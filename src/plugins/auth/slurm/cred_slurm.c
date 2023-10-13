@@ -34,5 +34,214 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/plugins/auth/slurm/auth_slurm.h"
 #include "src/plugins/cred/common/cred_common.h"
+
+extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
+				   uint16_t protocol_version)
+{
+	slurm_cred_t *cred = NULL;
+	char *token = NULL, *extra = NULL;
+
+	if (cred_arg->id)
+		extra = get_identity_string(cred_arg->id, cred_arg->id->uid,
+					    cred_arg->id->gid);
+
+	cred = cred_create(cred_arg, protocol_version);
+
+	if (!(token = create_internal("launch",
+				      cred_arg->id->uid,
+				      cred_arg->id->gid,
+				      slurm_conf.slurmd_user_id,
+				      get_buf_data(cred->buffer),
+				      get_buf_offset(cred->buffer),
+				      extra)))
+		error("create_internal() failed: %m");
+
+	set_buf_offset(cred->buffer, 0);
+	packstr(token, cred->buffer);
+	cred->signature = token;
+
+	xfree(extra);
+	return cred;
+}
+
+extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
+{
+	char *token = NULL;
+	jwt_t *jwt = NULL;
+	auth_cred_t *auth_cred = NULL;
+	buf_t *packed_buf = NULL;
+	char *json_id = NULL;
+	slurm_cred_t *cred = NULL;
+
+	safe_unpackstr(&token, buf);
+
+	if (!(jwt = decode_jwt(token, running_in_slurmd(), getuid()))) {
+		error("%s: decode_jwt() failed", __func__);
+		goto unpack_error;
+	}
+
+	auth_cred = new_cred();
+	if (copy_jwt_grants_to_cred(jwt, auth_cred))
+		goto unpack_error;
+
+	if (xstrcmp(auth_cred->context, "launch"))
+		goto unpack_error;
+
+	packed_buf = create_shadow_buf(auth_cred->data, auth_cred->dlen);
+	if (cred_unpack((void **) &cred, packed_buf, protocol_version))
+		goto unpack_error;
+
+	cred->arg->uid = auth_cred->uid;
+	cred->arg->gid = auth_cred->gid;
+	cred->ctime = auth_cred->ctime;
+	cred->verified = running_in_slurmd();
+
+	FREE_NULL_IDENTITY(cred->arg->id);
+	if (!(json_id = jwt_get_grants_json(jwt, "id"))) {
+		debug("%s: no identity provided", __func__);
+		cred->arg->id = fetch_identity(auth_cred->uid, auth_cred->gid,
+					       false);
+	} else if (!(cred->arg->id = extract_identity(json_id, auth_cred->uid,
+						      auth_cred->gid))) {
+		error("%s: extract_identity() failed", __func__);
+		goto unpack_error;
+	}
+	identity_debug2(cred->arg->id, __func__);
+
+	if (!running_in_slurmstepd()) {
+		cred->buffer = init_buf(4096);
+		packstr(token, cred->buffer);
+		cred->buf_version = protocol_version;
+	}
+
+	/* FIXME: use a hash instead of the entire token? */
+	cred->signature = token;
+
+	FREE_NULL_CRED(auth_cred);
+	FREE_NULL_BUFFER(packed_buf);
+	free(json_id);
+	jwt_free(jwt);
+	return cred;
+
+unpack_error:
+	FREE_NULL_CRED(auth_cred);
+	xfree(token);
+	FREE_NULL_BUFFER(packed_buf);
+	slurm_cred_destroy(cred);
+	if (json_id)
+		free(json_id);
+	if (jwt)
+		jwt_free(jwt);
+	return NULL;
+}
+
+extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
+{
+	return NULL;
+}
+
+extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
+{
+	return NULL;
+}
+
+extern sbcast_cred_t *sbcast_p_create(sbcast_cred_arg_t *cred_arg,
+				      uint16_t protocol_version)
+{
+	sbcast_cred_t *cred = NULL;
+	char *token = NULL, *extra = NULL;
+
+	extra = encode_sbcast(cred_arg);
+
+	if (!(token = create_internal("sbcast", cred_arg->id->uid,
+				      cred_arg->id->gid,
+				      slurm_conf.slurmd_user_id,
+				      NULL, 0, extra))) {
+		error("create_internal() failed: %m");
+		xfree(extra);
+		return NULL;
+	}
+
+	xfree(extra);
+
+	cred = xmalloc(sizeof(*cred));
+	cred->signature = token;
+
+	return cred;
+}
+
+extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
+				      uint16_t protocol_version)
+{
+	sbcast_cred_t *cred = NULL;
+	char *token = NULL;
+	jwt_t *jwt = NULL;
+	auth_cred_t *auth_cred = NULL;
+	char *json_id = NULL, *json_sbcast = NULL;
+
+	safe_unpackstr(&token, buf);
+
+	if (!running_in_slurmd())
+		verify = false;
+
+	if (!(jwt = decode_jwt(token, verify, getuid()))) {
+		error("%s: decode_jwt() failed", __func__);
+		goto unpack_error;
+	}
+
+	auth_cred = new_cred();
+	if (copy_jwt_grants_to_cred(jwt, auth_cred))
+		goto unpack_error;
+
+	if (xstrcmp(auth_cred->context, "sbcast"))
+		goto unpack_error;
+
+	if (!(json_sbcast = jwt_get_grants_json(jwt, "sbcast"))) {
+		error("%s: jwt_get_grants_json() failure for sbcast", __func__);
+		goto unpack_error;
+	} else if (!(cred = extract_sbcast(json_sbcast))) {
+		error("%s: extract_sbcast() failed", __func__);
+		goto unpack_error;
+	}
+
+	if (!(json_id = jwt_get_grants_json(jwt, "id"))) {
+		debug("%s: no identity provided", __func__);
+		cred->arg.id = fetch_identity(auth_cred->uid, auth_cred->gid,
+					      false);
+	} else if (!(cred->arg.id = extract_identity(json_id, auth_cred->uid,
+						     auth_cred->gid))) {
+		error("%s: extract_identity() failed", __func__);
+		goto unpack_error;
+	} else {
+		identity_debug2(cred->arg.id, __func__);
+	}
+
+	cred->signature = token;
+
+	jwt_free(jwt);
+	FREE_NULL_CRED(auth_cred);
+	free(json_sbcast);
+	free(json_id);
+	return cred;
+
+unpack_error:
+	xfree(token);
+	if (jwt)
+		jwt_free(jwt);
+	FREE_NULL_CRED(auth_cred);
+	if (json_sbcast)
+		free(json_sbcast);
+	if (json_id)
+		free(json_id);
+	return NULL;
+}

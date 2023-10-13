@@ -40,11 +40,19 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/identity.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/serializer.h"
+
+#include "src/slurmdbd/read_config.h"
 
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
@@ -73,38 +81,94 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[] = "Slurm authentication plugin";
+const char plugin_name[] = "Slurm auth and cred plugin";
 const char plugin_type[] = "auth/slurm";
 const uint32_t plugin_id = AUTH_PLUGIN_SLURM;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-const bool hash_enable = false;
+const bool hash_enable = true;
+
+bool internal = false;
+bool use_client_ids = false;
 
 extern int init(void)
 {
-	debug("loaded");
+	static bool init_run = false;
+	bool run = false, set = false;
+
+	if (init_run)
+		return SLURM_SUCCESS;
+	init_run = true;
+
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("%s: serializer_g_init() failed", __func__);
+
+	internal = run_in_daemon(&run, &set, "slurmd,slurmctld,slurmdbd");
+
+	if (internal) {
+		debug("running as daemon");
+		init_internal();
+		init_sack_conmgr();
+	} else {
+		debug("running as client");
+	}
+
+	if (xstrstr(slurm_conf.slurmctld_params, "use_client_ids") ||
+	    (slurmdbd_conf &&
+	     xstrstr(slurmdbd_conf->parameters, "use_client_ids")))
+		use_client_ids = true;
+
+	debug("loaded: internal=%s, use_client_ids=%s",
+	      internal ? "true" : "false",
+	      use_client_ids ? "true" : "false");
 
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	static bool fini_run = false;
+
+	if (fini_run)
+		return SLURM_SUCCESS;
+	fini_run = true;
+
+	if (internal) {
+		fini_sack_conmgr();
+		fini_internal();
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern auth_cred_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
 				  int dlen)
 {
-	return NULL;
+	if (internal) {
+		auth_cred_t *cred = new_cred();
+		cred->token = create_internal("auth", getuid(), getgid(), r_uid,
+					      data, dlen, NULL);
+		return cred;
+	}
+
+	return create_external(r_uid, data, dlen);
 }
 
 extern void auth_p_destroy(auth_cred_t *cred)
 {
-	/* no op */
+	destroy_cred(cred);
 }
 
 extern int auth_p_verify(auth_cred_t *cred, char *auth_info)
 {
-	return SLURM_ERROR;
+	if (!cred) {
+		errno = ESLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+
+	if (internal)
+		return verify_internal(cred, getuid());
+
+	return verify_external(cred);
 }
 
 extern void auth_p_get_ids(auth_cred_t *cred, uid_t *uid, gid_t *gid)
@@ -127,33 +191,64 @@ extern void auth_p_get_ids(auth_cred_t *cred, uid_t *uid, gid_t *gid)
 extern char *auth_p_get_host(auth_cred_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	return cred->hostname;
+	return xstrdup(cred->hostname);
 }
 
 extern int auth_p_get_data(auth_cred_t *cred, char **data, uint32_t *len)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
-	*data = NULL;
-	*len = 0;
+	*data = cred->data;
+	*len = cred->dlen;
 	return SLURM_SUCCESS;
+}
+
+extern void *auth_p_get_identity(auth_cred_t *cred)
+{
+	if (!cred)
+		return NULL;
+
+	return copy_identity(cred->id);
 }
 
 extern int auth_p_pack(auth_cred_t *cred, buf_t *buf,
 		       uint16_t protocol_version)
 {
+	if (!buf) {
+		errno = ESLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+
+	packstr(cred->token, buf);
+
 	return SLURM_SUCCESS;
 }
 
 extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
+	auth_cred_t *cred = NULL;
+	uint32_t uint32_tmp;
+
+	if (!buf) {
+		errno = ESLURM_AUTH_BADARG;
+		return NULL;
+	}
+
+	cred = new_cred();
+	safe_unpackstr_xmalloc(&cred->token, &uint32_tmp, buf);
+
+	return cred;
+
+unpack_error:
+	FREE_NULL_CRED(cred);
+	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
 

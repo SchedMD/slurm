@@ -37,17 +37,76 @@
 #ifndef _AUTH_SLURM_H
 #define _AUTH_SLURM_H
 
+#include <jwt.h>
 #include <stdbool.h>
 #include <sys/types.h>
+
+#include "src/common/data.h"
+#include "src/common/identity.h"
+#include "src/interfaces/cred.h"
+
+#define DEFAULT_TTL 60
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 
 	bool verified;
 
+	time_t ctime;
+
 	uid_t uid;
 	gid_t gid;
 	char *hostname;
+	char *cluster;
+	char *context;
+
+	void *data;
+	int dlen;
+
+	identity_t *id;
+
+	/* packed data below */
+	char *token;
 } auth_cred_t;
+
+extern bool internal;
+extern bool use_client_ids;
+
+/* Borrow these from libjwt despite them not being public. */
+extern int jwt_Base64encode(char *encoded, const char *string, int len);
+extern int jwt_Base64decode(unsigned char *bufplain, const char *bufcoded);
+
+extern void init_internal(void);
+extern void fini_internal(void);
+extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
+			     void *data, int dlen, char *extra);
+extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid);
+extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid);
+
+extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen);
+extern int verify_external(auth_cred_t *cred);
+
+extern void init_sack_conmgr(void);
+extern void fini_sack_conmgr(void);
+
+extern auth_cred_t *new_cred(void);
+extern void destroy_cred(auth_cred_t *cred);
+#define FREE_NULL_CRED(_X)		\
+do {					\
+	if (_X)				\
+		destroy_cred(_X);	\
+	_X = NULL;			\
+} while (0)
+
+extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred);
+extern char *get_identity_string(identity_t *id, uid_t uid, gid_t gid);
+extern data_t *identity_to_data(identity_t *id);
+extern identity_t *extract_identity(char *json, uid_t uid, gid_t gid);
+
+extern char *encode_launch(slurm_cred_arg_t *cred);
+extern slurm_cred_t *extract_launch(char *json);
+
+extern char *encode_sbcast(sbcast_cred_arg_t *cred);
+extern sbcast_cred_t *extract_sbcast(char *json);
 
 #endif

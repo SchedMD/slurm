@@ -34,4 +34,68 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <sys/types.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/slurm_xlator.h"
+
+#include "src/common/log.h"
+#include "src/common/sack_api.h"
+#include "src/common/xmalloc.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
+
+extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen)
+{
+	auth_cred_t *cred = new_cred();
+
+	if (!(cred->token = sack_create(r_uid, data, dlen))) {
+		error("%s: failed to create token", __func__);
+		xfree(cred);
+	}
+
+	return cred;
+}
+
+extern int verify_external(auth_cred_t *cred)
+{
+	int rc = SLURM_ERROR;
+	jwt_t *jwt = NULL;
+
+	if (!cred) {
+		error("%s: rejecting NULL cred", __func__);
+		goto fail;
+	}
+
+	if (cred->verified)
+		return SLURM_SUCCESS;
+
+	if (!cred->token) {
+		error("%s: rejecting NULL token", __func__);
+		goto fail;
+	}
+
+	if ((rc = sack_verify(cred->token))) {
+		error("%s: sack_verify failure: %s",
+		      __func__, slurm_strerror(rc));
+		goto fail;
+	}
+
+	cred->verified = true;
+
+	if ((rc = jwt_decode(&jwt, cred->token, NULL, 0))) {
+		error("%s: jwt_decode failure: %s",
+		      __func__, slurm_strerror(rc));
+		goto fail;
+	}
+
+	/* provides own logging on failures */
+	if ((rc = copy_jwt_grants_to_cred(jwt, cred)))
+		goto fail;
+
+	debug("token verified");
+fail:
+	if (jwt)
+		jwt_free(jwt);
+	return rc;
+}
