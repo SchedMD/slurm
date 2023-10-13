@@ -414,6 +414,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 		hosts = layout->front_end;
 	else
 		hosts = layout->node_list;
+	fwd_set_alias_addrs(layout->alias_addrs);
 	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
