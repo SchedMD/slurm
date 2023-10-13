@@ -104,6 +104,7 @@ extern int	scontrol_callerid(int argc, char **argv);
 extern int	scontrol_create_part(int argc, char **argv);
 extern int	scontrol_create_res(int argc, char **argv);
 extern int	scontrol_encode_hostlist(char *hostlist, bool sorted);
+extern void	scontrol_getaddrs(char *node_list);
 extern void	scontrol_gethost(const char *stepd_node, const char *node_name);
 extern int	scontrol_hold(char *op, char *job_id_str);
 extern int	scontrol_job_notify(int argc, char **argv);
