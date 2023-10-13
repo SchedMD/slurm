@@ -147,6 +147,8 @@ typedef struct {
 	uint32_t       ntasks; /* total number of tasks in current job      */
 	uint32_t       nodeid; /* relative position of this node in job     */
 	uint32_t       node_tasks;	/* number of tasks on *this* node   */
+	slurm_addr_t *node_addrs; /* allocated node addrs -- from cred */
+	char *node_list; /* allocated nodes -- from cred */
 	uint32_t       het_job_id;	/* Hetjob ID or NO_VAL */
 	uint32_t       het_job_nnodes;	/* total node count for entire hetjob */
 	char          *het_job_node_list; /* Hetjob step node list */

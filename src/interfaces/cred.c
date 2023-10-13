@@ -344,6 +344,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->sockets_per_node);
 	xfree(arg->job_mem_alloc);
 	xfree(arg->job_mem_alloc_rep_count);
+	xfree(arg->job_node_addrs);
 	xfree(arg->job_partition);
 	xfree(arg->job_reservation);
 	xfree(arg->job_std_err);
@@ -391,6 +392,9 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 		break;
 	case CRED_DATA_JOB_ALIAS_LIST:
 		rc = (void *) cred->arg->job_alias_list;
+		break;
+	case CRED_DATA_JOB_NODE_ADDRS:
+		rc = (void *) cred->arg->job_node_addrs;
 		break;
 	case CRED_DATA_STEP_GRES_LIST:
 		rc = (void *) cred->arg->step_gres_list;
@@ -711,7 +715,7 @@ extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 
 extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
-	uint32_t u32_ngids, len;
+	uint32_t u32_ngids, len, uint32_tmp;
 	slurm_cred_t *credential = NULL;
 	/*
 	 * The slightly confusing name is to avoid changing the entire unpack
@@ -772,6 +776,9 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
 		safe_unpackstr(&cred->job_account, buffer);
+		if (slurm_unpack_addr_array(&cred->job_node_addrs,
+					    &uint32_tmp, buffer))
+			goto unpack_error;
 		safe_unpackstr(&cred->job_alias_list, buffer);
 		safe_unpackstr(&cred->job_comment, buffer);
 		safe_unpackstr(&cred->job_constraints, buffer);
@@ -1210,6 +1217,10 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		packstr(cred->job_account, buffer);
+		slurm_pack_addr_array(
+			cred->job_node_addrs,
+			cred->job_node_addrs ? cred->job_nhosts : 0,
+			buffer);
 		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_comment, buffer);
 		packstr(cred->job_constraints, buffer);

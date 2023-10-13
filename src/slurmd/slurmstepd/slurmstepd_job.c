@@ -265,7 +265,14 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	step->job_start_time = cred_arg->job_start_time;
 	step->selinux_context = xstrdup(cred_arg->selinux_context);
 
+	if (cred_arg->job_node_addrs) {
+		step->node_addrs =
+			xcalloc(cred_arg->job_nhosts, sizeof(slurm_addr_t));
+		memcpy(step->node_addrs, cred_arg->job_node_addrs,
+		       cred_arg->job_nhosts * sizeof(slurm_addr_t));
+	}
 	step->alias_list = xstrdup(cred_arg->job_alias_list);
+	step->node_list = xstrdup(cred_arg->job_hostlist);
 
 	slurm_cred_unlock_args(cred);
 }
@@ -675,6 +682,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	FREE_NULL_LIST(step->job_gres_list);
 	FREE_NULL_LIST(step->step_gres_list);
 	xfree(step->alias_list);
+	xfree(step->node_addrs);
 
 	if (step->container) {
 		step_container_t *c = step->container;

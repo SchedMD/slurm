@@ -2974,6 +2974,13 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_nhosts = resrcs->nhosts;
 		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
 		cred_arg->sockets_per_node = resrcs->sockets_per_node;
+
+		if (job_ptr->node_addrs) {
+			cred_arg->job_node_addrs =
+				xcalloc(resrcs->nhosts, sizeof(slurm_addr_t));
+			memcpy(cred_arg->job_node_addrs, job_ptr->node_addrs,
+			       resrcs->nhosts * sizeof(slurm_addr_t));
+		}
 	}
 
 	if (job_ptr->part_ptr)
