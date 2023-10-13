@@ -249,7 +249,8 @@ extern int cred_p_sign(char *buffer, int buf_size, char **signature)
  * to be managed directly. This is done so the buffer can be used
  * alongside the unpack functions without an additional memcpy step.
  */
-static int _decode(char *signature, bool replay_okay, buf_t **buffer)
+static int _decode(char *signature, bool replay_okay, buf_t **buffer,
+		   time_t *expiration)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;
@@ -297,6 +298,14 @@ again:
 		goto end_it;
 	}
 
+	if (expiration) {
+		int ttl;
+		time_t t;
+		munge_ctx_get(ctx, MUNGE_OPT_TTL, &ttl);
+		munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &t);
+		*expiration = t + ttl;
+	}
+
 	munge_ctx_destroy(ctx);
 	*buffer = create_buf(buf_out, buf_out_size);
 	return SLURM_SUCCESS;
@@ -318,7 +327,7 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	replay_okay = true;
 #endif
 
-	rc = _decode(signature, replay_okay, &payload);
+	rc = _decode(signature, replay_okay, &payload, NULL);
 
 	if (buf_size != payload->size)
 		rc = ESIG_BUF_SIZE_MISMATCH;
@@ -360,7 +369,7 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 	buf_t *buffer = NULL;
 
 	/* warning: do not use free_buf() on the returned buffer */
-	if ((rc = _decode(net_cred, true, &buffer))) {
+	if ((rc = _decode(net_cred, true, &buffer, NULL))) {
 		error("%s: failed decode", __func__);
 		return NULL;
 	}
