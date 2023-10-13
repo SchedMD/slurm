@@ -915,6 +915,20 @@ extern void forward_wait(slurm_msg_t * msg)
 	return;
 }
 
+extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *alias_addrs)
+{
+	if (!alias_addrs)
+		return;
+
+	slurm_mutex_lock(&alias_addrs_mutex);
+
+	if (!last_alias_addrs)
+		last_alias_addrs = xmalloc(sizeof(*last_alias_addrs));
+	slurm_copy_node_alias_addrs_members(last_alias_addrs, alias_addrs);
+
+	slurm_mutex_unlock(&alias_addrs_mutex);
+}
+
 void destroy_data_info(void *object)
 {
 	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
