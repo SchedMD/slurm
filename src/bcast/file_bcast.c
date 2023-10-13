@@ -345,7 +345,7 @@ static int _bcast_file(struct bcast_parameters *params)
 
 	if (!params->fanout)
 		params->fanout = DEFAULT_THREADS;
-	else
+	else if (params->fanout != 0xfffd)
 		params->fanout = MIN(MAX_THREADS, params->fanout);
 
 	while (more) {

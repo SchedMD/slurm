@@ -115,8 +115,12 @@ extern void parse_command_line(int argc, char **argv)
 		xfree(params.exclude);
 		params.exclude = xstrdup(env_val);
 	}
-	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
-		params.fanout = atoi(env_val);
+	if ((env_val = getenv("SBCAST_FANOUT"))) {
+		if (!xstrcasecmp(env_val, "off"))
+			params.fanout = 0xfffd;
+		else
+			params.fanout = atoi(env_val);
+	}
 	if (getenv("SBCAST_FORCE"))
 		params.flags |= BCAST_FLAG_FORCE;
 
@@ -164,7 +168,10 @@ extern void parse_command_line(int argc, char **argv)
 			params.flags |= BCAST_FLAG_FORCE;
 			break;
 		case (int)'F':
-			params.fanout = atoi(optarg);
+			if (!xstrcasecmp(optarg, "off"))
+				params.fanout = 0xfffd;
+			else
+				params.fanout = atoi(optarg);
 			break;
 		case (int)'j':
 			params.selected_step = slurm_parse_step_str(optarg);
