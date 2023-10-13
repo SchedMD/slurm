@@ -365,11 +365,12 @@ extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 {
 	int rc;
+	time_t expiration;
 	slurm_node_alias_addrs_t *addrs = NULL;
 	buf_t *buffer = NULL;
 
 	/* warning: do not use free_buf() on the returned buffer */
-	if ((rc = _decode(net_cred, true, &buffer, NULL))) {
+	if ((rc = _decode(net_cred, true, &buffer, &expiration))) {
 		error("%s: failed decode", __func__);
 		return NULL;
 	}
@@ -382,6 +383,7 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 		}
 		return NULL;
 	}
+	addrs->expiration = expiration;
 	if (buffer) {
 		free(get_buf_data(buffer));
 		xfree(buffer);
