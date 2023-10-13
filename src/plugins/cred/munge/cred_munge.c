@@ -50,6 +50,7 @@
 
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -315,10 +316,47 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 {
-	return NULL;
+	int rc;
+	char *signature;
+	buf_t *buffer = init_buf(BUF_SIZE);
+
+	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
+
+	if ((rc = cred_p_sign(get_buf_data(buffer), get_buf_offset(buffer),
+			      &signature))) {
+		error("%s: cred_p_sign failure: %s",
+		      __func__, slurm_strerror(rc));
+		free_buf(buffer);
+		return NULL;
+	}
+
+	free_buf(buffer);
+	return signature;
 }
 
 extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 {
-	return NULL;
+	int rc;
+	slurm_node_alias_addrs_t *addrs = NULL;
+	buf_t *buffer = NULL;
+
+	/* warning: do not use free_buf() on the returned buffer */
+	if ((rc = _decode(net_cred, true, &buffer))) {
+		error("%s: failed decode", __func__);
+		return NULL;
+	}
+
+	if (slurm_unpack_node_alias_addrs(&addrs, buffer, protocol_version)) {
+		error("%s: failed unpack", __func__);
+		if (buffer) {
+			free(get_buf_data(buffer));
+			xfree(buffer);
+		}
+		return NULL;
+	}
+	if (buffer) {
+		free(get_buf_data(buffer));
+		xfree(buffer);
+	}
+	return addrs;
 }
