@@ -239,6 +239,7 @@ documents those changes that are of interest to users and administrators.
     the number of 'RPC limit exceeded...' messages that are logged.
  -- Rename sbcast --fanout to --treewidth.
  -- Remove SLURM_NODE_ALIASES env variable.
+ -- Enable fanout for dynamic and unaddresable cloud nodes.
 
 * Changes in Slurm 23.02.7
 ==========================
