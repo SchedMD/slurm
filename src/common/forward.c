@@ -263,8 +263,8 @@ void *_forward_thread(void *arg)
 				continue;
 			}
 			goto cleanup;
-		} else if ((fwd_msg->header.forward.cnt+1)
-			  != list_count(ret_list)) {
+		} else if ((fwd_msg->header.forward.cnt + 1) !=
+			   list_count(ret_list)) {
 			/* this should never be called since the above
 			   should catch the failed forwards and pipe
 			   them back down, but this is here so we
@@ -277,7 +277,7 @@ void *_forward_thread(void *arg)
 				= hostlist_iterator_create(hl);
 			error("We shouldn't be here.  We forwarded to %d "
 			      "but only got %d back",
-			      (fwd_msg->header.forward.cnt+1),
+			      (fwd_msg->header.forward.cnt + 1),
 			      list_count(ret_list));
 			while ((tmp = hostlist_next(host_itr))) {
 				int node_found = 0;
