@@ -6520,6 +6520,65 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	slurm_free_crontab_update_response_msg(resp_msg);
 }
 
+static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	slurm_msg_t response_msg;
+	char *node_list = ((slurm_node_alias_addrs_t *)msg->data)->node_list;
+	slurm_node_alias_addrs_t alias_addrs = {0};
+	hostlist_t *hl;
+	bitstr_t *node_bitmap = NULL;
+	node_record_t *node_ptr;
+
+	slurmctld_lock_t node_read_lock = {
+		.node = READ_LOCK
+	};
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_NODE_ALIAS_ADDRS");
+
+	lock_slurmctld(node_read_lock);
+
+	if (!(hl = hostlist_create(node_list))) {
+		error("hostlist_create error for %s: %m",
+		      node_list);
+		goto end_it;
+	}
+
+	hostlist2bitmap(hl, true, &node_bitmap);
+	FREE_NULL_HOSTLIST(hl);
+
+	if (bit_ffs(node_bitmap) != -1) {
+		int addr_index = 0;
+		alias_addrs.node_list = bitmap2node_name_sortable(node_bitmap,
+								  false);
+		alias_addrs.node_cnt = bit_set_count(node_bitmap);
+		alias_addrs.node_addrs = xcalloc(alias_addrs.node_cnt,
+						 sizeof(slurm_addr_t));
+		for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i));
+		     i++) {
+			slurm_conf_get_addr(
+				node_ptr->name,
+				&alias_addrs.node_addrs[addr_index++], 0);
+		}
+	}
+
+end_it:
+	unlock_slurmctld(node_read_lock);
+	END_TIMER2(__func__);
+
+	if (alias_addrs.node_addrs) {
+		response_init(&response_msg, msg, RESPONSE_NODE_ALIAS_ADDRS,
+			      &alias_addrs);
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	} else {
+		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
+	}
+
+	xfree(alias_addrs.node_addrs);
+	xfree(alias_addrs.node_list);
+}
+
 slurmctld_rpc_t slurmctld_rpcs[] =
 {
 	{
@@ -6864,6 +6923,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_UPDATE_CRONTAB,
 		.func = _slurm_rpc_update_crontab,
+	},{
+		.msg_type = REQUEST_NODE_ALIAS_ADDRS,
+		.func = _slurm_rpc_node_alias_addrs,
 	},{	/* terminate the array. this must be last. */
 		.msg_type = 0,
 		.func = NULL,

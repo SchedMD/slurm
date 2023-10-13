@@ -331,6 +331,8 @@ typedef enum {
 	DEFUNCT_RPC_3013,
 	REQUEST_DELETE_NODE,
 	REQUEST_CREATE_NODE,
+	REQUEST_NODE_ALIAS_ADDRS,
+	RESPONSE_NODE_ALIAS_ADDRS,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -1766,6 +1768,8 @@ extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
+extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg);
+extern void slurm_free_node_alias_addrs(slurm_node_alias_addrs_t *msg);
 extern void slurm_free_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg);
 extern void slurm_free_control_status_msg(control_status_msg_t *msg);

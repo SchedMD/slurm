@@ -5395,6 +5395,24 @@ extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->node_addrs);
+	xfree(msg->node_list);
+}
+
+extern void slurm_free_node_alias_addrs(slurm_node_alias_addrs_t *msg)
+{
+	if (!msg)
+		return;
+
+	slurm_free_node_alias_addrs_members(msg);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5805,6 +5823,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_CONTAINER_START:
 		/* struct has no members that need to be freed */
 		xfree_ptr(data);
+		break;
+	case REQUEST_NODE_ALIAS_ADDRS:
+	case RESPONSE_NODE_ALIAS_ADDRS:
+		slurm_free_node_alias_addrs(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);

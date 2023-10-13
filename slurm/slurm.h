@@ -3114,6 +3114,12 @@ typedef struct slurm_update_node_msg {
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 
+typedef struct {
+	slurm_addr_t *node_addrs;
+	uint32_t node_cnt;
+	char *node_list;
+} slurm_node_alias_addrs_t;
+
 typedef struct slurm_update_front_end_msg {
 	char *name;		/* comma separated list of front end nodes */
 	uint32_t node_state;	/* see enum node_states */
@@ -4280,6 +4286,9 @@ extern int slurm_get_node_energy(char *host,
 				 uint16_t delta,
 				 uint16_t *sensors_cnt,
 				 acct_gather_energy_t **energy);
+
+extern int slurm_get_node_alias_addrs(char *node_list,
+				      slurm_node_alias_addrs_t **alias_addrs);
 
 /*
  * slurm_free_node_info_msg - free the node information response message

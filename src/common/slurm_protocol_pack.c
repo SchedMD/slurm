@@ -11779,6 +11779,48 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
+				   buf_t *buffer,
+				   uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		slurm_pack_addr_array(msg->node_addrs, msg->node_cnt, buffer);
+		pack32(msg->node_cnt, buffer);
+		packstr(msg->node_list, buffer);
+	}
+}
+
+static int _unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
+				    buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	slurm_node_alias_addrs_t *msg;
+
+	xassert(msg_ptr);
+
+	msg = xmalloc(sizeof(*msg));
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_addr_array(&msg->node_addrs, &uint32_tmp, buffer))
+			goto unpack_error;
+		safe_unpack32(&msg->node_cnt, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+
+		xassert(uint32_tmp == msg->node_cnt);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_alias_addrs(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -12384,6 +12426,11 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case REQUEST_CONTAINER_EXEC:
 		_pack_container_exec_msg(msg, buffer);
+		break;
+	case REQUEST_NODE_ALIAS_ADDRS:
+	case RESPONSE_NODE_ALIAS_ADDRS:
+		_pack_node_alias_addrs(msg->data, buffer,
+				       msg->protocol_version);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13080,6 +13127,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_CONTAINER_EXEC:
 		rc = _unpack_container_exec_msg(msg, buffer);
+		break;
+	case REQUEST_NODE_ALIAS_ADDRS:
+	case RESPONSE_NODE_ALIAS_ADDRS:
+		rc = _unpack_node_alias_addrs(
+			(slurm_node_alias_addrs_t **)&(msg->data), buffer,
+			msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
