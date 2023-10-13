@@ -11821,6 +11821,42 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_node_alias_addrs_resp_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
+{
+	slurm_node_alias_addrs_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		char *tmp_str = create_net_cred(msg, smsg->protocol_version);
+		packstr(tmp_str, buffer);
+		xfree(tmp_str);
+	}
+}
+
+static int _unpack_node_alias_addrs_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	slurm_node_alias_addrs_t *msg;
+
+	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		char *tmp_str = NULL;
+		safe_unpackstr(&tmp_str, buffer);
+		msg = extract_net_cred(tmp_str, smsg->protocol_version);
+		if (!msg) {
+			xfree(tmp_str);
+			goto unpack_error;
+		}
+		msg->net_cred = tmp_str;
+		smsg->data = msg;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_alias_addrs(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -12428,9 +12464,11 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_container_exec_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_ALIAS_ADDRS:
-	case RESPONSE_NODE_ALIAS_ADDRS:
 		slurm_pack_node_alias_addrs(msg->data, buffer,
 					    msg->protocol_version);
+		break;
+	case RESPONSE_NODE_ALIAS_ADDRS:
+		_pack_node_alias_addrs_resp_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13129,10 +13167,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_container_exec_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_ALIAS_ADDRS:
-	case RESPONSE_NODE_ALIAS_ADDRS:
 		rc = slurm_unpack_node_alias_addrs(
 			(slurm_node_alias_addrs_t **)&(msg->data), buffer,
 			msg->protocol_version);
+		break;
+	case RESPONSE_NODE_ALIAS_ADDRS:
+		rc = _unpack_node_alias_addrs_resp_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
