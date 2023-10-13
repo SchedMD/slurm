@@ -160,12 +160,9 @@ buf_t *create_mmap_buf(const char *file)
 		return NULL;
 	}
 
-	my_buf = xmalloc_nz(sizeof(*my_buf));
-	my_buf->magic = BUF_MAGIC;
-	my_buf->size = f_stat.st_size;
-	my_buf->processed = 0;
-	my_buf->head = data;
-	my_buf->mmaped = true;
+	my_buf = create_buf(data, f_stat.st_size);
+	if (my_buf)
+		my_buf->mmaped = true;
 
 	debug3("%s: loaded file `%s` as buf_t", __func__, file);
 
