@@ -567,6 +567,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 
 		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
+		fwd_msg->header.forward.tree_width = header->forward.tree_width;
 		slurm_thread_create_detached(_forward_thread, fwd_msg);
 	}
 }
