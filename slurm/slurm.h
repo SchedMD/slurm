@@ -3115,6 +3115,8 @@ typedef struct slurm_update_node_msg {
 } update_node_msg_t;
 
 typedef struct {
+	time_t expiration;
+	char *net_cred;
 	slurm_addr_t *node_addrs;
 	uint32_t node_cnt;
 	char *node_list;

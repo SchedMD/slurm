@@ -5400,6 +5400,7 @@ extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg)
 	if (!msg)
 		return;
 
+	xfree(msg->net_cred);
 	xfree(msg->node_addrs);
 	xfree(msg->node_list);
 }
