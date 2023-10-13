@@ -699,6 +699,7 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 {
 	struct stat fbuf = { 0 };
 	con_mgr_fd_t *con = NULL;
+	bool set_keep_alive;
 
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
 		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
@@ -709,12 +710,17 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 		return NULL;
 	}
 
+	set_keep_alive = !unix_socket_path && S_ISSOCK(fbuf.st_mode);
+
 	/* all connections are non-blocking */
-	net_set_keep_alive(input_fd);
+	if (set_keep_alive)
+		net_set_keep_alive(input_fd);
 	fd_set_nonblocking(input_fd);
 	if (input_fd != output_fd) {
 		fd_set_nonblocking(output_fd);
-		net_set_keep_alive(output_fd);
+
+		if (set_keep_alive)
+			net_set_keep_alive(output_fd);
 	}
 
 	con = xmalloc(sizeof(*con));
