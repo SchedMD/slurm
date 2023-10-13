@@ -214,6 +214,34 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	return;
 }
 
+static void _set_job_node_addrs(job_record_t *job_ptr)
+{
+	/*
+	 * Don't send node_addr array until the nodes are ready (e.g.
+	 * the alias_list will be TBD until all nodes are powered up)
+	 * The alias_list will not be set if not allocated nodes needing
+	 * to be powered up.
+	 */
+	if (!job_ptr->node_addrs &&
+	    job_ptr->node_bitmap &&
+	    bit_set_count(job_ptr->node_bitmap) &&
+	    (!job_ptr->alias_list || xstrcmp(job_ptr->alias_list, "TBD"))) {
+		node_record_t *node_ptr;
+
+		job_ptr->node_addrs =
+			xcalloc(bit_set_count(job_ptr->node_bitmap),
+				sizeof(slurm_addr_t));
+		for (int i = 0, addr_index = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
+						  &i));
+		     i++) {
+			slurm_conf_get_addr(node_ptr->name,
+					    &job_ptr->node_addrs[addr_index++],
+					    0);
+		}
+	}
+}
+
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
@@ -243,6 +271,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 				   node_ptr->node_hostname);
 		}
 	}
+
+	_set_job_node_addrs(job_ptr);
 }
 
 extern void set_job_features_use(job_details_t *details_ptr)
