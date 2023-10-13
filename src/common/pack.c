@@ -120,7 +120,7 @@ buf_t *create_buf(char *data, uint32_t size)
 		return NULL;
 	}
 
-	my_buf = xmalloc_nz(sizeof(*my_buf));
+	my_buf = xmalloc(sizeof(*my_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
@@ -222,7 +222,7 @@ buf_t *init_buf(uint32_t size)
 	}
 	if (size <= 0)
 		size = BUF_SIZE;
-	my_buf = xmalloc_nz(sizeof(*my_buf));
+	my_buf = xmalloc(sizeof(*my_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
