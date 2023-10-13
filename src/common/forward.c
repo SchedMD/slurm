@@ -334,6 +334,9 @@ cleanup:
 	if ((fd >= 0) && close(fd) < 0)
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
+	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
+	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
+	fwd_msg->header.forward.alias_addrs.node_list = NULL;
 	destroy_forward(&fwd_msg->header.forward);
 	FREE_NULL_BUFFER(buffer);
 	slurm_cond_signal(&fwd_struct->notify);
@@ -774,6 +777,7 @@ void destroy_data_info(void *object)
 void destroy_forward(forward_t *forward)
 {
 	if (forward->init == FORWARD_INIT) {
+		slurm_free_node_alias_addrs_members(&forward->alias_addrs);
 		xfree(forward->nodelist);
 		forward->init = 0;
 	} else {

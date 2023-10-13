@@ -493,6 +493,7 @@ typedef enum {
  * core api configuration struct
 \*****************************************************************************/
 typedef struct forward {
+	slurm_node_alias_addrs_t alias_addrs;
 	uint16_t   cnt;		/* number of nodes to forward to */
 	uint16_t   init;	/* tell me it has been set (FORWARD_INIT) */
 	char      *nodelist;	/* ranged string of who to forward the
