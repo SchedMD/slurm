@@ -74,6 +74,10 @@ typedef struct {
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
 					 char *signature);
 	const char *(*cred_str_error)	(int);
+	char *(*create_net_cred)	(void *addrs,
+					 uint16_t protocol_version);
+	void *(*extract_net_cred)	(char *net_cred,
+					 uint16_t protocol_version);
 } slurm_cred_ops_t;
 
 /*
@@ -84,6 +88,8 @@ static const char *syms[] = {
 	"cred_p_sign",
 	"cred_p_verify_sign",
 	"cred_p_str_error",
+	"cred_p_create_net_cred",
+	"cred_p_extract_net_cred",
 };
 
 struct sbcast_cache {
@@ -1710,4 +1716,28 @@ extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
 	xfree(arg->nodes);
 	xfree(arg->user_name);
 	xfree(arg);
+}
+
+extern char *create_net_cred(void *addrs, uint16_t protocol_version)
+{
+	xassert(g_context);
+
+	if (!addrs) {
+		error("%s: addrs not provided", __func__);
+		return NULL;
+	}
+
+	return (*(ops.create_net_cred))(addrs, protocol_version);
+}
+
+extern void *extract_net_cred(char *net_cred, uint16_t protocol_version)
+{
+	xassert(g_context);
+
+	if (!net_cred) {
+		error("%s: net_cred not provided", __func__);
+		return NULL;
+	}
+
+	return (*(ops.extract_net_cred))(net_cred, protocol_version);
 }

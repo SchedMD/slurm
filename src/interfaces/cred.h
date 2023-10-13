@@ -334,4 +334,7 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_versio
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 
+extern char *create_net_cred(void *addrs, uint16_t protocol_version);
+extern void *extract_net_cred(char *net_cred, uint16_t protocol_version);
+
 #endif
