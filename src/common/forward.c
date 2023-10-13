@@ -369,8 +369,19 @@ cleanup:
 static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 			      slurm_addr_t *address)
 {
-	if (slurm_conf_get_addr(name, address, fwd_tree->orig_msg->flags) ==
-	    SLURM_ERROR) {
+	if ((fwd_tree->orig_msg->flags & SLURM_PACK_ADDRS) &&
+	    fwd_tree->orig_msg->forward.alias_addrs.node_addrs) {
+		hostlist_t *hl =
+			hostlist_create(fwd_tree->orig_msg->forward.alias_addrs.node_list);
+		int n = hostlist_find(hl, name);
+		hostlist_destroy(hl);
+		if (n < 0)
+			return SLURM_ERROR;
+		*address =
+			fwd_tree->orig_msg->forward.alias_addrs.node_addrs[n];
+	} else if (slurm_conf_get_addr(name, address,
+				       fwd_tree->orig_msg->flags) ==
+		   SLURM_ERROR) {
 		error("%s: can't find address for host %s, check slurm.conf",
 		      __func__, name);
 		slurm_mutex_lock(fwd_tree->tree_mutex);
