@@ -180,9 +180,9 @@ main (int argc, char **argv)
 	 * and blocks until the step is complete */
 	rc = job_manager(step);
 
-	return stepd_cleanup(msg, step, cli, rc, 0);
+	return stepd_cleanup(msg, step, cli, rc, false);
 ending:
-	return stepd_cleanup(msg, step, cli, rc, 1);
+	return stepd_cleanup(msg, step, cli, rc, true);
 }
 
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
