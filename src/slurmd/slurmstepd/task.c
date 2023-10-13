@@ -304,7 +304,6 @@ _setup_mpi(stepd_step_rec_t *step, int ltaskid)
 		info->gtaskid = step->het_job_task_offset +
 				step->task[ltaskid]->gtid;
 		info->ltaskid = step->task[ltaskid]->id;
-		info->self    = step->envtp->self;
 		info->client  = step->envtp->cli;
 	} else {
 		info->step_id.step_id  = step->step_id.step_id;
@@ -315,7 +314,6 @@ _setup_mpi(stepd_step_rec_t *step, int ltaskid)
 		info->ltasks  = step->node_tasks;
 		info->gtaskid = step->task[ltaskid]->gtid;
 		info->ltaskid = step->task[ltaskid]->id;
-		info->self    = step->envtp->self;
 		info->client  = step->envtp->cli;
 	}
 
