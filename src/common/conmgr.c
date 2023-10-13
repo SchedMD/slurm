@@ -1380,7 +1380,8 @@ static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg)
 {
-	con->events.on_finish(arg);
+	if (con->events.on_finish)
+		con->events.on_finish(arg);
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->wait_on_finish = false;
