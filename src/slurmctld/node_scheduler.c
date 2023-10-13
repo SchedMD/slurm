@@ -249,14 +249,14 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 
 	xfree(job_ptr->alias_list);
 
-	if (cloud_dns)
+	if (cloud_dns && bit_super_set(job_ptr->node_bitmap, cloud_node_bitmap))
 		return;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
-		    IS_NODE_CLOUD(node_ptr)) {
+		    (!cloud_dns && IS_NODE_CLOUD(node_ptr))) {
 			if (IS_NODE_POWERED_DOWN(node_ptr) ||
 			    IS_NODE_POWERING_UP(node_ptr)) {
 				xfree(job_ptr->alias_list);
@@ -272,7 +272,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 		}
 	}
 
-	_set_job_node_addrs(job_ptr);
+	if (job_ptr->alias_list)
+		_set_job_node_addrs(job_ptr);
 }
 
 extern void set_job_features_use(job_details_t *details_ptr)

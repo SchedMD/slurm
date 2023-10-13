@@ -46,11 +46,6 @@ more details.
 </dl>
 </p>
 
-<p>
-<b>NOTE</b>: The <b>cloud_dns</b> <b>SlurmctldParameter</b> must not be set as
-this disables the alias list.
-</p>
-
 <h3 id="config">Partition Assignment
 <a class="slurm_link" href="#partitions"></a>
 </h3>
@@ -152,6 +147,6 @@ disabled.
 </p>
 
 
-<p style="text-align:center;">Last modified 8 August 2023</p>
+<p style="text-align:center;">Last modified 15 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
