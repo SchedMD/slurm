@@ -5155,7 +5155,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	if (conf_node->port_str)
+	if (conf_node && conf_node->port_str)
 		node_ptr->port = strtol(conf_node->port_str, NULL, 10);
 
 	/* Get IP of slurmd */
