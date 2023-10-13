@@ -80,6 +80,8 @@
 #define MAGIC_DEFERRED_FUNC 0xA230403A
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
+#define MAX_CONNECTIONS_DEFAULT 150
+#define THREAD_COUNT_DEFAULT 10
 
 /*
  * Connection tracking structure
@@ -468,6 +470,11 @@ static void _fini_signal_handler(void)
 extern void init_con_mgr(int thread_count, int max_connections,
 			 con_mgr_callbacks_t callbacks)
 {
+	if (thread_count < 1)
+		thread_count = THREAD_COUNT_DEFAULT;
+	if (max_connections < 1)
+		max_connections = MAX_CONNECTIONS_DEFAULT;
+
 	slurm_mutex_lock(&mgr.mutex);
 
 	if (mgr.workq) {
