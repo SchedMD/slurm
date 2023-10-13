@@ -395,6 +395,10 @@ void *_fwd_tree_thread(void *arg)
 			buf = hostlist_ranged_string_xmalloc(
 					fwd_tree->tree_hl);
 			send_msg.forward.nodelist = buf;
+			if (send_msg.flags & SLURM_PACK_ADDRS) {
+				send_msg.forward.alias_addrs =
+					fwd_tree->orig_msg->forward.alias_addrs;
+			}
 		} else
 			send_msg.forward.nodelist = NULL;
 
