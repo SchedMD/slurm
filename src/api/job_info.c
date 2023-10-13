@@ -1582,9 +1582,25 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address,
-					    req_msg.flags);
-		} else {
+			if (!slurm_conf_get_addr(this_addr, &req_msg.address,
+						 req_msg.flags)) {
+				/* Found addr, don't use localhost */
+				this_addr = NULL;
+			} else {
+				slurm_node_alias_addrs_t *alias_addrs;
+				if (!slurm_get_node_alias_addrs(this_addr,
+								&alias_addrs)) {
+					add_remote_nodes_to_conf_tbls(
+						alias_addrs->node_list,
+						alias_addrs->node_addrs);
+				}
+				slurm_free_node_alias_addrs(alias_addrs);
+				slurm_conf_get_addr(this_addr, &req_msg.address,
+						    req_msg.flags);
+			}
+		}
+
+		if (!this_addr) {
 			this_addr = "localhost";
 			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 				       this_addr);
