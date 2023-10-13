@@ -351,9 +351,6 @@ static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
 static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			     con_mgr_work_status_t status, const char *tag,
 			     void *arg);
-static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
-				 con_mgr_work_status_t status, const char *tag,
-				 void *arg);
 
 /*
  * Find by matching fd to connection
@@ -518,8 +515,6 @@ extern void init_con_mgr(int thread_count, int max_connections,
 	fd_set_blocking(mgr.signal_fd[1]);
 
 	_add_signal_work(SIGALRM, _on_signal_alarm, NULL, "_on_signal_alarm()");
-	_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
-			 "_on_signal_interrupt()");
 
 	slurm_mutex_unlock(&mgr.mutex);
 }
@@ -1719,14 +1714,6 @@ static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	log_flag(NET, "%s: caught SIGALRM", __func__);
 	_queue_func(false, _handle_timer, NULL, "_handle_timer");
 	_signal_change(false);
-}
-
-static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
-				 con_mgr_work_status_t status, const char *tag,
-				 void *arg)
-{
-	info("%s: caught SIGINT. Shutting down.", __func__);
-	con_mgr_request_shutdown();
 }
 
 /*

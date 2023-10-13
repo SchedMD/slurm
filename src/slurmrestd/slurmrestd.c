@@ -486,6 +486,14 @@ static int _op_handler_openapi(const char *context_id,
 	return get_openapi_specification(resp);
 }
 
+static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
+				 con_mgr_work_status_t status, const char *tag,
+				 void *arg)
+{
+	info("%s: caught SIGINT. Shutting down.", __func__);
+	con_mgr_request_shutdown();
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
@@ -529,6 +537,9 @@ int main(int argc, char **argv)
 
 	init_con_mgr((run_mode.listen ? thread_count : 1), max_connections,
 		     callbacks);
+
+	con_mgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
+				"_on_signal_interrupt()");
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
