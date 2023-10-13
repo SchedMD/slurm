@@ -3394,48 +3394,6 @@ static int _establish_config_source(char **config_file, int *memfd)
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_reset_alias() for each node in alias_list
- *
- * IN alias_list - string with sets of node name, communication address in []
- * 	and hostname. Each element in the set if colon separated and
- * 	each set is comma separated.
- * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
- * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
- */
-extern int set_nodes_alias(const char *alias_list)
-{
-	int rc = SLURM_SUCCESS;
-	char *aliases, *save_ptr = NULL;
-	char *addr, *hostname, *slurm_name;
-
-	aliases = xstrdup(alias_list);
-	slurm_name = strtok_r(aliases, ":", &save_ptr);
-	while (slurm_name) {
-		/* Checking for [] around address */
-		if (save_ptr[0] == '[') {
-			save_ptr++;
-			addr = strtok_r(NULL, "]", &save_ptr);
-			save_ptr++;
-		} else
-			addr = strtok_r(NULL, ":", &save_ptr);
-		if (!addr) {
-			rc = SLURM_ERROR;
-			break;
-		}
-		hostname = strtok_r(NULL, ",", &save_ptr);
-		if (!hostname) {
-			rc = SLURM_ERROR;
-			break;
-		}
-		slurm_reset_alias(slurm_name, addr, hostname);
-		slurm_name = strtok_r(NULL, ":", &save_ptr);
-	}
-	xfree(aliases);
-
-	return rc;
-}
-
 extern int read_conf_send_stepd(int fd)
 {
 	int len;

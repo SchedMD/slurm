@@ -820,14 +820,11 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 			    conf->node_topo_addr);
 	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
-	/*
-	 * Reset address for cloud nodes
-	 */
+
+	/* Reset addrs for dyanmic/cloud nodes to hash tables*/
 	if (step->node_addrs &&
-	    !add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
-		/* Successfully added nodes */
-	} else if (step->alias_list && set_nodes_alias(step->alias_list)) {
-		error("%s: set_nodes_alias failed: %s", __func__,
+	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
+		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy(step);
 		return NULL;
