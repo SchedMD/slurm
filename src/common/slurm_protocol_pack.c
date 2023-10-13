@@ -1350,7 +1350,10 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 
 	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
-		packstr(msg->alias_list, buffer);
+
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
 		packstr(msg->batch_host, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
 		pack32(msg->error_code, buffer);
@@ -7378,7 +7381,10 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
 				      protocol_version);
 		job_options_pack(msg->options, buffer);
-		packstr(msg->alias_list, buffer);
+
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
@@ -8321,7 +8327,9 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
-		packstr(msg->alias_list, buffer);
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
 		packstr(msg->nodes, buffer);
 		packstr(msg->work_dir, buffer);
 
@@ -9109,7 +9117,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 				     buffer);
 		}
 
-		packstr(msg->alias_list, buffer);
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
 		packstr(msg->cpu_bind, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->script, buffer);

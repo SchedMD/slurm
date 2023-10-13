@@ -577,11 +577,6 @@ Taskprolog, SrunEpilog and TaskEpilog.</li>
 Number of nodes assigned to a job. Available in SrunProlog, TaskProlog,
 SrunEpilog and TaskEpilog.</li>
 
-<li><b>SLURM_NODE_ALIASES</b>
-Contains the node name, communication address and hostname of a node.
-Used for cloud environments. Available in Prolog (PrologFlags=alloc only),
-SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
-
 <li><b>SLURM_NODEID</b>
 ID of current node relative to other nodes in a multi-node job. Available in
 TaskProlog and TaskEpilog.</li>

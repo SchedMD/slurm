@@ -957,7 +957,6 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
- *	SLURM_NODE_ALIASES
  *	SLURM_NTASKS_PER_NODE
  *
  * dest OUT - array in which to the set environment variables
@@ -1006,8 +1005,6 @@ extern int env_array_for_job(char ***dest,
 				    "%u", step_layout_req.num_hosts);
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NODELIST", het_job_offset,
 				    "%s", alloc->node_list);
-	env_array_overwrite_het_fmt(dest, "SLURM_NODE_ALIASES", het_job_offset,
-				    "%s", alloc->alias_list);
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_PARTITION", het_job_offset,
 				    "%s", alloc->partition);
 
@@ -1212,7 +1209,6 @@ extern int env_array_for_job(char ***dest,
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
- *	SLURM_NODE_ALIASES
  *	ENVIRONMENT=BATCH
  *	HOSTNAME
  *
@@ -1287,8 +1283,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_PARTITION", "%s",
 				batch->partition);
-	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
-				batch->alias_list);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
 				       batch->cpus_per_node,

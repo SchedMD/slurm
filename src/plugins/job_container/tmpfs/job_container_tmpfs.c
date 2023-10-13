@@ -455,9 +455,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 					"SLURM_CONF", "%s",
 					slurm_conf.slurm_conf);
 		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_NODE_ALIASES", "%s",
-					step->alias_list);
-		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURMD_NODENAME", "%s",
 					conf->node_name);
 		result = run_command(&run_command_args);

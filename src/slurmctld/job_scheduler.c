@@ -2536,12 +2536,7 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 				"SLURM_MEM_PER_NODE",
 				het_job_offset, "%"PRIu64"", tmp_mem);
 		}
-		if (het_job->alias_list) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_NODE_ALIASES", het_job_offset,
-				"%s", het_job->alias_list);
-		}
+
 		if (het_job->details && het_job->job_resrcs) {
 			/* Both should always be set for active jobs */
 			struct job_resources *resrcs_ptr = het_job->job_resrcs;

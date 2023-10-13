@@ -267,18 +267,6 @@ are preserved when the slurmctld daemon is restarted unless the "-c"
 <p>The <i>SuspendProgram</i> only needs to relinquish the node back to the
 cloud.</p>
 
-<p>An environment variable SLURM_NODE_ALIASES contains sets of node name,
-communication address and hostname.
-The variable is set by salloc, sbatch, and srun.
-It is then used by srun to determine the destination for job launch
-communication messages.
-This environment variable is only set for nodes allocated from the cloud.
-If a job is allocated some resources from the local cluster and others from
-the cloud, only those nodes from the cloud will appear in SLURM_NODE_ALIASES.
-Each set of names and addresses is comma separated and
-the elements within the set are separated by colons. For example:<br>
-SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2:123.45.67.9:bar</p>
-
 <h2 id="cloud">Cloud Node Lifecycle
 <a class="slurm_link" href="#cloud"></a>
 </h2>

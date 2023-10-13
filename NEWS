@@ -238,6 +238,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new rl_log_freq option to SlurmctldParameters to allow sites to limit
     the number of 'RPC limit exceeded...' messages that are logged.
  -- Rename sbcast --fanout to --treewidth.
+ -- Remove SLURM_NODE_ALIASES env variable.
 
 * Changes in Slurm 23.02.7
 ==========================

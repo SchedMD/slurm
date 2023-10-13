@@ -1147,14 +1147,6 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	}
 	xfree(tmp);
 
-	if (aliases) {
-		if (setenv("SLURM_NODE_ALIASES", aliases, 1) < 0) {
-			error("%s: Unable to set SLURM_NODE_ALIASES in environment",
-			      __func__);
-		}
-		xfree(aliases);
-	}
-
 	xfree(reps);
 	xfree(cpus);
 	hostset_destroy(hs);
@@ -1997,15 +1989,6 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 	}
 	xfree(key);
 
-	key = _build_key("SLURM_NODE_ALIASES", het_job_offset);
-	if (resp->alias_list) {
-		if (setenv(key, resp->alias_list, 1) < 0)
-			error("unable to set %s in environment", key);
-	} else {
-		unsetenv(key);
-	}
-	xfree(key);
-
 	if (resp->env_size) {	/* Used to set Burst Buffer environment */
 		for (i = 0; i < resp->env_size; i++) {
 			tmp = xstrdup(resp->environment[i]);
@@ -2092,15 +2075,6 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 		key = _build_key("SLURM_JOB_RESERVATION", het_job_offset);
 		if (!getenv(key) &&
 		    (setenvf(NULL, key, "%s", resp->resv_name) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
-	}
-
-	if (resp->alias_list) {
-		key = _build_key("SLURM_NODE_ALIASES", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%s", resp->alias_list) < 0)) {
 			error("unable to set %s in environment", key);
 		}
 		xfree(key);

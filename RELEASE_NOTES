@@ -59,6 +59,8 @@ HIGHLIGHTS
     for controller changes without draining all compute jobs.
  -- sreport - cluster Utilization PlannedDown field now includes the time that
     all nodes were in the POWERED_DOWN state instead of just cloud nodes.
+ -- Remove SLURM_NODE_ALIASES env variable. Client code now uses slurm_addr_t's
+    passed from controller.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
