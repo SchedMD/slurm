@@ -800,7 +800,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	}
 	if (srun_opt->send_libs)
 		params->flags |= BCAST_FLAG_SEND_LIBS;
-	params->fanout = 0;
+	params->tree_width = 0;
 	params->selected_step = xmalloc(sizeof(*params->selected_step));
 	params->selected_step->array_task_id = NO_VAL;
 	memcpy(&params->selected_step->step_id, &job->step_id,

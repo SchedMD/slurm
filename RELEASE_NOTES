@@ -130,6 +130,7 @@ COMMAND CHANGES (see man pages for details)
     brackets around requests with multiple features that include node counts.
  -- sdiag - Added statistics on why the main and backfill schedulers have
     stopped evaluation on each scheduling cycle.
+ -- Rename sbcast --fanout to --treewidth.
 
 API CHANGES
 ===========

@@ -50,12 +50,12 @@ struct bcast_parameters {
 	uint16_t compress;
 	char *exclude;
 	char *dst_fname;
-	int fanout;
 	uint16_t flags;
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;
 	int timeout;
+	int tree_width;
 	int verbose;
 };
 
