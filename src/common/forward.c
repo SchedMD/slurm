@@ -740,11 +740,11 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 	itr = hostlist_iterator_create(hl);
 
 	while ((name = hostlist_next(itr))) {
-		slurm_addr_t addr;
 		slurm_node_alias_addrs_t *alias_addrs;
 		char *nodelist;
+		bool dynamic;
 
-		if (!slurm_conf_get_addr(name, &addr, 0)) {
+		if (!slurm_conf_check_addr(name, &dynamic) && !dynamic) {
 			free(name);
 			continue;
 		}
