@@ -125,6 +125,9 @@ void pack_header(header_t *header, buf_t *buffer)
 			packstr(header->forward.nodelist, buffer);
 			pack32(header->forward.timeout, buffer);
 			pack16(header->forward.tree_width, buffer);
+			if (header->flags & SLURM_PACK_ADDRS)
+				packstr(header->forward.alias_addrs.net_cred,
+					buffer);
 		}
 		pack16(header->ret_cnt, buffer);
 		if (header->ret_cnt > 0) {
@@ -176,6 +179,11 @@ int unpack_header(header_t *header, buf_t *buffer)
 			safe_unpackstr(&header->forward.nodelist, buffer);
 			safe_unpack32(&header->forward.timeout, buffer);
 			safe_unpack16(&header->forward.tree_width, buffer);
+			if (header->flags & SLURM_PACK_ADDRS) {
+				safe_unpackstr(
+					&header->forward.alias_addrs.net_cred,
+					buffer);
+			}
 		}
 
 		safe_unpack16(&header->ret_cnt, buffer);
