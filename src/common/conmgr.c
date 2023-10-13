@@ -1127,25 +1127,30 @@ static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
 				con_mgr_work_status_t status, const char *tag,
 				void *arg)
 {
-	log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-		 __func__, con->name, (uintptr_t) con->events.on_connection);
+	if (con->events.on_connection) {
+		log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection);
 
-	arg = con->events.on_connection(con, con->new_arg);
+		arg = con->events.on_connection(con, con->new_arg);
 
-	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name, (uintptr_t) con->events.on_connection,
-		 (uintptr_t) arg);
+		log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection,
+			 (uintptr_t) arg);
 
-	if (!arg) {
-		error("%s: [%s] closing connection due to NULL return from on_connection",
-		      __func__, con->name);
-		_close_con(false, con);
-	} else {
-		slurm_mutex_lock(&mgr.mutex);
-		con->arg = arg;
-		con->is_connected = true;
-		slurm_mutex_unlock(&mgr.mutex);
+		if (!arg) {
+			error("%s: [%s] closing connection due to NULL return from on_connection",
+			      __func__, con->name);
+			_close_con(false, con);
+			return;
+		}
 	}
+
+	slurm_mutex_lock(&mgr.mutex);
+	con->arg = arg;
+	con->is_connected = true;
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int _con_mgr_process_fd_internal(con_mgr_con_type_t type,
