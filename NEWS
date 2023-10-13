@@ -245,6 +245,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- libslurm_nss - Avoid causing glibc to assert due to an unexpected return
     from slurm_nss due to an error during lookup.
+ -- Fix job requests with --tres-per-task sometimes resulting in bad allocations
+    that cannot run subsequent job steps.
 
 * Changes in Slurm 23.02.6
 ==========================
