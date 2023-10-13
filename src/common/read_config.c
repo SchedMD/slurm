@@ -2335,7 +2335,9 @@ static int _check_callback(char *alias, char *hostname, char *address,
                 last_update = slurm_conf.last_update;
         }
 
-	if (!cloud_dns && (state_val & NODE_STATE_CLOUD))
+	if (!cloud_dns &&
+	    ((state_val & NODE_STATE_CLOUD) ||
+	     (state_val & NODE_STATE_FUTURE)))
 		dynamic_addr = true;
 
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
