@@ -92,6 +92,19 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 	}
 }
 
+static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
+			     slurm_addr_t *address)
+{
+	hostlist_t *hl = hostlist_create(fwd_struct->alias_addrs->node_list);
+	int n = hostlist_find(hl, name);
+	hostlist_destroy(hl);
+	if (n < 0)
+		return SLURM_ERROR;
+	*address = fwd_struct->alias_addrs->node_addrs[n];
+
+	return SLURM_SUCCESS;
+}
+
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
@@ -109,10 +122,11 @@ void *_forward_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
-		if (slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)
-		    == SLURM_ERROR) {
-			error("forward_thread: can't find address for host "
-			      "%s, check slurm.conf", name);
+		if ((!(fwd_msg->header.flags & SLURM_PACK_ADDRS) ||
+		     _forward_get_addr(fwd_struct, name, &addr)) &&
+		    slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)) {
+			error("%s: can't find address for host %s, check slurm.conf",
+			      __func__, name);
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(&fwd_struct->ret_list, name,
 					       SLURM_UNKNOWN_FORWARD_ADDR);
@@ -150,6 +164,12 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
+
+		if (fwd_msg->header.flags & SLURM_PACK_ADDRS) {
+			fwd_msg->header.forward.alias_addrs =
+				*(fwd_struct->alias_addrs);
+		}
+
 #if 0
 		info("sending %d forwards (%s) to %s",
 		     fwd_msg->header.forward.cnt,
@@ -624,6 +644,19 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		return SLURM_ERROR;
 	}
 	hl = hostlist_create(header->forward.nodelist);
+	if (header->flags & SLURM_PACK_ADDRS) {
+		forward_struct->alias_addrs = extract_net_cred(
+			header->forward.alias_addrs.net_cred, header->version);
+		if (!forward_struct->alias_addrs) {
+			error("unable to extract net_cred");
+			hostlist_destroy(hl);
+			return SLURM_ERROR;
+		}
+		forward_struct->alias_addrs->net_cred =
+			header->forward.alias_addrs.net_cred;
+		header->forward.alias_addrs.net_cred = NULL;
+	}
+
 	hostlist_uniq(hl);
 
 	if (route_g_split_hostlist(
