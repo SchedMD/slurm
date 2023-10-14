@@ -3001,7 +3001,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
-	bool sign_cred = false;
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
@@ -3105,9 +3104,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
 
-	sign_cred = false;
-
-	prolog_msg_ptr->cred = slurm_cred_create(&cred_arg, sign_cred,
+	prolog_msg_ptr->cred = slurm_cred_create(&cred_arg, false,
 						 protocol_version);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
