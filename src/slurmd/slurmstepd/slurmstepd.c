@@ -644,6 +644,9 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
 
+	if (cred_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize credential plugin");
+
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugins");
 
@@ -681,7 +684,6 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (cred_g_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS) ||
 	    (route_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
