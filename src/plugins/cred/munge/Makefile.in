@@ -182,7 +182,8 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-cred_munge_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+cred_munge_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	../common/libcred_common.la
 am_cred_munge_la_OBJECTS = cred_munge.lo
 cred_munge_la_OBJECTS = $(am_cred_munge_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -192,7 +193,6 @@ am__v_lt_1 =
 cred_munge_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(cred_munge_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_MUNGE_TRUE@am_cred_munge_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -516,15 +516,12 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
-
-# Add your plugin to this line, following the naming conventions.
-@WITH_MUNGE_TRUE@MUNGE = cred_munge.la
-pkglib_LTLIBRARIES = $(MUNGE)
+pkglib_LTLIBRARIES = cred_munge.la
 
 # Munge cred plugin
 cred_munge_la_SOURCES = cred_munge.c
 cred_munge_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
-cred_munge_la_LIBADD = $(MUNGE_LIBS)
+cred_munge_la_LIBADD = $(MUNGE_LIBS) ../common/libcred_common.la
 all: all-am
 
 .SUFFIXES:
@@ -595,7 +592,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 cred_munge.la: $(cred_munge_la_OBJECTS) $(cred_munge_la_DEPENDENCIES) $(EXTRA_cred_munge_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(cred_munge_la_LINK) $(am_cred_munge_la_rpath) $(cred_munge_la_OBJECTS) $(cred_munge_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(cred_munge_la_LINK) -rpath $(pkglibdir) $(cred_munge_la_OBJECTS) $(cred_munge_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

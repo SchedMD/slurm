@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = cred_none.la
 
 # Null job credential plugin
 cred_none_la_SOURCES = cred_none.c
-cred_none_la_LDFLAGS = $(PLUGIN_FLAGS)
+cred_none_la_LDFLAGS = $(PLUGIN_FLAGS) ../common/libcred_common.la

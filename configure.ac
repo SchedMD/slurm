@@ -430,6 +430,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/core_spec/Makefile
 		 src/plugins/core_spec/cray_aries/Makefile
 		 src/plugins/cred/Makefile
+		 src/plugins/cred/common/Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
