@@ -39,5 +39,6 @@
 
 extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		      uint16_t protocol_version);
+extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version);
 
 #endif

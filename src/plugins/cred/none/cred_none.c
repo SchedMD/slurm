@@ -123,6 +123,11 @@ extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 	cred_pack(cred, buf, protocol_version);
 }
 
+extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
+{
+	return cred_unpack(cred, buf, protocol_version);
+}
+
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 {
 	return NULL;
