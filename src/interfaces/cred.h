@@ -199,6 +199,11 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 				       uint16_t protocol_version);
 
 /*
+ * Allocate a credential.
+ */
+extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg);
+
+/*
  * Create a "fake" credential with bogus data in the signature.
  * This function can be used for testing, or when srun would like
  * to talk to slurmd directly, bypassing the controller

@@ -113,8 +113,6 @@ static bool enable_send_gids = true;
  * Static prototypes:
  */
 
-static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
-
 static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
 
@@ -264,7 +262,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 		goto fail;
 	}
 
-	cred = _slurm_cred_alloc(false);
+	cred = slurm_cred_alloc(false);
 	xassert(cred->magic == CRED_MAGIC);
 
 	if (arg->sock_core_rep_count) {
@@ -731,7 +729,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	/* Save current buffer position here, use it later to verify cred. */
 	cred_start = get_buf_offset(buffer);
 
-	credential = _slurm_cred_alloc(true);
+	credential = slurm_cred_alloc(true);
 	cred = credential->arg;
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
@@ -1134,7 +1132,7 @@ unpack_error:
 	return NULL;
 }
 
-static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
+extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
 {
 	slurm_cred_t *cred = xmalloc(sizeof(*cred));
 	/* Contents initialized to zero */
