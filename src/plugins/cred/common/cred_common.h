@@ -37,4 +37,7 @@
 #ifndef _CRED_COMMON_H
 #define _CRED_COMMON_H
 
+extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
+		      uint16_t protocol_version);
+
 #endif

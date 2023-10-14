@@ -40,6 +40,7 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
+#include "src/plugins/cred/common/cred_common.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -115,6 +116,11 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	if (xstrcmp(signature, correct_signature))
 		return ESIG_INVALID;
 	return SLURM_SUCCESS;
+}
+
+extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+{
+	cred_pack(cred, buf, protocol_version);
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

@@ -55,6 +55,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/plugins/cred/common/cred_common.h"
 
 #define RETRY_COUNT		20
 #define RETRY_USEC		100000
@@ -341,6 +342,11 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	}
 
 	return rc;
+}
+
+extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+{
+	cred_pack(cred, buf, protocol_version);
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

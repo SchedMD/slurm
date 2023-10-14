@@ -74,6 +74,8 @@ typedef struct {
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
 					 char *signature);
 	const char *(*cred_str_error)	(int);
+	void (*cred_pack)		(void *cred, buf_t *buf,
+					 uint16_t protocol_version);
 	char *(*create_net_cred)	(void *addrs,
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
@@ -88,6 +90,7 @@ static const char *syms[] = {
 	"cred_p_sign",
 	"cred_p_verify_sign",
 	"cred_p_str_error",
+	"cred_p_pack",
 	"cred_p_create_net_cred",
 	"cred_p_extract_net_cred",
 };
@@ -114,9 +117,6 @@ static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
 static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
-
-static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
-		       uint16_t protocol_version);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void)
@@ -283,7 +283,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
 
-	_pack_cred(arg, cred->buffer, protocol_version);
+	(*(ops.cred_pack))(arg, cred->buffer, protocol_version);
 
 	if (sign_it && _cred_sign(cred) < 0) {
 		goto fail;
@@ -1185,272 +1185,6 @@ static void _cred_verify_signature(slurm_cred_t *cred)
 	}
 
 	cred->verified = true;
-}
-
-
-static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
-		       uint16_t protocol_version)
-{
-	uint32_t tot_core_cnt = 0;
-	/*
-	 * The gr_names array is optional. If the array exists the length
-	 * must match that of the gids array.
-	 */
-	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
-	time_t ctime = time(NULL);
-
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
-
-		(void) gres_job_state_pack(cred->job_gres_list, buffer,
-					   cred->step_id.job_id, false,
-					   protocol_version);
-		gres_step_state_pack(cred->step_gres_list, buffer,
-				     &cred->step_id, protocol_version);
-		pack16(cred->job_core_spec, buffer);
-		packstr(cred->job_account, buffer);
-		slurm_pack_addr_array(
-			cred->job_node_addrs,
-			cred->job_node_addrs ? cred->job_nhosts : 0,
-			buffer);
-		packstr(cred->job_alias_list, buffer);
-		packstr(cred->job_comment, buffer);
-		packstr(cred->job_constraints, buffer);
-		pack_time(cred->job_end_time, buffer);
-		packstr(cred->job_extra, buffer);
-		pack16(cred->job_oversubscribe, buffer);
-		packstr(cred->job_partition, buffer);
-		packstr(cred->job_reservation, buffer);
-		pack16(cred->job_restart_cnt, buffer);
-		pack_time(cred->job_start_time, buffer);
-		packstr(cred->job_std_err, buffer);
-		packstr(cred->job_std_in, buffer);
-		packstr(cred->job_std_out, buffer);
-		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
-		pack_time(ctime, buffer);
-
-		if (cred->job_core_bitmap)
-			tot_core_cnt = bit_size(cred->job_core_bitmap);
-		pack32(tot_core_cnt, buffer);
-		pack_bit_str_hex(cred->job_core_bitmap, buffer);
-		pack_bit_str_hex(cred->step_core_bitmap, buffer);
-		pack16(cred->core_array_size, buffer);
-		if (cred->core_array_size) {
-			pack16_array(cred->cores_per_socket,
-				     cred->core_array_size,
-				     buffer);
-			pack16_array(cred->sockets_per_node,
-				     cred->core_array_size,
-				     buffer);
-			pack32_array(cred->sock_core_rep_count,
-				     cred->core_array_size,
-				     buffer);
-		}
-		pack32(cred->cpu_array_count, buffer);
-		if (cred->cpu_array_count) {
-			pack16_array(cred->cpu_array,
-				     cred->cpu_array_count,
-				     buffer);
-			pack32_array(cred->cpu_array_reps,
-				     cred->cpu_array_count,
-				     buffer);
-		}
-		pack32(cred->job_nhosts, buffer);
-		pack32(cred->job_ntasks, buffer);
-		packstr(cred->job_hostlist, buffer);
-		packstr(cred->job_licenses, buffer);
-		pack32(cred->job_mem_alloc_size, buffer);
-		if (cred->job_mem_alloc_size) {
-			pack64_array(cred->job_mem_alloc,
-				     cred->job_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->job_mem_alloc_rep_count,
-				     cred->job_mem_alloc_size,
-				     buffer);
-		}
-		pack32(cred->step_mem_alloc_size, buffer);
-		if (cred->step_mem_alloc_size) {
-			pack64_array(cred->step_mem_alloc,
-				     cred->step_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->step_mem_alloc_rep_count,
-				     cred->step_mem_alloc_size,
-				     buffer);
-		}
-		packstr(cred->selinux_context, buffer);
-	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
-
-		(void) gres_job_state_pack(cred->job_gres_list, buffer,
-					   cred->step_id.job_id, false,
-					   protocol_version);
-		gres_step_state_pack(cred->step_gres_list, buffer,
-				     &cred->step_id, protocol_version);
-		pack16(cred->job_core_spec, buffer);
-		packstr(cred->job_account, buffer);
-		packstr(cred->job_alias_list, buffer);
-		packstr(cred->job_comment, buffer);
-		packstr(cred->job_constraints, buffer);
-		pack_time(cred->job_end_time, buffer);
-		packstr(cred->job_extra, buffer);
-		pack16(cred->job_oversubscribe, buffer);
-		packstr(cred->job_partition, buffer);
-		packstr(cred->job_reservation, buffer);
-		pack16(cred->job_restart_cnt, buffer);
-		pack_time(cred->job_start_time, buffer);
-		packstr(cred->job_std_err, buffer);
-		packstr(cred->job_std_in, buffer);
-		packstr(cred->job_std_out, buffer);
-		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
-		pack_time(ctime, buffer);
-
-		if (cred->job_core_bitmap)
-			tot_core_cnt = bit_size(cred->job_core_bitmap);
-		pack32(tot_core_cnt, buffer);
-		pack_bit_str_hex(cred->job_core_bitmap, buffer);
-		pack_bit_str_hex(cred->step_core_bitmap, buffer);
-		pack16(cred->core_array_size, buffer);
-		if (cred->core_array_size) {
-			pack16_array(cred->cores_per_socket,
-				     cred->core_array_size,
-				     buffer);
-			pack16_array(cred->sockets_per_node,
-				     cred->core_array_size,
-				     buffer);
-			pack32_array(cred->sock_core_rep_count,
-				     cred->core_array_size,
-				     buffer);
-		}
-		pack32(cred->cpu_array_count, buffer);
-		if (cred->cpu_array_count) {
-			pack16_array(cred->cpu_array,
-				     cred->cpu_array_count,
-				     buffer);
-			pack32_array(cred->cpu_array_reps,
-				     cred->cpu_array_count,
-				     buffer);
-		}
-		pack32(cred->job_nhosts, buffer);
-		pack32(cred->job_ntasks, buffer);
-		packstr(cred->job_hostlist, buffer);
-		packstr(cred->job_licenses, buffer);
-		pack32(cred->job_mem_alloc_size, buffer);
-		if (cred->job_mem_alloc_size) {
-			pack64_array(cred->job_mem_alloc,
-				     cred->job_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->job_mem_alloc_rep_count,
-				     cred->job_mem_alloc_size,
-				     buffer);
-		}
-		pack32(cred->step_mem_alloc_size, buffer);
-		if (cred->step_mem_alloc_size) {
-			pack64_array(cred->step_mem_alloc,
-				     cred->step_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->step_mem_alloc_rep_count,
-				     cred->step_mem_alloc_size,
-				     buffer);
-		}
-		packstr(cred->selinux_context, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
-
-		(void) gres_job_state_pack(cred->job_gres_list, buffer,
-					   cred->step_id.job_id, false,
-					   protocol_version);
-		gres_step_state_pack(cred->step_gres_list, buffer,
-				     &cred->step_id, protocol_version);
-		pack16(cred->job_core_spec, buffer);
-		packstr(cred->job_account, buffer);
-		packstr(cred->job_alias_list, buffer);
-		packstr(cred->job_comment, buffer);
-		packstr(cred->job_constraints, buffer);
-		packstr(cred->job_partition, buffer);
-		packstr(cred->job_reservation, buffer);
-		pack16(cred->job_restart_cnt, buffer);
-		packstr(cred->job_std_err, buffer);
-		packstr(cred->job_std_in, buffer);
-		packstr(cred->job_std_out, buffer);
-		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
-		pack_time(ctime, buffer);
-
-		if (cred->job_core_bitmap)
-			tot_core_cnt = bit_size(cred->job_core_bitmap);
-		pack32(tot_core_cnt, buffer);
-		pack_bit_str_hex(cred->job_core_bitmap, buffer);
-		pack_bit_str_hex(cred->step_core_bitmap, buffer);
-		pack16(cred->core_array_size, buffer);
-		if (cred->core_array_size) {
-			pack16_array(cred->cores_per_socket,
-				     cred->core_array_size,
-				     buffer);
-			pack16_array(cred->sockets_per_node,
-				     cred->core_array_size,
-				     buffer);
-			pack32_array(cred->sock_core_rep_count,
-				     cred->core_array_size,
-				     buffer);
-		}
-		pack32(cred->cpu_array_count, buffer);
-		if (cred->cpu_array_count) {
-			pack16_array(cred->cpu_array,
-				     cred->cpu_array_count,
-				     buffer);
-			pack32_array(cred->cpu_array_reps,
-				     cred->cpu_array_count,
-				     buffer);
-		}
-		pack32(cred->job_nhosts, buffer);
-		pack32(cred->job_ntasks, buffer);
-		packstr(cred->job_hostlist, buffer);
-		pack32(cred->job_mem_alloc_size, buffer);
-		if (cred->job_mem_alloc_size) {
-			pack64_array(cred->job_mem_alloc,
-				     cred->job_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->job_mem_alloc_rep_count,
-				     cred->job_mem_alloc_size,
-				     buffer);
-		}
-		pack32(cred->step_mem_alloc_size, buffer);
-		if (cred->step_mem_alloc_size) {
-			pack64_array(cred->step_mem_alloc,
-				     cred->step_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->step_mem_alloc_rep_count,
-				     cred->step_mem_alloc_size,
-				     buffer);
-		}
-		packstr(cred->selinux_context, buffer);
-	}
 }
 
 /*****************************************************************************\
