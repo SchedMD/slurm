@@ -9,4 +9,5 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libcgroup_common.la
 libcgroup_common_la_SOURCES =	\
-	cgroup_common.c
+	cgroup_common.c		\
+	cgroup_common.h
