@@ -54,6 +54,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/identity.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -804,6 +805,7 @@ struct job_record {
 	List het_job_list;		/* List of job pointers to all
 					 * components */
 	uint32_t job_id;		/* job ID */
+	identity_t *id;			/* job identity */
 	job_record_t *job_next;		/* next entry with same hash index */
 	job_record_t *job_array_next_j;	/* job array linked list by job_id */
 	job_record_t *job_array_next_t;	/* job array linked list by task_id */

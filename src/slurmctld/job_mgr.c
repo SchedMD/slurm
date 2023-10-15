@@ -1585,6 +1585,13 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 
 	packstr(dump_job_ptr->selinux_context, buffer);
 
+	if (dump_job_ptr->id) {
+		pack8(1, buffer);
+		pack_identity(dump_job_ptr->id, buffer, SLURM_PROTOCOL_VERSION);
+	} else {
+		pack8(0, buffer);
+	}
+
 	return 0;
 }
 
@@ -1617,6 +1624,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	acct_policy_limit_set_t limit_set;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
+	uint8_t identity_flag;
 	char *container = NULL, *container_id = NULL;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -1880,6 +1888,10 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpackstr(&job_ptr->tres_per_task, buffer);
 
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
+
+		safe_unpack8(&identity_flag, buffer);
+		if (identity_flag)
+			unpack_identity(&job_ptr->id, buffer, protocol_version);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -4709,6 +4721,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	_add_job_array_hash(job_ptr);
 	job_ptr_pend->job_resrcs = NULL;
 
+	job_ptr_pend->id = copy_identity(job_ptr->id);
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
