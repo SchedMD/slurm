@@ -125,6 +125,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern identity_t *copy_identity(identity_t *id)
+{
+	identity_t *new;
+
+	if (!id)
+		return NULL;
+
+	new = xmalloc(sizeof(*new));
+	new->pw_name = xstrdup(id->pw_name);
+	new->pw_gecos = xstrdup(id->pw_gecos);
+	new->pw_dir = xstrdup(id->pw_dir);
+	new->pw_shell = xstrdup(id->pw_shell);
+
+	new->ngids = id->ngids;
+	new->gids = copy_gids(id->ngids, id->gids);
+
+	if (id->gr_names) {
+		new->gr_names = xcalloc(id->ngids, sizeof(char *));
+		for (int i = 0; i < new->ngids; i++)
+			new->gr_names[i] = xstrdup(id->gr_names[i]);
+	}
+
+	return new;
+}
+
 extern void destroy_identity(identity_t *id)
 {
 	if (!id)

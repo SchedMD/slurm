@@ -58,6 +58,7 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 extern int unpack_identity(identity_t **id, buf_t *buffer,
 			   uint16_t protocol_version);
 
+extern identity_t *copy_identity(identity_t *id);
 extern void destroy_identity(identity_t *id);
 
 #define FREE_NULL_IDENTITY(_X)		\
