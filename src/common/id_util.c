@@ -33,3 +33,32 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/identity.h"
+#include "src/common/uid.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
+
+extern char *user_from_job(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (job_ptr->id)
+		return xstrdup(job_ptr->id->pw_name);
+
+	return uid_to_string_or_null(job_ptr->user_id);
+}
+
+extern char *group_from_job(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (job_ptr->id && job_ptr->id->gr_names) {
+		for (int i = 0; i < job_ptr->id->ngids; i++) {
+			if (job_ptr->id->gids[i] == job_ptr->group_id)
+				return xstrdup(job_ptr->id->gr_names[i]);
+		}
+	}
+
+	return gid_to_string_or_null(job_ptr->group_id);
+}

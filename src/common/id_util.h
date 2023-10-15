@@ -37,4 +37,9 @@
 #ifndef _ID_UTIL_H
 #define _ID_UTIL_H
 
+#include "src/slurmctld/slurmctld.h"
+
+extern char *user_from_job(job_record_t *job_ptr);
+extern char *group_from_job(job_record_t *job_ptr);
+
 #endif
