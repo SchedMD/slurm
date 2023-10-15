@@ -73,12 +73,12 @@ static int _unpack_run_script(run_script_msg_t **msg, buf_t *buffer)
 	safe_unpackmem_xmalloc(&script_msg->extra_buf,
 			       &script_msg->extra_buf_size, buffer);
 	safe_unpack32(&script_msg->job_id, buffer);
-	safe_unpackstr_xmalloc(&script_msg->script_name, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&script_msg->script_path, &tmp32, buffer);
+	safe_unpackstr(&script_msg->script_name, buffer);
+	safe_unpackstr(&script_msg->script_path, buffer);
 	safe_unpack32(&script_msg->script_type, buffer);
 	safe_unpack32(&script_msg->timeout, buffer);
-	safe_unpackstr_xmalloc(&script_msg->tmp_file_env_name, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&script_msg->tmp_file_str, &tmp32, buffer);
+	safe_unpackstr(&script_msg->tmp_file_env_name, buffer);
+	safe_unpackstr(&script_msg->tmp_file_str, buffer);
 
 	return rc;
 
@@ -108,8 +108,8 @@ static int _unpack_script_complete(script_complete_t **resp_msg,
 	*resp_msg = data;
 
 	safe_unpack32(&data->job_id, buffer);
-	safe_unpackstr_xmalloc(&data->resp_msg, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&data->script_name, &tmp32, buffer);
+	safe_unpackstr(&data->resp_msg, buffer);
+	safe_unpackstr(&data->script_name, buffer);
 	safe_unpack32(&data->script_type, buffer);
 	safe_unpackbool(&data->signalled, buffer);
 	safe_unpack32(&tmp32, buffer);
@@ -157,12 +157,11 @@ static void _pack_reconfig(reconfig_msg_t *msg, buf_t *buffer)
 
 static int _unpack_reconfig(reconfig_msg_t **msg, buf_t *buffer)
 {
-	uint32_t tmp32;
 	reconfig_msg_t *data = xmalloc(sizeof *data);
 	*msg = data;
 
 	safe_unpack64(&data->debug_flags, buffer);
-	safe_unpackstr_xmalloc(&data->logfile, &tmp32, buffer);
+	safe_unpackstr(&data->logfile, buffer);
 	safe_unpack16(&data->log_fmt, buffer);
 	safe_unpack16(&data->slurmctld_debug, buffer);
 	safe_unpack16(&data->syslog_debug, buffer);
@@ -263,10 +262,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 
 extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 {
-	uint32_t tmp32;
 	int rc = SLURM_SUCCESS;
 
-	safe_unpackstr_xmalloc(&msg->key, &tmp32, buffer);
+	safe_unpackstr(&msg->key, buffer);
 	switch (msg->msg_type) {
 	case SLURMSCRIPTD_REQUEST_FLUSH:
 		/* Nothing to unpack */

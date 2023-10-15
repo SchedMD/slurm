@@ -1191,7 +1191,6 @@ static time_t _get_last_job_state_write_time(void)
 	buf_t *buffer;
 	time_t buf_time = (time_t) 0;
 	char *ver_str = NULL;
-	uint32_t ver_str_len;
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
@@ -1203,7 +1202,7 @@ static time_t _get_last_job_state_write_time(void)
 	if (error_code)
 		return buf_time;
 
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 	safe_unpack_time(&buf_time, buffer);
@@ -1229,7 +1228,6 @@ extern int load_all_job_state(void)
 	time_t buf_time;
 	uint32_t saved_job_id;
 	char *ver_str = NULL;
-	uint32_t ver_str_len;
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
@@ -1245,7 +1243,7 @@ extern int load_all_job_state(void)
 
 	job_id_sequence = MAX(job_id_sequence, slurm_conf.first_job_id);
 
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
@@ -1311,7 +1309,6 @@ extern int load_last_job_id( void )
 	buf_t *buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
-	uint32_t ver_str_len;
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
@@ -1325,7 +1322,7 @@ extern int load_last_job_id( void )
 	xfree(state_file);
 	unlock_state_files();
 
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
@@ -1597,7 +1594,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 {
 	uint64_t db_index;
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, assoc_id, name_len, time_min;
+	uint32_t exit_code, assoc_id, time_min;
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
@@ -1666,10 +1663,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			if (task_id_size) {
-				safe_unpackstr_xmalloc(&task_id_str, &name_len,
-						       buffer);
-			}
+			if (task_id_size)
+				safe_unpackstr(&task_id_str, buffer);
 			safe_unpack32(&array_flags, buffer);
 			safe_unpack32(&max_run_tasks, buffer);
 			safe_unpack32(&tot_run_tasks, buffer);
@@ -1679,11 +1674,11 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		}
 
 		safe_unpack32(&assoc_id, buffer);
-		safe_unpackstr_xmalloc(&batch_features, &name_len, buffer);
-		safe_unpackstr_xmalloc(&container, &name_len, buffer);
-		safe_unpackstr_xmalloc(&container_id, &name_len, buffer);
+		safe_unpackstr(&batch_features, buffer);
+		safe_unpackstr(&container, buffer);
+		safe_unpackstr(&container_id, buffer);
 		safe_unpack32(&delay_boot, buffer);
-		safe_unpackstr_xmalloc(&failed_node, &name_len, buffer);
+		safe_unpackstr(&failed_node, buffer);
 		safe_unpack32(&job_id, buffer);
 
 		/* validity test as possible */
@@ -1722,7 +1717,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&het_job_id, buffer);
-		safe_unpackstr_xmalloc(&het_job_id_set, &name_len, buffer);
+		safe_unpackstr(&het_job_id_set, buffer);
 		safe_unpack32(&het_job_offset, buffer);
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack32(&req_switch, buffer);
@@ -1759,8 +1754,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		_unpack_acct_policy_limit_members(&limit_set, buffer,
 						  protocol_version);
 
-		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
+		safe_unpackstr(&state_desc, buffer);
+		safe_unpackstr(&resp_host, buffer);
 
 		safe_unpack16(&alloc_resp_port, buffer);
 		safe_unpack16(&other_port, buffer);
@@ -1768,15 +1763,12 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack16(&start_protocol_ver, buffer);
 		safe_unpackdouble(&billable_tres, buffer);
 
-		if (job_state & JOB_COMPLETING) {
-			safe_unpackstr_xmalloc(&nodes_completing,
-					       &name_len, buffer);
-		}
-		if (state_reason == WAIT_PROLOG) {
-			safe_unpackstr_xmalloc(&nodes_pr, &name_len, buffer);
-		}
-		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+		if (job_state & JOB_COMPLETING)
+			safe_unpackstr(&nodes_completing, buffer);
+		if (state_reason == WAIT_PROLOG)
+			safe_unpackstr(&nodes_pr, buffer);
+		safe_unpackstr(&nodes, buffer);
+		safe_unpackstr(&partition, buffer);
 		if (partition == NULL) {
 			error("No partition for JobId=%u", job_id);
 			goto unpack_error;
@@ -1799,25 +1791,25 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 			}
 		}
 
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&user_name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
-		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
-		safe_unpackstr_xmalloc(&account, &name_len, buffer);
-		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->extra, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
-		safe_unpackstr_xmalloc(&lic_req, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
-		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
-		safe_unpackstr_xmalloc(&burst_buffer_state, &name_len, buffer);
-		safe_unpackstr_xmalloc(&system_comment, &name_len, buffer);
+		safe_unpackstr(&name, buffer);
+		safe_unpackstr(&user_name, buffer);
+		safe_unpackstr(&wckey, buffer);
+		safe_unpackstr(&alloc_node, buffer);
+		safe_unpackstr(&account, buffer);
+		safe_unpackstr(&admin_comment, buffer);
+		safe_unpackstr(&comment, buffer);
+		safe_unpackstr(&job_ptr->extra, buffer);
+		safe_unpackstr(&gres_used, buffer);
+		safe_unpackstr(&network, buffer);
+		safe_unpackstr(&licenses, buffer);
+		safe_unpackstr(&lic_req, buffer);
+		safe_unpackstr(&mail_user, buffer);
+		safe_unpackstr(&mcs_label, buffer);
+		safe_unpackstr(&resv_name, buffer);
+		safe_unpackstr(&batch_host, buffer);
+		safe_unpackstr(&burst_buffer, buffer);
+		safe_unpackstr(&burst_buffer_state, buffer);
+		safe_unpackstr(&system_comment, buffer);
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -1866,40 +1858,28 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
-		safe_unpackstr_xmalloc(&tres_alloc_str,
-				       &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
-				       &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
-		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
+		safe_unpackstr(&tres_alloc_str, buffer);
+		safe_unpackstr(&tres_fmt_alloc_str, buffer);
+		safe_unpackstr(&tres_req_str, buffer);
+		safe_unpackstr(&tres_fmt_req_str, buffer);
+		safe_unpackstr(&clusters, buffer);
 		if ((error_code = _load_job_fed_details(&job_fed_details,
 							buffer,
 							protocol_version)))
 			goto unpack_error;
 
-		safe_unpackstr_xmalloc(&job_ptr->origin_cluster, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->origin_cluster, buffer);
 
-		safe_unpackstr_xmalloc(&job_ptr->cpus_per_tres, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->mem_per_tres, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_bind, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_freq, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_job, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_socket, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
+		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
+		safe_unpackstr(&job_ptr->tres_bind, buffer);
+		safe_unpackstr(&job_ptr->tres_freq, buffer);
+		safe_unpackstr(&job_ptr->tres_per_job, buffer);
+		safe_unpackstr(&job_ptr->tres_per_node, buffer);
+		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
+		safe_unpackstr(&job_ptr->tres_per_task, buffer);
 
-		safe_unpackstr_xmalloc(&job_ptr->selinux_context, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1907,10 +1887,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			if (task_id_size) {
-				safe_unpackstr_xmalloc(&task_id_str, &name_len,
-						       buffer);
-			}
+			if (task_id_size)
+				safe_unpackstr(&task_id_str, buffer);
 			safe_unpack32(&array_flags,    buffer);
 			safe_unpack32(&max_run_tasks,  buffer);
 			safe_unpack32(&tot_run_tasks,  buffer);
@@ -1920,8 +1898,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		}
 
 		safe_unpack32(&assoc_id, buffer);
-		safe_unpackstr_xmalloc(&batch_features, &name_len, buffer);
-		safe_unpackstr_xmalloc(&container, &name_len, buffer);
+		safe_unpackstr(&batch_features, buffer);
+		safe_unpackstr(&container, buffer);
 		safe_unpack32(&delay_boot, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1961,7 +1939,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&het_job_id, buffer);
-		safe_unpackstr_xmalloc(&het_job_id_set, &name_len, buffer);
+		safe_unpackstr(&het_job_id_set, buffer);
 		safe_unpack32(&het_job_offset, buffer);
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack32(&req_switch, buffer);
@@ -1998,8 +1976,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		_unpack_acct_policy_limit_members(&limit_set, buffer,
 						  protocol_version);
 
-		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
+		safe_unpackstr(&state_desc, buffer);
+		safe_unpackstr(&resp_host, buffer);
 
 		safe_unpack16(&alloc_resp_port, buffer);
 		safe_unpack16(&other_port, buffer);
@@ -2007,15 +1985,12 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack16(&start_protocol_ver, buffer);
 		safe_unpackdouble(&billable_tres, buffer);
 
-		if (job_state & JOB_COMPLETING) {
-			safe_unpackstr_xmalloc(&nodes_completing,
-					       &name_len, buffer);
-		}
-		if (state_reason == WAIT_PROLOG) {
-			safe_unpackstr_xmalloc(&nodes_pr, &name_len, buffer);
-		}
-		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+		if (job_state & JOB_COMPLETING)
+			safe_unpackstr(&nodes_completing, buffer);
+		if (state_reason == WAIT_PROLOG)
+			safe_unpackstr(&nodes_pr, buffer);
+		safe_unpackstr(&nodes, buffer);
+		safe_unpackstr(&partition, buffer);
 		if (partition == NULL) {
 			error("No partition for JobId=%u", job_id);
 			goto unpack_error;
@@ -2038,23 +2013,23 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 			}
 		}
 
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&user_name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
-		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
-		safe_unpackstr_xmalloc(&account, &name_len, buffer);
-		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
-		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
-		safe_unpackstr_xmalloc(&burst_buffer_state, &name_len, buffer);
-		safe_unpackstr_xmalloc(&system_comment, &name_len, buffer);
+		safe_unpackstr(&name, buffer);
+		safe_unpackstr(&user_name, buffer);
+		safe_unpackstr(&wckey, buffer);
+		safe_unpackstr(&alloc_node, buffer);
+		safe_unpackstr(&account, buffer);
+		safe_unpackstr(&admin_comment, buffer);
+		safe_unpackstr(&comment, buffer);
+		safe_unpackstr(&gres_used, buffer);
+		safe_unpackstr(&network, buffer);
+		safe_unpackstr(&licenses, buffer);
+		safe_unpackstr(&mail_user, buffer);
+		safe_unpackstr(&mcs_label, buffer);
+		safe_unpackstr(&resv_name, buffer);
+		safe_unpackstr(&batch_host, buffer);
+		safe_unpackstr(&burst_buffer, buffer);
+		safe_unpackstr(&burst_buffer_state, buffer);
+		safe_unpackstr(&system_comment, buffer);
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -2103,40 +2078,28 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
-		safe_unpackstr_xmalloc(&tres_alloc_str,
-				       &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
-				       &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
-		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
+		safe_unpackstr(&tres_alloc_str, buffer);
+		safe_unpackstr(&tres_fmt_alloc_str, buffer);
+		safe_unpackstr(&tres_req_str, buffer);
+		safe_unpackstr(&tres_fmt_req_str, buffer);
+		safe_unpackstr(&clusters, buffer);
 		if ((error_code = _load_job_fed_details(&job_fed_details,
 							buffer,
 							protocol_version)))
 			goto unpack_error;
 
-		safe_unpackstr_xmalloc(&job_ptr->origin_cluster, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->origin_cluster, buffer);
 
-		safe_unpackstr_xmalloc(&job_ptr->cpus_per_tres, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->mem_per_tres, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_bind, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_freq, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_job, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_socket, &name_len,
-				       buffer);
-		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
+		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
+		safe_unpackstr(&job_ptr->tres_bind, buffer);
+		safe_unpackstr(&job_ptr->tres_freq, buffer);
+		safe_unpackstr(&job_ptr->tres_per_job, buffer);
+		safe_unpackstr(&job_ptr->tres_per_node, buffer);
+		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
+		safe_unpackstr(&job_ptr->tres_per_task, buffer);
 
-		safe_unpackstr_xmalloc(&job_ptr->selinux_context, &name_len,
-				       buffer);
+		safe_unpackstr(&job_ptr->selinux_context, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -2664,7 +2627,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
 	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
-	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0, task_dist;
+	uint32_t num_tasks, argc = 0, env_cnt = 0, task_dist;
 	uint16_t contiguous, core_spec = NO_VAL16;
 	uint16_t ntasks_per_node, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
@@ -2685,7 +2648,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
 
-		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpackstr(&acctg_freq, buffer);
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
@@ -2697,9 +2660,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack8(&share_res, buffer);
 		safe_unpack8(&whole_node, buffer);
 
-		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpackstr(&cpu_bind, buffer);
 		safe_unpack16(&cpu_bind_type, buffer);
-		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpackstr(&mem_bind, buffer);
 		safe_unpack16(&mem_bind_type, buffer);
 		safe_unpack16(&plane_size, buffer);
 
@@ -2717,23 +2680,23 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack_time(&accrue_time, buffer);
 		safe_unpack_time(&submit_time, buffer);
 
-		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
-		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
-		safe_unpackstr_xmalloc(&prefer, &name_len, buffer);
+		safe_unpackstr(&req_nodes, buffer);
+		safe_unpackstr(&exc_nodes, buffer);
+		safe_unpackstr(&features, buffer);
+		safe_unpackstr(&cluster_features, buffer);
+		safe_unpackstr(&prefer, buffer);
 		safe_unpack8(&features_use, buffer);
 		unpack_bit_str_hex(&job_size_bitmap, buffer);
 
 		unpack_dep_list(&depend_list, buffer, protocol_version);
-		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
-		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+		safe_unpackstr(&dependency, buffer);
+		safe_unpackstr(&orig_dependency, buffer);
 
-		safe_unpackstr_xmalloc(&err, &name_len, buffer);
-		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&out, &name_len, buffer);
-		safe_unpackstr_xmalloc(&submit_line, &name_len, buffer);
-		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr(&err, buffer);
+		safe_unpackstr(&in, buffer);
+		safe_unpackstr(&out, buffer);
+		safe_unpackstr(&submit_line, buffer);
+		safe_unpackstr(&work_dir, buffer);
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
@@ -2743,8 +2706,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		if (unpack_cron_entry((void **) &crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&env_hash, &name_len, buffer);
-		safe_unpackstr_xmalloc(&script_hash, &name_len, buffer);
+		safe_unpackstr(&env_hash, buffer);
+		safe_unpackstr(&script_hash, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -2752,7 +2715,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
 
-		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpackstr(&acctg_freq, buffer);
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
@@ -2764,9 +2727,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack8(&share_res, buffer);
 		safe_unpack8(&whole_node, buffer);
 
-		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpackstr(&cpu_bind, buffer);
 		safe_unpack16(&cpu_bind_type, buffer);
-		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpackstr(&mem_bind, buffer);
 		safe_unpack16(&mem_bind_type, buffer);
 		safe_unpack16(&plane_size, buffer);
 
@@ -2784,22 +2747,22 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack_time(&accrue_time, buffer);
 		safe_unpack_time(&submit_time, buffer);
 
-		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
-		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
-		safe_unpackstr_xmalloc(&prefer, &name_len, buffer);
+		safe_unpackstr(&req_nodes, buffer);
+		safe_unpackstr(&exc_nodes, buffer);
+		safe_unpackstr(&features, buffer);
+		safe_unpackstr(&cluster_features, buffer);
+		safe_unpackstr(&prefer, buffer);
 		safe_unpack8(&features_use, buffer);
 
 		unpack_dep_list(&depend_list, buffer, protocol_version);
-		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
-		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+		safe_unpackstr(&dependency, buffer);
+		safe_unpackstr(&orig_dependency, buffer);
 
-		safe_unpackstr_xmalloc(&err, &name_len, buffer);
-		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&out, &name_len, buffer);
-		safe_unpackstr_xmalloc(&submit_line, &name_len, buffer);
-		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr(&err, buffer);
+		safe_unpackstr(&in, buffer);
+		safe_unpackstr(&out, buffer);
+		safe_unpackstr(&submit_line, buffer);
+		safe_unpackstr(&work_dir, buffer);
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
@@ -2809,8 +2772,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		if (unpack_cron_entry((void **) &crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&env_hash, &name_len, buffer);
-		safe_unpackstr_xmalloc(&script_hash, &name_len, buffer);
+		safe_unpackstr(&env_hash, buffer);
+		safe_unpackstr(&script_hash, buffer);
 	} else {
 		error("_load_job_details: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -18677,7 +18640,6 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 				 buf_t *buffer, uint16_t protocol_version)
 {
 	uint16_t tmp_uint16;
-	uint32_t tmp_uint32;
 	job_fed_details_t *fed_details_ptr = NULL;
 
 	xassert(fed_details_pptr);
@@ -18688,18 +18650,15 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
 			fed_details_ptr = *fed_details_pptr;
 			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
-			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
-					       &tmp_uint32, buffer);
+			safe_unpackstr(&fed_details_ptr->origin_str, buffer);
 			safe_unpack64(&fed_details_ptr->siblings_active,
 				      buffer);
-			safe_unpackstr_xmalloc(
-				&fed_details_ptr->siblings_active_str,
-				&tmp_uint32, buffer);
+			safe_unpackstr(&fed_details_ptr->siblings_active_str,
+				       buffer);
 			safe_unpack64(&fed_details_ptr->siblings_viable,
 				      buffer);
-			safe_unpackstr_xmalloc(
-				&fed_details_ptr->siblings_viable_str,
-				&tmp_uint32, buffer);
+			safe_unpackstr(&fed_details_ptr->siblings_viable_str,
+				       buffer);
 		}
 	} else
 		goto unpack_error;

@@ -363,7 +363,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
-	uint32_t tmp_disk, name_len, weight = 0;
+	uint32_t tmp_disk, weight = 0;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
 	time_t power_save_req_time = 0, resume_after = 0;
@@ -402,7 +402,7 @@ extern int load_all_node_state ( bool state_only )
 	xfree(state_file);
 	unlock_state_files();
 
-	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, NODE_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
@@ -428,19 +428,18 @@ extern int load_all_node_state ( bool state_only )
 		uint32_t base_state;
 		uint16_t obj_protocol_version = NO_VAL16;
 		if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-			uint32_t len;
-			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
-			safe_unpackstr_xmalloc(&comment, &len, buffer);
-			safe_unpackstr_xmalloc(&extra, &len, buffer);
-			safe_unpackstr_xmalloc(&reason, &len, buffer);
-			safe_unpackstr_xmalloc(&features, &len, buffer);
-			safe_unpackstr_xmalloc(&features_act, &len,buffer);
-			safe_unpackstr_xmalloc(&gres, &len, buffer);
-			safe_unpackstr_xmalloc(&instance_id, &len, buffer);
-			safe_unpackstr_xmalloc(&instance_type, &len, buffer);
-			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
+			safe_unpackstr(&comm_name, buffer);
+			safe_unpackstr(&node_name, buffer);
+			safe_unpackstr(&node_hostname, buffer);
+			safe_unpackstr(&comment, buffer);
+			safe_unpackstr(&extra, buffer);
+			safe_unpackstr(&reason, buffer);
+			safe_unpackstr(&features, buffer);
+			safe_unpackstr(&features_act, buffer);
+			safe_unpackstr(&gres, buffer);
+			safe_unpackstr(&instance_id, buffer);
+			safe_unpackstr(&instance_type, buffer);
+			safe_unpackstr(&cpu_spec_list, buffer);
 			safe_unpack32(&next_state, buffer);
 			safe_unpack32(&node_state, buffer);
 			safe_unpack32(&cpu_bind, buffer);
@@ -460,7 +459,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16(&port, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
-			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
+			safe_unpackstr(&mcs_label, buffer);
 			if (gres_node_state_unpack(&gres_list, buffer,
 						   node_name,
 						   protocol_version) !=
@@ -469,17 +468,16 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32(&weight, buffer);
 			base_state = node_state & NODE_STATE_BASE;
 		} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-			uint32_t len;
-			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
-			safe_unpackstr_xmalloc(&comment, &len, buffer);
-			safe_unpackstr_xmalloc(&extra, &len, buffer);
-			safe_unpackstr_xmalloc(&reason, &len, buffer);
-			safe_unpackstr_xmalloc(&features, &len, buffer);
-			safe_unpackstr_xmalloc(&features_act, &len,buffer);
-			safe_unpackstr_xmalloc(&gres, &len, buffer);
-			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
+			safe_unpackstr(&comm_name, buffer);
+			safe_unpackstr(&node_name, buffer);
+			safe_unpackstr(&node_hostname, buffer);
+			safe_unpackstr(&comment, buffer);
+			safe_unpackstr(&extra, buffer);
+			safe_unpackstr(&reason, buffer);
+			safe_unpackstr(&features, buffer);
+			safe_unpackstr(&features_act, buffer);
+			safe_unpackstr(&gres, buffer);
+			safe_unpackstr(&cpu_spec_list, buffer);
 			safe_unpack32(&next_state, buffer);
 			safe_unpack32(&node_state, buffer);
 			safe_unpack32(&cpu_bind, buffer);
@@ -498,7 +496,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
-			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
+			safe_unpackstr(&mcs_label, buffer);
 			if (gres_node_state_unpack(&gres_list, buffer,
 						   node_name,
 						   protocol_version) !=
@@ -507,17 +505,16 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32(&weight, buffer);
 			base_state = node_state & NODE_STATE_BASE;
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			uint32_t len;
-			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
-			safe_unpackstr_xmalloc(&comment, &len, buffer);
-			safe_unpackstr_xmalloc(&extra, &len, buffer);
-			safe_unpackstr_xmalloc(&reason, &len, buffer);
-			safe_unpackstr_xmalloc(&features, &len, buffer);
-			safe_unpackstr_xmalloc(&features_act, &len,buffer);
-			safe_unpackstr_xmalloc(&gres, &len, buffer);
-			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
+			safe_unpackstr(&comm_name, buffer);
+			safe_unpackstr(&node_name, buffer);
+			safe_unpackstr(&node_hostname, buffer);
+			safe_unpackstr(&comment, buffer);
+			safe_unpackstr(&extra, buffer);
+			safe_unpackstr(&reason, buffer);
+			safe_unpackstr(&features, buffer);
+			safe_unpackstr(&features_act, buffer);
+			safe_unpackstr(&gres, buffer);
+			safe_unpackstr(&cpu_spec_list, buffer);
 			safe_unpack32(&next_state, buffer);
 			safe_unpack32(&node_state, buffer);
 			safe_unpack32(&cpu_bind, buffer);
@@ -535,7 +532,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
-			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
+			safe_unpackstr(&mcs_label, buffer);
 			if (gres_node_state_unpack(&gres_list, buffer,
 						   node_name,
 						   protocol_version) !=

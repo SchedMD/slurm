@@ -753,7 +753,6 @@ static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, buf_t *buffer)
 static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 {
 	trig_mgr_info_t *trig_ptr;
-	uint32_t str_len;
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 
@@ -769,14 +768,14 @@ static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack16   (&trig_ptr->flags,     buffer);
 		safe_unpack32   (&trig_ptr->trig_id,   buffer);
 		safe_unpack16   (&trig_ptr->res_type,  buffer);
-		safe_unpackstr_xmalloc(&trig_ptr->res_id, &str_len, buffer);
+		safe_unpackstr(&trig_ptr->res_id, buffer);
 		/* rebuild nodes_bitmap as needed from res_id */
 		/* rebuild job_id as needed from res_id */
 		safe_unpack32   (&trig_ptr->trig_type, buffer);
 		safe_unpack_time(&trig_ptr->trig_time, buffer);
 		safe_unpack32   (&trig_ptr->user_id,   buffer);
 		safe_unpack32   (&trig_ptr->group_id,  buffer);
-		safe_unpackstr_xmalloc(&trig_ptr->program, &str_len, buffer);
+		safe_unpackstr(&trig_ptr->program, buffer);
 		safe_unpack8    (&trig_ptr->state,     buffer);
 	} else {
 		error("_load_trigger_state: protocol_version "
@@ -943,7 +942,6 @@ extern void trigger_state_restore(void)
 	buf_t *buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
-	uint32_t ver_str_len;
 
 	/* read the file */
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -958,7 +956,7 @@ extern void trigger_state_restore(void)
 	xfree(state_file);
 	unlock_state_files();
 
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	if (ver_str && !xstrcmp(ver_str, TRIGGER_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 

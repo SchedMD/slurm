@@ -570,7 +570,6 @@ int load_all_part_state(void)
 	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
 	uint16_t state_up, cr_type;
 	part_record_t *part_ptr;
-	uint32_t name_len;
 	int error_code = 0, part_cnt = 0;
 	buf_t *buffer;
 	char *ver_str = NULL;
@@ -593,7 +592,7 @@ int load_all_part_state(void)
 	xfree(state_file);
 	unlock_state_files();
 
-	safe_unpackstr_xmalloc(&ver_str, &name_len, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, PART_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
@@ -614,7 +613,7 @@ int load_all_part_state(void)
 	while (remaining_buf(buffer) > 0) {
 		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 			safe_unpack32(&cpu_bind, buffer);
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpackstr(&part_name, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
@@ -636,22 +635,15 @@ int load_all_part_state(void)
 			safe_unpack16(&state_up, buffer);
 			safe_unpack16(&cr_type, buffer);
 
-			safe_unpackstr_xmalloc(&allow_accounts,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_qos,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&qos_char,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len,
-					       buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
-			safe_unpackstr_xmalloc(&deny_accounts,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&deny_qos,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			safe_unpackstr(&allow_accounts, buffer);
+			safe_unpackstr(&allow_groups, buffer);
+			safe_unpackstr(&allow_qos, buffer);
+			safe_unpackstr(&qos_char, buffer);
+			safe_unpackstr(&allow_alloc_nodes, buffer);
+			safe_unpackstr(&alternate, buffer);
+			safe_unpackstr(&deny_accounts, buffer);
+			safe_unpackstr(&deny_qos, buffer);
+			safe_unpackstr(&nodes, buffer);
 			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
 			    (flags & PART_FLAG_EXC_USER_CLR)  ||
 			    (flags & PART_FLAG_HIDDEN_CLR)    ||
@@ -666,7 +658,7 @@ int load_all_part_state(void)
 			}
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&cpu_bind, buffer);
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpackstr(&part_name, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
@@ -687,22 +679,15 @@ int load_all_part_state(void)
 			safe_unpack16(&state_up, buffer);
 			safe_unpack16(&cr_type, buffer);
 
-			safe_unpackstr_xmalloc(&allow_accounts,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_qos,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&qos_char,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len,
-					       buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
-			safe_unpackstr_xmalloc(&deny_accounts,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&deny_qos,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			safe_unpackstr(&allow_accounts, buffer);
+			safe_unpackstr(&allow_groups, buffer);
+			safe_unpackstr(&allow_qos, buffer);
+			safe_unpackstr(&qos_char, buffer);
+			safe_unpackstr(&allow_alloc_nodes, buffer);
+			safe_unpackstr(&alternate, buffer);
+			safe_unpackstr(&deny_accounts, buffer);
+			safe_unpackstr(&deny_qos, buffer);
+			safe_unpackstr(&nodes, buffer);
 			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
 			    (flags & PART_FLAG_EXC_USER_CLR)  ||
 			    (flags & PART_FLAG_HIDDEN_CLR)    ||

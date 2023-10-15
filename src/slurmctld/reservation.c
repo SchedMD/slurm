@@ -2078,43 +2078,33 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 					  uint16_t protocol_version)
 {
 	slurmctld_resv_t *resv_ptr;
-	uint32_t uint32_tmp = 0;
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->magic = RESV_MAGIC;
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&resv_ptr->accounts,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->comment,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->accounts, buffer);
+		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
+		safe_unpackstr(&resv_ptr->comment, buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->features,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->features, buffer);
 		safe_unpack64(&resv_ptr->flags,		buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->licenses,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->licenses, buffer);
 		safe_unpack32(&resv_ptr->max_start_delay, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->name,	buffer);
 
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->node_list,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->partition,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->node_list, buffer);
+		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
 		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
-				       &uint32_tmp, 	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->groups, &uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
+		safe_unpackstr(&resv_ptr->users, buffer);
+		safe_unpackstr(&resv_ptr->groups, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->assoc_list, buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
 		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
 					 protocol_version) != SLURM_SUCCESS)
@@ -2124,44 +2114,34 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->tres_str, buffer);
 		safe_unpack32(&resv_ptr->ctld_flags, buffer);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&resv_ptr->accounts,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->comment,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->accounts, buffer);
+		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
+		safe_unpackstr(&resv_ptr->comment, buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->features,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->features, buffer);
 		safe_unpack64(&resv_ptr->flags,		buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->licenses,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->licenses, buffer);
 		safe_unpack32(&resv_ptr->max_start_delay, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->name,	buffer);
 
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->node_list,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->partition,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->node_list, buffer);
+		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
 		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
-				       &uint32_tmp, 	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->groups, &uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
+		safe_unpackstr(&resv_ptr->users, buffer);
+		safe_unpackstr(&resv_ptr->groups, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->assoc_list, buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
 		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
 					 protocol_version) != SLURM_SUCCESS)
@@ -2171,42 +2151,33 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->tres_str, buffer);
 		safe_unpack32(&resv_ptr->ctld_flags, buffer);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&resv_ptr->accounts,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->accounts, buffer);
+		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->features,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->features, buffer);
 		safe_unpack64(&resv_ptr->flags,		buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->licenses,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->licenses, buffer);
 		safe_unpack32(&resv_ptr->max_start_delay, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->name,	buffer);
 
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->node_list,
-				       &uint32_tmp,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->partition,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->node_list, buffer);
+		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
 		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
-				       &uint32_tmp, 	buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->groups, &uint32_tmp, buffer);
+		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
+		safe_unpackstr(&resv_ptr->users, buffer);
+		safe_unpackstr(&resv_ptr->groups, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
-				       &uint32_tmp,	buffer);
+		safe_unpackstr(&resv_ptr->assoc_list, buffer);
 		safe_unpack32(&resv_ptr->boot_time,	buffer);
 		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
 					 protocol_version) != SLURM_SUCCESS)
@@ -2216,8 +2187,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
-		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
-				       &uint32_tmp, 	buffer);
+		safe_unpackstr(&resv_ptr->tres_str, buffer);
 		safe_unpack32(&resv_ptr->ctld_flags, buffer);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
@@ -4758,7 +4728,6 @@ extern int load_all_resv_state(int recover)
 {
 	char *state_file, *ver_str = NULL;
 	time_t now;
-	uint32_t uint32_tmp;
 	int error_code = 0;
 	buf_t *buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
@@ -4785,7 +4754,7 @@ extern int load_all_resv_state(int recover)
 	xfree(state_file);
 	unlock_state_files();
 
-	safe_unpackstr_xmalloc( &ver_str, &uint32_tmp, buffer);
+	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in resv_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, RESV_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);

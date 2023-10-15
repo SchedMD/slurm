@@ -3634,7 +3634,6 @@ extern int dump_config_state_lite(void)
 
 extern int load_config_state_lite(void)
 {
-	uint32_t uint32_tmp = 0;
 	uint16_t ver = 0;
 	char *state_file;
 	buf_t *buffer;
@@ -3669,8 +3668,7 @@ extern int load_config_state_lite(void)
 		return EFAULT;
 	} else {
 		safe_unpack_time(&buf_time, buffer);
-		safe_unpackstr_xmalloc(&last_accounting_storage_type,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&last_accounting_storage_type, buffer);
 	}
 
 	if (last_accounting_storage_type
