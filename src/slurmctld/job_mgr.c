@@ -2555,9 +2555,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 	pack8(detail_ptr->share_res, buffer);
 	pack8(detail_ptr->whole_node, buffer);
 
-	packstr(detail_ptr->cpu_bind,     buffer);
+	packstr(detail_ptr->cpu_bind, buffer);
 	pack16(detail_ptr->cpu_bind_type, buffer);
-	packstr(detail_ptr->mem_bind,     buffer);
+	packstr(detail_ptr->mem_bind, buffer);
 	pack16(detail_ptr->mem_bind_type, buffer);
 	pack16(detail_ptr->plane_size, buffer);
 
@@ -2575,9 +2575,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 	pack_time(detail_ptr->accrue_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
-	packstr(detail_ptr->req_nodes,  buffer);
-	packstr(detail_ptr->exc_nodes,  buffer);
-	packstr(detail_ptr->features,   buffer);
+	packstr(detail_ptr->req_nodes, buffer);
+	packstr(detail_ptr->exc_nodes, buffer);
+	packstr(detail_ptr->features, buffer);
 	packstr(detail_ptr->cluster_features, buffer);
 	packstr(detail_ptr->prefer, buffer);
 	if (detail_ptr->features_use == detail_ptr->features)
@@ -2591,11 +2591,11 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);	/* subject to change */
 
-	packstr(detail_ptr->std_err,       buffer);
-	packstr(detail_ptr->std_in,        buffer);
-	packstr(detail_ptr->std_out,       buffer);
-	packstr(detail_ptr->submit_line,   buffer);
-	packstr(detail_ptr->work_dir,  buffer);
+	packstr(detail_ptr->std_err, buffer);
+	packstr(detail_ptr->std_in, buffer);
+	packstr(detail_ptr->std_out, buffer);
+	packstr(detail_ptr->submit_line, buffer);
+	packstr(detail_ptr->work_dir, buffer);
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
 			     SLURM_PROTOCOL_VERSION);
