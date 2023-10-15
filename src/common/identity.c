@@ -169,4 +169,5 @@ extern void destroy_identity(identity_t *id)
 		xfree(id->gr_names);
 	}
 	id->ngids = 0;
+	xfree(id);
 }
