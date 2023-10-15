@@ -271,11 +271,11 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 
-static char *_get_mail_user(const char *user_name, uid_t user_id)
+static char *_get_mail_user(const char *user_name, job_record_t *job_ptr)
 {
 	char *mail_user = NULL;
 	if (!user_name || (user_name[0] == '\0')) {
-		mail_user = uid_to_string(user_id);
+		mail_user = uid_to_string(job_ptr->user_id);
 		/* unqualified sender, append MailDomain if set */
 		if (slurm_conf.mail_domain)
 			xstrfmtcat(mail_user, "@%s", slurm_conf.mail_domain);
@@ -2455,12 +2455,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	job_ptr->lic_req = lic_req;
 	lic_req = NULL;	/* reused, nothing left to free */
 	job_ptr->mail_type    = mail_type;
-	xfree(job_ptr->mail_user);
-	if (mail_user)
-		job_ptr->mail_user    = mail_user;
-	else
-		job_ptr->mail_user = _get_mail_user(NULL, user_id);
-	mail_user             = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->mcs_label);
 	job_ptr->mcs_label    = mcs_label;
 	mcs_label	      = NULL;   /* reused, nothing left to free */
@@ -2593,6 +2587,14 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	 */
 	job_ptr->best_switch     = true;
 	job_ptr->start_protocol_ver = start_protocol_ver;
+
+	/* Handle this after user_id and other identity has been filled in */
+	xfree(job_ptr->mail_user);
+	if (mail_user) {
+		job_ptr->mail_user = mail_user;
+		mail_user = NULL;
+	} else
+		job_ptr->mail_user = _get_mail_user(NULL, job_ptr);
 
 	_add_job_hash(job_ptr);
 	_add_job_array_hash(job_ptr);
@@ -8760,7 +8762,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->licenses  = xstrdup(job_desc->licenses_tot);
 	job_ptr->lic_req  = xstrdup(job_desc->licenses);
 	job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
-					    job_ptr->user_id);
+					    job_ptr);
 	if (job_desc->mail_type &&
 	    (job_desc->mail_type != NO_VAL16)) {
 		job_ptr->mail_type = job_desc->mail_type;
@@ -14811,7 +14813,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->mail_user) {
 		xfree(job_ptr->mail_user);
 		job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
-						    job_ptr->user_id);
+						    job_ptr);
 		sched_info("%s: setting mail_user to %s for %pJ",
 			   __func__, job_ptr->mail_user, job_ptr);
 	}
