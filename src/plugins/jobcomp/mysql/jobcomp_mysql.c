@@ -48,9 +48,9 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
+#include "src/common/id_util.h"
 #include "src/common/parse_time.h"
 #include "src/interfaces/select.h"
-#include "src/common/uid.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -207,8 +207,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 			return SLURM_ERROR;
 	}
 
-	usr_str = uid_to_string_or_null(job_ptr->user_id);
-	grp_str = gid_to_string_or_null(job_ptr->group_id);
+	usr_str = user_from_job(job_ptr);
+	grp_str = group_from_job(job_ptr);
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;

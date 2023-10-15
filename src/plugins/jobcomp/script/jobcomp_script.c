@@ -94,13 +94,13 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
+#include "src/common/id_util.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -197,9 +197,9 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	j->state_reason_prev = job->state_reason_prev_db;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
-	j->user_name = uid_to_string_or_null(job->user_id);
+	j->user_name = user_from_job(job);
 	j->gid = job->group_id;
-	j->group_name = gid_to_string_or_null(job->group_id);
+	j->group_name = group_from_job(job);
 	j->name = xstrdup (job->name);
 	if (job->assoc_ptr && job->assoc_ptr->cluster &&
 	    job->assoc_ptr->cluster[0])

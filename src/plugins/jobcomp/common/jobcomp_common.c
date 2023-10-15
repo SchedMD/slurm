@@ -37,8 +37,8 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
+#include "src/common/id_util.h"
 #include "src/common/parse_time.h"
-#include "src/common/uid.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -135,8 +135,8 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	uint32_t time_limit;
 	data_t *record = NULL;
 
-	usr_str = uid_to_string_or_null(job_ptr->user_id);
-	grp_str = gid_to_string_or_null(job_ptr->group_id);
+	usr_str = user_from_job(job_ptr);
+	grp_str = group_from_job(job_ptr);
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
