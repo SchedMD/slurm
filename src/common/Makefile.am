@@ -47,6 +47,8 @@ libcommon_la_SOURCES =				\
 	hostlist.h				\
 	http.h					\
 	http.c					\
+	identity.h				\
+	identity.c				\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_features.c				\

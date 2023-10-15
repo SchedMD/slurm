@@ -162,13 +162,14 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo conmgr.lo core_array.lo cpu_frequency.lo cron.lo \
 	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
 	forward.lo global_defaults.lo group_cache.lo half_duplex.lo \
-	hostlist.lo http.lo io_hdr.lo job_features.lo job_options.lo \
-	job_resources.lo list.lo log.lo net.lo node_conf.lo \
-	oci_config.lo openapi.lo optz.lo pack.lo parse_config.lo \
-	parse_time.lo parse_value.lo plugin.lo plugrack.lo \
-	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
-	run_command.lo run_in_daemon.lo setproctitle.lo slurm_errno.lo \
-	slurm_opt.lo slurm_persist_conn.lo slurm_protocol_api.lo \
+	hostlist.lo http.lo identity.lo io_hdr.lo job_features.lo \
+	job_options.lo job_resources.lo list.lo log.lo net.lo \
+	node_conf.lo oci_config.lo openapi.lo optz.lo pack.lo \
+	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
+	plugrack.lo print_fields.lo proc_args.lo read_config.lo \
+	reverse_tree.lo run_command.lo run_in_daemon.lo \
+	setproctitle.lo slurm_errno.lo slurm_opt.lo \
+	slurm_persist_conn.lo slurm_protocol_api.lo \
 	slurm_protocol_defs.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket.lo \
 	slurm_resolv.lo slurm_resource_info.lo slurm_rlimits_info.lo \
@@ -215,9 +216,10 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
 	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
 	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
-	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_features.Plo \
-	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/identity.Plo ./$(DEPDIR)/io_hdr.Plo \
+	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
+	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/oci_config.Plo \
 	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
 	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
@@ -597,6 +599,8 @@ libcommon_la_SOURCES = \
 	hostlist.h				\
 	http.h					\
 	http.c					\
+	identity.h				\
+	identity.c				\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_features.c				\
@@ -815,6 +819,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/half_duplex.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/identity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@ # am--include-marker
@@ -1022,6 +1027,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/half_duplex.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
+	-rm -f ./$(DEPDIR)/identity.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo
 	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
@@ -1149,6 +1155,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/half_duplex.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
+	-rm -f ./$(DEPDIR)/identity.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo
 	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
