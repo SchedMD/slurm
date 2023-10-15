@@ -66,13 +66,13 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/id_util.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -275,7 +275,7 @@ static char *_get_mail_user(const char *user_name, job_record_t *job_ptr)
 {
 	char *mail_user = NULL;
 	if (!user_name || (user_name[0] == '\0')) {
-		mail_user = uid_to_string(job_ptr->user_id);
+		mail_user = user_from_job(job_ptr);
 		/* unqualified sender, append MailDomain if set */
 		if (slurm_conf.mail_domain)
 			xstrfmtcat(mail_user, "@%s", slurm_conf.mail_domain);
@@ -19076,10 +19076,9 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	}
 
 	job_info_resp_msg->uid = job_ptr->user_id;
-	job_info_resp_msg->user_name = uid_to_string_or_null(job_ptr->user_id);
+	job_info_resp_msg->user_name = user_from_job(job_ptr);
 	job_info_resp_msg->gid = job_ptr->group_id;
-	job_info_resp_msg->group_name =
-		gid_to_string_or_null(job_ptr->group_id);
+	job_info_resp_msg->group_name = group_from_job(job_ptr);
 
 	return job_info_resp_msg;
 }
@@ -19359,7 +19358,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		}
 	}
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
-	name = gid_to_string((gid_t) job_ptr->group_id);
+	name = group_from_job(job_ptr);
 	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
 	xfree(name);
 	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
@@ -19398,7 +19397,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	setenvf(&my_env, "SLURM_JOB_START_TIME", "%lu", job_ptr->start_time);
 
 	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
-	name = uid_to_string((uid_t) job_ptr->user_id);
+	name = user_from_job(job_ptr);
 	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
 	xfree(name);
 	if (job_ptr->wckey) {

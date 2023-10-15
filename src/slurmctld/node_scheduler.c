@@ -55,9 +55,9 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/id_util.h"
 #include "src/common/job_features.h"
 #include "src/common/list.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -3046,7 +3046,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
 	if (!job_ptr->user_name)
-		job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
+		job_ptr->user_name = user_from_job(job_ptr);
 	prolog_msg_ptr->user_name_deprecated = xstrdup(job_ptr->user_name);
 	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);

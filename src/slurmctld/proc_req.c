@@ -59,6 +59,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/id_util.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -67,7 +68,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/acct_gather.h"
@@ -924,9 +924,9 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 
 	alloc_msg->tres_per_node = xstrdup(job_ptr->tres_per_node);
 	alloc_msg->uid = job_ptr->user_id;
-	alloc_msg->user_name = uid_to_string_or_null(job_ptr->user_id);
+	alloc_msg->user_name = user_from_job(job_ptr);
 	alloc_msg->gid = job_ptr->group_id;
-	alloc_msg->group_name = gid_to_string_or_null(job_ptr->group_id);
+	alloc_msg->group_name = group_from_job(job_ptr);
 
 	return alloc_msg;
 }
