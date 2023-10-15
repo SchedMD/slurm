@@ -179,43 +179,6 @@ extern int cred_g_fini(void)
 	return rc;
 }
 
-/* Fill in user information based on what options are enabled. */
-extern identity_t *fetch_identity(uid_t uid, gid_t gid)
-{
-	identity_t *id;
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
-	int rc;
-
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (rc || !result) {
-		if (!result && !rc)
-			error("%s: getpwuid_r(%u): no record found",
-			      __func__, uid);
-		else
-			error("%s: getpwuid_r(%u): %s",
-			      __func__, uid, slurm_strerror(rc));
-		return NULL;
-	}
-
-	id = xmalloc(sizeof(*id));
-
-	id->pw_name = xstrdup(result->pw_name);
-	id->pw_gecos = xstrdup(result->pw_gecos);
-	id->pw_dir = xstrdup(result->pw_dir);
-	id->pw_shell = xstrdup(result->pw_shell);
-
-	id->ngids = group_cache_lookup(uid, gid, id->pw_name, &id->gids);
-
-	if (enable_nss_slurm && id->ngids) {
-		id->gr_names = xcalloc(id->ngids, sizeof(char *));
-		for (int i = 0; i < id->ngids; i++)
-			id->gr_names[i] = gid_to_string(id->gids[i]);
-	}
-
-	return id;
-}
-
 extern int cred_expiration(void)
 {
 	return cred_expire;
@@ -256,7 +219,8 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	arg->core_array_size = i;
 
 	if (enable_nss_slurm || enable_send_gids)
-		if (!(arg->id = fetch_identity(arg->uid, arg->gid)))
+		if (!(arg->id = fetch_identity(arg->uid, arg->gid,
+					       enable_nss_slurm)))
 			goto fail;
 
 	cred->buffer = init_buf(4096);

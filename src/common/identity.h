@@ -51,6 +51,8 @@ typedef struct {
 	char **gr_names;	/* array of group names matching gids */
 } identity_t;
 
+extern identity_t *fetch_identity(uid_t uid, gid_t gid, bool group_names);
+
 extern void pack_identity(identity_t *id, buf_t *buffer,
 			  uint16_t protocol_version);
 extern int unpack_identity(identity_t **id, buf_t *buffer,

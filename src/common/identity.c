@@ -34,10 +34,48 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/group_cache.h"
 #include "src/common/identity.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+extern identity_t *fetch_identity(uid_t uid, gid_t gid, bool group_names)
+{
+	identity_t *id;
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
+	int rc;
+
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (rc || !result) {
+		if (!result && !rc)
+			error("%s: getpwuid_r(%u): no record found",
+			      __func__, uid);
+		else
+			error("%s: getpwuid_r(%u): %s",
+			      __func__, uid, slurm_strerror(rc));
+		return NULL;
+	}
+
+	id = xmalloc(sizeof(*id));
+
+	id->pw_name = xstrdup(result->pw_name);
+	id->pw_gecos = xstrdup(result->pw_gecos);
+	id->pw_dir = xstrdup(result->pw_dir);
+	id->pw_shell = xstrdup(result->pw_shell);
+
+	id->ngids = group_cache_lookup(uid, gid, id->pw_name, &id->gids);
+
+	if (group_names) {
+		id->gr_names = xcalloc(id->ngids, sizeof(char *));
+		for (int i = 0; i < id->ngids; i++)
+			id->gr_names[i] = gid_to_string(id->gids[i]);
+	}
+
+	return id;
+}
 
 extern void pack_identity(identity_t *id, buf_t *buffer,
 			  uint16_t protocol_version)
