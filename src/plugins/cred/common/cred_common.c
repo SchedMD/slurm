@@ -53,19 +53,19 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 	 * The gr_names array is optional. If the array exists the length
 	 * must match that of the gids array.
 	 */
-	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
+	uint32_t gr_names_cnt = (cred->id.gr_names) ? cred->id.ngids : 0;
 	time_t ctime = time(NULL);
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
+		packstr(cred->id.pw_name, buffer);
+		packstr(cred->id.pw_gecos, buffer);
+		packstr(cred->id.pw_dir, buffer);
+		packstr(cred->id.pw_shell, buffer);
+		pack32_array(cred->id.gids, cred->id.ngids, buffer);
+		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -148,12 +148,12 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
+		packstr(cred->id.pw_name, buffer);
+		packstr(cred->id.pw_gecos, buffer);
+		packstr(cred->id.pw_dir, buffer);
+		packstr(cred->id.pw_shell, buffer);
+		pack32_array(cred->id.gids, cred->id.ngids, buffer);
+		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -232,12 +232,12 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->pw_name, buffer);
-		packstr(cred->pw_gecos, buffer);
-		packstr(cred->pw_dir, buffer);
-		packstr(cred->pw_shell, buffer);
-		pack32_array(cred->gids, cred->ngids, buffer);
-		packstr_array(cred->gr_names, gr_names_cnt, buffer);
+		packstr(cred->id.pw_name, buffer);
+		packstr(cred->id.pw_gecos, buffer);
+		packstr(cred->id.pw_dir, buffer);
+		packstr(cred->id.pw_shell, buffer);
+		pack32_array(cred->id.gids, cred->id.ngids, buffer);
+		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -338,16 +338,16 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->pw_name, buffer);
-		safe_unpackstr(&cred_arg->pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->pw_dir, buffer);
-		safe_unpackstr(&cred_arg->pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->gids, &u32_ngids, buffer);
-		cred_arg->ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->ngids != u32_ngids) {
+		safe_unpackstr(&cred_arg->id.pw_name, buffer);
+		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
+		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
+		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
+		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
+		cred_arg->id.ngids = u32_ngids;
+		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
+		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
 			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->ngids);
+			      __func__, u32_ngids, cred_arg->id.ngids);
 			goto unpack_error;
 		}
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
@@ -461,16 +461,16 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->pw_name, buffer);
-		safe_unpackstr(&cred_arg->pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->pw_dir, buffer);
-		safe_unpackstr(&cred_arg->pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->gids, &u32_ngids, buffer);
-		cred_arg->ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->ngids != u32_ngids) {
+		safe_unpackstr(&cred_arg->id.pw_name, buffer);
+		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
+		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
+		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
+		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
+		cred_arg->id.ngids = u32_ngids;
+		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
+		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
 			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->ngids);
+			      __func__, u32_ngids, cred_arg->id.ngids);
 			goto unpack_error;
 		}
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
@@ -580,16 +580,16 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			      __func__);
 			goto unpack_error;
 		}
-		safe_unpackstr(&cred_arg->pw_name, buffer);
-		safe_unpackstr(&cred_arg->pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->pw_dir, buffer);
-		safe_unpackstr(&cred_arg->pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->gids, &u32_ngids, buffer);
-		cred_arg->ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->ngids != u32_ngids) {
+		safe_unpackstr(&cred_arg->id.pw_name, buffer);
+		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
+		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
+		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
+		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
+		cred_arg->id.ngids = u32_ngids;
+		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
+		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
 			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->ngids);
+			      __func__, u32_ngids, cred_arg->id.ngids);
 			goto unpack_error;
 		}
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,

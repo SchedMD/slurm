@@ -33,3 +33,25 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/identity.h"
+#include "src/common/xmalloc.h"
+
+extern void destroy_identity(identity_t *id)
+{
+	if (!id)
+		return;
+
+	xfree(id->pw_name);
+	xfree(id->pw_gecos);
+	xfree(id->pw_dir);
+	xfree(id->pw_shell);
+	xfree(id->gids);
+
+	if (id->gr_names) {
+		for (int i = 0; i < id->ngids; i++)
+			xfree(id->gr_names[i]);
+		xfree(id->gr_names);
+	}
+	id->ngids = 0;
+}

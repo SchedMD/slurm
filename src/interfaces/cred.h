@@ -44,8 +44,10 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/identity.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/uid.h"
 
 /*
  * Default credential information expiration window.
@@ -71,18 +73,13 @@ typedef struct {
 	slurm_step_id_t step_id;
 	uid_t uid; /* user for which the cred is valid */
 	gid_t gid; /* user's primary group id */
+
 	/*
 	 * These are only used in certain conditions and should not be supplied
 	 * when creating a new credential.  They are defined here so the values
 	 * can be fetched from the credential.
 	 */
-	char *pw_name; /* user_name as a string */
-	char *pw_gecos; /* user information */
-	char *pw_dir; /* home directory */
-	char *pw_shell; /* user program */
-	int ngids; /* number of extended group ids */
-	gid_t *gids; /* extended group ids for user */
-	char **gr_names; /* array of group names matching gids */
+	identity_t id;
 
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket

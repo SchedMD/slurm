@@ -37,4 +37,25 @@
 #ifndef _IDENTITY_H
 #define _IDENTITY_H
 
+#include <sys/types.h>
+
+typedef struct {
+	char *pw_name;		/* user_name as a string */
+	char *pw_gecos;		/* user information */
+	char *pw_dir;		/* home directory */
+	char *pw_shell;		/* user program */
+	int ngids;		/* number of extended group ids */
+	gid_t *gids;		/* extended group ids for user */
+	char **gr_names;	/* array of group names matching gids */
+} identity_t;
+
+extern void destroy_identity(identity_t *id);
+
+#define FREE_NULL_IDENTITY(_X)		\
+do {					\
+	if (_X)				\
+		destroy_identity(_X);	\
+	_X = NULL;			\
+} while(0)
+
 #endif

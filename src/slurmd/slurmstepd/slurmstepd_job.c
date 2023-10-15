@@ -247,18 +247,18 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	step->uid = cred_arg->uid;
 	step->gid = cred_arg->gid;
 
-	step->user_name = xstrdup(cred_arg->pw_name);
+	step->user_name = xstrdup(cred_arg->id.pw_name);
 	if (!step->user_name)
 		step->user_name = uid_to_string_or_null(step->uid);
 
-	step->pw_gecos = xstrdup(cred_arg->pw_gecos);
-	step->pw_dir = xstrdup(cred_arg->pw_dir);
-	step->pw_shell = xstrdup(cred_arg->pw_shell);
+	step->pw_gecos = xstrdup(cred_arg->id.pw_gecos);
+	step->pw_dir = xstrdup(cred_arg->id.pw_dir);
+	step->pw_shell = xstrdup(cred_arg->id.pw_shell);
 
-	step->ngids = cred_arg->ngids;
-	step->gids = cred_arg->gids;
-	cred_arg->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
-	step->gr_names = copy_gr_names(cred_arg->ngids, cred_arg->gr_names);
+	step->ngids = cred_arg->id.ngids;
+	step->gids = cred_arg->id.gids;
+	cred_arg->id.gids = copy_gids(cred_arg->id.ngids, cred_arg->id.gids);
+	step->gr_names = copy_gr_names(cred_arg->id.ngids, cred_arg->id.gr_names);
 
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_licenses = xstrdup(cred_arg->job_licenses);

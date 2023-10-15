@@ -1129,11 +1129,11 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	xfree(req->gids);
-	if (arg->ngids) {
-		req->ngids = arg->ngids;
-		req->gids = copy_gids(arg->ngids, arg->gids);
+	if (arg->id.ngids) {
+		req->ngids = arg->id.ngids;
+		req->gids = copy_gids(arg->id.ngids, arg->id.gids);
 	} else {
-		char *user_name = xstrdup(arg->pw_name);
+		char *user_name = xstrdup(arg->id.pw_name);
 		if (!user_name)
 			user_name = uid_to_string(arg->uid);
 		/*
@@ -2403,16 +2403,16 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	batch_uid = cred_arg->uid;
 	batch_gid = cred_arg->gid;
 	/* If available, use the cred to fill in username. */
-	if (cred_arg->pw_name)
-		user_name = xstrdup(cred_arg->pw_name);
+	if (cred_arg->id.pw_name)
+		user_name = xstrdup(cred_arg->id.pw_name);
 	else
 		user_name = uid_to_string(batch_uid);
 
 	xfree(req->gids); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in groups */
-	if (cred_arg->ngids) {
-		req->ngids = cred_arg->ngids;
-		req->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
+	if (cred_arg->id.ngids) {
+		req->ngids = cred_arg->id.ngids;
+		req->gids = copy_gids(cred_arg->id.ngids, cred_arg->id.gids);
 	} else
 		req->ngids = group_cache_lookup(batch_uid, batch_gid,
 						user_name, &req->gids);

@@ -49,6 +49,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/common/group_cache.h"
+#include "src/common/identity.h"
 #include "src/common/io_hdr.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
@@ -201,42 +202,25 @@ static int _fill_cred_gids(slurm_cred_arg_t *arg)
 		return SLURM_ERROR;
 	}
 
-	arg->pw_name = xstrdup(result->pw_name);
-	arg->pw_gecos = xstrdup(result->pw_gecos);
-	arg->pw_dir = xstrdup(result->pw_dir);
-	arg->pw_shell = xstrdup(result->pw_shell);
+	arg->id.pw_name = xstrdup(result->pw_name);
+	arg->id.pw_gecos = xstrdup(result->pw_gecos);
+	arg->id.pw_dir = xstrdup(result->pw_dir);
+	arg->id.pw_shell = xstrdup(result->pw_shell);
 
-	arg->ngids = group_cache_lookup(arg->uid, arg->gid,
-					arg->pw_name, &arg->gids);
+	arg->id.ngids = group_cache_lookup(arg->uid, arg->gid,
+					   arg->id.pw_name, &arg->id.gids);
 
 	if (enable_nss_slurm) {
-		if (arg->ngids) {
-			arg->gr_names = xcalloc(arg->ngids, sizeof(char *));
-			for (int i = 0; i < arg->ngids; i++)
-				arg->gr_names[i] = gid_to_string(arg->gids[i]);
+		if (arg->id.ngids) {
+			arg->id.gr_names = xcalloc(arg->id.ngids,
+						   sizeof(char *));
+			for (int i = 0; i < arg->id.ngids; i++)
+				arg->id.gr_names[i] =
+					gid_to_string(arg->id.gids[i]);
 		}
 	}
 
 	return SLURM_SUCCESS;
-}
-
-static void _release_cred_gids(slurm_cred_arg_t *arg)
-{
-	if (!enable_nss_slurm && !enable_send_gids)
-		return;
-
-	xfree(arg->pw_name);
-	xfree(arg->pw_gecos);
-	xfree(arg->pw_dir);
-	xfree(arg->pw_shell);
-	xfree(arg->gids);
-
-	if (arg->gr_names) {
-		for (int i = 0; i < arg->ngids; i++)
-			xfree(arg->gr_names[i]);
-		xfree(arg->gr_names);
-	}
-	arg->ngids = 0;
 }
 
 extern int cred_expiration(void)
@@ -291,7 +275,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 
 	/* Release any values populated through _fill_cred_gids(). */
-	_release_cred_gids(arg);
+	destroy_identity(&arg->id);
 
 	return cred;
 
@@ -319,14 +303,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	if (!arg)
 		return;
 
-	xfree(arg->pw_name);
-	xfree(arg->pw_gecos);
-	xfree(arg->pw_dir);
-	xfree(arg->pw_shell);
-	xfree(arg->gids);
-	for (int i = 0; arg->gr_names && i < arg->ngids; i++)
-		xfree(arg->gr_names[i]);
-	xfree(arg->gr_names);
+	destroy_identity(&arg->id);
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
