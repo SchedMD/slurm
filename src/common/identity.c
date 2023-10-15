@@ -47,6 +47,10 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 	 * must match that of the gids array.
 	 */
 	uint32_t gr_names_cnt = (id->gr_names) ? id->ngids : 0;
+	identity_t null_id = {};
+
+	if (!id)
+		id = &null_id;
 
 	packstr(id->pw_name, buffer);
 	packstr(id->pw_gecos, buffer);
