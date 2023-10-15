@@ -80,15 +80,17 @@ extern identity_t *fetch_identity(uid_t uid, gid_t gid, bool group_names)
 extern void pack_identity(identity_t *id, buf_t *buffer,
 			  uint16_t protocol_version)
 {
-	/*
-	 * The gr_names array is optional. If the array exists the length
-	 * must match that of the gids array.
-	 */
-	uint32_t gr_names_cnt = (id->gr_names) ? id->ngids : 0;
+	uint32_t gr_names_cnt;
 	identity_t null_id = {};
 
 	if (!id)
 		id = &null_id;
+
+	/*
+	 * The gr_names array is optional. If the array exists the length
+	 * must match that of the gids array.
+	 */
+	gr_names_cnt = (id->gr_names) ? id->ngids : 0;
 
 	packstr(id->pw_name, buffer);
 	packstr(id->pw_gecos, buffer);
