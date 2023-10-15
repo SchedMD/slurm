@@ -293,7 +293,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 
 extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 {
-	uint32_t u32_ngids, len, uint32_tmp;
+	uint32_t len, uint32_tmp;
 	slurm_cred_t *cred = NULL;
 	slurm_cred_arg_t *cred_arg = NULL;
 	char *bit_fmt_str = NULL;
@@ -319,18 +319,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->id.pw_name, buffer);
-		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
-		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
-		cred_arg->id.ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
-			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->id.ngids);
+		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
-		}
+
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
 					  cred_arg->step_id.job_id,
 					  protocol_version)
@@ -442,18 +433,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->id.pw_name, buffer);
-		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
-		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
-		cred_arg->id.ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
-			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->id.ngids);
+		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
-		}
+
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
 					  cred_arg->step_id.job_id,
 					  protocol_version)
@@ -561,18 +543,10 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			      __func__);
 			goto unpack_error;
 		}
-		safe_unpackstr(&cred_arg->id.pw_name, buffer);
-		safe_unpackstr(&cred_arg->id.pw_gecos, buffer);
-		safe_unpackstr(&cred_arg->id.pw_dir, buffer);
-		safe_unpackstr(&cred_arg->id.pw_shell, buffer);
-		safe_unpack32_array(&cred_arg->id.gids, &u32_ngids, buffer);
-		cred_arg->id.ngids = u32_ngids;
-		safe_unpackstr_array(&cred_arg->id.gr_names, &u32_ngids, buffer);
-		if (u32_ngids && cred_arg->id.ngids != u32_ngids) {
-			error("%s: mismatch on gr_names array, %u != %u",
-			      __func__, u32_ngids, cred_arg->id.ngids);
+
+		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
-		}
+
 		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
 					  cred_arg->step_id.job_id,
 					  protocol_version)

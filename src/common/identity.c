@@ -36,6 +36,7 @@
 
 #include "src/common/identity.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
 extern void pack_identity(identity_t *id, buf_t *buffer,
@@ -53,6 +54,30 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 	packstr(id->pw_shell, buffer);
 	pack32_array(id->gids, id->ngids, buffer);
 	packstr_array(id->gr_names, gr_names_cnt, buffer);
+}
+
+extern int unpack_identity(identity_t *id, buf_t *buffer,
+			   uint16_t protocol_version)
+{
+	uint32_t u32_ngids;
+
+	safe_unpackstr(&id->pw_name, buffer);
+	safe_unpackstr(&id->pw_gecos, buffer);
+	safe_unpackstr(&id->pw_dir, buffer);
+	safe_unpackstr(&id->pw_shell, buffer);
+	safe_unpack32_array(&id->gids, &u32_ngids, buffer);
+	id->ngids = u32_ngids;
+	safe_unpackstr_array(&id->gr_names, &u32_ngids, buffer);
+	if (u32_ngids && (id->ngids != u32_ngids)) {
+		error("%s: mismatch on gr_names array, %u != %u",
+		      __func__, u32_ngids, id->ngids);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 extern void destroy_identity(identity_t *id)
