@@ -35,7 +35,25 @@
 \*****************************************************************************/
 
 #include "src/common/identity.h"
+#include "src/common/pack.h"
 #include "src/common/xmalloc.h"
+
+extern void pack_identity(identity_t *id, buf_t *buffer,
+			  uint16_t protocol_version)
+{
+	/*
+	 * The gr_names array is optional. If the array exists the length
+	 * must match that of the gids array.
+	 */
+	uint32_t gr_names_cnt = (id->gr_names) ? id->ngids : 0;
+
+	packstr(id->pw_name, buffer);
+	packstr(id->pw_gecos, buffer);
+	packstr(id->pw_dir, buffer);
+	packstr(id->pw_shell, buffer);
+	pack32_array(id->gids, id->ngids, buffer);
+	packstr_array(id->gr_names, gr_names_cnt, buffer);
+}
 
 extern void destroy_identity(identity_t *id)
 {

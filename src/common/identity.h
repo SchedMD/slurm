@@ -39,6 +39,8 @@
 
 #include <sys/types.h>
 
+#include "src/common/pack.h"
+
 typedef struct {
 	char *pw_name;		/* user_name as a string */
 	char *pw_gecos;		/* user information */
@@ -48,6 +50,9 @@ typedef struct {
 	gid_t *gids;		/* extended group ids for user */
 	char **gr_names;	/* array of group names matching gids */
 } identity_t;
+
+extern void pack_identity(identity_t *id, buf_t *buffer,
+			  uint16_t protocol_version);
 
 extern void destroy_identity(identity_t *id);
 

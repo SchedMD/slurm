@@ -37,6 +37,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/identity.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
@@ -49,23 +50,13 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		      uint16_t protocol_version)
 {
 	uint32_t tot_core_cnt = 0;
-	/*
-	 * The gr_names array is optional. If the array exists the length
-	 * must match that of the gids array.
-	 */
-	uint32_t gr_names_cnt = (cred->id.gr_names) ? cred->id.ngids : 0;
 	time_t ctime = time(NULL);
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->id.pw_name, buffer);
-		packstr(cred->id.pw_gecos, buffer);
-		packstr(cred->id.pw_dir, buffer);
-		packstr(cred->id.pw_shell, buffer);
-		pack32_array(cred->id.gids, cred->id.ngids, buffer);
-		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
+		pack_identity(&cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -148,12 +139,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->id.pw_name, buffer);
-		packstr(cred->id.pw_gecos, buffer);
-		packstr(cred->id.pw_dir, buffer);
-		packstr(cred->id.pw_shell, buffer);
-		pack32_array(cred->id.gids, cred->id.ngids, buffer);
-		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
+		pack_identity(&cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -232,12 +218,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		packstr(cred->id.pw_name, buffer);
-		packstr(cred->id.pw_gecos, buffer);
-		packstr(cred->id.pw_dir, buffer);
-		packstr(cred->id.pw_shell, buffer);
-		pack32_array(cred->id.gids, cred->id.ngids, buffer);
-		packstr_array(cred->id.gr_names, gr_names_cnt, buffer);
+		pack_identity(&cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
