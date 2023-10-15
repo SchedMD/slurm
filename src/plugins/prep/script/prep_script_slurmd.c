@@ -349,10 +349,10 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_std_out)
 			setenvf(&env, "SLURM_JOB_STDOUT", "%s",
 				cred_arg->job_std_out);
-		if (cred_arg->id.pw_name) {
+		if (cred_arg->id->pw_name) {
 			user_set = true;
 			setenvf(&env, "SLURM_JOB_USER", "%s",
-				cred_arg->id.pw_name);
+				cred_arg->id->pw_name);
 		}
 		slurm_cred_unlock_args(cred);
 	}

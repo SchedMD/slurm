@@ -79,7 +79,7 @@ typedef struct {
 	 * when creating a new credential.  They are defined here so the values
 	 * can be fetched from the credential.
 	 */
-	identity_t id;
+	identity_t *id;
 
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket

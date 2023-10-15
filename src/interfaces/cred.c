@@ -180,47 +180,40 @@ extern int cred_g_fini(void)
 }
 
 /* Fill in user information based on what options are enabled. */
-static int _fill_cred_gids(slurm_cred_arg_t *arg)
+extern identity_t *fetch_identity(uid_t uid, gid_t gid)
 {
+	identity_t *id;
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE];
 	int rc;
 
-	if (!enable_nss_slurm && !enable_send_gids)
-		return SLURM_SUCCESS;
-
-	xassert(arg);
-
-	rc = slurm_getpwuid_r(arg->uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (rc || !result) {
 		if (!result && !rc)
 			error("%s: getpwuid_r(%u): no record found",
-			      __func__, arg->uid);
+			      __func__, uid);
 		else
 			error("%s: getpwuid_r(%u): %s",
-			      __func__, arg->uid, slurm_strerror(rc));
-		return SLURM_ERROR;
+			      __func__, uid, slurm_strerror(rc));
+		return NULL;
 	}
 
-	arg->id.pw_name = xstrdup(result->pw_name);
-	arg->id.pw_gecos = xstrdup(result->pw_gecos);
-	arg->id.pw_dir = xstrdup(result->pw_dir);
-	arg->id.pw_shell = xstrdup(result->pw_shell);
+	id = xmalloc(sizeof(*id));
 
-	arg->id.ngids = group_cache_lookup(arg->uid, arg->gid,
-					   arg->id.pw_name, &arg->id.gids);
+	id->pw_name = xstrdup(result->pw_name);
+	id->pw_gecos = xstrdup(result->pw_gecos);
+	id->pw_dir = xstrdup(result->pw_dir);
+	id->pw_shell = xstrdup(result->pw_shell);
 
-	if (enable_nss_slurm) {
-		if (arg->id.ngids) {
-			arg->id.gr_names = xcalloc(arg->id.ngids,
-						   sizeof(char *));
-			for (int i = 0; i < arg->id.ngids; i++)
-				arg->id.gr_names[i] =
-					gid_to_string(arg->id.gids[i]);
-		}
+	id->ngids = group_cache_lookup(uid, gid, id->pw_name, &id->gids);
+
+	if (enable_nss_slurm && id->ngids) {
+		id->gr_names = xcalloc(id->ngids, sizeof(char *));
+		for (int i = 0; i < id->ngids; i++)
+			id->gr_names[i] = gid_to_string(id->gids[i]);
 	}
 
-	return SLURM_SUCCESS;
+	return id;
 }
 
 extern int cred_expiration(void)
@@ -262,8 +255,9 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 	arg->core_array_size = i;
 
-	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
-		goto fail;
+	if (enable_nss_slurm || enable_send_gids)
+		if (!(arg->id = fetch_identity(arg->uid, arg->gid)))
+			goto fail;
 
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
@@ -275,7 +269,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 
 	/* Release any values populated through _fill_cred_gids(). */
-	destroy_identity(&arg->id);
+	FREE_NULL_IDENTITY(arg->id);
 
 	return cred;
 
@@ -303,7 +297,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	if (!arg)
 		return;
 
-	destroy_identity(&arg->id);
+	FREE_NULL_IDENTITY(arg->id);
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);

@@ -56,7 +56,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		pack_identity(&cred->id, buffer, protocol_version);
+		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -139,7 +139,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		pack_identity(&cred->id, buffer, protocol_version);
+		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,
@@ -218,7 +218,7 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
-		pack_identity(&cred->id, buffer, protocol_version);
+		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
 					   cred->step_id.job_id, false,

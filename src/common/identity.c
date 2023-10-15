@@ -60,10 +60,11 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 	packstr_array(id->gr_names, gr_names_cnt, buffer);
 }
 
-extern int unpack_identity(identity_t *id, buf_t *buffer,
+extern int unpack_identity(identity_t **out, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	uint32_t u32_ngids;
+	identity_t *id = xmalloc(sizeof(*id));
 
 	safe_unpackstr(&id->pw_name, buffer);
 	safe_unpackstr(&id->pw_gecos, buffer);
@@ -78,9 +79,11 @@ extern int unpack_identity(identity_t *id, buf_t *buffer,
 		goto unpack_error;
 	}
 
+	*out = id;
 	return SLURM_SUCCESS;
 
 unpack_error:
+	destroy_identity(id);
 	return SLURM_ERROR;
 }
 
