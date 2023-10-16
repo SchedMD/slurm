@@ -5817,7 +5817,7 @@ static void *_prolog_timer(void *x)
 	ts.tv_sec = now.tv_sec + delay_time;
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(timer_struct->timer_mutex);
-	if (!timer_struct->prolog_fini) {
+	if (!(*timer_struct->prolog_fini)) {
 		rc = pthread_cond_timedwait(timer_struct->timer_cond,
 					    timer_struct->timer_mutex, &ts);
 	}
