@@ -607,6 +607,8 @@ enum job_state_reason {
 	WAIT_RESV_DELETED,	      /* Reservation was deleted */
 	WAIT_RESV_INVALID,
 	FAIL_CONSTRAINTS, /* Constraints cannot currently be satisfied */
+
+	REASON_END, /* end of table */
 };
 
 enum job_acct_types {
