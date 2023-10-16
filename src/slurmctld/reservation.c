@@ -5335,7 +5335,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 resv_select_t *resv_select_ret)
 {
 	slurmctld_resv_t *resv_ptr;
-	resv_select_t resv_select[MAX_BITMAPS] = { 0 };
+	resv_select_t resv_select[MAX_BITMAPS] = {{0}};
 	int max_bitmap = SELECT_ALL_RSVD;
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
