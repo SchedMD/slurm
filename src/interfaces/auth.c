@@ -69,6 +69,7 @@ typedef struct {
 	char *		(*get_host)	(void *cred);
 	int		(*get_data)	(void *cred, char **data,
 					 uint32_t *len);
+	void *		(*get_identity)	(void *cred);
 	int		(*pack)		(void *cred, buf_t *buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(buf_t *buf, uint16_t protocol_version);
@@ -90,6 +91,7 @@ static const char *syms[] = {
 	"auth_p_get_ids",
 	"auth_p_get_host",
 	"auth_p_get_data",
+	"auth_p_get_identity",
 	"auth_p_pack",
 	"auth_p_unpack",
 	"auth_p_thread_config",
@@ -428,6 +430,23 @@ extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 	slurm_rwlock_unlock(&context_lock);
 
 	return rc;
+}
+
+extern void *auth_g_get_identity(void *cred)
+{
+	cred_wrapper_t *wrap = cred;
+	void *id = NULL;
+
+	xassert(g_context_num > 0);
+
+	if (!wrap)
+		return NULL;
+
+	slurm_rwlock_rdlock(&context_lock);
+	id = (*(ops[wrap->index].get_identity))(cred);
+	slurm_rwlock_unlock(&context_lock);
+
+	return id;
 }
 
 extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)

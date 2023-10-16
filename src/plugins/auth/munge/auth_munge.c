@@ -418,6 +418,16 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 	return SLURM_SUCCESS;
 }
 
+extern void *auth_p_get_identity(auth_credential_t *cred)
+{
+	if (!cred) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return NULL;
+	}
+
+	return NULL;
+}
+
 /*
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
