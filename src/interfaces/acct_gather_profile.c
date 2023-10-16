@@ -288,12 +288,11 @@ extern int acct_gather_profile_fini(void)
 		pthread_join(timer_thread_id, NULL);
 	}
 
-	if (!g_context)
-		goto done;
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
 
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
-done:
 	plugin_inited = PLUGIN_NOT_INITED;
 	slurm_mutex_unlock(&g_context_lock);
 
