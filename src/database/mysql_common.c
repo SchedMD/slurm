@@ -55,6 +55,7 @@ static char *table_defs_table = "table_defs_table";
 typedef struct {
 	char *name;
 	char *columns;
+	bool non_unique;
 } db_key_t;
 
 static void _destroy_db_key(void *arg)
@@ -345,6 +346,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			db_key = xmalloc(sizeof(db_key_t));
 			db_key->name = xstrdup(row[2]); // name
 			db_key->columns = xstrdup(row[4]); // column name
+			db_key->non_unique = true;
 			list_append(keys_list, db_key); // don't use list_push
 		}
 	}
