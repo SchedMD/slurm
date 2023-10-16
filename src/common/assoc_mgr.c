@@ -6521,74 +6521,91 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 	return SLURM_SUCCESS;
 }
 
+static int _for_each_assoc_missing_uids(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *object = x;
+	uid_t pw_uid;
+
+	if (!object->user || (object->uid != NO_VAL))
+		return 1;
+
+	if (uid_from_string(object->user, &pw_uid) < 0) {
+		debug2("%s: refresh association couldn't get a uid for user %s",
+		       __func__, object->user);
+	} else {
+		/*
+		 * Since the uid changed the hash will change.
+		 * Remove the assoc from the hash, then add it back.
+		*/
+		_delete_assoc_hash(object);
+		object->uid = pw_uid;
+		_add_assoc_hash(object);
+		debug3("%s: found uid %u for user %s",
+		       __func__, pw_uid, object->user);
+	}
+
+	return 1;
+}
+
+static int _for_each_wckey_missing_uids(void *x, void *arg)
+{
+	slurmdb_wckey_rec_t *object = x;
+	uid_t pw_uid;
+
+	if (!object->user || (object->uid != NO_VAL))
+		return 1;
+
+	if (uid_from_string(object->user, &pw_uid) < 0) {
+		debug2("%s: refresh wckey couldn't get a uid for user %s",
+		       __func__, object->user);
+	} else {
+		object->uid = pw_uid;
+		debug3("%s: found uid %u for user %s",
+		       __func__, pw_uid, object->name);
+	}
+
+	return 1;
+}
+
+static int _for_each_user_missing_uids(void *x, void *arg)
+{
+	slurmdb_user_rec_t *object = x;
+	uid_t pw_uid;
+
+	if (!object->name || (object->uid != NO_VAL))
+		return 1;
+
+	if (uid_from_string(object->name, &pw_uid) < 0) {
+		debug2("%s: refresh user couldn't get uid for user %s",
+		       __func__, object->name);
+	} else {
+		debug3("%s: found uid %u for user %s",
+		       __func__, pw_uid, object->name);
+		object->uid = pw_uid;
+	}
+
+	return 1;
+}
+
 extern int assoc_mgr_set_missing_uids(void)
 {
-	uid_t pw_uid;
-	ListIterator itr = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
 				   .wckey = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_assoc_list) {
-		slurmdb_assoc_rec_t *object = NULL;
-		itr = list_iterator_create(assoc_mgr_assoc_list);
-		while ((object = list_next(itr))) {
-			if (object->user && (object->uid == NO_VAL)) {
-				if (uid_from_string(
-					    object->user, &pw_uid) < 0) {
-					debug2("refresh association "
-					       "couldn't get a uid for user %s",
-					       object->user);
-				} else {
-					/* Since the uid changed the
-					   hash as well will change.  Remove
-					   the assoc from the hash before the
-					   change or you won't find it.
-					*/
-					_delete_assoc_hash(object);
-
-					object->uid = pw_uid;
-					_add_assoc_hash(object);
-				}
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each(assoc_mgr_assoc_list,
+			      _for_each_assoc_missing_uids, NULL);
 	}
 
 	if (assoc_mgr_wckey_list) {
-		slurmdb_wckey_rec_t *object = NULL;
-		itr = list_iterator_create(assoc_mgr_wckey_list);
-		while ((object = list_next(itr))) {
-			if (object->user && (object->uid == NO_VAL)) {
-				if (uid_from_string(
-					    object->user, &pw_uid) < 0) {
-					debug2("refresh wckey "
-					       "couldn't get a uid for user %s",
-					       object->user);
-				} else
-					object->uid = pw_uid;
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each(assoc_mgr_wckey_list,
+			      _for_each_wckey_missing_uids, NULL);
 	}
 
 	if (assoc_mgr_user_list) {
-		slurmdb_user_rec_t *object = NULL;
-		itr = list_iterator_create(assoc_mgr_user_list);
-		while ((object = list_next(itr))) {
-			if (object->name && (object->uid == NO_VAL)) {
-				if (uid_from_string(
-					    object->name, &pw_uid) < 0) {
-					debug3("%s: refresh user couldn't get uid for user %s",
-					       __func__, object->name);
-				} else {
-					debug5("%s: found uid %u for user %s",
-					       __func__, pw_uid, object->name);
-					object->uid = pw_uid;
-				}
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each(assoc_mgr_user_list,
+			      _for_each_user_missing_uids, NULL);
 	}
 	assoc_mgr_unlock(&locks);
 
