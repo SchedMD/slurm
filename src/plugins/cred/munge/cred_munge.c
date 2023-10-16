@@ -55,6 +55,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/cred.h"
 #include "src/plugins/cred/common/cred_common.h"
 
 #define RETRY_COUNT		20
@@ -351,7 +352,33 @@ extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 
 extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
 {
-	return cred_unpack(cred, buf, protocol_version);
+	slurm_cred_t *credential = NULL;
+	int rc = SLURM_ERROR;
+
+	if (!(credential = cred_unpack_with_signature(buf, protocol_version)))
+		goto unpack_error;
+
+	/*
+	 * Using the saved position, verify the credential.
+	 * This avoids needing to re-pack the entire thing just to
+	 * cross-check that the signature matches up later.
+	 * (Only done in slurmd.)
+	 */
+	if (credential->signature && running_in_slurmd()) {
+		if ((rc = cred_p_verify_sign(get_buf_data(credential->buffer),
+					     get_buf_offset(credential->buffer),
+					     credential->signature)))
+			goto unpack_error;
+
+		credential->verified = true;
+	}
+
+	*cred = credential;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_cred_destroy(credential);
+	return rc;
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

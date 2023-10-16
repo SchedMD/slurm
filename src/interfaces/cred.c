@@ -118,7 +118,6 @@ static bool enable_send_gids = true;
  */
 
 static int _cred_sign(slurm_cred_t *cred);
-static void _cred_verify_signature(slurm_cred_t *cred);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void)
@@ -658,41 +657,9 @@ extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
 	slurm_cred_t *credential = NULL;
-	uint32_t cred_start, cred_len;
-
-	xassert(buffer != NULL);
-
-	/* Save current buffer position here, use it later to verify cred. */
-	cred_start = get_buf_offset(buffer);
 
 	if ((*(ops.cred_unpack))((void **) &credential, buffer, protocol_version))
 		goto unpack_error;
-
-	cred_len = get_buf_offset(buffer) - cred_start;
-	/* signature must come after the end of the signed portion */
-	safe_unpackstr(&credential->signature, buffer);
-
-	/*
-	 * Both srun and slurmd will unpack the credential just to pack it
-	 * again. Hold onto a buffer with the pre-packed representation.
-	 */
-	if (!running_in_slurmstepd()) {
-		credential->buffer = init_buf(cred_len);
-		credential->buf_version = protocol_version;
-		memcpy(credential->buffer->head,
-		       get_buf_data(buffer) + cred_start,
-		       cred_len);
-		credential->buffer->processed = cred_len;
-	}
-
-	/*
-	 * Using the saved position, verify the credential.
-	 * This avoids needing to re-pack the entire thing just to
-	 * cross-check that the signature matches up later.
-	 * (Only done in slurmd.)
-	 */
-	if (credential->signature && running_in_slurmd())
-		_cred_verify_signature(credential);
 
 	return credential;
 
@@ -735,23 +702,6 @@ static int _cred_sign(slurm_cred_t *cred)
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
-}
-
-static void _cred_verify_signature(slurm_cred_t *cred)
-{
-	int rc;
-	void *start = get_buf_data(cred->buffer);
-	uint32_t len = get_buf_offset(cred->buffer);
-
-	rc = (*(ops.cred_verify_sign))(start, len, cred->signature);
-
-	if (rc) {
-		error("Credential signature check: %s",
-		      (*(ops.cred_str_error))(rc));
-		return;
-	}
-
-	cred->verified = true;
 }
 
 /*****************************************************************************\

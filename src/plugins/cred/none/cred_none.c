@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/plugins/cred/common/cred_common.h"
 
@@ -125,7 +126,15 @@ extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 
 extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
 {
-	return cred_unpack(cred, buf, protocol_version);
+	slurm_cred_t *credential = NULL;
+
+	if (!(credential = cred_unpack_with_signature(buf, protocol_version)))
+		return SLURM_ERROR;
+
+	/* why bother checking? */
+	credential->verified = true;
+	*cred = credential;
+	return SLURM_SUCCESS;
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

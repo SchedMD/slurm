@@ -646,3 +646,39 @@ unpack_error:
 	slurm_cred_destroy(cred);
 	return SLURM_ERROR;
 }
+
+extern slurm_cred_t *cred_unpack_with_signature(buf_t *buffer,
+						uint16_t protocol_version)
+{
+	slurm_cred_t *credential = NULL;
+	uint32_t cred_start, cred_len;
+
+	cred_start = get_buf_offset(buffer);
+
+	if ((cred_unpack((void **) &credential, buffer, protocol_version)))
+		goto unpack_error;
+
+	cred_len = get_buf_offset(buffer) - cred_start;
+
+	/* signature follows the main buffer */
+	safe_unpackstr(&credential->signature, buffer);
+
+	/*
+	 * Both srun and slurmd will unpack the credential just to pack it
+	 * again. Hold onto a buffer with the pre-packed representation.
+	 */
+	if (!running_in_slurmstepd()) {
+		credential->buffer = init_buf(cred_len);
+		credential->buf_version = protocol_version;
+		memcpy(credential->buffer->head,
+		       get_buf_data(buffer) + cred_start,
+		       cred_len);
+		credential->buffer->processed = cred_len;
+	}
+
+	return credential;
+
+unpack_error:
+	slurm_cred_destroy(credential);
+	return NULL;
+}
