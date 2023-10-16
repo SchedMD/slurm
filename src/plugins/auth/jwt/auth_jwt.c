@@ -535,6 +535,16 @@ extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
 	return SLURM_SUCCESS;
 }
 
+extern void *auth_p_get_identity(auth_token_t *cred)
+{
+	if (!cred) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return NULL;
+	}
+
+	return NULL;
+}
+
 extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
 		       uint16_t protocol_version)
 {
