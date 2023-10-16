@@ -252,6 +252,8 @@ extern int acct_gather_profile_fini(void)
 {
 	int rc = SLURM_SUCCESS, i;
 
+	acct_gather_profile_endpoll();
+
 	/*
 	 * If the plugin is a NOOP, do the cleanup of jobacct gather anyways
 	 * since other plugins might have been inited in acct_gather_conf_init()
