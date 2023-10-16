@@ -4586,9 +4586,11 @@ static int PARSE_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 
 	return SLURM_SUCCESS;
 cleanup:
-	for (int i = 0; fargs.array[i]; i++)
-		xfree(fargs.array[i]);
-	xfree(fargs.array);
+	if (fargs.array) {
+		for (int i = 0; fargs.array[i]; i++)
+			xfree(fargs.array[i]);
+		xfree(fargs.array);
+	}
 
 	return ESLURM_DATA_CONV_FAILED;
 }
