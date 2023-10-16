@@ -177,15 +177,19 @@ static char *_convert_to_id(char *name, bool gid)
  * value IN - numeric value
  * RET true if "tok" is a valid number
  */
-static bool _is_valid_number(char *tok, unsigned long long int *value)
+static bool _is_valid_number(char *tok, uint64_t *value)
 {
-	unsigned long long int tmp_val;
+	uint64_t tmp_val = 1;
 	uint64_t mult;
 	char *end_ptr = NULL;
 
-	tmp_val = strtoull(tok, &end_ptr, 10);
-	if (tmp_val == ULLONG_MAX)
+	if (isdigit(tok[0])) {
+		tmp_val = strtoull(tok, &end_ptr, 10);
+		if (tmp_val == ULLONG_MAX)
+			return false;
+	} else
 		return false;
+
 	if ((mult = suffix_mult(end_ptr)) == NO_VAL64)
 		return false;
 	tmp_val *= mult;
@@ -1680,6 +1684,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->groups);
 	if (res_free_flags & RESV_FREE_STR_NODES)
 		xfree(msg->node_list);
+	if (res_free_flags & RESV_FREE_STR_TRES)
+		xfree(msg->tres_str);
 }
 
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
@@ -6870,12 +6876,13 @@ extern int slurm_get_rep_count_inx(
 }
 
 extern int slurm_get_next_tres(
-	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr)
 {
-	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
-	int rc = SLURM_SUCCESS, tres_type_len;
-	unsigned long long int value = 0;
+	char *comma, *sep, *name = NULL, *type = NULL;
+	int rc = SLURM_SUCCESS, tres_type_len = 0;
+	uint64_t value = 0;
+	bool is_gres = false;
 
 	xassert(tres_type);
 	xassert(cnt);
@@ -6889,23 +6896,63 @@ extern int slurm_get_next_tres(
 		*save_ptr = in_val;
 	}
 
-	tres_type_len = strlen(tres_type);
+	if (*tres_type)
+		tres_type_len = strlen(*tres_type);
 
 next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		*save_ptr = NULL;
 		goto fini;
 	}
 
-	if (!(sep = xstrstr(*save_ptr, tres_type))) {
-		debug2("%s is not a %s", *save_ptr, tres_type);
-		xfree(name);
+	if (*tres_type) {
+		if (!(sep = xstrstr(*save_ptr, *tres_type))) {
+			debug2("%s is not a %s", *save_ptr, *tres_type);
+			xfree(name);
+			*save_ptr = NULL;
+			*name_ptr = NULL;
+			goto fini;
+		} else {
+			sep += tres_type_len; /* strlen "gres" */
+			*save_ptr = sep;
+		}
+	} else {
+		char extra = '\0';
+		comma = strchr(*save_ptr, ',');
+
+		/*
+		 * This is original memory so anything we change here needs to
+		 * be put back to the way it was before we starting messing with
+		 * it.
+		 */
+		if (comma)
+			comma[0] = '\0';
+
+		if ((sep = strchr(*save_ptr, '/')) ||
+		    (sep = strchr(*save_ptr, ':')) ||
+		    (sep = strchr(*save_ptr, '='))) {
+			extra = sep[0];
+			sep[0] = '\0';
+		}
+
+		*tres_type = xstrdup(*save_ptr);
+
+		if (comma)
+			comma[0] = ',';
+		if (sep) {
+			sep[0] = extra;
+			*save_ptr = sep;
+		} else
+			*save_ptr += strlen(*tres_type);
+	}
+
+	if (!*tres_type) {
 		*save_ptr = NULL;
 		*name_ptr = NULL;
 		goto fini;
-	} else {
-		sep += tres_type_len; /* strlen "gres:" */
-		*save_ptr = sep;
 	}
+
+	if (*save_ptr[0] == '/')
+		(*save_ptr)++;
 
 	name = xstrdup(*save_ptr);
 	comma = strchr(name, ',');
@@ -6918,55 +6965,68 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 
 	if (name[0] == '\0') {
 		/* Nothing but a comma */
+		if (!tres_type_len)
+			xfree(*tres_type);
 		xfree(name);
 		goto next;
 	}
 
-	sep = strchr(name, ':');
-	if (sep) {
+	is_gres = !xstrcasecmp(*tres_type, "gres");
+
+	/* First check to see if the last part is a count or not */
+	if ((sep = strrchr(name, '=')) ||
+	    (sep = strrchr(name, ':'))) {
+		bool equals = (sep[0] == '=') ? true : false, valid_num;
 		sep[0] = '\0';
 		sep++;
-		sep2 = strchr(sep, ':');
-		if (sep2) {
-			sep2[0] = '\0';
-			sep2++;
-		}
-	} else {
-		sep2 = NULL;
-	}
-
-	if (sep2) {		/* Two colons */
-		/* We have both type and count */
-		if ((sep[0] == '\0') || (sep2[0] == '\0')) {
-			/* Bad format (e.g. "gpu:tesla:" or "gpu::1") */
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		type = xstrdup(sep);
-		if (!_is_valid_number(sep2, &value)) {
-			debug("%s: Invalid count value TRES %s%s:%s:%s", __func__,
-			      tres_type, name, type, sep2);
-			rc = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-	} else if (sep) {	/* One colon */
 		if (sep[0] == '\0') {
 			/* Bad format (e.g. "gpu:") */
 			rc = ESLURM_INVALID_TRES;
 			goto fini;
-		} else if (_is_valid_number(sep, &value)) {
-			/* We have count, but no type */
-			type = NULL;
-		} else {
+		}
+
+		valid_num = _is_valid_number(sep, &value);
+
+		if (!valid_num) {
+			if (equals) {
+				rc = ESLURM_INVALID_TRES;
+				goto fini;
+			}
 			/* We have type with implicit count of 1 */
 			type = xstrdup(sep);
 			value = 1;
 		}
-	} else {		/* No colon */
-		/* We have no type and implicit count of 1 */
-		type = NULL;
+	} else if (_is_valid_number(name, &value)) {
+		xfree(name); /* we got a valid number, we don't have a name */
+		goto fini;
+	} else
 		value = 1;
+
+	if ((sep = strchr(name, ':'))) {
+		sep[0] = '\0';
+		sep++;
+
+		/*
+		 * If we already have a type we know it was 'supposed' to be a
+		 * count.
+		 */
+		if (type) {
+			xfree(type);
+			rc = ESLURM_INVALID_TRES;
+			goto fini;
+		}
+		type = xstrdup(sep);
 	}
+
+	/* Only 'gres' tres have 'types' */
+	if (type && !is_gres) {
+		error("TRES '%s' can't have a type (%s:%s)",
+		      *tres_type, name, type);
+		rc = ESLURM_INVALID_TRES;
+		xfree(type);
+		goto fini;
+	}
+
 	if (value == 0) {
 		xfree(name);
 		xfree(type);
@@ -6979,6 +7039,8 @@ fini:	if (rc != SLURM_SUCCESS) {
 			info("%s: Invalid TRES job specification %s", __func__,
 			     in_val);
 		}
+		if (!tres_type_len)
+			xfree(*tres_type);
 		xfree(type);
 		xfree(name);
 		*type_ptr = NULL;
@@ -6986,10 +7048,61 @@ fini:	if (rc != SLURM_SUCCESS) {
 	} else {
 		*cnt = value;
 		*type_ptr = type;
+		if (name && name[0] == '\0')
+			xfree(name);
 		*name_ptr = name;
 	}
 
 	return rc;
+}
+
+extern char *slurm_get_tres_sub_string(
+	char *full_tres_str, char *tres_type, uint32_t num_tasks,
+	bool include_tres_type, bool include_type)
+{
+	char *sub_tres = NULL, *sub_tres_pos = NULL;
+	char *name, *type, *save_ptr = NULL;
+	uint64_t cnt = 0;
+	bool free_tres_type = false;
+
+	if (!tres_type)
+		free_tres_type = true;
+
+	while ((slurm_get_next_tres(&tres_type,
+				    full_tres_str,
+				    &name, &type,
+				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
+	       save_ptr) {
+		if (!name) {
+			error("%s doesn't have a name! %s",
+			      tres_type, full_tres_str);
+			xfree(type);
+			if (free_tres_type)
+				xfree(tres_type);
+			break;
+		}
+
+		if (num_tasks != NO_VAL)
+			cnt *= num_tasks;
+
+		if (sub_tres)
+			xstrcatat(sub_tres, &sub_tres_pos, ",");
+		if (include_tres_type)
+			xstrfmtcatat(sub_tres, &sub_tres_pos, "%s/", tres_type);
+		xstrfmtcatat(sub_tres, &sub_tres_pos, "%s", name);
+		if (include_type && type)
+			xstrfmtcatat(sub_tres, &sub_tres_pos, ":%s", type);
+		xstrfmtcatat(sub_tres, &sub_tres_pos, "=%"PRIu64, cnt);
+		if (free_tres_type)
+			xfree(tres_type);
+		xfree(name);
+		xfree(type);
+	}
+
+	if (free_tres_type)
+		xfree(tres_type);
+
+	return sub_tres;
 }
 
 extern uint32_t slurm_select_cr_type(void)
@@ -7061,4 +7174,49 @@ char *bf_exit2string(uint16_t opcode)
 	default:
 		return "unknown";
 	}
+}
+
+extern char *slurm_watts_to_str(uint32_t watts)
+{
+	char *str = NULL;
+
+	if ((watts == NO_VAL) || (watts == 0))
+		xstrcat(str, "n/a");
+	else if (watts == INFINITE)
+		xstrcat(str, "INFINITE");
+	else if ((watts % 1000000) == 0)
+		xstrfmtcat(str, "%uM", watts / 1000000);
+	else if ((watts % 1000) == 0)
+		xstrfmtcat(str, "%uK", watts / 1000);
+	else
+		xstrfmtcat(str, "%u", watts);
+
+	return str;
+}
+
+extern uint32_t slurm_watts_str_to_int(char *watts_str,
+				       char **err_msg)
+{
+	uint32_t resv_watts = NO_VAL;
+	char *end_ptr = NULL;
+
+	if (!xstrcasecmp(watts_str, "n/a") || !xstrcasecmp(watts_str, "none"))
+		return 0;
+	if (!xstrcasecmp(watts_str, "INFINITE")) {
+		resv_watts = INFINITE;
+		return resv_watts;
+	}
+	resv_watts = (uint32_t)strtoul(watts_str, &end_ptr, 10);
+	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+		resv_watts *= 1000;
+	} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+		resv_watts *= 1000000;
+	} else if (end_ptr[0] != '\0') {
+		if (err_msg)
+			xstrfmtcat(*err_msg, "Invalid Watts value: %s",
+				   watts_str);
+		resv_watts = NO_VAL;
+		return resv_watts;
+	}
+	return resv_watts;
 }

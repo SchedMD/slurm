@@ -2202,6 +2202,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		packstr(msg->burst_buffer, buffer);
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
+		packstr(msg->tres_str, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		uint32_t *core_cnt = NULL, *node_cnt = NULL;
 		packstr(msg->name,         buffer);
@@ -2313,6 +2314,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
 		safe_unpackstr(&tmp_ptr->groups, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
+		safe_unpackstr(&tmp_ptr->tres_str, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		uint32_t *core_cnt, *node_cnt;
 		safe_unpackstr(&tmp_ptr->name, buffer);
@@ -6573,13 +6575,31 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
 
 		safe_unpackstr(&job_desc_ptr->cpus_per_tres, buffer);
+		xstrsubstituteall(job_desc_ptr->cpus_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->mem_per_tres, buffer);
+		xstrsubstituteall(job_desc_ptr->mem_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_bind, buffer);
 		safe_unpackstr(&job_desc_ptr->tres_freq, buffer);
 		safe_unpackstr(&job_desc_ptr->tres_per_job, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_job,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_node, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_node,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_socket, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_socket,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_task, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_task,
+				  "gres:", "gres/");
+
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
@@ -6741,13 +6761,31 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
 
 		safe_unpackstr(&job_desc_ptr->cpus_per_tres, buffer);
+		xstrsubstituteall(job_desc_ptr->cpus_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->mem_per_tres, buffer);
+		xstrsubstituteall(job_desc_ptr->mem_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_bind, buffer);
 		safe_unpackstr(&job_desc_ptr->tres_freq, buffer);
 		safe_unpackstr(&job_desc_ptr->tres_per_job, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_job,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_node, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_node,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_socket, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_socket,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_desc_ptr->tres_per_task, buffer);
+		xstrsubstituteall(job_desc_ptr->tres_per_task,
+				  "gres:", "gres/");
+
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;

@@ -244,6 +244,9 @@ documents those changes that are of interest to users and administrators.
     never completes due to a node failure.
  -- Remove redundant database indexes.
  -- Add database index to suspend table to speed up archive/purges.
+ -- When requesting --tres-per-task alter incorrect request for TRES,
+    it should be TRESType/TRESName not TRESType:TRESName.
+ -- Make it so reservations can reserve GRES.
 
 * Changes in Slurm 23.02.7
 ==========================

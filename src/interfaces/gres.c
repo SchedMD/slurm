@@ -98,6 +98,8 @@ typedef cpuset_t cpu_set_t;
 #define MAX_GRES_BITMAP 1024
 
 strong_alias(gres_find_id, slurm_gres_find_id);
+strong_alias(gres_find_job_by_key_exact_type,
+	     slurm_gres_find_job_by_key_exact_type);
 strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
@@ -267,7 +269,6 @@ static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      int gres_name_colon_len);
 static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
-static void	_job_state_delete(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
@@ -5180,7 +5181,7 @@ extern uint64_t gres_node_config_cnt(List gres_list, char *name)
 	return count;
 }
 
-static void _job_state_delete(gres_job_state_t *gres_js)
+extern void gres_job_state_delete(gres_job_state_t *gres_js)
 {
 	int i;
 
@@ -5224,7 +5225,7 @@ extern void gres_job_list_delete(void *list_element)
 
 	gres_state_job = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
-	_job_state_delete(gres_state_job->gres_data);
+	gres_job_state_delete(gres_state_job->gres_data);
 	gres_state_job->gres_data = NULL;
 	_gres_state_delete_members(gres_state_job);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -5514,14 +5515,14 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
 			  uint64_t *cnt, char **save_ptr)
 {
-	char *name = NULL, *type = NULL;
+	char *name = NULL, *type = NULL, *tres_type = "gres";
 	int i, rc = SLURM_SUCCESS;
 	uint64_t value = 0;
 
 	xassert(cnt);
 	xassert(save_ptr);
 
-	rc = slurm_get_next_tres("gres:", in_val, &name, &type,
+	rc = slurm_get_next_tres(&tres_type, in_val, &name, &type,
 				 &value, save_ptr);
 	if (name) {
 		for (i = 0; i < gres_context_cnt; i++) {
@@ -5979,7 +5980,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		 */
 		uint32_t gpus = *num_tasks / *ntasks_per_tres;
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gres:gpu:%u", gpus);
+		xstrfmtcat(gres, "gres/gpu:%u", gpus);
 		in_val = gres;
 		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
 							    *gres_list,
@@ -6686,7 +6687,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			 */
 			error("%s: no plugin configured to unpack data type %u from job %u. This is likely due to a difference in the GresTypes configured in slurm.conf on different cluster nodes.",
 			      __func__, plugin_id, job_id);
-			_job_state_delete(gres_js);
+			gres_job_state_delete(gres_js);
 			continue;
 		}
 
@@ -6702,7 +6703,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 unpack_error:
 	error("%s: unpack error from job %u", __func__, job_id);
 	if (gres_js)
-		_job_state_delete(gres_js);
+		gres_job_state_delete(gres_js);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
@@ -8037,7 +8038,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 		uint32_t gpus = *num_tasks / ntasks_per_tres;
 		/* For now, do type-less GPUs */
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gres:gpu:%u", gpus);
+		xstrfmtcat(gres, "gres/gpu:%u", gpus);
 		in_val = gres;
 		if (*num_tasks != ntasks_per_tres * gpus) {
 			log_flag(GRES, "%s: -n/--ntasks %u is not a multiple of --ntasks-per-gpu=%u",
@@ -10104,9 +10105,9 @@ extern char *gres_prepend_tres_type(const char *gres_str)
 	char *output = NULL;
 
 	if (gres_str) {
-		output = xstrdup_printf("gres:%s", gres_str);
-		xstrsubstituteall(output, ",", ",gres:");
-		xstrsubstituteall(output, "gres:gres:", "gres:");
+		output = xstrdup_printf("gres/%s", gres_str);
+		xstrsubstituteall(output, ",", ",gres/");
+		xstrsubstituteall(output, "gres/gres/", "gres/");
 	}
 	return output;
 }

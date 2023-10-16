@@ -37,7 +37,6 @@
 \*****************************************************************************/
 
 #include "src/common/proc_args.h"
-#include "src/common/state_control.h"
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
@@ -271,20 +270,42 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			resv_msg_ptr->partition = val;
 
 		} else if (xstrncasecmp(tag, "TRES", MAX(taglen, 1)) == 0) {
-			if (state_control_parse_resv_tres(val, resv_msg_ptr,
-							  res_free_flags,
-							  &err_msg)
-			    == SLURM_ERROR) {
-				error("%s", err_msg);
-				xfree(err_msg);
+			if (resv_msg_ptr->tres_str) {
 				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			} else if (plus_minus) {
+				exit_code = 1;
+				error("Parameter %s specified a plus or minus.  This is not allowed.",
+				      argv[i]);
 				return SLURM_ERROR;
 			}
 
+			resv_msg_ptr->tres_str = val;
+		} else if (xstrncasecmp(tag, "TRESPerNode",
+					MAX(taglen, 5)) == 0) {
+			if (resv_msg_ptr->tres_str) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			} else if (plus_minus) {
+				exit_code = 1;
+				error("Parameter %s specified a plus or minus.  This is not allowed.",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			resv_msg_ptr->tres_str = val;
+			if (resv_msg_ptr->flags == NO_VAL64)
+				resv_msg_ptr->flags = RESERVE_TRES_PER_NODE;
+			else
+				resv_msg_ptr->flags |= RESERVE_TRES_PER_NODE;
+			*res_free_flags |= RESV_FREE_STR_TRES;
 		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			if (state_control_parse_resv_watts(val, resv_msg_ptr,
-							   &err_msg)
-			    == SLURM_ERROR) {
+			resv_msg_ptr->resv_watts =
+				slurm_watts_str_to_int(val, &err_msg);
+			if (err_msg) {
 				error("%s", err_msg);
 				xfree(err_msg);
 				exit_code = 1;
@@ -435,10 +456,11 @@ scontrol_create_res(int argc, char **argv)
 	    (!resv_msg.node_cnt || (resv_msg.node_cnt == NO_VAL)) &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
+	    (resv_msg.tres_str  == NULL || resv_msg.tres_str[0]  == '\0') &&
 	    (resv_msg.resv_watts == NO_VAL)) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
-			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
+			error("CoreCnt, Nodes, NodeCnt, TRES or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
 		if (resv_msg.flags == NO_VAL64)

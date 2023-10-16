@@ -7295,8 +7295,6 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 				 job_record_t *job_ptr)
 {
 	char *lic_req = NULL, *lic_req_pos = NULL;
-	char *sep = "";
-	char *tres_type = "license:";
 	uint32_t num_tasks = job_desc->num_tasks;
 	char *tres_per_task = job_desc->tres_per_task;
 
@@ -7325,32 +7323,8 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 		if (!lic_req)
 			lic_req = xstrdup("");
 	} else if (tres_per_task) {
-		char *name = NULL, *type = NULL, *save_ptr = NULL;
-		uint64_t cnt = 0;
-
-		while ((slurm_get_next_tres(tres_type,
-					    tres_per_task,
-					    &name, &type,
-					    &cnt, &save_ptr) != SLURM_ERROR) &&
-		       save_ptr) {
-			if (type) {
-				error("licenses don't have types (%s:%s), throwing away",
-				      name, type);
-				xfree(type);
-			}
-			if (!name) {
-				error("license doesn't have a name! %s",
-				      tres_per_task);
-				break;
-			}
-			if (lic_req)
-				sep = ",";
-			if (num_tasks != NO_VAL)
-				cnt *= num_tasks;
-			xstrfmtcatat(lic_req, &lic_req_pos, "%s%s:%"PRIu64,
-				     sep, name, cnt);
-			xfree(name);
-		}
+		lic_req = slurm_get_tres_sub_string(
+			tres_per_task, "license", num_tasks, false, false);
 	}
 
 	xfree(job_desc->licenses_tot);
@@ -7551,15 +7525,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		     &gres_list)))
 		goto cleanup_fail;
 
-	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
+	if (!valid_tres_cnt(job_desc->cpus_per_tres, 0) ||
+	    !valid_tres_cnt(job_desc->mem_per_tres, 0) ||
 	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
 	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    !valid_tres_cnt(job_desc->tres_per_job)	||
-	    !valid_tres_cnt(job_desc->tres_per_node)	||
-	    !valid_tres_cnt(job_desc->tres_per_socket)	||
-	    !valid_tres_cnt(job_desc->tres_per_task)) {
+	    !valid_tres_cnt(job_desc->mem_per_tres, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_job, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_node, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_socket, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_task, 0)) {
 		error_code = ESLURM_INVALID_TRES;
 		goto cleanup_fail;
 	}
@@ -9035,8 +9009,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		mem_ratio = (job_mem_limit + sys_mem_limit - 1);
-		mem_ratio /= sys_mem_limit;
+		mem_ratio = ROUNDUP(job_mem_limit, sys_mem_limit);
 		debug("JobId=%u: increasing cpus_per_task and decreasing mem_per_cpu by factor of %"PRIu64" based upon mem_per_cpu limits",
 		      job_desc_msg->job_id, mem_ratio);
 		if (job_desc_msg->cpus_per_task == NO_VAL16)
@@ -9145,99 +9118,55 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 
 /*
  * Validate TRES specification of the form:
- * "name=tres_type:name:[#|type:#]"
- * For example: "cpu:2,gres:gpu:kepler:2,gres:craynetwork:1"
+ * "name=tres_type/name|count[:#|type:#]"
+ * For example: "cpu:2,gres/gpu:kepler:2,gres/craynetwork:1"
  */
-extern bool valid_tres_cnt(char *tres)
+extern bool valid_tres_cnt(char *tres, bool gres_tres_enforce)
 {
-	char *end_ptr = NULL, *value = NULL, *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-	uint64_t count = 1;
+	char *tres_type = NULL, *name = NULL, *type = NULL, *save_ptr = NULL;
+	int rc = true, pos = -1;
+	uint64_t cnt = 0;
 
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		int pos;
-
-		/* First check to see if the last part is a count or not */
-		if ((value = strrchr(tok, ':'))) {
-			if (!value[1]) {
-				rc = false;
-				break;
-			}
-			if (isdigit(value[1])) {
-				count = strtoull(value + 1, &end_ptr, 10);
-
-				if (count == ULLONG_MAX) {
-					rc = false;
-					break;
-				}
-
-				/*
-				 * Now check that any count suffic is valid.
-				 */
-				if (suffix_mult(end_ptr) == NO_VAL64) {
-					rc = false;
-					break;
-				}
-			} else /* This isn't a value so set it to NULL */
-				value = NULL;
+	while (((rc = slurm_get_next_tres(&tres_type,
+					  tres,
+					  &name, &type,
+					  &cnt, &save_ptr)) == SLURM_SUCCESS) &&
+	       save_ptr) {
+		/*
+		 * This is here to handle the old craynetwork:0
+		 * Any gres that is formatted correctly and has a count
+		 * of 0 is valid to be thrown away but allow job to
+		 * allocate.
+		 */
+		if (gres_tres_enforce && type) {
+			xstrfmtcat(name, ":%s", type);
 		}
-
-		/* Now check to see what the first part is */
-		if (!(sep = strchr(tok, ':'))) {
-			rc = false;
-			break;
+		xfree(type);
+		if (cnt == 0) {
+			xfree(tres_type);
+			xfree(name);
+			continue;
 		}
-
-		/* This means there was a sep */
-		if (value != sep) {
-			sep[0] = '\0';
-			sep++;
-		} else
-			sep = NULL;
-
-		/* Now we zero out value since we checked against sep */
-		if (value) {
-			value[0] = '\0';
-			/*
-			 * This is here to handle the old craynetwork:0
-			 * Any gres that is formatted correctly and has a count
-			 * of 0 is valid to be thrown away but allow job to
-			 * allocate.
-			 */
-			if (count == 0)
-				goto next;
-		}
-
 		/* gres doesn't have to be a TRES to be valid */
-		if (sep && !xstrcmp(tok, "gres")) {
-			/* We only want the first part of a gres for this */
-			if ((tok = strchr(sep, ':')))
-				tok[0] = '\0';
-			pos = valid_gres_name(sep) ? 1 : -1;
+		if (!gres_tres_enforce && !xstrcmp(tres_type, "gres")) {
+			pos = valid_gres_name(name) ? 1 : -1;
 		} else {
 			slurmdb_tres_rec_t tres_rec = {
-				.type = tok,
-				.name = sep,
+				.type = tres_type,
+				.name = name,
 			};
-
 			pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 		}
+		xfree(tres_type);
+		xfree(name);
 
 		if (pos == -1) {
-			rc = false;
+			rc = SLURM_ERROR;
 			break;
 		}
-	next:
-		tok = strtok_r(NULL, ",", &save_ptr);
 	}
-	xfree(tmp);
 
-	return rc;
+	return (rc == SLURM_SUCCESS) ? true : false;
 }
 
 /*
@@ -11314,13 +11243,10 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
-				min_cores = detail_ptr->num_tasks +
-					detail_ptr->mc_ptr->ntasks_per_core - 1;
-				min_cores /=
-					detail_ptr->mc_ptr->ntasks_per_core;
-
-				min_nodes = min_cores + max_core_cnt - 1;
-				min_nodes /= max_core_cnt;
+				min_cores = ROUNDUP(detail_ptr->num_tasks,
+						    detail_ptr->mc_ptr->
+						    ntasks_per_core);
+				min_nodes = ROUNDUP(min_cores, max_core_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				pack32(min_nodes, buffer);
@@ -11329,9 +11255,9 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count only */
 				uint32_t min_nodes;
 				uint32_t max_nodes;
-				min_nodes = detail_ptr->num_tasks +
-					max_cpu_cnt - 1;
-				min_nodes /= max_cpu_cnt;
+
+				min_nodes = ROUNDUP(detail_ptr->num_tasks,
+						    max_cpu_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				max_nodes = MAX(min_nodes,
@@ -11478,24 +11404,21 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
-				min_cores = detail_ptr->num_tasks +
-					detail_ptr->mc_ptr->ntasks_per_core - 1;
-				min_cores /=
-					detail_ptr->mc_ptr->ntasks_per_core;
-
-				min_nodes = min_cores + max_core_cnt - 1;
-				min_nodes /= max_core_cnt;
+				min_cores = ROUNDUP(detail_ptr->num_tasks,
+						    detail_ptr->mc_ptr->
+						    ntasks_per_core);
+				min_nodes = ROUNDUP(min_cores, max_core_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			} else {
 				/* min_nodes based upon task count only */
-				uint32_t min_nodes;
+				uint32_t min_nodes =
+					ROUNDUP(detail_ptr->num_tasks,
+						max_cpu_cnt);
 				uint32_t max_nodes;
-				min_nodes = detail_ptr->num_tasks +
-					max_cpu_cnt - 1;
-				min_nodes /= max_cpu_cnt;
+
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				max_nodes = MAX(min_nodes,
@@ -13022,7 +12945,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->licenses && !job_desc->licenses[0])
 		job_desc->bitflags |= RESET_LIC_JOB;
 	if (job_desc->tres_per_task &&
-	    !xstrcasestr(job_desc->tres_per_task, "license:"))
+	    !xstrcasestr(job_desc->tres_per_task, "license/"))
 		job_desc->bitflags |= RESET_LIC_TASK;
 
 	_set_tot_license_req(job_desc, job_ptr);
@@ -14672,7 +14595,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->cpus_per_tres) {
-		if (!valid_tres_cnt(job_desc->cpus_per_tres)) {
+		if (!valid_tres_cnt(job_desc->cpus_per_tres, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14689,7 +14612,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->mem_per_tres) {
-		if (!valid_tres_cnt(job_desc->mem_per_tres)) {
+		if (!valid_tres_cnt(job_desc->mem_per_tres, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14738,7 +14661,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_job) {
-		if (!valid_tres_cnt(job_desc->tres_per_job)) {
+		if (!valid_tres_cnt(job_desc->tres_per_job, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14754,7 +14677,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 	if (job_desc->tres_per_node) {
-		if (!valid_tres_cnt(job_desc->tres_per_node)) {
+		if (!valid_tres_cnt(job_desc->tres_per_node, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14771,7 +14694,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_socket) {
-		if (!valid_tres_cnt(job_desc->tres_per_socket)) {
+		if (!valid_tres_cnt(job_desc->tres_per_socket, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14788,7 +14711,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_task) {
-		if (!valid_tres_cnt(job_desc->tres_per_task)) {
+		if (!valid_tres_cnt(job_desc->tres_per_task, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -19516,7 +19439,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 					&detail_ptr->req_node_bitmap);
 	}
 
-	if (resv_desc_ptr->core_cnt != NO_VAL) {
+	if (resv_desc_ptr->tres_str || resv_desc_ptr->core_cnt != NO_VAL) {
 		detail_ptr->mc_ptr = xmalloc(sizeof(*detail_ptr->mc_ptr));
 		detail_ptr->mc_ptr->cores_per_socket = NO_VAL16;
 		detail_ptr->mc_ptr->ntasks_per_core = 1;
@@ -19536,6 +19459,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->cpus_per_task = 1;
 	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
 	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
+	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
 	detail_ptr->features = xstrdup(resv_desc_ptr->features);
 
 	if (build_feature_list(job_ptr, false, true)) {
@@ -19546,5 +19470,49 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->task_dist = SLURM_DIST_BLOCK;
 	job_ptr->best_switch = true;
 
+	if (resv_desc_ptr->tres_str) {
+		detail_ptr->ntasks_per_node = NO_VAL16;
+		detail_ptr->mc_ptr->ntasks_per_socket = NO_VAL16;
+		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
+		detail_ptr->orig_cpus_per_task = NO_VAL16;
+		detail_ptr->ntasks_per_tres = NO_VAL16;
+
+		job_ptr->tres_req_str = xstrdup(resv_desc_ptr->tres_str);
+
+		if (resv_desc_ptr->flags & RESERVE_TRES_PER_NODE)
+			job_ptr->tres_per_node = xstrdup(job_ptr->tres_req_str);
+		else
+			job_ptr->tres_per_job = xstrdup(job_ptr->tres_req_str);
+
+		(void)gres_job_state_validate(
+			NULL,
+			NULL,
+			job_ptr->tres_per_job,
+			job_ptr->tres_per_node,
+			NULL,
+			NULL,
+			NULL,
+			&detail_ptr->num_tasks,
+			&detail_ptr->min_nodes,
+			&detail_ptr->max_nodes,
+			&detail_ptr->ntasks_per_node,
+			&detail_ptr->mc_ptr->ntasks_per_socket,
+			&detail_ptr->mc_ptr->sockets_per_node,
+			&detail_ptr->orig_cpus_per_task,
+			&detail_ptr->ntasks_per_tres,
+			&job_ptr->gres_list_req);
+
+		if (detail_ptr->num_tasks == NO_VAL)
+			detail_ptr->num_tasks = 0;
+		if (detail_ptr->min_cpus == NO_VAL)
+			detail_ptr->min_cpus = 1;
+		if (detail_ptr->ntasks_per_node == NO_VAL16)
+			detail_ptr->ntasks_per_node = 0;
+		if (detail_ptr->mc_ptr->ntasks_per_socket == NO_VAL16)
+			detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
+		if (job_ptr->gres_list_req)
+			job_ptr->bit_flags |= GRES_ENFORCE_BIND;
+		gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
+	}
 	return job_ptr;
 }

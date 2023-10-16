@@ -152,7 +152,6 @@ static List gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static uint16_t *gs_bits_per_node = NULL;
 static uint32_t num_sorted_part = 0;
 
 /* function declarations */
@@ -242,41 +241,6 @@ static uint16_t _get_part_gr_type(part_record_t *part_ptr)
 
 	/* Use global configuration */
 	return gr_type;
-}
-
-/* For GS_CPU and GS_CPU2 gs_bits_per_node is the total number of CPUs per node.
- * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
- *	cores per per node.
- */
-static void _load_phys_res_cnt(void)
-{
-	uint16_t bit = 0;
-	uint32_t i, bit_index = 0;
-	node_record_t *node_ptr;
-
-	xfree(gs_bits_per_node);
-
-	if (gr_type == GS_NODE)
-		return;
-
-	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
-
-	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if (gr_type == GS_CPU) {
-			bit = node_ptr->config_ptr->cpus;
-		} else {
-			bit  = node_ptr->tot_cores;
-		}
-
-		gs_bits_per_node[bit_index++] = bit;
-	}
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_GANG) {
-		for (i = 0; i < bit_index; i++) {
-			info("gang: _load_phys_res_cnt: bits_per_node[%d]=%u",
-			     i, gs_bits_per_node[i]);
-		}
-	}
 }
 
 static uint16_t _get_phys_bit_cnt(int node_index)
@@ -402,8 +366,7 @@ static int _job_fits_in_active_row(job_record_t *job_ptr,
 	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
 	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
 	    (job_gr_type == GS_SOCKET)) {
-		return job_fits_into_cores(job_res, p_ptr->active_resmap,
-					   gs_bits_per_node);
+		return job_fits_into_cores(job_res, p_ptr->active_resmap);
 	}
 
 	/* job_gr_type == GS_NODE || job_gr_type == GS_CPU */
@@ -479,8 +442,7 @@ static void _add_job_to_active(job_record_t *job_ptr, struct gs_part *p_ptr)
 	    (job_gr_type == GS_SOCKET)) {
 		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap)
 			bit_clear_all(p_ptr->active_resmap);
-		add_job_to_cores(job_res, &(p_ptr->active_resmap),
-				 gs_bits_per_node);
+		add_job_to_cores(job_res, &(p_ptr->active_resmap));
 		if (job_gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
 	} else { /* GS_NODE or GS_CPU */
@@ -1107,9 +1069,6 @@ extern void gs_init(void)
 	gr_type = _get_gr_type();
 	preempt_job_list = list_create(xfree_ptr);
 
-	/* load the physical resource count data */
-	_load_phys_res_cnt();
-
 	slurm_mutex_lock(&data_mutex);
 	_build_parts();
 	/* load any currently running jobs */
@@ -1153,7 +1112,6 @@ extern void gs_fini(void)
 	slurm_mutex_lock(&data_mutex);
 	FREE_NULL_LIST(gs_part_list);
 	gs_part_list = NULL;
-	xfree(gs_bits_per_node);
 	slurm_mutex_unlock(&data_mutex);
 	log_flag(GANG, "gang: leaving gs_fini");
 }
@@ -1309,7 +1267,6 @@ extern void gs_reconfig(void)
 
 	/* reset global data */
 	gr_type = _get_gr_type();
-	_load_phys_res_cnt();
 	_build_parts();
 
 	/* scan the old part list and add existing jobs to the new list */

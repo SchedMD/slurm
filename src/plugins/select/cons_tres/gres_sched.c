@@ -40,6 +40,105 @@
 
 #include "src/common/xstring.h"
 
+static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
+				   int node_inx, int gres_bit)
+{
+	gres_job_state_t *gres_js;
+	bool found = false;
+
+	if (!resv_exc_ptr)
+		return true;
+
+	gres_js = resv_exc_ptr->gres_js_exc ?
+		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
+
+	if (!gres_js)
+		return true;
+
+	if (!gres_js->gres_bit_alloc || !gres_js->gres_bit_alloc[node_inx])
+		return resv_exc_ptr->gres_js_exc ? true : false;
+	found = bit_test(gres_js->gres_bit_alloc[node_inx], gres_bit);
+
+	if (resv_exc_ptr->gres_js_exc && found) {
+		log_flag(SELECT_TYPE, "can't include!, it is excluded %d %d",
+		     node_inx, gres_bit);
+		return false;
+	} else if (resv_exc_ptr->gres_js_inc && !found) {
+		log_flag(SELECT_TYPE,
+			 "can't include!, it is not included %d %d",
+			 node_inx, gres_bit);
+		return false;
+	}
+
+	return true;
+}
+
+static void _handle_gres_exc_by_type(resv_exc_t *resv_exc_ptr,
+				     gres_job_state_t *gres_js_in,
+				     int node_inx, uint64_t *avail_gres)
+{
+	gres_job_state_t *gres_js;
+
+	if (!resv_exc_ptr)
+		return;
+
+	gres_js = resv_exc_ptr->gres_js_exc ?
+		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
+
+	if (!gres_js)
+		return;
+
+	if (gres_js->type_name && (gres_js->type_id != gres_js_in->type_id)) {
+		if (resv_exc_ptr->gres_js_exc)
+			return;
+
+		*avail_gres = 0;
+		return;
+	}
+
+	if (resv_exc_ptr->gres_js_exc) {
+		if (gres_js->gres_cnt_node_alloc[node_inx] >= *avail_gres)
+			*avail_gres = 0;
+		else
+			*avail_gres -= gres_js->gres_cnt_node_alloc[node_inx];
+	} else
+		*avail_gres = gres_js->gres_cnt_node_alloc[node_inx];
+
+	log_flag(SELECT_TYPE, "avail_gres for node %d is now %"PRIu64,
+		 node_inx, *avail_gres);
+
+	return;
+}
+
+static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
+				   gres_job_state_t *gres_js_in,
+				   int node_inx, uint64_t *avail_gres)
+{
+	gres_job_state_t *gres_js;
+
+	if (!resv_exc_ptr)
+		return;
+
+	gres_js = resv_exc_ptr->gres_js_exc ?
+		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
+
+	if (!gres_js)
+		return;
+
+	if (resv_exc_ptr->gres_js_exc) {
+		if (gres_js->gres_cnt_node_alloc[node_inx] >= *avail_gres)
+			*avail_gres = 0;
+		else
+			*avail_gres -= gres_js->gres_cnt_node_alloc[node_inx];
+	} else
+		*avail_gres = gres_js->gres_cnt_node_alloc[node_inx];
+
+	log_flag(SELECT_TYPE, "avail_gres for node %d is now %"PRIu64,
+		 node_inx, *avail_gres);
+
+	return;
+}
+
 /*
  * Determine how many GRES of a given type can be used by this job on a
  * given node and return a structure with the details. Note that multiple
@@ -49,6 +148,7 @@
 static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_job,
 	gres_state_t *gres_state_node,
+	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
@@ -77,6 +177,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	sock_gres->sock_cnt = sockets;
 	sock_gres->bits_by_sock = xcalloc(sockets, sizeof(bitstr_t *));
 	sock_gres->cnt_by_sock = xcalloc(sockets, sizeof(uint64_t));
+
 	for (i = 0; i < gres_ns->topo_cnt; i++) {
 		bool use_all_sockets = false;
 		if (gres_js->type_name &&
@@ -90,6 +191,9 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		     gres_ns->topo_gres_cnt_avail[i])) {
 			continue;	/* No GRES remaining */
 		}
+
+		if (!_can_use_gres_exc_topo(resv_exc_ptr, node_inx, i))
+			continue;   /* Not allowed in resv_exc_ptr */
 
 		if (!use_total_gres && !gres_ns->no_consume) {
 			avail_gres = gres_ns->topo_gres_cnt_avail[i] -
@@ -379,9 +483,10 @@ static sock_gres_t *_build_sock_gres_by_topo(
 static sock_gres_t *_build_sock_gres_by_type(
 	gres_job_state_t *gres_js,
 	gres_node_state_t *gres_ns,
+	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name)
+	uint32_t job_id, char *node_name, uint32_t node_inx)
 {
 	int i;
 	sock_gres_t *sock_gres;
@@ -409,6 +514,10 @@ static sock_gres_t *_build_sock_gres_by_type(
 		} else {
 			avail_gres = gres_ns->type_cnt_avail[i];
 		}
+
+		_handle_gres_exc_by_type(resv_exc_ptr, gres_js,
+					 node_inx, &avail_gres);
+
 		gres_tmp = gres_ns->gres_cnt_avail;
 		if (!use_total_gres)
 			gres_tmp -= gres_ns->gres_cnt_alloc;
@@ -432,9 +541,10 @@ static sock_gres_t *_build_sock_gres_by_type(
 static sock_gres_t *_build_sock_gres_basic(
 	gres_job_state_t *gres_js,
 	gres_node_state_t *gres_ns,
+	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name)
+	uint32_t job_id, char *node_name, uint32_t node_inx)
 {
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
@@ -456,6 +566,9 @@ static sock_gres_t *_build_sock_gres_basic(
 			gres_ns->gres_cnt_alloc;
 	} else
 		avail_gres = gres_ns->gres_cnt_avail;
+
+	_handle_gres_exc_basic(resv_exc_ptr, gres_js, node_inx, &avail_gres);
+
 	if (avail_gres < min_gres)
 		return NULL;	/* Insufficient GRES remaining */
 
@@ -740,6 +853,7 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
 
 extern List gres_sched_create_sock_gres_list(
 	List job_gres_list, List node_gres_list,
+	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
@@ -753,12 +867,26 @@ extern List gres_sched_create_sock_gres_list(
 	gres_job_state_t  *gres_js;
 	gres_node_state_t *gres_ns;
 	uint32_t local_s_p_n;
+	list_t *gres_list_resv = NULL;
+	gres_job_state_t **gres_js_resv = NULL;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
 		return sock_gres_list;
 	if (!node_gres_list)	/* Node lacks GRES to match */
 		return sock_gres_list;
 	(void) gres_init();
+
+	if (resv_exc_ptr) {
+		if (resv_exc_ptr->gres_list_exc) {
+			gres_list_resv = resv_exc_ptr->gres_list_exc;
+			gres_js_resv = (gres_job_state_t **)&(
+				resv_exc_ptr->gres_js_exc);
+		} else if (resv_exc_ptr->gres_list_inc) {
+			gres_list_resv = resv_exc_ptr->gres_list_inc;
+			gres_js_resv = (gres_job_state_t **)&(
+				resv_exc_ptr->gres_js_inc);
+		}
+	}
 
 	sock_gres_list = list_create(gres_sock_delete);
 	job_gres_iter = list_iterator_create(job_gres_list);
@@ -774,6 +902,25 @@ extern List gres_sched_create_sock_gres_list(
 		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
 		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 
+		if (gres_list_resv) {
+			gres_key_t job_search_key = {
+				.config_flags = gres_state_job->config_flags,
+				.plugin_id = gres_state_job->plugin_id,
+				.type_id = gres_js->type_id,
+			};
+
+			gres_state_t *gres_state_job_tmp =
+				list_find_first(
+					gres_list_resv,
+					gres_find_job_by_key_exact_type,
+					&job_search_key);
+			if (gres_state_job_tmp)
+				*gres_js_resv =
+					gres_state_job_tmp->gres_data;
+			else
+				*gres_js_resv = NULL;
+		}
+
 		if (gres_js->gres_per_job &&
 		    !gres_js->gres_per_socket)
 			local_s_p_n = s_p_n;	/* Maximize GRES per node */
@@ -783,7 +930,7 @@ extern List gres_sched_create_sock_gres_list(
 			sock_gres = NULL;	/* No cores available */
 		} else if (gres_ns->topo_cnt) {
 			sock_gres = _build_sock_gres_by_topo(
-				gres_state_job, gres_state_node,
+				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
 				job_id, node_name, enforce_binding,
@@ -792,15 +939,15 @@ extern List gres_sched_create_sock_gres_list(
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
 				gres_js,
-				gres_ns, use_total_gres,
+				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name);
+				job_id, node_name, node_inx);
 		} else {
 			sock_gres = _build_sock_gres_basic(
 				gres_js,
-				gres_ns, use_total_gres,
+				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name);
+				job_id, node_name, node_inx);
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */

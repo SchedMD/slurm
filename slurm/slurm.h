@@ -2590,6 +2590,10 @@ typedef struct will_run_response_msg {
 						  * reservation proper */
 #define RESERVE_FLAG_HOURLY	   SLURM_BIT(35) /* Set HOURLY flag */
 #define RESERVE_FLAG_NO_HOURLY	   SLURM_BIT(36) /* Clear HOURLY flag */
+#define RESERVE_FLAG_GRES_REQ	   SLURM_BIT(37) /* There has been GRES
+						  * requested */
+#define RESERVE_TRES_PER_NODE      SLURM_BIT(38) /* If the tres_str is per-node
+						  * instead of per-job */
 
 #define RESERVE_REOCCURRING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
 				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \

@@ -44,7 +44,6 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/state_control.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -149,7 +148,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	watts_str = state_control_watts_to_str(resv_ptr->resv_watts);
+	watts_str = slurm_watts_to_str(resv_ptr->resv_watts);
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,

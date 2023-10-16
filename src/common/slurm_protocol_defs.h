@@ -203,6 +203,7 @@
 #define RESV_FREE_STR_GROUP     SLURM_BIT(6)
 #define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
+#define RESV_FREE_STR_TRES      SLURM_BIT(9)
 
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
@@ -1967,7 +1968,8 @@ extern int slurm_get_rep_count_inx(
 
 /*
  * Reentrant TRES specification parse logic
- * tres_type IN - type of tres we are looking for
+ * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we
+ *                    will fill it in
  * in_val IN - initial input string
  * name OUT -  must be xfreed by caller
  * type OUT -  must be xfreed by caller
@@ -1976,8 +1978,22 @@ extern int slurm_get_rep_count_inx(
  * RET rc - error code
  */
 extern int slurm_get_next_tres(
-	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr);
+
+/*
+ * Return a sub-string from full_tres_str for a specific TRES.
+ * full_tres_str IN - complete list of TRES.
+ * tres_type IN - type of tres we are looking for (NULL) for all
+ * num_tasks IN - number of tasks to multiply tres by (tres-per-task)
+ * include_tres_type IN - include the tres_type in the sub-string
+ * include_type IN - if a TRES has a name and type (GRES) include it in the
+ *                   sub-string.
+ * RET char * of tres_type we are looking for (xfreed by caller).
+ */
+extern char *slurm_get_tres_sub_string(
+	char *full_tres_str, char *tres_type, uint32_t num_tasks,
+	bool include_tres_type, bool include_type);
 
 /*
  * Return cached select cons res type.
@@ -1989,6 +2005,19 @@ extern uint32_t slurm_select_cr_type(void);
 extern char *schedule_exit2string(uint16_t opcode);
 
 extern char *bf_exit2string(uint16_t opcode);
+
+/*
+ * IN watts - resv_watts to convert to string format
+ */
+extern char *slurm_watts_to_str(uint32_t watts);
+
+/*
+ * Parse reservation request option Watts
+ * IN watts_str - value to parse
+ * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern uint32_t slurm_watts_str_to_int(char *watts_str, char **err_msg);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

@@ -62,6 +62,7 @@ HIGHLIGHTS
  -- Remove SLURM_NODE_ALIASES env variable. Client code now uses slurm_addr_t's
     passed from controller.
  -- Enable fanout for dynamic and unaddresable cloud nodes.
+ -- Make it so reservations can reserve GRES.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -134,6 +135,8 @@ COMMAND CHANGES (see man pages for details)
  -- sdiag - Added statistics on why the main and backfill schedulers have
     stopped evaluation on each scheduling cycle.
  -- Rename sbcast --fanout to --treewidth.
+ -- salloc/sbatch/srun - When requesting --tres-per-task alter incorrect
+    request for TRES, it should be TRESType/TRESName not TRESType:TRESName.
 
 API CHANGES
 ===========

@@ -425,7 +425,7 @@ uint64_t str_to_mbytes(const char *arg)
 		;
 	else if (((endptr[0] == 'k') || (endptr[0] == 'K')) &&
 		 _end_on_byte(endptr))
-		result = (result + 1023) / 1024;	/* round up */
+		result = ROUNDUP(result, 1024);	/* round up */
 	else if (((endptr[0] == 'm') || (endptr[0] == 'M')) &&
 	         _end_on_byte(endptr))
 		;
@@ -1735,7 +1735,7 @@ extern int validate_acctg_freq(char *acctg_freq)
 /*
  * Format a tres_per_* argument
  * dest OUT - resulting string
- * prefix IN - TRES type (e.g. "gres:gpu")
+ * prefix IN - TRES type (e.g. "gres/gpu")
  * src IN - user input, can include multiple comma-separated specifications
  */
 extern void xfmt_tres(char **dest, char *prefix, char *src)
@@ -1762,7 +1762,7 @@ extern void xfmt_tres(char **dest, char *prefix, char *src)
 /*
  * Format a tres_freq argument
  * dest OUT - resulting string
- * prefix IN - TRES type (e.g. "gres:gpu")
+ * prefix IN - TRES type (e.g. "gres/gpu")
  * src IN - user input
  */
 extern void xfmt_tres_freq(char **dest, char *prefix, char *src)

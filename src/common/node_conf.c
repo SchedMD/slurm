@@ -1550,3 +1550,11 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr)
 	*save_ptr = end;
 	return s;
 }
+
+extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap)
+{
+	if (*core_bitmap)
+		return;
+
+	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
+}

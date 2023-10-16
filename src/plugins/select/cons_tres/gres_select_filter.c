@@ -358,6 +358,7 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
+ * IN job_ptr - job's pointer
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by
  *	gres_sched_create_sock_gres_list()
@@ -376,7 +377,8 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
  * IN avail_core - cores available on this node, UPDATED
  * IN node_name - name of the node
  */
-extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
+extern void gres_select_filter_sock_core(job_record_t *job_ptr,
+					 gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
 					 uint16_t sockets,
 					 uint16_t cores_per_socket,
@@ -513,11 +515,21 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		} else if (gres_js->def_cpus_per_gres) {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
 			has_cpus_per_gres = true;
-		} else if (first_pass)
+		} else if (first_pass) {
 			_estimate_cpus_per_gres(mc_ptr->ntasks_per_job,
 						gres_js->gres_per_job,
 						mc_ptr->cpus_per_task,
 						&cpus_per_gres);
+			/*
+			 * Reservations (job_id == 0) are core based, so if we
+			 * are dealing with GRES here we need to convert the
+			 * DefCPUPerGPU to be cores instead of cpus.
+			 */
+			if (!job_ptr->job_id) {
+				cpus_per_gres =
+					ROUNDUP(cpus_per_gres, cpus_per_core);
+			}
+		}
 
 		/* Filter out unusable GRES by socket */
 		cnt_avail_total = sock_gres->cnt_any_sock;
@@ -728,8 +740,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 
 		while (*max_tasks_this_node >= *min_tasks_this_node) {
 			/* round up by full threads per core */
-			req_cores += threads_per_core - 1;
-			req_cores /= threads_per_core;
+			req_cores = ROUNDUP(req_cores, threads_per_core);
 			if (req_cores <= avail_cores_tot) {
 				if (removed_tasks)
 					log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",

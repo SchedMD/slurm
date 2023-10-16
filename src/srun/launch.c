@@ -694,7 +694,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->cpu_freq_gov = opt_local->cpu_freq_gov;
 
 	if (opt_local->cpus_per_gpu) {
-		xstrfmtcat(step_req->cpus_per_tres, "gres:gpu:%d",
+		xstrfmtcat(step_req->cpus_per_tres, "gres/gpu:%d",
 			   opt_local->cpus_per_gpu);
 		/* Like cpus_per_task, imply --exact */
 		if (srun_opt->whole)
@@ -733,7 +733,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		step_req->max_nodes = opt_local->max_nodes;
 
 	if (opt_local->mem_per_gpu != NO_VAL64)
-		xstrfmtcat(step_req->mem_per_tres, "gres:gpu:%"PRIu64,
+		xstrfmtcat(step_req->mem_per_tres, "gres/gpu:%"PRIu64,
 			   opt.mem_per_gpu);
 
 	step_req->min_nodes = job->nhosts;
@@ -928,7 +928,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	xstrfmtcat(step_req->tres_per_step, "%scpu:%u",
 		   step_req->tres_per_step ? "," : "",
 		   step_req->cpu_count);
-	xfmt_tres(&step_req->tres_per_step, "gres:gpu", opt_local->gpus);
+	xfmt_tres(&step_req->tres_per_step, "gres/gpu", opt_local->gpus);
 
 	/* add_tres set from opt_local->gres or environment above */
 	if (opt_local->gres)
@@ -943,7 +943,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	 * environment.
 	 */
 	if (!add_tres || xstrcasecmp(add_tres, "NONE")) {
-		xfmt_tres(&step_req->tres_per_node, "gres:gpu",
+		xfmt_tres(&step_req->tres_per_node, "gres/gpu",
 			  opt_local->gpus_per_node);
 	}
 
@@ -954,14 +954,14 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 			step_req->tres_per_node = xstrdup(add_tres);
 	}
 
-	xfmt_tres(&step_req->tres_per_socket, "gres:gpu",
+	xfmt_tres(&step_req->tres_per_socket, "gres/gpu",
 		  opt_local->gpus_per_socket);
 
 	if (opt_local->cpus_set)
 		xstrfmtcat(step_req->tres_per_task, "%scpu:%u",
 			   step_req->tres_per_task ? "," : "",
 			   opt_local->cpus_per_task);
-	xfmt_tres(&step_req->tres_per_task, "gres:gpu",
+	xfmt_tres(&step_req->tres_per_task, "gres/gpu",
 		  opt_local->gpus_per_task);
 
 	if (opt_local->time_limit != NO_VAL)
