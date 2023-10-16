@@ -857,16 +857,14 @@ static int _match_path_from_data(void *x, void *key)
 		}
 	}
 
-	if (matched)
-		debug5("%s: match successful for %s(%d, %s) to %s(0x%"PRIXPTR")",
-		       __func__, src_path, args->path->tag,
-		       get_http_method_string(args->method), dst_path,
-		       (uintptr_t) args->dpath);
-	else
-		debug5("%s: match failed for %s(%d, %s) to %s(0x%"PRIXPTR")",
-		       __func__, src_path, args->path->tag,
-		       get_http_method_string(args->method), dst_path,
-		       (uintptr_t) args->dpath);
+	debug5("%s: match %s for %s(%d, %s) to %s(0x%"PRIXPTR")",
+	       __func__,
+	       matched ? "successful" : "failed",
+	       src_path,
+	       args->path->tag,
+	       get_http_method_string(args->method),
+	       dst_path,
+	       (uintptr_t) args->dpath);
 
 	xfree(src_path);
 	xfree(dst_path);
