@@ -852,6 +852,7 @@ static int _match_path_from_data(void *x, void *key)
 		 * anything to compare in request.
 		 */
 		if (!args->entry->type) {
+			args->tag = path->tag;
 			matched = true;
 			break;
 		}
@@ -869,12 +870,7 @@ static int _match_path_from_data(void *x, void *key)
 	xfree(src_path);
 	xfree(dst_path);
 
-	if (matched) {
-		args->tag = path->tag;
-		return 1;
-	} else {
-		return 0;
-	}
+	return matched;
 }
 
 extern int find_path_tag(const data_t *dpath, data_t *params,
