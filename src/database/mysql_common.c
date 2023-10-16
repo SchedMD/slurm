@@ -528,8 +528,17 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		if (temp[end]) {
 			end++;
 			unique_index = xstrndup(temp, end);
-			if (old_index)
-				xstrfmtcat(query, " drop index %s,", old_index);
+
+			db_key = list_remove_first(keys_list, _find_db_key,
+						   udex_name);
+			if (db_key) {
+				xstrfmtcat(query,
+					   " drop index %s,", db_key->name);
+				_destroy_db_key(db_key);
+			} else {
+				info("adding %s to table %s",
+				     unique_index, table_name);
+			}
 			xstrfmtcat(correct_query, " drop index %s,", udex_name);
 			xstrfmtcat(query, " add %s,", unique_index);
 			xstrfmtcat(correct_query, " add %s,", unique_index);
@@ -588,10 +597,15 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	/* flush extra (old) keys */
 	itr = list_iterator_create(keys_list);
 	while ((db_key = list_next(itr))) {
-		if (!db_key->non_unique)
-			continue;
-		info("dropping key %s from table %s", db_key->name, table_name);
-		xstrfmtcat(query, " drop key %s,", db_key->name);
+		if (!db_key->non_unique) {
+			info("dropping unique index %s from table %s",
+			     db_key->name, table_name);
+			xstrfmtcat(query, " drop index %s,", db_key->name);
+		} else {
+			info("dropping key %s from table %s",
+			     db_key->name, table_name);
+			xstrfmtcat(query, " drop key %s,", db_key->name);
+		}
 	}
 	list_iterator_destroy(itr);
 
