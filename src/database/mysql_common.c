@@ -302,7 +302,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	char *primary_key = NULL;
 	char *unique_index = NULL;
 	int old_primary = 0;
-	char *old_index = NULL;
 	char *temp = NULL, *temp2 = NULL;
 	List keys_list = NULL;
 	db_key_t *db_key = NULL;
@@ -327,8 +326,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		if (!xstrcasecmp(row[2], "PRIMARY")) {
 			old_primary = 1;
 			continue;
-		} else if (!old_index) {
-			old_index = xstrdup(row[2]);
 		}
 
 		db_key = list_find_first(keys_list, _find_db_key, row[2]);
@@ -350,7 +347,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			       table_name);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		xfree(old_index);
 		return SLURM_ERROR;
 	}
 	xfree(query);
@@ -374,7 +370,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	query = xstrdup_printf("show columns from %s", table_name);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		xfree(old_index);
 		FREE_NULL_LIST(keys_list);
 		return SLURM_ERROR;
 	}
@@ -546,7 +541,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		}
 		xfree(udex_name);
 	}
-	xfree(old_index);
 
 	temp2 = ending;
 	while ((temp = strstr(temp2, ", key "))) {
