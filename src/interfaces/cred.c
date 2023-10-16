@@ -189,6 +189,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 {
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
+	bool release_id = false;
 
 	xassert(arg != NULL);
 	xassert(g_context);
@@ -218,10 +219,12 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 	arg->core_array_size = i;
 
-	if (enable_nss_slurm || enable_send_gids)
+	if (!arg->id && (enable_nss_slurm || enable_send_gids)) {
+		release_id = true;
 		if (!(arg->id = fetch_identity(arg->uid, arg->gid,
 					       enable_nss_slurm)))
 			goto fail;
+	}
 
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
@@ -233,11 +236,14 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 
 	/* Release any values populated through _fill_cred_gids(). */
-	FREE_NULL_IDENTITY(arg->id);
+	if (release_id)
+		FREE_NULL_IDENTITY(arg->id);
 
 	return cred;
 
 fail:
+	if (release_id)
+		FREE_NULL_IDENTITY(arg->id);
 	slurm_cred_destroy(cred);
 	return NULL;
 }
