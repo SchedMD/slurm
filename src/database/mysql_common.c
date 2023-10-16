@@ -317,12 +317,31 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		return SLURM_ERROR;
 	}
 	xfree(query);
+
+	keys_list = list_create(_destroy_db_key);
 	while ((row = mysql_fetch_row(result))) {
-		// row[2] is the key name
-		if (!xstrcasecmp(row[2], "PRIMARY"))
+		/*
+		 * row[2] = key name
+		 * row[4] = column name
+		 */
+		if (!xstrcasecmp(row[2], "PRIMARY")) {
 			old_primary = 1;
-		else if (!old_index)
+			continue;
+		} else if (!old_index) {
 			old_index = xstrdup(row[2]);
+		}
+
+		db_key = list_find_first(keys_list, _find_db_key, row[2]);
+
+		if (db_key) {
+			xstrfmtcat(db_key->columns, ", %s", row[4]);
+		} else {
+			db_key = xmalloc(sizeof(db_key_t));
+			db_key->name = xstrdup(row[2]);
+			db_key->columns = xstrdup(row[4]);
+			db_key->non_unique = false;
+			list_append(keys_list, db_key);
+		}
 	}
 	mysql_free_result(result);
 
@@ -336,7 +355,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 	xfree(query);
 
-	keys_list = list_create(_destroy_db_key);
 	while ((row = mysql_fetch_row(result))) {
 		db_key = list_find_first(keys_list, _find_db_key, row[2]);
 
@@ -570,6 +588,8 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	/* flush extra (old) keys */
 	itr = list_iterator_create(keys_list);
 	while ((db_key = list_next(itr))) {
+		if (!db_key->non_unique)
+			continue;
 		info("dropping key %s from table %s", db_key->name, table_name);
 		xstrfmtcat(query, " drop key %s,", db_key->name);
 	}
