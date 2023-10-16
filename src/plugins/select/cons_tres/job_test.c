@@ -5328,6 +5328,41 @@ static int _build_cr_job_list(void *x, void *arg)
 }
 
 /*
+ * Set scheduling weight for node bitmaps -- pre-nodeset scheduling.
+ *
+ * Similar to _set_sched_weight() in node_scheduler.c except this function
+ * shifts by 16 instead of 8 to give room to accommodate extra weighted states
+ * (e.g. completing and rebooting). sched_weight will be rebuilt when scheduling
+ * based off of nodesets in _build_node_list().
+ *
+ * 0x00000000000## - Reserved for cons_tres, favor nodes with co-located CPU/GPU
+ * 0x000000000##00 - Reserved for completing and rebooting nodes
+ * 0x0########0000 - Node weight
+ * 0x#000000000000 - Reserved for powered down nodes
+ *
+ * 0x0000000000100 - Completing nodes
+ * 0x0000000000200 - Rebooting nodes
+ * 0x2000000000000 - Node powered down
+ */
+static void _set_sched_weight(bitstr_t *node_bitmap)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
+		node_ptr->sched_weight = node_ptr->weight;
+		node_ptr->sched_weight = node_ptr->sched_weight << 16;
+		if (IS_NODE_COMPLETING(node_ptr))
+			node_ptr->sched_weight |= 0x100;
+		if (IS_NODE_REBOOT_REQUESTED(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
+			node_ptr->sched_weight |= 0x200;
+		if (IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr))
+			node_ptr->sched_weight |= 0x2000000000000;
+	}
+}
+
+/*
  * Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
  * end of its time limit and use this to show where and when the job at job_ptr
@@ -5354,6 +5389,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	cr_job_list_args_t args;
 
 	orig_map = bit_copy(node_bitmap);
+
+	_set_sched_weight(node_bitmap);
 
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
