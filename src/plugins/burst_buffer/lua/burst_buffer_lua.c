@@ -219,12 +219,38 @@ pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
  * don't use stage throttle for stage_in.
  * This variable is protected by bb_state.bb_mutex.
  */
+static pthread_mutex_t stage_in_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int stage_in_cnt = 0;
 
 /* Function prototypes */
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 			    uint32_t group_id);
+
+static int _get_stage_in_cnt(void)
+{
+	int cnt;
+
+	slurm_mutex_lock(&stage_in_mutex);
+	cnt = stage_in_cnt;
+	slurm_mutex_unlock(&stage_in_mutex);
+
+	return cnt;
+}
+
+static void _incr_stage_in_cnt(void)
+{
+	slurm_mutex_lock(&stage_in_mutex);
+	stage_in_cnt++;
+	slurm_mutex_unlock(&stage_in_mutex);
+}
+
+static void _decr_stage_in_cnt(void)
+{
+	slurm_mutex_lock(&stage_in_mutex);
+	stage_in_cnt--;
+	slurm_mutex_unlock(&stage_in_mutex);
+}
 
 static int _get_lua_thread_cnt(void)
 {
@@ -3386,11 +3412,11 @@ static void *_start_stage_in(void *x)
 					job_ptr->group_id);
 		}
 	}
-	stage_in_cnt--;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
 
 fini:
+	_decr_stage_in_cnt();
 	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->pool);
@@ -3440,7 +3466,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, bb_job->job_pool,
 		     &bb_state, true);
 
-	stage_in_cnt++;
+	_incr_stage_in_cnt();
 	slurm_thread_create_detached(&tid, _start_stage_in, stage_in_args);
 
 	xfree(hash_dir);
@@ -3473,7 +3499,7 @@ static int _try_alloc_job_bb(void *x, void *arg)
 	else
 		rc = 0;
 
-	if (stage_in_cnt >= MAX_BURST_BUFFERS_PER_STAGE)
+	if (_get_stage_in_cnt() >= MAX_BURST_BUFFERS_PER_STAGE)
 		return SLURM_ERROR; /* Break out of loop */
 
 	if (rc == 0) {
