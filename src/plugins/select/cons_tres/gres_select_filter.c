@@ -326,8 +326,8 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 	if (!ntasks_per_job || (ntasks_per_job == NO_VAL) || !gres_per_job)
 		return;
 
-	if (ntasks_per_job >= gres_per_job &&
-	    (ntasks_per_job % gres_per_job == 0)) {
+	if ((ntasks_per_job >= gres_per_job) &&
+	    !(ntasks_per_job % gres_per_job)) {
 		/*
 		 * If we have more tasks than gres and tasks is multiple of
 		 * gres we want to attempt placing tasks on CPUs on the same
@@ -335,13 +335,13 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 		 */
 		uint64_t tasks_per_gres = ntasks_per_job / gres_per_job;
 		*cpus_per_gres = tasks_per_gres * cpus_per_task;
-	} else if ((gres_per_job % ntasks_per_job == 0)) {
+	} else if (!(gres_per_job % ntasks_per_job)) {
 		/*
 		 * If we have more gres than tasks, but gres is multiple of
 		 * tasks we attempt symmetrical distribution of tasks
 		 */
 		uint64_t gres_per_task = gres_per_job / ntasks_per_job;
-		if ((cpus_per_task % gres_per_task == 0)) {
+		if (!(cpus_per_task % gres_per_task)) {
 			/*
 			 * If cpus_per_task is multiple of gres_per_task we
 			 * attempt giving each GPU same number of CPUs
