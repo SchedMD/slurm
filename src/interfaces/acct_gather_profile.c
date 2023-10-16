@@ -252,6 +252,8 @@ extern int acct_gather_profile_fini(void)
 {
 	int rc = SLURM_SUCCESS, i;
 
+	acct_gather_profile_endpoll();
+
 	/*
 	 * If the plugin is a NOOP, do the cleanup of jobacct gather anyways
 	 * since other plugins might have been inited in acct_gather_conf_init()
@@ -281,19 +283,11 @@ extern int acct_gather_profile_fini(void)
 		}
 	}
 
-	if (timer_thread_id) {
-		slurm_mutex_lock(&timer_thread_mutex);
-		slurm_cond_signal(&timer_thread_cond);
-		slurm_mutex_unlock(&timer_thread_mutex);
-		pthread_join(timer_thread_id, NULL);
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
 	}
 
-	if (!g_context)
-		goto done;
-
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
-done:
 	plugin_inited = PLUGIN_NOT_INITED;
 	slurm_mutex_unlock(&g_context_lock);
 
@@ -572,6 +566,12 @@ extern void acct_gather_profile_endpoll(void)
 			      "(acct_gather_profile_endpoll)", i);
 		}
 	}
+
+	slurm_mutex_lock(&timer_thread_mutex);
+	slurm_cond_signal(&timer_thread_cond);
+	slurm_mutex_unlock(&timer_thread_mutex);
+	pthread_join(timer_thread_id, NULL);
+	timer_thread_id = 0;
 }
 
 extern int acct_gather_profile_g_child_forked(void)
