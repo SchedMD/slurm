@@ -68,6 +68,15 @@ static void _destroy_db_key(void *arg)
 	}
 }
 
+static int _find_db_key(void *x, void *key)
+{
+	db_key_t * db_key = (db_key_t *) x;
+
+	if (xstrcmp(db_key->name, (char *) key))
+		return 0;
+	return 1;
+}
+
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _clear_results(MYSQL *db_conn)
 {
@@ -326,17 +335,9 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 	xfree(query);
 
-	itr = NULL;
 	keys_list = list_create(_destroy_db_key);
 	while ((row = mysql_fetch_row(result))) {
-		if (!itr)
-			itr = list_iterator_create(keys_list);
-		else
-			list_iterator_reset(itr);
-		while ((db_key = list_next(itr))) {
-			if (!xstrcmp(db_key->name, row[2]))
-				break;
-		}
+		db_key = list_find_first(keys_list, _find_db_key, row[2]);
 
 		if (db_key) {
 			xstrfmtcat(db_key->columns, ", %s", row[4]);
@@ -348,11 +349,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		}
 	}
 	mysql_free_result(result);
-
-	if (itr) {
-		list_iterator_destroy(itr);
-		itr = NULL;
-	}
 
 	/* figure out the existing columns in the table */
 	query = xstrdup_printf("show columns from %s", table_name);
