@@ -520,7 +520,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	xfree(old_index);
 
 	temp2 = ending;
-	itr = list_iterator_create(keys_list);
 	while ((temp = strstr(temp2, ", key "))) {
 		int open = 0, close = 0, name_end = 0;
 		int end = 5;
@@ -544,13 +543,9 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			end++;
 			new_key_name = xstrndup(temp+6, name_end-6);
 			new_key = xstrndup(temp+2, end-2); // skip ', '
-			while ((db_key = list_next(itr))) {
-				if (!xstrcmp(db_key->name, new_key_name)) {
-					list_remove(itr);
-					break;
-				}
-			}
-			list_iterator_reset(itr);
+
+			db_key = list_remove_first(keys_list, _find_db_key,
+						   new_key_name);
 			if (db_key) {
 				xstrfmtcat(query,
 					   " drop key %s,", db_key->name);
@@ -571,6 +566,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 
 	/* flush extra (old) keys */
+	itr = list_iterator_create(keys_list);
 	while ((db_key = list_next(itr))) {
 		info("dropping key %s from table %s", db_key->name, table_name);
 		xstrfmtcat(query, " drop key %s,", db_key->name);
