@@ -1056,8 +1056,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (mysql_db_create_table(mysql_conn, clus_res_table,
 				  clus_res_table_fields,
-				  ", primary key (res_id, cluster(42)), "
-				  "unique index udex (res_id, cluster(42)))")
+				  ", primary key (res_id, cluster(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1663,7 +1662,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  step_table_fields,
 				  ", primary key (job_db_inx, id_step, "
 				  "step_het_comp), "
-				  "key no_step_comp (job_db_inx, id_step), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -1673,8 +1671,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  suspend_table_fields,
 				  ", primary key (job_db_inx, time_start), "
-				  "key job_db_inx_times (job_db_inx, "
-				  "time_start, time_end))") == SLURM_ERROR)
+				  "key archive_purge (time_end))")
+	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
