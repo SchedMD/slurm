@@ -63,6 +63,7 @@
 #define OPT_LONG_YAML      0x110
 #define OPT_LONG_AUTOCOMP  0x111
 #define OPT_LONG_ARRAY     0x112
+#define OPT_LONG_HELPSTATE 0x113
 
 #define JOB_HASH_SIZE 1000
 
@@ -106,6 +107,19 @@ static void _help_fields_msg(void)
 		else if (i)
 			printf("\n");
 		printf("%-19s", fields[i].name);
+	}
+	printf("\n");
+	return;
+}
+
+static void _help_job_state_msg(void)
+{
+	for (int idx = 0; idx < JOB_END; idx++) {
+		if (idx & 3)
+			printf(" ");
+		else if (idx)
+			printf("\n");
+		printf("%-19s", job_state_string(idx));
 	}
 	printf("\n");
 	return;
@@ -259,6 +273,9 @@ sacct [<OPTION>]                                                            \n \
                    to select jobs to display.  By default, all groups are   \n\
                    selected.                                                \n\
      -h, --help:   Print this description of use.                           \n\
+         --helpstate                                                        \n\
+                   Print a list of job states that can be specified with    \n\
+                   the '--state' option.                                    \n\
      -i, --nnodes=N:                                                        \n\
                    Return jobs which ran on this many nodes (N = min[-max]) \n\
      -I, --ncpus=N:                                                         \n\
@@ -599,6 +616,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"federation",     no_argument,       0,    OPT_LONG_FEDR},
                 {"helpformat",     no_argument,       0,    'e'},
                 {"help-fields",    no_argument,       0,    'e'},
+                {"helpstate",      no_argument,       0,    OPT_LONG_HELPSTATE},
                 {"endtime",        required_argument, 0,    'E'},
                 {"env-vars",       no_argument,       0,    OPT_LONG_ENV},
                 {"file",           required_argument, 0,    'f'},
@@ -950,6 +968,9 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
 			exit(0);
+			break;
+		case OPT_LONG_HELPSTATE:
+			params.opt_help = 4;
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */
@@ -1362,6 +1383,9 @@ extern void do_help(void)
 		break;
 	case 3:
 		_usage();
+		break;
+	case 4:
+		_help_job_state_msg();
 		break;
 	default:
 		debug2("sacct bug: params.opt_help=%d",

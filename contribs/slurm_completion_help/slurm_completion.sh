@@ -913,6 +913,24 @@ function __slurm_helpformat() {
 	echo "${output}"
 }
 
+# Slurm helper function to get state list
+#
+# $1: slurm command to run --helpstate against
+# RET: space delimited list
+function __slurm_helpstate() {
+	local cmd="$1"
+	local output=""
+
+	if [[ -z $cmd ]]; then
+		__slurm_log_error "$(__func__): command context is empty"
+		return 1
+	fi
+
+	output="$(__slurm_func_wrapper "$cmd --helpstate")"
+	output=${output,,} # force lowercase
+	echo "${output}"
+}
+
 # Slurm helper function to get sorted hostlist list
 #
 # RET: space delimited list
@@ -1853,23 +1871,6 @@ function __slurm_comp_sacct_flags() {
 		"qosminbilling"
 		"reservationdeleted"
 	)
-	local states=(
-		"boot_fail"
-		"cancelled"
-		"completed"
-		"deadline"
-		"failed"
-		"node_fail"
-		"out_of_memory"
-		"pending"
-		"preempted"
-		"running"
-		"requeued"
-		"resizing"
-		"revoked"
-		"suspended"
-		"timeout"
-	)
 	local units=(
 		"K"
 		"M"
@@ -1898,7 +1899,7 @@ function __slurm_comp_sacct_flags() {
 	-r | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	-R | --reason) __slurm_compreply_list "${reasons[*]}" ;; # TODO: want --helpreason
-	-s | --state) __slurm_compreply_list "${states[*]}" ;;   # TODO: want --helpstate
+	-s | --state) __slurm_compreply_list "$(__slurm_helpstate "$cmd")" ;;
 	-u | --uid?(s) | --user?(s)) __slurm_compreply_list "$(__slurm_linux_users) $(__slurm_linux_uids)" ;;
 	--units) __slurm_compreply "${units[*]}" ;;
 	-W | --wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
