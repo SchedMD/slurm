@@ -1456,7 +1456,7 @@ static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 	int found = 0;
 	unsigned char address[sizeof(struct in6_addr)];
 	char *address_str = NULL;
-	int af;
+	int af = AF_UNSPEC;
 	slurm_addr_t addr;
 
 	safe_read(fd, &mode, sizeof(int));
