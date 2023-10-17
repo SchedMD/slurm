@@ -485,6 +485,8 @@ extern int load_assoc_mgr_state(bool only_tres);
  */
 extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level);
 
+extern void assoc_mgr_set_uid(uid_t uid, char *username);
+
 /*
  * Sets the uids of users added to the system after the start of the
  * calling program.

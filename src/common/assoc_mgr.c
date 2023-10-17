@@ -6532,6 +6532,97 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 	return SLURM_SUCCESS;
 }
 
+static int _each_assoc_set_uid(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	slurmdb_user_rec_t *user = arg;
+
+	if ((assoc->uid != NO_VAL) || xstrcmp(assoc->user, user->name))
+		return 0;
+
+	/*
+	 * Since the uid changed the hash will change.
+	 * Remove it, change it, then insert it.
+	*/
+	_delete_assoc_hash(assoc);
+	assoc->uid = user->uid;
+	_add_assoc_hash(assoc);
+
+	if (assoc->is_def)
+		_set_user_default_acct(assoc, user);
+
+	return 0;
+}
+
+static int _each_wckey_set_uid(void *x, void *arg)
+{
+	slurmdb_wckey_rec_t *wckey = x;
+	slurmdb_user_rec_t *user = arg;
+
+	if ((wckey->uid != NO_VAL) || xstrcmp(wckey->user, user->name))
+		return 0;
+
+	wckey->uid = user->uid;
+	if (wckey->is_def)
+		_set_user_default_wckey(wckey, user);
+
+	return 0;
+}
+
+extern void assoc_mgr_set_uid(uid_t uid, char *username)
+{
+	assoc_mgr_lock_t read_lock = { .user = READ_LOCK };
+	assoc_mgr_lock_t write_locks = {
+		.assoc = WRITE_LOCK,
+		.user = WRITE_LOCK,
+		.wckey = WRITE_LOCK
+	};
+	slurmdb_user_rec_t lookup = { .name = username };
+	slurmdb_user_rec_t *user = NULL;
+
+	/*
+	 * Check if we know about this uid already. If so, exit sooner.
+	 */
+	assoc_mgr_lock(&read_lock);
+	if (!assoc_mgr_user_list) {
+		debug("%s: missing assoc_mgr_user_list", __func__);
+		assoc_mgr_unlock(&read_lock);
+		return;
+	}
+
+	if (list_find_first_ro(assoc_mgr_user_list, _list_find_uid, &uid)) {
+		debug2("%s: uid=%u already known", __func__, uid);
+		assoc_mgr_unlock(&read_lock);
+		return;
+	}
+	assoc_mgr_unlock(&read_lock);
+
+	assoc_mgr_lock(&write_locks);
+	if (!assoc_mgr_user_list) {
+		debug("%s: missing assoc_mgr_user_list", __func__);
+		assoc_mgr_unlock(&write_locks);
+		return;
+	}
+
+	if (!(user = list_find_first(assoc_mgr_user_list, _list_find_user,
+				     &lookup))) {
+		debug2("%s: user %s not in assoc_mgr_user_list",
+		       __func__, username);
+		assoc_mgr_unlock(&write_locks);
+		return;
+	}
+
+	debug2("%s: adding mapping for user %s uid %u",
+	       __func__, username, uid);
+	user->uid = uid;
+
+	if (assoc_mgr_assoc_list)
+		list_for_each(assoc_mgr_assoc_list, _each_assoc_set_uid, user);
+	if (assoc_mgr_wckey_list)
+		list_for_each(assoc_mgr_wckey_list, _each_wckey_set_uid, user);
+	assoc_mgr_unlock(&write_locks);
+}
+
 static int _for_each_assoc_missing_uids(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *object = x;
