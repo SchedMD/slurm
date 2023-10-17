@@ -60,7 +60,8 @@ extern identity_t *fetch_identity(uid_t uid, gid_t gid, bool group_names)
 	}
 
 	id = xmalloc(sizeof(*id));
-
+	id->uid = uid;
+	id->gid = gid;
 	id->pw_name = xstrdup(result->pw_name);
 	id->pw_gecos = xstrdup(result->pw_gecos);
 	id->pw_dir = xstrdup(result->pw_dir);
@@ -135,6 +136,8 @@ extern identity_t *copy_identity(identity_t *id)
 		return NULL;
 
 	new = xmalloc(sizeof(*new));
+	new->uid = id->uid;
+	new->gid = id->gid;
 	new->pw_name = xstrdup(id->pw_name);
 	new->pw_gecos = xstrdup(id->pw_gecos);
 	new->pw_dir = xstrdup(id->pw_dir);
@@ -157,6 +160,8 @@ extern void destroy_identity(identity_t *id)
 	if (!id)
 		return;
 
+	id->uid = SLURM_AUTH_NOBODY;
+	id->gid = SLURM_AUTH_NOBODY;
 	xfree(id->pw_name);
 	xfree(id->pw_gecos);
 	xfree(id->pw_dir);

@@ -42,6 +42,8 @@
 #include "src/common/pack.h"
 
 typedef struct {
+	uid_t uid;
+	gid_t gid;
 	char *pw_name;		/* user_name as a string */
 	char *pw_gecos;		/* user information */
 	char *pw_dir;		/* home directory */
