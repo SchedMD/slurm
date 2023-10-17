@@ -845,9 +845,9 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(select_context_cnt >= 0);
 	if (jobinfo) {
 		if (jobinfo->data) {
+			xassert(select_context_cnt >= 0);
 			rc = (*(ops[jobinfo->plugin_id].
 				jobinfo_free))(jobinfo->data);
 		}
