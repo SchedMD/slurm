@@ -2208,7 +2208,8 @@ static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 		return SLURMDB_ADMIN_NOTSET;
 	}
 
-	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid, &uid);
+	found_user = list_find_first_ro(assoc_mgr_user_list,
+					_list_find_uid, &uid);
 
 	if (found_user)
 		level = found_user->admin_level;
@@ -2875,8 +2876,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 		return SLURM_SUCCESS;
 	}
 
-	if (!(found_user = list_find_first(assoc_mgr_user_list,
-					   _list_find_user, user))) {
+	if (!(found_user = list_find_first_ro(assoc_mgr_user_list,
+					      _list_find_user, user))) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
@@ -3283,8 +3284,8 @@ extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name)
 		return NULL;
 	}
 
-	user = list_find_first(
-		assoc_mgr_coord_list, _list_find_user, &req_user);
+	user = list_find_first_ro(assoc_mgr_coord_list,
+				  _list_find_user, &req_user);
 
 	if (user && user->coord_accts)
 		ret_list = slurmdb_list_copy_coord(user->coord_accts);
@@ -3312,8 +3313,8 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 		return false;
 	}
 
-	found_user = list_find_first(assoc_mgr_coord_list, _list_find_uid,
-				     &uid);
+	found_user = list_find_first_ro(assoc_mgr_coord_list,
+					_list_find_uid, &uid);
 
 	found = assoc_mgr_is_user_acct_coord_user_rec(found_user, acct_name);
 
