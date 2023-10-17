@@ -46,12 +46,6 @@
 #include "src/common/pack.h"
 
 /*
- * This is what the UID and GID accessors return on error.
- * The value is currently RedHat Linux's ID for the user "nobody".
- */
-#define SLURM_AUTH_NOBODY 99
-
-/*
  * This should be equal to MUNGE_UID_ANY
  * do not restrict decode via uid
  */

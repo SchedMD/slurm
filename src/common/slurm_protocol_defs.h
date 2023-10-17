@@ -66,6 +66,12 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 
+/*
+ * This is what the UID and GID accessors return on error.
+ * The value is currently RedHat Linux's ID for the user "nobody".
+ */
+#define SLURM_AUTH_NOBODY 99
+
 #define FORWARD_INIT 0xfffe
 
 /* Defined job states */

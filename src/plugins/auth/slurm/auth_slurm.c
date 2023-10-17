@@ -42,6 +42,7 @@
 
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #include "src/interfaces/auth.h"
 
