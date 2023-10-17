@@ -5740,7 +5740,6 @@ extern int dump_assoc_mgr_state(void)
 	int error_code = 0, log_fd;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
 		*tmp_char = NULL;
-	dbd_list_msg_t msg;
 	buf_t *buffer = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .file = WRITE_LOCK,
 				   .qos = READ_LOCK, .res = READ_LOCK,
@@ -5762,8 +5761,7 @@ extern int dump_assoc_mgr_state(void)
 
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_tres_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_tres_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_tres_list };
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_TRES, buffer);
 	}
@@ -5822,8 +5820,7 @@ extern int dump_assoc_mgr_state(void)
 	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_user_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_user_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_user_list };
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
@@ -5831,8 +5828,7 @@ extern int dump_assoc_mgr_state(void)
 	}
 
 	if (assoc_mgr_res_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_res_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_res_list };
 		/* let us know what to unpack */
 		pack16(DBD_ADD_RES, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
@@ -5840,8 +5836,7 @@ extern int dump_assoc_mgr_state(void)
 	}
 
 	if (assoc_mgr_qos_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_qos_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_qos_list };
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
@@ -5849,8 +5844,7 @@ extern int dump_assoc_mgr_state(void)
 	}
 
 	if (assoc_mgr_wckey_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_wckey_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_wckey_list };
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
@@ -5859,8 +5853,7 @@ extern int dump_assoc_mgr_state(void)
 	/* this needs to be done last so qos is set up
 	 * before hand when loading it back */
 	if (assoc_mgr_assoc_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = assoc_mgr_assoc_list;
+		dbd_list_msg_t msg = { .my_list = assoc_mgr_assoc_list };
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
