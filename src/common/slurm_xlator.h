@@ -227,6 +227,7 @@
 #define	list_insert		slurm_list_insert
 #define	list_find		slurm_list_find
 #define	list_remove		slurm_list_remove
+#define	list_remove_first	slurm_list_remove_first
 #define	list_delete_item	slurm_list_delete_item
 #define list_flush		slurm_list_flush
 #define list_flush_max		slurm_list_flush_max

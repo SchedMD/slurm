@@ -90,6 +90,7 @@ strong_alias(list_next,		slurm_list_next);
 strong_alias(list_insert,	slurm_list_insert);
 strong_alias(list_find,		slurm_list_find);
 strong_alias(list_remove,	slurm_list_remove);
+strong_alias(list_remove_first,	slurm_list_remove_first);
 strong_alias(list_delete_item,	slurm_list_delete_item);
 
 /***************
