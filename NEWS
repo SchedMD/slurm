@@ -254,6 +254,8 @@ documents those changes that are of interest to users and administrators.
     from slurm_nss due to an error during lookup.
  -- Fix job requests with --tres-per-task sometimes resulting in bad allocations
     that cannot run subsequent job steps.
+ -- Fix issue with slurmd where srun fails to be warned when a node prolog
+    script runs beyond MsgTimeout set in slurm.conf.
 
 * Changes in Slurm 23.02.6
 ==========================
