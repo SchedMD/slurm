@@ -2882,21 +2882,7 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_mpi_type(slurm_opt_t *opt, const char *arg)
-{
-	if (!opt->srun_opt)
-		return SLURM_ERROR;
-
-	xfree(opt->srun_opt->mpi_type);
-	/* skip 'none' */
-	if (xstrcasecmp(arg, "none"))
-		opt->srun_opt->mpi_type = xstrdup(arg);
-
-	return SLURM_SUCCESS;
-}
-
-COMMON_SRUN_STRING_OPTION_GET(mpi_type);
-COMMON_SRUN_STRING_OPTION_RESET(mpi_type);
+COMMON_SRUN_STRING_OPTION(mpi_type);
 static slurm_cli_opt_t slurm_opt_mpi = {
 	.name = "mpi",
 	.has_arg = required_argument,
