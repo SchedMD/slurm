@@ -4388,7 +4388,6 @@ function _sinfo() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	local fields=(
-		"%ALL"
 		"%a" "%A"
 		"%b" "%B"
 		"%c" "%C"
@@ -4414,7 +4413,6 @@ function _sinfo() {
 		"%z" "%Z"
 	)
 	local fields_long=(
-		"ALL"
 		"allocmem"
 		"allocnodes"
 		"available"
@@ -4495,12 +4493,12 @@ function _sinfo() {
 
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-o | --format) __slurm_compreply_list "${fields[*]}" ;;      # TODO: want --helpformat
-	-O | --Format) __slurm_compreply_list "${fields_long[*]}" ;; # TODO: want --helpformat2
+	-o | --format) __slurm_compreply_list "${fields[*]}" "%ALL" ;;     # TODO: want --helpformat
+	-O | --Format) __slurm_compreply_list "${fields_long[*]}" "ALL" ;; # TODO: want --helpformat2
 	-n | --node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
-	-t | --state?(s)) __slurm_compreply_list "${states[*]}" ;; # TODO: want --helpstate
+	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	esac
 
 	[[ $split == "true" ]] && return
@@ -4721,6 +4719,8 @@ function _squeue() {
 		"boot_fail"
 		"cancelled"
 		"completed"
+		"completing"
+		"configuring"
 		"deadline"
 		"failed"
 		"node_fail"
@@ -4729,8 +4729,15 @@ function _squeue() {
 		"preempted"
 		"running"
 		"requeued"
+		"requeue_fed"
+		"requeue_hold"
 		"resizing"
 		"revoked"
+		"resv_del_hold"
+		"signaling"
+		"special_exit"
+		"stage_out"
+		"stopped"
 		"suspended"
 		"timeout"
 	)
@@ -4748,7 +4755,7 @@ function _squeue() {
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	-R | --reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
-	-t | --state?(s)) __slurm_compreply_list "${states[*]}" ;;
+	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
