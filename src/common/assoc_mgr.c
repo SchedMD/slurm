@@ -696,7 +696,7 @@ static int _list_find_user(void *x, void *key)
 	slurmdb_user_rec_t *user = key;
 
 	if (user->uid != NO_VAL)
-		return _list_find_uid(found_user, &user->uid);
+		return (found_user->uid == user->uid);
 	else if (!xstrcasecmp(found_user->name, user->name))
 		return 1;
 
