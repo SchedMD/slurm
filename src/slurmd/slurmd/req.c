@@ -1128,6 +1128,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
+	identity_debug2(arg->id, __func__);
+
 	xfree(req->gids);
 	if (arg->id->ngids) {
 		req->ngids = arg->id->ngids;
