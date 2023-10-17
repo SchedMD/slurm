@@ -532,7 +532,8 @@ extern int mpi_g_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 
 extern int mpi_g_client_init(char **mpi_type)
 {
-	_mpi_init(mpi_type);
+	if (!client_plugin_id)
+		_mpi_init(mpi_type);
 
 	return client_plugin_id;
 }
