@@ -726,7 +726,8 @@ static int _list_find_coord(void *x, void *key)
 }
 
 /* locks should be put in place before calling this function USER_WRITE */
-static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
+static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc,
+				   slurmdb_user_rec_t *user)
 {
 	xassert(assoc);
 	xassert(assoc->acct);
@@ -734,8 +735,9 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 
 	/* set up the default if this is it */
 	if ((assoc->is_def == 1) && (assoc->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = list_find_first(
-			assoc_mgr_user_list, _list_find_uid, &assoc->uid);
+		if (!user)
+			user = list_find_first(assoc_mgr_user_list,
+					       _list_find_uid, &assoc->uid);
 
 		if (!user)
 			return;
@@ -941,7 +943,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 			else
 				assoc->uid = pw_uid;
 		}
-		_set_user_default_acct(assoc);
+		_set_user_default_acct(assoc, NULL);
 
 		/* get the qos bitmap here */
 		if (g_qos_count > 0) {
@@ -4188,7 +4190,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				   so try to avoid doing it twice.
 				*/
 				if (!parents_changed) {
-					_set_user_default_acct(rec);
+					_set_user_default_acct(rec, NULL);
 					_clear_user_default_acct(rec);
 				}
 			}
