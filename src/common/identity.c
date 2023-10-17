@@ -190,3 +190,29 @@ extern void destroy_identity(identity_t *id)
 	id->ngids = 0;
 	xfree(id);
 }
+
+extern void identity_debug2(identity_t *id, const char *func)
+{
+	char *groups = NULL, *pos = NULL;
+
+	if (get_log_level() < LOG_LEVEL_DEBUG2)
+		return;
+
+	for (int i = 0; i < id->ngids; i++) {
+		if (id->gr_names)
+			xstrfmtcatat(groups, &pos, "%s(%u),",
+				     id->gr_names[i], id->gids[i]);
+		else
+			xstrfmtcatat(groups, &pos, "%u,", id->gids[i]);
+	}
+
+	/* remove trailing comma */
+	if (pos)
+		*(pos - 1) = '\0';
+
+	debug2("%s: identity: uid=%u gid=%u pw_name=%s pw_gecos=%s pw_dir=%s pw_shell=%s ngids=%d groups=%s",
+	       func, id->uid, id->gid, id->pw_name, id->pw_gecos, id->pw_dir,
+	       id->pw_shell, id->ngids, groups);
+
+	xfree(groups);
+}

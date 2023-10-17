@@ -70,4 +70,6 @@ do {					\
 	_X = NULL;			\
 } while(0)
 
+extern void identity_debug2(identity_t *id, const char *func);
+
 #endif
