@@ -76,6 +76,7 @@ typedef struct {
 					 char *signature);
 	const char *(*cred_str_error)	(int);
 	slurm_cred_t *(*cred_create)	(slurm_cred_arg_t *cred_arg,
+					 bool sign_it,
 					 uint16_t protocol_version);
 	int (*cred_unpack)		(void **cred, buf_t *buf,
 					 uint16_t protocol_version);
@@ -112,12 +113,6 @@ static list_t *sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
-
-/*
- * Static prototypes:
- */
-
-static int _cred_sign(slurm_cred_t *cred);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void)
@@ -222,11 +217,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 			goto fail;
 	}
 
-	cred = (*(ops.cred_create))(arg, protocol_version);
-
-	if (sign_it && _cred_sign(cred) < 0) {
-		goto fail;
-	}
+	cred = (*(ops.cred_create))(arg, sign_it, protocol_version);
 
 	/* Release any values populated through _fill_cred_gids(). */
 	if (release_id)
@@ -680,22 +671,6 @@ extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
 	cred->magic = CRED_MAGIC;
 
 	return cred;
-}
-
-static int _cred_sign(slurm_cred_t *cred)
-{
-	int rc;
-
-	rc = (*(ops.cred_sign))(get_buf_data(cred->buffer),
-				get_buf_offset(cred->buffer),
-				&cred->signature);
-
-	if (rc) {
-		error("Credential sign: %s",
-		      (*(ops.cred_str_error))(rc));
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
 }
 
 /*****************************************************************************\

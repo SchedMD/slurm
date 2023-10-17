@@ -326,9 +326,18 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	return rc;
 }
 
-extern slurm_cred_t *cred_p_create(void *cred, uint16_t protocol_version)
+extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
+				   uint16_t protocol_version)
 {
-	return cred_create(cred, protocol_version);
+	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
+
+	if (sign_it && _encode(&cred->signature, cred->buffer)) {
+		error("%s: failed to sign, returning NULL", __func__);
+		slurm_cred_destroy(cred);
+		return NULL;
+	}
+
+	return cred;
 }
 
 extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
