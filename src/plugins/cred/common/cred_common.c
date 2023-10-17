@@ -54,8 +54,6 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
 		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
@@ -137,8 +135,6 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		packstr(cred->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
 		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
@@ -216,8 +212,6 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		packstr(cred->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred->uid, buffer);
-		pack32(cred->gid, buffer);
 		pack_identity(cred->id, buffer, protocol_version);
 
 		(void) gres_job_state_pack(cred->job_gres_list, buffer,
@@ -305,19 +299,6 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_arg->uid, buffer);
-		if (cred_arg->uid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid user nobody",
-			      __func__);
-			goto unpack_error;
-		}
-
-		safe_unpack32(&cred_arg->gid, buffer);
-		if (cred_arg->gid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid group nobody",
-			      __func__);
-			goto unpack_error;
-		}
 
 		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
@@ -419,19 +400,6 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_arg->uid, buffer);
-		if (cred_arg->uid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid user nobody",
-			      __func__);
-			goto unpack_error;
-		}
-
-		safe_unpack32(&cred_arg->gid, buffer);
-		if (cred_arg->gid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid group nobody",
-			      __func__);
-			goto unpack_error;
-		}
 
 		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
@@ -530,19 +498,6 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_arg->uid, buffer);
-		if (cred_arg->uid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid user nobody",
-			      __func__);
-			goto unpack_error;
-		}
-
-		safe_unpack32(&cred_arg->gid, buffer);
-		if (cred_arg->gid == SLURM_AUTH_NOBODY) {
-			error("%s: refusing to unpack credential for invalid group nobody",
-			      __func__);
-			goto unpack_error;
-		}
 
 		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
 			goto unpack_error;
@@ -637,6 +592,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
+
+	cred_arg->uid = cred_arg->id->uid;
+	cred_arg->gid = cred_arg->id->gid;
 
 	*out = cred;
 	return SLURM_SUCCESS;

@@ -93,6 +93,8 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 	 */
 	gr_names_cnt = (id->gr_names) ? id->ngids : 0;
 
+	pack32(id->uid, buffer);
+	pack32(id->gid, buffer);
 	packstr(id->pw_name, buffer);
 	packstr(id->pw_gecos, buffer);
 	packstr(id->pw_dir, buffer);
@@ -107,6 +109,18 @@ extern int unpack_identity(identity_t **out, buf_t *buffer,
 	uint32_t u32_ngids;
 	identity_t *id = xmalloc(sizeof(*id));
 
+	safe_unpack32(&id->uid, buffer);
+	if (id->uid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to unpack identity for invalid user nobody",
+		      __func__);
+		goto unpack_error;
+	}
+	safe_unpack32(&id->gid, buffer);
+	if (id->gid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to unpack identity for invalid group nobody",
+		      __func__);
+		goto unpack_error;
+	}
 	safe_unpackstr(&id->pw_name, buffer);
 	safe_unpackstr(&id->pw_gecos, buffer);
 	safe_unpackstr(&id->pw_dir, buffer);
