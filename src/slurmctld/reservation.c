@@ -7207,8 +7207,10 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				}
 			}
 
-			_addto_gres_list_exc(&resv_exc_ptr->gres_list_exc,
-					     resv_ptr->gres_list_alloc);
+			if (resv_exc_ptr)
+				_addto_gres_list_exc(
+					&resv_exc_ptr->gres_list_exc,
+					resv_ptr->gres_list_alloc);
 
 			if(!job_ptr->part_ptr ||
 			    bit_overlap_any(job_ptr->part_ptr->node_bitmap,
