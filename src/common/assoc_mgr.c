@@ -785,7 +785,8 @@ static void _clear_user_default_acct(slurmdb_assoc_rec_t *assoc)
 }
 
 /* locks should be put in place before calling this function USER_WRITE */
-static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
+static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey,
+				    slurmdb_user_rec_t *user)
 {
 	xassert(wckey);
 	xassert(wckey->name);
@@ -793,8 +794,9 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 
 	/* set up the default if this is it */
 	if ((wckey->is_def == 1) && (wckey->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = list_find_first(
-			assoc_mgr_user_list, _list_find_uid, &wckey->uid);
+		if (!user)
+			user = list_find_first(assoc_mgr_user_list,
+					       _list_find_uid, &wckey->uid);
 
 		if (!user)
 			return;
@@ -1191,7 +1193,7 @@ static int _post_wckey_list(List wckey_list)
 			wckey->uid = NO_VAL;
 		} else
 			wckey->uid = pw_uid;
-		_set_user_default_wckey(wckey);
+		_set_user_default_wckey(wckey, NULL);
 	}
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
@@ -4555,7 +4557,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 			if (object->is_def != NO_VAL16) {
 				rec->is_def = object->is_def;
 				if (rec->is_def)
-					_set_user_default_wckey(rec);
+					_set_user_default_wckey(rec, NULL);
 			}
 
 			break;
@@ -4576,7 +4578,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 			   be NO_VAL, so if it isn't 1 make it 0.
 			*/
 			if (object->is_def == 1)
-				_set_user_default_wckey(object);
+				_set_user_default_wckey(object, NULL);
 			else
 				object->is_def = 0;
 			list_append(assoc_mgr_wckey_list, object);
