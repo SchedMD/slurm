@@ -565,6 +565,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 
 	qos = list_find_first(args->qos_list, slurmdb_find_qos_in_list, qos_id);
 	if (!qos) {
+		(void) data_set_string(dst, "Unknown");
 		return on_error(DUMPING, parser->type, args,
 				ESLURM_REST_EMPTY_RESULT,
 				"list_find_first()->slurmdb_find_qos_in_list()",
