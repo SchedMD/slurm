@@ -1574,14 +1574,12 @@ extern int assoc_mgr_post_tres_list(List new_list)
 
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
-	slurmdb_tres_cond_t tres_q;
+	slurmdb_tres_cond_t tres_q = {0};
 	uid_t uid = getuid();
 	List new_list = NULL;
 	int changed;
 	assoc_mgr_lock_t locks =
 		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres= WRITE_LOCK };
-
-	memset(&tres_q, 0, sizeof(slurmdb_tres_cond_t));
 
 	assoc_mgr_lock(&locks);
 
@@ -1621,7 +1619,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
-	slurmdb_assoc_cond_t assoc_q;
+	slurmdb_assoc_cond_t assoc_q = {0};
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
@@ -1630,7 +1628,6 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	assoc_mgr_lock(&locks);
 	FREE_NULL_LIST(assoc_mgr_assoc_list);
 
-	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
 	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, slurm_conf.cluster_name);
@@ -1740,12 +1737,9 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
-	slurmdb_user_cond_t user_q;
+	slurmdb_user_cond_t user_q = { .with_coords = 1 };
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
-
-	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
-	user_q.with_coords = 1;
 
 	assoc_mgr_lock(&locks);
 	FREE_NULL_LIST(assoc_mgr_user_list);
@@ -1771,7 +1765,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 {
-	slurmdb_wckey_cond_t wckey_q;
+	slurmdb_wckey_cond_t wckey_q = {0};
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
@@ -1779,7 +1773,6 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 	assoc_mgr_lock(&locks);
 	FREE_NULL_LIST(assoc_mgr_wckey_list);
 
-	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, slurm_conf.cluster_name);
@@ -1830,7 +1823,7 @@ static int _refresh_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
-	slurmdb_assoc_cond_t assoc_q;
+	slurmdb_assoc_cond_t assoc_q = {0};
 	List current_assocs = NULL;
 	uid_t uid = getuid();
 	ListIterator curr_itr = NULL;
@@ -1839,7 +1832,6 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 //	DEF_TIMERS;
 
-	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
 	if (!slurmdbd_conf) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, slurm_conf.cluster_name);
@@ -1999,12 +1991,9 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	List current_users = NULL;
-	slurmdb_user_cond_t user_q;
+	slurmdb_user_cond_t user_q = { .with_coords = 1 };
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
-
-	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
-	user_q.with_coords = 1;
 
 	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
 
@@ -2031,12 +2020,11 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
  */
 static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 {
-	slurmdb_wckey_cond_t wckey_q;
+	slurmdb_wckey_cond_t wckey_q = {0};
 	List current_wckeys = NULL;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
-	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (!slurmdbd_conf) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, slurm_conf.cluster_name);
@@ -2677,7 +2665,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (!assoc->id) {
 		if (!assoc->acct) {
-			slurmdb_user_rec_t user;
+			slurmdb_user_rec_t user = { .uid = assoc->uid };
 
 			if (assoc->uid == NO_VAL) {
 				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
@@ -2689,8 +2677,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 					return SLURM_SUCCESS;
 				}
 			}
-			memset(&user, 0, sizeof(slurmdb_user_rec_t));
-			user.uid = assoc->uid;
 			if (assoc_mgr_fill_in_user(db_conn, &user,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
@@ -3096,7 +3082,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 	if (!wckey->id) {
 		if (!wckey->name) {
-			slurmdb_user_rec_t user;
+			slurmdb_user_rec_t user =
+				{ .uid = wckey->uid, .name = wckey->user };
 
 			if (wckey->uid == NO_VAL && !wckey->user) {
 				if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
@@ -3108,9 +3095,6 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 					return SLURM_SUCCESS;
 				}
 			}
-			memset(&user, 0, sizeof(slurmdb_user_rec_t));
-			user.uid = wckey->uid;
-			user.name = wckey->user;
 			if (assoc_mgr_fill_in_user(db_conn, &user,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
@@ -3259,7 +3243,7 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
 extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
-	find_coord_t find_coord;
+	find_coord_t find_coord = { .req = acct_name };
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -3271,8 +3255,6 @@ extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 		return NULL;
 	}
 
-	memset(&find_coord, 0, sizeof(find_coord));
-	find_coord.req = acct_name;
 	(void) list_for_each(assoc_mgr_coord_list,
 			     _list_find_coord, &find_coord);
 
@@ -3284,7 +3266,8 @@ extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
-	slurmdb_user_rec_t *user, req_user;
+	slurmdb_user_rec_t req_user = { .name = user_name, .uid = NO_VAL };
+	slurmdb_user_rec_t *user;
 	list_t *ret_list = NULL;
 
 	assoc_mgr_lock(&locks);
@@ -3295,10 +3278,6 @@ extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name)
 		assoc_mgr_unlock(&locks);
 		return NULL;
 	}
-
-	memset(&req_user, 0, sizeof(req_user));
-	req_user.name = user_name;
-	req_user.uid = NO_VAL;
 
 	user = list_find_first(
 		assoc_mgr_coord_list, _list_find_user, &req_user);
@@ -3371,7 +3350,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	assoc_shares_object_t *share = NULL;
 	List ret_list = NULL;
 	char *tmp_char = NULL;
-	slurmdb_user_rec_t user;
+	slurmdb_user_rec_t user = { .uid = uid };
 	int is_admin=1;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
@@ -3379,9 +3358,6 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 	if (!assoc_mgr_assoc_list || !list_count(assoc_mgr_assoc_list))
 		return;
-
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
 
 	if (req_msg) {
 		if (req_msg->user_list && list_count(req_msg->user_list))
@@ -3566,7 +3542,8 @@ extern void assoc_mgr_info_get_pack_msg(
 	slurmdb_assoc_rec_t *assoc_rec = NULL;
 	List ret_list = NULL, tmp_list;
 	char *tmp_char = NULL;
-	slurmdb_user_rec_t user, *user_rec = NULL;
+	slurmdb_user_rec_t user = { .uid = uid };
+	slurmdb_user_rec_t *user_rec = NULL;
 	int is_admin=1;
 	void *object;
 	uint32_t flags = 0;
@@ -3577,9 +3554,6 @@ extern void assoc_mgr_info_get_pack_msg(
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
 
 	if (msg) {
 		if (msg->user_list && list_count(msg->user_list))
@@ -5569,7 +5543,7 @@ static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
 	char *tmp_str = tres_str;
 	int pos, id;
 	char *endptr;
-	slurmdb_tres_rec_t tres_rec;
+	slurmdb_tres_rec_t tres_rec = {0};
 
 	xassert(tres_cnt);
 
@@ -5578,8 +5552,6 @@ static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
 
 	if (tmp_str[0] == ',')
 		tmp_str++;
-
-	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 
 	while (tmp_str) {
 		id = atoi(tmp_str);
