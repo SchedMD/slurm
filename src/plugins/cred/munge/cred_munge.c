@@ -126,11 +126,10 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static munge_ctx_t _munge_ctx_create(bool uid_restriction)
+static munge_ctx_t _munge_ctx_create(void)
 {
 	static int auth_ttl = 0;
 	munge_ctx_t ctx;
-	munge_err_t err;
 	char *socket;
 	int rc;
 
@@ -164,24 +163,6 @@ static munge_ctx_t _munge_ctx_create(bool uid_restriction)
 		}
 	}
 
-	/*
-	 * Only allow slurmd_user (usually root) to decode job
-	 * credentials created by slurmctld. This provides a slight
-	 * layer of extra security, as non-privileged users cannot
-	 * get at the contents of job credentials.
-	 */
-	if (uid_restriction) {
-		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-				    slurm_conf.slurmd_user_id);
-
-		if (err != EMUNGE_SUCCESS) {
-			error("Unable to set uid restriction on munge credentials: %s",
-			      munge_ctx_strerror(ctx));
-			munge_ctx_destroy(ctx);
-			return NULL;
-		}
-	}
-
 	return ctx;
 }
 
@@ -199,12 +180,12 @@ extern const char *cred_p_str_error(int errnum)
 		return munge_strerror ((munge_err_t) errnum);
 }
 
-static int _encode(char **signature, bool uid_restriction, buf_t *buffer)
+static int _encode(char **signature, buf_t *buffer)
 {
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create(uid_restriction);
+	munge_ctx_t ctx = _munge_ctx_create();
 
 	if (!ctx)
 		return 0;
@@ -239,7 +220,7 @@ extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 
 	buf = create_buf(buffer, buf_size);
 	buf->processed = buf_size;
-	rc = _encode(signature, true, buf);
+	rc = _encode(signature, buf);
 	xfer_buf_data(buf);
 
 	return rc;
@@ -261,7 +242,7 @@ static int _decode(char *signature, bool replay_okay, buf_t **buffer,
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create(false);
+	munge_ctx_t ctx = _munge_ctx_create();
 
 	if (!ctx)
 		return SLURM_ERROR;
@@ -389,7 +370,7 @@ extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 
 	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
 
-	if ((rc = _encode(&signature, false, buffer))) {
+	if ((rc = _encode(&signature, buffer))) {
 		error("%s: _encode failure: %s",
 		      __func__, slurm_strerror(rc));
 		free_buf(buffer);
