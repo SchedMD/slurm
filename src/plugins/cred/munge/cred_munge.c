@@ -218,10 +218,10 @@ extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 	int rc = SLURM_SUCCESS;
 	buf_t *buf = NULL;
 
-	buf = create_buf(buffer, buf_size);
+	buf = create_shadow_buf(buffer, buf_size);
 	buf->processed = buf_size;
 	rc = _encode(signature, buf);
-	xfer_buf_data(buf);
+	FREE_NULL_BUFFER(buf);
 
 	return rc;
 }
