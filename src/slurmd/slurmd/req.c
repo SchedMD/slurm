@@ -4329,11 +4329,6 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	libdir_rec_t *libdir = NULL;
 	bool force_opt = false;
 
-	/* may still be unset in credential */
-	if (!cred_arg->id->ngids || !cred_arg->id->gids)
-		cred_arg->id->ngids = group_cache_lookup(key->uid, key->gid,
-							 cred_arg->id->pw_name,
-							 &cred_arg->id->gids);
 	force_opt = req->flags & FILE_BCAST_FORCE;
 
 	flags = O_WRONLY | O_CREAT;
