@@ -96,16 +96,10 @@ static const char *syms[] = {
 	"sbcast_p_unpack",
 };
 
-struct sbcast_cache {
-	time_t       expire;	/* Time that the cred was created	*/
-	uint32_t value;		/* Hash of credential signature */
-};
-
 static slurm_cred_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static time_t cred_restart_time = (time_t) 0;
-static list_t *sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
@@ -147,7 +141,6 @@ extern int cred_g_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	sbcast_cache_list = list_create(xfree_ptr);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -163,7 +156,6 @@ extern int cred_g_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	FREE_NULL_LIST(sbcast_cache_list);
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -700,30 +692,6 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	xfree(sbcast_cred);
 }
 
-static uint32_t _sbcast_cache_hash(char *signature)
-{
-	uint32_t hash = 0;
-	int len = strlen(signature);
-
-	/* Using two bytes at a time gives us a larger number
-	 * and reduces the possibility of a duplicate value */
-	for (int i = 0; i < len; i += 2) {
-		hash += (signature[i] << 8) + signature[i + 1];
-	}
-
-	return hash;
-}
-
-static void _sbcast_cache_add(sbcast_cred_t *sbcast_cred)
-{
-	struct sbcast_cache *new_cache_rec;
-
-	new_cache_rec = xmalloc(sizeof(struct sbcast_cache));
-	new_cache_rec->expire = sbcast_cred->expiration;
-	new_cache_rec->value = _sbcast_cache_hash(sbcast_cred->signature);
-	list_append(sbcast_cache_list, new_cache_rec);
-}
-
 /* Extract contents of an sbcast credential verifying the digital signature.
  * NOTE: We can only perform the full credential validation once with
  *	Munge without generating a credential replay error, so we only
@@ -736,7 +704,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 					      uint16_t protocol_version)
 {
 	sbcast_cred_arg_t *arg;
-	struct sbcast_cache *next_cache_rec;
 	time_t now = time(NULL);
 
 	xassert(g_context);
@@ -747,28 +714,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
 		if (!sbcast_cred->verified)
 			return NULL;
-		_sbcast_cache_add(sbcast_cred);
-	} else {
-		bool cache_match_found = false;
-		list_itr_t *sbcast_iter;
-		uint32_t sig_num = _sbcast_cache_hash(sbcast_cred->signature);
-
-		sbcast_iter = list_iterator_create(sbcast_cache_list);
-		while ((next_cache_rec = list_next(sbcast_iter))) {
-			if ((next_cache_rec->expire == sbcast_cred->expiration) &&
-			    (next_cache_rec->value  == sig_num)) {
-				cache_match_found = true;
-				break;
-			}
-			if (next_cache_rec->expire <= now)
-				list_delete_item(sbcast_iter);
-		}
-		list_iterator_destroy(sbcast_iter);
-
-		if (!cache_match_found) {
-			error("sbcast_cred verify: signature not in cache");
-			return NULL;
-		}
 	}
 
 	if (sbcast_cred->uid == SLURM_AUTH_NOBODY) {
