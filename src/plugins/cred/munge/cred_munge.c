@@ -272,7 +272,7 @@ end_it:
 	return rc;
 }
 
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
+static int _verify_signature(char *buffer, uint32_t buf_size, char *signature)
 {
 	int rc = SLURM_SUCCESS;
 	bool replay_okay = false;
@@ -330,9 +330,9 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 	 * (Only done in slurmd.)
 	 */
 	if (credential->signature && running_in_slurmd()) {
-		if (cred_p_verify_sign(get_buf_data(credential->buffer),
-				       credential->sig_offset,
-				       credential->signature)) {
+		if (_verify_signature(get_buf_data(credential->buffer),
+				      credential->sig_offset,
+				      credential->signature)) {
 			slurm_cred_destroy(credential);
 			return NULL;
 		}
@@ -417,8 +417,8 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
 	}
 
 	if (running_in_slurmd()) {
-		if (cred_p_verify_sign(get_buf_data(buf) + cred_start,
-				       siglen, cred->signature)) {
+		if (_verify_signature(get_buf_data(buf) + cred_start,
+				      siglen, cred->signature)) {
 			delete_sbcast_cred(cred);
 			return NULL;
 		}
