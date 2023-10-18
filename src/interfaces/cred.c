@@ -191,13 +191,13 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	if (arg->uid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create job %u credential for invalid user nobody",
 		      __func__, arg->step_id.job_id);
-		goto fail;
+		return NULL;
 	}
 
 	if (arg->gid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create job %u credential for invalid group nobody",
 		      __func__, arg->step_id.job_id);
-		goto fail;
+		return NULL;
 	}
 
 	if (arg->sock_core_rep_count) {
@@ -213,8 +213,10 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	if (!arg->id && (enable_nss_slurm || enable_send_gids)) {
 		release_id = true;
 		if (!(arg->id = fetch_identity(arg->uid, arg->gid,
-					       enable_nss_slurm)))
-			goto fail;
+					       enable_nss_slurm))) {
+			error("%s: fetch_identity() failed", __func__);
+			return NULL;
+		}
 	}
 
 	cred = (*(ops.cred_create))(arg, sign_it, protocol_version);
@@ -224,12 +226,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 		FREE_NULL_IDENTITY(arg->id);
 
 	return cred;
-
-fail:
-	if (release_id)
-		FREE_NULL_IDENTITY(arg->id);
-	slurm_cred_destroy(cred);
-	return NULL;
 }
 
 extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
