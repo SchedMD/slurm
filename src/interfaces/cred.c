@@ -187,6 +187,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
 	bool release_id = false;
+	identity_t fake_id = { .uid = arg->uid, .gid = arg->gid };
 
 	xassert(arg);
 	xassert(g_context);
@@ -220,6 +221,8 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 			error("%s: fetch_identity() failed", __func__);
 			return NULL;
 		}
+	} else if (!arg->id) {
+		arg->id = &fake_id;
 	}
 
 	cred = (*(ops.cred_create))(arg, sign_it, protocol_version);
