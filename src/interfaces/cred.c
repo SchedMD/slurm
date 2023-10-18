@@ -711,18 +711,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 			return NULL;
 	}
 
-	if (sbcast_cred->arg.uid == SLURM_AUTH_NOBODY) {
-		error("%s: refusing to create bcast credential for invalid user nobody",
-		      __func__);
-		return NULL;
-	}
-
-	if (sbcast_cred->arg.gid == SLURM_AUTH_NOBODY) {
-		error("%s: refusing to create bcast credential for invalid group nobody",
-		      __func__);
-		return NULL;
-	}
-
 	return &sbcast_cred->arg;
 }
 
