@@ -2872,50 +2872,23 @@ function __sacctmgr_delete() {
 
 # completion handler for: sacctmgr dump [key=val]...
 function __sacctmgr_dump() {
-	local subcmds=(
-		"account"
-		"association"
-		"cluster"
-		"configuration"
-		"coordinator"
-		"event"
-		"federation"
-		"job"
-		"problem"
-		"qos"
-		"resource"
-		"reservation"
-		"runawayjobs"
-		"stats"
-		"transaction"
-		"tres"
-		"user"
-		"wckey"
-	)
 	local parameters=(
+		"cluster="
 		"file="
 	)
-	local subcmd
-	subcmd="$(__slurm_find_subcmd "${subcmds[*]}")"
-	local param
-	param="$(__slurm_find_param "${parameters[*]}")"
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-	__slurm_log_debug "$(__func__): subcmd='$subcmd' param='$param'"
-	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
-	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
-	if [[ -z ${subcmd-} ]]; then
-		__slurm_compreply "${subcmds[*]}"
-	elif [[ -z ${param-} ]]; then
-		__slurm_compreply "${parameters[*]}"
-	else
-		case "${prev}" in
-		file) _filedir ;;
-		esac
-	fi
+	case "${prev}" in
+	cluster) __slurm_compreply "$(__slurm_clusters)" ;;
+	file) _filedir ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: sacctmgr list account [key=val]...
@@ -3022,7 +2995,24 @@ function __sacctmgr_list() {
 
 # completion handler for: sacctmgr load [key=val]...
 function __sacctmgr_load() {
-	_filedir
+	local parameters=(
+		"clean"
+		"cluster="
+		"file="
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	cluster) __slurm_compreply "$(__slurm_clusters)" ;;
+	file) _filedir ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: sacctmgr modify account [key=val]...
