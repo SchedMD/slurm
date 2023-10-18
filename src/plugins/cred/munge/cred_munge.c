@@ -213,17 +213,18 @@ again:
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size, char **signature)
+extern char *cred_p_sign(char *buffer, int buf_size)
 {
-	int rc = SLURM_SUCCESS;
+	char *signature = NULL;
 	buf_t *buf = NULL;
 
 	buf = create_shadow_buf(buffer, buf_size);
 	buf->processed = buf_size;
-	rc = _encode(signature, buf);
+	if (_encode(&signature, buf))
+		error("%s: _encode() failed", __func__);
 	FREE_NULL_BUFFER(buf);
 
-	return rc;
+	return signature;
 }
 
 /*

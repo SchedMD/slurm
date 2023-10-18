@@ -70,8 +70,7 @@
 #define MAX_TIME 0x7fffffff
 
 typedef struct {
-	int   (*cred_sign)		(char *buffer, int buf_size,
-					 char **signature);
+	char *(*cred_sign)		(char *buffer, int buf_size);
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
 					 char *signature);
 	const char *(*cred_str_error)	(int);
@@ -693,7 +692,6 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version)
 {
 	buf_t *buffer;
-	int rc;
 	sbcast_cred_t *sbcast_cred;
 
 	xassert(g_context);
@@ -722,13 +720,12 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-	rc = (*(ops.cred_sign))(get_buf_data(buffer), get_buf_offset(buffer),
-				&sbcast_cred->signature);
+	sbcast_cred->signature = (*(ops.cred_sign))(get_buf_data(buffer),
+						    get_buf_offset(buffer));
 	FREE_NULL_BUFFER(buffer);
 
-	if (rc) {
-		error("sbcast_cred sign: %s",
-		      (*(ops.cred_str_error))(rc));
+	if (!sbcast_cred->signature) {
+		error("%s: failed to sign sbcast credential", __func__);
 		delete_sbcast_cred(sbcast_cred);
 		return NULL;
 	}
