@@ -697,14 +697,15 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 		safe_unpack32_array(&sbcast_cred->arg.gids,
 				    &sbcast_cred->arg.ngids, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
-
-		*siglen = get_buf_offset(buffer) - cred_start;
-
-		/* "signature" must be last */
-		safe_unpackstr(&sbcast_cred->signature, buffer);
-		if (!sbcast_cred->signature)
-			goto unpack_error;
 	} else
+		goto unpack_error;
+
+
+	*siglen = get_buf_offset(buffer) - cred_start;
+
+	/* "signature" must be last */
+	safe_unpackstr(&sbcast_cred->signature, buffer);
+	if (!sbcast_cred->signature)
 		goto unpack_error;
 
 	/*
