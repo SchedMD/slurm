@@ -656,10 +656,10 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 {
 	buf_t *buffer = init_buf(4096);
 	time_t now = time(NULL);
+	identity_t fake_id =
+		{ .uid = sbcast_cred->uid, .gid = sbcast_cred->gid };
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		identity_t fake_id =
-			{ .uid = sbcast_cred->uid, .gid = sbcast_cred->gid };
 		if (!sbcast_cred->id)
 			sbcast_cred->id = &fake_id;
 
