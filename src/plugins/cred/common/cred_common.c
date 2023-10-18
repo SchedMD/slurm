@@ -687,16 +687,16 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
-		safe_unpack_time(&sbcast_cred->expiration, buffer);
-		safe_unpack32(&sbcast_cred->jobid, buffer);
-		safe_unpack32(&sbcast_cred->het_job_id, buffer);
-		safe_unpack32(&sbcast_cred->step_id, buffer);
-		safe_unpack32(&sbcast_cred->uid, buffer);
-		safe_unpack32(&sbcast_cred->gid, buffer);
-		safe_unpackstr(&sbcast_cred->user_name, buffer);
-		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
-				    buffer);
-		safe_unpackstr(&sbcast_cred->nodes, buffer);
+		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
+		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
+		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
+		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
+		safe_unpack32(&sbcast_cred->arg.uid, buffer);
+		safe_unpack32(&sbcast_cred->arg.gid, buffer);
+		safe_unpackstr(&sbcast_cred->arg.user_name, buffer);
+		safe_unpack32_array(&sbcast_cred->arg.gids,
+				    &sbcast_cred->arg.ngids, buffer);
+		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 
 		*siglen = get_buf_offset(buffer) - cred_start;
 

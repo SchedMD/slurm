@@ -154,7 +154,7 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char *user_name;
-	int ngids;
+	uint32_t ngids;
 	gid_t *gids;
 	identity_t *id;
 
@@ -164,18 +164,8 @@ typedef struct {
 
 typedef struct sbcast_cred {
 	time_t ctime;		/* Time that the cred was created	*/
-	time_t expiration;	/* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* Slurm job id for this credential	*/
-	uint32_t het_job_id;	/* Slurm hetjob leader id for the job	*/
-	uint32_t step_id;	/* StepId				*/
-	uint32_t uid;		/* user for which this cred is valid	*/
-	uint32_t gid;		/* user's primary group id		*/
-	char *user_name;	/* user_name as a string		*/
-	uint32_t ngids;		/* number of extended group ids sent in
-				 * credential. if 0, these will need to
-				 * be fetched locally instead.		*/
-	uint32_t *gids;		/* extended group ids for user		*/
-	char *nodes;		/* nodes for which credential is valid	*/
+
+	sbcast_cred_arg_t arg;
 
 	buf_t *buffer;		/* pre-packed buffer */
 	char *signature;	/* credential signature			*/
@@ -342,7 +332,6 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 					 uint16_t protocol_version);
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
-extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 
 extern char *create_net_cred(void *addrs, uint16_t protocol_version);
 extern void *extract_net_cred(char *net_cred, uint16_t protocol_version);

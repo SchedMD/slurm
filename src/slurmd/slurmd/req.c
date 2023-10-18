@@ -3981,7 +3981,6 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
  * NOTE: We can only perform the full credential validation once with
  * Munge without generating a credential replay error
  * RET an sbcast credential or NULL on error.
- * free with sbcast_cred_arg_free()
  */
 static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     uid_t req_uid,
@@ -4001,12 +4000,10 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 
 	if (!(hset = hostset_create(arg->nodes))) {
 		error("Unable to parse sbcast_cred hostlist %s", arg->nodes);
-		sbcast_cred_arg_free(arg);
 		return NULL;
 	} else if (!hostset_within(hset, conf->node_name)) {
 		error("Security violation: sbcast_cred from %u has "
 		      "bad hostset %s", req_uid, arg->nodes);
-		sbcast_cred_arg_free(arg);
 		hostset_destroy(hset);
 		return NULL;
 	}
@@ -4015,7 +4012,6 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 	if ((arg->uid != req_uid) || (arg->gid != req_gid)) {
 		error("Security violation: sbcast cred from %u/%u but rpc from %u/%u",
 		      arg->uid, arg->gid, req_uid, req_gid);
-		sbcast_cred_arg_free(arg);
 		return NULL;
 	}
 
@@ -4261,11 +4257,9 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	/* first block must register the file and open fd/mmap */
 	if (req->block_no == 1) {
 		if ((rc = _file_bcast_register_file(msg, cred_arg, &key))) {
-			sbcast_cred_arg_free(cred_arg);
 			goto done;
 		}
 	}
-	sbcast_cred_arg_free(cred_arg);
 
 	slurm_rwlock_rdlock(&file_bcast_lock);
 	if (!(file_info = _bcast_lookup_file(&key))) {

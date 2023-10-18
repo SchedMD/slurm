@@ -684,10 +684,11 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	if (!sbcast_cred)
 		return;
 
+	FREE_NULL_IDENTITY(sbcast_cred->arg.id);
+	xfree(sbcast_cred->arg.gids);
+	xfree(sbcast_cred->arg.nodes);
+	xfree(sbcast_cred->arg.user_name);
 	FREE_NULL_BUFFER(sbcast_cred->buffer);
-	xfree(sbcast_cred->gids);
-	xfree(sbcast_cred->user_name);
-	xfree(sbcast_cred->nodes);
 	xfree(sbcast_cred->signature);
 	xfree(sbcast_cred);
 }
@@ -703,12 +704,11 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 					      uint16_t block_no, uint16_t flags,
 					      uint16_t protocol_version)
 {
-	sbcast_cred_arg_t *arg;
 	time_t now = time(NULL);
 
 	xassert(g_context);
 
-	if (now > sbcast_cred->expiration)
+	if (now > sbcast_cred->arg.expiration)
 		return NULL;
 
 	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
@@ -716,28 +716,19 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 			return NULL;
 	}
 
-	if (sbcast_cred->uid == SLURM_AUTH_NOBODY) {
+	if (sbcast_cred->arg.uid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create bcast credential for invalid user nobody",
 		      __func__);
 		return NULL;
 	}
 
-	if (sbcast_cred->gid == SLURM_AUTH_NOBODY) {
+	if (sbcast_cred->arg.gid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create bcast credential for invalid group nobody",
 		      __func__);
 		return NULL;
 	}
 
-	arg = xmalloc(sizeof(sbcast_cred_arg_t));
-	arg->job_id = sbcast_cred->jobid;
-	arg->step_id = sbcast_cred->step_id;
-	arg->uid = sbcast_cred->uid;
-	arg->gid = sbcast_cred->gid;
-	arg->user_name = xstrdup(sbcast_cred->user_name);
-	arg->ngids = sbcast_cred->ngids;
-	arg->gids = copy_gids(sbcast_cred->ngids, sbcast_cred->gids);
-	arg->nodes = xstrdup(sbcast_cred->nodes);
-	return arg;
+	return &sbcast_cred->arg;
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
@@ -765,22 +756,11 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
-	info("Sbcast_cred: JobId   %u", sbcast_cred->jobid);
-	info("Sbcast_cred: StepId  %u", sbcast_cred->step_id);
-	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes);
+	info("Sbcast_cred: JobId   %u", sbcast_cred->arg.job_id);
+	info("Sbcast_cred: StepId  %u", sbcast_cred->arg.step_id);
+	info("Sbcast_cred: Nodes   %s", sbcast_cred->arg.nodes);
 	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime));
-	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->expiration));
-}
-
-extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
-{
-	if (!arg)
-		return;
-
-	xfree(arg->gids);
-	xfree(arg->nodes);
-	xfree(arg->user_name);
-	xfree(arg);
+	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->arg.expiration));
 }
 
 extern char *create_net_cred(void *addrs, uint16_t protocol_version)
