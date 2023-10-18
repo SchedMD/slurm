@@ -4012,11 +4012,6 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 	}
 	hostset_destroy(hset);
 
-	/* fill in the credential with any missing data */
-	if (arg->uid == NO_VAL)
-		arg->uid = req_uid;
-	if (arg->gid == NO_VAL)
-		arg->gid = req_gid;
 	if ((arg->uid != req_uid) || (arg->gid != req_gid)) {
 		error("Security violation: sbcast cred from %u/%u but rpc from %u/%u",
 		      arg->uid, arg->gid, req_uid, req_gid);
