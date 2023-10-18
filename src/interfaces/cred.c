@@ -704,12 +704,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 					      uint16_t block_no, uint16_t flags,
 					      uint16_t protocol_version)
 {
-	time_t now = time(NULL);
-
 	xassert(g_context);
-
-	if (now > sbcast_cred->arg.expiration)
-		return NULL;
 
 	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
 		if (!sbcast_cred->verified)

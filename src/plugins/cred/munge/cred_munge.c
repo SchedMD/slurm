@@ -418,6 +418,12 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
 	}
 
 	if (verify) {
+		if (time(NULL) > cred->arg.expiration) {
+			error("%s: sbcast credential expired", __func__);
+			delete_sbcast_cred(cred);
+			return NULL;
+		}
+
 		if (_verify_signature(get_buf_data(buf) + cred_start,
 				      siglen, cred->signature)) {
 			delete_sbcast_cred(cred);
