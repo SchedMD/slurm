@@ -658,6 +658,11 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 	time_t now = time(NULL);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		identity_t fake_id =
+			{ .uid = sbcast_cred->uid, .gid = sbcast_cred->gid };
+		if (!sbcast_cred->id)
+			sbcast_cred->id = &fake_id;
+
 		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->job_id, buffer);
@@ -665,8 +670,9 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 		pack32(sbcast_cred->step_id, buffer);
 		pack32(sbcast_cred->uid, buffer);
 		pack32(sbcast_cred->gid, buffer);
-		packstr(sbcast_cred->user_name, buffer);
-		pack32_array(sbcast_cred->gids, sbcast_cred->ngids, buffer);
+		packstr(sbcast_cred->id->pw_name, buffer);
+		pack32_array(sbcast_cred->id->gids, sbcast_cred->id->ngids,
+			     buffer);
 		packstr(sbcast_cred->nodes, buffer);
 	}
 
