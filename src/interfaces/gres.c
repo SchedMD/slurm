@@ -9314,7 +9314,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 			else
 				task_mult = 1;
 			if (task_mult == 0) {
-				error("Repetition count of 0 not allowed in --gpu-bind=mask_gpu, using 1 instead");
+				error("Repetition count of 0 not allowed in gres binding mask, using 1 instead");
 				task_mult = 1;
 			}
 			if ((local_proc_id >= task_offset) &&
@@ -9322,7 +9322,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 				value = strtol(tok, NULL, 0);
 				usable_gres = bit_alloc(bitmap_size);
 				if ((value < min) || (value > max)) {
-					error("Invalid --gpu-bind= value specified.");
+					error("Invalid map or mask value specified.");
 					xfree(tmp);
 					goto end;	/* Bad value */
 				}
@@ -9584,18 +9584,25 @@ static int _get_usable_gres(int context_inx, int proc_id,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
 			    stepd_step_rec_t *step, uint64_t *gres_per_bit)
 {
-	char *sep;
+	char *tres_name = NULL, *sep;
 	bitstr_t *usable_gres = NULL;
 	uint32_t plugin_id = gres_context[context_inx].plugin_id;
-	char *gres_name = gres_context[context_inx].gres_name;
 	*usable_gres_ptr = NULL;
 
 	if (!gres_bit_alloc || !tres_bind_str)
 		return SLURM_SUCCESS;
 
-	if (!xstrcmp(gres_name, "gpu") &&
-	    (sep = xstrstr(tres_bind_str, "gres/gpu:"))) {
-		sep += 9;
+	tres_name = xstrdup_printf("gres/%s:",
+				   gres_context[context_inx].gres_name);
+	sep = xstrstr(tres_bind_str, tres_name);
+	if (!sep) {
+		xfree(tres_name);
+		return SLURM_SUCCESS;
+	}
+	sep += strlen(tres_name);
+	xfree(tres_name);
+
+	if (!gres_id_shared(gres_context[context_inx].config_flags)) {
 		if (!xstrncasecmp(sep, "map_gpu:", 8)) { // Old Syntax
 			usable_gres = _get_usable_gres_map_or_mask(
 				(sep + 8), proc_id, gres_bit_alloc,
@@ -9640,9 +9647,7 @@ static int _get_usable_gres(int context_inx, int proc_id,
 			}
 		} else
 			return SLURM_ERROR;
-	} else if (!xstrcmp(gres_name, "gres/shard") &&
-		   (sep = xstrstr(tres_bind_str, "shard:"))) {
-		sep += 11;
+	} else { // Shared gres only support per_task binding for now
 		if (!xstrncasecmp(sep, "per_task:", 9)) {
 			usable_gres = _get_shared_gres_per_task(
 				gres_bit_alloc, gres_per_bit,
@@ -9652,19 +9657,6 @@ static int _get_usable_gres(int context_inx, int proc_id,
 				bit_consolidate(usable_gres);
 		} else
 			return SLURM_ERROR;
-	} else if (!xstrcmp(gres_name, "gres/nic") &&
-		   (sep = xstrstr(tres_bind_str, "nic:"))) {
-		sep += 9;
-		if (!xstrncasecmp(sep, "closest", 7)) {
-			usable_gres = _get_closest_usable_gres(
-				context_inx, gres_bit_alloc,
-				step->task[proc_id]->cpu_set);
-			if (!get_devices && gres_use_local_device_index())
-				bit_consolidate(usable_gres);
-		} else
-			return SLURM_ERROR;
-	} else {
-		return SLURM_SUCCESS;
 	}
 
 	if (usable_gres && !bit_set_count(usable_gres)) {
