@@ -37,8 +37,8 @@
 #ifndef _CRED_COMMON_H
 #define _CRED_COMMON_H
 
-extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
-		      uint16_t protocol_version);
+extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
+				 uint16_t protocol_version);
 extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version);
 
 extern slurm_cred_t *cred_unpack_with_signature(buf_t *buffer,

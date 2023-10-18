@@ -119,9 +119,9 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	return SLURM_SUCCESS;
 }
 
-extern void cred_p_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+extern slurm_cred_t *cred_p_create(void *cred, uint16_t protocol_version)
 {
-	cred_pack(cred, buf, protocol_version);
+	return cred_create(cred, protocol_version);
 }
 
 extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)

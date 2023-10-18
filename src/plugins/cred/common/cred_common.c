@@ -46,11 +46,18 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 
-extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
-		      uint16_t protocol_version)
+extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
+				 uint16_t protocol_version)
 {
+	slurm_cred_t *credential;
 	uint32_t tot_core_cnt = 0;
+	buf_t *buffer;
+
 	time_t ctime = time(NULL);
+
+	credential = slurm_cred_alloc(false);
+	credential->buffer = buffer = init_buf(4096);
+	credential->buf_version = protocol_version;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
@@ -283,6 +290,8 @@ extern void cred_pack(slurm_cred_arg_t *cred, buf_t *buffer,
 		}
 		packstr(cred->selinux_context, buffer);
 	}
+
+	return credential;
 }
 
 extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)

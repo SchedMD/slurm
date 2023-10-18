@@ -75,7 +75,7 @@ typedef struct {
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
 					 char *signature);
 	const char *(*cred_str_error)	(int);
-	void (*cred_pack)		(void *cred, buf_t *buf,
+	slurm_cred_t *(*cred_create)	(slurm_cred_arg_t *cred_arg,
 					 uint16_t protocol_version);
 	int (*cred_unpack)		(void **cred, buf_t *buf,
 					 uint16_t protocol_version);
@@ -93,7 +93,7 @@ static const char *syms[] = {
 	"cred_p_sign",
 	"cred_p_verify_sign",
 	"cred_p_str_error",
-	"cred_p_pack",
+	"cred_p_create",
 	"cred_p_unpack",
 	"cred_p_create_net_cred",
 	"cred_p_extract_net_cred",
@@ -205,9 +205,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 		goto fail;
 	}
 
-	cred = slurm_cred_alloc(false);
-	xassert(cred->magic == CRED_MAGIC);
-
 	if (arg->sock_core_rep_count) {
 		for (i = 0; i < arg->job_nhosts; i++) {
 			sock_recs += arg->sock_core_rep_count[i];
@@ -225,10 +222,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 			goto fail;
 	}
 
-	cred->buffer = init_buf(4096);
-	cred->buf_version = protocol_version;
-
-	(*(ops.cred_pack))(arg, cred->buffer, protocol_version);
+	cred = (*(ops.cred_create))(arg, protocol_version);
 
 	if (sign_it && _cred_sign(cred) < 0) {
 		goto fail;
