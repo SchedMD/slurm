@@ -803,7 +803,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 		_sbcast_cache_add(sbcast_cred);
 
 	} else {
-		char *err_str = NULL;
 		bool cache_match_found = false;
 		list_itr_t *sbcast_iter;
 		uint32_t sig_num = _sbcast_cache_hash(sbcast_cred->signature);
@@ -822,23 +821,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 
 		if (!cache_match_found) {
 			error("sbcast_cred verify: signature not in cache");
-			if ((now - cred_restart_time) > 60)
-				return NULL;	/* restarted >60 secs ago */
-			buffer = init_buf(4096);
-			_pack_sbcast_cred(sbcast_cred, buffer,
-					  protocol_version);
-			rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
-						       get_buf_offset(buffer),
-						       sbcast_cred->signature);
-			FREE_NULL_BUFFER(buffer);
-			if (rc)
-				err_str = (char *)(*(ops.cred_str_error))(rc);
-			if (err_str && xstrcmp(err_str, "Credential replayed")){
-				error("sbcast_cred verify: %s", err_str);
-				return NULL;
-			}
-			info("sbcast_cred verify: signature revalidated");
-			_sbcast_cache_add(sbcast_cred);
+			return NULL;
 		}
 	}
 
