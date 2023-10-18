@@ -685,6 +685,8 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 {
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 	uint32_t cred_start = get_buf_offset(buffer);
+	char *user_name = NULL;
+	uint32_t ngids = 0, *gids = NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
@@ -694,9 +696,8 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.uid, buffer);
 		safe_unpack32(&sbcast_cred->arg.gid, buffer);
-		safe_unpackstr(&sbcast_cred->arg.user_name, buffer);
-		safe_unpack32_array(&sbcast_cred->arg.gids,
-				    &sbcast_cred->arg.ngids, buffer);
+		safe_unpackstr(&user_name, buffer);
+		safe_unpack32_array(&gids, &ngids, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 	} else
 		goto unpack_error;
@@ -704,10 +705,9 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
 	sbcast_cred->arg.id->uid = sbcast_cred->arg.uid;
 	sbcast_cred->arg.id->gid = sbcast_cred->arg.gid;
-	sbcast_cred->arg.id->pw_name = xstrdup(sbcast_cred->arg.user_name);
-	sbcast_cred->arg.id->ngids = sbcast_cred->arg.ngids;
-	sbcast_cred->arg.id->gids = copy_gids(sbcast_cred->arg.ngids,
-					      sbcast_cred->arg.gids);
+	sbcast_cred->arg.id->pw_name = user_name;
+	sbcast_cred->arg.id->ngids = ngids;
+	sbcast_cred->arg.id->gids = gids;
 
 	*siglen = get_buf_offset(buffer) - cred_start;
 

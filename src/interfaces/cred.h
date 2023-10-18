@@ -153,9 +153,6 @@ typedef struct {
 	uint32_t step_id;
 	uid_t uid;
 	gid_t gid;
-	char *user_name;
-	uint32_t ngids;
-	gid_t *gids;
 	identity_t *id;
 
 	time_t expiration;

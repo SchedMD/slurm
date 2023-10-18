@@ -685,9 +685,7 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 		return;
 
 	FREE_NULL_IDENTITY(sbcast_cred->arg.id);
-	xfree(sbcast_cred->arg.gids);
 	xfree(sbcast_cred->arg.nodes);
-	xfree(sbcast_cred->arg.user_name);
 	FREE_NULL_BUFFER(sbcast_cred->buffer);
 	xfree(sbcast_cred->signature);
 	xfree(sbcast_cred);
