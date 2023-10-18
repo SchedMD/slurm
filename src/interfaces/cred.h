@@ -147,6 +147,21 @@ typedef struct {
 	bool verified;		/* credential has been verified successfully */
 } slurm_cred_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint32_t het_job_id;
+	uint32_t step_id;
+	uid_t uid;
+	gid_t gid;
+	char *user_name;
+	int ngids;
+	gid_t *gids;
+	identity_t *id;
+
+	time_t expiration;
+	char *nodes;
+} sbcast_cred_arg_t;
+
 typedef struct sbcast_cred {
 	time_t ctime;		/* Time that the cred was created	*/
 	time_t expiration;	/* Time at which cred is no longer good	*/
@@ -315,21 +330,6 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
  * Functions to create, delete, pack, and unpack an sbcast credential
  * Caller of extract_sbcast_cred() must xfree returned node string
  */
-
-typedef struct {
-	uint32_t job_id;
-	uint32_t het_job_id;
-	uint32_t step_id;
-	uid_t uid;
-	gid_t gid;
-	char *user_name;
-	int ngids;
-	gid_t *gids;
-	identity_t *id;
-
-	time_t expiration;
-	char *nodes;
-} sbcast_cred_arg_t;
 
 extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version);
