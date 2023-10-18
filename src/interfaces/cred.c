@@ -118,8 +118,8 @@ static bool enable_send_gids = true;
 extern int cred_g_init(void)
 {
 	char *tok;
-	char    *plugin_type = "cred";
-	int	retval = SLURM_SUCCESS;
+	char *plugin_type = "cred";
+	int retval = SLURM_SUCCESS;
 
 	/*					 123456789012 */
 	if ((tok = xstrstr(slurm_conf.authinfo, "cred_expire="))) {
@@ -135,10 +135,10 @@ extern int cred_g_init(void)
 	else if (xstrcasestr(slurm_conf.launch_params, "disable_send_gids"))
 		enable_send_gids = false;
 
-	slurm_mutex_lock( &g_context_lock );
+	slurm_mutex_lock(&g_context_lock);
 	if (cred_restart_time == (time_t) 0)
 		cred_restart_time = time(NULL);
-	if ( g_context )
+	if (g_context)
 		goto done;
 
 	g_context = plugin_context_create(plugin_type,
@@ -154,7 +154,7 @@ extern int cred_g_init(void)
 	sbcast_cache_list = list_create(xfree_ptr);
 
 done:
-	slurm_mutex_unlock( &g_context_lock );
+	slurm_mutex_unlock(&g_context_lock);
 
 	return(retval);
 }
