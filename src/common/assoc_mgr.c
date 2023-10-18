@@ -6578,7 +6578,7 @@ extern void assoc_mgr_set_uid(uid_t uid, char *username)
 		.user = WRITE_LOCK,
 		.wckey = WRITE_LOCK
 	};
-	slurmdb_user_rec_t lookup = { .name = username };
+	slurmdb_user_rec_t lookup = { .uid = NO_VAL, .name = username };
 	slurmdb_user_rec_t *user = NULL;
 
 	/*
