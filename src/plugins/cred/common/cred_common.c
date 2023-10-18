@@ -696,6 +696,19 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	} else
 		goto unpack_error;
 
+	/*
+	 * Preserve a copy of the buffer in srun/sbcast to avoid needing to
+	 * repack it later.
+	 */
+	if (!running_in_slurmd()) {
+		uint32_t cred_len = get_buf_offset(buffer) - cred_start;
+		sbcast_cred->buffer = init_buf(cred_len);
+		memcpy(sbcast_cred->buffer->head,
+		       get_buf_data(buffer) + cred_start,
+		       cred_len);
+		sbcast_cred->buffer->processed = cred_len;
+	}
+
 	return sbcast_cred;
 
 unpack_error:
