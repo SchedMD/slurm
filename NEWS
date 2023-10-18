@@ -281,6 +281,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix arbitrary distribution allowing it to be used with salloc and sbatch and
     fix how cpus are allocated to nodes.
  -- Allow nodes to reboot while node is drained or in a maintenance state.
+ -- Allow scontrol reboot to use nodesets to filter nodes to reboot.
 
 * Changes in Slurm 23.02.7
 ==========================

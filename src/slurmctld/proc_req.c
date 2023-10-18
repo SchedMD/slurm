@@ -5667,12 +5667,18 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		nodelist = reboot_msg->node_list;
 	if (!nodelist || !xstrcasecmp(nodelist, "ALL")) {
 		bitmap = node_conf_get_active_bitmap();
-	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
-		FREE_NULL_BITMAP(bitmap);
-		error("%s: Bad node list in REBOOT_NODES request: \"%s\"",
-		      __func__, nodelist);
-		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
-		return;
+	} else {
+		hostlist_t *hostlist;
+		if (!(hostlist =
+		      nodespec_to_hostlist(nodelist, true, NULL))) {
+			error("%s: Bad node list in REBOOT_NODES request: \"%s\"",
+			      __func__, nodelist);
+			slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+			return;
+		} else {
+			hostlist2bitmap(hostlist, true, &bitmap);
+			FREE_NULL_HOSTLIST(hostlist);
+		}
 	}
 
 	lock_slurmctld(node_write_lock);
