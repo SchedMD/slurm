@@ -80,7 +80,7 @@ typedef struct {
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
 					 uint16_t protocol_version);
-	void (*sbcast_pack)		(sbcast_cred_arg_t *cred, buf_t *buffer,
+	sbcast_cred_t *(*sbcast_pack)	(sbcast_cred_arg_t *cred,
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
 					 uint16_t protocol_version);
@@ -672,8 +672,6 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 
 	xassert(g_context);
 
-	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
-
 	if (enable_send_gids) {
 		/* this may still be null, in which case slurmd will handle */
 		arg->user_name = uid_to_string_or_null(arg->uid);
@@ -682,9 +680,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 						arg->user_name, &arg->gids);
 	}
 
-	sbcast_cred->buffer = init_buf(4096);
-	(*(ops.sbcast_pack))(arg, sbcast_cred->buffer,
-			     protocol_version);
+	sbcast_cred = (*(ops.sbcast_pack))(arg, protocol_version);
 	sbcast_cred->signature = (*(ops.cred_sign))(sbcast_cred->buffer);
 
 	xfree(arg->user_name);
