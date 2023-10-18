@@ -142,7 +142,7 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 	return NULL;
 }
 
-extern void sbcast_p_pack(sbcast_cred_t *cred, buf_t *buf,
+extern void sbcast_p_pack(sbcast_cred_arg_t *cred, buf_t *buf,
 			  uint16_t protocol_version)
 {
 	sbcast_cred_pack(cred, buf, protocol_version);

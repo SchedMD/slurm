@@ -80,7 +80,7 @@ typedef struct {
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
 					 uint16_t protocol_version);
-	void (*sbcast_pack)		(sbcast_cred_t *cred, buf_t *buffer,
+	void (*sbcast_pack)		(sbcast_cred_arg_t *cred, buf_t *buffer,
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
 					 uint16_t protocol_version);
@@ -673,31 +673,22 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 	xassert(g_context);
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
-	sbcast_cred->ctime = time(NULL);
-	sbcast_cred->expiration = arg->expiration;
-	sbcast_cred->jobid = arg->job_id;
-	sbcast_cred->het_job_id = arg->het_job_id;
-	sbcast_cred->step_id = arg->step_id;
-	sbcast_cred->uid = arg->uid;
-	sbcast_cred->gid = arg->gid;
-	sbcast_cred->user_name = xstrdup(arg->user_name);
-	sbcast_cred->ngids = arg->ngids;
-	sbcast_cred->gids = copy_gids(arg->ngids, arg->gids);
-	sbcast_cred->nodes = xstrdup(arg->nodes);
 
 	if (enable_send_gids) {
 		/* this may still be null, in which case slurmd will handle */
-		sbcast_cred->user_name = uid_to_string_or_null(arg->uid);
+		arg->user_name = uid_to_string_or_null(arg->uid);
 		/* lookup and send extended gids list */
-		sbcast_cred->ngids = group_cache_lookup(arg->uid, arg->gid,
-							sbcast_cred->user_name,
-							&sbcast_cred->gids);
+		arg->ngids = group_cache_lookup(arg->uid, arg->gid,
+						arg->user_name, &arg->gids);
 	}
 
 	sbcast_cred->buffer = init_buf(4096);
-	(*(ops.sbcast_pack))(sbcast_cred, sbcast_cred->buffer,
+	(*(ops.sbcast_pack))(arg, sbcast_cred->buffer,
 			     protocol_version);
 	sbcast_cred->signature = (*(ops.cred_sign))(sbcast_cred->buffer);
+
+	xfree(arg->user_name);
+	xfree(arg->gids);
 
 	if (!sbcast_cred->signature) {
 		error("%s: failed to sign sbcast credential", __func__);

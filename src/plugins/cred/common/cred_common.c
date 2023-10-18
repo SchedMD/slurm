@@ -651,13 +651,15 @@ unpack_error:
 	return NULL;
 }
 
-extern void sbcast_cred_pack(sbcast_cred_t *sbcast_cred, buf_t *buffer,
+extern void sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred, buf_t *buffer,
 			     uint16_t protocol_version)
 {
+	time_t now = time(NULL);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(sbcast_cred->ctime, buffer);
+		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
-		pack32(sbcast_cred->jobid, buffer);
+		pack32(sbcast_cred->job_id, buffer);
 		pack32(sbcast_cred->het_job_id, buffer);
 		pack32(sbcast_cred->step_id, buffer);
 		pack32(sbcast_cred->uid, buffer);
