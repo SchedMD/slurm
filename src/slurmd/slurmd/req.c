@@ -3987,16 +3987,8 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     gid_t req_gid,
 					     uint16_t protocol_version)
 {
-	sbcast_cred_arg_t *arg;
+	sbcast_cred_arg_t *arg = &req->cred->arg;
 	hostset_t *hset = NULL;
-
-	arg = extract_sbcast_cred(req->cred, req->block_no, req->flags,
-				  protocol_version);
-	if (!arg) {
-		error("Security violation: Invalid sbcast_cred from uid %u",
-		      req_uid);
-		return NULL;
-	}
 
 	if (!(hset = hostset_create(arg->nodes))) {
 		error("Unable to parse sbcast_cred hostlist %s", arg->nodes);

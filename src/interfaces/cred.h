@@ -316,17 +316,9 @@ extern void format_core_allocs(slurm_cred_t *cred,
 extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 			  list_t **job_gres_list, list_t **step_gres_list);
 
-/*
- * Functions to create, delete, pack, and unpack an sbcast credential
- * Caller of extract_sbcast_cred() must xfree returned node string
- */
-
 extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version);
 extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
-extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
-					      uint16_t block_no, uint16_t flags,
-					      uint16_t protocol_version);
 extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 		      uint16_t protocol_Version);
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
