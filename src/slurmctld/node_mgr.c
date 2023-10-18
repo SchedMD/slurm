@@ -3407,7 +3407,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				clusteracct_storage_g_node_up(
 					acct_db_conn, node_ptr, now);
 			}
-		} else if (node_ptr->last_response &&
+		} else if (!IS_NODE_DRAINED(node_ptr) &&
+			   !IS_NODE_MAINT(node_ptr) &&
+			   node_ptr->last_response &&
 			   (node_ptr->boot_time > node_ptr->last_response) &&
 			   (slurm_conf.ret2service != 2)) {
 			if (!node_ptr->reason ||

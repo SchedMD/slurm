@@ -280,6 +280,7 @@ documents those changes that are of interest to users and administrators.
     fewer cores instead of using fewer threads per core.
  -- Fix arbitrary distribution allowing it to be used with salloc and sbatch and
     fix how cpus are allocated to nodes.
+ -- Allow nodes to reboot while node is drained or in a maintenance state.
 
 * Changes in Slurm 23.02.7
 ==========================
