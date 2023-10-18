@@ -320,7 +320,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version);
 extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
-		      uint16_t protocol_Version);
+			     uint16_t protocol_Version);
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 					 uint16_t protocol_version);
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
