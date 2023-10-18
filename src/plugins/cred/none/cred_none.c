@@ -96,19 +96,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern char *cred_p_sign(buf_t *buffer)
-{
-	return xstrdup("fake signature");
-}
-
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
-{
-	char *correct_signature = "fake signature";
-	if (xstrcmp(signature, correct_signature))
-		return ESIG_INVALID;
-	return SLURM_SUCCESS;
-}
-
 extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 				   uint16_t protocol_version)
 {

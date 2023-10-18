@@ -68,9 +68,6 @@
 #include "src/interfaces/gres.h"
 
 typedef struct {
-	char *(*cred_sign)		(buf_t *buffer);
-	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
-					 char *signature);
 	slurm_cred_t *(*cred_create)	(slurm_cred_arg_t *cred_arg,
 					 bool sign_it,
 					 uint16_t protocol_version);
@@ -91,8 +88,6 @@ typedef struct {
  * for slurm_cred_ops_t.
  */
 static const char *syms[] = {
-	"cred_p_sign",
-	"cred_p_verify_sign",
 	"cred_p_create",
 	"cred_p_unpack",
 	"cred_p_create_net_cred",

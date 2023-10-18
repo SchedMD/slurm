@@ -198,16 +198,6 @@ again:
 	return signature;
 }
 
-extern char *cred_p_sign(buf_t *buffer)
-{
-	char *signature = NULL;
-
-	if (!(signature = _encode(buffer)))
-		error("%s: _encode() failed", __func__);
-
-	return signature;
-}
-
 /*
  * WARNING: the buf_t returned from this is slightly non-standard.
  * The head points to malloc()'d memory, not xmalloc()'d, and needs
