@@ -77,7 +77,7 @@ typedef struct {
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
 					 uint16_t protocol_version);
-	sbcast_cred_t *(*sbcast_pack)	(sbcast_cred_arg_t *cred,
+	sbcast_cred_t *(*sbcast_create)	(sbcast_cred_arg_t *cred,
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
 					 uint16_t protocol_version);
@@ -92,7 +92,7 @@ static const char *syms[] = {
 	"cred_p_unpack",
 	"cred_p_create_net_cred",
 	"cred_p_extract_net_cred",
-	"sbcast_p_pack",
+	"sbcast_p_create",
 	"sbcast_p_unpack",
 };
 
@@ -675,7 +675,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 						arg->user_name, &arg->gids);
 	}
 
-	if (!(sbcast_cred = (*(ops.sbcast_pack))(arg, protocol_version)))
+	if (!(sbcast_cred = (*(ops.sbcast_create))(arg, protocol_version)))
 		error("%s: failed to create sbcast credential", __func__);
 
 	xfree(arg->user_name);
