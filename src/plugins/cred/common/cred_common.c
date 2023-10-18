@@ -625,7 +625,7 @@ extern slurm_cred_t *cred_unpack_with_signature(buf_t *buffer,
 	if ((cred_unpack((void **) &credential, buffer, protocol_version)))
 		goto unpack_error;
 
-	cred_len = get_buf_offset(buffer) - cred_start;
+	credential->sig_offset = get_buf_offset(buffer) - cred_start;
 
 	/* signature follows the main buffer */
 	safe_unpackstr(&credential->signature, buffer);
@@ -635,6 +635,7 @@ extern slurm_cred_t *cred_unpack_with_signature(buf_t *buffer,
 	 * again. Hold onto a buffer with the pre-packed representation.
 	 */
 	if (!running_in_slurmstepd()) {
+		cred_len = get_buf_offset(buffer) - cred_start;
 		credential->buffer = init_buf(cred_len);
 		credential->buf_version = protocol_version;
 		memcpy(credential->buffer->head,

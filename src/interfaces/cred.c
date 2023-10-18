@@ -624,7 +624,6 @@ extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 	xassert(cred->buffer);
 	xassert(cred->buf_version == protocol_version);
 	packbuf(cred->buffer, buffer);
-	packstr(cred->signature, buffer);
 
 	slurm_rwlock_unlock(&cred->mutex);
 }

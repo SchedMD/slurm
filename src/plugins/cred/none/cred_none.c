@@ -121,7 +121,9 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 {
 	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
 	if (sign_it)
-		cred->signature = xstrdup("fake signature");
+		packstr("fake signature", cred->buffer);
+	else
+		packnull(cred->buffer);
 	return cred;
 }
 

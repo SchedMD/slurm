@@ -137,6 +137,7 @@ typedef struct {
 	int magic;
 	pthread_rwlock_t mutex;
 	buf_t *buffer;		/* packed representation of credential */
+	uint32_t sig_offset;	/* starting point for the signature */
 	uint16_t buf_version;	/* version buffer was generated with */
 
 	slurm_cred_arg_t *arg;	/* fields */
