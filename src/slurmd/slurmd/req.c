@@ -4001,9 +4001,9 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 	}
 	hostset_destroy(hset);
 
-	if ((arg->uid != req_uid) || (arg->gid != req_gid)) {
+	if ((arg->id->uid != req_uid) || (arg->id->gid != req_gid)) {
 		error("Security violation: sbcast cred from %u/%u but rpc from %u/%u",
-		      arg->uid, arg->gid, req_uid, req_gid);
+		      arg->id->uid, arg->id->gid, req_uid, req_gid);
 		return NULL;
 	}
 
@@ -4330,10 +4330,10 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	bool force_opt = false;
 
 	/* may still be unset in credential */
-	if (!cred_arg->ngids || !cred_arg->gids)
-		cred_arg->ngids = group_cache_lookup(key->uid, key->gid,
-						     cred_arg->user_name,
-						     &cred_arg->gids);
+	if (!cred_arg->id->ngids || !cred_arg->id->gids)
+		cred_arg->id->ngids = group_cache_lookup(key->uid, key->gid,
+							 cred_arg->id->pw_name,
+							 &cred_arg->id->gids);
 	force_opt = req->flags & FILE_BCAST_FORCE;
 
 	flags = O_WRONLY | O_CREAT;
@@ -4343,8 +4343,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		flags |= O_EXCL;
 
 	rc = _open_as_other(req->fname, flags, 0700, key->job_id, key->uid,
-			    key->gid, cred_arg->ngids, cred_arg->gids, false,
-			    false, &fd);
+			    key->gid, cred_arg->id->ngids, cred_arg->id->gids,
+			    false, false, &fd);
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to open %s: %s", req->fname, strerror(rc));
 		return rc;
@@ -4354,8 +4354,9 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		int fd_dir;
 		char *directory = xstrdup_printf("%s_libs", key->fname);
 		rc = _open_as_other(directory, 0, 0700, key->job_id, key->uid,
-				    key->gid, cred_arg->ngids, cred_arg->gids,
-				    true, force_opt, &fd_dir);
+				    key->gid, cred_arg->id->ngids,
+				    cred_arg->id->gids, true, force_opt,
+				    &fd_dir);
 		if (rc != SLURM_SUCCESS) {
 			error("Unable to create directory %s: %s",
 			      directory, strerror(rc));
