@@ -340,13 +340,12 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 	return cred;
 }
 
-extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
+extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	slurm_cred_t *credential = NULL;
-	int rc = SLURM_ERROR;
 
 	if (!(credential = cred_unpack_with_signature(buf, protocol_version)))
-		goto unpack_error;
+		return NULL;
 
 	/*
 	 * Using the saved position, verify the credential.
@@ -355,20 +354,17 @@ extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
 	 * (Only done in slurmd.)
 	 */
 	if (credential->signature && running_in_slurmd()) {
-		if ((rc = cred_p_verify_sign(get_buf_data(credential->buffer),
-					     credential->sig_offset,
-					     credential->signature)))
-			goto unpack_error;
+		if (cred_p_verify_sign(get_buf_data(credential->buffer),
+				       credential->sig_offset,
+				       credential->signature)) {
+			slurm_cred_destroy(credential);
+			return NULL;
+		}
 
 		credential->verified = true;
 	}
 
-	*cred = credential;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_cred_destroy(credential);
-	return rc;
+	return credential;
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

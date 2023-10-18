@@ -127,17 +127,16 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 	return cred;
 }
 
-extern int cred_p_unpack(void **cred, buf_t *buf, uint16_t protocol_version)
+extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	slurm_cred_t *credential = NULL;
 
 	if (!(credential = cred_unpack_with_signature(buf, protocol_version)))
-		return SLURM_ERROR;
+		return NULL;
 
 	/* why bother checking? */
 	credential->verified = true;
-	*cred = credential;
-	return SLURM_SUCCESS;
+	return credential;
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

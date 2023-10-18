@@ -77,7 +77,7 @@ typedef struct {
 	slurm_cred_t *(*cred_create)	(slurm_cred_arg_t *cred_arg,
 					 bool sign_it,
 					 uint16_t protocol_version);
-	int (*cred_unpack)		(void **cred, buf_t *buf,
+	slurm_cred_t *(*cred_unpack)	(buf_t *buffer,
 					 uint16_t protocol_version);
 	char *(*create_net_cred)	(void *addrs,
 					 uint16_t protocol_version);
@@ -630,16 +630,7 @@ extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 
 extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
-	slurm_cred_t *credential = NULL;
-
-	if ((*(ops.cred_unpack))((void **) &credential, buffer, protocol_version))
-		goto unpack_error;
-
-	return credential;
-
-unpack_error:
-	slurm_cred_destroy(credential);
-	return NULL;
+	return (*(ops.cred_unpack))(buffer, protocol_version);
 }
 
 extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
