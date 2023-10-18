@@ -825,14 +825,10 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	xassert(sbcast_cred);
+	xassert(sbcast_cred->buffer);
 
-	if (sbcast_cred->buffer) {
-		/* already includes signature */
-		packbuf(sbcast_cred->buffer, buffer);
-	} else {
-		(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
-		packstr(sbcast_cred->signature, buffer);
-	}
+	/* already includes signature */
+	packbuf(sbcast_cred->buffer, buffer);
 }
 
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
