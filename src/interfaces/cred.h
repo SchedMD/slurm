@@ -151,8 +151,6 @@ typedef struct {
 	uint32_t job_id;
 	uint32_t het_job_id;
 	uint32_t step_id;
-	uid_t uid;
-	gid_t gid;
 	identity_t *id;
 
 	time_t expiration;
@@ -314,6 +312,7 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 			  list_t **job_gres_list, list_t **step_gres_list);
 
 extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
+					 uid_t uid, gid_t gid,
 					 uint16_t protocol_version);
 extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,

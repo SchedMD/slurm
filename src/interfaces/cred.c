@@ -653,19 +653,23 @@ extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
 extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
+					 uid_t uid, gid_t gid,
 					 uint16_t protocol_version)
 {
 	sbcast_cred_t *sbcast_cred;
 	bool release_id = false;
+	identity_t fake_id = { .uid = uid, .gid = gid };
 
 	xassert(g_context);
 
 	if (!arg->id && enable_send_gids) {
 		release_id = true;
-		if (!(arg->id = fetch_identity(arg->uid, arg->gid, false))) {
+		if (!(arg->id = fetch_identity(uid, gid, false))) {
 			error("%s: fetch_identity() failed", __func__);
 			return NULL;
 		}
+	} else if (!arg->id) {
+		arg->id = &fake_id;
 	}
 
 	if (!(sbcast_cred = (*(ops.sbcast_create))(arg, protocol_version)))

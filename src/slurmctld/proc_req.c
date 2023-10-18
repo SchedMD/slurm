@@ -3215,12 +3215,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		sbcast_arg.step_id = step_ptr->step_id.step_id;
 	else
 		sbcast_arg.step_id = job_ptr->next_step_id;
-	sbcast_arg.uid = job_ptr->user_id;
-	sbcast_arg.gid = job_ptr->group_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
 	sbcast_arg.expiration = job_ptr->end_time;
 
-	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg,
+	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg, job_ptr->user_id,
+					       job_ptr->group_id,
 					       msg->protocol_version))) {
 		unlock_slurmctld(job_read_lock);
 		error("%s %pJ cred create error", __func__, job_ptr);

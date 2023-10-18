@@ -657,35 +657,23 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 {
 	buf_t *buffer = init_buf(4096);
 	time_t now = time(NULL);
-	identity_t fake_id =
-		{ .uid = sbcast_cred->uid, .gid = sbcast_cred->gid };
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		if (!sbcast_cred->id)
-			sbcast_cred->id = &fake_id;
-
+		pack_identity(sbcast_cred->id, buffer, protocol_version);
 		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->job_id, buffer);
 		pack32(sbcast_cred->het_job_id, buffer);
 		pack32(sbcast_cred->step_id, buffer);
-		pack32(sbcast_cred->uid, buffer);
-		pack32(sbcast_cred->gid, buffer);
-		packstr(sbcast_cred->id->pw_name, buffer);
-		pack32_array(sbcast_cred->id->gids, sbcast_cred->id->ngids,
-			     buffer);
 		packstr(sbcast_cred->nodes, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!sbcast_cred->id)
-			sbcast_cred->id = &fake_id;
-
 		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->job_id, buffer);
 		pack32(sbcast_cred->het_job_id, buffer);
 		pack32(sbcast_cred->step_id, buffer);
-		pack32(sbcast_cred->uid, buffer);
-		pack32(sbcast_cred->gid, buffer);
+		pack32(sbcast_cred->id->uid, buffer);
+		pack32(sbcast_cred->id->gid, buffer);
 		packstr(sbcast_cred->id->pw_name, buffer);
 		pack32_array(sbcast_cred->id->gids, sbcast_cred->id->ngids,
 			     buffer);
@@ -700,19 +688,22 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 {
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 	uint32_t cred_start = get_buf_offset(buffer);
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
 	char *user_name = NULL;
 	uint32_t ngids = 0, *gids = NULL;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		if (unpack_identity(&sbcast_cred->arg.id, buffer,
+				    protocol_version))
+			goto unpack_error;
+		uid = sbcast_cred->arg.id->uid;
+		gid = sbcast_cred->arg.id->gid;
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
 		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.uid, buffer);
-		safe_unpack32(&sbcast_cred->arg.gid, buffer);
-		safe_unpackstr(&user_name, buffer);
-		safe_unpack32_array(&gids, &ngids, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
@@ -720,28 +711,33 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.uid, buffer);
-		safe_unpack32(&sbcast_cred->arg.gid, buffer);
+		safe_unpack32(&uid, buffer);
+		safe_unpack32(&gid, buffer);
 		safe_unpackstr(&user_name, buffer);
 		safe_unpack32_array(&gids, &ngids, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 	} else
 		goto unpack_error;
 
-	if (!user_name) {
-		sbcast_cred->arg.id = fetch_identity(sbcast_cred->arg.uid,
-						     sbcast_cred->arg.gid,
-						     false);
+	if (sbcast_cred->arg.id && !sbcast_cred->arg.id->pw_name) {
+		debug2("%s: need to fetch identity", __func__);
+		FREE_NULL_IDENTITY(sbcast_cred->arg.id);
+	}
+
+	if (!user_name && !sbcast_cred->arg.id) {
+		sbcast_cred->arg.id = fetch_identity(uid, gid, false);
 		if (!sbcast_cred->arg.id)
 			goto unpack_error;
 	} else {
 		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
-		sbcast_cred->arg.id->uid = sbcast_cred->arg.uid;
-		sbcast_cred->arg.id->gid = sbcast_cred->arg.gid;
+		sbcast_cred->arg.id->uid = uid;
+		sbcast_cred->arg.id->gid = gid;
 		sbcast_cred->arg.id->pw_name = user_name;
 		sbcast_cred->arg.id->ngids = ngids;
 		sbcast_cred->arg.id->gids = gids;
 	}
+
+	identity_debug2(sbcast_cred->arg.id, __func__);
 
 	*siglen = get_buf_offset(buffer) - cred_start;
 
