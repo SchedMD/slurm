@@ -96,13 +96,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern const char *cred_p_str_error(int errnum)
-{
-	if (errnum == ESIG_INVALID)
-		return "Invalid signature";
-	return NULL;
-}
-
 extern char *cred_p_sign(buf_t *buffer)
 {
 	return xstrdup("fake signature");

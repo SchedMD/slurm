@@ -166,20 +166,6 @@ static munge_ctx_t _munge_ctx_create(void)
 	return ctx;
 }
 
-extern const char *cred_p_str_error(int errnum)
-{
-	if (errnum == ESIG_BUF_DATA_MISMATCH)
-		return "Credential data mismatch";
-	else if (errnum == ESIG_BUF_SIZE_MISMATCH)
-		return "Credential data size mismatch";
-	else if (errnum == ESIG_BAD_USERID)
-		return "Credential created by invalid user";
-	else if (errnum == ESIG_CRED_REPLAYED)
-		return "Credential replayed";
-	else
-		return munge_strerror ((munge_err_t) errnum);
-}
-
 static char *_encode(buf_t *buffer)
 {
 	int retry = RETRY_COUNT;
