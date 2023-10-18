@@ -680,19 +680,11 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 						arg->user_name, &arg->gids);
 	}
 
-	sbcast_cred = (*(ops.sbcast_pack))(arg, protocol_version);
-	sbcast_cred->signature = (*(ops.cred_sign))(sbcast_cred->buffer);
+	if (!(sbcast_cred = (*(ops.sbcast_pack))(arg, protocol_version)))
+		error("%s: failed to create sbcast credential", __func__);
 
 	xfree(arg->user_name);
 	xfree(arg->gids);
-
-	if (!sbcast_cred->signature) {
-		error("%s: failed to sign sbcast credential", __func__);
-		delete_sbcast_cred(sbcast_cred);
-		return NULL;
-	}
-
-	packstr(sbcast_cred->signature, sbcast_cred->buffer);
 
 	return sbcast_cred;
 }

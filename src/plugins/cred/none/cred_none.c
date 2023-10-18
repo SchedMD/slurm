@@ -148,6 +148,7 @@ extern sbcast_cred_t *sbcast_p_pack(sbcast_cred_arg_t *cred_arg,
 	sbcast_cred_t *cred = xmalloc(sizeof(*cred));
 	cred->buffer = init_buf(4096);
 	sbcast_cred_pack(cred_arg, cred->buffer, protocol_version);
+	packstr("fake signature", cred->buffer);
 	return cred;
 }
 

@@ -400,8 +400,19 @@ extern sbcast_cred_t *sbcast_p_pack(sbcast_cred_arg_t *cred_arg,
 				    uint16_t protocol_version)
 {
 	sbcast_cred_t *cred = xmalloc(sizeof(*cred));
+	char *signature;
+
 	cred->buffer = init_buf(4096);
 	sbcast_cred_pack(cred_arg, cred->buffer, protocol_version);
+	if (!(signature = _encode(cred->buffer))) {
+		error("%s: _encode() failure", __func__);
+		delete_sbcast_cred(cred);
+		return NULL;
+	}
+
+	packstr(signature, cred->buffer);
+	xfree(signature);
+
 	return cred;
 }
 
