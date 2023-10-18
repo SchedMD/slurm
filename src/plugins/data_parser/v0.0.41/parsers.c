@@ -1098,6 +1098,27 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	}
 }
 
+PARSE_DISABLED(JOB_PLANNED_TIME)
+
+static int DUMP_FUNC(JOB_PLANNED_TIME)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	slurmdb_job_rec_t *job = obj;
+	uint64_t diff = NO_VAL64;
+
+	/* It's the same logic as used in sacct */
+	if (!job->eligible || (job->eligible == INFINITE))
+		diff = 0;
+	else if ((job->start == NO_VAL) && job->end)
+		diff = job->end - job->eligible;
+	else if (job->start)
+		diff = job->start - job->eligible;
+	else
+		diff = time(NULL) - job->eligible;
+
+	return DUMP(UINT64_NO_VAL, diff, dst, args);
+}
+
 static int _foreach_resolve_tres_id(void *x, void *arg)
 {
 	slurmdb_tres_rec_t *tres = (slurmdb_tres_rec_t *) x;
@@ -6172,6 +6193,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(UINT32, resvid, "reservation/id", NULL),
 	add_parse(STRING, resv_name, "reservation/name", NULL),
+	add_complex_parser(slurmdb_job_rec_t, JOB_PLANNED_TIME, false, "time/planned", "Time in seconds required to start job after becoming eligible to run"),
 	add_parse(STRING, script, "script", NULL),
 	add_skip(show_full),
 	add_parse(TIMESTAMP, start, "time/start", NULL),
@@ -8759,6 +8781,7 @@ static const parser_t parsers[] = {
 	addpca(STEP_TRES_REQ_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
+	addpcp(JOB_PLANNED_TIME, UINT64_NO_VAL, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN_DEPTH, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_PER_MIN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),

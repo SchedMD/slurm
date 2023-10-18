@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Make slurmstepd retry REQUEST_COMPLETE_BATCH_SCRIPT indefinitely.
  -- Always load serializer/json when using any data_parser plugins.
  -- slurmrestd - Reject single http query with multiple path requests.
+ -- slurmrestd - Add time/planned field to slurmdb/v0.0.41/job/{job_id}.
 
 * Changes in Slurm 23.11.2
 ==========================

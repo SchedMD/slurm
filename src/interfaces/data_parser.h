@@ -501,6 +501,7 @@ typedef enum {
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_PTR, /* assoc_shares_object_t* */
 	DATA_PARSER_OVERSUBSCRIBE_JOBS, /* max_share */
 	DATA_PARSER_OVERSUBSCRIBE_FLAGS, /* max_share */
+	DATA_PARSER_JOB_PLANNED_TIME, /* slurmdb_job_rec_t->start - slurmdb_job_rec_t->eligible */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
