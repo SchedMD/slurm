@@ -230,16 +230,12 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 
 extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	slurm_cred_t *cred = NULL;
-
 	/*
 	 * Force this on to ensure pw_name, ngid, gids are all populated.
 	 */
 	enable_send_gids = true;
 
-	cred = slurm_cred_create(arg, true, SLURM_PROTOCOL_VERSION);
-
-	return cred;
+	return slurm_cred_create(arg, true, SLURM_PROTOCOL_VERSION);
 }
 
 extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
