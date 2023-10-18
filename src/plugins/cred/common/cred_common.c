@@ -37,6 +37,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/group_cache.h"
 #include "src/common/identity.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -700,6 +701,13 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	} else
 		goto unpack_error;
 
+	sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
+	sbcast_cred->arg.id->uid = sbcast_cred->arg.uid;
+	sbcast_cred->arg.id->gid = sbcast_cred->arg.gid;
+	sbcast_cred->arg.id->pw_name = xstrdup(sbcast_cred->arg.user_name);
+	sbcast_cred->arg.id->ngids = sbcast_cred->arg.ngids;
+	sbcast_cred->arg.id->gids = copy_gids(sbcast_cred->arg.ngids,
+					      sbcast_cred->arg.gids);
 
 	*siglen = get_buf_offset(buffer) - cred_start;
 
