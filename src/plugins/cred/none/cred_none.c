@@ -138,7 +138,8 @@ extern sbcast_cred_t *sbcast_p_create(sbcast_cred_arg_t *cred_arg,
 	return cred;
 }
 
-extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
+extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
+				      uint16_t protocol_version)
 {
 	uint32_t siglen;
 	sbcast_cred_t *cred;

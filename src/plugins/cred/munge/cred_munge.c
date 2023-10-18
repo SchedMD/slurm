@@ -406,7 +406,8 @@ extern sbcast_cred_t *sbcast_p_create(sbcast_cred_arg_t *cred_arg,
 	return cred;
 }
 
-extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
+extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
+				      uint16_t protocol_version)
 {
 	sbcast_cred_t *cred;
 	uint32_t cred_start = get_buf_offset(buf), siglen = 0;
@@ -416,7 +417,7 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
 		return NULL;
 	}
 
-	if (running_in_slurmd()) {
+	if (verify) {
 		if (_verify_signature(get_buf_data(buf) + cred_start,
 				      siglen, cred->signature)) {
 			delete_sbcast_cred(cred);

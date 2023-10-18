@@ -79,7 +79,7 @@ typedef struct {
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_create)	(sbcast_cred_arg_t *cred,
 					 uint16_t protocol_version);
-	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
+	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer, bool verify,
 					 uint16_t protocol_version);
 } slurm_cred_ops_t;
 
@@ -751,10 +751,16 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 	packbuf(sbcast_cred->buffer, buffer);
 }
 
-extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
+extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 					 uint16_t protocol_version)
 {
-	return (*(ops.sbcast_unpack))(buffer, protocol_version);
+	file_bcast_msg_t *bmsg = msg;
+	bool verify = false;
+
+	if (bmsg && (bmsg->block_no == 1) && !(bmsg->flags & FILE_BCAST_SO))
+		verify = true;
+
+	return (*(ops.sbcast_unpack))(buffer, verify, protocol_version);
 }
 
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred)

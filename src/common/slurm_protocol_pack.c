@@ -1713,7 +1713,7 @@ static int _unpack_job_sbcast_cred_msg(slurm_msg_t *smsg, buf_t *buffer)
 	safe_unpack32(&uint32_tmp, buffer); /* was node_cnt */
 
 	tmp_ptr->sbcast_cred =
-		unpack_sbcast_cred(buffer, smsg->protocol_version);
+		unpack_sbcast_cred(buffer, NULL, smsg->protocol_version);
 	if (tmp_ptr->sbcast_cred == NULL)
 		goto unpack_error;
 
@@ -10373,7 +10373,8 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 		if (uint32_tmp != msg->block_len)
 			goto unpack_error;
 
-		msg->cred = unpack_sbcast_cred(buffer, protocol_version);
+		msg->cred = unpack_sbcast_cred(buffer, msg,
+					       protocol_version);
 		if (msg->cred == NULL)
 			goto unpack_error;
 	}
