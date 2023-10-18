@@ -676,19 +676,8 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 		}
 	}
 
-	if (enable_send_gids) {
-		/* this may still be null, in which case slurmd will handle */
-		arg->user_name = uid_to_string_or_null(arg->uid);
-		/* lookup and send extended gids list */
-		arg->ngids = group_cache_lookup(arg->uid, arg->gid,
-						arg->user_name, &arg->gids);
-	}
-
 	if (!(sbcast_cred = (*(ops.sbcast_create))(arg, protocol_version)))
 		error("%s: failed to create sbcast credential", __func__);
-
-	xfree(arg->user_name);
-	xfree(arg->gids);
 
 	if (release_id)
 		FREE_NULL_IDENTITY(arg->id);
