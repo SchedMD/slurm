@@ -185,7 +185,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	int i = 0, sock_recs = 0;
 	bool release_id = false;
 
-	xassert(arg != NULL);
+	xassert(arg);
 	xassert(g_context);
 
 	if (arg->uid == SLURM_AUTH_NOBODY) {
@@ -288,7 +288,7 @@ extern void slurm_cred_unlock_args(slurm_cred_t *cred)
  */
 extern slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 {
-	xassert(cred != NULL);
+	xassert(cred);
 
 	slurm_rwlock_rdlock(&cred->mutex);
 	return cred->arg;
@@ -299,7 +299,7 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 {
 	void *rc = NULL;
 
-	xassert(cred != NULL);
+	xassert(cred);
 
 	slurm_rwlock_rdlock(&cred->mutex);
 
@@ -342,8 +342,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 	time_t now = time(NULL);
 	int errnum;
 
-	xassert(cred != NULL);
-
+	xassert(cred);
 	xassert(g_context);
 
 	slurm_rwlock_rdlock(&cred->mutex);
@@ -622,7 +621,7 @@ extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 			    uint16_t protocol_version)
 {
-	xassert(cred != NULL);
+	xassert(cred);
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_rwlock_rdlock(&cred->mutex);
