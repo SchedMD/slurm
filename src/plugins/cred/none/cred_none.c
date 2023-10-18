@@ -103,8 +103,7 @@ extern const char *cred_p_str_error(int errnum)
 	return NULL;
 }
 
-/* NOTE: Caller must xfree the signature returned by sig_pp */
-extern char *cred_p_sign(char *buffer, int buf_size)
+extern char *cred_p_sign(buf_t *buffer)
 {
 	return xstrdup("fake signature");
 }

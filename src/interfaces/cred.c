@@ -70,7 +70,7 @@
 #define MAX_TIME 0x7fffffff
 
 typedef struct {
-	char *(*cred_sign)		(char *buffer, int buf_size);
+	char *(*cred_sign)		(buf_t *buffer);
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
 					 char *signature);
 	const char *(*cred_str_error)	(int);
@@ -720,8 +720,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-	sbcast_cred->signature = (*(ops.cred_sign))(get_buf_data(buffer),
-						    get_buf_offset(buffer));
+	sbcast_cred->signature = (*(ops.cred_sign))(buffer);
 	FREE_NULL_BUFFER(buffer);
 
 	if (!sbcast_cred->signature) {

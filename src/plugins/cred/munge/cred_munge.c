@@ -212,17 +212,12 @@ again:
 	return 0;
 }
 
-/* NOTE: Caller must xfree the signature returned by sig_pp */
-extern char *cred_p_sign(char *buffer, int buf_size)
+extern char *cred_p_sign(buf_t *buffer)
 {
 	char *signature = NULL;
-	buf_t *buf = NULL;
 
-	buf = create_shadow_buf(buffer, buf_size);
-	buf->processed = buf_size;
-	if (_encode(&signature, buf))
+	if (_encode(&signature, buffer))
 		error("%s: _encode() failed", __func__);
-	FREE_NULL_BUFFER(buf);
 
 	return signature;
 }
