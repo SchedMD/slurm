@@ -180,15 +180,15 @@ extern const char *cred_p_str_error(int errnum)
 		return munge_strerror ((munge_err_t) errnum);
 }
 
-static int _encode(char **signature, buf_t *buffer)
+static char *_encode(buf_t *buffer)
 {
 	int retry = RETRY_COUNT;
-	char *cred;
+	char *signature, *cred;
 	munge_err_t err;
 	munge_ctx_t ctx = _munge_ctx_create();
 
 	if (!ctx)
-		return 0;
+		return NULL;
 
 again:
 	err = munge_encode(&cred, ctx, get_buf_data(buffer),
@@ -203,20 +203,20 @@ again:
 		if (err == EMUNGE_SOCKET)  /* Also see MUNGE_OPT_TTL above */
 			error("If munged is up, restart with --num-threads=10");
 		munge_ctx_destroy(ctx);
-		return err;
+		return NULL;
 	}
 
-	*signature = xstrdup(cred);
+	signature = xstrdup(cred);
 	free(cred);
 	munge_ctx_destroy(ctx);
-	return 0;
+	return signature;
 }
 
 extern char *cred_p_sign(buf_t *buffer)
 {
 	char *signature = NULL;
 
-	if (_encode(&signature, buffer))
+	if (!(signature = _encode(buffer)))
 		error("%s: _encode() failed", __func__);
 
 	return signature;
@@ -327,7 +327,7 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 {
 	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
 
-	if (sign_it && _encode(&cred->signature, cred->buffer)) {
+	if (sign_it && !(cred->signature = _encode(cred->buffer))) {
 		error("%s: failed to sign, returning NULL", __func__);
 		slurm_cred_destroy(cred);
 		return NULL;
@@ -369,18 +369,13 @@ unpack_error:
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 {
-	int rc;
 	char *signature;
 	buf_t *buffer = init_buf(BUF_SIZE);
 
 	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
 
-	if ((rc = _encode(&signature, buffer))) {
-		error("%s: _encode failure: %s",
-		      __func__, slurm_strerror(rc));
-		free_buf(buffer);
-		return NULL;
-	}
+	if (!(signature = _encode(buffer)))
+		error("%s: _encode() failure", __func__);
 
 	free_buf(buffer);
 	return signature;
