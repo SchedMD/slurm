@@ -126,12 +126,16 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static munge_ctx_t _munge_ctx_create(bool uid_restriction, int auth_ttl)
+static munge_ctx_t _munge_ctx_create(bool uid_restriction)
 {
+	static int auth_ttl = 0;
 	munge_ctx_t ctx;
 	munge_err_t err;
 	char *socket;
 	int rc;
+
+	if (!auth_ttl)
+		auth_ttl = slurm_get_auth_ttl();
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error("%s: munge_ctx_create failed", __func__);
@@ -149,9 +153,6 @@ static munge_ctx_t _munge_ctx_create(bool uid_restriction, int auth_ttl)
 			return NULL;
 		}
 	}
-
-	if (!auth_ttl)
-		auth_ttl = slurm_get_auth_ttl();
 
 	if (auth_ttl) {
 		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
@@ -204,7 +205,7 @@ static int _encode(char **signature, bool uid_restriction, buf_t *buffer,
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create(uid_restriction, 0);
+	munge_ctx_t ctx = _munge_ctx_create(uid_restriction);
 
 	if (!ctx)
 		return 0;
@@ -261,7 +262,7 @@ static int _decode(char *signature, bool replay_okay, buf_t **buffer,
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create(false, 0);
+	munge_ctx_t ctx = _munge_ctx_create(false);
 
 	if (!ctx)
 		return SLURM_ERROR;
