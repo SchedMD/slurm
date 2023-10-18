@@ -702,12 +702,20 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	} else
 		goto unpack_error;
 
-	sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
-	sbcast_cred->arg.id->uid = sbcast_cred->arg.uid;
-	sbcast_cred->arg.id->gid = sbcast_cred->arg.gid;
-	sbcast_cred->arg.id->pw_name = user_name;
-	sbcast_cred->arg.id->ngids = ngids;
-	sbcast_cred->arg.id->gids = gids;
+	if (!user_name) {
+		sbcast_cred->arg.id = fetch_identity(sbcast_cred->arg.uid,
+						     sbcast_cred->arg.gid,
+						     false);
+		if (!sbcast_cred->arg.id)
+			goto unpack_error;
+	} else {
+		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
+		sbcast_cred->arg.id->uid = sbcast_cred->arg.uid;
+		sbcast_cred->arg.id->gid = sbcast_cred->arg.gid;
+		sbcast_cred->arg.id->pw_name = user_name;
+		sbcast_cred->arg.id->ngids = ngids;
+		sbcast_cred->arg.id->gids = gids;
+	}
 
 	*siglen = get_buf_offset(buffer) - cred_start;
 
