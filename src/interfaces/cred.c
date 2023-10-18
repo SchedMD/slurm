@@ -67,8 +67,6 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 
-#define MAX_TIME 0x7fffffff
-
 typedef struct {
 	char *(*cred_sign)		(buf_t *buffer);
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
