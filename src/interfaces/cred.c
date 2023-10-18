@@ -706,11 +706,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 {
 	xassert(g_context);
 
-	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
-		if (!sbcast_cred->verified)
-			return NULL;
-	}
-
 	return &sbcast_cred->arg;
 }
 
