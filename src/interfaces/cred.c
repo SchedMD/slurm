@@ -82,6 +82,8 @@ typedef struct {
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
 					 uint16_t protocol_version);
+	void (*sbcast_pack)		(sbcast_cred_t *cred, buf_t *buffer,
+					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
 					 uint16_t protocol_version);
 } slurm_cred_ops_t;
@@ -97,6 +99,7 @@ static const char *syms[] = {
 	"cred_p_unpack",
 	"cred_p_create_net_cred",
 	"cred_p_extract_net_cred",
+	"sbcast_p_pack",
 	"sbcast_p_unpack",
 };
 
@@ -658,24 +661,6 @@ extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
  *****************       SBCAST CREDENTIAL FUNCTIONS        ******************
 \*****************************************************************************/
 
-/* Pack sbcast credential without the digital signature */
-static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
-			      uint16_t protocol_version)
-{
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(sbcast_cred->ctime, buffer);
-		pack_time(sbcast_cred->expiration, buffer);
-		pack32(sbcast_cred->jobid, buffer);
-		pack32(sbcast_cred->het_job_id, buffer);
-		pack32(sbcast_cred->step_id, buffer);
-		pack32(sbcast_cred->uid, buffer);
-		pack32(sbcast_cred->gid, buffer);
-		packstr(sbcast_cred->user_name, buffer);
-		pack32_array(sbcast_cred->gids, sbcast_cred->ngids, buffer);
-		packstr(sbcast_cred->nodes, buffer);
-	}
-}
-
 /* Create an sbcast credential for the specified job and nodes
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
@@ -710,7 +695,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 	}
 
 	buffer = init_buf(4096);
-	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
+	(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
 	sbcast_cred->signature = (*(ops.cred_sign))(buffer);
 	FREE_NULL_BUFFER(buffer);
 
@@ -838,7 +823,7 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 {
 	xassert(sbcast_cred);
 
-	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
+	(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
 	packstr(sbcast_cred->signature, buffer);
 }
 

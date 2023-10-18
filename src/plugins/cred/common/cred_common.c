@@ -651,6 +651,23 @@ unpack_error:
 	return NULL;
 }
 
+extern void sbcast_cred_pack(sbcast_cred_t *sbcast_cred, buf_t *buffer,
+			     uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(sbcast_cred->ctime, buffer);
+		pack_time(sbcast_cred->expiration, buffer);
+		pack32(sbcast_cred->jobid, buffer);
+		pack32(sbcast_cred->het_job_id, buffer);
+		pack32(sbcast_cred->step_id, buffer);
+		pack32(sbcast_cred->uid, buffer);
+		pack32(sbcast_cred->gid, buffer);
+		packstr(sbcast_cred->user_name, buffer);
+		pack32_array(sbcast_cred->gids, sbcast_cred->ngids, buffer);
+		packstr(sbcast_cred->nodes, buffer);
+	}
+}
+
 extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 					 uint16_t protocol_version)
 {
