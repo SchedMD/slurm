@@ -776,9 +776,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 {
 	sbcast_cred_arg_t *arg;
 	struct sbcast_cache *next_cache_rec;
-	int rc;
 	time_t now = time(NULL);
-	buf_t *buffer;
 
 	xassert(g_context);
 
@@ -786,22 +784,9 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 		return NULL;
 
 	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
-		buffer = init_buf(4096);
-		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-		/* NOTE: the verification checks that the credential was
-		 * created by SlurmUser or root */
-		rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
-					       get_buf_offset(buffer),
-					       sbcast_cred->signature);
-		FREE_NULL_BUFFER(buffer);
-
-		if (rc) {
-			error("sbcast_cred verify: %s",
-			      (*(ops.cred_str_error))(rc));
+		if (!sbcast_cred->verified)
 			return NULL;
-		}
 		_sbcast_cache_add(sbcast_cred);
-
 	} else {
 		bool cache_match_found = false;
 		list_itr_t *sbcast_iter;

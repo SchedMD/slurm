@@ -413,11 +413,21 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	sbcast_cred_t *cred;
+	uint32_t cred_start = get_buf_offset(buf), siglen = 0;
 
-	if (!(cred = sbcast_cred_unpack(buf, protocol_version))) {
+	if (!(cred = sbcast_cred_unpack(buf, &siglen, protocol_version))) {
 		error("%s: sbcast_cred_unpack() failed", __func__);
 		return NULL;
+	}
 
+	if (running_in_slurmd()) {
+		if (cred_p_verify_sign(get_buf_data(buf) + cred_start,
+				       siglen, cred->signature)) {
+			delete_sbcast_cred(cred);
+			return NULL;
+		}
+
+		cred->verified = true;
 	}
 
 	return cred;

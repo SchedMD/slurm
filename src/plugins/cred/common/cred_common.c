@@ -651,10 +651,11 @@ unpack_error:
 	return NULL;
 }
 
-extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer,
+extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 					 uint16_t protocol_version)
 {
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
+	uint32_t cred_start = get_buf_offset(buffer);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
@@ -668,6 +669,8 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer,
 		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
 				    buffer);
 		safe_unpackstr(&sbcast_cred->nodes, buffer);
+
+		*siglen = get_buf_offset(buffer) - cred_start;
 
 		/* "signature" must be last */
 		safe_unpackstr(&sbcast_cred->signature, buffer);

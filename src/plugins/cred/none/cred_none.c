@@ -151,12 +151,16 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 
 extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
+	uint32_t siglen;
 	sbcast_cred_t *cred;
 
-	if (!(cred = sbcast_cred_unpack(buf, protocol_version))) {
+	if (!(cred = sbcast_cred_unpack(buf, &siglen, protocol_version))) {
 		error("%s: sbcast_cred_unpack() failed", __func__);
 		return NULL;
 	}
+
+	/* why bother checking? */
+	cred->verified = true;
 
 	return cred;
 }

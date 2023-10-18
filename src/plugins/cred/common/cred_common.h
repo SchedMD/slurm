@@ -44,7 +44,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version);
 extern slurm_cred_t *cred_unpack_with_signature(buf_t *buffer,
 						uint16_t protocol_version);
 
-extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer,
+extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 					 uint16_t protocol_version);
 
 #endif
