@@ -161,6 +161,8 @@ typedef struct sbcast_cred {
 				 * be fetched locally instead.		*/
 	uint32_t *gids;		/* extended group ids for user		*/
 	char *nodes;		/* nodes for which credential is valid	*/
+
+	buf_t *buffer;		/* pre-packed buffer */
 	char *signature;	/* credential signature			*/
 	bool verified;		/* credential has been verified successfully */
 } sbcast_cred_t;

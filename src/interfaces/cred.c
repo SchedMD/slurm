@@ -668,7 +668,6 @@ extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg)
 extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version)
 {
-	buf_t *buffer;
 	sbcast_cred_t *sbcast_cred;
 
 	xassert(g_context);
@@ -695,16 +694,18 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 							&sbcast_cred->gids);
 	}
 
-	buffer = init_buf(4096);
-	(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
-	sbcast_cred->signature = (*(ops.cred_sign))(buffer);
-	FREE_NULL_BUFFER(buffer);
+	sbcast_cred->buffer = init_buf(4096);
+	(*(ops.sbcast_pack))(sbcast_cred, sbcast_cred->buffer,
+			     protocol_version);
+	sbcast_cred->signature = (*(ops.cred_sign))(sbcast_cred->buffer);
 
 	if (!sbcast_cred->signature) {
 		error("%s: failed to sign sbcast credential", __func__);
 		delete_sbcast_cred(sbcast_cred);
 		return NULL;
 	}
+
+	packstr(sbcast_cred->signature, sbcast_cred->buffer);
 
 	return sbcast_cred;
 }
@@ -716,6 +717,7 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	if (!sbcast_cred)
 		return;
 
+	FREE_NULL_BUFFER(sbcast_cred->buffer);
 	xfree(sbcast_cred->gids);
 	xfree(sbcast_cred->user_name);
 	xfree(sbcast_cred->nodes);
@@ -824,8 +826,13 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 {
 	xassert(sbcast_cred);
 
-	(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
-	packstr(sbcast_cred->signature, buffer);
+	if (sbcast_cred->buffer) {
+		/* already includes signature */
+		packbuf(sbcast_cred->buffer, buffer);
+	} else {
+		(*(ops.sbcast_pack))(sbcast_cred, buffer, protocol_version);
+		packstr(sbcast_cred->signature, buffer);
+	}
 }
 
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
