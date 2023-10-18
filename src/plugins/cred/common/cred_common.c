@@ -650,3 +650,35 @@ unpack_error:
 	slurm_cred_destroy(credential);
 	return NULL;
 }
+
+extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer,
+					 uint16_t protocol_version)
+{
+	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack_time(&sbcast_cred->ctime, buffer);
+		safe_unpack_time(&sbcast_cred->expiration, buffer);
+		safe_unpack32(&sbcast_cred->jobid, buffer);
+		safe_unpack32(&sbcast_cred->het_job_id, buffer);
+		safe_unpack32(&sbcast_cred->step_id, buffer);
+		safe_unpack32(&sbcast_cred->uid, buffer);
+		safe_unpack32(&sbcast_cred->gid, buffer);
+		safe_unpackstr(&sbcast_cred->user_name, buffer);
+		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
+				    buffer);
+		safe_unpackstr(&sbcast_cred->nodes, buffer);
+
+		/* "signature" must be last */
+		safe_unpackstr(&sbcast_cred->signature, buffer);
+		if (!sbcast_cred->signature)
+			goto unpack_error;
+	} else
+		goto unpack_error;
+
+	return sbcast_cred;
+
+unpack_error:
+	delete_sbcast_cred(sbcast_cred);
+	return NULL;
+}

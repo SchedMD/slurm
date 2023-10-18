@@ -148,3 +148,15 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 {
 	return NULL;
 }
+
+extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, uint16_t protocol_version)
+{
+	sbcast_cred_t *cred;
+
+	if (!(cred = sbcast_cred_unpack(buf, protocol_version))) {
+		error("%s: sbcast_cred_unpack() failed", __func__);
+		return NULL;
+	}
+
+	return cred;
+}

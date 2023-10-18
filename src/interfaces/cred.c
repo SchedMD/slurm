@@ -83,6 +83,8 @@ typedef struct {
 					 uint16_t protocol_version);
 	void *(*extract_net_cred)	(char *net_cred,
 					 uint16_t protocol_version);
+	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer,
+					 uint16_t protocol_version);
 } slurm_cred_ops_t;
 
 /*
@@ -97,6 +99,7 @@ static const char *syms[] = {
 	"cred_p_unpack",
 	"cred_p_create_net_cred",
 	"cred_p_extract_net_cred",
+	"sbcast_p_unpack",
 };
 
 struct sbcast_cache {
@@ -873,37 +876,10 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 	packstr(sbcast_cred->signature, buffer);
 }
 
-/* Unpack an sbcast credential into a buffer including the digital signature */
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack_time(&sbcast_cred->ctime, buffer);
-		safe_unpack_time(&sbcast_cred->expiration, buffer);
-		safe_unpack32(&sbcast_cred->jobid, buffer);
-		safe_unpack32(&sbcast_cred->het_job_id, buffer);
-		safe_unpack32(&sbcast_cred->step_id, buffer);
-		safe_unpack32(&sbcast_cred->uid, buffer);
-		safe_unpack32(&sbcast_cred->gid, buffer);
-		safe_unpackstr(&sbcast_cred->user_name, buffer);
-		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
-				    buffer);
-		safe_unpackstr(&sbcast_cred->nodes, buffer);
-
-		/* "signature" must be last */
-		safe_unpackstr(&sbcast_cred->signature, buffer);
-		if (!sbcast_cred->signature)
-			goto unpack_error;
-	} else
-		goto unpack_error;
-
-	return sbcast_cred;
-
-unpack_error:
-	delete_sbcast_cred(sbcast_cred);
-	return NULL;
+	return (*(ops.sbcast_unpack))(buffer, protocol_version);
 }
 
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred)
