@@ -325,6 +325,7 @@ typedef struct {
 	char *user_name;
 	int ngids;
 	gid_t *gids;
+	identity_t *id;
 
 	time_t expiration;
 	char *nodes;

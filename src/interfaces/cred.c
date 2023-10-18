@@ -664,8 +664,17 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version)
 {
 	sbcast_cred_t *sbcast_cred;
+	bool release_id = false;
 
 	xassert(g_context);
+
+	if (!arg->id && enable_send_gids) {
+		release_id = true;
+		if (!(arg->id = fetch_identity(arg->uid, arg->gid, false))) {
+			error("%s: fetch_identity() failed", __func__);
+			return NULL;
+		}
+	}
 
 	if (enable_send_gids) {
 		/* this may still be null, in which case slurmd will handle */
@@ -680,6 +689,9 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 
 	xfree(arg->user_name);
 	xfree(arg->gids);
+
+	if (release_id)
+		FREE_NULL_IDENTITY(arg->id);
 
 	return sbcast_cred;
 }
