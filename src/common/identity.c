@@ -82,7 +82,8 @@ extern void pack_identity(identity_t *id, buf_t *buffer,
 			  uint16_t protocol_version)
 {
 	uint32_t gr_names_cnt;
-	identity_t null_id = {};
+	identity_t null_id =
+		{ .uid = SLURM_AUTH_NOBODY, .gid = SLURM_AUTH_NOBODY };
 
 	if (!id)
 		id = &null_id;
