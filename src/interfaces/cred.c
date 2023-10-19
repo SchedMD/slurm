@@ -700,10 +700,14 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	xassert(sbcast_cred);
-	xassert(sbcast_cred->buffer);
 
-	/* already includes signature */
-	packbuf(sbcast_cred->buffer, buffer);
+	if (sbcast_cred->buffer) {
+		/* already includes signature */
+		packbuf(sbcast_cred->buffer, buffer);
+	} else {
+		/* credential only uses signature */
+		packstr(sbcast_cred->signature, buffer);
+	}
 }
 
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
