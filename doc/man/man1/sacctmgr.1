@@ -3284,6 +3284,7 @@ This operation cannot be rolled back
 once executed. If one of the following options is not specified when sacctmgr
 is called, the value configured in slurmdbd.conf is used.
 
+.RS
 .TP
 \fBDirectory=\fR
 Directory to store the archive data.
@@ -3348,6 +3349,8 @@ all step data removed will be lost permanently.
 \fBSuspend\fR
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
+.IP
+.RE
 
 .SS archive load
 Load in to the database previously archived data. The archive file will not be
@@ -3362,6 +3365,7 @@ will have duplicate records.
 Archive files from the current or any prior Slurm release may be loaded
 through \fBarchive load\fR.
 
+.RS
 .TP
 \fBFile=\fR
 File to load into database. The specified file must exist on the slurmdbd host,
@@ -3373,6 +3377,7 @@ which is not necessarily the machine running the command.
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
 .IP
+.RE
 
 .SH "PERFORMANCE"
 .PP
