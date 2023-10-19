@@ -49,15 +49,7 @@ make_bash_script $file_in "$srun -t00:01:00 sleep 300"
 
 set job_id [submit_job -fail "-o /dev/null -t00:02:00 $file_in"]
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	# TODO Temporary debug to troubleshoot bug 11887 (revert once fixed)
-	run_command "$squeue"
-	run_command "$sinfo"
-	run_command "$scontrol show job"
-	run_command "$scontrol show node"
-
-	fail "Error waiting for job ($job_id) to complete"
-}
+wait_for_job -fail $job_id "DONE"
 
 subtest {![wait_for_command_match -timeout $sacct_update_timeout "$sacct --jobs=$job_id.0 --format=State --noheader --parsable2" "TIMEOUT"]} "Verify that the srun step timed out"
 subtest {![wait_for_command_match -timeout $sacct_update_timeout "$sacct --jobs=$job_id.batch --format=State --noheader --parsable2" "FAILED"]} "Verify that the batch step failed"
