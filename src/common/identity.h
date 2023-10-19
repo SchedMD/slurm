@@ -51,6 +51,8 @@ typedef struct {
 	int ngids;		/* number of extended group ids */
 	gid_t *gids;		/* extended group ids for user */
 	char **gr_names;	/* array of group names matching gids */
+
+	bool fake;		/* not a complete identity, only uid/gid */
 } identity_t;
 
 extern identity_t *fetch_identity(uid_t uid, gid_t gid, bool group_names);

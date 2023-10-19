@@ -172,7 +172,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
 	bool release_id = false;
-	identity_t fake_id = { .uid = arg->uid, .gid = arg->gid };
+	identity_t fake_id = { .uid = arg->uid, .gid = arg->gid, .fake = true };
 
 	xassert(arg);
 	xassert(g_context);
@@ -658,7 +658,7 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 {
 	sbcast_cred_t *sbcast_cred;
 	bool release_id = false;
-	identity_t fake_id = { .uid = uid, .gid = gid };
+	identity_t fake_id = { .uid = uid, .gid = gid, .fake = true };
 
 	xassert(g_context);
 
