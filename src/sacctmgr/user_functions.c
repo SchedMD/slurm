@@ -828,7 +828,10 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (rc == SLURM_NO_CHANGE_IN_DATA) {
-		printf("%s", ret_str ? ret_str : slurm_strerror(rc));
+		if (ret_str) {
+			printf("%sNothing added.\nMake sure the accounts requested here have been added to the system/cluster. (sacctmgr add account...)\n", ret_str);
+		} else
+			printf("%s\n", slurm_strerror(rc));
 	} else {
 		exit_code=1;
 		fprintf(stderr,

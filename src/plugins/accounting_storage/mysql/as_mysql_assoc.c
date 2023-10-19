@@ -43,6 +43,7 @@
 static char *tmp_cluster_name = "slurmredolftrgttemp";
 
 #define ADD_ASSOC_FLAG_STR_ERR SLURM_BIT(0)
+#define ADD_ASSOC_FLAG_ADDED SLURM_BIT(1)
 
 typedef struct {
 	slurmdb_assoc_rec_t *alloc_assoc;
@@ -3083,6 +3084,8 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 			  &add_assoc_cond->ret_str_pos, "\n");
 	}
 
+	add_assoc_cond->flags |= ADD_ASSOC_FLAG_ADDED;
+
 	if (!add_assoc_cond->moved_parent) {
 		_set_assoc_limits_for_add(mysql_conn, assoc);
 		if ((add_assoc_cond->rpc_version <=
@@ -3352,8 +3355,14 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 
 	if (add_assoc_cond->add_assoc->user_list) {
 		if (rc != SLURM_SUCCESS) {
-			debug("No account %s on cluster %s, skipping.",
-			      acct_assoc.acct, acct_assoc.cluster);
+			char *tmp_str = xstrdup_printf(
+				"No account %s on cluster %s, skipping.",
+				acct_assoc.acct, acct_assoc.cluster);
+			debug("%s", tmp_str);
+			xstrfmtcatat(add_assoc_cond->ret_str,
+				     &add_assoc_cond->ret_str_pos,
+				     "%s\n", tmp_str);
+			xfree(tmp_str);
 			goto end_it;
 		}
 
@@ -3376,8 +3385,14 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 
 	/* Add account (non-user associations) */
 	if (rc == SLURM_SUCCESS) {
-		debug2("Already existing account %s on cluster %s",
+		char *tmp_str = xstrdup_printf(
+			"Already existing account %s on cluster %s",
 		       acct_assoc.acct, acct_assoc.cluster);
+		debug2("%s", tmp_str);
+		xstrfmtcatat(add_assoc_cond->ret_str,
+			     &add_assoc_cond->ret_str_pos,
+			     "%s\n", tmp_str);
+		xfree(tmp_str);
 		goto end_it;
 	}
 
@@ -3967,7 +3982,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!(add_assoc_cond.flags & ADD_ASSOC_FLAG_STR_ERR))
 			xfree(add_assoc_cond.ret_str);
 		errno = add_assoc_cond.rc;
-	} else if (!add_assoc_cond.ret_str) {
+	} else if (!(add_assoc_cond.flags & ADD_ASSOC_FLAG_ADDED)) {
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
 		errno = SLURM_NO_CHANGE_IN_DATA;
 	} else {

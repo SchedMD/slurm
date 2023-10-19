@@ -738,11 +738,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		rc = errno;
 		add_assoc->default_acct = NULL;
 
-		if (rc == SLURM_NO_CHANGE_IN_DATA) {
-			if (add_user_cond.ret_str)
-				rc = SLURM_SUCCESS;
-		}
-
 		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
 			if (!add_user_cond.ret_str_err)

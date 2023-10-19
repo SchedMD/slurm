@@ -654,7 +654,8 @@ static int _add_users_cond(slurmdbd_conn_t *slurmdbd_conn,
 				comment = "Unknown issue\n";
 		}
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
-	}
+	} else
+		rc = errno;
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment,
