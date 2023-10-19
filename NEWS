@@ -252,6 +252,9 @@ documents those changes that are of interest to users and administrators.
     existing endpoint, e.g. POST request to /slurm/v0.0.40/job was routed
     to the handler of POST /slurm/v0.0.40/job/submit.
  -- Don't display old job_arrays/het_jobs in sacct if Job ID was reused.
+ -- sbcast - use the specified --fanout value on all hops in message
+    forwarding; previously the specified fanout was only used on the first hop,
+    and additional hops used TreeWidth in slurm.conf.
 
 * Changes in Slurm 23.02.7
 ==========================

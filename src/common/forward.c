@@ -424,6 +424,13 @@ void *_fwd_tree_thread(void *arg)
 			continue;
 		}
 
+		/*
+		 * Tell additional message forwarding to use the same
+		 * tree_width; without this, additional message forwarding
+		 * defaults to slurm_conf.tree_width (see _forward_thread).
+		 */
+		send_msg.forward.tree_width =
+			fwd_tree->orig_msg->forward.tree_width;
 		send_msg.forward.timeout = fwd_tree->timeout;
 		if ((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))){
 			buf = hostlist_ranged_string_xmalloc(
