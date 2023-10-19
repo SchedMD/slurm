@@ -979,6 +979,9 @@ extern int64_t data_get_int(const data_t *data)
 	if (!data)
 		return 0;
 
+	if (data->type == TYPE_NULL)
+		return 0;
+
 	xassert(data->type == TYPE_INT_64);
 	return data->data.int_u;
 }
@@ -991,7 +994,8 @@ extern char *data_get_string(data_t *data)
 		return NULL;
 
 	xassert((data->type == TYPE_STRING_PTR) ||
-		(data->type == TYPE_STRING_INLINE));
+		(data->type == TYPE_STRING_INLINE) ||
+		(data->type == TYPE_NULL));
 
 	if (data->type == TYPE_STRING_PTR) {
 		return data->data.string_ptr_u;
