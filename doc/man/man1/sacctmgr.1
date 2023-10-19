@@ -2949,27 +2949,44 @@ dash, space, entity value, then specifications. Specifications are colon
 separated. If any variable, such as an Organization name, has a space in it,
 surround the name with single or double quotes.
 
-To create a file of associations you can run
-.RS
-\fBsacctmgr dump tux file=tux.cfg\fP
-.RE
-
-To load a previously created file you can run
-.RS
-\fBsacctmgr load file=tux.cfg\fP
-.RE
-
+.P
 sacctmgr dump/load must be run as a Slurm administrator or root. If using
 sacctmgr load on a database without any associations, it must be run as root
 (because there aren't any users in the database yet).
 
-Other options for load are:
+.SS dump
+Dump cluster associations from the database into a file. If no file is given
+then one will be generated, using the cluster name for the file name. That
+file will be created in the current working directory.
+
+.P
+To create a file with the association information you can run:
+
+.nf
+sacctmgr dump tux file=tux.cfg
+.fi
+
+.SS load
+Load cluster associations into the database. The imported associations will be
+reconciled with existing ones.
+
+.P
+To load a previously created file you can run:
+
+.nf
+sacctmgr load file=tux.cfg
+.fi
+
 .RS
-\fBclean\fP     \- delete what was already there and start from scratch with
-this information.
-.br
-\fBCluster=\fP  \- specify a different name for the cluster than that which is
-in the file.
+.TP
+\fBclean\fR
+Delete what was already there and start from scratch with this information.
+.IP
+
+.TP
+\fBCluster=\fR
+Specify a different name for the cluster than that which is in the file.
+.IP
 .RE
 
 .SH "SPECIFICATIONS FOR FLAT FILE"
