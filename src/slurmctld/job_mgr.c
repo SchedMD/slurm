@@ -15120,6 +15120,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
 		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 			rc = rc2;
+			xfree(err_msg);
 			goto reply;
 		}
 		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
