@@ -42,6 +42,8 @@
 /* Remove this 2 versions after 23.11 */
 static char *tmp_cluster_name = "slurmredolftrgttemp";
 
+#define ADD_ASSOC_FLAG_STR_ERR SLURM_BIT(0)
+
 typedef struct {
 	slurmdb_assoc_rec_t *alloc_assoc;
 	slurmdb_add_assoc_cond_t *add_assoc;
@@ -49,6 +51,7 @@ typedef struct {
 	char *base_lineage;
 	char *cols;
 	char *extra;
+	uint32_t flags;
 	int incr; /* 2 versions after 23.11 */
 	bool is_coord;
 	mysql_conn_t *mysql_conn;
@@ -57,7 +60,6 @@ typedef struct {
 	char *old_parent; /* 2 versions after 23.11 */
 	char *old_cluster; /* 2 versions after 23.11 */
 	int rc;
-	bool ret_str_err;
 	char *ret_str;
 	char *ret_str_pos;
 	uint32_t rpc_version;
@@ -3434,7 +3436,7 @@ static int _add_assoc_cond_cluster(void *x, void *arg)
 
 		if (rc != SLURM_SUCCESS) {
 			xfree(add_assoc_cond->ret_str);
-			add_assoc_cond->ret_str_err = true;
+			add_assoc_cond->flags |= ADD_ASSOC_FLAG_STR_ERR;
 			if (!xstrcmp(acct_assoc.acct, "root")) {
 				add_assoc_cond->rc =
 					ESLURM_INVALID_CLUSTER_NAME;
@@ -3962,7 +3964,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (add_assoc_cond.rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
-		if (!add_assoc_cond.ret_str_err)
+		if (!(add_assoc_cond.flags & ADD_ASSOC_FLAG_STR_ERR))
 			xfree(add_assoc_cond.ret_str);
 		errno = add_assoc_cond.rc;
 	} else if (!add_assoc_cond.ret_str) {
