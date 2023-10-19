@@ -115,13 +115,12 @@ typedef struct {
 	char *job_partition;		/* partition */
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
+	char *job_selinux_context;
 	time_t job_start_time;          /* UNIX timestamp for job start time */
 	char *job_std_err;
 	char *job_std_in;
 	char *job_std_out;
-	uint16_t x11;			/* x11 flag set on job */
-
-	char *selinux_context;
+	uint16_t job_x11;		/* x11 flag set on job */
 
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */

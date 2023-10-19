@@ -2949,8 +2949,8 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_licenses = job_ptr->licenses;
 	cred_arg->job_reservation = job_ptr->resv_name;
 	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
+	cred_arg->job_selinux_context = job_ptr->selinux_context;
 	cred_arg->job_start_time = job_ptr->start_time;
-	cred_arg->selinux_context = job_ptr->selinux_context;
 	cred_arg->uid = job_ptr->user_id;
 
 	if (job_ptr->details) {
@@ -2961,7 +2961,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_std_err = job_ptr->details->std_err;
 		cred_arg->job_std_in = job_ptr->details->std_in;
 		cred_arg->job_std_out = job_ptr->details->std_out;
-		cred_arg->x11 = job_ptr->details->x11;
+		cred_arg->job_x11 = job_ptr->details->x11;
 	}
 
 	if (job_ptr->job_resrcs) {

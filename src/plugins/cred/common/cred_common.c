@@ -89,7 +89,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_std_in, buffer);
 		packstr(cred->job_std_out, buffer);
 		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
+		pack16(cred->job_x11, buffer);
 		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
@@ -140,7 +140,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				     cred->step_mem_alloc_size,
 				     buffer);
 		}
-		packstr(cred->selinux_context, buffer);
+		packstr(cred->job_selinux_context, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack_identity(cred->id, buffer, protocol_version);
@@ -166,7 +166,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_std_in, buffer);
 		packstr(cred->job_std_out, buffer);
 		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
+		pack16(cred->job_x11, buffer);
 		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
@@ -217,7 +217,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				     cred->step_mem_alloc_size,
 				     buffer);
 		}
-		packstr(cred->selinux_context, buffer);
+		packstr(cred->job_selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack_identity(cred->id, buffer, protocol_version);
@@ -239,7 +239,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_std_in, buffer);
 		packstr(cred->job_std_out, buffer);
 		packstr(cred->step_hostlist, buffer);
-		pack16(cred->x11, buffer);
+		pack16(cred->job_x11, buffer);
 		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
@@ -289,7 +289,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				     cred->step_mem_alloc_size,
 				     buffer);
 		}
-		packstr(cred->selinux_context, buffer);
+		packstr(cred->job_selinux_context, buffer);
 	}
 
 	return credential;
@@ -343,7 +343,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred_arg->job_std_in, buffer);
 		safe_unpackstr(&cred_arg->job_std_out, buffer);
 		safe_unpackstr(&cred_arg->step_hostlist, buffer);
-		safe_unpack16(&cred_arg->x11, buffer);
+		safe_unpack16(&cred_arg->job_x11, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred_arg->job_core_bitmap, buffer);
@@ -405,7 +405,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->selinux_context, buffer);
+		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -441,7 +441,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred_arg->job_std_in, buffer);
 		safe_unpackstr(&cred_arg->job_std_out, buffer);
 		safe_unpackstr(&cred_arg->step_hostlist, buffer);
-		safe_unpack16(&cred_arg->x11, buffer);
+		safe_unpack16(&cred_arg->job_x11, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred_arg->job_core_bitmap, buffer);
@@ -503,7 +503,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->selinux_context, buffer);
+		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -535,7 +535,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred_arg->job_std_in, buffer);
 		safe_unpackstr(&cred_arg->job_std_out, buffer);
 		safe_unpackstr(&cred_arg->step_hostlist, buffer);
-		safe_unpack16(&cred_arg->x11, buffer);
+		safe_unpack16(&cred_arg->job_x11, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred_arg->job_core_bitmap, buffer);
@@ -596,7 +596,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 
-		safe_unpackstr(&cred_arg->selinux_context, buffer);
+		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

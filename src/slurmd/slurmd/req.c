@@ -1178,16 +1178,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		 * host_index already.
 		 *
 		 */
-		if (!arg->x11)
+		if (!arg->job_x11)
 			setup_x11 = false;
-		else if (arg->x11 & X11_FORWARD_ALL)
+		else if (arg->job_x11 & X11_FORWARD_ALL)
 			setup_x11 = true;
 		/* assumes that the first node is the batch host */
-		else if (((arg->x11 & X11_FORWARD_FIRST) ||
-			  (arg->x11 & X11_FORWARD_BATCH))
+		else if (((arg->job_x11 & X11_FORWARD_FIRST) ||
+			  (arg->job_x11 & X11_FORWARD_BATCH))
 			 && (host_index == 0))
 			setup_x11 = true;
-		else if ((arg->x11 & X11_FORWARD_LAST)
+		else if ((arg->job_x11 & X11_FORWARD_LAST)
 			 && (host_index == (req->nnodes - 1)))
 			setup_x11 = true;
 
@@ -1961,7 +1961,8 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	 * handle x11 settings here since this is the only access to the cred
 	 * on the batch step.
 	 */
-	if ((arg->x11 & X11_FORWARD_ALL) || (arg->x11 & X11_FORWARD_BATCH))
+	if ((arg->job_x11 & X11_FORWARD_ALL) ||
+	    (arg->job_x11 & X11_FORWARD_BATCH))
 		_setup_x11_display(req->job_id, SLURM_BATCH_SCRIPT,
 				   &req->environment, &req->envc);
 
