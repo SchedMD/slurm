@@ -56,7 +56,7 @@ file delete $test_prog
 
 if [compile_against_libslurm -full $test_prog "-ldl -lm -export-dynamic \
 				   ${build_dir}/src/slurmctld/locks.o \
-				   ${build_dir}/src/sshare/process.o"] {
+				   ${build_dir}/src/sshare/process.o -lgcov"] {
 	fail "Cannot compile test program"
 }
 
