@@ -2966,6 +2966,19 @@ To create a file with the association information you can run:
 sacctmgr dump tux file=tux.cfg
 .fi
 
+.RS
+.TP
+\fBCluster=\fR
+Specify the cluster to dump the information for.
+.IP
+
+.TP
+\fBFile=\fR
+Specify a file to save flat file data to.
+If the filename is not specified it uses clustername.cfg filename by default.
+.IP
+.RE
+
 .SS load
 Load cluster associations into the database. The imported associations will be
 reconciled with existing ones.
@@ -2986,6 +2999,11 @@ Delete what was already there and start from scratch with this information.
 .TP
 \fBCluster=\fR
 Specify a different name for the cluster than that which is in the file.
+.IP
+
+.TP
+\fBFile=\fR
+Specify a flat file to load from.
 .IP
 .RE
 
