@@ -29,6 +29,7 @@ source ./globals
 
 set job_id        0
 set file_in       "$test_dir/job_script"
+set sacct_update_timeout 3
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -48,17 +49,8 @@ make_bash_script $file_in "$srun -t00:01:00 sleep 300"
 
 set job_id [submit_job -fail "-o /dev/null -t00:02:00 $file_in"]
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	# TODO Temporary debug to troubleshoot bug 11887 (revert once fixed)
-	run_command "$squeue"
-	run_command "$sinfo"
-	run_command "$scontrol show job"
-	run_command "$scontrol show node"
+wait_for_job -fail $job_id "DONE"
 
-	fail "Error waiting for job ($job_id) to complete"
-}
-
-set output [run_command_output -fail "$sacct --jobs=$job_id --format=JobID,State --parsable2 --noheader --starttime=00:00"]
-subtest [regexp "$job_id\\.0\\|TIMEOUT" $output] "Verify that the srun step timed out"
-subtest [regexp "$job_id\\.batch\\|FAILED" $output] "Verify that the batch step failed"
-subtest [regexp "$job_id\\|FAILED" $output] "Verify that the job failed"
+subtest {![wait_for_command_match -timeout $sacct_update_timeout "$sacct --jobs=$job_id.0 --format=State --noheader --parsable2" "TIMEOUT"]} "Verify that the srun step timed out"
+subtest {![wait_for_command_match -timeout $sacct_update_timeout "$sacct --jobs=$job_id.batch --format=State --noheader --parsable2" "FAILED"]} "Verify that the batch step failed"
+subtest {![wait_for_command_match -timeout $sacct_update_timeout "$sacct --jobs=$job_id --format=State --allocations --noheader --parsable2" "FAILED"]} "Verify that the job failed"
