@@ -744,6 +744,8 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				xfree(add_user_cond.ret_str);
 			else
 				xfree(ret_str);
+			xfree(add_user_cond.txn_query);
+			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
@@ -768,6 +770,8 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				xfree(add_user_cond.ret_str);
 			else
 				xfree(ret_str);
+			xfree(add_user_cond.txn_query);
+			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
