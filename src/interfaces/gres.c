@@ -9653,6 +9653,8 @@ static int _get_usable_gres(int context_inx, int proc_id,
 					gres_bit_alloc, slurm_atoul(sep + 9),
 					step, plugin_id, proc_id);
 			}
+		} else if (!xstrncasecmp(sep, "none", 4)) {
+			usable_gres = bit_copy(gres_bit_alloc);
 		} else
 			return SLURM_ERROR;
 	} else { // Shared gres only support per_task binding for now
@@ -9663,6 +9665,8 @@ static int _get_usable_gres(int context_inx, int proc_id,
 				step, gpu_plugin_id, proc_id);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
+		} else if (!xstrncasecmp(sep, "none", 4)) {
+			usable_gres = bit_copy(gres_bit_alloc);
 		} else
 			return SLURM_ERROR;
 	}
