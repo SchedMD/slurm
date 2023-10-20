@@ -124,7 +124,9 @@ present. Build dependencies for various plugins and commands are denoted below:
 		</li>
 <li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
 		accounting plugin will be built if the <i>freeipmi</i>
-		development library is present.</li>
+		development library is present. When building the RPM,
+		<code>rpmbuild ... --with freeipmi</code> can be
+		specified to explicitly check for these dependencies.</li>
 <li> <b>Lua Support</b> The lua API will be available in various plugins if the
 		<i>lua</i> development library is present.</li>
 <li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE
@@ -858,6 +860,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 05 October 2023</p>
+<p style="text-align:center;">Last modified 20 October 2023</p>
 
 <!--#include virtual="footer.txt"-->

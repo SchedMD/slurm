@@ -124,7 +124,9 @@ Datasets provided by the plugin have name: <IPMI_SENSOR_LABEL>Power.
 NOTES:
 .LP
 This plugin requires the freeipmi development files to be installed and linkable
-at configure time. The plugin will not build otherwise.
+at configure time. The plugin will not build otherwise. When building the RPM,
+\fIrpmbuild ... --with freeipmi\fR can be specified to explicitly check for
+these dependencies.
 
 .SH acct_gather_energy/rapl
 Required entry in slurm.conf:
