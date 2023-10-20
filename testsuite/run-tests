@@ -309,6 +309,10 @@ def print_run_summary(run_tup_list):
             num_tests = stats_dict["total"]
             status = stats_dict["status"]
 
+            # Sort fails so that they are in order
+            fails.sort(key=lambda x : [int(num_group)
+                                       for num_group in re.findall(f"\d+", x)])
+
             if completions + skips + num_fails > 0:
                 print_frmt(frmt, f"{msg}:", "")
                 print_frmt(frmt, "Completions:", f"{completions}/{num_tests}")
