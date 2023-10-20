@@ -62,7 +62,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 decl_static_data(usage_txt);
 

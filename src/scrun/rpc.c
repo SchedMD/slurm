@@ -44,7 +44,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 		    int *conn_fd)

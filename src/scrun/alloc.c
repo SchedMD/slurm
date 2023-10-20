@@ -51,7 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 /* max number of seconds to delay while waiting for job */
 #define MAX_DELAY 60

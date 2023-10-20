@@ -71,7 +71,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 #define CONMGR_THREADS 4
 #define MAX_OPEN_CONNECTIONS 124

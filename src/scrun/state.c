@@ -43,7 +43,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/auth.h"
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 #define STATE_MAGIC 0x0a0a0b0b
 

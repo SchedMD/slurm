@@ -16,7 +16,7 @@ convenience_libs = $(LIB_SLURM)
 
 if HAVE_LUA
 
-AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS) -I$(top_srcdir)/src/scrun/
+AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS)
 
 bin_PROGRAMS = scrun
 scrun_SOURCES = $(SRCS)

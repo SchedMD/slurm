@@ -529,7 +529,7 @@ SRCS = \
 	state.c
 
 convenience_libs = $(LIB_SLURM)
-@HAVE_LUA_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS) -I$(top_srcdir)/src/scrun/
+@HAVE_LUA_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS)
 @HAVE_LUA_TRUE@scrun_SOURCES = $(SRCS)
 @HAVE_LUA_TRUE@scrun_DEPENDENCIES = $(LIB_SLURM_BUILD)
 @HAVE_LUA_TRUE@scrun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

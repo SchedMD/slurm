@@ -49,7 +49,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
-#include "scrun.h"
+#include "src/scrun/scrun.h"
 
 static data_for_each_cmd_t _foreach_load_annotation(const char *key,
 						    data_t *data, void *arg)
