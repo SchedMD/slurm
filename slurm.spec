@@ -246,6 +246,12 @@ Example configuration files for Slurm.
 Summary: Slurm controller daemon
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
+%if %{with pmix} && "%{_with_pmix}" == "--with-pmix"
+Requires: pmix = %{pmix_version}
+%endif
+%if %{with ucx} && "%{_with_ucx}" == "--with-ucx"
+Requires: ucx = %{ucx_version}
+%endif
 %description slurmctld
 Slurm controller daemon. Used to manage the job queue, schedule jobs,
 and dispatch RPC messages to the slurmd processon the compute nodes
