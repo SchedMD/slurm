@@ -9,6 +9,14 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(
 pkglib_LTLIBRARIES = auth_slurm.la
 
 # Slurm authentication plugin.
-auth_slurm_la_SOURCES = auth_slurm.c auth_slurm.h external.c internal.c sack.c util.c
+auth_slurm_la_SOURCES = \
+	auth_slurm.c \
+	auth_slurm.h \
+	cred_slurm.c \
+	external.c \
+	internal.c \
+	sack.c \
+	sbcast.c \
+	util.c
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(JWT_LIBS)
+auth_slurm_la_LIBADD = $(JWT_LIBS) ../../cred/common/libcred_common.la

@@ -181,9 +181,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-auth_slurm_la_DEPENDENCIES =
-am_auth_slurm_la_OBJECTS = auth_slurm.lo external.lo internal.lo \
-	sack.lo util.lo
+auth_slurm_la_DEPENDENCIES = ../../cred/common/libcred_common.la
+am_auth_slurm_la_OBJECTS = auth_slurm.lo cred_slurm.lo external.lo \
+	internal.lo sack.lo sbcast.lo util.lo
 auth_slurm_la_OBJECTS = $(am_auth_slurm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -208,8 +208,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/auth_slurm.Plo \
-	./$(DEPDIR)/external.Plo ./$(DEPDIR)/internal.Plo \
-	./$(DEPDIR)/sack.Plo ./$(DEPDIR)/util.Plo
+	./$(DEPDIR)/cred_slurm.Plo ./$(DEPDIR)/external.Plo \
+	./$(DEPDIR)/internal.Plo ./$(DEPDIR)/sack.Plo \
+	./$(DEPDIR)/sbcast.Plo ./$(DEPDIR)/util.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -520,9 +521,18 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(
 pkglib_LTLIBRARIES = auth_slurm.la
 
 # Slurm authentication plugin.
-auth_slurm_la_SOURCES = auth_slurm.c auth_slurm.h external.c internal.c sack.c util.c
+auth_slurm_la_SOURCES = \
+	auth_slurm.c \
+	auth_slurm.h \
+	cred_slurm.c \
+	external.c \
+	internal.c \
+	sack.c \
+	sbcast.c \
+	util.c
+
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(JWT_LIBS)
+auth_slurm_la_LIBADD = $(JWT_LIBS) ../../cred/common/libcred_common.la
 all: all-am
 
 .SUFFIXES:
@@ -602,9 +612,11 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auth_slurm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred_slurm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/external.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/internal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sack.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sbcast.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -735,9 +747,11 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/auth_slurm.Plo
+	-rm -f ./$(DEPDIR)/cred_slurm.Plo
 	-rm -f ./$(DEPDIR)/external.Plo
 	-rm -f ./$(DEPDIR)/internal.Plo
 	-rm -f ./$(DEPDIR)/sack.Plo
+	-rm -f ./$(DEPDIR)/sbcast.Plo
 	-rm -f ./$(DEPDIR)/util.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -785,9 +799,11 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/auth_slurm.Plo
+	-rm -f ./$(DEPDIR)/cred_slurm.Plo
 	-rm -f ./$(DEPDIR)/external.Plo
 	-rm -f ./$(DEPDIR)/internal.Plo
 	-rm -f ./$(DEPDIR)/sack.Plo
+	-rm -f ./$(DEPDIR)/sbcast.Plo
 	-rm -f ./$(DEPDIR)/util.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
