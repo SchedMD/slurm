@@ -19,4 +19,4 @@ auth_slurm_la_SOURCES = \
 	sbcast.c \
 	util.c
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(JWT_LIBS) ../../cred/common/libcred_common.la
+auth_slurm_la_LIBADD = $(JWT_LIBS)
