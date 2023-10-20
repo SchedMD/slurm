@@ -522,9 +522,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
-	-I$(top_srcdir)/src/common $(RDKAFKA_CPPFLAGS)
-
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(RDKAFKA_CPPFLAGS)
 @WITH_RDKAFKA_TRUE@pkglib_LTLIBRARIES = jobcomp_kafka.la
 @WITH_RDKAFKA_TRUE@jobcomp_kafka_la_SOURCES = jobcomp_kafka.c \
 @WITH_RDKAFKA_TRUE@			jobcomp_kafka_conf.c jobcomp_kafka_conf.h \

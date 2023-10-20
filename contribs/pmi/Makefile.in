@@ -513,7 +513,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -fPIC -I$(top_srcdir)
 @WITH_GNU_LD_TRUE@PMI_VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@        pmi_version.map
 
