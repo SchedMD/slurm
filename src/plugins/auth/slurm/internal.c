@@ -78,7 +78,10 @@ static void _check_key_permissions(const char *path, int bad_perms)
 
 extern void init_internal(void)
 {
-	char *key_file = get_extra_conf_path("slurm.key");
+	char *key_file = xstrdup(getenv("SLURM_SACK_KEY"));
+
+	if (!key_file)
+		key_file = get_extra_conf_path("slurm.key");
 
 	_check_key_permissions(key_file, S_IRWXO);
 

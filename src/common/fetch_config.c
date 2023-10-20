@@ -39,6 +39,7 @@
 #include <inttypes.h>
 #include <sys/mman.h>	/* memfd_create */
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include "src/common/fetch_config.h"
 #include "src/common/read_config.h"
@@ -136,6 +137,8 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	List controllers = NULL;
 	pid_t pid;
+	char *sack_key = NULL;
+	struct stat statbuf;
 
 	/*
 	 * Two main processing options here: we are either given an explicit
@@ -176,6 +179,17 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 			return NULL;
                 }
 	}
+
+	/* If the slurm.key file exists, assume we're using auth/slurm */
+	sack_key = get_extra_conf_path("slurm.key");
+	if (!stat(sack_key, &statbuf)) {
+		/*
+		 * This envvar will ensure both the config fetching process
+		 * as well as ourselves will use the original key location.
+		 */
+		setenv("SLURM_SACK_KEY", sack_key, 1);
+	}
+	xfree(sack_key);
 
 	/*
 	 * At this point we have a List of controllers.

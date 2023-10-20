@@ -190,6 +190,12 @@ extern int auth_g_init(void)
 			auth_get_plugin_name(AUTH_PLUGIN_JWT));
 	}
 
+	if (getenv("SLURM_SACK_KEY")) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup(
+			auth_get_plugin_name(AUTH_PLUGIN_SLURM));
+	}
+
 	type = slurm_conf.authtype;
 	if (!type || type[0] == '\0')
 		goto done;
