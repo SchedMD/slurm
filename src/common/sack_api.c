@@ -33,3 +33,104 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include <inttypes.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+#include "src/common/fd.h"
+#include "src/common/pack.h"
+#include "src/common/sack_api.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+
+static int _sack_connect(void)
+{
+	int fd;
+	struct sockaddr_un addr = {
+		.sun_family = AF_UNIX,
+		.sun_path = "/run/slurm/sack.socket",
+	};
+	size_t len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		error("%s: socket() failed: %m", __func__);
+		return -1;
+	}
+
+	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		error("%s: connect() failed for %s: %m",
+		      __func__, addr.sun_path);
+		close(fd);
+		return -1;
+	}
+
+	return fd;
+}
+
+extern char *sack_create(uid_t r_uid, void *data, int dlen)
+{
+	int fd = -1;
+	char *token = NULL;
+	buf_t *request = init_buf(1024);
+	uint32_t len;
+	uint32_t length_position, end_position;
+
+	if ((fd = _sack_connect()) < 0)
+		goto rwfail;
+
+	/* version is not included in length calculation */
+	pack16(SLURM_PROTOCOL_VERSION, request);
+	length_position = get_buf_offset(request);
+	pack32(0, request);
+	pack32(SACK_CREATE, request);
+	pack32(r_uid, request);
+	packmem(data, dlen, request);
+	end_position = get_buf_offset(request);
+	set_buf_offset(request, length_position);
+	pack32(end_position - length_position, request);
+	set_buf_offset(request, end_position);
+	safe_write(fd, get_buf_data(request), get_buf_offset(request));
+
+	safe_read(fd, &len, sizeof(uint32_t));
+	if (!(len = ntohl(len)))
+		goto rwfail;
+	token = xmalloc(len + 1);
+	safe_read(fd, token, len);
+
+rwfail:
+	FREE_NULL_BUFFER(request);
+	return token;
+}
+
+extern int sack_verify(char *token)
+{
+	int fd = -1;
+	uint32_t result = SLURM_ERROR;
+	buf_t *request = init_buf(1024);
+	uint32_t length_position, end_position;
+
+	if ((fd = _sack_connect()) < 0)
+		goto rwfail;
+
+	/* version is not included in length calculation */
+	pack16(SLURM_PROTOCOL_VERSION, request);
+	length_position = get_buf_offset(request);
+	pack32(0, request);
+	pack32(SACK_VERIFY, request);
+	packstr(token, request);
+	end_position = get_buf_offset(request);
+	set_buf_offset(request, length_position);
+	pack32(end_position - length_position, request);
+	set_buf_offset(request, end_position);
+	safe_write(fd, get_buf_data(request), get_buf_offset(request));
+
+	safe_read(fd, &result, sizeof(uint32_t));
+	result = ntohl(result);
+
+rwfail:
+	FREE_NULL_BUFFER(request);
+	return result;
+}

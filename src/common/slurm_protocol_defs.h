@@ -494,6 +494,8 @@ typedef enum {
 	RESPONSE_CONTAINER_DELETE, /* return_code_msg_t */
 	REQUEST_CONTAINER_STATE, /* empty */
 	RESPONSE_CONTAINER_STATE, /* return_code_msg_t */
+
+	/* reserve 64000 for SACK API codes */
 } slurm_msg_type_t;
 
 /*****************************************************************************\

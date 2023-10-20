@@ -183,6 +183,7 @@ $(libslurm_o_LDADD) $(convenience_libs) $(slurmapi_add) : force
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   islurm_*;"; \
+	 echo "   sack_*;"; \
 	 echo "   slurm_*;"; \
 	 echo "   slurmdb_*;"; \
 	 echo "   plugin_context_*;"; \

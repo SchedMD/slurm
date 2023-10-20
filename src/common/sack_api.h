@@ -37,4 +37,37 @@
 #ifndef _SACK_API_H
 #define _SACK_API_H
 
+/*
+ * The 64000 range is reserved for SACK to
+ * avoid collisions with slurm_msg_type_t.
+ */
+typedef enum {
+	SACK_CREATE = 64001,
+	SACK_VERIFY = 64002,
+} sack_msg_t;
+
+#define SACK_HEADER_LENGTH (sizeof(uint16_t) + 2 * sizeof(uint32_t))
+
+/*
+ * Create a SACK token with an (optional) binary payload.
+ *
+ * The r_uid restricts decoding to a specific uid,
+ * or SLURM_AUTH_UID_ANY to permit anyone to decode.
+ *
+ * Returns an xmalloc()'d string, caller must xfree().
+ */
+extern char *sack_create(uid_t r_uid, void *data, int dlen);
+
+/*
+ * Given a SACK token, ensure the signature is valid,
+ * that the calling process has permissions to decode,
+ * and that it has not expired.
+ *
+ * Only works for "auth" and "sack" context tokens,
+ * all others will be rejected.
+ *
+ * Returns SLURM_SUCCESS if verified.
+ */
+extern int sack_verify(char *token);
+
 #endif
