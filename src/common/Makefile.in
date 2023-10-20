@@ -167,7 +167,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	net.lo node_conf.lo oci_config.lo openapi.lo optz.lo pack.lo \
 	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
 	plugrack.lo print_fields.lo proc_args.lo read_config.lo \
-	reverse_tree.lo run_command.lo run_in_daemon.lo \
+	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
 	setproctitle.lo slurm_errno.lo slurm_opt.lo \
 	slurm_persist_conn.lo slurm_protocol_api.lo \
 	slurm_protocol_defs.lo slurm_protocol_pack.lo \
@@ -228,8 +228,9 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
 	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
 	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
-	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/slurm_errno.Plo \
-	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_persist_conn.Plo \
+	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
+	./$(DEPDIR)/slurm_persist_conn.Plo \
 	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
@@ -651,6 +652,8 @@ libcommon_la_SOURCES = \
 	run_command.h				\
 	run_in_daemon.c				\
 	run_in_daemon.h				\
+	sack_api.c				\
+	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
 	slurm_errno.c				\
@@ -844,6 +847,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sack_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt.Plo@am__quote@ # am--include-marker
@@ -1052,6 +1056,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo
@@ -1180,6 +1185,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo

@@ -99,6 +99,8 @@ libcommon_la_SOURCES =				\
 	run_command.h				\
 	run_in_daemon.c				\
 	run_in_daemon.h				\
+	sack_api.c				\
+	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
 	slurm_errno.c				\
