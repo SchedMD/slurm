@@ -210,6 +210,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 		arg->id = &fake_id;
 	}
 
+	identity_debug2(arg->id, __func__);
 	cred = (*(ops.cred_create))(arg, sign_it, protocol_version);
 
 	/* Release any values populated through _fill_cred_gids(). */
