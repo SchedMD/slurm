@@ -65,7 +65,13 @@ static void _check_key_permissions(const char *path, int bad_perms)
 	if (stat(path, &statbuf))
 		fatal("%s: cannot stat '%s': %m", plugin_type, path);
 
-	if ((statbuf.st_uid != 0) &&
+	/*
+	 * Configless operation means slurm_user_id is 0.
+	 * Avoid an incorrect warning if the key is actually owned by the
+	 * (currently unknown) SlurmUser. (Although if you're running with
+	 * SlurmUser=root, this warning will be skipped inadvertently.)
+	 */
+	if ((statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
 	    (statbuf.st_uid != slurm_conf.slurm_user_id))
 		warning("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
 			plugin_type, path, statbuf.st_uid,
