@@ -184,7 +184,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 auth_slurm_la_DEPENDENCIES =  \
 	$(top_builddir)/src/plugins/cred/common/libcred_common.la
 am_auth_slurm_la_OBJECTS = auth_slurm.lo cred_slurm.lo external.lo \
-	internal.lo sack.lo sbcast.lo util.lo
+	internal.lo net_aliases.lo sack.lo sbcast.lo util.lo
 auth_slurm_la_OBJECTS = $(am_auth_slurm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -210,8 +210,9 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/auth_slurm.Plo \
 	./$(DEPDIR)/cred_slurm.Plo ./$(DEPDIR)/external.Plo \
-	./$(DEPDIR)/internal.Plo ./$(DEPDIR)/sack.Plo \
-	./$(DEPDIR)/sbcast.Plo ./$(DEPDIR)/util.Plo
+	./$(DEPDIR)/internal.Plo ./$(DEPDIR)/net_aliases.Plo \
+	./$(DEPDIR)/sack.Plo ./$(DEPDIR)/sbcast.Plo \
+	./$(DEPDIR)/util.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -528,6 +529,7 @@ auth_slurm_la_SOURCES = \
 	cred_slurm.c \
 	external.c \
 	internal.c \
+	net_aliases.c \
 	sack.c \
 	sbcast.c \
 	util.c
@@ -616,6 +618,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred_slurm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/external.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/internal.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net_aliases.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sbcast.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Plo@am__quote@ # am--include-marker
@@ -751,6 +754,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cred_slurm.Plo
 	-rm -f ./$(DEPDIR)/external.Plo
 	-rm -f ./$(DEPDIR)/internal.Plo
+	-rm -f ./$(DEPDIR)/net_aliases.Plo
 	-rm -f ./$(DEPDIR)/sack.Plo
 	-rm -f ./$(DEPDIR)/sbcast.Plo
 	-rm -f ./$(DEPDIR)/util.Plo
@@ -803,6 +807,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cred_slurm.Plo
 	-rm -f ./$(DEPDIR)/external.Plo
 	-rm -f ./$(DEPDIR)/internal.Plo
+	-rm -f ./$(DEPDIR)/net_aliases.Plo
 	-rm -f ./$(DEPDIR)/sack.Plo
 	-rm -f ./$(DEPDIR)/sbcast.Plo
 	-rm -f ./$(DEPDIR)/util.Plo

@@ -109,4 +109,7 @@ extern slurm_cred_t *extract_launch(char *json);
 extern char *encode_sbcast(sbcast_cred_arg_t *cred);
 extern sbcast_cred_t *extract_sbcast(char *json);
 
+extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases);
+extern slurm_node_alias_addrs_t *extract_net_aliases(char *json);
+
 #endif

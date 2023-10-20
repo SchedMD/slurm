@@ -148,11 +148,58 @@ unpack_error:
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 {
-	return NULL;
+	char *token = NULL, *extra = NULL;
+
+	extra = encode_net_aliases(addrs);
+
+	if (!(token = create_internal("net", getuid(), getgid(),
+				      slurm_conf.slurmd_user_id,
+				      NULL, 0, extra)))
+		error("create_internal() failed: %m");
+
+	xfree(extra);
+	return token;
 }
 
 extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 {
+	slurm_node_alias_addrs_t *addrs = NULL;
+	jwt_t *jwt = NULL;
+	const char *context = NULL;
+	char *json_net = NULL;
+
+	if (!(jwt = decode_jwt(net_cred, running_in_slurmd(), getuid()))) {
+		error("%s: decode_jwt() failed", __func__);
+		return NULL;
+	}
+
+	errno = 0;
+	context = jwt_get_grant(jwt, "context");
+	if (!context || (errno == EINVAL)) {
+		error("%s: jwt_get_grant failure for context", __func__);
+		goto unpack_error;
+	}
+	if (xstrcmp(context, "net")) {
+		error("%s: wrong context in cred: %s", __func__, context);
+		goto unpack_error;
+	}
+
+	if (!(json_net = jwt_get_grants_json(jwt, "net"))) {
+		error("%s: jwt_get_grants_json() failure for net", __func__);
+		goto unpack_error;
+	} else if (!(addrs = extract_net_aliases(json_net))) {
+		error("%s: extract_net_aliases() failed", __func__);
+		goto unpack_error;
+	}
+
+	free(json_net);
+	jwt_free(jwt);
+	return addrs;
+
+unpack_error:
+	if (json_net)
+		free(json_net);
+	jwt_free(jwt);
 	return NULL;
 }
 

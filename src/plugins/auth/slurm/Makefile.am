@@ -15,6 +15,7 @@ auth_slurm_la_SOURCES = \
 	cred_slurm.c \
 	external.c \
 	internal.c \
+	net_aliases.c \
 	sack.c \
 	sbcast.c \
 	util.c
