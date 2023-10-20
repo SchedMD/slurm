@@ -19,4 +19,8 @@ auth_slurm_la_SOURCES = \
 	sbcast.c \
 	util.c
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(JWT_LIBS)
+auth_slurm_la_LIBADD = $(top_builddir)/src/plugins/cred/common/libcred_common.la $(JWT_LIBS)
+
+force:
+$(auth_slurm_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

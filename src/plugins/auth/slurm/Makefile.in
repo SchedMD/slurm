@@ -181,7 +181,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-auth_slurm_la_DEPENDENCIES =
+auth_slurm_la_DEPENDENCIES =  \
+	$(top_builddir)/src/plugins/cred/common/libcred_common.la
 am_auth_slurm_la_OBJECTS = auth_slurm.lo cred_slurm.lo external.lo \
 	internal.lo sack.lo sbcast.lo util.lo
 auth_slurm_la_OBJECTS = $(am_auth_slurm_la_OBJECTS)
@@ -532,7 +533,7 @@ auth_slurm_la_SOURCES = \
 	util.c
 
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(JWT_LIBS)
+auth_slurm_la_LIBADD = $(top_builddir)/src/plugins/cred/common/libcred_common.la $(JWT_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -842,6 +843,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(auth_slurm_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
