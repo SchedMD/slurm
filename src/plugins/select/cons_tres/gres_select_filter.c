@@ -695,6 +695,36 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 			*max_tasks_this_node = MIN(*max_tasks_this_node,
 						   max_tasks);
 		}
+		if (cpus_per_gres && cnt_avail_total) {
+			uint32_t gres_cpus;
+
+			/*
+			 * Limit max_tasks_this_node per the cpus_per_gres
+			 * request. req_cores is initialized to
+			 * max_tasks_this_node, and req_cores needs to be
+			 * limited by cpus_per_gres.
+			 */
+			gres_cpus = cpus_per_gres * cnt_avail_total;
+
+			if (gres_cpus <
+			    (*min_tasks_this_node * mc_ptr->cpus_per_task)) {
+				/*
+				 * cpus_per_gres may end up requesting fewer
+				 * cpus than tasks on the node. In this case,
+				 * ignore cpus_per_gres and instead set
+				 * max_tasks to min_tasks.
+				 */
+				*max_tasks_this_node = *min_tasks_this_node;
+			} else {
+				uint32_t gres_tasks;
+
+				/* Truncate: round down */
+				gres_tasks = gres_cpus / mc_ptr->cpus_per_task;
+				*max_tasks_this_node =
+					MIN(*max_tasks_this_node, gres_tasks);
+			}
+		}
+
 		/*
 		 * min_tasks_this_node and max_tasks_this_node must be multiple
 		 * of original min_tasks_this_node value. This is to support
