@@ -989,11 +989,12 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 		}
 
 		/*
-		 * Only do this if enforce_binding=true, since without
+		 * Set a minimum required core count to fulfill the job's
+		 * cpus_per_gres request or enforce_binding. Without
 		 * enforce_binding a job may run on fewer cores than required
 		 * for optimal binding.
 		 */
-		if (enforce_binding)
+		if (enforce_binding || has_cpus_per_gres)
 			*min_cores_this_node =
 				MIN(*min_cores_this_node, req_cores);
 	}
