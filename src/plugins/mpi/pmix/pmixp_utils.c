@@ -35,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
+#include "config.h"
+
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
@@ -521,6 +523,20 @@ int pmixp_mkdir(char *path)
 		xfree(base);
 		return errno;
 	}
+
+#ifdef MULTIPLE_SLURMD
+	struct stat statbuf;
+	if (!fstatat(dirfd, newdir, &statbuf, AT_SYMLINK_NOFOLLOW)) {
+		if ((statbuf.st_mode & S_IFDIR) &&
+		    (statbuf.st_uid == pmixp_info_jobuid())) {
+			PMIXP_ERROR_STD("Directory \"%s\" already exists, but has correct uid",
+					path);
+			close(dirfd);
+			xfree(base);
+			return 0;
+		}
+	}
+#endif
 
 	if (mkdirat(dirfd, newdir, rights) < 0) {
 		PMIXP_ERROR_STD("Cannot create directory \"%s\"",
