@@ -55,6 +55,7 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char **err_msg;
+	identity_t *id;
 	char **job_submit_user_msg;
 	char **failed_lines;
 	List new_jobs;
@@ -92,6 +93,9 @@ static int _handle_job(void *x, void *y)
 
 	xfree(job->alloc_node);
 	job->alloc_node = xstrdup(args->alloc_node);
+
+	FREE_NULL_IDENTITY(job->id);
+	job->id = copy_identity(args->id);
 
 	/* enforce this flag so the job submit plugin can differentiate */
 	job->bitflags |= CRON_JOB;
@@ -212,7 +216,8 @@ static int _copy_jobids(void *x, void *y)
 
 extern void crontab_submit(crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
-			   char *alloc_node, uint16_t protocol_version)
+			   char *alloc_node, identity_t *id,
+			   uint16_t protocol_version)
 {
 	foreach_cron_job_args_t args;
 	char *dir = NULL, *file = NULL;
@@ -246,6 +251,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		args.uid = request->uid;
 		args.gid = request->gid;
 		args.err_msg = &response->err_msg;
+		args.id = id;
 		args.job_submit_user_msg = &response->job_submit_user_msg;
 		args.failed_lines = &response->failed_lines;
 		args.new_jobs = list_create(NULL);

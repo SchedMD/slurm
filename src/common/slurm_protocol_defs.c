@@ -1336,6 +1336,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
 		xfree(msg->cluster_features);
+		FREE_NULL_IDENTITY(msg->id);
 		xfree(msg->job_id_str);
 		xfree(msg->job_size_str);
 		xfree(msg->licenses);

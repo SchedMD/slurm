@@ -612,6 +612,22 @@ extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
 
 }
 
+static void _set_identity(slurm_msg_t *msg, void **id)
+{
+	static bool set = false, use_client_ids = false;
+
+	if (!set) {
+		if (xstrstr(slurm_conf.authinfo, "use_client_ids"))
+			use_client_ids = true;
+		set = true;
+	}
+
+	if (!use_client_ids)
+		return;
+
+	*id = (void *) auth_g_get_identity(msg->auth_cred);
+}
+
 static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 {
 	slurm_addr_t addr;
@@ -1332,6 +1348,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 		     msg->auth_uid);
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
+	_set_identity(msg, &job_desc_msg->id);
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2638,6 +2655,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
+	_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3714,6 +3732,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	}
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
+	_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3915,6 +3934,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		}
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
+		_set_identity(msg, &job_desc_msg->id);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -6501,13 +6521,16 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	if (!resp_msg->return_code) {
 		char *alloc_node = NULL;
+		void *id = NULL;
 		_set_hostname(msg, &alloc_node);
+		_set_identity(msg, &id);
 		if (!alloc_node || (alloc_node[0] == '\0'))
 			resp_msg->return_code = ESLURM_INVALID_NODE_NAME;
 		else
-			crontab_submit(req_msg, resp_msg, alloc_node,
+			crontab_submit(req_msg, resp_msg, alloc_node, id,
 				       msg->protocol_version);
 		xfree(alloc_node);
+		FREE_NULL_IDENTITY(id);
 	}
 
 	unlock_slurmctld(job_write_lock);
