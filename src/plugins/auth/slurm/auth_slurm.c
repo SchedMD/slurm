@@ -52,8 +52,6 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/serializer.h"
 
-#include "src/slurmdbd/read_config.h"
-
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 /*
@@ -112,9 +110,7 @@ extern int init(void)
 		debug("running as client");
 	}
 
-	if (xstrstr(slurm_conf.slurmctld_params, "use_client_ids") ||
-	    (slurmdbd_conf &&
-	     xstrstr(slurmdbd_conf->parameters, "use_client_ids")))
+	if (xstrstr(slurm_conf.authinfo, "use_client_ids"))
 		use_client_ids = true;
 
 	debug("loaded: internal=%s, use_client_ids=%s",
