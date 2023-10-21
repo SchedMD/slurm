@@ -729,9 +729,15 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber(L, job_desc->user_id);
 	} else if (!xstrcmp(name, "user_name")) {
-		char *username = uid_to_string_or_null(job_desc->user_id);
-		lua_pushstring(L, username);
-		xfree(username);
+		if (job_desc->id) {
+			identity_t *id = job_desc->id;
+			lua_pushstring(L, id->pw_name);
+		} else {
+			char *username =
+				uid_to_string_or_null(job_desc->user_id);
+			lua_pushstring(L, username);
+			xfree(username);
+		}
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber(L, job_desc->wait4switch);
 	} else if (!xstrcmp(name, "work_dir")) {
