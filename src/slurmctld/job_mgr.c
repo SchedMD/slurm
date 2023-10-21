@@ -8704,6 +8704,10 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
+	/* skip copy, just take ownership */
+	job_ptr->id = job_desc->id;
+	job_desc->id = NULL;
+
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->deadline   = job_desc->deadline;
