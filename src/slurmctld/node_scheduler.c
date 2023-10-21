@@ -2939,6 +2939,8 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 {
 	memset(cred_arg, 0, sizeof(slurm_cred_arg_t));
 
+	cred_arg->id = job_ptr->id;
+
 	cred_arg->gid = job_ptr->group_id;
 	cred_arg->job_account = job_ptr->account;
 	cred_arg->job_alias_list = job_ptr->alias_list;
