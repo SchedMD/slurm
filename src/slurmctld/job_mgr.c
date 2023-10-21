@@ -1890,8 +1890,12 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
 
 		safe_unpack8(&identity_flag, buffer);
-		if (identity_flag)
-			unpack_identity(&job_ptr->id, buffer, protocol_version);
+		if (identity_flag) {
+			if (unpack_identity(&job_ptr->id, buffer,
+					    protocol_version))
+				goto unpack_error;
+			assoc_mgr_set_uid(user_id, job_ptr->id->pw_name);
+		}
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
