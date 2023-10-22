@@ -260,7 +260,8 @@ extern void init_sack_conmgr(void)
 
 	init_con_mgr(0, 0, callbacks);
 
-	fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0);
+	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
+		fatal("%s: socket() failed: %m", __func__);
 
 	/* set value of socket path */
 	if ((rc = bind(fd, (const struct sockaddr *) &addr,
