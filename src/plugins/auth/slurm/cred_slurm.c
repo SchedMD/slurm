@@ -51,9 +51,10 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 	slurm_cred_t *cred = NULL;
 	char *token = NULL, *extra = NULL;
 
-	if (cred_arg->id)
-		extra = get_identity_string(cred_arg->id, cred_arg->id->uid,
-					    cred_arg->id->gid);
+	xassert(cred_arg && cred_arg->id);
+
+	extra = get_identity_string(cred_arg->id, cred_arg->id->uid,
+				    cred_arg->id->gid);
 
 	cred = cred_create(cred_arg, protocol_version);
 
