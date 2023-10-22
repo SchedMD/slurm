@@ -101,6 +101,8 @@ extern char *sack_create(uid_t r_uid, void *data, int dlen)
 	safe_read(fd, token, len);
 
 rwfail:
+	if (fd >= 0)
+		close(fd);
 	FREE_NULL_BUFFER(request);
 	return token;
 }
@@ -131,6 +133,8 @@ extern int sack_verify(char *token)
 	result = ntohl(result);
 
 rwfail:
+	if (fd >= 0)
+		close(fd);
 	FREE_NULL_BUFFER(request);
 	return result;
 }
