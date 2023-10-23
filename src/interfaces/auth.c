@@ -219,6 +219,10 @@ extern int auth_g_init(void)
 		xrecalloc(g_context, g_context_num + 1,
 			  sizeof(plugin_context_t));
 
+		if (!xstrncmp(type, "auth/", 5))
+			type += 5;
+		type = xstrdup_printf("auth/%s", type);
+
 		g_context[g_context_num] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_num],
 			syms, sizeof(syms));
@@ -226,15 +230,15 @@ extern int auth_g_init(void)
 		if (!g_context[g_context_num]) {
 			error("cannot create %s context for %s", plugin_type, type);
 			retval = SLURM_ERROR;
+			xfree(type);
 			goto done;
 		}
 		g_context_num++;
+		xfree(type);
 
 		if (auth_alt_types) {
 			type = strtok_r(list, ",", &last);
 			list = NULL; /* for next iteration */
-		} else {
-			type = NULL;
 		}
 	}
 done:
