@@ -745,6 +745,8 @@ extern int send_registration_msg(uint32_t status)
 
 	if (get_reg_resp)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
+	if (conf->conf_cache)
+		msg->flags |= SLURMD_REG_FLAG_CONFIGLESS;
 
 	_fill_registration_msg(msg);
 	msg->status = status;
