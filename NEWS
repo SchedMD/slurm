@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - skip empty string when parsing QOS ids.
  -- data_parser/v0.0.39 - Fix potential DATA log segfault
  -- data_parser/v0.0.39 - add ASSOC_USAGE parser_obj type
+ -- Fix "qos <id> doesn't exist" error message in assoc_mgr_update_assocs to
+    print the attempted new default qos, rather than the current default qos.
 
 * Changes in Slurm 23.02.6
 ==========================

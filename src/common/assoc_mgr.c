@@ -3951,7 +3951,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			/*      rec->def_qos_id, object->def_qos_id); */
 			if (object->def_qos_id != NO_VAL &&
 			    object->def_qos_id >= g_qos_count) {
-				error("qos %d doesn't exist", rec->def_qos_id);
+				error("qos %d doesn't exist",
+				      object->def_qos_id);
 				rec->def_qos_id = 0;
 			} else  if (object->def_qos_id != NO_VAL)
 				rec->def_qos_id = object->def_qos_id;
