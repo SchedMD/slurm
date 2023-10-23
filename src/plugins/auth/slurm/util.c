@@ -168,9 +168,11 @@ extern data_t *identity_to_data(identity_t *id)
 	data_set_string(data_key_set(data_id, "dir"), id->pw_dir);
 	data_set_string(data_key_set(data_id, "shell"), id->pw_shell);
 
-	groups = data_set_dict(data_key_set(data_id, "groups"));
-	for (int i = 0; i < id->ngids; i++)
-		data_set_int(data_key_set(groups, id->gr_names[i]), id->gids[i]);
+	if (id->gr_names) {
+		groups = data_set_dict(data_key_set(data_id, "groups"));
+		for (int i = 0; i < id->ngids; i++)
+			data_set_int(data_key_set(groups, id->gr_names[i]), id->gids[i]);
+	}
 
 	return data;
 }
