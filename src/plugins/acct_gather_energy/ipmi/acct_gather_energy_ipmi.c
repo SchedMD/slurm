@@ -905,6 +905,7 @@ static void *_thread_ipmi_run(void *no_data)
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
+	_close_dcmi_context();
 	log_flag(ENERGY, "ipmi-thread: ended");
 
 	return NULL;
@@ -1205,6 +1206,13 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		rc = SLURM_ERROR;
 		break;
 	}
+
+	/*
+	 * Close the dcmi context, since it has __thread on the variable each
+	 * thread will get a different pointer.
+	 */
+	_close_dcmi_context();
+
 	return rc;
 }
 
