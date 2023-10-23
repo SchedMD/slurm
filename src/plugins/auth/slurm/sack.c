@@ -190,16 +190,16 @@ static int _on_connection_data(con_mgr_fd_t *con, void *arg)
 	uint32_t length = 0, rpc = 0;
 	buf_t *in = NULL;
 
-	debug("%s", con_mgr_fd_get_name(con));
+	log_flag(SACK, "%s", con_mgr_fd_get_name(con));
 
 	if (!(in = con_mgr_fd_shadow_in_buffer(con))) {
-		debug("con_mgr_fd_shadow_in_buffer() failed");
+		log_flag(SACK, "con_mgr_fd_shadow_in_buffer() failed");
 		goto unpack_error;
 	}
 
 	if (size_buf(in) < SACK_HEADER_LENGTH) {
-		debug("incomplete header, only %u bytes available, try again",
-		      size_buf(in));
+		log_flag(SACK, "incomplete header, only %u bytes available, try again",
+			 size_buf(in));
 		FREE_NULL_BUFFER(in);
 		return SLURM_SUCCESS;
 	}
@@ -215,14 +215,14 @@ static int _on_connection_data(con_mgr_fd_t *con, void *arg)
 	 * one connection to process multiple RPCs.
 	 */
 	if (size_buf(in) < (length + sizeof(uint16_t))) {
-		debug("incomplete message, only %u bytes available of %u bytes",
-		      size_buf(in), length);
+		log_flag(SACK, "incomplete message, only %u bytes available of %u bytes",
+			 size_buf(in), length);
 		FREE_NULL_BUFFER(in);
 		return SLURM_SUCCESS;
 	}
 	con_mgr_fd_mark_consumed_in_buffer(con, length);
 
-	debug("received version=%hu rpc=%u", version, rpc);
+	log_flag(SACK, "received version=%hu rpc=%u", version, rpc);
 
 	switch (rpc) {
 	case SACK_CREATE:
