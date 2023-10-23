@@ -12501,6 +12501,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_config_request_msg((config_request_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
+	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
 		pack_config_response_msg((config_response_msg_t *) msg->data,
@@ -13154,6 +13155,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			(config_request_msg_t **) &msg->data,
 			buffer, msg->protocol_version);
 		break;
+	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
 		unpack_config_response_msg(
