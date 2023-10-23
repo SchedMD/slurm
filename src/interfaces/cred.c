@@ -128,7 +128,7 @@ extern int cred_g_init(void)
 
 	/* allow the bare plugin name. also handle slurm type quirks */
 	type = slurm_conf.cred_type;
-	if (!xstrncmp(type, "cred/", 5))
+	if (!xstrncmp(type, "auth/", 5) || !xstrncmp(type, "cred/", 5))
 		type += 5;
 	if (!xstrcmp(type, "slurm"))
 		type = xstrdup("auth/slurm");
