@@ -104,11 +104,8 @@ static int _find_sackd_node(void *x, void *arg)
 
 static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 {
-	slurm_node_registration_status_msg_t *node_reg = msg->data;
 	slurm_addr_t addr;
 
-	if (!node->hostname)
-		node->hostname = xstrdup(node_reg->hostname);
 	node->last_update = time(NULL);
 	node->protocol_version = msg->protocol_version;
 
@@ -118,7 +115,7 @@ static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 		node->nodeaddr = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(&addr, node->nodeaddr, INET6_ADDRSTRLEN);
         } else {
-		node->nodeaddr = xstrdup(node_reg->hostname);
+		node->nodeaddr = xstrdup(node->hostname);
 	}
 }
 
@@ -156,28 +153,24 @@ extern void sackd_mgr_fini(void)
 
 extern void sackd_mgr_add_node(slurm_msg_t *msg)
 {
-	slurm_node_registration_status_msg_t *node_reg = msg->data;
 	sackd_node_t *node = NULL;
-
-	if (!(node_reg->flags & SLURMD_REG_FLAG_CONFIGLESS)) {
-		debug2("%s: skipping %s as non-configless node",
-		       __func__, node_reg->hostname);
-		return;
-	}
+	char *auth_host = auth_g_get_host(msg->auth_cred);
 
 	slurm_mutex_lock(&sackd_lock);
 	if (!sackd_nodes)
 		sackd_nodes = list_create(_destroy_sackd_node);
 
 	if ((node = list_find_first(sackd_nodes, _find_sackd_node,
-				    node_reg->hostname))) {
+				    auth_host))) {
 		debug("%s: updating existing record for %s",
-		      __func__, node_reg->hostname);
+		      __func__, auth_host);
 		_update_sackd_node(node, msg);
+		xfree(auth_host);
 	} else {
 		debug("%s: adding record for %s",
-		      __func__, node_reg->hostname);
+		      __func__, auth_host);
 		node = xmalloc(sizeof(*node));
+		node->hostname = auth_host;
 		_update_sackd_node(node, msg);
 		list_append(sackd_nodes, node);
 	}
