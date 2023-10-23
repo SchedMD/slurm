@@ -249,6 +249,16 @@ static int _open_dcmi_context(void)
 	return SLURM_SUCCESS;
 }
 
+static void _close_dcmi_context(void)
+{
+	if (!ipmi_dcmi_ctx)
+		return;
+
+	ipmi_ctx_close(ipmi_dcmi_ctx);
+	ipmi_ctx_destroy(ipmi_dcmi_ctx);
+	ipmi_dcmi_ctx = NULL;
+}
+
 /*
  * _init_ipmi_config initializes parameters for freeipmi library
  */
@@ -1091,11 +1101,7 @@ extern int fini(void)
 		ipmi_ctx = NULL;
 	}
 
-	if (ipmi_dcmi_ctx) {
-		ipmi_ctx_close(ipmi_dcmi_ctx);
-		ipmi_ctx_destroy(ipmi_dcmi_ctx);
-		ipmi_dcmi_ctx = NULL;
-	}
+	_close_dcmi_context();
 
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
