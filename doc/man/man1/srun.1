@@ -944,8 +944,9 @@ subsequent srun requests. Task distribution affects job allocation at the
 last stage of the evaluation of available resources by the cons_res and
 cons_tres plugins. Consequently, other options (e.g. \-\-ntasks\-per\-node,
 \-\-cpus\-per\-task) may affect resource selection prior to task distribution.
-To ensure a specific task distribution jobs should have access to whole
-nodes, for instance by using the \-\-exclusive flag.
+To ensure a specific task distribution, jobs should have access to entire
+nodes, which can be accomplished by using the \fB\-\-exclusive\fR flag
+or by requesting all the resources on the node(s).
 
 This option controls the distribution of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
