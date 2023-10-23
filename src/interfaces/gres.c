@@ -584,7 +584,7 @@ static int _unload_plugin(slurm_gres_context_t *gres_ctx)
 	return rc;
 }
 
-static bool _is_shared_name(char *name)
+extern bool gres_is_shared_name(char *name)
 {
 	if (!xstrcmp(name, "mps") ||
 	    !xstrcmp(name, "shard"))
@@ -594,7 +594,7 @@ static bool _is_shared_name(char *name)
 
 static void _set_shared_flag(char *name, uint32_t *config_flags)
 {
-	if (_is_shared_name(name))
+	if (gres_is_shared_name(name))
 		*config_flags |= GRES_CONF_SHARED;
 }
 
@@ -653,7 +653,7 @@ extern int gres_init(void)
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		bool skip_name = false;
-		if (_is_shared_name(one_name)) {
+		if (gres_is_shared_name(one_name)) {
 			have_shared = true;
 			if (!have_gpu) {
 				/* "shared" must follow "gpu" */

@@ -1142,6 +1142,12 @@ extern void gres_sock_delete(void *x);
 extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked);
 
 /*
+ * Return TRUE if this the gres with this name consumes GRES count > 1 for a
+ * single device file (e.g. MPS)
+ */
+extern bool gres_is_shared_name(char *name);
+
+/*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
  */
