@@ -101,6 +101,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
@@ -475,6 +476,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	if ((agent_arg_ptr->msg_type != REQUEST_JOB_NOTIFY)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_REBOOT_NODES)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)	&&
+	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE_SACKD) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE_WITH_CONFIG) &&
 	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)	&&
 	    (agent_arg_ptr->msg_type != SRUN_TIMEOUT)		&&
@@ -610,7 +612,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
  */
 static void *_wdog(void *args)
 {
-	bool srun_agent = false;
+	bool srun_agent = false, sack_agent = false;
 	int i;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
@@ -630,6 +632,8 @@ static void *_wdog(void *args)
 	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)	||
 	     (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) )
 		srun_agent = true;
+	if (agent_ptr->msg_type == REQUEST_RECONFIGURE_SACKD)
+		sack_agent = true;
 
 	thd_comp.max_delay = 0;
 
@@ -667,7 +671,9 @@ static void *_wdog(void *args)
 		slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	}
 
-	if (srun_agent) {
+	if (sack_agent) {
+		sackd_mgr_remove_node(thread_ptr[0].nodename);
+	} else if (srun_agent) {
 		_notify_slurmctld_jobs(agent_ptr);
 	} else if (agent_ptr->msg_type != REQUEST_SHUTDOWN) {
 		_notify_slurmctld_nodes(agent_ptr,
@@ -929,7 +935,7 @@ static void *_thread_per_group_rpc(void *args)
 	thd_t           *thread_ptr         = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
-	bool is_kill_msg, srun_agent;
+	bool is_kill_msg, srun_agent, sack_agent;
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
@@ -959,6 +965,7 @@ static void *_thread_per_group_rpc(void *args)
 			(msg_type == SRUN_USER_MSG)		||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
+	sack_agent = (msg_type == REQUEST_RECONFIGURE_SACKD);
 
 	thread_ptr->start_time = time(NULL);
 
@@ -1045,7 +1052,7 @@ static void *_thread_per_group_rpc(void *args)
 		} else if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
 		} else {
-			if (!srun_agent) {
+			if (!sack_agent && !srun_agent) {
 				lock_slurmctld(node_read_lock);
 				_comm_err(thread_ptr->nodename, msg_type);
 				unlock_slurmctld(node_read_lock);
@@ -1221,7 +1228,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			break;
 		default:
-			if (!srun_agent) {
+			if (!sack_agent && !srun_agent) {
 				if (ret_data_info->err)
 					errno = ret_data_info->err;
 				else
@@ -1232,7 +1239,7 @@ static void *_thread_per_group_rpc(void *args)
 				unlock_slurmctld(node_read_lock);
 			}
 
-			if (srun_agent)
+			if (sack_agent || srun_agent)
 				thread_state = DSH_FAILED;
 			else if (rc || (ret_data_info->type ==
 					RESPONSE_FORWARD_FAILED))
@@ -1965,6 +1972,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_prolog_launch_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)
 			slurm_free_reboot_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_SACKD)
+			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG)
 			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
 		else

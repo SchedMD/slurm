@@ -57,6 +57,8 @@ slurmctld_SOURCES =     \
 	reservation.h	\
 	rpc_queue.c	\
 	rpc_queue.h	\
+	sackd_mgr.c	\
+	sackd_mgr.h	\
 	slurmctld.h	\
 	slurmscriptd.c \
 	slurmscriptd.h \

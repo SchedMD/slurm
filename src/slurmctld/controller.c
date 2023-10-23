@@ -121,6 +121,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/rpc_queue.h"
+#include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
@@ -1168,6 +1169,7 @@ extern int reconfigure_slurm(void)
 		if (config_for_slurmd) {
 			configless_update();
 			push_reconfig_to_slurmd(slurmd_config_files);
+			sackd_mgr_push_reconfig();
 		} else
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		node_features_updated = true;
