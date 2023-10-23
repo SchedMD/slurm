@@ -39,6 +39,7 @@
 #include <ctype.h>
 
 #include "src/common/xstring.h"
+#include "src/interfaces/gres.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -101,18 +102,20 @@ static int _valid_num_list(const char *arg, bool hex)
 }
 
 /*
- * Test for valid GPU binding specification
+ * Test for valid gres binding specification
  * RET - -1 on error, else 0
  */
-static int _valid_gpu_bind(char *arg)
+static int _valid_gres_bind(char *arg)
 {
 	if (!strncasecmp(arg, "verbose,", 8))
 		arg += 8;
 	if (!xstrncasecmp(arg, "closest", 7))
 		return 0;
-	if (!xstrncasecmp(arg, "map_gpu:", 8))
+	if (!xstrncasecmp(arg, "map_gpu:", 8) || //Old syntax
+	    !xstrncasecmp(arg, "map:", 4))
 		return _valid_num_list(arg + 8, false);
-	if (!xstrncasecmp(arg, "mask_gpu:", 9))
+	if (!xstrncasecmp(arg, "mask_gpu:", 9) || //Old syntax
+	    !xstrncasecmp(arg, "mask:", 5))
 		return _valid_num_list(arg + 9, true);
 	if (!xstrncasecmp(arg, "none", 4))
 		return 0;
@@ -124,17 +127,32 @@ static int _valid_gpu_bind(char *arg)
 }
 
 /*
+ * Test for valid shared gres binding specification
+ * RET - -1 on error, else 0
+ */
+static int _valid_shared_gres_bind(char *arg)
+{
+	if (!strncasecmp(arg, "verbose,", 8))
+		arg += 8;
+	if (!xstrncasecmp(arg, "none", 4))
+		return 0;
+	if (!xstrncasecmp(arg, "per_task:", 9))
+		return _valid_num(arg + 9);
+	return -1;
+}
+
+/*
  * Verify --tres-bind command line option
- * NOTE: Separate TRES specifications with ";" rather than ","
+ * NOTE: Separate TRES specifications with "+" rather than ","
  *
  * arg IN - Parameter value to check
  * RET - -1 on error, else 0
  *
- * Example: gpu:closest
- *          gpu:single:2
- *          gpu:map_gpu:0,1
- *          gpu:mask_gpu:0x3,0x3
- *          gpu:map_gpu:0,1;nic:closest
+ * Example: gres/gpu:closest
+ *          gres/gpu:single:2
+ *          gres/gpu:map:0,1
+ *          gres/gpu:mask:0x3,0x3s
+ *          gres/gpu:map:0,1+nic:closest
  */
 extern int tres_bind_verify_cmdline(const char *arg)
 {
@@ -145,7 +163,7 @@ extern int tres_bind_verify_cmdline(const char *arg)
 		return 0;
 
 	tmp = xstrdup(arg);
-	tok = strtok_r(tmp, ";", &save_ptr);
+	tok = strtok_r(tmp, "+", &save_ptr);
 	while (tok) {
 		sep = strchr(tok, ':');		/* Bad format */
 		if (!sep) {
@@ -154,16 +172,23 @@ extern int tres_bind_verify_cmdline(const char *arg)
 		}
 		sep[0] = '\0';
 		sep++;
-		if (!strcmp(tok, "gpu")) {	/* Only support GPUs today */
-			if (_valid_gpu_bind(sep) != 0) {
-				rc = -1;
-				break;
+		if (!xstrncmp(tok, "gres/", 5)) {
+			if (gres_is_shared_name(tok + 5)) {
+				if (_valid_shared_gres_bind(sep) != 0) {
+					rc = -1;
+					break;
+				}
+			} else {
+				if (_valid_gres_bind(sep) != 0) {
+					rc = -1;
+					break;
+				}
 			}
 		} else {
 			rc = -1;
 			break;
 		}
-		tok = strtok_r(NULL, ";", &save_ptr);
+		tok = strtok_r(NULL, "+", &save_ptr);
 	}
 	xfree(tmp);
 

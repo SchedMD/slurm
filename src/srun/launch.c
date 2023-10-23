@@ -677,6 +677,34 @@ static int _parse_gpu_request(char *in_str)
 	return gpus_val;
 }
 
+static void _implicitly_bind_tres_per_task(slurm_opt_t *opt_local,
+					   char *name)
+{
+	int count;
+	char *sep, *end;
+
+	if (opt_local->tres_bind && xstrstr(opt_local->tres_bind, name))
+		return; /* Binding explicitly set */
+
+	if (opt_local->tres_per_task &&
+	    (sep = xstrstr(opt_local->tres_per_task, name))) {
+		end = strchr(sep, ',');
+		if (end)
+			*end = '\0';
+		while ((sep = strchr(sep, ':'))) {
+			sep++;
+			count = slurm_atoul(sep);
+			if (count > 0) {
+				xstrfmtcat(opt_local->tres_bind,
+					   "%s:per_task:%d", name, count);
+				break;
+			}
+		}
+		if (end)
+			*end = ',';
+	}
+}
+
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -891,22 +919,20 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	} else
 		step_req->threads_per_core = NO_VAL16;
 
-	/*
-	 * FIXME: tres_bind is really gres_bind. This should be fixed in the
-	 * future.
-	 */
-
 	if (!opt_local->tres_bind &&
 	    ((opt_local->ntasks_per_tres != NO_VAL) ||
 	     (opt_local->ntasks_per_gpu != NO_VAL))) {
 		/* Implicit single GPU binding with ntasks-per-tres/gpu */
 		if (opt_local->ntasks_per_tres != NO_VAL)
-			xstrfmtcat(opt_local->tres_bind, "gpu:single:%d",
+			xstrfmtcat(opt_local->tres_bind, "gres/gpu:single:%d",
 				   opt_local->ntasks_per_tres);
 		else
-			xstrfmtcat(opt_local->tres_bind, "gpu:single:%d",
+			xstrfmtcat(opt_local->tres_bind, "gres/gpu:single:%d",
 				   opt_local->ntasks_per_gpu);
 	}
+
+	_implicitly_bind_tres_per_task(opt_local, "gres/shard");
+	_implicitly_bind_tres_per_task(opt_local, "gres/gpu");
 
 	/*
 	 * FIXME: tres_per_task Should be handled in src/common/slurm_opt.c
@@ -915,12 +941,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	 */
 	if (opt_local->tres_per_task)
 	        step_req->tres_per_task = xstrdup(opt_local->tres_per_task);
-
-	if (!opt_local->tres_bind && opt_local->gpus_per_task) {
-		/* Implicit GPU binding with gpus_per_task */
-		xstrfmtcat(opt_local->tres_bind, "gpu:per_task:%s",
-			   opt_local->gpus_per_task);
-	}
 
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);
 	step_req->tres_freq = xstrdup(opt_local->tres_freq);

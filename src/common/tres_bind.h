@@ -48,9 +48,9 @@
  * RET - -1 on error, else 0
  *
  * Example: gpu:closest
- *          gpu:map_gpu:0,1
- *          gpu:mask_gpu:0x3,0x3
- *          gpu:map_gpu:0,1;nic:closest
+ *          gpu:map:0,1
+ *          gpu:mask:0x3,0x3
+ *          gpu:map:0,1;nic:closest
  */
 extern int tres_bind_verify_cmdline(const char *arg);
 
