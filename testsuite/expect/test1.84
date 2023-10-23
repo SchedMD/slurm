@@ -43,88 +43,28 @@ if {[check_config_select "linear"]} {
 	skip "This test is incompatible with select/linear"
 }
 
-#
-# Submit a 1 node job to determine the node's CPU count
-#
-set core_spec_cnt  0
-set cpu_cnt        0
-set cpus_per_node  0
-set host           ""
-set timeout        $max_job_delay
-set task_cnt       0
-set threads_per_core 1
-set units ""
-
-# find me an idle node in default partition
-log_user 0
-
-# find the nodes in the default partition
-log_user 0
-set def_hostlist ""
-set part_exclusive 0
-set part_oversubscribe_force 0
-spawn $scontrol show part [default_partition]
-expect {
-	-re " Nodes=($re_word_str)"  {
-		set def_hostlist $expect_out(1,string)
-		exp_continue
-	}
-	-re " BasePartitions=($re_word_str)" {
-		set def_hostlist $expect_out(1,string)
-		exp_continue
-	}
-	-re " OverSubscribe=EXCLUSIVE" {
-		set part_exclusive 1
-		exp_continue
-	}
-	-re " OverSubscribe=FORCE" {
-		set part_oversubscribe_force 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$part_oversubscribe_force != 0} {
+# Check for OverSubscribe
+set oversubscribe [get_partition_param [default_partition] "OverSubscribe"]
+if {$oversubscribe == "FORCE"} {
 	skip "This test is incompatible with forced sharing of nodes"
 }
 
-# Add sleep for any epilog clean up of previous jobs
-sleep 2
-set fd [open "|$scontrol --oneliner show node $def_hostlist"]
-exp_internal 1
-while {[gets $fd line] != -1} {
-	if {[regexp {NodeName=([^\s]+).*CPUTot=(\d+)(K?).*CoreSpecCount=(\d+).*State=IDLE\S+ ThreadsPerCore=(\d+)} $line frag host cpu_cnt units core_spec_cnt threads_per_core] == 1} {
-		break
-	}
-	if {[regexp {NodeName=([^\s]+).*CPUTot=(\d+)(K?).*State=IDLE\S+ ThreadsPerCore=(\d+)} $line frag host cpu_cnt units threads_per_core] == 1} {
-		break
-	}
-}
-exp_internal 0
-if {$units ne ""} {
-	set cpu_cnt [expr $cpu_cnt * 1024]
-}
-catch {close $fd}
-
-log_user 1
-
-if {!$cpu_cnt} {
-	fail "Couldn't find an idle node in the default partition"
+# Get an idle node and their main params
+set nodes [get_nodes_by_state]
+if {[llength $nodes] == 0} {
+	skip "Couldn't find an idle node in the default partition"
 }
 
-#
-# Check CPU count
-#
-if {$host eq ""} {
-	fail "Did not get hostname from idle node"
+set host [lindex $nodes 0]
+set cpu_cnt [get_node_param $host "CPUTot"]
+set threads_per_core [get_node_param $host "ThreadsPerCore"]
+set core_spec_cnt [get_node_param $host "CoreSpecCount"]
+if {$core_spec_cnt == "MISSING"} {
+	set core_spec_cnt 0
 }
-
 log_debug "Found idle node $host with $cpu_cnt processors"
 
+set task_cnt       0
 spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv SLURM_PROCID
 expect {
 	-re "($number):" {
