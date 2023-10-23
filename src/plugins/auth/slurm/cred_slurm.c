@@ -109,7 +109,7 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 
 	FREE_NULL_IDENTITY(cred->arg->id);
 	if (!(json_id = jwt_get_grants_json(jwt, "id"))) {
-		debug("%s: no identity provided", __func__);
+		debug2("%s: no identity provided", __func__);
 		cred->arg->id = fetch_identity(auth_cred->uid, auth_cred->gid,
 					       false);
 	} else if (!(cred->arg->id = extract_identity(json_id, auth_cred->uid,
@@ -216,7 +216,7 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
 	}
 
 	if (!(json_id = jwt_get_grants_json(jwt, "id"))) {
-		debug("%s: no identity provided", __func__);
+		debug2("%s: no identity provided", __func__);
 		cred->arg.id = fetch_identity(auth_cred->uid, auth_cred->gid,
 					      false);
 	} else if (!(cred->arg.id = extract_identity(json_id, auth_cred->uid,

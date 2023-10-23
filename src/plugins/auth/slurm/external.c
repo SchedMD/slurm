@@ -93,7 +93,7 @@ extern int verify_external(auth_cred_t *cred)
 	if ((rc = copy_jwt_grants_to_cred(jwt, cred)))
 		goto fail;
 
-	debug("token verified");
+	debug2("token verified");
 fail:
 	if (jwt)
 		jwt_free(jwt);
