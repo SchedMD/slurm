@@ -100,7 +100,7 @@ extern int init(void)
 	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 		fatal("%s: serializer_g_init() failed", __func__);
 
-	internal = run_in_daemon(&run, &set, "slurmd,slurmctld,slurmdbd");
+	internal = run_in_daemon(&run, &set, "sackd,slurmd,slurmctld,slurmdbd");
 
 	if (internal) {
 		debug("running as daemon");
