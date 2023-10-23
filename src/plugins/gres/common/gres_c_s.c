@@ -291,6 +291,18 @@ static List _build_sharing_list(List gres_list, char *sharing_name)
 			}
 			continue;
 		}
+
+		/*
+		 * Do not split up gres records with MultipleFiles, e.g. MIGs.
+		 * With MultipleFiles, all files correspond to the same gres
+		 * device, as opposed to File=nvidia[0-3] which corresponds to
+		 * four separate gres devices.
+		 */
+		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT) {
+			list_append(sharing_list, gres_slurmd_conf);
+			list_remove(itr);
+			continue;
+		}
 		hl = hostlist_create(gres_slurmd_conf->file);
 		while ((f_name = hostlist_shift(hl))) {
 			sharing_record = xmalloc(sizeof(gres_slurmd_conf_t));

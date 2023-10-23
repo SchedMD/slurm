@@ -1499,16 +1499,12 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					continue;
 				}
 
-				nvml_mig.links = gres_links_create_empty(
-					j, mig_count);
-
 				/*
 				 * Add MIG device to GRES list. MIG does not
 				 * support NVLinks. CPU affinity, CPU count, and
 				 * device name will be the same as non-MIG GPU.
 				 */
 				gres_slurmd_conf.file = nvml_mig.files;
-				gres_slurmd_conf.links = nvml_mig.links;
 				gres_slurmd_conf.type_name =
 					nvml_mig.profile_name;
 				gres_slurmd_conf.unique_id = nvml_mig.unique_id;
