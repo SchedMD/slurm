@@ -101,6 +101,8 @@ static void _fetch_child(List controllers, uint32_t flags)
 	buf_t *buffer = init_buf(1024 * 1024);
 	int len = 0;
 
+	setenv("SLURM_CONFIG_FETCH", "1", 1);
+
 	/*
 	 * Parent process was holding this, but we need to drop it before
 	 * issuing any RPC calls as the RPC stack will call into

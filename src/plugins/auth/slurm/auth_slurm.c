@@ -105,7 +105,8 @@ extern int init(void)
 	if (internal) {
 		debug("running as daemon");
 		init_internal();
-		init_sack_conmgr();
+		if (!getenv("SLURM_CONFIG_FETCH"))
+			init_sack_conmgr();
 	} else {
 		debug("running as client");
 	}
