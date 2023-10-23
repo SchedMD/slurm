@@ -172,6 +172,10 @@ extern data_t *identity_to_data(identity_t *id)
 		groups = data_set_dict(data_key_set(data_id, "groups"));
 		for (int i = 0; i < id->ngids; i++)
 			data_set_int(data_key_set(groups, id->gr_names[i]), id->gids[i]);
+	} else if (id->ngids) {
+		data_t *data_gids = data_set_list(data_key_set(data_id, "gids"));
+		for (int i = 0; i < id->ngids; i++)
+			data_set_int(data_list_append(data_gids), id->gids[i]);
 	}
 
 	return data;
@@ -189,9 +193,19 @@ data_for_each_cmd_t _for_each_group(const char *key, const data_t *data,
 	return DATA_FOR_EACH_CONT;
 }
 
+data_for_each_cmd_t _for_each_gid(const data_t *data, void *arg)
+{
+	identity_t *id = arg;
+
+	id->gids[id->ngids] = data_get_int(data);
+	id->ngids++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
 extern identity_t *extract_identity(char *json, uid_t uid, gid_t gid)
 {
-	data_t *data_id = NULL, *groups = NULL;
+	data_t *data_id = NULL, *groups = NULL, *gids = NULL;
 	int ngids;
 	identity_t *id = xmalloc(sizeof(*id));
 
@@ -210,16 +224,26 @@ extern identity_t *extract_identity(char *json, uid_t uid, gid_t gid)
 	id->pw_dir = xstrdup(data_get_string(data_key_get(data_id, "dir")));
 	id->pw_shell = xstrdup(data_get_string(data_key_get(data_id, "shell")));
 
-	groups = data_key_get(data_id, "groups");
-	ngids = data_get_dict_length(groups);
-	id->gids = xcalloc(ngids, sizeof(gid_t));
-	id->gr_names = xcalloc(ngids, sizeof(char *));
+	if ((groups = data_key_get(data_id, "groups"))) {
+		ngids = data_get_dict_length(groups);
+		id->gids = xcalloc(ngids, sizeof(gid_t));
+		id->gr_names = xcalloc(ngids, sizeof(char *));
 
-	if (data_dict_for_each_const(groups, _for_each_group, id) < 0) {
-		error("%s: data_dict_for_each_const failed", __func__);
-		FREE_NULL_DATA(data_id);
-		FREE_NULL_IDENTITY(id);
-		return NULL;
+		if (data_dict_for_each_const(groups, _for_each_group, id) < 0) {
+			error("%s: data_dict_for_each_const failed", __func__);
+			FREE_NULL_DATA(data_id);
+			FREE_NULL_IDENTITY(id);
+			return NULL;
+		}
+	} else if ((gids = data_key_get(data_id, "gids"))) {
+		ngids = data_get_list_length(gids);
+		id->gids = xcalloc(ngids, sizeof(gid_t));
+		if (data_list_for_each_const(gids, _for_each_gid, id) < 0) {
+			error("%s: data_list_for_each_const failed", __func__);
+			FREE_NULL_DATA(data_id);
+			FREE_NULL_IDENTITY(id);
+			return NULL;
+		}
 	}
 
 	FREE_NULL_DATA(data_id);
