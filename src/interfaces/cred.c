@@ -110,6 +110,7 @@ extern int cred_g_init(void)
 	char *tok;
 	char *plugin_type = "cred";
 	int retval = SLURM_SUCCESS;
+	char *type = NULL;
 
 	/*					 123456789012 */
 	if ((tok = xstrstr(slurm_conf.authinfo, "cred_expire="))) {
@@ -125,14 +126,22 @@ extern int cred_g_init(void)
 	else if (xstrcasestr(slurm_conf.launch_params, "disable_send_gids"))
 		enable_send_gids = false;
 
+	/* allow the bare plugin name. also handle slurm type quirks */
+	type = slurm_conf.cred_type;
+	if (!xstrncmp(type, "cred/", 5))
+		type += 5;
+	if (!xstrcmp(type, "slurm"))
+		type = xstrdup("auth/slurm");
+	else
+		type = xstrdup_printf("cred/%s", type);
+
 	slurm_mutex_lock(&g_context_lock);
 	if (cred_restart_time == (time_t) 0)
 		cred_restart_time = time(NULL);
 	if (g_context)
 		goto done;
 
-	g_context = plugin_context_create(plugin_type,
-					  slurm_conf.cred_type,
+	g_context = plugin_context_create(plugin_type, type,
 					  (void **) &ops, syms, sizeof(syms));
 
 	if (!g_context) {
@@ -144,6 +153,7 @@ extern int cred_g_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
+	xfree(type);
 
 	return(retval);
 }
