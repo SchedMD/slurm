@@ -1415,7 +1415,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	debug2("Queue RPC msg_type=%s, nodes=%d for retry",
 	       rpc_num2string(agent_arg_ptr->msg_type), j);
 
-	/* add the requeust to a list */
+	/* add the request to a list */
 	queued_req_ptr = xmalloc(sizeof(queued_request_t));
 	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
 	queued_req_ptr->last_attempt  = time(NULL);
