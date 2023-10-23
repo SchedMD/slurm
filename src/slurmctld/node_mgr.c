@@ -83,6 +83,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
+#include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -207,6 +208,7 @@ int dump_all_node_state ( void )
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
 	_dump_cluster_settings(buffer);
+	sackd_mgr_dump_state(buffer, SLURM_PROTOCOL_VERSION);
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
@@ -423,6 +425,10 @@ extern int load_all_node_state ( bool state_only )
 
 	if (_load_cluster_settings(state_only, buffer, protocol_version))
 		goto unpack_error;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION)
+		if (sackd_mgr_load_state(buffer, protocol_version))
+			goto unpack_error;
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;

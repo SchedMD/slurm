@@ -36,6 +36,7 @@
 
 #include "src/common/fetch_config.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -64,6 +65,35 @@ static void _destroy_sackd_node(void *x)
 	xfree(node);
 }
 
+static void _pack_node(void *x, uint16_t protocol_version, buf_t *buffer)
+{
+	sackd_node_t *node = x;
+
+	pack16(node->protocol_version, buffer);
+	pack64(node->last_update, buffer);
+	packstr(node->hostname, buffer);
+	packstr(node->nodeaddr, buffer);
+}
+
+static int _unpack_node(void **x, uint16_t protocol_version, buf_t *buffer)
+{
+	uint64_t time_tmp;
+	sackd_node_t *node = xmalloc(sizeof(*node));
+
+	safe_unpack16(&node->protocol_version, buffer);
+	safe_unpack64(&time_tmp, buffer);
+	node->last_update = time_tmp;
+	safe_unpackstr(&node->hostname, buffer);
+	safe_unpackstr(&node->nodeaddr, buffer);
+
+	*x = node;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_destroy_sackd_node(node);
+	return SLURM_ERROR;
+}
+
 static int _find_sackd_node(void *x, void *arg)
 {
 	sackd_node_t *node = x;
@@ -89,6 +119,38 @@ static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
         } else {
 		node->nodeaddr = xstrdup(node_reg->hostname);
 	}
+}
+
+extern void sackd_mgr_dump_state(buf_t *buffer, uint16_t protocol_version)
+{
+	slurm_mutex_lock(&sackd_lock);
+	slurm_pack_list(sackd_nodes, _pack_node, buffer,
+			SLURM_PROTOCOL_VERSION);
+	debug("%s: saved state of %d nodes",
+	      __func__, list_count(sackd_nodes));
+	slurm_mutex_unlock(&sackd_lock);
+}
+
+extern int sackd_mgr_load_state(buf_t *buffer, uint16_t protocol_version)
+{
+	int rc;
+
+	slurm_mutex_lock(&sackd_lock);
+	FREE_NULL_LIST(sackd_nodes);
+	rc = slurm_unpack_list(&sackd_nodes, _unpack_node, _destroy_sackd_node,
+			       buffer, protocol_version);
+	debug("%s: restored state of %d nodes",
+	      __func__, list_count(sackd_nodes));
+	slurm_mutex_unlock(&sackd_lock);
+
+	return rc;
+}
+
+extern void sackd_mgr_fini(void)
+{
+	debug("%s", __func__);
+	slurm_mutex_lock(&sackd_lock);
+	slurm_mutex_unlock(&sackd_lock);
 }
 
 extern void sackd_mgr_add_node(slurm_msg_t *msg)
