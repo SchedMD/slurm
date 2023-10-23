@@ -3305,6 +3305,9 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	if (req->flags & CONFIG_REQUEST_SLURMD)
 		response_msg.data = config_for_slurmd;
 
+	if (req->flags & CONFIG_REQUEST_SACKD)
+		sackd_mgr_add_node(msg);
+
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
 

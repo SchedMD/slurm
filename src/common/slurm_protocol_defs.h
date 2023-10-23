@@ -1186,6 +1186,7 @@ typedef struct job_id_response_msg {
 typedef enum {
 	CONFIG_REQUEST_SLURM_CONF = 0,
 	CONFIG_REQUEST_SLURMD,
+	CONFIG_REQUEST_SACKD,
 } config_request_flags_t;
 
 typedef struct {
