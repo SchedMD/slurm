@@ -252,7 +252,7 @@ extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid)
 			if (!cred->id)
 				goto fail;
 
-			if (!running_in_slurmd())
+			if (running_in_slurmctld() || running_in_slurmdbd())
 				assoc_mgr_set_uid(cred->uid, cred->id->pw_name);
 		}
 	}
