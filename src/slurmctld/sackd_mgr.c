@@ -192,8 +192,7 @@ static int _each_sackd_node(void *x, void *arg)
 	args->node_count = 1;
 	args->protocol_version = node->protocol_version;
 	args->retry = 0;
-	// fixme - this should change to slurm_user_id
-	set_agent_arg_r_uid(args, slurm_conf.slurmd_user_id);
+	set_agent_arg_r_uid(args, slurm_conf.slurm_user_id);
 
 	agent_queue_request(args);
 
