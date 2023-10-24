@@ -837,11 +837,10 @@ not currently recommend for customer use. Unfortunately, this inclusion could
 cause Slurm to be updated to a newer version outside of a planned maintenance
 period. In order to prevent Slurm from being updated unintentionally, we
 recommend you modify the EPEL Repository configuration to exclude all Slurm
-packages from automatic updates.
+packages from automatic updates.</p>
 <pre>
 exclude=slurm*
 </pre>
-</p>
 
 <h2 id="FreeBSD">FreeBSD<a class="slurm_link" href="#FreeBSD"></a></h2>
 
