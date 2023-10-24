@@ -107,6 +107,11 @@ throughput. Disable collection of accounting by using the
 Disabling recording of job completion information will improve job
 throughput. Disable recording of job completion information by using the
 <i>jobcomp/none</i> plugin.</li>
+<li><b>JobSubmitPlugins</b>:
+Use of a lua job submit plugin is not recommended. slurmctld runs this
+script while holding internal locks, and only a single copy of this script
+can run at a time. This blocks most concurrency in slurmctld. Therefore, we
+do not recommend using it in a high throughput environment.</li>
 <li><b>MaxJobCount</b>:
 Controls how many jobs may be in the <b>slurmctld</b> daemon records at any
 point in time (pending, running, suspended or completed[temporarily]).
@@ -244,6 +249,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 18 April 2023</p>
+<p style="text-align:center;">Last modified 6 December 2023</p>
 
 <!--#include virtual="footer.txt"-->
