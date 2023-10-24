@@ -170,6 +170,8 @@ directory of the user building them.
 <p>You can control some aspects of the RPM built with a <i>.rpmmacros</i>
 file in your home directory. <b>Special macro definitions will likely
 only be required if files are installed in unconventional locations.</b>
+A full list of <i>rpmbuild</i> options can be found near the top of the
+slurm.spec file.
 Some macro definitions that may be used in building Slurm include:
 <dl>
 <dt>_enable_debug
