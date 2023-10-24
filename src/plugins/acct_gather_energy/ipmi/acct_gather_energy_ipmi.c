@@ -351,9 +351,6 @@ static int _init_ipmi_config (void)
 	/* 	sensor_reading_flags |= */
 	/* 		IPMI_MONITORING_SENSOR_READING_FLAGS_ENTITY_SENSOR_NAMES; */
 
-	if (_open_dcmi_context() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
 	return SLURM_SUCCESS;
 }
 
@@ -766,7 +763,7 @@ static int _thread_init(void)
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
 
-	if (!first && (_open_dcmi_context() != SLURM_SUCCESS)) {
+	if (_open_dcmi_context() != SLURM_SUCCESS) {
 		error("Cannot open dcmi context for this thread.");
 		return SLURM_ERROR;
 	}
