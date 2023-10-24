@@ -531,6 +531,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/cgroup/Makefile
 		 src/plugins/task/cray_aries/Makefile
 		 src/plugins/topology/3d_torus/Makefile
+		 src/plugins/topology/common/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile

@@ -181,7 +181,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-topology_tree_la_LIBADD =
+topology_tree_la_DEPENDENCIES = ../common/libtopology_common.la
 am_topology_tree_la_OBJECTS = topology_tree.lo
 topology_tree_la_OBJECTS = $(am_topology_tree_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -514,12 +514,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 pkglib_LTLIBRARIES = topology_tree.la
 
-# Null topology plugin.
+# tree topology plugin.
 topology_tree_la_SOURCES = topology_tree.c
 topology_tree_la_LDFLAGS = $(PLUGIN_FLAGS)
+topology_tree_la_LIBADD = ../common/libtopology_common.la
 all: all-am
 
 .SUFFIXES:
@@ -811,6 +812,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(topology_tree_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
