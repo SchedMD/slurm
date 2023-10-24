@@ -672,7 +672,8 @@ static void *_wdog(void *args)
 	}
 
 	if (sack_agent) {
-		sackd_mgr_remove_node(thread_ptr[0].nodename);
+		if (thread_ptr[0].state != DSH_DONE)
+			sackd_mgr_remove_node(thread_ptr[0].nodename);
 	} else if (srun_agent) {
 		_notify_slurmctld_jobs(agent_ptr);
 	} else if (agent_ptr->msg_type != REQUEST_SHUTDOWN) {
