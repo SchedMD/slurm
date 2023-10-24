@@ -181,8 +181,6 @@ Some macro definitions that may be used in building Slurm include:
 /etc/slurm)
 <dt>with_munge
 <dd>Specifies the MUNGE (authentication library) installation location
-<dt>with_ssl
-<dd>Specifies SSL library installation location
 </dl>
 <p>An example .rpmmacros file:</p>
 <pre>
