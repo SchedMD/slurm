@@ -9153,11 +9153,6 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	bitstr_t *gres_slots = NULL;
 	int32_t gres_count = bit_set_count(gres_bit_alloc);
 
-	if ((ntasks_per_gres <= 0) || (ntasks_per_gres > UINT32_MAX)) {
-		error("%s: single: does not specify a valid number. Defaulting to 1.",
-			__func__);
-		ntasks_per_gres = 1;
-	}
 
 	/* No need to select gres if there is only 1 to use */
 	if (gres_count <= 1) {
