@@ -387,7 +387,7 @@ static uint32_t _setup_listener(void)
 
 	if ((rc = con_mgr_process_fd(CON_TYPE_RPC, fd, fd, events, NULL, 0,
 				     NULL)))
-		fatal("%s: conmgr refuesed fd=%d: %s",
+		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
 	return port;
