@@ -1277,7 +1277,9 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 
 	/* Clear the node's regular GRES bitmaps based on what the job has */
 	if (gres_ns->gres_bit_alloc && gres_js->gres_bit_alloc &&
-	    gres_js->gres_bit_alloc[node_offset]) {
+	    gres_js->gres_bit_alloc[node_offset] &&
+	    gres_js->gres_cnt_node_alloc &&
+	    gres_js->gres_cnt_node_alloc[node_offset]) {
 		len = bit_size(gres_js->gres_bit_alloc[node_offset]);
 		i   = bit_size(gres_ns->gres_bit_alloc);
 		if (i != len) {
