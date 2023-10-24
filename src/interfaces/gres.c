@@ -9397,7 +9397,7 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 		if (!*gres_per_bit)
 			*gres_per_bit = xcalloc(
 				bit_size(gres_ss->gres_bit_alloc[0]),
-				sizeof(uint64_t *));
+				sizeof(uint64_t));
 		for (int i = 0; i < bit_size(gres_ss->gres_bit_alloc[0]); i++) {
 			(*gres_per_bit)[i] += gres_ss->gres_per_bit_alloc[0][i];
 		}
