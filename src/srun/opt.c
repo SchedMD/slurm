@@ -1303,12 +1303,6 @@ static bool _opt_verify(void)
 	if (!sropt.mpi_type)
 		sropt.mpi_type = xstrdup(slurm_conf.mpi_default);
 
-	if (!mpi_g_client_init(&sropt.mpi_type)) {
-		error("Invalid MPI type '%s', --mpi=list for acceptable types",
-		      sropt.mpi_type);
-		exit(error_exit);
-	}
-
 	if (!opt.job_name)
 		opt.job_name = xstrdup(sropt.cmd_name);
 

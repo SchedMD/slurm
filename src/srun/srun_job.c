@@ -731,6 +731,13 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 			het_job_fini = true;
 		}
 	}
+
+	if (!mpi_g_client_init(&sropt.mpi_type)) {
+		error("Invalid MPI type '%s', --mpi=list for acceptable types",
+		      sropt.mpi_type);
+		exit(error_exit);
+	}
+
 	_post_opts(opt_list);
 
 	/*
