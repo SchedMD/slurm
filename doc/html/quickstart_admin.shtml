@@ -163,7 +163,7 @@ required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
 and execute (substituting the appropriate Slurm version
-number):<br><code>rpmbuild -ta slurm-21.08.1.tar.bz2</code></p>
+number):<br><code>rpmbuild -ta slurm-23.02.7.tar.bz2</code></p>
 The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
 directory of the user building them.
 
