@@ -220,96 +220,22 @@ if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-# find the default partition
-set def_part [default_partition]
-
-# find the nodes in the default partition
-set def_node_name ""
-spawn $sinfo -h -o "=%N=" -p $def_part
-expect {
-	-re "=($re_word_str).($number)-($number).=" {
-		set def_node_name $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$def_node_name eq ""} {
-	skip "Node name format not supported for this test"
-}
-
-log_user 0
-set def_hostlist ""
+# Check for OverSubscribe
 set part_exclusive 0
-spawn $scontrol show part $def_part
-expect {
-	-re " Nodes=($re_word_str)"  {
-		set def_hostlist $expect_out(1,string)
-		exp_continue
-	}
-	-re " BasePartitions=($re_word_str)" {
-		set def_hostlist $expect_out(1,string)
-		exp_continue
-	}
-	-re " OverSubscribe=EXCLUSIVE" {
-		set part_exclusive 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-set host_cnt 0
-spawn $scontrol show hostnames $def_hostlist
-expect {
-	-re "($re_word_str)"  {
-		set host_name($host_cnt) $expect_out(1,string)
-		incr host_cnt
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$host_cnt == 0} {
-	fail "Could not find any nodes in default partition"
+if {[get_partition_param [default_partition] "OverSubscribe"] == "EXCLUSIVE"} {
+	set part_exclusive 1
 }
 
-# find me an idle node in default partition
-log_user 0
-set inode_name ""
-set inode_cores_per_socket 0
-set inode_procs 0
-set units ""
-set inode_sockets 0
-set inode_threads_per_core 0
-
-set fd [open "|$scontrol --oneliner show node $def_hostlist"]
-exp_internal 1
-while {[gets $fd line] != -1} {
-	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+).*State=IDLE\S+ ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
-		break
-	}
+# Get an idle node and their main params
+set nodes [get_nodes_by_state]
+if {[llength $nodes] == 0} {
+	skip "Couldn't find an idle node in the default partition"
 }
-exp_internal 0
-if {$units ne ""} {
-	set inode_procs [expr $inode_procs * 1024]
-}
-catch {close $fd}
 
-log_user 1
-
-if {!$inode_procs} {
-	fail "Couldn't find an idle node in the default partition"
-}
+set inode_name [lindex $nodes 0]
+set inode_cores_per_socket [get_node_param $inode_name "CoresPerSocket"]
+set inode_procs [get_node_param $inode_name "CPUTot"]
+set inode_threads_per_core [get_node_param $inode_name "ThreadsPerCore"]
 
 log_debug "Found idle node $inode_name with $inode_procs processors"
 
