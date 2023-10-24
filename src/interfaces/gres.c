@@ -7831,7 +7831,9 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 			info("  gres_bit_select[%d]:%s of %d", i, tmp_str,
 			     (int) bit_size(gres_js->gres_bit_select[i]));
 		}
-		if (gres_js->gres_per_bit_select &&
+		if (gres_js->gres_bit_select &&
+		    gres_js->gres_bit_select[i] &&
+		    gres_js->gres_per_bit_select &&
 		    gres_js->gres_per_bit_select[i]) {
 			for (int j = 0;
 			     (j = bit_ffs_from_bit(gres_js->gres_bit_select[i],
@@ -7863,7 +7865,9 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 		} else if (gres_js->gres_bit_alloc)
 			info("  gres_bit_alloc[%d]:NULL", i);
 
-		if (gres_js->gres_per_bit_alloc &&
+		if (gres_js->gres_bit_alloc &&
+		    gres_js->gres_bit_alloc[i] &&
+		    gres_js->gres_per_bit_alloc &&
 		    gres_js->gres_per_bit_alloc[i]) {
 			for (int j = 0;
 			     (j = bit_ffs_from_bit(gres_js->gres_bit_alloc[i],
@@ -7883,7 +7887,9 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 		} else if (gres_js->gres_bit_step_alloc)
 			info("  gres_bit_step_alloc[%d]:NULL", i);
 
-		if (gres_js->gres_per_bit_step_alloc &&
+		if (gres_js->gres_bit_step_alloc &&
+		    gres_js->gres_bit_step_alloc[i] &&
+		    gres_js->gres_per_bit_step_alloc &&
 		    gres_js->gres_per_bit_step_alloc[i]) {
 			for (int j = 0;
 			     (j = bit_ffs_from_bit(
