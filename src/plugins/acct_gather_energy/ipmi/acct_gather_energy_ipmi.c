@@ -1108,8 +1108,6 @@ extern int fini(void)
 		ipmi_ctx = NULL;
 	}
 
-	_close_dcmi_context();
-
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	slurm_mutex_unlock(&ipmi_mutex);
@@ -1160,11 +1158,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 
 	switch (data_type) {
 	case ENERGY_DATA_NODE_ENERGY_UP:
-		slurm_mutex_lock(&ipmi_mutex);
 		if (running_in_slurmd()) {
-			if (_thread_init() == SLURM_SUCCESS)
-				_thread_update_node_energy();
+			/* Signal the thread to update node energy */
+			slurm_cond_signal(&ipmi_cond);
+			slurm_mutex_lock(&ipmi_mutex);
 		} else {
+			slurm_mutex_lock(&ipmi_mutex);
 			_get_joules_task(10);
 		}
 		_get_node_energy(energy);
@@ -1193,11 +1192,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_JOULES_TASK:
-		slurm_mutex_lock(&ipmi_mutex);
 		if (running_in_slurmd()) {
-			if (_thread_init() == SLURM_SUCCESS)
-				_thread_update_node_energy();
+			/* Signal the thread to update node energy */
+			slurm_cond_signal(&ipmi_cond);
+			slurm_mutex_lock(&ipmi_mutex);
 		} else {
+			slurm_mutex_lock(&ipmi_mutex);
 			_get_joules_task(10);
 		}
 		for (i = 0; i < sensors_len; ++i)
@@ -1211,12 +1211,6 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		rc = SLURM_ERROR;
 		break;
 	}
-
-	/*
-	 * Close the dcmi context, since it has __thread on the variable each
-	 * thread will get a different pointer.
-	 */
-	_close_dcmi_context();
 
 	return rc;
 }
