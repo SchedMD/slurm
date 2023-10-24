@@ -9466,7 +9466,7 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 			break;
 		}
 	}
-
+	FREE_NULL_BITMAP(gres_bit_avail);
 	return usable_gres;
 }
 
@@ -9560,7 +9560,7 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 						     gres_per_bit_avail,
 						     &gres_needed, false,
 						     (i == local_proc_id));
-
+		FREE_NULL_BITMAP(closest_gres);
 		if (gres_needed) {
 			error("Not enough shared gres to bind %d per task",
 			      gres_per_task);
@@ -9795,6 +9795,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		if (_get_usable_gres(i, local_proc_id, step->tres_bind,
 				     &usable_gres, gres_bit_alloc, false, step,
 				     gres_per_bit, &flags) == SLURM_ERROR) {
+			xfree(gres_per_bit);
 			FREE_NULL_BITMAP(gres_bit_alloc);
 			continue;
 		}
@@ -9815,6 +9816,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 						gres_bit_alloc,
 					        gres_cnt, usable_gres, flags);
 		gres_cnt = 0;
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
