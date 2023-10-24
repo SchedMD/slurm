@@ -34,7 +34,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/conmgr.h"
+#include "src/common/read_config.h"
+
+#include "src/interfaces/auth.h"
+
 extern int main(int argc, char **argv)
 {
+	slurm_conf_init(NULL);
+
+	auth_g_init();
+
+	con_mgr_run(true);
+
 	return 0;
 }
