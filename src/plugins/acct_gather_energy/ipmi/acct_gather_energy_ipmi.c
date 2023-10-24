@@ -512,12 +512,13 @@ static int _get_dcmi_power_reading(uint16_t dcmi_mode)
 	                                      mode_attributes, dcmi_rs);
 	if (ret < 0) {
 		if (read_err_cnt < MAX_LOG_ERRORS) {
-			error("%s: get DCMI power reading failed",
-			      __func__);
+			error("%s: get DCMI power reading failed: %s",
+			      __func__, ipmi_ctx_errormsg(ipmi_dcmi_ctx));
 			read_err_cnt++;
 		} else if (read_err_cnt == MAX_LOG_ERRORS) {
-			error("%s: get DCMI power reading failed. Stop logging these errors after %d attempts",
-			      __func__, MAX_LOG_ERRORS);
+			error("%s: get DCMI power reading failed: %s. Stop logging these errors after %d attempts",
+			      __func__, ipmi_ctx_errormsg(ipmi_dcmi_ctx),
+			      MAX_LOG_ERRORS);
 			read_err_cnt++;
 		}
 		fiid_obj_destroy(dcmi_rs);
