@@ -94,7 +94,7 @@ Obsoletes: slurm-plugins <= %{version}
 
 %define use_mysql_devel %(perl -e '`rpm -q mariadb-devel`; print $?;')
 
-%if %{with mysql}
+%if %{with mysql} || %{with cray_network}
 %if %{use_mysql_devel}
 BuildRequires: mysql-devel >= 5.0.0
 %else
@@ -114,11 +114,6 @@ BuildRequires: pkg-config
 %endif
 
 %if %{with cray_network}
-%if %{use_mysql_devel}
-BuildRequires: mysql-devel
-%else
-BuildRequires: mariadb-devel
-%endif
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
 BuildRequires: hwloc-devel
