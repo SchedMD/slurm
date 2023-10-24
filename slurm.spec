@@ -30,7 +30,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with hdf5		%_with_hdf5 path	require hdf5 support
 # --with hwloc		%_with_hwloc 1		require hwloc support
 # --with lua		%_with_lua path		build Slurm lua bindings
-# --with mysql		%_with_mysql 1		require mysql/mariadb support
 # --with numa		%_with_numa 1		require NUMA support
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 # --without x11		%_without_x11 1		disable internal X11 support
@@ -53,7 +52,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
 %bcond_with hwloc
-%bcond_with mysql
 %bcond_with hdf5
 %bcond_with lua
 %bcond_with numa
@@ -102,7 +100,6 @@ Obsoletes: slurm-plugins <= %{version}
 # Oracle mysql commercial
 %define use_mysql_commercial %(perl -e '`rpm -q mysql-commercial-devel`; print !$?;')
 
-%if %{with mysql} || %{with cray_network}
 %if 0%{?use_mysql_devel}
 BuildRequires: mysql-devel >= 5.0.0
 %else
@@ -119,7 +116,6 @@ BuildRequires: libmariadbd-devel >= 5.0.0
 BuildRequires: MariaDB-devel >= 5.0.0
 %else
 BuildRequires: mariadb-devel >= 5.0.0
-%endif
 %endif
 %endif
 %endif

@@ -257,6 +257,10 @@ documents those changes that are of interest to users and administrators.
     and additional hops used TreeWidth in slurm.conf.
  -- slurmrestd - remove logger prefix from '-s/-a list' options outputs.
  -- Fix fd socket name resolution which could flood log files at debug level.
+ -- The rpmbuild "--with mysql" option has been removed. The rpm has long
+    required sql development libraries to build and the existence of this option
+    was confusing. The default behavior now is to always require one of the sql
+    development libraries.
 
 * Changes in Slurm 23.02.7
 ==========================

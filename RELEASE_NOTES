@@ -63,6 +63,10 @@ HIGHLIGHTS
     passed from controller.
  -- Enable fanout for dynamic and unaddresable cloud nodes.
  -- Make it so reservations can reserve GRES.
+ -- The rpmbuild "--with mysql" option has been removed. The rpm has long
+    required sql development libraries to build and the existence of this option
+    was confusing. The default behavior now is to always require one of the sql
+    development libraries.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
