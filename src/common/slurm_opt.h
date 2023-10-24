@@ -517,7 +517,7 @@ extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
 /*
  * Was the option set by an data_t value?
  */
-extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
+extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval);
 
 /*
  * Get option value by common option name.
