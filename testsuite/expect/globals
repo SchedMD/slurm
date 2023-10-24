@@ -687,7 +687,7 @@ proc get_subtest_fail_count {} {
 #	reset_bash_prompt
 #
 # DESCRIPTION
-#	The procedure will normally be called within an expect body to
+#	The procedure must be called within an expect body to
 #	reset the bash prompt to the $test_prompt.
 #
 # EXAMPLE
@@ -709,7 +709,8 @@ proc get_subtest_fail_count {} {
 proc reset_bash_prompt {} {
 	global testsuite_dir
 
-	send "source $testsuite_dir/reset_bash_prompt.sh\n"
+	upvar spawn_id sid
+	send -i $sid "source $testsuite_dir/reset_bash_prompt.sh\n"
 }
 
 
