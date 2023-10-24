@@ -487,6 +487,7 @@ static int _get_dcmi_power_reading(uint16_t dcmi_mode)
 	uint64_t current_power;
 	fiid_obj_t dcmi_rs;
 	int ret;
+	static uint8_t read_err_cnt = 0;
 
 	if (!ipmi_dcmi_ctx) {
 		error("%s: IPMI DCMI context not initialized", __func__);
@@ -510,7 +511,15 @@ static int _get_dcmi_power_reading(uint16_t dcmi_mode)
 	ret = ipmi_cmd_dcmi_get_power_reading(ipmi_dcmi_ctx, mode,
 	                                      mode_attributes, dcmi_rs);
 	if (ret < 0) {
-		error("%s: get DCMI power reading failed", __func__);
+		if (read_err_cnt < MAX_LOG_ERRORS) {
+			error("%s: get DCMI power reading failed",
+			      __func__);
+			read_err_cnt++;
+		} else if (read_err_cnt == MAX_LOG_ERRORS) {
+			error("%s: get DCMI power reading failed. Stop logging these errors after %d attempts",
+			      __func__, MAX_LOG_ERRORS);
+			read_err_cnt++;
+		}
 		fiid_obj_destroy(dcmi_rs);
 		return SLURM_ERROR;
 	}
