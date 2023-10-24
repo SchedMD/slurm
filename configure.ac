@@ -534,6 +534,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile
+		 src/sackd/Makefile
 		 src/sacctmgr/Makefile
 		 src/salloc/Makefile
 		 src/sattach/Makefile

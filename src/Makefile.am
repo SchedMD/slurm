@@ -8,6 +8,7 @@ SUBDIRS =		\
 	plugins		\
 	sacct		\
 	sacctmgr	\
+	sackd		\
 	salloc		\
 	sattach		\
 	sbatch		\
