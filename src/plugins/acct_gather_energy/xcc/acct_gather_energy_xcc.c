@@ -301,6 +301,16 @@ static int _running_profile(void)
 	return run;
 }
 
+static void _close_ipmi_context(void)
+{
+	if (!ipmi_ctx)
+		return;
+
+	ipmi_ctx_close(ipmi_ctx);
+	ipmi_ctx_destroy(ipmi_ctx);
+	ipmi_ctx = NULL;
+}
+
 /*
  * _init_ipmi_config initializes parameters for freeipmi library
  */
@@ -422,9 +432,7 @@ static int _init_ipmi_config(void)
 	return SLURM_SUCCESS;
 
 cleanup:
-	ipmi_ctx_close(ipmi_ctx);
-	ipmi_ctx_destroy(ipmi_ctx);
-	ipmi_ctx = NULL;
+	_close_ipmi_context();
 	return SLURM_ERROR;
 }
 
