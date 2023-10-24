@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sack.c - [Sl]urm's [a]uth and [c]red [k]iosk
+ *  sack.c - [S]lurm's [a]uth and [c]red [k]iosk
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sack_api.c - [Sl]urm's [a]uth and [c]red [k]iosk API
+ *  sack_api.c - [S]lurm's [a]uth and [c]red [k]iosk API
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
