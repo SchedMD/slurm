@@ -242,6 +242,14 @@ Group: Development/System
 %description example-configs
 Example configuration files for Slurm.
 
+%package sackd
+Summary: Slurm authentication daemon
+Group: System Environment/Base
+Requires: %{name}%{?_isa} = %{version}-%{release}
+%description sackd
+Slurm authentication daemon. Used on login nodes that are not running slurmd
+daemons to allow authentication to the cluster.
+
 %package slurmctld
 Summary: Slurm controller daemon
 Group: System Environment/Base
@@ -409,6 +417,7 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 make install-contrib DESTDIR=%{buildroot}
 
+install -D -m644 etc/sackd.service %{buildroot}/%{_unitdir}/sackd.service
 install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.service
 install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
 install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
@@ -608,6 +617,12 @@ rm -rf %{buildroot}
 
 #############################################################################
 
+%files sackd
+%defattr(-,root,root)
+%{_sbindir}/sackd
+%{_unitdir}/sackd.service
+#############################################################################
+
 %files slurmctld
 %defattr(-,root,root)
 %{_sbindir}/slurmctld
@@ -700,6 +715,13 @@ rm -rf %{buildroot}
 
 %postun
 /sbin/ldconfig
+
+%post sackd
+%systemd_post sackd.service
+%preun sackd
+%systemd_preun sackd.service
+%postun sackd
+%systemd_postun_with_restart sackd.service
 
 %post slurmctld
 %systemd_post slurmctld.service
