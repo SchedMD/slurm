@@ -619,13 +619,13 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	xassert(running_in_slurmd_stepd());
 	switch (data_type) {
 	case ENERGY_DATA_NODE_ENERGY_UP:
-		slurm_mutex_lock(&gpu_mutex);
 		if (running_in_slurmd()) {
-			if (_thread_init() == SLURM_SUCCESS) {
-				_thread_update_node_energy();
-				_get_node_energy(energy);
-			}
+			/* Signal the thread to update node energy */
+			slurm_cond_signal(&gpu_cond);
+			slurm_mutex_lock(&gpu_mutex);
+			_get_node_energy(energy);
 		} else {
+			slurm_mutex_lock(&gpu_mutex);
 			_get_joules_task(10);
 			_get_node_energy_up(energy);
 		}
@@ -657,11 +657,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_JOULES_TASK:
-		slurm_mutex_lock(&gpu_mutex);
 		if (running_in_slurmd()) {
-			if (_thread_init() == SLURM_SUCCESS)
-				_thread_update_node_energy();
+			/* Signal the thread to update node energy */
+			slurm_cond_signal(&gpu_cond);
+			slurm_mutex_lock(&gpu_mutex);
 		} else {
+			slurm_mutex_lock(&gpu_mutex);
 			_get_joules_task(10);
 		}
 		for (i = 0; i < gpus_len; ++i)
