@@ -523,6 +523,7 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
+	static int disable_gpu_acct = -1;
 	char *proc_file = NULL;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
@@ -539,6 +540,15 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 			use_pss = 1;
 		else
 			use_pss = 0;
+	}
+
+	if (disable_gpu_acct == -1) {
+		if (xstrcasestr(slurm_conf.job_acct_gather_params,
+				"DisableGPUAcct")) {
+			disable_gpu_acct = 1;
+			log_flag(JAG, "GPU accounting disabled as JobAcctGatherParams=DisableGpuAcct is set.");
+		} else
+			disable_gpu_acct = 0;
 	}
 
 	xstrfmtcat(proc_file, "/proc/%u/stat", pid);
@@ -582,7 +592,8 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 
 	fclose(stat_fp);
 
-	gpu_g_usage_read(pid, prec->tres_data);
+	if (!disable_gpu_acct)
+		gpu_g_usage_read(pid, prec->tres_data);
 
 	/* Remove shared data from rss */
 	if (no_share_data) {
