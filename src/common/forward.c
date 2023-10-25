@@ -49,7 +49,7 @@
 #include "src/common/forward.h"
 #include "src/common/macros.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -679,7 +679,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 
 	hostlist_uniq(hl);
 
-	if (route_g_split_hostlist(
+	if (topology_g_split_hostlist(
 		    hl, &sp_hl, &hl_count, header->forward.tree_width)) {
 		error("unable to split forward hostlist");
 		hostlist_destroy(hl);
@@ -825,8 +825,8 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	_get_alias_addrs(hl, msg, &host_count);
 	_get_dynamic_addrs(hl, msg);
 
-	if (route_g_split_hostlist(hl, &sp_hl, &hl_count,
-				   msg->forward.tree_width)) {
+	if (topology_g_split_hostlist(hl, &sp_hl, &hl_count,
+				      msg->forward.tree_width)) {
 		error("unable to split forward hostlist");
 		return NULL;
 	}

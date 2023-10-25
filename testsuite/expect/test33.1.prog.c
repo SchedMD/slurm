@@ -56,7 +56,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/route.h"
 #include "src/interfaces/topology.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -187,7 +186,7 @@ int _measure_api(char* measure_case)
 	nodes = measure_case;
 	hl = hostlist_create(nodes);
 	START_TIMER;
-	if (route_g_split_hostlist(hl, &sp_hl, &hl_count, 0)) {
+	if (topology_g_split_hostlist(hl, &sp_hl, &hl_count, 0)) {
 		hostlist_destroy(hl);
 		fatal("unable to split forward hostlist");
 	}
@@ -232,7 +231,7 @@ int _run_test(char** testcase, int lines)
 	char *nodes;
 	nodes = testcase[0];
 	hostlist_t *hl = hostlist_create(nodes);
-	if (route_g_split_hostlist(hl, &hll, &hl_count, 0)) {
+	if (topology_g_split_hostlist(hl, &hll, &hl_count, 0)) {
 		info("Unable to split forward hostlist");
 		_print_test(testcase,lines);
 		rc = SLURM_ERROR;
@@ -293,7 +292,6 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
-	route_g_init();
 	topology_g_init();
 	opts.stderr_level = LOG_LEVEL_DEBUG;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);

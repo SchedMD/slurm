@@ -71,7 +71,6 @@
 #include "src/interfaces/power.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
-#include "src/interfaces/route.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -1771,7 +1770,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	rehash_node();
 	topology_g_build_config();
-	route_g_reconfigure();
 	if (reconfig)
 		power_g_reconfig();
 
