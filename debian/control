@@ -175,6 +175,17 @@ Description: Slurm's pam_slurm_adopt module
   running on the node, or any user who has allocated resources on the node
   according to the Slurm
 
+Package: slurm-smd-libpmi0
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends:
+  slurm-smd (= ${binary:Version}),
+  ${shlibs:Depends},
+  ${misc:Depends}
+Description: Slurm PMI library implementation
+  The Slurm PMI library.
+
 Package: slurm-smd-libslurm-perl
 Section: perl
 Architecture: any
