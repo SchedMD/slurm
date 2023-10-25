@@ -1,0 +1,14 @@
+debian/tmp/usr/share/man/man1/slurm.1
+debian/tmp/usr/share/man/man5/acct_gather.conf.5
+debian/tmp/usr/share/man/man5/burst_buffer.conf.5
+debian/tmp/usr/share/man/man5/cgroup.conf.5
+debian/tmp/usr/share/man/man5/ext_sensors.conf.5
+debian/tmp/usr/share/man/man5/gres.conf.5
+debian/tmp/usr/share/man/man5/helpers.conf.5
+debian/tmp/usr/share/man/man5/job_container.conf.5
+debian/tmp/usr/share/man/man5/knl.conf.5
+debian/tmp/usr/share/man/man5/mpi.conf.5
+debian/tmp/usr/share/man/man5/oci.conf.5
+debian/tmp/usr/share/man/man5/slurm.conf.5
+debian/tmp/usr/share/man/man5/topology.conf.5
+debian/tmp/usr/share/man/man8/spank.8

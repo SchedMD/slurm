@@ -1,0 +1,162 @@
+Source: slurm-smd
+Section: admin
+Priority: optional
+Maintainer: SchedMD Support <support@schedmd.com>
+Uploaders: Tim Mcmullan <mcmullan@schedmd.com>
+Build-Depends:
+ debhelper (>= 12),
+ libmunge-dev,
+ libncurses-dev,
+ po-debconf,
+ python3,
+ libgtk2.0-dev,
+ libpam0g-dev,
+ libperl-dev,
+ libpam0g-dev,
+ liblua5.3-dev,
+ libhwloc-dev,
+ dh-exec,
+ librrd-dev,
+ libipmimonitoring-dev,
+ hdf5-helpers,
+ libfreeipmi-dev,
+ libhdf5-dev,
+ man2html,
+ libcurl4-openssl-dev,
+ libpmix-dev,
+ libhttp-parser-dev,
+ libyaml-dev,
+ libjson-c-dev,
+ libjwt-dev,
+ liblz4-dev,
+ bash-completion,
+ libdbus-1-dev,
+ librdkafka-dev
+Homepage: http://slurm.schedmd.com
+Vcs-Browser: https://github.com/SchedMD/slurm
+Vcs-Git: https://github.com/SchedMD/slurm.git
+
+Package: slurm-smd
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ munge
+Conflicts:
+ slurm-wlm,
+ slurm-wlm-basic-plugins,
+ slurm-wlm-elasticsearch-plugin,
+ slurm-wlm-emulator,
+ slurm-wlm-hdf5-plugin,
+ slurm-wlm-influxdb-plugin,
+ slurm-wlm-ipmi-plugins,
+ slurm-wlm-jwt-plugin,
+ slurm-wlm-mysql-plugin,
+ slurm-wlm-plugins,
+ slurm-wlm-rrd-plugin,
+ slurm-wlm-rsmi-plugin
+Description: Slurm Workload Manager
+ Slurm is an open source, fault-tolerant, and highly scalable
+ cluster management and job scheduling system for Linux clusters.
+ Components include machine status, partition management,
+ job management, scheduling and accounting modules.
+
+Package: slurm-smd-client
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ slurm-smd (= ${binary:Version}),
+ munge
+Conflicts:
+ slurm-client,
+ slurm-client-emulator
+Description: Slurm Workload Manager client commands.
+ This package contains the Slurm client commands (excluding sview).
+
+Package: slurm-smd-dev
+Architecture: any
+Depends:
+ slurm-smd (= ${binary:Version}),
+ munge
+Conflicts:
+ slurm-wlm-basic-plugins-dev,
+ slurm-wlm-elasticsearch-plugin-dev,
+ slurm-wlm-hdf5-plugin-dev,
+ slurm-wlm-influxdb-plugin-dev,
+ slurm-wlm-ipmi-plugins-dev,
+ slurm-wlm-jwt-plugin-dev,
+ slurm-wlm-mysql-plugin-dev,
+ slurm-wlm-plugins-dev,
+ slurm-wlm-rrd-plugin-dev,
+ slurm-wlm-rsmi-plugin-dev,
+ libslurm-dev
+Description: Development package for Slurm-smd.
+ This package includes the header files and static libraries for the Slurm API.
+
+Package: slurm-smd-doc
+Section: doc
+Architecture: all
+Depends:
+ ${misc:Depends}
+Conflicts:
+ slurm-wlm-doc
+Description: Slurm HTML documentation
+ This package contains the Slurm html documentation.
+
+Package: slurm-smd-slurmctld
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ slurm-smd (= ${binary:Version}),
+ munge
+Conflicts:
+ slurmctld
+Description: Slurm contoller daemon.
+ Used to manage the job queue, schedule jobs, and dispatch RPC messages to the
+ slurmd processon the compute nodes to launch jobs.
+
+Package: slurm-smd-slurmd
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ slurm-smd (= ${binary:Version}),
+ munge
+Conflicts:
+ slurmd
+Description: Slurm compute node daemon
+  Used to launch jobs on compute nodes.
+
+Package: slurm-smd-slurmdbd
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ slurm-smd (= ${binary:Version}),
+ munge
+Conflicts:
+ slurmdbd
+Description: Slurm database daemon.
+ Used to accept and process database RPCs and upload database changes to
+ slurmctld daemons on each cluster.
+
+Package: slurm-smd-slurmrestd
+Architecture: any
+Depends:
+ slurm-smd (= ${binary:Version}),
+ ${shlibs:Depends},
+ ${misc:Depends},
+Conflicts:
+ slurmrestd
+Description: Slurm REST API daemon
+ Provides a REST interface to Slurm using the REST API daemon slurmrestd.
+
+Package: slurm-smd-sview
+Architecture: any
+Depends:
+ slurm-smd (= ${binary:Version}),
+ ${shlibs:Depends},
+ ${misc:Depends},
+Conflicts:
+ sview,
+Description: GUI to view or modify Slurm state information.
+ This package contains sview, a GUI for viewing Slurm configuration, job, node,
+ and partition state information.  Can be used to modify some information by
+ authorized users.

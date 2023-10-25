@@ -1,0 +1,32 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all,-bindnow
+
+%:
+	dh $@ --builddirectory
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rvf $(CURDIR)/debian/slurm-smd.install
+	rm -rvf $(CURDIR)/debian/slurm-smd-dev.install
+
+override_dh_update_autotools_config:
+
+override_dh_autoreconf:
+
+override_dh_auto_configure:
+	# Run with --disable-debug to allow optimizations, -g is still provided
+	# by dpkg-buildflags.
+	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-slurmrestd --with-pmix SUCMD=/bin/su SLEEP_CMD=/bin/sleep
+
+override_dh_auto_install:
+	dh_auto_install
+
+	rm -r debian/tmp/usr/lib/*/slurm/src
+
+	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" | sed "s/^debian\/tmp\///" > debian/slurm-smd.install
+
+	find debian/tmp/usr/include/slurm/ -type f > debian/slurm-smd-dev.install
+	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
+
+override_dh_auto_test:
