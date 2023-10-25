@@ -55,11 +55,12 @@ struct slurm_step_ctx_struct {
  * step_ctx_create_timeout - Create a job step and its context.
  * IN step_req - job step request
  * IN timeout - in milliseconds
+ * OUT timed_out - indicate if poll timed-out
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
 extern slurm_step_ctx_t *step_ctx_create_timeout(
-	job_step_create_request_msg_t *step_req, int timeout);
+	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out);
 
 /*
  * step_ctx_create_no_alloc - Create a job step and its context without

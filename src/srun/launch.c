@@ -1264,6 +1264,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 	      step_req->name, step_req->relative);
 
 	for (i = 0; (!(*destroy_job)); i++) {
+		bool timed_out = false;
 		if (srun_opt->no_alloc) {
 			job->step_ctx = step_ctx_create_no_alloc(
 				step_req, job->step_id.step_id);
@@ -1279,8 +1280,9 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				step_wait = ((getpid() % 10) +
 					     slurmctld_timeout) * 1000;
 			}
-			job->step_ctx = step_ctx_create_timeout(
-						step_req, step_wait);
+			job->step_ctx = step_ctx_create_timeout(step_req,
+								step_wait,
+								&timed_out);
 		}
 		if (job->step_ctx != NULL) {
 			job->step_ctx->verbose_level = opt_local->verbose;
@@ -1310,9 +1312,13 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					step_req->step_id.job_id);
 			} else {
-				info("Job %u step creation temporarily disabled, retrying (%s)",
-				     step_req->step_id.job_id,
-				     slurm_strerror(rc));
+				if (timed_out)
+					info("Job %u step creation temporarily disabled, retrying (%s)",
+					     step_req->step_id.job_id,
+					     slurm_strerror(rc));
+				else
+					verbose("Step completed in JobId=%u, retrying",
+						step_req->step_id.job_id);
 			}
 			xsignal_unblock(sig_array);
 			for (j = 0; sig_array[j]; j++)
@@ -1322,10 +1328,15 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				verbose("Job %u step creation still disabled, retrying (%s)",
 					step_req->step_id.job_id,
 					slurm_strerror(rc));
-			else
-				info("Job %u step creation still disabled, retrying (%s)",
-				     step_req->step_id.job_id,
-				     slurm_strerror(rc));
+			else {
+				if (timed_out)
+					info("Job %u step creation still disabled, retrying (%s)",
+					     step_req->step_id.job_id,
+					     slurm_strerror(rc));
+				else
+					verbose("Step completed in JobId=%u, retrying",
+						step_req->step_id.job_id);
+			}
 		}
 
 		if (*destroy_job) {
