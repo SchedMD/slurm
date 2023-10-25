@@ -141,7 +141,8 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
-			error("forward_thread to %s (%pA): %m", name, &addr);
+			error("%s: failed to %s (%pA): %m",
+			      __func__, name, &addr);
 
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(
@@ -205,7 +206,7 @@ static void *_forward_thread(void *arg)
 		if (slurm_msg_sendto(fd,
 				     get_buf_data(buffer),
 				     get_buf_offset(buffer)) < 0) {
-			error("forward_thread: slurm_msg_sendto: %m");
+			error("%s: slurm_msg_sendto: %m", __func__);
 
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(&fwd_struct->ret_list, name,
@@ -462,10 +463,9 @@ static void *_fwd_tree_thread(void *arg)
 			*/
 			if ((ret_cnt <= send_msg.forward.cnt) &&
 			    (errno != SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
-				error("fwd_tree_thread: %s failed to forward "
-				      "the message, expecting %d ret got only "
-				      "%d",
-				      name, send_msg.forward.cnt + 1, ret_cnt);
+				error("%s: %s failed to forward the message, expecting %d ret got only %d",
+				      __func__, name, send_msg.forward.cnt + 1,
+				      ret_cnt);
 				if (ret_cnt > 1) { /* not likely */
 					ret_data_info_t *ret_data_info = NULL;
 					ListIterator itr =
@@ -507,9 +507,8 @@ static void *_fwd_tree_thread(void *arg)
 			/* This should never happen (when this was
 			 * written slurm_send_addr_recv_msgs always
 			 * returned a list */
-			error("fwd_tree_thread: no return list given from "
-			      "slurm_send_addr_recv_msgs spawned for %s",
-			      name);
+			error("%s: no return list given from slurm_send_addr_recv_msgs spawned for %s",
+			      __func__, name);
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			mark_as_failed_forward(
 				&fwd_tree->ret_list, name,
@@ -954,7 +953,7 @@ extern void destroy_forward(forward_t *forward)
 		xfree(forward->nodelist);
 		forward->init = 0;
 	} else {
-		error("destroy_forward: no init");
+		error("%s: no init", __func__);
 	}
 }
 
