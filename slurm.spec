@@ -95,6 +95,8 @@ Obsoletes: slurm-plugins <= %{version}
 %define use_mysql_devel %(perl -e '`rpm -q mysql-devel`; print !$?;')
 # Default for OpenSUSE/SLES builds
 %define use_libmariadbd_devel %(perl -e '`rpm -q libmariadbd-devel`; print !$?;')
+# Package name from the official MariaDB version
+%define use_MariaDB_devel %(perl -e '`rpm -q MariaDB-devel`; print !$?;')
 
 %if %{with mysql} || %{with cray_network}
 %if 0%{?use_mysql_devel}
@@ -103,7 +105,11 @@ BuildRequires: mysql-devel >= 5.0.0
 %if 0%{?use_libmariadbd_devel}
 BuildRequires: libmariadbd-devel >= 5.0.0
 %else
+%if 0%{?use_MariaDB_devel}
+BuildRequires: MariaDB-devel >= 5.0.0
+%else
 BuildRequires: mariadb-devel >= 5.0.0
+%endif
 %endif
 %endif
 %endif
