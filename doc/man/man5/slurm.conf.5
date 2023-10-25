@@ -3696,32 +3696,6 @@ etc. are equal to or greater than the values configured in slurm.conf.
 .IP
 
 .TP
-\fBRoutePlugin\fR
-Identifies the plugin to be used for defining which nodes will be used
-for message forwarding.
-.IP
-.RS
-.TP
-\fBroute/default\fR
-default, use TreeWidth.
-.IP
-
-.TP
-\fBroute/partition\fR
-Use partition nodes lists to route communications from the controller. Once on
-the compute node, communications will be routed using TreeWidth. If a node is
-in multiple partitions, the first partition seen will be used. The controller
-will communicate directly with any nodes that aren't part of a partition.
-.IP
-
-.TP
-\fBroute/topology\fR
-use the switch hierarchy defined in a \fItopology.conf\fR file.
-TopologyPlugin=topology/tree is required.
-.RE
-.IP
-
-.TP
 \fBSchedulerParameters\fR
 The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.

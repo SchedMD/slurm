@@ -64,8 +64,6 @@ libcommon_interfaces_la_SOURCES =    \
 	prep.h					\
 	priority.c				\
 	priority.h				\
-	route.c					\
-	route.h					\
 	select.c				\
 	select.h				\
 	serializer.c				\
