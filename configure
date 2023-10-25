@@ -5792,17 +5792,20 @@ fi
 
 	#Check for MySQL
 	ac_have_mysql="no"
-	_x_ac_mysql_bin="no"
+	_x_ac_mysql_bin=""
 	### Check for mysql_config program
 
 # Check whether --with-mysql_config was given.
 if test ${with_mysql_config+y}
 then :
-  withval=$with_mysql_config; _x_ac_mysql_bin="$withval"
+  withval=$with_mysql_config; if test "x$with_mysql_config" != xno && test "x$with_mysql_config" != xyes
+then :
+  _x_ac_mysql_bin="$with_mysql_config"
+fi
 fi
 
 
-	if test x$_x_ac_mysql_bin = xno; then
+	if test -z "$_x_ac_mysql_bin"; then
 		for ac_prog in mysql_config mariadb_config
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -5908,9 +5911,16 @@ test -n "$HAVEMYSQLCONFIG" || HAVEMYSQLCONFIG="no"
 
 	fi
 
-	if test x$HAVEMYSQLCONFIG = xno; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql_config not found. Evidently no MySQL development libs installed on system." >&5
+	if test x$with_mysql_config = xno; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for mysql is disabled" >&5
+printf "%s\n" "$as_me: support for mysql is disabled" >&6;}
+	elif test x$HAVEMYSQLCONFIG = xno; then
+		if test -z "$with_mysql_config"; then
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql_config not found. Evidently no MySQL development libs installed on system." >&5
 printf "%s\n" "$as_me: WARNING: *** mysql_config not found. Evidently no MySQL development libs installed on system." >&2;}
+		else
+			as_fn_error $? "*** mysql_config not found. Evidently no MySQL development libs installed on system." "$LINENO" 5
+		fi
 	else
 		# check for mysql-5.0.0+
 		mysql_config_major_version=`$HAVEMYSQLCONFIG --version | \
