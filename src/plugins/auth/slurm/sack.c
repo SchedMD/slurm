@@ -67,44 +67,45 @@
  * requested payload.
  */
 
-static void _prepare_run_dir(void)
+static void _prepare_run_dir(const char *subdir)
 {
-	int dirfd, slurmdirfd;
+	int dirfd, subdirfd;
 	struct stat statbuf;
 
 	if ((dirfd = open("/run", O_DIRECTORY | O_NOFOLLOW)) < 0)
 		fatal("%s: could not open /run", __func__);
 
-	if ((slurmdirfd = openat(dirfd, "slurm",
-				 (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+	if ((subdirfd = openat(dirfd, subdir,
+			       (O_DIRECTORY | O_NOFOLLOW))) < 0) {
 		/* just assume ENOENT and attempt to create */
-		if (mkdirat(dirfd, "slurm", 0755) < 0)
-			fatal("%s: failed to create /run/slurm", __func__);
-		if (fchownat(dirfd, "slurm", slurm_conf.slurm_user_id, -1,
+		if (mkdirat(dirfd, subdir, 0755) < 0)
+			fatal("%s: failed to create /run/%s", __func__, subdir);
+		if (fchownat(dirfd, subdir, slurm_conf.slurm_user_id, -1,
 			     AT_SYMLINK_NOFOLLOW) < 0)
-			fatal("%s: failed to change ownership of /run/slurm to SlurmUser",
-			      __func__);
+			fatal("%s: failed to change ownership of /run/%s to SlurmUser",
+			      __func__, subdir);
 		close(dirfd);
 		return;
 	}
 
-	if (!fstat(slurmdirfd, &statbuf)) {
+	if (!fstat(subdirfd, &statbuf)) {
 		if (!(statbuf.st_mode & S_IFDIR))
-			fatal("%s: /run/slurm exists but is not a directory",
-			      __func__);
+			fatal("%s: /run/%s exists but is not a directory",
+			      __func__, subdir);
 		if (statbuf.st_uid != slurm_conf.slurm_user_id) {
 			if (statbuf.st_uid)
-				fatal("%s: /run/slurm exists but is owned by %u",
-				      __func__, statbuf.st_uid);
-			warning("%s: /run/slurm exists but is owned by root, not SlurmUser",
-				__func__);
+				fatal("%s: /run/%s exists but is owned by %u",
+				      __func__, subdir, statbuf.st_uid);
+			warning("%s: /run/%s exists but is owned by root, not SlurmUser",
+				__func__, subdir);
 		}
 	}
 
-	if (unlinkat(slurmdirfd, "sack.socket", 0) && (errno != ENOENT))
-		fatal("%s: failed to remove /run/slurm/sack.socket", __func__);
+	if (unlinkat(subdirfd, "sack.socket", 0) && (errno != ENOENT))
+		fatal("%s: failed to remove /run/%s/sack.socket",
+		      __func__, subdir);
 
-	close(slurmdirfd);
+	close(subdirfd);
 	close(dirfd);
 }
 
@@ -258,7 +259,7 @@ extern void init_sack_conmgr(void)
 	int rc;
 	mode_t mask;
 
-	_prepare_run_dir();
+	_prepare_run_dir("slurm");
 
 	init_conmgr(0, 0, callbacks);
 
