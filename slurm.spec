@@ -376,6 +376,7 @@ notifies slurm about failed nodes.
 
 %build
 %configure \
+	--with-systemdsystemunitdir=%{_unitdir} \
 	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_cpusetdir} \
@@ -416,15 +417,6 @@ chmod +x find-requires.sh
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 make install-contrib DESTDIR=%{buildroot}
-
-install -D -m644 etc/sackd.service %{buildroot}/%{_unitdir}/sackd.service
-install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.service
-install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
-install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
-
-%if %{with slurmrestd}
-install -D -m644 etc/slurmrestd.service  %{buildroot}/%{_unitdir}/slurmrestd.service
-%endif
 
 # Do not package Slurm's version of libpmi on Cray systems in the usual location.
 # Cray's version of libpmi should be used. Move it elsewhere if the site still
