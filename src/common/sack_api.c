@@ -46,28 +46,52 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-static int _sack_connect(void)
+static struct sockaddr_un sack_addrs[] =
 {
-	int fd;
-	struct sockaddr_un addr = {
+	{
 		.sun_family = AF_UNIX,
 		.sun_path = "/run/slurm/sack.socket",
-	};
-	size_t len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
+	}, {
+		.sun_family = AF_UNIX,
+		.sun_path = "/run/slurmctld/sack.socket",
+	}, {
+		.sun_family = AF_UNIX,
+		.sun_path = "/run/slurmdbd/sack.socket",
+	}
+};
+
+static int _sack_try_connection(struct sockaddr_un *addr)
+{
+	int fd;
+	size_t len = strlen(addr->sun_path) + 1 + sizeof(addr->sun_family);
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		error("%s: socket() failed: %m", __func__);
+		debug3("%s: socket() failed: %m", __func__);
 		return -1;
 	}
 
-	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		error("%s: connect() failed for %s: %m",
-		      __func__, addr.sun_path);
+	if (connect(fd, (struct sockaddr *) addr, len) < 0) {
+		debug3("%s: connect() failed for %s: %m",
+		      __func__, addr->sun_path);
 		close(fd);
 		return -1;
 	}
 
 	return fd;
+}
+
+static int _sack_connect(void)
+{
+	for (int i = 0; i < ARRAY_SIZE(sack_addrs); i++) {
+		int fd;
+		if ((fd = _sack_try_connection(&sack_addrs[i])) < 0)
+			continue;
+		debug2("%s: connected to %s", __func__, sack_addrs[i].sun_path);
+		return fd;
+	}
+
+	error("failed to connect to any sack sockets");
+	return -1;
 }
 
 extern char *sack_create(uid_t r_uid, void *data, int dlen)
