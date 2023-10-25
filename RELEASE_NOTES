@@ -69,6 +69,9 @@ HIGHLIGHTS
     development libraries.
  -- The reference slurmctld and slurmdbd service files now run under User=slurm
     and Group=slurm. (These are installed automatically for RPMs.)
+ -- Added support for Debian packaging.  Please note that this set of packages
+    is new and subject to more change than the long-standing and more stable
+    spec file.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

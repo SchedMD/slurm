@@ -261,6 +261,7 @@ documents those changes that are of interest to users and administrators.
     required sql development libraries to build and the existence of this option
     was confusing. The default behavior now is to always require one of the sql
     development libraries.
+ -- Add support for Debian packaging.
 
 * Changes in Slurm 23.02.7
 ==========================
