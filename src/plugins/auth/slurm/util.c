@@ -70,6 +70,9 @@ extern void destroy_cred(auth_cred_t *cred)
 	if (!cred)
 		return;
 
+	xfree(cred->cluster);
+	xfree(cred->context);
+	xfree(cred->data);
 	FREE_NULL_IDENTITY(cred->id);
 	xfree(cred->hostname);
 	xfree(cred->token);
