@@ -160,3 +160,17 @@ Description: GUI to view or modify Slurm state information.
  This package contains sview, a GUI for viewing Slurm configuration, job, node,
  and partition state information.  Can be used to modify some information by
  authorized users.
+
+Package: slurm-smd-libpam-slurm-adopt
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Conflicts:
+ libpam-slurm-adopt
+Description: Slurm's pam_slurm_adopt module
+  This module restricts access to compute nodes in a cluster where Slurm is in
+  use.  Access is granted to root, any user with an Slurm-launched job currently
+  running on the node, or any user who has allocated resources on the node
+  according to the Slurm

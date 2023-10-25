@@ -1,0 +1,2 @@
+debian/tmp/lib/security/pam_slurm_adopt.a
+debian/tmp/lib/security/pam_slurm_adopt.la
