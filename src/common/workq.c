@@ -271,7 +271,7 @@ extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
 	slurm_mutex_unlock(&workq->mutex);
 
 	if (rc)
-		xfree(work);
+		_work_delete(work);
 
 	return rc;
 }
