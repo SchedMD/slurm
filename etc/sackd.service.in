@@ -6,6 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+ExitType=cgroup
 EnvironmentFile=-/etc/sysconfig/sackd
 EnvironmentFile=-/etc/default/sackd
 User=slurm
