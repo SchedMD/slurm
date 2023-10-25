@@ -46,6 +46,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/util-net.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -426,17 +427,29 @@ extern char *auth_g_get_host(void *slurm_msg)
 
 	if (host) {
 		debug3("%s: using auth token: %s", __func__, host);
-	} else if (msg->conn && msg->conn->rem_host) {
+		return host;
+	}
+
+	if (msg->conn && msg->conn->rem_host) {
 		/* use remote host name if persistent connection */
 		host = xstrdup(msg->conn->rem_host);
 		debug3("%s: using remote hostname: %s", __func__, host);
-	} else if (!slurm_get_peer_addr(msg->conn_fd, &addr)) {
-		/* use remote host IP */
+		return host;
+	}
+
+	if (slurm_get_peer_addr(msg->conn_fd, &addr)) {
+		error("%s: unable to determine host", __func__);
+		return NULL;
+	}
+
+	/* use remote host IP, then look it up */
+	if ((host = xgetnameinfo((struct sockaddr *) &addr, sizeof(addr)))) {
+		debug3("%s: looked up from connection's IP address: %s",
+		       __func__, host);
+	} else {
 		host = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(&addr, host, INET6_ADDRSTRLEN);
 		debug3("%s: using connection's IP address: %s", __func__, host);
-	} else {
-		error("%s: unable to determine host", __func__);
 	}
 
 	return host;
