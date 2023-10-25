@@ -45,6 +45,9 @@ override_dh_auto_install:
 	# Build torque wrappers
 	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/torque install DESTDIR=$(CURDIR)/debian/tmp
 
+	# Build OpenLava/LSF wrappers
+	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/openlava install DESTDIR=$(CURDIR)/debian/tmp
+
 	# Place systemd unit files where debian packaging will pick them up.
 	mv -v debian/tmp/lib/systemd/system/slurmctld.service debian/slurm-smd-slurmctld.slurmctld.service
 	mv -v debian/tmp/lib/systemd/system/slurmd.service debian/slurm-smd-slurmd.slurmd.service

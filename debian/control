@@ -210,6 +210,17 @@ Description: Perl API for Slurm
   This package includes the perl API to provide a helpful interface to Slurm
   through Perl
 
+Package: slurm-smd-openlava
+Architecture: all
+Depends:
+ slurm-smd (>= ${source:Version}),
+ slurm-smd-libslurm-perl (>= ${source:Version}),
+ libswitch-perl,
+ ${perl:Depends},
+ ${misc:Depends}
+Description: OpenLava compatibility wrappers for Slurm
+  OpenLava wrapper scripts used for helping migrate from OpenLava/LFS to Slurm
+
 Package: slurm-smd-torque
 Architecture: all
 Depends:
