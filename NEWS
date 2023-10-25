@@ -272,6 +272,8 @@ documents those changes that are of interest to users and administrators.
  -- gpu/nvml - Fix linking issue with MIGs that prevented multiple MIGs being
     used in a single job for certain MIG configurations
  -- Add JobAcctGatherParams=DisableGPUAcct to disable gpu accounting.
+ -- Fix file descriptor leak in slurmd when using acct_gather_energy/ipmi with
+    DCMI devices.
 
 * Changes in Slurm 23.02.6
 ==========================
