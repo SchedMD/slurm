@@ -967,6 +967,17 @@ function __slurm_nodes_frontend() {
 	__slurm_func_wrapper "$cmd"
 }
 
+# Slurm helper function to get node hostname list
+#
+# RET: space delimited list
+function __slurm_nodes_hostname() {
+	__slurm_comp_slurm_value || return
+	__slurm_ctld_status || return
+
+	local cmd="scontrol -o show nodes | grep -Po 'NodeHostName=\S+' | cut -d'=' -f2"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to get organizations list
 #
 # RET: space delimited list
@@ -3628,6 +3639,24 @@ function __scontrol_setdebugflags() {
 		__slurm_compreply_list "${_debug_flags[*]}"
 		;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol show aliases *
+function __scontrol_show_aliases() {
+	local parameters=(
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	aliases) __slurm_compreply "$(__slurm_nodes_hostname)" ;;
 	*)
 		[[ $split == "true" ]] && return
 		__slurm_compreply_param "${parameters[*]}"
