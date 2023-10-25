@@ -110,7 +110,7 @@ static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
 
 static void *_forward_thread(void *arg)
 {
-	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
+	forward_msg_t *fwd_msg = arg;
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	List ret_list = NULL;
@@ -401,7 +401,7 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 
 static void *_fwd_tree_thread(void *arg)
 {
-	fwd_tree_t *fwd_tree = (fwd_tree_t *)arg;
+	fwd_tree_t *fwd_tree = arg;
 	List ret_list = NULL;
 	char *name = NULL;
 	char *buf = NULL;
@@ -938,7 +938,7 @@ extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *alias_addrs)
 
 void destroy_data_info(void *object)
 {
-	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
+	ret_data_info_t *ret_data_info = object;
 	if (ret_data_info) {
 		slurm_free_msg_data(ret_data_info->type,
 				    ret_data_info->data);
