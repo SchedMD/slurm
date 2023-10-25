@@ -296,7 +296,12 @@ static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
 	rem_max_cpus -= resv_cpus;
 	if (*avail_cpus > rem_max_cpus) {
 		*avail_cpus = MAX(rem_max_cpus, (int)details_ptr->pn_min_cpus);
-		*avail_cpus = MAX(*avail_cpus, details_ptr->min_gres_cpu);
+		if (avail_res->gres_min_cpus)
+			*avail_cpus =
+				MAX(*avail_cpus, avail_res->gres_min_cpus);
+		else
+			*avail_cpus =
+				MAX(*avail_cpus, details_ptr->min_gres_cpu);
 		/* Round up CPU count to CPU in allocation unit (e.g. core) */
 		avail_res->avail_cpus = *avail_cpus;
 	}
