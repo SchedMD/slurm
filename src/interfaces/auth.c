@@ -410,6 +410,7 @@ extern uid_t auth_g_get_uid(void *cred)
 
 extern char *auth_g_get_host(void *slurm_msg)
 {
+	slurm_addr_t addr;
 	slurm_msg_t *msg = slurm_msg;
 	cred_wrapper_t *wrap = NULL;
 	char *host = NULL;
@@ -422,6 +423,21 @@ extern char *auth_g_get_host(void *slurm_msg)
 	slurm_rwlock_rdlock(&context_lock);
 	host = (*(ops[wrap->index].get_host))(wrap);
 	slurm_rwlock_unlock(&context_lock);
+
+	if (host) {
+		debug3("%s: using auth token: %s", __func__, host);
+	} else if (msg->conn && msg->conn->rem_host) {
+		/* use remote host name if persistent connection */
+		host = xstrdup(msg->conn->rem_host);
+		debug3("%s: using remote hostname: %s", __func__, host);
+	} else if (!slurm_get_peer_addr(msg->conn_fd, &addr)) {
+		/* use remote host IP */
+		host = xmalloc(INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, host, INET6_ADDRSTRLEN);
+		debug3("%s: using connection's IP address: %s", __func__, host);
+	} else {
+		error("%s: unable to determine host", __func__);
+	}
 
 	return host;
 }

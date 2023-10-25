@@ -631,28 +631,8 @@ static void _set_identity(slurm_msg_t *msg, void **id)
 
 static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 {
-	slurm_addr_t addr;
-
 	xfree(*alloc_node);
-	if ((*alloc_node = auth_g_get_host(msg)))
-		debug3("%s: Using auth hostname for alloc_node: %s",
-		       __func__, *alloc_node);
-	else if (msg->conn) {
-		/* use remote host name if persistent connection */
-		*alloc_node = xstrdup(msg->conn->rem_host);
-		debug3("%s: Using remote hostname for alloc_node: %s",
-		       __func__, msg->conn->rem_host);
-	} else if (msg->conn_fd >= 0 &&
-		   !slurm_get_peer_addr(msg->conn_fd, &addr)) {
-		/* use remote host IP */
-		*alloc_node = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, *alloc_node,
-				 INET6_ADDRSTRLEN);
-		debug3("%s: Using requester IP for alloc_node: %s",
-		       __func__, *alloc_node);
-	} else {
-		error("%s: Unable to determine alloc_node", __func__);
-	}
+	*alloc_node = auth_g_get_host(msg);
 }
 
 static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
