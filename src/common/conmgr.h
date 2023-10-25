@@ -288,6 +288,15 @@ extern int conmgr_run(bool blocking);
 extern void conmgr_request_shutdown(void);
 
 /*
+ * Hold starting any new work and event handling.
+ * 	Will cause any active conmgr_run(true) to return.
+ * 	Any running work will not be interrupted.
+ * 	Quiesce state cleared by next call of conmgr_run().
+ * IN wait - wait for all running work to finish before returning
+ */
+extern void conmgr_quiesce(bool wait);
+
+/*
  * Add work to call on signal received
  * IN signal - Signal number to watch
  * IN func - function pointer to run work

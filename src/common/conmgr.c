@@ -209,6 +209,11 @@ struct {
 	 * Is trying to shutdown?
 	 */
 	bool shutdown;
+	/*
+	 * Is mgr currently quiesced?
+	 * Sends all new work to deferred_funcs() while true
+	 */
+	bool quiesced;
 	/* thread pool */
 	workq_t *workq;
 	/* will inspect connections (not listeners */
@@ -259,6 +264,7 @@ struct {
 	.event_fd = { -1, -1 },
 	.signal_fd = { -1, -1 },
 	.error = SLURM_SUCCESS,
+	.quiesced = true,
 };
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
@@ -603,6 +609,11 @@ extern void free_conmgr(void)
 	}
 
 	mgr.shutdown = true;
+	mgr.quiesced = false;
+
+	/* run all deferred work if there is any */
+	_requeue_deferred_funcs();
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: connection manager shutting down", __func__);
@@ -620,6 +631,7 @@ extern void free_conmgr(void)
 	FREE_NULL_WORKQ(mgr.workq);
 
 	/* deferred_funcs should have been cleared by conmgr_run() */
+	xassert(list_is_empty(mgr.deferred_funcs));
 	FREE_NULL_LIST(mgr.deferred_funcs);
 
 	/*
@@ -2066,6 +2078,18 @@ static void _watch(void *blocking)
 watch:
 	if (mgr.shutdown)
 		_close_all_connections(true);
+	else if (mgr.quiesced) {
+		if (mgr.poll_active || mgr.listen_active) {
+			/*
+			 * poll() hasn't returned yet so signal it to stop again
+			 * and wait for the thread to return
+			 */
+			_signal_change(true);
+			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		}
+
+		goto quiesced;
+	}
 
 	/* grab counts once */
 	count = list_count(mgr.connections);
@@ -2197,6 +2221,7 @@ watch:
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);
 
+quiesced:
 	xassert(mgr.watching);
 	mgr.watching = false;
 
@@ -2224,22 +2249,17 @@ watch:
  */
 static void _requeue_deferred_funcs(void)
 {
-	list_t *deferred_funcs = NULL;
 	deferred_func_t *df;
 
-	if (!mgr.deferred_funcs)
+	if (mgr.quiesced)
 		return;
 
-	SWAP(deferred_funcs, mgr.deferred_funcs);
-
-	while ((df = list_pop(deferred_funcs))) {
+	while ((df = list_pop(mgr.deferred_funcs))) {
 		_queue_func(true, df->func, df->arg, df->tag);
 		xassert(df->magic == MAGIC_DEFERRED_FUNC);
 		df->magic = ~MAGIC_DEFERRED_FUNC;
 		xfree(df);
 	}
-
-	FREE_NULL_LIST(deferred_funcs);
 }
 
 extern int conmgr_run(bool blocking)
@@ -2258,6 +2278,7 @@ extern int conmgr_run(bool blocking)
 	}
 
 	xassert(!mgr.error || !mgr.exit_on_error);
+	mgr.quiesced = false;
 	_requeue_deferred_funcs();
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -2670,6 +2691,25 @@ extern void conmgr_request_shutdown(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+extern void conmgr_quiesce(bool wait)
+{
+	log_flag(NET, "%s: quiesce requested", __func__);
+
+	slurm_mutex_lock(&mgr.mutex);
+	if (mgr.shutdown) {
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	mgr.quiesced = true;
+	_signal_change(true);
+
+	if (wait)
+		_wait_for_watch();
+	else
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
 static void _cancel_delayed_work(bool locked)
 {
 	if (!locked)
@@ -2909,7 +2949,7 @@ try_again:
 			 __func__, (uintptr_t) func, (uintptr_t) arg);
 		func(arg);
 		slurm_mutex_lock(&mgr.mutex);
-	} else if (!mgr.deferred_funcs) {
+	} else if (!mgr.quiesced) {
 		if (workq_add_work(mgr.workq, func, arg, tag)) {
 			/* catch and handle if this fails but it should not */
 			xassert(false);
@@ -2930,6 +2970,7 @@ try_again:
 			.arg = arg,
 			.tag = tag,
 		};
+
 		list_append(mgr.deferred_funcs, df);
 	}
 
