@@ -108,7 +108,7 @@ static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
 	return SLURM_SUCCESS;
 }
 
-void *_forward_thread(void *arg)
+static void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
@@ -399,7 +399,7 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 	return SLURM_SUCCESS;
 }
 
-void *_fwd_tree_thread(void *arg)
+static void *_fwd_tree_thread(void *arg)
 {
 	fwd_tree_t *fwd_tree = (fwd_tree_t *)arg;
 	List ret_list = NULL;
