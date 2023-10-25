@@ -24,6 +24,13 @@ autom4te.cache
 /contribs/perlapi/libslurmdb/perl/Makefile.PL
 /cscope.files
 /cscope.out
+/debian/autoreconf.*
+/debian/.debhelper
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.log
+/debian/*.substvars
+/debian/tmp
 /doc/html/*.html
 !/doc/html/review_release.html
 /etc/cgroup.release_common.example
