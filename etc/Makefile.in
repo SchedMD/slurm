@@ -476,9 +476,9 @@ edit = sed \
 	-e 's|@SYSTEMD_TASKSMAX_OPTION[@]|$(SYSTEMD_TASKSMAX_OPTION)|g'
 
 noinst_DATA = $(ETC_FILES)
-@WITH_SYSTEMD_UNITS_TRUE@systemdsystemunit_DATA = slurmctld.service \
-@WITH_SYSTEMD_UNITS_TRUE@	slurmdbd.service slurmd.service \
-@WITH_SYSTEMD_UNITS_TRUE@	$(am__append_1)
+@WITH_SYSTEMD_UNITS_TRUE@systemdsystemunit_DATA = sackd.service \
+@WITH_SYSTEMD_UNITS_TRUE@	slurmctld.service slurmdbd.service \
+@WITH_SYSTEMD_UNITS_TRUE@	slurmd.service $(am__append_1)
 all: all-am
 
 .SUFFIXES:
