@@ -186,6 +186,18 @@ Depends:
 Description: Slurm PMI library implementation
   The Slurm PMI library.
 
+Package: slurm-smd-libpmi2-0
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends:
+  slurm-smd (= ${binary:Version}),
+  ${shlibs:Depends},
+  ${misc:Depends}
+Description: Slurm PMI2 library implementation
+  The Slurm PMI2 library.  For systems using Slurm, this version is preferred
+  over the compatibility libraries shipped by the PMIx project.
+
 Package: slurm-smd-libslurm-perl
 Section: perl
 Architecture: any
