@@ -9,6 +9,7 @@ override_dh_auto_clean:
 	dh_auto_clean
 	rm -rvf $(CURDIR)/debian/slurm-smd.install
 	rm -rvf $(CURDIR)/debian/slurm-smd-dev.install
+	rm -rvf $(CURDIR)/debian/*.service
 
 override_dh_update_autotools_config:
 
@@ -17,7 +18,8 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	# Run with --disable-debug to allow optimizations, -g is still provided
 	# by dpkg-buildflags.
-	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-slurmrestd --with-pmix SUCMD=/bin/su SLEEP_CMD=/bin/sleep
+	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-slurmrestd --with-pmix --with-systemdsystemunitdir SUCMD=/bin/su SLEEP_CMD=/bin/sleep
+>>>>>>> ce3cdd40c7 (Add systemd unit files to relevant packages.)
 
 override_dh_auto_install:
 	dh_auto_install
@@ -28,5 +30,24 @@ override_dh_auto_install:
 
 	find debian/tmp/usr/include/slurm/ -type f > debian/slurm-smd-dev.install
 	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
+
+	# Place systemd unit files where debian packaging will pick them up.
+	mv -v debian/tmp/lib/systemd/system/slurmctld.service debian/slurm-smd-slurmctld.slurmctld.service
+	mv -v debian/tmp/lib/systemd/system/slurmd.service debian/slurm-smd-slurmd.slurmd.service
+	mv -v debian/tmp/lib/systemd/system/slurmdbd.service debian/slurm-smd-slurmdbd.slurmdbd.service
+	mv -v debian/tmp/lib/systemd/system/slurmrestd.service debian/slurm-smd-slurmrestd.slurmrestd.service
+
+override_dh_installinit:
+	dh_installinit -pslurm-smd-slurmctld --name=slurmctld
+	dh_installinit -pslurm-smd-slurmd --name=slurmd
+	dh_installinit -pslurm-smd-slurmdbd --name=slurmdbd
+	dh_installinit -pslurm-smd-slurmrestd --name=slurmrestd
+
+override_dh_installsystemd:
+	dh_installsystemd -pslurm-smd-slurmctld --name=slurmctld
+	dh_installsystemd -pslurm-smd-slurmd --name=slurmd
+	dh_installsystemd -pslurm-smd-slurmdbd --name=slurmdbd
+	dh_installsystemd -pslurm-smd-slurmrestd --name=slurmrestd
+
 
 override_dh_auto_test:
