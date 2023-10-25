@@ -2248,7 +2248,15 @@ extern int conmgr_run(bool blocking)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	xassert(!mgr.shutdown);
+	if (mgr.shutdown) {
+		log_flag(NET, "%s: refusing to run when conmgr is shutdown",
+			 __func__);
+
+		rc = mgr.error;
+		slurm_mutex_unlock(&mgr.mutex);
+		return rc;
+	}
+
 	xassert(!mgr.error);
 	_requeue_deferred_funcs();
 	slurm_mutex_unlock(&mgr.mutex);
