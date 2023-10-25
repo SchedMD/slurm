@@ -228,8 +228,10 @@ extern int main(int argc, char **argv)
 		xfree(user);
 	}
 
-	auth_g_init();
-	hash_g_init();
+	if (auth_g_init())
+		fatal("auth_g_init() failed");
+	if (hash_g_init())
+		fatal("hash_g_init() failed");
 
 	if (registered)
 		_listen_for_reconf();
