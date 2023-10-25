@@ -2257,7 +2257,7 @@ extern int conmgr_run(bool blocking)
 		return rc;
 	}
 
-	xassert(!mgr.error);
+	xassert(!mgr.error || !mgr.exit_on_error);
 	_requeue_deferred_funcs();
 	slurm_mutex_unlock(&mgr.mutex);
 
