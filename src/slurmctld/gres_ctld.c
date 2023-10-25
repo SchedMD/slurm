@@ -1265,8 +1265,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 		if (!(gres_js->gres_per_bit_alloc &&
 		      gres_js->gres_per_bit_alloc[node_offset]) &&
 		    (gres_js->gres_bit_alloc &&
-		     gres_js->gres_bit_alloc[node_offset] &&
-		     bit_set_count(gres_js->gres_bit_alloc[node_offset]))) {
+		     gres_js->gres_bit_alloc[node_offset])) {
 			error("gres/%s: job %u dealloc node %s where gres shared but there is no gres_per_bit_alloc",
 			      gres_name, job_id, node_name);
 			return SLURM_ERROR;
