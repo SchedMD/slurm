@@ -2266,8 +2266,7 @@ extern int conmgr_run(bool blocking)
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching)
-			workq_add_work(mgr.workq, _watch, NULL,
-				       "conmgr::_watch()");
+			_queue_func(true, _watch, NULL, "conmgr::_watch()");
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
