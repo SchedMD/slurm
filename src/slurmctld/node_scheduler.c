@@ -2949,6 +2949,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_extra = job_ptr->extra;
 	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
 	cred_arg->job_licenses = job_ptr->licenses;
+	cred_arg->job_node_addrs = job_ptr->node_addrs;
 	cred_arg->job_reservation = job_ptr->resv_name;
 	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
 	cred_arg->job_selinux_context = job_ptr->selinux_context;
@@ -2977,13 +2978,6 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_nhosts = resrcs->nhosts;
 		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
 		cred_arg->sockets_per_node = resrcs->sockets_per_node;
-
-		if (job_ptr->node_addrs) {
-			cred_arg->job_node_addrs =
-				xcalloc(resrcs->nhosts, sizeof(slurm_addr_t));
-			memcpy(cred_arg->job_node_addrs, job_ptr->node_addrs,
-			       resrcs->nhosts * sizeof(slurm_addr_t));
-		}
 	}
 
 	if (job_ptr->part_ptr)
