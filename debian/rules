@@ -56,18 +56,20 @@ override_dh_auto_install:
 	mv -v debian/tmp/lib/systemd/system/slurmd.service debian/slurm-smd-slurmd.slurmd.service
 	mv -v debian/tmp/lib/systemd/system/slurmdbd.service debian/slurm-smd-slurmdbd.slurmdbd.service
 	mv -v debian/tmp/lib/systemd/system/slurmrestd.service debian/slurm-smd-slurmrestd.slurmrestd.service
+	mv -v debian/tmp/lib/systemd/system/sackd.service debian/slurm-smd-sackd.sackd.service
 
 override_dh_installinit:
 	dh_installinit -pslurm-smd-slurmctld --name=slurmctld
 	dh_installinit -pslurm-smd-slurmd --name=slurmd
 	dh_installinit -pslurm-smd-slurmdbd --name=slurmdbd
 	dh_installinit -pslurm-smd-slurmrestd --name=slurmrestd
+	dh_installinit -pslurm-smd-sackd --name=sackd
 
 override_dh_installsystemd:
 	dh_installsystemd -pslurm-smd-slurmctld --name=slurmctld
 	dh_installsystemd -pslurm-smd-slurmd --name=slurmd
 	dh_installsystemd -pslurm-smd-slurmdbd --name=slurmdbd
 	dh_installsystemd -pslurm-smd-slurmrestd --name=slurmrestd
-
+	dh_installsystemd -pslurm-smd-sackd --name=sackd
 
 override_dh_auto_test:

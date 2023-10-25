@@ -148,6 +148,15 @@ Conflicts:
 Description: Slurm REST API daemon
  Provides a REST interface to Slurm using the REST API daemon slurmrestd.
 
+Package: slurm-smd-sackd
+Architecture: any
+Depends:
+ slurm-smd (= ${binary:Version}),
+ ${shlibs:Depends}
+Description: Slurm authentication daemon.
+ Used on login nodes that are not running slurmd daemons to allow authentication
+ to the cluster.
+
 Package: slurm-smd-sview
 Architecture: any
 Depends:
