@@ -97,10 +97,20 @@ Obsoletes: slurm-plugins <= %{version}
 %define use_libmariadbd_devel %(perl -e '`rpm -q libmariadbd-devel`; print !$?;')
 # Package name from the official MariaDB version
 %define use_MariaDB_devel %(perl -e '`rpm -q MariaDB-devel`; print !$?;')
+# Oracle mysql community
+%define use_mysql_community %(perl -e '`rpm -q mysql-community-devel`; print !$?;')
+# Oracle mysql commercial
+%define use_mysql_commercial %(perl -e '`rpm -q mysql-commercial-devel`; print !$?;')
 
 %if %{with mysql} || %{with cray_network}
 %if 0%{?use_mysql_devel}
 BuildRequires: mysql-devel >= 5.0.0
+%else
+%if 0%{?use_mysql_community}
+BuildRequires: mysql-community-devel >= 5.0.0
+%else
+%if 0%{?use_mysql_commercial}
+BuildRequires: mysql-commercial-devel >= 5.0.0
 %else
 %if 0%{?use_libmariadbd_devel}
 BuildRequires: libmariadbd-devel >= 5.0.0
@@ -109,6 +119,8 @@ BuildRequires: libmariadbd-devel >= 5.0.0
 BuildRequires: MariaDB-devel >= 5.0.0
 %else
 BuildRequires: mariadb-devel >= 5.0.0
+%endif
+%endif
 %endif
 %endif
 %endif
