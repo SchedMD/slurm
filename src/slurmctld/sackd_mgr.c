@@ -154,7 +154,7 @@ extern void sackd_mgr_fini(void)
 extern void sackd_mgr_add_node(slurm_msg_t *msg)
 {
 	sackd_node_t *node = NULL;
-	char *auth_host = auth_g_get_host(msg->auth_cred);
+	char *auth_host = auth_g_get_host(msg);
 
 	slurm_mutex_lock(&sackd_lock);
 	if (!sackd_nodes)

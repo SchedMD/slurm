@@ -14846,7 +14846,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr;
-	char *hostname = auth_g_get_host(msg->auth_cred);
+	char *hostname = auth_g_get_host(msg);
 	char *err_msg = NULL;
 	int rc;
 
@@ -14889,7 +14889,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
-	char *hostname = auth_g_get_host(msg->auth_cred);
+	char *hostname = auth_g_get_host(msg);
 	ListIterator iter;
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;

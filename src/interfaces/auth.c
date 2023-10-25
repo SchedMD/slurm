@@ -408,18 +408,19 @@ extern uid_t auth_g_get_uid(void *cred)
 	return uid;
 }
 
-extern char *auth_g_get_host(void *cred)
+extern char *auth_g_get_host(void *slurm_msg)
 {
-	cred_wrapper_t *wrap = cred;
+	slurm_msg_t *msg = slurm_msg;
+	cred_wrapper_t *wrap = NULL;
 	char *host = NULL;
 
 	xassert(g_context_num > 0);
 
-	if (!wrap)
+	if (!msg || !(wrap = msg->auth_cred))
 		return NULL;
 
 	slurm_rwlock_rdlock(&context_lock);
-	host = (*(ops[wrap->index].get_host))(cred);
+	host = (*(ops[wrap->index].get_host))(wrap);
 	slurm_rwlock_unlock(&context_lock);
 
 	return host;

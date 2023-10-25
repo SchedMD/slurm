@@ -634,7 +634,7 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	slurm_addr_t addr;
 
 	xfree(*alloc_node);
-	if ((*alloc_node = auth_g_get_host(msg->auth_cred)))
+	if ((*alloc_node = auth_g_get_host(msg)))
 		debug3("%s: Using auth hostname for alloc_node: %s",
 		       __func__, *alloc_node);
 	else if (msg->conn) {
@@ -2418,7 +2418,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		req_step_msg->user_id = msg->auth_uid;
 
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
-			char *host = auth_g_get_host(msg->auth_cred);
+			char *host = auth_g_get_host(msg);
 			debug3("%s: [%s] set RPC user_id to %d",
 			       __func__, host, msg->auth_uid);
 			xfree(host);
