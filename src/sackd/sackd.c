@@ -89,6 +89,7 @@ static void _parse_args(int argc, char **argv)
 				long_options, &option_index)) != -1) {
 		switch (c) {
 		case (int) 'f':
+			xfree(conf_file);
 			conf_file = xstrdup(optarg);
 			break;
 		case (int) 'h':
@@ -100,6 +101,7 @@ static void _parse_args(int argc, char **argv)
 			log_alter(logopt, 0, NULL);
 			break;
 		case LONG_OPT_CONF_SERVER:
+			xfree(conf_server);
 			conf_server = xstrdup(optarg);
 			break;
 		default:
