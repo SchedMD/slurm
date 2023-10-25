@@ -3,7 +3,7 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all,-bindnow
 
 %:
-	dh $@ --builddirectory
+	dh $@ --builddirectory --with bash-completion
 
 override_dh_auto_clean:
 	dh_auto_clean
