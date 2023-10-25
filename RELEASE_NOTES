@@ -73,6 +73,7 @@ HIGHLIGHTS
     is new and subject to more change than the long-standing and more stable
     spec file.
  -- switch/hpe_slingshot - Add support for collectives.
+ -- Rename topology/none plugin to topology/default.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -37,9 +37,11 @@
 #include "common_topo.h"
 
 #include "src/common/hostlist.h"
+#include "src/common/node_conf.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 						hostlist_t ***sp_hl,
@@ -80,5 +82,19 @@ extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 	xfree(span);
 	*count = nhl;
 
+	return SLURM_SUCCESS;
+}
+
+extern int common_topo_get_node_addr(char *node_name, char **addr,
+				     char **pattern)
+{
+
+#ifndef HAVE_FRONT_END
+	if (find_node_record(node_name) == NULL)
+		return SLURM_ERROR;
+#endif
+
+	*addr = xstrdup(node_name);
+	*pattern = xstrdup("node");
 	return SLURM_SUCCESS;
 }

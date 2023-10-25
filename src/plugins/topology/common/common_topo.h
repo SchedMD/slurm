@@ -64,5 +64,13 @@ extern int common_topo_split_hostlist_treewidth(
 	hostlist_t ***sp_hl,
 	int *count, uint16_t tree_width);
 
+/*
+ * common_topo_get_node_addr - Build node address and the associated pattern
+ *      based on the topology information in default plugin, only use node name
+ *      as the topology address.
+ */
+extern int common_topo_get_node_addr(char *node_name, char **addr,
+				     char **pattern);
+
 #endif
 

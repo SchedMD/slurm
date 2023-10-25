@@ -92,10 +92,7 @@ extern int topology_g_init(void)
 	if (plugin_inited)
 		goto done;
 
-	if (!slurm_conf.topology_plugin) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
+	xassert(slurm_conf.topology_plugin);
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.topology_plugin,
@@ -136,9 +133,6 @@ extern int topology_g_build_config(void)
 
 	xassert(plugin_inited);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
-
 	START_TIMER;
 	rc = (*(ops.build_config))();
 	END_TIMER3(__func__, 20000);
@@ -154,9 +148,6 @@ extern bool topology_g_generate_node_ranking(void)
 {
 	xassert(plugin_inited);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return false;
-
 	return (*(ops.node_ranking))();
 }
 
@@ -164,17 +155,6 @@ extern int topology_g_get_node_addr(char *node_name, char **addr,
 				    char **pattern)
 {
 	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP) {
-#ifndef HAVE_FRONT_END
-		if (find_node_record(node_name) == NULL)
-			return SLURM_ERROR;
-#endif
-
-		*addr = xstrdup(node_name);
-		*pattern = xstrdup("node");
-		return SLURM_SUCCESS;
-	}
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }
