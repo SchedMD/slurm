@@ -256,6 +256,7 @@ documents those changes that are of interest to users and administrators.
     forwarding; previously the specified fanout was only used on the first hop,
     and additional hops used TreeWidth in slurm.conf.
  -- slurmrestd - remove logger prefix from '-s/-a list' options outputs.
+ -- Fix fd socket name resolution which could flood log files at debug level.
 
 * Changes in Slurm 23.02.7
 ==========================

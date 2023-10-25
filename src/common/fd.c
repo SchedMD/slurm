@@ -326,17 +326,16 @@ extern char *fd_resolve_path(int fd)
 	char *path = NULL;
 
 #if defined(__linux__)
-	char *ret = NULL;
-	path = xstrdup_printf("/proc/self/fd/%u", fd);
-	ret = realpath(path, NULL);
-	if (!ret) {
-		debug("%s: realpath(%s) failed: %m", __func__,  path);
-	} else {
-		resolved = xstrdup(ret);
-		free(ret);
-	}
-#endif
+	char ret[PATH_MAX + 1];
 
+	path = xstrdup_printf("/proc/self/fd/%u", fd);
+	memset(ret, 0, (PATH_MAX + 1));
+
+	if (readlink(path, ret, PATH_MAX) < 0)
+		debug("%s: readlink(%s) failed: %m", __func__,  path);
+	else
+		resolved = xstrdup(ret);
+#endif
 	// TODO: use fcntl(fd, F_GETPATH, filePath) on macOS
 
 	xfree(path);

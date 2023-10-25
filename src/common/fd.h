@@ -115,15 +115,15 @@ int fd_get_socket_error(int fd, int *err);
 /*
  * Expand symlink for the specified file descriptor from /proc/self/fd/
  *
- * References to /./, /../ and extra characters are resolved and a
- * null-terminated string is produced pointing to an absolute pathname up to a
- * maximum of PATH_MAX bytes.
+ * A NULL-terminated string with the contents of the symlink is produced,
+ * with a maximum of PATH_MAX + 1 bytes. For a socket/pipe it will contain the
+ * name. For regular files or fds it will contain a path.
  *
  * The caller should deallocate the returned string using xfree().
  *
  * IN fd - file descriptor to resolve symlink from
- * RET ptr to a string to an absolute path, without any symbolic link, /./ or
- * /../ components. NULL if path cannot be resolved.
+ * RET ptr to a string with the contents of the symlink. NULL if fd path cannot
+ * be resolved.
  *
  */
 extern char *fd_resolve_path(int fd);
