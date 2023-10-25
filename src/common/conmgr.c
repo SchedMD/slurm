@@ -2898,6 +2898,7 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+try_again:
 	if (mgr.shutdown) {
 		/*
 		 * Mgr is shutdown so workq will reject new work. Need to unlock
@@ -2910,8 +2911,12 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 		func(arg);
 		slurm_mutex_lock(&mgr.mutex);
 	} else if (!mgr.deferred_funcs) {
-		/* this should never fail here */
-		workq_add_work(mgr.workq, func, arg, tag);
+		if (workq_add_work(mgr.workq, func, arg, tag)) {
+			/* catch and handle if this fails but it should not */
+			xassert(false);
+			mgr.shutdown = true;
+			goto try_again;
+		}
 	} else {
 		/*
 		 * Defer all funcs until conmgr_run() as adding new connections
