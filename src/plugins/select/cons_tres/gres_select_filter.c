@@ -1003,7 +1003,7 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 				   bool use_single_dev, int node_inx, int s,
 				   uint64_t *gres_needed, int *topo_index)
 {
-	int cnt_to_alloc, cnt_avail;
+	uint64_t cnt_to_alloc, cnt_avail;
 	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = sock_gres->gres_state_node->gres_data;
 

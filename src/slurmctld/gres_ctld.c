@@ -178,11 +178,11 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 	return gres_js;
 }
 
-static int _get_sharing_cnt_from_shared_cnt(gres_job_state_t *gres_js,
-					    bitstr_t *left_over_bits,
-					    int n, int shared_cnt)
+static uint64_t _get_sharing_cnt_from_shared_cnt(gres_job_state_t *gres_js,
+						 bitstr_t *left_over_bits,
+						 int n, int64_t shared_cnt)
 {
-	int sharing_cnt = 0;
+	uint64_t sharing_cnt = 0;
 
 	if (!gres_js->gres_per_bit_alloc || !gres_js->gres_per_bit_alloc[n]) {
 		error("Allocated shared gres with no gres_per_bit_alloc");
@@ -199,10 +199,10 @@ static int _get_sharing_cnt_from_shared_cnt(gres_job_state_t *gres_js,
 	return sharing_cnt;
 }
 
-static int _cnt_topo_gres(gres_job_state_t *gres_js, int n,
+static uint64_t _cnt_topo_gres(gres_job_state_t *gres_js, int n,
 			  bitstr_t *topo_gres_bitmap)
 {
-	int gres_cnt = 0;
+	uint64_t gres_cnt = 0;
 
 	if (gres_js->gres_per_bit_alloc && gres_js->gres_per_bit_alloc[n]) {
 		for (int i = 0;

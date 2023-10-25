@@ -680,7 +680,7 @@ static int _parse_gpu_request(char *in_str)
 static void _implicitly_bind_tres_per_task(slurm_opt_t *opt_local,
 					   char *name)
 {
-	int count;
+	uint64_t count;
 	char *sep, *end;
 
 	if (opt_local->tres_bind && xstrstr(opt_local->tres_bind, name))
@@ -696,7 +696,7 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt_local,
 			count = slurm_atoul(sep);
 			if (count > 0) {
 				xstrfmtcat(opt_local->tres_bind,
-					   "%s:per_task:%d", name, count);
+					   "%s:per_task:%"PRIu64, name, count);
 				break;
 			}
 		}

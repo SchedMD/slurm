@@ -9402,7 +9402,7 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 static void _filter_gres_per_task(bitstr_t *test_gres,
 				  bitstr_t *gres_bit_avail,
 				  bitstr_t *usable_gres,
-				  uint32_t *gres_needed,
+				  uint64_t *gres_needed,
 				  bool set_usable_gres)
 {
 	for (int bit = 0;
@@ -9422,12 +9422,12 @@ static void _filter_gres_per_task(bitstr_t *test_gres,
  * RET usable_gres
  */
 static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
-				    uint32_t gres_per_task,
+				    uint64_t gres_per_task,
 				    stepd_step_rec_t *step,
 				    uint32_t plugin_id,
 				    int local_proc_id)
 {
-	uint32_t gres_needed;
+	uint64_t gres_needed;
 	bitstr_t *usable_gres, *gres_bit_avail, *closest_gres = NULL;
 
 	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
@@ -9456,7 +9456,7 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 					      (i == local_proc_id));
 
 		if (gres_needed) {
-			error("Not enough gres to bind %d per task",
+			error("Not enough gres to bind %"PRIu64" per task",
 			      gres_per_task);
 			break;
 		}
@@ -9468,14 +9468,14 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 static void _filter_shared_gres_per_task(bitstr_t *test_gres,
 					 bitstr_t *usable_gres,
 					 uint64_t *gres_per_bit_avail,
-					 uint32_t *gres_needed,
+					 uint64_t *gres_needed,
 					 bool use_single_dev,
 					 bool set_usable_gres)
 {
 	for (int bit = 0;
 	     *gres_needed && (bit = bit_ffs_from_bit(test_gres, bit)) >= 0;
 	     bit++) {
-		int dec = MIN(gres_per_bit_avail[bit], *gres_needed);
+		uint64_t dec = MIN(gres_per_bit_avail[bit], *gres_needed);
 
 		if (dec < (use_single_dev ? *gres_needed : 1))
 			continue;
@@ -9495,12 +9495,12 @@ static void _filter_shared_gres_per_task(bitstr_t *test_gres,
  */
 static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 					   uint64_t *gres_per_bit,
-					   uint32_t gres_per_task,
+					   uint64_t gres_per_task,
 					   stepd_step_rec_t *step,
 					   uint32_t sharing_plugin_id,
 					   int local_proc_id)
 {
-	uint32_t gres_needed;
+	uint64_t gres_needed;
 	bitstr_t *usable_gres, *closest_gres;
 	uint64_t *gres_per_bit_avail;
 
@@ -9557,7 +9557,7 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 						     (i == local_proc_id));
 		FREE_NULL_BITMAP(closest_gres);
 		if (gres_needed) {
-			error("Not enough shared gres to bind %d per task",
+			error("Not enough shared gres to bind %"PRIu64" per task",
 			      gres_per_task);
 			break;
 		}
