@@ -353,6 +353,7 @@ static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 			     conmgr_work_status_t status, const char *tag,
 			     void *arg);
+static void _requeue_deferred_funcs(void);
 
 /*
  * Find by matching fd to connection
@@ -2217,6 +2218,30 @@ watch:
 	}
 }
 
+/*
+ * Re-queue all deferred functions
+ * WARNING: caller must hold mgr.mutex
+ */
+static void _requeue_deferred_funcs(void)
+{
+	list_t *deferred_funcs = NULL;
+	deferred_func_t *df;
+
+	if (!mgr.deferred_funcs)
+		return;
+
+	SWAP(deferred_funcs, mgr.deferred_funcs);
+
+	while ((df = list_pop(deferred_funcs))) {
+		_queue_func(true, df->func, df->arg, df->tag);
+		xassert(df->magic == MAGIC_DEFERRED_FUNC);
+		df->magic = ~MAGIC_DEFERRED_FUNC;
+		xfree(df);
+	}
+
+	FREE_NULL_LIST(deferred_funcs);
+}
+
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
@@ -2225,19 +2250,7 @@ extern int conmgr_run(bool blocking)
 
 	xassert(!mgr.shutdown);
 	xassert(!mgr.error);
-
-	if (mgr.deferred_funcs) {
-		list_t *deferred_funcs = NULL;
-		deferred_func_t *df;
-
-		SWAP(deferred_funcs, mgr.deferred_funcs);
-		while ((df = list_pop(deferred_funcs))) {
-			_queue_func(true, df->func, df->arg, df->tag);
-			df->magic = ~MAGIC_DEFERRED_FUNC;
-			xfree(df);
-		}
-		FREE_NULL_LIST(deferred_funcs);
-	}
+	_requeue_deferred_funcs();
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (blocking) {
