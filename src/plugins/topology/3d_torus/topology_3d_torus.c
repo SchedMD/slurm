@@ -48,6 +48,8 @@
 #include "src/common/node_conf.h"
 #include "src/common/xstring.h"
 
+#include "../common/common_topo.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -132,4 +134,11 @@ extern int topology_g_get_node_addr(char *node_name, char **paddr,
 	*paddr = xstrdup(node_name);
 	*ppattern = xstrdup("node");
 	return SLURM_SUCCESS;
+}
+
+extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width)
+{
+	return common_topo_split_hostlist_treewidth(
+		hl, sp_hl, count, tree_width);
 }

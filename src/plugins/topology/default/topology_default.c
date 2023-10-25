@@ -104,3 +104,10 @@ extern int topology_g_get_node_addr(
 {
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }
+
+extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width)
+{
+	return common_topo_split_hostlist_treewidth(
+		hl, sp_hl, count, tree_width);
+}

@@ -5918,6 +5918,13 @@ network topology.
 .IP
 
 .TP
+\fBRouteTree\fR
+Use the switch hierarchy defined in a \fItopology.conf\fR file for routing
+instead of just scheduling.
+Valid when TopologyPlugin=topology/tree.
+.IP
+
+.TP
 \fBTopoOptional\fR
 Only optimize allocation for network topology if the job includes a switch
 option. Since optimizing resource allocation for topology involves much higher

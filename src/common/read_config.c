@@ -5478,6 +5478,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				   conf->comm_params ? "," : "", legacy_var);
 	}
 
+	if (s_p_get_string(&temp_str, "RoutePlugin", hashtbl)) {
+		if (xstrcasestr(temp_str, "tree")) {
+			xstrfmtcat(conf->topology_param, "%sRouteTree",
+				   conf->topology_param ? "," : "");
+		}
+		xfree(temp_str);
+	}
+
 	if (!s_p_get_string(&conf->topology_plugin,
 			    "TopologyPlugin", hashtbl)) {
 #if defined HAVE_3D

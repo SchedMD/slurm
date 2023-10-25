@@ -72,5 +72,11 @@ extern int common_topo_split_hostlist_treewidth(
 extern int common_topo_get_node_addr(char *node_name, char **addr,
 				     char **pattern);
 
+/*
+ * common_topo_route_tree - Return true if TopologyParam=RouteTree, false
+ *                          otherwise.
+ */
+extern bool common_topo_route_tree(void);
+
 #endif
 

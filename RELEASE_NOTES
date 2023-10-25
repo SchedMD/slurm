@@ -107,6 +107,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Cray XC support has been deprecated. Use '--enable-deprecated' to allow the
     the build to continue. Sites are encouraged to contact SchedMD about the EOL
     date for Cray XC support.
+ -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -98,3 +98,16 @@ extern int common_topo_get_node_addr(char *node_name, char **addr,
 	*pattern = xstrdup("node");
 	return SLURM_SUCCESS;
 }
+
+extern bool common_topo_route_tree(void)
+{
+	static int route_tree = -1;
+	if (route_tree == -1) {
+		if (xstrcasestr(slurm_conf.topology_param, "routetree"))
+			route_tree = true;
+		else
+			route_tree = false;
+	}
+
+	return route_tree;
+}
