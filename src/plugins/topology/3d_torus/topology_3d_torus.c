@@ -126,14 +126,7 @@ extern bool topology_g_generate_node_ranking(void)
 extern int topology_g_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern)
 {
-#ifndef HAVE_FRONT_END
-	if (find_node_record(node_name) == NULL)
-		return SLURM_ERROR;
-#endif
-
-	*paddr = xstrdup(node_name);
-	*ppattern = xstrdup("node");
-	return SLURM_SUCCESS;
+	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }
 
 extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
