@@ -2013,6 +2013,23 @@ cleanup:
 }
 
 /*
+ * Wait for _watch() to finish
+ *
+ * WARNING: caller must hold mgr.mutex
+ * WARNING: mgr.mutex will be released by this call
+ */
+static void _wait_for_watch(void)
+{
+	if (!mgr.watching)
+		return;
+
+	slurm_mutex_lock(&mgr.watch_mutex);
+	slurm_mutex_unlock(&mgr.mutex);
+	slurm_cond_wait(&mgr.watch_cond, &mgr.watch_mutex);
+	slurm_mutex_unlock(&mgr.watch_mutex);
+}
+
+/*
  * Poll all connections and handle any events
  * IN blocking - non-zero if blocking
  */
@@ -2033,10 +2050,7 @@ static void _watch(void *blocking)
 
 	if (mgr.watching) {
 		if (blocking) {
-			slurm_mutex_lock(&mgr.watch_mutex);
-			slurm_mutex_unlock(&mgr.mutex);
-			slurm_cond_wait(&mgr.watch_cond, &mgr.watch_mutex);
-			slurm_mutex_unlock(&mgr.watch_mutex);
+			_wait_for_watch();
 		} else {
 			slurm_mutex_unlock(&mgr.mutex);
 		}
