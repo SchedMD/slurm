@@ -88,6 +88,23 @@ const bool hash_enable = true;
 bool internal = false;
 bool use_client_ids = false;
 
+static void _run_sack_maybe(void)
+{
+	bool run_sack = true;
+
+	if (xstrstr(slurm_conf.authinfo, "disable_sack"))
+		run_sack = false;
+
+	if (running_in_sackd())
+		run_sack = true;
+
+	if (getenv("SLURM_CONFIG_FETCH"))
+		run_sack = false;
+
+	if (run_sack)
+		init_sack_conmgr();
+}
+
 extern int init(void)
 {
 	static bool init_run = false;
@@ -105,8 +122,7 @@ extern int init(void)
 	if (internal) {
 		debug("running as daemon");
 		init_internal();
-		if (!getenv("SLURM_CONFIG_FETCH"))
-			init_sack_conmgr();
+		_run_sack_maybe();
 	} else {
 		debug("running as client");
 	}
