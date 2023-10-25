@@ -104,7 +104,7 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred)
 	errno = 0;
 	hostname = jwt_get_grant(jwt, "host");
 	if (!hostname || (errno == EINVAL)) {
-		error("%s: jwt_get_grant_int failure for host", __func__);
+		error("%s: jwt_get_grant failure for host", __func__);
 		return SLURM_ERROR;
 	}
 	cred->hostname = xstrdup(hostname);
@@ -115,7 +115,7 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred)
 	errno = 0;
 	context = jwt_get_grant(jwt, "context");
 	if (!context || (errno == EINVAL)) {
-		error("%s: jwt_get_grant_int failure for context", __func__);
+		error("%s: jwt_get_grant failure for context", __func__);
 		return SLURM_ERROR;
 	}
 	cred->context = xstrdup(context);
