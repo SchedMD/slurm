@@ -936,7 +936,7 @@ extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *alias_addrs)
 	slurm_mutex_unlock(&alias_addrs_mutex);
 }
 
-void destroy_data_info(void *object)
+extern void destroy_data_info(void *object)
 {
 	ret_data_info_t *ret_data_info = object;
 	if (ret_data_info) {
@@ -947,7 +947,7 @@ void destroy_data_info(void *object)
 	}
 }
 
-void destroy_forward(forward_t *forward)
+extern void destroy_forward(forward_t *forward)
 {
 	if (forward->init == FORWARD_INIT) {
 		slurm_free_node_alias_addrs_members(&forward->alias_addrs);
@@ -958,7 +958,7 @@ void destroy_forward(forward_t *forward)
 	}
 }
 
-void destroy_forward_struct(forward_struct_t *forward_struct)
+extern void destroy_forward_struct(forward_struct_t *forward_struct)
 {
 	if (forward_struct) {
 		xfree(forward_struct->buf);
