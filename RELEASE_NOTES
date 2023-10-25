@@ -67,6 +67,8 @@ HIGHLIGHTS
     required sql development libraries to build and the existence of this option
     was confusing. The default behavior now is to always require one of the sql
     development libraries.
+ -- The reference slurmctld and slurmdbd service files now run under User=slurm
+    and Group=slurm. (These are installed automatically for RPMs.)
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
