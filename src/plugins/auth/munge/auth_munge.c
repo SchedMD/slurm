@@ -365,6 +365,14 @@ char *auth_p_get_host(auth_credential_t *cred)
 	sin->sin_addr.s_addr = cred->addr.s_addr;
 
 	/*
+	 * If the address is under 127.0.0.0/8 this is some variety of
+	 * localhost that MUNGE packed from the remote site.
+	 * Return NULL since this data will be useless.
+	 */
+	if ((ntohl(sin->sin_addr.s_addr) & 0xff000000) == 0x7f000000)
+		return NULL;
+
+	/*
 	 * For IPv6-native systems, MUNGE always reports the host as 0.0.0.0
 	 * which will never resolve successfully. So don't even bother trying.
 	 */
