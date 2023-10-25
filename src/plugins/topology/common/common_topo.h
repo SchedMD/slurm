@@ -39,5 +39,30 @@
 
 #include <slurm/slurm.h>
 
+/*
+ * common_topo_split_hostlist_treewidth - logic to split an input hostlist into
+ *                                  a set of hostlists to forward to.
+ *
+ * This is the default behavior. It is implemented here as there are cases
+ * where the topology version also needs to split the message list based
+ * on TreeWidth.
+ *
+ * IN: hl        - hostlist_t *   - list of every node to send message to
+ *                                  will be empty on return which is same
+ *                                  behavior as similar code replaced in
+ *                                  forward.c
+ * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
+ * OUT: count    - int *          - the count of created hostlists
+ * RET: SLURM_SUCCESS - int
+ *
+ * Note: created hostlist will have to be freed independently using
+ *       hostlist_destroy by the caller.
+ * Note: the hostlist_t array will have to be xfree.
+ */
+extern int common_topo_split_hostlist_treewidth(
+	hostlist_t *hl,
+	hostlist_t ***sp_hl,
+	int *count, uint16_t tree_width);
+
 #endif
 

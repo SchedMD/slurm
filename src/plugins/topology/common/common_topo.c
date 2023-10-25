@@ -36,3 +36,49 @@
 
 #include "common_topo.h"
 
+#include "src/common/hostlist.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+
+extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
+						hostlist_t ***sp_hl,
+						int *count, uint16_t tree_width)
+{
+	int host_count;
+	int *span = NULL;
+	char *name = NULL;
+	char *buf;
+	int nhl = 0;
+	int j;
+
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	host_count = hostlist_count(hl);
+	span = set_span(host_count, tree_width);
+	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
+
+	while ((name = hostlist_shift(hl))) {
+		(*sp_hl)[nhl] = hostlist_create(name);
+		free(name);
+		for (j = 0; span && (j < span[nhl]); j++) {
+			name = hostlist_shift(hl);
+			if (!name) {
+				break;
+			}
+			hostlist_push_host((*sp_hl)[nhl], name);
+			free(name);
+		}
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+			buf = hostlist_ranged_string_xmalloc((*sp_hl)[nhl]);
+			debug("ROUTE: ... sublist[%d] %s", nhl, buf);
+			xfree(buf);
+		}
+		nhl++;
+	}
+	xfree(span);
+	*count = nhl;
+
+	return SLURM_SUCCESS;
+}
