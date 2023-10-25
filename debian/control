@@ -209,3 +209,16 @@ Conflicts: libslurmdb-perl
 Description: Perl API for Slurm
   This package includes the perl API to provide a helpful interface to Slurm
   through Perl
+
+Package: slurm-smd-torque
+Architecture: all
+Depends:
+ slurm-smd (>= ${source:Version}),
+ slurm-smd-libslurm-perl (>= ${source:Version}),
+ libswitch-perl,
+ ${shlibs:Depends},
+ ${perl:Depends},
+ ${misc:Depends}
+Conflicts: gridengine-client, torque-client, torque-client-x11
+Description: Torque compatibility wrappers for Slurm
+  Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm

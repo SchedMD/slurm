@@ -25,10 +25,10 @@ override_dh_auto_install:
 
 	rm -r debian/tmp/usr/lib/*/slurm/src
 
-	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" -not -name "libpmi*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd.install
+	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" -not -name "libpmi*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd.install
 
 	find debian/tmp/usr/include/slurm/ -type f > debian/slurm-smd-dev.install
-	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" -not -name "libpmi*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
+	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" -not -name "libpmi*" -not -name "*_pbs*" -not -path "*/perl*/* | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
 
 	# Build for libpam-slurm-adopt package
 	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/pam_slurm_adopt install DESTDIR=$(CURDIR)/debian/tmp
@@ -41,6 +41,9 @@ override_dh_auto_install:
 
 	# Build for libpmi2-0 package
 	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/pmi2 install DESTDIR=$(CURDIR)/debian/tmp
+
+	# Build torque wrappers
+	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/torque install DESTDIR=$(CURDIR)/debian/tmp
 
 	# Place systemd unit files where debian packaging will pick them up.
 	mv -v debian/tmp/lib/systemd/system/slurmctld.service debian/slurm-smd-slurmctld.slurmctld.service
