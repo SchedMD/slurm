@@ -1,5 +1,7 @@
 debian/tmp/lib/security/pam_slurm_adopt.a
 debian/tmp/lib/security/pam_slurm_adopt.la
+debian/tmp/usr/lib/*/libnss_slurm.a
+debian/tmp/usr/lib/*/libnss_slurm.la
 debian/tmp/usr/lib/*/libpmi.a
 debian/tmp/usr/lib/*/libpmi.la
 debian/tmp/usr/lib/*/libpmi2.a
