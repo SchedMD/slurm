@@ -1,0 +1,3 @@
+debian/tmp/usr/share/man/man3/Slurm.3pm
+debian/tmp/usr/share/man/man3/Slurm::*.3pm
+debian/tmp/usr/share/man/man3/Slurmdb.3pm

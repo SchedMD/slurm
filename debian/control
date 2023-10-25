@@ -174,3 +174,15 @@ Description: Slurm's pam_slurm_adopt module
   use.  Access is granted to root, any user with an Slurm-launched job currently
   running on the node, or any user who has allocated resources on the node
   according to the Slurm
+
+Package: slurm-smd-libslurm-perl
+Section: perl
+Architecture: any
+Depends:
+ ${perl:Depends},
+ ${misc:Depends},
+ ${shlibs:Depends}
+Conflicts: libslurmdb-perl
+Description: Perl API for Slurm
+  This package includes the perl API to provide a helpful interface to Slurm
+  through Perl
