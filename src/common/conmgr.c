@@ -770,8 +770,8 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 				/* out of options to query */
 				outfd = xstrdup_printf("fd:%u", output_fd);
 
-			xstrfmtcat(con->name, "%s->%s", unix_socket_path,
-				   outfd);
+			xstrfmtcat(con->name, "%s->%s (fd %u)",
+				   source->unix_socket, outfd, output_fd);
 
 			xfree(outfd);
 		}
@@ -797,8 +797,8 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 				/* out of options to query */
 				outfd = xstrdup_printf("fd:%u", output_fd);
 
-			xstrfmtcat(con->name, "%s->%s", source->unix_socket,
-				   outfd);
+			xstrfmtcat(con->name, "%s->%s (fd %u)",
+				   source->unix_socket, outfd, output_fd);
 
 			xfree(outfd);
 		}
