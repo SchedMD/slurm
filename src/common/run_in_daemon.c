@@ -90,7 +90,7 @@ extern bool running_in_daemon(void)
 {
 	static bool run = false, set = false;
 	return run_in_daemon(&run, &set,
-			     "slurmctld,slurmd,slurmdbd,slurmstepd,slurmrestd");
+			     "sackd,slurmctld,slurmd,slurmdbd,slurmstepd,slurmrestd");
 }
 
 static bool _running_in_slurmctld(bool reset)
