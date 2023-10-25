@@ -146,6 +146,7 @@ static int _sack_create(con_mgr_fd_t *con, buf_t *in)
 	con_mgr_fd_xfer_out_buffer(con, out);
 
 	FREE_NULL_BUFFER(out);
+	xfree(data);
 	xfree(extra);
 	xfree(token);
 	return SLURM_SUCCESS;
