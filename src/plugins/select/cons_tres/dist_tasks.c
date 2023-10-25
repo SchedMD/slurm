@@ -1565,8 +1565,9 @@ extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
 					 avail_cpus[n], n);
 				job_res->cpus[n] = avail_cpus[n];
 			} else {
-				log_flag(SELECT_TYPE, "%pJ: Setting job_res->cpus to gres_min_cpus (%u) for node %u",
-					 job_ptr, gres_min_cpus[n], n);
+				log_flag(SELECT_TYPE, "%pJ: Changing job_res->cpus from %u to gres_min_cpus %u for node %u",
+					 job_ptr, job_res->cpus[n],
+					 gres_min_cpus[n], n);
 				job_res->cpus[n] = gres_min_cpus[n];
 			}
 		}
