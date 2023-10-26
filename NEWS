@@ -265,6 +265,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Add support for collectives.
  -- Nodes with suspended jobs can now be displayed as MIXED.
  -- sview - Fix search by node state returning incorrect node list.
+ -- Fix inconsistent handling of using cli and/or environment options for
+    tres_per_task=cpu:# and cpus_per_gpu.
 
 * Changes in Slurm 23.02.7
 ==========================
