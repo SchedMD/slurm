@@ -280,7 +280,7 @@ function __slurm_compreply_param() {
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
 		[[ ${words[*]} =~ ${p}= ]] && continue
-		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
+		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && [[ $cword == "${#words[@]}" ]] && continue
 		compreply+=("$param")
 	done
 
@@ -854,6 +854,39 @@ function __slurm_gres() {
 	__slurm_ctld_status || return
 
 	local cmd="scontrol -o show config | grep 'GresTypes' | tr -d '[:space:]' | cut -d= -f2 | tr ',' '\n'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get instance extra list
+#
+# RET: space delimited list
+function __slurm_instances_extra() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=extra"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get instance id list
+#
+# RET: space delimited list
+function __slurm_instances_id() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=instanceid"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get instance type list
+#
+# RET: space delimited list
+function __slurm_instances_type() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=instancetype"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -1501,7 +1534,7 @@ function __slurm_linux_gids() {
 function _sacct() {
 	local cur prev words cword split
 	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur' split='$split'"
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	local sched_flags=(
 		"schedsubmit"
@@ -1860,20 +1893,20 @@ function __slurm_comp_sacctmgr_spec_associations() {
 	)
 	local parameters_set=(
 		"defaultqos="
-		"fairshare=" "share="
+		"fairshare="
 		"grpjobs="
 		"grpjobsaccrue="
-		"grpsubmit=" "grpsubmitjobs="
+		"grpsubmitjobs="
 		"grptres="
 		"grptresmins="
 		"grptresrunmins="
 		"grpwall="
 		"maxjobs="
 		"maxjobsaccrue="
-		"maxsubmit=" "maxsubmitjobs="
-		"maxtresmins=" "maxtresminsperjob="
-		"maxtres=" "maxtresperjob="
-		"maxwall=" "maxwalldurationperjob="
+		"maxsubmitjobs="
+		"maxtresminsperjob="
+		"maxtresperjob="
+		"maxwalldurationperjob="
 		"priority="
 		"qoslevel="
 		"qoslevel\+="
@@ -1953,7 +1986,6 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 	name?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	organization?(s)) __slurm_compreply "$(__slurm_organizations)" ;;
 	parent?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
-	rawusage) __slurm_compreply "0" ;;
 	*)
 		[[ $split == "true" ]] && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -2185,7 +2217,9 @@ function __slurm_comp_sacctmgr_spec_instances() {
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	instance?(s)) __slurm_compreply_list "${event_types[*]}" ;;
+	extra) __slurm_compreply_list "$(__slurm_instances_extra)" ;;
+	instanceid) __slurm_compreply_list "$(__slurm_instances_id)" ;;
+	instancetype) __slurm_compreply_list "$(__slurm_instances_type)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		[[ $split == "true" ]] && return
@@ -2266,14 +2300,14 @@ function __slurm_comp_sacctmgr_spec_qos() {
 		"maxjobspu=" "maxjobsperuser="
 		"maxsubmitjobspa=" "maxsubmitjobsperaccount="
 		"maxsubmitjobspu=" "maxsubmitjobsperuser="
-		"maxtres=" "maxtresperjob="
-		"maxtresmins=" "maxtresminsperjob="
+		"maxtresperjob="
+		"maxtresminsperjob="
 		"maxtrespa=" "maxtresperaccount="
 		"maxtrespernode="
 		"maxtrespu=" "maxtresperuser="
-		"maxwall=" "maxwalldurationperjob="
+		"maxwalldurationperjob="
 		"minpriothreshold="
-		"mintres=" "mintresperjob="
+		"mintresperjob="
 		"preempt="
 		"preemptexempttime="
 		"preemptmode="
@@ -2294,6 +2328,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 		"partitionmaxnodes"
 		"partitionminnodes"
 		"partitiontimelimit"
+		"relative"
 		"requiresreservation"
 		"usagefactorsafe"
 	)
@@ -3990,6 +4025,8 @@ function __scontrol_update_partitionname() {
 		"maxtime="
 		"minnodes="
 		"nodes="
+		"nodes\+="
+		"nodes\-="
 		"overtimelimit="
 		"oversubscribe="
 		"partitionname=" # meta
@@ -4047,7 +4084,7 @@ function __scontrol_update_partitionname() {
 	hidden) __slurm_compreply "$(__slurm_boolean)" ;;
 	jobdefault?(s)) __slurm_compreply "${job_defaults[*]}" ;;
 	lln) __slurm_compreply "$(__slurm_boolean)" ;;
-	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	node?(s)?(+|-)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	oversubscribe) __slurm_compreply "${oversubscribe_types[*]}" ;;
 	partitionname) __slurm_compreply "$(__slurm_partitions)" ;;
 	powerdownonidle) __slurm_compreply "$(__slurm_boolean)" ;;
@@ -4099,7 +4136,7 @@ function __scontrol_update_reservationname() {
 		"no_hold_jobs_after"
 		"overlap"
 		"part_nodes"
-		"purge_comp" "purge_comp\\\="
+		"purge_comp"
 		"replace"
 		"replace_down"
 		"spec_nodes"
