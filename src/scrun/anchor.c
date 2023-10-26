@@ -1607,7 +1607,7 @@ extern int spawn_anchor(void)
 	else if (state.requested_terminal)
 		_open_pty();
 
-	init_con_mgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS, callbacks);
+	init_conmgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS, callbacks);
 
 	/* scrun anchor process */
 
@@ -1650,7 +1650,7 @@ done:
 	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));
 
 	FREE_NULL_LIST(socket_listen);
-	free_con_mgr();
+	free_conmgr();
 
 	debug("%s: exit[%d]: %s", __func__, rc, slurm_strerror(rc));
 

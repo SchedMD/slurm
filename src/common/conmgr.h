@@ -176,9 +176,9 @@ typedef enum {
  * IN max_connections - max number of connections or 0 for default
  * IN callbacks - struct containing function pointers
  */
-extern void init_con_mgr(int thread_count, int max_connections,
-			 conmgr_callbacks_t callbacks);
-extern void free_con_mgr(void);
+extern void init_conmgr(int thread_count, int max_connections,
+			conmgr_callbacks_t callbacks);
+extern void free_conmgr(void);
 
 /*
  * Request kernel provide auth credentials for connection

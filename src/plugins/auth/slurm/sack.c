@@ -259,7 +259,7 @@ extern void init_sack_conmgr(void)
 
 	_prepare_run_dir();
 
-	init_con_mgr(0, 0, callbacks);
+	init_conmgr(0, 0, callbacks);
 
 	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
 		fatal("%s: socket() failed: %m", __func__);
@@ -301,5 +301,5 @@ extern void fini_sack_conmgr(void)
 	 * would prevent the current owner from responding.
 	 */
 
-	free_con_mgr();
+	free_conmgr();
 }

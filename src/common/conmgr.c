@@ -467,8 +467,8 @@ static void _fini_signal_handler(void)
 	mgr.signal_handler_count = 0;
 }
 
-extern void init_con_mgr(int thread_count, int max_connections,
-			 conmgr_callbacks_t callbacks)
+extern void init_conmgr(int thread_count, int max_connections,
+			conmgr_callbacks_t callbacks)
 {
 	if (thread_count < 1)
 		thread_count = THREAD_COUNT_DEFAULT;
@@ -591,7 +591,7 @@ static void _close_all_connections(bool locked)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void free_con_mgr(void)
+extern void free_conmgr(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
 	if (mgr.shutdown) {

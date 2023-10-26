@@ -535,8 +535,8 @@ int main(int argc, char **argv)
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
-	init_con_mgr((run_mode.listen ? thread_count : 1), max_connections,
-		     callbacks);
+	init_conmgr((run_mode.listen ? thread_count : 1), max_connections,
+		    callbacks);
 
 	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
 			       "_on_signal_interrupt()");
@@ -673,7 +673,7 @@ int main(int argc, char **argv)
 	destroy_rest_auth();
 	destroy_operations();
 	destroy_openapi();
-	free_con_mgr();
+	free_conmgr();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
