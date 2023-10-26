@@ -47,7 +47,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* Version of the state file */
-#define SLINGSHOT_STATE_VERSION 1
+#define SLINGSHOT_STATE_VERSION 2
+#define SLINGSHOT_STATE_VERSION_VER1 1
 
 /* State file name */
 #define SLINGSHOT_STATE_FILE "slingshot_state"
@@ -103,6 +104,8 @@ typedef struct slingshot_state {
 	bitstr_t *vni_table;    /* Bitmap of allocated VNIs */
 	uint32_t num_job_vnis;  /* Number of per-job shared VNIs */
 	job_vni_t *job_vnis;    /* Per-job shared VNI reservations */
+	uint32_t num_job_hwcoll; /* Number of per-job shared VNIs */
+	uint32_t *job_hwcoll;	/* Array of job IDs using collectives */
 } slingshot_state_t;
 
 /* Max NIC resources per application */

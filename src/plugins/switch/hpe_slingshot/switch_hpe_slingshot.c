@@ -154,7 +154,7 @@ extern int switch_p_reconfig(void)
 extern int switch_p_libstate_save(char *dir_name)
 {
 	int state_fd;
-	uint32_t actual_job_vnis;
+	uint32_t actual_job_vnis, actual_job_hwcoll;
 	buf_t *state_buf;
 	char *new_state_file, *state_file, *buf;
 	size_t buflen;
@@ -186,6 +186,20 @@ extern int switch_p_libstate_save(char *dir_name)
 				pack16(slingshot_state.job_vnis[i].vni,
 				       state_buf);
 			}
+		}
+	}
+	/* Pack only job_hwcoll slots that are being used */
+	actual_job_hwcoll = 0;
+	for (int i = 0; i < slingshot_state.num_job_hwcoll; i++) {
+		if (slingshot_state.job_hwcoll[i])
+			actual_job_hwcoll++;
+	}
+	pack32(actual_job_hwcoll, state_buf);
+	if (actual_job_hwcoll > 0) {
+		for (int i = 0; i < slingshot_state.num_job_hwcoll; i++) {
+			if (slingshot_state.job_hwcoll[i])
+				pack32(slingshot_state.job_hwcoll[i],
+				       state_buf);
 		}
 	}
 
@@ -274,12 +288,14 @@ extern int switch_p_libstate_restore(char *dir_name, bool recover)
 		goto error;
 	}
 
-	/* Validate version */
+	/* Validate version (support both version 1 and 2) */
 	safe_unpack32(&version, state_buf);
 	if (version != SLINGSHOT_STATE_VERSION) {
-		error("State file %s version %"PRIu32" != %d", state_file,
-			version, SLINGSHOT_STATE_VERSION);
-		goto error;
+		if (version != SLINGSHOT_STATE_VERSION_VER1) {
+			error("State file %s version %"PRIu32" != %d",
+				state_file, version, SLINGSHOT_STATE_VERSION);
+			goto error;
+		}
 	}
 
 	/* Unpack the rest into global state structure */
@@ -300,6 +316,22 @@ extern int switch_p_libstate_restore(char *dir_name, bool recover)
 				state_buf);
 			safe_unpack16(&slingshot_state.job_vnis[i].vni,
 				state_buf);
+		}
+	}
+	/* Unpack version 2 job_hwcoll state */
+	slingshot_state.num_job_hwcoll = 0;
+	slingshot_state.job_hwcoll = NULL;
+	if (version == SLINGSHOT_STATE_VERSION) {
+		safe_unpack32(&slingshot_state.num_job_hwcoll, state_buf);
+		if (slingshot_state.num_job_hwcoll > 0) {
+			debug("%s: unpacking %u job_hwcoll",
+			      state_file, slingshot_state.num_job_hwcoll);
+			slingshot_state.job_hwcoll = xcalloc(
+				slingshot_state.num_job_hwcoll,
+				sizeof(job_vni_t));
+			for (i = 0; i < slingshot_state.num_job_hwcoll; i++)
+				safe_unpack32(&slingshot_state.job_hwcoll[i],
+					state_buf);
 		}
 	}
 

@@ -919,10 +919,14 @@ static bool _alloc_job_vni(uint32_t job_id, uint16_t *vnip)
 				 slingshot_state.num_job_vnis);
 			*vnip = jobvni->vni;
 			return true;
-		} else if (jobvni->job_id == 0) {
+		} else if (jobvni->job_id == 0 && freeslot < 0) {
 			freeslot = i;
 		}
 	}
+
+	/* Allocate VNI from bitmap */
+	if (!_alloc_vni(vnip))
+		return false;
 
 	/* If no free slot, allocate a new slot in the job_vnis table */
 	if (freeslot < 0) {
@@ -931,10 +935,6 @@ static bool _alloc_job_vni(uint32_t job_id, uint16_t *vnip)
 		xrecalloc(slingshot_state.job_vnis,
 			slingshot_state.num_job_vnis, sizeof(job_vni_t));
 	}
-
-	if (!_alloc_vni(vnip))
-		return false;
-
 	slingshot_state.job_vnis[freeslot].job_id = job_id;
 	slingshot_state.job_vnis[freeslot].vni = *vnip;
 	log_flag(SWITCH, "[job_id=%u]: new vni[%d] vni=%hu num_job_vnis=%d",

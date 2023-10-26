@@ -89,6 +89,54 @@ extern void slingshot_fini_collectives(void)
 }
 
 /*
+ * Save jobID in slingshot_state.job_hwcoll[] array to indicate use of
+ * hardware collectives (for cleanup time).  Return if jobID is already there.
+ */
+static void _save_hwcoll(uint32_t job_id)
+{
+	int freeslot = -1;
+
+	for (int i = 0; i < slingshot_state.num_job_hwcoll; i++) {
+		if (slingshot_state.job_hwcoll[i] == job_id) {
+			goto done;
+		} else if (slingshot_state.job_hwcoll[i] == 0 && freeslot < 0) {
+			freeslot = i;
+		}
+	}
+
+	/* If no free slot, allocate a new slot in the job_vnis table */
+	if (freeslot < 0) {
+		freeslot = slingshot_state.num_job_hwcoll;
+		slingshot_state.num_job_hwcoll++;
+		xrecalloc(slingshot_state.job_hwcoll,
+			  slingshot_state.num_job_hwcoll, sizeof(uint32_t));
+	}
+	slingshot_state.job_hwcoll[freeslot] = job_id;
+done:
+	log_flag(SWITCH, "job_hwcoll[%d] %u num_job_hwcoll=%d",
+		 freeslot, job_id, slingshot_state.num_job_hwcoll);
+	return;
+}
+
+/*
+ * Zero out entry if job_id is found in slingshot_state.job_hwcoll[];
+ * return true if job_id is in the table, false otherwise.
+ */
+static bool _clear_hwcoll(uint32_t job_id)
+{
+	if (slingshot_state.num_job_hwcoll == 0)
+		return false;
+
+	for (int i = 0; i < slingshot_state.num_job_hwcoll; i++) {
+		if (slingshot_state.job_hwcoll[i] == job_id) {
+			slingshot_state.job_hwcoll[i] = 0;
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
  * If Slingshot hardware collectives are configured, and the job has
  * enough nodes, reserve the configured per-job number of multicast addresses
  * by registering the job with the fabric manager
@@ -168,6 +216,12 @@ extern bool slingshot_setup_collectives(slingshot_jobinfo_t *job,
 		}
 		xfree(url);
 	}
+
+	/*
+	 * Save jobID in slingshot_state.job_hwcoll[] array to indicate
+	 * use of hardware collectives (for cleanup time)
+	 */
+	_save_hwcoll(job_id);
 
 	rc = true;
 
@@ -307,6 +361,13 @@ extern void slingshot_release_collectives_job(uint32_t job_id)
 
 	/* Just return if we're not using collectives */
 	if (!slingshot_config.fm_url || !collectives_enabled)
+		return;
+
+	/*
+	 * Just return if no job_id in slingshot_state.job_hwcoll[];
+	 * clear out entry if found
+	 */
+	if (!_clear_hwcoll(job_id))
 		return;
 
 	/* Do a DELETE on the job object in the fabric manager */
