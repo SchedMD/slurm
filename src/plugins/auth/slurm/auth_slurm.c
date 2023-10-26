@@ -204,6 +204,8 @@ extern int auth_p_get_data(auth_cred_t *cred, char **data, uint32_t *len)
 
 	*data = cred->data;
 	*len = cred->dlen;
+	cred->data = NULL;
+	cred->dlen = 0;
 	return SLURM_SUCCESS;
 }
 
