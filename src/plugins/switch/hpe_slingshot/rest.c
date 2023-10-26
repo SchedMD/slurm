@@ -602,6 +602,12 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 		_clear_auth_header(conn);
 
 		/* Get the token URL and client_{id,secret}, create request */
+		url = _read_authfile(conn->auth.auth_dir,
+				     SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE);
+		if (!url)
+			goto err;
+		xstrcat(url, "/fabric/login");
+
 		client_id = _read_authfile(conn->auth.auth_dir,
 					   SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE);
 		if (!client_id)
@@ -610,10 +616,6 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 			_read_authfile(conn->auth.auth_dir,
 				       SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE);
 		if (!client_secret)
-			goto err;
-		url = _read_authfile(conn->auth.auth_dir,
-				     SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE);
-		if (!url)
 			goto err;
 		req = xstrdup_printf("grant_type=client_credentials"
 				     "&client_id=%s&client_secret=%s",
