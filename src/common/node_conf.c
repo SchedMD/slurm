@@ -777,7 +777,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	 * registers.
 	 */
 	node_ptr->magic = NODE_MAGIC;
-	node_ptr->cpu_load = NO_VAL;
+	node_ptr->cpu_load = 0;
 	node_ptr->energy = acct_gather_energy_alloc(1);
 	node_ptr->ext_sensors = ext_sensors_alloc();
 	node_ptr->free_mem = NO_VAL64;

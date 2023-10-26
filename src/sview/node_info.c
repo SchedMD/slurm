@@ -273,12 +273,9 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CPUS),
 				   tmp_cnt);
 
-	if (node_ptr->cpu_load == NO_VAL) {
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
-	} else {
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "%.2f",
-			 (node_ptr->cpu_load / 100.0));
-	}
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%.2f",
+		 (node_ptr->cpu_load / 100.0));
+
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CPU_LOAD),
@@ -532,12 +529,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 node_ptr->power->cap_watts);
 	}
 
-	if (node_ptr->cpu_load == NO_VAL) {
-		strlcpy(tmp_cpu_load, "N/A", sizeof(tmp_cpu_load));
-	} else {
-		snprintf(tmp_cpu_load, sizeof(tmp_cpu_load),
-			 "%.2f", (node_ptr->cpu_load / 100.0));
-	}
+	snprintf(tmp_cpu_load, sizeof(tmp_cpu_load), "%.2f",
+	         (node_ptr->cpu_load / 100.0));
 
 	if (node_ptr->free_mem == NO_VAL64) {
 		strlcpy(tmp_free_mem, "N/A", sizeof(tmp_free_mem));
