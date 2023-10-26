@@ -262,6 +262,7 @@ documents those changes that are of interest to users and administrators.
     was confusing. The default behavior now is to always require one of the sql
     development libraries.
  -- Add support for Debian packaging.
+ -- switch/hpe_slingshot - Add support for collectives.
 
 * Changes in Slurm 23.02.7
 ==========================

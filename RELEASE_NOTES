@@ -72,6 +72,7 @@ HIGHLIGHTS
  -- Added support for Debian packaging.  Please note that this set of packages
     is new and subject to more change than the long-standing and more stable
     spec file.
+ -- switch/hpe_slingshot - Add support for collectives.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -99,6 +100,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     "node[0001-0010]-int".
  -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
  -- Add SelectTypeParameters=LL_SHARED_GRES.
+ -- Add SwitchParameters=hwcoll_addrs_per_job, hwcoll_num_nodes, fm_url,
+    fm_auth, and fm_authdir to support collectives.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
