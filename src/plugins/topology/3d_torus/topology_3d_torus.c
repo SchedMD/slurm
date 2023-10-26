@@ -103,7 +103,7 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topology_g_build_config(void)
+extern int topology_p_build_config(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -111,7 +111,7 @@ extern int topology_g_build_config(void)
 /*
  * topo_generate_node_ranking  -  populate node_rank fields
  */
-extern bool topology_g_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(void)
 {
 	nodes_to_hilbert_curve();
 	return true;
@@ -123,7 +123,7 @@ extern bool topology_g_generate_node_ranking(void)
  *
  * in 3d_torus plugin, only use node name as the topology address
  */
-extern int topology_g_get_node_addr(char *node_name, char **paddr,
+extern int topology_p_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern)
 {
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
