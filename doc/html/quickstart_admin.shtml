@@ -1,6 +1,22 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Quick Start Administrator Guide</h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick_start">Super Quick Start</a></li>
+<li><a href="#build_install">Building and Installing Slurm</a></li>
+<li><a href="#daemons">Daemons</a></li>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#Config">Configuration</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#starting_daemons">Starting the Daemons</a></li>
+<li><a href="#admin_examples">Administration Examples</a></li>
+<li><a href="#upgrade">Upgrades</a></li>
+<li><a href="#FreeBSD">FreeBSD</a></li>
+</ul>
+
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
 general overview.</p>
