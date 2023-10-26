@@ -468,15 +468,19 @@ extern bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 				      const char *conn_name)
 {
 	memset(conn, 0, sizeof(*conn));
-	if (auth_type == SLINGSHOT_AUTH_BASIC) {
-		conn->auth.auth_type = SLINGSHOT_AUTH_BASIC;
+	switch (auth_type) {
+	case SLINGSHOT_AUTH_BASIC:
+		conn->auth.auth_type = auth_type;
 		conn->auth.u.basic.user_name = xstrdup(basic_user);
 		if (!(conn->auth.u.basic.password = _read_authfile(
 						auth_dir, basic_pwdfile)))
 			return false;
-	} else if (auth_type == SLINGSHOT_AUTH_OAUTH) {
-		conn->auth.auth_type = SLINGSHOT_AUTH_OAUTH;
-	} else {
+		break;
+	case SLINGSHOT_AUTH_OAUTH:
+	case SLINGSHOT_AUTH_NONE:
+		conn->auth.auth_type = auth_type;
+		break;
+	default:
 		error("Invalid auth_type value %u", auth_type);
 		return false;
 	}
