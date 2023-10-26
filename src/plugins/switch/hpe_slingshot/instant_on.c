@@ -38,482 +38,22 @@
 
 #define _GNU_SOURCE
 
-#include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #if HAVE_JSON_C_INC
 #  include <json-c/json.h>
 #elif HAVE_JSON_INC
 #  include <json/json.h>
 #endif
-#define CURL_TRACE 0	/* Turn on curl debug tracing */
-#if CURL_TRACE
-#include <ctype.h>
-#endif
 
 #include "src/common/slurm_xlator.h"
 
 #include "switch_hpe_slingshot.h"
+#include "rest.h"
 
-/* HTTP status values */
-#define HTTP_OK                200
-#define HTTP_NO_CONTENT        204
-#define HTTP_REDIRECT          308
-#define HTTP_UNAUTHORIZED      401
-#define HTTP_FORBIDDEN         403
-#define HTTP_SERVICE_UNAVAILABLE 503
-
-typedef struct rest_conn {
-	CURL *handle;	      /* CURL connection handle */
-	char *data;	      /* Response data buffer */
-	size_t datalen;	      /* Length of the response data */
-	size_t datasiz;	      /* Size of the data buffer */
-	const char *name;     /* Descriptive name for logging */
-	const char *base_url; /* Base URL for connection */
-	slingshot_rest_auth_t auth; /* Authentication type (BASIC/OAUTH) */
-} rest_conn_t;
-
-static rest_conn_t jlope_conn;  /* Connection to jackaloped */
+static slingshot_rest_conn_t jlope_conn;  /* Connection to jackaloped */
 
 static bool instant_on_enabled = false;
-static char *auth_header = NULL; /* cache OAUTH auth header here */
-static char *_get_auth_header(bool cache_use);
-
-
-/*
- * If an error response was received, log it
- */
-static void _log_rest_detail(const char *name, const char *method,
-			     const char *url, json_object *respjson,
-			     long status)
-{
-	json_object *detail = NULL;
-
-	if (!(detail = json_object_object_get(respjson, "detail"))) {
-		error("%s %s %s status %ld no error details",
-			name, method, url, status);
-	} else {
-		error("%s %s %s status %ld: %s", name, method, url, status,
-			json_object_get_string(detail));
-	}
-}
-
-/*
- * Wrapper around curl_easy_setopt that jumps to 'err' on failure
- */
-#define CURL_SETOPT(handle, opt, param) { \
-	CURLcode _ret = curl_easy_setopt(handle, opt, param); \
-	if (_ret != CURLE_OK) { \
-		error("Couldn't set CURL option %d: %s", \
-			opt, curl_easy_strerror(_ret)); \
-		goto err; \
-	} \
-}
-
-/*
- * CURL write callback to receive data
- */
-static size_t _rest_data_received(void *contents, size_t size, size_t nmemb,
-				  void *userp)
-{
-	rest_conn_t *conn = userp;
-
-	/* Resize buffer if needed */
-	size_t realsize = size * nmemb;
-	size_t newlen = conn->datalen + realsize + 1;
-	if (newlen > conn->datasiz) {
-		char *newdata = xrealloc(conn->data, newlen);
-		conn->data = newdata;
-		conn->datasiz = newlen;
-	}
-
-	/* Write new data to buffer */
-	memcpy(conn->data + conn->datalen, contents, realsize);
-	conn->datalen += realsize;
-	conn->data[conn->datalen] = 0;
-	return realsize;
-}
-
-/*
- * This is used to make sure the connection has a valid data reading
- * function. Without this function, during a DELETE attempt, it appears
- * that CURL will try to read from a NULL FILE object, think it is getting
- * FD 0, and hang trying to read from STDIN.
- */
-static size_t _read_function(void *contents, size_t size, size_t nmemb,
-			     void *userp)
-{
-	(void)contents;
-	(void)size;
-	(void)nmemb;
-	(void)userp;
-	return 0;
-}
-
-/*
- * Disconnect and free memory
- */
-static void _rest_disconnect(rest_conn_t *conn)
-{
-	if (!conn->name)
-		return;
-	debug("disconnecting from '%s' REST interface", conn->name);
-	if (conn->handle)
-		curl_easy_cleanup(conn->handle);
-	xfree(conn->data);
-	memset(conn, 0, sizeof(*conn));
-}
-
-#if CURL_TRACE
-/*
- * Callback for libcurl tracing - print out datatype and data
- */
-static int _libcurl_trace(CURL *handle, curl_infotype type, char *data,
-			  size_t size, void *userp)
-{
-	char *buf = xmalloc(size + 1);
-	char *typestr = "unknown";
-
-	if (type == CURLINFO_TEXT)
-		typestr = "text";
-	else if (type == CURLINFO_HEADER_OUT)
-		typestr = "header_out";
-	else if (type == CURLINFO_DATA_OUT)
-		typestr = "data_out";
-	else if (type == CURLINFO_SSL_DATA_OUT)
-		typestr = "ssl_data_out";
-	else if (type == CURLINFO_HEADER_IN)
-		typestr = "header_in";
-	else if (type == CURLINFO_DATA_IN)
-		typestr = "data_in";
-	else if (type == CURLINFO_SSL_DATA_IN)
-		typestr = "ssl_data_in";
-
-	while (size > 0 && (data[size-1] == '\n' || data[size-1] == '\r'))
-		data[--size] = '\0';
-
-	for (int i = 0; i < size; i++)
-		buf[i] = isprint(data[i]) ? data[i] : '_';
-	buf[size] = '\0';
-
-	log_flag(SWITCH, "%s: '%s'", typestr, buf);
-	xfree(buf);
-	return 0;
-}
-#endif
-
-/*
- * Generic handle set up function for UNIX and network connections to use
- */
-static bool _rest_connect(rest_conn_t *conn, const char *name,
-			  const char *url, slingshot_rest_auth_t auth,
-			  long timeout, long connect_timeout,
-			  const char *user_name, const char *password)
-{
-	log_flag(SWITCH, "conn->handle=%p name='%s' url=%s auth=%u to=%lu cto=%lu user_name=%s",
-		conn->handle, name, url, auth, timeout, connect_timeout,
-		user_name);
-
-	/* If we're already connected, do nothing */
-	if (conn->handle != NULL)
-		return true;
-
-	conn->name = name;
-
-	/* Set up the handle */
-	conn->handle = curl_easy_init();
-	if (conn->handle == NULL) {
-		error("Couldn't initialize %s connection handle: %m",
-			conn->name);
-		goto err;
-	}
-	conn->base_url = url;
-	conn->auth = auth;
-
-	/* Set options that don't change between requests */
-	CURL_SETOPT(conn->handle, CURLOPT_TIMEOUT, timeout);
-	CURL_SETOPT(conn->handle, CURLOPT_CONNECTTIMEOUT, connect_timeout);
-	CURL_SETOPT(conn->handle, CURLOPT_WRITEFUNCTION, _rest_data_received);
-	CURL_SETOPT(conn->handle, CURLOPT_WRITEDATA, conn);
-	CURL_SETOPT(conn->handle, CURLOPT_READFUNCTION, _read_function);
-	CURL_SETOPT(conn->handle, CURLOPT_FOLLOWLOCATION, 0);
-
-#if CURL_TRACE
-	CURL_SETOPT(conn->handle, CURLOPT_DEBUGFUNCTION, _libcurl_trace);
-	CURL_SETOPT(conn->handle, CURLOPT_VERBOSE, 1L);
-#endif
-
-	/* These are needed to work with self-signed certificates */
-	CURL_SETOPT(conn->handle, CURLOPT_SSL_VERIFYPEER, 0);
-	CURL_SETOPT(conn->handle, CURLOPT_SSL_VERIFYHOST, 0);
-
-	/* If using basic auth, add the user name and password */
-	if (conn->auth == SLINGSHOT_AUTH_BASIC && user_name && password) {
-		CURL_SETOPT(conn->handle, CURLOPT_USERNAME, user_name);
-		CURL_SETOPT(conn->handle, CURLOPT_PASSWORD, password);
-	}
-	return true;
-
-err:
-	_rest_disconnect(conn);
-	return false;
-}
-
-/*
- * Issue a request, and return the HTTP status and JSON-decoded result.
- * Caller must free the returned response with json_object_put.
- */
-static bool _rest_request(rest_conn_t *conn, long *status, json_object **resp)
-{
-	CURLcode ret;
-
-	/* Reset received data buffer */
-	if (conn->data != NULL && conn->datasiz > 0)
-		memset(conn->data, 0, conn->datasiz);
-	conn->datalen = 0;
-
-	/* Issue the request */
-	ret = curl_easy_perform(conn->handle);
-	if (ret != CURLE_OK) {
-		error("Couldn't perform %s request: %s", conn->name,
-			curl_easy_strerror(ret));
-		return false;
-	}
-
-	/* Get the HTTP status of the response */
-	ret = curl_easy_getinfo(conn->handle, CURLINFO_RESPONSE_CODE, status);
-	if (ret != CURLE_OK) {
-		error("Couldn't get %s response code: %s", conn->name,
-			curl_easy_strerror(ret));
-		return false;
-	}
-
-	/* Decode response into JSON */
-	if (*status != HTTP_NO_CONTENT && *status != HTTP_FORBIDDEN &&
-			*status != HTTP_UNAUTHORIZED) {
-		enum json_tokener_error jerr;
-		*resp = json_tokener_parse_verbose(conn->data, &jerr);
-		if (*resp == NULL) {
-			error("Couldn't decode jackaloped response: %s",
-				json_tokener_error_desc(jerr));
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/*
- * POST with JSON payload, and return the response (or NULL on error)
- */
-static json_object *_rest_post(rest_conn_t *conn, const char *urlsuffix,
-			       json_object *reqjson, long *status)
-{
-	json_object *respjson = NULL;
-	struct curl_slist *headers = NULL;
-	const char *req = NULL;
-	bool use_cache = true;
-	char *url = NULL;
-
-	xassert(conn != NULL);
-	xassert(urlsuffix != NULL);
-	xassert(reqjson != NULL);
-
-	/* Create full URL */
-	url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
-
-	/* Dump JSON to string */
-	if (!(req = json_object_to_json_string(reqjson))) {
-		error("Couldn't dump JSON request: %m");
-		goto err;
-	}
-
-again:
-	debug("%s POST url=%s data='%s'", conn->name, url, req);
-
-	/* Create header list */
-	headers = curl_slist_append(headers, "Content-Type: application/json");
-	if (conn->auth == SLINGSHOT_AUTH_OAUTH) {
-		const char *hdr = _get_auth_header(use_cache);
-		if (!hdr)
-			goto err;
-		headers = curl_slist_append(headers, hdr);
-	}
-
-	/* Set up connection handle for the POST */
-	CURL_SETOPT(conn->handle, CURLOPT_URL, url);
-	CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, NULL);
-	CURL_SETOPT(conn->handle, CURLOPT_POST, 1);
-	CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, req);
-	CURL_SETOPT(conn->handle, CURLOPT_HTTPHEADER, headers);
-
-	/* Issue the POST and get the response */
-	if (!_rest_request(conn, status, &respjson))
-		goto err;
-
-	/* On a successful response, grab the self URL */
-	if (*status == HTTP_OK) {
-		debug("%s POST %s successful", conn->name, url);
-	} else if ((*status == HTTP_FORBIDDEN || *status == HTTP_UNAUTHORIZED)
-		   && (conn->auth == SLINGSHOT_AUTH_OAUTH) && use_cache) {
-		/*
-		 * on HTTP_{FORBIDDEN,UNAUTHORIZED}, free auth header
-		 * and re-cache token
-		 */
-		curl_slist_free_all(headers);
-		headers = NULL;
-		use_cache = false;
-		goto again;
-	} else {
-		_log_rest_detail(conn->name, "POST", url, respjson, *status);
-		goto err;
-	}
-
-	curl_slist_free_all(headers);
-	xfree(url);
-	return respjson;
-
-err:
-	curl_slist_free_all(headers);
-	xfree(url);
-	json_object_put(respjson);
-	return NULL;
-}
-
-/*
- * Return buffer with contents of authentication file with
- * pathname <jlope_authdir>/<base>; strip any trailing newlines
- */
-static char *_read_authfile(const char *base)
-{
-	char *fname = NULL;
-	int fd = -1;
-	struct stat statbuf;
-	size_t siz = 0;
-	char *buf = NULL;
-
-	fname = xstrdup_printf("%s/%s", slingshot_config.jlope_authdir, base);
-	fd = open(fname, O_RDONLY);
-	if (fd == -1) {
-		error("Couldn't open %s: %m", fname);
-		goto rwfail;
-	}
-	if (fstat(fd, &statbuf) == -1) {
-		error("fstat failed on %s: %m", fname);
-		goto rwfail;
-	}
-	siz = statbuf.st_size;
-	buf = xmalloc(siz + 1);
-	safe_read(fd, buf, siz);
-	while (siz > 0 && buf[siz - 1] == '\n')
-		siz--;
-	buf[siz] = '\0';
-
-	xfree(fname);
-	close(fd);
-	return buf;
-
-rwfail:
-	xfree(fname);
-	xfree(buf);
-	close(fd);
-	return NULL;
-}
-
-/*
- * Clear OAUTH authentication header
- */
-static void _clear_auth_header(void)
-{
-	if (auth_header) {
-		memset(auth_header, 0, strlen(auth_header));
-		xfree(auth_header);
-		auth_header = NULL;
-	}
-}
-
-/*
- * If needed, access a token service to get an OAUTH2 auth token;
- * return the authorization header (and cache in 'auth_header' global);
- * if 'cache_use' is set, return the cached auth_header if set
- */
-static char *_get_auth_header(bool cache_use)
-{
-	char *client_id = NULL;
-	char *client_secret = NULL;
-	char *url = NULL;
-	rest_conn_t conn = { 0 };  /* Connection to token service */
-	char *req = NULL;
-	json_object *respjson = NULL;
-	json_object *tokjson = NULL;
-	const char *token = NULL;
-	long status = 0;
-
-	/* Use what we've got if allowed */
-	if (auth_header && cache_use)
-		return auth_header;
-
-	/* Get a new token from the token service */
-	_clear_auth_header();
-
-	/* Get the token URL and client_{id,secret}, create request string */
-	client_id = _read_authfile(SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE);
-	if (!client_id)
-		goto err;
-	client_secret =
-		_read_authfile(SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE);
-	if (!client_secret)
-		goto err;
-	url = _read_authfile(SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE);
-	if (url)
-		goto err;
-	req = xstrdup_printf("grant_type=client_credentials&client_id=%s"
-			     "&client_secret=%s", client_id, client_secret);
-
-	/* Connect and POST request to OAUTH token endpoint */
-	if (!_rest_connect(&conn, "OAUTH token grant", url,
-			   SLINGSHOT_AUTH_NONE, SLINGSHOT_JLOPE_TIMEOUT,
-			   SLINGSHOT_JLOPE_CONNECT_TIMEOUT, NULL, NULL))
-		goto err;
-
-	/* Set up connection handle for the POST */
-	CURL_SETOPT(conn.handle, CURLOPT_URL, url);
-	CURL_SETOPT(conn.handle, CURLOPT_CUSTOMREQUEST, NULL);
-	CURL_SETOPT(conn.handle, CURLOPT_POST, 1);
-	CURL_SETOPT(conn.handle, CURLOPT_POSTFIELDS, req);
-
-	/* Issue the POST and get the response */
-	if (!_rest_request(&conn, &status, &respjson))
-		goto err;
-
-	/* On a successful response, get the access_token out of it */
-	if (status == HTTP_OK) {
-		debug("%s POST %s successful", conn.name, url);
-	} else {
-		_log_rest_detail(conn.name, "POST", url, respjson, status);
-		goto err;
-	}
-
-	/* Create an authentication header from the access_token */
-	tokjson = json_object_object_get(respjson, "access_token");
-	if (!tokjson || !(token = json_object_get_string(tokjson))) {
-		error("Couldn't get auth token from OAUTH service: json='%s'",
-		      json_object_to_json_string(respjson));
-		goto err;
-	}
-	auth_header = xstrdup_printf("Authorization: Bearer %s", token);
-
-err:
-	xfree(client_id);
-	xfree(client_secret);
-	xfree(url);
-	_rest_disconnect(&conn);
-	xfree(req);
-	json_object_put(respjson);
-	return auth_header;
-}
 
 /*
  * Read any authentication files and connect to the jackalope daemon,
@@ -521,48 +61,26 @@ err:
  */
 extern bool slingshot_init_instant_on(void)
 {
-	char *basic_username = NULL;
-	char *basic_passwd = NULL;
-
-	if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_NONE) {
-		info("Slingshot Instant On support not configured");
-		instant_on_enabled = false;
-		return false;
-	} else if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_BASIC) {
-		basic_username = SLINGSHOT_AUTH_BASIC_USER;
-		if (!(basic_passwd = _read_authfile(
-					SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE)))
-			goto err;
-	} else if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_OAUTH) {
-		/* Attempt to get an OAUTH token for later use */
-		if (!_get_auth_header(false))
-			goto err;
-	} else {
-		error("Invalid jlope_auth value %u",
-			slingshot_config.jlope_auth);
-		goto err;
-	}
-	if (!_rest_connect(&jlope_conn, "Slingshot Jackalope daemon",
-			   slingshot_config.jlope_url,
-			   slingshot_config.jlope_auth,
-			   SLINGSHOT_JLOPE_TIMEOUT,
-			   SLINGSHOT_JLOPE_CONNECT_TIMEOUT,
-			   basic_username, basic_passwd))
+	if (!slingshot_rest_connection(&jlope_conn, slingshot_config.jlope_url,
+				       slingshot_config.jlope_auth,
+				       slingshot_config.jlope_authdir,
+				       SLINGSHOT_JLOPE_AUTH_BASIC_USER,
+				       SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE,
+				       SLINGSHOT_JLOPE_TIMEOUT,
+				       SLINGSHOT_JLOPE_CONNECT_TIMEOUT,
+				       "Slingshot Jackalope daemon"))
 		goto err;
 
-	debug("Connected to %s at %s using %s auth",
-	      jlope_conn.name, jlope_conn.base_url,
-	      (slingshot_config.jlope_auth == SLINGSHOT_AUTH_BASIC) ?
-		"BASIC" : "OAUTH");
+	if (!slingshot_rest_connect(&jlope_conn))
+		goto err;
 
 	instant_on_enabled = true;
-	xfree(basic_passwd);
 	return true;
 
 err:
 	info("Instant On support disabled due to errors");
+	slingshot_rest_destroy_connection(&jlope_conn);
 	instant_on_enabled = false;
-	xfree(basic_passwd);
 	return false;
 }
 
@@ -571,8 +89,7 @@ err:
  */
 extern void slingshot_fini_instant_on(void)
 {
-	_rest_disconnect(&jlope_conn);
-	_clear_auth_header();
+	slingshot_rest_destroy_connection(&jlope_conn);
 }
 
 /*
@@ -773,8 +290,8 @@ extern bool slingshot_fetch_instant_on(slingshot_jobinfo_t *job,
 	}
 	log_flag(SWITCH, "reqjson='%s'", json_object_to_json_string(reqjson));
 
-	if (!(respjson = _rest_post(&jlope_conn, "/fabric/nics", reqjson,
-				    &status))) {
+	if (!(respjson = slingshot_rest_post(&jlope_conn, "/fabric/nics",
+					     reqjson, &status))) {
 		error("POST to jackaloped for instant on data failed: %ld",
 		      status);
 		goto out;

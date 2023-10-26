@@ -81,25 +81,12 @@
 #define SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE \
 	"/sys/module/cxi_core/parameters/rdzv_get_en_default"
 
-/*
- * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
- */
+/* Set of valid auth types used for REST */
 typedef enum {
 	SLINGSHOT_AUTH_NONE = 0, /* No authentication */
 	SLINGSHOT_AUTH_BASIC,    /* User name and password */
 	SLINGSHOT_AUTH_OAUTH     /* OAuth2 client credentials grant */
 } slingshot_rest_auth_t;
-#define SLINGSHOT_AUTH_BASIC_STR  "BASIC" /* {jlope,fm}_auth token */
-#define SLINGSHOT_AUTH_OAUTH_STR  "OAUTH" /* {jlope,fm}_auth token */
-#define SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE     "client-id"
-#define SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE "client-secret"
-#define SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE      "endpoint"
-#define SLINGSHOT_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
-#define SLINGSHOT_JLOPE_AUTH_BASIC_DIR       "/etc/jackaloped"
-#define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE  "passwd"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR       "/etc/wlm-client-auth"
-#define SLINGSHOT_JLOPE_TIMEOUT         10   /* jackaloped REST call timeout */
-#define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10   /* jackaloped REST connect " */
 
 /* Per-job shared VNI structure */
 typedef struct job_vni {

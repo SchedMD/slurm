@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 
 #include "switch_hpe_slingshot.h"
+#include "rest.h"
 
 /* Set this to true if VNI table is re-sized and loses some bits */
 static bool lost_vnis = false;
