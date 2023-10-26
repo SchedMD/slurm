@@ -3000,7 +3000,6 @@ typedef struct {
 	char *resv_prolog;	/* path of reservation prolog run by slurmctld */
 	uint16_t ret2service;	/* 1 return DOWN node to service at
 				 * registration */
-	char *route_plugin;     /* route plugin */
 	char *sched_logfile;    /* where slurm Scheduler log gets written */
 	uint16_t sched_log_level;  /* configured level of slurm Scheduler log */
 	char *sched_params;	/* SchedulerParameters OR

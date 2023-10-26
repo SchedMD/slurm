@@ -458,7 +458,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->resv_over_run       = conf->resv_over_run;
 	conf_ptr->resv_prolog         = xstrdup(conf->resv_prolog);
 	conf_ptr->ret2service         = conf->ret2service;
-	conf_ptr->route_plugin        = xstrdup(conf->route_plugin);
 
 	conf_ptr->sched_params        = xstrdup(conf->sched_params);
 	conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);
