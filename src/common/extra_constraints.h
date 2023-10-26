@@ -37,4 +37,51 @@
 #ifndef _EXTRA_CONSTRAINTS_H
 #define _EXTRA_CONSTRAINTS_H
 
+typedef enum {
+	OP_NONE = 0,
+	OP_CHILD_AND, /* Accept both '&' and ',' */
+	OP_CHILD_AND_COMMA, /* During parsing, this is automatically converted
+			     * to OP_CHILD_AND */
+	OP_CHILD_OR,
+	OP_LEAF_EQ,
+	OP_LEAF_GT,
+	OP_LEAF_GTE,
+	OP_LEAF_LT,
+	OP_LEAF_LTE,
+} op_t;
+
+typedef struct elem elem_t;
+struct elem {
+	op_t operator;
+	elem_t **children;
+	int num_children;
+	int curr_max_children;
+	char *key;
+	char *value;
+};
+
+/*
+ * This function returns a heap allocated string that represents the tree in a
+ * human readable format. This should primarily be used for debugging.
+ * The return value must be free'd with xfree.
+ */
+extern char *extra_constraints_2str(elem_t *el);
+
+extern void extra_constraints_free_null(elem_t **el);
+#define FREE_NULL_EXTRA_CONSTRAINTS(el) \
+	extra_constraints_free_null(&el)
+
+/*
+ * Parse an extra constraint into a tree. The tree should only be accessed by
+ * functions in this file.
+ *
+ * IN extra - constraints to be parsed
+ * OUT head - head of tree if parsing is successful. This should be free'd by
+ *            calling FREE_NULL_EXTRA_CONSTRAINTS.
+ *
+ * Return SLURM_SUCCESS if parsing is successful or disabled.
+ * Return SLURM_ERROR if parsing failed.
+ */
+extern int extra_constraints_parse(char *extra, elem_t **head);
+
 #endif /* _EXTRA_CONSTRAINTS_H */
