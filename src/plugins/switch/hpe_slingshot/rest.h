@@ -51,9 +51,11 @@
 /* HTTP status values */
 #define HTTP_OK                200
 #define HTTP_NO_CONTENT        204
+#define HTTP_LAST_OK           299	/* HTTP success codes are 200-299 */
 #define HTTP_REDIRECT          308
 #define HTTP_UNAUTHORIZED      401
 #define HTTP_FORBIDDEN         403
+#define HTTP_NOT_FOUND         404
 #define HTTP_SERVICE_UNAVAILABLE 503
 
 /*
@@ -124,4 +126,11 @@ bool slingshot_rest_connect(slingshot_rest_conn_t *conn);
 json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
 				 const char *urlsuffix, json_object *reqjson,
 				 long *status);
+json_object *slingshot_rest_patch(slingshot_rest_conn_t *conn,
+				  const char *urlsuffix, json_object *reqjson,
+				  long *status);
+json_object *slingshot_rest_get(slingshot_rest_conn_t *conn,
+			        const char *urlsuffix, long *status);
+bool slingshot_rest_delete(slingshot_rest_conn_t *conn, const char *urlsuffix,
+			   long *status);
 #endif

@@ -303,11 +303,11 @@ static bool _rest_request(slingshot_rest_conn_t *conn, long *status,
 }
 
 /*
- * POST with JSON payload, and return the response (or NULL on error)
+ * Internals of REST POST/PATCH/GET/DELETE calls, with retries, etc.
  */
-extern json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
-					const char *urlsuffix,
-					json_object *reqjson, long *status)
+static json_object *_rest_call(slingshot_rest_conn_t *conn, const char *type,
+			       const char *urlsuffix, json_object *reqjson,
+			       long *status, bool not_found_ok)
 {
 	json_object *respjson = NULL;
 	struct curl_slist *headers = NULL;
@@ -317,19 +317,20 @@ extern json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
 
 	xassert(conn != NULL);
 	xassert(urlsuffix != NULL);
-	xassert(reqjson != NULL);
 
 	/* Create full URL */
 	url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
 
-	/* Dump JSON to string */
-	if (!(req = json_object_to_json_string(reqjson))) {
-		error("Couldn't dump JSON request: %m");
-		goto err;
+	/* If present, dump JSON payload to string */
+	if (reqjson) {
+		if (!(req = json_object_to_json_string(reqjson))) {
+			error("Couldn't dump JSON request: %m");
+			goto err;
+		}
 	}
 
 again:
-	debug("%s POST url=%s data='%s'", conn->name, url, req);
+	debug("%s %s url=%s data='%s'", conn->name, type, url, req);
 
 	/* Create header list */
 	headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -340,23 +341,44 @@ again:
 	if (!_get_auth_header(conn, &headers, use_cache))
 		goto err;
 
-	/* Set up connection handle for the POST */
+	/* Set up connection handle for the specific operation */
 	CURL_SETOPT(conn->handle, CURLOPT_URL, url);
-	CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, NULL);
-	CURL_SETOPT(conn->handle, CURLOPT_POST, 1);
-	CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, req);
 	CURL_SETOPT(conn->handle, CURLOPT_HTTPHEADER, headers);
+	if (!strcmp(type, "POST")) {
+		CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, NULL);
+		CURL_SETOPT(conn->handle, CURLOPT_POST, 1);
+		CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, req);
+		CURL_SETOPT(conn->handle, CURLOPT_HTTPGET, 0);
+	} else if (!strcmp(type, "PATCH")) {
+		CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, "PATCH");
+		CURL_SETOPT(conn->handle, CURLOPT_POST, 1);
+		CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, req);
+		CURL_SETOPT(conn->handle, CURLOPT_HTTPGET, 0);
+	} else if (!strcmp(type, "GET")) {
+		CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, NULL);
+		CURL_SETOPT(conn->handle, CURLOPT_POST, 0);
+		CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, NULL);
+		CURL_SETOPT(conn->handle, CURLOPT_HTTPGET, 1);
+	} else if (!strcmp(type, "DELETE")) {
+		CURL_SETOPT(conn->handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+		CURL_SETOPT(conn->handle, CURLOPT_POST, 0);
+		CURL_SETOPT(conn->handle, CURLOPT_POSTFIELDS, NULL);
+		CURL_SETOPT(conn->handle, CURLOPT_HTTPGET, 0);
+	}
 
-	/* Issue the POST and get the response */
+	/* Issue the REST request and get the response (if any) */
 	if (!_rest_request(conn, status, &respjson))
 		goto err;
 
-	/* On a successful response, grab the self URL */
-	if (*status == HTTP_OK) {
-		debug("%s POST %s successful", conn->name, url);
+	if (((*status >= HTTP_OK) && (*status <= HTTP_LAST_OK)) ||
+		(*status == HTTP_NOT_FOUND && not_found_ok)) {
+		debug("%s %s %s successful (%ld)",
+		      conn->name, type, url, *status);
 	} else if ((*status == HTTP_FORBIDDEN || *status == HTTP_UNAUTHORIZED)
 		   && (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH)
 		   && use_cache) {
+		debug("%s %s %s unauthorized status %ld, retrying",
+		      conn->name, type, url, *status);
 		/*
 		 * on HTTP_{FORBIDDEN,UNAUTHORIZED}, free auth header
 		 * and re-cache token
@@ -366,7 +388,7 @@ again:
 		use_cache = false;
 		goto again;
 	} else {
-		_log_rest_detail(conn->name, "POST", url, respjson, *status);
+		_log_rest_detail(conn->name, type, url, respjson, *status);
 		goto err;
 	}
 
@@ -379,6 +401,57 @@ err:
 	xfree(url);
 	json_object_put(respjson);
 	return NULL;
+}
+
+
+/*
+ * POST with JSON payload, and return the response (or NULL on error)
+ */
+extern json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
+					const char *urlsuffix,
+					json_object *reqjson, long *status)
+{
+	return _rest_call(conn, "POST", urlsuffix, reqjson, status, false);
+}
+
+/*
+ * PATCH with JSON payload, and return the response (or NULL on error)
+ */
+extern json_object *slingshot_rest_patch(slingshot_rest_conn_t *conn,
+					 const char *urlsuffix,
+					 json_object *reqjson, long *status)
+{
+	return _rest_call(conn, "PATCH", urlsuffix, reqjson, status, true);
+}
+
+/*
+ * Do a GET from the requested URL; return the JSON response,
+ * or NULL on error
+ */
+extern json_object *slingshot_rest_get(slingshot_rest_conn_t *conn,
+				       const char *urlsuffix, long *status)
+{
+	return _rest_call(conn, "GET", urlsuffix, NULL, status, true);
+}
+
+/*
+ * DELETE the given URL; return true on success
+ */
+extern bool slingshot_rest_delete(slingshot_rest_conn_t *conn,
+				  const char *urlsuffix, long *status)
+{
+	json_object *respjson = NULL;
+	bool rc = true;
+
+	/* Only delete if we successfully POSTed before */
+	if (!conn || !conn->handle || !conn->base_url)
+		return false;
+
+	respjson = _rest_call(conn, "DELETE", urlsuffix, NULL, status, false);
+	if (!respjson)
+		rc = false;
+	json_object_put(respjson);
+	return rc;
 }
 
 /*
