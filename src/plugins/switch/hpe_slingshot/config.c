@@ -1188,10 +1188,10 @@ err:
  * Return true on success, false if VNI cannot be allocated,
  * or --network parameters have syntax errors
  */
-extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
-				     uint32_t job_id,
-				     const char *network_params,
-				     const char *job_network_params)
+extern bool slingshot_setup_job_step_vni(slingshot_jobinfo_t *job, int node_cnt,
+					 uint32_t job_id,
+					 const char *network_params,
+					 const char *job_network_params)
 {
 	int alloc_vnis = 0;
 	uint16_t vni = 0, job_vni = 0;
@@ -1259,7 +1259,7 @@ err:
 /*
  * Free job-step VNI (if any)
  */
-extern void slingshot_free_job_step(slingshot_jobinfo_t *job)
+extern void slingshot_free_job_step_vni(slingshot_jobinfo_t *job)
 {
 	/* Second VNI is a job VNI - don't free until job is complete */
 	if (job->vnis && (job->num_vnis > 0)) {
@@ -1271,7 +1271,7 @@ extern void slingshot_free_job_step(slingshot_jobinfo_t *job)
 /*
  * Free this job's job-specific VNI; called at end of job
  */
-extern void slingshot_free_job(uint32_t job_id)
+extern void slingshot_free_job_vni(uint32_t job_id)
 {
 	uint16_t vni = _free_job_vni(job_id);
 	debug("free job_vni=%hu free_vnis=%d", vni, free_vnis);

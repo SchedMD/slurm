@@ -556,8 +556,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	}
 
 	/* Do VNI allocation/traffic classes/network limits */
-	if (!slingshot_setup_job_step(job, node_cnt, job_id, step_ptr->network,
-				      job_ptr->network))
+	if (!slingshot_setup_job_step_vni(job, node_cnt, job_id,
+					  step_ptr->network, job_ptr->network))
 		return SLURM_ERROR;
 
 	/*
@@ -1062,7 +1062,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 	 */
 	if (job) {
 		/* Free job step VNI */
-		slingshot_free_job_step(job);
+		slingshot_free_job_step_vni(job);
 	}
 
 	return SLURM_SUCCESS;
@@ -1099,5 +1099,5 @@ extern void switch_p_job_complete(uint32_t job_id)
 	/* Free any job VNIs */
 	xassert(running_in_slurmctld());
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);
-	slingshot_free_job(job_id);
+	slingshot_free_job_vni(job_id);
 }
