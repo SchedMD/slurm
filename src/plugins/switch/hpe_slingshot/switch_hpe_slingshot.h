@@ -273,6 +273,11 @@ extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 /* collectives.c */
 extern bool slingshot_init_collectives(void);
 extern void slingshot_fini_collectives(void);
+extern bool slingshot_setup_collectives(slingshot_jobinfo_t *job,
+					uint32_t node_cnt, uint32_t job_id,
+					uint32_t step_id);
+extern void slingshot_release_collectives_job_step(slingshot_jobinfo_t *job);
+extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);

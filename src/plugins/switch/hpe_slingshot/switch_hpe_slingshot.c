@@ -569,6 +569,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		return SLURM_ERROR;
 
 	/*
+	 * Reserve hardware collectives multicast addresses if configured
+	 */
+	if (!slingshot_setup_collectives(job, node_cnt, job_id,
+					 step_ptr->step_id.step_id))
+		return SLURM_ERROR;
+
+	/*
 	 * Fetch any Instant On data if configured;
 	 * don't fail launch on Instant On failure
 	 */
@@ -1132,6 +1139,9 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 	if (job) {
 		/* Free job step VNI */
 		slingshot_free_job_step_vni(job);
+
+		/* Release any hardware collectives multicast addresses */
+		slingshot_release_collectives_job_step(job);
 	}
 
 	return SLURM_SUCCESS;
@@ -1163,10 +1173,17 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Free any job VNIs, as well as any Slingshot hardware collectives
+ * multicast addresses associated with the job
+ */
 extern void switch_p_job_complete(uint32_t job_id)
 {
 	/* Free any job VNIs */
 	xassert(running_in_slurmctld());
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);
 	slingshot_free_job_vni(job_id);
+
+	/* Release any hardware collectives multicast addresses */
+	slingshot_release_collectives_job(job_id);
 }
