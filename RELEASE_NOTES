@@ -102,6 +102,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add SelectTypeParameters=LL_SHARED_GRES.
  -- Add SwitchParameters=hwcoll_addrs_per_job, hwcoll_num_nodes, fm_url,
     fm_auth, and fm_authdir to support collectives.
+ -- Deprecate the ExtSensorsType and ExtSensorsFreq options.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
