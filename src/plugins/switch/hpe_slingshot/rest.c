@@ -531,8 +531,8 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 		/* Connect and POST request to OAUTH token endpoint */
 		if (!slingshot_rest_connection(&token_conn, url,
 				       SLINGSHOT_AUTH_NONE, NULL, NULL, NULL,
-				       SLINGSHOT_JLOPE_TIMEOUT,
-				       SLINGSHOT_JLOPE_CONNECT_TIMEOUT,
+				       SLINGSHOT_TOKEN_TIMEOUT,
+				       SLINGSHOT_TOKEN_CONNECT_TIMEOUT,
 				       "OAUTH token grant"))
 			goto err;
 

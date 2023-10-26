@@ -98,6 +98,8 @@ typedef struct {
 #define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR       "/etc/wlm-client-auth"
 #define SLINGSHOT_JLOPE_TIMEOUT         10   /* jackaloped REST call timeout */
 #define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10   /* jackaloped REST connect " */
+#define SLINGSHOT_TOKEN_TIMEOUT         10   /* OAUTH token REST call timeout */
+#define SLINGSHOT_TOKEN_CONNECT_TIMEOUT 10   /* OAUTH token REST connect " */
 
 /* global functions */
 /* NOTE: all strings are copied to the conn struct */
