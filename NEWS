@@ -267,6 +267,8 @@ documents those changes that are of interest to users and administrators.
  -- sview - Fix search by node state returning incorrect node list.
  -- Fix inconsistent handling of using cli and/or environment options for
     tres_per_task=cpu:# and cpus_per_gpu.
+ -- Requesting --cpus-per-task will now set SLURM_TRES_PER_TASK=cpu:# in the
+    environment.
 
 * Changes in Slurm 23.02.7
 ==========================

@@ -6234,10 +6234,17 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	 * --tres-per-task=cpu:# will cause SLURM_CPUS_PER_TASK to be set as
 	 * well. So if they're both in the environment, verify that they're the
 	 * same.
+	 *
+	 * If either of these options are set, then make sure that both of these
+	 * options are set to the same thing:
+	 * opt->cpus_per_task and opt->tres_per_task=cpu:#.
 	 */
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
-	if (!cpu_per_task_ptr)
+	if (!cpu_per_task_ptr) {
+		if (opt->cpus_set)
+			_update_tres_per_task_cpu(opt);
 		return;
+	}
 
 	if (slurm_option_set_by_cli(opt, 'c') &&
 	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
@@ -6321,23 +6328,6 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		fatal("You can not have --tres-per-task=gres/gpu: and --gpus-per-task please use one or the other");
 
 	_validate_cpus_per_task(opt);
-
-	/*
-	 * FIXME: While it would be nice to see this in the tres_per_task str we
-	 * would need to change the situation where the allocation requested -c
-	 * and the step also does the same thing. If we unset the code below we
-	 * fail into this situation and we will fail above thinking we set the
-	 * --tres_per_task=cpu as well as -c. The correct fix would be to handle
-	 * this in arg_set_data_cpus_per_task() above by replacing the number in
-	 * tres_per_task here with the new number after it is validated and then
-	 * skip the check above. For now all works without putting this in the
-	 * string.
-	 */
-	/* if (opt->cpus_set && !cpu_per_task_ptr) { */
-	/* 	xstrfmtcat(opt->tres_per_task, "%scpu:%d", */
-	/* 		   opt->tres_per_task ? "," : "", */
-	/* 		   opt->cpus_per_task); */
-	/* } */
 }
 
 static void _validate_cpus_per_tres(slurm_opt_t *opt)

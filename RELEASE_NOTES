@@ -155,6 +155,8 @@ COMMAND CHANGES (see man pages for details)
     request for TRES, it should be TRESType/TRESName not TRESType:TRESName.
  -- salloc/sbatch/srun - Add disable_rdzv_get option to --network to disable
     rendezvous gets when using the switch/hpe_slingshot plugin.
+ -- Requesting --cpus-per-task will now set SLURM_TRES_PER_TASK=cpu:# in the
+    environment.
 
 API CHANGES
 ===========
