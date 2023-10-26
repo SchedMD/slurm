@@ -2447,12 +2447,6 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 	gres_ss_alloc = _step_get_alloc_gres_ptr(
 		args->step_gres_list_alloc, gres_state_job);
 
-	/*
-	 * cpus_per_gres is also used when deallocating a step, so it needs to
-	 * be part of the allocated state information.
-	 */
-	gres_ss_alloc->cpus_per_gres = gres_ss->cpus_per_gres;
-
 	args->rc = _step_alloc(gres_ss_alloc, args->gres_state_step,
 			       gres_state_job,
 			       args->node_offset, &args->tmp_step_id,
@@ -2569,14 +2563,14 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 
 static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 			 slurm_step_id_t *step_id, int node_offset,
-			 bool decr_job_alloc, int *total_gres_cpu_cnt)
+			 bool decr_job_alloc)
 {
 	gres_state_t *gres_state_job;
 	gres_step_state_t *gres_ss =
 		(gres_step_state_t *)gres_state_step->gres_data;
 	gres_job_state_t *gres_js;
 	uint32_t j;
-	uint64_t gres_cnt = 0;
+	uint64_t gres_cnt;
 	int len_j, len_s;
 	gres_key_t job_search_key;
 
@@ -2619,11 +2613,6 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 	if (!bit_test(gres_ss->node_in_use, node_offset))
 		return SLURM_SUCCESS;
 
-	if (gres_ss->gres_cnt_node_alloc)
-		gres_cnt = gres_ss->gres_cnt_node_alloc[node_offset];
-	if (gres_cnt && (gres_ss->cpus_per_gres != NO_VAL16))
-		*total_gres_cpu_cnt += gres_cnt * gres_ss->cpus_per_gres;
-
 	if (!decr_job_alloc) {
 		/* This step was not counted against job allocation */
 		if (gres_ss->gres_bit_alloc)
@@ -2631,7 +2620,9 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 		return SLURM_SUCCESS;
 	}
 
-	if (!gres_ss->gres_cnt_node_alloc) {
+	if (gres_ss->gres_cnt_node_alloc)
+		gres_cnt = gres_ss->gres_cnt_node_alloc[node_offset];
+	else {
 		error("gres/%s: %s %ps dealloc, gres_cnt_node_alloc is NULL",
 		      gres_state_job->gres_name, __func__, step_id);
 		return SLURM_ERROR;
@@ -2690,15 +2681,12 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 				  uint32_t job_id, uint32_t step_id,
 				  int node_offset,
-				  bool decr_job_alloc,
-				  int *total_gres_cpu_cnt)
+				  bool decr_job_alloc)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator step_gres_iter;
 	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
-
-	*total_gres_cpu_cnt = 0;
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -2718,8 +2706,7 @@ extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 				    job_gres_list,
 				    &tmp_step_id,
 				    node_offset,
-				    decr_job_alloc,
-				    total_gres_cpu_cnt);
+				    decr_job_alloc);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

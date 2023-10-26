@@ -472,6 +472,8 @@ extern void free_step_record(void *x)
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	jobacctinfo_destroy(step_ptr->jobacct);
 	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
+	xfree(step_ptr->cpu_alloc_reps);
+	xfree(step_ptr->cpu_alloc_values);
 	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
@@ -2276,6 +2278,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
+	uint16_t *cpus_per_task_array = NULL;
+	uint16_t *cpus_alloc_pn = NULL;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 
 	xassert(job_resrcs_ptr);
@@ -2327,6 +2331,9 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		all_job_mem = true;
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
+	xassert(rem_nodes == step_layout->node_cnt);
+
+	cpus_alloc_pn = xcalloc(step_layout->node_cnt, sizeof(*cpus_alloc_pn));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
@@ -2470,11 +2477,23 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			}
 		}
 		step_ptr->cpus_per_task = cpus_per_task;
-		step_layout->cpus_per_task[step_node_inx] = cpus_per_task;
+		/*
+		 * Only populate cpus_per_task_array if needed: if cpus_per_tres
+		 * was requested, then cpus_per_task may not be the same on all
+		 * nodes. Otherwise, cpus_per_task is the same on all nodes,
+		 * and this per-node array isn't needed.
+		 */
+		if (gres_cpus_alloc) {
+			if (!cpus_per_task_array)
+				cpus_per_task_array =
+					xcalloc(step_layout->node_cnt,
+						sizeof(*cpus_per_task_array));
+			cpus_per_task_array[step_node_inx] = cpus_per_task;
+		}
 		log_flag(STEPS, "%s: %pS node %d (%s) gres_cpus_alloc=%d tasks=%u cpus_per_task=%u",
 			 __func__, step_ptr, job_node_inx, node_ptr->name,
 			 gres_cpus_alloc, task_cnt,
-			 step_layout->cpus_per_task[step_node_inx]);
+			 cpus_per_task);
 
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
@@ -2530,6 +2549,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			 */
 		}
 		step_ptr->cpu_count += cpus_alloc;
+		cpus_alloc_pn[step_node_inx] = cpus_alloc;
 
 		/*
 		 * Don't count this step against the allocation if
@@ -2642,6 +2662,18 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		if (step_node_inx == (step_layout->node_cnt - 1))
 			break;
 	}
+	slurm_array16_to_value_reps(cpus_per_task_array, step_layout->node_cnt,
+				    &step_layout->cpt_compact_array,
+				    &step_layout->cpt_compact_reps,
+				    &step_layout->cpt_compact_cnt);
+	xfree(cpus_per_task_array);
+
+	slurm_array16_to_value_reps(cpus_alloc_pn, step_layout->node_cnt,
+				    &step_ptr->cpu_alloc_values,
+				    &step_ptr->cpu_alloc_reps,
+				    &step_ptr->cpu_alloc_array_cnt);
+	xfree(cpus_alloc_pn);
+
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
@@ -2753,8 +2785,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
-		int gres_cpus_alloc = 0;
-
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -2764,15 +2794,12 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 
 		/*
 		 * We need to free GRES structures regardless of overlap.
-		 * Also, if cpus_per_gres was requested, get total cpus
-		 * allocated for gres (cpus_per_gres * gres_alloc count)
 		 */
 		gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
 				       job_ptr->gres_list_alloc, job_ptr->job_id,
 				       step_ptr->step_id.step_id,
 				       job_node_inx,
-				       !(step_ptr->flags & SSF_OVERLAP_FORCE),
-				       &gres_cpus_alloc);
+				       !(step_ptr->flags & SSF_OVERLAP_FORCE));
 
 		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
 			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
@@ -2788,58 +2815,28 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (!step_ptr->step_layout->tasks[step_node_inx])
 			continue;
 
-		if (step_ptr->flags & SSF_WHOLE)
+		if (step_ptr->start_protocol_ver >=
+		    SLURM_23_11_PROTOCOL_VERSION) {
+			int inx;
+
+			xassert(step_ptr->cpu_alloc_array_cnt);
+			xassert(step_ptr->cpu_alloc_reps);
+			xassert(step_ptr->cpu_alloc_values);
+
+			inx = slurm_get_rep_count_inx(
+				step_ptr->cpu_alloc_reps,
+				step_ptr->cpu_alloc_array_cnt,
+				step_node_inx);
+			cpus_alloc = step_ptr->cpu_alloc_values[inx];
+		} else if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-		else {
-			slurm_step_layout_t *step_layout =
-				step_ptr->step_layout;
-			uint16_t *cpt_array = step_layout->cpus_per_task;
-			uint16_t *tasks = step_layout->tasks;
-			uint16_t cpus_per_task;
+		} else {
+			uint16_t cpus_per_task = step_ptr->cpus_per_task;
 			uint16_t vpus = node_ptr->tpc;
 
-			if (step_ptr->start_protocol_ver >=
-			    SLURM_23_11_PROTOCOL_VERSION) {
-				xassert (cpt_array);
-
-				cpus_per_task = cpt_array[step_node_inx];
-			} else
-				cpus_per_task = step_ptr->cpus_per_task;
-
-			/*
-			 * gres_cpus_alloc being set is new in 23.11, so we
-			 * only want to use this logic if it was set at step
-			 * allocation time, which means only for steps started
-			 * with 23.11.
-			 * Two versions after 23.11, we can remove just the
-			 * protocol version check, so this will turn into:
-			 *   if (gres_cpus_alloc) {
-			 *   ...
-			 *   } else
-			 */
-			if (gres_cpus_alloc &&
-			    (step_ptr->start_protocol_ver >=
-			     SLURM_23_11_PROTOCOL_VERSION)) {
-				/*
-				 * Use the same logic here as in
-				 * _step_alloc_lps().
-				 *
-				 * Allocated cpus may be modified if
-				 * ntasks_per_core was requested.
-				 * If gres_cpus_alloc is less than the number
-				 * of tasks, then default to one cpu per task.
-				 */
-				if (step_ptr->ntasks_per_core != INFINITE16)
-					cpus_alloc =
-						tasks[step_node_inx] *
-						cpus_per_task;
-				else if (gres_cpus_alloc < tasks[step_node_inx])
-					cpus_alloc = tasks[step_node_inx];
-				else
-					cpus_alloc = gres_cpus_alloc;
-			} else
-				cpus_alloc =
-					tasks[step_node_inx] * cpus_per_task;
+			cpus_alloc =
+				step_ptr->step_layout->tasks[step_node_inx] *
+				cpus_per_task;
 
 			/*
 			 * If we are doing threads per core we need the whole
@@ -4945,6 +4942,10 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	pack32(step_ptr->flags, buffer);
 
+	pack32_array(step_ptr->cpu_alloc_reps,
+		     step_ptr->cpu_alloc_array_cnt, buffer);
+	pack16_array(step_ptr->cpu_alloc_values,
+		     step_ptr->cpu_alloc_array_cnt, buffer);
 	pack32(step_ptr->cpu_count, buffer);
 	pack64(step_ptr->pn_min_memory, buffer);
 	pack32(step_ptr->exit_code, buffer);
@@ -5028,6 +5029,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t cpus_per_task, resv_port_cnt, state;
 	uint32_t cpu_count, exit_code, srun_pid = 0, flags = 0;
+	uint32_t cpu_alloc_array_cnt;
+	uint32_t *cpu_alloc_reps = NULL;
+	uint16_t *cpu_alloc_values = NULL;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint32_t tmp32;
 	uint64_t pn_min_memory;
@@ -5050,7 +5054,88 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		.step_het_comp = NO_VAL,
 	};
 
-	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id.step_id, buffer);
+		safe_unpack32(&step_id.step_het_comp, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack32(&srun_pid, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpackstr(&container, buffer);
+		safe_unpackstr(&container_id, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpack16(&state, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+
+		safe_unpack32(&flags, buffer);
+
+		safe_unpack32_array(&cpu_alloc_reps,
+				    &cpu_alloc_array_cnt, buffer);
+		safe_unpack16_array(&cpu_alloc_values, &tmp32, buffer);
+		xassert(tmp32 == cpu_alloc_array_cnt);
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			unpack_bit_str_hex(&exit_node_bitmap, buffer);
+		}
+		unpack_bit_str_hex(&core_bitmap_job, buffer);
+
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+
+		safe_unpackstr(&host, buffer);
+		safe_unpackstr(&resv_ports, buffer);
+		safe_unpackstr(&name, buffer);
+		safe_unpackstr(&network, buffer);
+
+		if (gres_step_state_unpack(&gres_list_req, buffer,
+					   &step_id, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (gres_step_state_unpack(&gres_list_alloc, buffer,
+					   &step_id, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (unpack_slurm_step_layout(&step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp &&
+		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+					     protocol_version)))
+			goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		safe_unpackstr(&tres_alloc_str, buffer);
+		safe_unpackstr(&tres_fmt_alloc_str, buffer);
+
+		safe_unpackstr(&cpus_per_tres, buffer);
+		safe_unpackstr(&mem_per_tres, buffer);
+		safe_unpackstr(&submit_line, buffer);
+		safe_unpackstr(&tres_bind, buffer);
+		safe_unpackstr(&tres_freq, buffer);
+		safe_unpackstr(&tres_per_step, buffer);
+		safe_unpackstr(&tres_per_node, buffer);
+		safe_unpackstr(&tres_per_socket, buffer);
+		safe_unpackstr(&tres_per_task, buffer);
+		if (jobacctinfo_unpack(&jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer, true))
+			goto unpack_error;
+		safe_unpack64_array(&memory_allocated, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(memory_allocated);
+	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
@@ -5227,6 +5312,13 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 	step_ptr->container = container;
 	step_ptr->container_id = container_id;
+	step_ptr->cpu_alloc_array_cnt = cpu_alloc_array_cnt;
+	xfree(step_ptr->cpu_alloc_reps);
+	step_ptr->cpu_alloc_reps = cpu_alloc_reps;
+	cpu_alloc_reps = NULL;
+	xfree(step_ptr->cpu_alloc_values);
+	step_ptr->cpu_alloc_values = cpu_alloc_values;
+	cpu_alloc_values = NULL;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
@@ -5333,6 +5425,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(cpu_alloc_reps);
+	xfree(cpu_alloc_values);
 	xfree(host);
 	xfree(resv_ports);
 	xfree(name);

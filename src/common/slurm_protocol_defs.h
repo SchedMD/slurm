@@ -926,7 +926,12 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  argc;
 	uint16_t  node_cpus;
 	uint16_t  cpus_per_task;
-	uint16_t  *cpus_per_task_array; /* Per node array of cpus per task */
+	uint16_t *cpt_compact_array; /* Compressed per-node cpus_per_task.
+				      * Index with slurm_get_rep_count_inx() */
+	uint32_t cpt_compact_cnt; /* number of elements in cpt_compact arrays */
+	uint32_t *cpt_compact_reps; /* number of consecutive nodes on which a
+				     * value in cpt_compact_array is
+				     * duplicated */
 	uint16_t  threads_per_core;
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	char    **env;
@@ -1947,8 +1952,9 @@ extern void xlate_array_task_str(char **array_task_str,
 				 bitstr_t **array_bitmap);
 
 /*
- * slurm_array64_to_value_reps - Compress array into an array that represents
- *                               the number of repeated values compressed.
+ * slurm_array<size>_to_value_reps - Compress array into an array that
+ *				     represents the number of repeated values
+ *				     compressed.
  *
  * IN array - Array of values.
  * IN array_cnt - Count of elements in 'array'.
@@ -1958,6 +1964,10 @@ extern void xlate_array_task_str(char **array_task_str,
  */
 extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 					uint64_t **values,
+					uint32_t **values_reps,
+					uint32_t *values_cnt);
+extern void slurm_array16_to_value_reps(uint16_t *array, uint32_t array_cnt,
+					uint16_t **values,
 					uint32_t **values_reps,
 					uint32_t *values_cnt);
 
