@@ -853,6 +853,8 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 					 node_name);
 			}
 			i *= cpus_per_gres;
+			/* max tasks is based on cpus */
+			*max_tasks_this_node = MIN(i, *max_tasks_this_node);
 			i = (i + cpus_per_core - 1) / cpus_per_core;
 			if (req_cores < i)
 				log_flag(SELECT_TYPE, "Node %s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",

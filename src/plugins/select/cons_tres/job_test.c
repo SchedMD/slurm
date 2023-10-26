@@ -51,7 +51,8 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_gpus;	/* Count of available GPUs */
 	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
-	uint32_t gres_min_cpus;
+	uint32_t gres_min_cpus; /* Minimum required cpus for gres */
+	uint32_t gres_max_tasks; /* Maximum tasks for gres */
 	uint16_t max_cpus;	/* Maximum available CPUs on the node */
 	uint16_t min_cpus;	/* Minimum allocated CPUs */
 	uint16_t sock_cnt;	/* Number of sockets on this node */
@@ -459,6 +460,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	avail_res_array[node_inx]->gres_min_cpus =
 		cons_helpers_cpus_per_core(job_ptr->details, node_inx) *
 		min_cores_this_node;
+	avail_res_array[node_inx]->gres_max_tasks = max_tasks_this_node;
 }
 
 /*
@@ -4897,6 +4899,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bitstr_t **avail_cores, **free_cores, **avail_cores_tmp = NULL;
 	bool test_only = false, will_run = false;
+	bool have_gres_max_tasks = false;
 	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
 	uint32_t *gres_min_cpus;
@@ -5598,6 +5601,8 @@ alloc_job:
 			     node_record_table_ptr[i]->name,
 			     i, job_res->cpus[n], i, gres_min_cpus[n]);
 		}
+		if (avail_res_array[i]->gres_max_tasks)
+			have_gres_max_tasks = true;
 		total_cpus += job_res->cpus[n];
 		n++;
 	}
@@ -5628,7 +5633,7 @@ alloc_job:
 		 */
 		have_gres_per_task = gres_select_util_job_tres_per_task(
 			job_ptr->gres_list_req);
-		if (have_gres_per_task) {
+		if (have_gres_per_task || have_gres_max_tasks) {
 			gres_task_limit = xcalloc(job_res->nhosts,
 						  sizeof(uint32_t));
 		}
@@ -5644,6 +5649,10 @@ alloc_job:
 						sock_gres_list);
 				if (gres_task_limit[j] != NO_VAL)
 					task_limit_set = true;
+			} else if (have_gres_max_tasks) {
+				gres_task_limit[j] =
+					avail_res_array[i]->gres_max_tasks;
+				task_limit_set = true;
 			}
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
