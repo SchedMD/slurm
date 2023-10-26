@@ -1125,6 +1125,8 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	xfree(devices);
 	xfree(tcss);
 
+	/* Add any collectives-related environment variables */
+	slingshot_collectives_env(job, env);
 	return SLURM_SUCCESS;
 }
 

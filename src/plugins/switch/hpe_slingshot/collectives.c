@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "switch_hpe_slingshot.h"
 #include "rest.h"
 
@@ -174,6 +176,52 @@ out:
 	json_object_put(reqjson);
 	json_object_put(respjson);
 	return rc;
+}
+
+/*
+ * Set up collectives-related environment variables for job step:
+ * if job->hwcoll is set, add the string-ized value of every
+ * field in job->hwcoll to this job step's environment
+ */
+extern void slingshot_collectives_env(slingshot_jobinfo_t *job, char ***env)
+{
+	slingshot_hwcoll_t *hwcoll = job->hwcoll;
+	char *job_id = NULL, *step_id = NULL;
+	char *addrs_per_job = NULL, *num_nodes = NULL;
+
+	if (!hwcoll)
+		return;
+
+	xstrfmtcat(job_id, "%u", hwcoll->job_id);
+	xstrfmtcat(step_id, "%u", hwcoll->step_id);
+	xstrfmtcat(addrs_per_job, "%u", hwcoll->addrs_per_job);
+	xstrfmtcat(num_nodes, "%u", hwcoll->num_nodes);
+
+	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
+		 SLINGSHOT_FI_CXI_COLL_JOB_ID_ENV, job_id,
+		 SLINGSHOT_FI_CXI_COLL_JOB_STEP_ID_ENV, step_id,
+		 SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV, hwcoll->mcast_token);
+	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
+		 SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV, hwcoll->mcast_token,
+		 SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV, addrs_per_job,
+		 SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV, num_nodes);
+
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_JOB_ID_ENV, job_id);
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_JOB_STEP_ID_ENV,
+			    step_id);
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV,
+			    hwcoll->mcast_token);
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV,
+			    hwcoll->fm_url);
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV,
+			    addrs_per_job);
+	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV,
+			    num_nodes);
+	xfree(job_id);
+	xfree(step_id);
+	xfree(addrs_per_job);
+	xfree(num_nodes);
+	return;
 }
 
 /*

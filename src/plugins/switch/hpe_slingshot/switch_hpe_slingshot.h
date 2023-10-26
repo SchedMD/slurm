@@ -261,6 +261,13 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_VNIS_ENV            "SLINGSHOT_VNIS"
 #define SLINGSHOT_DEVICES_ENV         "SLINGSHOT_DEVICES"
 #define SLINGSHOT_TCS_ENV             "SLINGSHOT_TCS"
+/* Slingshot collectives environment variables set for applications */
+#define SLINGSHOT_FI_CXI_COLL_JOB_ID_ENV          "FI_CXI_COLL_JOB_ID"
+#define SLINGSHOT_FI_CXI_COLL_JOB_STEP_ID_ENV     "FI_CXI_COLL_JOB_STEP_ID"
+#define SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV     "FI_CXI_COLL_MCAST_TOKEN"
+#define SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV  "FI_CXI_COLL_FABRIC_MGR_URL"
+#define SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV "FI_CXI_HWCOLL_ADDRS_PER_JOB"
+#define SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV     "FI_CXI_HWCOLL_MIN_NODES"
 
 /* Global variables */
 extern slingshot_state_t slingshot_state;
@@ -276,6 +283,7 @@ extern void slingshot_fini_collectives(void);
 extern bool slingshot_setup_collectives(slingshot_jobinfo_t *job,
 					uint32_t node_cnt, uint32_t job_id,
 					uint32_t step_id);
+extern void slingshot_collectives_env(slingshot_jobinfo_t *job, char ***env);
 extern void slingshot_release_collectives_job_step(slingshot_jobinfo_t *job);
 extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
