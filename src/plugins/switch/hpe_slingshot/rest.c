@@ -676,7 +676,7 @@ err:
 	xfree(client_id);
 	xfree(client_secret);
 	xfree(url);
-	slingshot_rest_disconnect(&token_conn);
+	slingshot_rest_destroy_connection(&token_conn);
 	xfree(req);
 	json_object_put(respjson);
 	return retval;
