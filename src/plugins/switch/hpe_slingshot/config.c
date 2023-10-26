@@ -820,7 +820,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	/* Set up connection to jackaloped */
 	if (!slingshot_init_instant_on())
 		goto err;
-        // TODO Set up connection to fabric manager
+	/* Set up connection to fabric manager */
+	if (!slingshot_init_collectives())
+		goto err;
 
 out:
 	debug("single_node_vni=%d job_vni=%d tcs=%#x flags=%#x",
@@ -839,6 +841,7 @@ out:
 	return true;
 
 err:
+	error("SwitchParameters parsing encountered errors, exiting");
 	xfree(params);
 	return false;
 }

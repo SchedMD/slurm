@@ -123,6 +123,7 @@ extern int fini(void)
 	if (running_in_slurmctld()) {
 		switch_p_libstate_clear();
 		slingshot_fini_instant_on();
+		slingshot_fini_collectives();
 		slingshot_free_config();
 	} else
 		slingshot_free_services();
@@ -139,6 +140,7 @@ extern int switch_p_reconfig(void)
 {
 	if (running_in_slurmctld()) {
 		slingshot_fini_instant_on();
+		slingshot_fini_collectives();
 		if (!slingshot_setup_config(slurm_conf.switch_param))
 			return SLURM_ERROR;
 	}

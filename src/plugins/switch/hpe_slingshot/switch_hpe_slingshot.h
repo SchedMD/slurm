@@ -256,6 +256,9 @@ extern slingshot_config_t slingshot_config;
 /* apinfo.c */
 extern bool create_slingshot_apinfo(const stepd_step_rec_t *step);
 extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
+/* collectives.c */
+extern bool slingshot_init_collectives(void);
+extern void slingshot_fini_collectives(void);
 /* config.c */
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);

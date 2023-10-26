@@ -186,9 +186,10 @@ am__DEPENDENCIES_1 =
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1) \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@am_switch_hpe_slingshot_la_OBJECTS =  \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.lo config.lo \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	instant_on.lo rest.lo \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	setup_nic.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.lo instant_on.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	rest.lo setup_nic.lo \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.lo
 switch_hpe_slingshot_la_OBJECTS =  \
 	$(am_switch_hpe_slingshot_la_OBJECTS)
@@ -217,7 +218,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/apinfo.Plo ./$(DEPDIR)/config.Plo \
+am__depfiles_remade = ./$(DEPDIR)/apinfo.Plo \
+	./$(DEPDIR)/collectives.Plo ./$(DEPDIR)/config.Plo \
 	./$(DEPDIR)/instant_on.Plo ./$(DEPDIR)/rest.Plo \
 	./$(DEPDIR)/setup_nic.Plo ./$(DEPDIR)/switch_hpe_slingshot.Plo
 am__mv = mv -f
@@ -534,6 +536,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
 # HPE Slingshot switch plugin.
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_SOURCES = \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	instant_on.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	rest.c \
@@ -623,6 +626,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/apinfo.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/collectives.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/instant_on.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest.Plo@am__quote@ # am--include-marker
@@ -757,6 +761,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
+	-rm -f ./$(DEPDIR)/collectives.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/rest.Plo
@@ -808,6 +813,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
+	-rm -f ./$(DEPDIR)/collectives.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/rest.Plo
