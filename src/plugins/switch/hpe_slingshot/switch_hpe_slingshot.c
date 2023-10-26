@@ -642,6 +642,22 @@ static void _pack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 	packstr(nic->device_name, buffer);
 }
 
+static void _pack_hwcoll(const slingshot_hwcoll_t *hwcoll, buf_t *buffer)
+{
+	/* Pack a boolean to let unpack routine know that hwcoll exists */
+	if (hwcoll) {
+		packbool(true, buffer);
+		pack32(hwcoll->job_id, buffer);
+		pack32(hwcoll->step_id, buffer);
+		packstr(hwcoll->mcast_token, buffer);
+		packstr(hwcoll->fm_url, buffer);
+		pack32(hwcoll->addrs_per_job, buffer);
+		pack32(hwcoll->num_nodes, buffer);
+	} else {
+		packbool(false, buffer);
+	}
+}
+
 static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 				 buf_t *buffer)
 {
@@ -696,6 +712,41 @@ unpack_error:
 	return false;
 }
 
+static bool _unpack_hwcoll(slingshot_hwcoll_t **hwcollp, buf_t *buffer)
+{
+	slingshot_hwcoll_t *hwcoll = NULL;
+	bool got_hwcoll = false;
+	uint32_t name_len;
+
+	*hwcollp = NULL;
+	/* Unpack a boolean to see if hwcoll is packed in the buffer */
+	safe_unpackbool(&got_hwcoll, buffer);
+	if (got_hwcoll) {
+		hwcoll = xmalloc(sizeof(*hwcoll));
+
+		safe_unpack32(&hwcoll->job_id, buffer);
+		safe_unpack32(&hwcoll->step_id, buffer);
+
+		safe_unpackstr_xmalloc(&hwcoll->mcast_token, &name_len, buffer);
+		if (!hwcoll->mcast_token)
+			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&hwcoll->fm_url, &name_len, buffer);
+		if (!hwcoll->fm_url)
+			goto unpack_error;
+
+		safe_unpack32(&hwcoll->addrs_per_job, buffer);
+		safe_unpack32(&hwcoll->num_nodes, buffer);
+
+		*hwcollp = hwcoll;
+	}
+
+	return true;
+
+unpack_error:
+	return false;
+}
+
 extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 				 uint16_t protocol_version)
 {
@@ -734,6 +785,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
 			_pack_hsn_nic(&jobinfo->nics[pidx], buffer);
 		}
+		_pack_hwcoll(jobinfo->hwcoll, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		/* nothing to pack, pack special "null" version number */
 		if (!jobinfo ||
@@ -857,6 +909,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 			if (!_unpack_hsn_nic(&jobinfo->nics[pidx], buffer))
 				goto unpack_error;
 		}
+		_unpack_hwcoll(&jobinfo->hwcoll, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		bitstr_t *vni_pids = NULL;
 		safe_unpack32(&jobinfo->version, buffer);
@@ -902,6 +955,8 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 			if (!_unpack_hsn_nic(&jobinfo->nics[pidx], buffer))
 				goto unpack_error;
 		}
+		/* Not present in this version, set to none */
+		jobinfo->hwcoll = NULL;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		safe_unpack32(&jobinfo->version, buffer);
@@ -940,6 +995,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 		jobinfo->flags = 0;
 		jobinfo->num_nics = 0;
 		jobinfo->nics = NULL;
+		jobinfo->hwcoll = NULL;
 	} else {
 		error("invalid protocol version");
 		goto error;
