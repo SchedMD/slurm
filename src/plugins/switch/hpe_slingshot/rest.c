@@ -184,6 +184,21 @@ extern void slingshot_rest_disconnect(slingshot_rest_conn_t *conn)
 	conn->datasiz = 0;
 }
 
+/* Return a string corresponding to the passed-in authentication type */
+static const char *_auth_type_tostr(slingshot_rest_auth_t auth_type)
+{
+	switch (auth_type) {
+	case SLINGSHOT_AUTH_BASIC:
+		return "BASIC";
+	case SLINGSHOT_AUTH_OAUTH:
+		return "OAUTH";
+	case SLINGSHOT_AUTH_NONE:
+		return "NONE";
+	default:
+		return "unknown auth_type";
+	}
+}
+
 /*
  * Generic handle set up function for network connections to use
  */
@@ -233,8 +248,7 @@ extern bool slingshot_rest_connect(slingshot_rest_conn_t *conn)
 	}
 
 	debug("Connected to %s at %s using %s auth", conn->name, conn->base_url,
-	      (conn->auth.auth_type == SLINGSHOT_AUTH_BASIC) ?
-	      "BASIC" : "OAUTH");
+	      _auth_type_tostr(conn->auth.auth_type));
 
 	return true;
 
