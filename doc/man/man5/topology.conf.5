@@ -1,16 +1,10 @@
 .TH "topology.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
 
 .SH "NAME"
-topology.conf \- Slurm configuration file for defining the network topology
-
-.SH "PREREQUISITES"
-
-Topology.conf can only represent a hierarchical network. All nodes in the
-network must be connected to at least one switch. The network must be fully
-connected to use TopologyParam=RouteTree. Jobs can only span nodes connected
-by the same switch fabric, even if there are available idle nodes.
+topology.conf \-  Slurm configuration file for the topology plugins
 
 .SH "DESCRIPTION"
+
 \fBtopology.conf\fP is an ASCII file which describes the
 cluster's network topology for optimized job resource allocation.
 The file will always be located in the same directory as the \fBslurm.conf\fR.
@@ -22,6 +16,14 @@ Changes to the configuration file take effect upon restart of
 Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
+
+.SH topology/tree:
+
+All nodes in the
+network must be connected to at least one switch. The network must be fully
+connected to use TopologyParam=RouteTree. Jobs can only span nodes connected
+by the same switch fabric, even if there are available idle nodes.
+
 The network topology configuration one line defining a switch name and
 its children, either node names or switch names.
 Slurm's hostlist expression parser is used, so the node and switch
@@ -32,8 +34,9 @@ An optional link speed may also be specified.
 The \fBtopology.conf\fP file for an Infiniband switch can be
 automatically generated using the \fBslurmibtopology\fP tool found here:
 <https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmibtopology>.
+
 .LP
-The overall configuration parameters available include:
+The overall configuration parameters available for topology/tree include:
 
 .TP
 \fBSwitchName\fR
@@ -61,6 +64,35 @@ The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.
 .IP
 
+.SH topology/block:
+
+.LP
+The network topology configuration one line defining a block name and
+its children node names.
+Slurm's hostlist expression parser is used, so the node
+names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]").
+
+.LP
+The overall configuration parameters available for topology/block include:
+
+.TP
+\fBBlockName\fR
+The name of a block. This name is internal to Slurm and arbitrary.
+Each block should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBNodes\fR
+Child Nodes of the named block.
+Either this option or the \fBBlockName\fR option must be specified.
+.IP
+
+.TP
+\fBBlockLevels\fR
+List of enforced level of block aggregation
+.IP
+
 .SH "EXAMPLE"
 .nf
 ##################################################################
@@ -73,11 +105,24 @@ SwitchName=s2 Nodes=dev[12\-17]
 SwitchName=s3 Switches=s[0\-2]
 .fi
 
+.nf
+##################################################################
+# Slurm's network topology configuration file for use with the
+# topology/block plugin
+##################################################################
+BlockName=block1 Nodes=node[01,05,09,13]
+BlockName=block2 Nodes=node[02,06,10,14]
+BlockName=block3 Nodes=node[03,07,11,15]
+BlockName=block4 Nodes=node[04,08,12,16]
+
+BlockLevels=0-1,2
+.fi
+
 .SH "COPYING"
 Copyright (C) 2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2022 SchedMD LLC.
+Copyright (C) 2010\-2023 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
