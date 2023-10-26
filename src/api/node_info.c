@@ -177,25 +177,12 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
  */
 char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
-	uint32_t my_state = node_ptr->node_state;
 	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
 	uint16_t alloc_cpus = 0;
-	int idle_cpus;
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
-
-	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-				  SELECT_NODEDATA_SUBCNT,
-				  NODE_STATE_ALLOCATED,
-				  &alloc_cpus);
-	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
-
-	if (idle_cpus  && (idle_cpus != node_ptr->cpus_efctv)) {
-		my_state &= NODE_STATE_FLAGS;
-		my_state |= NODE_STATE_MIXED;
-	}
 
 	/****** Line 1 ******/
 	xstrfmtcat(out, "NodeName=%s ", node_ptr->name);
@@ -324,7 +311,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line ******/
-	complete_state = node_state_string_complete(my_state);
+	complete_state = node_state_string_complete(node_ptr->node_state);
 	xstrfmtcat(out, "State=%s ThreadsPerCore=%u TmpDisk=%u Weight=%u ",
 		   complete_state, node_ptr->threads, node_ptr->tmp_disk,
 		   node_ptr->weight);
@@ -345,8 +332,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 
 	/****** Line ******/
 	if ((node_ptr->next_state != NO_VAL) &&
-	    ((my_state & NODE_STATE_REBOOT_REQUESTED) ||
-	     (my_state & NODE_STATE_REBOOT_ISSUED))) {
+	    (IS_NODE_REBOOT_REQUESTED(node_ptr) ||
+	     IS_NODE_REBOOT_ISSUED(node_ptr))) {
 		xstrfmtcat(out, "NextState=%s",
 			   node_state_string(node_ptr->next_state));
 		xstrcat(out, line_end);
@@ -506,6 +493,36 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	return out;
 }
 
+static void _set_node_mixed_op(node_info_t *node_ptr)
+{
+	uint16_t alloc_cpus = 0;
+	uint16_t idle_cpus = 0;
+	char *alloc_tres = NULL;
+	bool make_mixed = false;
+
+	xassert(node_ptr);
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ALLOCATED, &alloc_cpus);
+	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
+				     NODE_STATE_ALLOCATED, &alloc_tres);
+
+	if (idle_cpus && (idle_cpus < node_ptr->cpus_efctv))
+		make_mixed = true;
+	if (alloc_tres && (idle_cpus == node_ptr->cpus_efctv))
+		make_mixed = true;
+	if (make_mixed) {
+		node_ptr->node_state &= NODE_STATE_FLAGS;
+		node_ptr->node_state |= NODE_STATE_MIXED;
+	}
+
+	xfree(alloc_tres);
+}
+
 static void _set_node_mixed(node_info_msg_t *resp)
 {
 	node_info_t *node_ptr = NULL;
@@ -516,14 +533,7 @@ static void _set_node_mixed(node_info_msg_t *resp)
 
 	for (i = 0, node_ptr = resp->node_array;
 	     i < resp->record_count; i++, node_ptr++) {
-		uint16_t used_cpus = 0;
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-					     SELECT_NODEDATA_SUBCNT,
-					     NODE_STATE_ALLOCATED, &used_cpus);
-		if (used_cpus && (used_cpus != node_ptr->cpus_efctv)) {
-			node_ptr->node_state &= NODE_STATE_FLAGS;
-			node_ptr->node_state |= NODE_STATE_MIXED;
-		}
+		_set_node_mixed_op(node_ptr);
 	}
 }
 

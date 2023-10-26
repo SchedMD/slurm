@@ -1052,7 +1052,7 @@ for more information.
 
 .TP
 \fBDRAINING\fR
-The node is currently executing a job, but will not be allocated
+The node is currently allocated a job, but will not be allocated
 additional jobs. The node state will be changed to state
 \fBDRAINED\fR when the last job on it completes. Nodes enter
 this state per system administrator request. See the \fBupdate
@@ -1113,6 +1113,7 @@ A request to reboot this node has been made, but hasn't been handled yet.
 .TP
 \fBMIXED\fR
 The node has some of its CPUs \fBALLOCATED\fR while others are \fBIDLE\fR.
+Or the node has a suspended job allocated to some of its TRES (e.g. memory).
 .IP
 
 .TP

@@ -956,11 +956,10 @@ update_color:
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 {
 	node_info_msg_t *new_node_ptr = NULL;
-	uint16_t show_flags = 0;
+	uint16_t show_flags = SHOW_MIXED;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL), delay;
 	static time_t last;
-	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
 	delay = now - last;
@@ -994,17 +993,14 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(g_node_info_ptr);
-			changed = 1;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_node_ptr = g_node_info_ptr;
-			changed = 0;
 		}
 	} else {
 		new_node_ptr = NULL;
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     show_flags);
-		changed = 1;
 	}
 
 	last_flags = show_flags;
@@ -1012,36 +1008,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 
 	if (g_node_info_ptr && (*info_ptr != g_node_info_ptr))
 		error_code = SLURM_SUCCESS;
-
- 	if (new_node_ptr && new_node_ptr->node_array && changed) {
-		int i;
-		node_info_t *node_ptr = NULL;
-		uint16_t alloc_cpus = 0;
-		int idle_cpus;
-
-		for (i=0; i<g_node_info_ptr->record_count; i++) {
-			node_ptr = &(g_node_info_ptr->node_array[i]);
-			if (!node_ptr->name || (node_ptr->name[0] == '\0'))
-				continue;	/* bad node */
-			idle_cpus = node_ptr->cpus_efctv;
-
-			slurm_get_select_nodeinfo(
-				node_ptr->select_nodeinfo,
-				SELECT_NODEDATA_SUBCNT,
-				NODE_STATE_ALLOCATED,
-				&alloc_cpus);
-			idle_cpus -= alloc_cpus;
-
-			if (IS_NODE_DRAIN(node_ptr)) {
-				/* don't worry about mixed since the
-				   whole node is being drained. */
-			} else if (idle_cpus &&
-				   (idle_cpus != node_ptr->cpus_efctv)) {
-				node_ptr->node_state &= NODE_STATE_FLAGS;
-				node_ptr->node_state |= NODE_STATE_MIXED;
-			}
-		}
-	}
 
 	*info_ptr = g_node_info_ptr;
 
@@ -1802,32 +1768,14 @@ display_it:
 		case SEARCH_NODE_STATE:
 			if (search_info->int_data == NO_VAL)
 				continue;
-			else if (search_info->int_data
-				 != node_ptr->node_state) {
-				if (IS_NODE_MIXED(node_ptr)) {
-					uint16_t alloc_cnt = 0;
-					uint16_t idle_cnt =
-						node_ptr->cpus_efctv;
-					select_g_select_nodeinfo_get(
-						node_ptr->select_nodeinfo,
-						SELECT_NODEDATA_SUBCNT,
-						NODE_STATE_ALLOCATED,
-						&alloc_cnt);
-					idle_cnt -= alloc_cnt;
-					if ((search_info->int_data
-					     & NODE_STATE_BASE)
-					    == NODE_STATE_ALLOCATED) {
-						if (alloc_cnt)
-							break;
-					} else if ((search_info->int_data
-						    & NODE_STATE_BASE)
-						   == NODE_STATE_IDLE) {
-						if (idle_cnt)
-							break;
-					}
-				}
+			if ((node_ptr->node_state & NODE_STATE_BASE) ==
+			    (search_info->int_data & NODE_STATE_BASE))
+				found = 1;
+			if ((node_ptr->node_state & NODE_STATE_FLAGS) &
+			    (search_info->int_data & NODE_STATE_FLAGS))
+				found = 1;
+			if (!found)
 				continue;
-			}
 			break;
 		case SEARCH_NODE_NAME:
 		default:

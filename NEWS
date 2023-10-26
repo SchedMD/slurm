@@ -263,6 +263,8 @@ documents those changes that are of interest to users and administrators.
     development libraries.
  -- Add support for Debian packaging.
  -- switch/hpe_slingshot - Add support for collectives.
+ -- Nodes with suspended jobs can now be displayed as MIXED.
+ -- sview - Fix search by node state returning incorrect node list.
 
 * Changes in Slurm 23.02.7
 ==========================
