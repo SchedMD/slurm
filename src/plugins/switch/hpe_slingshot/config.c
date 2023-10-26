@@ -386,6 +386,145 @@ static void _config_jlope_defaults(void)
 }
 
 /*
+ * Parse the "hwcoll_addrs_per_job" token, with format
+ * "hwcoll_addrs_per_job=<number>"
+ */
+static bool _config_hwcoll_addrs_per_job(const char *token, char *arg)
+{
+	char *end_ptr = NULL;
+        uint32_t num;
+
+	if (!arg)
+		goto err;
+	num = strtol(arg, &end_ptr, 10);
+	if (!end_ptr || (end_ptr == arg))
+		goto err;
+        if (num <= 0)
+            goto err;
+	slingshot_config.hwcoll_addrs_per_job = num;
+
+	log_flag(SWITCH, "[token=%s]: hwcoll_addrs_per_job %u",
+		 token, slingshot_config.hwcoll_addrs_per_job);
+	return true;
+err:
+	error("Invalid hwcoll_addrs_per_job token '%s' (example 'hwcoll_addrs_per_job=26')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "hwcoll_num_nodes" token, with format "hwcoll_num_nodes=<number>"
+ */
+static bool _config_hwcoll_num_nodes(const char *token, char *arg)
+{
+	char *end_ptr = NULL;
+        uint32_t num;
+
+	if (!arg)
+		goto err;
+	num = strtol(arg, &end_ptr, 10);
+	if (!end_ptr || (end_ptr == arg))
+		goto err;
+        if (num <= 0)
+            goto err;
+	slingshot_config.hwcoll_num_nodes = num;
+
+	log_flag(SWITCH, "[token=%s]: hwcoll_num_nodes %u",
+		 token, slingshot_config.hwcoll_num_nodes);
+	return true;
+err:
+	error("Invalid hwcoll_num_nodes token '%s' (example 'hwcoll_num_nodes=64')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_url" token, with format "fm_url=<url>"
+ */
+static bool _config_fm_url(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.fm_url = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_url %s",
+		 token, slingshot_config.fm_url);
+	return true;
+err:
+	error("Invalid fm_url token '%s' (example 'fm_url=https://api-gw-service-nmn.local/apis/fm')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_auth" token, with format "fm_auth={BASIC,OAUTH}"
+ */
+static bool _config_fm_auth(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	if (!xstrcasecmp(arg, SLINGSHOT_AUTH_BASIC_STR))
+		slingshot_config.fm_auth = SLINGSHOT_AUTH_BASIC;
+	else if (!xstrcasecmp(arg, SLINGSHOT_AUTH_OAUTH_STR))
+		slingshot_config.fm_auth = SLINGSHOT_AUTH_OAUTH;
+	else
+		goto err;
+
+	log_flag(SWITCH, "[token=%s]: fm_auth %d",
+		 token, slingshot_config.fm_auth);
+	return true;
+err:
+	error("Invalid fm_auth token '%s' (example 'fm_auth={BASIC,OAUTH}')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_authdir" token, with format "fm_authdir=<dirpath>"
+ */
+static bool _config_fm_authdir(const char *token, char *arg)
+{
+	struct stat statbuf;
+
+	if (!arg)
+		goto err;
+	if (stat(arg, &statbuf) != 0 || !S_ISDIR(statbuf.st_mode)) {
+		error("fm_authdir directory '%s' is not a directory", arg);
+		return false;
+	}
+	slingshot_config.fm_authdir = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_authdir %s",
+		 token, slingshot_config.fm_authdir);
+	return true;
+err:
+	error("Invalid fm_authdir token '%s' (example 'fm_authdir=/etc/wlm-client-auth')",
+	      token);
+	return false;
+}
+
+/*
+ * If fm_url is set, set up default values for fm_auth{dir}
+ * (if not already set)
+ */
+static void _config_fm_defaults(void)
+{
+	if (!slingshot_config.fm_url)
+		return;
+	if (slingshot_config.fm_auth == SLINGSHOT_AUTH_NONE)
+		slingshot_config.fm_auth = SLINGSHOT_AUTH_OAUTH;
+	if (!slingshot_config.fm_authdir) {
+		if (slingshot_config.fm_auth == SLINGSHOT_AUTH_OAUTH)
+			slingshot_config.fm_authdir =
+					xstrdup(SLINGSHOT_FM_AUTH_OAUTH_DIR);
+		else if (slingshot_config.fm_auth == SLINGSHOT_AUTH_BASIC)
+			slingshot_config.fm_authdir =
+					xstrdup(SLINGSHOT_FM_AUTH_BASIC_DIR);
+	}
+	xassert(slingshot_config.fm_authdir);
+}
+
+/*
  * Mapping between Slingshot limit names, slingshot_limits_set_t offset, maximum
  * values
  */
@@ -509,6 +648,8 @@ extern void slingshot_free_config(void)
 {
 	xfree(slingshot_config.jlope_url);
 	xfree(slingshot_config.jlope_authdir);
+	xfree(slingshot_config.fm_url);
+	xfree(slingshot_config.fm_authdir);
 }
 
 /*
@@ -536,6 +677,17 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_jlope_auth = sizeof(jlope_auth) - 1;
 	const char jlope_authdir[] = "jlope_authdir";
 	const size_t size_jlope_authdir = sizeof(jlope_authdir) - 1;
+	const char hwcoll_addrs_per_job[] = "hwcoll_addrs_per_job";
+	const size_t size_hwcoll_addrs_per_job =
+                                        sizeof(hwcoll_addrs_per_job) - 1;
+	const char hwcoll_num_nodes[] = "hwcoll_num_nodes";
+	const size_t size_hwcoll_num_nodes = sizeof(hwcoll_num_nodes) - 1;
+	const char fm_url[] = "fm_url";
+	const size_t size_fm_url = sizeof(fm_url) - 1;
+	const char fm_auth[] = "fm_auth";
+	const size_t size_fm_auth = sizeof(fm_auth) - 1;
+	const char fm_authdir[] = "fm_authdir";
+	const size_t size_fm_authdir = sizeof(fm_authdir) - 1;
 	/* Use min/max in state file if SwitchParameters not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
@@ -557,8 +709,17 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *     used/reserved by system services
 	 *   jlope_url=<url>: use URL for jackaloped REST requests
 	 *   jlope_auth="BASIC|OAUTH": jackaloped REST API authentication type
-	 *   jlope_authdir=<dir>: directory containing authentication info
+	 *   jlope_authdir=<dir>: jackaloped authentication info directory
 	 *     (i.e. /etc/jackaloped for BASIC, /etc/wlm-client-auth for OAUTH)
+	 *   hwcoll_addrs_per_job=<number>: allocate <number> of Slingshot
+         *     hardware collectives multicast addresses per job
+         *     (that are larger than <hwcoll_min_nodes> nodes)
+	 *   hwcoll_num_nodes=<num_nodes>: minimum number of nodes for a
+         *     job to be allocated Slingshot hardware collectives
+	 *   fm_url=<url>: use URL for fabric manager REST requests
+	 *   fm_auth="BASIC|OAUTH": fabric manager REST API authentication type
+	 *   fm_authdir=<dir>: fabric manager authentication info directory
+	 *     (i.e. /etc/fmsim for BASIC, /etc/wlm-client-auth for OAUTH)
 	 *
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
@@ -625,6 +786,27 @@ extern bool slingshot_setup_config(const char *switch_params)
 		} else if (!xstrncasecmp(token, jlope_auth, size_jlope_auth)) {
 			if (!_config_jlope_auth(token, arg))
 				goto err;
+		} else if (!xstrncasecmp(token, hwcoll_addrs_per_job,
+                                         size_hwcoll_addrs_per_job)) {
+			if (!_config_hwcoll_addrs_per_job(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, hwcoll_num_nodes,
+					 size_hwcoll_num_nodes)) {
+			if (!_config_hwcoll_num_nodes(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, fm_url, size_fm_url)) {
+			if (!_config_fm_url(token, arg))
+				goto err;
+		/*
+		 * NOTE: fm_authdir needs to come before fm_auth
+		 * since fm_auth is a prefix of fm_authdir
+		 */
+		} else if (!xstrncasecmp(token, fm_authdir, size_fm_authdir)) {
+			if (!_config_fm_authdir(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, fm_auth, size_fm_auth)) {
+			if (!_config_fm_auth(token, arg))
+				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
 				goto err;
@@ -632,10 +814,13 @@ extern bool slingshot_setup_config(const char *switch_params)
 	}
 	/* If jlope_url is set, set up default values for jlope_auth{dir} */
 	_config_jlope_defaults();
+	/* If fm_url is set, set up default values for fm_auth{dir} */
+	_config_fm_defaults();
 
 	/* Set up connection to jackaloped */
 	if (!slingshot_init_instant_on())
 		goto err;
+        // TODO Set up connection to fabric manager
 
 out:
 	debug("single_node_vni=%d job_vni=%d tcs=%#x flags=%#x",
@@ -644,6 +829,10 @@ out:
 	debug("jlope_url=%s jlope_auth=%u jlope_authdir=%s",
 	      slingshot_config.jlope_url, slingshot_config.jlope_auth,
 	      slingshot_config.jlope_authdir);
+	debug("hwcoll_addrs_per_job=%d hwcoll_num_nodes=%d fm_url=%s fm_auth=%u fm_authdir=%s",
+	      slingshot_config.hwcoll_addrs_per_job,
+              slingshot_config.hwcoll_num_nodes, slingshot_config.fm_url,
+              slingshot_config.fm_auth, slingshot_config.fm_authdir);
 	_print_limits(&slingshot_config.limits);
 
 	xfree(params);

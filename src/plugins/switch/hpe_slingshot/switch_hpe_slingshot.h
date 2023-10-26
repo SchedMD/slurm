@@ -157,6 +157,11 @@ typedef struct slingshot_config {
 	char *jlope_url;                /* URL of jackaloped REST interface */
 	slingshot_rest_auth_t jlope_auth; /* jackaloped authentication type */
 	char *jlope_authdir;            /* jackaloped auth file directory */
+	uint32_t hwcoll_addrs_per_job;  /* #Hardware collectives per job */
+	uint32_t hwcoll_num_nodes;      /* Minimum job nodes for HW coll */
+	char *fm_url;                   /* fabric manager REST interface URL */
+	slingshot_rest_auth_t fm_auth;  /* fabric manager authentication type */
+	char *fm_authdir;               /* fabric manager auth file directory */
 } slingshot_config_t;
 
 /* Values for slingshot_config_t.single_node_vni */

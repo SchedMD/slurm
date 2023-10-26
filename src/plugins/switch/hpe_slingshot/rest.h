@@ -96,8 +96,14 @@ typedef struct {
 #define SLINGSHOT_JLOPE_AUTH_BASIC_DIR       "/etc/jackaloped"
 #define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE  "passwd"
 #define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR       "/etc/wlm-client-auth"
+#define SLINGSHOT_FM_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
+#define SLINGSHOT_FM_AUTH_BASIC_DIR          "/etc/fmsim"
+#define SLINGSHOT_FM_AUTH_BASIC_PWD_FILE     "passwd"
+#define SLINGSHOT_FM_AUTH_OAUTH_DIR          "/etc/wlm-client-auth"
 #define SLINGSHOT_JLOPE_TIMEOUT         10   /* jackaloped REST call timeout */
 #define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10   /* jackaloped REST connect " */
+#define SLINGSHOT_FM_TIMEOUT            10   /* fabric manager REST call tout */
+#define SLINGSHOT_FM_CONNECT_TIMEOUT    10   /* fabric manager REST connect " */
 #define SLINGSHOT_TOKEN_TIMEOUT         10   /* OAUTH token REST call timeout */
 #define SLINGSHOT_TOKEN_CONNECT_TIMEOUT 10   /* OAUTH token REST connect " */
 
