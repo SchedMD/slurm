@@ -28031,6 +28031,11 @@ printf "%s\n" "${x_ac_deprecated=no}" >&6; }
      if test "$ac_cv_sizeof_void_p" = "4"; then
         as_fn_error $? "32-bit support is deprecated, and not tested regularly. Use at your own risk." "$LINENO" 5
      fi
+     if test "$ac_have_cray_network" = "yes" ||
+        test "$ac_really_no_cray" = "yes" ||
+        test "$ac_have_native_cray" = "yes"; then
+        as_fn_error $? "Cray XC support is deprecated. Please contact SchedMD for details." "$LINENO" 5
+     fi
    fi
 
 

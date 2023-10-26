@@ -103,6 +103,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add SwitchParameters=hwcoll_addrs_per_job, hwcoll_num_nodes, fm_url,
     fm_auth, and fm_authdir to support collectives.
  -- Deprecate the ExtSensorsType and ExtSensorsFreq options.
+ -- Cray XC support has been deprecated. Use '--enable-deprecated' to allow the
+    the build to continue. Sites are encouraged to contact SchedMD about the EOL
+    date for Cray XC support.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

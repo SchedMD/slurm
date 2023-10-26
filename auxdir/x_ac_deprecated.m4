@@ -30,5 +30,10 @@ AC_DEFUN([X_AC_DEPRECATED], [
      if test "$ac_cv_sizeof_void_p" = "4"; then
         AC_MSG_ERROR([32-bit support is deprecated, and not tested regularly. Use at your own risk.])
      fi
+     if [test "$ac_have_cray_network" = "yes"] ||
+        [test "$ac_really_no_cray" = "yes"] ||
+        [test "$ac_have_native_cray" = "yes"]; then
+        AC_MSG_ERROR([Cray XC support is deprecated. Please contact SchedMD for details.])
+     fi
    fi
 ])
