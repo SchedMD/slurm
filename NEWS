@@ -269,6 +269,11 @@ documents those changes that are of interest to users and administrators.
     tres_per_task=cpu:# and cpus_per_gpu.
  -- Requesting --cpus-per-task will now set SLURM_TRES_PER_TASK=cpu:# in the
     environment.
+ -- For some tres related environment variables such as SLURM_TRES_PER_TASK,
+    when srun requests a different value for that option, set these environment
+    variables to the value requested by srun. Previously these environment
+    variables were unchanged from the job allocation. This bug only affected the
+    output environment variables, not the actual step resource allocation.
 
 * Changes in Slurm 23.02.7
 ==========================

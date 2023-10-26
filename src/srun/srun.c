@@ -711,9 +711,25 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	}
 
 	setup_env(env, srun_opt->preserve_env);
+	/*
+	 * set_env_from_opts() could set job->env vars that are already set in
+	 * environ, but the values could be different (srun requests something
+	 * that is different from the job's environment) and we want the
+	 * job->env to take precedence.
+	 *
+	 * env_array_merge() overwrites anything in dest (the first argument)
+	 * with anything in source (the second argument). Thus, anything in
+	 * environ would overwrite anything already in job->env. The environ
+	 * vars could differ from vars in job->env, and at this point job->env
+	 * is the correct one.
+	 *
+	 * So, we need to first set the env vars from job->env to the environ,
+	 * then do the merge.
+	 */
 	set_env_from_opts(opt_local, &job->env,
 			  (job->het_job_offset == NO_VAL) ?
 			  -1 : job->het_job_offset);
+	env_array_set_environment(job->env);
 	env_array_merge(&job->env, (const char **)environ);
 
 	xfree(env->task_count);
