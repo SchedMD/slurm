@@ -83,7 +83,7 @@ typedef struct {
 
 static const char *_name(const on_http_request_args_t *args)
 {
-	return con_mgr_fd_get_name(args->context->con);
+	return conmgr_fd_get_name(args->context->con);
 }
 
 static void _check_path_magic(const path_t *path)
@@ -319,7 +319,7 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 	(void) send_http_response(&send_args);
 
 	/* close connection on error */
-	con_mgr_queue_close_fd(args->context->con);
+	conmgr_queue_close_fd(args->context->con);
 
 	FREE_NULL_LIST(send_args.headers);
 

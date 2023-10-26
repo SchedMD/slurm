@@ -86,9 +86,9 @@
 /*
  * Connection tracking structure
  */
-struct con_mgr_fd_s {
+struct conmgr_fd_s {
 	int magic;
-	con_mgr_con_type_t type;
+	conmgr_con_type_t type;
 	/* input and output may be a different fd to inet mode */
 	int input_fd;
 	int output_fd;
@@ -99,7 +99,7 @@ struct con_mgr_fd_s {
 	/* name of connection for logging */
 	char *name;
 	/* call backs on events */
-	con_mgr_events_t events;
+	conmgr_events_t events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* has on_data already tried to parse data */
@@ -166,7 +166,7 @@ typedef struct {
 typedef struct {
 	int magic; /* MAGIC_SIGNAL_WORK */
 	int signal;
-	con_mgr_work_func_t func;
+	conmgr_work_func_t func;
 	void *arg;
 	const char *tag;
 } signal_work_t;
@@ -179,17 +179,17 @@ struct {
 	int max_connections;
 	/*
 	 * list of all connections to process
-	 * type: con_mgr_fd_t
+	 * type: conmgr_fd_t
 	 */
 	list_t *connections;
 	/*
 	 * list of connections that only listen
-	 * type: con_mgr_fd_t
+	 * type: conmgr_fd_t
 	 */
 	list_t *listen;
 	/*
 	 * list of complete connections pending cleanup
-	 * type: con_mgr_fd_t
+	 * type: conmgr_fd_t
 	 */
 	list_t *complete;
 	/*
@@ -243,7 +243,7 @@ struct {
 	int signal_work_count;
 
 	/* functions to handle host/port parsing */
-	con_mgr_callbacks_t callbacks;
+	conmgr_callbacks_t callbacks;
 
 	pthread_mutex_t mutex;
 	/* called after events or changes to wake up _watch */
@@ -261,16 +261,16 @@ struct {
 	.error = SLURM_SUCCESS,
 };
 
-typedef void (*on_poll_event_t)(int fd, con_mgr_fd_t *con, short revents);
+typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
 typedef struct {
 	int magic;
-	con_mgr_fd_t *con;
-	con_mgr_work_func_t func;
+	conmgr_fd_t *con;
+	conmgr_work_func_t func;
 	void *arg;
 	const char *tag;
-	con_mgr_work_status_t status;
-	con_mgr_work_type_t type;
+	conmgr_work_status_t status;
+	conmgr_work_type_t type;
 	struct {
 		/* absolute time when to work can begin */
 		time_t seconds;
@@ -286,7 +286,7 @@ typedef struct {
 } deferred_func_t;
 
 struct {
-	con_mgr_work_status_t status;
+	conmgr_work_status_t status;
 	const char *string;
 } statuses[] = {
 	{ CONMGR_WORK_STATUS_INVALID, "INVALID" },
@@ -296,7 +296,7 @@ struct {
 };
 
 struct {
-	con_mgr_work_type_t type;
+	conmgr_work_type_t type;
 	const char *string;
 } types[] = {
 	{ CONMGR_WORK_TYPE_INVALID, "INVALID" },
@@ -320,38 +320,38 @@ typedef struct {
 } foreach_delayed_work_t;
 
 typedef struct {
-	con_mgr_events_t events;
+	conmgr_events_t events;
 	void *arg;
-	con_mgr_con_type_t type;
+	conmgr_con_type_t type;
 } socket_listen_init_t;
 
 static int _close_con_for_each(void *x, void *arg);
-static void _listen_accept(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
+static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
 			   void *arg);
-static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
-				con_mgr_work_status_t status, const char *tag,
+static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
+				conmgr_work_status_t status, const char *tag,
 				void *arg);
-static void _add_work(bool locked, con_mgr_fd_t *con, con_mgr_work_func_t func,
-		      con_mgr_work_type_t type, void *arg, const char *tag);
-static void _wrap_on_data(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
+static void _add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
+		      conmgr_work_type_t type, void *arg, const char *tag);
+static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
+			  conmgr_work_status_t status, const char *tag,
 			  void *arg);
-static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
+static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
 			       void *arg);
-static void _deferred_write_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
+static void _deferred_write_fd(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
 			       void *arg);
 static void _cancel_delayed_work(bool locked);
 static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
 static void _queue_func(bool locked, work_func_t func, void *arg,
 			const char *tag);
-static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
+static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 			     const char *tag);
-static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			     con_mgr_work_status_t status, const char *tag,
+static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
+			     conmgr_work_status_t status, const char *tag,
 			     void *arg);
 
 /*
@@ -359,12 +359,12 @@ static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
  */
 static int _find_by_fd(void *x, void *key)
 {
-	con_mgr_fd_t *con = x;
+	conmgr_fd_t *con = x;
 	int fd = *(int *)key;
 	return (con->input_fd == fd) || (con->output_fd == fd);
 }
 
-extern const char *con_mgr_work_status_string(con_mgr_work_status_t status)
+extern const char *conmgr_work_status_string(conmgr_work_status_t status)
 {
 	for (int i = 0; i < ARRAY_SIZE(statuses); i++)
 		if (statuses[i].status == status)
@@ -373,7 +373,7 @@ extern const char *con_mgr_work_status_string(con_mgr_work_status_t status)
 	fatal_abort("%s: invalid work status 0x%x", __func__, status);
 }
 
-extern const char *con_mgr_work_type_string(con_mgr_work_type_t type)
+extern const char *conmgr_work_type_string(conmgr_work_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(types); i++)
 		if (types[i].type == type)
@@ -384,7 +384,7 @@ extern const char *con_mgr_work_type_string(con_mgr_work_type_t type)
 
 static void _connection_fd_delete(void *x)
 {
-	con_mgr_fd_t *con = x;
+	conmgr_fd_t *con = x;
 
 	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
@@ -468,7 +468,7 @@ static void _fini_signal_handler(void)
 }
 
 extern void init_con_mgr(int thread_count, int max_connections,
-			 con_mgr_callbacks_t callbacks)
+			 conmgr_callbacks_t callbacks)
 {
 	if (thread_count < 1)
 		thread_count = THREAD_COUNT_DEFAULT;
@@ -618,7 +618,7 @@ extern void free_con_mgr(void)
 	 */
 	FREE_NULL_WORKQ(mgr.workq);
 
-	/* deferred_funcs should have been cleared by con_mgr_run() */
+	/* deferred_funcs should have been cleared by conmgr_run() */
 	FREE_NULL_LIST(mgr.deferred_funcs);
 
 	/*
@@ -649,7 +649,7 @@ extern void free_con_mgr(void)
  * Stop reading from connection but write out the remaining buffer and finish
  * any queued work
  */
-static void _close_con(bool locked, con_mgr_fd_t *con)
+static void _close_con(bool locked, conmgr_fd_t *con)
 {
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
@@ -696,16 +696,16 @@ cleanup:
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
-				     con_mgr_fd_t *source, int input_fd,
-				     int output_fd,
-				     const con_mgr_events_t events,
-				     const slurm_addr_t *addr,
-				     socklen_t addrlen, bool is_listen,
-				     const char *unix_socket_path, void *arg)
+static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
+				    conmgr_fd_t *source, int input_fd,
+				    int output_fd,
+				    const conmgr_events_t events,
+				    const slurm_addr_t *addr,
+				    socklen_t addrlen, bool is_listen,
+				    const char *unix_socket_path, void *arg)
 {
 	struct stat fbuf = { 0 };
-	con_mgr_fd_t *con = NULL;
+	conmgr_fd_t *con = NULL;
 	bool set_keep_alive;
 
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
@@ -731,7 +731,7 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 	}
 
 	con = xmalloc(sizeof(*con));
-	*con = (con_mgr_fd_t){
+	*con = (conmgr_fd_t) {
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
@@ -835,7 +835,7 @@ static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
 	return con;
 }
 
-static void _wrap_con_work(work_t *work, con_mgr_fd_t *con)
+static void _wrap_con_work(work_t *work, conmgr_fd_t *con)
 {
 	work->func(work->con, work->type, work->status, work->tag, work->arg);
 
@@ -850,13 +850,13 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con)
 static void _wrap_work(void *x)
 {
 	work_t *work = x;
-	con_mgr_fd_t *con = work->con;
+	conmgr_fd_t *con = work->con;
 
 	log_flag(NET, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
 		 (con ? "] " : ""), (uintptr_t) work, work->tag,
-		 (uintptr_t) work->func, con_mgr_work_type_string(work->type),
-		 con_mgr_work_status_string(work->status),
+		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
+		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
 	switch (work->type) {
@@ -878,8 +878,8 @@ static void _wrap_work(void *x)
 	log_flag(NET, "%s: %s%s%sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
 		 (con ? "] " : ""), (uintptr_t) work, work->tag,
-		 (uintptr_t) work->func, con_mgr_work_type_string(work->type),
-		 con_mgr_work_status_string(work->status),
+		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
+		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
 	_signal_change(false);
@@ -888,8 +888,8 @@ static void _wrap_work(void *x)
 	xfree(work);
 }
 
-static void _handle_read(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			 con_mgr_work_status_t status, const char *tag,
+static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
+			 conmgr_work_status_t status, const char *tag,
 			 void *arg)
 {
 	ssize_t read_c;
@@ -967,8 +967,8 @@ static void _handle_read(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	}
 }
 
-static void _handle_write(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
+static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
+			  conmgr_work_status_t status, const char *tag,
 			  void *arg)
 {
 	ssize_t wrote;
@@ -1031,7 +1031,7 @@ static void _handle_write(con_mgr_fd_t *con, con_mgr_work_type_t type,
 		set_buf_offset(con->out, 0);
 }
 
-static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
+static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 {
 	int rc = SLURM_ERROR;
 	uint32_t need;
@@ -1126,8 +1126,8 @@ static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
 	return rc;
 }
 
-static void _wrap_on_data(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
+static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
+			  conmgr_work_status_t status, const char *tag,
 			  void *arg)
 {
 	int avail = get_buf_offset(con->in);
@@ -1207,8 +1207,8 @@ static void _wrap_on_data(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	con->in->size = size;
 }
 
-static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
-				con_mgr_work_status_t status, const char *tag,
+static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
+				conmgr_work_status_t status, const char *tag,
 				void *arg)
 {
 	if (con->events.on_connection) {
@@ -1237,14 +1237,14 @@ static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern int _con_mgr_process_fd_internal(con_mgr_con_type_t type,
-					con_mgr_fd_t *source, int input_fd,
-					int output_fd,
-					const con_mgr_events_t events,
-					const slurm_addr_t *addr,
-					socklen_t addrlen, void *arg)
+extern int _conmgr_process_fd_internal(conmgr_con_type_t type,
+				       conmgr_fd_t *source, int input_fd,
+				       int output_fd,
+				       const conmgr_events_t events,
+				       const slurm_addr_t *addr,
+				       socklen_t addrlen, void *arg)
 {
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 
 	con = _add_connection(type, source, input_fd, output_fd, events, addr,
 			      addrlen, false, NULL, arg);
@@ -1260,12 +1260,12 @@ extern int _con_mgr_process_fd_internal(con_mgr_con_type_t type,
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd(con_mgr_con_type_t type, int input_fd,
-			      int output_fd, const con_mgr_events_t events,
-			      const slurm_addr_t *addr, socklen_t addrlen,
-			      void *arg)
+extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
+			     int output_fd, const conmgr_events_t events,
+			     const slurm_addr_t *addr, socklen_t addrlen,
+			     void *arg)
 {
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 
 	con = _add_connection(type, NULL, input_fd, output_fd, events, addr,
 			      addrlen, false, NULL, arg);
@@ -1281,12 +1281,12 @@ extern int con_mgr_process_fd(con_mgr_con_type_t type, int input_fd,
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd_listen(int fd, con_mgr_con_type_t type,
-				     const con_mgr_events_t events,
-				     const slurm_addr_t *addr,
-				     socklen_t addrlen, void *arg)
+extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
+				    const conmgr_events_t events,
+				    const slurm_addr_t *addr,
+				    socklen_t addrlen, void *arg)
 {
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 
 	con = _add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
 			      NULL, arg);
@@ -1300,13 +1300,13 @@ extern int con_mgr_process_fd_listen(int fd, con_mgr_con_type_t type,
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd_unix_listen(con_mgr_con_type_t type, int fd,
-					  const con_mgr_events_t events,
+extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
+					  const conmgr_events_t events,
 					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path,
 					  void *arg)
 {
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 
 	con = _add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
 			      path, arg);
@@ -1320,7 +1320,7 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_con_type_t type, int fd,
 	return SLURM_SUCCESS;
 }
 
-static void _handle_poll_event_error(int fd, con_mgr_fd_t *con, short revents)
+static void _handle_poll_event_error(int fd, conmgr_fd_t *con, short revents)
 {
 	int err = SLURM_ERROR;
 	int rc;
@@ -1363,7 +1363,7 @@ static void _handle_poll_event_error(int fd, con_mgr_fd_t *con, short revents)
  * Event on a processing socket.
  * mgr must be locked.
  */
-static void _handle_poll_event(int fd, con_mgr_fd_t *con, short revents)
+static void _handle_poll_event(int fd, conmgr_fd_t *con, short revents)
 {
 	con->can_read = false;
 	con->can_write = false;
@@ -1383,8 +1383,8 @@ static void _handle_poll_event(int fd, con_mgr_fd_t *con, short revents)
 		 (con->can_write ? "T" : "F"));
 }
 
-static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
+static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
 			       void *arg)
 {
 	if (con->events.on_finish)
@@ -1405,7 +1405,7 @@ static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
  */
 static int _handle_connection(void *x, void *arg)
 {
-	con_mgr_fd_t *con = x;
+	conmgr_fd_t *con = x;
 	int count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -1429,8 +1429,8 @@ static int _handle_connection(void *x, void *arg)
 
 		log_flag(NET, "%s: [%s] queuing work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, con->name, (uintptr_t) work,
-			con_mgr_work_status_string(work->status),
-			con_mgr_work_type_string(work->type),
+			conmgr_work_status_string(work->status),
+			conmgr_work_type_string(work->type),
 			work->tag, (uintptr_t) work->func);
 
 		_handle_work(true, work);
@@ -1584,7 +1584,7 @@ static int _handle_connection(void *x, void *arg)
  */
 static int _close_con_for_each(void *x, void *arg)
 {
-	con_mgr_fd_t *con = x;
+	conmgr_fd_t *con = x;
 	_close_con(true, con);
 	return 1;
 }
@@ -1608,7 +1608,7 @@ static void _inspect_connections(void *x)
  * Event on a listen only socket
  * mgr must be locked.
  */
-static void _handle_listen_event(int fd, con_mgr_fd_t *con, short revents)
+static void _handle_listen_event(int fd, conmgr_fd_t *con, short revents)
 {
 	if (revents & POLLHUP) {
 		/* how can a listening socket hang up? */
@@ -1721,8 +1721,8 @@ static void _handle_signals(void)
 	mgr.signaled = false;
 }
 
-static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			     con_mgr_work_status_t status, const char *tag,
+static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
+			     conmgr_work_status_t status, const char *tag,
 			     void *arg)
 {
 	log_flag(NET, "%s: caught SIGALRM", __func__);
@@ -1740,7 +1740,7 @@ static void _poll(poll_args_t *args, list_t *fds, on_poll_event_t on_poll,
 {
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 	int signal_fd, event_fd;
 
 again:
@@ -1815,7 +1815,7 @@ static void _poll_connections(void *x)
 {
 	poll_args_t *args = x;
 	struct pollfd *fds_ptr = NULL;
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
@@ -1928,7 +1928,7 @@ static void _listen(void *x)
 {
 	poll_args_t *args = x;
 	struct pollfd *fds_ptr = NULL;
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
@@ -2092,7 +2092,7 @@ watch:
 			 */
 			_signal_change(true);
 		} else {
-			con_mgr_fd_t *con;
+			conmgr_fd_t *con;
 
 			/*
 			 * Memory cleanup of connections can be done entirely
@@ -2203,7 +2203,7 @@ watch:
 	}
 }
 
-extern int con_mgr_run(bool blocking)
+extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -2246,8 +2246,8 @@ extern int con_mgr_run(bool blocking)
 /*
  * listen socket is ready to accept
  */
-static void _listen_accept(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
+static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
 			   void *arg)
 {
 	int rc;
@@ -2301,17 +2301,17 @@ static void _listen_accept(con_mgr_fd_t *con, con_mgr_work_type_t type,
 		      __func__, addrlen);
 
 	/* hand over FD for normal processing */
-	if ((rc = _con_mgr_process_fd_internal(con->type, con, fd, fd,
+	if ((rc = _conmgr_process_fd_internal(con->type, con, fd, fd,
 					       con->events, &addr, addrlen,
 					       con->new_arg))) {
-		log_flag(NET, "%s: [fd:%d] _con_mgr_process_fd_internal rejected: %s",
+		log_flag(NET, "%s: [fd:%d] _conmgr_process_fd_internal rejected: %s",
 			 __func__, fd, slurm_strerror(rc));
 		_close_con(false, con);
 	}
 }
 
-static void _deferred_write_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
+static void _deferred_write_fd(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
 			       void *arg)
 {
 	/*
@@ -2319,23 +2319,23 @@ static void _deferred_write_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	 * written first before anything else to maintain order.
 	 */
 
-	(void) con_mgr_queue_write_fd(con, NULL, 0);
+	(void) conmgr_queue_write_fd(con, NULL, 0);
 }
 
 static int _for_each_deferred_write(void *x, void *arg)
 {
 	buf_t *buf = x;
-	con_mgr_fd_t *con = arg;
+	conmgr_fd_t *con = arg;
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	(void) con_mgr_queue_write_fd(con, get_buf_data(buf),
-				  get_buf_offset(buf));
+	(void) conmgr_queue_write_fd(con, get_buf_data(buf),
+				     get_buf_offset(buf));
 
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
-				  const size_t bytes)
+extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
+				 const size_t bytes)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -2411,7 +2411,7 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 /*
  * based on _pack_msg() and slurm_send_node_msg() in slurm_protocol_api.c
  */
-extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg)
+extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 {
 	int rc;
 	msg_bufs_t buffers = {0};
@@ -2430,19 +2430,19 @@ extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg)
 
 	//TODO: handing over the buffers would be better than copying
 
-	if ((rc = con_mgr_queue_write_fd(con, &msglen, sizeof(msglen))))
+	if ((rc = conmgr_queue_write_fd(con, &msglen, sizeof(msglen))))
 		goto cleanup;
 
-	if ((rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.header),
-					 get_buf_offset(buffers.header))))
+	if ((rc = conmgr_queue_write_fd(con, get_buf_data(buffers.header),
+					get_buf_offset(buffers.header))))
 		goto cleanup;
 
-	if ((rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.auth),
-					 get_buf_offset(buffers.auth))))
+	if ((rc = conmgr_queue_write_fd(con, get_buf_data(buffers.auth),
+					get_buf_offset(buffers.auth))))
 		goto cleanup;
 
-	rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.body),
-				    get_buf_offset(buffers.body));
+	rc = conmgr_queue_write_fd(con, get_buf_data(buffers.body),
+				   get_buf_offset(buffers.body));
 cleanup:
 	if (!rc) {
 		log_flag(PROTOCOL, "%s: [%s] sending RPC %s",
@@ -2467,21 +2467,21 @@ cleanup:
 	return rc;
 }
 
-static void _deferred_close_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
+static void _deferred_close_fd(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
 			       void *arg)
 {
 	slurm_mutex_lock(&mgr.mutex);
 	if (con->work_active) {
 		slurm_mutex_unlock(&mgr.mutex);
-		con_mgr_queue_close_fd(con);
+		conmgr_queue_close_fd(con);
 	} else {
 		_close_con(true, con);
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 
-extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
+extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -2510,7 +2510,7 @@ static int _create_socket(void *x, void *arg)
 	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
-	con_mgr_callbacks_t callbacks;
+	conmgr_callbacks_t callbacks;
 
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
@@ -2545,7 +2545,7 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, hostport);
 
-		return con_mgr_process_fd_unix_listen(init->type, fd,
+		return conmgr_process_fd_unix_listen(init->type, fd,
 			init->events, (const slurm_addr_t *) &addr,
 			sizeof(addr), unixsock, init->arg);
 	} else {
@@ -2596,7 +2596,7 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = con_mgr_process_fd_listen(fd, init->type, init->events,
+		rc = conmgr_process_fd_listen(fd, init->type, init->events,
 			(const slurm_addr_t *)addr->ai_addr, addr->ai_addrlen,
 			init->arg);
 	}
@@ -2607,8 +2607,8 @@ static int _create_socket(void *x, void *arg)
 	return rc;
 }
 
-extern int con_mgr_create_sockets(con_mgr_con_type_t type, list_t *hostports,
-				  con_mgr_events_t events, void *arg)
+extern int conmgr_create_sockets(conmgr_con_type_t type, list_t *hostports,
+				 conmgr_events_t events, void *arg)
 {
 	int rc;
 	socket_listen_init_t *init = xmalloc(sizeof(*init));
@@ -2626,7 +2626,7 @@ extern int con_mgr_create_sockets(con_mgr_con_type_t type, list_t *hostports,
 	return rc;
 }
 
-extern void con_mgr_request_shutdown(void)
+extern void conmgr_request_shutdown(void)
 {
 	log_flag(NET, "%s: shutdown requested", __func__);
 
@@ -2879,7 +2879,7 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 		workq_add_work(mgr.workq, func, arg, tag);
 	} else {
 		/*
-		 * Defer all funcs until con_mgr_run() as adding new connections
+		 * Defer all funcs until conmgr_run() as adding new connections
 		 * will call _queue_func() including on_connection() callback
 		 * which is very surprising before conmgr is running and can
 		 * cause locking conflicts.
@@ -2907,7 +2907,7 @@ static void _handle_work_run(work_t *work)
 /* mgr must be locked */
 static void _handle_work_pending(work_t *work)
 {
-	con_mgr_fd_t *con = work->con;
+	conmgr_fd_t *con = work->con;
 
 	switch (work->type) {
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
@@ -2954,19 +2954,19 @@ static void _handle_work_pending(work_t *work)
 
 static void _handle_work(bool locked, work_t *work)
 {
-	con_mgr_fd_t *con = work->con;
+	conmgr_fd_t *con = work->con;
 
 	if (con)
 		log_flag(NET, "%s: [%s] work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, con->name, (uintptr_t) work,
-			con_mgr_work_status_string(work->status),
-			con_mgr_work_type_string(work->type),
+			conmgr_work_status_string(work->status),
+			conmgr_work_type_string(work->type),
 			work->tag, (uintptr_t) work->func);
 	else
 		log_flag(NET, "%s: work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, (uintptr_t) work,
-			con_mgr_work_status_string(work->status),
-			con_mgr_work_type_string(work->type),
+			conmgr_work_status_string(work->status),
+			conmgr_work_type_string(work->type),
 			work->tag, (uintptr_t) work->func);
 
 	if (!locked)
@@ -2997,8 +2997,8 @@ static void _handle_work(bool locked, work_t *work)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _add_work(bool locked, con_mgr_fd_t *con, con_mgr_work_func_t func,
-		      con_mgr_work_type_t type, void *arg, const char *tag)
+static void _add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
+		      conmgr_work_type_t type, void *arg, const char *tag)
 {
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
@@ -3014,17 +3014,17 @@ static void _add_work(bool locked, con_mgr_fd_t *con, con_mgr_work_func_t func,
 	_handle_work(locked, work);
 }
 
-extern void con_mgr_add_work(con_mgr_fd_t *con, con_mgr_work_func_t func,
-			     con_mgr_work_type_t type, void *arg,
-			     const char *tag)
+extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
+			    conmgr_work_type_t type, void *arg,
+			    const char *tag)
 {
 	_add_work(false, con, func, type, arg, tag);
 }
 
-extern void con_mgr_add_delayed_work(con_mgr_fd_t *con,
-				     con_mgr_work_func_t func, time_t seconds,
-				     long nanoseconds, void *arg,
-				     const char *tag)
+extern void conmgr_add_delayed_work(conmgr_fd_t *con,
+				    conmgr_work_func_t func, time_t seconds,
+				    long nanoseconds, void *arg,
+				    const char *tag)
 {
 	work_t *work;
 
@@ -3060,7 +3060,7 @@ extern void con_mgr_add_delayed_work(con_mgr_fd_t *con,
 	_handle_work(false, work);
 }
 
-static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
+static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 			     const char *tag)
 {
 	xrecalloc(mgr.signal_work, (mgr.signal_work_count + 1),
@@ -3077,8 +3077,8 @@ static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
 	mgr.signal_work_count++;
 }
 
-extern void con_mgr_add_signal_work(int signal, con_mgr_work_func_t func,
-				    void *arg, const char *tag)
+extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
+				   void *arg, const char *tag)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -3094,7 +3094,7 @@ extern void con_mgr_add_signal_work(int signal, con_mgr_work_func_t func,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
+extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
 				     uid_t *cred_uid, gid_t *cred_gid,
 				     pid_t *cred_pid)
 {
@@ -3139,7 +3139,7 @@ extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
 	return rc;
 }
 
-extern int con_mgr_get_thread_count(void)
+extern int conmgr_get_thread_count(void)
 {
 	int count;
 
@@ -3150,14 +3150,14 @@ extern int con_mgr_get_thread_count(void)
 	return count;
 }
 
-extern void con_mgr_set_exit_on_error(bool exit_on_error)
+extern void conmgr_set_exit_on_error(bool exit_on_error)
 {
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.exit_on_error = exit_on_error;
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern bool con_mgr_get_exit_on_error(void)
+extern bool conmgr_get_exit_on_error(void)
 {
 	bool exit_on_error;
 
@@ -3168,7 +3168,7 @@ extern bool con_mgr_get_exit_on_error(void)
 	return exit_on_error;
 }
 
-extern int con_mgr_get_error(void)
+extern int conmgr_get_error(void)
 {
 	int rc;
 
@@ -3179,15 +3179,15 @@ extern int con_mgr_get_error(void)
 	return rc;
 }
 
-extern const char *con_mgr_fd_get_name(const con_mgr_fd_t *con)
+extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->name && con->name[0]);
 	return con->name;
 }
 
-extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
-				     const void **data_ptr, size_t *bytes_ptr)
+extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
+				    const void **data_ptr, size_t *bytes_ptr)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->work_active);
@@ -3197,7 +3197,7 @@ extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
 	*bytes_ptr = size_buf(con->in);
 }
 
-extern buf_t *con_mgr_fd_shadow_in_buffer(const con_mgr_fd_t *con)
+extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
@@ -3207,8 +3207,8 @@ extern buf_t *con_mgr_fd_shadow_in_buffer(const con_mgr_fd_t *con)
 				 (size_buf(con->in) - con->in->processed));
 }
 
-extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
-					       size_t bytes)
+extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
+					      size_t bytes)
 {
 	size_t offset;
 
@@ -3220,8 +3220,8 @@ extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 	set_buf_offset(con->in, offset);
 }
 
-extern int con_mgr_fd_xfer_in_buffer(const con_mgr_fd_t *con,
-				     buf_t **buffer_ptr)
+extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
+				    buf_t **buffer_ptr)
 {
 	buf_t *buf;
 
@@ -3275,7 +3275,7 @@ extern int con_mgr_fd_xfer_in_buffer(const con_mgr_fd_t *con,
 	}
 }
 
-extern int con_mgr_fd_xfer_out_buffer(con_mgr_fd_t *con, buf_t *output)
+extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 {
 	int rc;
 
@@ -3289,8 +3289,8 @@ extern int con_mgr_fd_xfer_out_buffer(con_mgr_fd_t *con, buf_t *output)
 	xassert(size_buf(output) <= xsize(get_buf_data(output)));
 	xassert(get_buf_offset(output) <= size_buf(output));
 
-	rc = con_mgr_queue_write_fd(con, get_buf_data(output),
-				    get_buf_offset(output));
+	rc = conmgr_queue_write_fd(con, get_buf_data(output),
+				   get_buf_offset(output));
 
 	if (!rc)
 		set_buf_offset(output, 0);
@@ -3298,23 +3298,23 @@ extern int con_mgr_fd_xfer_out_buffer(con_mgr_fd_t *con, buf_t *output)
 	return rc;
 }
 
-extern int con_mgr_fd_get_input_fd(con_mgr_fd_t *con)
+extern int conmgr_fd_get_input_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->work_active);
 	return con->input_fd;
 }
 
-extern int con_mgr_fd_get_output_fd(con_mgr_fd_t *con)
+extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->work_active);
 	return con->output_fd;
 }
 
-extern con_mgr_fd_status_t con_mgr_fd_get_status(con_mgr_fd_t *con)
+extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
-	con_mgr_fd_status_t status = {
+	conmgr_fd_status_t status = {
 		.is_socket = con->is_socket,
 		.unix_socket = con->unix_socket,
 		.is_listen = con->is_listen,

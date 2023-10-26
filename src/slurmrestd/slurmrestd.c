@@ -450,7 +450,7 @@ static void _lock_down(void)
 }
 
 /* simple wrapper to hand over operations router in http context */
-static void *_setup_http_context(con_mgr_fd_t *con, void *arg)
+static void *_setup_http_context(conmgr_fd_t *con, void *arg)
 {
 	xassert(operations_router == arg);
 	return setup_http_context(con, operations_router);
@@ -486,12 +486,12 @@ static int _op_handler_openapi(const char *context_id,
 	return get_openapi_specification(resp);
 }
 
-static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
-				 con_mgr_work_status_t status, const char *tag,
+static void _on_signal_interrupt(conmgr_fd_t *con, conmgr_work_type_t type,
+				 conmgr_work_status_t status, const char *tag,
 				 void *arg)
 {
 	info("%s: caught SIGINT. Shutting down.", __func__);
-	con_mgr_request_shutdown();
+	conmgr_request_shutdown();
 }
 
 int main(int argc, char **argv)
@@ -499,12 +499,12 @@ int main(int argc, char **argv)
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	struct sigaction sigpipe_handler = { .sa_handler = _sigpipe_handler };
 	socket_listen = list_create(xfree_ptr);
-	con_mgr_events_t conmgr_events = {
+	conmgr_events_t conmgr_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
 	};
-	static const con_mgr_callbacks_t callbacks = {
+	static const conmgr_callbacks_t callbacks = {
 		.parse = parse_host_port,
 		.free_parse = free_parse_host_port,
 	};
@@ -538,8 +538,8 @@ int main(int argc, char **argv)
 	init_con_mgr((run_mode.listen ? thread_count : 1), max_connections,
 		     callbacks);
 
-	con_mgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
-				"_on_signal_interrupt()");
+	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
+			       "_on_signal_interrupt()");
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
@@ -636,19 +636,19 @@ int main(int argc, char **argv)
 		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
-		if ((rc = con_mgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					     STDOUT_FILENO, conmgr_events, NULL,
-					     0, operations_router)))
+		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
+					    STDOUT_FILENO, conmgr_events, NULL,
+					    0, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
 		/* fail on first error if this is piped process */
-		con_mgr_set_exit_on_error(true);
+		conmgr_set_exit_on_error(true);
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (con_mgr_create_sockets(CON_TYPE_RAW, socket_listen,
-					   conmgr_events, operations_router))
+		if (conmgr_create_sockets(CON_TYPE_RAW, socket_listen,
+					  conmgr_events, operations_router))
 			fatal("Unable to create sockets");
 
 		umask(mask);
@@ -657,15 +657,15 @@ int main(int argc, char **argv)
 		debug("%s: server listen mode activated", __func__);
 	}
 
-	rc = con_mgr_run(true);
+	rc = conmgr_run(true);
 
 	/*
 	 * Capture if there were issues during parsing in inet mode.
 	 * Inet mode expects connection errors to propagate upwards as
 	 * connection errors so they can be logged appropriately.
 	 */
-	if (con_mgr_get_exit_on_error())
-		parse_rc = con_mgr_get_error();
+	if (conmgr_get_exit_on_error())
+		parse_rc = conmgr_get_error();
 
 	unbind_operation_handler(_op_handler_openapi);
 

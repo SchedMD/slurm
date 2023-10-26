@@ -108,7 +108,7 @@ static void _prepare_run_dir(void)
 	close(dirfd);
 }
 
-static int _sack_create(con_mgr_fd_t *con, buf_t *in)
+static int _sack_create(conmgr_fd_t *con, buf_t *in)
 {
 	uid_t r_uid = SLURM_AUTH_NOBODY;
 	uid_t uid = SLURM_AUTH_NOBODY;
@@ -119,8 +119,8 @@ static int _sack_create(con_mgr_fd_t *con, buf_t *in)
 	char *extra = NULL, *token = NULL;
 	buf_t *out = init_buf(1024);
 
-	if (con_mgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
-		error("%s: con_mgr_get_fd_auth_creds() failed", __func__);
+	if (conmgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
+		error("%s: conmgr_get_fd_auth_creds() failed", __func__);
 		goto unpack_error;
 	}
 
@@ -143,7 +143,7 @@ static int _sack_create(con_mgr_fd_t *con, buf_t *in)
 	}
 
 	packstr(token, out);
-	con_mgr_fd_xfer_out_buffer(con, out);
+	conmgr_fd_xfer_out_buffer(con, out);
 
 	FREE_NULL_BUFFER(out);
 	xfree(data);
@@ -158,7 +158,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _sack_verify(con_mgr_fd_t *con, buf_t *in)
+static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 {
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
@@ -168,13 +168,13 @@ static int _sack_verify(con_mgr_fd_t *con, buf_t *in)
 
 	safe_unpackstr(&cred->token, in);
 
-	if (con_mgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
-		error("%s: con_mgr_get_fd_auth_creds() failed", __func__);
+	if (conmgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
+		error("%s: conmgr_get_fd_auth_creds() failed", __func__);
 		goto unpack_error;
 	}
 
 	rc = htonl(verify_internal(cred, uid));
-	con_mgr_queue_write_fd(con, &rc, sizeof(uint32_t));
+	conmgr_queue_write_fd(con, &rc, sizeof(uint32_t));
 
 	FREE_NULL_CRED(cred);
 	return SLURM_SUCCESS;
@@ -184,17 +184,17 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _on_connection_data(con_mgr_fd_t *con, void *arg)
+static int _on_connection_data(conmgr_fd_t *con, void *arg)
 {
 	int rc = SLURM_ERROR;
 	uint16_t version = 0;
 	uint32_t length = 0, rpc = 0;
 	buf_t *in = NULL;
 
-	log_flag(SACK, "%s", con_mgr_fd_get_name(con));
+	log_flag(SACK, "%s", conmgr_fd_get_name(con));
 
-	if (!(in = con_mgr_fd_shadow_in_buffer(con))) {
-		log_flag(SACK, "con_mgr_fd_shadow_in_buffer() failed");
+	if (!(in = conmgr_fd_shadow_in_buffer(con))) {
+		log_flag(SACK, "conmgr_fd_shadow_in_buffer() failed");
 		goto unpack_error;
 	}
 
@@ -221,7 +221,7 @@ static int _on_connection_data(con_mgr_fd_t *con, void *arg)
 		FREE_NULL_BUFFER(in);
 		return SLURM_SUCCESS;
 	}
-	con_mgr_fd_mark_consumed_in_buffer(con, length);
+	conmgr_fd_mark_consumed_in_buffer(con, length);
 
 	log_flag(SACK, "received version=%hu rpc=%u", version, rpc);
 
@@ -238,7 +238,7 @@ static int _on_connection_data(con_mgr_fd_t *con, void *arg)
 	}
 
 unpack_error:
-	con_mgr_queue_close_fd(con);
+	conmgr_queue_close_fd(con);
 	FREE_NULL_BUFFER(in);
 
 	return rc;
@@ -246,8 +246,8 @@ unpack_error:
 
 extern void init_sack_conmgr(void)
 {
-	con_mgr_callbacks_t callbacks = {NULL, NULL};
-	con_mgr_events_t events = {
+	conmgr_callbacks_t callbacks = {NULL, NULL};
+	conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
 	int fd;
@@ -280,14 +280,14 @@ extern void init_sack_conmgr(void)
 		fatal("%s: [%s] unable to listen(): %m",
 		      __func__, addr.sun_path);
 
-	if ((rc = con_mgr_process_fd_unix_listen(CON_TYPE_RAW, fd, events,
-						 (const slurm_addr_t *) &addr,
-						 sizeof(addr), addr.sun_path,
-						 NULL)))
+	if ((rc = conmgr_process_fd_unix_listen(CON_TYPE_RAW, fd, events,
+						(const slurm_addr_t *) &addr,
+						sizeof(addr), addr.sun_path,
+						NULL)))
 		fatal("%s: conmgr refused fd %d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
-	if ((rc = con_mgr_run(false)))
+	if ((rc = conmgr_run(false)))
 		fatal("%s: conmgr run failed: %s",
 		      __func__, slurm_strerror(rc));
 }

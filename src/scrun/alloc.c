@@ -243,16 +243,16 @@ static int _stage_in()
 	return rc;
 }
 
-static void *_on_connection(con_mgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
 	debug("%s:[%s] new srun connection",
-	      __func__, con_mgr_fd_get_name(con));
+	      __func__, conmgr_fd_get_name(con));
 
 	/* must return !NULL or connection will be closed */
 	return con;
 }
 
-static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	int rc = SLURM_SUCCESS;
 	xassert(arg == con);
@@ -270,11 +270,11 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		response_init(&resp_msg, msg, RESPONSE_SLURM_RC, &rc_msg);
 		resp_msg.data_size = sizeof(rc_msg);
 
-		rc = con_mgr_queue_write_msg(con, &resp_msg);
+		rc = conmgr_queue_write_msg(con, &resp_msg);
 		/* nothing to xfree() */
 
 		debug("%s:[%s] srun RPC PING has been PONGED",
-		      __func__, con_mgr_fd_get_name(con));
+		      __func__, conmgr_fd_get_name(con));
 		break;
 	}
 	case SRUN_JOB_COMPLETE:
@@ -283,7 +283,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 			sizeof(slurm_step_id_t));
 		slurm_step_id_t *step = msg->data;
 		debug("%s:[%s] %pS complete srun RPC",
-		      __func__, con_mgr_fd_get_name(con), step);
+		      __func__, conmgr_fd_get_name(con), step);
 		stop_anchor(SLURM_SUCCESS);
 		break;
 	}
@@ -291,7 +291,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	{
 		srun_timeout_msg_t *to = msg->data;
 		debug("%s:[%s] srun RPC %pS timeout at %ld RPC",
-		      __func__, con_mgr_fd_get_name(con), &to->step_id,
+		      __func__, conmgr_fd_get_name(con), &to->step_id,
 		      to->timeout);
 		stop_anchor(ESLURM_JOB_TIMEOUT_KILLED);
 		break;
@@ -301,7 +301,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		srun_user_msg_t *um = msg->data;
 
 		debug("%s:[%s] JobId=%u srun user message RPC",
-		      __func__, con_mgr_fd_get_name(con), um->job_id);
+		      __func__, conmgr_fd_get_name(con), um->job_id);
 
 		print_multi_line_string(um->msg, -1, LOG_LEVEL_INFO);
 		break;
@@ -310,7 +310,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	{
 		srun_node_fail_msg_t *nf = msg->data;
 		debug("%s:[%s] srun RPC %pS nodes failed: %s",
-		      __func__, con_mgr_fd_get_name(con), &nf->step_id,
+		      __func__, conmgr_fd_get_name(con), &nf->step_id,
 		      nf->nodelist);
 		stop_anchor(ESLURM_JOB_NODE_FAIL_KILLED);
 		break;
@@ -320,7 +320,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		suspend_msg_t *sus_msg = msg->data;
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] rejecting srun suspend RPC for %s",
-		      __func__, con_mgr_fd_get_name(con), sus_msg->job_id_str);
+		      __func__, conmgr_fd_get_name(con), sus_msg->job_id_str);
 		break;
 	}
 	case SRUN_NET_FORWARD:
@@ -328,13 +328,13 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		net_forward_msg_t *net = msg->data;
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] rejecting srun net forward RPC for %s",
-		      __func__, con_mgr_fd_get_name(con), net->target);
+		      __func__, conmgr_fd_get_name(con), net->target);
 		break;
 	}
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] received spurious srun message type: %s",
-		      __func__, con_mgr_fd_get_name(con),
+		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
 	}
 
@@ -343,12 +343,12 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 
 static void _on_finish(void *arg)
 {
-	con_mgr_fd_t *con = arg;
+	conmgr_fd_t *con = arg;
 
 	if (get_log_level() > LOG_LEVEL_DEBUG) {
 		read_lock_state();
 		debug("%s: [%s] closed srun connection state=%s",
-		      __func__, con_mgr_fd_get_name(con),
+		      __func__, conmgr_fd_get_name(con),
 		      slurm_container_status_to_str(state.status));
 		unlock_state();
 	}
@@ -360,7 +360,7 @@ static void _on_finish(void *arg)
  */
 static uint32_t _setup_listener(void)
 {
-	static const con_mgr_events_t events = {
+	static const conmgr_events_t events = {
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
@@ -385,8 +385,8 @@ static uint32_t _setup_listener(void)
 	xassert(port > 0);
 	debug("%s: listening for srun RPCs on port=%hu", __func__, port);
 
-	if ((rc = con_mgr_process_fd(CON_TYPE_RPC, fd, fd, events, NULL, 0,
-				     NULL)))
+	if ((rc = conmgr_process_fd(CON_TYPE_RPC, fd, fd, events, NULL, 0,
+				    NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
@@ -399,8 +399,8 @@ static void _pending_callback(uint32_t job_id)
 }
 
 /* check allocation has all nodes ready */
-extern void check_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			     con_mgr_work_status_t status, const char *tag,
+extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
+			     conmgr_work_status_t status, const char *tag,
 			     void *arg)
 {
 	/* there must be only 1 thread that will call this at any one time */
@@ -428,7 +428,7 @@ extern void check_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 
 	if (status != CONMGR_WORK_STATUS_RUN) {
 		debug("%s: bailing due to callback status %s",
-		      __func__, con_mgr_work_status_string(status));
+		      __func__, conmgr_work_status_string(status));
 		stop_anchor(ESLURM_ALREADY_DONE);
 		return;
 	}
@@ -451,8 +451,8 @@ extern void check_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			      __func__, state.jobid, delay);
 			unlock_state();
 		}
-		con_mgr_add_delayed_work(NULL, check_allocation, delay, 0, NULL,
-					 "check_allocation");
+		conmgr_add_delayed_work(NULL, check_allocation, delay, 0, NULL,
+					"check_allocation");
 	} else if ((rc == READY_JOB_FATAL) || !(rc & READY_JOB_STATE)) {
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -475,7 +475,7 @@ extern void check_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			stop_anchor(rc);
 		} else {
 			/* we have a job now. see if creating is done */
-			con_mgr_add_work(NULL, on_allocation,
+			conmgr_add_work(NULL, on_allocation,
 					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
 		}
 	}
@@ -591,8 +591,8 @@ static void _alloc_job(void)
 	slurm_free_resource_allocation_response_msg(alloc);
 }
 
-extern void get_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
+extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
 			   void *arg)
 {
 	int rc;
@@ -677,10 +677,10 @@ extern void get_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 		if ((rc = _stage_in()))
 			stop_anchor(rc);
 		else
-			con_mgr_add_work(NULL, on_allocation,
+			conmgr_add_work(NULL, on_allocation,
 					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
 	} else {
-		con_mgr_add_delayed_work(NULL, check_allocation, 0, 1, NULL,
+		conmgr_add_delayed_work(NULL, check_allocation, 0, 1, NULL,
 					 "check_allocation");
 	}
 }

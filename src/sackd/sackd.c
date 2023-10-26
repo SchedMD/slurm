@@ -165,16 +165,16 @@ static void _establish_config_source(void)
 	xstrfmtcat(conf_file, "%s/slurm.conf", dir);
 }
 
-static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	if (!msg->auth_ids_set) {
 		error("%s: [%s] rejecting %s RPC with missing user auth",
-		      __func__, con_mgr_fd_get_name(con),
+		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	} else if (msg->auth_uid != slurm_conf.slurm_user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != SlurmUser:%u",
-		      __func__, con_mgr_fd_get_name(con),
+		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth_uid,
 		      slurm_conf.slurm_user_id);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -189,11 +189,11 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		break;
 	default:
 		error("%s: [%s] unexpected message %u",
-		      __func__, con_mgr_fd_get_name(con), msg->msg_type);
+		      __func__, conmgr_fd_get_name(con), msg->msg_type);
 	}
 
 	slurm_free_msg(msg);
-	con_mgr_queue_close_fd(con);
+	conmgr_queue_close_fd(con);
 	return SLURM_SUCCESS;
 }
 
@@ -201,14 +201,14 @@ static void _listen_for_reconf(void)
 {
 	int fd = -1;
 	int rc = SLURM_SUCCESS;
-	con_mgr_events_t events = { .on_msg = _on_msg };
+	conmgr_events_t events = { .on_msg = _on_msg };
 
 	if ((fd = slurm_init_msg_engine_port(slurm_conf.slurmd_port)) < 0) {
 		error("%s: failed to open port: %m", __func__);
 		return;
 	}
 
-	if ((rc = con_mgr_process_fd_listen(fd, CON_TYPE_RPC, events, NULL, 0, NULL)))
+	if ((rc = conmgr_process_fd_listen(fd, CON_TYPE_RPC, events, NULL, 0, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 }
@@ -237,7 +237,7 @@ extern int main(int argc, char **argv)
 		_listen_for_reconf();
 
 	info("running");
-	con_mgr_run(true);
+	conmgr_run(true);
 
 	xfree(conf_file);
 	xfree(conf_server);

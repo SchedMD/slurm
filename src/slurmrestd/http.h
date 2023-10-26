@@ -60,7 +60,7 @@ typedef int (*on_http_request_t)(on_http_request_args_t *args);
 typedef struct {
 	int magic;
 	/* assigned connection */
-	con_mgr_fd_t *con;
+	conmgr_fd_t *con;
 	/* Authentication context (auth_context_type_t) */
 	void *auth;
 	/* callback to call on each HTTP request */
@@ -114,10 +114,10 @@ typedef http_context_t *(*on_http_connection_t)(int fd);
  * IN context connection context to hand to callback (do not xfree)
  * RET SLURM_SUCCESS or error
  */
-extern int parse_http(con_mgr_fd_t *con, void *context);
+extern int parse_http(conmgr_fd_t *con, void *context);
 
 typedef struct {
-	con_mgr_fd_t *con; /* assigned connection */
+	conmgr_fd_t *con; /* assigned connection */
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	http_status_code_t status_code; /* HTTP status code to send */
@@ -148,7 +148,7 @@ extern int send_http_response(const send_http_response_args_t *args);
  * IN on_http_request callback to call on each HTTP request
  * RET NULL on error or new http context (must xfree)
  */
-extern http_context_t *setup_http_context(con_mgr_fd_t *con,
+extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request);
 
 /*

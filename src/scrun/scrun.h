@@ -94,7 +94,7 @@ typedef struct {
 	data_t *config; /* container's config.json */
 	list_t *start_requests; /* list of (blocking_req_t *) */
 	list_t *delete_requests; /* list of (blocking_req_t *) */
-	con_mgr_fd_t *startup_con; /* conmgr connection for the SIGCHILD handler */
+	conmgr_fd_t *startup_con; /* conmgr connection for the SIGCHILD handler */
 } state_t;
 
 extern state_t state;
@@ -179,13 +179,13 @@ extern int get_anchor_state(void);
  * Request allocation for job
  * IN arg - ptr to conmgr
  */
-extern void get_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
+extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
 			   void *arg);
 
 /* callback after allocation success */
-extern void on_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
+extern void on_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
+			  conmgr_work_status_t status, const char *tag,
 			  void *arg);
 
 /*
