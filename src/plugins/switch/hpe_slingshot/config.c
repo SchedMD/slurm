@@ -323,10 +323,10 @@ static bool _config_jlope_auth(const char *token, char *arg)
 {
 	if (!arg)
 		goto err;
-	if (!xstrcasecmp(arg, SLINGSHOT_JLOPE_AUTH_BASIC_STR))
-		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_BASIC;
-	else if (!xstrcasecmp(arg, SLINGSHOT_JLOPE_AUTH_OAUTH_STR))
-		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_OAUTH;
+	if (!xstrcasecmp(arg, SLINGSHOT_AUTH_BASIC_STR))
+		slingshot_config.jlope_auth = SLINGSHOT_AUTH_BASIC;
+	else if (!xstrcasecmp(arg, SLINGSHOT_AUTH_OAUTH_STR))
+		slingshot_config.jlope_auth = SLINGSHOT_AUTH_OAUTH;
 	else
 		goto err;
 
@@ -371,14 +371,13 @@ static void _config_jlope_defaults(void)
 {
 	if (!slingshot_config.jlope_url)
 		return;
-	if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_NONE)
-		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_OAUTH;
+	if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_NONE)
+		slingshot_config.jlope_auth = SLINGSHOT_AUTH_OAUTH;
 	if (!slingshot_config.jlope_authdir) {
-		if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_OAUTH)
+		if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_OAUTH)
 			slingshot_config.jlope_authdir =
 					xstrdup(SLINGSHOT_JLOPE_AUTH_OAUTH_DIR);
-		else if (slingshot_config.jlope_auth ==
-				SLINGSHOT_JLOPE_AUTH_BASIC)
+		else if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_BASIC)
 			slingshot_config.jlope_authdir =
 					xstrdup(SLINGSHOT_JLOPE_AUTH_BASIC_DIR);
 	}

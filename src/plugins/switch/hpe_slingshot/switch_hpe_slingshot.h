@@ -85,21 +85,21 @@
  * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
  */
 typedef enum {
-	SLINGSHOT_JLOPE_AUTH_NONE = 0, /* No authentication */
-	SLINGSHOT_JLOPE_AUTH_BASIC,    /* User name and password */
-	SLINGSHOT_JLOPE_AUTH_OAUTH     /* OAuth2 client credentials grant */
-} jlope_auth_t;
-#define SLINGSHOT_JLOPE_AUTH_BASIC_STR  "BASIC" /* jlope_auth token */
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_STR  "OAUTH" /* jlope_auth token */
-#define SLINGSHOT_JLOPE_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
-#define SLINGSHOT_JLOPE_TIMEOUT         10      /* timeout for REST calls */
-#define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10      /* timeout for REST connect */
-#define SLINGSHOT_JLOPE_AUTH_BASIC_DIR                "/etc/jackaloped"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR                "/etc/wlm-client-auth"
-#define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE           "passwd"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_ID_FILE     "client-id"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_SECRET_FILE "client-secret"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_ENDPOINT_FILE      "endpoint"
+	SLINGSHOT_AUTH_NONE = 0, /* No authentication */
+	SLINGSHOT_AUTH_BASIC,    /* User name and password */
+	SLINGSHOT_AUTH_OAUTH     /* OAuth2 client credentials grant */
+} slingshot_rest_auth_t;
+#define SLINGSHOT_AUTH_BASIC_STR  "BASIC" /* {jlope,fm}_auth token */
+#define SLINGSHOT_AUTH_OAUTH_STR  "OAUTH" /* {jlope,fm}_auth token */
+#define SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE     "client-id"
+#define SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE "client-secret"
+#define SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE      "endpoint"
+#define SLINGSHOT_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
+#define SLINGSHOT_JLOPE_AUTH_BASIC_DIR       "/etc/jackaloped"
+#define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE  "passwd"
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR       "/etc/wlm-client-auth"
+#define SLINGSHOT_JLOPE_TIMEOUT         10   /* jackaloped REST call timeout */
+#define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10   /* jackaloped REST connect " */
 
 /* Per-job shared VNI structure */
 typedef struct job_vni {
@@ -168,8 +168,8 @@ typedef struct slingshot_config {
 	uint32_t flags;                 /* Bitmap of configuration flags */
 	slingshot_limits_set_t limits;  /* Set of NIC resource limits */
 	char *jlope_url;                /* URL of jackaloped REST interface */
-	jlope_auth_t jlope_auth;        /* jackaloped authentication type */
-	char *jlope_authdir;            /* directory containing auth files */
+	slingshot_rest_auth_t jlope_auth; /* jackaloped authentication type */
+	char *jlope_authdir;            /* jackaloped auth file directory */
 } slingshot_config_t;
 
 /* Values for slingshot_config_t.single_node_vni */

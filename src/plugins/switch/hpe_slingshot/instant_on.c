@@ -72,7 +72,7 @@ typedef struct rest_conn {
 	size_t datasiz;	      /* Size of the data buffer */
 	const char *name;     /* Descriptive name for logging */
 	const char *base_url; /* Base URL for connection */
-	jlope_auth_t auth;    /* Authentication type (BASIC/OAUTH) */
+	slingshot_rest_auth_t auth; /* Authentication type (BASIC/OAUTH) */
 } rest_conn_t;
 
 static rest_conn_t jlope_conn;  /* Connection to jackaloped */
@@ -208,7 +208,7 @@ static int _libcurl_trace(CURL *handle, curl_infotype type, char *data,
  * Generic handle set up function for UNIX and network connections to use
  */
 static bool _rest_connect(rest_conn_t *conn, const char *name,
-			  const char *url, jlope_auth_t auth,
+			  const char *url, slingshot_rest_auth_t auth,
 			  long timeout, long connect_timeout,
 			  const char *user_name, const char *password)
 {
@@ -250,7 +250,7 @@ static bool _rest_connect(rest_conn_t *conn, const char *name,
 	CURL_SETOPT(conn->handle, CURLOPT_SSL_VERIFYHOST, 0);
 
 	/* If using basic auth, add the user name and password */
-	if (conn->auth == SLINGSHOT_JLOPE_AUTH_BASIC && user_name && password) {
+	if (conn->auth == SLINGSHOT_AUTH_BASIC && user_name && password) {
 		CURL_SETOPT(conn->handle, CURLOPT_USERNAME, user_name);
 		CURL_SETOPT(conn->handle, CURLOPT_PASSWORD, password);
 	}
@@ -335,7 +335,7 @@ again:
 
 	/* Create header list */
 	headers = curl_slist_append(headers, "Content-Type: application/json");
-	if (conn->auth == SLINGSHOT_JLOPE_AUTH_OAUTH) {
+	if (conn->auth == SLINGSHOT_AUTH_OAUTH) {
 		const char *hdr = _get_auth_header(use_cache);
 		if (!hdr)
 			goto err;
@@ -357,7 +357,7 @@ again:
 	if (*status == HTTP_OK) {
 		debug("%s POST %s successful", conn->name, url);
 	} else if ((*status == HTTP_FORBIDDEN || *status == HTTP_UNAUTHORIZED)
-		   && (conn->auth == SLINGSHOT_JLOPE_AUTH_OAUTH) && use_cache) {
+		   && (conn->auth == SLINGSHOT_AUTH_OAUTH) && use_cache) {
 		/*
 		 * on HTTP_{FORBIDDEN,UNAUTHORIZED}, free auth header
 		 * and re-cache token
@@ -459,14 +459,14 @@ static char *_get_auth_header(bool cache_use)
 	_clear_auth_header();
 
 	/* Get the token URL and client_{id,secret}, create request string */
-	client_id = _read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_ID_FILE);
+	client_id = _read_authfile(SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE);
 	if (!client_id)
 		goto err;
 	client_secret =
-		_read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_SECRET_FILE);
+		_read_authfile(SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE);
 	if (!client_secret)
 		goto err;
-	url = _read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_ENDPOINT_FILE);
+	url = _read_authfile(SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE);
 	if (url)
 		goto err;
 	req = xstrdup_printf("grant_type=client_credentials&client_id=%s"
@@ -474,7 +474,7 @@ static char *_get_auth_header(bool cache_use)
 
 	/* Connect and POST request to OAUTH token endpoint */
 	if (!_rest_connect(&conn, "OAUTH token grant", url,
-			   SLINGSHOT_JLOPE_AUTH_NONE, SLINGSHOT_JLOPE_TIMEOUT,
+			   SLINGSHOT_AUTH_NONE, SLINGSHOT_JLOPE_TIMEOUT,
 			   SLINGSHOT_JLOPE_CONNECT_TIMEOUT, NULL, NULL))
 		goto err;
 
@@ -524,16 +524,16 @@ extern bool slingshot_init_instant_on(void)
 	char *basic_username = NULL;
 	char *basic_passwd = NULL;
 
-	if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_NONE) {
+	if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_NONE) {
 		info("Slingshot Instant On support not configured");
 		instant_on_enabled = false;
 		return false;
-	} else if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_BASIC) {
-		basic_username = SLINGSHOT_JLOPE_AUTH_BASIC_USER;
+	} else if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_BASIC) {
+		basic_username = SLINGSHOT_AUTH_BASIC_USER;
 		if (!(basic_passwd = _read_authfile(
 					SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE)))
 			goto err;
-	} else if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_OAUTH) {
+	} else if (slingshot_config.jlope_auth == SLINGSHOT_AUTH_OAUTH) {
 		/* Attempt to get an OAUTH token for later use */
 		if (!_get_auth_header(false))
 			goto err;
@@ -552,7 +552,7 @@ extern bool slingshot_init_instant_on(void)
 
 	debug("Connected to %s at %s using %s auth",
 	      jlope_conn.name, jlope_conn.base_url,
-	      (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_BASIC) ?
+	      (slingshot_config.jlope_auth == SLINGSHOT_AUTH_BASIC) ?
 		"BASIC" : "OAUTH");
 
 	instant_on_enabled = true;
