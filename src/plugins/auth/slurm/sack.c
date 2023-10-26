@@ -259,7 +259,17 @@ extern void init_sack_conmgr(void)
 	int rc;
 	mode_t mask;
 
-	_prepare_run_dir("slurm");
+	if (running_in_slurmctld()) {
+		_prepare_run_dir("slurmctld");
+		(void) strlcpy(addr.sun_path, "/run/slurmctld/sack.socket",
+			       sizeof(addr.sun_path));
+	} else if (running_in_slurmdbd()) {
+		_prepare_run_dir("slurmdbd");
+		(void) strlcpy(addr.sun_path, "/run/slurmdbd/sack.socket",
+			       sizeof(addr.sun_path));
+	} else {
+		_prepare_run_dir("slurm");
+	}
 
 	init_conmgr(0, 0, callbacks);
 
