@@ -5657,6 +5657,11 @@ alloc_job:
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
 				avail_res_array[i]->sock_gres_list;
+			if (task_limit_set)
+				log_flag(SELECT_TYPE, "%pJ: Node=%s: gres_task_limit[%d]=%u",
+					 job_ptr,
+					 node_ptr->name,
+					 i, gres_task_limit[j]);
 			j++;
 		}
 		if (!task_limit_set)
