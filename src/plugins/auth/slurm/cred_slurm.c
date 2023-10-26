@@ -192,6 +192,9 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
+	/* decode_jwt() already validated this previously */
+	addrs->expiration = jwt_get_grant_int(jwt, "exp");
+
 	free(json_net);
 	jwt_free(jwt);
 	return addrs;
