@@ -831,10 +831,11 @@ out:
 	debug("jlope_url=%s jlope_auth=%u jlope_authdir=%s",
 	      slingshot_config.jlope_url, slingshot_config.jlope_auth,
 	      slingshot_config.jlope_authdir);
-	debug("hwcoll_addrs_per_job=%d hwcoll_num_nodes=%d fm_url=%s fm_auth=%u fm_authdir=%s",
+	debug("fm_url=%s fm_auth=%u fm_authdir=%s hwcoll_addrs_per_job=%d hwcoll_num_nodes=%d",
+              slingshot_config.fm_url, slingshot_config.fm_auth,
+	      slingshot_config.fm_authdir,
 	      slingshot_config.hwcoll_addrs_per_job,
-              slingshot_config.hwcoll_num_nodes, slingshot_config.fm_url,
-              slingshot_config.fm_auth, slingshot_config.fm_authdir);
+	      slingshot_config.hwcoll_num_nodes);
 	_print_limits(&slingshot_config.limits);
 
 	xfree(params);

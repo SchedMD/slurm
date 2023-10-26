@@ -371,6 +371,14 @@ static void _copy_jobinfo(slingshot_jobinfo_t *old, slingshot_jobinfo_t *new)
 		new->nics = xmalloc(nicsz);
 		memcpy(new->nics, old->nics, nicsz);
 	}
+
+	if (old->hwcoll) {
+		size_t hwcollsz = sizeof(slingshot_hwcoll_t);
+		new->hwcoll = xmalloc(hwcollsz);
+		memcpy(new->hwcoll, old->hwcoll, hwcollsz);
+		new->hwcoll->mcast_token = xstrdup(old->hwcoll->mcast_token);
+		new->hwcoll->fm_url = xstrdup(old->hwcoll->fm_url);
+	}
 }
 
 /*
@@ -588,6 +596,11 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	xfree(jobinfo->vnis);
 	xfree(jobinfo->profiles);
 	xfree(jobinfo->nics);
+	if (jobinfo->hwcoll) {
+		xfree(jobinfo->hwcoll->mcast_token);
+		xfree(jobinfo->hwcoll->fm_url);
+		xfree(jobinfo->hwcoll);
+	}
 	xfree(jobinfo);
 }
 

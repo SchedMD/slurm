@@ -199,6 +199,19 @@ typedef struct {
 	char device_name[16];  /* Device name */
 } slingshot_hsn_nic_t;
 
+/*
+ * Information to support Slingshot HSN hardware collectives
+ * and communication with Slingshot Fabric Manager (FM)
+ */
+typedef struct {
+	uint32_t job_id; 	 /* job id */
+	uint32_t step_id; 	 /* step id */
+	char *mcast_token;       /* Session token returned from FM */
+	char *fm_url;            /* FM URL for creating multicast trees */
+	uint32_t addrs_per_job;  /* Collectives multicast addrs per job */
+	uint32_t num_nodes;      /* Minimum #nodes to get multicast addrs */
+} slingshot_hwcoll_t;
+
 /* Denotes packing a null jobinfo structure */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 
@@ -215,6 +228,7 @@ typedef struct slingshot_jobinfo {
 	uint32_t flags;        /* Configuration flags */
 	uint32_t num_nics;     /* Number of entries in 'nics' array */
 	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
+	slingshot_hwcoll_t *hwcoll; /* HSN HW collectives info */
 } slingshot_jobinfo_t;
 
 /* Slingshot traffic classes (bitmap) */
