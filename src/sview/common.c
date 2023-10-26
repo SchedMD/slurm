@@ -2210,3 +2210,26 @@ extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
 
 	return;
 }
+
+extern void set_column_width_fixed(GtkTreeView *tree_view,
+				   int sortid,
+				   int width)
+{
+	GList* col_list;
+	GList *col;
+
+	xassert(tree_view);
+
+	if (!(col_list = gtk_tree_view_get_columns(tree_view)))
+		return;
+
+	for (col = col_list; col; col = g_list_next(col)) {
+		if (gtk_tree_view_column_get_sort_column_id(col->data) ==
+		    sortid) {
+			gtk_tree_view_column_set_sizing(
+				col->data, GTK_TREE_VIEW_COLUMN_FIXED);
+			gtk_tree_view_column_set_fixed_width(col->data, width);
+		}
+	}
+	g_list_free(col_list);
+}

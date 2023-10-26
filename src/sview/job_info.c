@@ -2419,16 +2419,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	return;
 }
 
-static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf,
-			       int buf_size)
-{
-	char *sorted_nodelist;
-
-	sorted_nodelist = slurm_sort_node_list_str(step_ptr->nodes);
-	snprintf(buf, buf_size, "%s", sorted_nodelist);
-	xfree(sorted_nodelist);
-}
-
 static int _id_from_stepstr(char *str) {
 	char *end = NULL;
 	int id = strtol(str, &end, 10);
@@ -2468,7 +2458,8 @@ static void _layout_step_record(GtkTreeView *treeview,
 				int update, bool suspended)
 {
 	char *uname;
-	char tmp_char[100], tmp_str[50], tmp_nodes[50], tmp_time[50];
+	char *tmp_nodes;
+	char tmp_char[100], tmp_str[50], tmp_time[50];
 	GtkTreeIter iter;
 	uint32_t state;
 	GtkTreeStore *treestore =
@@ -2556,11 +2547,11 @@ static void _layout_step_record(GtkTreeView *treeview,
 	if (!step_ptr->nodes
 	    || !xstrcasecmp(step_ptr->nodes, "waiting...")) {
 		sprintf(tmp_time,"00:00:00");
-		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
+		tmp_nodes = xstrdup("waiting...");
 		state = JOB_PENDING;
 	} else {
 		secs2time_str(step_ptr->run_time, tmp_time, sizeof(tmp_time));
-		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
+		tmp_nodes = slurm_sort_node_list_str(step_ptr->nodes);
 		convert_num_unit((float)_nodes_in_list(tmp_nodes),
 				 tmp_char, sizeof(tmp_char), UNIT_NONE,
 				 NO_VAL,
@@ -2614,6 +2605,8 @@ static void _layout_step_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_TRES_ALLOC),
 				   step_ptr->tres_alloc_str);
+
+	xfree(tmp_nodes);
 }
 
 static void _update_step_record(job_step_info_t *step_ptr,
@@ -2621,7 +2614,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeIter *iter, bool suspended)
 {
 	char *tmp_uname;
-	char tmp_nodes[50];
+	char *tmp_nodes;
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[256], tmp_task_cnt[40];
 	char tmp_step_id[40], tmp_job_id[400];
@@ -2641,13 +2634,13 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	if (!step_ptr->nodes ||
 	    !xstrcasecmp(step_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run, "00:00:00");
-		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
+		tmp_nodes = xstrdup("waiting...");
 		tmp_node_cnt[0] = '\0';
 		state = JOB_PENDING;
 	} else {
 		secs2time_str(step_ptr->run_time,
 			      tmp_time_run, sizeof(tmp_time_run));
-		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
+		tmp_nodes = slurm_sort_node_list_str(step_ptr->nodes);
 		convert_num_unit((float)_nodes_in_list(tmp_nodes),
 				 tmp_node_cnt, sizeof(tmp_node_cnt),
 				 UNIT_NONE, NO_VAL,
@@ -2720,6 +2713,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_USER_ID,      tmp_uname,
 			   -1);
 
+	xfree(tmp_nodes);
 
 	return;
 }
@@ -3891,6 +3885,11 @@ display_it:
 		 * treestore we don't really care about the return value */
 		create_treestore(tree_view, display_data_job,
 				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
+
+		set_column_width_fixed(tree_view, SORTID_NODELIST, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_EXC, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_REQ, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_SCHED, 100);
 	}
 
 	view = INFO_VIEW;

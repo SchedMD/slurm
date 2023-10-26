@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Add JobAcctGatherParams=DisableGPUAcct to disable gpu accounting.
  -- Fix file descriptor leak in slurmd when using acct_gather_energy/ipmi with
     DCMI devices.
+ -- sview - avoid crash when job has a node list string > 49 characters.
 
 * Changes in Slurm 23.02.6
 ==========================

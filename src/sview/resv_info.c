@@ -1255,6 +1255,8 @@ display_it:
 		   the return value */
 		create_treestore(tree_view, display_data_resv,
 				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
+
+		set_column_width_fixed(tree_view, SORTID_NODELIST, 100);
 	}
 
 	view = INFO_VIEW;

@@ -2644,6 +2644,8 @@ display_it:
 			def_sort_col = SORTID_CLUSTER_NAME;
 		create_treestore(tree_view, display_data_part, SORTID_CNT,
 				 def_sort_col, SORTID_COLOR);
+
+		set_column_width_fixed(tree_view, SORTID_NODELIST, 100);
 	}
 
 	view = INFO_VIEW;
