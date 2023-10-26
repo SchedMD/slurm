@@ -1582,11 +1582,12 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			if (!slurm_conf_get_addr(this_addr, &req_msg.address,
-						 req_msg.flags)) {
-				/* Found addr, don't use localhost */
-				this_addr = NULL;
-			} else {
+			if (slurm_conf_get_addr(this_addr, &req_msg.address,
+						req_msg.flags)) {
+				/*
+				 * The node isn't in the conf, see if the
+				 * controller has an address for it.
+				 */
 				slurm_node_alias_addrs_t *alias_addrs;
 				if (!slurm_get_node_alias_addrs(this_addr,
 								&alias_addrs)) {
@@ -1598,9 +1599,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 				slurm_conf_get_addr(this_addr, &req_msg.address,
 						    req_msg.flags);
 			}
-		}
-
-		if (!this_addr) {
+		} else {
 			this_addr = "localhost";
 			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
 				       this_addr);
