@@ -578,6 +578,7 @@ static void _do_power_work(time_t now)
 
 			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
+			node_mgr_reset_node_stats(node_ptr);
 
 			reset_node_active_features(node_ptr);
 			reset_node_instance(node_ptr);
@@ -623,6 +624,7 @@ static void _do_power_work(time_t now)
 			bit_clear(booting_node_bitmap, node_ptr->index);
 			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
+			node_mgr_reset_node_stats(node_ptr);
 
 			if (resume_fail_prog) {
 				if (!failed_node_bitmap) {

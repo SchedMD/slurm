@@ -4519,6 +4519,19 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 }
 
 /*
+ * Reset the statistics of a node that is powered down or downed unexpectedly
+ * so that client applications do not show erroneous values.
+ */
+extern void node_mgr_reset_node_stats(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+	xassert(node_ptr->energy);
+
+	node_ptr->cpu_load = 0;
+	memset(node_ptr->energy, 0, sizeof(acct_gather_energy_t));
+}
+
+/*
  * Subset of _make_node_down() except for marking node down, trigger and
  * accounting update.
  */
@@ -4542,6 +4555,7 @@ static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 	xassert(node_ptr);
 
 	_make_node_unavail(node_ptr);
+	node_mgr_reset_node_stats(node_ptr);
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	node_ptr->owner = NO_VAL;

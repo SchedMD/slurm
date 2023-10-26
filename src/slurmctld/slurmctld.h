@@ -1321,6 +1321,16 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 extern void make_node_avail(node_record_t *node_ptr);
 
 /*
+ * Reset load & power statistics for node.
+ *
+ * When node is powered down or downed unexpectedly, the load/power stats
+ * are effectively '0'.
+ *
+ * IN node_ptr - node to reset statistics for.
+ */
+extern void node_mgr_reset_node_stats(node_record_t *node_ptr);
+
+/*
  * Copy a job's feature list
  * IN feature_list_src - a job's depend_lst
  * RET copy of depend_list_src, must be freed by caller
