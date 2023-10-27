@@ -78,5 +78,11 @@ extern int common_topo_get_node_addr(char *node_name, char **addr,
  */
 extern bool common_topo_route_tree(void);
 
+/*
+ * common_topo_route_part - Return true if TopologyParam=RoutePart, false
+ *                          otherwise.
+ */
+extern bool common_topo_route_part(void);
+
 #endif
 

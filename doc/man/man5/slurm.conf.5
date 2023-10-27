@@ -5911,6 +5911,16 @@ Valid when TopologyPlugin=topology/tree.
 .IP
 
 .TP
+\fBRoutePart\fR
+Instead of using the plugins default route calculation use partition node lists
+to route communications from the controller. Once on the compute node,
+communications will be routed using the reguested plugins normal algorithm. If
+a node is in multiple partitions, the first partition seen will be used. The
+controller will communicate directly with any nodes that aren't part of a
+partition.
+.IP
+
+.TP
 \fBSwitchAsNodeRank\fR
 Assign the same node rank to all nodes under one leaf switch.
 This can be useful if the naming convention for the nodes does not match the
