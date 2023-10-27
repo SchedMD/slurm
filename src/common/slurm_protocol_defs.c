@@ -5468,6 +5468,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BUILD_INFO:
 		slurm_free_last_update_msg(data);
 		break;
+	case RESPONSE_BUILD_INFO:
+		slurm_free_ctl_conf(data);
+		break;
 	case REQUEST_JOB_INFO:
 		slurm_free_job_info_request_msg(data);
 		break;
@@ -5482,6 +5485,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		slurm_free_epilog_complete_msg(data);
+		break;
+	case RESPONSE_JOB_STEP_INFO:
+		slurm_free_job_step_info_response_msg(data);
 		break;
 	case REQUEST_KILL_JOB:
 	case REQUEST_CANCEL_JOB_STEP:
@@ -5533,6 +5539,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_submit_response_response_msg(data);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
+	case RESPONSE_ACCT_GATHER_ENERGY:
 		slurm_free_acct_gather_node_resp_msg(data);
 		break;
 	case RESPONSE_NODE_REGISTRATION:
@@ -5579,6 +5586,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_RESERVATION_INFO:
 		slurm_free_resv_info_request_msg(data);
 		break;
+	case RESPONSE_RESERVATION_INFO:
+		slurm_free_reservation_info_msg(data);
+		break;
 	case REQUEST_FRONT_END_INFO:
 		slurm_free_front_end_info_request_msg(data);
 		break;
@@ -5609,6 +5619,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_BATCH_SCRIPT:
 		slurm_free_batch_script_msg(data);
 		break;
+	case RESPONSE_PARTITION_INFO:
+		slurm_free_partition_info_msg(data);
+		break;
+	case RESPONSE_NODE_INFO:
+		slurm_free_node_info_msg(data);
+		break;
 	case REQUEST_JOB_USER_INFO:
 		slurm_free_job_user_id_msg(data);
 		break;
@@ -5631,6 +5647,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_STEP_PIDS:
 	case REQUEST_STEP_LAYOUT:
 		slurm_free_step_id(data);
+		break;
+	case RESPONSE_STEP_LAYOUT:
+		slurm_job_step_layout_free(data);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
 		slurm_free_job_step_stat(data);
@@ -5662,6 +5681,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_ID:
 		slurm_free_job_id_request_msg(data);
 		break;
+	case RESPONSE_JOB_ID:
+		slurm_free_job_id_response_msg(data);
+		break;
 	case REQUEST_CONFIG:
 		slurm_free_config_request_msg(data);
 		break;
@@ -5677,10 +5699,18 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_CONTAINER_KILL:
 	case RESPONSE_CONTAINER_DELETE:
 	case RESPONSE_CONTAINER_EXEC:
+	case RESPONSE_PROLOG_EXECUTING:
+	case RESPONSE_JOB_READY:
 		slurm_free_return_code_msg(data);
 		break;
 	case RESPONSE_SLURM_RC_MSG:
 		slurm_free_return_code2_msg(data);
+		break;
+	case RESPONSE_SLURM_REROUTE_MSG:
+		slurm_free_reroute_msg(data);
+		break;
+	case RESPONSE_JOB_STEP_CREATE:
+		slurm_free_job_step_create_response_msg(data);
 		break;
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);
@@ -5716,6 +5746,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);
 		break;
+	case RESPONSE_FRONT_END_INFO:
+		slurm_free_front_end_info_msg(data);
+		break;
 	case REQUEST_PERSIST_INIT:
 		slurm_persist_free_init_req_msg(data);
 		break;
@@ -5731,11 +5764,17 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_TOPO_INFO:
 		slurm_free_topo_info_msg(data);
 		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		slurm_free_sbcast_cred_msg(data);
+		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		slurm_free_update_step_msg(data);
 		break;
 	case RESPONSE_PING_SLURMD:
 		slurm_free_ping_slurmd_resp(data);
+		break;
+	case RESPONSE_LICENSE_INFO:
+		slurm_free_license_info_msg(data);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		slurm_free_job_array_resp(data);
@@ -5750,11 +5789,17 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TRIGGER_PULL:
 		slurm_free_trigger_msg(data);
 		break;
+	case RESPONSE_SLURMD_STATUS:
+		slurm_free_slurmd_status(data);
+		break;
 	case REQUEST_JOB_NOTIFY:
 		slurm_free_job_notify_msg(data);
 		break;
 	case REQUEST_STATS_INFO:
 		slurm_free_stats_info_request_msg(data);
+		break;
+	case RESPONSE_STATS_INFO:
+		slurm_free_stats_response_msg(data);
 		break;
 	case REQUEST_LICENSE_INFO:
 		slurm_free_license_info_request_msg(data);
@@ -5767,6 +5812,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		slurm_free_network_callerid_msg(data);
+		break;
+	case RESPONSE_NETWORK_CALLERID:
+		slurm_free_network_callerid_resp(data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		slurm_free_srun_job_complete_msg(data);
@@ -5796,11 +5844,15 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case PMI_KVS_PUT_REQ:
 		slurm_free_kvs_comm_set(data);
 		break;
+	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
 		slurm_free_resource_allocation_response_msg(data);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
 		slurm_free_assoc_mgr_info_request_msg(data);
+		break;
+	case RESPONSE_ASSOC_MGR_INFO:
+		slurm_free_assoc_mgr_info_msg(data);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
