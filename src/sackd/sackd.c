@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include <getopt.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -213,9 +214,35 @@ static void _listen_for_reconf(void)
 		      __func__, fd, slurm_strerror(rc));
 }
 
+static void _on_sigint(conmgr_fd_t *con, conmgr_work_type_t type,
+		       conmgr_work_status_t status, const char *tag,
+		       void *arg)
+{
+	info("Caught SIGINT. Shutting down.");
+	conmgr_request_shutdown();
+}
+
+static void _on_sighup(conmgr_fd_t *con, conmgr_work_type_t type,
+		       conmgr_work_status_t status, const char *tag,
+		       void *arg)
+{
+	info("Caught SIGHUP. Reconfiguring.");
+}
+
+static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
+		        conmgr_work_status_t status, const char *tag,
+		        void *arg)
+{
+	info("Caught SIGUSR2. Ignoring.");
+}
+
 extern int main(int argc, char **argv)
 {
 	_parse_args(argc, argv);
+
+	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
+	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sigint()");
+	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
 
 	_establish_config_source();
 
