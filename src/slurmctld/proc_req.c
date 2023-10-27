@@ -684,51 +684,21 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 	return SLURM_SUCCESS;
 }
 
-/*
- * This trickery is to avoid contending any further on config_read.
- * Without this _slurm_rpc_config_request() would need to hold
- * conf_read until the response had finished sending (since we're using
- * a single shared copy of the configs).
- *
- * Instead, swap the pointers as quickly as possible. There is, as always,
- * a potential race here, but it's viewed as less problematic than
- * slowing down slurmctld with additional locking pressure.
- */
 extern void configless_update(void)
 {
-	config_response_msg_t new, *old;
-
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
 		return;
 
 	running_configless = true;
 	slurm_rwlock_wrlock(&configless_lock);
-	if (!config_for_slurmd)
-		config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
-	if (!config_for_clients)
-		config_for_clients = xmalloc(sizeof(*config_for_clients));
+	slurm_free_config_response_msg(config_for_slurmd);
+	slurm_free_config_response_msg(config_for_clients);
+	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
+	config_for_clients = xmalloc(sizeof(*config_for_clients));
 
-	/* handle slurmd first */
-	memset(&new, 0, sizeof(new));
-	old = xmalloc(sizeof(*old));
-
-	new.slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-	load_config_response_list(&new, slurmd_config_files, true);
-
-	memcpy(old, config_for_slurmd, sizeof(*old));
-	/* pseudo-atomic update of the pointers */
-	memcpy(config_for_slurmd, &new, sizeof(*config_for_slurmd));
-	slurm_free_config_response_msg(old);
-
-	/* then the clients */
-	memset(&new, 0, sizeof(new));
-	old = xmalloc(sizeof(*old));
-	load_config_response_list(&new, client_config_files, false);
-
-	memcpy(old, config_for_clients, sizeof(*old));
-	/* pseudo-atomic update of the pointers */
-	memcpy(config_for_clients, &new, sizeof(*config_for_clients));
-	slurm_free_config_response_msg(old);
+	load_config_response_list(config_for_slurmd, slurmd_config_files, true);
+	config_for_slurmd->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
+	load_config_response_list(config_for_clients, client_config_files, true);
 	slurm_rwlock_unlock(&configless_lock);
 }
 
