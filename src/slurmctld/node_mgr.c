@@ -4289,7 +4289,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * So explicitly split the pool into three groups.
  * Note: DOES NOT SUPPORT FRONTEND.
  */
-void push_reconfig_to_slurmd(char **slurmd_config_files)
+extern void push_reconfig_to_slurmd(void)
 {
 #ifndef HAVE_FRONT_END
 	agent_arg_t *curr_args, *prev_args, *old_args;
@@ -4300,21 +4300,21 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	curr_args->retry = 0;
 	curr_args->hostlist = hostlist_create(NULL);
 	curr_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	curr_args->msg_args = new_config_response(slurmd_config_files, true);
+	curr_args->msg_args = new_config_response(true);
 
 	prev_args = xmalloc(sizeof(*prev_args));
 	prev_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	prev_args->retry = 0;
 	prev_args->hostlist = hostlist_create(NULL);
 	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
-	prev_args->msg_args = new_config_response(slurmd_config_files, true);
+	prev_args->msg_args = new_config_response(true);
 
 	old_args = xmalloc(sizeof(*old_args));
 	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	old_args->retry = 0;
 	old_args->hostlist = hostlist_create(NULL);
 	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	old_args->msg_args = new_config_response(slurmd_config_files, true);
+	old_args->msg_args = new_config_response(true);
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))

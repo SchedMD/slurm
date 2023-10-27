@@ -1150,7 +1150,7 @@ extern int reconfigure_slurm(void)
 		set_slurmctld_state_loc();
 		if (running_configless) {
 			configless_update();
-			push_reconfig_to_slurmd(slurmd_config_files);
+			push_reconfig_to_slurmd();
 			sackd_mgr_push_reconfig();
 		} else
 			msg_to_slurmd(REQUEST_RECONFIGURE);

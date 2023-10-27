@@ -51,6 +51,18 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+static char *slurmd_config_files[] = {
+	"slurm.conf", "acct_gather.conf", "cgroup.conf",
+	"cli_filter.lua", "ext_sensors.conf", "gres.conf", "helpers.conf",
+	"job_container.conf", "knl_cray.conf", "mpi.conf", "oci.conf",
+	"plugstack.conf", "topology.conf", NULL
+};
+
+static char *client_config_files[] = {
+	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf", NULL
+};
+
+
 static void _init_minimal_conf_server_config(List controllers);
 
 static int to_parent[2] = {-1, -1};
@@ -498,10 +510,14 @@ extern int find_map_conf_file(void *x, void *key)
 	return 0;
 }
 
-extern config_response_msg_t *new_config_response(char *files[], bool to_slurmd)
+extern config_response_msg_t *new_config_response(bool to_slurmd)
 {
 	config_response_msg_t *msg = xmalloc(sizeof(*msg));
 	conf_includes_map_t *map = NULL;
+	char **files = client_config_files;
+
+	if (to_slurmd)
+		files = slurmd_config_files;
 
 	msg->config_files = list_create(destroy_config_file);
 

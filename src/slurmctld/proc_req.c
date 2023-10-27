@@ -121,17 +121,6 @@ static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 static bool do_post_rpc_node_registration = false;
 
 bool running_configless = false;
-char *slurmd_config_files[] = {
-	"slurm.conf", "acct_gather.conf", "cgroup.conf",
-	"cli_filter.lua", "ext_sensors.conf", "gres.conf", "helpers.conf",
-	"job_container.conf", "knl_cray.conf", "mpi.conf", "oci.conf",
-	"plugstack.conf", "topology.conf", NULL
-};
-
-static char *client_config_files[] = {
-	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf", NULL
-};
-
 static pthread_rwlock_t configless_lock = PTHREAD_RWLOCK_INITIALIZER;
 static config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
@@ -696,9 +685,9 @@ extern void configless_update(void)
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
 	config_for_clients = xmalloc(sizeof(*config_for_clients));
 
-	config_for_slurmd = new_config_response(slurmd_config_files, true);
+	config_for_slurmd = new_config_response(true);
 	config_for_slurmd->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-	config_for_clients = new_config_response(client_config_files, false);
+	config_for_clients = new_config_response(false);
 	slurm_rwlock_unlock(&configless_lock);
 }
 
