@@ -6462,7 +6462,8 @@ static void _validate_arbitrary(slurm_opt_t *opt)
 
 	if ((opt->distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_ARBITRARY)
 		return;
-	if (!opt->nodes_set)
+	if (!opt->nodes_set ||
+	    slurm_option_set_by_env(opt, 'N'))
 		return;
 
 	error("--nodes is incompatable with --distribution=arbitrary");
