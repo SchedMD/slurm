@@ -511,6 +511,54 @@ function __slurm_split_opt() {
 	return 0
 }
 
+# Determine if we are completing a long opt
+#
+# 0 = yes, 1 = no
+function __slurm_is_long_opt() {
+	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur' split='$split'"
+
+	if [[ "$prev" =~ ^--[[:alnum:]][-[:alnum:]]+$ ]] && $split; then
+		return 0;
+	elif [[ "$prev" =~ ^--[[:alnum:]][-[:alnum:]]+=*$ ]]; then
+		return 0;
+	else
+		return 1
+	fi
+}
+
+# Determine if we are completing a short opt
+#
+# 0 = yes, 1 = no
+function __slurm_is_short_opt() {
+	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur'"
+
+	if [[ "$prev" =~ ^-[[:alnum:]]+=* ]]; then
+		return 0;
+	else
+		return 1
+	fi
+}
+
+# Determine if we are completing an opt (e.g. short, long)
+#
+# 0 = yes, 1 = no
+function __slurm_is_opt() {
+	local is_short=false
+	local is_long=false
+
+	__slurm_is_short_opt && is_short=true
+	__slurm_is_long_opt && $split && is_long=true
+
+	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur' split='$split'"
+	__slurm_log_debug "$(__func__): is_short='$is_short' is_long='$is_long'"
+	
+	if $is_long || $is_short; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 # _init_completion() wrapper
 #
 # RET: 0 = success, 1 = failure
@@ -1416,6 +1464,7 @@ function __slurm_comp_common() {
 
 	__slurm_comp_flags "$cmd" && return
 
+	__slurm_is_opt || return 1
 	case "${prev}" in
 	--accel-bind) __slurm_compreply "${accelbind_types[*]}" ;;
 	-A | --account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
@@ -1779,6 +1828,7 @@ function _sacct() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-x | --association?(s)) __slurm_compreply_list "$(__slurm_associations)" ;;
@@ -3106,6 +3156,7 @@ function __sacctmgr_update() {
 function __slurm_comp_sacctmgr_flags() {
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 
+	__slurm_is_opt || return 1
 	case "${prev}" in
 	*) return 1 ;;
 	esac
@@ -3221,6 +3272,7 @@ function _sbcast() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-C | --compress) __slurm_compreply "$(__slurm_compress_types)" ;;
 	--exclude?(s)) _filedir -d ;;
@@ -3253,6 +3305,7 @@ function _scancel() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -4383,6 +4436,7 @@ function __scontrol_write() {
 function __slurm_comp_scontrol_flags() {
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 
+	__slurm_is_opt || return 1
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply "$(__slurm_clusters)" ;;
 	-u | --uid?(s)) __slurm_compreply "$(__slurm_users)" ;;
@@ -4468,6 +4522,7 @@ function _scrontab() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-u) __slurm_compreply "$(__slurm_users)" ;;
 	esac
@@ -4493,6 +4548,7 @@ function _sdiag() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	esac
@@ -4620,6 +4676,7 @@ function _sinfo() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" "%ALL" ;;     # TODO: want --helpformat
@@ -4668,6 +4725,7 @@ function _sprio() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" ;; # TODO: want --helpformat
@@ -4873,6 +4931,7 @@ function _squeue() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" ;;      # TODO: want --helpformat
@@ -5111,6 +5170,7 @@ function __slurm_comp_sreport_flags() {
 		"percent"
 	)
 
+	__slurm_is_opt || return 1
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-t) __slurm_compreply "${time_format[*]}" ;;
@@ -5191,6 +5251,7 @@ function _sshare() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -5219,6 +5280,7 @@ function _sstat() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$1")" ;;
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
@@ -5265,6 +5327,7 @@ function _strigger() {
 
 	__slurm_comp_flags "$1" && return
 
+	__slurm_is_opt || return
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	--flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
