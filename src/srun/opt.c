@@ -905,6 +905,24 @@ static bool _opt_verify(void)
 	int hl_cnt = 0;
 	bool mpack_reset_nodes = false;
 
+	if (opt.srun_opt->interactive) {
+		if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
+		     SLURM_DIST_ARBITRARY)) {
+			opt.distribution &= ~SLURM_DIST_ARBITRARY;
+		}
+	}
+
+	/*
+	 * This means --ntasks was read from the environment.
+	 * We will override it with what the user specified in the hostlist.
+	 */
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)) {
+		if (slurm_option_set_by_env(&opt, 'n'))
+			opt.ntasks_set = false;
+		if (slurm_option_set_by_env(&opt, 'N'))
+			opt.nodes_set = false;
+	}
+
 	validate_options_salloc_sbatch_srun(&opt);
 
 	/*
@@ -998,17 +1016,6 @@ static bool _opt_verify(void)
 	if (!sropt.prolog)
 		sropt.prolog = xstrdup(slurm_conf.srun_prolog);
 
-	/*
-	 * This means --ntasks was read from the environment.
-	 * We will override it with what the user specified in the hostlist.
-	 */
-	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)) {
-		if (slurm_option_set_by_env(&opt, 'n'))
-			opt.ntasks_set = false;
-		if (slurm_option_set_by_env(&opt, 'N'))
-			opt.nodes_set = false;
-	}
-
 	/* slurm_verify_cpu_bind has to be called before validate_hint_option */
 	if (opt.srun_opt->cpu_bind) {
 		if (slurm_verify_cpu_bind(opt.srun_opt->cpu_bind,
@@ -1046,44 +1053,6 @@ static bool _opt_verify(void)
 	    slurm_option_set_by_cli(&opt, LONG_OPT_OVERLAP)) {
 		error("--exclusive and --overlap are mutually exclusive");
 		verified = false;
-	}
-
-	if (opt.nodefile) {
-		char *tmp;
-		xfree(opt.nodelist);
-		if (!(tmp = slurm_read_hostfile(opt.nodefile, 0))) {
-			error("Invalid --nodefile node file");
-			exit(-1);
-		}
-		opt.nodelist = xstrdup(tmp);
-		free(tmp);
-	}
-
-	if (!opt.nodelist) {
-		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
-			/* make sure the file being read in has a / in
-			   it to make sure it is a file in the
-			   valid_node_list function */
-			if (!strstr(opt.nodelist, "/")) {
-				char *add_slash = xstrdup("./");
-				xstrcat(add_slash, opt.nodelist);
-				xfree(opt.nodelist);
-				opt.nodelist = add_slash;
-			}
-			opt.distribution &= SLURM_DIST_STATE_FLAGS;
-			opt.distribution |= SLURM_DIST_ARBITRARY;
-			if (!_valid_node_list(&opt.nodelist)) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				exit(error_exit);
-			} else {
-				debug("loaded nodes (%s) from hostfile",
-				      opt.nodelist);
-			}
-		}
-	} else {
-		if (!_valid_node_list(&opt.nodelist))
-			exit(error_exit);
 	}
 
 	/* set proc and node counts based on the arbitrary list of nodes */

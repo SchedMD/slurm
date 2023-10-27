@@ -438,44 +438,6 @@ static bool _opt_verify(void)
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);
 
-	if (opt.nodefile) {
-		char *tmp;
-		xfree(opt.nodelist);
-		if (!(tmp = slurm_read_hostfile(opt.nodefile, 0))) {
-			error("Invalid --nodefile node file");
-			exit(-1);
-		}
-		opt.nodelist = xstrdup(tmp);
-		free(tmp);
-	}
-
-	if (!opt.nodelist) {
-		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
-			/* make sure the file being read in has a / in
-			   it to make sure it is a file in the
-			   valid_node_list function */
-			if (!strstr(opt.nodelist, "/")) {
-				char *add_slash = xstrdup("./");
-				xstrcat(add_slash, opt.nodelist);
-				xfree(opt.nodelist);
-				opt.nodelist = add_slash;
-			}
-			opt.distribution &= SLURM_DIST_STATE_FLAGS;
-			opt.distribution |= SLURM_DIST_ARBITRARY;
-			if (!_valid_node_list(&opt.nodelist)) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				exit(error_exit);
-			} else {
-				debug("loaded nodes (%s) from hostfile",
-				      opt.nodelist);
-			}
-		}
-	} else {
-		if (!_valid_node_list(&opt.nodelist))
-			exit(error_exit);
-	}
-
 	if (opt.nodelist && !opt.nodes_set) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl) {
@@ -590,8 +552,8 @@ static bool _opt_verify(void)
 	   of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	    && (!opt.nodes_set || !opt.ntasks_set)) {
-		if (!hl)
-			hl = hostlist_create(opt.nodelist);
+		FREE_NULL_HOSTLIST(hl);
+		hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = 1;
 			opt.ntasks = hostlist_count(hl);

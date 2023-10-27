@@ -278,6 +278,8 @@ documents those changes that are of interest to users and administrators.
  -- If ThreadsPerCore in slurm.conf is configured with less
     than the number of hardware threads, fix a bug where the task plugins used
     fewer cores instead of using fewer threads per core.
+ -- Fix arbitrary distribution allowing it to be used with salloc and sbatch and
+    fix how cpus are allocated to nodes.
 
 * Changes in Slurm 23.02.7
 ==========================

@@ -160,6 +160,11 @@ typedef struct {
 	int rc;
 } job_overlap_args_t;
 
+typedef struct {
+	int node_index;
+	int node_count;
+} node_inx_cnt_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -196,6 +201,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
+static void _calc_arbitrary_tpn(job_record_t *job_ptr);
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -715,6 +721,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->script);
 	xfree(job_entry->details->script_hash);
+	xfree(job_entry->details->arbitrary_tpn);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
 	xfree(job_entry->details->x11_target);
@@ -3041,6 +3048,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->acctg_freq);
+	xfree(job_ptr->details->arbitrary_tpn);
 	for (i=0; i<job_ptr->details->argc; i++)
 		xfree(job_ptr->details->argv[i]);
 	xfree(job_ptr->details->argv);
@@ -3144,6 +3152,10 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
+
+	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_ARBITRARY)
+		_calc_arbitrary_tpn(job_ptr);
 
 	return SLURM_SUCCESS;
 
@@ -8621,6 +8633,56 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 	return default_batch_wait;
 }
 
+static int _comp_node_inx(const void *n1, const void *n2)
+{
+	const node_inx_cnt_t *node1 = n1;
+	const node_inx_cnt_t *node2 = n2;
+
+	return node1->node_index - node2->node_index;
+}
+
+static void _calc_arbitrary_tpn(job_record_t *job_ptr)
+{
+	uint16_t *arbitrary_tasks_np = NULL;
+	int cur_node = 0;
+	int num_nodes = job_ptr->details->min_nodes;
+	char *host, *prev_host = NULL;
+	node_inx_cnt_t *node_inx_cnts;
+	hostlist_t *hl = hostlist_create(job_ptr->details->req_nodes);
+	hostlist_sort(hl);
+
+	xassert(num_nodes == hostlist_count(hl));
+
+	arbitrary_tasks_np = xcalloc(num_nodes, sizeof(uint16_t));
+	node_inx_cnts = xcalloc(num_nodes, sizeof(node_inx_cnt_t));
+
+	while ((host = hostlist_shift(hl))) {
+		if (!prev_host || !xstrcmp(host, prev_host)) {
+			node_inx_cnts[cur_node].node_count += 1;
+		} else {
+			node_inx_cnts[cur_node].node_index =
+				node_name_get_inx(prev_host);
+			cur_node++;
+			node_inx_cnts[cur_node].node_count += 1;
+		}
+
+		free(prev_host);
+		prev_host = host;
+	}
+	node_inx_cnts[cur_node].node_index = node_name_get_inx(prev_host);
+	free(prev_host);
+
+	qsort(node_inx_cnts, num_nodes, sizeof(node_inx_cnt_t), _comp_node_inx);
+
+	for (int i = 0; i < num_nodes; i++)
+		arbitrary_tasks_np[i] = node_inx_cnts[i].node_count;
+
+	hostlist_destroy(hl);
+	xfree(node_inx_cnts);
+
+	job_ptr->details->arbitrary_tpn = arbitrary_tasks_np;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
@@ -8810,8 +8872,14 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->x11_target = xstrdup(job_desc->x11_target);
 	detail_ptr->x11_target_port = job_desc->x11_target_port;
 	if (job_desc->req_nodes) {
-		detail_ptr->req_nodes =
-			_copy_nodelist_no_dup(job_desc->req_nodes);
+		if ((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
+		    SLURM_DIST_ARBITRARY) {
+			detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
+			_calc_arbitrary_tpn(job_ptr);
+		} else {
+			detail_ptr->req_nodes =
+				_copy_nodelist_no_dup(job_desc->req_nodes);
+		}
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
@@ -12581,6 +12649,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	    !xstrcmp(job_desc->req_nodes, detail_ptr->req_nodes)) {
 		sched_debug("%s: new req_nodes identical to old req_nodes %s",
 			    __func__, job_desc->req_nodes);
+	} else if (job_desc->req_nodes && detail_ptr &&
+		   (detail_ptr->task_dist & SLURM_DIST_STATE_BASE) ==
+		   SLURM_DIST_ARBITRARY) {
+		sched_info("%s: Cannot update node list of %pJ. Not compatible with arbitrary distribution",
+		      __func__, job_ptr);
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
 	} else if (job_desc->req_nodes &&
 		   (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/*
@@ -13311,7 +13386,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	/* Reset min and max node counts as needed, ensure consistency */
 	if (job_desc->min_nodes != NO_VAL) {
-		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		if (job_ptr->details &&
+		    (job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+		    SLURM_DIST_ARBITRARY) {
+			info("%s: Cannot update node count of %pJ. Not compatible with arbitrary distribution",
+			     __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			;	/* shrink running job, processed later */
 		else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;

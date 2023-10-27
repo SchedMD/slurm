@@ -618,6 +618,8 @@ static int _eval_nodes_consec(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	 * provide, then select additional resources as needed in next loop
 	 */
 	if (req_map) {
+		int count = 0;
+		uint16_t *arbitrary_tpn = job_ptr->details->arbitrary_tpn;
 		for (i = 0;
 		     ((node_ptr = next_node_bitmap(req_map, &i)) &&
 		      (max_nodes > 0));
@@ -626,9 +628,34 @@ static int _eval_nodes_consec(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass,
 				      cr_type);
-			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
-				     details_ptr, avail_res_array[i], i,
-				     cr_type);
+			if (arbitrary_tpn) {
+				int req_cpus = arbitrary_tpn[count++];
+				if ((details_ptr->cpus_per_task != NO_VAL16) ||
+				    (details_ptr->cpus_per_task != 0))
+					req_cpus *= details_ptr->cpus_per_task;
+
+				req_cpus = MAX(req_cpus,
+					       (int) details_ptr->pn_min_cpus);
+				req_cpus = MAX(req_cpus,
+					       details_ptr->min_gres_cpu);
+
+				if (avail_cpus < req_cpus) {
+					debug("%pJ required node %s needed %d cpus but only has %d",
+					      job_ptr, node_ptr->name, req_cpus,
+					      avail_cpus);
+					goto fini;
+				}
+				avail_cpus = req_cpus;
+
+				avail_res_array[i]->avail_cpus = avail_cpus;
+				avail_res_array[i]->avail_res_cnt =
+					avail_res_array[i]->avail_cpus +
+					avail_res_array[i]->avail_gpus;
+
+			} else
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
+					     min_rem_nodes, details_ptr,
+					     avail_res_array[i], i, cr_type);
 			if (gres_per_job) {
 				gres_sched_add(
 					job_ptr->gres_list_req,
@@ -648,6 +675,7 @@ static int _eval_nodes_consec(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			min_rem_nodes--;
 			max_nodes--;
 		}
+
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;

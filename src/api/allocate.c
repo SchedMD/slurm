@@ -932,10 +932,10 @@ _handle_rc_msg(slurm_msg_t *msg)
 
 /*
  * Read a Slurm hostfile specified by "filename".  "filename" must contain
- * a list of Slurm NodeNames, one per line.  Reads up to "n" number of hostnames
- * from the file. Returns a string representing a hostlist ranged string of
- * the contents of the file.  This is a helper function, it does not
- * contact any Slurm daemons.
+ * a list of Slurm NodeNames, one per line, comma seperated, or * notation.
+ * Reads up to "n" number of hostnames from the file. Returns a string
+ * representing a hostlist ranged string of the contents of the file.
+ * This is a helper function, it does not contact any Slurm daemons.
  *
  * Returns a string representing the hostlist.  Returns NULL if there are fewer
  * than "n" hostnames in the file, or if an error occurs.  If "n" ==
@@ -1049,6 +1049,9 @@ char *slurm_read_hostfile(const char *filename, int n)
 			    (i = atoi(asterisk + 1))) {
 				asterisk[0] = '\0';
 
+				if (n != (int) NO_VAL)
+					i = MIN(i,
+						n - hostlist_count(hostlist));
 				/*
 				 * Don't forget the extra space potentially
 				 * needed
@@ -1061,6 +1064,10 @@ char *slurm_read_hostfile(const char *filename, int n)
 				hostlist_push_host(hostlist, host_name);
 			}
 			host_name = strtok_r(NULL, ",", &save_ptr);
+
+			if ((n != (int) NO_VAL) &&
+			    (hostlist_count(hostlist) == n))
+				break;
 		}
 		xfree(tmp_text);
 
