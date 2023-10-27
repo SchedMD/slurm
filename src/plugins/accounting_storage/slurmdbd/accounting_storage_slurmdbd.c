@@ -2674,14 +2674,21 @@ extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 	bitstr_t *node_bitmap;
 	hostlist_iterator_t h_itr;
 
-	if (!nodes || !cluster_hl)
+	if (!nodes)
 		return NULL;
-
 	node_hl = hostlist_create(nodes);
-	node_bitmap = bit_alloc(node_record_count);
 	h_itr = hostlist_iterator_create(node_hl);
 
 	slurm_mutex_lock(&cluster_hl_mutex);
+	if (!cluster_hl) {
+		slurm_mutex_unlock(&cluster_hl_mutex);
+		hostlist_iterator_destroy(h_itr);
+		FREE_NULL_HOSTLIST(node_hl);
+		return NULL;
+	}
+
+	node_bitmap = bit_alloc(hostlist_count(cluster_hl));
+
 	while ((host = hostlist_next(h_itr))) {
 		int loc;
 		if ((loc = hostlist_find(cluster_hl, host)) != -1)

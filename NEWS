@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix file descriptor leak in slurmd when using acct_gather_energy/ipmi with
     DCMI devices.
  -- sview - avoid crash when job has a node list string > 49 characters.
+ -- Prevent slurmctld crash during reconfigure when packing job start messages.
 
 * Changes in Slurm 23.02.6
 ==========================
