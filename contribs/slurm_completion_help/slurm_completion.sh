@@ -1675,6 +1675,23 @@ function __slurm_linux_gids() {
 	echo "${output}"
 }
 
+# Returns list of linux hostname and IP
+#
+# RET: space delimited list
+function __slurm_linux_hostnames() {
+	local output=""
+	local commands=(
+		"hostname --short"
+		"hostname --fqdn"
+		"hostname --all-ip-addresses"
+	)
+	for cmd in "${commands[@]}"; do
+		output+="$(eval "${cmd}") "
+	done
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
+}
+
 ################################################################################
 #			SACCT Completion Functions
 ################################################################################
@@ -5410,3 +5427,91 @@ function _strigger() {
 	fi
 }
 complete -o nospace -F _strigger strigger
+
+################################################################################
+#			SLURMRESTD Completion Functions
+################################################################################
+
+# Slurm helper function to get slurmrestd auth plugin list
+#
+# RET: space delimited list
+function __slurm_restd_auth() {
+	local ctx="slurmrestd"
+	local cmd="$ctx -a list 2>&1 | tail -n +2 | sed 's/$ctx: //g'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get slurmrestd data parser plugin list
+#
+# RET: space delimited list
+function __slurm_restd_dataparser() {
+	local ctx="slurmrestd"
+	local cmd="$ctx -d list 2>&1 | tail -n +2 | sed 's/$ctx: //g'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get slurmrestd openapi plugin list
+#
+# RET: space delimited list
+function __slurm_restd_openapi() {
+	local ctx="slurmrestd"
+	local cmd="$ctx -s list 2>&1 | tail -n +2 | sed 's/$ctx: //g'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm completion helper for slurmrestd flag completion
+#
+# $1: slurm command being completed
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_slurmrestd_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$1" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-a) __slurm_compreply_list "$(__slurm_restd_auth)" ;;
+	-d) __slurm_compreply_list "$(__slurm_restd_dataparser)" ;;
+	-f) _filedir ;;
+	-g) __slurm_compreply "$(__slurm_linux_groups)" ;;
+	-s) __slurm_compreply_list "$(__slurm_restd_openapi)" ;;
+	-u) __slurm_compreply "$(__slurm_linux_users)" ;;
+	esac
+
+	return 0
+}
+
+# slurmrestd completion handler
+# https://slurm.schedmd.com/slurmrestd.html
+function _slurmrestd() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	local _compreply=()
+	local _options=()
+
+	__slurm_comp_slurmrestd_flags "$1" && return
+
+	# Split on ':' to make value completion easier
+	case "${cur}" in
+	--?*:* | ?*:*)
+		prev="${cur%%?(\\):*}"
+		cur="${cur#*?(\\):}"
+		split=true
+		;;
+	esac
+
+	case "${prev}" in
+	unix) _filedir ;;
+	esac
+
+	$split && return
+
+	_options=("localhost $(__slurm_linux_hostnames) unix")
+	_compreply+=("$(compgen -W "${_options[*]}" -S ":" -- "${cur}")")
+	__slurm_comp "${_compreply[*]}" "" "${cur}" "" ""
+}
+complete -o nospace -F _slurmrestd slurmrestd
