@@ -111,7 +111,7 @@ for {set i 0} {$i<3} {incr i} {
 	if { $i == 0} {
 		spawn $srun -N3 -t1 -l $bin_printenv SLURMD_NODENAME
 	} else {
-		spawn $srun -N3 -t1 -l --distribution=arbitrary $bin_printenv SLURMD_NODENAME
+		spawn $srun -t1 -l --distribution=arbitrary $bin_printenv SLURMD_NODENAME
 	}
 	expect {
 		-re "($number): ($re_word_str)" {
