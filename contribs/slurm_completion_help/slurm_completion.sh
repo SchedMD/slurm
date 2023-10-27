@@ -2771,6 +2771,27 @@ function __sacctmgr_create() {
 	__sacctmgr_add
 }
 
+# completion handler for: sacctmgr clear *
+function __sacctmgr_clear() {
+	local subcmds=(
+		"stats"
+	)
+	local subcmd
+	subcmd="$(__slurm_find_subcmd "${subcmds[*]}")"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_debug "$(__func__): subcmd='$subcmd'"
+	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
+	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
+
+	if [[ -z ${subcmd-} ]]; then
+		__slurm_compreply "${subcmds[*]}"
+	else
+		comp_cmd="${comp_cmd}_${subcmd//[^[:alnum:]]/}"
+		__slurm_comp_command "${comp_cmd}"
+	fi
+}
+
 # completion handler for: sacctmgr delete *
 function __sacctmgr_delete() {
 	comp_cmd="${comp_cmd//_delete/_remove}"
