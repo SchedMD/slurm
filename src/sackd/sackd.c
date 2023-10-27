@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include "src/common/conmgr.h"
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/read_config.h"
@@ -54,10 +55,14 @@
 
 decl_static_data(usage_txt);
 
+static bool reconfig = false;
 static bool registered = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
 static char *dir = "/run/slurm/conf";
+
+static char **main_argv = NULL;
+static int listen_fd = -1;
 
 static void _usage(void)
 {
@@ -143,6 +148,13 @@ static void _establish_config_source(void)
 		return;
 	}
 
+	/* Reconfigured child process does not need to fetch configs again. */
+	if (getenv("SACKD_RECONF_LISTEN_FD")) {
+		xstrfmtcat(conf_file, "%s/slurm.conf", dir);
+		registered = true;
+		return;
+	}
+
 	/*
 	 * Attempt to create cache dir.
 	 * If that fails, attempt to destroy it, then make a new directory.
@@ -151,7 +163,8 @@ static void _establish_config_source(void)
 	if (mkdir(dir, 0755) < 0) {
 		(void) rmdir_recursive(dir, true);
 		if (mkdir(dir, 0755) < 0)
-			fatal("%s: failed to create a clean %s", __func__, dir);
+			fatal("%s: failed to create a clean cache dir at %s",
+			      __func__, dir);
 	}
 
 	if (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD)))
@@ -183,9 +196,11 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 
 	switch (msg->msg_type) {
 	case REQUEST_RECONFIGURE_SACKD:
-		info("reconfigure requested");
+		info("reconfigure requested by slurmd");
 		if (write_configs_to_conf_cache(msg->data, dir))
 			error("%s: failed to write configs to cache", __func__);
+		reconfig = true;
+		conmgr_quiesce(false);
 		/* no need to respond */
 		break;
 	default:
@@ -200,18 +215,21 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 
 static void _listen_for_reconf(void)
 {
-	int fd = -1;
 	int rc = SLURM_SUCCESS;
 	conmgr_events_t events = { .on_msg = _on_msg };
 
-	if ((fd = slurm_init_msg_engine_port(slurm_conf.slurmd_port)) < 0) {
+	if (getenv("SACKD_RECONF_LISTEN_FD")) {
+		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
+	} else if ((listen_fd =
+		slurm_init_msg_engine_port(slurm_conf.slurmd_port)) < 0) {
 		error("%s: failed to open port: %m", __func__);
 		return;
 	}
 
-	if ((rc = conmgr_process_fd_listen(fd, CON_TYPE_RPC, events, NULL, 0, NULL)))
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, events,
+					   NULL, 0, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
-		      __func__, fd, slurm_strerror(rc));
+		      __func__, listen_fd, slurm_strerror(rc));
 }
 
 static void _on_sigint(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -227,6 +245,8 @@ static void _on_sighup(conmgr_fd_t *con, conmgr_work_type_t type,
 		       void *arg)
 {
 	info("Caught SIGHUP. Reconfiguring.");
+	reconfig = true;
+	conmgr_quiesce(false);
 }
 
 static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -236,8 +256,75 @@ static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
 	info("Caught SIGUSR2. Ignoring.");
 }
 
+static void _try_to_reconfig(void)
+{
+	extern char **environ;
+	struct rlimit rlim;
+	char **child_env;
+	pid_t pid;
+	int to_parent[2];
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+
+	if (pipe(to_parent) < 0) {
+		error("%s: pipe() failed: %m", __func__);
+		return;
+	}
+
+	child_env = env_array_copy((const char **) environ);
+	if (listen_fd != -1) {
+		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
+		fd_set_noclose_on_exec(listen_fd);
+	}
+	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
+
+	if ((pid = fork()) < 0) {
+		error("%s: fork() failed, cannot reconfigure.", __func__);
+		return;
+	} else if (pid > 0) {
+		int len, rc;
+		/*
+		 * Close the input side of the pipe so the read() will return
+		 * immediately if the child process fatal()s.
+		 * Otherwise we'd be stuck here indefinitely assuming another
+		 * internal thread might write something to the pipe.
+		 */
+		(void) close(to_parent[1]);
+		len = read(to_parent[0], &rc, sizeof(int));
+
+		if (len < 0) {
+			error("%s: read() failed: %m", __func__);
+		} else if (len != sizeof(int)) {
+			error("%s: read() incomplete, got %d: %m",
+			      __func__, len);
+		} else if (rc != SLURM_SUCCESS) {
+			error("%s: child returned %s",
+			      __func__, slurm_strerror(rc));
+		} else {
+			info("Relinquishing control to new sackd process");
+			exit(0);
+		}
+		close(to_parent[0]);
+		env_array_free(child_env);
+		waitpid(pid, &rc, 0);
+		info("Resuming operation, reconfigure failed.");
+	} else {
+		for (int fd = 3; fd < rlim.rlim_cur; fd++) {
+			if ((fd != to_parent[1]) && (fd != listen_fd))
+				(void) close(fd);
+		}
+
+		execve(main_argv[0], main_argv, child_env);
+		fatal("execv() failed: %m");
+	}
+}
+
 extern int main(int argc, char **argv)
 {
+	main_argv = argv;
 	_parse_args(argc, argv);
 
 	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
@@ -263,8 +350,23 @@ extern int main(int argc, char **argv)
 	if (registered)
 		_listen_for_reconf();
 
+	if (getenv("SACKD_RECONF_PARENT_FD")) {
+		int rc = SLURM_SUCCESS;
+		int fd = atoi(getenv("SACKD_RECONF_PARENT_FD"));
+		info("child started successfully");
+		write(fd, &rc, sizeof(int));
+		(void) close(fd);
+	}
+
 	info("running");
-	conmgr_run(true);
+	while (true) {
+		conmgr_run(true);
+		if (!reconfig)
+			break;
+		reconfig = false;
+		/* will exit this process if successful */
+		_try_to_reconfig();
+	}
 
 	xfree(conf_file);
 	xfree(conf_server);
