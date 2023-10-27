@@ -63,6 +63,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -80,6 +81,7 @@
 #include "src/slurmrestd/rest_auth.h"
 
 #define OPT_LONG_MAX_CON 0x100
+#define OPT_LONG_AUTOCOMP 0x101
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define unshare(_) (false)
@@ -340,9 +342,20 @@ static void _usage(void)
  */
 static void _parse_commandline(int argc, char **argv)
 {
-	static const struct option long_options[] = {
+	static struct option long_options[] = {
+		{ "autocomplete", required_argument, NULL, OPT_LONG_AUTOCOMP },
 		{ "help", no_argument, NULL, 'h' },
 		{ "max-connections", required_argument, NULL, OPT_LONG_MAX_CON },
+		{ NULL, required_argument, NULL, 'a' },
+		{ NULL, required_argument, NULL, 'd' },
+		{ NULL, required_argument, NULL, 'f' },
+		{ NULL, required_argument, NULL, 'g' },
+		{ NULL, no_argument, NULL, 'h' },
+		{ NULL, required_argument, NULL, 's' },
+		{ NULL, required_argument, NULL, 't' },
+		{ NULL, required_argument, NULL, 'u' },
+		{ NULL, no_argument, NULL, 'v' },
+		{ NULL, no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 	int c = 0, option_index = 0;
@@ -392,6 +405,10 @@ static void _parse_commandline(int argc, char **argv)
 			break;
 		case OPT_LONG_MAX_CON:
 			_set_max_connections(optarg);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			_usage();
