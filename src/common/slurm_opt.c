@@ -6130,6 +6130,97 @@ extern bool slurm_option_get_tres_per_tres(
 		return true;
 }
 
+/*
+ * Update the cpu:# part of opt->tres_per_task and match it to the cpu count of
+ * opt->cpus_per_task.
+ *
+ * If opt->cpus_per_task == 0, then just remove the cpu:# string from
+ * opt->tres_per_task.
+ *
+ * tres_per_task takes a form similar to "cpu:10,gres:gpu:gtx:1,license:iop1:1".
+ *
+ * IN/OUT: opt - slurm_opt_t, with opt->tres_per_task to be matched to
+ *               opt->cpus_per_task.
+ */
+static void _update_tres_per_task_cpu(slurm_opt_t *opt)
+{
+	int tres_cpu_cnt;
+	char *end, *prefix, *suffix = NULL, *new_str = NULL;
+	char *tres_cpu_cnt_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
+
+	if (!tres_cpu_cnt_ptr) {
+		if (opt->cpus_per_task) {
+			/* Add "cpu:*" to opt->tres_per_task. */
+			if (opt->tres_per_task) {
+				xstrfmtcat(new_str, "cpu:%d,%s",
+					   opt->cpus_per_task,
+					   opt->tres_per_task);
+			} else {
+				xstrfmtcat(new_str, "cpu:%d",
+					   opt->cpus_per_task);
+			}
+			xfree(opt->tres_per_task);
+			opt->tres_per_task = new_str;
+		}
+		return;
+	}
+
+	/* Get the cpu count in opt->tres_per_task */
+	tres_cpu_cnt = atoi(tres_cpu_cnt_ptr + 4);
+
+	/* Nothing to update. */
+	if (tres_cpu_cnt == opt->cpus_per_task)
+		return;
+
+	/* Get the "cpu:#" end ptr and the prefix and suffix strings */
+	if ((end = xstrstr(tres_cpu_cnt_ptr, ","))) {
+		/* Remove the initial comma in the suffix. */
+		suffix = end + 1;
+	}
+
+	/* Set the prefix */
+	*tres_cpu_cnt_ptr = '\0';
+	prefix = opt->tres_per_task;
+	if (prefix) {
+		/* Remove the final comma of the prefix. */
+		char *pfx_comma = prefix + strlen(prefix) - 1;
+		if (*pfx_comma == ',')
+			*pfx_comma = '\0';
+	}
+
+	/* Skip empty prefix/suffix in the following logic*/
+	if (prefix && !*prefix)
+		prefix = NULL;
+	if (suffix && !*suffix)
+		suffix = NULL;
+
+	if (!opt->cpus_per_task) {
+		/* Exclude the cpus:# string */
+		if (prefix && suffix)
+			xstrfmtcat(new_str, "%s,%s", prefix, suffix);
+		if (prefix && !suffix)
+			xstrfmtcat(new_str, "%s", prefix);
+		if (!prefix && suffix)
+			xstrfmtcat(new_str, "%s", suffix);
+	} else {
+		/* Compose the new string. */
+		if (prefix && suffix)
+			xstrfmtcat(new_str, "%s,cpu:%d,%s",
+				   prefix, opt->cpus_per_task, suffix);
+		if (prefix && !suffix)
+			xstrfmtcat(new_str, "%s,cpu:%d",
+				   prefix, opt->cpus_per_task);
+		if (!prefix && suffix)
+			xstrfmtcat(new_str, "cpu:%d,%s",
+				   opt->cpus_per_task, suffix);
+		if (!prefix && !suffix)
+			xstrfmtcat(new_str, "cpu:%d", opt->cpus_per_task);
+	}
+
+	xfree(opt->tres_per_task);
+	opt->tres_per_task = new_str;
+}
+
 static void _validate_cpus_per_task(slurm_opt_t *opt)
 {
 	int tmp_int;
@@ -6155,11 +6246,12 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
 		/*
 		 * The value is already in opt->cpus_per_task.
-		 * Ideally we would clear just the cpus part of the env
-		 * variable but currently don't have a way to do that.
+		 * Update the cpus part of the env variable.
 		 */
+		_update_tres_per_task_cpu(opt);
 		if (opt->verbose)
-			info("Ignoring SLURM_TRES_PER_TASK=cpu: since --cpus-per-task was given as a command line option.");
+			info("Updating SLURM_TRES_PER_TASK to %s as --cpus-per-task takes precedence over the environment variables.",
+			     opt->tres_per_task);
 		return;
 	}
 
