@@ -498,14 +498,12 @@ extern int find_map_conf_file(void *x, void *key)
 	return 0;
 }
 
-extern void load_config_response_list(config_response_msg_t *msg,
-				      char *files[], bool to_slurmd)
+extern config_response_msg_t *new_config_response(char *files[], bool to_slurmd)
 {
+	config_response_msg_t *msg = xmalloc(sizeof(*msg));
 	conf_includes_map_t *map = NULL;
 
-	xassert(msg);
-	if (!msg->config_files)
-		msg->config_files = list_create(destroy_config_file);
+	msg->config_files = list_create(destroy_config_file);
 
 	for (int i = 0; files[i]; i++) {
 		_load_conf2list(msg, files[i], false);
@@ -532,6 +530,8 @@ extern void load_config_response_list(config_response_msg_t *msg,
 		if (slurm_conf.epilog && (slurm_conf.epilog[0] != '/'))
 			_load_conf2list(msg, slurm_conf.epilog, true);
 	}
+
+	return msg;
 }
 
 extern void destroy_config_file(void *object)

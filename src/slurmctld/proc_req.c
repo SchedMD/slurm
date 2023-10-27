@@ -696,9 +696,9 @@ extern void configless_update(void)
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
 	config_for_clients = xmalloc(sizeof(*config_for_clients));
 
-	load_config_response_list(config_for_slurmd, slurmd_config_files, true);
+	config_for_slurmd = new_config_response(slurmd_config_files, true);
 	config_for_slurmd->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-	load_config_response_list(config_for_clients, client_config_files, true);
+	config_for_clients = new_config_response(client_config_files, true);
 	slurm_rwlock_unlock(&configless_lock);
 }
 

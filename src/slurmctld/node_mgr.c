@@ -4294,34 +4294,27 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 #ifndef HAVE_FRONT_END
 	agent_arg_t *curr_args, *prev_args, *old_args;
 	node_record_t *node_ptr;
-	config_response_msg_t *curr_config, *prev_config, *old_config;
 
 	curr_args = xmalloc(sizeof(*curr_args));
 	curr_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	curr_args->retry = 0;
 	curr_args->hostlist = hostlist_create(NULL);
 	curr_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	curr_config = xmalloc(sizeof(*curr_config));
-	load_config_response_list(curr_config, slurmd_config_files, true);
-	curr_args->msg_args = curr_config;
+	curr_args->msg_args = new_config_response(slurmd_config_files, true);
 
 	prev_args = xmalloc(sizeof(*prev_args));
 	prev_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	prev_args->retry = 0;
 	prev_args->hostlist = hostlist_create(NULL);
 	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
-	prev_config = xmalloc(sizeof(*prev_config));
-	load_config_response_list(prev_config, slurmd_config_files, true);
-	prev_args->msg_args = prev_config;
+	prev_args->msg_args = new_config_response(slurmd_config_files, true);
 
 	old_args = xmalloc(sizeof(*old_args));
 	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	old_args->retry = 0;
 	old_args->hostlist = hostlist_create(NULL);
 	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	old_config = xmalloc(sizeof(*old_config));
-	load_config_response_list(old_config, slurmd_config_files, true);
-	old_args->msg_args = old_config;
+	old_args->msg_args = new_config_response(slurmd_config_files, true);
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
@@ -4347,7 +4340,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 
 	if (curr_args->node_count == 0) {
 		hostlist_destroy(curr_args->hostlist);
-		slurm_free_config_response_msg(curr_config);
+		slurm_free_config_response_msg(curr_args->msg_args);
 		xfree(curr_args);
 	} else {
 		debug("Spawning agent msg_type=%s",
@@ -4358,7 +4351,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 
 	if (prev_args->node_count == 0) {
 		hostlist_destroy(prev_args->hostlist);
-		slurm_free_config_response_msg(prev_config);
+		slurm_free_config_response_msg(prev_args->msg_args);
 		xfree(prev_args);
 	} else {
 		debug("Spawning agent msg_type=%s",
@@ -4369,7 +4362,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 
 	if (old_args->node_count == 0) {
 		hostlist_destroy(old_args->hostlist);
-		slurm_free_config_response_msg(old_config);
+		slurm_free_config_response_msg(old_args->msg_args);
 		xfree(old_args);
 	} else {
 		debug("Spawning agent msg_type=%s",

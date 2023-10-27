@@ -181,12 +181,10 @@ static int _each_sackd_node(void *x, void *arg)
 {
 	sackd_node_t *node = x;
 	agent_arg_t *args = xmalloc(sizeof(*args));
-	config_response_msg_t *config = xmalloc(sizeof(*config));
 
 	args->addr = xmalloc(sizeof(slurm_addr_t));
 	slurm_set_addr(args->addr, slurm_conf.slurmd_port, node->nodeaddr);
-	load_config_response_list(config, slurmd_config_files, true);
-	args->msg_args = config;
+	args->msg_args = new_config_response(slurmd_config_files, true);
 	args->msg_type = REQUEST_RECONFIGURE_SACKD;
 	args->hostlist = hostlist_create(node->hostname);
 	args->node_count = 1;

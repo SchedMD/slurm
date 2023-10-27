@@ -61,8 +61,7 @@ extern int find_map_conf_file(void *x, void *key);
 extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 				       char *dir);
 
-extern void load_config_response_list(config_response_msg_t *msg,
-				      char *files[], bool to_slurmd);
+extern config_response_msg_t *new_config_response(char *files[], bool to_slurmd);
 
 extern void destroy_config_file(void *object);
 
