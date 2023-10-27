@@ -60,7 +60,7 @@
 
 # Source guard
 (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
-if [ $SOURCED -eq 0 ]; then
+if [ "$SOURCED" -eq 0 ]; then
 	echo "FATAL: this script (slurm_completion.sh) is meant to be sourced." 1>&2
 	exit 1
 elif [[ -z $BASH_VERSION ]] && [[ -z ${BASH_SOURCE[-1]} ]]; then
@@ -3110,7 +3110,7 @@ function __slurm_comp_sacctmgr_flags() {
 	*) return 1 ;;
 	esac
 
-	return 0
+	# return 0
 }
 
 # sacctmgr completion handler
