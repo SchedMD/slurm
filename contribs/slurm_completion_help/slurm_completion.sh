@@ -1135,6 +1135,24 @@ function __slurm_resources_servers() {
 	__slurm_func_wrapper "$cmd"
 }
 
+# Slurm helper function for client data parser (json) plugin list
+#
+# RET: space delimited list
+function __slurm_dataparser_json() {
+	local ctx="$1"
+	local cmd="$ctx --json=list 2>&1 | tail -n +2 | sed 's/$ctx: //g'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function for client data parser (yaml) plugin list
+#
+# RET: space delimited list
+function __slurm_dataparser_yaml() {
+	local ctx="$1"
+	local cmd="$ctx --yaml=list 2>&1 | tail -n +2 | sed 's/$ctx: //g'"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to return accepted signals list
 #
 # RET: signals
@@ -1880,6 +1898,8 @@ function __slurm_comp_sacct_flags() {
 	--units) __slurm_compreply "${units[*]}" ;;
 	-W | --wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	--whole-hetjob) __slurm_compreply "$(__slurm_boolean)" ;;
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -3241,6 +3261,8 @@ function __slurm_comp_sacctmgr_flags() {
 	__slurm_is_opt || return 1
 
 	case "${prev}" in
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -4560,6 +4582,8 @@ function __slurm_comp_scontrol_flags() {
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply "$(__slurm_clusters)" ;;
 	-u | --uid?(s)) __slurm_compreply "$(__slurm_users)" ;;
+	--json) __slurm_compreply "$(__slurm_dataparser_json "$ctx")" ;;
+	--yaml) __slurm_compreply "$(__slurm_dataparser_yaml "$ctx")" ;;
 	*) return 1 ;;
 	esac
 
@@ -4684,6 +4708,8 @@ function __slurm_comp_sdiag_flags() {
 
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -4831,6 +4857,8 @@ function __slurm_comp_sinfo_flags() {
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -5117,6 +5145,8 @@ function __slurm_comp_squeue_flags() {
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -5430,6 +5460,8 @@ function __slurm_comp_sshare_flags() {
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "$(__slurm_helpformat "$cmd")" ;;
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
+	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
+	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
