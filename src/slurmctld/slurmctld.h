@@ -2804,11 +2804,6 @@ extern void configless_update(void);
 extern void configless_clear(void);
 
 /*
- */
-int
-waitpid_timeout(const char *, pid_t, int *, int);
-
-/*
  * Calculate and populate the number of tres' for all partitions.
  */
 extern void set_partition_tres(bool assoc_mgr_locked);
