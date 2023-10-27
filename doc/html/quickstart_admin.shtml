@@ -1,6 +1,30 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Quick Start Administrator Guide</h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick_start">Super Quick Start</a></li>
+<li>
+<a href="#build_install">Building and Installing Slurm</a>
+<ul>
+<li><a href="#prereqs">Installing Prerequisites</a></li>
+<li><a href="#manual_build">Building Manually</a></li>
+<li><a href="#rpmbuild">Building RPMs</a></li>
+<li><a href="#rpms">Installing RPMs</a></li>
+</ul>
+</li>
+<li><a href="#daemons">Daemons</a></li>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#Config">Configuration</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#starting_daemons">Starting the Daemons</a></li>
+<li><a href="#admin_examples">Administration Examples</a></li>
+<li><a href="#upgrade">Upgrades</a></li>
+<li><a href="#FreeBSD">FreeBSD</a></li>
+</ul>
+
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
 general overview.</p>
@@ -68,40 +92,15 @@ the cluster.</li>
 <a class="slurm_link" href="#build_install"></a>
 </h2>
 
-<p>Instructions to build and install Slurm manually are shown below.
-See the README and INSTALL files in the source distribution for more details.
-</p>
-<ol>
-<li>Unpack the distributed tarball:<br>
-<code>tar -xaf slurm*tar.bz2</code>
-<li><code>cd</code> to the directory containing the Slurm source and type
-<code>./configure</code> with appropriate options (see below).</li>
-<li>Type <code>make install</code> to compile and install the programs,
-documentation, libraries, header files, etc.</li>
-<li>Type <code>ldconfig -n &lt;library_location&gt;</code> so that the Slurm
-libraries can be found by applications that intend to use Slurm APIs directly.
-The library location will be a subdirectory of PREFIX (described below) and
-depend upon the system type and configuration, typically lib or lib64.
-For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
-find that a file named "/usr/lib64/libslurm.so" was installed and the command
-<code>ldconfig -n /usr/lib64</code> should be executed.</li>
-</ol>
-<p>A full list of <code>configure</code> options will be returned by the
-command <code>configure --help</code>. The most commonly used arguments
-to the <code>configure</code> command include:</p>
-<p style="margin-left:.2in"><code>--enable-debug</code><br>
-Enable additional debugging logic within Slurm.</p>
-<p style="margin-left:.2in"><code>--prefix=<i>PREFIX</i></code><br>
-Install architecture-independent files in PREFIX; default value is /usr/local.</p>
-<p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
-Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
+<h3 id="prereqs">Installing Prerequisites
+<a class="slurm_link" href="#prereqs"></a>
+</h3>
 
-<p>If required libraries or header files are in non-standard locations, set
-<code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
-Optional Slurm plugins will be built automatically when the
-<code>configure</code> script detects that the required build requirements are
-present. Build dependencies for various plugins and commands are denoted below:
-</p>
+<p>Before building Slurm, consider which plugins you will need for your
+installation.  Which plugins are built can vary based on the libraries that
+are available when running configure.  Refer to the below list of possible
+plugins and what is required to build them.</p>
+
 <ul>
 <li> <b>AMD GPU Support</b> Autodetection of AMD GPUs will be available
 		if the <i>ROCm</i> development library is installed.
@@ -133,9 +132,9 @@ present. Build dependencies for various plugins and commands are denoted below:
 		authentication development library is installed. MUNGE is used
 		as the default authentication mechanism.</li>
 <li> <b>MySQL</b> MySQL support for accounting will be built if the
-		<i>mysql</i> development library (preferably version 5.5 or
-		later), or if the <i>MariaDB</i> development library is
-		present.</li>
+		<i>MySQL</i> or <i>MariaDB</i> development library is present.
+		A currently supported version of MySQL or MariaDB should be
+		used.</li>
 <li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
 		available if the <i>numa</i> development library is installed.
 		</li>
@@ -163,15 +162,54 @@ present. Build dependencies for various plugins and commands are denoted below:
 <p>Please see the <a href="download.html">Download</a> page for references to
 required software to build these plugins.</p>
 
+<p>If required libraries or header files are in non-standard locations, set
+<code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
+</p>
+
+<h3 id="manual_build">Building Manually
+<a class="slurm_link" href="#manual_build"></a>
+</h3>
+
+<p>Instructions to build and install Slurm manually are shown below.
+See the README and INSTALL files in the source distribution for more details.
+</p>
+<ol>
+<li>Unpack the distributed tarball:<br>
+<code>tar -xaf slurm*tar.bz2</code>
+<li><code>cd</code> to the directory containing the Slurm source and type
+<code>./configure</code> with appropriate options (see below).</li>
+<li>Type <code>make install</code> to compile and install the programs,
+documentation, libraries, header files, etc.</li>
+<li>Type <code>ldconfig -n &lt;library_location&gt;</code> so that the Slurm
+libraries can be found by applications that intend to use Slurm APIs directly.
+The library location will be a subdirectory of PREFIX (described below) and
+depend upon the system type and configuration, typically lib or lib64.
+For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
+find that a file named "/usr/lib64/libslurm.so" was installed and the command
+<code>ldconfig -n /usr/lib64</code> should be executed.</li>
+</ol>
+<p>A full list of <code>configure</code> options will be returned by the
+command <code>configure --help</code>. The most commonly used arguments
+to the <code>configure</code> command include:</p>
+<p style="margin-left:.2in"><code>--enable-debug</code><br>
+Enable additional debugging logic within Slurm.</p>
+<p style="margin-left:.2in"><code>--prefix=<i>PREFIX</i></code><br>
+Install architecture-independent files in PREFIX; default value is /usr/local.</p>
+<p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
+Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
+
+<h3 id="rpmbuild">Building RPMs<a class="slurm_link" href="#rpmbuild"></a></h3>
 <p>To build RPMs directly, copy the distributed tarball into a directory
 and execute (substituting the appropriate Slurm version
-number):<br><code>rpmbuild -ta slurm-21.08.1.tar.bz2</code></p>
+number):<br><code>rpmbuild -ta slurm-23.02.7.tar.bz2</code></p>
 The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
 directory of the user building them.
 
 <p>You can control some aspects of the RPM built with a <i>.rpmmacros</i>
 file in your home directory. <b>Special macro definitions will likely
 only be required if files are installed in unconventional locations.</b>
+A full list of <i>rpmbuild</i> options can be found near the top of the
+slurm.spec file.
 Some macro definitions that may be used in building Slurm include:
 <dl>
 <dt>_enable_debug
@@ -183,8 +221,6 @@ Some macro definitions that may be used in building Slurm include:
 /etc/slurm)
 <dt>with_munge
 <dd>Specifies the MUNGE (authentication library) installation location
-<dt>with_ssl
-<dd>Specifies SSL library installation location
 </dl>
 <p>An example .rpmmacros file:</p>
 <pre>
@@ -804,7 +840,7 @@ The recommended upgrade order is as follows:</p>
     <a href="accounting.html#slurm-accounting-configuration-before-build">
     accounting page</a>.</li>
 <li>Upgrade the slurmdbd daemon.</li>
-<li>Restart the slurmdbd daemon.</li>
+<li>Restart the slurmdbd daemon.
 <ul>
 <li><b>NOTE</b>: The first time slurmdbd is started after an upgrade it will
 take some time to update existing records in the database. If slurmdbd is
@@ -813,6 +849,7 @@ the process when it reaches its timeout value, which causes problems with the
 upgrade. We recommend starting slurmdbd by calling the command directly rather
 than using systemd when performing an upgrade.</li>
 </ul>
+</li>
 <li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
     execute "scontrol reconfig" for them to take effect.</li>
 <li>Shutdown the slurmctld daemon(s).</li>
@@ -837,11 +874,10 @@ not currently recommend for customer use. Unfortunately, this inclusion could
 cause Slurm to be updated to a newer version outside of a planned maintenance
 period. In order to prevent Slurm from being updated unintentionally, we
 recommend you modify the EPEL Repository configuration to exclude all Slurm
-packages from automatic updates.
+packages from automatic updates.</p>
 <pre>
 exclude=slurm*
 </pre>
-</p>
 
 <h2 id="FreeBSD">FreeBSD<a class="slurm_link" href="#FreeBSD"></a></h2>
 
@@ -860,6 +896,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 20 October 2023</p>
+<p style="text-align:center;">Last modified 24 October 2023</p>
 
 <!--#include virtual="footer.txt"-->
