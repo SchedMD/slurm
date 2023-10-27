@@ -89,17 +89,17 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_g_build_config(void)
+extern int topology_p_build_config(void)
 {
 	return SLURM_SUCCESS;
 }
 
-extern bool topology_g_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(void)
 {
 	return false;
 }
 
-extern int topology_g_get_node_addr(
+extern int topology_p_get_node_addr(
 	char *node_name, char **paddr, char **ppattern)
 {
 	return common_topo_get_node_addr(node_name, paddr, ppattern);

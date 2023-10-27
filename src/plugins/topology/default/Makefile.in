@@ -181,7 +181,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-topology_default_la_LIBADD =
+topology_default_la_DEPENDENCIES = ../common/libtopology_common.la
 am_topology_default_la_OBJECTS = topology_default.lo
 topology_default_la_OBJECTS = $(am_topology_default_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -520,6 +520,7 @@ pkglib_LTLIBRARIES = topology_default.la
 # Null topology plugin.
 topology_default_la_SOURCES = topology_default.c
 topology_default_la_LDFLAGS = $(PLUGIN_FLAGS)
+topology_default_la_LIBADD = ../common/libtopology_common.la
 all: all-am
 
 .SUFFIXES:
@@ -811,6 +812,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(topology_default_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
