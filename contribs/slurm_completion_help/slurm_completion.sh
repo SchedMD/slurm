@@ -4353,7 +4353,6 @@ function _scontrol() {
 	local subcmds=(
 		"abort"
 		"cancel_reboot"
-		"cluster"
 		"create"
 		"completing"
 		"delete"
