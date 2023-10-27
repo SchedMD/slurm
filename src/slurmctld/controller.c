@@ -492,8 +492,6 @@ int main(int argc, char **argv)
 			slurmctld_config.scheduling_disabled = true;
 	}
 
-	configless_setup();
-
 	/*
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
@@ -713,13 +711,6 @@ int main(int argc, char **argv)
 				      slurm_conf.slurm_conf,
 				      slurm_strerror(error_code));
 			}
-			/*
-			 * configless_setup() is called only after slurm.conf
-			 * has been parsed, and thus only the slurm.conf Include
-			 * files have been identified. Call configless_update()
-			 * now to setup configless with the included files from
-			 * other conf files.
-			 */
 			configless_update();
 			if (conf_includes_list) {
 				/*

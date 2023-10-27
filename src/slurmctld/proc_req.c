@@ -683,22 +683,6 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 	return SLURM_SUCCESS;
 }
 
-extern void configless_setup(void)
-{
-	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
-		return;
-
-	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
-	config_for_clients = xmalloc(sizeof(*config_for_clients));
-
-	config_for_slurmd->slurmd_spooldir =
-		xstrdup(slurm_conf.slurmd_spooldir);
-
-	load_config_response_list(config_for_slurmd, slurmd_config_files, true);
-	load_config_response_list(config_for_clients, client_config_files,
-				  false);
-}
-
 /*
  * This trickery is to avoid contending any further on config_read.
  * Without this _slurm_rpc_config_request() would need to hold
@@ -713,8 +697,13 @@ extern void configless_update(void)
 {
 	config_response_msg_t new, *old;
 
-	if (!config_for_slurmd)
+	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
 		return;
+
+	if (!config_for_slurmd)
+		config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
+	if (!config_for_clients)
+		config_for_clients = xmalloc(sizeof(*config_for_clients));
 
 	/* handle slurmd first */
 	memset(&new, 0, sizeof(new));
