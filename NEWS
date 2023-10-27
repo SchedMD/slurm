@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Update node reason with updated INVAL state reason if different from last
     registration.
  -- acct_gather_energy/ipmi - Improve logging of DCMI issues.
+ -- conmgr - Avoid NULL dereference when using auth/none.
 
 * Changes in Slurm 23.02.6
 ==========================
