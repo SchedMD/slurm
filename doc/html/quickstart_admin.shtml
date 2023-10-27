@@ -96,12 +96,11 @@ the cluster.</li>
 <a class="slurm_link" href="#prereqs"></a>
 </h3>
 
-<p>If required libraries or header files are in non-standard locations, set
-<code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
-Optional Slurm plugins will be built automatically when the
-<code>configure</code> script detects that the required build requirements are
-present. Build dependencies for various plugins and commands are denoted below:
-</p>
+<p>Before building Slurm, consider which plugins you will need for your
+installation.  Which plugins are built can vary based on the libraries that
+are available when running configure.  Refer to the below list of possible
+plugins and what is required to build them.</p>
+
 <ul>
 <li> <b>AMD GPU Support</b> Autodetection of AMD GPUs will be available
 		if the <i>ROCm</i> development library is installed.
@@ -160,6 +159,10 @@ present. Build dependencies for various plugins and commands are denoted below:
 </ul>
 <p>Please see the <a href="download.html">Download</a> page for references to
 required software to build these plugins.</p>
+
+<p>If required libraries or header files are in non-standard locations, set
+<code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
+</p>
 
 <h3 id="manual_build">Building Manually
 <a class="slurm_link" href="#manual_build"></a>
