@@ -256,6 +256,7 @@ extern void init_sack_conmgr(void)
 		.sun_path = "/run/slurm/sack.socket",
 	};
 	int rc;
+	mode_t mask;
 
 	_prepare_run_dir();
 
@@ -265,14 +266,12 @@ extern void init_sack_conmgr(void)
 		fatal("%s: socket() failed: %m", __func__);
 
 	/* set value of socket path */
+	mask = umask(0);
 	if ((rc = bind(fd, (const struct sockaddr *) &addr,
 		       sizeof(addr))))
 		fatal("%s: [%s] Unable to bind UNIX socket: %m",
 		      __func__, addr.sun_path);
-
-	if (lchmod(addr.sun_path, 0777) < 0)
-		fatal("%s: failed to chmod() `%s`: %m",
-		      __func__, addr.sun_path);
+	umask(mask);
 
 	fd_set_oob(fd, 0);
 
