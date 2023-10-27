@@ -520,10 +520,10 @@ function __slurm_init_completion() {
 	prev="${COMP_WORDS[COMP_CWORD - 1]}"
 	cword="${#COMP_CWORD[@]}"
 	words=("${COMP_WORDS[@]}")
-	split="false"
+	split=false
 
 	_init_completion -s -n "=:" || return 1
-	__slurm_split_opt && split="true"
+	__slurm_split_opt && split=true
 
 	__slurm_log_debug "$(__func__): prev='$prev'"
 	__slurm_log_debug "$(__func__): cur='$cur'"
@@ -1801,7 +1801,7 @@ function _sacct() {
 	--whole-hetjob) __slurm_compreply "$(__slurm_boolean)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -1952,7 +1952,7 @@ function __slurm_comp_sacctmgr_spec_associations() {
 	qoslevel?(s)?(+|-)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -1998,7 +1998,7 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 	organization?(s)) __slurm_compreply "$(__slurm_organizations)" ;;
 	parent?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2059,7 +2059,7 @@ function __slurm_comp_sacctmgr_spec_clusters() {
 	name?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	rpc) __slurm_compreply_list "$(__slurm_clusters_rpc)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2092,7 +2092,7 @@ function __slurm_comp_sacctmgr_spec_coordinators() {
 	coordinator?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2156,7 +2156,7 @@ function __slurm_comp_sacctmgr_spec_events() {
 	state?(s)) __slurm_compreply_list "${states[*]}" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2194,7 +2194,7 @@ function __slurm_comp_sacctmgr_spec_federations() {
 	federation?(s)) __slurm_compreply_list "$(__slurm_federations)" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_federations)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2233,7 +2233,7 @@ function __slurm_comp_sacctmgr_spec_instances() {
 	instancetype) __slurm_compreply_list "$(__slurm_instances_type)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2278,7 +2278,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 	user?(s)) __slurm_compreply "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2369,7 +2369,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 	rawusage) __slurm_compreply "0" ;;
 	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2407,7 +2407,7 @@ function __slurm_comp_sacctmgr_spec_reservations() {
 	name?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2459,7 +2459,7 @@ function __slurm_comp_sacctmgr_spec_resources() {
 	server?(s)) __slurm_compreply_list "$(__slurm_resources_servers)" ;;
 	type?(s)) __slurm_compreply "${types[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2500,7 +2500,7 @@ function __slurm_comp_sacctmgr_spec_transactions() {
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2541,7 +2541,7 @@ function __slurm_comp_sacctmgr_spec_tres() {
 	case "${prev}" in
 	type?(s)) __slurm_compreply "${types[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2602,7 +2602,7 @@ function __slurm_comp_sacctmgr_spec_users() {
 	rawusage) __slurm_compreply "0" ;;
 	wckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2638,7 +2638,7 @@ function __slurm_comp_sacctmgr_spec_wckeys() {
 	name?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2728,7 +2728,7 @@ function __sacctmgr_archive_dump() {
 	directory) _filedir ;;
 	script) _filedir ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -2748,7 +2748,7 @@ function __sacctmgr_archive_load() {
 	case "${prev}" in
 	file) _filedir ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3165,7 +3165,7 @@ function _salloc() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_common "$1" && return
-	[[ $split == "true" ]] && return
+	$split && return
 
 	_filedir
 }
@@ -3183,7 +3183,7 @@ function _sattach() {
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_flags "$1" && return
-	[[ $split == "true" ]] && return
+	$split && return
 
 	__slurm_compreply "$(__slurm_jobsteps_tasks)"
 
@@ -3202,7 +3202,7 @@ function _sbatch() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_common "$1" && return
-	[[ $split == "true" ]] && return
+	$split && return
 
 	_filedir
 }
@@ -3227,7 +3227,7 @@ function _sbcast() {
 	-j | --jobid?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		_filedir
 		;;
 	esac
@@ -3336,7 +3336,7 @@ function __scontrol_create_nodename() {
 	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "" "true" ;;
 	state) __slurm_compreply "${states[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3422,7 +3422,7 @@ function __scontrol_hold() {
 	jobid) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	jobname) __slurm_compreply_list "$(__slurm_jobnames)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3465,7 +3465,7 @@ function __scontrol_reboot() {
 	nextstate) __slurm_compreply "${states[*]}" ;;
 	reboot) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3486,7 +3486,7 @@ function __scontrol_release() {
 	jobid) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	jobname) __slurm_compreply_list "$(__slurm_jobnames)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3506,7 +3506,7 @@ function __scontrol_requeue() {
 	case "${prev}" in
 	jobid) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3531,7 +3531,7 @@ function __scontrol_requeuehold() {
 	jobid) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	state) __slurm_compreply "${states[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3578,7 +3578,7 @@ function __scontrol_setdebug() {
 	setdebug) __slurm_compreply "${debug_levels[*]}" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3640,7 +3640,7 @@ function __scontrol_setdebugflags() {
 		;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3658,7 +3658,7 @@ function __scontrol_show_aliases() {
 	case "${prev}" in
 	aliases) __slurm_compreply "$(__slurm_nodes_hostname)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3688,7 +3688,7 @@ function __scontrol_show_assocmgr() {
 	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3827,7 +3827,7 @@ function __scontrol_token() {
 	lifespan) ;;
 	username?(s)) __slurm_compreply "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3859,7 +3859,7 @@ function __scontrol_update_frontendname() {
 	frontendname) __slurm_compreply "$(__slurm_nodes_frontend)" ;;
 	state?(s)) __slurm_compreply "${states[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -3987,7 +3987,7 @@ function __scontrol_update_jobid() {
 	wckey?(s)) __slurm_compreply "$(__slurm_wckey)" ;;
 	workdir) _filedir -d ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4040,7 +4040,7 @@ function __scontrol_update_nodename() {
 	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	state?(s)) __slurm_compreply "${states[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4145,7 +4145,7 @@ function __scontrol_update_partitionname() {
 	shared) __slurm_compreply "${oversubscribe_types[*]}" ;;
 	state) __slurm_compreply "${states[*]}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4213,7 +4213,7 @@ function __scontrol_update_reservationname() {
 	reservationname?(s)) __slurm_compreply "$(__slurm_reservations)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4233,7 +4233,7 @@ function __scontrol_update_stepid() {
 	case "${prev}" in
 	stepid) __slurm_compreply "$(__slurm_jobsteps)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4254,7 +4254,7 @@ function __scontrol_update_suspendexcnodes() {
 	case "${prev}" in
 	suspendexcnode?(s)?(+|-)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4275,7 +4275,7 @@ function __scontrol_update_suspendexcparts() {
 	case "${prev}" in
 	suspendexcpart?(s)?(+|-)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4310,7 +4310,7 @@ function __scontrol_update_suspendexcstates() {
 	case "${prev}" in
 	suspendexcstate?(s)?(+|-)) __slurm_compreply_list "${states[*],,}" ;;
 	*)
-		[[ $split == "true" ]] && return
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
 		;;
 	esac
@@ -4472,7 +4472,7 @@ function _scrontab() {
 	-u) __slurm_compreply "$(__slurm_users)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "-"
@@ -4497,7 +4497,7 @@ function _sdiag() {
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -4630,7 +4630,7 @@ function _sinfo() {
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -4676,7 +4676,7 @@ function _sprio() {
 	-u) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -4888,7 +4888,7 @@ function _squeue() {
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -4921,7 +4921,7 @@ function __slurm_comp_sreport_spec_all() {
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -4965,7 +4965,7 @@ function __sreport_cluster() {
 	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -5016,7 +5016,7 @@ function __sreport_job() {
 	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -5051,7 +5051,7 @@ function __sreport_reservation() {
 	name?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -5088,7 +5088,7 @@ function __sreport_user() {
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
 	*)
-		[[ $split == "true" ]] && return 1
+		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
 		return 1
 		;;
@@ -5152,7 +5152,7 @@ function _sreport() {
 		__slurm_comp_command "${comp_cmd}"
 	fi
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -5172,7 +5172,7 @@ function _srun() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_common "$1" && return
-	[[ $split == "true" ]] && return
+	$split && return
 
 	_filedir
 }
@@ -5198,7 +5198,7 @@ function _sshare() {
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -5224,7 +5224,7 @@ function _sstat() {
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
@@ -5274,7 +5274,7 @@ function _strigger() {
 	--user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
-	[[ $split == "true" ]] && return
+	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
 		__slurm_compreply "--"
