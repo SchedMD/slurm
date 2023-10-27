@@ -72,7 +72,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/interfaces/route.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -2701,14 +2700,9 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 
 	if (!running_in_daemon()) {
 		/*
-		 * Load route and topo plugins here to make it so the api can do
+		 * Load topo plugin here to make it so the api can do
 		 * it easily
 		 */
-		if (route_g_init() != SLURM_SUCCESS) {
-			error("failed to initialize route plugins");
-			return NULL;
-		}
-
 		if (topology_g_init() != SLURM_SUCCESS) {
 			error("failed to initialize route plugins");
 			return NULL;

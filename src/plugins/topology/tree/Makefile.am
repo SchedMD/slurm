@@ -4,10 +4,15 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 
 pkglib_LTLIBRARIES = topology_tree.la
 
-# Null topology plugin.
+# tree topology plugin.
 topology_tree_la_SOURCES = topology_tree.c
 topology_tree_la_LDFLAGS = $(PLUGIN_FLAGS)
+topology_tree_la_LIBADD = ../common/libtopology_common.la
+
+force:
+$(topology_tree_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

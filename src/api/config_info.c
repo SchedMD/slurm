@@ -1482,11 +1482,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("RoutePlugin");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->route_plugin);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SchedulerParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_params);
 	list_append(ret_list, key_pair);

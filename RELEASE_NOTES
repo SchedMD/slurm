@@ -28,7 +28,7 @@ HIGHLIGHTS
  -- job_submit/throttle - improve reset of submitted job counts per user in
     order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
  -- Allow SlurmUser/root to use reservations without specific permissions.
- -- Add route/partition plugin to route communications based on partition node
+ -- Add TopologyParam=RoutePart to route communications based on partition node
     lists.
  -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
  -- Added --external-launcher option to srun to allow different MPI
@@ -73,6 +73,7 @@ HIGHLIGHTS
     is new and subject to more change than the long-standing and more stable
     spec file.
  -- switch/hpe_slingshot - Add support for collectives.
+ -- Rename topology/none plugin to topology/default.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -106,6 +107,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Cray XC support has been deprecated. Use '--enable-deprecated' to allow the
     the build to continue. Sites are encouraged to contact SchedMD about the EOL
     date for Cray XC support.
+ -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

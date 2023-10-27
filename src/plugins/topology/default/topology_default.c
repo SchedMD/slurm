@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  route_default.c - default version of route plugin
+ *  topology_default.c - Default for system topology
  *****************************************************************************
- *  Copyright (C) 2014 Bull S. A. S.
- *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
- *
- *  Written by Rod Schultz <rod.schultz@bull.com>
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette <jette1@llnl.gov>
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,16 +36,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <signal.h>
-#include <stdlib.h>
 #include <sys/types.h>
 
-#include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/forward.h"
+
+#include "slurm/slurm_errno.h"
+#include "src/common/log.h"
 #include "src/common/node_conf.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/interfaces/route.h"
+#include "src/common/xstring.h"
+
+#include "../common/common_topo.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -71,62 +74,40 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "route default plugin";
-const char plugin_type[]        = "route/default";
+const char plugin_name[]        = "topology Default plugin";
+const char plugin_type[]        = "topology/default";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-
-/*****************************************************************************\
- *  Functions required of all plugins
-\*****************************************************************************/
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
+
 extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
 
-/*****************************************************************************\
- *  Plugin API Implementations
-\*****************************************************************************/
-
-/*
- * route_p_split_hostlist  - logic to split an input hostlist into
- *                           a set of hostlists to forward to.
- *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return;
- * OUT: sp_hl    - hostlist_t *** - the array of hostlist that will be malloced
- * OUT: count    - int *          - the count of created hostlist
- * RET: SLURM_SUCCESS - int
- *
- * Note: created hostlist will have to be freed independently using
- *       hostlist_destroy by the caller.
- * Note: the hostlist_t array will have to be xfree.
- */
-extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
-				  int* count, uint16_t tree_width)
-{
-	return route_split_hostlist_treewidth(hl, sp_hl, count, tree_width);
-}
-
-/*
- * route_g_reconfigure - reset during reconfigure
- *
- * RET: SLURM_SUCCESS - int
- */
-extern int route_p_reconfigure (void)
+extern int topology_g_build_config(void)
 {
 	return SLURM_SUCCESS;
+}
+
+extern bool topology_g_generate_node_ranking(void)
+{
+	return false;
+}
+
+extern int topology_g_get_node_addr(
+	char *node_name, char **paddr, char **ppattern)
+{
+	return common_topo_get_node_addr(node_name, paddr, ppattern);
+}
+
+extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width)
+{
+	return common_topo_split_hostlist_treewidth(
+		hl, sp_hl, count, tree_width);
 }

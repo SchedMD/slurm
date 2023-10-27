@@ -15,3 +15,8 @@ topology_3d_torus_la_SOURCES =	\
 	hilbert_slurm.c		\
 	topology_3d_torus.c
 topology_3d_torus_la_LDFLAGS = $(PLUGIN_FLAGS)
+topology_3d_torus_la_LIBADD = ../common/libtopology_common.la
+
+force:
+$(topology_3d_torus_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

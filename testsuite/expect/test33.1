@@ -111,7 +111,7 @@ set file_in "$wd/etc.33.1.1/slurm.conf"
 file delete $file_in
 set fd [open "$file_in" a]
 puts $fd "$params
-RoutePlugin=route/topology
+TopologyParam=RouteTree
 
 # ================================
 # Node and Partition Definitions
@@ -132,7 +132,7 @@ set file_in "$wd/etc.33.1.2/slurm.conf"
 file delete $file_in
 set fd [open "$file_in" a]
 puts $fd "$params
-RoutePlugin=route/topology
+TopologyParam=RouteTree
 
 # ================================
 # Node and Partition Definitions
@@ -173,7 +173,7 @@ set file_in "$wd/etc.33.1.4/slurm.conf"
 file delete $file_in
 set fd [open "$file_in" a]
 puts $fd "$params
-RoutePlugin=route/topology
+TopologyParam=RouteTree
 
 # ================================
 # Node and Partition Definitions
@@ -198,7 +198,7 @@ set file_in "$wd/etc.33.1.5/slurm.conf"
 file delete $file_in
 set fd [open "$file_in" a]
 puts $fd "$params
-RoutePlugin=route/topology
+TopologyParam=RouteTree
 
 # ================================
 # Node and Partition Definitions

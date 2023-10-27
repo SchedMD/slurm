@@ -26,7 +26,6 @@ SUBDIRS = \
 	prep			\
 	priority		\
 	proctrack		\
-	route			\
 	sched			\
 	select			\
 	serializer		\

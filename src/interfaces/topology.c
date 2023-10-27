@@ -60,6 +60,10 @@ typedef struct slurm_topo_ops {
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
 						  char** pattern );
+	int (*split_hostlist) (hostlist_t *hl,
+			       hostlist_t ***sp_hl,
+			       int *count,
+			       uint16_t tree_width);
 } slurm_topo_ops_t;
 
 /*
@@ -69,6 +73,7 @@ static const char *syms[] = {
 	"topology_p_build_config",
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
+	"topology_p_split_hostlist",
 };
 
 static slurm_topo_ops_t ops;
@@ -92,10 +97,7 @@ extern int topology_g_init(void)
 	if (plugin_inited)
 		goto done;
 
-	if (!slurm_conf.topology_plugin) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
+	xassert(slurm_conf.topology_plugin);
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.topology_plugin,
@@ -136,9 +138,6 @@ extern int topology_g_build_config(void)
 
 	xassert(plugin_inited);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
-
 	START_TIMER;
 	rc = (*(ops.build_config))();
 	END_TIMER3(__func__, 20000);
@@ -154,9 +153,6 @@ extern bool topology_g_generate_node_ranking(void)
 {
 	xassert(plugin_inited);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return false;
-
 	return (*(ops.node_ranking))();
 }
 
@@ -165,16 +161,49 @@ extern int topology_g_get_node_addr(char *node_name, char **addr,
 {
 	xassert(plugin_inited);
 
-	if (plugin_inited == PLUGIN_NOOP) {
-#ifndef HAVE_FRONT_END
-		if (find_node_record(node_name) == NULL)
-			return SLURM_ERROR;
-#endif
+	return (*(ops.get_node_addr))(node_name,addr,pattern);
+}
 
-		*addr = xstrdup(node_name);
-		*pattern = xstrdup("node");
-		return SLURM_SUCCESS;
+extern int topology_g_split_hostlist(hostlist_t *hl,
+				     hostlist_t ***sp_hl,
+				     int *count,
+				     uint16_t tree_width)
+{
+	int rc;
+	int j, nnodes, nnodex;
+	char *buf;
+
+	nnodes = nnodex = 0;
+	xassert(g_context);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+		/* nnodes has to be set here as the hl is empty after the
+		 * split_hostlise call.  */
+		nnodes = hostlist_count(hl);
+		buf = hostlist_ranged_string_xmalloc(hl);
+		info("ROUTE: split_hostlist: hl=%s tree_width %u",
+		     buf, tree_width);
+		xfree(buf);
 	}
 
-	return (*(ops.get_node_addr))(node_name,addr,pattern);
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	rc = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+		/* Sanity check to make sure all nodes in msg list are in
+		 * a child list */
+		nnodex = 0;
+		for (j = 0; j < *count; j++) {
+			nnodex += hostlist_count((*sp_hl)[j]);
+		}
+		if (nnodex != nnodes) {	/* CLANG false positive */
+			info("ROUTE: number of nodes in split lists (%d)"
+			     " is not equal to number in input list (%d)",
+			     nnodex, nnodes);
+		}
+	}
+
+	return rc;
 }

@@ -505,10 +505,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/cray_aries/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/pgid/Makefile
-		 src/plugins/route/Makefile
-		 src/plugins/route/default/Makefile
-		 src/plugins/route/partition/Makefile
-		 src/plugins/route/topology/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
@@ -531,6 +527,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/cgroup/Makefile
 		 src/plugins/task/cray_aries/Makefile
 		 src/plugins/topology/3d_torus/Makefile
+		 src/plugins/topology/common/Makefile
+		 src/plugins/topology/default/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile

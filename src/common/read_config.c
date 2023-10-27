@@ -2957,7 +2957,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->resv_epilog);
 	xfree (ctl_conf_ptr->resv_prolog);
-	xfree (ctl_conf_ptr->route_plugin);
 	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
@@ -3137,7 +3136,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->resv_over_run		= 0;
 	xfree (ctl_conf_ptr->resv_prolog);
 	ctl_conf_ptr->ret2service		= NO_VAL16;
-	xfree (ctl_conf_ptr->route_plugin);
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= NO_VAL16;
 	xfree( ctl_conf_ptr->schedtype );
@@ -5073,9 +5071,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);
 
-	if (!s_p_get_string(&conf->route_plugin, "RoutePlugin", hashtbl))
-		conf->route_plugin = xstrdup(DEFAULT_ROUTE_PLUGIN);
-
 	if (s_p_get_string(&temp_str, "SallocDefaultCommand", hashtbl))
 		fatal("SallocDefaultCommand has been removed. Please consider setting LaunchParameters=use_interactive_step instead.");
 
@@ -5478,6 +5473,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				   conf->comm_params ? "," : "", legacy_var);
 	}
 
+	if (s_p_get_string(&temp_str, "RoutePlugin", hashtbl)) {
+		if (xstrcasestr(temp_str, "tree")) {
+			xstrfmtcat(conf->topology_param, "%sRouteTree",
+				   conf->topology_param ? "," : "");
+		}
+		xfree(temp_str);
+	}
+
 	if (!s_p_get_string(&conf->topology_plugin,
 			    "TopologyPlugin", hashtbl)) {
 #if defined HAVE_3D
@@ -5487,6 +5490,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 #endif
 	} else if (xstrcasestr(conf->topology_plugin, "none"))
 		xfree(conf->topology_plugin);
+
+	if (!conf->topology_plugin)
+		conf->topology_plugin = xstrdup("topology/default");
 
 	if (((conf->tree_width = (getenv("SLURM_TREE_WIDTH") ?
 				  atoi(getenv("SLURM_TREE_WIDTH")) : 0)) > 0) ||

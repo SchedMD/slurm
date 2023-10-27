@@ -3696,32 +3696,6 @@ etc. are equal to or greater than the values configured in slurm.conf.
 .IP
 
 .TP
-\fBRoutePlugin\fR
-Identifies the plugin to be used for defining which nodes will be used
-for message forwarding.
-.IP
-.RS
-.TP
-\fBroute/default\fR
-default, use TreeWidth.
-.IP
-
-.TP
-\fBroute/partition\fR
-Use partition nodes lists to route communications from the controller. Once on
-the compute node, communications will be routed using TreeWidth. If a node is
-in multiple partitions, the first partition seen will be used. The controller
-will communicate directly with any nodes that aren't part of a partition.
-.IP
-
-.TP
-\fBroute/topology\fR
-use the switch hierarchy defined in a \fItopology.conf\fR file.
-TopologyPlugin=topology/tree is required.
-.RE
-.IP
-
-.TP
 \fBSchedulerParameters\fR
 The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
@@ -4526,7 +4500,7 @@ for allocation of entire nodes assuming a one\-dimensional array of nodes in
 which sequentially ordered nodes are preferable.
 For a heterogeneous cluster (e.g. different CPU counts on the various nodes),
 resource allocations will favor nodes with high CPU counts as needed based upon
-the job's node and CPU specification if no TopologyPlugin is
+the job's node and CPU specification if TopologyPlugin=topology/default is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
@@ -5911,10 +5885,27 @@ Valid when TopologyPlugin=topology/tree.
 .IP
 
 .TP
+\fBRoutePart\fR
+Instead of using the plugins default route calculation use partition node lists
+to route communications from the controller. Once on the compute node,
+communications will be routed using the reguested plugins normal algorithm. If
+a node is in multiple partitions, the first partition seen will be used. The
+controller will communicate directly with any nodes that aren't part of a
+partition.
+.IP
+
+.TP
 \fBSwitchAsNodeRank\fR
 Assign the same node rank to all nodes under one leaf switch.
 This can be useful if the naming convention for the nodes does not match the
 network topology.
+.IP
+
+.TP
+\fBRouteTree\fR
+Use the switch hierarchy defined in a \fItopology.conf\fR file for routing
+instead of just scheduling.
+Valid when TopologyPlugin=topology/tree.
 .IP
 
 .TP
@@ -5943,6 +5934,11 @@ Acceptable values include:
 .TP 21
 \fBtopology/3d_torus\fR
 best\-fit logic over three\-dimensional topology
+.IP
+
+.TP
+\fBtopology/default\fR
+default for other systems, best\-fit logic over one\-dimensional topology
 .IP
 
 .TP
@@ -7716,6 +7712,8 @@ The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are "topology/3d_torus" (default for
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
+"topology/default" (default for other systems,
+-best\-fit logic over one\-dimensional topology),
 "topology/tree" (determine the network topology based
 upon information contained in a topology.conf file,
 see "man topology.conf" for more information).

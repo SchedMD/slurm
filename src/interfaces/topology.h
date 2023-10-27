@@ -114,4 +114,27 @@ extern bool topology_g_generate_node_ranking(void);
 extern int topology_g_get_node_addr(char *node_name, char **addr,
 				    char **pattern);
 
+
+/*
+ * topology_g_split_hostlist - logic to split an input hostlist into
+ *                             a set of hostlists to forward to.
+ *
+ * IN: hl - hostlist_t * - List of every node to send message to
+ *                         will be empty on return which is same
+ *                         behavior as similar code replaced in
+ *                         forward.c
+ * OUT: sp_hl - hostlist_t *** - The array of hostlists that will be malloced
+ * OUT: count - int * - The count of created hostlists
+ * IN: tree_width - int - Max width of each branch on the tree.
+ * RET: SLURM_SUCCESS - int
+ *
+ * Note: Created hostlist will have to be freed independently using
+ *       hostlist_destroy by the caller.
+ * Note: The hostlist_t array will have to be xfree.
+ */
+extern int topology_g_split_hostlist(hostlist_t *hl,
+				     hostlist_t ***sp_hl,
+				     int *count,
+				     uint16_t tree_width);
+
 #endif

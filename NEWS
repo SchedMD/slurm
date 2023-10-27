@@ -66,7 +66,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow SlurmUser/root to use reservations without specific permissions.
  -- Fix sending step signals to nodes not allocated by the step.
  -- Remove CgroupAutomount= option from cgroup.conf.
- -- Add route/partition plugin to route communications based on partition node
+ -- Add TopologyRoute=RoutePart to route communications based on partition node
     lists.
  -- SPANK - added new spank_prepend_task_argv() function.
  -- slurmd - improve error logging at job startup during transition from slurmd
@@ -274,6 +274,7 @@ documents those changes that are of interest to users and administrators.
     variables to the value requested by srun. Previously these environment
     variables were unchanged from the job allocation. This bug only affected the
     output environment variables, not the actual step resource allocation.
+ -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
 
 * Changes in Slurm 23.02.7
 ==========================

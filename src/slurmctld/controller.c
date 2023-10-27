@@ -96,7 +96,6 @@
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/priority.h"
-#include "src/interfaces/route.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
@@ -579,13 +578,6 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize MPI plugins.");
 	}
-	if (route_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize route plugins.");
-			test_config_rc = 1;
-		} else
-			fatal("Failed to initialize route plugins.");
-	}
 	if (serializer_g_init(NULL, NULL)) {
 		if (test_config) {
 			error("Failed to initialize serialization plugins.");
@@ -962,7 +954,6 @@ int main(int argc, char **argv)
 	auth_g_fini();
 	hash_g_fini();
 	switch_fini();
-	route_g_fini();
 	site_factor_g_fini();
 
 	/* purge remaining data structures */

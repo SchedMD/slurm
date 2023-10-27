@@ -684,8 +684,8 @@ test32.12  Validates that sgather -t changes the timeout message.
 
 test33.#   Test of message forwarding.
 ======================================
-test33.1   Validates the route_g_splithost api of the route plugin correctly
-           splits hostlists.
+test33.1   Validates the topology_g_split_hostlist api of the route plugin
+	   correctly splits hostlists.
 
 test34.*   Test of Slurm preemption.
 ====================================
@@ -989,9 +989,9 @@ test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
 
-test_133_#   Testing of RoutePlugin.
-====================================
-test_133_1   /parameters/slurm/RoutePlugin/topology/test_plugin.py
+test_133_#   Testing of TopologyParam.
+======================================
+test_133_1   python version of test33.1
 
 test_134_#   Testing of SwitchType.
 ===================================

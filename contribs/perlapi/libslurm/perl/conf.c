@@ -279,9 +279,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, ret2service, uint16_t);
 
-	if (conf->route_plugin)
-		STORE_FIELD(hv, conf, route_plugin, charp);
-
 	if (conf->sched_logfile)
 		STORE_FIELD(hv, conf, sched_logfile, charp);
 	STORE_FIELD(hv, conf, sched_log_level, uint16_t);
@@ -548,7 +545,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, resv_over_run, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resv_prolog, charp, FALSE);
 	FETCH_FIELD(hv, conf, ret2service, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, route_plugin, charp, FALSE);
 
 	FETCH_FIELD(hv, conf, sched_logfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, sched_log_level, uint16_t, TRUE);

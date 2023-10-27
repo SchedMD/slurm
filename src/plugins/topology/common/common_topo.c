@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  route_partition.c - partition version of route plugin
+ *  common_topo.c - common functions for accounting storage
  *****************************************************************************
- *  Copyright (C) 2023 SchedMD LLC.
- *  Written by Dominik Bartkiewicz <bart@schedmd.com>
+ *  Copyright (C) SchedMD LLC.
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,21 +34,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/types.h>
-
-#include "slurm/slurm_errno.h"
-#include "src/common/slurm_xlator.h"
+#include "common_topo.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/hostlist.h"
 #include "src/common/node_conf.h"
-#include "src/common/slurm_protocol_defs.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/interfaces/route.h"
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
@@ -60,41 +55,10 @@
  */
 
 #if defined (__APPLE__)
-extern int node_record_count __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 #else
-int node_record_count;
 List part_list = NULL;
 #endif
-
-
-/*
- * These variables are required by the generic plugin interface.  If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  Slurm uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *      <application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "task" for task control) and <method> is a description
- * of how this plugin satisfies that application.  Slurm will only load
- * a task plugin if the plugin_type string has a prefix of "task/".
- *
- * plugin_version - an unsigned 32-bit integer containing the Slurm version
- * (major.minor.micro combined into a single number).
- */
-const char plugin_name[]        = "route partition plugin";
-const char plugin_type[]        = "route/partition";
-const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct {
 	int *count;
@@ -103,28 +67,6 @@ typedef struct {
 	bitstr_t *nodes_bitmap;
 	hostlist_t **sp_hl;
 } _foreach_part_split_hostlist_t;
-
-/*****************************************************************************\
- *  Functions required of all plugins
-\*****************************************************************************/
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
-extern int init(void)
-{
-	verbose("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
-extern int fini(void)
-{
-	return SLURM_SUCCESS;
-}
 
 static int _part_split_hostlist(void *x, void *y)
 {
@@ -153,26 +95,8 @@ static int _part_split_hostlist(void *x, void *y)
 	return 0;
 }
 
-/*****************************************************************************\
- *  Plugin API Implementations
-\*****************************************************************************/
-
-/*
- * route_p_split_hostlist  - logic to split an input hostlist into
- *                           a set of hostlists to forward to.
- *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return;
- * OUT: sp_hl    - hostlist_t *** - the array of hostlist that will be malloced
- * OUT: count    - int *          - the count of created hostlist
- * RET: SLURM_SUCCESS - int
- *
- * Note: created hostlist will have to be freed independently using
- *       hostlist_destroy by the caller.
- * Note: the hostlist_t array will have to be xfree.
- */
-extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
-				  int* count, uint16_t tree_width)
+static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				      int *count, uint16_t tree_width)
 {
 	slurmctld_lock_t node_read_lock = {
 		.node = READ_LOCK, .part = READ_LOCK
@@ -180,9 +104,7 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	bitstr_t *nodes_bitmap = NULL;
 	_foreach_part_split_hostlist_t part_split;
 
-	if (!running_in_slurmctld())
-		return route_split_hostlist_treewidth(hl, sp_hl, count,
-						      tree_width);
+	xassert(running_in_slurmctld());
 
 	lock_slurmctld(node_read_lock);
 	/* create bitmap of nodes to send message too */
@@ -249,12 +171,88 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	return SLURM_SUCCESS;
 }
 
-/*
- * route_g_reconfigure - reset during reconfigure
- *
- * RET: SLURM_SUCCESS - int
- */
-extern int route_p_reconfigure(void)
+extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
+						hostlist_t ***sp_hl,
+						int *count, uint16_t tree_width)
 {
+	int host_count;
+	int *span = NULL;
+	char *name = NULL;
+	char *buf;
+	int nhl = 0;
+	int j;
+
+	if (running_in_slurmctld() && common_topo_route_part())
+		return _route_part_split_hostlist(hl, sp_hl,
+						  count, tree_width);
+
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	host_count = hostlist_count(hl);
+	span = set_span(host_count, tree_width);
+	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
+
+	while ((name = hostlist_shift(hl))) {
+		(*sp_hl)[nhl] = hostlist_create(name);
+		free(name);
+		for (j = 0; span && (j < span[nhl]); j++) {
+			name = hostlist_shift(hl);
+			if (!name) {
+				break;
+			}
+			hostlist_push_host((*sp_hl)[nhl], name);
+			free(name);
+		}
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+			buf = hostlist_ranged_string_xmalloc((*sp_hl)[nhl]);
+			debug("ROUTE: ... sublist[%d] %s", nhl, buf);
+			xfree(buf);
+		}
+		nhl++;
+	}
+	xfree(span);
+	*count = nhl;
+
 	return SLURM_SUCCESS;
+}
+
+extern int common_topo_get_node_addr(char *node_name, char **addr,
+				     char **pattern)
+{
+
+#ifndef HAVE_FRONT_END
+	if (find_node_record(node_name) == NULL)
+		return SLURM_ERROR;
+#endif
+
+	*addr = xstrdup(node_name);
+	*pattern = xstrdup("node");
+	return SLURM_SUCCESS;
+}
+
+extern bool common_topo_route_tree(void)
+{
+	static int route_tree = -1;
+	if (route_tree == -1) {
+		if (xstrcasestr(slurm_conf.topology_param, "routetree"))
+			route_tree = true;
+		else
+			route_tree = false;
+	}
+
+	return route_tree;
+}
+
+extern bool common_topo_route_part(void)
+{
+	static int route_part = -1;
+	if (route_part == -1) {
+		if (xstrcasestr(slurm_conf.topology_param, "routepart"))
+			route_part = true;
+		else
+			route_part = false;
+	}
+
+	return route_part;
 }
