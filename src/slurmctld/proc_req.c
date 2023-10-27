@@ -132,6 +132,7 @@ static char *client_config_files[] = {
 	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf", NULL
 };
 
+static pthread_rwlock_t configless_lock = PTHREAD_RWLOCK_INITIALIZER;
 static config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
 
@@ -701,6 +702,7 @@ extern void configless_update(void)
 		return;
 
 	running_configless = true;
+	slurm_rwlock_wrlock(&configless_lock);
 	if (!config_for_slurmd)
 		config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
 	if (!config_for_clients)
@@ -727,14 +729,17 @@ extern void configless_update(void)
 	/* pseudo-atomic update of the pointers */
 	memcpy(config_for_clients, &new, sizeof(*config_for_clients));
 	slurm_free_config_response_msg(old);
+	slurm_rwlock_unlock(&configless_lock);
 }
 
 extern void configless_clear(void)
 {
+	slurm_rwlock_wrlock(&configless_lock);
 	slurm_free_config_response_msg(config_for_slurmd);
 	slurm_free_config_response_msg(config_for_clients);
 
 	FREE_NULL_LIST(conf_includes_list);
+	slurm_rwlock_unlock(&configless_lock);
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
@@ -3270,14 +3275,15 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	}
 	END_TIMER2(__func__);
 
+	slurm_rwlock_rdlock(&configless_lock);
 	response_init(&response_msg, msg, RESPONSE_CONFIG, config_for_clients);
 	if (req->flags & CONFIG_REQUEST_SLURMD)
 		response_msg.data = config_for_slurmd;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	slurm_rwlock_unlock(&configless_lock);
 
 	if (req->flags & CONFIG_REQUEST_SACKD)
 		sackd_mgr_add_node(msg);
-
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize
