@@ -1148,7 +1148,7 @@ extern int reconfigure_slurm(void)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
 		set_slurmctld_state_loc();
-		if (config_for_slurmd) {
+		if (running_configless) {
 			configless_update();
 			push_reconfig_to_slurmd(slurmd_config_files);
 			sackd_mgr_push_reconfig();

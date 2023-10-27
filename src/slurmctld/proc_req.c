@@ -120,6 +120,7 @@ static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 
 static bool do_post_rpc_node_registration = false;
 
+bool running_configless = false;
 char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cli_filter.lua", "ext_sensors.conf", "gres.conf", "helpers.conf",
@@ -131,8 +132,7 @@ static char *client_config_files[] = {
 	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf", NULL
 };
 
-
-config_response_msg_t *config_for_slurmd = NULL;
+static config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
 
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -700,6 +700,7 @@ extern void configless_update(void)
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
 		return;
 
+	running_configless = true;
 	if (!config_for_slurmd)
 		config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
 	if (!config_for_clients)
@@ -3253,7 +3254,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!config_for_slurmd) {
+	if (!running_configless) {
 		error("%s: Rejected request as configless is disabled",
 		      __func__);
 		slurm_send_rc_msg(msg, ESLURM_CONFIGLESS_DISABLED);
