@@ -2098,6 +2098,7 @@ watch:
 			 */
 			_signal_change(true);
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+			goto watch;
 		}
 
 		goto quiesced;
