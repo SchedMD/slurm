@@ -193,6 +193,10 @@ static int _next_month(cron_entry_t *entry, struct tm *tm)
 {
 	int months_to_advance = 0;
 
+	/* tm_mon should be 0-11 */
+	xassert(tm->tm_mon >= 0);
+	xassert(tm->tm_mon <= 11);
+
 	/* month is current valid, nice and easy, no major adjustments needed */
 	if (entry->flags & CRON_WILD_MONTH ||
 	    bit_test(entry->month, tm->tm_mon + 1))
@@ -238,6 +242,10 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 {
 	int days_to_advance = 0;
 
+	/* tm_wday should be 0-6 */
+	xassert(tm->tm_wday >= 0);
+	xassert(tm->tm_wday <= 6);
+
 	/* Start testing from now to get the closest day */
 	for (int i = tm->tm_wday; i < 7; i++) {
 		if (bit_test(entry->day_of_week, i))
@@ -264,6 +272,10 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 {
 	int days_to_advance = 0;
+
+	/* tm_mday should be 1-31 */
+	xassert(tm->tm_mday >= 1);
+	xassert(tm->tm_mday <= 31);
 
 	/* every month has 28 days, do checks for each day here */
 	for (int i = tm->tm_mday; i < 29; i++) {
