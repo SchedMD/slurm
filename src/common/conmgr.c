@@ -1845,6 +1845,12 @@ static void _poll_connections(void *x)
 		goto done;
 	}
 
+	if (mgr.quiesced) {
+		log_flag(NET, "%s: skipping poll() while quiesced",
+			 __func__);
+		goto done;
+	}
+
 	fds_ptr = args->fds;
 
 	xrecalloc(args->fds, ((count * 2) + 2), sizeof(*args->fds));
@@ -1956,6 +1962,12 @@ static void _listen(void *x)
 
 	if (mgr.signaled) {
 		log_flag(NET, "%s: skipping poll() to pending signal",
+			 __func__);
+		goto cleanup;
+	}
+
+	if (mgr.quiesced) {
+		log_flag(NET, "%s: skipping poll() while quiesced",
 			 __func__);
 		goto cleanup;
 	}
