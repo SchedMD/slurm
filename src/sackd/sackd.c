@@ -269,16 +269,17 @@ static void _try_to_reconfig(void)
 		rlim.rlim_cur = 4096;
 	}
 
-	if (pipe(to_parent) < 0) {
-		error("%s: pipe() failed: %m", __func__);
-		return;
-	}
-
 	child_env = env_array_copy((const char **) environ);
 	if (listen_fd != -1) {
 		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
 		fd_set_noclose_on_exec(listen_fd);
 	}
+
+	if (pipe(to_parent) < 0) {
+		error("%s: pipe() failed: %m", __func__);
+		return;
+	}
+
 	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
 
 	if ((pid = fork()) < 0) {
