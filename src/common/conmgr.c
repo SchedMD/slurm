@@ -76,6 +76,7 @@
 #define MAGIC_WORK 0xD231444A
 #define MAGIC_SIGNAL_WORK 0xA201444A
 #define MAGIC_SIGNAL_HANDLER 0xC20A444A
+#define MAGIC_POLL_ARGS 0xB201444A
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 #define MAGIC_DEFERRED_FUNC 0xA230403A
 /* Default buffer to 1 page */
@@ -316,6 +317,7 @@ struct {
 
 /* simple struct to keep track of fds */
 typedef struct {
+	int magic; /* MAGIC_POLL_ARGS */
 	struct pollfd *fds;
 	int nfds;
 } poll_args_t;
@@ -1757,6 +1759,7 @@ static void _poll(poll_args_t *args, list_t *fds, on_poll_event_t on_poll,
 	int signal_fd, event_fd;
 
 again:
+	xassert(args->magic == MAGIC_POLL_ARGS);
 	rc = poll(args->fds, args->nfds, -1);
 	if (rc == -1) {
 		bool exit_on_error;
@@ -1831,6 +1834,8 @@ static void _poll_connections(void *x)
 	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
+
+	xassert(args->magic == MAGIC_POLL_ARGS);
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -1950,6 +1955,8 @@ static void _listen(void *x)
 	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
+
+	xassert(args->magic == MAGIC_POLL_ARGS);
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -2162,6 +2169,7 @@ watch:
 	if (!list_is_empty(mgr.listen)) {
 		if (!listen_args) {
 			listen_args = xmalloc(sizeof(*listen_args));
+			listen_args->magic = MAGIC_POLL_ARGS;
 		}
 
 		/* run any queued work */
@@ -2189,6 +2197,7 @@ watch:
 	if (count) {
 		if (!poll_args) {
 			poll_args = xmalloc(sizeof(*poll_args));
+			poll_args->magic = MAGIC_POLL_ARGS;
 		}
 
 		if (!mgr.inspecting) {
@@ -2246,11 +2255,15 @@ quiesced:
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (poll_args) {
+		xassert(poll_args->magic == MAGIC_POLL_ARGS);
+		poll_args->magic = ~MAGIC_POLL_ARGS;
 		xfree(poll_args->fds);
 		xfree(poll_args);
 	}
 
 	if (listen_args) {
+		xassert(listen_args->magic == MAGIC_POLL_ARGS);
+		listen_args->magic = ~MAGIC_POLL_ARGS;
 		xfree(listen_args->fds);
 		xfree(listen_args);
 	}
