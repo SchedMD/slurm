@@ -56,6 +56,7 @@
 decl_static_data(usage_txt);
 
 static bool reconfig = false;
+static bool reconfig_in_place = false;
 static bool registered = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
@@ -80,10 +81,12 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_RECONFIG_IN_PLACE,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
+		{"reconfig-in-place", no_argument, 0, LONG_OPT_CONF_SERVER},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
@@ -109,6 +112,9 @@ static void _parse_args(int argc, char **argv)
 		case LONG_OPT_CONF_SERVER:
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
+			break;
+		case LONG_OPT_RECONFIG_IN_PLACE:
+			reconfig_in_place = true;
 			break;
 		default:
 			_usage();
@@ -273,6 +279,16 @@ static void _try_to_reconfig(void)
 	if (listen_fd != -1) {
 		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
 		fd_set_noclose_on_exec(listen_fd);
+	}
+
+	if (reconfig_in_place) {
+		for (int fd = 3; fd < rlim.rlim_cur; fd++) {
+			if (fd != listen_fd)
+				(void) close(fd);
+		}
+
+		execve(main_argv[0], main_argv, child_env);
+		fatal("execv() failed: %m");
 	}
 
 	if (pipe(to_parent) < 0) {
