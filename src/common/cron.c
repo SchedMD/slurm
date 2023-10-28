@@ -183,6 +183,9 @@ extern char *cronspec_from_cron_entry(cron_entry_t *entry)
 }
 
 /*
+ * Determine how many months there are between now and the next month this job
+ * could run in.
+ *
  * One important note: struct tm has jan == 0, but the crontab
  * format and our bitstring have jan == 1.
  */
@@ -195,12 +198,14 @@ static int _next_month(cron_entry_t *entry, struct tm *tm)
 	    bit_test(entry->month, tm->tm_mon + 1))
 		return 0;
 
+	/* Start testing from now to get the closest month */
 	for (int i = tm->tm_mon; i < 12; i++) {
 		if (bit_test(entry->month, i + 1))
 			goto found;
 		months_to_advance++;
 	}
 
+	/* Loop around to begining of the year if needed */
 	for (int i = 0; i < tm->tm_mon; i++) {
 		if (bit_test(entry->month, i + 1))
 			goto found;
@@ -223,16 +228,24 @@ found:
 	return 0;
 }
 
+/*
+ * Determine how many days there are between now and the next day of the week
+ * this job could run on.
+ *
+ * Intended for use when day of week is specified in the cron entry.
+ */
 static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 {
 	int days_to_advance = 0;
 
+	/* Start testing from now to get the closest day */
 	for (int i = tm->tm_wday; i < 7; i++) {
 		if (bit_test(entry->day_of_week, i))
 			return days_to_advance;
 		days_to_advance++;
 	}
 
+	/* Loop around to begining of the week if needed */
 	for (int i = 0; i < tm->tm_wday; i++) {
 		if (bit_test(entry->day_of_week, i))
 			return days_to_advance;
@@ -242,10 +255,17 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 	return 0;
 }
 
+/*
+ * Determine how many days there are between now and the next day of the month
+ * this job could run on.
+ *
+ * Intended for use when day of month is specified in the cron entry.
+ */
 static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 {
 	int days_to_advance = 0;
 
+	/* every month has 28 days, do checks for each day here */
 	for (int i = tm->tm_mday; i < 29; i++) {
 		if (bit_test(entry->day_of_month, i))
 			return days_to_advance;
@@ -254,6 +274,7 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 
 	/* february == 1 */
 	if (tm->tm_mon != 1) {
+		/* essentially continue the loop for not february */
 		if (tm->tm_mday > 29)
 			/* no-op */;
 		else if (bit_test(entry->day_of_month, 29))
@@ -261,6 +282,10 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 		else
 			days_to_advance++;
 
+		/*
+		 * for 30 and 31 days, this could push us to the 1st of the next
+		 * month
+		 */
 		if (tm->tm_mday > 30)
 			/* no-op */;
 		else if (bit_test(entry->day_of_month, 30))
@@ -268,6 +293,7 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 		else
 			days_to_advance++;
 
+		/* these months have 31 days, tm_mday can't be higher than 31 */
 		if ((tm->tm_mon == 0) || (tm->tm_mon == 2) ||
 		    (tm->tm_mon == 4) || (tm->tm_mon == 6) ||
 		    (tm->tm_mon == 7) || (tm->tm_mon == 9) ||
@@ -291,6 +317,10 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 		}
 	}
 
+	/*
+	 * Continue advancing days within next month till tm_mday found and return
+	 * aggregated count of advanced days.
+	 */
 	for (int i = 1; i < tm->tm_mday; i++) {
 		if (bit_test(entry->day_of_month, i))
 			return days_to_advance;
