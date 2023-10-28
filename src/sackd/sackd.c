@@ -322,6 +322,26 @@ static void _try_to_reconfig(void)
 	}
 }
 
+static void _notify_parent_of_success(void)
+{
+	char *parent_fd_env = getenv("SACKD_RECONF_PARENT_FD");
+	int rc = SLURM_SUCCESS, fd = -1;
+
+	if (!parent_fd_env)
+		return;
+
+	fd = atoi(getenv("SACKD_RECONF_PARENT_FD"));
+	info("child started successfully");
+	safe_write(fd, &rc, sizeof(int));
+	(void) close(fd);
+	return;
+
+rwfail:
+	error("failed to notify parent, may have two processes running now");
+	(void) close(fd);
+	return;
+}
+
 extern int main(int argc, char **argv)
 {
 	main_argv = argv;
@@ -350,13 +370,7 @@ extern int main(int argc, char **argv)
 	if (registered)
 		_listen_for_reconf();
 
-	if (getenv("SACKD_RECONF_PARENT_FD")) {
-		int rc = SLURM_SUCCESS;
-		int fd = atoi(getenv("SACKD_RECONF_PARENT_FD"));
-		info("child started successfully");
-		write(fd, &rc, sizeof(int));
-		(void) close(fd);
-	}
+	_notify_parent_of_success();
 
 	info("running");
 	while (true) {
