@@ -86,7 +86,7 @@ static void _parse_args(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
-		{"reconfig-in-place", no_argument, 0, LONG_OPT_CONF_SERVER},
+		{"reconfig-in-place", no_argument, 0, LONG_OPT_RECONFIG_IN_PLACE},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
