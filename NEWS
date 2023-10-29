@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     the primary controller.
  -- Fix primary controller not running the agent when a reconfigure of the
     slurmctld fails.
+ -- jobcomp/{elasticsearch,kafka} - Avoid sending fields with invalid date/time.
 
 * Changes in Slurm 23.11.8
 ==========================
