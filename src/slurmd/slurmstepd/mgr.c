@@ -1690,7 +1690,16 @@ static int exec_wait_signal (struct exec_wait_info *e, stepd_step_rec_t *step)
 {
 	debug3 ("Unblocking %ps task %d, writefd = %d",
 		&step->step_id, e->id, e->parentfd);
-	exec_wait_signal_child (e);
+
+	if (exec_wait_signal_child(e) != SLURM_SUCCESS) {
+		/*
+		 * can't unblock the task so it must have errored out already
+		 */
+		if (!step->task[e->id]->estatus)
+			step->task[e->id]->estatus = W_EXITCODE(1, 0);
+		step->task[e->id]->exited = true;
+	}
+
 	return (0);
 }
 
