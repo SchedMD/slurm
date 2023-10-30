@@ -428,3 +428,25 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	return common_topo_split_hostlist_treewidth(
 		hl, sp_hl, count, tree_width);
 }
+
+extern int topology_p_topology_free(void *topoinfo_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_get(void **topoinfo_pptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}

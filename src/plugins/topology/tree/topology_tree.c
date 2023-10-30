@@ -982,3 +982,25 @@ static void _check_better_path(int i, int j ,int k)
 	if (switch_record_table[j].switches_dist[k] > tmp)
 		switch_record_table[j].switches_dist[k] = tmp;
 }
+
+extern int topology_p_topology_free(void *topoinfo_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_get(void **topoinfo_pptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
