@@ -3133,4 +3133,9 @@ extern int controller_init_scheduling(void);
  */
 extern void controller_fini_scheduling(void);
 
+/*
+ * Reconfigure the various schedulers.
+ */
+extern void controller_reconfig_scheduling(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */

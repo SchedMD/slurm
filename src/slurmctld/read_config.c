@@ -1815,11 +1815,11 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		load_last_job_id();
 		reset_first_job_id();
-		(void) sched_g_reconfig();
+		controller_reconfig_scheduling();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		load_last_job_id();
 		reset_first_job_id();
-		(void) sched_g_reconfig();
+		controller_reconfig_scheduling();
 	} else if (recover == 1) {	/* Load job & node state files */
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
@@ -1930,7 +1930,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_all_resv_state(recover);
 		if (recover >= 1) {
 			trigger_state_restore();
-			(void) sched_g_reconfig();
+			controller_reconfig_scheduling();
 		}
 	}
 	 if (test_config)

@@ -3804,3 +3804,8 @@ extern void controller_fini_scheduling(void)
 {
 	(void) sched_g_fini();
 }
+
+extern void controller_reconfig_scheduling(void)
+{
+	(void) sched_g_reconfig();
+}
