@@ -133,11 +133,15 @@ proc process_result {function context expected_rc reports drains fails job_id_as
 		if {[subtest {$job_id > 0} "jobid != 0"]} {
 			set jobs_dict [get_jobs $job_id]
 			set job_state [dict get $jobs_dict $job_id "JobState"]
-			set failed [expr {$job_state eq "FAILED"}]
+			set failed [expr {$job_state eq "FAILED" || $job_state eq "CANCELLED"}]
 
-			subtest {$fails == $failed} [concat "JobId=$job_id state: " \
-				[expr {$fails ?  "FAILED" : "!FAILED"}] \
-				" == $job_state" ]
+			if {$fails} {
+				set failstr "FAILED"
+			} else {
+				set failstr "!FAILED"
+			}
+
+			subtest {$fails == $failed} "JobId=$job_id state: expected=$failstr == actual=$job_state"
 		}
 	} else {
 		subtest {$job_id == 0} "jobid should not have been assigned"
