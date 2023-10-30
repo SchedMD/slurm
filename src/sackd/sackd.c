@@ -365,7 +365,7 @@ extern int main(int argc, char **argv)
 	_parse_args(argc, argv);
 
 	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
-	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sigint()");
+	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
 	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
 
 	_establish_config_source();
