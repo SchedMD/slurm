@@ -88,7 +88,7 @@ static int    dbd_sigarray[] = {	/* blocked signals for this process */
 	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
 static int    debug_level = 0;		/* incremented for -v on command line */
-static int    foreground = 0;		/* run process as a daemon */
+static bool daemonize = true;		/* run process as a daemon */
 static int    setwd = 0;		/* change working directory -s  */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	_update_nice();
 
 	_kill_old_slurmdbd();
-	if (foreground == 0)
+	if (daemonize)
 		_daemonize();
 
 	/*
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	if (foreground == 0 || setwd)
+	if (daemonize || setwd)
 		_set_work_dir();
 	log_config();
 	init_dbd_stats();
@@ -472,7 +472,7 @@ static void _parse_commandline(int argc, char **argv)
 	while ((c = getopt(argc, argv, "Dhn:R::svV")) != -1)
 		switch (c) {
 		case 'D':
-			foreground = 1;
+			daemonize = 0;
 			break;
 		case 'h':
 			_usage(argv[0]);
@@ -548,14 +548,14 @@ static void _update_logging(bool startup)
 
 	log_opts.logfile_level = slurmdbd_conf->debug_level;
 
-	if (foreground)
+	if (!daemonize)
 		log_opts.stderr_level  = slurmdbd_conf->debug_level;
 	else
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 
 	if (slurmdbd_conf->syslog_debug != LOG_LEVEL_END) {
 		log_opts.syslog_level =	slurmdbd_conf->syslog_debug;
-	} else if (foreground) {
+	} else if (!daemonize) {
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else if ((slurmdbd_conf->debug_level > LOG_LEVEL_QUIET)
 		   && !slurmdbd_conf->log_file) {
