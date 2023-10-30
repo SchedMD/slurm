@@ -3797,6 +3797,8 @@ extern int controller_init_scheduling(bool init_gang)
 		return rc;
 	}
 
+	main_sched_init();
+
 	if (init_gang)
 		gs_init();
 
@@ -3806,6 +3808,8 @@ extern int controller_init_scheduling(bool init_gang)
 extern void controller_fini_scheduling(void)
 {
 	(void) sched_g_fini();
+
+	main_sched_fini();
 
 	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gs_fini();

@@ -47,8 +47,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/job_scheduler.h"
-
 typedef struct {
 	int (*reconfig)(void);
 } slurm_sched_ops_t;
@@ -90,8 +88,6 @@ extern int sched_g_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	main_sched_init();
-
 done:
 	slurm_mutex_unlock( &g_context_lock );
 	return retval;
@@ -106,8 +102,6 @@ extern int sched_g_fini(void)
 
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
-
-	main_sched_fini();
 
 	return rc;
 }
