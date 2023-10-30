@@ -2095,6 +2095,11 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		if (spank_task_post_fork (step, i) < 0) {
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
+
+			if (step->task[i]->estatus <= 0)
+				step->task[i]->estatus = W_EXITCODE(1, 0);
+			step->task[i]->exited = true;
+
 			goto fail2;
 		}
 	}
