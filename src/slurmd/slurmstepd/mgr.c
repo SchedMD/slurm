@@ -2346,6 +2346,15 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 			rc = task_g_post_term(step, t);
 			if (rc == ENOMEM)
 				step->oom_error = true;
+			else if (rc && !t->estatus)
+				t->estatus = rc;
+
+			if (t->estatus) {
+				slurm_mutex_lock(&step_complete.lock);
+				if (!step_complete.step_rc)
+					step_complete.step_rc = t->estatus;
+				slurm_mutex_unlock(&step_complete.lock);
+			}
 		}
 
 	} while ((pid > 0) && !waitflag);
