@@ -1482,18 +1482,18 @@ static void _spank_stack_set_remote_options_env(struct spank_stack *stack)
 	list_iterator_destroy(i);
 }
 
-int spank_set_remote_options(List opts)
+void spank_set_remote_options(List opts)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
 	List option_cache;
 
 	if (global_spank_stack == NULL)
-		return (0);
+		return;
 	option_cache = global_spank_stack->option_cache;
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
-		return (0);
+		return;
 
 	i = list_iterator_create(option_cache);
 	while ((p = list_next(i))) {
@@ -1509,7 +1509,7 @@ int spank_set_remote_options(List opts)
 				   p->optarg);
 	}
 	list_iterator_destroy(i);
-	return (0);
+	return;
 }
 
 struct opt_find_args {
