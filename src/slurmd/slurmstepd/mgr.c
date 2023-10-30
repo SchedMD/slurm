@@ -1919,6 +1919,8 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			rc = SLURM_ERROR;
 			goto fail4;
 		} else if ((pid = _exec_wait_get_pid(ei)) == 0) { /* child */
+			int rc;
+
 			/*
 			 *  Destroy exec_wait_list in the child.
 			 *   Only exec_wait_info for previous tasks have been
@@ -1941,9 +1943,9 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			 * NOTE: Only put things in here that are self contained
 			 * and belong in the child.
 			 */
-			if (_pre_task_child_privileged(step, i, &sprivs) < 0)
-				_exit(1);
-
+			if ((rc = _pre_task_child_privileged(step, i, &sprivs)))
+				fatal("%s: _pre_task_child_privileged() failed: %s",
+				      __func__, slurm_strerror(rc));
 
  			if (_become_user(step, &sprivs) < 0) {
  				error("_become_user failed: %m");
