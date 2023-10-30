@@ -713,8 +713,6 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 	int i;
 	static bool acct_sent = false;
 
-	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
-
 	if (step->batch) {	/* Nested batch step anomalies */
 		if (first == -1)
 			first = 0;
@@ -745,6 +743,11 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 		acct_sent = true;
 	}
 	/*********************************************/
+
+	debug2("%s: ranks=%d-%d parent_rank=%d step_rc[0x%x]=%s",
+	       __func__, first, last, step_complete.parent_rank, msg.step_rc,
+	       slurm_strerror(msg.step_rc));
+
 	slurm_msg_t_init(&req);
 	slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
 	req.msg_type = REQUEST_STEP_COMPLETE;
