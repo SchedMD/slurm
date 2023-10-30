@@ -89,7 +89,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);
 
 static void _send_ok_to_slurmd(int sock);
-static void _send_fail_to_slurmd(int sock);
+static void _send_fail_to_slurmd(int sock, int rc);
 static void _got_ack_from_slurmd(int);
 static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
@@ -140,8 +140,8 @@ main (int argc, char **argv)
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(step = _step_setup(cli, msg))) {
-		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
+		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
 	}
 
@@ -151,8 +151,8 @@ main (int argc, char **argv)
 
 	/* sets step->msg_handle and step->msgid */
 	if (msg_thr_create(step) == SLURM_ERROR) {
-		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
+		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
 	}
 
@@ -271,7 +271,7 @@ extern void close_slurmd_conn(int rc)
 	debug("%s: sending %d: %s", __func__, rc, slurm_strerror(rc));
 
 	if (rc)
-		_send_fail_to_slurmd(STDOUT_FILENO);
+		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 	else
 		_send_ok_to_slurmd(STDOUT_FILENO);
 
@@ -498,18 +498,12 @@ rwfail:
 #endif
 }
 
-static void
-_send_fail_to_slurmd(int sock)
+static void _send_fail_to_slurmd(int sock, int rc)
 {
 	/* If running under valgrind/memcheck, this pipe doesn't work correctly
 	 * so just skip it. */
 #if (SLURMSTEPD_MEMCHECK == 0)
-	int fail = SLURM_ERROR;
-
-	if (errno)
-		fail = errno;
-
-	safe_write(sock, &fail, sizeof(int));
+	safe_write(sock, &rc, sizeof(int));
 	return;
 rwfail:
 	error("Unable to send \"fail\" to slurmd");
