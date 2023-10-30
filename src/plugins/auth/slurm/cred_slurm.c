@@ -53,6 +53,10 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 
 	xassert(cred_arg && cred_arg->id);
 
+	/* support 'srun -Z' operation */
+	if (!running_in_slurmctld())
+		init_internal();
+
 	extra = get_identity_string(cred_arg->id, cred_arg->id->uid,
 				    cred_arg->id->gid);
 
