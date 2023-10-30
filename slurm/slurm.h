@@ -329,6 +329,8 @@ enum job_states {
 #define PARSE_FLAGS_IGNORE_NEW		SLURM_BIT(0)
 /* Check 0600 permissions for slurmdbd.conf included files */
 #define PARSE_FLAGS_CHECK_PERMISSIONS	SLURM_BIT(1)
+/* Only parse Include directives and ignore rest of parsing */
+#define PARSE_FLAGS_INCLUDE_ONLY	SLURM_BIT(2)
 
 /*
  * job_array_struct_t array_flags definitions. ARRAY_TASK_REQUEUED could be

@@ -1274,7 +1274,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
 						  line, &leftover, flags,
 						  filename, last_ancestor);
-		if (inc_rc == 0) {
+		if (inc_rc == 0 && !(flags & PARSE_FLAGS_INCLUDE_ONLY)) {
 			if (!_parse_next_key(hashtbl, line, &leftover,
 					     ignore_new)) {
 				rc = SLURM_ERROR;

@@ -290,6 +290,8 @@ documents those changes that are of interest to users and administrators.
  -- Kill recovered jobs that require unconfigured gres types.
  -- If keepalives are configured, enable them on all persistent connections.
  -- data_parser/v0.0.40 - add parsers for main/backfill cycle exit reasons.
+ -- Configless - Also send Includes from configuration files not parsed by the
+    controller (i.e. from plugstack.conf).
 
 * Changes in Slurm 23.02.7
 ==========================

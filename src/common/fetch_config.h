@@ -65,4 +65,5 @@ extern config_response_msg_t *new_config_response(bool to_slurmd);
 
 extern void destroy_config_file(void *object);
 
+extern void grab_include_directives(void);
 #endif

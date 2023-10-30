@@ -678,6 +678,7 @@ extern void configless_update(void)
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_configless"))
 		return;
 
+	grab_include_directives();
 	running_configless = true;
 	slurm_rwlock_wrlock(&configless_lock);
 	slurm_free_config_response_msg(config_for_slurmd);

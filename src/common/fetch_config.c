@@ -565,3 +565,23 @@ extern void destroy_config_file(void *object)
 	xfree(conf_file->file_content);
 	xfree(conf_file);
 }
+
+extern void grab_include_directives(void)
+{
+	char *conf_file;
+	struct stat stat_buf;
+	uint32_t parse_flags = 0;
+
+	parse_flags |= PARSE_FLAGS_INCLUDE_ONLY;
+	for (int i = 0; slurmd_config_files[i]; i++) {
+		if ((!conf_includes_list) ||
+		    (!list_find_first_ro(conf_includes_list,
+					 find_map_conf_file,
+					 slurmd_config_files[i]))) {
+			conf_file = get_extra_conf_path(slurmd_config_files[i]);
+			if (!stat(conf_file, &stat_buf))
+				s_p_parse_file(NULL, NULL, conf_file,
+					       parse_flags, NULL);
+		}
+	}
+}
