@@ -1362,14 +1362,14 @@ _spank_opt_print(struct spank_option *opt, FILE * fp, int left_pad, int width)
 	return;
 }
 
-int spank_print_options(FILE * fp, int left_pad, int width)
+void spank_print_options(FILE * fp, int left_pad, int width)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
 	List option_cache = get_global_option_cache();
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
-		return (0);
+		return;
 
 	fprintf(fp, "\nOptions provided by plugins:\n");
 
@@ -1381,7 +1381,7 @@ int spank_print_options(FILE * fp, int left_pad, int width)
 	}
 	list_iterator_destroy(i);
 
-	return (0);
+	return;
 }
 
 #define OPT_TYPE_SPANK 0x4400

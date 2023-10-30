@@ -145,7 +145,7 @@ int spank_process_option (int optval, const char *optarg);
  *   after which the usage text may be displayed, and `left_pad' is the
  *   amount of space to pad on the left before printing the --option.
  */
-int spank_print_options(FILE *fp, int left_pad, int width);
+void spank_print_options(FILE *fp, int left_pad, int width);
 
 /*  Set all registered remote options (i.e. those passed to
  *   spank_process_option) in the job options `options'.
