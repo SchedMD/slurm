@@ -2180,7 +2180,8 @@ extern int stepd_send_pending_exit_msgs(stepd_step_rec_t *step)
 	}
 
 	if (nsent) {
-		debug2("Aggregated %d task exit messages", nsent);
+		debug2("%s: aggregated %d task exit messages (rc=[0x%x]:%s)",
+		       __func__, nsent, status, slurm_strerror(status));
 		_send_exit_msg(step, tid, nsent, status);
 	}
 	xfree(tid);
