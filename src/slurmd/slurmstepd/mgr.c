@@ -1898,6 +1898,12 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	if (spank_user (step) < 0) {
 		error("spank_user failed.");
 		rc = SLURM_ERROR;
+
+		slurm_mutex_lock(&step_complete.lock);
+		if (!step_complete.step_rc)
+			step_complete.step_rc = rc;
+		slurm_mutex_unlock(&step_complete.lock);
+
 		goto fail4;
 	}
 
