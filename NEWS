@@ -304,6 +304,7 @@ documents those changes that are of interest to users and administrators.
  -- Preserve reason uid on reconfig.
  -- Update node reason with updated INVAL state reason if different from last
     registration.
+ -- acct_gather_energy/ipmi - Improve logging of DCMI issues.
 
 * Changes in Slurm 23.02.6
 ==========================
