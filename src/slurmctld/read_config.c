@@ -1695,12 +1695,12 @@ int read_slurm_conf(int recover, bool reconfig)
 			fatal("Failed to initialize jobcomp plugin");
 		}
 	}
-	if (sched_g_init() != SLURM_SUCCESS) {
+	if (controller_init_scheduling() != SLURM_SUCCESS) {
 		if (test_config) {
-			error("Failed to initialize sched plugin");
+			error("Failed to initialize the various schedulers");
 			test_config_rc = 1;
 		} else {
-			fatal("Failed to initialize sched plugin");
+			fatal("Failed to initialize the various schedulers");
 		}
 	}
 	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG)) {

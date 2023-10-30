@@ -602,7 +602,7 @@ int main(int argc, char **argv)
 
 		/* start in primary or backup mode */
 		if (!slurmctld_primary) {
-			sched_g_fini();	/* make sure shutdown */
+			controller_fini_scheduling(); /* make sure shutdown */
 			_run_primary_prog(false);
 			if (acct_storage_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize accounting_storage plugin");
@@ -793,15 +793,15 @@ int main(int argc, char **argv)
 		slurm_thread_create(&slurmctld_config.thread_id_acct_update,
 				    _acct_update_thread, NULL);
 
+		if (controller_init_scheduling() != SLURM_SUCCESS)
+			fatal("Failed to initialize the various schedulers");
 
-		if (sched_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize scheduling plugin");
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
 
-		sched_g_fini();	/* Stop all scheduling */
+		controller_fini_scheduling(); /* Stop all scheduling */
 
 		/* termination of controller */
 		switch_g_save(slurm_conf.state_save_location);
@@ -3786,4 +3786,21 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg)
 	data.control_time = control_time;
 	response_init(&response_msg, msg, RESPONSE_CONTROL_STATUS, &data);
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
+}
+
+extern int controller_init_scheduling(void)
+{
+	int rc = sched_g_init();
+
+	if (rc != SLURM_SUCCESS) {
+		error("failed to initialize sched plugin");
+		return rc;
+	}
+
+	return rc;
+}
+
+extern void controller_fini_scheduling(void)
+{
+	(void) sched_g_fini();
 }

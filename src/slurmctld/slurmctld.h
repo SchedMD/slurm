@@ -3123,4 +3123,14 @@ extern void job_mgr_list_delete_job(void *job_entry);
 extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	resv_desc_msg_t *resv_desc_ptr);
 
+/*
+ * Initialize the various schedulers.
+ */
+extern int controller_init_scheduling(void);
+
+/*
+ * Finialize the various schedulers.
+ */
+extern void controller_fini_scheduling(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */
