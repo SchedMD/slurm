@@ -371,6 +371,11 @@ batch_finish(stepd_step_rec_t *step, int rc)
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			step->step_id.job_id, rc, step_complete.step_rc);
+
+		/* if launch failed, make sure to tag step as failed too */
+		if (!step_complete.step_rc && rc)
+			step_complete.step_rc = rc;
+
 		_send_complete_batch_script_msg(
 			step, rc, step_complete.step_rc);
 	} else {
