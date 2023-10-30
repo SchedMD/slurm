@@ -2115,6 +2115,18 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
 
+			/*
+			 * Failure before the tasks have even started, so we
+			 * will need to mark all of them as failed unless there
+			 * is already an error present to avoid slurmctld from
+			 * thinking this was a slurmd issue and the step just
+			 * landed on an unhealthy node.
+			 */
+			slurm_mutex_lock(&step_complete.lock);
+			if (!step_complete.step_rc)
+				step_complete.step_rc = rc;
+			slurm_mutex_unlock(&step_complete.lock);
+
 			if (step->task[i]->estatus <= 0)
 				step->task[i]->estatus = W_EXITCODE(1, 0);
 			step->task[i]->exited = true;
