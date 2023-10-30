@@ -6315,8 +6315,10 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
-	if (prolog_return_code)
+	if (prolog_return_code) {
 		error("Prolog launch failure, %pJ", job_ptr);
+		job_ptr->exit_code = prolog_return_code;
+	}
 	/*
 	 * job_ptr->node_bitmap_pr is always NULL for front end systems
 	 */
