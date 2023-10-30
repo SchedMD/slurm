@@ -1242,6 +1242,15 @@ fail1:
 
 	if (step_complete.rank > -1)
 		stepd_wait_for_children_slurmstepd(step);
+
+	/*
+	 * Step failed outside of the exec()ed tasks, make sure to tell
+	 * slurmctld about it to avoid the user not knowing about a
+	 * failure.
+	 */
+	if (rc && !step_complete.step_rc)
+		step_complete.step_rc = rc;
+
 	stepd_send_step_complete_msgs(step);
 
 	return rc;
@@ -1520,6 +1529,15 @@ fail1:
 			info("job_manager exiting with aborted job");
 		else
 			stepd_wait_for_children_slurmstepd(step);
+
+		/*
+		 * Step failed outside of the exec()ed tasks, make sure to tell
+		 * slurmctld about it to avoid the user not knowing about a
+		 * failure.
+		 */
+		if (rc && !step_complete.step_rc)
+			step_complete.step_rc = rc;
+
 		stepd_send_step_complete_msgs(step);
 	}
 
