@@ -362,15 +362,6 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
 	} else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
-		/* Only the first flag can be an equal
-		 * type if all bits are being set:
-		 * There can only be one EQUAL bit since
-		 * they set all the bits or clear all of
-		 * them.
-		 */
-		if (bit->mask == INFINITE64)
-			xassert(i == 0);
-
 		/*
 		 * bit->mask must include all value bits
 		 * (if there are any)
