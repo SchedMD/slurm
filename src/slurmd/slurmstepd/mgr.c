@@ -1178,6 +1178,8 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 
 	if (spank_task_post_fork(step, -1) < 0)
 		error("spank extern task post-fork failed");
+		goto fail1;
+	}
 
 	/* let the slurmd know we actually are done with the setup */
 	close_slurmd_conn(rc);
