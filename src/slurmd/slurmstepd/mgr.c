@@ -1947,6 +1947,8 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		error("spank_user failed.");
 		rc = SLURM_ERROR;
 
+		step->task[0]->estatus = W_EXITCODE(1, 0);
+		step->task[0]->exited = true;
 		slurm_mutex_lock(&step_complete.lock);
 		if (!step_complete.step_rc)
 			step_complete.step_rc = rc;
