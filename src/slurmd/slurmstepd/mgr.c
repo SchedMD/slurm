@@ -1176,8 +1176,27 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
-	if (spank_task_post_fork(step, -1) < 0)
+	if (spank_task_post_fork(step, -1) < 0) {
 		error("spank extern task post-fork failed");
+		rc = SLURM_ERROR;
+
+		/*
+		 * Failure before the tasks have even started, so we will need
+		 * to mark all of them as failed unless there is already an
+		 * error present to avoid slurmctld from thinking this was a
+		 * slurmd issue and the step just landed on an unhealthy node.
+		 */
+		slurm_mutex_lock(&step_complete.lock);
+		if (!step_complete.step_rc)
+			step_complete.step_rc = rc;
+		slurm_mutex_unlock(&step_complete.lock);
+
+		for (uint32_t i = 0; i < step->node_tasks; i++)
+			if (step->task[i]->estatus <= 0)
+				step->task[i]->estatus = W_EXITCODE(1, 0);
+
+		/* let the slurmd know the setup failed */
+		close_slurmd_conn(rc);
 		goto fail1;
 	}
 
