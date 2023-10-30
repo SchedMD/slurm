@@ -793,7 +793,7 @@ int main(int argc, char **argv)
 		slurm_thread_create(&slurmctld_config.thread_id_acct_update,
 				    _acct_update_thread, NULL);
 
-		if (controller_init_scheduling() != SLURM_SUCCESS)
+		if (controller_init_scheduling(false) != SLURM_SUCCESS)
 			fatal("Failed to initialize the various schedulers");
 
 		/*
@@ -3788,7 +3788,7 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
 
-extern int controller_init_scheduling(void)
+extern int controller_init_scheduling(bool init_gang)
 {
 	int rc = sched_g_init();
 
@@ -3797,15 +3797,23 @@ extern int controller_init_scheduling(void)
 		return rc;
 	}
 
+	if (init_gang)
+		gs_init();
+
 	return rc;
 }
 
 extern void controller_fini_scheduling(void)
 {
 	(void) sched_g_fini();
+
+	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
+		gs_fini();
 }
 
 extern void controller_reconfig_scheduling(void)
 {
+	gs_reconfig();
+
 	(void) sched_g_reconfig();
 }

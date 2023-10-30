@@ -47,7 +47,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 
 typedef struct {
@@ -110,17 +109,12 @@ extern int sched_g_fini(void)
 
 	main_sched_fini();
 
-	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
-		gs_fini();
-
 	return rc;
 }
 
 extern int sched_g_reconfig(void)
 {
 	xassert(g_context);
-
-	gs_reconfig();
 
 	return (*(ops.reconfig))();
 }

@@ -3126,7 +3126,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 /*
  * Initialize the various schedulers.
  */
-extern int controller_init_scheduling(void);
+extern int controller_init_scheduling(bool init_gang);
 
 /*
  * Finialize the various schedulers.
