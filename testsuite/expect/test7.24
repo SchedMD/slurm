@@ -241,8 +241,8 @@ log_info "Testing srun.........."
 set srun_test "$srun -K -I10 -W10 -w $testnode -t1 true"
 testproc test_interactive "$srun_test" slurm_spank_init local                    $::RETURN_ERROR   -3000 0 1 0
 testproc test_interactive "$srun_test" slurm_spank_init_post_opt local           $::RETURN_ERROR   -3000 0 1 0
-testproc test_interactive "$srun_test" slurm_spank_local_user_init local         $::RETURN_ERROR   -3000 0 0 1
-testproc test_interactive "$srun_test" slurm_spank_user_init remote              $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$srun_test" slurm_spank_local_user_init local         $::RETURN_ERROR   -3000 0 1 1
+testproc test_interactive "$srun_test" slurm_spank_user_init remote              $::RETURN_ERROR   -3000 0 0 1
 testproc test_interactive "$srun_test" slurm_spank_task_init_privileged remote   $::RETURN_ERROR   -3000 0 1 1
 if {$pgid} {
 testproc test_interactive "$srun_test" slurm_spank_task_post_fork remote         $::RETURN_TIMEOUT -3000 0 0 1
@@ -260,12 +260,12 @@ testproc test_interactive "$salloc_test" slurm_spank_init_post_opt allocator    
 testproc test_interactive "$salloc_test" slurm_spank_init local                  $::RETURN_ERROR   -3000 0 1 0
 testproc test_interactive "$salloc_test" slurm_spank_init_post_opt local         $::RETURN_ERROR   -3000 0 1 0
 testproc test_interactive "$salloc_test" slurm_spank_local_user_init local       $::RETURN_ERROR   -3000 0 1 1
-testproc test_interactive "$salloc_test" slurm_spank_user_init remote            $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$salloc_test" slurm_spank_user_init remote            $::RETURN_ERROR   -3000 0 0 1
 testproc test_interactive "$salloc_test" slurm_spank_task_init_privileged remote $::RETURN_ERROR   -3000 0 1 1
 if {$pgid} {
 testproc test_interactive "$salloc_test" slurm_spank_task_post_fork remote       $::RETURN_TIMEOUT -3000 0 0 1
 } else {
-testproc test_interactive "$salloc_test" slurm_spank_task_post_fork remote       $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$salloc_test" slurm_spank_task_post_fork remote       $::RETURN_ERROR   -3000 0 0 1
 }
 testproc test_interactive "$salloc_test" slurm_spank_task_init remote            $::RETURN_ERROR   -3000 0 1 1
 testproc test_interactive "$salloc_test" slurm_spank_task_exit remote            $::RETURN_SUCCESS -3000 0 0 1
@@ -289,13 +289,13 @@ testproc test_batch slurm_spank_init local                                      
 testproc test_batch slurm_spank_init_post_opt local                              $::RETURN_ERROR    1     1    -3000 0 1 1 1
 testproc test_batch slurm_spank_local_user_init local                            $::RETURN_ERROR    1     1    -3000 0 1 1 1
 if {!$pgid} {
-	testproc test_batch slurm_spank_user_init remote                         $::RETURN_SUCCESS  0     0    -3000 1 0 1 1
+	testproc test_batch slurm_spank_user_init remote                         $::RETURN_ERROR    1     1    -3000 1 1 1 1
 } else {
 	testproc test_batch slurm_spank_user_init remote                         $::RETURN_SUCCESS  0     0    -3000 0 0 1 1
 }
 testproc test_batch slurm_spank_task_init_privileged remote                      $::RETURN_ERROR    1     1    -3000 0 1 1 1
 if {!$pgid} {
-	testproc test_batch slurm_spank_task_post_fork remote                    $::RETURN_SUCCESS  0     0    -3000 1 0 1 1
+	testproc test_batch slurm_spank_task_post_fork remote                    $::RETURN_ERROR    1     1    -3000 1 1 1 1
 } else {
 	testproc test_batch slurm_spank_task_post_fork remote                    $::RETURN_TIMEOUT  0     0    -3000 1 0 1 1
 }
