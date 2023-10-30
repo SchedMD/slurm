@@ -1712,7 +1712,7 @@ static void _spank_stack_get_remote_options(struct spank_stack *stack,
  *   spank option env vars  have a prefix of SPANK_OPTION_ENV_PREFIX,
  *   or SPANK_ + SPANK_OPTION_ENV_PREFIX
  */
-int spank_clear_remote_options_env (char **env)
+void spank_clear_remote_options_env (char **env)
 {
 	char **ep;
 	int len = strlen (SPANK_OPTION_ENV_PREFIX);
@@ -1732,7 +1732,7 @@ int spank_clear_remote_options_env (char **env)
 			}
 		}
 	}
-	return (0);
+	return;
 }
 
 

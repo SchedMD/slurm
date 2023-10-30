@@ -154,7 +154,7 @@ void spank_set_remote_options(List options);
 
 /*  Clear any spank remote options encoded in environment.
  */
-int spank_clear_remote_options_env (char **env);
+void spank_clear_remote_options_env(char **env);
 
 /*
  * spank_get_plugin_names
