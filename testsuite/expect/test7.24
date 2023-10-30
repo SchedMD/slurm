@@ -282,7 +282,7 @@ testproc test_interactive "$salloc_test" slurm_spank_exit allocator             
 #                                                                                                                         outputs
 log_info "Testing sbatch.........."
 make_bash_script $file_in "$srun $bin_echo IT_RAN"
-set sbatch_test "$sbatch -W -w $testnode -t1 -o $file_out -e $file_out $file_in"
+set sbatch_test "$sbatch --no-requeue -W -w $testnode -t1 -o $file_out -e $file_out $file_in"
 testproc test_batch slurm_spank_init allocator                                   -3000              1    -3000  0    0 1 0 0
 testproc test_batch slurm_spank_init_post_opt allocator                          -3000              1    -3000  0    0 1 0 0
 testproc test_batch slurm_spank_init local                                        1                 1     1    -3000 0 1 1 1
