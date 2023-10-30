@@ -48,7 +48,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gang.h"
-#include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/job_scheduler.h"
 
 typedef struct {
 	int (*reconfig)(void);
