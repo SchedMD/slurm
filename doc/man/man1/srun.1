@@ -459,7 +459,7 @@ is in use:
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
-of the individual SLURM_CPU_BIND variables. These variable are available
+of the individual SLURM_CPU_BIND variables. These variables are available
 only if the task/affinity plugin is configured.
 
 When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
@@ -927,8 +927,9 @@ subsequent srun requests. Task distribution affects job allocation at the
 last stage of the evaluation of available resources by the
 cons_tres plugin. Consequently, other options (e.g. \-\-ntasks\-per\-node,
 \-\-cpus\-per\-task) may affect resource selection prior to task distribution.
-To ensure a specific task distribution jobs should have access to whole
-nodes, for instance by using the \-\-exclusive flag.
+To ensure a specific task distribution, jobs should have access to entire
+nodes, which can be accomplished by using the \fB\-\-exclusive\fR flag
+or by requesting all the resources on the node(s).
 
 This option controls the distribution of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
@@ -998,7 +999,7 @@ https://slurm.schedmd.com/dist_plane.html
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
 as listed in file designated by the environment variable
-SLURM_HOSTFILE.  If this variable is listed it will over ride any
+SLURM_HOSTFILE. If this variable is listed it will override any
 other method specified.  If not set the method will default to block.
 Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
