@@ -212,6 +212,7 @@ extern int read_slurmdbd_conf(void)
 		bool a_steps = false, a_suspend = false, a_txn = false;
 		bool a_usage = false;
 		bool tmp_bool = false;
+		uint32_t parse_flags = 0;
 		uid_t conf_path_uid;
 		debug3("Checking slurmdbd.conf file:%s access permissions",
 		       conf_path);
@@ -223,7 +224,8 @@ extern int read_slurmdbd_conf(void)
 		debug("Reading slurmdbd.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
-		if (s_p_parse_file(tbl, NULL, conf_path, false, NULL, true)
+		parse_flags |= PARSE_FLAGS_CHECK_PERMISSIONS;
+		if (s_p_parse_file(tbl, NULL, conf_path, parse_flags, NULL)
 		    == SLURM_ERROR) {
 			fatal("Could not open/read/parse slurmdbd.conf file %s",
 			      conf_path);

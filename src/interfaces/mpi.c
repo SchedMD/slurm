@@ -285,6 +285,7 @@ static int _mpi_init_locked(char **mpi_type)
 	s_p_options_t **opts;
 	char *conf_path;
 	struct stat buf;
+	uint32_t parse_flags = 0;
 
 	/* Plugin load */
 
@@ -385,12 +386,13 @@ static int _mpi_init_locked(char **mpi_type)
 			debug2("No mpi.conf file (%s)", conf_path);
 		else {
 			debug2("Reading mpi.conf file (%s)", conf_path);
+			parse_flags |= PARSE_FLAGS_IGNORE_NEW;
 			for (int i = 0; i < g_context_cnt; i++) {
 				if (!all_tbls[i])
 					continue;
 				if (s_p_parse_file(all_tbls[i],
 						   NULL, conf_path,
-						   true, NULL, false) !=
+						   parse_flags, NULL) !=
 						   SLURM_SUCCESS)
 					/*
 					 * conf_path can't be freed: It's needed

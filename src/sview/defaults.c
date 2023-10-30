@@ -581,6 +581,7 @@ extern int load_defaults(void)
 	uint32_t hash_val = NO_VAL;
 	int i, rc = SLURM_SUCCESS;
 	char *tmp_str;
+	uint32_t parse_flags = 0;
 
 	_init_sview_conf();
 
@@ -601,8 +602,9 @@ extern int load_defaults(void)
 	}
 
 	hashtbl = s_p_hashtbl_create(sview_conf_options);
+	parse_flags |= PARSE_FLAGS_IGNORE_NEW;
 
-	if (s_p_parse_file(hashtbl, &hash_val, pathname, true, NULL, false)
+	if (s_p_parse_file(hashtbl, &hash_val, pathname, parse_flags, NULL)
 	    == SLURM_ERROR)
 		error("something wrong with opening/reading conf file");
 

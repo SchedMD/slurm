@@ -308,14 +308,12 @@ void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 /* Returns SLURM_SUCCESS if file was opened and parse correctly
  * OUT hash_val - cyclic redundancy check (CRC) character-wise value
  *                of file.
- * IN ignore_new - do not treat unrecognized keywords as a fatal error,
- *                 print debug() message and continue
+ * IN flags - flags affecting behavior.
  * OUT last_ancestor - last ancestor configuration filename used to map nested
  * 		       Include files in configless configurations.
  */
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
-		   bool ignore_new, char *last_ancestor,
-		   bool check_permissions);
+		   uint32_t flags, char *last_ancestor);
 
 /* Returns SLURM_SUCCESS if buffer was opened and parse correctly.
  * buffer must be a valid buf_t buffer only containing strings. The parsing
