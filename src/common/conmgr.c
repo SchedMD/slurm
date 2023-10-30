@@ -2503,8 +2503,10 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, false)))
 		goto cleanup;
 
-	msglen = get_buf_offset(buffers.auth) + get_buf_offset(buffers.body) +
-		get_buf_offset(buffers.header);
+	msglen = get_buf_offset(buffers.body) + get_buf_offset(buffers.header);
+
+	if (buffers.auth)
+		msglen += get_buf_offset(buffers.auth);
 
 	/* switch to network order */
 	msglen = htonl(msglen);
@@ -2518,7 +2520,8 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 					get_buf_offset(buffers.header))))
 		goto cleanup;
 
-	if ((rc = conmgr_queue_write_fd(con, get_buf_data(buffers.auth),
+	if (buffers.auth &&
+	    (rc = conmgr_queue_write_fd(con, get_buf_data(buffers.auth),
 					get_buf_offset(buffers.auth))))
 		goto cleanup;
 
