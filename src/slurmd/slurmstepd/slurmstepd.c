@@ -157,7 +157,7 @@ main (int argc, char **argv)
 	}
 
 	if (step->step_id.step_id != SLURM_EXTERN_CONT)
-		close_slurmd_conn();
+		close_slurmd_conn(rc);
 
 	/* slurmstepd is the only daemon that should survive upgrade. If it
 	 * had been swapped out before upgrade happened it could easily lead
@@ -266,9 +266,15 @@ done:
 	return rc;
 }
 
-extern void close_slurmd_conn(void)
+extern void close_slurmd_conn(int rc)
 {
-	_send_ok_to_slurmd(STDOUT_FILENO);
+	debug("%s: sending %d: %s", __func__, rc, slurm_strerror(rc));
+
+	if (rc)
+		_send_fail_to_slurmd(STDOUT_FILENO);
+	else
+		_send_ok_to_slurmd(STDOUT_FILENO);
+
 	_got_ack_from_slurmd(STDIN_FILENO);
 
 	/* Fancy way of closing stdin that keeps STDIN_FILENO from being

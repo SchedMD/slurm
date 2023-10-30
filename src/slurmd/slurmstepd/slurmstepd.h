@@ -73,6 +73,6 @@ extern int stepd_send_pending_exit_msgs(stepd_step_rec_t *step);
 extern void stepd_send_step_complete_msgs(stepd_step_rec_t *step);
 extern void stepd_wait_for_children_slurmstepd(stepd_step_rec_t *step);
 
-extern void close_slurmd_conn(void);
+extern void close_slurmd_conn(int rc);
 
 #endif /* !_SLURMSTEPD_H */
