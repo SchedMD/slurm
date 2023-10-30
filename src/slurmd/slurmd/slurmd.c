@@ -2299,6 +2299,8 @@ _slurmd_init(void)
 static int
 _slurmd_fini(void)
 {
+	int rc;
+
 	assoc_mgr_fini(false);
 	mpi_fini();
 	node_features_g_fini();
@@ -2318,7 +2320,10 @@ _slurmd_fini(void)
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	select_g_fini();
-	spank_slurmd_exit();
+	if ((rc = spank_slurmd_exit())) {
+		error("%s: SPANK slurmd exit failed: %s",
+		      __func__, slurm_strerror(rc));
+	}
 	cpu_freq_fini();
 	_resource_spec_fini();
 	job_container_fini();
