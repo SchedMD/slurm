@@ -262,7 +262,15 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	cleanup = true;
 done:
 	slurm_mutex_unlock(&cleanup_mutex);
-	info("done with job");
+	/* skipping lock of step_complete.lock */
+	if (rc || step_complete.step_rc) {
+		info("%s: done with step (rc[0x%x]:%s, cleanup_rc[0x%x]:%s)",
+		     __func__, step_complete.step_rc,
+		     slurm_strerror(step_complete.step_rc), rc,
+		     slurm_strerror(rc));
+	} else {
+		info("done with step");
+	}
 	return rc;
 }
 
