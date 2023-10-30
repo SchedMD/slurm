@@ -607,8 +607,9 @@ _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
 	ListIterator    i       = NULL;
 	srun_info_t    *srun    = NULL;
 
-	debug3("sending task exit msg for %d tasks status %d oom %d",
-	       n, status, step->oom_error);
+	debug3("%s: sending task exit msg for %d tasks (oom:%s exit_status:%s",
+	       __func__, n, (step->oom_error ? "true" : "false"),
+	       slurm_strerror(status));
 
 	memset(&msg, 0, sizeof(msg));
 	msg.task_id_list	= tid;
