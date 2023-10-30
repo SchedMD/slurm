@@ -100,6 +100,7 @@ int active_node_record_count;
  */
 const char plugin_name[]        = "topology block plugin";
 const char plugin_type[]        = "topology/block";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct slurm_conf_block {

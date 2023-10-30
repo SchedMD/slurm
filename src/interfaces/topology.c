@@ -49,6 +49,8 @@
 
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 
+static uint32_t active_topo_id;
+
 /* defined here but is really tree plugin related */
 switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
@@ -64,6 +66,7 @@ int block_record_cnt = 0;
 char *topo_conf = NULL;
 
 typedef struct slurm_topo_ops {
+	uint32_t (*plugin_id);
 	int		(*build_config)		( void );
 	bool		(*node_ranking)		( void );
 	int		(*get_node_addr)	( char* node_name,
@@ -79,6 +82,7 @@ typedef struct slurm_topo_ops {
  * Must be synchronized with slurm_topo_ops_t above.
  */
 static const char *syms[] = {
+	"plugin_id",
 	"topology_p_build_config",
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
@@ -122,7 +126,7 @@ extern int topology_g_init(void)
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-
+	active_topo_id = *(ops.plugin_id);
 	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);

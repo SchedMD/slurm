@@ -102,6 +102,7 @@ int active_node_record_count;
  */
 const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_TREE;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct slurm_conf_switches {

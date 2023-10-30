@@ -1178,6 +1178,12 @@ typedef enum {
 	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
 } step_spec_flags_t;
 
+enum topology_plugin_type {
+	TOPOLOGY_PLUGIN_3DTORUS = 100,
+	TOPOLOGY_PLUGIN_TREE = 101,
+	TOPOLOGY_PLUGIN_BLOCK = 102,
+};
+
 /*****************************************************************************\
  *      SLURM LIBRARY INITIALIZATION FUNCTIONS
 \*****************************************************************************/

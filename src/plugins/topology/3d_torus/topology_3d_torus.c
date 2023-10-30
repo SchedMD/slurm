@@ -76,6 +76,7 @@
  */
 const char plugin_name[]        = "topology 3d_torus plugin";
 const char plugin_type[]        = "topology/3d_torus";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_3DTORUS;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 extern void nodes_to_hilbert_curve(void);
