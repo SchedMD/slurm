@@ -2237,11 +2237,10 @@ static void _gres_reconfig(bool reconfig)
 	node_record_t *node_ptr;
 	char *gres_name;
 	int i;
-	bool gres_loaded = false;
 
 	if (reconfig) {
 		gres_reconfig();
-		goto grab_includes;
+		return;
 	}
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
@@ -2269,19 +2268,6 @@ static void _gres_reconfig(bool reconfig)
 			node_ptr->config_ptr->cores,
 			node_ptr->config_ptr->tot_sockets,
 			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
-
-		gres_loaded = true;
-	}
-
-grab_includes:
-	if (!gres_loaded) {
-		/*
-		 * Parse the gres.conf for any Include files to push with
-		 * configless files. Reading the file, without loading the
-		 * options, will add the Include files to conf_includes_list and
-		 * will be sent with configless.
-		 */
-		gres_parse_config_dummy();
 	}
 }
 
