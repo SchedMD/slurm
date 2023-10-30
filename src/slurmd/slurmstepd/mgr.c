@@ -1676,10 +1676,14 @@ static int exec_wait_signal_child (struct exec_wait_info *e)
 {
 	char c = '\0';
 
-	if (write (e->parentfd, &c, sizeof (c)) != 1)
-		return error ("write to unblock task %d failed: %m", e->id);
+	safe_write(e->parentfd, &c, sizeof(c));
 
-	return (0);
+	return SLURM_SUCCESS;
+rwfail:
+	error("%s: write(fd:%d) to unblock task %d failed",
+		      __func__, e->parentfd, e->id);
+
+	return SLURM_ERROR;
 }
 
 static int exec_wait_signal (struct exec_wait_info *e, stepd_step_rec_t *step)
@@ -2877,7 +2881,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		_exit(127);
 	}
 
-	if (exec_wait_signal_child (ei) < 0)
+	if (exec_wait_signal_child (ei) != SLURM_SUCCESS)
 		error ("run_script_as_user: Failed to wakeup %s", name);
 	_exec_wait_info_destroy (ei);
 
