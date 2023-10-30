@@ -55,8 +55,8 @@
 
 decl_static_data(usage_txt);
 
+static bool daemonize = true;
 static bool reconfig = false;
-static bool reconfig_in_place = false;
 static bool registered = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
@@ -81,12 +81,10 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
-		LONG_OPT_RECONFIG_IN_PLACE,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
-		{"reconfig-in-place", no_argument, 0, LONG_OPT_RECONFIG_IN_PLACE},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
@@ -94,9 +92,12 @@ static void _parse_args(int argc, char **argv)
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	opterr = 0;
-	while ((c = getopt_long(argc, argv, "f:hv",
+	while ((c = getopt_long(argc, argv, "Df:hv",
 				long_options, &option_index)) != -1) {
 		switch (c) {
+		case (int) 'D':
+			daemonize = 0;
+			break;
 		case (int) 'f':
 			xfree(conf_file);
 			conf_file = xstrdup(optarg);
@@ -112,9 +113,6 @@ static void _parse_args(int argc, char **argv)
 		case LONG_OPT_CONF_SERVER:
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
-			break;
-		case LONG_OPT_RECONFIG_IN_PLACE:
-			reconfig_in_place = true;
 			break;
 		default:
 			_usage();
@@ -281,7 +279,7 @@ static void _try_to_reconfig(void)
 		fd_set_noclose_on_exec(listen_fd);
 	}
 
-	if (reconfig_in_place) {
+	if (!daemonize) {
 		for (int fd = 3; fd < rlim.rlim_cur; fd++) {
 			if (fd != listen_fd)
 				(void) close(fd);
