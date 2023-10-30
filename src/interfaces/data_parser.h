@@ -293,6 +293,7 @@ typedef enum {
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN_DEPTH, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_CYCLE_PER_MIN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_SCHEDULE_EXIT, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_BF_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_BF_DEPTH_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_BF_DEPTH_MEAN_TRY, /* stats_info_response_msg_t-> computed value */
@@ -301,6 +302,8 @@ typedef enum {
 	DATA_PARSER_STATS_MSG_BF_ACTIVE, /* stats_info_response_msg_t-> computed bool */
 	DATA_PARSER_STATS_MSG_RPCS_BY_TYPE, /* stats_info_response_msg_t-> computed bool */
 	DATA_PARSER_STATS_MSG_RPCS_BY_USER, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_SCHEDULE_EXIT_FIELDS, /* schedule_exit_fields_t */
+	DATA_PARSER_SCHEDULE_EXIT_FIELDS_PTR, /* schedule_exit_fields_t* */
 	DATA_PARSER_CONTROLLER_PING, /* controller_ping_t */
 	DATA_PARSER_CONTROLLER_PING_PTR, /* controller_ping_t* */
 	DATA_PARSER_CONTROLLER_PING_ARRAY, /* controller_ping_t (NULL terminated array) */
