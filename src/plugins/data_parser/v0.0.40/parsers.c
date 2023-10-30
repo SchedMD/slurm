@@ -602,8 +602,6 @@ static int PARSE_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 	slurmdb_qos_rec_t *qos = NULL;
 	uint32_t *qos_id = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if ((rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
 			      __func__, false)))
 		return rc;
@@ -621,8 +619,6 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 	int rc;
 	slurmdb_qos_rec_t *qos = NULL;
 	char **qos_name = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
 			       __func__, true))) {
@@ -664,8 +660,6 @@ static int DUMP_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 {
 	char **name = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	(void) data_set_string(dst, *name);
 
 	return SLURM_SUCCESS;
@@ -677,13 +671,9 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 	uint32_t *qos_id = obj;
 	slurmdb_qos_rec_t *qos = NULL;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (!(*qos_id) || (*qos_id) == INFINITE) {
 		if (!is_complex_mode(args))
 			(void) data_set_string(dst, "");
-		else
-			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 		return SLURM_SUCCESS;
 	}
@@ -753,8 +743,6 @@ static int DUMP_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 		return SLURM_SUCCESS;
 
 	xassert(list_count(qos_list) >= 0);
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(list_count(args->qos_list) >= 0);
 
 	data_set_list(dst);
@@ -811,8 +799,6 @@ static int PARSE_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 		.index = -1,
 	};
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_list_for_each(src, _foreach_parse_qos_string_id, &argstruct) <
 	    0) {
 		FREE_NULL_LIST(argstruct.qos_list);
@@ -840,10 +826,8 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 {
 	slurmdb_qos_rec_t *qos = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 	xassert(args->qos_list);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(!qos->preempt_list);
 
 	data_set_list(dst);
@@ -949,7 +933,6 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	}
 
 	if (is_complex_mode(args)) {
-		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		return SLURM_SUCCESS;
 	}
 
@@ -965,7 +948,6 @@ static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
 
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args);
@@ -995,8 +977,6 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		.cluster = job->cluster, .id = job->associd
 	};
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->assoc_list);
 
 	if (!job->associd || (job->associd == NO_VAL) ||
@@ -1067,7 +1047,6 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	list_t *tres_list = NULL;
 
 	xassert(!*tres);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (!args->tres_list) {
 		/* should not happen */
@@ -1115,7 +1094,6 @@ static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	char **tres = obj;
 	list_t *tres_list = NULL;
 
-	xassert(args->magic == MAGIC_ARGS);
 	xassert(args->tres_list && (list_count(args->tres_list) >= 0));
 
 	if (!args->tres_list) {
@@ -1302,9 +1280,6 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	char *user;
 	slurmdb_job_rec_t *job = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	/* job user may be set but fail back to resolving the uid */
 
 	if (job->user && job->user[0]) {
@@ -1330,9 +1305,6 @@ static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
 				   data_t *dst, args_t *args)
 {
 	slurmdb_rollup_stats_t *rollup_stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	data_set_list(dst);
 
 	if (!rollup_stats) {
@@ -1417,9 +1389,6 @@ static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
 {
 	slurmdbd_msg_type_t *id = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_string(dst, slurmdbd_msg_type_2_str(*id, 1));
 
 	return SLURM_SUCCESS;
@@ -1430,8 +1399,6 @@ static int PARSE_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 					data_t *parent_path)
 {
 	int *id = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL)
 		return ESLURM_PLUGIN_INVALID;
@@ -1448,9 +1415,6 @@ static int DUMP_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 	int *id = obj;
 	char *s = select_plugin_id_to_string(*id);
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (s) {
 		data_set_string(dst, s);
 	} else
@@ -1466,9 +1430,6 @@ static int DUMP_FUNC(TASK_DISTRIBUTION)(const parser_t *const parser, void *obj,
 {
 	uint32_t *dist = obj;
 	char *d = slurm_step_layout_type_name(*dist);
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_string_own(dst, d);
 
@@ -1591,7 +1552,6 @@ static int DUMP_FUNC(WCKEY_TAG)(const parser_t *const parser, void *obj,
 
 	if (!*src) {
 		if (is_complex_mode(args)) {
-			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 			return SLURM_SUCCESS;
 		}
 	} else if (*src[0] == '*') {
@@ -1609,9 +1569,6 @@ static int DUMP_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 {
 	uid_t *uid = obj;
 	char *u;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if ((u = uid_to_string_or_null(*uid)))
 		data_set_string_own(dst, u);
@@ -1721,9 +1678,6 @@ static int DUMP_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	gid_t *gid = obj;
 	char *g;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((g = gid_to_string_or_null(*gid)))
 		data_set_string_own(dst, g);
 	else if (is_complex_mode(args))
@@ -1740,9 +1694,6 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 				 data_t *dst, args_t *args)
 {
 	uint32_t *state = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_string(dst, job_reason_string(*state));
 
@@ -1795,8 +1746,6 @@ static int PARSE_FUNC(STRING)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 	char **dst = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_get_type(str) == DATA_TYPE_NULL) {
 		xfree(*dst);
 	} else if (data_convert_type(str, DATA_TYPE_STRING) ==
@@ -1819,8 +1768,6 @@ static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 	char **src = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (*src)
 		data_set_string(data, *src);
 	else if (is_complex_mode(args))
@@ -1838,7 +1785,6 @@ static int PARSE_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 
 	xassert(sizeof(long double) * 8 == 128);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = (double) NO_VAL;
@@ -1858,9 +1804,6 @@ static int DUMP_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 {
 	long double *src = obj;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	/* see bug#9674 */
 	if (((uint32_t) *src == INFINITE) || ((uint32_t) *src == NO_VAL))
 		data_set_null(dst);
@@ -1877,7 +1820,6 @@ static int PARSE_FUNC(FLOAT64)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 
 	xassert(sizeof(double) * 8 == 64);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = 0;
@@ -1897,9 +1839,6 @@ static int DUMP_FUNC(FLOAT64)(const parser_t *const parser, void *obj,
 {
 	double *src = obj;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	(void) data_set_float(dst, *src);
 
 	return SLURM_SUCCESS;
@@ -1916,7 +1855,6 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 
 	xassert(sizeof(double) * 8 == 64);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL) {
 		*dst = (double) NO_VAL;
@@ -2008,9 +1946,6 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	double *src = obj;
 	data_t *set, *inf, *num;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (is_complex_mode(args)) {
 		if (isinf(*src))
 			data_set_string(dst, "Infinity");
@@ -2078,8 +2013,6 @@ static int PARSE_FUNC(INT64)(const parser_t *const parser, void *obj,
 	int64_t *dst = obj;
 	int rc = SLURM_SUCCESS;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = 0;
 	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
@@ -2097,9 +2030,6 @@ static int DUMP_FUNC(INT64)(const parser_t *const parser, void *obj,
 			    data_t *dst, args_t *args)
 {
 	int64_t *src = obj;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 
 	data_set_int(dst, *src);
 
@@ -2169,8 +2099,6 @@ static int PARSE_FUNC(UINT16)(const parser_t *const parser, void *obj,
 	uint16_t *dst = obj;
 	int rc = SLURM_SUCCESS;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = 0;
 	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
@@ -2189,9 +2117,6 @@ static int DUMP_FUNC(UINT16)(const parser_t *const parser, void *obj,
 {
 	uint16_t *src = obj;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	(void) data_set_int(dst, *src);
 
 	return SLURM_SUCCESS;
@@ -2204,8 +2129,6 @@ static int PARSE_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 	int rc;
 	uint16_t *dst = obj;
 	uint64_t num;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if ((rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args,
 					    parent_path)))
@@ -2225,9 +2148,6 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 {
 	uint16_t *src = obj;
 	data_t *set, *inf, *num;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE16)
@@ -2276,8 +2196,6 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 	bool set = false, inf = false;
 	uint64_t num = 0;
 	int rc = SLURM_SUCCESS;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL) {
 		*dst = NO_VAL64;
@@ -2381,9 +2299,6 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	data_set_dict(dst);
 	set = data_key_set(dst, "set");
 	inf = data_key_set(dst, "infinite");
@@ -2440,8 +2355,6 @@ static int PARSE_FUNC(UINT64)(const parser_t *const parser, void *obj,
 	uint64_t *dst = obj;
 	int rc = SLURM_SUCCESS;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = 0;
 	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
@@ -2460,9 +2373,6 @@ static int DUMP_FUNC(UINT64)(const parser_t *const parser, void *obj,
 {
 	uint64_t *src = obj;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	/* Never set values of INF or NO_VAL */
 	if ((*src == NO_VAL64) || (*src == INFINITE64))
 		data_set_null(dst);
@@ -2477,8 +2387,6 @@ static int PARSE_FUNC(UINT32)(const parser_t *const parser, void *obj,
 {
 	uint32_t *dst = obj;
 	int rc = SLURM_SUCCESS;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL) {
 		*dst = 0;
@@ -2503,9 +2411,6 @@ static int DUMP_FUNC(UINT32)(const parser_t *const parser, void *obj,
 {
 	uint32_t *src = obj;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
-
 	log_flag(DATA, "%s: uint32_t 0x%" PRIxPTR "=%u", __func__,
 		 (uintptr_t) src, *src);
 	(void) data_set_int(dst, *src);
@@ -2520,8 +2425,6 @@ static int PARSE_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 	int rc;
 	uint32_t *dst = obj;
 	uint64_t num;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if ((rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args,
 					    parent_path)))
@@ -2541,9 +2444,6 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 {
 	uint32_t *src = obj;
 	data_t *set, *inf, *num;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE)
@@ -2592,8 +2492,6 @@ static int DUMP_FUNC(STEP_NODES)(const parser_t *const parser, void *src,
 	slurmdb_step_rec_t *step = src;
 	hostlist_t *host_list;
 
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	/* ignore empty node list */
@@ -2617,9 +2515,6 @@ static int DUMP_FUNC(STEP_TRES_REQ_MAX)(const parser_t *const parser, void *src,
 					data_t *dst, args_t *args)
 {
 	slurmdb_step_rec_t *step = src;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	return _dump_tres_nct(parser, dst, step->stats.tres_usage_in_max,
@@ -2634,9 +2529,6 @@ static int DUMP_FUNC(STEP_TRES_REQ_MIN)(const parser_t *const parser, void *src,
 					data_t *dst, args_t *args)
 {
 	slurmdb_step_rec_t *step = src;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	return _dump_tres_nct(parser, dst, step->stats.tres_usage_in_min,
@@ -2651,9 +2543,6 @@ static int DUMP_FUNC(STEP_TRES_USAGE_MAX)(const parser_t *const parser,
 					  void *src, data_t *dst, args_t *args)
 {
 	slurmdb_step_rec_t *step = src;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	return _dump_tres_nct(parser, dst, step->stats.tres_usage_out_max,
@@ -2668,9 +2557,6 @@ static int DUMP_FUNC(STEP_TRES_USAGE_MIN)(const parser_t *const parser,
 					  void *src, data_t *dst, args_t *args)
 {
 	slurmdb_step_rec_t *step = src;
-
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
 	return _dump_tres_nct(parser, dst, step->stats.tres_usage_out_min,
@@ -2683,8 +2569,6 @@ static int PARSE_FUNC(BOOL)(const parser_t *const parser, void *obj,
 			    data_t *src, args_t *args, data_t *parent_path)
 {
 	uint8_t *b = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_convert_type(src, DATA_TYPE_BOOL) == DATA_TYPE_BOOL) {
 		*b = data_get_bool(src);
@@ -2699,9 +2583,6 @@ static int DUMP_FUNC(BOOL)(const parser_t *const parser, void *obj, data_t *dst,
 {
 	uint8_t *b = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_bool(dst, *b);
 	return SLURM_SUCCESS;
 }
@@ -2710,8 +2591,6 @@ static int PARSE_FUNC(BOOL16)(const parser_t *const parser, void *obj,
 			      data_t *src, args_t *args, data_t *parent_path)
 {
 	uint16_t *b = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_convert_type(src, DATA_TYPE_BOOL) == DATA_TYPE_BOOL) {
 		*b = data_get_bool(src);
@@ -2726,9 +2605,6 @@ static int DUMP_FUNC(BOOL16)(const parser_t *const parser, void *obj,
 {
 	uint16_t *b = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_bool(dst, *b);
 	return SLURM_SUCCESS;
 }
@@ -2738,8 +2614,6 @@ static int PARSE_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *parent_path)
 {
 	uint16_t *b = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		*b = NO_VAL16;
@@ -2759,9 +2633,6 @@ static int DUMP_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint16_t *b = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (is_complex_mode(args)) {
 		if (*b == NO_VAL16)
@@ -2786,9 +2657,6 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_MEAN)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (stats->schedule_cycle_counter)
 		data_set_int(dst, (stats->schedule_cycle_sum /
 				   stats->schedule_cycle_counter));
@@ -2806,9 +2674,6 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_MEAN_DEPTH)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (stats->schedule_cycle_counter)
 		data_set_int(dst, (stats->schedule_cycle_depth /
 				   stats->schedule_cycle_counter));
@@ -2825,9 +2690,6 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_PER_MIN)(const parser_t *const parser,
 					      args_t *args)
 {
 	stats_info_response_msg_t *stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if ((stats->req_time - stats->req_time_start) >= 60)
 		data_set_int(dst, (stats->schedule_cycle_counter /
@@ -2847,9 +2709,6 @@ static int DUMP_FUNC(STATS_MSG_BF_CYCLE_MEAN)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (stats->bf_cycle_counter)
 		data_set_int(dst,
 			     (stats->bf_cycle_sum / stats->bf_cycle_counter));
@@ -2866,9 +2725,6 @@ static int DUMP_FUNC(STATS_MSG_BF_DEPTH_MEAN)(const parser_t *const parser,
 					      args_t *args)
 {
 	stats_info_response_msg_t *stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (stats->bf_cycle_counter)
 		data_set_int(dst,
@@ -2887,9 +2743,6 @@ static int DUMP_FUNC(STATS_MSG_BF_DEPTH_MEAN_TRY)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (stats->bf_cycle_counter)
 		data_set_int(dst, (stats->bf_depth_try_sum /
 				   stats->bf_cycle_counter));
@@ -2906,9 +2759,6 @@ static int DUMP_FUNC(STATS_MSG_BF_QUEUE_LEN_MEAN)(const parser_t *const parser,
 						  args_t *args)
 {
 	stats_info_response_msg_t *stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (stats->bf_cycle_counter)
 		data_set_int(dst, (stats->bf_queue_len_sum /
@@ -2927,9 +2777,6 @@ static int DUMP_FUNC(STATS_MSG_BF_TABLE_SIZE_MEAN)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (stats->bf_cycle_counter)
 		data_set_int(dst, (stats->bf_table_size_sum /
 				   stats->bf_cycle_counter));
@@ -2946,9 +2793,6 @@ static int DUMP_FUNC(STATS_MSG_BF_ACTIVE)(const parser_t *const parser,
 {
 	stats_info_response_msg_t *stats = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_bool(dst, (stats->bf_active != 0));
 
 	return SLURM_SUCCESS;
@@ -2962,9 +2806,6 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 {
 	uint32_t *rpc_type_ave_time;
 	stats_info_response_msg_t *stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -3028,9 +2869,6 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 {
 	uint32_t *rpc_user_ave_time;
 	stats_info_response_msg_t *stats = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -3145,7 +2983,6 @@ static int PARSE_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
 		.parent_path = parent_path,
 	};
 
-	xassert(args->magic == MAGIC_ARGS);
 	xassert(!*dst);
 
 	xfree(*dst);
@@ -3183,9 +3020,6 @@ static int DUMP_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
 	char *save_ptr = NULL;
 	char *token = NULL;
 	char *str;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -3353,9 +3187,6 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_MEMORY)(const parser_t *const parser,
 	node_info_t *node = obj;
 	uint64_t alloc_memory = 0;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
 					    SELECT_NODEDATA_MEM_ALLOC,
 					    NODE_STATE_ALLOCATED,
@@ -3382,9 +3213,6 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_CPUS)(const parser_t *const parser,
 	node_info_t *node = obj;
 	uint16_t alloc_cpus = 0;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
 					    SELECT_NODEDATA_SUBCNT,
 					    NODE_STATE_ALLOCATED,
@@ -3410,9 +3238,6 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_IDLE_CPUS)(const parser_t *const parser,
 	node_info_t *node = obj;
 	uint16_t alloc_cpus = 0;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
 					    SELECT_NODEDATA_SUBCNT,
 					    NODE_STATE_ALLOCATED,
@@ -3437,9 +3262,6 @@ static int DUMP_FUNC(NODE_SELECT_TRES_USED)(const parser_t *const parser,
 	int rc;
 	node_info_t *node = obj;
 	char *node_alloc_tres = NULL;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
 					    SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
@@ -3469,9 +3291,6 @@ static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
 	node_info_t *node = obj;
 	double node_tres_weighted = 0;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
 					    SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
 					    NODE_STATE_ALLOCATED,
@@ -3494,9 +3313,6 @@ static int DUMP_FUNC(NODES)(const parser_t *const parser, void *obj,
 {
 	node_info_msg_t *nodes = obj;
 	int rc = SLURM_SUCCESS;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -3523,9 +3339,6 @@ static int DUMP_FUNC(LICENSES)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_SUCCESS;
 	license_info_msg_t *msg = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -3576,9 +3389,6 @@ static int DUMP_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 {
 	uint16_t *mem = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (!(*mem & CORE_SPEC_THREAD))
 		data_set_int(dst, *mem);
 	else
@@ -3623,9 +3433,6 @@ static int DUMP_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 {
 	uint16_t *mem = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if ((*mem & CORE_SPEC_THREAD))
 		data_set_int(dst, (*mem & ~CORE_SPEC_THREAD));
 	else
@@ -3640,9 +3447,6 @@ static int DUMP_FUNC(JOB_INFO_GRES_DETAIL)(const parser_t *const parser,
 					   void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(job);
 
 	data_set_list(dst);
@@ -3659,9 +3463,6 @@ static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 			   args_t *args)
 {
 	uint32_t *nice = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if ((*nice != NO_VAL) && (*nice != NICE_OFFSET))
 		data_set_int(dst, (*nice - NICE_OFFSET));
@@ -3723,9 +3524,6 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	uint64_t *mem = obj;
 	uint64_t cpu_mem = NO_VAL64;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (*mem & MEM_PER_CPU)
 		cpu_mem = *mem & ~MEM_PER_CPU;
 
@@ -3784,9 +3582,6 @@ static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	uint64_t *mem = obj;
 	uint64_t node_mem = NO_VAL64;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (!(*mem & MEM_PER_CPU))
 		node_mem = *mem;
 
@@ -3799,9 +3594,6 @@ static int DUMP_FUNC(ALLOCATED_CORES)(const parser_t *const parser, void *obj,
 				      data_t *dst, args_t *args)
 {
 	uint32_t *cores = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET))
 		data_set_int(dst, *cores);
@@ -3817,9 +3609,6 @@ static int DUMP_FUNC(ALLOCATED_CPUS)(const parser_t *const parser, void *obj,
 				     data_t *dst, args_t *args)
 {
 	uint32_t *cpus = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (slurm_conf.select_type_param & (CR_CPU))
 		data_set_int(dst, *cpus);
@@ -3908,8 +3697,6 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 	size_t array_size;
 	size_t sock_inx = 0, sock_reps = 0;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(j);
 	data_set_list(dst);
 
@@ -3957,9 +3744,6 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *msg = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_list(dst);
 
 	if (!msg || !msg->record_count) {
@@ -3983,9 +3767,6 @@ static int DUMP_FUNC(CONTROLLER_PING_MODE)(const parser_t *const parser,
 	int *mode_ptr = obj;
 	int mode = *mode_ptr;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (mode == 0)
 		data_set_string(dst, "primary");
 	else if ((mode == 1) && (slurm_conf.control_cnt == 2))
@@ -4005,9 +3786,6 @@ static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
 	bool *ping_ptr = obj;
 	int ping = *ping_ptr;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (ping)
 		data_set_string(dst, "UP");
 	else
@@ -4023,9 +3801,6 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_SUCCESS;
 	job_step_info_response_msg_t *msg = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -4072,8 +3847,6 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	int rc = SLURM_SUCCESS;
 	hostlist_t **host_list_ptr = obj;
 	hostlist_t *host_list = NULL;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL)
 		return SLURM_SUCCESS;
@@ -4130,9 +3903,6 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	hostlist_t **host_list_ptr = obj;
 	hostlist_t *host_list = *host_list_ptr;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_list(dst);
 
 	if (hostlist_count(host_list)) {
@@ -4158,7 +3928,6 @@ static int PARSE_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	char **host_list_str = obj;
 	hostlist_t *host_list = NULL;
 
-	xassert(args->magic == MAGIC_ARGS);
 
 	if ((rc = PARSE_FUNC(HOSTLIST)(parser, &host_list, src, args,
 				       parent_path)))
@@ -4178,9 +3947,6 @@ static int DUMP_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	char **host_list_ptr = obj;
 	char *host_list_str = *host_list_ptr;
 	hostlist_t *host_list;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (!host_list_str || !host_list_str[0]) {
 		/* empty list */
@@ -4209,9 +3975,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	uint32_t *freq_ptr = obj;
 	char buf[CPU_FREQ_FLAGS_BUF_SIZE];
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	cpu_freq_to_string(buf, sizeof(buf), *freq_ptr);
 	data_set_string(dst, buf);
 
@@ -4225,9 +3988,6 @@ static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
 {
 	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *msg = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -4252,9 +4012,6 @@ static int DUMP_FUNC(RESERVATION_INFO_MSG)(const parser_t *const parser,
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_list(dst);
 
 	for (int i = 0; !rc && (i < res->record_count); i++)
@@ -4272,9 +4029,6 @@ static int DUMP_FUNC(RESERVATION_INFO_CORE_SPEC)(const parser_t *const parser,
 {
 	int rc = SLURM_SUCCESS;
 	reserve_info_t *res = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
@@ -4325,9 +4079,6 @@ static int DUMP_FUNC(ERROR)(const parser_t *const parser, void *obj,
 {
 	uint32_t *rc = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	data_set_string(dst, slurm_strerror(*rc));
 
 	return SLURM_SUCCESS;
@@ -4339,8 +4090,6 @@ static int PARSE_FUNC(JOB_DESC_MSG_ARGV)(const parser_t *const parser,
 {
 	int rc;
 	job_desc_msg_t *job = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		xassert(!job->argv);
@@ -4361,9 +4110,6 @@ static int DUMP_FUNC(JOB_DESC_MSG_ARGV)(const parser_t *const parser, void *obj,
 {
 	job_desc_msg_t *job = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (!job || !job->argv)
 		return SLURM_SUCCESS;
 
@@ -4377,8 +4123,6 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 	int rc;
 	job_desc_msg_t *job = obj;
 	char *str = NULL;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		job->cpu_freq_min = NO_VAL;
@@ -4410,9 +4154,6 @@ static int DUMP_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 {
 	job_desc_msg_t *job = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (job->cpu_freq_min || job->cpu_freq_max || job->cpu_freq_gov) {
 		char *tmp = cpu_freq_to_cmdline(job->cpu_freq_min,
 						job->cpu_freq_max,
@@ -4432,8 +4173,6 @@ static int PARSE_FUNC(JOB_DESC_MSG_ENV)(const parser_t *const parser, void *obj,
 	int rc;
 	job_desc_msg_t *job = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		xassert(!job->environment);
 		xassert(!job->env_size);
@@ -4451,9 +4190,6 @@ static int DUMP_FUNC(JOB_DESC_MSG_ENV)(const parser_t *const parser, void *obj,
 {
 	job_desc_msg_t *job = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
 	if (!job || !job->environment)
 		return SLURM_SUCCESS;
 
@@ -4466,8 +4202,6 @@ static int PARSE_FUNC(JOB_DESC_MSG_SPANK_ENV)(const parser_t *const parser,
 {
 	int rc;
 	job_desc_msg_t *job = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		xassert(!job->spank_job_env);
@@ -4486,9 +4220,6 @@ static int DUMP_FUNC(JOB_DESC_MSG_SPANK_ENV)(const parser_t *const parser,
 					     args_t *args)
 {
 	job_desc_msg_t *job = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (!job || !job->spank_job_env)
 		return SLURM_SUCCESS;
@@ -4557,7 +4288,6 @@ static int PARSE_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 		.parent_path = parent_path,
 	};
 
-	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_LIST) {
 		fargs.array = xcalloc(data_get_list_length(src) + 1,
@@ -4600,9 +4330,6 @@ static int DUMP_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 {
 	char ***array_ptr = obj;
 	char **array;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
