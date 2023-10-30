@@ -132,57 +132,52 @@ static int _license_find_remote_rec(void *x, void *key)
 /* Given a license string, return a list of license_t records */
 static list_t *_build_license_list(char *licenses, bool *valid)
 {
-	char *tres_type = "license";
-	char *name = NULL, *type = NULL, *save_ptr = NULL;
-	int rc = true;
-	uint64_t cnt = 0;
-
-	licenses_t *license_entry = NULL;
-	list_t *lic_list = NULL;
+	int i;
+	char *end_num, *tmp_str, *token, *last;
+	licenses_t *license_entry;
+	list_t *lic_list;
 
 	*valid = true;
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
-	while (((rc = slurm_get_next_tres(&tres_type,
-					  licenses,
-					  &name, &type,
-					  &cnt, &save_ptr)) == SLURM_SUCCESS) &&
-	       save_ptr) {
-		xfree(type); // licenses don't have types
-		if (!name) {
-			error("%s doesn't have a name! %s",
-			      tres_type, licenses);
+	lic_list = list_create(license_free_rec);
+	tmp_str = xstrdup(licenses);
+	token = strtok_r(tmp_str, ",;", &last);
+	while (token && *valid) {
+		int32_t num = 1;
+		for (i = 0; token[i]; i++) {
+			if (isspace(token[i])) {
+				*valid = false;
+				break;
+			}
+
+			if (token[i] == ':') {
+				token[i++] = '\0';
+				num = (int32_t)strtol(&token[i], &end_num, 10);
+				if (*end_num != '\0')
+					 *valid = false;
+				break;
+			}
+		}
+		if (num < 0 || !(*valid)) {
 			*valid = false;
 			break;
 		}
 
-		if (cnt < 0) {
-			xfree(name);
-			*valid = false;
-			break;
-		}
-
-		if (!lic_list)
-			lic_list = list_create(license_free_rec);
-		else
-			license_entry = list_find_first(
-				lic_list, _license_find_rec, name);
-
+		license_entry = list_find_first(lic_list, _license_find_rec,
+						token);
 		if (license_entry) {
-			license_entry->total += cnt;
+			license_entry->total += num;
 		} else {
-			license_entry = xmalloc(sizeof(*license_entry));
-			license_entry->name = name;
-			name = NULL;
-			license_entry->total = cnt;
+			license_entry = xmalloc(sizeof(licenses_t));
+			license_entry->name = xstrdup(token);
+			license_entry->total = num;
 			list_push(lic_list, license_entry);
 		}
-		xfree(name);
+		token = strtok_r(NULL, ",;", &last);
 	}
-
-	if (rc != SLURM_SUCCESS)
-		*valid = false;
+	xfree(tmp_str);
 
 	if (*valid == false) {
 		FREE_NULL_LIST(lic_list);
