@@ -338,6 +338,11 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
 	static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 
+	if (!common_topo_route_tree()) {
+		return common_topo_split_hostlist_treewidth(
+			hl, sp_hl, count, tree_width);
+	}
+
 	slurm_mutex_lock(&init_lock);
 	if (switch_record_cnt == 0) {
 		if (running_in_slurmctld())
@@ -352,11 +357,6 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		}
 	}
 	slurm_mutex_unlock(&init_lock);
-
-	if (!common_topo_route_tree()) {
-		return common_topo_split_hostlist_treewidth(
-			hl, sp_hl, count, tree_width);
-	}
 
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
 	if (running_in_slurmctld())
