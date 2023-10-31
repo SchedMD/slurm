@@ -80,6 +80,8 @@ typedef struct slurm_topo_ops {
 	int (*topoinfo_get) (void **topoinfo_pptr);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
+	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
+			       char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
 } slurm_topo_ops_t;
@@ -96,6 +98,7 @@ static const char *syms[] = {
 	"topology_p_topology_free",
 	"topology_p_topology_get",
 	"topology_p_topology_pack",
+	"topology_p_topology_print",
 	"topology_p_topology_unpack",
 };
 
@@ -260,6 +263,17 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 
 	pack32(*(ops.plugin_id), buffer);
 	return (*(ops.topoinfo_pack))(topoinfo->data, buffer, protocol_version);
+}
+
+extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+				     char *nodes_list, char **out)
+{
+	xassert(plugin_inited);
+
+	if (topoinfo->plugin_id != active_topo_id)
+		return SLURM_ERROR;
+
+	return (*(ops.topoinfo_print))(topoinfo->data, nodes_list, out);
 }
 
 extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,

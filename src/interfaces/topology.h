@@ -172,6 +172,9 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer,
 				    uint16_t protocol_version);
 
+extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+				     char *nodes_list, char **out);
+
 /* unpack a system topology from a buffer
  * OUT topoinfo - the system topology
  * IN  buffer  - buffer with system topology read from current pointer loc

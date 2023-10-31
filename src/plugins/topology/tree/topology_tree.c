@@ -999,6 +999,13 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
+				     char **out)
+{
+	*out = NULL;
+	return SLURM_SUCCESS;
+}
+
 extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
