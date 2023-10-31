@@ -2363,6 +2363,7 @@ typedef struct topo_info {
 typedef struct topo_info_response_msg {
 	uint32_t record_count;		/* number of records */
 	topo_info_t *topo_array;	/* the switch topology records */
+	dynamic_plugin_data_t *topo_info;
 } topo_info_response_msg_t;
 
 typedef struct job_alloc_info_msg {

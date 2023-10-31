@@ -58,6 +58,7 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/topology.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/interfaces/switch.h"
@@ -5027,6 +5028,7 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 			}
 			xfree(msg->topo_array);
 		}
+		topology_g_topology_free(msg->topo_info);
 		xfree(msg);
 	}
 }
