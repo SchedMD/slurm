@@ -52,6 +52,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/topology.h"
+
 /*
  * slurm_load_topo - issue RPC to get slurm all switch topology configuration
  *	information
@@ -69,6 +71,8 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data     = NULL;
+
+	topology_g_init();
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					   working_cluster_rec) < 0)
