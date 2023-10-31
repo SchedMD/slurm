@@ -3055,14 +3055,27 @@ static void _get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 	gres_ns->gres_cnt_config = gres_config_cnt;
 }
 
+static int _find_gres_type(gres_node_state_t *gres_ns, uint32_t type_id)
+{
+	int type_index = -1;
+	for (int i = 0; i < gres_ns->type_cnt; i++) {
+		if(type_id == gres_ns->type_id[i]) {
+			type_index = i;
+			break;
+		}
+	}
+	return type_index;
+}
+
 static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 			    bool config_overrides, char **reason_down)
 {
 	int i, j;
 	uint64_t model_cnt;
+	int num_type_rem = 0;
 
 	if (gres_ns->type_cnt == 0)
-		return 0;
+		return SLURM_SUCCESS;
 
 	for (i = 0; i < gres_ns->type_cnt; i++) {
 		model_cnt = 0;
@@ -3092,10 +3105,62 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 					   model_cnt,
 					   gres_ns->type_cnt_avail[i]);
 			}
-			return -1;
+			return SLURM_ERROR;
 		}
 	}
-	return 0;
+
+	/*
+	 * Remove types with 0 available. This happens when updating the type
+	 * of a gres in slurm.conf during a reconfig
+	 */
+	for (int i = 0; i < gres_ns->type_cnt; i++) {
+		if (gres_ns->type_cnt_avail[i])
+			continue;
+		num_type_rem++;
+	}
+
+	if (num_type_rem) {
+		int tmp_cnt;
+		uint64_t *tmp_type_cnt_alloc, *tmp_type_cnt_avail;
+		uint32_t *tmp_type_id;
+		char **tmp_type_name;
+
+		tmp_cnt = gres_ns->type_cnt - num_type_rem;
+		tmp_type_id = xcalloc(tmp_cnt, sizeof(*tmp_type_id));
+		tmp_type_cnt_alloc =
+			xcalloc(tmp_cnt, sizeof(*tmp_type_cnt_alloc));
+		tmp_type_cnt_avail =
+			xcalloc(tmp_cnt, sizeof(*tmp_type_cnt_avail));
+		tmp_type_name =
+			xcalloc(tmp_cnt, sizeof(*tmp_type_name));
+
+		for (int j = 0, i = 0; i < gres_ns->type_cnt; i++) {
+			if (!gres_ns->type_cnt_avail[i]) {
+				xfree(gres_ns->type_name[i]);
+				continue;
+			}
+			tmp_type_cnt_alloc[j] =
+				gres_ns->type_cnt_alloc[i];
+			tmp_type_cnt_avail[j] =
+				gres_ns->type_cnt_avail[i];
+			tmp_type_id[j] = gres_ns->type_id[i];
+			tmp_type_name[j] = gres_ns->type_name[i];
+			j++;
+		}
+
+		xfree(gres_ns->type_cnt_alloc);
+		xfree(gres_ns->type_cnt_avail);
+		xfree(gres_ns->type_id);
+		xfree(gres_ns->type_name);
+
+		gres_ns->type_cnt_alloc = tmp_type_cnt_alloc;
+		gres_ns->type_cnt_avail = tmp_type_cnt_avail;
+		gres_ns->type_id = tmp_type_id;
+		gres_ns->type_name = tmp_type_name;
+		gres_ns->type_cnt -= num_type_rem;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static gres_node_state_t *_build_gres_node_state(void)
@@ -3391,7 +3456,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	gres_node_state_t *gres_ns;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	bool has_file, has_type, rebuild_topo = false;
+	bool has_file, has_type, first_time = false, rebuild_topo = false;
 	uint32_t type_id;
 	tot_from_slurmd_conf_t slurmd_conf_tot = {
 		.plugin_id = gres_ctx->plugin_id,
@@ -3448,6 +3513,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		} else {
 			gres_ns->gres_cnt_found = slurmd_conf_tot.gres_cnt;
 			updated_config = true;
+			first_time = true;
 		}
 	}
 	if (!updated_config && gres_ns->type_cnt) {
@@ -3463,6 +3529,37 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			break;
 		}
 	}
+
+	if (!first_time && gres_ns->type_cnt && gres_ns->topo_cnt) {
+		for (i = 0; i < gres_ns->topo_cnt; i++) {
+			int type_index = _find_gres_type(gres_ns,
+						gres_ns->topo_type_id[i]);
+			/*
+			 * On a reconfig if a type was removed from slurm.conf
+			 * its type_cnt_avail will be set to 0. If the type is
+			 * not found then the topo is from a previous invalid
+			 * registration.
+			 */
+			if ((type_index < 0) ||
+			    (gres_ns->type_cnt_avail[type_index] == 0 &&
+			     gres_ns->topo_gres_cnt_avail[i])) {
+				if (gres_ns->gres_cnt_alloc != 0) {
+					if (reason_down &&
+					    (*reason_down == NULL)) {
+						xstrfmtcat(*reason_down,
+							   "%s type changed and jobs are using them",
+							   gres_ctx->gres_type);
+					}
+					rc = EINVAL;
+					updated_config = false;
+				} else {
+					updated_config = true;
+				}
+			}
+
+		}
+	}
+
 	if (!updated_config)
 		return rc;
 	if ((slurmd_conf_tot.gres_cnt > gres_ns->gres_cnt_config) &&
@@ -3532,11 +3629,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		if (gres_ns->gres_bit_alloc)
 			bit_realloc(gres_ns->gres_bit_alloc, dev_cnt);
 		gres_ns->topo_cnt = slurmd_conf_tot.topo_cnt;
-	} else if (gres_id_shared(gres_ctx->config_flags) &&
-		   gres_ns->topo_cnt) {
+	} else if (gres_ns->topo_cnt) {
 		/*
 		 * Need to rebuild topology info to recover state after
-		 * slurmctld restart with running jobs.
+		 * slurmctld restart with running jobs. The number of gpus,
+		 * cores, and type might have changed in slurm.conf
 		 */
 		rebuild_topo = true;
 	}

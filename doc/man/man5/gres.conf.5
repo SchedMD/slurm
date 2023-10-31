@@ -374,8 +374,9 @@ the example below.
 An optional arbitrary string identifying the type of generic resource.
 For example, this might be used to identify a specific model of GPU, which users
 can then specify in a job request.
-A restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required for changes
-to the \fBType\fR option to take effect.
+For changes to the \fBType\fR option to take effect with a scontrol reconfig all
+affected \fBslurmd\fR daemons must be responding to the \fBslurmctld\fR.
+Otherwise a restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required.
 
 \fBNOTE\fR: If using autodetect functionality and defining the Type in your
 gres.conf file, the Type specified should match or be a substring of the value

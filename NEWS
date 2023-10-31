@@ -282,6 +282,9 @@ documents those changes that are of interest to users and administrators.
     fix how cpus are allocated to nodes.
  -- Allow nodes to reboot while node is drained or in a maintenance state.
  -- Allow scontrol reboot to use nodesets to filter nodes to reboot.
+ -- Fix how the topology of typed gres gets updated.
+ -- Changes to the Type option in gres.conf now can be applied with scontrol
+    reconfig.
 
 * Changes in Slurm 23.02.7
 ==========================
