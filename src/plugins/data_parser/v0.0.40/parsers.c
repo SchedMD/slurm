@@ -280,6 +280,27 @@ typedef struct {
 
 typedef struct {
 	uint32_t end_job_queue;
+	uint32_t bf_max_job_start;
+	uint32_t bf_max_job_test;
+	uint32_t bf_max_time;
+	uint32_t bf_node_space_size;
+	uint32_t state_changed;
+} bf_exit_fields_t;
+
+static const struct {
+	bf_exit_t field;
+	size_t offset;
+} bf_exit_map[] = {
+	{ BF_EXIT_END, offsetof(bf_exit_fields_t, end_job_queue) },
+	{ BF_EXIT_MAX_JOB_START, offsetof(bf_exit_fields_t, bf_max_job_start) },
+	{ BF_EXIT_MAX_JOB_TEST, offsetof(bf_exit_fields_t, bf_max_job_test) },
+	{ BF_EXIT_STATE_CHANGED, offsetof(bf_exit_fields_t, state_changed) },
+	{ BF_EXIT_TABLE_LIMIT, offsetof(bf_exit_fields_t, bf_node_space_size) },
+	{ BF_EXIT_TIMEOUT, offsetof(bf_exit_fields_t, bf_max_time) }
+};
+
+typedef struct {
+	uint32_t end_job_queue;
 	uint32_t default_queue_depth;
 	uint32_t max_job_start;
 	uint32_t max_rpc_cnt;
@@ -2724,6 +2745,41 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_PER_MIN)(const parser_t *const parser,
 		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(STATS_MSG_BF_EXIT)
+
+static void _set_bf_exit_field(stats_info_response_msg_t *stats,
+			       bf_exit_fields_t *dst, bf_exit_t field,
+			       int value)
+{
+	for (int i = 0; i < ARRAY_SIZE(bf_exit_map); i++) {
+		if (bf_exit_map[i].field == field) {
+			int *ptr = ((void *) dst) + bf_exit_map[i].offset;
+			*ptr = value;
+			return;
+		}
+	}
+
+	fatal_abort("unknown field %d", (int) field);
+}
+
+static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	stats_info_response_msg_t *stats = obj;
+	bf_exit_fields_t fields = {0};
+
+	/*
+	 * The size of the response bf_exit array (bf_exit_cnt) should always
+	 * be in sync with the number of fields in the bf_exit_map struct.
+	 */
+	xassert(stats->bf_exit_cnt == ARRAY_SIZE(bf_exit_map));
+
+	for (int i = 0; i < stats->bf_exit_cnt; i++)
+		_set_bf_exit_field(stats, &fields, i, stats->bf_exit[i]);
+
+	return DUMP(BF_EXIT_FIELDS, fields, dst, args);
 }
 
 PARSE_DISABLED(STATS_MSG_SCHEDULE_EXIT)
@@ -6529,6 +6585,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_BF_QUEUE_LEN_MEAN, "bf_table_size_mean", NULL),
 	add_parse(TIMESTAMP_NO_VAL, bf_when_last_cycle, "bf_when_last_cycle", NULL),
 	add_cparse(STATS_MSG_BF_ACTIVE, "bf_active", NULL),
+	add_cparse(STATS_MSG_BF_EXIT, "bf_exit", NULL),
 	add_skip(rpc_type_size),
 	add_cparse(STATS_MSG_RPCS_BY_TYPE, "rpcs_by_message_type", NULL),
 	add_skip(rpc_type_id), /* handled by STATS_MSG_RPCS_BY_TYPE */
@@ -6549,6 +6606,18 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 #undef add_parse
 #undef add_cparse
 #undef add_skip
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(bf_exit_fields_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(BF_EXIT_FIELDS)[] = {
+	add_parse(UINT32, end_job_queue, "end_job_queue", NULL),
+	add_parse(UINT32, bf_max_job_start, "bf_max_job_start", NULL),
+	add_parse(UINT32, bf_max_job_test, "bf_max_job_test", NULL),
+	add_parse(UINT32, bf_max_time, "bf_max_time", NULL),
+	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", NULL),
+	add_parse(UINT32, state_changed, "state_changed", NULL),
+};
+#undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(schedule_exit_fields_t, mtype, false, field, 0, path, desc)
@@ -8643,6 +8712,7 @@ static const parser_t parsers[] = {
 	addpc(STATS_MSG_BF_QUEUE_LEN_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_BF_TABLE_SIZE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_BF_ACTIVE, stats_info_response_msg_t, NEED_NONE, BOOL, NULL),
+	addpcp(STATS_MSG_BF_EXIT, BF_EXIT_FIELDS, stats_info_response_msg_t, NEED_NONE, NULL),
 	addpcs(STATS_MSG_RPCS_BY_TYPE, stats_info_response_msg_t, NEED_NONE, ARRAY, NULL),
 	addpcs(STATS_MSG_RPCS_BY_USER, stats_info_response_msg_t, NEED_NONE, ARRAY, NULL),
 	addpc(NODE_SELECT_ALLOC_MEMORY, node_info_t, NEED_NONE, INT64, NULL),
@@ -8788,6 +8858,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_ACCOUNTS_ADD_COND_RESP, openapi_resp_accounts_add_cond_t, NULL, NULL),
 	addpap(OPENAPI_USERS_ADD_COND_RESP, openapi_resp_users_add_cond_t, NULL, NULL),
 	addpap(SCHEDULE_EXIT_FIELDS, schedule_exit_fields_t, NULL, NULL),
+	addpap(BF_EXIT_FIELDS, bf_exit_fields_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
