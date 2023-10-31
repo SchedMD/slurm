@@ -1376,26 +1376,6 @@ slurm_print_topo_info_msg(slurm_t self, FILE *out, HV *topo_info_msg, char *node
 	CLEANUP:
 		xfree(ti_msg.topo_array);
 
-void
-slurm_print_topo_record(slurm_t self, FILE *out, HV *topo_info, int one_liner=0)
-	PREINIT:
-		topo_info_t ti;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if(hv_to_topo_info(topo_info, &ti) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ti, one_liner
-
-
 ######################################################################
 #	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
 ######################################################################

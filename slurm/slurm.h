@@ -4482,19 +4482,6 @@ extern void slurm_print_topo_info_msg(FILE *out,
 				      topo_info_response_msg_t *topo_info_msg_ptr,
 				      char *node_list, int one_liner);
 
-/*
- * slurm_print_topo_record - output information about a specific Slurm topology
- *	record based upon message as loaded using slurm_load_topo
- * IN out - file to write to
- * IN topo_ptr - an individual switch information record pointer
- * IN one_liner - print as a single line if not zero
- * RET out - char * containing formatted output (must be freed after call)
- *	   NULL is returned on failure.
- */
-extern void slurm_print_topo_record(FILE *out,
-				    topo_info_t *topo_ptr,
-				    int one_liner);
-
 /*****************************************************************************\
  *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/

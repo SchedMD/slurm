@@ -120,35 +120,3 @@ extern void slurm_print_topo_info_msg(
 	fprintf(out, "%s", out_str);
 	xfree(out_str);
 }
-
-/*
- * slurm_print_topo_record - output information about a specific Slurm topology
- *	record based upon message as loaded using slurm_load_topo
- * IN out - file to write to
- * IN topo_ptr - an individual switch information record pointer
- * IN one_liner - print as a single line if not zero
- * RET out - char * containing formatted output (must be freed after call)
- *	   NULL is returned on failure.
- */
-extern void slurm_print_topo_record(FILE * out, topo_info_t *topo_ptr,
-				    int one_liner)
-{
-	char *env, *line = NULL, *pos = NULL;
-
-	/****** Line 1 ******/
-	xstrfmtcatat(line, &pos, "SwitchName=%s Level=%u LinkSpeed=%u",
-		   topo_ptr->name, topo_ptr->level, topo_ptr->link_speed);
-
-	if (topo_ptr->nodes)
-		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
-
-	if (topo_ptr->switches)
-		xstrfmtcatat(line, &pos, " Switches=%s", topo_ptr->switches);
-
-	if ((env = getenv("SLURM_TOPO_LEN")))
-		fprintf(out, "%.*s\n", atoi(env), line);
-	else
-		fprintf(out, "%s\n", line);
-
-	xfree(line);
-}
