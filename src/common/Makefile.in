@@ -160,15 +160,15 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo conmgr.lo core_array.lo cpu_frequency.lo cron.lo \
-	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
-	forward.lo global_defaults.lo group_cache.lo half_duplex.lo \
-	hostlist.lo http.lo identity.lo id_util.lo io_hdr.lo \
-	job_features.lo job_options.lo job_resources.lo list.lo log.lo \
-	net.lo node_conf.lo oci_config.lo openapi.lo optz.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
-	plugrack.lo print_fields.lo proc_args.lo read_config.lo \
-	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
-	setproctitle.lo slurm_errno.lo slurm_opt.lo \
+	daemonize.lo data.lo eio.lo env.lo extra_constraints.lo fd.lo \
+	fetch_config.lo forward.lo global_defaults.lo group_cache.lo \
+	half_duplex.lo hostlist.lo http.lo identity.lo id_util.lo \
+	io_hdr.lo job_features.lo job_options.lo job_resources.lo \
+	list.lo log.lo net.lo node_conf.lo oci_config.lo openapi.lo \
+	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
+	plugin.lo plugrack.lo print_fields.lo proc_args.lo \
+	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
+	sack_api.lo setproctitle.lo slurm_errno.lo slurm_opt.lo \
 	slurm_persist_conn.lo slurm_protocol_api.lo \
 	slurm_protocol_defs.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket.lo \
@@ -212,14 +212,15 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/core_array.Plo ./$(DEPDIR)/cpu_frequency.Plo \
 	./$(DEPDIR)/cron.Plo ./$(DEPDIR)/daemonize.Plo \
 	./$(DEPDIR)/data.Plo ./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
-	./$(DEPDIR)/fd.Plo ./$(DEPDIR)/fetch_config.Plo \
-	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
-	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
-	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
-	./$(DEPDIR)/id_util.Plo ./$(DEPDIR)/identity.Plo \
-	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_features.Plo \
-	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
+	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
+	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/group_cache.Plo \
+	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
+	./$(DEPDIR)/http.Plo ./$(DEPDIR)/id_util.Plo \
+	./$(DEPDIR)/identity.Plo ./$(DEPDIR)/io_hdr.Plo \
+	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
+	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/oci_config.Plo \
 	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
 	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
@@ -585,6 +586,8 @@ libcommon_la_SOURCES = \
 	eio.h					\
 	env.c					\
 	env.h					\
+	extra_constraints.c			\
+	extra_constraints.h			\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
@@ -816,6 +819,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extra_constraints.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fetch_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@ # am--include-marker
@@ -1026,6 +1030,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
+	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
 	-rm -f ./$(DEPDIR)/forward.Plo
@@ -1156,6 +1161,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
+	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
 	-rm -f ./$(DEPDIR)/forward.Plo

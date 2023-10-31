@@ -32,6 +32,8 @@ libcommon_la_SOURCES =				\
 	eio.h					\
 	env.c					\
 	env.h					\
+	extra_constraints.c			\
+	extra_constraints.h			\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
