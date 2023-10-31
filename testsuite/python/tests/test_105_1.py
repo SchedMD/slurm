@@ -83,7 +83,7 @@ def test_gpus_per_cpu(init_gpu_vars):
 
     assert job_dict['CpusPerTres'] == f"gres/gpu:{cpus_per_gpu}"
     assert job_dict['MemPerTres'] == f"gres/gpu:{memory_per_gpu}"
-    assert job_dict['TresBind'] == f"gpu:{gpu_bind}"
+    assert job_dict['TresBind'] == f"gres/gpu:{gpu_bind}"
     assert job_dict['TresFreq'] == f"gpu:{gpu_freq}"
     assert job_dict['TresPerJob'] == f"gres/gpu:{gpu_count}"
     assert job_dict['TresPerNode'] == f"gres/gpu:{gpus_per_node}"

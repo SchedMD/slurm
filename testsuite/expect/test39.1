@@ -104,7 +104,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "TresBind=gpu:$gpu_bind" {
+	-re "TresBind=gres/gpu:$gpu_bind" {
 		incr match
 		exp_continue
 	}

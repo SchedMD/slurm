@@ -87,7 +87,7 @@ set timeout $max_job_delay
 set output [run_command_output -fail "$salloc --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu --nodes=$nb_nodes --ntasks=$ntasks -t1 $file_in"]
 subtest {[regexp -all "CpusPerTres=gres/gpu:$cpus_per_gpu" $output] == 1} "Verify CpusPerTres"
 subtest {[regexp -all "MemPerTres=gres/gpu:$mem_per_gpu" $output] == 1} "Verify MemPerTres"
-subtest {[regexp -all "TresBind=gpu:$gpu_bind" $output] == 1} "Verify TresBind"
+subtest {[regexp -all "TresBind=gres/gpu:$gpu_bind" $output] == 1} "Verify TresBind"
 subtest {[regexp -all "TresFreq=gpu:$gpu_freq" $output] == 1} "Verify TresFreq"
 subtest {[regexp -all "TresPerJob=gres/gpu:$tot_gpus" $output] == 1} "Verify TresPerJob"
 subtest {[regexp -all "TresPerNode=gres/gpu:$gpus_per_node" $output] == 1} "Verify TresPerNode"
