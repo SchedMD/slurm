@@ -113,6 +113,14 @@ typedef struct slurm_conf_switches {
 	char *switches;		/* names if child switches directly
 				 * connected to this switch, if any */
 } slurm_conf_switches_t;
+
+typedef topo_info_t topoinfo_switch_t;
+
+typedef struct topoinfo_tree {
+	uint32_t record_count;		/* number of records */
+	topoinfo_switch_t *topo_array;	/* the switch topology records */
+} topoinfo_tree_t;
+
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
 static void _check_better_path(int i, int j ,int k);
@@ -985,17 +993,63 @@ static void _check_better_path(int i, int j ,int k)
 
 extern int topology_p_topology_free(void *topoinfo_ptr)
 {
+	int i = 0;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+				xfree(topoinfo->topo_array[i].switches);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topology_get(void **topoinfo_pptr)
 {
+	int i = 0;
+	topoinfo_tree_t *topoinfo_ptr =
+		xmalloc(sizeof(topoinfo_tree_t));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	topoinfo_ptr->record_count = switch_record_cnt;
+	topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
+					   sizeof(topoinfo_switch_t));
+
+	for (i = 0; i < topoinfo_ptr->record_count; i++) {
+		topoinfo_ptr->topo_array[i].level =
+			switch_record_table[i].level;
+		topoinfo_ptr->topo_array[i].link_speed =
+			switch_record_table[i].link_speed;
+		topoinfo_ptr->topo_array[i].name =
+			xstrdup(switch_record_table[i].name);
+		topoinfo_ptr->topo_array[i].nodes =
+			xstrdup(switch_record_table[i].nodes);
+		topoinfo_ptr->topo_array[i].switches =
+			xstrdup(switch_record_table[i].switches);
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
+	int i;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+
+	pack32(topoinfo->record_count, buffer);
+	for (i = 0; i < topoinfo->record_count; i++) {
+		pack16(topoinfo->topo_array[i].level, buffer);
+		pack32(topoinfo->topo_array[i].link_speed, buffer);
+		packstr(topoinfo->topo_array[i].name, buffer);
+		packstr(topoinfo->topo_array[i].nodes, buffer);
+		packstr(topoinfo->topo_array[i].switches, buffer);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -1009,5 +1063,26 @@ extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
 extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
+	int i = 0;
+	topoinfo_tree_t *topoinfo_ptr =
+		xmalloc(sizeof(topoinfo_tree_t));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	safe_unpack32(&topoinfo_ptr->record_count, buffer);
+	safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
+		     sizeof(topoinfo_switch_t));
+	for (i = 0; i < topoinfo_ptr->record_count; i++) {
+		safe_unpack16(&topoinfo_ptr->topo_array[i].level, buffer);
+		safe_unpack32(&topoinfo_ptr->topo_array[i].link_speed, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].name, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].switches, buffer);
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topology_free(topoinfo_ptr);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
 }
