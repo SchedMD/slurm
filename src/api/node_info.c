@@ -201,6 +201,9 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ALLOCATED, &alloc_cpus);
 	xstrfmtcat(out, "CPUAlloc=%u CPUEfctv=%u CPUTot=%u ",
 		   alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
 
