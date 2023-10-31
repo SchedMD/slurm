@@ -241,8 +241,6 @@ Each node will have the "REBOOT" flag added to its node state.
 After a node reboots and the slurmd daemon starts up again, the
 HealthCheckProgram will run once. Then, the slurmd daemon will register
 itself with the slurmctld daemon and the "REBOOT" flag will be cleared.
-The node's "DRAIN" state flag will be cleared if the reboot was "ASAP",
-nextstate=resume or down.
 The "ASAP" option adds the "DRAIN" flag to each node's state, preventing
 additional jobs from running on the node so it can be
 rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
