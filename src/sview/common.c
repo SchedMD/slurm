@@ -74,18 +74,12 @@ static int _find_node_inx (char *name)
 
 static void _display_topology(void)
 {
-	int i, one_liner = 1;
-
 	if (TOPO_DEBUG) {
 		g_print("_display_topology,  record_count = %d\n",
 			g_topo_info_msg_ptr->record_count);
 	}
 
-	for (i = 0; i < g_topo_info_msg_ptr->record_count; i++) {
-		slurm_print_topo_record(stdout,
-					&g_topo_info_msg_ptr->topo_array[i],
-					one_liner);
-	}
+	slurm_print_topo_info_msg(stdout, g_topo_info_msg_ptr, NULL, 0);
 }
 
 static void _foreach_popup_all(GtkTreeModel  *model,
