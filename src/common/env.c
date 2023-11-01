@@ -2306,6 +2306,7 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    opt->gpus);
 	}
 	if (opt->tres_bind && (pos = xstrstr(opt->tres_bind, "gres/gpu:"))) {
+		pos += 9; /* Don't include "gres/gpu:" */
 		end = strchr(pos, '+');
 		if (end)
 			*end = '\0';

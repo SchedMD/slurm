@@ -9750,10 +9750,12 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str)
 {
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_GPU) {
-		xstrfmtcat(tres_bind_str, "+gres/gpu:closest");
+		xstrfmtcat(tres_bind_str, "%sgres/gpu:closest",
+			   tres_bind_str ? "+" : "");
 	}
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_NIC) {
-		xstrfmtcat(tres_bind_str, "+gres/nic:closest");
+		xstrfmtcat(tres_bind_str, "%sgres/nic:closest",
+			   tres_bind_str ? "+" : "");
 	}
 }
 

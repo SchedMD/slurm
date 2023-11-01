@@ -1947,9 +1947,9 @@ static int arg_set_gpu_bind(slurm_opt_t *opt, const char *arg)
 	xfree(opt->gpu_bind);
 	xfree(opt->tres_bind);
 	opt->gpu_bind = xstrdup(arg);
-	xstrfmtcat(opt->tres_bind, "+gres/gpu:%s", opt->gpu_bind);
+	xstrfmtcat(opt->tres_bind, "gres/gpu:%s", opt->gpu_bind);
 	if (tres_bind_verify_cmdline(opt->tres_bind)) {
-		error("Invalid --gpu-bind argument: %s", opt->tres_bind);
+		error("Invalid --gpu-bind argument: %s", opt->gpu_bind);
 		return SLURM_ERROR;
 	}
 
@@ -1967,7 +1967,7 @@ static int arg_set_data_gpu_bind(slurm_opt_t *opt, const data_t *arg,
 		xfree(opt->gpu_bind);
 		xfree(opt->tres_bind);
 		opt->gpu_bind = xstrdup(str);
-		xstrfmtcat(opt->tres_bind, "+gres/gpu:%s", opt->gpu_bind);
+		xstrfmtcat(opt->tres_bind, "gres/gpu:%s", opt->gpu_bind);
 		if (tres_bind_verify_cmdline(opt->tres_bind)) {
 			rc = SLURM_ERROR;
 			ADD_DATA_ERROR("Invalid --gpu-bind argument", rc);

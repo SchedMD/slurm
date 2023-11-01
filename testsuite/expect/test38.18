@@ -109,8 +109,8 @@ proc test_gpu_bind {} {
 	]
 
 	set submission_errors {
-		"error: Invalid --gpu-bind argument: gpu:blah"
-		"error: Invalid --gpu-bind argument: gpu:blah"
+		"error: Invalid --gpu-bind argument: blah"
+		"error: Invalid --gpu-bind argument: blah"
 	}
 
 	foreach cmd {sbatch srun salloc} {
@@ -137,11 +137,11 @@ proc test_gpu_bind {} {
 	]
 
 	set regexes [list \
-		"^JobId=.*TresBind=gpu:closest.*JobId=.*TresBind=gpu:closest" \
-		"^JobId=.*TresBind=gpu:closest.*JobId=.*TresBind=gpu:map_gpu:1" \
-		"^JobId=.*TresBind=gpu:map_gpu:1.*JobId=.*TresBind=gpu:closest" \
-		"^JobId=.*TresBind=gpu:closest.*JobId=" \
-		"^JobId=.*JobId=.*TresBind=gpu:closest" \
+		"^JobId=.*TresBind=gres/gpu:closest.*JobId=.*TresBind=gres/gpu:closest" \
+		"^JobId=.*TresBind=gres/gpu:closest.*JobId=.*TresBind=gres/gpu:map_gpu:1" \
+		"^JobId=.*TresBind=gres/gpu:map_gpu:1.*JobId=.*TresBind=gres/gpu:closest" \
+		"^JobId=.*TresBind=gres/gpu:closest.*JobId=" \
+		"^JobId=.*JobId=.*TresBind=gres/gpu:closest" \
 	]
 
 	foreach cmd {sbatch srun salloc} {
