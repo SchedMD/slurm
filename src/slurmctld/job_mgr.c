@@ -7727,6 +7727,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if ((error_code = build_feature_list(job_ptr, true, false)))
 		goto cleanup_fail;
 
+	error_code = extra_constraints_parse(job_ptr->extra,
+					     &job_ptr->extra_constraints);
+	if (error_code != SLURM_SUCCESS)
+		goto cleanup_fail;
+
 	/*
 	 * NOTE: If this job is being used to expand another job, this job's
 	 * gres_list has already been filled in with a copy of gres_list job
@@ -13115,10 +13120,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->extra) {
-		xfree(job_ptr->extra);
-		job_ptr->extra = xstrdup(job_desc->extra);
-		info("%s: setting extra to %s for %pJ",
-		     __func__, job_ptr->extra, job_ptr);
+		elem_t *head = NULL;
+
+		error_code = extra_constraints_parse(job_desc->extra, &head);
+		if (error_code != SLURM_SUCCESS) {
+			error("%s: Invalid extra constraints", __func__);
+		} else {
+			xfree(job_ptr->extra);
+			job_ptr->extra = xstrdup(job_desc->extra);
+			FREE_NULL_EXTRA_CONSTRAINTS(job_ptr->extra_constraints);
+			job_ptr->extra_constraints = head;
+			info("%s: setting extra to %s for %pJ",
+			     __func__, job_ptr->extra, job_ptr);
+		}
 	}
 
 	if (error_code != SLURM_SUCCESS)

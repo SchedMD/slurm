@@ -3371,6 +3371,8 @@ static void _restore_job_accounting(void)
 			 job_ptr->details->prefer)
 			job_ptr->details->feature_list_use =
 				job_ptr->details->prefer_list;
+		(void) extra_constraints_parse(job_ptr->extra,
+					       &job_ptr->extra_constraints);
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			job_array_start(job_ptr);
