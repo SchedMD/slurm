@@ -978,7 +978,6 @@ extern int reconfigure_slurm(void)
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	static bool in_progress = false;
 	int rc;
 	DEF_TIMERS;
 
@@ -987,8 +986,8 @@ extern int reconfigure_slurm(void)
 	/* Reconfigure RPCs must be serially served. */
 	slurm_mutex_lock(&reconfig_mutex);
 
-	if (in_progress || slurmctld_config.shutdown_time) {
-		debug5("%s: already in progress: skipping", __func__);
+	if (slurmctld_config.shutdown_time) {
+		debug5("%s: shutdown in progress: skipping", __func__);
 		return EINPROGRESS;
 	}
 
@@ -999,7 +998,6 @@ extern int reconfigure_slurm(void)
 	 */
 	sched_debug("begin reconfiguration");
 	lock_slurmctld(config_write_lock);
-	in_progress = true;
 	rc = read_slurm_conf(1, true);
 	if (rc != SLURM_SUCCESS)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
@@ -1013,7 +1011,6 @@ extern int reconfigure_slurm(void)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		node_features_updated = true;
 	}
-	in_progress = false;
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
