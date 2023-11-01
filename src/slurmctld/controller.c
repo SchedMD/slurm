@@ -242,6 +242,7 @@ static int          _controller_index(void);
 static void         _become_slurm_user(void);
 static void         _create_clustername_file(void);
 static void         _default_sigaction(int sig);
+static void _flush_rpcs(void);
 static void         _get_fed_updates();
 static void         _init_config(void);
 static void         _init_pidfile(void);
@@ -1841,6 +1842,31 @@ static void _queue_reboot_msg(void)
 	}
 }
 
+static void _flush_rpcs(void)
+{
+	struct timespec ts = {0, 0};
+	struct timeval now;
+	int exp_thread_cnt = slurmctld_config.resume_backup ? 1 : 0;
+
+	/* wait for RPCs to complete */
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + CONTROL_TIMEOUT;
+	ts.tv_nsec = now.tv_usec * 1000;
+
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+	while (slurmctld_config.server_thread_count > exp_thread_cnt) {
+		slurm_cond_timedwait(&slurmctld_config.thread_count_cond,
+				     &slurmctld_config.thread_count_lock, &ts);
+	}
+
+	if (slurmctld_config.server_thread_count > exp_thread_cnt) {
+		info("shutdown server_thread_count=%d",
+		     slurmctld_config.server_thread_count);
+	}
+
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+}
+
 /*
  * _slurmctld_background - process slurmctld background activities
  *	purge defunct job records, save state, schedule jobs, and
@@ -1964,29 +1990,7 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_config.shutdown_time) {
-			struct timespec ts = {0, 0};
-			struct timeval now;
-			int exp_thread_cnt =
-				slurmctld_config.resume_backup ? 1 : 0;
-			/* wait for RPC's to complete */
-			gettimeofday(&now, NULL);
-			ts.tv_sec = now.tv_sec + CONTROL_TIMEOUT;
-			ts.tv_nsec = now.tv_usec * 1000;
-
-			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-			while (slurmctld_config.server_thread_count >
-			       exp_thread_cnt) {
-				slurm_cond_timedwait(
-					&slurmctld_config.thread_count_cond,
-					&slurmctld_config.thread_count_lock,
-					&ts);
-			}
-			if (slurmctld_config.server_thread_count >
-			    exp_thread_cnt) {
-				info("shutdown server_thread_count=%d",
-				     slurmctld_config.server_thread_count);
-			}
-			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+			_flush_rpcs();
 
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
