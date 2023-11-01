@@ -132,7 +132,6 @@
 				 * 1 = recover saved job state,
 				 *     node DOWN/DRAIN state & reason information
 				 * 2 = recover state saved from last shutdown */
-#define DEFAULT_SETWD     0
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -205,7 +204,7 @@ static int	bu_thread_cnt = 0;
 static pthread_cond_t bu_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t bu_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool daemonize = true;
-static int	setwd = DEFAULT_SETWD;
+static bool setwd = false;
 static int	debug_level = 0;
 static char *	debug_logfile = NULL;
 static bool	dump_core = false;
@@ -2756,7 +2755,7 @@ static void _parse_commandline(int argc, char **argv)
 			recover = 2;
 			break;
 		case 's':
-			setwd = 1;
+			setwd = true;
 			break;
 		case 'v':
 			debug_level++;
