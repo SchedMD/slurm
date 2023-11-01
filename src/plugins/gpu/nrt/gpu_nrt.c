@@ -299,5 +299,106 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
+/*
+ * Currently there is the ability to read memory usage of a device in the
+ * sysfs interface but it is not PID based and requires adding different
+ * memory fields for each core for a total value on the device.
+ */
+
+/*
+ *#define NEURON_SYSFS_CORE_CNT_PREFIX \
+ *	NEURON_SYSFS_PREFIX "neuron%d/core_count"
+ *
+ *#define NEURON_SYSFS_DEVICE_MEM_PREFIX \
+ *	NEURON_SYSFS_PREFIX
+ *	"neuron%d/neuron_core%d/stats/memory_usage/device_mem/present"
+ *
+ *static int gpumem_pos = -1; // Init this in init()
+ *
+ *static int _get_core_count(int dev_inx)
+ *{
+ *	FILE *fp = NULL;
+ *	char *sysfs_file = NULL;
+ *	int dev_core_cnt = 0;
+ *
+ *	sysfs_file = xstrdup_printf(NEURON_SYSFS_CORE_CNT_PREFIX, dev_inx);
+ *	fp = fopen(sysfs_file, "r");
+ *	if (!fp) {
+ *		debug("Could not access core count in Neuron sysfs interface");
+ *		xfree(sysfs_file);
+ *		return -1;
+ *	}
+ *
+ *	if (!fscanf(fp, "%d", dev_core_cnt))
+ *		debug("Could not read Neuron core count");
+ *
+ *	xfree(sysfs_file);
+ *	fclose(fp);
+ *	return dev_core_cnt;
+ *}
+ *
+ *static void _read_mem(int dev_inx, int core_cnt, pid_t pid, acct_gather_data_t *data)
+ *{
+ *	FILE *fp = NULL;
+ *	char *sysfs_file = NULL;
+ *	int dev_mem = 0;
+ *
+ *	for (int i = 0; i < core_cnt; i++) {
+ *
+ *		sysfs_file = xstrdup_printf(NEURON_SYSFS_DEVICE_MEM_PREFIX,
+ *					    dev_inx, i);
+ *		fp = fopen(sysfs_file, "r");
+ *		if (!fp) {
+ *			debug("Could not access device memory in Neuron sysfs interface");
+ *			xfree(sysfs_file);
+ *			return;
+ *		}
+ *
+ *		if (!fscanf(fp, "%d", dev_mem))
+ *			debug("Could not read Neuron device memory for core %d",
+ *			      i);
+ *
+ *		data[gpumem_pos].size_read += dev_mem;
+ *
+ *		xfree(sysfs_file);
+ *		fclose(fp);
+ *	}
+ *}
+ *
+ *extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
+ *{
+ *
+ *	 // TODO: Determine how to incorporate getting acct_gather_data_t for
+ *	 // specific pids. As is this code just adds all memory being used across
+ *	 // all cores on all devices
+ *
+ *	unsigned int device_count = 0;
+ *	int core_cnt = 0;
+ *	bool track_gpumem;
+ *
+ *	track_gpumem = (gpumem_pos != -1);
+ *
+ *	if (!track_gpumem) {
+ *		debug2("%s: We are not tracking TRES gpumem", __func__);
+ *		return SLURM_SUCCESS;
+ *	}
+ *
+ *	_count_devices(&device_count);
+ *
+ *	data[gpumem_pos].size_read = 0;
+ *
+ *	for (int i = 0; i < device_count; i++) {
+ *
+ *		if (track_gpumem) {
+ *			core_cnt = _get_core_count(i);
+ *			_read_mem(i, core_cnt, pid, data)
+ *		}
+ *
+ *		log_flag(JAG, "pid %d has MemMB=%lu",
+ *			 pid,
+ *			 data[gpumem_pos].size_read / 1048576);
+ *	}
+ *}
+ */
 	return SLURM_SUCCESS;
 }
