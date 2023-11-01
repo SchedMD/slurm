@@ -127,11 +127,6 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define DEFAULT_RECOVER   1	/* Default state recovery on restart
-				 * 0 = use no saved state information
-				 * 1 = recover saved job state,
-				 *     node DOWN/DRAIN state & reason information
-				 * 2 = recover state saved from last shutdown */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -212,7 +207,13 @@ static int      job_sched_cnt = 0;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
-static int	recover   = DEFAULT_RECOVER;
+/*
+ * 0 = use no saved state information
+ * 1 = recover saved job state,
+ *     node DOWN/DRAIN state & reason information
+ * 2 = recover state saved from last shutdown
+ */
+static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -2781,10 +2782,8 @@ static void _parse_commandline(int argc, char **argv)
 static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
-#if (DEFAULT_RECOVER != 0)
 	fprintf(stderr, "  -c      "
 			"\tDo not recover state from last checkpoint.\n");
-#endif
 	fprintf(stderr, "  -D      "
 			"\tRun daemon in foreground, with logging copied to stdout.\n");
 	fprintf(stderr, "  -f file "
@@ -2797,13 +2796,8 @@ static void _usage(char *prog_name)
 			"\tLog messages to the specified file.\n");
 	fprintf(stderr, "  -n value "
 			"\tRun the daemon at the specified nice value.\n");
-#if (DEFAULT_RECOVER == 0)
-	fprintf(stderr, "  -r      "
-			"\tRecover state from last checkpoint.\n");
-#else
 	fprintf(stderr, "  -R      "
 			"\tRecover full state from last checkpoint.\n");
-#endif
 	fprintf(stderr, "  -s      "
 			"\tChange working directory to SlurmctldLogFile/StateSaveLocation.\n");
 	fprintf(stderr, "  -v      "
