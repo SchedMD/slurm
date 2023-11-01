@@ -83,6 +83,12 @@ slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 
 slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
 
+REF = usage.txt
+include $(top_srcdir)/make_ref.include
+noinst_LTLIBRARIES = $(LIB_REF)
+EXTRA_slurmctld_DEPENDENCIES = $(LIB_REF)
+slurmctld_LDADD += $(LIB_REF)
+
 force:
 $(slurmctld_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

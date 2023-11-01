@@ -68,6 +68,7 @@
 #include "src/common/pack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -126,6 +127,8 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
+
+decl_static_data(usage_txt);
 
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
@@ -266,7 +269,7 @@ static void         _update_diag_job_state_counts(void);
 static void         _update_cluster_tres(void);
 static void         _update_nice(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
-inline static void  _usage(char *prog_name);
+static void _usage(void);
 static bool         _verify_clustername(void);
 static bool         _wait_for_server_thread(void);
 static void *       _wait_primary_prog(void *arg);
@@ -2731,7 +2734,7 @@ static void _parse_commandline(int argc, char **argv)
 			slurm_conf_filename = xstrdup(optarg);
 			break;
 		case 'h':
-			_usage(argv[0]);
+			_usage();
 			exit(0);
 			break;
 		case 'i':
@@ -2766,7 +2769,7 @@ static void _parse_commandline(int argc, char **argv)
 			exit(0);
 			break;
 		default:
-			_usage(argv[0]);
+			_usage();
 			exit(1);
 		}
 	}
@@ -2777,33 +2780,12 @@ static void _parse_commandline(int argc, char **argv)
 	}
 }
 
-/* _usage - print a message describing the command line arguments of
- *	slurmctld */
-static void _usage(char *prog_name)
+static void _usage(void)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
-	fprintf(stderr, "  -c      "
-			"\tDo not recover state from last checkpoint.\n");
-	fprintf(stderr, "  -D      "
-			"\tRun daemon in foreground, with logging copied to stdout.\n");
-	fprintf(stderr, "  -f file "
-			"\tUse specified file for slurmctld configuration.\n");
-	fprintf(stderr, "  -h      "
-			"\tPrint this help message.\n");
-	fprintf(stderr, "  -i      "
-			"\tIgnore errors found while reading in state files on startup.\n");
-	fprintf(stderr, "  -L logfile "
-			"\tLog messages to the specified file.\n");
-	fprintf(stderr, "  -n value "
-			"\tRun the daemon at the specified nice value.\n");
-	fprintf(stderr, "  -R      "
-			"\tRecover full state from last checkpoint.\n");
-	fprintf(stderr, "  -s      "
-			"\tChange working directory to SlurmctldLogFile/StateSaveLocation.\n");
-	fprintf(stderr, "  -v      "
-			"\tVerbose mode. Multiple -v's increase verbosity.\n");
-	fprintf(stderr, "  -V      "
-			"\tPrint version information and exit.\n");
+        char *txt;
+        static_ref_to_cstring(txt, usage_txt);
+        fprintf(stderr, "%s", txt);
+        xfree(txt);
 }
 
 static void *_shutdown_bu_thread(void *arg)
