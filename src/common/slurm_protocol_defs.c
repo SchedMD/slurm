@@ -1397,6 +1397,7 @@ extern void slurm_free_dep_msg(dep_msg_t *msg)
 	if (msg) {
 		xfree(msg->dependency);
 		xfree(msg->job_name);
+		xfree(msg);
 	}
 }
 
@@ -1404,6 +1405,7 @@ extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg)
 {
 	if (msg) {
 		FREE_NULL_LIST(msg->depend_list);
+		xfree(msg);
 	}
 }
 
