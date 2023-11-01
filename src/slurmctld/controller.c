@@ -1020,6 +1020,7 @@ extern int reconfigure_slurm(void)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		node_features_updated = true;
 	}
+	FREE_NULL_LIST(conf_includes_list);
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
@@ -1050,14 +1051,6 @@ extern void reconfigure_slurm_post_send(int error_code)
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */
 	queue_job_scheduler();
-
-	if (conf_includes_list) {
-		/*
-		 * clear included files so that subsequent conf parsings refill
-		 * it with updated information.
-		 */
-		list_flush(conf_includes_list);
-	}
 
 	slurm_mutex_lock(&reconfig_mutex);
 	reconfig = false;
