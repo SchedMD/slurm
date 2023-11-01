@@ -218,7 +218,6 @@ static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  reconfig_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * Static list of signals to block in this process
@@ -1053,7 +1052,6 @@ extern void reconfigure_slurm_post_send(int error_code)
 		list_flush(conf_includes_list);
 	}
 	slurm_mutex_unlock(&reconfig_mutex);
-	slurm_cond_broadcast(&reconfig_cond);
 }
 
 static void _reconfigure_slurm(void)
