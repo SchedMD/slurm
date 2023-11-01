@@ -619,6 +619,7 @@ extern int extra_constraints_parse(char *extra, elem_t **head)
 	if (rc != SLURM_SUCCESS) {
 		error("%s: Parsing %s failed", __func__, extra);
 		FREE_NULL_EXTRA_CONSTRAINTS(tree_head);
+		rc = ESLURM_INVALID_EXTRA;
 	} else {
 		if (tree_head->operator == OP_NONE) {
 			/*

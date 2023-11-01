@@ -461,6 +461,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Unable to add node, node table is full" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_RELATIVE_QOS),
 	  "Invalid QOS specification, relative QOS can only be used in a single partition per cluster." },
+	{ ERRTAB_ENTRY(ESLURM_INVALID_EXTRA),
+	  "Invalid extra constraints specification" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),

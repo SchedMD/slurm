@@ -81,7 +81,7 @@ extern void extra_constraints_free_null(elem_t **el);
  *            calling FREE_NULL_EXTRA_CONSTRAINTS.
  *
  * Return SLURM_SUCCESS if parsing is successful or disabled.
- * Return SLURM_ERROR if parsing failed.
+ * Return ESLURM_INVALID_EXTRA if parsing failed.
  */
 extern int extra_constraints_parse(char *extra, elem_t **head);
 
