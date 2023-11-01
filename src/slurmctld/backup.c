@@ -287,9 +287,6 @@ static void *_background_signal_hand(void *no_data)
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
 	while (slurmctld_config.shutdown_time == 0) {
 		xsignal_sigset_create(backup_sigarray, &set);
 		rc = sigwait(&set, &sig);
@@ -351,8 +348,6 @@ static void *_background_rpc_mgr(void *no_data)
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
 
 	/* initialize port for RPCs */

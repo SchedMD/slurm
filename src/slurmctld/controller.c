@@ -1083,8 +1083,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 		error("%s: cannot set my name to %s %m", __func__, "sigmgr");
 	}
 #endif
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
 	for (i = 0; sig_array[i]; i++)
@@ -1168,8 +1166,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("%s pid = %u", __func__, getpid());
 
 	/* initialize ports for RPCs */
@@ -1928,8 +1924,6 @@ static void *_slurmctld_background(void *no_data)
 
 	last_ping_srun_time = now;
 	last_node_acct = now;
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());
 
 	while (1) {
