@@ -242,6 +242,7 @@ static int          _controller_index(void);
 static void         _become_slurm_user(void);
 static void         _create_clustername_file(void);
 static void         _default_sigaction(int sig);
+static void _flush_agent_queue(int tenths);
 static void _flush_rpcs(void);
 static void         _get_fed_updates();
 static void         _init_config(void);
@@ -276,7 +277,7 @@ static void *       _wait_primary_prog(void *arg);
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	int cnt, error_code, i;
+	int error_code, i;
 	struct timeval start, now;
 	struct stat stat_buf;
 	struct rlimit rlim;
@@ -762,20 +763,7 @@ int main(int argc, char **argv)
 	 *  Anything left over represents a leak.
 	 */
 
-
-	/*
-	 * Give running agents a chance to complete and free memory.
-	 * Wait up to 6 seconds.
-	 */
-	for (i = 0; i < 60; i++) {
-		agent_purge();
-		usleep(100000);
-		cnt = get_agent_count();
-		if (cnt == 0)
-			break;
-	}
-	if (cnt)
-		error("Left %d agent threads active", cnt);
+	_flush_agent_queue(60);
 
 	/* Purge our local data structures */
 	configless_clear();
@@ -822,29 +810,12 @@ int main(int argc, char **argv)
 }
 #else
 	/*
-	 * Give REQUEST_SHUTDOWN a chance to get propagated, up to 3 seconds.
-	 */
-	for (i = 0; i < 30; i++) {
-		agent_purge();
-		cnt = get_agent_count();
-		if (cnt == 0)
-			break;
-		usleep(100000);
-	}
-	if (i >= 30)
-		info("Dropped %d hung communications to shutdown", cnt);
-
-	/*
 	 * do this outside of MEMORY_LEAK_DEBUG so that remote connections get
 	 * closed.
 	 */
-
+	_flush_agent_queue(30);
 #endif
 
-	if (cnt) {
-		info("Slurmctld shutdown completing with %d active agent thread",
-		     cnt);
-	}
 	log_fini();
 	sched_log_fini();
 
@@ -852,6 +823,26 @@ int main(int argc, char **argv)
 		abort();
 	else
 		exit(0);
+}
+
+/*
+ * Give REQUEST_SHUTDOWN a chance to get propagated.
+ *
+ * FIXME: This should move into the agent code itself, and make use of
+ * agent_cnt_cond instead of sleeping for tenths of a second and retrying.
+ */
+static void _flush_agent_queue(int tenths)
+{
+	int count = 0;
+
+	for (int i = 0; i < tenths; i++) {
+		agent_purge();
+		if (!(count = get_agent_count()))
+			return;
+		usleep(100000);
+	}
+
+	error("%s: left %d agent threads active", __func__, count);
 }
 
 static int _find_node_event(void *x, void *key)
