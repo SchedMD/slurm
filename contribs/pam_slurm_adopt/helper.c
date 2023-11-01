@@ -41,6 +41,7 @@
 #endif
 
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <pwd.h>
 #include <stdarg.h>
@@ -50,7 +51,6 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
