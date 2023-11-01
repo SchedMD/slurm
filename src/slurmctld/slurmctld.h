@@ -883,8 +883,6 @@ struct job_record {
 					   * figured out in the priority plugin
 					   */
 	uint32_t profile;		/* Acct_gather_profile option */
-	time_t prolog_launch_time;	/* When the prolog was launched from the
-					 * controller -- PrologFlags=alloc */
 	uint32_t qos_id;		/* quality of service id */
 	slurmdb_qos_rec_t *qos_ptr;	/* pointer to the quality of
 					 * service record used for

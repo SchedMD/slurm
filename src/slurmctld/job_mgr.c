@@ -1475,7 +1475,6 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 
 	pack_time(dump_job_ptr->last_sched_eval, buffer);
 	pack_time(dump_job_ptr->preempt_time, buffer);
-	pack_time(dump_job_ptr->prolog_launch_time, buffer);
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->end_time_exp, buffer);
@@ -1617,7 +1616,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	uint32_t job_state, delay_boot = 0, site_factor = NICE_OFFSET;
 	time_t start_time, end_time, end_time_exp, suspend_time,
 		pre_sus_time, tot_sus_time;
-	time_t preempt_time = 0, prolog_launch_time = 0, deadline = 0;
+	time_t preempt_time = 0, deadline = 0;
 	time_t last_sched_eval = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0, power_flags = 0;
@@ -1743,7 +1742,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 
 		safe_unpack_time(&last_sched_eval, buffer);
 		safe_unpack_time(&preempt_time, buffer);
-		safe_unpack_time(&prolog_launch_time, buffer);
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
 		safe_unpack_time(&end_time_exp, buffer);
@@ -2579,7 +2577,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->last_sched_eval = last_sched_eval;
 	job_ptr->preempt_time = preempt_time;
-	job_ptr->prolog_launch_time = prolog_launch_time;
 	job_ptr->user_id      = user_id;
 	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_flags   = warn_flags;
