@@ -122,7 +122,7 @@
 #include "src/slurmctld/rpc_queue.h"
 #include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
-#include "slurmscriptd.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
