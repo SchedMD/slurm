@@ -1235,9 +1235,9 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
 		buf = vxstrfmt(fmt, args);
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->prefix, pfx, buf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s", sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
-			    "sched: %s\n", msgbuf);
+			    "sched: %s%s\n", msgbuf, buf);
 		fflush(sched_log->logfp);
 		xfree(msgbuf);
 	}
@@ -1324,8 +1324,9 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
 			            tmp, pfx, buf, eol);
 		} else if ((log->fmt & LOG_FMT_FORMAT_STDERR)) {
-			xlogfmtcat(&msgbuf, "[%M] %s%s%s", pfx, buf, eol);
-			_log_printf(log, log->buf, stderr, msgbuf);
+			xlogfmtcat(&msgbuf, "[%M] %s", pfx);
+			_log_printf(log, log->buf, stderr, "%s%s%s",
+				    msgbuf, buf, eol);
 			xfree(msgbuf);
 		} else {
 			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
@@ -1369,8 +1370,8 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		xfree(msgbuf);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->prefix, pfx, buf);
-		_log_printf(log, log->fbuf, log->logfp, "%s\n", msgbuf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s", log->prefix, pfx);
+		_log_printf(log, log->fbuf, log->logfp, "%s%s\n", msgbuf, buf);
 		fflush(log->logfp);
 
 		xfree(msgbuf);
