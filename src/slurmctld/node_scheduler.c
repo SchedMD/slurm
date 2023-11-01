@@ -3423,6 +3423,29 @@ static void _split_node_set(struct node_set *node_set_ptr,
 	node_set_ptr[nset_inx_base].node_cnt -= node_set_ptr[nset_inx].node_cnt;
 }
 
+static void _apply_extra_constraints(job_record_t *job_ptr,
+				     bitstr_t *usable_node_mask)
+{
+	node_record_t *node_ptr = NULL;
+
+	xassert(job_ptr->extra);
+	xassert(job_ptr->extra_constraints);
+
+	for (int i = 0; (node_ptr = next_node_bitmap(usable_node_mask, &i));
+	     i++) {
+		if (!node_ptr->extra_data) {
+			bit_clear(usable_node_mask, i);
+			continue;
+		}
+
+		if (!extra_constraints_test(job_ptr->extra_constraints,
+					    node_ptr->extra_data)) {
+			bit_clear(usable_node_mask, i);
+			continue;
+		}
+	}
+}
+
 /*
  * _build_node_list - identify which nodes could be allocated to a job
  *	based upon node features, memory, processors, etc. Note that a
@@ -3507,7 +3530,6 @@ static int _build_node_list(job_record_t *job_ptr,
 		}
 	}
 
-
 	if (detail_ptr->exc_node_bitmap) {
 		if (usable_node_mask) {
 			bit_and_not(usable_node_mask, detail_ptr->exc_node_bitmap);
@@ -3519,6 +3541,9 @@ static int _build_node_list(job_record_t *job_ptr,
 	} else if (usable_node_mask == NULL) {
 		usable_node_mask = node_conf_get_active_bitmap();
 	}
+
+	if (!test_only && job_ptr->extra_constraints)
+		_apply_extra_constraints(job_ptr, usable_node_mask);
 
 	if ((rc = valid_feature_counts(job_ptr, false, usable_node_mask,
 				       &has_mor))) {
