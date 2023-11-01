@@ -109,8 +109,8 @@ proc test_gpu_bind {} {
 	]
 
 	set submission_errors {
-		"error: Invalid --gpu-bind argument: gpu:blah"
-		"error: Invalid --gpu-bind argument: gpu:blah"
+		"error: Invalid --gpu-bind argument: blah"
+		"error: Invalid --gpu-bind argument: blah"
 	}
 
 	foreach cmd {sbatch srun salloc} {
