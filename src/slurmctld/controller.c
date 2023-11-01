@@ -354,12 +354,9 @@ int main(int argc, char **argv)
 		fd_set_close_on_exec(i);
 
 	if (daemonize) {
-		slurmctld_config.daemonize = 1;
 		if (xdaemon())
 			error("daemon(): %m");
 		sched_debug("slurmctld starting");
-	} else {
-		slurmctld_config.daemonize = 0;
 	}
 
 	if (!test_config) {
@@ -1099,7 +1096,6 @@ static void  _init_config(void)
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
-	slurmctld_config.daemonize = 1;
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
 	slurmctld_config.shutdown_time  = (time_t) 0;
