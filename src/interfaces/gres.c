@@ -9828,7 +9828,8 @@ static int _get_usable_gres(int context_inx, int proc_id,
 			if (!get_devices && gres_use_local_device_index()) {
 				usable_gres = bit_alloc(
 					bit_size(gres_bit_alloc));
-				bit_nset(usable_gres, 0, slurm_atoul(sep + 9));
+				bit_nset(usable_gres, 0,
+					 slurm_atoul(sep + 9) - 1);
 			} else {
 				usable_gres = _get_gres_per_task(
 					gres_bit_alloc, slurm_atoul(sep + 9),
