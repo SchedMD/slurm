@@ -67,6 +67,7 @@ struct elem {
  */
 extern char *extra_constraints_2str(elem_t *el);
 
+extern bool extra_constraints_enabled(void);
 extern void extra_constraints_free_null(elem_t **el);
 #define FREE_NULL_EXTRA_CONSTRAINTS(el) \
 	extra_constraints_free_null(&el)
@@ -83,5 +84,10 @@ extern void extra_constraints_free_null(elem_t **el);
  * Return SLURM_ERROR if parsing failed.
  */
 extern int extra_constraints_parse(char *extra, elem_t **head);
+
+/*
+ * Enable or disable extra constraints parsing.
+ */
+extern void extra_constraints_set_parsing(bool set);
 
 #endif /* _EXTRA_CONSTRAINTS_H */

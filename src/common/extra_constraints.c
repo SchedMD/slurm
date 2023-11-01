@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "src/common/extra_constraints.h"
@@ -70,6 +71,8 @@ static const int op_table_len = ARRAY_SIZE(op_table);
 static const char *child_op_chars = ",&|";
 static const char *leaf_op_chars = "<>=";
 static const char *op_chars = ",&|<>=";
+
+static bool extra_constraints_parsing = false;
 
 static char *_op2str(op_t op)
 {
@@ -139,6 +142,11 @@ static void _free_null_elem(elem_t **el)
 	}
 }
 #define _free_element(el) _free_null_elem(&el)
+
+extern bool extra_constraints_enabled(void)
+{
+	return extra_constraints_parsing;
+}
 
 extern void extra_constraints_free_null(elem_t **el)
 {
@@ -593,6 +601,8 @@ extern int extra_constraints_parse(char *extra, elem_t **head)
 
 	if (!extra)
 		return SLURM_SUCCESS;
+	if (!extra_constraints_parsing)
+		return SLURM_SUCCESS;
 
 #if _DEBUG
 	info("%s: parse %s", __func__, extra);
@@ -636,4 +646,9 @@ extern int extra_constraints_parse(char *extra, elem_t **head)
 	*head = tree_head;
 	xfree(copy);
 	return rc;
+}
+
+extern void extra_constraints_set_parsing(bool set)
+{
+	extra_constraints_parsing = set;
 }

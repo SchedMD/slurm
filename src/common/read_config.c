@@ -65,6 +65,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/cpu_frequency.h"
+#include "src/common/extra_constraints.h"
 #include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
@@ -5086,6 +5087,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			fatal("SchedulerParameters option max_submit_line_size cannot exceed %d",
 			      MAX_MAX_SUBMIT_LINE_SIZE);
 	}
+	if (xstrcasestr(conf->sched_params, "extra_constraints"))
+		extra_constraints_set_parsing(true);
+	else
+		extra_constraints_set_parsing(false);
 
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))
