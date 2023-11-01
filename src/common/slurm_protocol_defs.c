@@ -2018,6 +2018,8 @@ extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 {
 	int i;
 	if (msg) {
+		xfree(msg->bf_exit);
+		xfree(msg->schedule_exit);
 		xfree(msg->rpc_type_id);
 		xfree(msg->rpc_type_cnt);
 		xfree(msg->rpc_type_time);
