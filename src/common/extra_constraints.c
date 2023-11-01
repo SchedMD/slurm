@@ -34,7 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdbool.h>
 #include <string.h>
 
 #include "src/common/extra_constraints.h"
@@ -43,10 +42,18 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 #define _DEBUG 0 /* Set this to non-zero to see detailed debugging */
 
 #define OP_BEGIN OP_CHILD_AND
+
+typedef enum {
+	CMP_INVALID = -2,
+	CMP_LT = -1,
+	CMP_EQ = 0,
+	CMP_GT = 1
+} cmp_t;
 
 typedef struct {
 	op_t op;
@@ -587,6 +594,218 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 	}
 }
 
+#define NUMBER_COMPARE(a,b,fuzzy,result) \
+do {\
+	if (fuzzy && fuzzy_equal(a, b))\
+		result = CMP_EQ;\
+	else if (!fuzzy && (a == b))\
+		result = CMP_EQ;\
+	else if (a < b)\
+		result = CMP_LT;\
+	else\
+		result = CMP_GT;\
+} while(0);
+
+
+/*
+ * Test if "data" equals, is less than, or is greater than "value"
+ * data.c already has data_check_match(); however, that only checks for
+ * equality and is stricter than we want to be here.
+ */
+static cmp_t _compare(data_t *data, char *value)
+{
+	cmp_t comparison;
+	data_type_t data_type;
+	data_t *value_d;
+
+	xassert(value);
+	xassert(data);
+
+	value_d = data_new();
+	if (!data_set_string(value_d, value)) {
+		data_free(value_d);
+#if _DEBUG
+		error("%s: Couldn't convert %s to data_t", __func__, value);
+#endif
+		return CMP_INVALID;
+	}
+	data_type = data_get_type(data);
+
+	switch (data_type) {
+	case DATA_TYPE_INT_64:
+	{
+		/*
+		 * We always do floating point comparison to be less strict on
+		 * the user, and if the node data sometimes swaps between
+		 * integer and floating point on node updates.
+		 */
+		double tmp1 = (double) data_get_int(data);
+		double tmp2;
+
+		if (data_convert_type(value_d, DATA_TYPE_FLOAT) !=
+		    DATA_TYPE_FLOAT) {
+			comparison = CMP_INVALID;
+		} else {
+			tmp2 = data_get_float(value_d);
+			NUMBER_COMPARE(tmp1, tmp2, true, comparison);
+		}
+		break;
+	}
+	case DATA_TYPE_STRING:
+		/*
+		 * NOTE: strcmp is not guaranteed to return -1, 0, or 1. It
+		 * is guaranteed to return a negative number, zero, or a
+		 * positive number. Convert those to our CMP_* values.
+		 */
+		comparison = xstrcmp(data_get_string(data), value);
+		if (comparison < 0)
+			comparison = CMP_LT;
+		else if (comparison > 0)
+			comparison = CMP_GT;
+		else
+			comparison = CMP_EQ;
+		break;
+	case DATA_TYPE_FLOAT:
+	{
+		double tmp1 = data_get_float(data);
+		double tmp2;
+
+		if (data_convert_type(value_d, DATA_TYPE_FLOAT) !=
+		    DATA_TYPE_FLOAT) {
+			comparison = CMP_INVALID;
+		} else {
+			tmp2 = data_get_float(value_d);
+			NUMBER_COMPARE(tmp1, tmp2, true, comparison);
+		}
+		break;
+	}
+	case DATA_TYPE_BOOL:
+	{
+		bool tmp1 = data_get_bool(data);
+		bool tmp2;
+
+		if (data_convert_type(value_d, DATA_TYPE_BOOL) !=
+		    DATA_TYPE_BOOL) {
+			comparison = CMP_INVALID;
+		} else {
+			tmp2 = data_get_bool(value_d);
+			NUMBER_COMPARE(tmp1, tmp2, false, comparison);
+		}
+		break;
+	}
+	default:
+		comparison = CMP_INVALID;
+#if _DEBUG
+		info("%s: Data type: %s is invalid",
+		     __func__, data_type_to_string(data_type));
+#endif
+		break;
+	}
+	FREE_NULL_DATA(value_d);
+	return comparison;
+}
+
+static bool _test(cmp_t comparison, op_t op)
+{
+	bool rc;
+
+	if (op == OP_LEAF_EQ) {
+		rc = (comparison == CMP_EQ);
+	} else if (op == OP_LEAF_GT) {
+		rc = (comparison == CMP_GT);
+	} else if (op == OP_LEAF_GTE) {
+		rc = (comparison >= CMP_EQ);
+	} else if (op == OP_LEAF_LT) {
+		rc = (comparison == CMP_LT);
+	} else if (op == OP_LEAF_LTE) {
+		rc = (comparison <= CMP_EQ);
+	} else {
+		error("%s: Undefined leaf operator %d", __func__, op);
+		rc = false;
+	}
+
+	return rc;
+}
+
+/*
+ * Test each leaf: the test is true if <data_value> <leaf_op> <leaf_value>
+ * For each test, the key needs to exist in the data_t structure.
+ */
+static bool _test_extra_constraints(elem_t *parent, elem_t *el, data_t *data)
+{
+	bool test_result = false;
+
+	if (!el)
+		return false;
+	if (!el->num_children) {
+		/* leaf */
+		data_t *data_ptr = NULL;
+		cmp_t comparison = CMP_INVALID;
+#if _DEBUG
+		char *data_str = NULL;
+#endif
+
+		/* Check that key is in data_t */
+		data_ptr = data_key_get(data, el->key);
+		if (!data_ptr) {
+#if _DEBUG
+			info("%s: Key %s not found", __func__, el->key);
+#endif
+			return false;
+		}
+#if _DEBUG
+		if (data_get_string_converted(data_ptr, &data_str) !=
+		    SLURM_SUCCESS) {
+			/* Couldn't convert to string. */
+			data_str = xstrdup_printf("<Couldn't convert data to string>");
+		}
+#endif
+		comparison = _compare(data_ptr, el->value);
+		if (comparison == CMP_INVALID) {
+#if _DEBUG
+			info("%s: Invalid comparison: \"%s\" %s \"%s\"",
+			     __func__, el->value, _op2str(el->operator),
+			     data_str);
+			xfree(data_str);
+#endif
+			return false;
+		}
+		test_result = _test(comparison, el->operator);
+#if _DEBUG
+		info("%s: Comparison result=%s: \"%s\" %s \"%s\"",
+		     __func__, test_result ? "true" : "false",
+		     data_str, _op2str(el->operator), el->value);
+		xfree(data_str);
+#endif
+
+		return test_result;
+	}
+
+	xassert(el->children);
+	for (int i = 0; i < el->num_children; i++) {
+		test_result = _test_extra_constraints(el, el->children[i],
+						      data);
+		if (el->operator == OP_CHILD_OR) {
+			/* OR: At least one child must pass. */
+			if (test_result)
+				break;
+			else
+				continue;
+		} else {
+			/*
+			 * OP_CHILD_AND or OP_CHILD_NONE which is treated the
+			 * same as OP_CHILD_AND.
+			 * AND: All children must pass.
+			 */
+			if (test_result)
+				continue;
+			else
+				break;
+		}
+	}
+	return test_result;
+}
+
 /*
  * Parse a string into a tree
  */
@@ -652,4 +871,17 @@ extern int extra_constraints_parse(char *extra, elem_t **head)
 extern void extra_constraints_set_parsing(bool set)
 {
 	extra_constraints_parsing = set;
+}
+
+extern bool extra_constraints_test(elem_t *head, data_t *data)
+{
+	if (!extra_constraints_parsing)
+		return true;
+	if (!head)
+		return true;
+	if (!data) {
+		return false;
+	}
+
+	return _test_extra_constraints(NULL, head, data);
 }

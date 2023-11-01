@@ -37,6 +37,8 @@
 #ifndef _EXTRA_CONSTRAINTS_H
 #define _EXTRA_CONSTRAINTS_H
 
+#include "src/common/data.h"
+
 typedef enum {
 	OP_NONE = 0,
 	OP_CHILD_AND, /* Accept both '&' and ',' */
@@ -89,5 +91,14 @@ extern int extra_constraints_parse(char *extra, elem_t **head);
  * Enable or disable extra constraints parsing.
  */
 extern void extra_constraints_set_parsing(bool set);
+
+/*
+ * Return true if one of the following conditions are met:
+ * - Extra constraints parsing is disabled
+ * - No extra constraints are given (head == NULL)
+ * - The constraints given in the tree "head" are satisfied by "data"
+ * Otherwise return false.
+ */
+extern bool extra_constraints_test(elem_t *head, data_t *data);
 
 #endif /* _EXTRA_CONSTRAINTS_H */
