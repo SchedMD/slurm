@@ -218,6 +218,7 @@ static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool reconfig = false;
 
 /*
  * Static list of signals to block in this process
@@ -985,6 +986,14 @@ extern int reconfigure_slurm(void)
 
 	/* Reconfigure RPCs must be serially served. */
 	slurm_mutex_lock(&reconfig_mutex);
+	if (reconfig) {
+		debug("%s: ignoring overlapping reconfigure request",
+		      __func__);
+		slurm_mutex_unlock(&reconfig_mutex);
+		return EINPROGRESS;
+	}
+	reconfig = true;
+	slurm_mutex_unlock(&reconfig_mutex);
 
 	if (slurmctld_config.shutdown_time) {
 		debug5("%s: shutdown in progress: skipping", __func__);
@@ -1035,11 +1044,12 @@ extern int reconfigure_slurm(void)
 
 extern void reconfigure_slurm_post_send(int error_code)
 {
-	if (error_code == SLURM_SUCCESS) {
-		priority_g_reconfig(true);	/* notify priority plugin too */
-		save_all_state();		/* Has own locking */
-		queue_job_scheduler();
-	}
+	if (error_code)
+		return;
+
+	priority_g_reconfig(true);	/* notify priority plugin too */
+	save_all_state();		/* Has own locking */
+	queue_job_scheduler();
 
 	if (conf_includes_list) {
 		/*
@@ -1048,6 +1058,9 @@ extern void reconfigure_slurm_post_send(int error_code)
 		 */
 		list_flush(conf_includes_list);
 	}
+
+	slurm_mutex_lock(&reconfig_mutex);
+	reconfig = false;
 	slurm_mutex_unlock(&reconfig_mutex);
 }
 
