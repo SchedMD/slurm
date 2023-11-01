@@ -127,8 +127,6 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-
-#define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
 #define DEFAULT_RECOVER   1	/* Default state recovery on restart
 				 * 0 = use no saved state information
 				 * 1 = recover saved job state,
@@ -206,7 +204,7 @@ static int	bu_rc = SLURM_SUCCESS;
 static int	bu_thread_cnt = 0;
 static pthread_cond_t bu_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t bu_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int	daemonize = DEFAULT_DAEMONIZE;
+static bool daemonize = true;
 static int	setwd = DEFAULT_SETWD;
 static int	debug_level = 0;
 static char *	debug_logfile = NULL;
@@ -1101,7 +1099,7 @@ static void  _init_config(void)
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
-	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
+	slurmctld_config.daemonize = 1;
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
 	slurmctld_config.shutdown_time  = (time_t) 0;
@@ -2792,14 +2790,8 @@ static void _usage(char *prog_name)
 	fprintf(stderr, "  -c      "
 			"\tDo not recover state from last checkpoint.\n");
 #endif
-#if (DEFAULT_DAEMONIZE == 0)
-	fprintf(stderr, "  -d      "
-			"\tRun daemon in background.\n");
-#endif
-#if (DEFAULT_DAEMONIZE != 0)
 	fprintf(stderr, "  -D      "
 			"\tRun daemon in foreground, with logging copied to stdout.\n");
-#endif
 	fprintf(stderr, "  -f file "
 			"\tUse specified file for slurmctld configuration.\n");
 	fprintf(stderr, "  -h      "
