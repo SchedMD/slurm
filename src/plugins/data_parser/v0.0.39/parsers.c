@@ -566,11 +566,15 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 	qos = list_find_first(args->qos_list, slurmdb_find_qos_in_list, qos_id);
 	if (!qos) {
 		(void) data_set_string(dst, "Unknown");
-		return on_error(DUMPING, parser->type, args,
-				ESLURM_REST_EMPTY_RESULT,
-				"list_find_first()->slurmdb_find_qos_in_list()",
-				__func__, "Unable to find QOS with id#%d",
-				*qos_id);
+		/*
+		 * The QOS is either invalid or unknown.
+		 * Since this is coming from Slurm internally, issue a warning
+		 * instead of erroring out to allow graceful dumping of the
+		 * data.
+		 */
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Unknown QOS with id#%u. Unable to dump QOS.", *qos_id);
+		return SLURM_SUCCESS;
 	}
 
 	/*
