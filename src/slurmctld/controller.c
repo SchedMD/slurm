@@ -189,8 +189,6 @@ int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
 int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
-bool    test_config = false;
-int     test_config_rc = 0;
 uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
@@ -350,7 +348,7 @@ int main(int argc, char **argv)
 	create_clustername_file = _verify_clustername();
 
 	_update_nice();
-	if (!test_config)
+	if (true)
 		_kill_old_slurmctld();
 
 	for (i = 0; i < 3; i++)
@@ -362,7 +360,7 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
-	if (!test_config) {
+	if (true) {
 		/*
 		 * Need to create pidfile here in case we setuid() below
 		 * (init_pidfile() exits if it can't initialize pid file).
@@ -384,10 +382,8 @@ int main(int argc, char **argv)
 	if (daemonize || setwd)
 		_set_work_dir();
 
-	if (stat(slurm_conf.mail_prog, &stat_buf) != 0) {
+	if (stat(slurm_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
-		test_config_rc = 1;
-	}
 
 	if (!slurm_conf.accounting_storage_type) {
 		if (slurm_conf.job_acct_gather_type)
@@ -395,16 +391,8 @@ int main(int argc, char **argv)
 	} else if (!slurm_conf.job_acct_gather_type)
 		info("Job accounting information stored, but details not gathered");
 
-	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Invalid Licenses value: %s",
-			      slurm_conf.licenses);
-			test_config_rc = 1;
-		} else {
-			fatal("Invalid Licenses value: %s",
-			      slurm_conf.licenses);
-		}
-	}
+	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS)
+		fatal("Invalid Licenses value: %s", slurm_conf.licenses);
 
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -448,28 +436,18 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	if (!test_config)
-		info("%s version %s started on cluster %s",
-		     slurm_prog_name, SLURM_VERSION_STRING,
-		     slurm_conf.cluster_name);
+	info("%s version %s started on cluster %s",
+	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
-					    HOST_NAME_MAX)) &&
-	    !test_config)
+					    HOST_NAME_MAX)))
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
 	if ((error_code = gethostname(slurmctld_config.node_name_long,
-				      HOST_NAME_MAX)) &&
-	    !test_config)
+				      HOST_NAME_MAX)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
-	if (cred_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize cred plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize cred plugin");
-		}
-	}
+	if (cred_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cred plugin");
 
 	/* Must set before plugins are loaded. */
 	backup_inx = _controller_index();
@@ -480,9 +458,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (test_config) {
-		slurmctld_primary = 1;
-	} else if (backup_inx > 0) {
+	if (backup_inx > 0) {
 		slurmctld_primary = 0;
 
 		if (xstrcasestr(slurm_conf.sched_params,
@@ -494,101 +470,31 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
-	if (select_g_init(0) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize node selection plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize node selection plugin");
-		}
-	}
+	if (select_g_init(0) != SLURM_SUCCESS)
+		fatal("failed to initialize node selection plugin");
 	/* gres_init() must follow select_g_init() */
-	if (gres_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize gres plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize gres plugin");
-		}
-	}
-	if (preempt_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize preempt plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize preempt plugin");
-		}
-	}
-	if (acct_gather_conf_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize acct_gather plugins");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize acct_gather plugins");
-		}
-	}
-	if (jobacct_gather_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize jobacct_gather plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize jobacct_gather plugin");
-		}
-	}
-	if (job_submit_g_init(false) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize job_submit plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize job_submit plugin");
-		}
-	}
-	if (prep_g_init(&prep_callbacks) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize prep plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize prep plugin");
-		}
-	}
-	if (ext_sensors_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize ext_sensors plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize ext_sensors plugin");
-		}
-	}
-	if (node_features_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize node_features plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize node_features plugin");
-		}
-	}
-	if (mpi_g_daemon_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize MPI plugins.");
-			test_config_rc = 1;
-		} else
-			fatal("Failed to initialize MPI plugins.");
-	}
-	if (serializer_g_init(NULL, NULL)) {
-		if (test_config) {
-			error("Failed to initialize serialization plugins.");
-			test_config_rc = 1;
-		} else
-			fatal("Failed to initialize serialization plugins.");
-	}
-	if (switch_init(1) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize switch plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize switch plugin");
-		}
-	}
+	if (gres_init() != SLURM_SUCCESS)
+		fatal("failed to initialize gres plugin");
+	if (preempt_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize preempt plugin");
+	if (acct_gather_conf_init() != SLURM_SUCCESS)
+		fatal("failed to initialize acct_gather plugins");
+	if (jobacct_gather_init() != SLURM_SUCCESS)
+		fatal("failed to initialize jobacct_gather plugin");
+	if (job_submit_g_init(false) != SLURM_SUCCESS)
+		fatal("failed to initialize job_submit plugin");
+	if (prep_g_init(&prep_callbacks) != SLURM_SUCCESS)
+		fatal("failed to initialize prep plugin");
+	if (ext_sensors_init() != SLURM_SUCCESS)
+		fatal("failed to initialize ext_sensors plugin");
+	if (node_features_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize node_features plugin");
+	if (mpi_g_daemon_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize MPI plugins.");
+	if (serializer_g_init(NULL, NULL))
+		fatal("Failed to initialize serialization plugins.");
+	if (switch_init(1) != SLURM_SUCCESS)
+		fatal("Failed to initialize switch plugin");
 
 	agent_init();
 
@@ -609,68 +515,23 @@ int main(int argc, char **argv)
 			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
-		} else if (test_config || slurmctld_primary) {
-			if (acct_storage_g_init() != SLURM_SUCCESS) {
-				if (test_config) {
-					error("failed to initialize accounting_storage plugin");
-					test_config_rc = 1;
-				} else {
-					fatal("failed to initialize accounting_storage plugin");
-				}
-			}
-			if (!test_config) {
-				(void) _shutdown_backup_controller();
-				trigger_primary_ctld_res_ctrl();
-				ctld_assoc_mgr_init();
-			}
+		} else {
+			if (acct_storage_g_init() != SLURM_SUCCESS)
+				fatal("failed to initialize accounting_storage plugin");
+			(void) _shutdown_backup_controller();
+			trigger_primary_ctld_res_ctrl();
+			ctld_assoc_mgr_init();
 			/*
 			 * read_slurm_conf() will load the burst buffer state,
 			 * init the burst buffer plugin early.
 			 */
-			if (bb_g_init() != SLURM_SUCCESS) {
-				if (test_config) {
-					error("failed to initialize burst_buffer plugin");
-					test_config_rc = 1;
-				} else {
-					fatal("failed to initialize burst_buffer plugin");
-				}
-			}
+			if (bb_g_init() != SLURM_SUCCESS)
+				fatal("failed to initialize burst_buffer plugin");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(slurm_conf.state_save_location,
-			                     (recover ? true : false))) {
-				if (test_config) {
-					error("failed to initialize switch plugin");
-					test_config_rc = 1;
-				} else {
-					fatal("failed to initialize switch plugin");
-				}
-			}
-
-			if (test_config) {
-				char *result_str;
-				if ((error_code = read_slurm_conf(0, false))) {
-					error("read_slurm_conf reading %s: %s",
-					      slurm_conf.slurm_conf,
-					      slurm_strerror(error_code));
-					test_config_rc = 1;
-				}
-				unlock_slurmctld(config_write_lock);
-				if (config_test_result() != SLURM_SUCCESS)
-					test_config_rc = 1;
-
-				if (test_config_rc == 0)
-					result_str = "Succeeded";
-				else
-					result_str = "FAILED";
-				log_opts.stderr_level  = LOG_LEVEL_INFO;
-				log_opts.logfile_level = LOG_LEVEL_QUIET;
-				log_opts.syslog_level  = LOG_LEVEL_QUIET;
-				log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
-				          slurm_conf.slurmctld_logfile);
-				info("%s configuration test", result_str);
-				exit(test_config_rc);
-			}
+			                     (recover ? true : false)))
+				fatal("failed to initialize switch plugin");
 		}
 
 		/* This needs to be done before priority_g_init() is called */
@@ -703,7 +564,7 @@ int main(int argc, char **argv)
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 
-		if (test_config || slurmctld_primary) {
+		if (slurmctld_primary) {
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -1162,13 +1023,8 @@ extern int reconfigure_slurm(void)
 	assoc_mgr_set_missing_uids();
 	slurmscriptd_reconfig();
 	start_power_mgr(&slurmctld_config.thread_id_power);
-	if (mpi_g_daemon_reconfig() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to reconfigure MPI plugins.");
-			test_config_rc = 1;
-		} else
-			fatal("Failed to reconfigure MPI plugins.");
-	}
+	if (mpi_g_daemon_reconfig() != SLURM_SUCCESS)
+		fatal("Failed to reconfigure MPI plugins.");
 	trigger_reconfig();
 
 	END_TIMER2(__func__);
@@ -2773,11 +2629,6 @@ static void _parse_commandline(int argc, char **argv)
 			exit(1);
 		}
 	}
-	if (test_config) {
-		daemonize = 0;
-		recover = 0;
-		config_test_start();
-	}
 }
 
 static void _usage(void)
@@ -2978,11 +2829,7 @@ void update_logging(void)
 			(LOG_LEVEL_INFO + debug_level),
 			(LOG_LEVEL_END - 1));
 	}
-	if (test_config) {
-		log_opts.stderr_level  = LOG_LEVEL_ERROR;
-		log_opts.logfile_level = LOG_LEVEL_QUIET;
-		log_opts.syslog_level  = LOG_LEVEL_QUIET;
-	} else if (slurm_conf.slurmctld_debug != NO_VAL16) {
+	if (slurm_conf.slurmctld_debug != NO_VAL16) {
 		log_opts.logfile_level = slurm_conf.slurmctld_debug;
 	}
 	if (debug_logfile) {
@@ -3369,8 +3216,6 @@ static void _become_slurm_user(void)
 			fatal("Failed to set supplementary groups, "
 			      "initgroups: %m");
 		}
-	} else if (test_config) {
-		return;
 	} else {
 		info("Not running as root. Can't drop supplementary groups");
 	}

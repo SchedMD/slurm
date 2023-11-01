@@ -261,8 +261,6 @@ extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
 extern int   slurmctld_tres_cnt;
 extern slurmdb_cluster_rec_t *response_cluster_rec;
-extern bool   test_config;
-extern int    test_config_rc;
 
 /*****************************************************************************\
  * Configless data structures, defined in src/slurmctld/proc_req.c

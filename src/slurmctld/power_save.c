@@ -900,32 +900,26 @@ static int _init_power_config(void)
 	}
 	if (suspend_rate < 0) {
 		error("power_save module disabled, SuspendRate < 0");
-		test_config_rc = 1;
 		return -1;
 	}
 	if (resume_rate < 0) {
 		error("power_save module disabled, ResumeRate < 0");
-		test_config_rc = 1;
 		return -1;
 	}
 	if (suspend_prog == NULL) {
 		error("power_save module disabled, NULL SuspendProgram");
-		test_config_rc = 1;
 		return -1;
 	} else if (!_valid_prog(suspend_prog)) {
 		error("power_save module disabled, invalid SuspendProgram %s",
 		      suspend_prog);
-		test_config_rc = 1;
 		return -1;
 	}
 	if (resume_prog == NULL) {
 		error("power_save module disabled, NULL ResumeProgram");
-		test_config_rc = 1;
 		return -1;
 	} else if (!_valid_prog(resume_prog)) {
 		error("power_save module disabled, invalid ResumeProgram %s",
 		      resume_prog);
-		test_config_rc = 1;
 		return -1;
 	}
 

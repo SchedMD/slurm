@@ -146,9 +146,6 @@ extern void *slurmctld_state_save(void *no_data)
 	}
 #endif
 
-	if (test_config)	/* Should be redundant, but just to be safe */
-		return NULL;
-
 	while (1) {
 		/* wait for work to perform */
 		slurm_mutex_lock(&state_save_lock);

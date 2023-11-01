@@ -1625,14 +1625,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (slurm_conf.slurmd_user_id != 0)
 		_test_cgroup_plugin_use();
 
-	if (topology_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize topology plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize topology plugin");
-		}
-	}
+	if (topology_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize topology plugin");
 
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
@@ -1683,44 +1677,25 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_config_state_lite();
 
 		/* store new config */
-		if (!test_config)
-			dump_config_state_lite();
+		dump_config_state_lite();
 	}
 	update_logging();
-	if (jobcomp_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize jobcomp plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize jobcomp plugin");
-		}
-	}
+	if (jobcomp_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize jobcomp plugin");
 	if (controller_init_scheduling(
 		    (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG))) !=
 	    SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize the various schedulers");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize the various schedulers");
-		}
+		fatal("Failed to initialize the various schedulers");
 	}
 
-	if (switch_init(1) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Failed to initialize switch plugin");
-			test_config_rc = 1;
-		} else {
+	if (switch_init(1) != SLURM_SUCCESS)
 			fatal("Failed to initialize switch plugin");
-		}
-	}
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		test_config_rc = 1;
 		_purge_old_node_state(old_node_table_ptr,
 				      old_node_record_count);
 		_purge_old_part_state(old_part_list, old_def_part_name);
@@ -1837,10 +1812,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	restore_node_features(recover);
 
 	if ((node_features_g_count() > 0) &&
-	    (node_features_g_get_node(NULL) != SLURM_SUCCESS)) {
+	    (node_features_g_get_node(NULL) != SLURM_SUCCESS))
 		error("failed to initialize node features");
-		test_config_rc = 1;
-	}
 
 	/*
 	 * _build_bitmaps() must follow node_features_g_get_node() and
@@ -1859,15 +1832,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if ((select_g_node_init() != SLURM_SUCCESS) ||
 	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
-	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
-		if (test_config) {
-			error("Failed to initialize node selection plugin state");
-			test_config_rc = 1;
-		} else {
-			fatal("Failed to initialize node selection plugin state, "
-			      "Clean start required.");
-		}
-	}
+	    (select_g_job_init(job_list) != SLURM_SUCCESS))
+		fatal("Failed to initialize node selection plugin state, Clean start required.");
 
 	/*
 	 * config_power_mgr() Must be after node and partitions have been loaded
@@ -1895,16 +1861,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	reserve_port_config(slurm_conf.mpi_params);
 
-	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("Invalid Licenses value: %s",
-			      slurm_conf.licenses);
-			test_config_rc = 1;
-		} else {
-			fatal("Invalid Licenses value: %s",
-			      slurm_conf.licenses);
-		}
-	}
+	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS)
+		fatal("Invalid Licenses value: %s", slurm_conf.licenses);
 
 	init_requeue_policy();
 	init_depend_policy();
@@ -1914,8 +1872,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * _build_part_bitmaps()) have been created and before
 	 * _sync_nodes_to_comp_job().
 	 */
-	if (!test_config)
-		set_cluster_tres(false);
+	set_cluster_tres(false);
 
 	_validate_het_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
@@ -1932,8 +1889,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			controller_reconfig_scheduling();
 		}
 	}
-	 if (test_config)
-		goto end_it;
 
 	_restore_job_accounting();
 
@@ -2000,14 +1955,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		info("Changing PreemptType from %s to %s",
 		     old_preempt_type, slurm_conf.preempt_type);
 		(void) preempt_g_fini();
-		if (preempt_g_init() != SLURM_SUCCESS) {
-			if (test_config) {
-				error("failed to initialize preempt plugin");
-				test_config_rc = 1;
-			} else {
-				fatal("failed to initialize preempt plugin");
-			}
-		}
+		if (preempt_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize preempt plugin");
 	}
 	_update_preempt(old_preempt_mode);
 
