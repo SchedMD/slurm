@@ -4937,13 +4937,37 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 		bitstr_t *topo_printed = bit_alloc(gres_ns->topo_cnt);
 		xfree(gres_ns->gres_used);    /* Free any cached value */
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
+			/*
+			 * For non-shared gres, we record which indices have
+			 * gres allocated. For shared gres, we record the count
+			 * of allocated gres at each index (may be >1, as
+			 * opposed to non-shared gres which is never >1)
+			 *
+			 * topo_gres_bitmap is used for non-shared gres, while
+			 * topo_gres_cnt_alloc_str is used for shared gres
+			 * (shard, mps).
+			 */
 			bitstr_t *topo_gres_bitmap = NULL;
+			char *topo_gres_cnt_alloc_str = NULL;
+
 			uint64_t gres_alloc_cnt = 0;
 			char *gres_alloc_idx, tmp_str[64];
+			bool is_shared;
+
 			if (bit_test(topo_printed, i))
 				continue;
 			bit_set(topo_printed, i);
-			if (gres_ns->topo_gres_bitmap[i]) {
+
+			is_shared = gres_is_shared_name(gres_name);
+			if (is_shared) {
+				uint64_t alloc, avail;
+				alloc = gres_ns->topo_gres_cnt_alloc[i];
+				avail = gres_ns->topo_gres_cnt_avail[i];
+				xstrfmtcat(topo_gres_cnt_alloc_str,
+					   "%"PRIu64"/%"PRIu64,
+					   alloc, avail);
+				gres_alloc_cnt += alloc;
+			} else if (gres_ns->topo_gres_bitmap[i]) {
 				topo_gres_bitmap =
 					bit_copy(gres_ns->
 						 topo_gres_bitmap[i]);
@@ -4955,7 +4979,15 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 				    gres_ns->topo_type_id[j])
 					continue;
 				bit_set(topo_printed, j);
-				if (gres_ns->topo_gres_bitmap[j]) {
+				if (is_shared) {
+					uint64_t alloc, avail;
+					alloc = gres_ns->topo_gres_cnt_alloc[j];
+					avail = gres_ns->topo_gres_cnt_avail[j];
+					xstrfmtcat(topo_gres_cnt_alloc_str,
+						   ",%"PRIu64"/%"PRIu64,
+						   alloc, avail);
+					gres_alloc_cnt += alloc;
+				} else if (gres_ns->topo_gres_bitmap[j]) {
 					if (!topo_gres_bitmap) {
 						topo_gres_bitmap =
 							bit_copy(gres_ns->
@@ -4969,14 +5001,17 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 					}
 				}
 			}
-			if (gres_ns->gres_bit_alloc && topo_gres_bitmap &&
+			if (!is_shared && gres_ns->gres_bit_alloc &&
+			    topo_gres_bitmap &&
 			    (bit_size(topo_gres_bitmap) ==
 			     bit_size(gres_ns->gres_bit_alloc))) {
 				bit_and(topo_gres_bitmap,
 					gres_ns->gres_bit_alloc);
 				gres_alloc_cnt = bit_set_count(topo_gres_bitmap);
 			}
-			if (gres_alloc_cnt > 0) {
+			if (is_shared) {
+				gres_alloc_idx = topo_gres_cnt_alloc_str;
+			} else if (gres_alloc_cnt > 0) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
 					topo_gres_bitmap);
 				gres_alloc_idx = tmp_str;
@@ -4984,11 +5019,12 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 				gres_alloc_idx = "N/A";
 			}
 			xstrfmtcat(gres_ns->gres_used,
-				   "%s%s:%s:%"PRIu64"(IDX:%s)", sep, gres_name,
-				   gres_ns->topo_type_name[i],
-				   gres_alloc_cnt, gres_alloc_idx);
+				   "%s%s:%s:%"PRIu64"(%s%s)", sep, gres_name,
+				   gres_ns->topo_type_name[i], gres_alloc_cnt,
+				   is_shared ? "" : "IDX:", gres_alloc_idx);
 			sep = ",";
 			FREE_NULL_BITMAP(topo_gres_bitmap);
+			xfree(topo_gres_cnt_alloc_str);
 		}
 		FREE_NULL_BITMAP(topo_printed);
 	} else if (gres_ns->gres_used) {

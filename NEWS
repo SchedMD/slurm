@@ -300,6 +300,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - Fix how the "INVALID" nodes state is dumped.
  -- Add SchedulerParameters=extra_constraints. This enables various node
     filtering options in the --extra flag of salloc, sbatch, and srun.
+ -- Improve scontrol show node -d information of used shared gres (shard/mps)
+    topology.
 
 * Changes in Slurm 23.02.7
 ==========================
