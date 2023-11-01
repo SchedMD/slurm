@@ -54,6 +54,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/extra_constraints.h"
 #include "src/common/identity.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
@@ -780,6 +781,9 @@ struct job_record {
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	char *extra;			/* Arbitrary string */
+	elem_t *extra_constraints;	/* Head of tree built from constraints
+					 * defined in "extra". Not state saved.
+					 */
 	char *failed_node;		/* Name of node that failed which caused
 					 * this job to be killed.
 					 * NULL in all other situations */

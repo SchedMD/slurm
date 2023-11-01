@@ -10133,6 +10133,7 @@ extern void job_mgr_list_delete_job(void *job_entry)
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
 	xfree(job_ptr->extra);
+	FREE_NULL_EXTRA_CONSTRAINTS(job_ptr->extra_constraints);
 	xfree(job_ptr->failed_node);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
