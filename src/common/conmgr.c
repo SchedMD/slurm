@@ -266,6 +266,7 @@ struct {
 	.signal_fd = { -1, -1 },
 	.error = SLURM_SUCCESS,
 	.quiesced = true,
+	.shutdown = true,
 };
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
@@ -485,6 +486,8 @@ extern void init_conmgr(int thread_count, int max_connections,
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
 	slurm_mutex_lock(&mgr.mutex);
+
+	mgr.shutdown = false;
 
 	if (mgr.workq) {
 		/* already initialized */
