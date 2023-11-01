@@ -2721,10 +2721,10 @@ static void _parse_commandline(int argc, char **argv)
 			recover = 0;
 			break;
 		case 'd':
-			daemonize = 1;
+			daemonize = true;
 			break;
 		case 'D':
-			daemonize = 0;
+			daemonize = false;
 			break;
 		case 'f':
 			xfree(slurm_conf_filename);
