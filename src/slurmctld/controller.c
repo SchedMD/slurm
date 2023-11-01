@@ -1057,11 +1057,6 @@ extern void reconfigure_slurm_post_send(int error_code)
 	slurm_mutex_unlock(&reconfig_mutex);
 }
 
-static void _reconfigure_slurm(void)
-{
-	reconfigure_slurm_post_send(reconfigure_slurm());
-}
-
 /* Request that the job scheduler execute soon (typically within seconds) */
 extern void queue_job_scheduler(void)
 {
@@ -1103,7 +1098,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			_reconfigure_slurm();
+			reconfigure_slurm_post_send(reconfigure_slurm());
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
