@@ -808,24 +808,27 @@ static bool _match_flag_bit(const parser_t *const parser, void *src,
 static bool _match_flag_equal(const parser_t *const parser, void *src,
 			      const flag_bit_t *bit)
 {
+	bool found;
 	const uint64_t v = bit->mask & bit->value;
 
 	/* C allows complier to choose a size for the enum */
 	if (parser->size == sizeof(uint64_t)) {
 		uint64_t *flags = src;
-		return ((*flags & bit->mask) == v);
+		found = ((*flags & bit->mask) == v);
 	} else if (parser->size == sizeof(uint32_t)) {
 		uint32_t *flags = src;
-		return ((*flags & bit->mask) == v);
+		found = ((*flags & bit->mask) == v);
 	} else if (parser->size == sizeof(uint16_t)) {
 		uint16_t *flags = src;
-		return ((*flags & bit->mask) == v);
+		found = ((*flags & bit->mask) == v);
 	} else if (parser->size == sizeof(uint8_t)) {
 		uint8_t *flags = src;
-		return ((*flags & bit->mask) == v);
+		found = ((*flags & bit->mask) == v);
+	} else {
+		fatal("%s: unexpected enum size: %zu", __func__, parser->size);
 	}
 
-	fatal("%s: unexpected enum size: %zu", __func__, parser->size);
+	return found;
 }
 
 static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
