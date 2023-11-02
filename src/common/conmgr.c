@@ -2725,7 +2725,7 @@ extern void conmgr_quiesce(bool wait)
 	log_flag(NET, "%s: quiesce requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (mgr.shutdown) {
+	if (mgr.quiesced || mgr.shutdown) {
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
