@@ -1393,72 +1393,6 @@ start_child:
 	fatal("execv() failed: %m");
 }
 
-#if 0
-static void
-_reconfigure(void)
-{
-	_reconfig = 0;
-	slurm_conf_reinit(conf->conffile);
-	cgroup_conf_reinit();
-	_read_config();
-
-	/*
-	 * In case the administrator changed the cpu frequency set capabilities
-	 * on this node, rebuild the cpu frequency table information
-	 */
-	cpu_freq_init(conf);
-
-	/*
-	 * If configured, apply resource specialization
-	 */
-	_resource_spec_init();
-
-	_print_conf();
-
-	/*
-	 * Purge the username -> grouplist cache.
-	 */
-	group_cache_purge();
-
-	gres_reconfig();
-	(void) switch_g_reconfig();
-	container_g_reconfig();
-	prep_g_reconfig();
-
-	init_node_conf();
-	build_all_nodeline_info(true, 0);
-	build_all_frontend_info(true);
-	_dynamic_reconfig();
-	_load_gres();
-
-	/*
-	 * Rebuild topology information and refresh slurmd topo infos
-	 */
-	rehash_node();
-	topology_g_build_config();
-	_set_topo_info();
-
-	build_conf_buf();
-
-	slurm_mutex_lock(&cached_features_mutex);
-	refresh_cached_features = true;
-	slurm_mutex_unlock(&cached_features_mutex);
-	send_registration_msg(SLURM_SUCCESS);
-
-	acct_gather_reconfig();
-
-	/* reconfigure energy */
-	acct_gather_energy_g_set_data(ENERGY_DATA_RECONFIG, NULL);
-
-	if (mpi_g_daemon_reconfig() != SLURM_SUCCESS)
-		fatal("Failed reconfigure MPI plugins.");
-
-	/*
-	 * XXX: reopen slurmd port?
-	 */
-}
-#endif
-
 static void
 _print_conf(void)
 {
@@ -2171,24 +2105,6 @@ static void _dynamic_init(void)
 	}
 	slurm_mutex_unlock(&conf->config_mutex);
 }
-
-#if 0
-static void _dynamic_reconfig(void)
-{
-	if (conf->dynamic_type == DYN_NODE_NORM) {
-		/*
-		 * Node needs to be re-added to node table so gres can be
-		 * loaded properly.
-		 */
-		char *err_msg = NULL;
-		if (_create_nodes(conf->dynamic_conf, &err_msg)) {
-			fatal("failed to create dynamic node '%s'",
-			      conf->dynamic_conf);
-		}
-		xfree(err_msg);
-	}
-}
-#endif
 
 static int
 _slurmd_init(void)
