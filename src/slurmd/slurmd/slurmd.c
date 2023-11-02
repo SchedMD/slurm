@@ -392,6 +392,7 @@ main (int argc, char **argv)
 
 	slurm_thread_create_detached(_registration_engine, NULL);
 
+	/* main processing loop. when this returns start shutting down */
 	_msg_engine();
 
 	/*
