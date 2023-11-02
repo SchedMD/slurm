@@ -43,6 +43,7 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/proc_args.h"
 #include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 
@@ -66,8 +67,14 @@ xsignal(int signo, SigFunc *f)
 	sigemptyset(&sa.sa_mask);
 	sigaddset(&sa.sa_mask, signo);
 	sa.sa_flags = 0;
+
 	if (sigaction(signo, &sa, &old_sa) < 0)
 		error("xsignal(%d) failed: %m", signo);
+
+	debug2("%s: Swap signal %s[%d] to 0x%"PRIxPTR" from 0x%"PRIxPTR,
+	       __func__, sig_num2name(signo), signo, (uintptr_t) f,
+	       (uintptr_t) old_sa.sa_handler);
+
 	return (old_sa.sa_handler);
 }
 
