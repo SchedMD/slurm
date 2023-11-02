@@ -241,6 +241,7 @@ static void _on_sigint(conmgr_fd_t *con, conmgr_work_type_t type,
 		       void *arg)
 {
 	info("Caught SIGINT. Shutting down.");
+	reconfig = false;
 	conmgr_request_shutdown();
 }
 
