@@ -568,7 +568,7 @@ extern void destroy_config_file(void *object)
 
 extern void grab_include_directives(void)
 {
-	char *conf_file;
+	char *conf_file = NULL;
 	struct stat stat_buf;
 	uint32_t parse_flags = 0;
 
@@ -583,5 +583,6 @@ extern void grab_include_directives(void)
 				s_p_parse_file(NULL, NULL, conf_file,
 					       parse_flags, NULL);
 		}
+		xfree(conf_file);
 	}
 }
