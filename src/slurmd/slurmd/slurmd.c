@@ -461,8 +461,7 @@ _registration_engine(void *arg)
 	return NULL;
 }
 
-static void
-_msg_engine(void)
+static void _msg_engine(void)
 {
 	slurm_addr_t *cli;
 	int sock;
@@ -491,7 +490,7 @@ _msg_engine(void)
 			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
-		cli = xmalloc (sizeof (slurm_addr_t));
+		cli = xmalloc(sizeof(*cli));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
 			continue;
@@ -499,14 +498,13 @@ _msg_engine(void)
 		/*
 		 *  Otherwise, accept() failed.
 		 */
-		xfree (cli);
+		xfree(cli);
 		if (errno == EINTR)
 			continue;
 		error("accept: %m");
 	}
 	verbose("got shutdown request");
 	close(conf->lfd);
-	return;
 }
 
 static void
