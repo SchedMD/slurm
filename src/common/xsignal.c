@@ -78,6 +78,24 @@ xsignal(int signo, SigFunc *f)
 	return (old_sa.sa_handler);
 }
 
+extern SigFunc *xsignal_default(int sig)
+{
+	struct sigaction act;
+	if (sigaction(sig, NULL, &act)) {
+		error("sigaction(%d): %m", sig);
+		return NULL;
+	}
+	if (act.sa_handler != SIG_IGN)
+		return act.sa_handler;
+
+	act.sa_handler = SIG_DFL;
+	if (sigaction(sig, &act, NULL)) {
+		error("sigaction(%d): %m", sig);
+		return NULL;
+	}
+
+	return act.sa_handler;
+}
 
 /*
  *  Wrapper for pthread_sigmask.

@@ -49,6 +49,11 @@ typedef void SigFunc(int);
 SigFunc *xsignal(int signo, SigFunc *);
 
 /*
+ * Set signal handler to default unless it is marked as ignore
+ */
+extern SigFunc *xsignal_default(int sig);
+
+/*
  * Save current set of blocked signals into `set'
  */
 int xsignal_save_mask(sigset_t *set);
