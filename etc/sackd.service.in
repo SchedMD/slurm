@@ -5,15 +5,14 @@ Wants=network-online.target
 #ConditionPathExists=@sysconfdir@/slurm.conf
 
 [Service]
-Type=simple
-ExitType=cgroup
+Type=notify
 EnvironmentFile=-/etc/sysconfig/sackd
 EnvironmentFile=-/etc/default/sackd
 User=slurm
 Group=slurm
 RuntimeDirectory=slurm
 RuntimeDirectoryMode=0755
-ExecStart=@sbindir@/sackd $SACKD_OPTIONS
+ExecStart=@sbindir@/sackd --systemd $SACKD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 LimitNOFILE=131072

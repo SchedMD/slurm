@@ -50,6 +50,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/xsystemd.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
@@ -60,6 +61,7 @@ static bool daemonize = true;
 static bool original = true;
 static bool reconfig = false;
 static bool registered = false;
+static bool under_systemd = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
 static char *dir = "/run/slurm/conf";
@@ -83,10 +85,12 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
+		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
@@ -116,11 +120,20 @@ static void _parse_args(int argc, char **argv)
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
 			break;
+		case LONG_OPT_SYSTEMD:
+			under_systemd = true;
+			break;
 		default:
 			_usage();
 			exit(1);
 			break;
 		}
+	}
+
+	if (under_systemd) {
+		if (!getenv("NOTIFY_SOCKET"))
+			fatal("Missing NOTIFY_SOCKET");
+		daemonize = false;
 	}
 }
 
@@ -283,7 +296,7 @@ static void _try_to_reconfig(void)
 		fd_set_noclose_on_exec(listen_fd);
 	}
 
-	if (!daemonize)
+	if (!daemonize && !under_systemd)
 		goto start_child;
 
 	if (pipe(to_parent) < 0) {
@@ -309,6 +322,14 @@ static void _try_to_reconfig(void)
 		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
 
 		info("Relinquishing control to new sackd process");
+		if (under_systemd) {
+			/*
+			 * Ensure child has exited.
+			 * Grandchild should be owned by init.
+			 */
+			waitpid(pid, &rc, 0);
+			xsystemd_change_mainpid(grandchild_pid);
+		}
 		_exit(0);
 
 rwfail:
@@ -323,6 +344,18 @@ start_child:
 	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
 		if ((fd != to_parent[1]) && (fd != listen_fd))
 			(void) close(fd);
+	}
+
+	/*
+	 * This second fork() ensures that the new grandchild's parent is init,
+	 * which avoids a nuisance warning from systemd of:
+	 * "Supervising process 123456 which is not our child. We'll most likely not notice when it exits"
+	 */
+	if (under_systemd) {
+		if ((pid = fork()) < 0)
+			fatal("fork() failed: %m");
+		else if (pid)
+			exit(0);
 	}
 
 	execve(main_argv[0], main_argv, child_env);
@@ -385,6 +418,8 @@ extern int main(int argc, char **argv)
 
 	if (!original)
 		_notify_parent_of_success();
+	else if (under_systemd)
+		xsystemd_change_mainpid(getpid());
 
 	info("running");
 	while (true) {
