@@ -126,7 +126,6 @@ extern char **environ;
 
 static void _call_spank_fini(void);
 static int  _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local);
-static void _default_sigaction(int sig);
 static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2);
 static void _handle_intr(srun_job_t *job);
 static void _handle_pipe(void);
@@ -1796,21 +1795,6 @@ static int _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local)
 	return spank_local_user(info);
 }
 
-static void _default_sigaction(int sig)
-{
-	struct sigaction act;
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return;
-
-	act.sa_handler = SIG_DFL;
-	if (sigaction(sig, &act, NULL))
-		error("sigaction(%d): %m", sig);
-}
-
 /* Return the number of microseconds between tv1 and tv2 with a maximum
  * a maximum value of 10,000,000 to prevent overflows */
 static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2)
@@ -2309,7 +2293,7 @@ static void *_srun_signal_mgr(void *job_ptr)
 
 	/* Make sure no required signals are ignored (possibly inherited) */
 	for (i = 0; sig_array[i]; i++)
-		_default_sigaction(sig_array[i]);
+		xsignal_default(sig_array[i]);
 	while (!srun_shutdown) {
 		xsignal_sigset_create(sig_array, &set);
 		rc = sigwait(&set, &sig);

@@ -108,7 +108,6 @@ static void  _become_slurm_user(void);
 static void  _commit_handler_cancel(void);
 static void *_commit_handler(void *no_data);
 static void  _daemonize(void);
-static void  _default_sigaction(int sig);
 static void  _init_config(void);
 static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
@@ -889,11 +888,11 @@ static void *_signal_handler(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
-	_default_sigaction(SIGINT);
-	_default_sigaction(SIGTERM);
-	_default_sigaction(SIGHUP);
-	_default_sigaction(SIGABRT);
-	_default_sigaction(SIGUSR2);
+	xsignal_default(SIGINT);
+	xsignal_default(SIGTERM);
+	xsignal_default(SIGHUP);
+	xsignal_default(SIGABRT);
+	xsignal_default(SIGUSR2);
 
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
@@ -924,24 +923,6 @@ static void *_signal_handler(void *no_data)
 		}
 	}
 
-}
-
-/* Reset some signals to their default state to clear any
- * inherited signal states */
-static void _default_sigaction(int sig)
-{
-	struct sigaction act;
-
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return;
-
-	act.sa_handler = SIG_DFL;
-	if (sigaction(sig, &act, NULL))
-		error("sigaction(%d): %m", sig);
 }
 
 static void _become_slurm_user(void)

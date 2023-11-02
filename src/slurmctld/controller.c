@@ -241,7 +241,6 @@ static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
 static void         _become_slurm_user(void);
 static void         _create_clustername_file(void);
-static void         _default_sigaction(int sig);
 static void _flush_agent_queue(int tenths);
 static void _flush_rpcs(void);
 static void         _get_fed_updates();
@@ -1073,7 +1072,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 
 	/* Make sure no required signals are ignored (possibly inherited) */
 	for (i = 0; sig_array[i]; i++)
-		_default_sigaction(sig_array[i]);
+		xsignal_default(sig_array[i]);
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
 		rc = sigwait(&set, &sig);
@@ -1112,21 +1111,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 			error("Invalid signal (%d) received", sig);
 		}
 	}
-}
-
-static void _default_sigaction(int sig)
-{
-	struct sigaction act;
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return;
-
-	act.sa_handler = SIG_DFL;
-	if (sigaction(sig, &act, NULL))
-		error("sigaction(%d): %m", sig);
 }
 
 static void _sig_handler(int signal)

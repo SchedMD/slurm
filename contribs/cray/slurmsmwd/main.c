@@ -473,24 +473,6 @@ static void _reconfig(void)
 	_update_logging();
 }
 
-/* Reset some signals to their default state to clear any
- * inherited signal states */
-static void _default_sigaction(int sig)
-{
-	struct sigaction act;
-
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return;
-
-	act.sa_handler = SIG_DFL;
-	if (sigaction(sig, &act, NULL))
-		error("sigaction(%d): %m", sig);
-}
-
 /* _signal_handler - Process daemon-wide signals */
 static void *_signal_handler(void *no_data)
 {
@@ -502,10 +484,10 @@ static void *_signal_handler(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
-	_default_sigaction(SIGINT);
-	_default_sigaction(SIGTERM);
-	_default_sigaction(SIGHUP);
-	_default_sigaction(SIGABRT);
+	xsignal_default(SIGINT);
+	xsignal_default(SIGTERM);
+	xsignal_default(SIGHUP);
+	xsignal_default(SIGABRT);
 
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
