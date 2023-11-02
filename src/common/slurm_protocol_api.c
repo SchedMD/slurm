@@ -2863,61 +2863,6 @@ extern int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
 	return ret_c;
 }
 
-/* this is used to set how many nodes are going to be on each branch
- * of the tree.
- * IN total       - total number of nodes to send to
- * IN tree_width  - how wide the tree should be on each hop
- * RET int *	  - int array tree_width in length each space
- *		    containing the number of nodes to send to each hop
- *		    on the span.
- */
-extern int *set_span(int total,  uint16_t tree_width)
-{
-	int *span = NULL;
-	int left = total;
-	int i = 0;
-
-	if (tree_width == 0)
-		tree_width = slurm_conf.tree_width;
-
-	//info("span count = %d", tree_width);
-	if (total <= tree_width) {
-		return span;
-	}
-
-	span = xcalloc(tree_width, sizeof(int));
-
-	while (left > 0) {
-		for (i = 0; i < tree_width; i++) {
-			if ((tree_width-i) >= left) {
-				if (span[i] == 0) {
-					left = 0;
-					break;
-				} else {
-					span[i] += left;
-					left = 0;
-					break;
-				}
-			} else if (left <= tree_width) {
-				if (span[i] == 0)
-					left--;
-
-				span[i] += left;
-				left = 0;
-				break;
-			}
-
-			if (span[i] == 0)
-				left--;
-
-			span[i] += tree_width;
-			left -= tree_width;
-		}
-	}
-
-	return span;
-}
-
 /*
  * Free a slurm message's memebers but not the message itself
  */

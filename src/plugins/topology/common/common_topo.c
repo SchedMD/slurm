@@ -171,6 +171,61 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	return SLURM_SUCCESS;
 }
 
+/* this is used to set how many nodes are going to be on each branch
+ * of the tree.
+ * IN total       - total number of nodes to send to
+ * IN tree_width  - how wide the tree should be on each hop
+ * RET int *	  - int array tree_width in length each space
+ *		    containing the number of nodes to send to each hop
+ *		    on the span.
+ */
+static int *_set_span(int total,  uint16_t tree_width)
+{
+	int *span = NULL;
+	int left = total;
+	int i = 0;
+
+	if (tree_width == 0)
+		tree_width = slurm_conf.tree_width;
+
+	//info("span count = %d", tree_width);
+	if (total <= tree_width) {
+		return span;
+	}
+
+	span = xcalloc(tree_width, sizeof(int));
+
+	while (left > 0) {
+		for (i = 0; i < tree_width; i++) {
+			if ((tree_width-i) >= left) {
+				if (span[i] == 0) {
+					left = 0;
+					break;
+				} else {
+					span[i] += left;
+					left = 0;
+					break;
+				}
+			} else if (left <= tree_width) {
+				if (span[i] == 0)
+					left--;
+
+				span[i] += left;
+				left = 0;
+				break;
+			}
+
+			if (span[i] == 0)
+				left--;
+
+			span[i] += tree_width;
+			left -= tree_width;
+		}
+	}
+
+	return span;
+}
+
 extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 						hostlist_t ***sp_hl,
 						int *count, uint16_t tree_width)
@@ -190,7 +245,7 @@ extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 		tree_width = slurm_conf.tree_width;
 
 	host_count = hostlist_count(hl);
-	span = set_span(host_count, tree_width);
+	span = _set_span(host_count, tree_width);
 	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
 
 	while ((name = hostlist_shift(hl))) {

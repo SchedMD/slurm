@@ -554,13 +554,6 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 
 /* Slurm message functions */
 
-/* set_span
- * build an array indicating how message fanout should occur
- * IN total - total number of nodes to communicate with
- * IN tree_width - message fanout, use system default if zero
- * NOTE: Returned array MUST be release by caller using xfree */
-extern int *set_span(int total, uint16_t tree_width);
-
 extern void slurm_free_msg_members(slurm_msg_t *msg);
 extern void slurm_free_msg(slurm_msg_t * msg);
 
