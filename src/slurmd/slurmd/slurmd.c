@@ -1698,23 +1698,12 @@ _process_cmdline(int ac, char **av)
 	}
 }
 
-
-static void
-_create_msg_socket(void)
+static void _create_msg_socket(void)
 {
-	int ld = slurm_init_msg_engine_port(conf->port);
-
-	if (ld < 0) {
-		error("Unable to bind listen port (%u): %m",
-		      conf->port);
-		exit(1);
-	}
-
-	conf->lfd = ld;
+	if ((conf->lfd = slurm_init_msg_engine_port(conf->port)) < 0)
+		fatal("Unable to bind listen port (%u): %m", conf->port);
 
 	debug3("Successfully opened slurm listen port %u", conf->port);
-
-	return;
 }
 
 static void
