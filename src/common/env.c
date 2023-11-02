@@ -2318,11 +2318,6 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    het_job_offset, "%s",
 					    opt->gpus_per_socket);
 	}
-	if (opt->gpus_per_task) {
-		env_array_overwrite_het_fmt(dest, "SLURM_GPUS_PER_TASK",
-					    het_job_offset, "%s",
-					    opt->gpus_per_task);
-	}
 	if (opt->mem_per_gpu != NO_VAL64) {
 		env_array_overwrite_het_fmt(dest, "SLURM_MEM_PER_GPU",
 					    het_job_offset, "%"PRIu64,

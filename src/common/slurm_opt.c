@@ -2098,7 +2098,40 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.reset_each_pass = true,
 };
 
-COMMON_STRING_OPTION(gpus_per_task);
+static int arg_set_gpus_per_task(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->gpus_per_task);
+	xfree(opt->tres_per_task);
+	opt->gpus_per_task = xstrdup(arg);
+	xstrfmtcat(opt->tres_per_task, "gres/gpu:%s", opt->gpus_per_task);
+
+	return SLURM_SUCCESS;
+}
+static int arg_set_data_gpus_per_task(slurm_opt_t *opt, const data_t *arg,
+				      data_t *errors)
+{
+	int rc;
+	char *str = NULL;
+
+	if ((rc = data_get_string_converted(arg, &str)))
+		ADD_DATA_ERROR("Unable to read string", rc);
+	else {
+		xfree(opt->gpus_per_task);
+		xfree(opt->tres_per_task);
+		opt->gpus_per_task = xstrdup(str);
+		xstrfmtcat(opt->tres_per_task, "gres/gpu:%s",
+			   opt->gpus_per_task);
+	}
+
+	xfree(str);
+	return rc;
+}
+static void arg_reset_gpus_per_task(slurm_opt_t *opt)
+{
+	xfree(opt->gpus_per_task);
+	xfree(opt->tres_per_task);
+}
+COMMON_STRING_OPTION_GET(gpus_per_task);
 static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.name = "gpus-per-task",
 	.has_arg = required_argument,
@@ -6320,12 +6353,9 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	xstrsubstituteall(opt->tres_per_task, "license:", "license/");
 	xstrsubstituteall(opt->tres_per_task, "gres:", "gres/");
 
-	/*
-	 * FIXME: "gpu:" is not a perfect test. --tres-per-task=gpu is
-	 * also permitted and would not trigger this check.
-	 */
-	if (xstrcasestr(opt->tres_per_task, "gpu:") && opt->gpus_per_task)
-		fatal("You can not have --tres-per-task=gres/gpu: and --gpus-per-task please use one or the other");
+	if (slurm_option_isset(opt, "gpus-per-task") &&
+	    slurm_option_isset(opt, "tres-per-task"))
+		fatal("gpus-per-task is mutually exclusive with tres-per-task");
 
 	_validate_cpus_per_task(opt);
 }
@@ -6735,12 +6765,6 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		  opt_local->gpus_per_socket);
 
 	job_desc->tres_per_task = xstrdup(opt_local->tres_per_task);
-
-	if (opt_local->gpus_per_task &&
-	    !xstrcasestr(job_desc->tres_per_task, "gres/gpu"))
-		xfmt_tres(&job_desc->tres_per_task, "gres/gpu",
-			  opt_local->gpus_per_task);
-
 	job_desc->user_id = opt_local->uid;
 
 	/* wait_all_nodes not filled in here */

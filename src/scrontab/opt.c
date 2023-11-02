@@ -188,7 +188,7 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 			desc->tres_per_node = xstrdup(opt.gres);
 	}
 	xfmt_tres(&desc->tres_per_socket, "gres/gpu", opt.gpus_per_socket);
-	xfmt_tres(&desc->tres_per_task, "gres/gpu", opt.gpus_per_task);
+	desc->tres_per_task = xstrdup(opt.tres_per_task);
 	if (opt.mem_per_gpu != NO_VAL64)
 		xstrfmtcat(desc->mem_per_tres, "gres/gpu:%"PRIu64, opt.mem_per_gpu);
 }

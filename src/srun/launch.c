@@ -934,14 +934,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	_implicitly_bind_tres_per_task(opt_local, "gres/shard");
 	_implicitly_bind_tres_per_task(opt_local, "gres/gpu");
 
-	/*
-	 * FIXME: tres_per_task Should be handled in src/common/slurm_opt.c
-	 * _validate_tres_per_task(). But we should probably revisit this to get
-	 * rid of gpus_per_task completely.
-	 */
-	if (opt_local->tres_per_task)
-	        step_req->tres_per_task = xstrdup(opt_local->tres_per_task);
-
+	step_req->tres_per_task = xstrdup(opt_local->tres_per_task);
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);
 	step_req->tres_freq = xstrdup(opt_local->tres_freq);
 
@@ -981,8 +974,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		xstrfmtcat(step_req->tres_per_task, "%scpu:%u",
 			   step_req->tres_per_task ? "," : "",
 			   opt_local->cpus_per_task);
-	xfmt_tres(&step_req->tres_per_task, "gres/gpu",
-		  opt_local->gpus_per_task);
 
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;
