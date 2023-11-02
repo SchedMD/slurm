@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include "src/common/conmgr.h"
+#include "src/common/daemonize.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
@@ -56,6 +57,7 @@
 decl_static_data(usage_txt);
 
 static bool daemonize = true;
+static bool original = true;
 static bool reconfig = false;
 static bool registered = false;
 static char *conf_file = NULL;
@@ -275,6 +277,7 @@ static void _try_to_reconfig(void)
 	}
 
 	child_env = env_array_copy((const char **) environ);
+	setenvf(&child_env, "SACKD_RECONF", "1");
 	if (listen_fd != -1) {
 		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
 		fd_set_noclose_on_exec(listen_fd);
@@ -352,12 +355,17 @@ extern int main(int argc, char **argv)
 	main_argv = argv;
 	_parse_args(argc, argv);
 
+	if (getenv("SACKD_RECONF"))
+		original = false;
+
+	if (original && daemonize)
+		xdaemon();
+
 	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
 	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
 	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
 
 	_establish_config_source();
-
 	slurm_conf_init(conf_file);
 
 	if (getuid() != slurm_conf.slurm_user_id) {
@@ -375,7 +383,8 @@ extern int main(int argc, char **argv)
 	if (registered)
 		_listen_for_reconf();
 
-	_notify_parent_of_success();
+	if (!original)
+		_notify_parent_of_success();
 
 	info("running");
 	while (true) {
