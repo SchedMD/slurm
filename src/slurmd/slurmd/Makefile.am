@@ -2,6 +2,7 @@
 # Makefile for slurmd
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 sbin_PROGRAMS = slurmd
 
@@ -32,6 +33,12 @@ SLURMD_SOURCES = \
 slurmd_SOURCES = $(SLURMD_SOURCES)
 
 slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD) $(SLURMD_INTERFACES)
+
+REF = usage.txt
+include $(top_srcdir)/make_ref.include
+noinst_LTLIBRARIES = $(LIB_REF)
+EXTRA_slurmd_DEPENDENCIES = $(LIB_REF)
+slurmd_LDADD += $(LIB_REF)
 
 force:
 $(slurmd_DEPENDENCIES) : force

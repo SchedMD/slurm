@@ -1,0 +1,23 @@
+Usage: slurmd [OPTIONS]
+   -b                         Report node reboot now.
+   -c                         Force cleanup of slurmd shared memory.
+   -C                         Print node configuration information and exit.
+   --conf                     Dynamic node configuration, works with -Z.
+   --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.
+   -d stepd                   Pathname to the slurmstepd program.
+   -D                         Run daemon in foreground.
+   --extra                    Arbitrary descriptive string.
+   -f config                  Read configuration from the specified file.
+   -F[feature]                Start as Dynamic Future node w/optional Feature.
+   -G                         Print node's GRES configuration and exit.
+   -h                         Print this help message.
+   --instance-id              Cloud instance ID of node.
+   --instance-type            Cloud instance type of node.
+   -L logfile                 Log messages to the file `logfile'.
+   -M                         Use mlock() to lock slurmd pages into memory.
+   -n value                   Run the daemon at the specified nice value.
+   -N node                    Run the daemon for specified nodename.
+   -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.
+   -v                         Verbose mode. Multiple -v's increase verbosity.
+   -V                         Print version information and exit.
+   -Z                         Start as Dynamic Normal node.
