@@ -33,3 +33,52 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/strlcpy.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+extern void xsystemd_change_mainpid(pid_t pid)
+{
+	char *notify_socket = getenv("NOTIFY_SOCKET");
+	char *payload = NULL;
+	size_t len = 0;
+	struct sockaddr_un addr = { .sun_family = AF_UNIX };
+	int fd = -1;
+
+	if (!notify_socket) {
+		error("%s: missing NOTIFY_SOCKET", __func__);
+		return;
+	}
+
+	strlcpy(addr.sun_path, notify_socket, sizeof(addr.sun_path));
+	len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
+
+	if ((fd = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
+		error("%s: socket() failed: %m", __func__);
+		return;
+	}
+
+	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		error("%s: connect() failed for %s: %m",
+		      __func__, addr.sun_path);
+		close(fd);
+		return;
+	}
+
+	xstrfmtcat(payload, "READY=1\nMAINPID=%d", pid);
+	safe_write(fd, payload, strlen(payload));
+	xfree(payload);
+	close(fd);
+	return;
+
+rwfail:
+	error("%s: failed to send message: %m", __func__);
+	xfree(payload);
+	close(fd);
+}

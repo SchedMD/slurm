@@ -37,4 +37,14 @@
 #ifndef _COMMON_XSYSTEMD_H
 #define _COMMON_XSYSTEMD_H
 
+#include <sys/types.h>
+
+/*
+ * Inform systemd of changed to mainpid.
+ *
+ * Equivalent to using their library for:
+ * sd_notifyf(0, "READY=1\nMAINPID=%d", pid);
+ */
+extern void xsystemd_change_mainpid(pid_t pid);
+
 #endif
