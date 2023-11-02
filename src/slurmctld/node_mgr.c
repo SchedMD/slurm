@@ -74,6 +74,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/power.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -1792,11 +1793,26 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 
 		if (update_node_msg->extra) {
-			xfree(node_ptr->extra);
-			if (update_node_msg->extra[0])
-				node_ptr->extra = xstrdup(
-					update_node_msg->extra);
-			update_db = true;
+			data_t *data = NULL;
+			char *extra = update_node_msg->extra;
+
+			if (extra[0] && extra_constraints_enabled() &&
+			    serialize_g_string_to_data(&data, extra,
+						       strlen(extra),
+						       MIME_TYPE_JSON)) {
+				error("Failed to decode extra \"%s\" for node %s",
+				      update_node_msg->extra, node_ptr->name);
+				error_code = ESLURM_INVALID_EXTRA;
+			} else {
+				FREE_NULL_DATA(node_ptr->extra_data);
+				node_ptr->extra_data = data;
+				xfree(node_ptr->extra);
+				if (update_node_msg->extra[0]) {
+					node_ptr->extra =
+						xstrdup(update_node_msg->extra);
+				}
+				update_db = true;
+			}
 		}
 
 		if (update_node_msg->comment) {
@@ -2309,6 +2325,21 @@ extern void restore_node_features(int recover)
 				update_node_avail_features(node_ptr->name,
 							   node_ptr->features,
 							   FEATURE_MODE_COMB);
+			}
+		}
+
+		/*
+		 * Rebuild extra_data
+		 */
+		if (node_ptr->extra && extra_constraints_enabled()) {
+			data_t *data = NULL;
+			if (serialize_g_string_to_data(&data, node_ptr->extra,
+						       strlen(node_ptr->extra),
+						       MIME_TYPE_JSON)) {
+				info("Failed to decode extra \"%s\" for node %s",
+				     node_ptr->extra, node_ptr->name);
+			} else {
+				node_ptr->extra_data = data;
 			}
 		}
 
@@ -3268,6 +3299,22 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	if (reg_msg->extra) {
+		data_t *data = NULL;
+
+		if (extra_constraints_enabled() &&
+		    serialize_g_string_to_data(&data, node_ptr->extra,
+					       strlen(node_ptr->extra),
+					       MIME_TYPE_JSON)) {
+			info("Failed to decode extra \"%s\" for node %s",
+			      reg_msg->extra, node_ptr->name);
+		}
+		FREE_NULL_DATA(node_ptr->extra_data);
+		node_ptr->extra_data = data;
+
+		/*
+		 * Always set the extra field from the registration message,
+		 * even if decoding failed.
+		 */
 		xfree(node_ptr->extra);
 		if (reg_msg->extra[0]) {
 			node_ptr->extra = xstrdup(reg_msg->extra);
