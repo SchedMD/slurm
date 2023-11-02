@@ -174,6 +174,7 @@ static int	ncpus;			/* number of CPUs on this node */
 /*
  * static shutdown and reconfigure flags:
  */
+static bool original = true;
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static sig_atomic_t _update_log = 0;
@@ -267,25 +268,24 @@ main (int argc, char **argv)
 	char time_stamp[256];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
+	if (getenv("SLURMD_RECONF"))
+		original = false;
+
 	/* NOTE: logfile is NULL at this point */
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
-	/*
-	 * Make sure we have no extra open files which
-	 * would be propagated to spawned tasks.
-	 */
-	closeall(3);
+	if (original) {
+		/*
+		 * Make sure we have no extra open files which
+		 * could propagate to spawned tasks.
+		 */
+		closeall(3);
 
-	/*
-	 * Drop supplementary groups.
-	 */
-	if (geteuid() == 0) {
-		if (setgroups(0, NULL) != 0) {
-			fatal("Failed to drop supplementary groups, "
-			      "setgroups: %m");
-		}
-	} else {
-		debug("Not running as root. Can't drop supplementary groups");
+		/* Drop supplementary groups. */
+		if (geteuid())
+			debug("Not running as root. Can't drop supplementary groups");
+		else if (setgroups(0, NULL) < 0)
+			fatal("Failed to drop supplementary groups, setgroups: %m");
 	}
 
 	/*
@@ -325,7 +325,7 @@ main (int argc, char **argv)
 	/*
 	 * Become a daemon if desired.
 	 */
-	if (conf->daemonize) {
+	if (original && conf->daemonize) {
 		if (xdaemon())
 			error("Couldn't daemonize slurmd: %m");
 	}
@@ -339,7 +339,8 @@ main (int argc, char **argv)
 		set_oom_adj(i);
 	}
 
-	_kill_old_slurmd();
+	if (original)
+		_kill_old_slurmd();
 
 	if (conf->mlock_pages) {
 		/*
@@ -385,7 +386,8 @@ main (int argc, char **argv)
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
 
-	run_script_health_check();
+	if (original)
+		run_script_health_check();
 
 	slurm_thread_create_detached(_registration_engine, NULL);
 
