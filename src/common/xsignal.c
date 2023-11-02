@@ -44,8 +44,8 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
-#include "src/common/xsignal.h"
 #include "src/common/xassert.h"
+#include "src/common/xsignal.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
