@@ -48,6 +48,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/extra_constraints.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/read_config.h"
@@ -107,6 +108,7 @@ struct node_record {
 	acct_gather_energy_t *energy;	/* power consumption data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *extra;			/* arbitrary string */
+	data_t *extra_data;		/* Data serialized from extra */
 	char *features;			/* node's available features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
