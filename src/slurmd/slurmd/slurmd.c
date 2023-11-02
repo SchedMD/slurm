@@ -95,6 +95,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/xsystemd.h"
 
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
@@ -263,7 +264,7 @@ static void      _wait_for_all_threads(int secs);
 int
 main (int argc, char **argv)
 {
-	int pidfd;
+	int pidfd = -1;
 	int blocked_signals[] = {SIGPIPE, 0};
 	char *oom_value;
 	uint32_t curr_uid = 0;
@@ -380,7 +381,8 @@ main (int argc, char **argv)
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	pidfd = create_pidfile(conf->pidfile, 0);
+	if (!under_systemd)
+		pidfd = create_pidfile(conf->pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
@@ -390,6 +392,8 @@ main (int argc, char **argv)
 
 	if (!original)
 		_notify_parent_of_success();
+	else if (under_systemd)
+		xsystemd_change_mainpid(getpid());
 
 	if (original)
 		run_script_health_check();
@@ -404,7 +408,7 @@ main (int argc, char **argv)
 	 * but do not close until later. Closing the file will release
 	 * the flock, which will then let a new slurmd process start.
 	 */
-	if (unlink(conf->pidfile) < 0)
+	if (!under_systemd && unlink(conf->pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m",
 		      conf->pidfile);
 
@@ -1361,6 +1365,8 @@ static void _try_to_reconfig(void)
 		 * Grandchild should be owned by init then.
 		 */
 		waitpid(pid, &rc, 0);
+		if (under_systemd)
+			xsystemd_change_mainpid(grandchild_pid);
 		_exit(0);
 
 rwfail:
