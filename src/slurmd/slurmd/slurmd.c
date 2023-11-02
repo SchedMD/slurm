@@ -68,6 +68,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/conmgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -196,7 +197,6 @@ static int       _core_spec_init(void);
 static void      _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
-static void      _dynamic_reconfig(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _hup_handler(int);
@@ -206,12 +206,12 @@ static bool      _is_core_spec_cray(void);
 static void      _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
 static void      _msg_engine(void);
+static void _notify_parent_of_success(void);
 static void      _print_conf(void);
 static void      _print_config(void);
 static void      _print_gres(void);
 static void      _process_cmdline(int ac, char **av);
 static void      _read_config(void);
-static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static void      _resource_spec_fini(void);
 static int       _resource_spec_init(void);
@@ -222,6 +222,7 @@ static int       _set_topo_info(void);
 static int       _set_work_dir(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
+static void _try_to_reconfig(void);
 static void      _update_nice(void);
 static void      _usage(void);
 static void      _usr_handler(int);
@@ -387,6 +388,9 @@ main (int argc, char **argv)
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
 
+	if (!original)
+		_notify_parent_of_success();
+
 	if (original)
 		run_script_health_check();
 
@@ -485,7 +489,7 @@ static void _msg_engine(void)
 			_wait_for_all_threads(rpc_wait);
 			if (_shutdown)
 				break;
-			_reconfigure();
+			_try_to_reconfig();
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
@@ -1278,6 +1282,118 @@ extern void update_stepd_logging(bool reconfig)
 	FREE_NULL_LIST(steps);
 }
 
+static void _notify_parent_of_success(void)
+{
+	char *parent_fd_env = getenv("SLURMD_RECONF_PARENT_FD");
+	pid_t pid = getpid();
+	int fd = -1;
+
+	if (!parent_fd_env)
+		return;
+
+	fd = atoi(parent_fd_env);
+	info("child started successfully");
+	safe_write(fd, &pid, sizeof(pid_t));
+	(void) close(fd);
+	return;
+
+rwfail:
+	error("failed to notify parent, may have two processes running now");
+	(void) close(fd);
+	return;
+}
+
+static void _try_to_reconfig(void)
+{
+	extern char **environ;
+	struct rlimit rlim;
+	char **child_env;
+	pid_t pid;
+	int to_parent[2] = {-1, -1};
+
+	_reconfig = 0;
+	conmgr_quiesce(true);
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+
+	child_env = env_array_copy((const char **) environ);
+	setenvf(&child_env, "SLURMD_RECONF", "1");
+	if (conf->conf_cache)
+		setenvf(&child_env, "SLURMD_RECONF_CONF_CACHE", "%s",
+			conf->conf_cache);
+	if (conf->lfd != -1) {
+		setenvf(&child_env, "SLURMD_RECONF_LISTEN_FD", "%d", conf->lfd);
+		fd_set_noclose_on_exec(conf->lfd);
+	}
+
+	if (!conf->daemonize && !under_systemd)
+		goto start_child;
+
+	if (pipe(to_parent) < 0) {
+		error("%s: pipe() failed: %m", __func__);
+		return;
+	}
+
+	setenvf(&child_env, "SLURMD_RECONF_PARENT_FD", "%d", to_parent[1]);
+
+	if ((pid = fork()) < 0) {
+		error("%s: fork() failed, cannot reconfigure.", __func__);
+		return;
+	} else if (pid > 0) {
+		pid_t grandchild_pid;
+		int rc;
+		/*
+		 * Close the input side of the pipe so the read() will return
+		 * immediately if the child process fatal()s.
+		 * Otherwise we'd be stuck here indefinitely assuming another
+		 * internal thread might write something to the pipe.
+		 */
+		(void) close(to_parent[1]);
+		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
+
+		info("Relinquishing control to new slurmd process (%d)",
+		     grandchild_pid);
+		/*
+		 * Ensure child has exited.
+		 * Grandchild should be owned by init then.
+		 */
+		waitpid(pid, &rc, 0);
+		_exit(0);
+
+rwfail:
+		close(to_parent[0]);
+		env_array_free(child_env);
+		waitpid(pid, &rc, 0);
+		info("Resuming operation, reconfigure failed.");
+		return;
+	}
+
+start_child:
+	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
+		if ((fd != to_parent[1]) && (fd != conf->lfd))
+			(void) close(fd);
+	}
+
+	/*
+	 * This second fork() ensures that the new grandchild's parent is init,
+	 * which avoids a nuisance warning from systemd of:
+	 * "Supervising process 123456 which is not our child. We'll most likely not notice when it exits"
+	 */
+	if (under_systemd) {
+		if ((pid = fork()) < 0)
+			fatal("fork() failed: %m");
+		else if (pid)
+			exit(0);
+	}
+
+	execve(conf->argv[0], conf->argv, child_env);
+	fatal("execv() failed: %m");
+}
+
+#if 0
 static void
 _reconfigure(void)
 {
@@ -1341,6 +1457,7 @@ _reconfigure(void)
 	 * XXX: reopen slurmd port?
 	 */
 }
+#endif
 
 static void
 _print_conf(void)
@@ -1702,6 +1819,12 @@ _process_cmdline(int ac, char **av)
 
 static void _create_msg_socket(void)
 {
+	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
+		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
+		debug2("%s: inherited socket on fd=%d", __func__, conf->lfd);
+		return;
+	}
+
 	if ((conf->lfd = slurm_init_msg_engine_port(conf->port)) < 0)
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 
@@ -1811,6 +1934,12 @@ static void _handle_slash_run(void)
 static int _establish_configuration(void)
 {
 	config_response_msg_t *configs;
+
+	if ((conf->conf_cache = xstrdup(getenv("SLURMD_RECONF_CONF_CACHE")))) {
+		xstrfmtcat(conf->conffile, "%s/slurm.conf", conf->conf_cache);
+		slurm_conf_init(conf->conffile);
+		return SLURM_SUCCESS;
+	}
 
 	if (!conf->conf_server && _slurm_conf_file_exists()) {
 		debug("%s: config will load from file", __func__);
@@ -2043,6 +2172,7 @@ static void _dynamic_init(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
+#if 0
 static void _dynamic_reconfig(void)
 {
 	if (conf->dynamic_type == DYN_NODE_NORM) {
@@ -2058,6 +2188,7 @@ static void _dynamic_reconfig(void)
 		xfree(err_msg);
 	}
 }
+#endif
 
 static int
 _slurmd_init(void)
