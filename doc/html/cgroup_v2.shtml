@@ -84,22 +84,26 @@ rules, forces Slurm to choose a design which coexists with both.</p>
 <a class="slurm_link" href="#real_sysd_prob"></a>
 </h3>
 <p>When designing the cgroup/v2 plugin for Slurm, the initial idea was to let
-slurmd setup the required hierarchy in its own cgroup directory. Then it would
-place jobs and steps and move newer forked slurmstepds into the corresponding
-directories.</p>
-<p>This worked fine, until we needed to restart slurmd. Since the hierarchy was
-already created, the slurmd restart just terminated the slurmd process and then
-started a new one, but then it would try to put the new process directly in
-the root of the specific group tree. Since this directory was now a domain
-controller and not a leaf anymore, systemd would fail to start the daemon.
-</p>
+slurmd setup the required hierarchy in its own root cgroup directory. It
+would create a specific directory for itself and then place jobs and steps in
+other corresponding directories. This would guarantee the
+<a href="#no_internal_process">no internal process constraint</a> rule.</p>
+
+<p>This worked fine until we needed to restart slurmd. Since the entire
+hierarchy was already created starting at the slurmd cgroup, the slurmd restart
+would terminate the slurmd process and then start a new one, which would be
+put into the root of the original group tree. Since this directory was now what
+is called a "domain controller" (it contained sub-directories) and not a leaf
+anymore, the <a href="#no_internal_process">no internal process constraint</a>
+rule would be broken and systemd would fail to start the daemon.</p>
+
 <p>Lacking any mechanism in systemd to tackle this situation, this left us with
 no other choice but to separate slurmd and forked slurmstepds into separate
 subtree directories. Because of the design rule of systemd about being the
 single-writer on the tree, it was not possible to just do a "mkdir" from
 slurmd or the slurmstepd itself and then move the stepd process into a new and
-separate directory, that would mean this directory was not controlled by systemd
-and would cause problems.</p>
+separate directory, that would mean this directory would not be controlled by
+systemd and would cause problems.</p>
 
 <p>The only way that a "mkdir" could work was if it was done inside a
 "delegated" cgroup subtree, so we needed to find a way to find a Unit with
@@ -289,6 +293,104 @@ Slurm.</p>
 <p>When slurmd ends (since on supported systems it has been started by systemd)
 its cgroup will just be cleaned up by systemd.</p>
 
+<h3 id="manual_startup">Special case - manual startup
+<a class="slurm_link" href="#manual_startup"></a>
+</h3>
+<p>Starting slurmd from systemd creates the slurmd unit with its own cgroup.
+Then slurmd starts the slurmstepd.scope which in turn creates a new cgroup
+tree. Any new process spawned for a job is migrated into this scope. If,
+instead of starting slurmd from systemd, one starts slurmd manually from the
+command line, things are different. The slurmd will be spawned into the same
+terminal's cgroup and will share the cgroup tree with the terminal process
+itself (and possibly with other user processes).</p>
+
+<p>This situation is detected by slurmd by reading the <b>INVOCATION_ID</b>
+environment variable. This variable is normally set by systemd when it starts
+a process and is a way to determine if slurmd has been started in its own
+cgroup or started manually into a shared cgroup. In the first case slurmd
+doesn't try to move itself to any other cgroup. In the second case, where
+<b>INVOCATION_ID</b> is not set, it will try to move itself to a new
+subdirectory inside the slurmstepd.scope cgroup.</p>
+
+<p>A problem arises when <b>INVOCATION_ID</b> is set in your environment and
+you try to start slurmd manually. slurmd will think it is in its own cgroup
+and won't try to migrate itself and, if MemSpecLimit or CoreSpecLimit are set,
+slurmd will apply memory or core limits into this cgroup, indirectly limiting
+your terminal or other processes. For example, starting slurmd in your terminal
+with low memory in MemSpecLimit, sending it to the background, and then trying
+to run any program that consumes memory, might end up with your processes
+being OOMed.</p>
+
+<p>To avoid this situation we recommend you unset <b>INVOCATION_ID</b> before
+starting Slurm, in situations where this environment variable is set.</p>
+
+<p>Another problem related to this is when not all controllers are enabled in
+your terminal's cgroup, which is what typically happens in the systemd
+<i>user.slice</i>. Then slurmd will fail to initialize because it won't detect
+the required controllers, and will display errors similar to these:</p>
+
+<pre>
+]# slurmd -Dv
+slurmd: error: Controller cpuset is not enabled!
+slurmd: error: Controller cpu is not enabled!
+...
+slurmd: slurmd version 23.11.0-0rc1 started
+slurmd: error: cpu cgroup controller is not available.
+slurmd: error: There's an issue initializing memory or cpu controller
+slurmd: error: Couldn't load specified plugin name for jobacct_gather/cgroup: Plugin init() callback failed
+slurmd: error: cannot create jobacct_gather context for jobacct_gather/cgroup
+slurmd: fatal: Unable to initialize jobacct_gather
+</pre>
+
+<p>One workaround is to set <i>EnableControllers=yes</i> in slurm.conf, but
+note that this won't save you from possibly having other processes have OOM
+errors, as mentioned previously. Moreover, that will modify your entire cgroup
+tree from the root <i>/sys/fs/cgroup</i>. So the real solution is to either
+start slurmd through a unit file, or unset the <b>INVOCATION_ID</b>
+environment variable.</p>
+
+<p><b>NOTE</b>: Be aware that this doesn't only happen when starting slurmd
+manually. It may happen if you use custom scripts to start slurmd, even if the
+scripts are run with systemd. We encourage you to use our provided
+slurmd.service file or at least to unset the <b>INVOCATION_ID</b> explicitly
+in your startup scripts.</p>
+
+<h4 id="troubleshooting_startup">Troubleshooting startup
+<a class="slurm_link" href="#troubleshooting_startup"></a>
+</h4>
+<p> As the integration with systemd has some degree of complexity, and due to
+different configurations or changes in OS setups, we encourage you to set the
+debug flags in slurm.conf in order to diagnose what is going on if slurm doesn't
+start in cgroup/v2:</p>
+<pre>
+DebugFlags=cgroup
+SlurmdDebug=debug
+</pre>
+
+<p>If slurmd starts but throws cgroup errors, it is advisable to look at which
+cgroup slurmd has been started in. For example, this shows slurmd started in
+the user slice cgroup, which is generally wrong, and has possibly been started
+manually from the terminal with <b>INVOCATION_ID</b> set:</p>
+<pre>
+[root@llagosti ~]# cat /proc/$(pidof slurmd)/cgroup
+0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome-tmaster-47247.scope
+[root@llagosti ~]# grep -i INVOCATION_ID= /proc/47279/environ
+grep: /proc/47279/environ: binary file matches
+</pre>
+
+<p>Instead, when slurmd is manually and correctly started:</p>
+<pre>
+[root@llagosti ~]# cat /proc/$(pidof slurmd)/cgroup
+0::/system.slice/gamba1_slurmstepd.scope/slurmd
+</pre>
+
+<p>Finally, if slurmd is started by systemd you should see it living in its own
+cgroup:</p>
+<pre>
+[root@llagosti ~]# cat /proc/$(pidof slurmd)/cgroup
+0::/system.slice/slurmd.service
+</pre>
+
 <h3 id="hierarchy_overview">Hierarchy overview
 <a class="slurm_link" href="#hierarchy_overview"></a>
 </h3>
@@ -430,7 +532,8 @@ This is only if a call to dbus returned an error, as it would be with
 <li><b>EnableControllers=[yes|no]</b>: When set slurmd will check all the
 available controllers in <i>/sys/fs/cgroup</i> and will enable them recursively
 until it reaches the slurmd level. This will imply that the manually created
-slurmstepd directories will also have these controllers set.
+slurmstepd directories will also have these controllers set. See
+<a href="#manual_startup">manual startup</a> above for more info.
 </li>
 <li><b>CgroupMountPoint=/path/to/mount/point</b>: In most cases with cgroup v2,
 this parameter should not be used because <i>/sys/fs/cgroup</i> will be the only
@@ -503,6 +606,6 @@ will be put into the largest job id. Thanks to this we removed the dependency of
 the plugin against the specific cgroup hierarchy.
 </p>
 
-<p style="text-align:center;">Last modified 16 June 2022</p>
+<p style="text-align:center;">Last modified 10 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
