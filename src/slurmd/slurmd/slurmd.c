@@ -507,8 +507,7 @@ static void _msg_engine(void)
 	close(conf->lfd);
 }
 
-static void
-_decrement_thd_count(void)
+static void _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
 	if (active_threads > 0)
@@ -517,8 +516,7 @@ _decrement_thd_count(void)
 	slurm_mutex_unlock(&active_mutex);
 }
 
-static void
-_increment_thd_count(void)
+static void _increment_thd_count(void)
 {
 	bool logged = false;
 
