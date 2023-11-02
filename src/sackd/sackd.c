@@ -294,7 +294,8 @@ static void _try_to_reconfig(void)
 		error("%s: fork() failed, cannot reconfigure.", __func__);
 		return;
 	} else if (pid > 0) {
-		int len, rc;
+		pid_t grandchild_pid;
+		int rc;
 		/*
 		 * Close the input side of the pipe so the read() will return
 		 * immediately if the child process fatal()s.
@@ -302,20 +303,12 @@ static void _try_to_reconfig(void)
 		 * internal thread might write something to the pipe.
 		 */
 		(void) close(to_parent[1]);
-		len = read(to_parent[0], &rc, sizeof(int));
+		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
 
-		if (len < 0) {
-			error("%s: read() failed: %m", __func__);
-		} else if (len != sizeof(int)) {
-			error("%s: read() incomplete, got %d: %m",
-			      __func__, len);
-		} else if (rc != SLURM_SUCCESS) {
-			error("%s: child returned %s",
-			      __func__, slurm_strerror(rc));
-		} else {
-			info("Relinquishing control to new sackd process");
-			exit(0);
-		}
+		info("Relinquishing control to new sackd process");
+		_exit(0);
+
+rwfail:
 		close(to_parent[0]);
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
@@ -336,14 +329,15 @@ start_child:
 static void _notify_parent_of_success(void)
 {
 	char *parent_fd_env = getenv("SACKD_RECONF_PARENT_FD");
-	int rc = SLURM_SUCCESS, fd = -1;
+	pid_t pid = getpid();
+	int fd = -1;
 
 	if (!parent_fd_env)
 		return;
 
 	fd = atoi(getenv("SACKD_RECONF_PARENT_FD"));
 	info("child started successfully");
-	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &pid, sizeof(pid_t));
 	(void) close(fd);
 	return;
 
