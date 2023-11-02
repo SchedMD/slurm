@@ -267,7 +267,7 @@ static void _try_to_reconfig(void)
 	struct rlimit rlim;
 	char **child_env;
 	pid_t pid;
-	int to_parent[2];
+	int to_parent[2] = {-1, -1};
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
