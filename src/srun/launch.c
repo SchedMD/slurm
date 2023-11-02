@@ -708,7 +708,7 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt_local,
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
-	char *add_tres = NULL;
+	char *add_tres = NULL, *pos;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	job_step_create_request_msg_t *step_req = xmalloc(sizeof(*step_req));
 	List tmp_gres_list = NULL;
@@ -807,13 +807,13 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 			/* Use a minimum value for requested cpus */
 			step_req->cpu_count = opt_local->min_nodes *
 				gpus_per_node * opt_local->cpus_per_gpu;
-		} else if (opt_local->gpus_per_task) {
-			int gpus_per_task;
-
-			gpus_per_task =
-				_parse_gpu_request(opt_local->gpus_per_task);
+		} else if (opt_local->tres_per_task &&
+			   (pos = xstrstr(opt_local->tres_per_task,
+					  "gres/gpu:"))) {
+			pos += 9; /* Don't include "gres/gpu:" */
 			step_req->cpu_count = opt_local->ntasks *
-				gpus_per_task * opt_local->cpus_per_gpu;
+					      _parse_gpu_request(pos) *
+					      opt_local->cpus_per_gpu;
 		} else if (add_tres) {
 			int rc = SLURM_SUCCESS;
 			uint64_t gpus_per_node = 0;
