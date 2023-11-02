@@ -1228,6 +1228,7 @@ static struct {
 	{ "TERM",	SIGTERM	},
 	{ "USR1",	SIGUSR1	},
 	{ "USR2",	SIGUSR2	},
+	{ "PIPE",	SIGPIPE	},
 	{ "URG",	SIGURG	},
 	{ "CONT",	SIGCONT	},
 	{ "STOP",	SIGSTOP	},
