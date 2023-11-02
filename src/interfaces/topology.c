@@ -54,6 +54,8 @@ switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
 
+char *topo_conf = NULL;
+
 typedef struct slurm_topo_ops {
 	int		(*build_config)		( void );
 	bool		(*node_ranking)		( void );
@@ -99,6 +101,9 @@ extern int topology_g_init(void)
 
 	xassert(slurm_conf.topology_plugin);
 
+	if (!topo_conf)
+		topo_conf = get_extra_conf_path("topology.conf");
+
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.topology_plugin,
 					  (void **) &ops, syms, sizeof(syms));
@@ -125,6 +130,8 @@ extern int topology_g_fini(void)
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}
+
+	xfree(topo_conf);
 
 	plugin_inited = PLUGIN_NOT_INITED;
 

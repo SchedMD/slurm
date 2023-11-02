@@ -113,7 +113,6 @@ typedef struct slurm_conf_switches {
 				 * connected to this switch, if any */
 } slurm_conf_switches_t;
 static s_p_hashtbl_t *conf_hashtbl = NULL;
-static char* topo_conf = NULL;
 
 static void _check_better_path(int i, int j ,int k);
 static void _destroy_switches(void *ptr);
@@ -147,7 +146,6 @@ extern int init(void)
 extern int fini(void)
 {
 	_free_switch_record_table();
-	xfree(topo_conf);
 	return SLURM_SUCCESS;
 }
 
@@ -842,9 +840,8 @@ static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 	int count;
 	slurm_conf_switches_t **ptr;
 
-	debug("Reading the topology.conf file");
-	if (!topo_conf)
-		topo_conf = get_extra_conf_path("topology.conf");
+	xassert(topo_conf);
+	debug("Reading the %s file", topo_conf);
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
 	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, 0, NULL) ==
