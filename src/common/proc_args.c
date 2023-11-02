@@ -1226,6 +1226,7 @@ static struct {
 	{ "KILL",	SIGKILL	},
 	{ "ALRM",	SIGALRM	},
 	{ "TERM",	SIGTERM	},
+	{ "CHLD",	SIGCHLD	},
 	{ "USR1",	SIGUSR1	},
 	{ "USR2",	SIGUSR2	},
 	{ "PIPE",	SIGPIPE	},
