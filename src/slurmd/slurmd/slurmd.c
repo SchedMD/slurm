@@ -409,7 +409,7 @@ main (int argc, char **argv)
 	 * run_command_shutdown() will kill any scripts started with
 	 * run_command() including the prolog and epilog.
 	 * Call run_command_shutdown() *after* waiting for threads to complete
-	 * to give prolog and epilog scrripts a chance to finish,
+	 * to give prolog and epilog scripts a chance to finish,
 	 * otherwise jobs will fail and the node will be drained due to prolog
 	 * failure.
 	 */
