@@ -2928,6 +2928,7 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 				}
 				xfree(msg->kvs_comm_ptr[i]->kvs_keys);
 				xfree(msg->kvs_comm_ptr[i]->kvs_values);
+				xfree(msg->kvs_comm_ptr[i]);
 			}
 			xfree(msg->kvs_comm_ptr);
 		}
