@@ -1672,7 +1672,7 @@ _process_cmdline(int ac, char **av)
 
 	/*
 	 * Set instance_type and id to "" so that the controller will clear any
-	 * preivous instance_type or id.
+	 * previous instance_type or id.
 	 *
 	 * "extra" is left NULL if not explicitly set on the cmd line so that
 	 * any existing "extra" information on the controller is left intact.
