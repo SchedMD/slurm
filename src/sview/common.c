@@ -74,11 +74,6 @@ static int _find_node_inx (char *name)
 
 static void _display_topology(void)
 {
-	if (TOPO_DEBUG) {
-		g_print("_display_topology,  record_count = %d\n",
-			g_topo_info_msg_ptr->record_count);
-	}
-
 	slurm_print_topo_info_msg(stdout, g_topo_info_msg_ptr, NULL, 0);
 }
 
