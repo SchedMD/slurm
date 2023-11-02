@@ -621,7 +621,6 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread to process RPCs
 		 */
-		server_thread_incr();
 		slurm_thread_create(&slurmctld_config.thread_id_rpc,
 				    _slurmctld_rpc_mgr, NULL);
 
@@ -1243,7 +1242,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	rate_limit_shutdown();
 	rpc_queue_shutdown();
 
-	server_thread_decr();
 	return NULL;
 }
 
