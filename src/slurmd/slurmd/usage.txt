@@ -18,6 +18,7 @@ Usage: slurmd [OPTIONS]
    -n value                   Run the daemon at the specified nice value.
    -N node                    Run the daemon for specified nodename.
    -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.
+   --systemd                  Started from a systemd unit file.
    -v                         Verbose mode. Multiple -v's increase verbosity.
    -V                         Print version information and exit.
    -Z                         Start as Dynamic Normal node.

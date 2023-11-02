@@ -175,6 +175,7 @@ static int	ncpus;			/* number of CPUs on this node */
  * static shutdown and reconfigure flags:
  */
 static bool original = true;
+static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static sig_atomic_t _update_log = 0;
@@ -1551,6 +1552,7 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_EXTRA,
 		LONG_OPT_INSTANCE_ID,
 		LONG_OPT_INSTANCE_TYPE,
+		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
@@ -1560,6 +1562,7 @@ _process_cmdline(int ac, char **av)
 		{"extra",		required_argument, 0, LONG_OPT_EXTRA},
 		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
 		{"instance-type",	required_argument, 0, LONG_OPT_INSTANCE_TYPE},
+		{"systemd",		no_argument,       0, LONG_OPT_SYSTEMD},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
 	};
@@ -1658,6 +1661,9 @@ _process_cmdline(int ac, char **av)
 		case LONG_OPT_INSTANCE_TYPE:
 			conf->instance_type = xstrdup(optarg);
 			break;
+		case LONG_OPT_SYSTEMD:
+			under_systemd = true;
+			break;
 		default:
 			_usage();
 			exit(1);
@@ -1683,6 +1689,13 @@ _process_cmdline(int ac, char **av)
 		conf->instance_id = xstrdup("");
 	if (!conf->instance_type)
 		conf->instance_type = xstrdup("");
+
+	if (under_systemd) {
+		if (!getenv("NOTIFY_SOCKET"))
+			fatal("Missing NOTIFY_SOCKET.");
+		conf->daemonize = false;
+		conf->setwd = true;
+	}
 }
 
 
