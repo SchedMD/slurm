@@ -257,7 +257,7 @@ static void      _wait_for_all_threads(int secs);
 int
 main (int argc, char **argv)
 {
-	int i, pidfd;
+	int pidfd;
 	int blocked_signals[] = {SIGPIPE, 0};
 	char *oom_value;
 	uint32_t curr_uid = 0;
@@ -331,7 +331,7 @@ main (int argc, char **argv)
 	debug3("finished daemonize");
 
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
-		i = atoi(oom_value);
+		int i = atoi(oom_value);
 		debug("Setting slurmd oom_adj to %d", i);
 		set_oom_adj(i);
 	}
