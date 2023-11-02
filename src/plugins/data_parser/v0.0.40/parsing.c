@@ -1037,11 +1037,14 @@ cleanup:
 }
 
 static bool _match_flag_bit(const parser_t *const parser, void *src,
-			    const flag_bit_t *bit)
+			    const flag_bit_t *bit, uint64_t used_equal_bits)
 {
 	const uint64_t v = bit->mask & bit->value;
 
-	/* C allows compiler to choose a size for the enum */
+	if (used_equal_bits & bit->mask)
+		return false;
+
+	/* C allows complier to choose a size for the enum */
 	if (parser->size == sizeof(uint64_t)) {
 		uint64_t *flags = src;
 		return ((*flags & v) == v);
@@ -1060,7 +1063,8 @@ static bool _match_flag_bit(const parser_t *const parser, void *src,
 }
 
 static bool _match_flag_equal(const parser_t *const parser, void *src,
-			      const flag_bit_t *bit)
+			      const flag_bit_t *bit,
+			      uint64_t *used_equal_bits_ptr)
 {
 	bool found;
 	const uint64_t v = bit->mask & bit->value;
@@ -1082,19 +1086,23 @@ static bool _match_flag_equal(const parser_t *const parser, void *src,
 		fatal("%s: unexpected enum size: %zu", __func__, parser->size);
 	}
 
+	if (found)
+		*used_equal_bits_ptr |= bit->mask;
+
 	return found;
 }
 
 static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 				      const parser_t *const parser,
-				      const flag_bit_t *bit, bool set_bool)
+				      const flag_bit_t *bit, bool set_bool,
+				      uint64_t *used_equal_bits)
 {
 	bool found;
 
 	if (bit->type == FLAG_BIT_TYPE_BIT)
-		found = _match_flag_bit(parser, src, bit);
+		found = _match_flag_bit(parser, src, bit, *used_equal_bits);
 	else if (bit->type == FLAG_BIT_TYPE_EQUAL)
-		found = _match_flag_equal(parser, src, bit);
+		found = _match_flag_equal(parser, src, bit, used_equal_bits);
 	else
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 
@@ -1156,6 +1164,7 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 				const parser_t *const parser)
 {
 	int rc = SLURM_SUCCESS;
+	uint64_t used_equal_bits = 0;
 
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
@@ -1169,7 +1178,8 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 
 	for (int8_t i = 0; !rc && (i < parser->flag_bit_array_count); i++)
 		_dump_flag_bit_array_flag(args, src, dst, parser,
-					  &parser->flag_bit_array[i], false);
+					  &parser->flag_bit_array[i], false,
+					  &used_equal_bits);
 
 	return SLURM_SUCCESS;
 }
@@ -1354,6 +1364,8 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 
 	if (parser->model ==
 	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		uint64_t used_equal_bits = 0;
+
 		if (data_get_type(dst) == DATA_TYPE_NULL)
 			data_set_dict(dst);
 
@@ -1363,7 +1375,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 
 			xassert(src);
 			_dump_flag_bit_array_flag(args, src, bit_dst, parser,
-						  bit, true);
+						  bit, true, &used_equal_bits);
 		}
 
 		goto cleanup;

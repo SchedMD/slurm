@@ -297,6 +297,7 @@ documents those changes that are of interest to users and administrators.
  -- SPANK - Failures from most spank functions (not epilog or exit) will now
     cause the step to be marked as failed and the command (srun, salloc,
     sbatch --wait) to return 1.
+ -- data_parser/v0.0.40 - Fix how the "INVALID" nodes state is dumped.
 
 * Changes in Slurm 23.02.7
 ==========================
