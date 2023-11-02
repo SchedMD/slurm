@@ -1320,27 +1320,26 @@ static bool _wait_for_server_thread(void)
 		if (slurmctld_config.server_thread_count < max_server_threads) {
 			slurmctld_config.server_thread_count++;
 			break;
-		} else {
-			/* wait for state change and retry,
-			 * just a delay and not an error.
-			 * This can happen when the epilog completes
-			 * on a bunch of nodes at the same time, which
-			 * can easily happen for highly parallel jobs. */
-			if (print_it) {
-				static time_t last_print_time = 0;
-				time_t now = time(NULL);
-				if (difftime(now, last_print_time) > 2) {
-					verbose("server_thread_count over "
-						"limit (%d), waiting",
-						slurmctld_config.
-						server_thread_count);
-					last_print_time = now;
-				}
-				print_it = false;
-			}
-			slurm_cond_wait(&slurmctld_config.thread_count_cond,
-					&slurmctld_config.thread_count_lock);
 		}
+
+		/*
+		 * Wait for state change and retry, this is just a delay and
+		 * not an error. This can happen when the epilog completes on
+		 * a bunch of nodes at the same time, which can easily happen
+		 * for highly parallel jobs.
+		 */
+		if (print_it) {
+			static time_t last_print_time = 0;
+			time_t now = time(NULL);
+			if (difftime(now, last_print_time) > 2) {
+				verbose("server_thread_count over limit (%d), waiting",
+					slurmctld_config.server_thread_count);
+				last_print_time = now;
+			}
+			print_it = false;
+		}
+		slurm_cond_wait(&slurmctld_config.thread_count_cond,
+				&slurmctld_config.thread_count_lock);
 	}
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	return rc;
