@@ -193,10 +193,10 @@ static int _auth_socket(on_http_request_args_t *args,
 				fatal("%s: user proxy mode requires running as root",
 				      __func__);
 
-			ctxt->user_name = uid_to_string_or_null(cred_pid);
+			ctxt->user_name = uid_to_string_or_null(cred_uid);
 
 			if (!ctxt->user_name)
-				fatal("%s: [%s] unable to resolve user uid %u: %m",
+				fatal("%s: [%s] unable to resolve user uid %u",
 				      __func__, name, cred_uid);
 
 			if (setgroups(0, NULL))
