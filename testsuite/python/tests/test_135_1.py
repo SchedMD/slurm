@@ -26,7 +26,6 @@ def test_task_epilog(tmp_path):
 exit 0
 """)
     atf.set_config_parameter('TaskEpilog', task_epilog)
-    atf.run_command("scontrol reconfigure", user=atf.properties['slurm-user'], fatal=True)
 
     # Verify task epilog ran by checking for the file creation
     atf.run_job(f"-t1 true", fatal=True)
