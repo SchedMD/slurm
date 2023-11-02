@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "October 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "November 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -3440,22 +3440,22 @@ List all available QOSs in the cluster.
 
 .nf
 $ sacctmgr show qos format=name
-      Name
+       Name
   \-\-\-\-\-\-\-\-\-
-    normal
-  expedite
+     normal
+   expedite
 .fi
 
 List all the associations in the cluster.
 
 .nf
 $ sacctmgr show assoc format=cluster,account,qos
-   Cluster    Account    QOS
-  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-
-  zebra       root         normal
-  zebra       root         normal
-  zebra          g         normal
-  zebra         g1         normal
+   Cluster     Account                  QOS
+  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+     zebra        root               normal
+     zebra        root               normal
+     zebra           g               normal
+     zebra          g1               normal
 .fi
 
 Add the QOS expedite to account G1 and display the result.
@@ -3465,12 +3465,12 @@ with the  existing QOS to this account.
 .nf
 $ sacctmgr modify account name=g1 set qos+=expedite
 $ sacctmgr show assoc format=cluster,account,qos
-   Cluster    Account   QOS
-   \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-
-   zebra       root         normal
-   zebra       root         normal
-   zebra          g         normal
-   zebra         g1  expedite,normal
+   Cluster     Account                  QOS
+  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+     zebra        root               normal
+     zebra        root               normal
+     zebra           g               normal
+     zebra          g1      expedite,normal
 .fi
 
 Now set the QOS expedite as the only QOS for the account G and display
@@ -3479,13 +3479,13 @@ QOS by account G
 
 .nf
 $ sacctmgr modify account name=G set qos=expedite
-$ sacctmgr show assoc format=cluster,account,user,qos
-   Cluster    Account  QOS
-  \-\-\-\-\-\-\-\-\-   \-\-\-\-\-\-\-\- \-\-\-\-\-
-  zebra       root      normal
-  zebra       root      normal
-  zebra          g      expedite
-  zebra         g1      expedite,normal
+$ sacctmgr show assoc format=cluster,account,qos
+   Cluster     Account                  QOS
+  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+     zebra        root               normal
+     zebra        root               normal
+     zebra           g             expedite
+     zebra          g1      expedite,normal
 .fi
 
 If a new account is added under the account G it will inherit the
@@ -3494,13 +3494,13 @@ QOS expedite and it will not have access to QOS normal.
 .nf
 $ sacctmgr add account banana parent=G
 $ sacctmgr show assoc format=cluster,account,qos
-   Cluster    Account   QOS
-  \-\-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-  \-\-\-\-\-
-  zebra       root       normal
-  zebra       root       normal
-  zebra          g       expedite
-  zebra     banana       expedite
-  zebra         g1       expedite,normal
+   Cluster     Account                  QOS
+  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+     zebra        root               normal
+     zebra        root               normal
+     zebra           g             expedite
+     zebra      banana             expedite
+     zebra          g1      expedite,normal
 .fi
 
 An example of listing trackable resources:
