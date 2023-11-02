@@ -175,6 +175,8 @@ libcommon_la_SOURCES =				\
 	xmalloc.h				\
 	xregex.c				\
 	xregex.h				\
+	xsystemd.c				\
+	xsystemd.h				\
 	xsignal.c				\
 	xsignal.h				\
 	xstring.c				\

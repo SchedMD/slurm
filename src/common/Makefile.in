@@ -179,7 +179,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
 	working_cluster.lo workq.lo write_labelled_message.lo \
 	x11_util.lo xassert.lo xhash.lo xmalloc.lo xregex.lo \
-	xsignal.lo xstring.lo
+	xsystemd.lo xsignal.lo xstring.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -252,7 +252,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xassert.Plo \
 	./$(DEPDIR)/xhash.Plo ./$(DEPDIR)/xmalloc.Plo \
 	./$(DEPDIR)/xregex.Plo ./$(DEPDIR)/xsignal.Plo \
-	./$(DEPDIR)/xstring.Plo
+	./$(DEPDIR)/xstring.Plo ./$(DEPDIR)/xsystemd.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -728,6 +728,8 @@ libcommon_la_SOURCES = \
 	xmalloc.h				\
 	xregex.c				\
 	xregex.h				\
+	xsystemd.c				\
+	xsystemd.h				\
 	xsignal.c				\
 	xsignal.h				\
 	xstring.c				\
@@ -886,6 +888,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xregex.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsystemd.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1095,6 +1098,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/xregex.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
+	-rm -f ./$(DEPDIR)/xsystemd.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1224,6 +1228,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/xregex.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
+	-rm -f ./$(DEPDIR)/xsystemd.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
