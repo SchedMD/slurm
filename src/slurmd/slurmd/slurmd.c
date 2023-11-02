@@ -1360,13 +1360,14 @@ static void _try_to_reconfig(void)
 
 		info("Relinquishing control to new slurmd process (%d)",
 		     grandchild_pid);
-		/*
-		 * Ensure child has exited.
-		 * Grandchild should be owned by init then.
-		 */
-		waitpid(pid, &rc, 0);
-		if (under_systemd)
+		if (under_systemd) {
+			/*
+			 * Ensure child has exited.
+			 * Grandchild should be owned by init then.
+			 */
+			waitpid(pid, &rc, 0);
 			xsystemd_change_mainpid(grandchild_pid);
+		}
 		_exit(0);
 
 rwfail:
