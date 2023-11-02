@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_xlator.h"
+
 #include "common_topo.h"
 
 #include "src/common/bitstring.h"
