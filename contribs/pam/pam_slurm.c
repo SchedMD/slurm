@@ -177,6 +177,19 @@ _log_msg(int level, const char *format, ...)
 }
 
 /*
+ * pam 1.5.3 stopped providing _pam_drop_reply().  Our use does not currently
+ * fetch sensitive data so simply free this structure.
+ */
+static void _pam_slurm_drop_response(struct pam_response *reply, int replies)
+{
+	for (int i = 0; i < replies; i++) {
+		if (reply[i].resp)
+			free(reply[i].resp);
+	}
+	free(reply);
+}
+
+/*
  *  Parses module args passed via PAM's config.
  */
 static void
@@ -414,7 +427,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 		_log_msg(LOG_ERR, "unable to converse with app: %s",
 			 pam_strerror(pamh, retval));
 	if (prsp != NULL)
-		_pam_drop_reply(prsp, 1);
+		_pam_slurm_drop_response(prsp, 1);
 
 	return;
 }
