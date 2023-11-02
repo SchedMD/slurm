@@ -277,6 +277,23 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 	else
 		hints.ai_family = AF_UNSPEC;
 
+	/* RFC4291 2.4 "Unspecified" address type or IPv4 INADDR_ANY */
+	if (!xstrcmp("::", hostname)) {
+		/*
+		 * Only specify one address instead of NULL if possible to avoid
+		 * EADDRINUSE when trying to bind on IPv4 and IPv6 INADDR_ANY.
+		 */
+		if (v6_enabled)
+			hostname = "0::0";
+		else if (v4_enabled)
+			hostname = "0.0.0.0";
+		else
+			hostname = NULL;
+	}
+	/* RFC4291 2.4 "Loopback" address type */
+	if (v6_enabled && !xstrcmp("::1", hostname))
+		hostname = "0::1";
+
 	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
 	if (hostname)
 		hints.ai_flags |= AI_CANONNAME;
