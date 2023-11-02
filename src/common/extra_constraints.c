@@ -68,6 +68,7 @@ static op_tbl_t op_table[] = {
 	{ OP_CHILD_AND_COMMA, "," },
 	{ OP_CHILD_OR, "|" },
 	{ OP_LEAF_EQ, "=" },
+	{ OP_LEAF_NE, "!=" },
 	{ OP_LEAF_GT, ">" },
 	{ OP_LEAF_GTE, ">=" },
 	{ OP_LEAF_LT, "<" },
@@ -76,8 +77,8 @@ static op_tbl_t op_table[] = {
 static const int op_table_len = ARRAY_SIZE(op_table);
 
 static const char *child_op_chars = ",&|";
-static const char *leaf_op_chars = "<>=";
-static const char *op_chars = ",&|<>=";
+static const char *leaf_op_chars = "<>=!";
+static const char *op_chars = ",&|<>=!";
 
 static bool extra_constraints_parsing = false;
 
@@ -711,6 +712,8 @@ static bool _test(cmp_t comparison, op_t op)
 
 	if (op == OP_LEAF_EQ) {
 		rc = (comparison == CMP_EQ);
+	} else if (op == OP_LEAF_NE) {
+		rc = (comparison != CMP_EQ);
 	} else if (op == OP_LEAF_GT) {
 		rc = (comparison == CMP_GT);
 	} else if (op == OP_LEAF_GTE) {

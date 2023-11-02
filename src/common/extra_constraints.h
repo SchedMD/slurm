@@ -46,6 +46,7 @@ typedef enum {
 			     * to OP_CHILD_AND */
 	OP_CHILD_OR,
 	OP_LEAF_EQ,
+	OP_LEAF_NE,
 	OP_LEAF_GT,
 	OP_LEAF_GTE,
 	OP_LEAF_LT,
