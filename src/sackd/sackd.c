@@ -280,15 +280,8 @@ static void _try_to_reconfig(void)
 		fd_set_noclose_on_exec(listen_fd);
 	}
 
-	if (!daemonize) {
-		for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-			if (fd != listen_fd)
-				(void) close(fd);
-		}
-
-		execve(main_argv[0], main_argv, child_env);
-		fatal("execv() failed: %m");
-	}
+	if (!daemonize)
+		goto start_child;
 
 	if (pipe(to_parent) < 0) {
 		error("%s: pipe() failed: %m", __func__);
@@ -327,15 +320,17 @@ static void _try_to_reconfig(void)
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
-	} else {
-		for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-			if ((fd != to_parent[1]) && (fd != listen_fd))
-				(void) close(fd);
-		}
-
-		execve(main_argv[0], main_argv, child_env);
-		fatal("execv() failed: %m");
+		return;
 	}
+
+start_child:
+	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
+		if ((fd != to_parent[1]) && (fd != listen_fd))
+			(void) close(fd);
+	}
+
+	execve(main_argv[0], main_argv, child_env);
+	fatal("execv() failed: %m");
 }
 
 static void _notify_parent_of_success(void)
