@@ -45,6 +45,7 @@
 #endif
 
 #include <errno.h>
+#include <getopt.h>
 #include <grp.h>
 #include <poll.h>
 #include <pthread.h>
@@ -2539,8 +2540,17 @@ static void _parse_commandline(int argc, char **argv)
 	int c = 0;
 	char *tmp_char;
 
+	enum {
+		LONG_OPT_ENUM_START = 0x100,
+	};
+
+	static struct option long_options[] = {
+		{"version", no_argument, 0, 'V'},
+	};
+
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRsvV")) != -1) {
+	while ((c = getopt_long(argc, argv, "cdDf:hiL:n:rRsvV",
+	       long_options, NULL)) > 0) {
 		switch (c) {
 		case 'c':
 			recover = 0;
