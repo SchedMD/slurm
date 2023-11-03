@@ -374,7 +374,7 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
-	if (true) {
+	if (!under_systemd) {
 		/*
 		 * Need to create pidfile here in case we setuid() below
 		 * (init_pidfile() exits if it can't initialize pid file).
