@@ -2331,8 +2331,8 @@ static int _add_node_gres_tres(void *x, void *arg)
 {
 	uint64_t gres_cnt;
 	int tres_pos;
-	slurmdb_tres_rec_t *tres_rec_in = (slurmdb_tres_rec_t *)x;
-	node_record_t *node_ptr = (node_record_t *) arg;
+	slurmdb_tres_rec_t *tres_rec_in = x;
+	node_record_t *node_ptr = arg;
 
 	xassert(tres_rec_in);
 
@@ -2621,7 +2621,7 @@ static void *_shutdown_bu_thread(void *arg)
 	shutdown_arg_t *shutdown_arg;
 	shutdown_msg_t shutdown_msg;
 
-	shutdown_arg = (shutdown_arg_t *)arg;
+	shutdown_arg = arg;
 	bu_inx = shutdown_arg->index;
 	do_shutdown = shutdown_arg->shutdown;
 	xfree(arg);
@@ -3432,7 +3432,7 @@ static void _get_fed_updates(void)
 
 static int _foreach_job_running(void *object, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *)object;
+	job_record_t *job_ptr = object;
 
 	if (IS_JOB_PENDING(job_ptr)) {
 		int job_cnt = (job_ptr->array_recs &&
@@ -3456,7 +3456,7 @@ static void _update_diag_job_state_counts(void)
 
 static void *_wait_primary_prog(void *arg)
 {
-	primary_thread_arg_t *wait_arg = (primary_thread_arg_t *) arg;
+	primary_thread_arg_t *wait_arg = arg;
 	int status = 0;
 
 	waitpid(wait_arg->cpid, &status, 0);
@@ -3521,7 +3521,7 @@ static void _run_primary_prog(bool primary_on)
 
 static int _init_dep_job_ptr(void *object, void *arg)
 {
-	depend_spec_t *dep_ptr = (depend_spec_t *)object;
+	depend_spec_t *dep_ptr = object;
 	dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 					      dep_ptr->array_task_id);
 	return SLURM_SUCCESS;
