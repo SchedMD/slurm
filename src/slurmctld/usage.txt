@@ -8,5 +8,6 @@ Usage: slurmctld [OPTIONS]
   -n value      Run the daemon at the specified nice value.
   -R            Recover full state from last checkpoint.
   -s            Change working directory to SlurmctldLogFile/StateSaveLocation.
+  --systemd     Started from a systemd unit file.
   -v            Verbose mode. Multiple -v's increase verbosity.
   -V            Print version information and exit.

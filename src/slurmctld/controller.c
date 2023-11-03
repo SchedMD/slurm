@@ -226,6 +226,7 @@ static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
+static bool under_systemd = false;
 
 /*
  * Static list of signals to block in this process
@@ -2547,9 +2548,11 @@ static void _parse_commandline(int argc, char **argv)
 
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
+		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
+		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{"version", no_argument, 0, 'V'},
 	};
 
@@ -2605,6 +2608,9 @@ static void _parse_commandline(int argc, char **argv)
 			print_slurm_version();
 			exit(0);
 			break;
+		case LONG_OPT_SYSTEMD:
+			under_systemd = true;
+			break;
 		default:
 			_usage();
 			exit(1);
@@ -2618,6 +2624,13 @@ static void _parse_commandline(int argc, char **argv)
 	if (!original) {
 		ignore_state_errors = false;
 		recover = 1;
+	}
+
+	if (under_systemd) {
+		if (!getenv("NOTIFY_SOCKET"))
+			fatal("Missing NOTIFY_SOCKET.");
+		daemonize = false;
+		setwd = true;
 	}
 
 	/*
