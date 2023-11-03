@@ -393,7 +393,8 @@ extern int main(int argc, char **argv)
 		original = false;
 
 	if (original && daemonize)
-		xdaemon();
+		if (xdaemon())
+			error("daemon(): %m");
 
 	init_conmgr(0, 0, callbacks);
 
