@@ -318,6 +318,9 @@ documents those changes that are of interest to users and administrators.
  -- conmgr - Avoid NULL dereference when using auth/none.
  -- data_parser/v0.0.39 - Fixed how deleted QOS and associations for jobs are
     dumped.
+ -- burst_buffer/lua - fix stage in counter not decrementing when a job is
+    cancelled during stage in. This counter is used to enforce the limit of 128
+    scripts per stage.
 
 * Changes in Slurm 23.02.6
 ==========================
