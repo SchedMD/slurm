@@ -152,13 +152,14 @@ wait
 <a class="slurm_link" href="#AutoDetect"></a>
 </h2>
 
-<p>If <i>AutoDetect=nvml</i> or <i>AutoDetect=rsmi</i>
-or <i>AutoDetect=oneapi</i> are set in <i>gres.conf</i>, and their
-corresponding GPU management libraries are installed
-on the node and found during Slurm configuration, configuration details will
-automatically be filled in for any system-detected GPU. This removes the need to
-explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
+<p>If <i>AutoDetect=nvml</i>, <i>AutoDetect=rsmi</i>, <i>AutoDetect=nrt</i>,
+or <i>AutoDetect=oneapi</i> are set in <i>gres.conf</i>, configuration details
+will automatically be filled in for any system-detected GPU. This removes the
+need to explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
 slurm.conf is still required in order to tell slurmctld how many GRES to expect.
+Note that <i>AutoDetect=nvml</i>, <i>AutoDetect=rsmi</i>, and
+<i>AutoDetect=oneapi</i> need their corresponding GPU management libraries
+installed on the node and found during Slurm configuration in order to work.
 </P>
 
 <P>By default, all system-detected devices are added to the node.

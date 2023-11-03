@@ -74,6 +74,7 @@ HIGHLIGHTS
     spec file.
  -- switch/hpe_slingshot - Add support for collectives.
  -- Rename topology/none plugin to topology/default.
+ -- Add gpu/nrt plugin for nodes using Trainium/Inferentia devices.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

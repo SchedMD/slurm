@@ -51,7 +51,8 @@ Specific plugins have been developed for:</p>
 through their proprietary NVML library. AutoDetect=rsmi enables
 autodetection of AMD GPUs through their proprietary RSMI library
 (tested on x86_64 and arm64). AutoDetect=oneapi enables
-autodetection of Intel GPUs through their proprietary oneAPI library.</li>
+autodetection of Intel GPUs through their proprietary oneAPI library.
+AutoDetect=nrt enables autodetection of AWS Trainium/Inferentia devices.</li>
 <li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to
 share GPUs between multiple compute processes</li>
 <li>gres/shard &mdash; Generic mechanism that provides a way to share
