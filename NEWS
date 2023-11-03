@@ -316,6 +316,8 @@ documents those changes that are of interest to users and administrators.
     registration.
  -- acct_gather_energy/ipmi - Improve logging of DCMI issues.
  -- conmgr - Avoid NULL dereference when using auth/none.
+ -- data_parser/v0.0.39 - Fixed how deleted QOS and associations for jobs are
+    dumped.
 
 * Changes in Slurm 23.02.6
 ==========================
