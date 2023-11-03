@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "October 2023" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "November 2023" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -873,8 +873,11 @@ shared GRES.
 
 .TP
 \fB\-\-extra\fR=<\fIstring\fR>
-An arbitrary string enclosed in double quotes if using spaces or some
+An arbitrary string enclosed in single or double quotes if using spaces or some
 special characters.
+
+If \fBSchedulerParameters=extra_constraints\fR is enabled, this string is used
+for node filtering based on the \fIExtra\fR field in each node.
 .IP
 
 .TP

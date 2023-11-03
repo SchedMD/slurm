@@ -109,6 +109,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     the build to continue. Sites are encouraged to contact SchedMD about the EOL
     date for Cray XC support.
  -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
+ -- Add SchedulerParameters=extra_constraints. This enables various node
+    filtering options in the --extra flag of salloc, sbatch, and srun.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

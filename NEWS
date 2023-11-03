@@ -298,6 +298,8 @@ documents those changes that are of interest to users and administrators.
     cause the step to be marked as failed and the command (srun, salloc,
     sbatch --wait) to return 1.
  -- data_parser/v0.0.40 - Fix how the "INVALID" nodes state is dumped.
+ -- Add SchedulerParameters=extra_constraints. This enables various node
+    filtering options in the --extra flag of salloc, sbatch, and srun.
 
 * Changes in Slurm 23.02.7
 ==========================

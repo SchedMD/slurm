@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2023" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -944,8 +944,9 @@ Value may be cleared with blank data value, "ExcNodeList=".
 
 .TP
 \fBExtra\fR=<\fIspec\fR>
-An arbitrary string enclosed in double quotes if using spaces or some
-special characters.
+An arbitrary string enclosed in single or double quotes if using spaces or some
+special characters. See \fBsalloc\fR(1), \fBsbatch\fR(1), or \fBsrun\fR(1) for
+more details.
 .IP
 
 .TP
@@ -1562,7 +1563,7 @@ Supported options include: "none", "socket", "ldom" (NUMA), "core",
 .TP
 \fBExtra\fR=<\fIcomment\fR>
 Arbitrary string on the node. Use quotes to enclose a string having more than
-one word.
+one word. See \fBslurmd\fR(8) for more details.
 .IP
 
 .TP

@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "December 2022" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "November 2023" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -96,7 +96,9 @@ Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 
 .TP
 \fB\-\-extra <arbitrary string>\fR
-Set "extra" data on node startup.
+Set "extra" data on node startup. If this is a json string and
+\fBSchedulerParameters=extra_constraints\fR is set in slurm.conf, then jobs may
+use the \-\-extra option to filter based on this "extra" data.
 .IP
 
 .TP

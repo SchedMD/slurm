@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4165,6 +4165,12 @@ The default value.
 .TP
 \fBenable_user_top\fR
 Enable use of the "scontrol top" command by non\-privileged users.
+.IP
+
+.TP
+\fBextra_constraints\fR
+Enable node filtering with the \-\-extra option for salloc, sbatch, and srun
+and the node's Extra field.
 .IP
 
 .TP
