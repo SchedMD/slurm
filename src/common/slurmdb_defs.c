@@ -454,7 +454,7 @@ static uint32_t _str_2_job_flags(char *flags)
 	if (xstrcasestr(flags, "SchedBackfill"))
 		return SLURMDB_JOB_FLAG_BACKFILL;
 
-	if (xstrcasestr(flags, "StartRecieved"))
+	if (xstrcasestr(flags, "StartReceived"))
 		return SLURMDB_JOB_FLAG_START_R;
 
 	return SLURMDB_JOB_FLAG_NOTSET;
@@ -1928,7 +1928,7 @@ extern char *slurmdb_job_flags_str(uint32_t flags)
 		xstrcat(job_flags, "SchedBackfill");
 
 	if (flags & SLURMDB_JOB_FLAG_START_R)
-		xstrfmtcat(job_flags, "%sStartRecieved", job_flags ? "," : "");
+		xstrfmtcat(job_flags, "%sStartReceived", job_flags ? "," : "");
 
 	return job_flags;
 }
