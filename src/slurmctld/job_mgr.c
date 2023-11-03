@@ -13132,13 +13132,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		List use_part_list = new_part_ptr ?
 			part_ptr_list : job_ptr->part_ptr_list;
-		assoc_mgr_lock(&locks);
+		assoc_mgr_lock(&assoc_mgr_read_lock);
 		if ((error_code = _check_for_part_assocs(
 			     use_part_list, use_assoc_ptr)) != SLURM_SUCCESS) {
-			assoc_mgr_unlock(&locks);
+			assoc_mgr_unlock(&assoc_mgr_read_lock);
 			goto fini;
 		}
-		assoc_mgr_unlock(&locks);
+		assoc_mgr_unlock(&assoc_mgr_read_lock);
 
 		if (!operator &&
 		    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
