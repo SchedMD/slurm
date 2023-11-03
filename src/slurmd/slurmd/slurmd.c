@@ -381,8 +381,6 @@ main (int argc, char **argv)
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	if (!under_systemd)
-		pidfd = create_pidfile(conf->pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
@@ -394,6 +392,9 @@ main (int argc, char **argv)
 		_notify_parent_of_success();
 	else if (under_systemd)
 		xsystemd_change_mainpid(getpid());
+
+	if (!under_systemd)
+		pidfd = create_pidfile(conf->pidfile, 0);
 
 	if (original)
 		run_script_health_check();
