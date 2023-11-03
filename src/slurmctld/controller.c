@@ -277,7 +277,7 @@ static void *       _wait_primary_prog(void *arg);
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	int error_code, i;
+	int error_code;
 	struct timeval start, now;
 	struct stat stat_buf;
 	struct rlimit rlim;
@@ -329,10 +329,8 @@ int main(int argc, char **argv)
 	 * will lead to significant scheduler performance issues.
 	 */
 	gettimeofday(&start, NULL);
-
-	for (i=0; i < 1000; i++) {
+	for (int i = 0; i < 1000; i++)
 		gettimeofday(&now, NULL);
-	}
 
 	slurmctld_diag_stats.latency  = (now.tv_sec  - start.tv_sec) * 1000000;
 	slurmctld_diag_stats.latency +=  now.tv_usec - start.tv_usec;
@@ -353,7 +351,7 @@ int main(int argc, char **argv)
 	if (true)
 		_kill_old_slurmctld();
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		fd_set_close_on_exec(i);
 
 	if (daemonize) {
