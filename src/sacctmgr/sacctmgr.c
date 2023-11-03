@@ -48,6 +48,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/serializer.h"
 
 #define OPT_LONG_AUTOCOMP 0x100
@@ -221,9 +222,19 @@ int main(int argc, char **argv)
 
 
 	/* We are only running a single command and exiting */
-	if (optind < argc)
+	if (optind < argc) {
 		error_code = _process_command(argc - optind, argv + optind);
-	else {
+	} else if ((argc == 2) && (optind == argc) && mime_type &&
+		   !xstrcmp(data_parser, "list")) {
+		/*
+		 * We are only listing the available data parser plugins.
+		 * Calling DATA_DUMP_CLI_SINGLE() with a dummy type to get to
+		 * "list".
+		 * TODO: After Bug 18109 is fixed, replace this logic:
+		 */
+		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, argc, argv,
+				     NULL, mime_type, data_parser, exit_code);
+	} else {
 		/* We are running interactively multiple commands */
 		int input_field_count = 0;
 		char **input_fields = xcalloc(MAX_INPUT_FIELDS, sizeof(char *));
