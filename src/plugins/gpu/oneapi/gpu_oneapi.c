@@ -969,6 +969,9 @@ extern int init(void)
 
 	/* Init oneAPI */
 	setenv("ZES_ENABLE_SYSMAN", "1", 1);
+	setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE", 1);
+	setenv("ZE_ENABLE_PCI_ID_DEVICE_ORDER", "1", 1);
+
 	if (zeInit(0) != ZE_RESULT_SUCCESS)
 		fatal("zeInit failed");
 
