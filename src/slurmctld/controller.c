@@ -2609,6 +2609,15 @@ static void _parse_commandline(int argc, char **argv)
 			exit(1);
 		}
 	}
+
+	/*
+	 * Reconfiguration has historically been equivalent to recover = 1.
+	 * Force defaults in case the original process used '-c', '-i' or '-R'.
+	 */
+	if (!original) {
+		ignore_state_errors = false;
+		recover = 1;
+	}
 }
 
 static void _usage(void)
