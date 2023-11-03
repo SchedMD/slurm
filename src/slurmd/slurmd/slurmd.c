@@ -386,7 +386,6 @@ main (int argc, char **argv)
 	info("%s started on %s", slurm_prog_name, time_stamp);
 
 	slurm_conf_install_fork_handlers();
-	record_launched_jobs();
 
 	if (!original) {
 		_notify_parent_of_success();
@@ -401,6 +400,7 @@ main (int argc, char **argv)
 	if (original)
 		run_script_health_check();
 
+	record_launched_jobs();
 	slurm_thread_create_detached(_registration_engine, NULL);
 
 	/* main processing loop. when this returns start shutting down */
