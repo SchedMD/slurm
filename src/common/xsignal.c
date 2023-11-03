@@ -72,9 +72,9 @@ xsignal(int signo, SigFunc *f)
 	if (sigaction(signo, &sa, &old_sa) < 0)
 		error("xsignal(%d) failed: %m", signo);
 
-	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+	if (get_log_level() >= LOG_LEVEL_DEBUG4) {
 		char *name = sig_num2name(signo);
-		debug2("%s: Swap signal %s[%d] to 0x%"PRIxPTR" from 0x%"PRIxPTR,
+		debug4("%s: Swap signal %s[%d] to 0x%"PRIxPTR" from 0x%"PRIxPTR,
 		       __func__, name, signo, (uintptr_t) f,
 		       (uintptr_t) old_sa.sa_handler);
 		xfree(name);
