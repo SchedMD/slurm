@@ -169,6 +169,9 @@ API CHANGES
  -- "flags" argument was added to slurm_kill_job_step().
  -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
  -- SPANK - added new spank_prepend_task_argv() function.
+ -- SPANK - Failures from most spank functions (not epilog or exit) will now
+    cause the step to be marked as failed and the command (srun, salloc,
+    sbatch --wait) to return 1.
 
 SLURMRESTD CHANGES
 ==================

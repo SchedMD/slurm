@@ -294,6 +294,9 @@ documents those changes that are of interest to users and administrators.
     controller (i.e. from plugstack.conf).
  -- Add gpu/nrt plugin for nodes using Trainium/Inferentia devices.
  -- data_parser/v0.0.40 - Add START_RECEIVED to job flags in dumped output.
+ -- SPANK - Failures from most spank functions (not epilog or exit) will now
+    cause the step to be marked as failed and the command (srun, salloc,
+    sbatch --wait) to return 1.
 
 * Changes in Slurm 23.02.7
 ==========================
