@@ -204,7 +204,6 @@ static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
 static bool      _is_core_spec_cray(void);
-static void      _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
 static void      _msg_engine(void);
 static void _notify_parent_of_success(void);
@@ -229,6 +228,7 @@ static void      _usage(void);
 static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
+static void _wait_on_old_slurmd(bool kill_it);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -343,7 +343,7 @@ main (int argc, char **argv)
 	}
 
 	if (original)
-		_kill_old_slurmd();
+		_wait_on_old_slurmd(true);
 
 	if (conf->mlock_pages) {
 		/*
@@ -2283,7 +2283,7 @@ _slurmd_init(void)
 		/*
 		 * Need to kill any running slurmd's here
 		 */
-		_kill_old_slurmd();
+		_wait_on_old_slurmd(true);
 
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 		_stepd_cleanup_batch_dirs(conf->spooldir, conf->node_name);
@@ -2414,19 +2414,15 @@ static int _set_slurmd_spooldir(const char *dir)
 	return SLURM_SUCCESS;
 }
 
-/* Kill the currently running slurmd
- *
- * Returns file descriptor for the existing pidfile so that the
- * current slurmd can wait on termination of the old.
- */
-static void
-_kill_old_slurmd(void)
+static void _wait_on_old_slurmd(bool kill_it)
 {
 	int fd;
 	pid_t oldpid = read_pidfile(conf->pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
-		info ("killing old slurmd[%lu]", (unsigned long) oldpid);
-		kill(oldpid, SIGTERM);
+		if (kill_it) {
+			info("killing old slurmd[%lu]", (unsigned long) oldpid);
+			kill(oldpid, SIGTERM);
+		}
 
 		/*
 		 * Wait for previous daemon to terminate
