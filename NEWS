@@ -328,6 +328,7 @@ documents those changes that are of interest to users and administrators.
     scripts per stage.
  -- gpu/oneapi - Add support for new env vars ZE_FLAT_DEVICE_HIERARCHY and
     ZE_ENABLE_PCI_ID_DEVICE_ORDER.
+ -- data_parser/v0.0.39 - Fix how the "INVALID" nodes state is dumped.
 
 * Changes in Slurm 23.02.6
 ==========================

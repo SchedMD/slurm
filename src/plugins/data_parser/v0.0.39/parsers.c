@@ -193,15 +193,6 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
 	} else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
-		/* Only the first flag can be an equal
-		 * type if all bits are being set:
-		 * There can only be one EQUAL bit since
-		 * they set all the bits or clear all of
-		 * them.
-		 */
-		if (bit->mask == INFINITE64)
-			xassert(i == 0);
-
 		/*
 		 * bit->mask must include all value bits
 		 * (if there are any)
@@ -4693,7 +4684,7 @@ static const parser_t PARSER_ARRAY(USER)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 	add_flag_equal(SLURMDB_JOB_FLAG_NONE, INFINITE64, "NONE"),
-	add_flag_bit(SLURMDB_JOB_CLEAR_SCHED, "CLEAR_SCHEDULING"),
+	add_flag_equal(SLURMDB_JOB_CLEAR_SCHED, INFINITE64, "CLEAR_SCHEDULING"),
 	add_flag_bit(SLURMDB_JOB_FLAG_NOTSET, "NOT_SET"),
 	add_flag_bit(SLURMDB_JOB_FLAG_SUBMIT, "STARTED_ON_SUBMIT"),
 	add_flag_bit(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
