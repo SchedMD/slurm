@@ -76,6 +76,7 @@ typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
 	char         **argv;            /* argument vector                 */
 	int          argc;              /* argument count                  */
+	char binary[PATH_MAX];		/* path to slurmd                  */
 	buf_t        *buf;              /* packed version of this lite config */
 	char         *hostname;	 	/* local hostname		   */
 	char         *conf_server;	/* slurmctld to fetch config from  */

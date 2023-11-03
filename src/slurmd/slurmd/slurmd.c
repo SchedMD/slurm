@@ -1396,7 +1396,7 @@ start_child:
 			exit(0);
 	}
 
-	execve(conf->argv[0], conf->argv, child_env);
+	execve(conf->binary, conf->argv, child_env);
 	fatal("execv() failed: %m");
 }
 
@@ -1753,6 +1753,20 @@ _process_cmdline(int ac, char **av)
 			fatal("Missing NOTIFY_SOCKET.");
 		conf->daemonize = false;
 		conf->setwd = true;
+	}
+
+	/*
+	 * Using setwd() later means a relative path to ourselves may shift.
+	 * Capture /proc/self/exe now and save this for reconfig later.
+	 * Cannot wait to capture it later as Linux will append " (deleted)"
+	 * to the filename if it's been replaced, which would break reconfig
+	 * after an upgrade.
+	 */
+	if (conf->argv[0][0] != '/') {
+		if (readlink("/proc/self/exe", conf->binary, PATH_MAX) < 0)
+			fatal("%s: readlink failed: %m", __func__);
+	} else {
+		strlcpy(conf->binary, conf->argv[0], PATH_MAX);
 	}
 }
 
