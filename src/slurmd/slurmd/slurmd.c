@@ -1476,25 +1476,24 @@ _print_conf(void)
 
 /* Initialize slurmd configuration table.
  * Everything is already NULL/zero filled when called */
-static void
-_init_conf(void)
+static void _init_conf(void)
 {
-	char  host[HOST_NAME_MAX];
+	char host[HOST_NAME_MAX];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
 	if (gethostname_short(host, HOST_NAME_MAX) < 0) {
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}
-	conf->hostname    = xstrdup(host);
-	conf->daemonize   =  1;
-	conf->def_config  =  true;
-	conf->lfd         = -1;
-	conf->log_opts    = lopts;
+	conf->hostname = xstrdup(host);
+	conf->daemonize = true;
+	conf->def_config =  true;
+	conf->lfd = -1;
+	conf->log_opts = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
-	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
-	conf->setwd	  = false;
-	conf->print_gres   = false;
+	conf->spooldir = xstrdup(DEFAULT_SPOOLDIR);
+	conf->setwd = false;
+	conf->print_gres = false;
 
 	slurm_mutex_init(&conf->config_mutex);
 
@@ -1502,7 +1501,6 @@ _init_conf(void)
 	slurm_cond_init(&conf->starting_steps_cond, NULL);
 	conf->prolog_running_jobs = list_create(xfree_ptr);
 	slurm_cond_init(&conf->prolog_running_cond, NULL);
-	return;
 }
 
 static void
