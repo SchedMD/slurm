@@ -206,6 +206,8 @@ static int	debug_level = 0;
 static char *	debug_logfile = NULL;
 static bool	dump_core = false;
 static int      job_sched_cnt = 0;
+static int listen_nports = 0;
+static struct pollfd *listen_fds = NULL;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
@@ -1122,9 +1124,8 @@ static void _sig_handler(int signal)
 static void *_slurmctld_rpc_mgr(void *no_data)
 {
 	int *newsockfd;
-	struct pollfd *fds;
 	slurm_addr_t cli_addr, srv_addr;
-	int fd_next = 0, i, nports;
+	int fd_next = 0, i;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1140,21 +1141,18 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
-	nports = slurm_conf.slurmctld_port_count;
-	if (nports == 0) {
+	if (!(listen_nports = slurm_conf.slurmctld_port_count))
 		fatal("slurmctld port count is zero");
-		return NULL;	/* Fix CLANG false positive */
-	}
-	fds = xcalloc(nports, sizeof(struct pollfd));
-	for (i = 0; i < nports; i++) {
-		fds[i].fd = slurm_init_msg_engine_port(
+	listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
+	for (i = 0; i < listen_nports; i++) {
+		listen_fds[i].fd = slurm_init_msg_engine_port(
 			slurm_conf.slurmctld_port + i);
-		fds[i].events = POLLIN;
-		if (fds[i].fd == SLURM_ERROR) {
+		listen_fds[i].events = POLLIN;
+		if (listen_fds[i].fd == SLURM_ERROR) {
 			fatal("slurm_init_msg_engine_port error %m");
 			return NULL;	/* Fix CLANG false positive */
 		}
-		if (slurm_get_stream_addr(fds[i].fd, &srv_addr)) {
+		if (slurm_get_stream_addr(listen_fds[i].fd, &srv_addr)) {
 			error("slurm_get_stream_addr error %m");
 		} else {
 			debug2("slurmctld listening on %pA", &srv_addr);
@@ -1179,7 +1177,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	 * Process incoming RPCs until told to shutdown
 	 */
 	while (_wait_for_server_thread()) {
-		if (poll(fds, nports, -1) == -1) {
+		if (poll(listen_fds, listen_nports, -1) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn poll: %m");
 			server_thread_decr();
@@ -1187,16 +1185,17 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 
 		/* find one to process */
-		for (i = 0; i < nports; i++) {
-			if (fds[(fd_next + i) % nports].revents) {
-				i = (fd_next + i) % nports;
+		for (i = 0; i < listen_nports; i++) {
+			if (listen_fds[(fd_next + i) % listen_nports].revents) {
+				i = (fd_next + i) % listen_nports;
 				break;
 			}
 		}
-		fd_next = (i + 1) % nports;
+		fd_next = (i + 1) % listen_nports;
 
 		newsockfd = xmalloc(sizeof(*newsockfd));
-		if ((*newsockfd = slurm_accept_msg_conn(fds[i].fd, &cli_addr))
+		if ((*newsockfd = slurm_accept_msg_conn(listen_fds[i].fd,
+							&cli_addr))
 		    == SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
@@ -1218,9 +1217,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	}
 
 	debug3("%s shutting down", __func__);
-	for (i = 0; i < nports; i++)
-		close(fds[i].fd);
-	xfree(fds);
+	for (i = 0; i < listen_nports; i++)
+		close(listen_fds[i].fd);
+	xfree(listen_fds);
 
 	rate_limit_shutdown();
 	rpc_queue_shutdown();
