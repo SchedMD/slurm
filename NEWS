@@ -293,6 +293,7 @@ documents those changes that are of interest to users and administrators.
  -- Configless - Also send Includes from configuration files not parsed by the
     controller (i.e. from plugstack.conf).
  -- Add gpu/nrt plugin for nodes using Trainium/Inferentia devices.
+ -- data_parser/v0.0.40 - Add START_RECEIVED to job flags in dumped output.
 
 * Changes in Slurm 23.02.7
 ==========================

@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "August 2023" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "November 2023" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -218,8 +218,9 @@ implicitly enables the \-c flag.
 .TP
 \fB\-F\fR, \fB\-\-flags\fR=<\fIflag_list\fR>
 Comma separated list to filter jobs based on what various ways the jobs were
-handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill.  These
-particular options describe the scheduler that started the job.
+handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill and
+StartReceived. SchedSubmit, SchedMain, SchedBackfill describe the scheduler
+that started the job.
 .IP
 
 .TP
