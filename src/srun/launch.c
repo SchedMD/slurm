@@ -677,34 +677,6 @@ static int _parse_gpu_request(char *in_str)
 	return gpus_val;
 }
 
-static void _implicitly_bind_tres_per_task(slurm_opt_t *opt_local,
-					   char *name)
-{
-	uint64_t count;
-	char *sep, *end;
-
-	if (opt_local->tres_bind && xstrstr(opt_local->tres_bind, name))
-		return; /* Binding explicitly set */
-
-	if (opt_local->tres_per_task &&
-	    (sep = xstrstr(opt_local->tres_per_task, name))) {
-		end = strchr(sep, ',');
-		if (end)
-			*end = '\0';
-		while ((sep = strchr(sep, ':'))) {
-			sep++;
-			count = slurm_atoul(sep);
-			if (count > 0) {
-				xstrfmtcat(opt_local->tres_bind,
-					   "%s:per_task:%"PRIu64, name, count);
-				break;
-			}
-		}
-		if (end)
-			*end = ',';
-	}
-}
-
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -930,9 +902,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 			xstrfmtcat(opt_local->tres_bind, "gres/gpu:single:%d",
 				   opt_local->ntasks_per_gpu);
 	}
-
-	_implicitly_bind_tres_per_task(opt_local, "gres/shard");
-	_implicitly_bind_tres_per_task(opt_local, "gres/gpu");
 
 	step_req->tres_per_task = xstrdup(opt_local->tres_per_task);
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);

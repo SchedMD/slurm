@@ -6322,6 +6322,51 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		info("Ignoring SLURM_CPUS_PER_TASK since --tres-per-task=cpu: was given as a command line option.");
 }
 
+/*
+ * Implicitly set tres_bind based off of tres_per_task if tres_bind is not
+ * explicitly set already.
+ */
+static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
+{
+	char *tmp_str, *saveptr = NULL, *name, *binding, *end_tok, *end_name;
+	uint64_t count;
+	if (!opt->tres_per_task)
+		return;
+
+	tmp_str = xstrdup(opt->tres_per_task);
+	for (name = strtok_r(tmp_str, ",", &saveptr); name;
+	     name = strtok_r(NULL, ",", &saveptr)) {
+		if (xstrncmp(name, "gres/", 5))
+			continue; /* tres_bind only supports gres currently */
+
+		end_name = xstrchr(name, ':');
+		*end_name = '\0';
+		if (opt->tres_bind && xstrstr(opt->tres_bind, name))
+			continue; /* Binding explicitly set */
+		*end_name = ':';
+
+		end_tok = xstrchr(name, ',');
+		if (end_tok)
+			*end_tok = '\0';
+		while ((binding = xstrchr(name, ':'))) {
+			binding++;
+			count = slurm_atoul(binding);
+			if (count > 0) {
+				*end_name = '\0';
+				xstrfmtcat(opt->tres_bind,
+					   "%s%s:per_task:%" PRIu64,
+					   opt->tres_bind ? "+" : "", name,
+					   count);
+				*end_name = ':';
+				break;
+			}
+		}
+		if (end_tok)
+			*end_tok = ',';
+	}
+	xfree(tmp_str);
+}
+
 static void _validate_tres_per_task(slurm_opt_t *opt)
 {
 	if (!xstrncasecmp(opt->tres_per_task, "mem", 3) ||
@@ -6358,6 +6403,7 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		fatal("gpus-per-task is mutually exclusive with tres-per-task");
 
 	_validate_cpus_per_task(opt);
+	_implicitly_bind_tres_per_task(opt);
 }
 
 static void _validate_cpus_per_tres(slurm_opt_t *opt)
