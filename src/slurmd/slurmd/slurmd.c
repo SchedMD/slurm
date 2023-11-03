@@ -388,9 +388,11 @@ main (int argc, char **argv)
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
 
-	if (!original)
+	if (!original) {
 		_notify_parent_of_success();
-	else if (under_systemd)
+		if (conf->daemonize)
+			_wait_on_old_slurmd(false);
+	} else if (under_systemd)
 		xsystemd_change_mainpid(getpid());
 
 	if (!under_systemd)
