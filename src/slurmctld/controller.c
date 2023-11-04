@@ -196,6 +196,7 @@ pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
+static char binary[PATH_MAX];
 static int	bu_rc = SLURM_SUCCESS;
 static int	bu_thread_cnt = 0;
 static pthread_cond_t bu_cond = PTHREAD_COND_INITIALIZER;
@@ -2617,6 +2618,20 @@ static void _parse_commandline(int argc, char **argv)
 	if (!original) {
 		ignore_state_errors = false;
 		recover = 1;
+	}
+
+	/*
+	 * Using setwd() later means a relative path to ourselves may shift.
+	 * Capture /proc/self/exe now and save this for reconfig later.
+	 * Cannot wait to capture it later as Linux will append " (deleted)"
+	 * to the filename if it's been replaced, which would break reconfig
+	 * after an upgrade.
+	 */
+	if (argv[0][0] != '/') {
+		if (readlink("/proc/self/exe", binary, PATH_MAX) < 0)
+			fatal("%s: readlink failed: %m", __func__);
+	} else {
+		strlcpy(binary, argv[0], PATH_MAX);
 	}
 }
 
