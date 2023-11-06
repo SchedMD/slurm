@@ -1209,8 +1209,10 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 			rc = _set_lineage(mysql_conn, mod_assoc, use_parent,
 					  row[ASSOC_ACCT], row[ASSOC_USER],
 					  row[ASSOC_PART]);
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
 				break;
+			}
 			modified = 1;
 		}
 
