@@ -15243,9 +15243,9 @@ reply:
 			slurm_free_job_array_resp(resp_array_msg);
 		} else {
 			slurm_send_rc_err_msg(msg, rc, err_msg);
-			xfree(err_msg);
 		}
 	}
+	xfree(err_msg);
 	_resp_array_free(resp_array);
 
 	FREE_NULL_BITMAP(array_bitmap);
