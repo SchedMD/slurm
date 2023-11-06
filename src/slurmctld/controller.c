@@ -213,6 +213,7 @@ static char **main_argv = NULL;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
+static bool original = true;
 /*
  * 0 = use no saved state information
  * 1 = recover saved job state,
@@ -298,11 +299,15 @@ int main(int argc, char **argv)
 	main_argc = argc;
 	main_argv = argv;
 
+	if (getenv("SLURMCTLD_RECONF"))
+		original = false;
+
 	/*
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
-	closeall(3);
+	if (original)
+		closeall(3);
 
 	/*
 	 * Establish initial configuration
@@ -355,13 +360,13 @@ int main(int argc, char **argv)
 	create_clustername_file = _verify_clustername();
 
 	_update_nice();
-	if (true)
+	if (original)
 		_kill_old_slurmctld();
 
 	for (int i = 0; i < 3; i++)
 		fd_set_close_on_exec(i);
 
-	if (daemonize) {
+	if (original && daemonize) {
 		if (xdaemon())
 			error("daemon(): %m");
 		sched_debug("slurmctld starting");
