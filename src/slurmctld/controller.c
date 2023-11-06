@@ -1094,7 +1094,7 @@ start_child:
 			exit(0);
 	}
 
-	execve(main_argv[0], main_argv, child_env);
+	execve(binary, main_argv, child_env);
 	fatal("execv() failed: %m");
 }
 
