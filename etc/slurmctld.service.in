@@ -5,14 +5,14 @@ Wants=network-online.target
 ConditionPathExists=@sysconfdir@/slurm.conf
 
 [Service]
-Type=simple
+Type=notify
 EnvironmentFile=-/etc/sysconfig/slurmctld
 EnvironmentFile=-/etc/default/slurmctld
 User=slurm
 Group=slurm
 RuntimeDirectory=slurmctld
 RuntimeDirectoryMode=0755
-ExecStart=@sbindir@/slurmctld -D -s $SLURMCTLD_OPTIONS
+ExecStart=@sbindir@/slurmctld --systemd $SLURMCTLD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 LimitNOFILE=65536
 @SYSTEMD_TASKSMAX_OPTION@
