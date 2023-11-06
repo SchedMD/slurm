@@ -1150,21 +1150,31 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
-	if (!(listen_nports = slurm_conf.slurmctld_port_count))
-		fatal("slurmctld port count is zero");
-	listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
-	for (i = 0; i < listen_nports; i++) {
-		listen_fds[i].fd = slurm_init_msg_engine_port(
-			slurm_conf.slurmctld_port + i);
-		listen_fds[i].events = POLLIN;
-		if (listen_fds[i].fd == SLURM_ERROR) {
-			fatal("slurm_init_msg_engine_port error %m");
-			return NULL;	/* Fix CLANG false positive */
+	if (original) {
+		if (!(listen_nports = slurm_conf.slurmctld_port_count))
+			fatal("slurmctld port count is zero");
+		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
+		for (i = 0; i < listen_nports; i++) {
+			listen_fds[i].fd = slurm_init_msg_engine_port(
+				slurm_conf.slurmctld_port + i);
+			listen_fds[i].events = POLLIN;
+			if (listen_fds[i].fd == SLURM_ERROR)
+				fatal("slurm_init_msg_engine_port: error %m");
+			if (slurm_get_stream_addr(listen_fds[i].fd,
+						  &srv_addr)) {
+				error("slurm_get_stream_addr error %m");
+			} else {
+				debug2("slurmctld listening on %pA", &srv_addr);
+			}
 		}
-		if (slurm_get_stream_addr(listen_fds[i].fd, &srv_addr)) {
-			error("slurm_get_stream_addr error %m");
-		} else {
-			debug2("slurmctld listening on %pA", &srv_addr);
+	} else {
+		char *pos = getenv("SLURMCTLD_RECONF_LISTEN_FDS");
+		listen_nports = atoi(getenv("SLURMCTLD_RECONF_LISTEN_COUNT"));
+		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
+		for (int i = 0; i < listen_nports; i++) {
+			listen_fds[i].fd = strtol(pos, &pos, 10);
+			listen_fds[i].events = POLLIN;
+			pos++; /* skip comma */
 		}
 	}
 	unlock_slurmctld(config_read_lock);
