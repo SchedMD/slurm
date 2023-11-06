@@ -735,7 +735,8 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		return NULL;
 	}
 
-	set_keep_alive = !unix_socket_path && S_ISSOCK(fbuf.st_mode);
+	set_keep_alive =
+		!unix_socket_path && S_ISSOCK(fbuf.st_mode) && !is_listen;
 
 	/* all connections are non-blocking */
 	if (set_keep_alive)
