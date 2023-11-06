@@ -2359,7 +2359,6 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 		}
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			log_flag(NET, "%s: [%s] retry: %m", __func__, con->name);
-			rc = SLURM_SUCCESS;
 			return;
 		}
 
