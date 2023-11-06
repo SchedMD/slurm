@@ -3260,7 +3260,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 	} else
 		info("Processing Reconfiguration Request");
 
+	server_thread_decr();
 	reconfigure_slurm(msg);
+	server_thread_incr();
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
