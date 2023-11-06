@@ -630,7 +630,7 @@ static int _eval_nodes_consec(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				      cr_type);
 			if (arbitrary_tpn) {
 				int req_cpus = arbitrary_tpn[count++];
-				if ((details_ptr->cpus_per_task != NO_VAL16) ||
+				if ((details_ptr->cpus_per_task != NO_VAL16) &&
 				    (details_ptr->cpus_per_task != 0))
 					req_cpus *= details_ptr->cpus_per_task;
 
