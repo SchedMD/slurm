@@ -888,7 +888,7 @@ int dump_all_job_state(void)
 		      "but the file contains a time stamp of %u.",
 		      (uint32_t) last_file_write_time,
 		      (uint32_t) last_state_file_time);
-		if (slurmctld_primary == 0) {
+		if (!slurmctld_primary) {
 			fatal("Two slurmctld daemons are running as primary. "
 			      "Shutting down this daemon to avoid inconsistent "
 			      "state due to split brain.");

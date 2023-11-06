@@ -186,7 +186,7 @@ pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
 int	sched_interval = 60;
 slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
-int	slurmctld_primary = 1;
+bool slurmctld_primary = true;
 bool	want_nodes_reboot = true;
 int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
@@ -461,7 +461,7 @@ int main(int argc, char **argv)
 	}
 
 	if (backup_inx > 0) {
-		slurmctld_primary = 0;
+		slurmctld_primary = false;
 
 		if (xstrcasestr(slurm_conf.sched_params,
 		                "no_backup_scheduling"))
@@ -595,10 +595,8 @@ int main(int argc, char **argv)
 		_run_primary_prog(true);
 		control_time = time(NULL);
 		heartbeat_start();
-		if ((slurmctld_config.resume_backup == false) &&
-		    (slurmctld_primary == 1)) {
+		if (!slurmctld_config.resume_backup && slurmctld_primary)
 			trigger_primary_ctld_res_op();
-		}
 
 		_accounting_cluster_ready();
 		_send_future_cloud_to_db();
@@ -734,8 +732,7 @@ int main(int argc, char **argv)
 			break;
 
 		/* primary controller doesn't resume backup mode */
-		if ((slurmctld_config.resume_backup == true) &&
-		    (slurmctld_primary == 1))
+		if (slurmctld_config.resume_backup && slurmctld_primary)
 			break;
 
 		recover = 2;

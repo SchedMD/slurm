@@ -258,7 +258,7 @@ extern pthread_mutex_t purge_thread_lock;
 extern pthread_mutex_t check_bf_running_lock;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
-extern int   slurmctld_primary;
+extern bool slurmctld_primary;
 extern int   slurmctld_tres_cnt;
 extern slurmdb_cluster_rec_t *response_cluster_rec;
 
