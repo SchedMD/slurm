@@ -60,6 +60,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/group_cache.h"
@@ -79,6 +80,7 @@
 #include "src/common/util-net.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/xsystemd.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_profile.h"
@@ -226,6 +228,7 @@ static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
 static bool reconfig = false;
 static bool under_systemd = false;
 
@@ -258,6 +261,7 @@ static void         _init_pidfile(void);
 static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char **argv);
+static void _post_reconfig(void);
 static void *       _purge_files_thread(void *no_data);
 static void *_acct_update_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
@@ -375,7 +379,7 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
-	if (!under_systemd) {
+	if (original && !under_systemd) {
 		/*
 		 * Need to create pidfile here in case we setuid() below
 		 * (init_pidfile() exits if it can't initialize pid file).
@@ -481,6 +485,11 @@ int main(int argc, char **argv)
 			slurmctld_config.scheduling_disabled = true;
 	}
 
+	if (!original && !slurmctld_primary) {
+		info("Restarted restarted while operating as primary, resuming operation as primary.");
+		slurmctld_primary = true;
+	}
+
 	/*
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
@@ -512,6 +521,9 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize switch plugin");
 
 	agent_init();
+
+	if (original && under_systemd)
+		xsystemd_change_mainpid(getpid());
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -602,7 +614,6 @@ int main(int argc, char **argv)
 			}
 		}
 
-
 		slurm_persist_conn_recv_server_init();
 		info("Running as primary controller");
 		_run_primary_prog(true);
@@ -666,6 +677,13 @@ int main(int argc, char **argv)
 
 		if (controller_init_scheduling(false) != SLURM_SUCCESS)
 			fatal("Failed to initialize the various schedulers");
+
+		if (!original) {
+			notify_parent_of_success();
+			if (!under_systemd)
+				_init_pidfile();
+			_post_reconfig();
+		}
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -975,6 +993,111 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
+static int _try_to_reconfig(void)
+{
+	extern char **environ;
+	struct rlimit rlim;
+	char **child_env;
+	pid_t pid;
+	int to_parent[2] = {-1, -1};
+
+	conmgr_quiesce(true);
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+
+	child_env = env_array_copy((const char **) environ);
+	setenvf(&child_env, "SLURMCTLD_RECONF", "1");
+	if (listen_nports) {
+		char *ports = NULL, *pos = NULL;
+		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
+			listen_nports);
+		for (int i = 0; i < listen_nports; i++) {
+			xstrfmtcatat(ports, &pos, "%d,", listen_fds[i].fd);
+			fd_set_noclose_on_exec(listen_fds[i].fd);
+		}
+		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_FDS", "%s", ports);
+		xfree(ports);
+	}
+	for (int i = 0; i < 3; i++)
+		fd_set_noclose_on_exec(i);
+	if (!daemonize && !under_systemd)
+		goto start_child;
+
+	if (pipe(to_parent) < 0) {
+		error("%s: pipe() failed: %m", __func__);
+		return SLURM_ERROR;
+	}
+
+	setenvf(&child_env, "SLURMCTLD_RECONF_PARENT_FD", "%d", to_parent[1]);
+	if ((pid = fork()) < 0) {
+		error("%s: fork() failed, cannot reconfigure.", __func__);
+		return SLURM_ERROR;
+	} else if (pid > 0) {
+		pid_t grandchild_pid;
+		int rc;
+		/*
+		 * Close the input side of the pipe so the read() will return
+		 * immediately if the child process fatal()s.
+		 * Otherwise we'd be stuck here indefinitely assuming another
+		 * internal thread might write something to the pipe.
+		 */
+		(void) close(to_parent[1]);
+		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
+		if (pidfd != -1)
+			(void) close(pidfd);
+		info("Relinquishing control to new slurmd process");
+		/*
+		 * Ensure child has exited.
+		 * Grandchild should be owned by init.
+		 */
+		if (under_systemd) {
+			waitpid(pid, &rc, 0);
+			xsystemd_change_mainpid(grandchild_pid);
+		}
+		return SLURM_SUCCESS;
+
+rwfail:
+		close(to_parent[0]);
+		env_array_free(child_env);
+		waitpid(pid, &rc, 0);
+		info("Resuming operation, reconfigure failed.");
+		return SLURM_ERROR;
+	}
+
+start_child:
+	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
+		bool match = false;
+		if (fd == to_parent[1])
+			continue;
+		for (int i = 0; i < listen_nports; i++) {
+			if (fd == listen_fds[i].fd) {
+				match = true;
+				break;
+			}
+		}
+		if (!match)
+			(void) close(fd);
+	}
+
+	/*
+	 * This second fork() ensures that the new grandchild's parent is init,
+	 * which avoids a nuisance warning from systemd of:
+	 * "Supervising process 123456 which is not our child. We'll most likely not notice when it exits"
+	 */
+	if (under_systemd) {
+		if ((pid = fork()) < 0)
+			fatal("fork() failed: %m");
+		else if (pid)
+			exit(0);
+	}
+
+	execve(main_argv[0], main_argv, child_env);
+	fatal("execv() failed: %m");
+}
+
 extern void notify_parent_of_success(void)
 {
 	char *parent_fd_env = getenv("SLURMCTLD_RECONF_PARENT_FD");
@@ -998,6 +1121,88 @@ rwfail:
 	(void) close(fd);
 }
 
+extern void reconfigure_slurm(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&reconfig_mutex);
+	if (reconfig) {
+		debug("%s: ignoring overlapping reconfigure request",
+		      __func__);
+		slurm_mutex_unlock(&reconfig_mutex);
+		if (msg)
+			slurm_send_rc_msg(msg, EINPROGRESS);
+		return;
+	}
+	reconfig = true;
+	slurm_mutex_unlock(&reconfig_mutex);
+
+	if (msg && !daemonize && !under_systemd)
+		slurm_send_rc_msg(msg, rc);
+
+	/* stop processing additional RPCs */
+	slurmctld_config.shutdown_time = time(NULL);
+	slurmctld_shutdown();
+
+	/* stop all scheduling */
+	controller_fini_scheduling();
+
+	/* flush outstanding RPCs */
+	_flush_rpcs();
+
+	/* flush agent queue */
+	_flush_agent_queue(30);
+
+	/* kill all scripts running by the slurmctld */
+	track_script_flush();
+	slurmscriptd_fini();
+
+	save_all_state();
+
+	rc = _try_to_reconfig();
+
+	if (msg)
+		slurm_send_rc_msg(msg, rc);
+	if (!rc)
+		exit(0);
+
+	/* The reconfigure attempt failed. Get things running again. */
+
+	/*
+	 * Some fed_mgr threads may have exited while the reconfig attempt
+	 * was in progress. Shut the remaining ones down in preparation to
+	 * restart it again.
+	 */
+	fed_mgr_fini();
+
+	slurmctld_config.shutdown_time = 0;
+
+	slurmscriptd_init(main_argc, main_argv);
+
+	if (controller_init_scheduling(false) != SLURM_SUCCESS)
+		fatal("Failed to initialize the various schedulers");
+
+	fed_mgr_init(acct_db_conn);
+
+	/* finish up the configuration */
+	slurm_mutex_lock(&reconfig_mutex);
+	reconfig = false;
+	slurm_cond_broadcast(&reconfig_cond);
+	slurm_mutex_unlock(&reconfig_mutex);
+}
+
+static void _post_reconfig(void)
+{
+	if (running_configless) {
+		configless_update();
+		push_reconfig_to_slurmd();
+		sackd_mgr_push_reconfig();
+	} else {
+		msg_to_slurmd(REQUEST_RECONFIGURE);
+	}
+}
+
+#if 0
 extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	/* Locks: Write configuration, job, node, and partition */
@@ -1082,6 +1287,7 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 	reconfig = false;
 	slurm_mutex_unlock(&reconfig_mutex);
 }
+#endif
 
 /* Request that the job scheduler execute soon (typically within seconds) */
 extern void queue_job_scheduler(void)
@@ -1226,6 +1432,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn poll: %m");
 			server_thread_decr();
+			slurm_mutex_lock(&reconfig_mutex);
+			if (reconfig)
+				slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+			slurm_mutex_unlock(&reconfig_mutex);
 			continue;
 		}
 
@@ -2003,6 +2213,16 @@ static void *_slurmctld_background(void *no_data)
 			last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME -
 					      ping_interval;
 		}
+
+		slurm_mutex_lock(&reconfig_mutex);
+		if (reconfig) {
+			slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+			if (slurmctld_config.shutdown_time) {
+				slurm_mutex_unlock(&reconfig_mutex);
+				break;
+			}
+		}
+		slurm_mutex_unlock(&reconfig_mutex);
 
 		if (slurmctld_config.shutdown_time) {
 			_flush_rpcs();
