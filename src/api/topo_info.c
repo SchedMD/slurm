@@ -52,6 +52,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/topology.h"
+
 /*
  * slurm_load_topo - issue RPC to get slurm all switch topology configuration
  *	information
@@ -69,6 +71,8 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data     = NULL;
+
+	topology_g_init();
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					   working_cluster_rec) < 0)
@@ -99,53 +103,20 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
  *	slurm_load_topo
  * IN out - file to write to
  * IN topo_info_msg_ptr - switch topology information message pointer
+ * IN node_list - NULL to print all topology information
  * IN one_liner - print as a single line if not zero
  */
 extern void slurm_print_topo_info_msg(
 	FILE * out,
 	topo_info_response_msg_t *topo_info_msg_ptr,
-	int one_liner)
+	char *node_list, int one_liner)
 {
-	int i;
-	topo_info_t *topo_ptr = topo_info_msg_ptr->topo_array;
+	char *out_str;
 
-	if (topo_info_msg_ptr->record_count == 0) {
-		error("No topology information available");
-		return;
-	}
+	topology_g_init();
 
-	for (i = 0; i < topo_info_msg_ptr->record_count; i++)
-		slurm_print_topo_record(out, &topo_ptr[i], one_liner);
-}
-
-/*
- * slurm_print_topo_record - output information about a specific Slurm topology
- *	record based upon message as loaded using slurm_load_topo
- * IN out - file to write to
- * IN topo_ptr - an individual switch information record pointer
- * IN one_liner - print as a single line if not zero
- * RET out - char * containing formatted output (must be freed after call)
- *	   NULL is returned on failure.
- */
-extern void slurm_print_topo_record(FILE * out, topo_info_t *topo_ptr,
-				    int one_liner)
-{
-	char *env, *line = NULL, *pos = NULL;
-
-	/****** Line 1 ******/
-	xstrfmtcatat(line, &pos, "SwitchName=%s Level=%u LinkSpeed=%u",
-		   topo_ptr->name, topo_ptr->level, topo_ptr->link_speed);
-
-	if (topo_ptr->nodes)
-		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
-
-	if (topo_ptr->switches)
-		xstrfmtcatat(line, &pos, " Switches=%s", topo_ptr->switches);
-
-	if ((env = getenv("SLURM_TOPO_LEN")))
-		fprintf(out, "%.*s\n", atoi(env), line);
-	else
-		fprintf(out, "%s\n", line);
-
-	xfree(line);
+	topology_g_topology_print(topo_info_msg_ptr->topo_info, node_list,
+				  &out_str);
+	fprintf(out, "%s", out_str);
+	xfree(out_str);
 }

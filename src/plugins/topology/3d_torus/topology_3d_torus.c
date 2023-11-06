@@ -76,6 +76,7 @@
  */
 const char plugin_name[]        = "topology 3d_torus plugin";
 const char plugin_type[]        = "topology/3d_torus";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_3DTORUS;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 extern void nodes_to_hilbert_curve(void);
@@ -103,7 +104,7 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topology_g_build_config(void)
+extern int topology_p_build_config(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -111,7 +112,7 @@ extern int topology_g_build_config(void)
 /*
  * topo_generate_node_ranking  -  populate node_rank fields
  */
-extern bool topology_g_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(void)
 {
 	nodes_to_hilbert_curve();
 	return true;
@@ -123,7 +124,7 @@ extern bool topology_g_generate_node_ranking(void)
  *
  * in 3d_torus plugin, only use node name as the topology address
  */
-extern int topology_g_get_node_addr(char *node_name, char **paddr,
+extern int topology_p_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern)
 {
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
@@ -134,4 +135,33 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 {
 	return common_topo_split_hostlist_treewidth(
 		hl, sp_hl, count, tree_width);
+}
+
+extern int topology_p_topology_free(void *topoinfo_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_get(void **topoinfo_pptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
+				     char **out)
+{
+	*out = NULL;
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
 }

@@ -102,6 +102,7 @@ int active_node_record_count;
  */
 const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_TREE;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct slurm_conf_switches {
@@ -112,8 +113,15 @@ typedef struct slurm_conf_switches {
 	char *switches;		/* names if child switches directly
 				 * connected to this switch, if any */
 } slurm_conf_switches_t;
+
+typedef topo_info_t topoinfo_switch_t;
+
+typedef struct topoinfo_tree {
+	uint32_t record_count;		/* number of records */
+	topoinfo_switch_t *topo_array;	/* the switch topology records */
+} topoinfo_tree_t;
+
 static s_p_hashtbl_t *conf_hashtbl = NULL;
-static char* topo_conf = NULL;
 
 static void _check_better_path(int i, int j ,int k);
 static void _destroy_switches(void *ptr);
@@ -147,7 +155,6 @@ extern int init(void)
 extern int fini(void)
 {
 	_free_switch_record_table();
-	xfree(topo_conf);
 	return SLURM_SUCCESS;
 }
 
@@ -842,9 +849,8 @@ static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 	int count;
 	slurm_conf_switches_t **ptr;
 
-	debug("Reading the topology.conf file");
-	if (!topo_conf)
-		topo_conf = get_extra_conf_path("topology.conf");
+	xassert(topo_conf);
+	debug("Reading the %s file", topo_conf);
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
 	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, 0, NULL) ==
@@ -983,4 +989,168 @@ static void _check_better_path(int i, int j ,int k)
 
 	if (switch_record_table[j].switches_dist[k] > tmp)
 		switch_record_table[j].switches_dist[k] = tmp;
+}
+
+extern int topology_p_topology_free(void *topoinfo_ptr)
+{
+	int i = 0;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+				xfree(topoinfo->topo_array[i].switches);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_get(void **topoinfo_pptr)
+{
+	int i = 0;
+	topoinfo_tree_t *topoinfo_ptr =
+		xmalloc(sizeof(topoinfo_tree_t));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	topoinfo_ptr->record_count = switch_record_cnt;
+	topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
+					   sizeof(topoinfo_switch_t));
+
+	for (i = 0; i < topoinfo_ptr->record_count; i++) {
+		topoinfo_ptr->topo_array[i].level =
+			switch_record_table[i].level;
+		topoinfo_ptr->topo_array[i].link_speed =
+			switch_record_table[i].link_speed;
+		topoinfo_ptr->topo_array[i].name =
+			xstrdup(switch_record_table[i].name);
+		topoinfo_ptr->topo_array[i].nodes =
+			xstrdup(switch_record_table[i].nodes);
+		topoinfo_ptr->topo_array[i].switches =
+			xstrdup(switch_record_table[i].switches);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	int i;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+
+	pack32(topoinfo->record_count, buffer);
+	for (i = 0; i < topoinfo->record_count; i++) {
+		pack16(topoinfo->topo_array[i].level, buffer);
+		pack32(topoinfo->topo_array[i].link_speed, buffer);
+		packstr(topoinfo->topo_array[i].name, buffer);
+		packstr(topoinfo->topo_array[i].nodes, buffer);
+		packstr(topoinfo->topo_array[i].switches, buffer);
+	}
+	return SLURM_SUCCESS;
+}
+void _print_topo_record(topoinfo_switch_t * topo_ptr, char **out)
+{
+	char *env, *line = NULL, *pos = NULL;
+
+	/****** Line 1 ******/
+	xstrfmtcatat(line, &pos, "SwitchName=%s Level=%u LinkSpeed=%u",
+		     topo_ptr->name, topo_ptr->level, topo_ptr->link_speed);
+
+	if (topo_ptr->nodes)
+		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
+
+	if (topo_ptr->switches)
+		xstrfmtcatat(line, &pos, " Switches=%s", topo_ptr->switches);
+
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+	else
+		xstrfmtcat(*out, "%s\n", line);
+
+	xfree(line);
+
+}
+
+extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
+				     char **out)
+{
+	int i, match, match_cnt = 0;;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+
+	*out = NULL;
+
+	if ((nodes_list == NULL) || (nodes_list[0] == '\0')) {
+		if (topoinfo->record_count == 0) {
+			error("No topology information available");
+			return SLURM_SUCCESS;
+		}
+
+		for (i = 0; i < topoinfo->record_count; i++)
+			_print_topo_record(&topoinfo->topo_array[i], out);
+
+		return SLURM_SUCCESS;
+	}
+
+	/* Search for matching switch name */
+	for (i = 0; i < topoinfo->record_count; i++) {
+		if (xstrcmp(topoinfo->topo_array[i].name, nodes_list))
+			continue;
+		_print_topo_record(&topoinfo->topo_array[i], out);
+		return SLURM_SUCCESS;
+	}
+
+	/* Search for matching node name */
+	for (i = 0; i < topoinfo->record_count; i++) {
+		hostset_t *hs;
+
+		if ((topoinfo->topo_array[i].nodes == NULL) ||
+		    (topoinfo->topo_array[i].nodes[0] == '\0'))
+			continue;
+		hs = hostset_create(topoinfo->topo_array[i].nodes);
+		if (hs == NULL)
+			fatal("hostset_create: memory allocation failure");
+		match = hostset_within(hs, nodes_list);
+		hostset_destroy(hs);
+		if (!match)
+			continue;
+		match_cnt++;
+		_print_topo_record(&topoinfo->topo_array[i], out);
+	}
+
+	if (match_cnt == 0) {
+		error("Topology information contains no switch or "
+		      "node named %s", nodes_list);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	int i = 0;
+	topoinfo_tree_t *topoinfo_ptr =
+		xmalloc(sizeof(topoinfo_tree_t));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	safe_unpack32(&topoinfo_ptr->record_count, buffer);
+	safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
+		     sizeof(topoinfo_switch_t));
+	for (i = 0; i < topoinfo_ptr->record_count; i++) {
+		safe_unpack16(&topoinfo_ptr->topo_array[i].level, buffer);
+		safe_unpack32(&topoinfo_ptr->topo_array[i].link_speed, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].name, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].switches, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topology_free(topoinfo_ptr);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
 }

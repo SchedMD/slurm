@@ -69,6 +69,26 @@ typedef struct {
 extern switch_record_t *switch_record_table;  /* ptr to switch records */
 extern int switch_record_cnt;		/* size of switch_record_table */
 extern int switch_levels;               /* number of switch levels     */
+extern char *topo_conf;
+
+/*****************************************************************************\
+ * defined here but is really block plugin related
+\*****************************************************************************/
+typedef struct {
+	int level;
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
+					 * this block */
+	char *nodes;			/* name if direct descendant nodes */
+	uint16_t block_index;
+} block_record_t;
+
+
+extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
+extern block_record_t *block_record_table;  /* ptr to block records */
+extern uint16_t bblock_node_cnt;
+extern bitstr_t *block_levels;
+extern int block_record_cnt;
 
 /*****************************************************************************\
  *  Slurm topology functions
@@ -114,7 +134,6 @@ extern bool topology_g_generate_node_ranking(void);
 extern int topology_g_get_node_addr(char *node_name, char **addr,
 				    char **pattern);
 
-
 /*
  * topology_g_split_hostlist - logic to split an input hostlist into
  *                             a set of hostlists to forward to.
@@ -136,5 +155,40 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 				     hostlist_t ***sp_hl,
 				     int *count,
 				     uint16_t tree_width);
+
+/* unpack a system topology from a buffer
+ * OUT topoinfo - the system topology
+ * RET         - slurm error code
+ * NOTE: returned value must be freed using topology_g_topology_free
+ */
+extern int topology_g_topology_get(dynamic_plugin_data_t **topoinfo);
+
+/* pack a mchine independent form system topology
+ * OUT buffer  - buffer with node topology appended
+ * IN protocol_version - slurm protocol version of client
+ * RET         - slurm error code
+ */
+extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
+				    buf_t *buffer,
+				    uint16_t protocol_version);
+
+extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+				     char *nodes_list, char **out);
+
+/* unpack a system topology from a buffer
+ * OUT topoinfo - the system topology
+ * IN  buffer  - buffer with system topology read from current pointer loc
+ * IN protocol_version - slurm protocol version of client
+ * RET         - slurm error code
+ * NOTE: returned value must be freed using topology_g_topology_free
+ */
+extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
+				      buf_t *buffer,
+				      uint16_t protocol_version);
+/* free storage previously allocated for a system topology
+ * IN jobinfo  - the system topology to be freed
+ * RET         - slurm error code
+ */
+extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
 
 #endif

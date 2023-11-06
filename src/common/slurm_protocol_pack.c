@@ -71,6 +71,7 @@
 #include "src/interfaces/power.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);
@@ -10971,14 +10972,18 @@ static void _pack_topo_info_msg(topo_info_response_msg_t *msg, buf_t *buffer,
 				uint16_t protocol_version)
 {
 	int i;
-
-	pack32(msg->record_count, buffer);
-	for (i=0; i<msg->record_count; i++) {
-		pack16(msg->topo_array[i].level,      buffer);
-		pack32(msg->topo_array[i].link_speed, buffer);
-		packstr(msg->topo_array[i].name,      buffer);
-		packstr(msg->topo_array[i].nodes,     buffer);
-		packstr(msg->topo_array[i].switches,  buffer);
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		topology_g_topology_pack(msg->topo_info, buffer,
+					 protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->record_count, buffer);
+		for (i = 0; i < msg->record_count; i++) {
+			pack16(msg->topo_array[i].level, buffer);
+			pack32(msg->topo_array[i].link_speed, buffer);
+			packstr(msg->topo_array[i].name, buffer);
+			packstr(msg->topo_array[i].nodes, buffer);
+			packstr(msg->topo_array[i].switches, buffer);
+		}
 	}
 }
 
@@ -10991,15 +10996,22 @@ static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 		xmalloc(sizeof(topo_info_response_msg_t));
 
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->record_count, buffer);
-	safe_xcalloc(msg_ptr->topo_array, msg_ptr->record_count,
-		     sizeof(topo_info_t));
-	for (i=0; i<msg_ptr->record_count; i++) {
-		safe_unpack16(&msg_ptr->topo_array[i].level,      buffer);
-		safe_unpack32(&msg_ptr->topo_array[i].link_speed, buffer);
-		safe_unpackstr(&msg_ptr->topo_array[i].name, buffer);
-		safe_unpackstr(&msg_ptr->topo_array[i].nodes, buffer);
-		safe_unpackstr(&msg_ptr->topo_array[i].switches, buffer);
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		topology_g_topology_unpack(&msg_ptr->topo_info, buffer,
+					   protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg_ptr->record_count, buffer);
+		safe_xcalloc(msg_ptr->topo_array, msg_ptr->record_count,
+			     sizeof(topo_info_t));
+		for (i = 0; i < msg_ptr->record_count; i++) {
+			safe_unpack16(&msg_ptr->topo_array[i].level, buffer);
+			safe_unpack32(&msg_ptr->topo_array[i].link_speed,
+				      buffer);
+			safe_unpackstr(&msg_ptr->topo_array[i].name, buffer);
+			safe_unpackstr(&msg_ptr->topo_array[i].nodes, buffer);
+			safe_unpackstr(&msg_ptr->topo_array[i].switches,
+				       buffer);
+		}
 	}
 
 	return SLURM_SUCCESS;
