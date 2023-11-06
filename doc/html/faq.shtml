@@ -1111,6 +1111,7 @@ If the cluster's computers used for the primary or backup controller
 will be out of service for an extended period of time, it may be desirable
 to relocate them. In order to do so, follow this procedure:</p>
 <ol>
+<li>Drain the cluster of running jobs</li>
 <li>Stop all Slurm daemons</li>
 <li>Modify the <i>SlurmctldHost</i> values in the <i>slurm.conf</i> file</li>
 <li>Distribute the updated <i>slurm.conf</i> file to all nodes</li>
@@ -1118,9 +1119,11 @@ to relocate them. In order to do so, follow this procedure:</p>
 make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 <li>Restart all Slurm daemons</li>
 </ol>
-<p>There should be no loss of any running or pending jobs. Ensure that
-any nodes added to the cluster have a current <i>slurm.conf</i> file
-installed.
+<p>Jobs that were started by the old controller will attempt to contact that
+controller to report their completion, so the cluster should be drained of
+running jobs for this procedure. There should be no loss of any pending jobs.
+Ensure that any nodes added to the cluster have a current <i>slurm.conf</i>
+file installed.
 <b>CAUTION:</b> If two nodes are simultaneously configured as the primary
 controller (two nodes on which <i>SlurmctldHost</i> specify the local host
 and the <i>slurmctld</i> daemon is executing on each), system behavior will be
@@ -2419,6 +2422,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 27 July 2023</p>
+<p style="text-align:center;">Last modified 06 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
