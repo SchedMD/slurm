@@ -9624,6 +9624,7 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 			_filter_gres_per_task(closest_gres, gres_bit_avail,
 					      usable_gres, &gres_needed,
 					      (i == local_proc_id));
+			FREE_NULL_BITMAP(closest_gres);
 		}
 
 		/* Second: Select any available device */
