@@ -1811,7 +1811,12 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->extra =
 						xstrdup(update_node_msg->extra);
 				}
-				update_db = true;
+				/*
+				 * Skip db updates for extra field changes,
+				 * otherwise we'll overwhelm it with event records
+				 * if someone is updating these constantly.
+				 */
+				// update_db = true;
 			}
 		}
 
@@ -3318,7 +3323,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		xfree(node_ptr->extra);
 		if (reg_msg->extra[0]) {
 			node_ptr->extra = xstrdup(reg_msg->extra);
-			update_db = true;
+			/*
+			 * Skip db updates for extra field changes,
+			 * otherwise we'll overwhelm it with event records
+			 * if someone is updating these constantly.
+			 */
+			// update_db = true;
 		}
 	}
 
