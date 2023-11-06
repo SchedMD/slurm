@@ -1256,29 +1256,6 @@ static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern int _conmgr_process_fd_internal(conmgr_con_type_t type,
-				       conmgr_fd_t *source, int input_fd,
-				       int output_fd,
-				       const conmgr_events_t events,
-				       const slurm_addr_t *addr,
-				       socklen_t addrlen, void *arg)
-{
-	conmgr_fd_t *con;
-
-	con = _add_connection(type, source, input_fd, output_fd, events, addr,
-			      addrlen, false, NULL, arg);
-
-	if (!con)
-		return SLURM_ERROR;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	_add_work(false, con, _wrap_on_connection,
-		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
-
-	return SLURM_SUCCESS;
-}
-
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     int output_fd, const conmgr_events_t events,
 			     const slurm_addr_t *addr, socklen_t addrlen,
@@ -2335,10 +2312,10 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 			   conmgr_work_status_t status, const char *tag,
 			   void *arg)
 {
-	int rc;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int fd;
+	conmgr_fd_t *child = NULL;
 
 	if (con->input_fd == -1) {
 		log_flag(NET, "%s: [%s] skipping accept on closed connection",
@@ -2385,13 +2362,20 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 		      __func__, addrlen);
 
 	/* hand over FD for normal processing */
-	if ((rc = _conmgr_process_fd_internal(con->type, con, fd, fd,
-					       con->events, &addr, addrlen,
-					       con->new_arg))) {
-		log_flag(NET, "%s: [fd:%d] _conmgr_process_fd_internal rejected: %s",
-			 __func__, fd, slurm_strerror(rc));
+	if (!(child = _add_connection(con->type, con, fd, fd, con->events,
+				      &addr, addrlen, false, NULL,
+				      con->new_arg))) {
+		log_flag(NET, "%s: [fd:%d] unable to a register new connection",
+			 __func__, fd);
 		_close_con(false, con);
+		return;
 	}
+
+	xassert(child->magic == MAGIC_CON_MGR_FD);
+
+	_add_work(false, child, _wrap_on_connection,
+		  CONMGR_WORK_TYPE_CONNECTION_FIFO, child,
+		  "_wrap_on_connection");
 }
 
 static void _deferred_write_fd(conmgr_fd_t *con, conmgr_work_type_t type,
