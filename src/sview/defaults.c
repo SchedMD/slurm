@@ -1107,8 +1107,6 @@ extern int configure_defaults(void)
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 	if (response == GTK_RESPONSE_OK) {
-		tmp_char_ptr = g_strdup_printf(
-			"Defaults updated successfully");
 		if (global_edit_error)
 			tmp_char_ptr = global_edit_error_msg;
 		else if (!global_send_update_msg)
@@ -1208,6 +1206,8 @@ extern int configure_defaults(void)
 			get_system_stats(main_grid_table);
 			/******************************************/
 			save_defaults(false);
+			tmp_char_ptr = g_strdup_printf(
+				"Defaults updated successfully");
 		}
 	denied_change:
 		display_edit_note(tmp_char_ptr);
