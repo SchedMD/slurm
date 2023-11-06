@@ -208,6 +208,8 @@ static bool	dump_core = false;
 static int      job_sched_cnt = 0;
 static int listen_nports = 0;
 static struct pollfd *listen_fds = NULL;
+static int main_argc = 0;
+static char **main_argv = NULL;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
@@ -292,6 +294,9 @@ int main(int argc, char **argv)
 	};
 	bool create_clustername_file;
 	char *conf_file;
+
+	main_argc = argc;
+	main_argv = argv;
 
 	/*
 	 * Make sure we have no extra open files which
