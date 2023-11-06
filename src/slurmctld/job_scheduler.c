@@ -815,10 +815,9 @@ static void *_sched_agent(void *args)
 	}
 #endif
 
-	while (!slurmctld_config.shutdown_time) {
-
+	while (true) {
 		slurm_mutex_lock(&sched_mutex);
-		while (1) {
+		while (true) {
 			if (slurmctld_config.shutdown_time) {
 				slurm_mutex_unlock(&sched_mutex);
 				return NULL;
