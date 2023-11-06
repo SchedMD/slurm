@@ -9604,7 +9604,7 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 				    int local_proc_id)
 {
 	uint64_t gres_needed;
-	bitstr_t *usable_gres, *gres_bit_avail, *closest_gres = NULL;
+	bitstr_t *usable_gres, *gres_bit_avail;
 
 	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
 	gres_bit_avail = bit_copy(gres_bit_alloc);
@@ -9614,16 +9614,17 @@ static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
 	 * which gres are available to be assigned to this task.
 	 */
 	for (int i = 0; i <= local_proc_id; i++) {
-		closest_gres = _get_closest_usable_gres(
-			plugin_id, gres_bit_avail, step->task[i]->cpu_set);
-
 		gres_needed = gres_per_task;
 
 		/* First: Try to select device with with cpu affinity */
-		if (gres_needed)
+		if (gres_needed) {
+			bitstr_t *closest_gres = _get_closest_usable_gres(
+				plugin_id, gres_bit_avail,
+				step->task[i]->cpu_set);
 			_filter_gres_per_task(closest_gres, gres_bit_avail,
 					      usable_gres, &gres_needed,
 					      (i == local_proc_id));
+		}
 
 		/* Second: Select any available device */
 		if (gres_needed)
