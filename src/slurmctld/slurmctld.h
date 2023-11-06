@@ -3086,6 +3086,8 @@ extern void set_node_reason(node_record_t *node_ptr,
 
 extern void reconfigure_slurm(slurm_msg_t *msg);
 
+extern void notify_parent_of_success(void);
+
 /*
  * Return the job's sharing value from job or partition value.
  */

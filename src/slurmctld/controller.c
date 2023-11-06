@@ -974,6 +974,29 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
+extern void notify_parent_of_success(void)
+{
+	char *parent_fd_env = getenv("SLURMCTLD_RECONF_PARENT_FD");
+	pid_t pid = getpid();
+	int fd = -1;
+	static bool notified = false;
+
+	if (original || !parent_fd_env || notified)
+		return;
+
+	notified = true;
+
+	fd = atoi(parent_fd_env);
+	info("child started successfully");
+	safe_write(fd, &pid, sizeof(pid_t));
+	(void) close(fd);
+	return;
+
+rwfail:
+	error("failed to notify parent, may have two processes running now");
+	(void) close(fd);
+}
+
 extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	/* Locks: Write configuration, job, node, and partition */
