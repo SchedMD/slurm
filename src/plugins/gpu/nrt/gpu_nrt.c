@@ -154,8 +154,7 @@ static char *_get_connected_devices(int dev_inx, unsigned int dev_cnt)
 
 	if (!fgets(conn_dev, CONNECTED_DEVICES_SZ, fp)) {
 		debug("Could not read Neuron connected devices. Setting empty links");
-		xfree(sysfs_file);
-		return links;
+		goto endit;
 	}
 
 	/*
@@ -178,6 +177,7 @@ static char *_get_connected_devices(int dev_inx, unsigned int dev_cnt)
 			xstrfmtcat(links, "%s%d", i ? "," : "", 0);
 	}
 
+endit:
 	xfree(sysfs_file);
 	fclose(fp);
 	return links;
