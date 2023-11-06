@@ -282,18 +282,19 @@ static int _verify_signature(char *buffer, uint32_t buf_size, char *signature)
 	replay_okay = true;
 #endif
 
-	rc = _decode(signature, replay_okay, &payload, NULL);
+	/* warning: do not use free_buf() on the returned buffer */
+	if ((rc = _decode(signature, replay_okay, &payload, NULL))) {
+		error("%s: failed decode", __func__);
+		return rc;
+	}
 
 	if (buf_size != payload->size)
 		rc = ESIG_BUF_SIZE_MISMATCH;
 	else if (memcmp(buffer, payload->head, payload->size))
 		rc = ESIG_BUF_DATA_MISMATCH;
 
-	/* warning: do not use free_buf() on this! */
-	if (payload) {
-		free(get_buf_data(payload));
-		xfree(payload);
-	}
+	free(get_buf_data(payload));
+	xfree(payload);
 
 	return rc;
 }
