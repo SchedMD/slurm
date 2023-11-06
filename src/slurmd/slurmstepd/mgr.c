@@ -1872,7 +1872,10 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	/*
 	 * Reclaim privileges to do the io setup
 	 */
-	reclaim_privileges(&sprivs);
+	if (reclaim_privileges(&sprivs) < 0) {
+		error("Unable to reclaim privileges");
+		/* Don't bother erroring out here */
+	}
 	if (rc)
 		goto fail1; /* pam_setup error */
 
@@ -2177,7 +2180,10 @@ fail4:
 		error ("Unable to return to working directory");
 	}
 fail3:
-	reclaim_privileges (&sprivs);
+	if (reclaim_privileges(&sprivs) < 0) {
+		error("Unable to reclaim privileges");
+		/* Don't bother erroring out here */
+	}
 fail2:
 	FREE_NULL_LIST(exec_wait_list);
 	io_close_task_fds(step);
