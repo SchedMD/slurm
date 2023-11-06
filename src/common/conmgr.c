@@ -2316,6 +2316,7 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 	socklen_t addrlen = sizeof(addr);
 	int fd;
 	conmgr_fd_t *child = NULL;
+	const char *unix_path = NULL;
 
 	if (con->input_fd == -1) {
 		log_flag(NET, "%s: [%s] skipping accept on closed connection",
@@ -2361,9 +2362,17 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 		fatal("%s: unexpected large address returned from accept(): %u bytes",
 		      __func__, addrlen);
 
+	if (addr.ss_family == AF_UNIX) {
+		const struct sockaddr_un *usock = (struct sockaddr_un *) &addr;
+
+		xassert(usock->sun_family == AF_UNIX);
+
+		unix_path = usock->sun_path;
+	}
+
 	/* hand over FD for normal processing */
 	if (!(child = _add_connection(con->type, con, fd, fd, con->events,
-				      &addr, addrlen, false, NULL,
+				      &addr, addrlen, false, unix_path,
 				      con->new_arg))) {
 		log_flag(NET, "%s: [fd:%d] unable to a register new connection",
 			 __func__, fd);
