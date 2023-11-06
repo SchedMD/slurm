@@ -3084,22 +3084,7 @@ extern void set_node_reason(node_record_t *node_ptr,
 			    char *message,
 			    time_t time);
 
-/*
- * Read configuration file - first part, reconfigure_slurm_post_send() must be
- * called every time after this is called.
- */
-extern int reconfigure_slurm(void);
-
-/*
- * Read configuration file - second part, reconfigure_slurm() must be
- * called first before this is called.
- *
- * Things in this function are usually heavier functions that can happen after
- * an rc is sent to a client.
- *
- * IN error_code - the error code given from reconfigure_slurm().
- */
-extern void reconfigure_slurm_post_send(int error_code);
+extern void reconfigure_slurm(slurm_msg_t *msg);
 
 /*
  * Return the job's sharing value from job or partition value.

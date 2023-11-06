@@ -974,7 +974,7 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
-extern int reconfigure_slurm(void)
+extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
@@ -990,14 +990,18 @@ extern int reconfigure_slurm(void)
 		debug("%s: ignoring overlapping reconfigure request",
 		      __func__);
 		slurm_mutex_unlock(&reconfig_mutex);
-		return EINPROGRESS;
+		if (msg)
+			slurm_send_rc_msg(msg, EINPROGRESS);
+		return;
 	}
 	reconfig = true;
 	slurm_mutex_unlock(&reconfig_mutex);
 
 	if (slurmctld_config.shutdown_time) {
 		debug5("%s: shutdown in progress: skipping", __func__);
-		return EINPROGRESS;
+		if (msg)
+			slurm_send_rc_msg(msg, EINPROGRESS);
+		return;
 	}
 
 	/*
@@ -1040,12 +1044,10 @@ extern int reconfigure_slurm(void)
 	else
 		info("%s: completed %s", __func__, TIME_STR);
 
-	return rc;
-}
+	if (msg)
+		slurm_send_rc_msg(msg, rc);
 
-extern void reconfigure_slurm_post_send(int error_code)
-{
-	if (error_code)
+	if (rc)
 		return;
 
 	priority_g_reconfig(true);	/* notify priority plugin too */
@@ -1098,7 +1100,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			reconfigure_slurm_post_send(reconfigure_slurm());
+			reconfigure_slurm(NULL);
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");

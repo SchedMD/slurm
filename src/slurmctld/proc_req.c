@@ -3252,8 +3252,6 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
  */
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 {
-	int error_code;
-
 	if (!validate_super_user(msg->auth_uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
@@ -3262,13 +3260,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 	} else
 		info("Processing Reconfiguration Request");
 
-	error_code = reconfigure_slurm();
-
-	/* return result */
-	slurm_send_rc_msg(msg, error_code);
-
-	/* finish up the configuration */
-	reconfigure_slurm_post_send(error_code);
+	reconfigure_slurm(msg);
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
