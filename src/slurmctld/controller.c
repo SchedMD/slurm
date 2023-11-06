@@ -1320,8 +1320,12 @@ static void *_slurmctld_signal_hand(void *no_data)
 	/* Make sure no required signals are ignored (possibly inherited) */
 	for (i = 0; sig_array[i]; i++)
 		xsignal_default(sig_array[i]);
+
+	sigfillset(&set);
+	xsignal_set_mask(&set);
+	xsignal_sigset_create(sig_array, &set);
+
 	while (1) {
-		xsignal_sigset_create(sig_array, &set);
 		rc = sigwait(&set, &sig);
 		if (rc == EINTR)
 			continue;
