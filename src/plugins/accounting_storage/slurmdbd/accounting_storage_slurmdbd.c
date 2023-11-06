@@ -128,6 +128,9 @@ static char *cluster_tres = NULL; /* Protected by node write lock */
 static hostlist_t *cluster_hl = NULL;
 static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static int prev_node_record_count = -1;
+static bitstr_t *total_node_bitmap = NULL;
+
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
@@ -538,8 +541,6 @@ static int _send_cluster_tres(void *db_conn,
 
 static void _update_cluster_nodes(void)
 {
-	static int prev_node_record_count = -1;
-	static bitstr_t *total_node_bitmap = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -638,7 +639,9 @@ extern int fini ( void )
 	xfree(cluster_nodes);
 	xfree(cluster_tres);
 	FREE_NULL_HOSTLIST(cluster_hl);
+	FREE_NULL_BITMAP(total_node_bitmap);
 
+	prev_node_record_count = -1;
 	first = 1;
 
 	return SLURM_SUCCESS;
