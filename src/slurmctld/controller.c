@@ -215,6 +215,7 @@ static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
 static bool original = true;
+static int pidfd = -1;
 /*
  * 0 = use no saved state information
  * 1 = recover saved job state,
@@ -3030,8 +3031,8 @@ static void _init_pidfile(void)
 
 	/* Don't close the fd returned here since we need to keep the
 	 * fd open to maintain the write lock */
-	(void) create_pidfile(slurm_conf.slurmctld_pidfile,
-	                      slurm_conf.slurm_user_id);
+	pidfd = create_pidfile(slurm_conf.slurmctld_pidfile,
+			       slurm_conf.slurm_user_id);
 }
 
 /*
