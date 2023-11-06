@@ -6234,13 +6234,12 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		cps = cores_per_socket * threads_per_core;
 
 	tmp_cpt = cpus_per_task;
-	if (req_sock_map) {
-		i = 0;
+	if (req_sock_map && (i = bit_set_count(req_sock_map))) {
 		tmp_core = bit_alloc(bit_size(core_map));
 		if (req_sock_cpus > avail_cpus) {
-			max_cpu_per_req_sock = avail_cpus /
-					       bit_set_count(req_sock_map);
+			max_cpu_per_req_sock = avail_cpus / i;
 		}
+		i = 0;
 	} else {
 		i = sockets;
 	}
