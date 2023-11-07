@@ -2992,8 +2992,6 @@ extern int fed_mgr_fini(void)
 	if (origin_dep_thread_id)
 		pthread_join(origin_dep_thread_id, NULL);
 
-	_remove_job_watch_thread();
-
 	slurm_mutex_lock(&fed_job_list_mutex);
 	FREE_NULL_LIST(fed_job_list);
 	slurm_mutex_unlock(&fed_job_list_mutex);
