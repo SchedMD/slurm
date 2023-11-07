@@ -1027,7 +1027,7 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		 * data.
 		 */
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"unknown association with id#%u. Unable to dump assocation.",
+			"Unknown association with id#%u. Unable to dump association.",
 			job->associd);
 		data_set_dict(dst);
 		return SLURM_SUCCESS;
