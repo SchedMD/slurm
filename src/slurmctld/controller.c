@@ -280,6 +280,7 @@ static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_diag_job_state_counts(void);
 static void         _update_cluster_tres(void);
 static void         _update_nice(void);
+static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static bool         _verify_clustername(void);
@@ -681,7 +682,7 @@ int main(int argc, char **argv)
 		if (!original) {
 			notify_parent_of_success();
 			if (!under_systemd)
-				_init_pidfile();
+				_update_pidfile();
 			_post_reconfig();
 		}
 
@@ -1010,6 +1011,10 @@ static int _try_to_reconfig(void)
 
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMCTLD_RECONF", "1");
+	if (pidfd != -1) {
+		setenvf(&child_env, "SLURMCTLD_RECONF_PIDFD", "%d", pidfd);
+		fd_set_noclose_on_exec(pidfd);
+	}
 	if (listen_nports) {
 		char *ports = NULL, *pos = NULL;
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
@@ -1046,8 +1051,6 @@ static int _try_to_reconfig(void)
 		 */
 		(void) close(to_parent[1]);
 		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
-		if (pidfd != -1)
-			(void) close(pidfd);
 		info("Relinquishing control to new slurmctld process");
 		/*
 		 * Ensure child has exited.
@@ -1071,6 +1074,8 @@ start_child:
 	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
 		bool match = false;
 		if (fd == to_parent[1])
+			continue;
+		if (fd == pidfd)
 			continue;
 		for (int i = 0; i < listen_nports; i++) {
 			if (fd == listen_fds[i].fd) {
@@ -3253,6 +3258,19 @@ static void _init_pidfile(void)
 	 * fd open to maintain the write lock */
 	pidfd = create_pidfile(slurm_conf.slurmctld_pidfile,
 			       slurm_conf.slurm_user_id);
+}
+
+static void _update_pidfile(void)
+{
+	char *env = getenv("SLURMCTLD_RECONF_PIDFD");
+
+	if (!env) {
+		debug("%s: missing SLURMCTLD_RECONF_PIDFD envvar", __func__);
+		return;
+	}
+
+	pidfd = atoi(env);
+	update_pidfile(pidfd);
 }
 
 /*
