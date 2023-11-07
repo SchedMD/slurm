@@ -2376,7 +2376,7 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 				      con->new_arg))) {
 		log_flag(NET, "%s: [fd:%d] unable to a register new connection",
 			 __func__, fd);
-		_close_con(false, con);
+		_close_con(false, child);
 		return;
 	}
 
