@@ -8218,10 +8218,10 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                          
 /* add parser array for an OpenAPI response with a single field */
 #define add_openapi_response_single(stype, mtype, path, desc)                             \
 	static const parser_t PARSER_ARRAY(stype)[] = {                                   \
+		add_parser(openapi_resp_single_t, mtype, true, response, 0, path, desc),  \
 		add_openapi_response_meta(openapi_resp_single_t),                         \
 		add_openapi_response_errors(openapi_resp_single_t),                       \
 		add_openapi_response_warnings(openapi_resp_single_t),                     \
-		add_parser(openapi_resp_single_t, mtype, true, response, 0, path, desc),  \
 	}
 
 add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "statistics");
@@ -8252,13 +8252,13 @@ add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node 
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
-	add_openapi_response_meta(openapi_job_post_response_t),
-	add_openapi_response_errors(openapi_job_post_response_t),
-	add_openapi_response_warnings(openapi_job_post_response_t),
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
 	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submision user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_openapi_response_meta(openapi_job_post_response_t),
+	add_openapi_response_errors(openapi_job_post_response_t),
+	add_openapi_response_warnings(openapi_job_post_response_t),
 };
 #undef add_parse
 #undef add_parse_deprec
@@ -8268,13 +8268,13 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
-	add_openapi_response_meta(openapi_job_submit_response_t),
-	add_openapi_response_errors(openapi_job_submit_response_t),
-	add_openapi_response_warnings(openapi_job_submit_response_t),
 	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse(UINT32, resp.job_id, "job_id", "submited JobId"),
 	add_parse(STEP_ID, resp.step_id, "step_id", "submited StepID"),
 	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),
+	add_openapi_response_meta(openapi_job_submit_response_t),
+	add_openapi_response_errors(openapi_job_submit_response_t),
+	add_openapi_response_warnings(openapi_job_submit_response_t),
 };
 #undef add_parse
 #undef add_parse_deprec
@@ -8282,21 +8282,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_job_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_RESP)[] = {
-	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
-	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
-	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 	add_parse_req(JOB_INFO_MSG_PTR, jobs, "jobs", "list of jobs"),
 	add_parse_req(TIMESTAMP_NO_VAL, last_backfill, "last_backfill", "time of last backfill scheduler run (UNIX timestamp)"),
 	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last job change (UNIX timestamp)"),
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 };
 #undef add_parse_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
-	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
-	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
-	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 	add_parse(CLUSTER_REC_LIST, clusters, "clusters", "clusters"),
 	add_parse(TRES_LIST, tres, "tres", "tres"),
 	add_parse(ACCOUNT_LIST, accounts, "accounts", "accounts"),
@@ -8305,83 +8302,86 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(WCKEY_LIST, wckeys, "wckeys", "wckeys"),
 	add_parse(ASSOC_LIST, associations, "associations", "associations"),
 	add_parse(INSTANCE_LIST, instances, "instances", "instances"),
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 };
 #undef add_parse
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_node_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_NODES_RESP)[] = {
+	add_parse_req(NODES_PTR, nodes, "nodes", "list of nodes"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last node change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
-	add_parse_req(NODES_PTR, nodes, "nodes", "list of nodes"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last node change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_partitions_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_RESP)[] = {
+	add_parse_req(PARTITION_INFO_MSG_PTR, partitions, "partitions", "list of partitions"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last partition change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
-	add_parse_req(PARTITION_INFO_MSG_PTR, partitions, "partitions", "list of partitions"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last partition change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_reserve_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_RESP)[] = {
+	add_parse_req(RESERVATION_INFO_MSG_PTR, reservations, "reservations", "list of reservations"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last reservation change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
-	add_parse_req(RESERVATION_INFO_MSG_PTR, reservations, "reservations", "list of reservations"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last reservation change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_license_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_LICENSES_RESP)[] = {
+	add_parse_req(LICENSES_PTR, licenses, "licenses", "list of licenses"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
-	add_parse_req(LICENSES_PTR, licenses, "licenses", "list of licenses"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_job_step_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_STEP_INFO_MSG)[] = {
+	add_parse_req(STEP_INFO_MSG_PTR, steps, "steps", "list of steps"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
-	add_parse_req(STEP_INFO_MSG_PTR, steps, "steps", "list of steps"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_accounts_add_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNTS_ADD_COND_RESP)[] = {
+	add_parse(ACCOUNTS_ADD_COND_PTR, add_assoc, "association_condition", "CSV list of accounts, association limits and options, CSV list of clusters"),
+	add_parse(ACCOUNT_SHORT_PTR, acct, "account", "Account organization and description"),
 	add_openapi_response_meta(openapi_resp_accounts_add_cond_t),
 	add_openapi_response_errors(openapi_resp_accounts_add_cond_t),
 	add_openapi_response_warnings(openapi_resp_accounts_add_cond_t),
-	add_parse(ACCOUNTS_ADD_COND_PTR, add_assoc, "association_condition", "CSV list of accounts, association limits and options, CSV list of clusters"),
-	add_parse(ACCOUNT_SHORT_PTR, acct, "account", "Account organization and description"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_users_add_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USERS_ADD_COND_RESP)[] = {
+	add_parse(USERS_ADD_COND_PTR, add_assoc, "association_condition", "Filters to select associations for users"),
+	add_parse(USER_SHORT_PTR, user, "user", "Admin level of user, DefaultAccount, DefaultWCKey"),
 	add_openapi_response_meta(openapi_resp_users_add_cond_t),
 	add_openapi_response_errors(openapi_resp_users_add_cond_t),
 	add_openapi_response_warnings(openapi_resp_users_add_cond_t),
-	add_parse(USERS_ADD_COND_PTR, add_assoc, "association_condition", "Filters to select associations for users"),
-	add_parse(USER_SHORT_PTR, user, "user", "Admin level of user, DefaultAccount, DefaultWCKey"),
 };
 #undef add_parse
 

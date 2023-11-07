@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     commands to scontrol or sacctmgr.
  -- data_parser/v0.0.40 - Fixed how deleted QOS and associations for jobs are
     dumped.
+ -- data_parser/v0.0.40 - Fix how errors and warnings are dumped.
 
 * Changes in Slurm 23.11.0rc1
 =============================
