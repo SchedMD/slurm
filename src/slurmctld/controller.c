@@ -333,10 +333,6 @@ int main(int argc, char **argv)
 		if (!(conf_file = getenv("SLURM_CONF")))
 			conf_file = default_slurm_config_file;
 	slurm_conf_init(conf_file);
-	if (auth_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize auth plugin");
-	if (hash_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize hash plugin");
 
 	lock_slurmctld(config_write_lock);
 	update_logging();
@@ -379,6 +375,11 @@ int main(int argc, char **argv)
 			error("daemon(): %m");
 		sched_debug("slurmctld starting");
 	}
+
+	if (auth_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize auth plugin");
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
 
 	if (original && !under_systemd) {
 		/*
