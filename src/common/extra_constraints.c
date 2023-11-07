@@ -335,6 +335,7 @@ static elem_t *_parse_leaf(char *str)
 #if _DEBUG
 		error("Invalid key-op-value: %s", str);
 #endif
+		xfree(key);
 		return NULL;
 	}
 
