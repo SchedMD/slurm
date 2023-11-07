@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix "srun -Z" for cred/munge and cred/none.
  -- Fix listing available data_parser plugins for json and yaml when giving no
     commands to scontrol or sacctmgr.
+ -- data_parser/v0.0.40 - Fixed how deleted QOS and associations for jobs are
+    dumped.
 
 * Changes in Slurm 23.11.0rc1
 =============================
