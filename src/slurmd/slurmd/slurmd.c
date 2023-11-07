@@ -1378,6 +1378,7 @@ rwfail:
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
+		conmgr_run(false);
 		return;
 	}
 

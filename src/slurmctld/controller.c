@@ -1189,6 +1189,8 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 
 	fed_mgr_init(acct_db_conn);
 
+	conmgr_run(false);
+
 	/* finish up the configuration */
 	slurm_mutex_lock(&reconfig_mutex);
 	reconfig = false;
