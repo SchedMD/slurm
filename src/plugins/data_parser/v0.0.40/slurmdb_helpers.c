@@ -289,7 +289,9 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 	}
 
 	if ((parser->needs & NEED_ASSOC) && !args->assoc_list) {
-		slurmdb_assoc_cond_t cond = { 0 };
+		slurmdb_assoc_cond_t cond = {
+			.with_deleted = 1,
+		};
 
 		if ((rc = _db_query_list(QUERYING, parser->type, args,
 					 &args->assoc_list,
