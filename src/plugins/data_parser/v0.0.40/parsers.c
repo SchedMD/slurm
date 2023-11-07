@@ -721,7 +721,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 
 	if (qos && qos->name && qos->name[0])
 		(void) data_set_string(dst, qos->name);
-	else if (qos->id)
+	else if (qos && qos->id)
 		data_set_string_fmt(dst, "%u", qos->id);
 	else if (!is_complex_mode(args))
 		(void) data_set_string(dst, "");
