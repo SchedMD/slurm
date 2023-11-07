@@ -191,6 +191,28 @@ create_pidfile(const char *pidfile, uid_t uid)
 	return -1;
 }
 
+extern int update_pidfile(int fd)
+{
+	FILE *fp;
+
+	if (!(fp = fdopen(fd, "w"))) {
+		error("Unable to access pidfd=%d: %m", fd);
+		return -1;
+	}
+
+	rewind(fp);
+
+	if (fprintf(fp, "%lu\n", (unsigned long) getpid()) == EOF) {
+		error("Unable to write to pidfd=%d: %m", fd);
+		return -1;
+	}
+
+	fflush(fp);
+
+	/* WARNING: Do not close fp, it would close fd as well. */
+	return fd;
+}
+
 void
 test_core_limit(void)
 {

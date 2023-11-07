@@ -51,6 +51,7 @@ extern int xdaemon(void);
  * pidfile to that user.
  */
 extern int create_pidfile(const char *pidfilename, uid_t uid);
+extern int update_pidfile(int fd);
 
 /*
  * Attempt to read an old pid from the configured pidfile
