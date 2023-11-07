@@ -99,6 +99,8 @@ static pthread_mutex_t remote_dep_recv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List remote_dep_job_list = NULL;
 static pthread_t dep_job_thread_id = (pthread_t) 0;
 static pthread_mutex_t dep_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t test_dep_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t test_dep_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static List origin_dep_update_list = NULL;
 static pthread_t origin_dep_thread_id = (pthread_t) 0;
@@ -2434,6 +2436,7 @@ static void *_test_dep_job_thread(void *arg)
 {
 	time_t last_test = 0;
 	time_t now;
+	struct timespec ts = {0, 0};
 	slurmctld_lock_t job_read_lock = {
 		.job = READ_LOCK, .fed = READ_LOCK };
 
@@ -2446,6 +2449,7 @@ static void *_test_dep_job_thread(void *arg)
 
 	while (!slurmctld_config.shutdown_time) {
 		now = time(NULL);
+
 		/* Only test after joining a federation. */
 		if (fed_mgr_fed_rec && fed_mgr_cluster_rec &&
 		    ((now - last_test) > TEST_REMOTE_DEP_FREQ)) {
@@ -2454,7 +2458,12 @@ static void *_test_dep_job_thread(void *arg)
 			fed_mgr_test_remote_dependencies();
 			unlock_slurmctld(job_read_lock);
 		}
-		sleep(2);
+
+		slurm_mutex_lock(&test_dep_mutex);
+		ts.tv_sec = now + 2;
+		slurm_cond_timedwait(&test_dep_cond,
+				     &test_dep_mutex, &ts);
+		slurm_mutex_unlock(&test_dep_mutex);
 	}
 	return NULL;
 }
@@ -2749,7 +2758,9 @@ static void _spawn_threads(void)
 			    _remote_dep_recv_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
+	slurm_mutex_lock(&test_dep_mutex);
 	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
+	slurm_mutex_unlock(&test_dep_mutex);
 
 	slurm_mutex_lock(&origin_dep_update_mutex);
 	slurm_thread_create(&origin_dep_thread_id, _origin_dep_update_thread,
