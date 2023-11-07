@@ -723,8 +723,11 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 		(void) data_set_string(dst, qos->name);
 	else if (qos && qos->id)
 		data_set_string_fmt(dst, "%u", qos->id);
-	else if (!is_complex_mode(args))
-		(void) data_set_string(dst, "");
+	else if (!is_complex_mode(args)) {
+		(void) data_set_string(dst, "Unknown");
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Unknown QOS with id#%u. Unable to dump QOS.", *qos_id);
+	}
 
 	return SLURM_SUCCESS;
 }
