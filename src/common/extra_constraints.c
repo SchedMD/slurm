@@ -292,7 +292,7 @@ static elem_t *_parse_leaf(char *str)
 			break;
 		op_ptr++;
 	}
-	if (!op_ptr || (*op_ptr == '\0')) {
+	if (*op_ptr == '\0') {
 #if _DEBUG
 		error("Could not find a leaf operator \"%s\" in \"%s\"",
 		      leaf_op_chars, str);
