@@ -2434,7 +2434,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		block_cpu_cnt[i] = block_cpus;
 		if (req_nodes_bitmap &&
 		    bit_overlap_any(req_nodes_bitmap, block_node_bitmap[i])) {
-			if ((block_inx == -1)) {
+			if (block_inx == -1) {
 				block_inx = i;
 				break;
 			}
