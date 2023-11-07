@@ -2969,6 +2969,14 @@ extern int fed_mgr_fini(void)
 	_leave_federation();
 	unlock_slurmctld(fed_write_lock);
 
+	/* Signal threads to end */
+	slurm_cond_signal(&agent_cond);
+	slurm_cond_signal(&job_update_cond);
+	slurm_cond_signal(&remote_dep_cond);
+	slurm_cond_signal(&test_dep_cond);
+	slurm_cond_signal(&origin_dep_cond);
+	/* _job_watch_thread signaled by _leave_federation() */
+
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
 
