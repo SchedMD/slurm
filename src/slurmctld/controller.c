@@ -1048,7 +1048,7 @@ static int _try_to_reconfig(void)
 		safe_read(to_parent[0], &grandchild_pid, sizeof(pid_t));
 		if (pidfd != -1)
 			(void) close(pidfd);
-		info("Relinquishing control to new slurmd process");
+		info("Relinquishing control to new slurmctld process");
 		/*
 		 * Ensure child has exited.
 		 * Grandchild should be owned by init.
