@@ -1,4 +1,4 @@
-.TH "topology.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
+.TH "topology.conf" "5" "Slurm Configuration File" "November 2023" "Slurm Configuration File"
 
 .SH "NAME"
 topology.conf \-  Slurm configuration file for the topology plugins
@@ -17,19 +17,22 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 
-.SH topology/tree:
+.SH "topology/tree"
 
-All nodes in the
-network must be connected to at least one switch. The network must be fully
-connected to use TopologyParam=RouteTree. Jobs can only span nodes connected
-by the same switch fabric, even if there are available idle nodes.
-
-The network topology configuration one line defining a switch name and
+The network topology configuration, each line defining a switch name and
 its children, either node names or switch names.
 Slurm's hostlist expression parser is used, so the node and switch
 names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
 and "Switches=s[0\-2,4\-8,12]" will parse fine).
 An optional link speed may also be specified.
+
+.LP
+All nodes in the
+network must be connected to at least one switch. The network must be fully
+connected to use \fBTopologyParam=RouteTree\fR. Jobs can only span nodes
+connected by the same switch fabric, even if there are available idle nodes
+in other areas of the cluster.
+
 .LP
 The \fBtopology.conf\fP file for an Infiniband switch can be
 automatically generated using the \fBslurmibtopology\fP tool found here:
@@ -64,13 +67,32 @@ The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.
 .IP
 
-.SH topology/block:
+.SH "topology/block"
 
 .LP
-The network topology configuration one line defining a block name and
+The network topology configuration, each line defining a block name and
 its children node names.
 Slurm's hostlist expression parser is used, so the node
 names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]").
+
+.LP
+The block topology was designed with NVIDIA DGX GH200 machines in mind.
+These machines are designed to have low latency connections for blocks of
+machines. This topology places emphasis on reducing fragmentation of the
+cluster, allowing jobs to take advantage of the low latency connections,
+over starting jobs as quickly as possible on the first available resources,
+which leads to fragmentation over time.
+
+.LP
+Defined blocks of nodes are paired with other contiguous blocks, to create
+a higher level block of nodes. These larger blocks can then be paired with
+other blocks at the same level for bigger and bigger blocks of contiguous
+nodes with optimized communication between them. Levels are defined as
+level 0 being a single defined block, level 1 being a pair of blocks,
+level 2 being a group of 4 blocks, or as many as can be grouped together
+if there are an uneven number of blocks, level 3 being a group of (up to)
+8 blocks, etc. You can define how many levels you want to enforce jobs
+remain contiguous across with \fBBlockLevels\fR.
 
 .LP
 The overall configuration parameters available for topology/block include:
@@ -85,12 +107,12 @@ This field must be specified.
 .TP
 \fBNodes\fR
 Child Nodes of the named block.
-Either this option or the \fBBlockName\fR option must be specified.
+This must be specified along with the \fBBlockName\fR.
 .IP
 
 .TP
 \fBBlockLevels\fR
-List of enforced level of block aggregation
+List of enforced levels of block aggregation.
 .IP
 
 .SH "EXAMPLE"
