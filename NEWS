@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - Fixed how deleted QOS and associations for jobs are
     dumped.
  -- data_parser/v0.0.40 - Fix how errors and warnings are dumped.
+ -- Print consistent errors when serializer plugin fails to load.
 
 * Changes in Slurm 23.11.0rc1
 =============================

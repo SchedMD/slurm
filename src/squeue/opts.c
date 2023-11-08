@@ -359,13 +359,15 @@ parse_command_line( int argc, char* *argv )
 			params.mimetype = MIME_TYPE_JSON;
 			params.data_parser = optarg;
 			params.detail_flag = true;
-			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+				fatal("JSON plugin load failure");
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			params.data_parser = optarg;
 			params.detail_flag = true;
-			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
+				fatal("YAML plugin load failure");
 			break;
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);

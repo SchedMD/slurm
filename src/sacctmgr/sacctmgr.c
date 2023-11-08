@@ -180,12 +180,14 @@ int main(int argc, char **argv)
 		case OPT_LONG_JSON :
 			mime_type = MIME_TYPE_JSON;
 			data_parser = optarg;
-			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+				fatal("JSON plugin load failure");
 			break;
 		case OPT_LONG_YAML :
 			mime_type = MIME_TYPE_YAML;
 			data_parser = optarg;
-			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
+				fatal("YAML plugin load failure");
 			break;
 		default:
 			exit_code = 1;
