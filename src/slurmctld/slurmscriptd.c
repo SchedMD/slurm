@@ -775,9 +775,6 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				     script_msg->tmp_file_str,
 				     &resp_msg, &signalled);
 
-		slurm_mutex_lock(&powersave_script_count_mutex);
-		powersave_script_count--;
-		slurm_mutex_unlock(&powersave_script_count_mutex);
 		break;
 	default:
 		error("%s: Invalid script type=%d",
@@ -791,6 +788,12 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				   resp_msg, script_msg->script_name,
 				   script_msg->script_type, signalled, status,
 				   timed_out);
+
+	if (script_msg->script_type == SLURMSCRIPTD_POWER) {
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		powersave_script_count--;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
+	}
 	xfree(resp_msg);
 	env_array_free(run_command_args.env);
 
