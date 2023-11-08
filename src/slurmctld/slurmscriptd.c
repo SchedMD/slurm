@@ -289,6 +289,9 @@ static int _handle_close(eio_obj_t *obj, List objs)
 	if (!running_in_slurmctld()) { /* Only do this for slurmscriptd */
 		_wait_for_powersave_scripts();
 		track_script_flush();
+	} else {
+		/* fd has been closed */
+		slurmctld_readfd = -1;
 	}
 
 	return SLURM_SUCCESS; /* Note: Return value is ignored by eio. */
@@ -1095,8 +1098,12 @@ static void _kill_slurmscriptd(void)
 
 	slurmscriptd_flush();
 
-	/* Wait until all script complete messages have been processed. */
-	while ((pc = _script_cnt()) > 0) {
+	/*
+	 * Wait until all script complete messages have been processed or until
+	 * the readfd is closed, in which case we know we'll never get more
+	 * messages from slurmscriptd.
+	 */
+	while (((pc = _script_cnt()) > 0) && (slurmctld_readfd > 0)) {
 		if ((last_pc != 0) && (last_pc != pc)) {
 			info("waiting for %d running processes", pc);
 		}
