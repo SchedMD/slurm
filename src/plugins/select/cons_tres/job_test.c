@@ -51,8 +51,8 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_gpus;	/* Count of available GPUs */
 	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
-	uint32_t gres_min_cores; /* Minimum number of cores to satisfy GRES
-				    constraints */
+	uint32_t gres_min_cpus; /* Minimum required cpus for gres */
+	uint32_t gres_max_tasks; /* Maximum tasks for gres */
 	uint16_t max_cpus;	/* Maximum available CPUs on the node */
 	uint16_t min_cpus;	/* Minimum allocated CPUs */
 	uint16_t sock_cnt;	/* Number of sockets on this node */
@@ -297,7 +297,12 @@ static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
 	rem_max_cpus -= resv_cpus;
 	if (*avail_cpus > rem_max_cpus) {
 		*avail_cpus = MAX(rem_max_cpus, (int)details_ptr->pn_min_cpus);
-		*avail_cpus = MAX(*avail_cpus, details_ptr->min_gres_cpu);
+		if (avail_res->gres_min_cpus)
+			*avail_cpus =
+				MAX(*avail_cpus, avail_res->gres_min_cpus);
+		else
+			*avail_cpus =
+				MAX(*avail_cpus, details_ptr->min_gres_cpu);
 		/* Round up CPU count to CPU in allocation unit (e.g. core) */
 		avail_res->avail_cpus = *avail_cpus;
 	}
@@ -452,7 +457,10 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		   details_ptr && (details_ptr->min_gres_cpu == 0)) {
 		*avail_cpus = bit_set_count(avail_core[node_inx]);
 	}
-	avail_res_array[node_inx]->gres_min_cores = min_cores_this_node;
+	avail_res_array[node_inx]->gres_min_cpus =
+		cons_helpers_cpus_per_core(job_ptr->details, node_inx) *
+		min_cores_this_node;
+	avail_res_array[node_inx]->gres_max_tasks = max_tasks_this_node;
 }
 
 /*
@@ -4891,6 +4899,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bitstr_t **avail_cores, **free_cores, **avail_cores_tmp = NULL;
 	bool test_only = false, will_run = false;
+	bool have_gres_max_tasks = false;
 	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
 	uint32_t *gres_min_cpus;
@@ -5564,7 +5573,7 @@ alloc_job:
 	gres_min_cpus = xcalloc(job_res->nhosts, sizeof(uint32_t));
 	for (i = 0, n = 0; (node_ptr = next_node_bitmap(node_bitmap, &i));
 	     i++) {
-		uint32_t gres_min_cores;
+		uint32_t gres_min_node_cpus;
 		int first_core = 0, last_core = node_ptr->tot_cores;
 		bitstr_t *use_free_cores = free_cores[i];
 
@@ -5585,18 +5594,15 @@ alloc_job:
 			bit_set(job_res->core_bitmap, c);
 			c_alloc++;
 		}
-		gres_min_cores = avail_res_array[i]->gres_min_cores;
-		if (gres_min_cores) {
-			uint16_t vpus =
-				cons_helpers_cpus_per_core(job_ptr->details, i);
-			uint32_t new_cpus = gres_min_cores * vpus;
-			gres_min_cpus[n] = new_cpus;
-			log_flag(SELECT_TYPE, "%pJ: Node=%s: gres_min_cores=%u, vpus=%u, job_res->cpus[%d]=%u, gres_min_cpus[%d]=%u",
+		if ((gres_min_node_cpus = avail_res_array[i]->gres_min_cpus)) {
+			gres_min_cpus[n] = gres_min_node_cpus;
+			log_flag(SELECT_TYPE, "%pJ: Node=%s: job_res->cpus[%d]=%u, gres_min_cpus[%d]=%u",
 			     job_ptr,
 			     node_record_table_ptr[i]->name,
-			     gres_min_cores, vpus, i,
-			     job_res->cpus[n], i, gres_min_cpus[n]);
+			     i, job_res->cpus[n], i, gres_min_cpus[n]);
 		}
+		if (avail_res_array[i]->gres_max_tasks)
+			have_gres_max_tasks = true;
 		total_cpus += job_res->cpus[n];
 		n++;
 	}
@@ -5627,7 +5633,7 @@ alloc_job:
 		 */
 		have_gres_per_task = gres_select_util_job_tres_per_task(
 			job_ptr->gres_list_req);
-		if (have_gres_per_task) {
+		if (have_gres_per_task || have_gres_max_tasks) {
 			gres_task_limit = xcalloc(job_res->nhosts,
 						  sizeof(uint32_t));
 		}
@@ -5643,10 +5649,19 @@ alloc_job:
 						sock_gres_list);
 				if (gres_task_limit[j] != NO_VAL)
 					task_limit_set = true;
+			} else if (have_gres_max_tasks) {
+				gres_task_limit[j] =
+					avail_res_array[i]->gres_max_tasks;
+				task_limit_set = true;
 			}
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
 				avail_res_array[i]->sock_gres_list;
+			if (task_limit_set)
+				log_flag(SELECT_TYPE, "%pJ: Node=%s: gres_task_limit[%d]=%u",
+					 job_ptr,
+					 node_ptr->name,
+					 i, gres_task_limit[j]);
 			j++;
 		}
 		if (!task_limit_set)
