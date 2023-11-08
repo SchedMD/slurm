@@ -302,17 +302,15 @@ static int _verify_signature(char *buffer, uint32_t buf_size, char *signature)
 extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 				   uint16_t protocol_version)
 {
-	char *signature = NULL;
 	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
 
-	if (sign_it && !(signature = _encode(cred->buffer))) {
+	if (sign_it && !(cred->signature = _encode(cred->buffer))) {
 		error("%s: failed to sign, returning NULL", __func__);
 		slurm_cred_destroy(cred);
 		return NULL;
 	}
 
-	packstr(signature, cred->buffer);
-	xfree(signature);
+	packstr(cred->signature, cred->buffer);
 
 	return cred;
 }
