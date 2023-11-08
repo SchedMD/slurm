@@ -7077,6 +7077,8 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(partition_info_t, mtype, false, field, overloads, path, desc)
 #define add_skip(field) \
 	add_parser_skip(partition_info_t, field)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
@@ -7089,7 +7091,9 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, cluster_name, "cluster", NULL),
 	add_skip(cr_type), //TODO: add parsing for consumable resource type
 	add_parse(UINT32, cpu_bind, "cpus/task_binding", NULL),
-	add_parse(UINT64, def_mem_per_cpu, "defaults/memory_per_cpu", NULL),
+	add_parse_overload(UINT64, def_mem_per_cpu, 2, "defaults/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 2, "defaults/partition_memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 2, "defaults/partition_memory_per_node", NULL),
 	add_parse(UINT32_NO_VAL, default_time, "defaults/time", NULL),
 	add_parse(STRING, deny_accounts, "accounts/deny", NULL),
 	add_parse(STRING, deny_qos, "qos/deny", NULL),
@@ -7099,7 +7103,9 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, job_defaults_str, "defaults/job", NULL),
 	add_parse(UINT32_NO_VAL, max_cpus_per_node, "maximums/cpus_per_node", NULL),
 	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket", NULL),
-	add_parse(UINT64, max_mem_per_cpu, "maximums/memory_per_cpu", NULL),
+	add_parse_overload(UINT64, max_mem_per_cpu, 2, "maximums/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 2, "maximums/partition_memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", NULL),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", NULL),
 	add_parse(UINT16, max_share, "maximums/shares", NULL),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", NULL),
@@ -7123,6 +7129,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_parse_overload
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(sinfo_data_t, mtype, false, field, 0, path, desc)
