@@ -254,12 +254,20 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 
 	/* february == 1 */
 	if (tm->tm_mon != 1) {
-		if (bit_test(entry->day_of_month, 29))
+		if (tm->tm_mday > 29)
+			/* no-op */;
+		else if (bit_test(entry->day_of_month, 29))
 			return days_to_advance;
-		days_to_advance++;
-		if (bit_test(entry->day_of_month, 30))
+		else
+			days_to_advance++;
+
+		if (tm->tm_mday > 30)
+			/* no-op */;
+		else if (bit_test(entry->day_of_month, 30))
 			return days_to_advance;
-		days_to_advance++;
+		else
+			days_to_advance++;
+
 		if ((tm->tm_mon == 0) || (tm->tm_mon == 2) ||
 		    (tm->tm_mon == 4) || (tm->tm_mon == 6) ||
 		    (tm->tm_mon == 7) || (tm->tm_mon == 9) ||

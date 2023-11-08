@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid leaking sockets when an x11 application is closed in an allocation.
  -- Fix missing mutex unlock in group cache code which could cause slurmctld to
     freeze.
+ -- Fix scrontab monthly jobs possibly skipping a month if added near the end of
+    the month.
 
 * Changes in Slurm 23.02.6
 ==========================
