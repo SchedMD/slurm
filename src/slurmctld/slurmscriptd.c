@@ -1082,11 +1082,23 @@ static int _script_cnt(void)
 static void _kill_slurmscriptd(void)
 {
 	int status;
+	int pc, last_pc = 0;
 
 	if (slurmscriptd_pid <= 0) {
 		error("%s: slurmscriptd_pid < 0, we don't know the PID of slurmscriptd.",
 		      __func__);
 		return;
+	}
+
+	slurmscriptd_flush();
+
+	/* Wait until all script complete messages have been processed. */
+	while ((pc = _script_cnt()) > 0) {
+		if ((last_pc != 0) && (last_pc != pc)) {
+			info("waiting for %d running processes", pc);
+		}
+		last_pc = pc;
+		usleep(100000);
 	}
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
@@ -1536,19 +1548,8 @@ extern int slurmscriptd_init(int argc, char **argv)
 
 extern int slurmscriptd_fini(void)
 {
-	int pc, last_pc = 0;
-
 	debug("%s starting", __func__);
 	_kill_slurmscriptd();
-
-	/* Wait until all script complete messages have been processed. */
-	while ((pc = _script_cnt()) > 0) {
-		if ((last_pc != 0) && (last_pc != pc)) {
-			info("waiting for %d running processes", pc);
-		}
-		last_pc = pc;
-		usleep(100000);
-	}
 
 	/* Now shutdown communications. */
 	eio_signal_shutdown(msg_handle);
