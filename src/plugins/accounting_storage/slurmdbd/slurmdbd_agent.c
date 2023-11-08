@@ -50,6 +50,11 @@ enum {
 	MAX_DBD_ACTION_EXIT
 };
 
+typedef struct {
+	uint32_t msg_size;
+	list_t *my_list;
+} foreach_get_my_list_t;
+
 slurm_persist_conn_t *slurmdbd_conn = NULL;
 
 
@@ -584,6 +589,19 @@ static void _print_agent_list_msg_types(void)
 	xfree(mlist);
 }
 
+static int _get_my_list(void *x, void *arg)
+{
+	buf_t *buffer = x;
+	foreach_get_my_list_t *args = arg;
+
+	args->msg_size += size_buf(buffer);
+	if (args->msg_size > MAX_MSG_SIZE)
+		return -1;
+	list_enqueue(args->my_list, buffer);
+
+	return 0;
+}
+
 static void *_agent(void *x)
 {
 	int rc;
@@ -650,22 +668,17 @@ static void *_agent(void *x)
 			info("agent_count:%d", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
-			uint32_t msg_size = sizeof(list_req);
 			if (cnt > 1) {
-				int agent_count = 0;
-				ListIterator agent_itr =
-					list_iterator_create(agent_list);
-				list_msg.my_list = list_create(NULL);
-				while ((buffer = list_next(agent_itr))) {
-					msg_size += size_buf(buffer);
-					if (msg_size > MAX_MSG_SIZE)
-						break;
-					list_enqueue(list_msg.my_list, buffer);
-					agent_count++;
-					if (agent_count > 1000)
-						break;
-				}
-				list_iterator_destroy(agent_itr);
+				int max_rpcs = 1000;
+				foreach_get_my_list_t args = {
+					.msg_size = sizeof(list_req),
+					.my_list = list_create(NULL),
+				};
+
+				list_msg.my_list = args.my_list;
+
+				list_for_each_max(agent_list, &max_rpcs,
+						  _get_my_list, &args, 1, true);
 				buffer = pack_slurmdbd_msg(
 					&list_req, SLURM_PROTOCOL_VERSION);
 			} else
