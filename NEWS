@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Do not hold batch jobs whose extra constraints cannot be immediately
     satisfied, and set the state reason to "Constraints" instead of
     "BadConstraints".
+ -- Fix verbose log message printing a hex number instead of a job id.
 
 * Changes in Slurm 23.11.0rc1
 =============================

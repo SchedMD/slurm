@@ -4940,7 +4940,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	else if (!job_ptr->job_id)
 		debug_str = xstrdup("Job specs");
 	else
-		debug_str = xstrdup_printf("%pJ", job_ptr);
+		debug_str = xstrdup_printf("JobId=%u", job_ptr->job_id);
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	rc = _feature_string2list(features, debug_str,
