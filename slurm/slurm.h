@@ -605,7 +605,8 @@ enum job_state_reason {
 	WAIT_QOS_MIN_BILLING,               /* MinTRESPerJob     */
 
 	WAIT_RESV_DELETED,	      /* Reservation was deleted */
-	WAIT_RESV_INVALID
+	WAIT_RESV_INVALID,
+	FAIL_CONSTRAINTS, /* Constraints cannot currently be satisfied */
 };
 
 enum job_acct_types {

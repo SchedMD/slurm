@@ -2464,6 +2464,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "ReservationDeleted";
 	case WAIT_RESV_INVALID:
 		return "ReservationInvalid";
+	case FAIL_CONSTRAINTS:
+		return "Constraints";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -2869,6 +2871,8 @@ extern enum job_state_reason job_reason_num(char *reason)
 		return WAIT_RESV_DELETED;
 	if (!xstrcasecmp(reason, "ReservationInvalid"))
 		return WAIT_RESV_INVALID;
+	if (!xstrcasecmp(reason, "Constraints"))
+		return FAIL_CONSTRAINTS;
 
 	return NO_VAL;
 }
