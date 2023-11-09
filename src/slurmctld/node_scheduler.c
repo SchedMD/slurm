@@ -3542,8 +3542,21 @@ static int _build_node_list(job_record_t *job_ptr,
 		usable_node_mask = node_conf_get_active_bitmap();
 	}
 
-	if (!test_only && job_ptr->extra_constraints)
+	if (!test_only && job_ptr->extra_constraints) {
 		_apply_extra_constraints(job_ptr, usable_node_mask);
+		if (!bit_set_count(usable_node_mask)) {
+			rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			debug("%s: No nodes satisfy %pJ extra constraints in partition %s",
+				__func__, job_ptr, job_ptr->part_ptr->name);
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = FAIL_CONSTRAINTS;
+			debug2("%s: setting %pJ to \"%s\" (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(rc));
+			return rc;
+		}
+	}
 
 	if ((rc = valid_feature_counts(job_ptr, false, usable_node_mask,
 				       &has_mor))) {

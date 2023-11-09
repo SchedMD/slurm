@@ -25,6 +25,9 @@ documents those changes that are of interest to users and administrators.
  -- Improve error handling and error messages in slurmctld to slurmscriptd
     communications. This includes avoiding potential deadlock in slurmctld if
     slurmscript dies unexpectedly.
+ -- Do not hold batch jobs whose extra constraints cannot be immediately
+    satisfied, and set the state reason to "Constraints" instead of
+    "BadConstraints".
 
 * Changes in Slurm 23.11.0rc1
 =============================

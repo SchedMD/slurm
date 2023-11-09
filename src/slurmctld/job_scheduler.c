@@ -1921,6 +1921,15 @@ skip_start:
 			debug("%pJ non-runnable in partition %s: %s",
 			      job_ptr, job_ptr->part_ptr->name,
 			      slurm_strerror(error_code));
+		} else if ((error_code ==
+			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			   (job_ptr->state_reason == FAIL_CONSTRAINTS)) {
+			sched_info("%pJ current node constraints not satisfied",
+				   job_ptr);
+			/*
+			 * Future node updates may satisfy the constraints, so
+			 * do not hold the job.
+			 */
 		} else if (error_code == ESLURM_ACCOUNTING_POLICY) {
 			sched_debug3("%pJ delayed for accounting policy",
 				     job_ptr);
