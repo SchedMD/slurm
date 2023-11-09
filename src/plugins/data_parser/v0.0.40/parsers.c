@@ -721,10 +721,13 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 
 	if (qos && qos->name && qos->name[0])
 		(void) data_set_string(dst, qos->name);
-	else if (qos->id)
+	else if (qos && qos->id)
 		data_set_string_fmt(dst, "%u", qos->id);
-	else if (!is_complex_mode(args))
-		(void) data_set_string(dst, "");
+	else if (!is_complex_mode(args)) {
+		(void) data_set_string(dst, "Unknown");
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Unknown QOS with id#%u. Unable to dump QOS.", *qos_id);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -1027,7 +1030,7 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		 * data.
 		 */
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"unknown association with id#%u. Unable to dump assocation.",
+			"Unknown association with id#%u. Unable to dump association.",
 			job->associd);
 		data_set_dict(dst);
 		return SLURM_SUCCESS;
