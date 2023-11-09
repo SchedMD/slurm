@@ -159,6 +159,25 @@ static int _get_return_code(void)
 	return rc;
 }
 
+static int _get_return_codes(void *x, void *arg)
+{
+	buf_t *out_buf = x;
+	int *rc_ptr = arg;
+	buf_t *b;
+
+	if ((*rc_ptr = _unpack_return_code(slurmdbd_conn->version, out_buf)) !=
+	    SLURM_SUCCESS)
+		return -1;
+
+	if ((b = list_dequeue(agent_list))) {
+		FREE_NULL_BUFFER(b);
+	} else {
+		error("DBD_GOT_MULT_MSG unpack message error");
+	}
+
+	return 0;
+}
+
 static int _handle_mult_rc_ret(void)
 {
 	buf_t *buffer;
@@ -166,7 +185,6 @@ static int _handle_mult_rc_ret(void)
 	persist_rc_msg_t *msg = NULL;
 	dbd_list_msg_t *list_msg = NULL;
 	int rc = SLURM_ERROR;
-	buf_t *out_buf = NULL;
 
 	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL)
@@ -185,23 +203,8 @@ static int _handle_mult_rc_ret(void)
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list) {
-			ListIterator itr =
-				list_iterator_create(list_msg->my_list);
-			while ((out_buf = list_next(itr))) {
-				buf_t *b;
-				if ((rc = _unpack_return_code(
-					     slurmdbd_conn->version, out_buf))
-				    != SLURM_SUCCESS)
-					break;
-
-				if ((b = list_dequeue(agent_list))) {
-					FREE_NULL_BUFFER(b);
-				} else {
-					error("DBD_GOT_MULT_MSG "
-					      "unpack message error");
-				}
-			}
-			list_iterator_destroy(itr);
+			list_for_each(list_msg->my_list, _get_return_codes,
+				      &rc);
 		}
 		slurm_mutex_unlock(&agent_lock);
 		slurmdbd_free_list_msg(list_msg);
