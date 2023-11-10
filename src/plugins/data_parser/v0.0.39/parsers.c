@@ -172,7 +172,7 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args);
 
 #ifndef NDEBUG
-static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
+static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit)
 {
 	xassert(bit->magic == MAGIC_FLAG_BIT);
 	xassert(bit->type > FLAG_BIT_TYPE_INVALID);
@@ -192,6 +192,7 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
 		xassert(bit->value);
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
+		*found_bit = true;
 	} else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
 		/*
 		 * bit->mask must include all value bits
@@ -199,6 +200,11 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
 		 */
 		xassert(!bit->value ||
 			((bit->mask & bit->value) == bit->value));
+		/*
+		 * All equal type flags should come before any bit
+		 * type flags to avoid issues with masks overlapping
+		 */
+		xassert(!*found_bit);
 	}
 }
 
@@ -232,12 +238,15 @@ extern void check_parser_funcname(const parser_t *const parser,
 	xassert(parser->type_string && parser->type_string[0]);
 
 	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
+		bool found_bit_type = false;
+
 		/* parser of a specific flag field list */
 		xassert(parser->flag_bit_array);
 		xassert(parser->flag_bit_array_count < NO_VAL8);
 
 		for (int8_t i = 0; i < parser->flag_bit_array_count; i++) {
-			_check_flag_bit(i, &parser->flag_bit_array[i]);
+			_check_flag_bit(i, &parser->flag_bit_array[i],
+					&found_bit_type);
 
 			/* check for duplicate flag names */
 			for (int8_t j = 0; j < parser->flag_bit_array_count;
@@ -5861,11 +5870,13 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
 
 /* flag values based on output of slurm_sprint_cpu_bind_type() */
 static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
-	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
 	add_flag_equal(CPU_BIND_TO_THREADS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_THREADS"),
 	add_flag_equal(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_CORES"),
 	add_flag_equal(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_SOCKETS"),
 	add_flag_equal(CPU_BIND_TO_LDOMS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_LDOMS"),
+	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_THREADS"),
+	add_flag_equal(CPU_AUTO_BIND_TO_CORES, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_CORES"),
+	add_flag_equal(CPU_AUTO_BIND_TO_SOCKETS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_SOCKETS"),
 	add_flag_equal(CPU_BIND_NONE, CPU_BIND_T_MASK, "CPU_BIND_NONE"),
 	add_flag_equal(CPU_BIND_RANK, CPU_BIND_T_MASK, "CPU_BIND_RANK"),
 	add_flag_equal(CPU_BIND_MAP, CPU_BIND_T_MASK, "CPU_BIND_MAP"),
@@ -5873,10 +5884,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_LDRANK, CPU_BIND_T_MASK, "CPU_BIND_LDRANK"),
 	add_flag_equal(CPU_BIND_LDMAP, CPU_BIND_T_MASK, "CPU_BIND_LDMAP"),
 	add_flag_equal(CPU_BIND_LDMASK, CPU_BIND_T_MASK, "CPU_BIND_LDMASK"),
+	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
 	add_flag_masked_bit(CPU_BIND_ONE_THREAD_PER_CORE, CPU_BIND_ONE_THREAD_PER_CORE, "CPU_BIND_ONE_THREAD_PER_CORE"),
-	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_THREADS"),
-	add_flag_equal(CPU_AUTO_BIND_TO_CORES, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_CORES"),
-	add_flag_equal(CPU_AUTO_BIND_TO_SOCKETS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_SOCKETS"),
 	add_flag_masked_bit(SLURMD_OFF_SPEC, CPU_BIND_T_TASK_PARAMS_MASK, "SLURMD_OFF_SPEC"),
 	add_flag_masked_bit(CPU_BIND_OFF, CPU_BIND_T_TASK_PARAMS_MASK, "CPU_BIND_OFF"),
 };
@@ -5906,12 +5915,12 @@ static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
 #undef add_parse
 
 static const flag_bit_t PARSER_FLAG_ARRAY(MEMORY_BINDING_TYPE)[] = {
-	add_flag_masked_bit(MEM_BIND_VERBOSE, MEM_BIND_VERBOSE, "VERBOSE"),
 	add_flag_equal(MEM_BIND_NONE, MEM_BIND_TYPE_MASK, "NONE"),
 	add_flag_equal(MEM_BIND_RANK, MEM_BIND_TYPE_MASK, "RANK"),
 	add_flag_equal(MEM_BIND_MAP, MEM_BIND_TYPE_MASK, "MAP"),
 	add_flag_equal(MEM_BIND_MASK, MEM_BIND_TYPE_MASK, "MASK"),
 	add_flag_equal(MEM_BIND_LOCAL, MEM_BIND_TYPE_MASK, "LOCAL"),
+	add_flag_masked_bit(MEM_BIND_VERBOSE, MEM_BIND_VERBOSE, "VERBOSE"),
 	add_flag_masked_bit(MEM_BIND_SORT, MEM_BIND_TYPE_FLAGS_MASK, "SORT"),
 	add_flag_masked_bit(MEM_BIND_PREFER, MEM_BIND_TYPE_FLAGS_MASK, "PREFER"),
 };
