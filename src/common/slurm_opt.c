@@ -1134,7 +1134,19 @@ static slurm_cli_opt_t slurm_opt_cores_per_socket = {
 	.reset_each_pass = true,
 };
 
-COMMON_SRUN_STRING_OPTION(cpu_bind);
+COMMON_SRUN_STRING_OPTION_SET(cpu_bind);
+COMMON_SRUN_STRING_OPTION_GET(cpu_bind);
+static void arg_reset_cpu_bind(slurm_opt_t *opt)
+{
+	/*
+	 * Both opt->srun_opt->cpu_bind and opt->srun_opt->cpu_bind_type must
+	 * be reset.
+	 */
+	if (!opt->srun_opt)
+		return;
+	xfree(opt->srun_opt->cpu_bind);
+	opt->srun_opt->cpu_bind_type = 0;
+}
 static slurm_cli_opt_t slurm_opt_cpu_bind = {
 	.name = "cpu-bind",
 	.has_arg = required_argument,
@@ -6027,7 +6039,19 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		slurm_option_reset(opt, "ntasks-per-core");
 		slurm_option_reset(opt, "threads-per-core");
 		slurm_option_reset(opt, "extra-node-info");
-		slurm_option_reset(opt, "cpu-bind");
+		if (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE) {
+			bool has_verbose;
+
+			has_verbose = (opt->srun_opt->cpu_bind_type &
+				       CPU_BIND_VERBOSE);
+			/* Completely clear cpu_bind */
+			slurm_option_reset(opt, "cpu-bind");
+			if (has_verbose) {
+				/* Add verbose back in */
+				opt->srun_opt->cpu_bind_type = CPU_BIND_VERBOSE;
+				opt->srun_opt->cpu_bind = xstrdup("verbose");
+			}
+		}
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
 		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 		   slurm_option_set_by_cli(opt, 'B') ||
