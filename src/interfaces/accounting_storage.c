@@ -1036,6 +1036,11 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 extern int clusteracct_storage_g_node_update(void *db_conn,
 					     node_record_t *node_ptr)
 {
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
 	return (*(ops.node_update))(db_conn, node_ptr);
 }
 

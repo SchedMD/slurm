@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     internal processing threads faster.
  -- Skip running slurmdbd -R if the connected cluster is 23.11 or newer.
     This operation is nolonger relevant for 23.11.
+ -- Fix segfault when updating node instance id/type without accounting enabled.
 
 * Changes in Slurm 23.11.0rc1
 =============================
