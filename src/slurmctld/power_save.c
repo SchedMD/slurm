@@ -121,7 +121,7 @@ static void  _do_power_work(time_t now);
 static void  _do_resume(char *host, char *json);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
-static void *_init_power_save(void *arg);
+static void *_power_save_thread(void *arg);
 static bool  _valid_prog(char *file_name);
 
 static void _exc_node_part_free(void *x)
@@ -1002,7 +1002,7 @@ extern void power_save_init(void)
 	power_save_started = true;
 	slurm_mutex_unlock(&power_mutex);
 
-	slurm_thread_create(&power_thread, _init_power_save, NULL);
+	slurm_thread_create(&power_thread, _power_save_thread, NULL);
 }
 
 /* Report if node power saving is enabled */
@@ -1049,12 +1049,7 @@ static int _build_resume_job_list(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/*
- * init_power_save - Initialize the power save module. Started as a
- *	pthread. Terminates automatically at slurmctld shutdown time.
- *	Input and output are unused.
- */
-static void *_init_power_save(void *arg)
+static void *_power_save_thread(void *arg)
 {
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
