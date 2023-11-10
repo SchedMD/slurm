@@ -59,6 +59,7 @@ slurm_persist_conn_t *slurmdbd_conn = NULL;
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
 static pthread_t agent_tid      = 0;
 
@@ -762,6 +763,7 @@ static void *_agent(void *x)
 
 	FREE_NULL_LIST(agent_list);
 	agent_running = false;
+	slurm_cond_signal(&shutdown_cond);
 	slurm_mutex_unlock(&agent_lock);
 	return NULL;
 }
@@ -786,31 +788,36 @@ static void _create_agent(void)
 
 static void _shutdown_agent(void)
 {
+	struct timespec ts = {0, 0};
+	int rc;
+
 	if (!agent_tid)
 		return;
 
 	slurmdbd_shutdown = time(NULL);
-	for (int i = 0; i < 50; i++) {	/* up to 5 secs total */
-		slurm_mutex_lock(&agent_lock);
-		if (!agent_running) {
-			slurm_mutex_unlock(&agent_lock);
-			goto fini;
-		}
-		slurm_cond_broadcast(&agent_cond);
+	slurm_mutex_lock(&agent_lock);
+	if (!agent_running) {
 		slurm_mutex_unlock(&agent_lock);
-
-		usleep(100000);	/* 0.1 sec per try */
+		goto fini;
 	}
 
-	/*
-	 * On rare occasions agent thread may not end quickly,
-	 * perhaps due to communication problems with slurmdbd.
-	 * Cancel it and join before returning or we could remove
-	 * and leave the agent without valid data.
-	 */
-	error("agent failed to shutdown gracefully");
-	error("unable to save pending requests");
-	pthread_cancel(agent_tid);
+	slurm_cond_broadcast(&agent_cond);
+	ts.tv_sec = time(NULL) + 5;
+	rc = pthread_cond_timedwait(&shutdown_cond, &agent_lock, &ts);
+	slurm_mutex_unlock(&agent_lock);
+
+	if (rc == ETIMEDOUT) {
+		/*
+		 * On rare occasions agent thread may not end quickly,
+		 * perhaps due to communication problems with slurmdbd.
+		 * Cancel it and join before returning or we could remove
+		 * and leave the agent without valid data.
+		 */
+		error("agent failed to shutdown gracefully");
+		error("unable to save pending requests");
+		/* FIXME: this is not safe! */
+		pthread_cancel(agent_tid);
+	}
 
 fini:
 	pthread_join(agent_tid,  NULL);
