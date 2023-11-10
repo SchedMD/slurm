@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove shebang from bash completion script.
  -- Fix elapsed time in JobComp being set from invalid start and end times.
  -- Update service files to start slurmd, slurmctld, and slurmdbd after sssd.
+ -- data_parser/v0.0.40 - Fix output of DefMemPerCpu, MaxMemPerCpu, and
+    max_shares.
 
 * Changes in Slurm 23.11.0
 ==========================
