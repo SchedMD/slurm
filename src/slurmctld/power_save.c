@@ -82,6 +82,7 @@
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+static pthread_t power_thread = 0;
 static pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
@@ -991,14 +992,14 @@ extern void config_power_mgr(void)
  *	disabling power_save mode.
  * IN thread_id - pointer to thread ID of the started pthread.
  */
-extern void start_power_mgr(pthread_t *thread_id)
+extern void start_power_mgr(void)
 {
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started || !power_save_enabled) {
-		if (!power_save_enabled && *thread_id) {
+		if (!power_save_enabled && power_thread) {
 			slurm_mutex_unlock(&power_mutex);
-			pthread_join(*thread_id, NULL);
-			*thread_id = 0;
+			pthread_join(power_thread, NULL);
+			power_thread = 0;
 			return;
 		}
 		slurm_mutex_unlock(&power_mutex);
@@ -1007,7 +1008,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 	power_save_started = true;
 	slurm_mutex_unlock(&power_mutex);
 
-	slurm_thread_create(thread_id, _init_power_save, NULL);
+	slurm_thread_create(&power_thread, _init_power_save, NULL);
 }
 
 /* Report if node power saving is enabled */
@@ -1028,8 +1029,8 @@ extern bool power_save_test(void)
 /* Free module's allocated memory */
 extern void power_save_fini(void)
 {
-	if (slurmctld_config.thread_id_power)
-		pthread_join(slurmctld_config.thread_id_power, NULL);
+	if (power_thread)
+		pthread_join(power_thread, NULL);
 
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */

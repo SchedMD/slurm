@@ -671,7 +671,7 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for node power management
   		 */
-		start_power_mgr(&slurmctld_config.thread_id_power);
+		start_power_mgr();
 
 		/*
 		 * create attached thread for purging completed job files

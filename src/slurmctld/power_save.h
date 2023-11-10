@@ -53,9 +53,8 @@ extern void config_power_mgr(void);
 
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
- * IN thread_id - pointer to thread ID of the started pthread.
  */
-extern void start_power_mgr(pthread_t *thread_id);
+extern void start_power_mgr(void);
 
 /* Report if node power saving is enabled */
 extern bool power_save_test(void);
