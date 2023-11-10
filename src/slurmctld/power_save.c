@@ -1023,6 +1023,7 @@ extern bool power_save_test(void)
 /* Free module's allocated memory */
 extern void power_save_fini(void)
 {
+	slurm_cond_signal(&power_cond);
 	if (power_thread)
 		pthread_join(power_thread, NULL);
 
@@ -1051,6 +1052,7 @@ static int _build_resume_job_list(void *object, void *arg)
 
 static void *_power_save_thread(void *arg)
 {
+	struct timespec ts = {0, 0};
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -1074,8 +1076,14 @@ static void *_power_save_thread(void *arg)
 		unlock_slurmctld(node_write_lock);
 	}
 
-	while (slurmctld_config.shutdown_time == 0) {
-		sleep(1);
+	while (!slurmctld_config.shutdown_time) {
+		slurm_mutex_lock(&power_mutex);
+		ts.tv_sec = time(NULL) + 1;
+		slurm_cond_timedwait(&power_cond, &power_mutex, &ts);
+		slurm_mutex_unlock(&power_mutex);
+
+		if (slurmctld_config.shutdown_time)
+			break;
 
 		if (!power_save_enabled) {
 			debug("power_save mode not enabled, stopping power_save thread");
