@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Print consistent errors when serializer plugin fails to load.
  -- data_parser/v0.0.40 - Fix parsing of flag arrays to allow muliple flags to
     be set.
+ -- slurmctld - Rework 'scontrol reconfigure' to avoid race conditions that
+    can result in stray jobs.
 
 * Changes in Slurm 23.11.0rc1
 =============================

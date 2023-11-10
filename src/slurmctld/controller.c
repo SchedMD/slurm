@@ -229,6 +229,8 @@ static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
+static int reconfig_threads = 0;
+static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
 static bool under_systemd = false;
 
@@ -276,6 +278,7 @@ static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
+static int _try_to_reconfig(void);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_diag_job_state_counts(void);
 static void         _update_cluster_tres(void);
@@ -593,7 +596,7 @@ int main(int argc, char **argv)
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 
-		if (slurmctld_primary) {
+		if (slurmctld_primary && !reconfig) {
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -607,6 +610,9 @@ int main(int argc, char **argv)
 				 */
 				list_flush(conf_includes_list);
 			}
+		}
+
+		if (slurmctld_primary) {
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
 
@@ -618,11 +624,13 @@ int main(int argc, char **argv)
 
 		slurm_persist_conn_recv_server_init();
 		info("Running as primary controller");
-		_run_primary_prog(true);
-		control_time = time(NULL);
-		heartbeat_start();
-		if (!slurmctld_config.resume_backup && slurmctld_primary)
-			trigger_primary_ctld_res_op();
+		if (!reconfig) {
+			_run_primary_prog(true);
+			control_time = time(NULL);
+			heartbeat_start();
+			if (!slurmctld_config.resume_backup && slurmctld_primary)
+				trigger_primary_ctld_res_op();
+		}
 
 		_accounting_cluster_ready();
 		_send_future_cloud_to_db();
@@ -680,12 +688,14 @@ int main(int argc, char **argv)
 		if (controller_init_scheduling(false) != SLURM_SUCCESS)
 			fatal("Failed to initialize the various schedulers");
 
-		if (!original) {
+		if (!original && !reconfig) {
 			notify_parent_of_success();
 			if (!under_systemd)
 				_update_pidfile();
 			_post_reconfig();
 		}
+
+		reconfig = false;
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -749,6 +759,27 @@ int main(int argc, char **argv)
 		if (slurmctld_config.thread_id_power)
 			pthread_join(slurmctld_config.thread_id_power, NULL);
 		slurmctld_config.thread_id_power = (pthread_t) 0;
+
+		/* attempt reconfig here */
+		if (reconfig) {
+			info("Attempting to reconfigure");
+			reconfig_rc = _try_to_reconfig();
+
+			slurm_mutex_lock(&reconfig_mutex);
+			while (reconfig_threads) {
+				slurm_cond_broadcast(&reconfig_cond);
+				slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+			}
+			slurm_mutex_unlock(&reconfig_mutex);
+
+			if (!reconfig_rc) {
+				info("Relinquishing control to new child");
+				_exit(0);
+			}
+
+			recover = 2;
+			continue;
+		}
 
 		/* stop the heartbeat last */
 		heartbeat_stop();
@@ -1129,6 +1160,32 @@ rwfail:
 
 extern void reconfigure_slurm(slurm_msg_t *msg)
 {
+	xassert(msg);
+
+	if (slurmctld_config.thread_id_sig)
+		pthread_kill(slurmctld_config.thread_id_sig, SIGHUP);
+
+	if (!daemonize && !under_systemd) {
+		/*
+		 * Reconfigure will exec() within this process in this case.
+		 * Return now assuming success - we won't have a chance later.
+		 */
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		return;
+	}
+
+	slurm_mutex_lock(&reconfig_mutex);
+	reconfig_threads++;
+	slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+	slurm_send_rc_msg(msg, reconfig_rc);
+	reconfig_threads--;
+	slurm_cond_broadcast(&reconfig_cond);
+	slurm_mutex_unlock(&reconfig_mutex);
+}
+
+#if 0
+extern void reconfigure_slurm(slurm_msg_t *msg)
+{
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&reconfig_mutex);
@@ -1198,6 +1255,7 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 	slurm_cond_broadcast(&reconfig_cond);
 	slurm_mutex_unlock(&reconfig_mutex);
 }
+#endif
 
 static void _post_reconfig(void)
 {
@@ -1342,7 +1400,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			reconfigure_slurm(NULL);
+			reconfig = true;
+			slurmctld_config.shutdown_time = time(NULL);
+			slurmctld_shutdown();
+			return NULL;
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
@@ -1394,7 +1455,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
-	if (original) {
+	if (listen_nports) {
+		info("Resuming operation with already established listening sockets");
+	} else if (original) {
 		if (!(listen_nports = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
@@ -1444,10 +1507,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn poll: %m");
 			server_thread_decr();
-			slurm_mutex_lock(&reconfig_mutex);
-			if (reconfig)
-				slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-			slurm_mutex_unlock(&reconfig_mutex);
 			continue;
 		}
 
@@ -1482,6 +1541,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 						     newsockfd);
 		}
 	}
+
+	/* leave ports open */
+	if (reconfig)
+		return NULL;
 
 	debug3("%s shutting down", __func__);
 	for (i = 0; i < listen_nports; i++)
@@ -2225,16 +2288,6 @@ static void *_slurmctld_background(void *no_data)
 			last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME -
 					      ping_interval;
 		}
-
-		slurm_mutex_lock(&reconfig_mutex);
-		if (reconfig) {
-			slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-			if (slurmctld_config.shutdown_time) {
-				slurm_mutex_unlock(&reconfig_mutex);
-				break;
-			}
-		}
-		slurm_mutex_unlock(&reconfig_mutex);
 
 		if (slurmctld_config.shutdown_time) {
 			_flush_rpcs();
