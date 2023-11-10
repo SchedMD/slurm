@@ -1088,6 +1088,7 @@ static int _script_cnt(void)
 static void _kill_slurmscriptd(void)
 {
 	int status;
+	int rc;
 	int pc, last_pc = 0;
 
 	if (slurmscriptd_pid <= 0) {
@@ -1112,8 +1113,22 @@ static void _kill_slurmscriptd(void)
 	}
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
-	_send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL, NULL);
-	if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
+	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
+				  NULL);
+	if (rc != SLURM_SUCCESS) {
+		/* Shutdown signal failed. Try to reap slurmscriptd now. */
+		if (waitpid(slurmscriptd_pid, &status, WNOHANG) == 0) {
+			/*
+			 * slurmscriptd is not reaped and we cannot send a
+			 * shutdown signal to slurmscriptd; kill it so we know
+			 * that we won't wait forever.
+			 */
+			run_command_waitpid_timeout("slurmscriptd",
+						    slurmscriptd_pid,
+						    &status, 10 * MSEC_IN_SEC,
+						    0, 0, NULL);
+		}
+	} else if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
 		if (WIFEXITED(status)) {
 			/* Exited normally. */
 		} else {
