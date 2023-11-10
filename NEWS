@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     dumped.
  -- data_parser/v0.0.40 - Fix how errors and warnings are dumped.
  -- Print consistent errors when serializer plugin fails to load.
+ -- data_parser/v0.0.40 - Fix parsing of flag arrays to allow muliple flags to
+    be set.
 
 * Changes in Slurm 23.11.0rc1
 =============================
