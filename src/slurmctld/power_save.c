@@ -82,8 +82,8 @@
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
 bool power_save_enabled = false;
 bool power_save_started = false;
