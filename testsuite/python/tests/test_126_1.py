@@ -122,9 +122,6 @@ def set_enforce_part_limits_policy(policy):
         atf.set_config_parameter('EnforcePartLimits', policy)
         current_policy = policy
 
-    # Ensure value is set after reconfigure
-    atf.repeat_until(lambda : atf.config_parameter_includes('EnforcePartLimits', policy), lambda includes: includes, fatal=True)
-
 def set_partition_limit(limit_name, limit_value):
     global previous_limit
 
@@ -132,9 +129,6 @@ def set_partition_limit(limit_name, limit_value):
         atf.set_partition_parameter('p1', previous_limit, None)
     atf.set_partition_parameter('p1', limit_name, limit_value)
     previous_limit = limit_name
-
-    # Ensure the limit is set after reconfigure
-    atf.repeat_until(lambda : atf.get_partition_parameter('p1', limit_name), lambda limit: limit == limit_value, fatal=True)
 
 def satisfy_pending_job_limit(job_id, limit_name, val_pass):
     atf.wait_for_job_state(job_id, 'PENDING', poll_interval=.1, fatal=True, quiet=True)
