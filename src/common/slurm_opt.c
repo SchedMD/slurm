@@ -6055,7 +6055,8 @@ extern int validate_hint_option(slurm_opt_t *opt)
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
 		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 		   slurm_option_set_by_cli(opt, 'B') ||
-		   slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND)) {
+		   (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
+		    (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE))) {
 		slurm_option_reset(opt, "hint");
 		return SLURM_ERROR;
 	} else if (slurm_option_set_by_env(opt, LONG_OPT_HINT) &&
