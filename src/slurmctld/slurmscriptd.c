@@ -1128,11 +1128,13 @@ static void _kill_slurmscriptd(void)
 						    &status, 10 * MSEC_IN_SEC,
 						    0, 0, NULL);
 		}
-	} else if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
-		if (WIFEXITED(status)) {
-			/* Exited normally. */
-		} else {
-			error("%s: Unable to reap slurmscriptd child process", __func__);
+	} else {
+		while (waitpid(slurmscriptd_pid, &status, 0) < 0) {
+			if (errno == EINTR)
+				continue;
+			error("%s: Unable to reap slurmscriptd child process",
+			      __func__);
+			break;
 		}
 	}
 }
