@@ -232,6 +232,8 @@ static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
 static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
+static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
 
 /*
@@ -2025,7 +2027,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_uid_update;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
-	int i;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -2081,10 +2082,14 @@ static void *_slurmctld_background(void *no_data)
 	while (1) {
 		bool call_schedule = false, full_queue = false;
 
-		for (i = 0; ((i < 10) && (slurmctld_config.shutdown_time == 0));
-		     i++) {
-			usleep(100000);
+		slurm_mutex_lock(&shutdown_mutex);
+		if (!slurmctld_config.shutdown_time) {
+			struct timespec ts = {0, 0};
+			ts.tv_sec = time(NULL) + 1;
+			slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex,
+					     &ts);
 		}
+		slurm_mutex_unlock(&shutdown_mutex);
 
 		now = time(NULL);
 		START_TIMER;
@@ -2677,6 +2682,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 int slurmctld_shutdown(void)
 {
 	sched_debug("slurmctld terminating");
+	slurm_cond_signal(&shutdown_cond);
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;
