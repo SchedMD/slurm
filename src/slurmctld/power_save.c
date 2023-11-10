@@ -986,13 +986,7 @@ extern void config_power_mgr(void)
 	slurm_mutex_unlock(&power_mutex);
 }
 
-/*
- * start_power_mgr - Start power management thread as needed. The thread
- *	terminates automatically at slurmctld shutdown time or on config change
- *	disabling power_save mode.
- * IN thread_id - pointer to thread ID of the started pthread.
- */
-extern void start_power_mgr(void)
+extern void power_save_init(void)
 {
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started || !power_save_enabled) {

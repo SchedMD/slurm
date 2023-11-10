@@ -51,10 +51,8 @@ extern List resume_job_list;
  */
 extern void config_power_mgr(void);
 
-/* start_power_mgr - Start power management thread as needed. The thread
- *	terminates automatically at slurmctld shutdown time.
- */
-extern void start_power_mgr(void);
+extern void power_save_init(void);
+extern void power_save_fini(void);
 
 /* Report if node power saving is enabled */
 extern bool power_save_test(void);
@@ -76,9 +74,6 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
  * This creates node bitmaps. Must be done again when node bitmaps change.
  */
 extern void power_save_exc_setup(void);
-
-/* Free module's allocated memory */
-extern void power_save_fini(void);
 
 /*
  * Set node power times based on global and per-partition settings.

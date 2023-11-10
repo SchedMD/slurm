@@ -671,7 +671,7 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for node power management
   		 */
-		start_power_mgr();
+		power_save_init();
 
 		/*
 		 * create attached thread for purging completed job files
