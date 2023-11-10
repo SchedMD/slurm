@@ -45,7 +45,7 @@ def include_virtual(matchobj):
 
 def canonical_rewrite(matchobj):
     global newfilename
-    return '<link rel="canonical" href="' + canonical_url + newfilename + '" />'
+    return '<link rel="canonical" href="' + canonical_url + newfilename + '">'
 
 def page_title_rewrite(matchobj):
     global title
