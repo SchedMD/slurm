@@ -1749,6 +1749,18 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(OVERSUBSCRIBE_JOBS)
+
+static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj,
+				 data_t *dst, args_t *args)
+{
+	uint16_t *state = obj;
+	uint16_t val = *state & (~SHARED_FORCE);
+
+	data_set_int(dst, val);
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
@@ -6843,6 +6855,10 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
 	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(OVERSUBSCRIBE_FLAGS)[] = {
+	add_flag_bit(SHARED_FORCE, "force"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path, desc) \
@@ -7107,7 +7123,9 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 2, "maximums/partition_memory_per_cpu", NULL),
 	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", NULL),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", NULL),
-	add_parse(UINT16, max_share, "maximums/shares", NULL),
+	add_parse_overload(UINT16, max_share, 2, "maximums/shares", NULL),
+	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", NULL),
+	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", NULL),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", NULL),
 	add_parse(UINT32, min_nodes, "minimums/nodes", NULL),
 	add_parse(STRING, name, "name", NULL),
@@ -8666,6 +8684,7 @@ static const parser_t parsers[] = {
 	addpsp(WCKEY_TAG, WCKEY_TAG_STRUCT, char *, NEED_NONE, "WCKey ID with tagging"),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(OVERSUBSCRIBE_JOBS, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
@@ -8932,6 +8951,7 @@ static const parser_t parsers[] = {
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
+	addfa(OVERSUBSCRIBE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */

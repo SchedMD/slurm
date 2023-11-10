@@ -499,6 +499,8 @@ typedef enum {
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, /* assoc_shares_object_wrap_t->tres_cnt&obj->usage_tres_raw */
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TYPE, /* assoc_shares_object_wrap_t.obj->user */
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_PTR, /* assoc_shares_object_t* */
+	DATA_PARSER_OVERSUBSCRIBE_JOBS, /* max_share */
+	DATA_PARSER_OVERSUBSCRIBE_FLAGS, /* max_share */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
