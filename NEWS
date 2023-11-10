@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
     This operation is nolonger relevant for 23.11.
  -- Fix segfault when updating node instance id/type without accounting enabled.
  -- Ensure slurmscriptd shuts down before slurmctld is stopped / reconfigured.
+ -- Improve error handling and error messages in slurmctld to slurmscriptd
+    communications. This includes avoiding potential deadlock in slurmctld if
+    slurmscript dies unexpectedly.
 
 * Changes in Slurm 23.11.0rc1
 =============================
