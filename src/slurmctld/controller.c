@@ -750,15 +750,7 @@ int main(int argc, char **argv)
 		acct_storage_g_fini();
 
 		slurm_persist_conn_recv_server_fini();
-		/*
-		 * join the power save thread after saving all state
-		 * since it could wait a while waiting for spawned
-		 * processes to exit
-		 * The thread is only started if power save is configured.
-		 */
-		if (slurmctld_config.thread_id_power)
-			pthread_join(slurmctld_config.thread_id_power, NULL);
-		slurmctld_config.thread_id_power = (pthread_t) 0;
+		power_save_fini();
 
 		/* attempt reconfig here */
 		if (reconfig) {
@@ -827,7 +819,6 @@ int main(int argc, char **argv)
 
 	/* Purge our local data structures */
 	configless_clear();
-	power_save_fini();
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
 	node_fini();

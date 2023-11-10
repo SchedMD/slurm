@@ -1028,6 +1028,9 @@ extern bool power_save_test(void)
 /* Free module's allocated memory */
 extern void power_save_fini(void)
 {
+	if (slurmctld_config.thread_id_power)
+		pthread_join(slurmctld_config.thread_id_power, NULL);
+
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */
 		power_save_started = false;
