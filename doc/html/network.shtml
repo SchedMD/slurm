@@ -3,14 +3,16 @@
 <h1>Network Configuration Guide</h1>
 
 <h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
-<a href="#overview">Overview</a><br>
-<a href="#slurmctld">Communication for slurmctld</a><br>
-<a href="#slurmdbd">Communication for slurmdbd</a><br>
-<a href="#slurmd">Communication for slurmd</a><br>
-<a href="#client">Communication for client commands</a><br>
-<a href="#failover">Communication for multiple controllers</a><br>
-<a href="#multi">Communication with multiple clusters</a><br>
-<a href="#federation">Communication in a federation</a><br>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#slurmctld">Communication for slurmctld</a></li>
+<li><a href="#slurmdbd">Communication for slurmdbd</a></li>
+<li><a href="#slurmd">Communication for slurmd</a></li>
+<li><a href="#client">Communication for client commands</a></li>
+<li><a href="#failover">Communication for multiple controllers</a></li>
+<li><a href="#multi">Communication with multiple clusters</a></li>
+<li><a href="#federation">Communication in a federation</a></li>
+</ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
