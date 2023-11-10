@@ -4,7 +4,7 @@
 
 <h1>Profiling Using HDF5 User Guide</h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <a href="#Overview">Overview</a><br>
 <a href="#Administration">Administration</a><br>
 <a href="#Profiling">Profiling Jobs</a><br>

@@ -2,7 +2,7 @@
 
 <h1>Containers Guide</h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <a href="#overview">Overview</a><br>
 <a href="#limitations">Known limitations</a><br>
 <a href="#prereq">Prerequisites</a><br>

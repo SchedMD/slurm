@@ -2,7 +2,7 @@
 
 <h1><a name="top">Slurm Programmer's Guide</a></h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <a href="#Overview">Overview</a><br>
 <a href="#Plugins">Plugins</a><br>
 <a href="#Directory-Structure">Directory Structure</a><br>

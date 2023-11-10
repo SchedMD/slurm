@@ -2,7 +2,7 @@
 
 <h1>Generic Resource (GRES) Scheduling</h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <a href="#Overview">Overview</a><br>
 <a href="#Configuration">Configuration</a><br>
 <a href="#Running_Jobs">Running Jobs</a><br>

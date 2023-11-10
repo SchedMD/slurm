@@ -2,8 +2,7 @@
 
 <h1><a id="top">Accounting and Resource Limits</a></h1>
 
-
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <a href="#Overview">Overview</a><br>
 <a href="#infrastructure">Infrastructure</a><br>
 <a href="#slurm-jobcomp-configuration">Slurm JobComp Configuration</a><br>
