@@ -6038,7 +6038,8 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		   (slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERCORE) ||
 		    slurm_option_set_by_env(opt, LONG_OPT_THREADSPERCORE) ||
 		    slurm_option_set_by_env(opt, 'B') ||
-		    slurm_option_set_by_env(opt, LONG_OPT_CPU_BIND))) {
+		    (slurm_option_set_by_env(opt, LONG_OPT_CPU_BIND) &&
+		     (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE)))) {
 		if (opt->verbose)
 			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind, but more than one set by environment variables. Ignoring SLURM_HINT.");
 		slurm_option_reset(opt, "hint");
