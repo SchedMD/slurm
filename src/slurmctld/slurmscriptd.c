@@ -366,9 +366,9 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 	}
 	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT)
 		_incr_script_cnt();
-	_write_msg(slurmctld_writefd, msg.msg_type, buffer);
+	rc = _write_msg(slurmctld_writefd, msg.msg_type, buffer);
 
-	if (wait) {
+	if ((rc == SLURM_SUCCESS) && wait) {
 		_wait_for_script_resp(script_resp, &rc, resp_msg, signalled);
 		_script_resp_map_remove(script_resp->key);
 	}
