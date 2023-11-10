@@ -462,7 +462,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       </ul>
 
       <p><b>NOTE</b>: Nodes are still subject to powering down when being IDLE
-      for <b>SuspendTime</b>.</p>
+      for <b>SuspendTime</b> when PowerDownOnIdle is set to NO.</p>
     </dd>
 
     <dt id="ResumeTimeout_1"><b>ResumeTimeout<a class="slurm_link" href=
