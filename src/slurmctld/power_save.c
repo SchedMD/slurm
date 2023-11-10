@@ -1108,7 +1108,6 @@ fini:	_clear_power_config();
 }
 
 extern void power_save_set_timeouts(bool *partition_suspend_time_set)
-
 {
 	node_record_t *node_ptr;
 
