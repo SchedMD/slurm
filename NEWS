@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     can result in stray jobs.
  -- slurmctld - Shave ~1 second off average reconfigure time by terminating
     internal processing threads faster.
+ -- Skip running slurmdbd -R if the connected cluster is 23.11 or newer.
+    This operation is nolonger relevant for 23.11.
 
 * Changes in Slurm 23.11.0rc1
 =============================

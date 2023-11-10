@@ -4498,6 +4498,12 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		uint32_t root_assoc_id = 0;
 		DEF_TIMERS;
 		START_TIMER;
+		if (get_cluster_version(mysql_conn, cluster_name) >=
+		    SLURM_23_11_PROTOCOL_VERSION) {
+			info("Cluster %s too new for lft/rgt, skipping reset.",
+			     cluster_name);
+			continue;
+		}
 		info("Resetting cluster %s", cluster_name);
 		assoc_list = list_create(slurmdb_destroy_assoc_rec);
 		/* set this up to get the associations without parent_limits */
