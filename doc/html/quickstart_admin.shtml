@@ -13,6 +13,8 @@
 <li><a href="#manual_build">Building Manually</a></li>
 <li><a href="#rpmbuild">Building RPMs</a></li>
 <li><a href="#rpms">Installing RPMs</a></li>
+<li><a href="#debuild">Building Debian Packages</a></li>
+<li><a href="#debinstall">Installing Debian Packages</a></li>
 </ul>
 </li>
 <li><a href="#daemons">Daemons</a></li>
@@ -253,6 +255,69 @@ by configuration, but here is a suggested starting point:
 	<ul>
 	<li>slurm</li>
 	<li>slurm-slurmdbd</li>
+	</ul>
+</li>
+</ul>
+
+<h3 id="debuild">Building Debian Packages
+<a class="slurm_link" href="#debuild"></a>
+</h3>
+
+<p>Beginning with Slurm 23.11.0, Slurm includes the files required to build
+Debian packages. These packages conflict with the packages shipped with Debian
+based distributions, and are named distinctly to differentiate them. After
+downloading the desired version of Slurm, the following can be done to build
+the packages:</p>
+
+<ul>
+<li>Install basic Debian package build requirements:<br>
+<code>apt-get install build-essential fakeroot devscripts</code>
+</li>
+<li>Unpack the distributed tarball:<br>
+<code>tar -xaf slurm*tar.bz2</code>
+</li>
+<li><code>cd</code> to the directory containing the Slurm source</li>
+<li>Install the Slurm package dependencies:<br>
+<code>mk-build-deps -i debian/control</code>
+</li>
+<li>Build the Slurm packages:<br>
+<code>debuild -b -uc -us</code>
+</li>
+</ul>
+
+<p>The packages will be in the parent directory after debuild completes.</p>
+
+<h3 id="debinstall">Installing Debian Packages
+<a class="slurm_link" href="#debinstall"></a>
+</h3>
+
+<p>The packages needed on the head node, compute nodes, and slurmdbd node can
+vary site to site, but this is a good starting point:</p>
+<ul>
+<li>SlurmDBD Node
+	<ul>
+	<li>slurm-smd</li>
+	<li>slurm-smd-slurmdbd</li>
+	</ul>
+</li>
+<li>Head Node (slurmctld node)
+	<ul>
+	<li>slurm-smd</li>
+	<li>slurm-smd-slurmctld</li>
+	<li>slurm-smd-client</li>
+	</ul>
+</li>
+<li>Compute Nodes (slurmd node)
+	<ul>
+	<li>slurm-smd</li>
+	<li>slurm-smd-slurmd</li>
+	<li>slurm-smd-client</li>
+	</ul>
+</li>
+<li>Login Nodes
+	<ul>
+	<li>slurm-smd</li>
+	<li>slurm-smd-client</li>
 	</ul>
 </li>
 </ul>
@@ -896,6 +961,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 24 October 2023</p>
+<p style="text-align:center;">Last modified 14 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
