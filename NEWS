@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     be set.
  -- slurmctld - Rework 'scontrol reconfigure' to avoid race conditions that
     can result in stray jobs.
+ -- slurmctld - Shave ~1 second off average reconfigure time by terminating
+    internal processing threads faster.
 
 * Changes in Slurm 23.11.0rc1
 =============================
