@@ -50,7 +50,7 @@
 		</div>
 
 
-		<nav class="site-nav">
+		<nav class="site-nav" role="navigation">
 			<h2 class="site-nav__title">Navigation</h2>
 
 			<div class="slurm-title">
@@ -58,7 +58,7 @@
 				<div class="slurm-title__version">Version @SLURM_VERSION@</div>
 			</div>
 
-			<ul class="site-nav__menu site-menu menu" role="navigation">
+			<ul class="site-nav__menu site-menu menu">
 				<li class="site-menu__item">
 				        <div>About</div>
 					<ul>
