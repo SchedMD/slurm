@@ -252,20 +252,17 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 					    List ret_list,
 					    bool *default_account)
 {
-	char *query, *tmp_char = NULL, *as_statement = "", *last_user = NULL;
+	char *query, *tmp_char = NULL, *as_statement = "";
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i;
-	bool other_assoc = false;
 
 	char *dassoc_inx[] = {
-		"is_def",
 		"user",
 		"acct",
 	};
 
 	enum {
-		DASSOC_IS_DEF,
 		DASSOC_USER,
 		DASSOC_ACCT,
 		DASSOC_COUNT
@@ -279,10 +276,23 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 	if (!xstrncmp(assoc_char, "t2.", 3))
 		as_statement = "as t2 ";
 
-	/* Query all the user associations given */
-	query = xstrdup_printf("select %s from \"%s_%s\" %swhere deleted=0 && user!='' && (%s) order by user, is_def asc",
-			       tmp_char, cluster_name, assoc_table,
-			       as_statement, assoc_char);
+	/*
+	 * We are looking for users where default account is going to be deleted
+	 * and we are not deleting all accounts of that user.
+	 */
+	query = xstrdup_printf(
+		"select user, acct from \"%s_%s\" "
+		"where is_def=1 and deleted=0 and user in "
+		"(select user as myuser "
+		"from \"%s_%s\" %s where deleted=0 and user!='' and (%s) "
+		"group by user "
+		"having max(is_def)=1 " /* Is default account is selected */
+		"and not count(*)=" /* Is this all of that user's assocs? */
+		"(select count(*) FROM \"%s_%s\" "
+		"where deleted=0 AND user=myuser))",
+		cluster_name, assoc_table, cluster_name, assoc_table,
+		as_statement, assoc_char, cluster_name, assoc_table);
+
 	xfree(tmp_char);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 
@@ -292,31 +302,20 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 	if (!result)
 		return *default_account;
 
+	if (!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		return *default_account;
+	}
+
+	*default_account = true;
+	list_flush(ret_list);
+	reset_mysql_conn(mysql_conn);
+
 	while ((row = mysql_fetch_row(result))) {
-		if (!xstrcmp(last_user, row[DASSOC_USER])) {
-			other_assoc = false;
-			last_user = row[DASSOC_USER];
-		}
-
-		if (row[DASSOC_IS_DEF][0] == '0') {
-			other_assoc = true;
-			continue;
-		} else if (!other_assoc) {
-			/*
-			 * We have no other association, we are just removing
-			 * this from the mix.
-			 */
-			continue;
-		}
-
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
 			 "Attempted removing default account (%s) of user: %s",
 			 row[DASSOC_ACCT], row[DASSOC_USER]);
-		if (!(*default_account)) {
-			*default_account = true;
-			list_flush(ret_list);
-			reset_mysql_conn(mysql_conn);
-		}
+
 		tmp_char = xstrdup_printf("C = %-15s A = %-10s U = %-9s",
 					  cluster_name, row[DASSOC_ACCT],
 					  row[DASSOC_USER]);
