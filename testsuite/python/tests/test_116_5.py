@@ -42,10 +42,11 @@ def test_hostfile():
     write_host_file(match1)
 
     # Test pass 1
-    output = atf.run_job_output(f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME")
+    output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
     match2 = re.findall(r'(\d+): (\S+)', output)
     for match in match2:
         assert match in match_ordered, f"On pass 1 Task {match[0]} not distributed by hostfile {match} not in {match_ordered}"
+    assert len(match2) == node_num, f"On pass 1 {len(match2)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
 
     match2 += [match2.pop(0)]
     match_ordered = []
@@ -54,7 +55,8 @@ def test_hostfile():
     write_host_file(match2)
 
     # Test pass 2
-    output = atf.run_job_output(f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME")
+    output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
     match3 = re.findall(r'(\d+): (\S+)', output)
     for match in match3:
         assert match in match_ordered, f"On pass 2 Task {match[0]} not distributed by hostfile {match} not in {match_ordered}"
+    assert len(match3) == node_num, f"On pass 2 {len(match3)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
