@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix scontrol update job=... TimeLimit+=/-= when used with a raw JobId of job
     array element.
+ -- Reject TimeLimit increment/decrement when called on job with
+    TimeLimit=UNLIMITED.
 
 * Changes in Slurm 23.11.0
 ==========================

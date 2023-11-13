@@ -710,7 +710,12 @@ extern int scontrol_update_job(int argc, char **argv)
 				if (job_current_time == NO_VAL) {
 					exit_code = 1;
 					return 0;
+				} else if (job_current_time == INFINITE) {
+					error("Cannot increment/decrement TimeLimit when set to UNLIMITED.");
+					exit_code = 1;
+					return 0;
 				}
+
 				if (add_info[0] == '+') {
 					time_limit += job_current_time;
 				} else if (time_limit > job_current_time) {
