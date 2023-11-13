@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     satisfied, and set the state reason to "Constraints" instead of
     "BadConstraints".
  -- Fix verbose log message printing a hex number instead of a job id.
+ -- Upgrade rate limit parameters message from debug to info.
 
 * Changes in Slurm 23.11.0rc1
 =============================

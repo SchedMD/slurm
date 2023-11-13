@@ -92,8 +92,8 @@ extern void rate_limit_init(void)
 	user_buckets = xcalloc(table_size, sizeof(user_bucket_t));
 
 	info("RPC rate limiting enabled");
-	debug("%s: rl_table_size=%d,rl_bucket_size=%d,rl_refill_rate=%d,rl_refill_period=%d",
-	      __func__, table_size, bucket_size, refill_rate, refill_period);
+	info("%s: rl_table_size=%d,rl_bucket_size=%d,rl_refill_rate=%d,rl_refill_period=%d",
+	     __func__, table_size, bucket_size, refill_rate, refill_period);
 }
 
 extern void rate_limit_shutdown(void)
