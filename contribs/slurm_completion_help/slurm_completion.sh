@@ -1459,12 +1459,11 @@ function __slurm_comp_common_flags() {
 		"last"
 	)
 
-	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-	__slurm_log_debug "$(__func__): cmd='$cmd'"
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_comp_flags "$cmd" && return
-
+	__slurm_comp_flags "$cmd" && return 0
 	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	--accel-bind) __slurm_compreply "${accelbind_types[*]}" ;;
 	-A | --account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
@@ -1589,13 +1588,11 @@ function __slurm_linux_gids() {
 #			SACCT Completion Functions
 ################################################################################
 
-# sacct completion handler
-# https://slurm.schedmd.com/sacct.html
-function _sacct() {
-	local cur prev words cword split
-	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
-
+# Slurm completion helper for sacct flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sacct_flags() {
+	local cmd="$1"
 	local sched_flags=(
 		"schedsubmit"
 		"schedmain"
@@ -1826,9 +1823,11 @@ function _sacct() {
 		"P"
 	)
 
-	__slurm_comp_flags "$1" && return
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_is_opt || return
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-x | --association?(s)) __slurm_compreply_list "$(__slurm_associations)" ;;
@@ -1836,7 +1835,7 @@ function _sacct() {
 	-C | --constraint?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	-f | --file) _filedir ;;
 	-F | --flag?(s)) __slurm_compreply_list "${sched_flags[*]}" ;; # TODO: want --helpsched
-	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$1")" ;;
+	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$cmd")" ;;
 	-g | --gid?(s) | --group) __slurm_compreply_list "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	-j | --job?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	--name?(s)) __slurm_compreply_list "$(__slurm_jobnames)" ;;
@@ -1849,8 +1848,20 @@ function _sacct() {
 	--units) __slurm_compreply "${units[*]}" ;;
 	-W | --wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	--whole-hetjob) __slurm_compreply "$(__slurm_boolean)" ;;
+	*) return 1 ;;
 	esac
 
+	return 0
+}
+
+# sacct completion handler
+# https://slurm.schedmd.com/sacct.html
+function _sacct() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	__slurm_comp_sacct_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -3154,9 +3165,13 @@ function __sacctmgr_update() {
 #
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_sacctmgr_flags() {
-	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	local cmd="$1"
 
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
 	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	*) return 1 ;;
 	esac
@@ -3192,8 +3207,8 @@ function _sacctmgr() {
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
-	__slurm_comp_flags "$comp_cmd" && return
-	__slurm_comp_sacctmgr_flags && return
+	__slurm_comp_sacctmgr_flags "$1" && return
+	$split && return
 
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
@@ -3263,6 +3278,28 @@ complete -o nospace -F _sbatch sbatch
 #			SBCAST Completion Functions
 ################################################################################
 
+# Slurm completion helper for sbcast flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sbcast_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-C | --compress) __slurm_compreply "$(__slurm_compress_types)" ;;
+	--exclude?(s)) _filedir -d ;;
+	-j | --jobid?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
+	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
+
 # sbcast completion handler
 # https://slurm.schedmd.com/sbcast.html
 function _sbcast() {
@@ -3270,19 +3307,10 @@ function _sbcast() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_flags "$1" && return
+	__slurm_comp_sbcast_flags "$1" && return
+	$split && return
 
-	__slurm_is_opt || return
-	case "${prev}" in
-	-C | --compress) __slurm_compreply "$(__slurm_compress_types)" ;;
-	--exclude?(s)) _filedir -d ;;
-	-j | --jobid?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
-	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
-	*)
-		$split && return
-		_filedir
-		;;
-	esac
+	_filedir
 }
 complete -o nospace -F _sbcast sbcast
 
@@ -3290,22 +3318,22 @@ complete -o nospace -F _sbcast sbcast
 #			SCANCEL Completion Functions
 ################################################################################
 
-# scancel completion handler
-# https://slurm.schedmd.com/scancel.html
-function _scancel() {
-	local cur prev words cword split
-	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
-
+# Slurm completion helper for scancel flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_scancel_flags() {
+	local cmd="$1"
 	local states=(
 		"pending"
 		"running"
 		"suspended"
 	)
 
-	__slurm_comp_flags "$1" && return
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_is_opt || return
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -3319,8 +3347,22 @@ function _scancel() {
 	-t | --state?(s)) __slurm_compreply "${states[*]}" ;;
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	--wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
-	*) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
+	*) return 1 ;;
 	esac
+
+	return 0
+}
+
+# scancel completion handler
+# https://slurm.schedmd.com/scancel.html
+function _scancel() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	__slurm_comp_scancel_flags "$1" && return
+
+	__slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)"
 }
 complete -o nospace -F _scancel scancel
 
@@ -4434,9 +4476,13 @@ function __scontrol_write() {
 #
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_scontrol_flags() {
-	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	local cmd="$1"
 
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
 	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply "$(__slurm_clusters)" ;;
 	-u | --uid?(s)) __slurm_compreply "$(__slurm_users)" ;;
@@ -4497,8 +4543,7 @@ function _scontrol() {
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
-	__slurm_comp_flags "$comp_cmd" && return
-	__slurm_comp_scontrol_flags && return
+	__slurm_comp_scontrol_flags "$comp_cmd" && return
 
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
@@ -4513,6 +4558,25 @@ complete -o nospace -F _scontrol scontrol
 #			SCRONTAB Completion Functions
 ################################################################################
 
+# Slurm completion helper for scrontab flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_scrontab_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-u) __slurm_compreply "$(__slurm_users)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
+
 # scrontab completion handler
 # https://slurm.schedmd.com/scrontab.html
 function _scrontab() {
@@ -4520,13 +4584,7 @@ function _scrontab() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_flags "$1" && return
-
-	__slurm_is_opt || return
-	case "${prev}" in
-	-u) __slurm_compreply "$(__slurm_users)" ;;
-	esac
-
+	__slurm_comp_scrontab_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -4539,6 +4597,25 @@ complete -o nospace -F _scrontab scrontab
 #			SDIAG Completion Functions
 ################################################################################
 
+# Slurm completion helper for sdiag flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sdiag_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
+
 # sdiag completion handler
 # https://slurm.schedmd.com/sdiag.html
 function _sdiag() {
@@ -4546,13 +4623,7 @@ function _sdiag() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_flags "$1" && return
-
-	__slurm_is_opt || return
-	case "${prev}" in
-	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	esac
-
+	__slurm_comp_sdiag_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -4565,13 +4636,11 @@ complete -o nospace -F _sdiag sdiag
 #			SINFO Completion Functions
 ################################################################################
 
-# sinfo completion handler
-# https://slurm.schedmd.com/sinfo.html
-function _sinfo() {
-	local cur prev words cword split
-	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
-
+# Slurm completion helper for sinfo flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sinfo_flags() {
+	local cmd="$1"
 	local fields=(
 		"%a" "%A"
 		"%b" "%B"
@@ -4674,9 +4743,11 @@ function _sinfo() {
 		"?"
 	)
 
-	__slurm_comp_flags "$1" && return
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_is_opt || return
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" "%ALL" ;;     # TODO: want --helpformat
@@ -4685,8 +4756,20 @@ function _sinfo() {
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
+	*) return 1 ;;
 	esac
 
+	return 0
+}
+
+# sinfo completion handler
+# https://slurm.schedmd.com/sinfo.html
+function _sinfo() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	__slurm_comp_sinfo_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -4699,13 +4782,11 @@ complete -o nospace -F _sinfo sinfo
 #			SPRIO Completion Functions
 ################################################################################
 
-# sprio completion handler
-# https://slurm.schedmd.com/sprio.html
-function _sprio() {
-	local cur prev words cword split
-	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
-
+# Slurm completion helper for sprio flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sprio_flags() {
+	local cmd="$1"
 	local fields=(
 		"%a" "%A"
 		"%b" "%B"
@@ -4723,17 +4804,31 @@ function _sprio() {
 		"%y" "%Y"
 	)
 
-	__slurm_comp_flags "$1" && return
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_is_opt || return
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" ;; # TODO: want --helpformat
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-u) __slurm_compreply_list "$(__slurm_users)" ;;
+	*) return 1 ;;
 	esac
 
+	return 0
+}
+
+# sprio completion handler
+# https://slurm.schedmd.com/sprio.html
+function _sprio() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	__slurm_comp_sprio_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -4746,13 +4841,11 @@ complete -o nospace -F _sprio sprio
 #			SQUEUE Completion Functions
 ################################################################################
 
-# squeue completion handler
-# https://slurm.schedmd.com/squeue.html
-function _squeue() {
-	local cur prev words cword split
-	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
-
+# Slurm completion helper for squeue flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_squeue_flags() {
+	local cmd="$1"
 	local fields=(
 		"%ALL"
 		"%a" "%A"
@@ -4929,9 +5022,11 @@ function _squeue() {
 		"timeout"
 	)
 
-	__slurm_comp_flags "$1" && return
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
-	__slurm_is_opt || return
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" ;;      # TODO: want --helpformat
@@ -4945,8 +5040,20 @@ function _squeue() {
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
+	*) return 1 ;;
 	esac
 
+	return 0
+}
+
+# squeue completion handler
+# https://slurm.schedmd.com/squeue.html
+function _squeue() {
+	local cur prev words cword split
+	__slurm_compinit "$1" || return
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
+
+	__slurm_comp_squeue_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -5158,8 +5265,7 @@ function __sreport_user() {
 #
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_sreport_flags() {
-	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-
+	local cmd="$1"
 	local time_format=(
 		"secper"
 		"minper"
@@ -5170,7 +5276,11 @@ function __slurm_comp_sreport_flags() {
 		"percent"
 	)
 
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
 	__slurm_is_opt || return 1
+
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-t) __slurm_compreply "${time_format[*]}" ;;
@@ -5202,8 +5312,7 @@ function _sreport() {
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
-	__slurm_comp_flags "$comp_cmd" && return
-	__slurm_comp_sreport_flags && return
+	__slurm_comp_sreport_flags "$1" && return
 
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
@@ -5242,6 +5351,28 @@ complete -o nospace -F _srun srun
 #			SSHARE Completion Functions
 ################################################################################
 
+# Slurm completion helper for sshare flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sshare_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
+	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
+	-o | --format) __slurm_compreply_list "$(__slurm_helpformat "$cmd")" ;;
+	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
+
 # sshare completion handler
 # https://slurm.schedmd.com/sshare.html
 function _sshare() {
@@ -5249,16 +5380,7 @@ function _sshare() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_flags "$1" && return
-
-	__slurm_is_opt || return
-	case "${prev}" in
-	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-o | --format) __slurm_compreply_list "$(__slurm_helpformat "$1")" ;;
-	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
-	esac
-
+	__slurm_comp_sshare_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -5271,6 +5393,26 @@ complete -o nospace -F _sshare sshare
 #			SSTAT Completion Functions
 ################################################################################
 
+# Slurm completion helper for sstat flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_sstat_flags() {
+	local cmd="$1"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$cmd")" ;;
+	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
+
 # sstat completion handler
 # https://slurm.schedmd.com/sstat.html
 function _sstat() {
@@ -5278,14 +5420,7 @@ function _sstat() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_flags "$1" && return
-
-	__slurm_is_opt || return
-	case "${prev}" in
-	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$1")" ;;
-	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
-	esac
-
+	__slurm_comp_sstat_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
@@ -5297,6 +5432,33 @@ complete -o nospace -F _sstat sstat
 ################################################################################
 #			STRIGGER Completion Functions
 ################################################################################
+
+# Slurm completion helper for strigger flag completion
+#
+# RET: 0 = did completion; 1 = no completion
+function __slurm_comp_strigger_flags() {
+	local cmd="$1"
+	local flags=(
+		"perm"
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
+
+	__slurm_comp_flags "$cmd" && return 0
+	__slurm_is_opt || return 1
+
+	case "${prev}" in
+	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
+	--flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
+	-j | --jobid?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
+	-n | --node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	-p | --program) _filedir ;;
+	--user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
+	*) return 1 ;;
+	esac
+
+	return 0
+}
 
 # strigger completion handler
 # https://slurm.schedmd.com/strigger.html
@@ -5312,9 +5474,6 @@ function _strigger() {
 	)
 	local subcmd
 	subcmd="$(__slurm_find_subcmd "${subcmds[*]}")"
-	local flags=(
-		"perm"
-	)
 
 	__slurm_log_debug "$(__func__): subcmd='$subcmd'"
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
@@ -5325,18 +5484,7 @@ function _strigger() {
 		return
 	fi
 
-	__slurm_comp_flags "$1" && return
-
-	__slurm_is_opt || return
-	case "${prev}" in
-	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	--flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
-	-j | --jobid?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
-	-n | --node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
-	-p | --program) _filedir ;;
-	--user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
-	esac
-
+	__slurm_comp_strigger_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
