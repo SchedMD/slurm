@@ -33,30 +33,30 @@ def test_hostfile():
     HOSTFILE_ENV = 'SLURM_HOSTFILE'
 
     output = atf.run_job_output(f"-N{node_num} -l printenv SLURMD_NODENAME")
-    match1 = re.findall(r'(\d+): (\S+)', output)
-    match1 += [match1.pop(0)]
+    matches = re.findall(r'(\d+): (\S+)', output)
+    matches += [matches.pop(0)]
     match_ordered = []
-    for iter in range(len(match1)):
-        match_ordered.append((str(iter), match1[iter][1]))
+    for iter in range(len(matches)):
+        match_ordered.append((str(iter), matches[iter][1]))
     os.environ[HOSTFILE_ENV] = str(host_file)
-    write_host_file(match1)
+    write_host_file(matches)
 
     # Test pass 1
     output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
-    match2 = re.findall(r'(\d+): (\S+)', output)
-    for match in match2:
+    matches = re.findall(r'(\d+): (\S+)', output)
+    for match in matches:
         assert match in match_ordered, f"On pass 1 Task {match[0]} not distributed by hostfile {match} not in {match_ordered}"
-    assert len(match2) == node_num, f"On pass 1 {len(match2)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
+    assert len(matches) == node_num, f"On pass 1 {len(matches)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
 
-    match2 += [match2.pop(0)]
+    matches += [matches.pop(0)]
     match_ordered = []
-    for iter in range(len(match1)):
-        match_ordered.append((str(iter), match2[iter][1]))
-    write_host_file(match2)
+    for iter in range(len(matches)):
+        match_ordered.append((str(iter), matches[iter][1]))
+    write_host_file(matches)
 
     # Test pass 2
     output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
-    match3 = re.findall(r'(\d+): (\S+)', output)
-    for match in match3:
+    matches = re.findall(r'(\d+): (\S+)', output)
+    for match in matches:
         assert match in match_ordered, f"On pass 2 Task {match[0]} not distributed by hostfile {match} not in {match_ordered}"
-    assert len(match3) == node_num, f"On pass 2 {len(match3)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
+    assert len(matches) == node_num, f"On pass 2 {len(matches)} tasks were ran instead of {node_num} -- one task per node in the hostfile"
