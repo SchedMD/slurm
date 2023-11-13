@@ -758,11 +758,7 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 static int DUMP_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
-	char **name = obj;
-
-	(void) data_set_string(dst, *name);
-
-	return SLURM_SUCCESS;
+	return DUMP_FUNC(STRING)(parser, obj, dst, args);
 }
 
 static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
