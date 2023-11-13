@@ -1294,7 +1294,7 @@ function __slurm_comp_dependency() {
 #
 # $1: slurm command being completed
 # RET: 0 = did completion; 1 = no completion
-function __slurm_comp_common() {
+function __slurm_comp_common_flags() {
 	local cmd="$1"
 	local accelbind_types=(
 		"g"
@@ -3215,7 +3215,7 @@ function _salloc() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_common "$1" && return
+	__slurm_comp_common_flags "$1" && return
 	$split && return
 
 	_filedir
@@ -3252,7 +3252,7 @@ function _sbatch() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_common "$1" && return
+	__slurm_comp_common_flags "$1" && return
 	$split && return
 
 	_filedir
@@ -5231,7 +5231,7 @@ function _srun() {
 	__slurm_compinit "$1" || return
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
-	__slurm_comp_common "$1" && return
+	__slurm_comp_common_flags "$1" && return
 	$split && return
 
 	_filedir
