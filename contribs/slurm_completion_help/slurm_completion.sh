@@ -517,10 +517,10 @@ function __slurm_split_opt() {
 function __slurm_is_long_opt() {
 	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur' split='$split'"
 
-	if [[ "$prev" =~ ^--[[:alnum:]][-[:alnum:]]+$ ]] && $split; then
-		return 0;
-	elif [[ "$prev" =~ ^--[[:alnum:]][-[:alnum:]]+=*$ ]]; then
-		return 0;
+	if [[ $prev =~ ^--[[:alnum:]][-[:alnum:]]+$ ]] && $split; then
+		return 0
+	elif [[ $prev =~ ^--[[:alnum:]][-[:alnum:]]+=*$ ]]; then
+		return 0
 	else
 		return 1
 	fi
@@ -532,8 +532,8 @@ function __slurm_is_long_opt() {
 function __slurm_is_short_opt() {
 	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur'"
 
-	if [[ "$prev" =~ ^-[[:alnum:]]+=* ]]; then
-		return 0;
+	if [[ $prev =~ ^-[[:alnum:]]+=* ]]; then
+		return 0
 	else
 		return 1
 	fi
@@ -551,7 +551,7 @@ function __slurm_is_opt() {
 
 	__slurm_log_trace "$(__func__): prev='$prev' cur='$cur' split='$split'"
 	__slurm_log_debug "$(__func__): is_short='$is_short' is_long='$is_long'"
-	
+
 	if $is_long || $is_short; then
 		return 0
 	else
