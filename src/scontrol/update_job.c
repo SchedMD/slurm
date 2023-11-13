@@ -1384,7 +1384,12 @@ static uint32_t _get_job_time(const char *job_id_str)
 			error("Job ID %s not found", job_id_str);
 			slurm_free_job_info_msg(resp);
 			return time_limit;
+		} else if (resp->record_count == 1) {
+			time_limit = resp->job_array[0].time_limit;
+			slurm_free_job_info_msg(resp);
+			return time_limit;
 		}
+
 		if ((resp->record_count > 1) && (task_id == NO_VAL)) {
 			error("TimeLimit increment/decrement not supported "
 			      "for job arrays");

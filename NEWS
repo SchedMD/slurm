@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.1
 ==========================
+ -- Fix scontrol update job=... TimeLimit+=/-= when used with a raw JobId of job
+    array element.
 
 * Changes in Slurm 23.11.0
 ==========================
