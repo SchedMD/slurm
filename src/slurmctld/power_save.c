@@ -82,6 +82,9 @@
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+/* avoid magic numbers */
+#define MAX_NODE_RATE (60000 /*millisecond*/ * 1 /*node/millisecond*/)
+
 static pthread_t power_thread = 0;
 static pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -92,13 +95,22 @@ bool power_save_debug = false;
 
 int suspend_rate, resume_rate, max_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
-time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
+time_t last_log = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
 static uint16_t power_save_interval = 10;
 static uint16_t power_save_min_interval = 0;
 
 List resume_job_list = NULL;
+
+typedef struct {
+	bool inited;
+	uint64_t last_update;
+	uint32_t max_tokens;
+	uint32_t refill_count;
+	uint32_t refill_period_msec;
+	uint32_t tokens;
+} rl_config_t;
 
 typedef struct exc_node_partital {
 	int exc_node_cnt;
@@ -112,9 +124,6 @@ bitstr_t *exc_node_bitmap = NULL;
 static bool suspend_exc_down;
 static uint32_t suspend_exc_state_flags;
 
-int   suspend_cnt,   resume_cnt;
-float suspend_cnt_f, resume_cnt_f;
-
 static void  _clear_power_config(void);
 static void  _do_failed_nodes(char *hosts);
 static void  _do_power_work(time_t now);
@@ -123,6 +132,17 @@ static void  _do_suspend(char *host);
 static int   _init_power_config(void);
 static void *_power_save_thread(void *arg);
 static bool  _valid_prog(char *file_name);
+static uint64_t _timespec_to_msec(struct timespec *tv);
+
+static void _rl_init(rl_config_t *config,
+		     uint32_t refill_count,
+		     uint32_t max_tokens,
+		     uint32_t refill_period_msec,
+		     uint32_t start_tokens);
+static uint32_t _rl_get_tokens(rl_config_t *config);
+static void _rl_spend_token(rl_config_t *config);
+
+static rl_config_t resume_rl_config, suspend_rl_config;
 
 static void _exc_node_part_free(void *x)
 {
@@ -325,7 +345,6 @@ static int _pick_exc_nodes(void *x, void *arg)
 static void _do_power_work(time_t now)
 {
 	int i, susp_total = 0;
-	time_t delta_t;
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
@@ -336,21 +355,6 @@ static void _do_power_work(time_t now)
 	bitstr_t *job_power_node_bitmap;
 	uint32_t *job_id_ptr;
 	bool nodes_updated = false;
-
-	/* Set limit on counts of nodes to have state changed */
-	delta_t = now - last_work_scan;
-	if (delta_t >= 60) {
-		suspend_cnt_f = 0.0;
-		resume_cnt_f  = 0.0;
-	} else {
-		float rate = (60 - delta_t) / 60.0;
-		suspend_cnt_f *= rate;
-		resume_cnt_f  *= rate;
-	}
-	suspend_cnt = (suspend_cnt_f + 0.5);
-	resume_cnt  = (resume_cnt_f  + 0.5);
-
-	last_work_scan = now;
 
 	/* Identify nodes to avoid considering for suspend */
 	if (partial_node_list) {
@@ -395,7 +399,7 @@ static void _do_power_work(time_t now)
 		data_t *job_node_data;
 		bitstr_t *need_resume_bitmap, *to_resume_bitmap;
 
-		if ((resume_rate > 0) && (resume_cnt >= resume_rate)) {
+		if ((resume_rate > 0) && (!_rl_get_tokens(&resume_rl_config))) {
 			log_flag(POWER, "resume rate reached");
 			break;
 		}
@@ -425,10 +429,9 @@ static void _do_power_work(time_t now)
 		bit_and(need_resume_bitmap, power_node_bitmap);
 
 		for (int i = 0; next_node_bitmap(need_resume_bitmap, &i); i++) {
-			if ((resume_rate == 0) || (resume_cnt < resume_rate)) {
-				resume_cnt++;
-				resume_cnt_f++;
-
+			if ((resume_rate == 0) ||
+			    (_rl_get_tokens(&resume_rl_config))) {
+				_rl_spend_token(&resume_rl_config);
 				bit_set(job_power_node_bitmap, i);
 				bit_set(to_resume_bitmap, i);
 				bit_clear(need_resume_bitmap, i);
@@ -484,7 +487,8 @@ static void _do_power_work(time_t now)
 		/* Resume nodes as appropriate */
 		if ((bit_test(job_power_node_bitmap, node_ptr->index)) ||
 		    (susp_state &&
-		     ((resume_rate == 0) || (resume_cnt < resume_rate))	&&
+		     ((resume_rate == 0) ||
+		      (_rl_get_tokens(&resume_rl_config))) &&
 		     !IS_NODE_POWERING_DOWN(node_ptr) &&
 		     IS_NODE_POWER_UP(node_ptr))) {
 			if (wake_node_bitmap == NULL) {
@@ -492,10 +496,8 @@ static void _do_power_work(time_t now)
 					bit_alloc(node_record_count);
 			}
 			if (!(bit_test(job_power_node_bitmap,
-				       node_ptr->index))) {
-				resume_cnt++;
-				resume_cnt_f++;
-			}
+				       node_ptr->index)))
+				_rl_spend_token(&resume_rl_config);
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
@@ -514,8 +516,9 @@ static void _do_power_work(time_t now)
 
 		/* Suspend nodes as appropriate */
 		if (_node_state_suspendable(node_ptr) &&
-		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
-		    (node_ptr->sus_job_cnt == 0)			&&
+		    ((suspend_rate == 0) ||
+		     (_rl_get_tokens(&suspend_rl_config))) &&
+		    (node_ptr->sus_job_cnt == 0) &&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
@@ -533,8 +536,7 @@ static void _do_power_work(time_t now)
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			}
 
-			suspend_cnt++;
-			suspend_cnt_f++;
+			_rl_spend_token(&suspend_rl_config);
 			node_ptr->node_state |= NODE_STATE_POWERING_DOWN;
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -852,6 +854,63 @@ extern void power_save_exc_setup(void)
 	}
 }
 
+static void power_save_rl_setup(void)
+{
+	uint32_t max_tokens, refill_period_msec, effective_max_interval;
+
+	/*
+	 * Power save either runs nominally close to power_save_interval
+	 * or, at worst, at the minumum rate. Either way, we'll want the
+	 * larger value for worst-case scenario in sizing bucket.
+	 */
+	effective_max_interval = MAX(1,
+				     MAX(power_save_interval,
+					 power_save_min_interval));
+
+	if (resume_rate) {
+		/*
+		 * If the rate is high and/or the power save interval is large,
+		 * the bucket must be larger to accomodate large token
+		 * accumulation between executions of _do_power_work().
+		 * units are: (tokens) = ((tokens/min) * seconds) /
+		 *	                 (seconds / min)
+		 */
+		if (resume_rate * effective_max_interval < 60)
+			max_tokens = 1;
+		else
+			max_tokens = resume_rate * effective_max_interval / 60;
+
+		/*
+		 * Token refill period is independent of bucket size. We will
+		 * add one token every period and they will be spent in each
+		 * iteration of _do_power_work(). The minimum period is 1ms,
+		 * therefore the max number of nodes updated is 60000 per minute
+		 */
+		refill_period_msec = MAX_NODE_RATE / resume_rate;
+
+		_rl_init(&resume_rl_config,
+			 1,
+			 max_tokens,
+			 refill_period_msec,
+			 0);
+	}
+
+	if (suspend_rate) {
+		if (suspend_rate * effective_max_interval < 60)
+			max_tokens = 1;
+		else
+			max_tokens = suspend_rate * effective_max_interval / 60;
+
+		refill_period_msec = MAX_NODE_RATE / suspend_rate;
+
+		_rl_init(&suspend_rl_config,
+			 1,
+			 max_tokens,
+			 refill_period_msec,
+			 0);
+	}
+}
+
 /*
  * Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
@@ -862,7 +921,6 @@ static int _init_power_config(void)
 	char *tmp_ptr;
 	bool partition_suspend_time_set = false;
 
-	last_work_scan  = 0;
 	last_log	= 0;
 	suspend_rate = slurm_conf.suspend_rate;
 	resume_rate = slurm_conf.resume_rate;
@@ -923,6 +981,16 @@ static int _init_power_config(void)
 		      resume_prog);
 		return -1;
 	}
+	if (((resume_rate || suspend_rate)) &&
+	    ((power_save_interval > 60) || (power_save_min_interval > 60))) {
+		error("power save module can not work effectively with interval > 60 seconds");
+		return -1;
+	}
+	if ((suspend_rate > MAX_NODE_RATE) || (resume_rate > MAX_NODE_RATE)) {
+		error("selected suspend/resume rate exceeds maximum: %d/%d max: %d",
+		      suspend_rate, resume_rate, MAX_NODE_RATE);
+		return -1;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 		power_save_debug = true;
@@ -935,6 +1003,7 @@ static int _init_power_config(void)
 	}
 
 	power_save_exc_setup();
+	power_save_rl_setup();
 
 	return 0;
 }
@@ -1146,4 +1215,66 @@ extern void power_save_set_timeouts(bool *partition_suspend_time_set)
 				slurm_conf.resume_timeout :
 				node_ptr->resume_timeout);
 	}
+}
+
+static uint64_t _timespec_to_msec(struct timespec *tv)
+{
+	xassert(tv);
+	return (tv->tv_sec * 1000) + (tv->tv_nsec / 1000000);
+}
+
+/* Initializes and starts the rate limit operation */
+static void _rl_init(rl_config_t *config,
+		     uint32_t refill_count,
+		     uint32_t max_tokens,
+		     uint32_t refill_period_msec,
+		     uint32_t start_tokens)
+{
+	xassert(config);
+	struct timespec now = { 0 };
+	xassert(!clock_gettime(CLOCK_MONOTONIC, &now));
+	config->inited = true;
+	config->last_update = _timespec_to_msec(&now);
+	config->max_tokens = max_tokens;
+	config->refill_count = refill_count;
+	config->refill_period_msec = refill_period_msec;
+	config->tokens = start_tokens;
+}
+
+/* Updates the token count and returns the new count of available tokens */
+static uint32_t _rl_get_tokens(rl_config_t *config)
+{
+	struct timespec now = { 0 };
+
+	xassert(config);
+	xassert(config->inited);
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	uint64_t now_msec = _timespec_to_msec(&now);
+	uint64_t now_periods = now_msec / config->refill_period_msec;
+	uint64_t delta = now_periods - config->last_update;
+	config->last_update = now_periods;
+
+	if (delta) {
+		config->tokens += (delta * config->refill_count);
+		config->tokens = MIN(config->tokens, config->max_tokens);
+	}
+
+	return config->tokens;
+}
+
+/*
+ * Should not be called when there are no tokens to spend. Call
+ * _rl_get_tokens to check first.
+ */
+static void _rl_spend_token(rl_config_t *config)
+{
+	if (!config->inited)
+		return;
+
+	if (config->tokens)
+		config->tokens--;
+	else
+		error("Token spent when unavailable. Power save unlikely to respect resume/suspend rate.");
 }
