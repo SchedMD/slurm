@@ -362,6 +362,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - Fix parsing of flag arrays to allow muliple flags to
     be set.
  -- Avoid leaking sockets when an x11 application is closed in an allocation.
+ -- Fix missing mutex unlock in group cache code which could cause slurmctld to
+    freeze.
 
 * Changes in Slurm 23.02.6
 ==========================
