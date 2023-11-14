@@ -232,6 +232,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 		 */
 		*gids = xmalloc(sizeof(gid_t));
 		*gids[0] = needle->gid;
+		slurm_mutex_unlock(&gids_mutex);
 		return 1;
 	}
 
