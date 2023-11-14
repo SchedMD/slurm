@@ -12,6 +12,7 @@
 <li><a href="#failover">Communication for multiple controllers</a></li>
 <li><a href="#multi">Communication with multiple clusters</a></li>
 <li><a href="#federation">Communication in a federation</a></li>
+<li><a href="#ipv6">Communication with IPv6</a></li>
 </ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
