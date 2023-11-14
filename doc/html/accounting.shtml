@@ -2,25 +2,29 @@
 
 <h1><a id="top">Accounting and Resource Limits</a></h1>
 
-
-<h2>Contents</h2>
-<a href="#Overview">Overview</a><br>
-<a href="#infrastructure">Infrastructure</a><br>
-<a href="#slurm-jobcomp-configuration">Slurm JobComp Configuration</a><br>
-<a href="#slurm-accounting-configuration-before-build">Slurm Accounting Configuration Before Build</a><br>
-<a href="#slurm-accounting-configuration-after-build">Slurm Accounting Configuration After Build</a><br>
-<a href="#slurmdbd-configuration">SlurmDBD Configuration</a><br>
-<a style="margin-left: 20px" href="#slurmdbd-archive-purge">  SlurmDBD Archive and Purge</a><br>
-<a href="#mysql-configuration">MySQL Configuration</a><br>
-<a href="#archive">Archive Server</a><br>
-<a href="#tools">Tools</a><br>
-<a href="#database-configuration">Database Configuration</a><br>
-<a href="#cluster-options">Cluster Options</a><br>
-<a href="#account-options">Account Options</a><br>
-<a href="#user-options">User Options</a><br>
-<a href="#limit-enforcement">Limit Enforcement</a><br>
-<a href="#modifying-entities">Modifying Entities</a><br>
-<a href="#removing-entities">Removing Entities</a><br>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#slurm-jobcomp-configuration">Slurm JobComp Configuration</a></li>
+<li><a href="#slurm-accounting-configuration-before-build">Slurm Accounting Configuration Before Build</a></li>
+<li><a href="#slurm-accounting-configuration-after-build">Slurm Accounting Configuration After Build</a></li>
+<li><a href="#slurmdbd-configuration">SlurmDBD Configuration</a>
+<ul>
+<li><a href="#slurmdbd-archive-purge">  SlurmDBD Archive and Purge</a></li>
+</ul>
+<li
+<li><a href="#mysql-configuration">MySQL Configuration</a></li>
+<li><a href="#archive">Archive Server</a></li>
+<li><a href="#tools">Tools</a></li>
+<li><a href="#database-configuration">Database Configuration</a></li>
+<li><a href="#cluster-options">Cluster Options</a></li>
+<li><a href="#account-options">Account Options</a></li>
+<li><a href="#user-options">User Options</a></li>
+<li><a href="#limit-enforcement">Limit Enforcement</a></li>
+<li><a href="#modifying-entities">Modifying Entities</a></li>
+<li><a href="#removing-entities">Removing Entities</a></li>
+</ul>
 
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 

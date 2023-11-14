@@ -2,20 +2,22 @@
 
 <h1>Containers Guide</h1>
 
-<h2>Contents</h2>
-<a href="#overview">Overview</a><br>
-<a href="#limitations">Known limitations</a><br>
-<a href="#prereq">Prerequisites</a><br>
-<a href="#software">Required software</a><br>
-<a href="#example">Example configurations for various OCI Runtimes</a><br>
-<a href="#testing">Testing OCI runtime outside of Slurm</a><br>
-<a href="#request">Requesting container jobs or steps</a><br>
-<a href="#docker-scrun">Integration with Rootless Docker</a><br>
-<a href="#podman-scrun">Integration with Podman</a><br>
-<a href="#bundle">OCI Container bundle</a><br>
-<a href="#ex-ompi5-pmix4">Example OpenMPI v5 + PMIx v4 container</a><br>
-<a href="#plugin">Container support via Plugin</a><br>
-<a href="#types">Container Types</a><br>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#limitations">Known limitations</a></li>
+<li><a href="#prereq">Prerequisites</a></li>
+<li><a href="#software">Required software</a></li>
+<li><a href="#example">Example configurations for various OCI Runtimes</a></li>
+<li><a href="#testing">Testing OCI runtime outside of Slurm</a></li>
+<li><a href="#request">Requesting container jobs or steps</a></li>
+<li><a href="#docker-scrun">Integration with Rootless Docker</a></li>
+<li><a href="#podman-scrun">Integration with Podman</a></li>
+<li><a href="#bundle">OCI Container bundle</a></li>
+<li><a href="#ex-ompi5-pmix4">Example OpenMPI v5 + PMIx v4 container</a></li>
+<li><a href="#plugin">Container support via Plugin</a></li>
+<li><a href="#types">Container Types</a></li>
+</ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Containers are being adopted in HPC workloads.

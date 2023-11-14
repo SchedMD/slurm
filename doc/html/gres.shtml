@@ -2,15 +2,17 @@
 
 <h1>Generic Resource (GRES) Scheduling</h1>
 
-<h2>Contents</h2>
-<a href="#Overview">Overview</a><br>
-<a href="#Configuration">Configuration</a><br>
-<a href="#Running_Jobs">Running Jobs</a><br>
-<a href="#AutoDetect">AutoDetect</a><br>
-<a href="#GPU_Management">GPU Management</a><br>
-<a href="#MPS_Management">MPS Management</a><br>
-<a href="#MIG_Management">MIG Management</a><br>
-<a href="#Sharding">Sharding</a><br>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#Configuration">Configuration</a></li>
+<li><a href="#Running_Jobs">Running Jobs</a></li>
+<li><a href="#AutoDetect">AutoDetect</a></li>
+<li><a href="#GPU_Management">GPU Management</a></li>
+<li><a href="#MPS_Management">MPS Management</a></li>
+<li><a href="#MIG_Management">MIG Management</a></li>
+<li><a href="#Sharding">Sharding</a></li>
+</ul>
 
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>Slurm supports the ability to define and schedule arbitrary Generic RESources

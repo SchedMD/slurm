@@ -4,13 +4,14 @@
 
 <h1>Profiling Using HDF5 User Guide</h1>
 
-<h2>Contents</h2>
-<a href="#Overview">Overview</a><br>
-<a href="#Administration">Administration</a><br>
-<a href="#Profiling">Profiling Jobs</a><br>
-<a href="#HDF5">HDF5</a><br>
-<a href="#DataSeries">Data Structure</a><br>
-
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#Administration">Administration</a></li>
+<li><a href="#Profiling">Profiling Jobs</a></li>
+<li><a href="#HDF5">HDF5</a></li>
+<li><a href="#DataSeries">Data Structure</a></li>
+</ul>
 
 
 <h2 id="Overview">Overview<a class="slurm_link" ref="#Overview"></a></h2>

@@ -2,7 +2,7 @@
 
 <h1>Depth-Oblivious Fair-share Factor</h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
 <li><a href=#intro>Introduction</a></li>
 <li><a href=#fairshare>Depth-Oblivious Fair-Share Formula</a></li>

@@ -2,7 +2,7 @@
 
 <h1>Support for Multi-core/Multi-thread Architectures</h1>
 
-<h2>Contents</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <UL>
 <LI> <a href=#defs>Definitions</a>
 <LI> <a href=#flags>Overview of srun flags</a>

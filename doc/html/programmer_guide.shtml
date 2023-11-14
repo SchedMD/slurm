@@ -2,19 +2,21 @@
 
 <h1><a name="top">Slurm Programmer's Guide</a></h1>
 
-<h2>Contents</h2>
-<a href="#Overview">Overview</a><br>
-<a href="#Plugins">Plugins</a><br>
-<a href="#Directory-Structure">Directory Structure</a><br>
-<a href="#Documentation">Documentation</a><br>
-<a href="#Source-Code">Source Code</a><br>
-<a href="#Source-Code-Management">Source Code Management</a><br>
-<a href="#Adding-New-Modules">Adding New Modules</a><br>
-<a href="#Compiling">Compiling</a><br>
-<a href="#Configuration">Configuration</a><br>
-<a href="#Test-Suite">Test Suite</a><br>
-<a href="#Adding-Files-and-Directories">Adding Files and Directories</a><br>
-<a href="#Tricks-of-the-Trade">Tricks of the Trade</a><br>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#Plugins">Plugins</a></li>
+<li><a href="#Directory-Structure">Directory Structure</a></li>
+<li><a href="#Documentation">Documentation</a></li>
+<li><a href="#Source-Code">Source Code</a></li>
+<li><a href="#Source-Code-Management">Source Code Management</a></li>
+<li><a href="#Adding-New-Modules">Adding New Modules</a></li>
+<li><a href="#Compiling">Compiling</a></li>
+<li><a href="#Configuration">Configuration</a></li>
+<li><a href="#Test-Suite">Test Suite</a></li>
+<li><a href="#Adding-Files-and-Directories">Adding Files and Directories</a></li>
+<li><a href="#Tricks-of-the-Trade">Tricks of the Trade</a></li>
+</ul>
 
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 
