@@ -1055,9 +1055,9 @@ static int _build_resume_job_list(void *object, void *arg)
 static void *_power_save_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
-        /* Locks: Write jobs and nodes */
-        slurmctld_lock_t node_write_lock = {
-                NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Write jobs and nodes */
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, last_power_scan = 0;
 
 #if HAVE_SYS_PRCTL_H
