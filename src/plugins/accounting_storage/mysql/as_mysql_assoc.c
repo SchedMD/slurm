@@ -3413,8 +3413,6 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 
 end_it:
 	xfree(add_assoc_cond->add_assoc->assoc.lineage);
-	xfree(add_assoc_cond->old_cluster);
-	xfree(add_assoc_cond->old_parent);
 
 	add_assoc_cond->add_assoc->assoc.acct = NULL;
 	if (add_assoc_cond->rc != SLURM_SUCCESS)
@@ -3486,6 +3484,8 @@ static int _add_assoc_cond_cluster(void *x, void *arg)
 	_post_add_assoc_cond_cluster(add_assoc_cond);
 
 end_it:
+	xfree(add_assoc_cond->old_parent);
+	xfree(add_assoc_cond->old_cluster);
 	add_assoc_cond->add_assoc->assoc.cluster = NULL;
 	if (add_assoc_cond->rc != SLURM_SUCCESS)
 		return -1;
