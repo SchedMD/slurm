@@ -207,10 +207,6 @@ if possible.</li>
 <li>Repeat indefinitely.</li>
 </ol></p>
 
-<p>You can also configure Slurm with programs that perform no action as
-<b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
-impact of power saving mode before enabling it.</p>
-
 <h2 id="allocations">Use of Allocations
 <a class="slurm_link" href="#allocations"></a>
 </h2>
@@ -272,6 +268,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 12 October 2023</p>
+<p style="text-align:center;">Last modified 14 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
