@@ -5629,6 +5629,14 @@ static int DUMP_FUNC(ASSOC_SHARES_OBJ_LIST)(const parser_t *const parser,
 
 	data_set_list(dst);
 
+	if (!resp->assoc_shares_list) {
+		if (!slurm_conf.accounting_storage_type) {
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Shares list is empty because slurm accounting storage is disabled.");
+		}
+		return SLURM_SUCCESS;
+	}
+
 	if (list_for_each(resp->assoc_shares_list,
 			  _foreach_dump_ASSOC_SHARES_OBJ_LIST, &fargs) < 0)
 		xassert(fargs.rc);
