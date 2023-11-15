@@ -279,8 +279,8 @@ function __slurm_compreply_param() {
 	for param in $options; do
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
-		[[ ${words[*]} =~ ${p}= ]] && continue
-		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && [[ $cword == "${#words[@]}" ]] && continue
+		[[ $p != "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${param}[[:space:]]+ ]] && continue
+		[[ $p == "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
 
