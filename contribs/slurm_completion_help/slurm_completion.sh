@@ -3208,7 +3208,6 @@ function _sacctmgr() {
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
 	__slurm_comp_sacctmgr_flags "$1" && return
-	$split && return
 
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
@@ -3361,6 +3360,7 @@ function _scancel() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_scancel_flags "$1" && return
+	$split && return
 
 	__slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)"
 }
@@ -5086,11 +5086,7 @@ function __slurm_comp_sreport_spec_all() {
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	*)
-		$split && return 1
-		__slurm_compreply_param "${parameters[*]}"
-		return 1
-		;;
+	*) return 1 ;;
 	esac
 
 	return 0
@@ -5316,12 +5312,6 @@ function _sreport() {
 		comp_cmd="__${comp_cmd}_${subcmd//[^[:alnum:]]/}"
 		__slurm_comp_command "${comp_cmd}"
 	fi
-
-	$split && return
-
-	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
-		__slurm_compreply "--"
-	fi
 }
 complete -o nospace -F _sreport sreport
 
@@ -5475,12 +5465,13 @@ function _strigger() {
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
+	__slurm_comp_strigger_flags "$1" && return
+
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
 		return
 	fi
 
-	__slurm_comp_strigger_flags "$1" && return
 	$split && return
 
 	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
