@@ -215,8 +215,6 @@ proc cleanup {} {
 	remove_cluster "$cluster2"
 }
 
-cleanup
-
 # Add clusters
 if [add_cluster $cluster1 [array get clus_req]] {
 	fail "Unable to add cluster 1"
