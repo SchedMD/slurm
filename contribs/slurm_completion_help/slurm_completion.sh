@@ -5131,9 +5131,8 @@ function __sreport_cluster() {
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5182,9 +5181,8 @@ function __sreport_job() {
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5217,9 +5215,8 @@ function __sreport_reservation() {
 	name?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5254,9 +5251,8 @@ function __sreport_user() {
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
