@@ -27,7 +27,7 @@ restarted to initially enable power saving mode.
 Changes in the configuration parameters (e.g. <i>SuspendTime</i>)
 will take effect after modifying the <i>slurm.conf</i> configuration
 file and executing "<i>scontrol reconfig</i>".
-The following configuration parameters are available:
+The following configuration parameters are available:</p>
 <ul>
 
 <li><b>SuspendTime</b>:
@@ -147,7 +147,7 @@ If set to <b>NO</b> then power saving will operate
 as configured for the partition.
 The default value is <b>NO</b>.</li>
 
-</ul></p>
+</ul>
 
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as
 <i>SlurmUser</i> on the node where the <i>slurmctld</i> daemon runs
@@ -192,7 +192,7 @@ done
 </pre>
 
 <p>Subject to the various rates, limits and exclusions, the power save
-code follows this logic:
+code follows this logic:</p>
 <ol>
 <li>Identify nodes which have been idle for at least <b>SuspendTime</b>.</li>
 <li>Execute <b>SuspendProgram</b> with an argument of the idle node names.</li>
@@ -205,7 +205,7 @@ allocated to it.</li>
 <b>SlurmdTimeout</b>, the node will be marked DOWN and the job requeued
 if possible.</li>
 <li>Repeat indefinitely.</li>
-</ol></p>
+</ol>
 
 <h2 id="allocations">Use of Allocations
 <a class="slurm_link" href="#allocations"></a>
@@ -261,7 +261,7 @@ ten seconds of starting to guarantee that it still exists.
 
 <p>If you want <b>ResumeProgram</b> to boot various images according to
 job specifications, it will need to be a fairly sophisticated program
-and perform the following actions:
+and perform the following actions:</p>
 <ol>
 <li>Determine which jobs are associated with the nodes to be booted</li>
 <li>Determine which image is required for each job and</li>
