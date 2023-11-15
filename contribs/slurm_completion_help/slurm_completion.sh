@@ -4079,7 +4079,7 @@ function __scontrol_update_jobid() {
 	stdout) _filedir ;;
 	shared) __slurm_compreply "$(__slurm_boolean)" ;;
 	userid?(s)) __slurm_compreply "$(__slurm_users)" ;;
-	wckey?(s)) __slurm_compreply "$(__slurm_wckey)" ;;
+	wckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
 	workdir) _filedir -d ;;
 	*)
 		$split && return
@@ -5128,7 +5128,7 @@ function __sreport_cluster() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
 		$split && return 1
@@ -5179,7 +5179,7 @@ function __sreport_job() {
 	job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" ;;
 	partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
 		$split && return 1
@@ -5252,7 +5252,7 @@ function __sreport_user() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
 		$split && return 1
 		__slurm_compreply_param "${parameters[*]}"
