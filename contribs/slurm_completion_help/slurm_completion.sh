@@ -5471,11 +5471,5 @@ function _strigger() {
 		__slurm_compreply "${subcmds[*]}"
 		return
 	fi
-
-	$split && return
-
-	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
-		__slurm_compreply "--"
-	fi
 }
 complete -o nospace -F _strigger strigger
