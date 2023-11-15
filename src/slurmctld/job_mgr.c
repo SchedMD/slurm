@@ -9270,7 +9270,7 @@ extern bool valid_gres_name(char *name)
 }
 
 /*
- * Increment time limit of one job record for node configuraiton.
+ * Increment time limit of one job record for node configuration.
  */
 static void _job_time_limit_incr(job_record_t *job_ptr, uint32_t boot_job_id)
 {
@@ -9292,7 +9292,7 @@ static void _job_time_limit_incr(job_record_t *job_ptr, uint32_t boot_job_id)
 }
 
 /*
- * Increment time limit for all components of a hetjob for node configuraiton.
+ * Increment time limit for all components of a hetjob for node configuration.
  * job_ptr IN - pointer to job record for which configuration is complete
  * boot_job_id - job ID of record with newly powered up node or 0
  */
