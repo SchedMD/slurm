@@ -1636,7 +1636,8 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	      __func__, context_id, get_http_method_string(method),
 	      data_parser_get_plugin(ctxt.parser));
 
-	if (!(ctxt.db_conn = openapi_get_db_conn(auth))) {
+	if (slurm_conf.accounting_storage_type &&
+	    !(ctxt.db_conn = openapi_get_db_conn(auth))) {
 		openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION), __func__,
 				   "openapi_get_db_conn() failed to open slurmdb connection");
 	} else {
