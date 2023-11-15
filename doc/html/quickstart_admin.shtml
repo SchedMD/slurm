@@ -762,22 +762,22 @@ that represent both the major Slurm release and maintenance release level.
 The first two parts combine together to represent the major release, and match
 the year and month of that major release. The third number in the version
 designates a specific maintenance level:
-year.month.maintenance-release (e.g. 21.08.2 is major Slurm release 21.08, and
-maintenance version 2).
-Thus version 21.08.x was initially released in August 2021.
+year.month.maintenance-release (e.g. 23.11.1 is major Slurm release 23.11, and
+maintenance version 1).
+Thus version 23.11.x was initially released in November 2023.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>21.08.x (Released August 2021)</li>
 <li>22.05.x (Released May 2022)</li>
 <li>23.02.x (Released February 2023)</li>
+<li>23.11.x (Released November 2023)</li>
 </ul>
 
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
-In other words, when changing the version to a higher release number (e.g
-from 21.08.x to 22.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
+In other words, when changing the version to a higher release number (e.g.
+from 23.02.x to 23.11.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables. This must complete <b>before</b>
 upgrading slurmctld.
@@ -821,8 +821,8 @@ Also see the note above about reverse compatibility.</p>
 <p>Almost every new major release of Slurm (e.g. 22.05.x to 23.02.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades to a new major release from the past two major releases,
-which happen every nine months (e.g. 21.08.x or 22.05.x to 23.02.x) without loss of
-jobs or other state information.
+which happen every nine months (e.g. 22.05.x or 23.02.x to 23.11.x) without loss
+of jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
 State files are <b>not</b> recognized when downgrading (e.g. from 23.02.x to 22.05.x)
@@ -882,8 +882,8 @@ of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
 recompiled.</p>
 
 <p>Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 23.02.x SlurmDBD will support slurmctld daemons and
-commands with a version of 23.02.x, 22.05.x or 21.08.x).
+releases (e.g. a version 23.11.x SlurmDBD will support slurmctld daemons and
+commands with a version of 23.11.x, 23.02.x or 22.05.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the maintenance release number generally only include bug fixes,
