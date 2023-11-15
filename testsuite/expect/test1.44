@@ -82,17 +82,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		} else {
 			set message "stdout is incomplete ($stdout_lines != $stdin_lines)"
 		}
-
-		# TODO: Temporary debug to troubleshoot bug 14449 (remove once fixed)
-		if {[file exists $file_err] && [file size $file_err] > 0} {
-			error = run_command_output "cat $file_err"
-			log_debug "srun produced an error: $error"
-		} else {
-			log_debug "srun did not produce any errors"
-		}
-		sleep 30
-		log_debug "File output line count was [get_line_cnt $file_out] after 30 additional seconds"
-
 		fail $message
 	}
 }
