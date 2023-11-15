@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     "BadConstraints".
  -- Fix verbose log message printing a hex number instead of a job id.
  -- Upgrade rate limit parameters message from debug to info.
+ -- Fix missing symbols for those linking to libslurm.
 
 * Changes in Slurm 23.11.0rc1
 =============================

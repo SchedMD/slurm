@@ -1301,6 +1301,11 @@ $(VERSION_SCRIPT) :
 	 echo "   switch_record_cnt;"; \
 	 echo "   switch_levels;"; \
 	 echo "   switch_record_table;"; \
+	 echo "   bblock_node_cnt;"; \
+	 echo "   block_levels;"; \
+	 echo "   block_record_cnt;"; \
+	 echo "   block_record_table;"; \
+	 echo "   blocks_nodes_bitmap;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
