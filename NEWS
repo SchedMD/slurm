@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
     pseudoterminal (--pty) requested.
  -- Fix loading in dyanmic/cloud node jobs after net_cred expired.
  -- Fix cgroup null path error on slurmd/slurmstepd tear down.
+ -- data_parser/v0.0.40 - Prevent failure if accounting is disabled, instead
+    issue a warning if needed data from the database can not be retrieved.
+ -- openapi/slurmctld - Prevent failure if accounting is disabled.
 
 * Changes in Slurm 23.11.1
 ==========================
