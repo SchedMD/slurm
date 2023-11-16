@@ -124,7 +124,6 @@
 #include "src/slurmd/slurmstepd/x11_forwarding.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
-#define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
 step_complete_t step_complete = {
 	PTHREAD_COND_INITIALIZER,
@@ -2699,7 +2698,7 @@ _send_launch_resp(stepd_step_rec_t *step, int rc)
 static int
 _send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
 {
-	int		rc, i, msg_rc;
+	int rc;
 	slurm_msg_t	req_msg;
 	complete_batch_script_msg_t req;
 
@@ -2721,17 +2720,15 @@ _send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
 		 slurm_strerror(err), status);
 
 	/* Note: these log messages don't go to slurmd.log from here */
-	for (i = 0; i <= MAX_RETRY; i++) {
-		msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc,
-							   working_cluster_rec);
-		if (msg_rc == SLURM_SUCCESS)
-			break;
-		info("Retrying job complete RPC for %ps", &step->step_id);
+
+	/*
+	 * Retry batch complete RPC, send to slurmctld indefinitely.
+	 */
+	while (slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+						 working_cluster_rec)) {
+		info("Retrying job complete RPC for %ps [sleeping %us]",
+		     &step->step_id, RETRY_DELAY);
 		sleep(RETRY_DELAY);
-	}
-	if (i > MAX_RETRY) {
-		error("Unable to send job complete message: %m");
-		return SLURM_ERROR;
 	}
 
 	if ((rc == ESLURM_ALREADY_DONE) || (rc == ESLURM_INVALID_JOB_ID))
