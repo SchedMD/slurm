@@ -803,6 +803,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			} else
 				node_names = &thread_ptr[i].nodename;
 
+			if (!is_ret_list && !(*node_names))
+				goto finished;
+
 			switch (state) {
 			case DSH_NO_RESP:
 				if (!locked) {
