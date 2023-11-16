@@ -47,6 +47,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define LEAP_YEAR(y) ((y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0))
+
 extern cron_entry_t *new_cron_entry(void)
 {
 	cron_entry_t *entry = xmalloc(sizeof(*entry));
@@ -275,13 +277,7 @@ static int _days_in_month(struct tm *tm)
 
 	switch (tm->tm_mon) {
 	case 1:
-		/* (ab)use mktime() to figure out leap years for februrary */
-		struct tm test = { 0 };
-		test.tm_year = tm->tm_year;
-		test.tm_mon = 1;
-		test.tm_mday = 29;
-		slurm_mktime(&test);
-		days_in_month = (test.tm_mon == 1) ? 29 : 28;
+		days_in_month = LEAP_YEAR(tm->tm_year) ? 29 : 28;
 		break;
 	case 3:
 	case 5:
