@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Upgrade rate limit parameters message from debug to info.
  -- Fix missing symbols for those linking to libslurm.
  -- Fix memory leak when getting and forwarding addrs from client.
+ -- Fix xassert when forwarding to non-addressable nodes.
 
 * Changes in Slurm 23.11.0rc1
 =============================
