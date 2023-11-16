@@ -757,7 +757,7 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 	}
 
 	while ((name = hostlist_next(itr))) {
-		slurm_node_alias_addrs_t *alias_addrs;
+		slurm_node_alias_addrs_t *alias_addrs = NULL;
 		char *nodelist;
 		bool dynamic;
 
