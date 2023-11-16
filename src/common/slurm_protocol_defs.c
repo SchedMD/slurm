@@ -7154,14 +7154,6 @@ extern char *slurm_get_tres_sub_string(
 				    &name, &type,
 				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
 	       save_ptr) {
-		if (!name) {
-			error("%s doesn't have a name! %s",
-			      tres_type, full_tres_str);
-			xfree(type);
-			if (free_tres_type)
-				xfree(tres_type);
-			break;
-		}
 
 		if (num_tasks != NO_VAL)
 			cnt *= num_tasks;
@@ -7169,10 +7161,14 @@ extern char *slurm_get_tres_sub_string(
 		if (sub_tres)
 			xstrcatat(sub_tres, &sub_tres_pos, ",");
 		if (include_tres_type)
-			xstrfmtcatat(sub_tres, &sub_tres_pos, "%s/", tres_type);
-		xstrfmtcatat(sub_tres, &sub_tres_pos, "%s", name);
-		if (include_type && type)
-			xstrfmtcatat(sub_tres, &sub_tres_pos, ":%s", type);
+			xstrfmtcatat(sub_tres, &sub_tres_pos, "%s%s", tres_type,
+				     name ? "/" : "");
+		if (name) {
+			xstrfmtcatat(sub_tres, &sub_tres_pos, "%s", name);
+			if (include_type && type)
+				xstrfmtcatat(sub_tres, &sub_tres_pos, ":%s",
+					     type);
+		}
 		xstrfmtcatat(sub_tres, &sub_tres_pos, "=%"PRIu64, cnt);
 		if (free_tres_type)
 			xfree(tres_type);
