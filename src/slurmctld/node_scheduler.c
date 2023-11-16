@@ -3554,6 +3554,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			       __func__, job_ptr,
 			       job_reason_string(job_ptr->state_reason),
 			       slurm_strerror(rc));
+			FREE_NULL_BITMAP(usable_node_mask);
 			return rc;
 		}
 	}
