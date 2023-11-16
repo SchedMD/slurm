@@ -467,6 +467,38 @@ function __slurm_find_subcmd() {
 	echo "${item}"
 }
 
+# Search words[@] for an item from input array
+#
+# $1: string to find position of
+# RET: subcommand position
+function __slurm_find_subcmd_pos() {
+	local item="$1"
+	local found=false
+	local IFS=$' \t\n'
+
+	__slurm_log_debug "$(__func__): item='$item'"
+	__slurm_log_trace "$(__func__): #words[@]='${#words[@]}'"
+	__slurm_log_trace "$(__func__): words[*]='${words[*]}'"
+
+	local c=1 word=""
+	while [[ $c -lt ${cword-1} ]]; do
+		word="${words[c]}"
+		__slurm_log_trace "$(__func__): while loop: c='$c' word='$word'"
+		if [[ ${item} == "${word}" ]]; then
+			found=true
+			break
+		fi
+		((c++))
+	done
+
+	if [[ $found == true ]]; then
+		echo "${c}"
+	else
+		echo "-1"
+		return 1
+	fi
+}
+
 # Search words[@] for any parameters from given array
 #
 # $1: parameter array
@@ -1893,6 +1925,11 @@ function __slurm_comp_mode_select() {
 	local condition_set
 	condition_set="$(__slurm_find_subcmd "${conditions[1]}")"
 
+	local where_pos="-1"
+	where_pos="$(__slurm_find_subcmd_pos "${conditions[0]}")"
+	local set_pos="-1"
+	set_pos="$(__slurm_find_subcmd_pos "${conditions[1]}")"
+
 	__slurm_log_debug "$(__func__): mode='$mode' condition_where='$condition_where' condition_set='$condition_set'"
 	__slurm_log_trace "$(__func__): #parameters_where[@]='${#parameters_where[@]}'"
 	__slurm_log_trace "$(__func__): parameters_where[*]='${parameters_where[*]}'"
@@ -1904,34 +1941,30 @@ function __slurm_comp_mode_select() {
 	__slurm_log_trace "$(__func__): options[*]='${options[*]}'"
 
 	case "${mode}" in
-	0) # delete/remove
+	0) # sacctmgr delete/remove <ENTITY> where <SPECS>
 		# only use 'where' parameters
 		parameters+=("${conditions[0]}")
-		parameters+=("${parameters_where[@]}")
-		;;
-	1) # list/show
-		# use 'where' parameters and 'options'
-		parameters+=("${conditions[0]}")
-		if [[ -z $condition_where ]]; then
-			parameters+=("${options[@]}")
-			parameters+=("format=")
+		if [[ -n $condition_where ]]; then
+			parameters+=("${parameters_where[@]}")
 		fi
-		parameters+=("${parameters_where[@]}")
 		;;
-	2) # add/create
+	1) # sacctmgr list/show <ENTITY> [<SPECS>]
+		# use 'where' parameters and 'options'
+		parameters+=("${parameters_where[@]}")
+		parameters+=("${options[@]}")
+		parameters+=("format=")
+		;;
+	2) # sacctmgr add/create <ENTITY> <SPECS>
 		# use 'where' and 'set' parameters
-		parameters+=("${conditions[0]}")
 		parameters+=("${parameters_where[@]}")
 		parameters+=("${parameters_set[@]}")
 		;;
-	3) # modify/update
+	3) # sacctmgr modify/update <ENTITY> where <SPECS> set <SPECS>
 		# use 'where' parameters, or 'set' parameters
 		parameters+=("${conditions[@]}")
-		if [[ -n $condition_where ]]; then
-			parameters+=("${parameters_where[@]}")
-		elif [[ -n $condition_set ]]; then
+		if [[ -n $condition_set ]] && ((set_pos > where_pos)); then
 			parameters+=("${parameters_set[@]}")
-		else
+		elif [[ -n $condition_where ]] && ((where_pos > set_pos)); then
 			parameters+=("${parameters_where[@]}")
 		fi
 		;;
@@ -1997,11 +2030,14 @@ function __slurm_comp_sacctmgr_spec_associations() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2046,12 +2082,15 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 	__slurm_comp_sacctmgr_spec_associations "$mode" && return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2104,12 +2143,15 @@ function __slurm_comp_sacctmgr_spec_clusters() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 	__slurm_comp_sacctmgr_spec_associations "$mode" && return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2142,11 +2184,14 @@ function __slurm_comp_sacctmgr_spec_coordinators() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2203,11 +2248,14 @@ function __slurm_comp_sacctmgr_spec_events() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2243,11 +2291,14 @@ function __slurm_comp_sacctmgr_spec_federations() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)?(+|-)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2281,11 +2332,14 @@ function __slurm_comp_sacctmgr_spec_instances() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2326,11 +2380,14 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2415,11 +2472,14 @@ function __slurm_comp_sacctmgr_spec_qos() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
@@ -2457,11 +2517,14 @@ function __slurm_comp_sacctmgr_spec_reservations() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2507,11 +2570,14 @@ function __slurm_comp_sacctmgr_spec_resources() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2549,11 +2615,14 @@ function __slurm_comp_sacctmgr_spec_transactions() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2593,11 +2662,14 @@ function __slurm_comp_sacctmgr_spec_tres() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	type?(s)) __slurm_compreply "${types[*]}" ;;
@@ -2644,12 +2716,15 @@ function __slurm_comp_sacctmgr_spec_users() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 	__slurm_comp_sacctmgr_spec_associations "$mode" && return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
@@ -2688,11 +2763,14 @@ function __slurm_comp_sacctmgr_spec_wckeys() {
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
 
-	__slurm_comp_mode_select "$mode"
+	__slurm_comp_mode_select "$mode" || return
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split || return
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
