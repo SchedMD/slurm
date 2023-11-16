@@ -180,6 +180,7 @@ new Slurm release.</p>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
 <br>
 <li>Komoto Masahiro</li>
+<li>Skyler Malinowski (SchedMD)</li>
 <li>L. Shawn Matott (University at Buffalo)</li>
 <li>Dennis McRitchie (Princeton University)</li>
 <li>Steven McDougall (SiCortex)</li>
@@ -298,6 +299,6 @@ new Slurm release.</p>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 9 May 2022</p>
+<p style="text-align:center;">Last modified 16 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
