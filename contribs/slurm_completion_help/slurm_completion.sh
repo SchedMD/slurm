@@ -5105,6 +5105,7 @@ function __slurm_comp_squeue_flags() {
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	-R | --reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
+	-s | --steps) __slurm_compreply_list "$(__slurm_jobsteps)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
