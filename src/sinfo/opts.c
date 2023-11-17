@@ -65,6 +65,7 @@
 #define OPT_LONG_AUTOCOMP  0x108
 #define OPT_LONG_HELPFORMAT 0x109
 #define OPT_LONG_HELPFORMAT2 0x110
+#define OPT_LONG_HELPSTATE 0x111
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -85,6 +86,7 @@ static void  _parse_long_token(char *token, char *sep, int *field_size,
 			       bool *right_justify, char **suffix);
 static void  _print_options(void);
 static void  _usage(void);
+static void _print_node_states(void);
 
 /*
  * parse_command_line, fill in params data structure with data
@@ -108,6 +110,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"helpformat",no_argument,       0, OPT_LONG_HELPFORMAT},
 		{"helpFormat",no_argument,       0, OPT_LONG_HELPFORMAT2},
+		{"helpstate", no_argument,       0, OPT_LONG_HELPSTATE},
 		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",   required_argument, 0, 'i'},
 		{"local",     no_argument,       0, OPT_LONG_LOCAL},
@@ -333,6 +336,9 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_HELPFORMAT2:
 			_help_format2();
+			exit(0);
+		case OPT_LONG_HELPSTATE:
+			_print_node_states();
 			exit(0);
 			break;
 		}
@@ -579,6 +585,20 @@ _node_state_list (void)
 	return (all_states);
 }
 
+static void _print_node_states(void)
+{
+	char *states = xstrdup(_node_state_list());
+
+	for (uint32_t i = 0; states[i]; i++){
+		if (states[i] == ',')
+			states[i] = '\n';
+	}
+
+	if (states)
+		printf("%s\n", states);
+
+	xfree(states);
+}
 
 static bool
 _node_state_equal (int i, const char *str)
@@ -1061,6 +1081,8 @@ Usage: sinfo [OPTIONS]\n\
                              with '--format=' option\n\
   --helpFormat               print a list of fields that can be specified\n\
                              with '--Format=' option\n\
+  --helpstate                print a list of states that can use specified\n\
+                             with '--states=' option\n\
   --usage                    display brief usage message\n");
 }
 

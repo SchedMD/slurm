@@ -4588,32 +4588,6 @@ function __slurm_comp_sinfo_flags() {
 	local cmd="$1"
 	local _options=()
 	local _compreply=()
-	local states=(
-		"allocated"
-		"cloud"
-		"completing"
-		"down"
-		"drain"
-		"drained"
-		"draining"
-		"fail"
-		"future"
-		"idle"
-		"maint"
-		"mixed"
-		"no_respond"
-		"perfctrs"
-		"planned"
-		"power_down"
-		"powering_down"
-		"powered_down"
-		"powering_up"
-		"reboot"
-		"reboot^"
-		"reserved"
-		"unknown"
-		"?"
-	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
@@ -4634,7 +4608,7 @@ function __slurm_comp_sinfo_flags() {
 		_compreply+=("$(compgen -W "${_options[*]}" -P "-")") # descending
 		__slurm_compreply_list "${_compreply[*]}"
 		;;
-	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
+	-t | --state?(s)) __slurm_compreply_list "$(__slurm_helpstate "$cmd")" "ALL" ;;
 	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
 	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
 	*) return 1 ;;
