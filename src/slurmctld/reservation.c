@@ -306,7 +306,7 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 		false, false);
 	if (tres_sub_str) {
 		if (resv_desc_ptr->licenses)
-			return SLURM_ERROR;
+			return ESLURM_INVALID_LICENSES;
 		resv_desc_ptr->licenses = tres_sub_str;
 		tres_sub_str = NULL;
 	}
@@ -316,7 +316,7 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 		false, false);
 	if (tres_sub_str) {
 		if (resv_desc_ptr->core_cnt != NO_VAL)
-			return SLURM_ERROR;
+			return ESLURM_INVALID_CPU_COUNT;
 		resv_desc_ptr->core_cnt = atoi(tres_sub_str + 1);
 		xfree(tres_sub_str);
 	}
@@ -326,7 +326,7 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 		false, false);
 	if (tres_sub_str) {
 		if (resv_desc_ptr->node_cnt != NO_VAL)
-			return SLURM_ERROR;
+			return ESLURM_INVALID_NODE_COUNT;
 		resv_desc_ptr->node_cnt = atoi(tres_sub_str + 1);
 		xfree(tres_sub_str);
 	}
@@ -336,7 +336,7 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 		false, false);
 	if (tres_sub_str) {
 		if (resv_desc_ptr->burst_buffer)
-			return SLURM_ERROR;
+			return ESLURM_INVALID_BURST_BUFFER_REQUEST;
 		resv_desc_ptr->burst_buffer = tres_sub_str;
 		tres_sub_str = NULL;
 	}
@@ -2904,6 +2904,27 @@ static bool _has_multiple_reoccurring(resv_desc_msg_t *resv_desc_ptr){
 	return (flag_count > 1);
 }
 
+static void _set_tres_err_msg(char **err_msg, int rc)
+{
+	if (!err_msg)
+		return;
+
+	switch (rc) {
+	case ESLURM_INVALID_BURST_BUFFER_REQUEST:
+		*err_msg = xstrdup("TRES=<buffer_spec>=<num> and BurstBuffer=<buffer_spec> are mutually exclusive");
+		break;
+	case ESLURM_INVALID_CPU_COUNT:
+		*err_msg = xstrdup("TRES=cpu=<num> and CoreCnt=<num> are mutually exclusive");
+		break;
+	case ESLURM_INVALID_LICENSES:
+		*err_msg = xstrdup("TRES=license/<name>=<num> and Licenses=<name>:<num> are mutually exclusive");
+		break;
+	case ESLURM_INVALID_NODE_COUNT:
+		*err_msg = xstrdup("TRES=node=<num> and Nodes=<num> are mutually exclusive");
+		break;
+	}
+}
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
@@ -2921,8 +2942,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 	_create_resv_lists(false);
 
-	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS)
+	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS) {
+		_set_tres_err_msg(err_msg, rc);
 		return rc;
+	}
 
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
@@ -3426,8 +3449,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	bool append_magnetic_resv = false, remove_magnetic_resv = false;
 	job_record_t *job_ptr;
 
-	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS)
+	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS) {
+		_set_tres_err_msg(err_msg, rc);
 		return rc;
+	}
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
