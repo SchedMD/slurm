@@ -4028,6 +4028,11 @@ function __scontrol_update_frontendname() {
 	esac
 }
 
+# completion handler for: scontrol update jobname=* [key=val]...
+function __scontrol_update_jobname() {
+	__scontrol_update_jobid
+}
+
 # completion handler for: scontrol update jobid=* [key=val]...
 function __scontrol_update_jobid() {
 	local parameters=(
@@ -4050,8 +4055,8 @@ function __scontrol_update_jobid() {
 		"extra="
 		"features="
 		"gres="
-		"jobid=" # meta
-		"jobname="
+		"jobid="   # meta
+		"jobname=" # meta
 		"licenses="
 		"mailtype="
 		"mailuser="
@@ -4129,7 +4134,7 @@ function __scontrol_update_jobid() {
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	gres) __slurm_compreply_list "$(__slurm_gres)" ;;
 	jobid?(s)) __slurm_compreply "$(__slurm_jobs)" ;;
-	jobname?(s)) __slurm_compreply_list "$(__slurm_jobnames)" ;;
+	jobname?(s)) __slurm_compreply "$(__slurm_jobnames)" ;;
 	license?(s)) __slurm_compreply_list "$(__slurm_licenses)" ;;
 	mailtype?(s)) __slurm_compreply_list "${mail_types[*]}" ;;
 	mailuser?(s)) __slurm_compreply "$(__slurm_users)" ;;
@@ -4484,6 +4489,7 @@ function __scontrol_update() {
 	local parameters=(
 		"frontendname="
 		"jobid="
+		"jobname="
 		"nodename="
 		"partitionname="
 		"reservationname="
