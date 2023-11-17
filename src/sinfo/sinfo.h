@@ -162,6 +162,17 @@ typedef struct {
 #define MATCH_FLAG_VERSION		SLURM_BIT(38)
 #define MATCH_FLAG_WEIGHT		SLURM_BIT(39)
 
+/* Flags for fmt_data_t */
+#define FMT_FLAG_HIDDEN			SLURM_BIT(0)
+
+typedef struct fmt_data {
+	char *name;		/* long format name */
+	char c;			/* short format character, prefixed by '%' */
+	int (*fn)(sinfo_data_t *sinfo_data, int width, bool right, char *suffix);
+	uint64_t match_flags;	/* See MATCH_FLAG_* */
+	uint32_t flags;		/* See FMT_FLAG_* */
+} fmt_data_t;
+
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;

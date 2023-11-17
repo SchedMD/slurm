@@ -73,108 +73,10 @@ int  print_sinfo_entry(sinfo_data_t *sinfo_data);
 int  print_sinfo_list(List sinfo_list);
 void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 
-#define format_add_avail(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_avail)
-#define format_add_cpus(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_cpus)
-#define format_add_cpus_aiot(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_cpus_aiot)
-#define format_add_sct(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_sct)
-#define format_add_sockets(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_sockets)
-#define format_add_cores(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_cores)
-#define format_add_threads(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_threads)
-#define format_add_disk(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_disk)
-#define format_add_extra(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_extra)
-#define format_add_features(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_features)
-#define format_add_features_act(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_features_act)
-#define format_add_groups(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_groups)
-#define format_add_gres(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_gres)
-#define format_add_gres_used(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_gres_used)
-#define format_add_memory(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_memory)
-#define format_add_node_address(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_node_address)
-#define format_add_node_hostnames(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_node_hostnames)
-#define format_add_node_list(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_node_list)
-#define format_add_nodes(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_nodes_t)
-#define format_add_nodes_aiot(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_nodes_aiot)
-#define format_add_nodes_ai(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_nodes_ai)
-#define format_add_partition(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_partition)
-#define format_add_partition_name(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_partition_name)
-#define format_add_port(list, wid, right, suffix) \
-	format_add_function(list, wid, right, suffix, _print_port)
 #define format_add_prefix(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_prefix)
-#define format_add_preempt_mode(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_preempt_mode)
-#define format_add_priority_job_factor(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_priority_job_factor)
-#define format_add_priority_tier(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_priority_tier)
-#define format_add_comment(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_comment)
-#define format_add_reason(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_reason)
-#define format_add_resv_name(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_resv_name)
-#define format_add_root(list,wid,right,prefix) \
-	format_add_function(list,wid,right,prefix,_print_root)
-#define format_add_oversubscribe(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_oversubscribe)
-#define format_add_size(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_size)
-#define format_add_state_compact(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_state_compact)
-#define format_add_state_complete(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_state_complete)
-#define format_add_state_long(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_state_long)
-#define format_add_time(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_time)
-#define format_add_timestamp(list,wid,right,suffix)		\
-	format_add_function(list,wid,right,suffix,_print_timestamp)
-#define format_add_user(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_user)
-#define format_add_user_long(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_user_long)
-#define format_add_default_time(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_default_time)
-#define format_add_weight(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_weight)
-#define format_add_alloc_nodes(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_alloc_nodes)
 #define format_add_invalid(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_com_invalid)
-#define format_add_cpu_load(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_cpu_load)
-#define format_add_free_mem(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_free_mem)
-#define format_add_max_cpus_per_node(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_max_cpus_per_node)
-#define format_add_version(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_version)
-#define format_add_alloc_mem(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_alloc_mem)
-#define format_add_cluster_name(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_cluster_name)
 #define format_prepend_cluster_name(list,wid,right,suffix) \
 	format_prepend_function(list,wid,right,suffix,_print_cluster_name)
 
