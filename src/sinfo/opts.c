@@ -63,6 +63,8 @@
 #define OPT_LONG_JSON      0x106
 #define OPT_LONG_YAML      0x107
 #define OPT_LONG_AUTOCOMP  0x108
+#define OPT_LONG_HELPFORMAT 0x109
+#define OPT_LONG_HELPFORMAT2 0x110
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -70,6 +72,8 @@ static List  _build_all_states_list( void );
 static List  _build_part_list( char *parts );
 static char *_get_prefix(char *token);
 static void  _help( void );
+static void _help_format(void);
+static void _help_format2(void);
 static int   _parse_format(char *);
 static int   _parse_long_format(char *);
 static bool  _node_state_equal(int state_id, const char *state_str);
@@ -102,6 +106,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"federation",no_argument,       0, OPT_LONG_FEDR},
 		{"future",    no_argument,       0, 'F'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
+		{"helpformat",no_argument,       0, OPT_LONG_HELPFORMAT},
+		{"helpFormat",no_argument,       0, OPT_LONG_HELPFORMAT2},
 		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",   required_argument, 0, 'i'},
 		{"local",     no_argument,       0, OPT_LONG_LOCAL},
@@ -319,6 +325,14 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
+			exit(0);
+			break;
+		case OPT_LONG_HELPFORMAT:
+			_help_format();
+			exit(0);
+			break;
+		case OPT_LONG_HELPFORMAT2:
+			_help_format2();
 			exit(0);
 			break;
 		}
@@ -1043,5 +1057,53 @@ Usage: sinfo [OPTIONS]\n\
   --yaml[=data_parser]       Produce YAML output\n\
 \nHelp options:\n\
   --help                     show this help message\n\
+  --helpformat               print a list of fields that can be specified\n\
+                             with '--format=' option\n\
+  --helpFormat               print a list of fields that can be specified\n\
+                             with '--Format=' option\n\
   --usage                    display brief usage message\n");
+}
+
+static void _help_format(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data[i].c || fmt_data[i].name; i++) {
+		if (!fmt_data[i].c)
+			continue;
+		if (fmt_data[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 8) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%%%-5c", fmt_data[i].c);
+	}
+	printf("\n");
+}
+
+static void _help_format2(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data[i].c || fmt_data[i].name; i++) {
+		if (!fmt_data[i].name)
+			continue;
+		if (fmt_data[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 4) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%-20s", fmt_data[i].name);
+	}
+	printf("\n");
 }

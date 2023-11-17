@@ -4586,81 +4586,8 @@ complete -o nospace -F _sdiag sdiag
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_sinfo_flags() {
 	local cmd="$1"
-	local fields=(
-		"%a" "%A"
-		"%b" "%B"
-		"%c" "%C"
-		"%d" "%D"
-		"%e" "%E"
-		"%f" "%F"
-		"%g" "%G"
-		"%h" "%H"
-		"%I"
-		"%l" "%L"
-		"%m" "%M"
-		"%n" "%N"
-		"%o" "%O"
-		"%p" "%P"
-		"%r" "%R"
-		"%s" "%S"
-		"%t" "%T"
-		"%u" "%U"
-		"%v" "%V"
-		"%w"
-		"%X"
-		"%Y"
-		"%z" "%Z"
-	)
-	local fields_long=(
-		"allocmem"
-		"allocnodes"
-		"available"
-		"cluster"
-		"comment"
-		"cores"
-		"cpus"
-		"cpusload"
-		"cpusstate"
-		"defaulttime"
-		"disk"
-		"extra"
-		"features"
-		"features_act"
-		"freemem"
-		"gres"
-		"gresused"
-		"groups"
-		"maxcpuspernode"
-		"memory"
-		"nodeaddr"
-		"nodeai"
-		"nodeaiot"
-		"nodehost"
-		"nodelist"
-		"nodes"
-		"oversubscribe"
-		"partition"
-		"partitionname"
-		"port"
-		"preemptmode"
-		"priorityjobfactor"
-		"prioritytier"
-		"reason"
-		"root"
-		"size"
-		"socketcorethread"
-		"sockets"
-		"statecompact"
-		"statelong"
-		"statecomplete"
-		"threads"
-		"time"
-		"timestamp"
-		"user"
-		"userlong"
-		"version"
-		"weight"
-	)
+	local _options=()
+	local _compreply=()
 	local states=(
 		"allocated"
 		"cloud"
@@ -4696,11 +4623,17 @@ function __slurm_comp_sinfo_flags() {
 	case "${prev}" in
 	-i | --iterate) ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-o | --format) __slurm_compreply_list "${fields[*]}" "%ALL" ;;     # TODO: want --helpformat
-	-O | --Format) __slurm_compreply_list "${fields_long[*]}" "ALL" ;; # TODO: want --helpformat2
+	-o | --format) __slurm_compreply_list "$(__slurm_helpformat "$cmd" "nocase")" "%ALL" ;;
+	-O | --Format) __slurm_compreply_list "$(__slurm_helpformat2 "$cmd")" "ALL" ;;
 	-n | --node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
-	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
+	-S | --sort)
+		_options=("$(__slurm_helpformat "$cmd" "nocase")")
+		_options=("${_options//%/}")                          # remove '%' prefix
+		_compreply+=("$(compgen -W "${_options[*]}" -P "+")") # ascending
+		_compreply+=("$(compgen -W "${_options[*]}" -P "-")") # descending
+		__slurm_compreply_list "${_compreply[*]}"
+		;;
 	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
 	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;
