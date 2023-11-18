@@ -4823,6 +4823,7 @@ function __slurm_comp_sinfo_flags() {
 	__slurm_is_opt || return 1
 
 	case "${prev}" in
+	-i | --iterate) ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" "%ALL" ;;     # TODO: want --helpformat
 	-O | --Format) __slurm_compreply_list "${fields_long[*]}" "ALL" ;; # TODO: want --helpformat2
@@ -5103,6 +5104,7 @@ function __slurm_comp_squeue_flags() {
 
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
+	-i | --iterate) ;;
 	-o | --format) __slurm_compreply_list "${fields[*]}" ;;      # TODO: want --helpformat
 	-O | --Format) __slurm_compreply_list "${fields_long[*]}" ;; # TODO: want --helpformat2
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
