@@ -6328,43 +6328,22 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
  */
 static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
 {
-	char *tmp_str, *saveptr = NULL, *name, *binding, *end_tok, *end_name;
-	uint64_t count;
-	if (!opt->tres_per_task)
-		return;
+	char *name, *type, *save_ptr = NULL;
+	/* tres_bind only supports gres currently */
+	char *tres_type = "gres";
+	uint64_t cnt;
 
-	tmp_str = xstrdup(opt->tres_per_task);
-	for (name = strtok_r(tmp_str, ",", &saveptr); name;
-	     name = strtok_r(NULL, ",", &saveptr)) {
-		if (xstrncmp(name, "gres/", 5))
-			continue; /* tres_bind only supports gres currently */
-
-		end_name = xstrchr(name, ':');
-		*end_name = '\0';
+	while ((slurm_get_next_tres(&tres_type,
+				    opt->tres_per_task,
+				    &name, &type,
+				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
+	       save_ptr) {
+		 /* Skip any explicitly set binding */
 		if (opt->tres_bind && xstrstr(opt->tres_bind, name))
-			continue; /* Binding explicitly set */
-		*end_name = ':';
-
-		end_tok = xstrchr(name, ',');
-		if (end_tok)
-			*end_tok = '\0';
-		while ((binding = xstrchr(name, ':'))) {
-			binding++;
-			count = slurm_atoul(binding);
-			if (count > 0) {
-				*end_name = '\0';
-				xstrfmtcat(opt->tres_bind,
-					   "%s%s:per_task:%" PRIu64,
-					   opt->tres_bind ? "+" : "", name,
-					   count);
-				*end_name = ':';
-				break;
-			}
-		}
-		if (end_tok)
-			*end_tok = ',';
+			continue;
+		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
+			   opt->tres_bind ? "+" : "", tres_type, name, cnt);
 	}
-	xfree(tmp_str);
 }
 
 static void _validate_tres_per_task(slurm_opt_t *opt)

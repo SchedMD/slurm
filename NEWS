@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     values correctly, instead the absolute value was always returned.
  -- Fix issue where 'scontrol reconfigure' right as the controller was started
     or reconfigured could lead to it shutting down completely.
+ -- Fix --tres-per-task assertion.
 
 * Changes in Slurm 23.11.0rc1
 =============================
