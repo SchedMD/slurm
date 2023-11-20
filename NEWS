@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     starting a slurmd with --extra for a node that did not previously set this.
     This also ensures the extra constraints model works off the current node
     state, not the prior state.
+ -- Fix regression in 23.11.0rc1 where data_t would not decode negative float
+    values correctly, instead the absolute value was always returned.
 
 * Changes in Slurm 23.11.0rc1
 =============================

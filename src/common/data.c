@@ -1790,6 +1790,8 @@ static int _convert_data_float_from_string(data_t *data)
 		double x;
 
 		if (sscanf(&str[i], "%lf%c", &x, &end) == 1) {
+			if (negative)
+				x *= -1;
 			data_set_float(data, x);
 			goto converted;
 		}
