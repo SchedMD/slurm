@@ -1,0 +1,315 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Extra Constraints</h1>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#Configuration">Configuration</a></li>
+<li><a href="#Node_Extra_Data">Node Extra Data</a></li>
+<li><a href="#Job_Submission">Job Submission</a>
+<ul>
+	<li><a href="#Syntax">Syntax</a></li>
+	<li><a href="#Warnings">Warnings</a></li>
+	<li><a href="#Valid">Valid and Invalid Requests</a></li>
+</ul>
+<li><a href="#Examples">Examples</a></li>
+</li>
+</ul>
+
+<h2 id="Overview">Overview
+<a class="slurm_link" href="#Overview"></a>
+</h2>
+<p>
+Extra data may be added to a node, and jobs may request extra constraints
+to filter nodes based on their extra data. This is disabled by
+default, but may be enabled in slurm.conf. <b>Warning</b>: Slurm's backfill
+scheduler cannot accurately plan nodes for jobs whose request extra constraints
+are not immediately satisfied. This means that the more often extra data for
+nodes is changed, the less accurate the backfill scheduler will be.
+</p>
+
+<h2 id="Configuration">Configuration
+<a class="slurm_link" href="#Configuration"></a>
+</h2>
+
+<ul>
+<li>In slurm.conf, configure
+<code>SchedulerParameters=extra_constraints</code></li>
+</ul>
+
+<h2 id="Node_Extra_Data">Node Extra Data
+<a class="slurm_link" href="#Node_Extra_Data"></a>
+</h2>
+<p>
+A node's extra data is a json formatted string. It may be initialized on
+slurmd startup with the --extra flag for slurmd. For example:
+</p>
+<pre>
+slurmd --extra '{ "a": 1.23, "b": true, "c": 0, "foo": "bar", "zed": 23 }'
+</pre>
+<p>
+Or, it may be updated with scontrol. For example:
+</p>
+<pre>
+scontrol update nodename=node123 extra='{ "a": 1.23, "b": true, "c": 0, "foo": "bar", "zed": 23 }'
+</pre>
+<p>
+This defines the features that may be requested by the --extra option in
+salloc, sbatch, and srun. Values may be any string, number, or boolean value.
+</p>
+
+<h2 id="Job_Submission">Job Submission
+<a class="slurm_link" href="#Job_Submission"></a>
+</h2>
+
+<h3 id="Syntax">Syntax
+<a class="slurm_link" href="#Syntax"></a>
+</h3>
+<p>
+The salloc, sbatch, or srun --extra field is an arbitrary string enclosed in
+single or double quotes if using spaces or some special characters.
+</p>
+
+<p>
+If <b>SchedulerParameters=extra_constraints</b> is enabled, this string is used
+for node filtering based on the <i>Extra</i> field in each node.
+</p>
+
+<p>
+The most basic request is structured like this:
+</p>
+
+<pre>
+&lt;key&gt;&lt;comparison_operator&gt;&lt;value&gt;
+</pre>
+
+<p>
+Key and value are arbitrary, but cannot contain any characters that are part
+of operators and cannot contain parentheses. Thus, the following characters
+are not allowed in a key or value:
+</p>
+
+<pre>
+,&amp;|&lt;&gt;=!()
+</pre>
+
+<p>
+The following comparison operators are allowed:
+</p>
+<ul>
+<li><code>=   (equal to)</code></li>
+<li><code>!=  (not equal to)</code></li>
+<li><code>&gt;   (greater than)</code></li>
+<li><code>&gt;=  (greater than or equal to)</code></li>
+<li><code>&lt;   (less than)</code></li>
+<li><code>&lt;=  (less than or equal to)</code></li>
+</ul>
+
+<p>
+Two numbers are equal if their difference is less than 0.00001.
+Numerical suffixes (such as kb or mb) are not supported. If letters are
+interspersed with numbers, then the key or value is considered a string.
+</p>
+
+<p>
+Requests can be joined together with boolean operators.
+</p>
+
+<pre>
+&lt;request&gt;&lt;boolean_operator&gt;&lt;request&gt;
+</pre>
+
+<p>
+The following boolean operators are allowed:
+</p>
+
+<pre>
+&amp;   (AND)
+,   (AND)
+|   (OR)
+</pre>
+
+<p>
+Any number of parentheses may be used to group requests together.
+All boolean operators at any given level of parentheses must be identical.
+Boolean operators at different levels of parentheses may be different.
+For example, this is not allowed:
+</p>
+
+<pre>
+a=1&amp;b=2|c=foobar
+</pre>
+
+<p>
+But this is allowed:
+</p>
+
+<pre>
+(a=1&amp;b=2)|c=foobar
+</pre>
+
+<h3 id="Warnings">Warnings
+<a class="slurm_link" href="#Warnings"></a>
+</h3>
+
+<p>
+Whitespace characters are not treated specially. Any whitespace characters will
+be considered part of a key or value. This means that the following is invalid:
+</p>
+
+<pre>
+--extra " (a=b)"
+</pre>
+
+<p>
+The space at the beginning is parsed as a key of a request. Then the opening
+parenthesis character is recognized as an invalid character for either a key
+or a comparision operator. This request would result in the job being rejected.
+However, this is valid:
+</p>
+
+<pre>
+--extra "( a=b)"
+</pre>
+
+<p>
+This has a single request. The key is " a", the comparison operator is "=", and
+the value is "b".
+</p>
+
+<p>
+This same warning applies to single and double quotes. These are not considered
+special characters, and thus are part of a string. Thus, bar and "bar" are not
+equal.
+</p>
+
+<h3 id="Valid">Valid and Invalid Requests
+<a class="slurm_link" href="#Valid"></a>
+</h3>
+
+<p>
+Here are some examples of <b>valid</b> requests:
+</p>
+
+<pre>
+a=1.23
+a=   b
+a!=1.24
+a!=1.23|foo!=blah
+b=200
+b=true
+foo&lt;baz
+(c&lt;=0.0001&amp;a=1.25)|zed=23.0
+((c&lt;=0.0001&amp;a=1.25)|zed=23.0)&amp;(a&lt;1|b=false|c&gt;=0.00000001)
+((c&lt;=0.0001&amp;a=1.25)|zed=23.0)&amp;(a&lt;1|b=true|c&gt;=0.1)
+</pre>
+
+<p>
+Here are some examples of <b>invalid</b> requests:
+</p>
+
+<p>
+Invalid comparison operator:
+</p>
+<pre>
+a,&lt;=6
+</pre>
+
+<p>
+Trailing operator:
+</p>
+<pre>
+a&lt;=6&lt;=
+</pre>
+
+<p>
+Multiple boolean operators in a row:
+</p>
+<pre>
+a=5&amp;&amp;&amp;b=5
+a=5|||b=5
+</pre>
+
+<p>
+Multiple comparison operators in a row:
+</p>
+<pre>
+a====5
+b&lt;=&lt;=5
+</pre>
+
+<p>
+Parentheses without anything inside:
+</p>
+<pre>
+a=5&amp;()
+</pre>
+
+<p>
+Different boolean operators at a single level of parentheses:
+</p>
+<pre>
+a=5&amp;b=5|c=5
+(a=1)&amp;(b=2)|(c=3)
+</pre>
+
+<p>
+No boolean operator between individual requests:
+</p>
+<pre>
+a=1(b=2)
+(a=1)(b=2)
+(((a=1)b=2))
+</pre>
+
+<h2 id="Examples">Examples
+<a class="slurm_link" href="#Examples"></a>
+</h2>
+<p>
+Given a node with the following extra data:
+</p>
+
+<pre>
+Extra={ "a": 1.23, "b": true, "c": 0, "foo": "bar", "zed": 23 }
+</pre>
+
+<p>
+The following --extra requests are fulfilled by this node:
+</p>
+
+<pre>
+a=1.23
+a!=1.24
+a!=1.23|foo!=blah
+b=200
+b=true
+foo&lt;baz
+(c&lt;=0.0001&amp;a=1.25)|zed=23.0
+((c&lt;=0.0001&amp;a=1.25)|zed=23.0)&amp;(a&lt;1|b=false|c&gt;=0.00000001)
+((c&lt;=0.0001&amp;a=1.25)|zed=23.0)&amp;(a&lt;1|b=true|c&gt;=0.1)
+</pre>
+
+<p>
+The following --extra requests are not fulfilled by this node:
+</p>
+
+<pre>
+a!=1.23
+b=0
+b=false
+foo&gt;baz
+((c<=0.0001&a=1.25)|zed=23.0)&(a<1|b=false|c>=0.00001)
+</pre>
+
+<p>
+Reminder: in order for two numbers to be considered equal, their difference
+must be less than 0.0001. This is why 0.0001 is not considered equal to 0 and
+thus the request <code>c&gt;=0.0001</code> is not fulfilled,
+but 0.00000001 is considered equal to 0 and thus the request
+<code>c&gt;=0.00000001</code> is fulfilled.
+</p>
+
+<p style="text-align: center;">Last modified 20 November 2023</p>
+
+<!--#include virtual="footer.txt"-->
