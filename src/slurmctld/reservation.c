@@ -5269,8 +5269,12 @@ static int _combine_gres_list_exc(void *object, void *arg)
 		for (int i = 0; i < gres_js_in->node_cnt; i++) {
 			if (!gres_js_in->gres_bit_alloc[i])
 				continue;
-			bit_or(gres_js->gres_bit_alloc[i],
-			       gres_js_in->gres_bit_alloc[i]);
+			if (!gres_js->gres_bit_alloc[i])
+				gres_js->gres_bit_alloc[i] =
+					bit_copy(gres_js_in->gres_bit_alloc[i]);
+			else
+				bit_or(gres_js->gres_bit_alloc[i],
+				       gres_js_in->gres_bit_alloc[i]);
 		}
 	}
 	/* We only care about gres_js->gres_bit_alloc */
