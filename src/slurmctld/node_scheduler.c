@@ -2069,12 +2069,22 @@ try_sched:
 	if (licenses_unavailable) {
 		error_code = ESLURM_LICENSES_UNAVAILABLE;
 	} else if (!runable_ever) {
+		char *tmp;
+
+		/*
+		 * If a job requested extra_constraints, then assume
+		 * that the job might be runnable at some point in the
+		 * future. FIXME: This is a kludge and this assumption
+		 * may be wrong.
+		 */
+		tmp = job_ptr->extra_constraints ?
+			"currently not runnable" : "never runnable";
 		if (part_ptr->name) {
-			info("%s: %pJ never runnable in partition %s",
-			     __func__, job_ptr, part_ptr->name);
+			info("%s: %pJ %s in partition %s",
+			     __func__, job_ptr, tmp, part_ptr->name);
 		} else {
-			info("%s: job %pJ never runnable",
-			     __func__, job_ptr);
+			info("%s: job %pJ %s",
+			     __func__, job_ptr, tmp);
 		}
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (!runable_avail && !nodes_busy) {
@@ -2641,6 +2651,17 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		} else if ((job_ptr->state_reason == WAIT_HELD) &&
 			   (job_ptr->priority == 0)) {
 			/* Held by select plugin due to some failure */
+		} else if ((error_code ==
+			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			   job_ptr->extra_constraints) {
+			/*
+			 * If a job requested extra_constraints, then assume
+			 * that the job might be runnable at some point in the
+			 * future. FIXME: This is a kludge and this assumption
+			 * may be wrong.
+			 */
+			job_ptr->state_reason = FAIL_CONSTRAINTS;
+			xfree(job_ptr->state_desc);
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
