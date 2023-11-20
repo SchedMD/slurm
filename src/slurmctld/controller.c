@@ -533,10 +533,12 @@ int main(int argc, char **argv)
 		xsystemd_change_mainpid(getpid());
 
 	while (1) {
+		bool reconfiguring = reconfig;
 		/* initialization for each primary<->backup switch */
 		slurmctld_config.shutdown_time = (time_t) 0;
 		slurmctld_config.resume_backup = false;
 		control_time = 0;
+		reconfig = false;
 
 		/* start in primary or backup mode */
 		if (!slurmctld_primary) {
@@ -598,7 +600,7 @@ int main(int argc, char **argv)
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 
-		if (slurmctld_primary && !reconfig) {
+		if (slurmctld_primary && !reconfiguring) {
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -626,7 +628,7 @@ int main(int argc, char **argv)
 
 		slurm_persist_conn_recv_server_init();
 		info("Running as primary controller");
-		if (!reconfig) {
+		if (!reconfiguring) {
 			_run_primary_prog(true);
 			control_time = time(NULL);
 			heartbeat_start();
@@ -690,14 +692,12 @@ int main(int argc, char **argv)
 		if (controller_init_scheduling(false) != SLURM_SUCCESS)
 			fatal("Failed to initialize the various schedulers");
 
-		if (!original && !reconfig) {
+		if (!original && !reconfiguring) {
 			notify_parent_of_success();
 			if (!under_systemd)
 				_update_pidfile();
 			_post_reconfig();
 		}
-
-		reconfig = false;
 
 		/*
 		 * process slurm background activities, could run as pthread
