@@ -59,6 +59,7 @@
 #define OPT_LONG_SIBLING   0x103
 #define OPT_LONG_FEDR      0x104
 #define OPT_LONG_AUTOCOMP  0x105
+#define OPT_LONG_HELPFORMAT 0x106
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -66,6 +67,7 @@ static list_t *_build_part_list(char *str);
 static list_t *_build_user_list(char *str);
 static char *_get_prefix(char *token);
 static void  _help( void );
+static void _help_format(void);
 static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
@@ -121,6 +123,7 @@ parse_command_line( int argc, char* *argv )
 		{"weights",    no_argument,       0, 'w'},
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
+		{"helpformat", no_argument, 0, OPT_LONG_HELPFORMAT},
 		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
 		{"sibling",    no_argument,       0, OPT_LONG_SIBLING},
@@ -209,6 +212,10 @@ parse_command_line( int argc, char* *argv )
 			exit(0);
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
+			exit(0);
+			break;
+		case OPT_LONG_HELPFORMAT:
+			_help_format();
 			exit(0);
 			break;
 		}
@@ -548,5 +555,27 @@ Usage: sprio [OPTIONS]\n\
   -w, --weights                   show the weights for each priority factor\n\
 \nHelp options:\n\
   --help                          show this help message\n\
+  --helpformat                    print a list of fields that can be specified\n\
+                                  with '--format=' option\n\
   --usage                         display a brief summary of sprio options\n");
+}
+
+static void _help_format(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data[i].c || fmt_data[i].name; i++) {
+		if (!fmt_data[i].c)
+			continue;
+
+		if (cnt & 8) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%%%-5c", fmt_data[i].c);
+	}
+	printf("\n");
 }

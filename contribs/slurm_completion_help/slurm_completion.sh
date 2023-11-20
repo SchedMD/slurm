@@ -4642,22 +4642,8 @@ complete -o nospace -F _sinfo sinfo
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_sprio_flags() {
 	local cmd="$1"
-	local fields=(
-		"%a" "%A"
-		"%b" "%B"
-		"%c"
-		"%f" "%F"
-		"%i"
-		"%j" "%J"
-		"%N"
-		"%p" "%P"
-		"%q" "%Q"
-		"%r"
-		"%S"
-		"%t" "%T"
-		"%u"
-		"%y" "%Y"
-	)
+	local _options=()
+	local _compreply=()
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
@@ -4666,9 +4652,15 @@ function __slurm_comp_sprio_flags() {
 
 	case "${prev}" in
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-o | --format) __slurm_compreply_list "${fields[*]}" ;; # TODO: want --helpformat
+	-o | --format) __slurm_compreply_list "$(__slurm_helpformat "$cmd" "nocase")" ;;
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
-	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
+	-S | --sort)
+		_options=("$(__slurm_helpformat "$cmd" "nocase")")
+		_options=("${_options//%/}")                          # remove '%' prefix
+		_compreply+=("$(compgen -W "${_options[*]}" -P "+")") # ascending
+		_compreply+=("$(compgen -W "${_options[*]}" -P "-")") # descending
+		__slurm_compreply_list "${_compreply[*]}"
+		;;
 	-u) __slurm_compreply_list "$(__slurm_users)" ;;
 	*) return 1 ;;
 	esac
