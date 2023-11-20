@@ -3307,8 +3307,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		data_t *data = NULL;
 
 		if (extra_constraints_enabled() &&
-		    serialize_g_string_to_data(&data, node_ptr->extra,
-					       strlen(node_ptr->extra),
+		    serialize_g_string_to_data(&data, reg_msg->extra,
+					       strlen(reg_msg->extra),
 					       MIME_TYPE_JSON)) {
 			info("Failed to decode extra \"%s\" for node %s",
 			      reg_msg->extra, node_ptr->name);

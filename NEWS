@@ -35,6 +35,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix xassert when forwarding to non-addressable nodes.
  -- Fix regression in 23.11.0rc1 where assocs were created with an incorrect
     hierarchy for non-23.11 clusters.
+ -- For SchedulerParameters=extra_constraints, prevent slurmctld segfault when
+    starting a slurmd with --extra for a node that did not previously set this.
+    This also ensures the extra constraints model works off the current node
+    state, not the prior state.
 
 * Changes in Slurm 23.11.0rc1
 =============================
