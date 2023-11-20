@@ -306,14 +306,14 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
 			params.data_parser = optarg;
-			params.match_flags.gres_used_flag = true;
+			params.match_flags |= MATCH_FLAG_GRES_USED;
 			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 				fatal("JSON plugin load failure");
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			params.data_parser = optarg;
-			params.match_flags.gres_used_flag = true;
+			params.match_flags |= MATCH_FLAG_GRES_USED;
 			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
 				fatal("YAML plugin load failure");
 			break;
@@ -674,7 +674,7 @@ _parse_format( char* format )
 		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
 		if        (field[0] == 'a') {
-			params.match_flags.avail_flag = true;
+			params.match_flags |= MATCH_FLAG_AVAIL;
 			format_add_avail( params.format_list,
 					field_size,
 					right_justify,
@@ -685,31 +685,31 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'b') {
-			params.match_flags.features_act_flag = true;
+			params.match_flags |= MATCH_FLAG_FEATURES_ACT;
 			format_add_features_act( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'B') {
-			params.match_flags.max_cpus_per_node_flag = true;
+			params.match_flags |= MATCH_FLAG_MAX_CPUS_PER_NODE;
 			format_add_max_cpus_per_node( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
 		} else if (field[0] == 'c') {
-			params.match_flags.cpus_flag = true;
+			params.match_flags |= MATCH_FLAG_CPUS;
 			format_add_cpus( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'C') {
-			params.match_flags.cpus_flag = true;
+			params.match_flags |= MATCH_FLAG_CPUS;
 			format_add_cpus_aiot( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'd') {
-			params.match_flags.disk_flag = true;
+			params.match_flags |= MATCH_FLAG_DISK;
 			format_add_disk( params.format_list,
 					field_size,
 					right_justify,
@@ -720,19 +720,19 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'e') {
-			params.match_flags.free_mem_flag = true;
+			params.match_flags |= MATCH_FLAG_FREE_MEM;
 			format_add_free_mem( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'E') {
-			params.match_flags.reason_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON;
 			format_add_reason( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'f') {
-			params.match_flags.features_flag = true;
+			params.match_flags |= MATCH_FLAG_FEATURES;
 			format_add_features( params.format_list,
 					field_size,
 					right_justify,
@@ -743,67 +743,67 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'g') {
-			params.match_flags.groups_flag = true;
+			params.match_flags |= MATCH_FLAG_GROUPS;
 			format_add_groups( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'G') {
-			params.match_flags.gres_flag = true;
+			params.match_flags |= MATCH_FLAG_GRES;
 			format_add_gres( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'h') {
-			params.match_flags.oversubscribe_flag = true;
+			params.match_flags |= MATCH_FLAG_OVERSUBSCRIBE;
 			format_add_oversubscribe( params.format_list,
 						  field_size,
 						  right_justify,
 						  suffix );
 		} else if (field[0] == 'H') {
-			params.match_flags.reason_timestamp_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_TIMESTAMP;
 			format_add_timestamp( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (field[0] == 'i') {
-			params.match_flags.resv_name_flag = true;
+			params.match_flags |= MATCH_FLAG_RESV_NAME;
 			format_add_resv_name(params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix);
 		} else if (field[0] == 'I') {
-			params.match_flags.priority_job_factor_flag = true;
+			params.match_flags |= MATCH_FLAG_PRIORITY_JOB_FACTOR;
 			format_add_priority_job_factor(params.format_list,
 					field_size,
 					right_justify,
 					suffix);
 		} else if (field[0] == 'l') {
-			params.match_flags.max_time_flag = true;
+			params.match_flags |= MATCH_FLAG_MAX_TIME;
 			format_add_time( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'L') {
-			params.match_flags.default_time_flag = true;
+			params.match_flags |= MATCH_FLAG_DEFAULT_TIME;
 			format_add_default_time( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'm') {
-			params.match_flags.memory_flag = true;
+			params.match_flags |= MATCH_FLAG_MEMORY;
 			format_add_memory( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'M') {
-			params.match_flags.preempt_mode_flag = true;
+			params.match_flags |= MATCH_FLAG_PREEMPT_MODE;
 			format_add_preempt_mode( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'n') {
-			params.match_flags.hostnames_flag = true;
+			params.match_flags |= MATCH_FLAG_HOSTNAMES;
 			format_add_node_hostnames( params.format_list,
 					field_size,
 					right_justify,
@@ -814,43 +814,43 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'o') {
-			params.match_flags.node_addr_flag = true;
+			params.match_flags |= MATCH_FLAG_NODE_ADDR;
 			format_add_node_address( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'O') {
-			params.match_flags.cpu_load_flag = true;
+			params.match_flags |= MATCH_FLAG_CPU_LOAD;
 			format_add_cpu_load( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'p') {
-			params.match_flags.priority_tier_flag = true;
+			params.match_flags |= MATCH_FLAG_PRIORITY_TIER;
 			format_add_priority_tier(params.format_list,
 					field_size,
 					right_justify,
 					suffix);
 		} else if (field[0] == 'P') {
-			params.match_flags.partition_flag = true;
+			params.match_flags |= MATCH_FLAG_PARTITION;
 			format_add_partition( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'r') {
-			params.match_flags.root_flag = true;
+			params.match_flags |= MATCH_FLAG_ROOT;
 			format_add_root( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'R') {
-			params.match_flags.partition_flag = true;
+			params.match_flags |= MATCH_FLAG_PARTITION;
 			format_add_partition_name( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 's') {
-			params.match_flags.job_size_flag = true;
+			params.match_flags |= MATCH_FLAG_JOB_SIZE;
 			format_add_size( params.format_list,
 					 field_size,
 					 right_justify,
@@ -861,31 +861,31 @@ _parse_format( char* format )
 						right_justify,
 						suffix );
 		} else if (field[0] == 't') {
-			params.match_flags.state_flag = true;
+			params.match_flags |= MATCH_FLAG_STATE;
 			format_add_state_compact( params.format_list,
 						  field_size,
 						  right_justify,
 						  suffix );
 		} else if (field[0] == 'T') {
-			params.match_flags.state_flag = true;
+			params.match_flags |= MATCH_FLAG_STATE;
 			format_add_state_long( params.format_list,
 					       field_size,
 					       right_justify,
 					       suffix );
 		} else if (field[0] == 'u') {
-			params.match_flags.reason_user_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_USER;
 			format_add_user( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'U') {
-			params.match_flags.reason_user_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_USER;
 			format_add_user_long( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (field[0] == 'v') {
-			params.match_flags.version_flag = true;
+			params.match_flags |= MATCH_FLAG_VERSION;
 			format_add_version( params.format_list,
 					    field_size,
 					    right_justify,
@@ -896,31 +896,31 @@ _parse_format( char* format )
 						right_justify,
 						suffix);
 		} else if (field[0] == 'w') {
-			params.match_flags.weight_flag = true;
+			params.match_flags |= MATCH_FLAG_WEIGHT;
 			format_add_weight( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'X') {
-			params.match_flags.sockets_flag = true;
+			params.match_flags |= MATCH_FLAG_SOCKETS;
 			format_add_sockets( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'Y') {
-			params.match_flags.cores_flag = true;
+			params.match_flags |= MATCH_FLAG_CORES;
 			format_add_cores( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'Z') {
-			params.match_flags.threads_flag = true;
+			params.match_flags |= MATCH_FLAG_THREADS;
 			format_add_threads( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'z') {
-			params.match_flags.sct_flag = true;
+			params.match_flags |= MATCH_FLAG_SCT;
 			format_add_sct( params.format_list,
 					field_size,
 					right_justify,
@@ -969,7 +969,7 @@ static int _parse_long_format (char* format_long)
 			_parse_format ("%all");
 			xfree(suffix);
 		} else if (!xstrcasecmp(token, "allocmem")) {
-			params.match_flags.alloc_mem_flag = true;
+			params.match_flags |= MATCH_FLAG_ALLOC_MEM;
 			format_add_alloc_mem( params.format_list,
 						field_size,
 						right_justify,
@@ -980,7 +980,7 @@ static int _parse_long_format (char* format_long)
 						right_justify,
 						suffix );
 		} else if (!xstrcasecmp(token, "available")) {
-			params.match_flags.avail_flag = true;
+			params.match_flags |= MATCH_FLAG_AVAIL;
 			format_add_avail( params.format_list,
 					  field_size,
 					  right_justify,
@@ -991,95 +991,95 @@ static int _parse_long_format (char* format_long)
 						right_justify,
 						suffix);
 		} else if (!xstrcasecmp(token, "comment")) {
-			params.match_flags.comment_flag = true;
+			params.match_flags |= MATCH_FLAG_COMMENT;
 			format_add_comment(params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix);
 		} else if (!xstrcasecmp(token, "cpus")) {
-			params.match_flags.cpus_flag = true;
+			params.match_flags |= MATCH_FLAG_CPUS;
 			format_add_cpus( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "cpusload")) {
-			params.match_flags.cpu_load_flag = true;
+			params.match_flags |= MATCH_FLAG_CPU_LOAD;
 			format_add_cpu_load( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
 		} else if (!xstrcasecmp(token, "freemem")) {
-			params.match_flags.free_mem_flag = true;
+			params.match_flags |= MATCH_FLAG_FREE_MEM;
 			format_add_free_mem( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
 		} else if (!xstrcasecmp(token, "cpusstate")) {
-			params.match_flags.cpus_flag = true;
+			params.match_flags |= MATCH_FLAG_CPUS;
 			format_add_cpus_aiot( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (!xstrcasecmp(token, "cores")) {
-			params.match_flags.cores_flag = true;
+			params.match_flags |= MATCH_FLAG_CORES;
 			format_add_cores( params.format_list,
 					  field_size,
 					  right_justify,
 					  suffix );
 		} else if (!xstrcasecmp(token, "defaulttime")) {
-			params.match_flags.default_time_flag = true;
+			params.match_flags |= MATCH_FLAG_DEFAULT_TIME;
 			format_add_default_time( params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
 		} else if (!xstrcasecmp(token, "disk")) {
-			params.match_flags.disk_flag = true;
+			params.match_flags |= MATCH_FLAG_DISK;
 			format_add_disk( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "extra")) {
-			params.match_flags.extra_flag = true;
+			params.match_flags |= MATCH_FLAG_EXTRA;
 			format_add_extra(params.format_list, field_size,
 					 right_justify, suffix);
 		} else if (!xstrcasecmp(token, "features")) {
-			params.match_flags.features_flag = true;
+			params.match_flags |= MATCH_FLAG_FEATURES;
 			format_add_features( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
 		} else if (!xstrcasecmp(token, "features_act")) {
-			params.match_flags.features_act_flag = true;
+			params.match_flags |= MATCH_FLAG_FEATURES_ACT;
 			format_add_features_act( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (!xstrcasecmp(token, "groups")) {
-			params.match_flags.groups_flag = true;
+			params.match_flags |= MATCH_FLAG_GROUPS;
 			format_add_groups( params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix );
 		} else if (!xstrcasecmp(token, "gres")) {
-			params.match_flags.gres_flag = true;
+			params.match_flags |= MATCH_FLAG_GRES;
 			format_add_gres( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "gresused")) {
-			params.match_flags.gres_used_flag = true;
+			params.match_flags |= MATCH_FLAG_GRES_USED;
 			format_add_gres_used( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "maxcpuspernode")) {
-			params.match_flags.max_cpus_per_node_flag = true;
+			params.match_flags |= MATCH_FLAG_MAX_CPUS_PER_NODE;
 			format_add_max_cpus_per_node( params.format_list,
 						      field_size,
 						      right_justify,
 						      suffix );
 		} else if (!xstrcasecmp(token, "memory")) {
-			params.match_flags.memory_flag = true;
+			params.match_flags |= MATCH_FLAG_MEMORY;
 			format_add_memory( params.format_list,
 					   field_size,
 					   right_justify,
@@ -1090,7 +1090,7 @@ static int _parse_long_format (char* format_long)
 					  right_justify,
 					  suffix );
 		} else if (!xstrcasecmp(token, "nodeaddr")) {
-			params.match_flags.node_addr_flag = true;
+			params.match_flags |= MATCH_FLAG_NODE_ADDR;
 			format_add_node_address( params.format_list,
 						 field_size,
 						 right_justify,
@@ -1106,7 +1106,7 @@ static int _parse_long_format (char* format_long)
 					       right_justify,
 					       suffix );
 		} else if (!xstrcasecmp(token, "nodehost")) {
-			params.match_flags.hostnames_flag = true;
+			params.match_flags |= MATCH_FLAG_HOSTNAMES;
 			format_add_node_hostnames( params.format_list,
 						   field_size,
 						   right_justify,
@@ -1117,139 +1117,139 @@ static int _parse_long_format (char* format_long)
 					      right_justify,
 					      suffix );
 		} else if (!xstrcasecmp(token, "partition")) {
-			params.match_flags.partition_flag = true;
+			params.match_flags |= MATCH_FLAG_PARTITION;
 			format_add_partition( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (!xstrcasecmp(token, "partitionname")) {
-			params.match_flags.partition_flag = true;
+			params.match_flags |= MATCH_FLAG_PARTITION;
 			format_add_partition_name( params.format_list,
 						   field_size,
 						   right_justify,
 						   suffix );
 		} else if (!xstrcasecmp(token, "port")) {
-			params.match_flags.port_flag = true;
+			params.match_flags |= MATCH_FLAG_PORT;
 			format_add_port( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "preemptmode")) {
-			params.match_flags.preempt_mode_flag = true;
+			params.match_flags |= MATCH_FLAG_PREEMPT_MODE;
 			format_add_preempt_mode( params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
 		} else if (!xstrcasecmp(token, "priorityjobfactor")) {
-			params.match_flags.priority_job_factor_flag = true;
+			params.match_flags |= MATCH_FLAG_PRIORITY_JOB_FACTOR;
 			format_add_priority_job_factor(params.format_list,
 						       field_size,
 						       right_justify,
 						       suffix );
 		} else if (!xstrcasecmp(token, "prioritytier")) {
-			params.match_flags.priority_tier_flag = true;
+			params.match_flags |= MATCH_FLAG_PRIORITY_TIER;
 			format_add_priority_tier(params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
 		} else if (!xstrcasecmp(token, "reason")) {
-			params.match_flags.reason_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON;
 			format_add_reason( params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix );
 		} else if (!xstrcasecmp(token, "reservation")) {
-			params.match_flags.resv_name_flag = true;
+			params.match_flags |= MATCH_FLAG_RESV_NAME;
 			format_add_resv_name(params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix);
 		} else if (!xstrcasecmp(token, "root")) {
-			params.match_flags.root_flag = true;
+			params.match_flags |= MATCH_FLAG_ROOT;
 			format_add_root( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "oversubscribe") ||
 			   !xstrcasecmp(token, "share")) {
-			params.match_flags.oversubscribe_flag = true;
+			params.match_flags |= MATCH_FLAG_OVERSUBSCRIBE;
 			format_add_oversubscribe( params.format_list,
 						  field_size,
 						  right_justify,
 						  suffix );
 		} else if (!xstrcasecmp(token, "size")) {
-			params.match_flags.job_size_flag = true;
+			params.match_flags |= MATCH_FLAG_JOB_SIZE;
 			format_add_size( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "statecompact")) {
-			params.match_flags.state_flag = true;
+			params.match_flags |= MATCH_FLAG_STATE;
 			format_add_state_compact( params.format_list,
 						  field_size,
 						  right_justify,
 						  suffix );
 		} else if (!xstrcasecmp(token, "statecomplete")) {
-			params.match_flags.statecomplete_flag = true;
+			params.match_flags |= MATCH_FLAG_STATE_COMPLETE;
 			format_add_state_complete(params.format_list,
 						  field_size, right_justify,
 						  suffix );
 		} else if (!xstrcasecmp(token, "statelong")) {
-			params.match_flags.state_flag = true;
+			params.match_flags |= MATCH_FLAG_STATE;
 			format_add_state_long( params.format_list,
 					       field_size,
 					       right_justify,
 					       suffix );
 		} else if (!xstrcasecmp(token, "sockets")) {
-			params.match_flags.sockets_flag = true;
+			params.match_flags |= MATCH_FLAG_SOCKETS;
 			format_add_sockets( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix );
 		} else if (!xstrcasecmp(token, "socketcorethread")) {
-			params.match_flags.sct_flag = true;
+			params.match_flags |= MATCH_FLAG_SCT;
 			format_add_sct( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (!xstrcasecmp(token, "time")) {
-			params.match_flags.max_time_flag = true;
+			params.match_flags |= MATCH_FLAG_MAX_TIME;
 			format_add_time( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "timestamp")) {
-			params.match_flags.reason_timestamp_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_TIMESTAMP;
 			format_add_timestamp( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (!xstrcasecmp(token, "threads")) {
-			params.match_flags.threads_flag = true;
+			params.match_flags |= MATCH_FLAG_THREADS;
 			format_add_threads( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix );
 		} else if (!xstrcasecmp(token, "user")) {
-			params.match_flags.reason_user_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_USER;
 			format_add_user( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
 		} else if (!xstrcasecmp(token, "userlong")) {
-			params.match_flags.reason_user_flag = true;
+			params.match_flags |= MATCH_FLAG_REASON_USER;
 			format_add_user_long( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
 		} else if (!xstrcasecmp(token, "version")) {
-			params.match_flags.version_flag = true;
+			params.match_flags |= MATCH_FLAG_VERSION;
 			format_add_version( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix);
 		} else if (!xstrcasecmp(token, "weight")) {
-			params.match_flags.weight_flag = true;
+			params.match_flags |= MATCH_FLAG_WEIGHT;
 			format_add_weight( params.format_list,
 					   field_size,
 					   right_justify,
@@ -1379,68 +1379,72 @@ void _print_options( void )
 	printf("verbose     = %d\n", params.verbose);
 	printf("-----------------------------\n");
 	printf("all_flag        = %s\n", params.all_flag ? "true" : "false");
-	printf("alloc_mem_flag  = %s\n", params.match_flags.alloc_mem_flag ?
-			"true" : "false");
-	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
-			"true" : "false");
-	printf("comment_flag    = %s\n", params.match_flags.comment_flag ?
-			"true" : "false");
-	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
-			"true" : "false");
-	printf("default_time_flag =%s\n", params.match_flags.default_time_flag ?
-					"true" : "false");
-	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
-			"true" : "false");
+	printf("alloc_mem_flag  = %s\n",
+	       (params.match_flags & MATCH_FLAG_ALLOC_MEM) ? "true" : "false");
+	printf("avail_flag      = %s\n",
+	       (params.match_flags & MATCH_FLAG_AVAIL) ? "true" : "false");
+	printf("comment_flag    = %s\n",
+	       (params.match_flags & MATCH_FLAG_COMMENT) ? "true" : "false");
+	printf("cpus_flag       = %s\n",
+	       (params.match_flags & MATCH_FLAG_CPUS) ? "true" : "false");
+	printf("default_time_flag =%s\n",
+	       (params.match_flags & MATCH_FLAG_DEFAULT_TIME)
+	       ? "true" : "false");
+	printf("disk_flag       = %s\n",
+	       (params.match_flags & MATCH_FLAG_DISK) ? "true" : "false");
 	printf("extra_flag      = %s\n",
-	       params.match_flags.extra_flag ? "true" : "false");
-	printf("features_flag   = %s\n", params.match_flags.features_flag ?
-			"true" : "false");
-	printf("features_flag_act = %s\n", params.match_flags.features_act_flag?
-			"true" : "false");
-	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
-					"true" : "false");
-	printf("gres_flag       = %s\n", params.match_flags.gres_flag ?
-			"true" : "false");
-	printf("gres_used_flag  = %s\n", params.match_flags.gres_used_flag ?
-			"true" : "false");
-	printf("job_size_flag   = %s\n", params.match_flags.job_size_flag ?
-					"true" : "false");
-	printf("max_time_flag   = %s\n", params.match_flags.max_time_flag ?
-					"true" : "false");
-	printf("memory_flag     = %s\n", params.match_flags.memory_flag ?
-			"true" : "false");
-	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
-			"true" : "false");
-	printf("port_flag       = %s\n", params.match_flags.port_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_EXTRA) ? "true" : "false");
+	printf("features_flag   = %s\n",
+	       (params.match_flags & MATCH_FLAG_FEATURES) ? "true" : "false");
+	printf("features_flag_act = %s\n",
+	       (params.match_flags & MATCH_FLAG_FEATURES_ACT) ?
+	       "true" : "false");
+	printf("groups_flag     = %s\n",
+	       (params.match_flags & MATCH_FLAG_GROUPS) ? "true" : "false");
+	printf("gres_flag       = %s\n",
+	       (params.match_flags & MATCH_FLAG_GRES) ? "true" : "false");
+	printf("gres_used_flag  = %s\n",
+	       (params.match_flags & MATCH_FLAG_GRES_USED) ? "true" : "false");
+	printf("job_size_flag   = %s\n",
+	       (params.match_flags & MATCH_FLAG_JOB_SIZE) ? "true" : "false");
+	printf("max_time_flag   = %s\n",
+	       (params.match_flags & MATCH_FLAG_MAX_TIME) ? "true" : "false");
+	printf("memory_flag     = %s\n",
+	       (params.match_flags & MATCH_FLAG_MEMORY) ? "true" : "false");
+	printf("partition_flag  = %s\n",
+	       (params.match_flags & MATCH_FLAG_PARTITION) ? "true" : "false");
+	printf("port_flag       = %s\n",
+	       (params.match_flags & MATCH_FLAG_PORT) ? "true" : "false");
 	printf("priority_job_factor_flag   = %s\n",
-			params.match_flags.priority_job_factor_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_PRIORITY_JOB_FACTOR) ?
+	       "true" : "false");
 	printf("priority_tier_flag   = %s\n",
-			params.match_flags.priority_tier_flag ?
-			"true" : "false");
-	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_PRIORITY_TIER) ?
+	       "true" : "false");
+	printf("reason_flag     = %s\n",
+	       (params.match_flags & MATCH_FLAG_REASON) ? "true" : "false");
 	printf("reason_timestamp_flag = %s\n",
-			params.match_flags.reason_timestamp_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_REASON_TIMESTAMP) ?
+	       "true" : "false");
 	printf("reason_user_flag = %s\n",
-			params.match_flags.reason_user_flag ?  "true" : "false");
+	       (params.match_flags & MATCH_FLAG_REASON_USER) ?
+	       "true" : "false");
 	printf("reservation_flag = %s\n", params.reservation_flag ?
 			"true" : "false");
-	printf("resv_name_flag   = %s\n", params.match_flags.resv_name_flag ?
-	       "true" : "false");
-	printf("root_flag       = %s\n", params.match_flags.root_flag ?
-			"true" : "false");
+	printf("resv_name_flag   = %s\n",
+	       (params.match_flags & MATCH_FLAG_RESV_NAME) ? "true" : "false");
+	printf("root_flag       = %s\n",
+	       (params.match_flags & MATCH_FLAG_ROOT) ? "true" : "false");
 	printf("oversubscribe_flag      = %s\n",
-			params.match_flags.oversubscribe_flag ?
-			"true" : "false");
-	printf("state_flag      = %s\n", params.match_flags.state_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_OVERSUBSCRIBE) ?
+	       "true" : "false");
+	printf("state_flag      = %s\n",
+	       (params.match_flags & MATCH_FLAG_STATE) ? "true" : "false");
 	printf("statecomplete_flag = %s\n",
-	       params.match_flags.statecomplete_flag ? "true" : "false");
-	printf("weight_flag     = %s\n", params.match_flags.weight_flag ?
-			"true" : "false");
+	       (params.match_flags & MATCH_FLAG_STATE_COMPLETE) ?
+	       "true" : "false");
+	printf("weight_flag     = %s\n",
+	       (params.match_flags & MATCH_FLAG_WEIGHT) ? "true" : "false");
 	printf("-----------------------------\n\n");
 }
 

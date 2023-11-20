@@ -121,47 +121,46 @@ typedef struct {
 
 /* Identify what fields must match for a node's information to be
  * combined into a single sinfo_data entry based upon output format */
-struct sinfo_match_flags {
-	bool alloc_mem_flag;
-	bool avail_flag;
-	bool cpus_flag;
-	bool sockets_flag;
-	bool cores_flag;
-	bool threads_flag;
-	bool sct_flag;
-	bool disk_flag;
-	bool extra_flag;
-	bool features_flag;
-	bool features_act_flag;
-	bool groups_flag;
-	bool gres_flag;
-	bool gres_used_flag;
-	bool hostnames_flag;
-	bool job_size_flag;
-	bool default_time_flag;
-	bool max_time_flag;
-	bool memory_flag;
-	bool node_addr_flag;
-	bool partition_flag;
-	bool port_flag;
-	bool preempt_mode_flag;
-	bool priority_job_factor_flag;
-	bool priority_tier_flag;
-	bool comment_flag;
-	bool reason_flag;
-	bool resv_name_flag;
-	bool root_flag;
-	bool oversubscribe_flag;
-	bool state_flag;
-	bool statecomplete_flag;
-	bool weight_flag;
-	bool reason_timestamp_flag;
-	bool reason_user_flag;
-	bool cpu_load_flag;
-	bool free_mem_flag;
-	bool max_cpus_per_node_flag;
-	bool version_flag;
-};
+#define MATCH_FLAG_ALLOC_MEM		SLURM_BIT(0)
+#define MATCH_FLAG_AVAIL		SLURM_BIT(1)
+#define MATCH_FLAG_COMMENT		SLURM_BIT(2)
+#define MATCH_FLAG_CORES		SLURM_BIT(3)
+#define MATCH_FLAG_CPUS			SLURM_BIT(4)
+#define MATCH_FLAG_CPU_LOAD		SLURM_BIT(5)
+#define MATCH_FLAG_DEFAULT_TIME		SLURM_BIT(6)
+#define MATCH_FLAG_DISK			SLURM_BIT(7)
+#define MATCH_FLAG_EXTRA		SLURM_BIT(8)
+#define MATCH_FLAG_FEATURES		SLURM_BIT(9)
+#define MATCH_FLAG_FEATURES_ACT		SLURM_BIT(10)
+#define MATCH_FLAG_FREE_MEM		SLURM_BIT(11)
+#define MATCH_FLAG_GROUPS		SLURM_BIT(12)
+#define MATCH_FLAG_GRES			SLURM_BIT(13)
+#define MATCH_FLAG_GRES_USED		SLURM_BIT(14)
+#define MATCH_FLAG_HOSTNAMES		SLURM_BIT(15)
+#define MATCH_FLAG_JOB_SIZE		SLURM_BIT(16)
+#define MATCH_FLAG_MAX_CPUS_PER_NODE	SLURM_BIT(17)
+#define MATCH_FLAG_MAX_TIME		SLURM_BIT(18)
+#define MATCH_FLAG_MEMORY		SLURM_BIT(19)
+#define MATCH_FLAG_NODE_ADDR		SLURM_BIT(20)
+#define MATCH_FLAG_NODES_AI		SLURM_BIT(21)
+#define MATCH_FLAG_OVERSUBSCRIBE	SLURM_BIT(22)
+#define MATCH_FLAG_PARTITION		SLURM_BIT(23)
+#define MATCH_FLAG_PREEMPT_MODE		SLURM_BIT(24)
+#define MATCH_FLAG_PRIORITY_JOB_FACTOR	SLURM_BIT(25)
+#define MATCH_FLAG_PRIORITY_TIER	SLURM_BIT(26)
+#define MATCH_FLAG_PORT			SLURM_BIT(27)
+#define MATCH_FLAG_REASON		SLURM_BIT(28)
+#define MATCH_FLAG_REASON_TIMESTAMP	SLURM_BIT(29)
+#define MATCH_FLAG_REASON_USER		SLURM_BIT(30)
+#define MATCH_FLAG_ROOT			SLURM_BIT(31)
+#define MATCH_FLAG_RESV_NAME		SLURM_BIT(32)
+#define MATCH_FLAG_SCT			SLURM_BIT(33)
+#define MATCH_FLAG_SOCKETS		SLURM_BIT(34)
+#define MATCH_FLAG_STATE		SLURM_BIT(35)
+#define MATCH_FLAG_STATE_COMPLETE	SLURM_BIT(36)
+#define MATCH_FLAG_THREADS		SLURM_BIT(37)
+#define MATCH_FLAG_VERSION		SLURM_BIT(38)
+#define MATCH_FLAG_WEIGHT		SLURM_BIT(39)
 
 /* Input parameters */
 struct sinfo_parameters {
@@ -186,7 +185,7 @@ struct sinfo_parameters {
 	bool responding_nodes;
 	bool list_reasons;
 	bool summarize;
-	struct sinfo_match_flags match_flags;
+	uint64_t match_flags;
 
 	char* format;
 	char *mimetype; /* --yaml or --json */

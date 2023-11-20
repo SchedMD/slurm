@@ -366,7 +366,7 @@ static List _query_server(bool clear_old)
 	old_part_ptr = new_part_ptr;
 
 	/* GRES used is only populated on nodes with detail flag */
-	if (params.match_flags.gres_used_flag)
+	if (params.match_flags & MATCH_FLAG_GRES_USED)
 		show_flags |= SHOW_DETAIL;
 
 	if (old_node_ptr) {
@@ -580,7 +580,7 @@ static int _build_sinfo_data(List sinfo_list,
 	int j;
 
 	/* by default every partition is shown, even if no nodes */
-	if ((!params.node_flag) && params.match_flags.partition_flag) {
+	if ((!params.node_flag) && (params.match_flags & MATCH_FLAG_PARTITION)){
 		part_ptr = partition_msg->partition_array;
 		for (j = 0; j < partition_msg->record_count; j++, part_ptr++) {
 			if ((!params.part_list) ||
@@ -761,67 +761,67 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.node_flag)
 		return false;
 
-	if (params.match_flags.hostnames_flag &&
+	if ((params.match_flags & MATCH_FLAG_HOSTNAMES) &&
 	    (hostlist_find(sinfo_ptr->hostnames,
 			   node_ptr->node_hostname) == -1))
 		return false;
 
-	if (params.match_flags.node_addr_flag &&
+	if ((params.match_flags & MATCH_FLAG_NODE_ADDR) &&
 	    (hostlist_find(sinfo_ptr->node_addr, node_ptr->node_addr) == -1))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.extra_flag &&
+	    (params.match_flags & MATCH_FLAG_EXTRA) &&
 	    (xstrcmp(node_ptr->extra, sinfo_ptr->extra)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.features_flag &&
+	    (params.match_flags & MATCH_FLAG_FEATURES) &&
 	    (xstrcmp(node_ptr->features, sinfo_ptr->features)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.features_act_flag &&
+	    (params.match_flags & MATCH_FLAG_FEATURES_ACT) &&
 	    (xstrcmp(node_ptr->features_act, sinfo_ptr->features_act)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.gres_flag &&
+	    (params.match_flags & MATCH_FLAG_GRES) &&
 	    (xstrcmp(node_ptr->gres, sinfo_ptr->gres)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.gres_used_flag &&
+	    (params.match_flags & MATCH_FLAG_GRES_USED) &&
 	    (xstrcmp(node_ptr->gres_used, sinfo_ptr->gres_used)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.comment_flag &&
+	    (params.match_flags & MATCH_FLAG_COMMENT) &&
 	    (xstrcmp(node_ptr->comment, sinfo_ptr->comment)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.reason_flag &&
+	    (params.match_flags & MATCH_FLAG_REASON) &&
 	    (xstrcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.reason_timestamp_flag &&
+	    (params.match_flags & MATCH_FLAG_REASON_TIMESTAMP) &&
 	    (node_ptr->reason_time != sinfo_ptr->reason_time))
 		return false;
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.reason_user_flag &&
+	    (params.match_flags & MATCH_FLAG_REASON_USER) &&
 	    node_ptr->reason_uid != sinfo_ptr->reason_uid) {
 		return false;
 	}
 
 	if (sinfo_ptr->nodes &&
-	    params.match_flags.resv_name_flag &&
+	    (params.match_flags & MATCH_FLAG_RESV_NAME) &&
 	    xstrcmp(node_ptr->resv_name, sinfo_ptr->resv_name))
 		return false;
 
-	if (params.match_flags.state_flag) {
+	if ((params.match_flags & MATCH_FLAG_STATE)) {
 		char *state1, *state2;
 		state1 = node_state_string(node_ptr->node_state);
 		state2 = node_state_string(sinfo_ptr->node_state);
@@ -829,7 +829,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			return false;
 	}
 
-	if (params.match_flags.statecomplete_flag) {
+	if ((params.match_flags & MATCH_FLAG_STATE_COMPLETE)) {
 		char *state1, *state2;
 		int rc = true;
 		state1 = node_state_string_complete(node_ptr->node_state);
@@ -846,7 +846,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,
 				     &tmp);
-	if (params.match_flags.alloc_mem_flag &&
+	if ((params.match_flags & MATCH_FLAG_ALLOC_MEM) &&
 	    (tmp != sinfo_ptr->alloc_memory))
 		return false;
 
@@ -855,43 +855,43 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (!params.exact_match)
 		return true;
 
-	if (params.match_flags.cpus_flag &&
+	if ((params.match_flags & MATCH_FLAG_CPUS) &&
 	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
 		return false;
 
-	if (params.match_flags.sockets_flag &&
+	if ((params.match_flags & MATCH_FLAG_SOCKETS) &&
 	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
 		return false;
-	if (params.match_flags.cores_flag &&
+	if ((params.match_flags & MATCH_FLAG_CORES) &&
 	    (node_ptr->cores       != sinfo_ptr->min_cores))
 		return false;
-	if (params.match_flags.threads_flag &&
+	if ((params.match_flags & MATCH_FLAG_THREADS) &&
 	    (node_ptr->threads     != sinfo_ptr->min_threads))
 		return false;
-	if (params.match_flags.sct_flag &&
+	if ((params.match_flags & MATCH_FLAG_SCT) &&
 	    ((node_ptr->sockets     != sinfo_ptr->min_sockets) ||
 	     (node_ptr->cores       != sinfo_ptr->min_cores) ||
 	     (node_ptr->threads     != sinfo_ptr->min_threads)))
 		return false;
-	if (params.match_flags.disk_flag &&
+	if ((params.match_flags & MATCH_FLAG_DISK) &&
 	    (node_ptr->tmp_disk    != sinfo_ptr->min_disk))
 		return false;
-	if (params.match_flags.memory_flag &&
+	if ((params.match_flags & MATCH_FLAG_MEMORY) &&
 	    (node_ptr->real_memory != sinfo_ptr->min_mem))
 		return false;
-	if (params.match_flags.weight_flag &&
+	if ((params.match_flags & MATCH_FLAG_WEIGHT) &&
 	    (node_ptr->weight      != sinfo_ptr->min_weight))
 		return false;
-	if (params.match_flags.cpu_load_flag &&
+	if ((params.match_flags & MATCH_FLAG_CPU_LOAD) &&
 	    (node_ptr->cpu_load        != sinfo_ptr->min_cpu_load))
 		return false;
-	if (params.match_flags.free_mem_flag &&
+	if ((params.match_flags & MATCH_FLAG_FREE_MEM) &&
 	    (node_ptr->free_mem        != sinfo_ptr->min_free_mem))
 		return false;
-	if (params.match_flags.port_flag &&
+	if ((params.match_flags & MATCH_FLAG_PORT) &&
 	    (node_ptr->port != sinfo_ptr->port))
 		return false;
-	if (params.match_flags.version_flag &&
+	if ((params.match_flags & MATCH_FLAG_VERSION) &&
 	    (node_ptr->version     != sinfo_ptr->version))
 		return false;
 
@@ -905,7 +905,8 @@ static bool _serial_part_data(void)
 {
 	if (params.list_reasons)	/* Don't care about partition */
 		return true;
-	if (params.match_flags.partition_flag)	/* Match partition name */
+	/* Match partition name */
+	if ((params.match_flags & MATCH_FLAG_PARTITION))
 		return false;
 	return true;
 }
@@ -920,58 +921,58 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
 		return false;
 
-	if (params.match_flags.partition_flag
+	if ((params.match_flags & MATCH_FLAG_PARTITION)
 	    && (xstrcmp(part_ptr->name, sinfo_ptr->part_info->name)))
 		return false;
 
-	if (params.match_flags.avail_flag &&
+	if ((params.match_flags & MATCH_FLAG_AVAIL) &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
 		return false;
 
-	if (params.match_flags.groups_flag &&
+	if ((params.match_flags & MATCH_FLAG_GROUPS) &&
 	    (xstrcmp(part_ptr->allow_groups,
 		     sinfo_ptr->part_info->allow_groups)))
 		return false;
 
-	if (params.match_flags.job_size_flag &&
+	if ((params.match_flags & MATCH_FLAG_JOB_SIZE) &&
 	    (part_ptr->min_nodes != sinfo_ptr->part_info->min_nodes))
 		return false;
 
-	if (params.match_flags.job_size_flag &&
+	if ((params.match_flags & MATCH_FLAG_JOB_SIZE) &&
 	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
 		return false;
 
-	if (params.match_flags.default_time_flag &&
+	if ((params.match_flags & MATCH_FLAG_DEFAULT_TIME) &&
 	    (part_ptr->default_time != sinfo_ptr->part_info->default_time))
 		return false;
 
-	if (params.match_flags.max_time_flag &&
+	if ((params.match_flags & MATCH_FLAG_MAX_TIME) &&
 	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
 		return false;
 
-	if (params.match_flags.root_flag &&
+	if ((params.match_flags & MATCH_FLAG_ROOT) &&
 	    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
 	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
 		return false;
 
-	if (params.match_flags.oversubscribe_flag &&
+	if ((params.match_flags & MATCH_FLAG_OVERSUBSCRIBE) &&
 	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
 		return false;
 
-	if (params.match_flags.preempt_mode_flag &&
+	if ((params.match_flags & MATCH_FLAG_PREEMPT_MODE) &&
 	    (part_ptr->preempt_mode != sinfo_ptr->part_info->preempt_mode))
 		return false;
 
-	if (params.match_flags.priority_tier_flag &&
+	if ((params.match_flags & MATCH_FLAG_PRIORITY_TIER) &&
 	    (part_ptr->priority_tier != sinfo_ptr->part_info->priority_tier))
 		return false;
 
-	if (params.match_flags.priority_job_factor_flag &&
+	if ((params.match_flags & MATCH_FLAG_PRIORITY_JOB_FACTOR) &&
 	    (part_ptr->priority_job_factor !=
 	     sinfo_ptr->part_info->priority_job_factor))
 		return false;
 
-	if (params.match_flags.max_cpus_per_node_flag &&
+	if ((params.match_flags & MATCH_FLAG_MAX_CPUS_PER_NODE) &&
 	    (part_ptr->max_cpus_per_node !=
 	     sinfo_ptr->part_info->max_cpus_per_node))
 		return false;
@@ -1075,10 +1076,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) == -1)
 		hostlist_push_host(sinfo_ptr->nodes, node_ptr->name);
-	if (params.match_flags.node_addr_flag &&
+	if ((params.match_flags & MATCH_FLAG_NODE_ADDR) &&
 	    (hostlist_find(sinfo_ptr->node_addr, node_ptr->node_addr) == -1))
 		hostlist_push_host(sinfo_ptr->node_addr, node_ptr->node_addr);
-	if (params.match_flags.hostnames_flag &&
+	if ((params.match_flags & MATCH_FLAG_HOSTNAMES) &&
 	    (hostlist_find(sinfo_ptr->hostnames, node_ptr->node_hostname) == -1))
 		hostlist_push_host(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
