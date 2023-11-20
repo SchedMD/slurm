@@ -221,8 +221,7 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		tree_width = slurm_conf.tree_width;
 
 	rc = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
-	if (!rc &&
-	    (!(*count) || !(*sp_hl)))
+	if (!rc && !(*count))
 		rc = SLURM_ERROR;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
