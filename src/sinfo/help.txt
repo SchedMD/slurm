@@ -1,0 +1,42 @@
+Usage: sinfo [OPTIONS]
+  -a, --all                  show all partitions (including hidden and those
+                             not accessible)
+  -d, --dead                 show only non-responding nodes
+  -e, --exact                group nodes only on exact match of configuration
+      --federation           Report federated information if a member of one
+  -F, --future               Report information about nodes in \"FUTURE\" state.    
+  -h, --noheader             no headers on output
+  --hide                     do not show hidden or non-accessible partitions
+  -i, --iterate=seconds      specify an iteration period
+  --json[=data_parser]       Produce JSON output
+      --local                show only local cluster in a federation.
+                             Overrides --federation.
+  -l, --long                 long output - displays more information
+  -M, --clusters=names       clusters to issue commands to. Implies --local.
+                             NOTE: SlurmDBD must be up.
+  -n, --nodes=NODES          report on specific node(s)
+  --noconvert                don't convert units from their original type
+                             (e.g. 2048M won't be converted to 2G).
+  -N, --Node                 Node-centric format
+  -o, --format=format        format specification
+  -O, --Format=format        long format specification
+  -p, --partition=PARTITION  report on specific partition
+  -r, --responding           report only responding nodes
+  -R, --list-reasons         list reason nodes are down or drained
+  -s, --summarize            report state summary only
+  -S, --sort=fields          comma separated list of fields to sort on
+  -t, --states=node_state    specify the what states of nodes to view
+  -T, --reservation          show only reservation information
+  -v, --verbose              verbosity level
+  -V, --version              output version information and exit
+  --yaml[=data_parser]       Produce YAML output
+
+Help options:
+  --help                     show this help message
+  --helpformat               print a list of fields that can be specified
+                             with '--format=' option
+  --helpFormat               print a list of fields that can be specified
+                             with '--Format=' option
+  --helpstate                print a list of states that can use specified
+                             with '--states=' option
+  --usage                    display brief usage message

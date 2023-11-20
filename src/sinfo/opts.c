@@ -46,6 +46,7 @@
 
 #include "slurm/slurmdb.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 #include "src/interfaces/serializer.h"
@@ -87,6 +88,9 @@ static void  _parse_long_token(char *token, char *sep, int *field_size,
 static void  _print_options(void);
 static void  _usage(void);
 static void _print_node_states(void);
+
+decl_static_data(help_txt);
+decl_static_data(usage_txt);
 
 /*
  * parse_command_line, fill in params data structure with data
@@ -1035,55 +1039,18 @@ void _print_options( void )
 
 static void _usage( void )
 {
-	printf("\
-Usage: sinfo [-abdelNRrsTv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
-             [-S fields] [-o format] [-O Format] [--federation] [--local]\n");
+	char *txt;
+	static_ref_to_cstring(txt, usage_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
 static void _help( void )
 {
-	printf ("\
-Usage: sinfo [OPTIONS]\n\
-  -a, --all                  show all partitions (including hidden and those\n\
-			     not accessible)\n\
-  -d, --dead                 show only non-responding nodes\n\
-  -e, --exact                group nodes only on exact match of configuration\n\
-      --federation           Report federated information if a member of one\n\
-  -F, --future               Report information about nodes in \"FUTURE\" state.    \n\
-  -h, --noheader             no headers on output\n\
-  --hide                     do not show hidden or non-accessible partitions\n\
-  -i, --iterate=seconds      specify an iteration period\n\
-  --json[=data_parser]       Produce JSON output\n\
-      --local                show only local cluster in a federation.\n\
-                             Overrides --federation.\n\
-  -l, --long                 long output - displays more information\n\
-  -M, --clusters=names       clusters to issue commands to. Implies --local.\n\
-                             NOTE: SlurmDBD must be up.\n\
-  -n, --nodes=NODES          report on specific node(s)\n\
-  --noconvert                don't convert units from their original type\n\
-			     (e.g. 2048M won't be converted to 2G).\n\
-  -N, --Node                 Node-centric format\n\
-  -o, --format=format        format specification\n\
-  -O, --Format=format        long format specification\n\
-  -p, --partition=PARTITION  report on specific partition\n\
-  -r, --responding           report only responding nodes\n\
-  -R, --list-reasons         list reason nodes are down or drained\n\
-  -s, --summarize            report state summary only\n\
-  -S, --sort=fields          comma separated list of fields to sort on\n\
-  -t, --states=node_state    specify the what states of nodes to view\n\
-  -T, --reservation          show only reservation information\n\
-  -v, --verbose              verbosity level\n\
-  -V, --version              output version information and exit\n\
-  --yaml[=data_parser]       Produce YAML output\n\
-\nHelp options:\n\
-  --help                     show this help message\n\
-  --helpformat               print a list of fields that can be specified\n\
-                             with '--format=' option\n\
-  --helpFormat               print a list of fields that can be specified\n\
-                             with '--Format=' option\n\
-  --helpstate                print a list of states that can use specified\n\
-                             with '--states=' option\n\
-  --usage                    display brief usage message\n");
+	char *txt;
+	static_ref_to_cstring(txt, help_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
 static void _help_format(void)

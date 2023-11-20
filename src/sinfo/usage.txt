@@ -1,0 +1,2 @@
+Usage: sinfo [-abdelNRrsTv] [-i seconds] [-t states] [-p partition] [-n nodes]
+             [-S fields] [-o format] [-O Format] [--federation] [--local]
