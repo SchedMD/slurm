@@ -68,56 +68,8 @@ int job_format_add_function(list_t *list, int width, bool right_justify,
 			    int (*function) (priority_factors_object_t *,
 			    int, bool, char*));
 
-#define job_format_add_account(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_account)
-#define job_format_add_job_id(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_job_id)
 #define job_format_add_prefix(list,wid,right,suffix) \
 	job_format_add_function(list,0,0,suffix,_print_job_prefix)
-#define job_format_add_age_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_age_priority_normalized)
-#define job_format_add_age_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_age_priority_weighted)
-#define job_format_add_assoc_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_assoc_priority_normalized)
-#define job_format_add_assoc_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_assoc_priority_weighted)
-#define job_format_add_cluster_name(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_cluster_name)
-#define job_format_add_fs_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_fs_priority_normalized)
-#define job_format_add_fs_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_fs_priority_weighted)
-#define job_format_add_job_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_priority_normalized)
-#define job_format_add_job_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_priority_weighted)
-#define job_format_add_js_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_js_priority_normalized)
-#define job_format_add_js_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_js_priority_weighted)
-#define job_format_add_part_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_part_priority_normalized)
-#define job_format_add_part_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_part_priority_weighted)
-#define job_format_add_partition(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_partition)
-#define job_format_add_qos_name(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_qos_name)
-#define job_format_add_qos_priority_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_qos_priority_normalized)
-#define job_format_add_qos_priority_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_qos_priority_weighted)
-#define job_format_add_site_priority(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_site_priority)
-#define job_format_add_job_nice(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_nice)
-#define job_format_add_user_name(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_user_name)
-#define job_format_add_tres_normalized(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_tres_normalized)
-#define job_format_add_tres_weighted(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_tres_weighted)
 
 /*****************************************************************************
  * Job Line Print Functions

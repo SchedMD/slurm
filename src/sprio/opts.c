@@ -247,6 +247,34 @@ parse_command_line( int argc, char* *argv )
 	}
 }
 
+static fmt_data_t fmt_data[] = {
+	{NULL, 'a', _print_age_priority_normalized},
+	{NULL, 'A', _print_age_priority_weighted},
+	{NULL, 'b', _print_assoc_priority_normalized},
+	{NULL, 'B', _print_assoc_priority_weighted},
+	{NULL, 'c', _print_cluster_name},
+	{NULL, 'f', _print_fs_priority_normalized},
+	{NULL, 'F', _print_fs_priority_weighted},
+	{NULL, 'i', _print_job_job_id},
+	{NULL, 'j', _print_js_priority_normalized},
+	{NULL, 'J', _print_js_priority_weighted},
+	{NULL, 'n', _print_qos_name},
+	{NULL, 'N', _print_job_nice},
+	{NULL, 'o', _print_account},
+	{NULL, 'p', _print_part_priority_normalized},
+	{NULL, 'P', _print_part_priority_weighted},
+	{NULL, 'r', _print_partition},
+	{NULL, 'S', _print_site_priority},
+	{NULL, 'q', _print_qos_priority_normalized},
+	{NULL, 'Q', _print_qos_priority_weighted},
+	{NULL, 'u', _print_job_user_name},
+	{NULL, 'y', _print_job_priority_normalized},
+	{NULL, 'Y', _print_job_priority_weighted},
+	{NULL, 't', _print_tres_normalized},
+	{NULL, 'T', _print_tres_weighted},
+	{NULL, 0, NULL},
+};
+
 /*
  * parse_format - Take the user's format specification and use it to build
  *	build the format specifications (internalize it to print.c data
@@ -261,6 +289,8 @@ extern int parse_format( char* format )
 	char *prefix = NULL, *suffix = NULL, *token = NULL;
 	char *tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
+	int i;
+	bool found = false;
 
 	if (format == NULL) {
 		error ("Format option lacks specification.");
@@ -278,124 +308,21 @@ extern int parse_format( char* format )
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
 	while (token) {
+		found = false;
 		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
-		if (field[0] == 'a')
-			job_format_add_age_priority_normalized(params.format_list,
-							       field_size,
-							       right_justify,
-							       suffix );
-		else if (field[0] == 'A')
-			job_format_add_age_priority_weighted(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-		else if (field[0] == 'b')
-			job_format_add_assoc_priority_normalized(
-							params.format_list,
-							field_size,
-							right_justify, suffix);
-		else if (field[0] == 'B')
-			job_format_add_assoc_priority_weighted(
-							params.format_list,
-							field_size,
-							right_justify, suffix);
-		else if (field[0] == 'c')
-			job_format_add_cluster_name(params.format_list,
-						    field_size, right_justify,
-						    suffix);
-		else if (field[0] == 'f')
-			job_format_add_fs_priority_normalized(params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-		else if (field[0] == 'F')
-			job_format_add_fs_priority_weighted(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-		else if (field[0] == 'i')
-			job_format_add_job_id(params.format_list,
-					      field_size,
-					      right_justify,
-					      suffix );
-		else if (field[0] == 'j')
-			job_format_add_js_priority_normalized(params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-		else if (field[0] == 'J')
-			job_format_add_js_priority_weighted(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-		else if (field[0] == 'N')
-			job_format_add_job_nice(params.format_list,
-						field_size,
-						right_justify,
-						suffix );
-		else if (field[0] == 'n')
-			job_format_add_qos_name(params.format_list,
-						field_size,
-						right_justify,
-						suffix );
-		else if (field[0] == 'o')
-			job_format_add_account(params.format_list,
-					       field_size,
-					       right_justify,
-					       suffix);
-		else if (field[0] == 'p')
-			job_format_add_part_priority_normalized(params.format_list,
-								field_size,
-								right_justify,
-								suffix );
-		else if (field[0] == 'P')
-			job_format_add_part_priority_weighted(params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-		else if (field[0] == 'r')
-			job_format_add_partition(params.format_list,
-						 field_size, right_justify,
-						 suffix);
-		else if (field[0] == 'S')
-			job_format_add_site_priority(params.format_list,
-						     field_size,
-						     right_justify, suffix);
-		else if (field[0] == 'q')
-			job_format_add_qos_priority_normalized(params.format_list,
-							       field_size,
-							       right_justify,
-							       suffix );
-		else if (field[0] == 'Q')
-			job_format_add_qos_priority_weighted(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-		else if (field[0] == 'u')
-			job_format_add_user_name(params.format_list,
-						 field_size,
-						 right_justify,
-						 suffix );
-		else if (field[0] == 'y')
-			job_format_add_job_priority_normalized(params.format_list,
-							       field_size,
-							       right_justify,
-							       suffix );
-		else if (field[0] == 'Y')
-			job_format_add_job_priority_weighted(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-		else if (field[0] == 't')
-			job_format_add_tres_normalized(params.format_list,
-						     field_size, right_justify,
-						     suffix);
-		else if (field[0] == 'T')
-			job_format_add_tres_weighted(params.format_list,
-						     field_size, right_justify,
-						     suffix);
-		else
+		for (i = 0; fmt_data[i].name || fmt_data[i].c; i++) {
+			if (field[0] == fmt_data[i].c) {
+				found = true;
+				job_format_add_function(
+					params.format_list, field_size,
+					right_justify, suffix, fmt_data[i].fn);
+				break;
+			}
+		}
+		if (found) {
+			; /* NO OP */
+		} else
 			error( "Invalid job format specification: %c",
 			       field[0] );
 

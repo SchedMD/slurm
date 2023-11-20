@@ -83,6 +83,13 @@ struct sprio_parameters {
 	list_t *user_list;
 };
 
+typedef struct fmt_data {
+	char *name;	/* long format name */
+	char c;		/* short format character, prefixed by '%' */
+	int (*fn)(priority_factors_object_t *job, int width, bool right,
+		  char *suffix);
+} fmt_data_t;
+
 /********************
  * Global Variables *
  ********************/
