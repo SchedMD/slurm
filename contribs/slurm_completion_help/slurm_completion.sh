@@ -279,8 +279,8 @@ function __slurm_compreply_param() {
 	for param in $options; do
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
-		[[ ${words[*]} =~ ${p}= ]] && continue
-		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && [[ $cword == "${#words[@]}" ]] && continue
+		[[ $p != "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${param}[[:space:]]+ ]] && continue
+		[[ $p == "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
 
@@ -3208,7 +3208,6 @@ function _sacctmgr() {
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
 	__slurm_comp_sacctmgr_flags "$1" && return
-	$split && return
 
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
@@ -3337,7 +3336,7 @@ function __slurm_comp_scancel_flags() {
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-n | --jobname?(s)) __slurm_compreply_list "$(__slurm_jobnames)" ;;
+	-n | --name | --jobname) __slurm_compreply "$(__slurm_jobnames)" ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
@@ -3361,6 +3360,7 @@ function _scancel() {
 	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	__slurm_comp_scancel_flags "$1" && return
+	$split && return
 
 	__slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)"
 }
@@ -4079,7 +4079,7 @@ function __scontrol_update_jobid() {
 	stdout) _filedir ;;
 	shared) __slurm_compreply "$(__slurm_boolean)" ;;
 	userid?(s)) __slurm_compreply "$(__slurm_users)" ;;
-	wckey?(s)) __slurm_compreply "$(__slurm_wckey)" ;;
+	wckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
 	workdir) _filedir -d ;;
 	*)
 		$split && return
@@ -5086,11 +5086,7 @@ function __slurm_comp_sreport_spec_all() {
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	*)
-		$split && return 1
-		__slurm_compreply_param "${parameters[*]}"
-		return 1
-		;;
+	*) return 1 ;;
 	esac
 
 	return 0
@@ -5128,12 +5124,11 @@ function __sreport_cluster() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5179,12 +5174,11 @@ function __sreport_job() {
 	job?(s)) __slurm_compreply_list "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" ;;
 	partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5217,9 +5211,8 @@ function __sreport_reservation() {
 	name?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5252,11 +5245,10 @@ function __sreport_user() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	user?(s)) __slurm_compreply_list "$(__slurm_user)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
-		$split && return 1
+		$split && return
 		__slurm_compreply_param "${parameters[*]}"
-		return 1
 		;;
 	esac
 }
@@ -5319,12 +5311,6 @@ function _sreport() {
 	else
 		comp_cmd="__${comp_cmd}_${subcmd//[^[:alnum:]]/}"
 		__slurm_comp_command "${comp_cmd}"
-	fi
-
-	$split && return
-
-	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
-		__slurm_compreply "--"
 	fi
 }
 complete -o nospace -F _sreport sreport
@@ -5479,16 +5465,11 @@ function _strigger() {
 	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
 	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
 
+	__slurm_comp_strigger_flags "$1" && return
+
 	if [[ -z ${subcmd-} ]]; then
 		__slurm_compreply "${subcmds[*]}"
 		return
-	fi
-
-	__slurm_comp_strigger_flags "$1" && return
-	$split && return
-
-	if ((${#COMPREPLY[@]} == 0)) && [[ $cur == "" ]]; then
-		__slurm_compreply "--"
 	fi
 }
 complete -o nospace -F _strigger strigger
