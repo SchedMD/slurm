@@ -49,6 +49,11 @@ drwx------  2 tim    root 4096 Feb 10 17:14 .
 drwxr-xr-x 21 root   root 4096 Nov 15 08:46 ..
 </pre>
 
+<p>While a job is running, root should be able to confirm that
+<code>/$BasePath/$JobID/_tmp</code> exists and is empty. This directory is bind
+mounted into the job. <code>/$BasePath/$JobID</code> should be owned by root,
+and is not intended to be accessible to the user.</p>
+
 <h2 id="spank">SPANK<a class="slurm_link" href="#spank"></a></h2>
 <p>This plugin interfaces with the SPANK api, and automatically joins the job's
 container in the following functions:</p>
