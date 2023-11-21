@@ -4405,6 +4405,13 @@ The default value is 60 seconds.
 .IP
 
 .TP
+\fBtime_min_as_soft_limit\fR
+Treat the \-\-time\-min limit as a soft time limit for the job. Scheduling
+will plan for the shorter duration, while permitting the job to continue
+running until the ("hard") \-\-time limit.
+.IP
+
+.TP
 \fBwhole_hetjob\fR
 Requests to cancel, hold or release any component of a heterogeneous job will
 be applied to all components of the job.

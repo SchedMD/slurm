@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix a few issues when creating reservations.
  -- Fix slurmctld segfault when packing a job step loaded from a < 23.11 state.
  -- Fix a 32-bit compile issue.
+ -- Add SchedulerParameters=time_min_as_soft_limit option.
 
 * Changes in Slurm 23.11.0rc1
 =============================
