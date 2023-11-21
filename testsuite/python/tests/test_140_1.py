@@ -22,15 +22,15 @@ tres_dict = {
             "num": 3},
     "gpu": {"acct": "gres/gpu=",
             "count_needed": False,
-            "param": "gres:gpu:",
+            "param": "gres/gpu:",
             "num": 1},
     "shard": {"acct": "gres/shard=",
               "count_needed": False,
-              "param": "gres:shard:",
+              "param": "gres/shard:",
               "num": 3},
     "license": {"acct": "license/testing=",
                 "count_needed": False,
-                "param": "license:testing:",
+                "param": "license/testing:",
                 "num": license_task_cnt},
 }
 
@@ -290,14 +290,15 @@ def test_no_commas(name):
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_extra_colons(name):
     env_file = atf.module_tmp_path / (name + "_env")
-    # Replace each colon with two in new tres_param
-    tres_params = [f"{tres_dict[name]['param']}{tres_dict[name]['num']}"
-        .replace(":", "::")]
 
-    # If this tres works without a count, test without a count as well
+    # If this tres works without a count, replace slash to old colon
     if not tres_dict[name]["count_needed"]:
         # Replace each colon with two in new tres_param
-        tres_params.append(tres_dict[name]['param'][:-1].replace(":", "::"))
+        tres_params.append(tres_dict[name]['param'][:-1].replace("/", ":"))
+
+    # Replace each colon with two in new tres_param
+    tres_params = [f"{tres_dict[name]['param']}{tres_dict[name]['num']}"
+            .replace(":", "::")]
 
     for tres_param in tres_params:
         job_param = f"--tres-per-task={tres_param} -n1 hostname"
@@ -314,9 +315,9 @@ def test_extra_colons(name):
             f"Job created with extra colons in --tres-per-task running: sbatch --tres-per-task={tres_param} -n1 --wrap 'hostname'"
         # Test sbatch's step. Note sbatch is given legal --tres-per-task value
         job_id = atf.submit_job_sbatch(
-            f"--tres-per-task={tres_param.replace('::', ':')} -n1 "
+            f"--tres-per-task={tres_param.replace('::', '/')} -n1 "
             f"--wrap 'srun {job_param}'", fatal=True)
         atf.wait_for_job_state(job_id, "DONE", fatal=True)
         assert atf.get_job_parameter(
             job_id, 'JobState', default='NOT_FOUND', quiet=True) == "FAILED", \
-            f"sbatch should have failed when its step had an illegal tres-per-task running: sbatch --tres-per-task={tres_param.replace('::', ':')} -n1 --wrap 'srun {job_param}'"
+            f"sbatch should have failed when its step had an illegal tres-per-task running: sbatch --tres-per-task={tres_param.replace('::', '/')} -n1 --wrap 'srun {job_param}'"
