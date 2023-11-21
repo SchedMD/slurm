@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 23.11.0rc2
-=============================
+* Changes in Slurm 23.11.0
+==========================
  -- For jobs that request --cpus-per-gpu, ensure that the --cpus-per-gpu request
     is honored on every node in the and not just for the job as a whole.
  -- Fix "srun -Z" for cred/munge and cred/none.
