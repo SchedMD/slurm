@@ -581,6 +581,11 @@ _init_from_slurmd(int sock, char **argv,
 
 	slurm_conf.slurmd_port = conf->port;
 	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
+	/*
+	 * max_node_cnt is not sent over from slurmd and will be 0 unless we set
+	 * it here to be consistent with the way it's used elsewhere.
+	 */
+	slurm_conf.max_node_cnt = NO_VAL;
 
 	setenvf(NULL, "SLURMD_NODENAME", "%s", conf->node_name);
 

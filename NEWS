@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     the month.
  -- Fix loading of the gpu account gather energy plugin.
  -- Fix slurmctld segfault when reconfiguring after a job resize.
+ -- Fix crash in slurmstepd that can occur when launching tasks via mpi using
+    the pmi2 plugin and using the route/topology plugin.
 
 * Changes in Slurm 23.02.6
 ==========================
