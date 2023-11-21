@@ -25,7 +25,6 @@ generated_html = \
 	download.html \
 	dynamic_nodes.html \
 	elasticsearch.html \
-	elastic_computing.html \
 	extra_constraints.html \
 	faq.html \
 	federation.html \
