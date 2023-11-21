@@ -5029,7 +5029,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t cpus_per_task, resv_port_cnt, state;
 	uint32_t cpu_count, exit_code, srun_pid = 0, flags = 0;
-	uint32_t cpu_alloc_array_cnt;
+	uint32_t cpu_alloc_array_cnt = 0;
 	uint32_t *cpu_alloc_reps = NULL;
 	uint16_t *cpu_alloc_values = NULL;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;

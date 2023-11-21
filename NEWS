@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     or reconfigured could lead to it shutting down completely.
  -- Fix --tres-per-task assertion.
  -- Fix a few issues when creating reservations.
+ -- Fix slurmctld segfault when packing a job step loaded from a < 23.11 state.
 
 * Changes in Slurm 23.11.0rc1
 =============================
