@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	buf_t *buffer;
 	List job_gres_list = NULL, node_gres_list = NULL;
 	bitstr_t *cpu_bitmap;
-	char config_dir[10000], test[1000];
+	char config_dir[1000], test[1000];
 	char slurm_conf[1000];
 	uint32_t num_tasks = 1;
 	uint32_t min_nodes = 1;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	strlcpy(config_dir, argv[2], sizeof(config_dir));
 	strlcpy(config_dir, strcat(config_dir, "/test7.17_configs"),
 		sizeof(config_dir));
-	strlcpy(test, strcat(config_dir, argv[3]), sizeof(config_dir));
+	strlcpy(test, strcat(config_dir, argv[3]), sizeof(test));
 	strlcpy(slurm_conf, strcat(test, "/slurm.conf"), sizeof(slurm_conf));
 
 	/* Enable detailed logging for now */
