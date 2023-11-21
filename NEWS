@@ -388,6 +388,7 @@ documents those changes that are of interest to users and administrators.
     freeze.
  -- Fix scrontab monthly jobs possibly skipping a month if added near the end of
     the month.
+ -- Fix loading of the gpu account gather energy plugin.
 
 * Changes in Slurm 23.02.6
 ==========================
