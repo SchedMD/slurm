@@ -1903,7 +1903,7 @@ extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("update \"%s_%s\" "
 			       "set %s "
-			       "where node_name='%s' AND (state & %ld) "
+			       "where node_name='%s' AND (state & %"PRIu64") "
 			       "order by time_start desc "
 			       "limit 1",
 			       mysql_conn->cluster_name, event_table, values,
