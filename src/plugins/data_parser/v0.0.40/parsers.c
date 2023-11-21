@@ -7594,6 +7594,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_META)[] = {
 	add_parse(STRING, slurm.version.micro, "slurm/version/micro", "Slurm release micro version"),
 	add_parse(STRING, slurm.version.minor, "slurm/version/minor", "Slurm release minor version"),
 	add_parse(STRING, slurm.release, "slurm/release", "Slurm release string"),
+	add_parse(STRING, slurm.cluster, "slurm/cluster", "Slurm cluster name"),
 };
 #undef add_parse
 

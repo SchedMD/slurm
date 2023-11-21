@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     --tres-per-task=license.
  -- slurmctld - Prevent segfault in getopt_long() with an invalid long option.
  -- Switch to man2html-base in Build-Depends for Debian package.
+ -- slurmrestd - Added /meta/slurm/cluster field to responses.
 
 * Changes in Slurm 23.11.0
 ==========================

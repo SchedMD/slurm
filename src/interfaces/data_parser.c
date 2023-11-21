@@ -620,6 +620,7 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 				.minor = xstrdup(SLURM_MINOR),
 			},
 			.release = xstrdup(SLURM_VERSION_STRING),
+			.cluster = xstrdup(slurm_conf.cluster_name),
 		}
 	};
 

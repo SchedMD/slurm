@@ -1622,6 +1622,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	query_meta.plugin.accounting_storage =
 		(char *) slurm_conf.accounting_storage_type;
 	query_meta.client.source = (char *) context_id;
+	query_meta.slurm.cluster = slurm_conf.cluster_name;
 
 	ctxt.parent_path = data_set_list(data_new());
 	ctxt.errors = list_create(free_openapi_resp_error);

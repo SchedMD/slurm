@@ -161,6 +161,7 @@ typedef struct {
 			char *minor;
 		} version;
 		char *release;
+		char *cluster;
 	} slurm;
 } openapi_resp_meta_t;
 
