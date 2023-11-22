@@ -998,6 +998,9 @@ Examples of use include "Gres=gpus:2*cpu,disk=40G" and "Gres=help".
 Identify the job(s) to be updated.
 The job_list may be a comma separated list of job IDs.
 Either \fIJobId\fP or \fIJobName\fP is required.
+If the \fIJobId\fP is equal to the \fIArrayJobID\fP then the update will affect
+all of the individual jobs of the array. In that case, to update the specific
+individual job, the form <\fIArrayJobID\fP>_<\fIArrayTaskId\fP> must be used.
 .IP
 
 .TP
