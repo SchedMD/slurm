@@ -6,7 +6,7 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 23.11 slurmdbd will work with Slurm daemons of version 21.08 and above.
+The 23.11 slurmdbd will work with Slurm daemons of version 22.05 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
