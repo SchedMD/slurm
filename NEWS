@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Added /meta/slurm/cluster field to responses.
  -- Adjust systemd service files to start daemons after remote-fs.target.
  -- Add "--with selinux" option to slurm.spec.
+ -- Fix task/cgroup indexing tasks in cgroup plugins, which caused
+    jobacct/gather to match the gathered stats with the wrong task id.
 
 * Changes in Slurm 23.11.0
 ==========================

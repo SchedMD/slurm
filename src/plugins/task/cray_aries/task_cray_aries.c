@@ -374,7 +374,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *step)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * Runs in privileged mode.
  */
-extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
+				  uint32_t global_tid)
 {
 	int rc = SLURM_SUCCESS;
 	DEF_TIMERS;
