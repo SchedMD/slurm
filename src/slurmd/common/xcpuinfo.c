@@ -173,7 +173,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	int type_cnt;
 	hwloc_bitmap_t cpuset, cpuset_tot = NULL;
 
-	if (xstrcasestr(slurm_conf.slurmd_params, "allow_ecores"))
+	if (slurm_conf.conf_flags & CTL_CONF_ECORE)
 		return;
 
 	if (!(type_cnt = hwloc_cpukinds_get_nr(*topology, 0)))
@@ -404,14 +404,13 @@ extern int xcpuinfo_hwloc_topo_get(
 	}
 #endif
 
-	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket")) {
+	if (slurm_conf.conf_flags & CTL_CONF_L3CSOCK) {
 #if HWLOC_API_VERSION >= 0x00020000
 		objtype[SOCKET] = HWLOC_OBJ_L3CACHE;
 #else
 		error("SlurmdParameters=l3cache_as_socket requires hwloc v2");
 #endif
-	} else if (xstrcasestr(slurm_conf.slurmd_params,
-			       "numa_node_as_socket")) {
+	} else if (slurm_conf.conf_flags & CTL_CONF_NNSOCK) {
 #if HWLOC_API_VERSION >= 0x00020000
 		hwloc_obj_t numa_obj = hwloc_get_next_obj_by_type(
 			topology, HWLOC_OBJ_NODE, NULL);

@@ -5266,6 +5266,17 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (xstrcasestr(conf->slurmd_params, "config_override"))
 		conf->conf_flags |= CTL_CONF_OR;
 
+	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket"))
+		conf->conf_flags |= CTL_CONF_L3CSOCK;
+	else if (xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
+		conf->conf_flags |= CTL_CONF_NNSOCK;
+
+	if (xstrcasestr(conf->slurmd_params, "allow_ecores"))
+		conf->conf_flags |= CTL_CONF_ECORE;
+
+	if (xstrcasestr(conf->slurmd_params, "shutdown_on_reboot"))
+		conf->conf_flags |= CTL_CONF_SHR;
+
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 

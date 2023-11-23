@@ -1355,7 +1355,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		device_lut[i] = xstrdup(pci_info.busId);
 	}
 
-	if (!xstrcasestr(slurm_conf.slurmd_params, "allow_ecores")) {
+	if (!(slurm_conf.conf_flags & CTL_CONF_ECORE)) {
 		enabled_cpus_bits = bit_alloc(MAX_CPUS);
 		for (i = 0; i < conf->block_map_size; i++) {
 			bit_set(enabled_cpus_bits, conf->block_map[i]);

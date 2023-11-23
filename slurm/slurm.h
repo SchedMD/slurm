@@ -2819,6 +2819,10 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_SJX            SLURM_BIT(8) /* AccountingStoreFlags=job_extra */
 #define CTL_CONF_SJS            SLURM_BIT(9) /* AccountingStoreFlags=job_script */
 #define CTL_CONF_SJE            SLURM_BIT(10) /* AccountingStoreFlags=job_env */
+#define CTL_CONF_L3CSOCK        SLURM_BIT(11) /* SlurmdParameters=l3cache_as_socket */
+#define CTL_CONF_NNSOCK         SLURM_BIT(12) /* SlurmdParameters=numa_node_as_socket */
+#define CTL_CONF_ECORE          SLURM_BIT(13) /* SlurmdParameters=allow_ecores */
+#define CTL_CONF_SHR            SLURM_BIT(14) /* SlurmdParameters=shutdown_on_reboot */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
