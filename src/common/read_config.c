@@ -5271,6 +5271,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	else if (xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
 		conf->conf_flags |= CTL_CONF_NNSOCK;
 
+	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket") &&
+	    xstrcasestr(conf->slurmd_params, "numa_node_as_socket") &&
+	    running_in_daemon())
+		error("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
+
 	if (xstrcasestr(conf->slurmd_params, "allow_ecores"))
 		conf->conf_flags |= CTL_CONF_ECORE;
 
