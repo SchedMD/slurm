@@ -2377,16 +2377,12 @@ static int _get_gres_node_cnt(gres_node_state_t *gres_ns, int node_inx)
 /*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
- * job_id IN - job ID for logging
- * job_res IN - job resource allocation
- * overcommit IN - job's ability to overcommit resources
+ * IN job_ptr - job's pointer
  * tres_mc_ptr IN - job's multi-core options
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_select_filter_select_and_set(List *sock_gres_list,
-					     uint32_t job_id,
-					     struct job_resources *job_res,
-					     uint8_t overcommit,
+					     job_record_t *job_ptr,
 					     gres_mc_data_t *tres_mc_ptr)
 {
 	ListIterator sock_gres_iter;
@@ -2396,13 +2392,15 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	int i, job_node_inx = -1, gres_cnt;
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
-	uint32_t **tasks_per_node_socket = NULL;
+	uint32_t **tasks_per_node_socket = NULL, job_id;
 	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
+	struct job_resources *job_res = job_ptr->job_resrcs;
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
 
+	job_id = job_ptr->job_id;
 	node_cnt = bit_size(job_res->node_bitmap);
 	rem_node_cnt = bit_set_count(job_res->node_bitmap);
 	for (i = 0; (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
@@ -2419,7 +2417,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				tasks_per_node_socket =
 					_build_tasks_per_node_sock(
 						job_res,
-						overcommit,
+						job_ptr->details->overcommit,
 						tres_mc_ptr);
 			}
 			if (gres_js->total_node_cnt == 0) {

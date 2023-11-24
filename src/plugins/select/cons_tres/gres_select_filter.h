@@ -117,15 +117,12 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 /*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
- * job_id IN - job ID for logging
- * job_res IN - job resource allocation
- * overcommit IN - job's ability to overcommit resources
+ * IN job_ptr - job's pointer
  * tres_mc_ptr IN - job's multi-core options
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_select_filter_select_and_set(List *sock_gres_list, uint32_t job_id,
-					     struct job_resources *job_res,
-					     uint8_t overcommit,
+extern int gres_select_filter_select_and_set(List *sock_gres_list,
+					     job_record_t *job_ptr,
 					     gres_mc_data_t *tres_mc_ptr);
 
 #endif /* _GRES_SELECT_FILTER_H */
