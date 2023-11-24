@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix scrontab monthly jobs possibly skipping a month if added near the end of
     the month.
  -- Fix loading of the gpu account gather energy plugin.
+ -- Fix slurmctld segfault when reconfiguring after a job resize.
 
 * Changes in Slurm 23.02.6
 ==========================
