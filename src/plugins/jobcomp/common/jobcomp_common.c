@@ -175,7 +175,11 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 					sizeof(end_str));
 	}
 
-	elapsed_time = job_ptr->end_time - job_ptr->start_time;
+	if (job_ptr->end_time && job_ptr->start_time &&
+	    job_ptr->start_time < job_ptr->end_time)
+		elapsed_time = job_ptr->end_time - job_ptr->start_time;
+	else
+		elapsed_time = 0;
 
 	tmp_int = tmp_int2 = 0;
 	if (job_ptr->derived_ec == NO_VAL)
