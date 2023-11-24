@@ -108,7 +108,8 @@ offers some compatibility with PMI-2, but there is no guarantee that it will.
 <a class="slurm_link" href="#slurm_pmix"></a>
 </h3>
 
-<p>At configure time, Slurm looks by default for a PMIx installation under:</p>
+<p>At configure time, Slurm won't build with PMIx unless <b>--with-pmix</b> is
+set. Then it will look by default for a PMIx installation under:</p>
 
 <pre>
 /usr
