@@ -7344,8 +7344,18 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 		if (!lic_req)
 			lic_req = xstrdup("");
 	} else if (tres_per_task) {
-		lic_req = slurm_get_tres_sub_string(
+		char *lic_tmp = slurm_get_tres_sub_string(
 			tres_per_task, "license", num_tasks, false, false);
+		if (lic_tmp) {
+			if (lic_req) {
+				xstrfmtcatat(lic_req, &lic_req_pos,
+					     ",%s", lic_tmp);
+				xfree(lic_tmp);
+			} else {
+				lic_req = lic_tmp;
+				lic_tmp = NULL;
+			}
+		}
 	}
 
 	xfree(job_desc->licenses_tot);

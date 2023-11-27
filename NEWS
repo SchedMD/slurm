@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     TimeLimit=UNLIMITED.
  -- Fix slurmctld segfault when reconfiguring after a job resize.
  -- Fix compilation on FreeBSD.
+ -- Fix issue with requesting a job with --licenses as well as
+    --tres-per-task=license.
 
 * Changes in Slurm 23.11.0
 ==========================
