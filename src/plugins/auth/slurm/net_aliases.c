@@ -37,6 +37,8 @@
 #include <arpa/inet.h>
 #include <jwt.h>
 #include <inttypes.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 
 #include "slurm/slurm.h"
