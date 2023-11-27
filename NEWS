@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmdbd errors when updating reservations with names containing
     apostrophes.
  -- Prevent SQL injection attacks in slurmdbd. CVE-2023-49934.
+ -- Prevent message hash bypass in slurmd which can allow an attacker to reuse
+    root-level MUNGE tokens and escalate permissions. CVE-2023-49935.
 
 * Changes in Slurm 23.11.0
 ==========================

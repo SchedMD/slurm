@@ -1717,6 +1717,9 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		}
 	}
 
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
+
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
 		/* peer may have not been resolved already */
 		if (!peer)
@@ -1751,6 +1754,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
 	msg->auth_ids_set = true;
 
+skip_auth:
 	/*
 	 * Unpack message body
 	 */
