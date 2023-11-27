@@ -40,6 +40,7 @@
 #define _SLURMD_H
 
 #include <inttypes.h>
+#include <limits.h>
 #include <pthread.h>
 #include <sys/types.h>
 
