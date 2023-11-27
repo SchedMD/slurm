@@ -50,6 +50,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/ucred.h>
+#endif
+
 #include "slurm/slurm.h"
 
 #include "src/common/conmgr.h"
