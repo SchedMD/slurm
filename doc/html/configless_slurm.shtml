@@ -101,7 +101,7 @@ Any additional config files will need to be shared a different way or added to
 the parent config.
 </p>
 
-<p>If <b>Prolog</p>b> and <b>Epilog</b> scripts are specified in slurm.conf,
+<p>If <b>Prolog</b> and <b>Epilog</b> scripts are specified in slurm.conf,
 the scripts will <b>ONLY</b> be shipped if the filenames referenced have no path
 separators and the file is located adjacent to slurm.conf.
 </p>
