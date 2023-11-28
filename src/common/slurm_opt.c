@@ -6175,7 +6175,8 @@ extern bool slurm_option_get_tres_per_tres(
  * IN: cpus_per_task - new value for cpus_per_task
  * OUT: tres_per_task_p - string to update
  */
-static void _update_tres_per_task_cpu(int cpus_per_task, char **tres_per_task_p)
+extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
+						  char **tres_per_task_p)
 {
 	int tres_cpu_cnt;
 	char *end, *prefix, *suffix = NULL, *new_str = NULL;
@@ -6282,8 +6283,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
 	if (!cpu_per_task_ptr) {
 		if (opt->cpus_set)
-			_update_tres_per_task_cpu(opt->cpus_per_task,
-						  &opt->tres_per_task);
+			slurm_option_update_tres_per_task_cpu(
+				opt->cpus_per_task, &opt->tres_per_task);
 		return;
 	}
 
@@ -6296,8 +6297,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		 * The value is already in opt->cpus_per_task.
 		 * Update the cpus part of the env variable.
 		 */
-		_update_tres_per_task_cpu(opt->cpus_per_task,
-					  &opt->tres_per_task);
+		slurm_option_update_tres_per_task_cpu(opt->cpus_per_task,
+						      &opt->tres_per_task);
 		if (opt->verbose)
 			info("Updating SLURM_TRES_PER_TASK to %s as --cpus-per-task takes precedence over the environment variables.",
 			     opt->tres_per_task);
@@ -6445,8 +6446,8 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 		}
 		slurm_option_reset(opt, "cpus-per-task");
 		/* Also clear cpu:# from tres-per-task */
-		_update_tres_per_task_cpu(opt->cpus_per_task,
-					  &opt->tres_per_task);
+		slurm_option_update_tres_per_task_cpu(opt->cpus_per_task,
+						      &opt->tres_per_task);
 	}
 }
 
