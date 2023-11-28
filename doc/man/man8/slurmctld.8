@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "January 2023" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "November 2023" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -83,6 +83,12 @@ be preserved.
 Change working directory of slurmctld to SlurmctldLogFile path if possible, or
 to Slurm's StateSaveLocation otherwise. If both of them fail it will fallback to
 /var/tmp.
+.IP
+
+.TP
+\fB\-\-systemd\fR
+Use when starting the daemon with systemd. This will allow slurmctld to notify
+systemd of the new PID when using 'scontrol reconfigure'.
 .IP
 
 .TP
