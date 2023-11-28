@@ -1,6 +1,6 @@
 [Unit]
 Description=Slurm REST daemon
-After=network-online.target slurmctld.service
+After=network-online.target remote-fs.target slurmctld.service
 Wants=network-online.target
 ConditionPathExists=@sysconfdir@/slurm.conf
 
