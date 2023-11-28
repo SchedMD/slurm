@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with requesting a job with --licenses as well as
     --tres-per-task=license.
  -- slurmctld - Prevent segfault in getopt_long() with an invalid long option.
+ -- Switch to man2html-base in Build-Depends for Debian package.
 
 * Changes in Slurm 23.11.0
 ==========================

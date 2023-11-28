@@ -21,7 +21,7 @@ Build-Depends:
  hdf5-helpers,
  libfreeipmi-dev,
  libhdf5-dev,
- man2html,
+ man2html-base,
  libcurl4-openssl-dev,
  libpmix-dev,
  libhttp-parser-dev,
