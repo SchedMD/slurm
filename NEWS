@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix compilation on FreeBSD.
  -- Fix issue with requesting a job with --licenses as well as
     --tres-per-task=license.
+ -- slurmctld - Prevent segfault in getopt_long() with an invalid long option.
 
 * Changes in Slurm 23.11.0
 ==========================

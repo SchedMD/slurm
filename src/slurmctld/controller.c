@@ -2711,6 +2711,7 @@ static void _parse_commandline(int argc, char **argv)
 	static struct option long_options[] = {
 		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{"version", no_argument, 0, 'V'},
+		{NULL, 0, 0, 0}
 	};
 
 	opterr = 0;
