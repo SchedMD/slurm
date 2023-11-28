@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "--with selinux" option to slurm.spec.
  -- Fix task/cgroup indexing tasks in cgroup plugins, which caused
     jobacct/gather to match the gathered stats with the wrong task id.
+ -- select/linear - Fix regression in 23.11 in which jobs that requested
+    --cpus-per-task were rejected.
 
 * Changes in Slurm 23.11.0
 ==========================
