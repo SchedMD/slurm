@@ -243,9 +243,8 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 }
 
 /*
- * If we are removing the association with a user's default account, don't
- * unless are removing all of a user's assocs then removing the default assoc
- * is ok.
+ * Check to ensure that we do not remove a user's default account unless we are
+ * removing all of the user's accounts.
  */
 static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 					    char *cluster_name,
@@ -310,7 +309,7 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 			continue;
 		}
 
-		DB_DEBUG(DB_ASSOC,  mysql_conn->conn,
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
 			 "Attempted removing default account (%s) of user: %s",
 			 row[DASSOC_ACCT], row[DASSOC_USER]);
 		if (!(*default_account)) {
@@ -326,7 +325,6 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 
 	mysql_free_result(result);
 	return *default_account;
-
 }
 
 static void _process_running_jobs_result(char *cluster_name,
