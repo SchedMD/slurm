@@ -7044,6 +7044,7 @@ static int _unpack_node_reg_resp(
 
 unpack_error:
 	slurm_free_node_reg_resp_msg(msg_ptr);
+	*msg = NULL;
 	return SLURM_ERROR;
 }
 
