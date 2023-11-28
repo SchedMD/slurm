@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Switch to man2html-base in Build-Depends for Debian package.
  -- slurmrestd - Added /meta/slurm/cluster field to responses.
  -- Adjust systemd service files to start daemons after remote-fs.target.
+ -- Add "--with selinux" option to slurm.spec.
 
 * Changes in Slurm 23.11.0
 ==========================

@@ -38,6 +38,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with nvml		%_with_nvml path	require nvml support
 # --with jwt		%_with_jwt 1		require jwt support
 # --with freeipmi	%_with_freeipmi 1	require freeipmi support
+# --with selinux	%_with_selinux 1	build with selinux support
 #
 
 #  Options that are off by default (enable with --with <opt>)
@@ -183,6 +184,11 @@ BuildRequires: libyaml-devel >= 0.2.5
 %if %{with freeipmi}
 Requires: freeipmi
 BuildRequires: freeipmi-devel
+%endif
+
+%if %{with selinux}
+Requires: libselinux
+BuildRequires: libselinux-devel
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -399,6 +405,7 @@ notifies slurm about failed nodes.
 	%{?_without_cray:--enable-really-no-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
+	%{?_with_selinux:--enable-selinux} \
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
