@@ -5974,8 +5974,19 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	xassert(*gres_list == NULL);
 
 	if (tres_per_task && running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES))
-		return ESLURM_UNSUPPORTED_GRES;
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
+		char *tmp = xstrdup(tres_per_task);
+		/*
+		 * Check if cpus_per_task is the only part of tres_per_task. If
+		 * so, continue with validation. If not, then the request is
+		 * invalid: reject the request.
+		 */
+		slurm_option_update_tres_per_task_cpu(0, &tmp);
+		if (tmp) {
+			xfree(tmp);
+			return ESLURM_UNSUPPORTED_GRES;
+		}
+	}
 
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
