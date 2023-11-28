@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.11
 ===========================
+ -- Prevent double-xfree() on error in _unpack_node_reg_resp(). CVE-2023-49937.
 
 * Changes in Slurm 22.05.10
 ===========================
