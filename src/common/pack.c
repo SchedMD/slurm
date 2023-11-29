@@ -1046,15 +1046,9 @@ void packstr_array(char **valp, uint32_t size_val, buf_t *buffer)
 int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 {
 	int i;
-	uint32_t ns;
 	uint32_t uint32_tmp;
 
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
+	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > 0) {
 		*valp = xcalloc(*size_valp + 1, sizeof(char *));
@@ -1068,6 +1062,9 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
