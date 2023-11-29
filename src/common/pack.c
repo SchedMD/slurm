@@ -547,6 +547,7 @@ int unpack16_array(uint16_t **valp, uint32_t *size_val, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(*valp);
 	return SLURM_ERROR;
 }
 
@@ -584,6 +585,7 @@ int unpack32_array(uint32_t **valp, uint32_t *size_val, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(*valp);
 	return SLURM_ERROR;
 }
 
@@ -620,6 +622,7 @@ int unpack64_array(uint64_t **valp, uint32_t *size_val, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(*valp);
 	return SLURM_ERROR;
 }
 
@@ -651,6 +654,7 @@ int unpackdouble_array(double **valp, uint32_t* size_val, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(*valp);
 	return SLURM_ERROR;
 }
 
@@ -683,6 +687,7 @@ int unpacklongdouble_array(long double **valp, uint32_t *size_val,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(*valp);
 	return SLURM_ERROR;
 }
 
