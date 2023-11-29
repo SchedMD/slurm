@@ -918,11 +918,8 @@ int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	if (remaining_buf(buffer) < *size_valp)
 		goto unpack_error;
 
-	*valp = malloc(*size_valp);
-	if (*valp == NULL) {
-		log_oom(__FILE__, __LINE__, __func__);
-		abort();
-	}
+	if (!(*valp = malloc(*size_valp)))
+		goto unpack_error;
 	memcpy(*valp, &buffer->head[buffer->processed], *size_valp);
 	buffer->processed += *size_valp;
 
