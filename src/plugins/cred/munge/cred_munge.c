@@ -234,7 +234,8 @@ again:
 }
 
 extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
-			      char *signature, uint32_t sig_size)
+			      char *signature, uint32_t sig_size,
+			      bool replay_okay)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;
@@ -244,6 +245,10 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
 	munge_ctx_t ctx = (munge_ctx_t) key;
+
+#ifdef MULTIPLE_SLURMD
+	replay_okay = true;
+#endif
 
 again:
 	err = munge_decode(signature, ctx, &buf_out, &buf_out_size,
@@ -259,20 +264,17 @@ again:
 		if (err == EMUNGE_SOCKET)
 			error("If munged is up, restart with --num-threads=10");
 
-#ifdef MULTIPLE_SLURMD
 		if (err != EMUNGE_CRED_REPLAYED) {
 			rc = err;
 			goto end_it;
-		} else {
-			debug2("We had a replayed credential, but this is expected in multiple slurmd mode.");
 		}
-#else
-		if (err == EMUNGE_CRED_REPLAYED)
+
+		if (!replay_okay) {
 			rc = ESIG_CRED_REPLAYED;
-		else
-			rc = err;
-		goto end_it;
-#endif
+			goto end_it;
+		}
+
+		debug2("We had a replayed credential, but this is expected.");
 	}
 
 	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {

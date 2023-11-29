@@ -129,7 +129,8 @@ extern int cred_p_sign(void *key, char *buffer, int buf_size,
 }
 
 extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
-			      char *signature, uint32_t sig_size)
+			      char *signature, uint32_t sig_size,
+			      bool replay_okay)
 {
 	char *correct_signature = "fake signature";
 	if (xstrncmp(signature, correct_signature, sig_size))
