@@ -1062,7 +1062,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > 0) {
-		*valp = xcalloc(*size_valp + 1, sizeof(char *));
+		safe_xcalloc(*valp, *size_valp + 1, sizeof(char *));
 		for (i = 0; i < *size_valp; i++) {
 			if (unpackstr_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
 				*size_valp = 0;
@@ -1075,6 +1075,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	*size_valp = 0;
 	return SLURM_ERROR;
 }
 
