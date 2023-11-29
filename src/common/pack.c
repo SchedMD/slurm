@@ -1048,6 +1048,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	int i;
 	uint32_t uint32_tmp;
 
+	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > 0) {
@@ -1059,8 +1060,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 				return SLURM_ERROR;
 			}
 		}
-	} else
-		*valp = NULL;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
