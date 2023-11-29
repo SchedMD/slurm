@@ -959,6 +959,8 @@ unpack_error:
  */
 int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
+	uint32_t cnt;
+
 	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
@@ -969,37 +971,38 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
 		      __func__, *size_valp, MAX_PACK_MEM_LEN);
 		return SLURM_ERROR;
-	} else if (*size_valp > 0) {
-		uint32_t cnt = *size_valp;
+	}
 
-		if (remaining_buf(buffer) < cnt)
-			return SLURM_ERROR;
+	cnt = *size_valp;
 
-		/* make a buffer 2 times the size just to be safe */
-		*valp = xmalloc_nz((cnt * 2) + 1);
-		if (*valp) {
-			char *copy = NULL, *str, tmp;
-			uint32_t i;
-			copy = *valp;
-			str = &buffer->head[buffer->processed];
+	if (remaining_buf(buffer) < cnt)
+		return SLURM_ERROR;
 
-			for (i = 0; i < cnt && *str; i++) {
-				tmp = *str++;
-				if ((tmp == '\\') || (tmp == '\'')) {
-					*copy++ = '\\';
-					(*size_valp)++;
-				}
+	/* make a buffer 2 times the size just to be safe */
+	*valp = xmalloc_nz((cnt * 2) + 1);
+	if (*valp) {
+		char *copy = NULL, *str, tmp;
+		uint32_t i;
+		copy = *valp;
+		str = &buffer->head[buffer->processed];
 
-				*copy++ = tmp;
+		for (i = 0; i < cnt && *str; i++) {
+			tmp = *str++;
+			if ((tmp == '\\') || (tmp == '\'')) {
+				*copy++ = '\\';
+				(*size_valp)++;
 			}
 
-			/* Since we used xmalloc_nz, terminate the string. */
-			*copy++ = '\0';
+			*copy++ = tmp;
 		}
 
-		/* add the original value since that is what we processed */
-		buffer->processed += cnt;
+		/* Since we used xmalloc_nz, terminate the string. */
+		*copy++ = '\0';
 	}
+
+	/* add the original value since that is what we processed */
+	buffer->processed += cnt;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
