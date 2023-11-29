@@ -851,6 +851,7 @@ int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	*size_valp = 0;
 	return SLURM_ERROR;
 }
 
@@ -887,6 +888,7 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	*size_valp = 0;
 	return SLURM_ERROR;
 }
 
@@ -924,6 +926,7 @@ int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	*size_valp = 0;
 	return SLURM_ERROR;
 }
 
@@ -987,6 +990,7 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	*size_valp = 0;
 	return SLURM_ERROR;
 }
 
