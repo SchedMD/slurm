@@ -526,12 +526,15 @@ int unpack16_array(uint16_t **valp, uint32_t *size_val, buf_t *buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc_nz((*size_val) * sizeof(uint16_t));
+	safe_xcalloc(*valp, *size_val, sizeof(uint16_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack16((*valp) + i, buffer))
-			return SLURM_ERROR;
+			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
@@ -560,12 +563,15 @@ int unpack32_array(uint32_t **valp, uint32_t *size_val, buf_t *buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc_nz((*size_val) * sizeof(uint32_t));
+	safe_xcalloc(*valp, *size_val, sizeof(uint32_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack32((*valp) + i, buffer))
-			return SLURM_ERROR;
+			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
@@ -593,12 +599,15 @@ int unpack64_array(uint64_t **valp, uint32_t *size_val, buf_t *buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
+	safe_xcalloc(*valp, *size_val, sizeof(uint64_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack64((*valp) + i, buffer))
-			return SLURM_ERROR;
+			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 void packdouble_array(double *valp, uint32_t size_val, buf_t *buffer)
@@ -621,12 +630,15 @@ int unpackdouble_array(double **valp, uint32_t* size_val, buf_t *buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc_nz((*size_val) * sizeof(double));
+	safe_xcalloc(*valp, *size_val, sizeof(double));
 	for (i = 0; i < *size_val; i++) {
 		if (unpackdouble((*valp) + i, buffer))
-			return SLURM_ERROR;
+			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 void packlongdouble_array(long double *valp, uint32_t size_val, buf_t *buffer)
@@ -650,12 +662,15 @@ int unpacklongdouble_array(long double **valp, uint32_t *size_val,
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc_nz((*size_val) * sizeof(long double));
+	safe_xcalloc(*valp, *size_val, sizeof(long double));
 	for (i = 0; i < *size_val; i++) {
 		if (unpacklongdouble((*valp) + i, buffer))
-			return SLURM_ERROR;
+			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 
