@@ -981,9 +981,6 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 		*copy++ = tmp;
 	}
 
-	/* Since we used xmalloc_nz, terminate the string. */
-	*copy++ = '\0';
-
 	/* add the original value since that is what we processed */
 	buffer->processed += cnt;
 
