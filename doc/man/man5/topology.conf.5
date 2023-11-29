@@ -76,12 +76,10 @@ Slurm's hostlist expression parser is used, so the node
 names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]").
 
 .LP
-The block topology was designed with NVIDIA DGX GH200 machines in mind.
-These machines are designed to have low latency connections for blocks of
-machines. This topology places emphasis on reducing fragmentation of the
-cluster, allowing jobs to take advantage of the low latency connections,
-over starting jobs as quickly as possible on the first available resources,
-which leads to fragmentation over time.
+This topology plugin places emphasis on reducing fragmentation of the
+cluster, allowing jobs to take advantage of lower\-latency connections
+between smaller "blocks" of node, rather than starting jobs as quickly
+as possible on the first available resources.
 
 .LP
 Defined blocks of nodes are paired with other contiguous blocks, to create
