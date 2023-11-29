@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
     count that differs from the number of unique nodes in the hostlist.
  -- Prevent slurmdbd errors when updating reservations with names containing
     apostrophes.
+ -- Prevent message extension attacks that could bypass the message hash.
+    CVE-2023-49933.
  -- Prevent SQL injection attacks in slurmdbd. CVE-2023-49934.
  -- Prevent message hash bypass in slurmd which can allow an attacker to reuse
     root-level MUNGE tokens and escalate permissions. CVE-2023-49935.
