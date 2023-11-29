@@ -881,7 +881,7 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	if (remaining_buf(buffer) < *size_valp)
 		goto unpack_error;
 
-	*valp = xmalloc_nz(*size_valp);
+	safe_xmalloc(*valp, *size_valp);
 	memcpy(*valp, &buffer->head[buffer->processed], *size_valp);
 	buffer->processed += *size_valp;
 
