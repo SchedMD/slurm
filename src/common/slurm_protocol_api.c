@@ -2162,7 +2162,7 @@ extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
 	slurm_addr_t *addr_array = NULL;
 
 	safe_unpack32(size_val, buffer);
-	addr_array = xcalloc(*size_val, sizeof(slurm_addr_t));
+	safe_xcalloc(addr_array, *size_val, sizeof(slurm_addr_t));
 
 	for (int i = 0; i < *size_val; i++) {
 		if (slurm_unpack_addr_no_alloc(&addr_array[i], buffer))
