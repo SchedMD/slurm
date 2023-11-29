@@ -173,7 +173,8 @@ typedef struct {
 	int   (*cred_verify_sign)	(void *key, char *buffer,
 					 uint32_t buf_size,
 					 char *signature,
-					 uint32_t sig_size);
+					 uint32_t sig_size,
+					 bool replay_okay);
 	const char *(*cred_str_error)	(int);
 } slurm_cred_ops_t;
 
@@ -253,8 +254,6 @@ static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
-
-static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
 static int _slurm_cred_init(void)
 {
@@ -1793,11 +1792,11 @@ static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	rc = (*(ops.cred_verify_sign))(ctx->key, start, len,
 				       cred->signature,
-				       cred->siglen);
+				       cred->siglen, false);
 	if (rc && _exkey_is_valid(ctx)) {
 		rc = (*(ops.cred_verify_sign))(ctx->exkey, start, len,
 					       cred->signature,
-					       cred->siglen);
+					       cred->siglen, false);
 	}
 
 	if (rc) {
@@ -2487,25 +2486,6 @@ void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	xfree(sbcast_cred);
 }
 
-static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
-{
-	int i;
-	uint32_t sig_num = 0;
-	struct sbcast_cache *new_cache_rec;
-
-	/* Using two bytes at a time gives us a larger number
-	 * and reduces the possibility of a duplicate value */
-	for (i = 0; i < sbcast_cred->siglen; i += 2) {
-		sig_num += (sbcast_cred->signature[i] << 8) +
-			   sbcast_cred->signature[i+1];
-	}
-
-	new_cache_rec = xmalloc(sizeof(struct sbcast_cache));
-	new_cache_rec->expire = sbcast_cred->expiration;
-	new_cache_rec->value  = sig_num;
-	list_append(sbcast_cache_list, new_cache_rec);
-}
-
 /* Extract contents of an sbcast credential verifying the digital signature.
  * NOTE: We can only perform the full credential validation once with
  *	Munge without generating a credential replay error, so we only
@@ -2520,9 +2500,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				       uint16_t protocol_version)
 {
 	sbcast_cred_arg_t *arg;
-	struct sbcast_cache *next_cache_rec;
-	uint32_t sig_num = 0;
-	int i, rc;
+	int rc;
 	time_t now = time(NULL);
 	buf_t *buffer;
 
@@ -2533,65 +2511,20 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 	if (now > sbcast_cred->expiration)
 		return NULL;
 
-	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
+	if (block_no == 1) {
 		buffer = init_buf(4096);
 		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 		/* NOTE: the verification checks that the credential was
 		 * created by SlurmUser or root */
 		rc = (*(ops.cred_verify_sign)) (
 			ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
-			sbcast_cred->signature, sbcast_cred->siglen);
+			sbcast_cred->signature, sbcast_cred->siglen, true);
 		FREE_NULL_BUFFER(buffer);
 
 		if (rc) {
 			error("sbcast_cred verify: %s",
 			      (*(ops.cred_str_error))(rc));
 			return NULL;
-		}
-		_sbast_cache_add(sbcast_cred);
-
-	} else {
-		char *err_str = NULL;
-		bool cache_match_found = false;
-		ListIterator sbcast_iter;
-		for (i = 0; i < sbcast_cred->siglen; i += 2) {
-			sig_num += (sbcast_cred->signature[i] << 8) +
-				   sbcast_cred->signature[i+1];
-		}
-
-		sbcast_iter = list_iterator_create(sbcast_cache_list);
-		while ((next_cache_rec =
-			(struct sbcast_cache *) list_next(sbcast_iter))) {
-			if ((next_cache_rec->expire == sbcast_cred->expiration) &&
-			    (next_cache_rec->value  == sig_num)) {
-				cache_match_found = true;
-				break;
-			}
-			if (next_cache_rec->expire <= now)
-				list_delete_item(sbcast_iter);
-		}
-		list_iterator_destroy(sbcast_iter);
-
-		if (!cache_match_found) {
-			error("sbcast_cred verify: signature not in cache");
-			if (SLURM_DIFFTIME(now, cred_restart_time) > 60)
-				return NULL;	/* restarted >60 secs ago */
-			buffer = init_buf(4096);
-			_pack_sbcast_cred(sbcast_cred, buffer,
-					  protocol_version);
-			rc = (*(ops.cred_verify_sign)) (
-				ctx->key, get_buf_data(buffer),
-				get_buf_offset(buffer),
-				sbcast_cred->signature, sbcast_cred->siglen);
-			FREE_NULL_BUFFER(buffer);
-			if (rc)
-				err_str = (char *)(*(ops.cred_str_error))(rc);
-			if (err_str && xstrcmp(err_str, "Credential replayed")){
-				error("sbcast_cred verify: %s", err_str);
-				return NULL;
-			}
-			info("sbcast_cred verify: signature revalidated");
-			_sbast_cache_add(sbcast_cred);
 		}
 	}
 
