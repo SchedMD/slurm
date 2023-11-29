@@ -830,6 +830,7 @@ extern void packmem(void *valp, uint32_t size_val, buf_t *buffer)
  */
 int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
+	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
@@ -842,8 +843,7 @@ int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 			return SLURM_ERROR;
 		*valp = &buffer->head[buffer->processed];
 		buffer->processed += *size_valp;
-	} else
-		*valp = NULL;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -861,6 +861,7 @@ unpack_error:
  */
 int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
+	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
@@ -875,8 +876,7 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 		memcpy(*valp, &buffer->head[buffer->processed],
 		       *size_valp);
 		buffer->processed += *size_valp;
-	} else
-		*valp = NULL;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -894,6 +894,7 @@ unpack_error:
  */
 int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
+	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
@@ -909,9 +910,7 @@ int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 		memcpy(*valp, &buffer->head[buffer->processed],
 		       *size_valp);
 		buffer->processed += *size_valp;
-	} else
-		*valp = NULL;
-
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -934,6 +933,7 @@ unpack_error:
  */
 int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
+	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
@@ -970,8 +970,7 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 
 		/* add the original value since that is what we processed */
 		buffer->processed += cnt;
-	} else
-		*valp = NULL;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
