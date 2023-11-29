@@ -830,14 +830,7 @@ extern void packmem(void *valp, uint32_t size_val, buf_t *buffer)
  */
 int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
-	uint32_t ns;
-
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
+	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
@@ -852,6 +845,9 @@ int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
@@ -865,14 +861,7 @@ int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
  */
 int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
-	uint32_t ns;
-
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
+	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
@@ -889,6 +878,9 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
@@ -902,14 +894,7 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
  */
 int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
-	uint32_t ns;
-
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
+	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
@@ -930,6 +915,9 @@ int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 /*
@@ -948,14 +936,7 @@ int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
  */
 int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
-	uint32_t ns;
-
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
+	safe_unpack32(size_valp, buffer);
 
 	if (*size_valp > MAX_PACK_MEM_LEN) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
@@ -994,6 +975,9 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, buf_t *buf)
