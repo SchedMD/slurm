@@ -1097,7 +1097,7 @@ skip_auth:
 
 	msg->body_offset =  get_buf_offset(buffer);
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -1387,7 +1387,7 @@ skip_auth:
 	msg.msg_type = header.msg_type;
 	msg.flags = header.flags;
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		auth_g_destroy(auth_cred);
@@ -1818,7 +1818,7 @@ skip_auth:
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	if ( (header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		auth_g_destroy(auth_cred);

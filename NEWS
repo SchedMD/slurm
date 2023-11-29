@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove error message from assoc_mgr_update_assocs when purposefully
     resetting the default qos.
  -- data_parser/v0.0.39 - Fix segfault when POSTing data with association usage.
+ -- Prevent message extension attacks that could bypass the message hash.
+    CVE-2023-49933.
  -- Prevent message hash bypass in slurmd which can allow an attacker to reuse
     root-level MUNGE tokens and escalate permissions. CVE-2023-49935.
  -- Prevent NULL pointer dereference on size_valp overflow. CVE-2023-49936.
