@@ -246,7 +246,7 @@ if [ -z "$_SGATHER_SPAWNED" ]; then
   # isn't necessary) ...
   #
   if ! $_SGATHER_REMOTE_COPY; then
-    $SRUN --ntasks=$SLURM_NNODES --ntasks-per-node=1 $0 || exit $?
+    $SRUN --nodes=$SLURM_NNODES --ntasks-per-node=1 $0 || exit $?
   # ... or in multiple steps with regard to $_SGATHER_FANOUT
   #
   else
