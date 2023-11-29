@@ -521,9 +521,8 @@ void pack16_array(uint16_t *valp, uint32_t size_val, buf_t *buffer)
  */
 int unpack16_array(uint16_t **valp, uint32_t *size_val, buf_t *buffer)
 {
-	if (unpack32(size_val, buffer))
-		return SLURM_ERROR;
-
+	*valp = NULL;
+	safe_unpack32(size_val, buffer);
 	safe_xcalloc(*valp, *size_val, sizeof(uint16_t));
 	for (uint32_t i = 0; i < *size_val; i++)
 		safe_unpack16(&(*valp)[i], buffer);
@@ -555,9 +554,8 @@ void pack32_array(uint32_t *valp, uint32_t size_val, buf_t *buffer)
  */
 int unpack32_array(uint32_t **valp, uint32_t *size_val, buf_t *buffer)
 {
-	if (unpack32(size_val, buffer))
-		return SLURM_ERROR;
-
+	*valp = NULL;
+	safe_unpack32(size_val, buffer);
 	safe_xcalloc(*valp, *size_val, sizeof(uint32_t));
 	for (uint32_t i = 0; i < *size_val; i++)
 		safe_unpack32(&(*valp)[i], buffer);
@@ -588,9 +586,8 @@ void pack64_array(uint64_t *valp, uint32_t size_val, buf_t *buffer)
  */
 int unpack64_array(uint64_t **valp, uint32_t *size_val, buf_t *buffer)
 {
-	if (unpack32(size_val, buffer))
-		return SLURM_ERROR;
-
+	*valp = NULL;
+	safe_unpack32(size_val, buffer);
 	safe_xcalloc(*valp, *size_val, sizeof(uint64_t));
 	for (uint32_t i = 0; i < *size_val; i++)
 		safe_unpack64(&(*valp)[i], buffer);
@@ -616,9 +613,8 @@ void packdouble_array(double *valp, uint32_t size_val, buf_t *buffer)
 
 int unpackdouble_array(double **valp, uint32_t* size_val, buf_t *buffer)
 {
-	if (unpack32(size_val, buffer))
-		return SLURM_ERROR;
-
+	*valp = NULL;
+	safe_unpack32(size_val, buffer);
 	safe_xcalloc(*valp, *size_val, sizeof(double));
 	for (uint32_t i = 0; i < *size_val; i++)
 		safe_unpackdouble(&(*valp)[i], buffer);
@@ -645,9 +641,8 @@ void packlongdouble_array(long double *valp, uint32_t size_val, buf_t *buffer)
 int unpacklongdouble_array(long double **valp, uint32_t *size_val,
 			   buf_t *buffer)
 {
-	if (unpack32(size_val, buffer))
-		return SLURM_ERROR;
-
+	*valp = NULL;
+	safe_unpack32(size_val, buffer);
 	safe_xcalloc(*valp, *size_val, sizeof(long double));
 	for (uint32_t i = 0; i < *size_val; i++)
 		safe_unpacklongdouble(&(*valp)[i], buffer);
