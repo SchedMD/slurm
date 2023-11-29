@@ -1091,7 +1091,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 
 	msg->body_offset =  get_buf_offset(buffer);
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -1380,7 +1380,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	msg.msg_type = header.msg_type;
 	msg.flags = header.flags;
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		(void) auth_g_destroy(auth_cred);
@@ -1804,7 +1804,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	if ( (header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) auth_g_destroy(auth_cred);

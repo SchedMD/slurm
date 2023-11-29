@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.11
 ===========================
+ -- Prevent message extension attacks that could bypass the message hash.
+    CVE-2023-49933.
  -- Prevent NULL pointer dereference on size_valp overflow. CVE-2023-49936.
  -- Prevent double-xfree() on error in _unpack_node_reg_resp(). CVE-2023-49937.
 
