@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
     jobacct/gather to match the gathered stats with the wrong task id.
  -- select/linear - Fix regression in 23.11 in which jobs that requested
     --cpus-per-task were rejected.
+ -- Fix crash in slurmstepd that can occur when launching tasks via mpi using
+    the pmi2 plugin and using the route/topology plugin.
 
 * Changes in Slurm 23.11.0
 ==========================
