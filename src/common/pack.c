@@ -841,12 +841,12 @@ int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer)
 		      __func__, *size_valp, MAX_PACK_MEM_LEN);
 		return SLURM_ERROR;
 	}
-	else if (*size_valp > 0) {
-		if (remaining_buf(buffer) < *size_valp)
-			return SLURM_ERROR;
-		*valp = &buffer->head[buffer->processed];
-		buffer->processed += *size_valp;
-	}
+
+	if (remaining_buf(buffer) < *size_valp)
+		return SLURM_ERROR;
+	*valp = &buffer->head[buffer->processed];
+	buffer->processed += *size_valp;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -875,14 +875,13 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 		      __func__, *size_valp, MAX_PACK_MEM_LEN);
 		return SLURM_ERROR;
 	}
-	else if (*size_valp > 0) {
-		if (remaining_buf(buffer) < *size_valp)
-			return SLURM_ERROR;
-		*valp = xmalloc_nz(*size_valp);
-		memcpy(*valp, &buffer->head[buffer->processed],
-		       *size_valp);
-		buffer->processed += *size_valp;
-	}
+
+	if (remaining_buf(buffer) < *size_valp)
+		return SLURM_ERROR;
+	*valp = xmalloc_nz(*size_valp);
+	memcpy(*valp, &buffer->head[buffer->processed], *size_valp);
+	buffer->processed += *size_valp;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -911,18 +910,17 @@ int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 		      __func__, *size_valp, MAX_PACK_MEM_LEN);
 		return SLURM_ERROR;
 	}
-	else if (*size_valp > 0) {
-		if (remaining_buf(buffer) < *size_valp)
-			return SLURM_ERROR;
-		*valp = malloc(*size_valp);
-		if (*valp == NULL) {
-			log_oom(__FILE__, __LINE__, __func__);
-			abort();
-		}
-		memcpy(*valp, &buffer->head[buffer->processed],
-		       *size_valp);
-		buffer->processed += *size_valp;
+
+	if (remaining_buf(buffer) < *size_valp)
+		return SLURM_ERROR;
+	*valp = malloc(*size_valp);
+	if (*valp == NULL) {
+		log_oom(__FILE__, __LINE__, __func__);
+		abort();
 	}
+	memcpy(*valp, &buffer->head[buffer->processed], *size_valp);
+	buffer->processed += *size_valp;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
