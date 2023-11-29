@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent SQL injection attacks in slurmdbd. CVE-2023-49934.
  -- Prevent message hash bypass in slurmd which can allow an attacker to reuse
     root-level MUNGE tokens and escalate permissions. CVE-2023-49935.
+ -- Prevent NULL pointer dereference on size_valp overflow. CVE-2023-49936.
  -- Prevent double-xfree() on error in _unpack_node_reg_resp().
     CVE-2023-49937.
 
