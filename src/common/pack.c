@@ -947,6 +947,7 @@ unpack_error:
 int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 {
 	uint32_t cnt;
+	char *copy = NULL, *str, tmp;
 
 	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
@@ -967,25 +968,21 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 
 	/* make a buffer 2 times the size just to be safe */
 	*valp = xmalloc_nz((cnt * 2) + 1);
-	if (*valp) {
-		char *copy = NULL, *str, tmp;
-		uint32_t i;
-		copy = *valp;
-		str = &buffer->head[buffer->processed];
+	copy = *valp;
+	str = &buffer->head[buffer->processed];
 
-		for (i = 0; i < cnt && *str; i++) {
-			tmp = *str++;
-			if ((tmp == '\\') || (tmp == '\'')) {
-				*copy++ = '\\';
-				(*size_valp)++;
-			}
-
-			*copy++ = tmp;
+	for (uint32_t i = 0; i < cnt && *str; i++) {
+		tmp = *str++;
+		if ((tmp == '\\') || (tmp == '\'')) {
+			*copy++ = '\\';
+			(*size_valp)++;
 		}
 
-		/* Since we used xmalloc_nz, terminate the string. */
-		*copy++ = '\0';
+		*copy++ = tmp;
 	}
+
+	/* Since we used xmalloc_nz, terminate the string. */
+	*copy++ = '\0';
 
 	/* add the original value since that is what we processed */
 	buffer->processed += cnt;
