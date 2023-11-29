@@ -1049,14 +1049,15 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	*valp = NULL;
 	safe_unpack32(size_valp, buffer);
 
-	if (*size_valp > 0) {
-		safe_xcalloc(*valp, *size_valp + 1, sizeof(char *));
-		for (i = 0; i < *size_valp; i++) {
-			if (unpackstr_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
-				*size_valp = 0;
-				xfree_array(*valp);
-				return SLURM_ERROR;
-			}
+	if (!*size_valp)
+		return SLURM_SUCCESS;
+
+	safe_xcalloc(*valp, *size_valp + 1, sizeof(char *));
+	for (i = 0; i < *size_valp; i++) {
+		if (unpackstr_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
+			*size_valp = 0;
+			xfree_array(*valp);
+			return SLURM_ERROR;
 		}
 	}
 	return SLURM_SUCCESS;
