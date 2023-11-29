@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
     count that differs from the number of unique nodes in the hostlist.
  -- Prevent slurmdbd errors when updating reservations with names containing
     apostrophes.
+ -- Prevent SQL injection attacks in slurmdbd. CVE-2023-49934.
 
 * Changes in Slurm 23.11.0
 ==========================
