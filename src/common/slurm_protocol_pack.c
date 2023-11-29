@@ -14434,6 +14434,15 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	if (rc) {
 		error("Malformed RPC of type %s(%u) received",
 		      rpc_num2string(msg->msg_type), msg->msg_type);
+
+		/*
+		 * The unpack functions should not leave this set on error,
+		 * doing so would likely result in a double xfree() if we
+		 * did not proactively clear it. (Which, instead, may cause
+		 * a memory leak. But that's preferrable.)
+		 */
+		xassert(msg->data);
+		msg->data = NULL;
 	}
 	return rc;
 }
