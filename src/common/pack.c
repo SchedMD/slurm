@@ -980,7 +980,7 @@ int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, buf_t *buffer)
 		return SLURM_ERROR;
 
 	/* make a buffer 2 times the size just to be safe */
-	*valp = xmalloc_nz((cnt * 2) + 1);
+	safe_xmalloc(*valp, (cnt * 2) + 1);
 	copy = *valp;
 	str = &buffer->head[buffer->processed];
 
