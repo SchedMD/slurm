@@ -4079,7 +4079,7 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (args->proto_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
@@ -4123,63 +4123,6 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
-		packstr(step_ptr->tres_fmt_alloc_str, buffer);
-		pack16(step_ptr->start_protocol_ver, buffer);
-
-		packstr(step_ptr->cpus_per_tres, buffer);
-		packstr(step_ptr->mem_per_tres, buffer);
-		packstr(step_ptr->submit_line, buffer);
-		packstr(step_ptr->tres_bind, buffer);
-		packstr(step_ptr->tres_freq, buffer);
-		packstr(step_ptr->tres_per_step, buffer);
-		packstr(step_ptr->tres_per_node, buffer);
-		packstr(step_ptr->tres_per_socket, buffer);
-		packstr(step_ptr->tres_per_task, buffer);
-	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(step_ptr->job_ptr->array_job_id, buffer);
-		pack32(step_ptr->job_ptr->array_task_id, buffer);
-
-		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
-
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
-		pack32(step_ptr->cpu_freq_min, buffer);
-		pack32(step_ptr->cpu_freq_max, buffer);
-		pack32(step_ptr->cpu_freq_gov, buffer);
-		pack32(task_cnt, buffer);
-		if (step_ptr->step_layout)
-			pack32(step_ptr->step_layout->task_dist, buffer);
-		else
-			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
-		pack32(step_ptr->time_limit, buffer);
-		pack32(step_ptr->state, buffer);
-		pack32(step_ptr->srun_pid, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(slurm_conf.cluster_name, buffer);
-		packstr(step_ptr->container, buffer);
-		if (step_ptr->job_ptr->part_ptr)
-			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
-		else
-			packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->host, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_str_hex(pack_bitstr, buffer);
-		select_g_select_jobinfo_pack(NULL, buffer,
-					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
 
@@ -4459,45 +4402,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	return _step_partial_comp(step_ptr, req, finish, rem, max_rc);
 }
 
-static void _recalloc_jobacct(jobacctinfo_t *from, uint32_t new_count)
-{
-	xrecalloc(from->tres_ids, new_count, sizeof(uint32_t));
-	xrecalloc(from->tres_usage_in_max, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_max_nodeid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_max_taskid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_min, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_min_nodeid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_min_taskid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_in_tot, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_max, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_max_nodeid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_max_taskid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_min, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_min_nodeid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_min_taskid, new_count, sizeof(uint64_t));
-	xrecalloc(from->tres_usage_out_tot, new_count, sizeof(uint64_t));
-
-	/* init the new ones if dest is larger than from */
-	for (int i = from->tres_count; i < new_count; i++) {
-		from->tres_ids[i] = NO_VAL;
-		from->tres_usage_in_min[i] = INFINITE64;
-		from->tres_usage_in_max[i] = INFINITE64;
-		from->tres_usage_in_tot[i] = INFINITE64;
-		from->tres_usage_out_max[i] = INFINITE64;
-		from->tres_usage_out_min[i] = INFINITE64;
-		from->tres_usage_out_tot[i] = INFINITE64;
-		from->tres_usage_in_max_taskid[i] = INFINITE64;
-		from->tres_usage_in_min_taskid[i] = INFINITE64;
-		from->tres_usage_out_max_taskid[i] = INFINITE64;
-		from->tres_usage_out_min_taskid[i] = INFINITE64;
-		from->tres_usage_in_max_nodeid[i] = INFINITE64;
-		from->tres_usage_in_min_nodeid[i] = INFINITE64;
-		from->tres_usage_out_max_nodeid[i] = INFINITE64;
-		from->tres_usage_out_min_nodeid[i] = INFINITE64;
-	}
-	from->tres_count = new_count;
-}
-
 static int _step_partial_comp(step_record_t *step_ptr,
 			      step_complete_msg_t *req, bool finish,
 			      int *rem, uint32_t *max_rc)
@@ -4579,148 +4483,6 @@ static int _step_partial_comp(step_record_t *step_ptr,
 #endif
 
 	ext_sensors_g_get_stependdata(step_ptr);
-
-	/*
-	 * Before 23.02 it was possible for the slurmd to send the wrong TRES
-	 * count when starting a stepd if the TRES was changed in the slurmctld
-	 * but the slurmd was never restarted. In this event we will ignore the
-	 * accounting for the TRES coming in until the slurmd is restarted.
-	 *
-	 * This can be removed 2 versions after 23.02.
-	 */
-	if (step_ptr->jobacct && req->jobacct &&
-	    (step_ptr->jobacct->tres_count != req->jobacct->tres_count)) {
-		jobacctinfo_t *dest = step_ptr->jobacct, *from = req->jobacct;
-		int i, j;
-
-		/*
-		 * If the controller is bigger we want to alter the size here
-		 * before we swap things.
-		 */
-		if (dest->tres_count > from->tres_count)
-			_recalloc_jobacct(from, dest->tres_count);
-
-		for (i = 0, j = 0; i < dest->tres_count; i++, j++) {
-			int j2, j_no_val = -1, found = -1;
-			uint32_t tmp_id;
-			uint32_t tmp_val;
-
-			/* Skip the already correct ones. */
-			if (dest->tres_ids[i] == from->tres_ids[j])
-				continue;
-
-			/*
-			 * Here we are looking for the right spot and the first
-			 * NO_VAL to put the mismatch from the stepd into a
-			 * blank spot.
-			 */
-			for (j2 = j; j2 < from->tres_count; j2++) {
-				if (from->tres_ids[j2] == NO_VAL) {
-					j_no_val = j2;
-					if (found)
-						break;
-				}
-				if (dest->tres_ids[i] != from->tres_ids[j2]) {
-					continue;
-				}
-				found = j2;
-				if (j_no_val != -1)
-					break;
-			}
-
-			if (found == -1)
-				j2 = j_no_val;
-			else
-				j2 = found;
-
-			if (j2 == -1) {
-				error("Bad TRES from the stepd, this should never happen");
-				continue;
-			}
-
-			/* swap j for j2 */
-			tmp_id = from->tres_ids[j];
-			from->tres_ids[j] = from->tres_ids[j2];
-			from->tres_ids[j2] = tmp_id;
-
-			tmp_val = from->tres_usage_in_min[j];
-			from->tres_usage_in_min[j] =
-				from->tres_usage_in_min[j2];
-			from->tres_usage_in_min[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_max[j];
-			from->tres_usage_in_max[j] =
-				from->tres_usage_in_max[j2];
-			from->tres_usage_in_max[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_tot[j];
-			from->tres_usage_in_tot[j] =
-				from->tres_usage_in_tot[j2];
-			from->tres_usage_in_tot[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_max[j];
-			from->tres_usage_out_max[j] =
-				from->tres_usage_out_max[j2];
-			from->tres_usage_out_max[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_min[j];
-			from->tres_usage_out_min[j] =
-				from->tres_usage_out_min[j2];
-			from->tres_usage_out_min[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_tot[j];
-			from->tres_usage_out_tot[j] =
-				from->tres_usage_out_tot[j2];
-			from->tres_usage_out_tot[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_max_taskid[j];
-			from->tres_usage_in_max_taskid[j] =
-				from->tres_usage_in_max_taskid[j2];
-			from->tres_usage_in_max_taskid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_min_taskid[j];
-			from->tres_usage_in_min_taskid[j] =
-				from->tres_usage_in_min_taskid[j2];
-			from->tres_usage_in_min_taskid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_max_taskid[j];
-			from->tres_usage_out_max_taskid[j] =
-				from->tres_usage_out_max_taskid[j2];
-			from->tres_usage_out_max_taskid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_min_taskid[j];
-			from->tres_usage_out_min_taskid[j] =
-				from->tres_usage_out_min_taskid[j2];
-			from->tres_usage_out_min_taskid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_max_nodeid[j];
-			from->tres_usage_in_max_nodeid[j] =
-				from->tres_usage_in_max_nodeid[j2];
-			from->tres_usage_in_max_nodeid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_in_min_nodeid[j];
-			from->tres_usage_in_min_nodeid[j] =
-				from->tres_usage_in_min_nodeid[j2];
-			from->tres_usage_in_min_nodeid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_max_nodeid[j];
-			from->tres_usage_out_max_nodeid[j] =
-				from->tres_usage_out_max_nodeid[j2];
-			from->tres_usage_out_max_nodeid[j2] = tmp_val;
-
-			tmp_val = from->tres_usage_out_min_nodeid[j];
-			from->tres_usage_out_min_nodeid[j] =
-				from->tres_usage_out_min_nodeid[j2];
-			from->tres_usage_out_min_nodeid[j2] = tmp_val;
-		}
-
-		/*
-		 * If the ctld has less tres we have swapped everything we can
-		 * so we can now shrink the arrays.
-		 */
-		if (dest->tres_count < from->tres_count)
-			_recalloc_jobacct(from, dest->tres_count);
-	}
 
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
@@ -5135,83 +4897,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack64_array(&memory_allocated, &tmp32, buffer);
 		if (tmp32 == 0)
 			xfree(memory_allocated);
-	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpack32(&step_id.step_id, buffer);
-		safe_unpack32(&step_id.step_het_comp, buffer);
-		safe_unpack16(&cyclic_alloc, buffer);
-		safe_unpack32(&srun_pid, buffer);
-		safe_unpack16(&port, buffer);
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpackstr(&container, buffer);
-		safe_unpackstr(&container_id, buffer);
-		safe_unpack16(&resv_port_cnt, buffer);
-		safe_unpack16(&state, buffer);
-		safe_unpack16(&start_protocol_ver, buffer);
-
-		safe_unpack32(&flags, buffer);
-
-		safe_unpack32(&cpu_count, buffer);
-		safe_unpack64(&pn_min_memory, buffer);
-		safe_unpack32(&exit_code, buffer);
-		if (exit_code != NO_VAL) {
-			unpack_bit_str_hex(&exit_node_bitmap, buffer);
-		}
-		unpack_bit_str_hex(&core_bitmap_job, buffer);
-
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
-
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&pre_sus_time, buffer);
-		safe_unpack_time(&tot_sus_time, buffer);
-
-		safe_unpackstr(&host, buffer);
-		safe_unpackstr(&resv_ports, buffer);
-		safe_unpackstr(&name, buffer);
-		safe_unpackstr(&network, buffer);
-
-		if (gres_step_state_unpack(&gres_list_req, buffer,
-					   &step_id, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-		if (gres_step_state_unpack(&gres_list_alloc, buffer,
-					   &step_id, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (unpack_slurm_step_layout(&step_layout, buffer,
-					     protocol_version))
-			goto unpack_error;
-
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp &&
-		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
-					     protocol_version)))
-			goto unpack_error;
-
-		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
-						   protocol_version))
-			goto unpack_error;
-		safe_unpackstr(&tres_alloc_str, buffer);
-		safe_unpackstr(&tres_fmt_alloc_str, buffer);
-
-		safe_unpackstr(&cpus_per_tres, buffer);
-		safe_unpackstr(&mem_per_tres, buffer);
-		safe_unpackstr(&submit_line, buffer);
-		safe_unpackstr(&tres_bind, buffer);
-		safe_unpackstr(&tres_freq, buffer);
-		safe_unpackstr(&tres_per_step, buffer);
-		safe_unpackstr(&tres_per_node, buffer);
-		safe_unpackstr(&tres_per_socket, buffer);
-		safe_unpackstr(&tres_per_task, buffer);
-		if (jobacctinfo_unpack(&jobacct, protocol_version,
-				       PROTOCOL_TYPE_SLURM, buffer, true))
-			goto unpack_error;
-		safe_unpack64_array(&memory_allocated, &tmp32, buffer);
-		if (tmp32 == 0)
-			xfree(memory_allocated);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
@@ -5220,6 +4905,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&port, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpackstr(&container, buffer);
+		safe_unpackstr(&container_id, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);

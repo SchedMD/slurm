@@ -2528,7 +2528,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * the first place.
 	 */
 	rpc_version = get_cluster_version(mysql_conn, cluster_name);
-	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+	if (rpc_version < SLURM_23_11_PROTOCOL_VERSION) {
 		query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
 				       "creation_time>%ld && (%s);",
 				       cluster_name, assoc_table,
@@ -2838,18 +2838,9 @@ static int _send_ctld_update(void *x, void *arg)
 	    (db_conn->conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
-	/* This check can be removed 2 versions after 23.02 */
-	if (db_conn->conn_send) {
-		xassert(db_conn->conn_send);
-		(void) slurmdb_send_accounting_update_persist(
-			update_list, db_conn->conn_send);
-	} else
-		(void) slurmdb_send_accounting_update(
-			update_list,
-			db_conn->conn->cluster_name,
-			db_conn->conn->rem_host,
-			db_conn->conn->rem_port,
-			db_conn->conn->version);
+	xassert(db_conn->conn_send);
+	(void) slurmdb_send_accounting_update_persist(
+		update_list, db_conn->conn_send);
 
 	return 0;
 }

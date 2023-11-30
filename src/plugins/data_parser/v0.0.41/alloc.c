@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  config.c - Slurm REST API config http operations handlers
+ *  alloc.c - Slurm data parser allocators for objects
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) 2022 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,82 +34,56 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
-#include "src/common/list.h"
+#include "src/common/data.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/plugins/openapi/dbv0.0.38/api.h"
+#include "alloc.h"
 
-static const openapi_handler_t ops[] = {
-	/* Warning: order matters */
-	op_handler_clusters,
-	op_handler_tres,
-	op_handler_accounts,
-	op_handler_users,
-	op_handler_qos,
-	op_handler_wckeys,
-	op_handler_associations,
-};
-
-static int _op_handler_config(const char *context_id,
-			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp, void *auth,
-			      data_parser_t *parser)
+extern void *alloc_parser_obj(const parser_t *const parser)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
+	const parser_t *const lparser =
+		find_parser_by_type(parser->pointer_type);
+	void *obj = NULL;
 
-	if ((method != HTTP_REQUEST_GET) && (method != HTTP_REQUEST_POST))
-		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				  "invalid method requested", NULL);
+	check_parser(parser);
+	check_parser(lparser);
 
-	for (int i = 0; (!rc) && (i < ARRAY_SIZE(ops)); i++) {
-		int rc2 = ops[i](context_id, method, parameters, query, tag,
-				 resp, auth, parser);
+	if (parser->new)
+		obj = parser->new();
+	else
+		obj = xmalloc(lparser->size);
 
-		/*
-		 * ignore empty results as there may simply be nothing
-		 * there to dump.
-		 **/
-		if (rc2 != ESLURM_REST_EMPTY_RESULT)
-			rc = rc2;
-	}
+	xassert(obj);
+	xassert(xsize(obj) == lparser->size);
 
-	if (method == HTTP_REQUEST_POST) {
-		if (!rc)
-			rc = db_query_commit(errors, auth);
-		else
-			rc = resp_error(errors, rc,
-					"refusing to commit after error",
-					NULL);
-	}
+	log_flag(DATA, "created %zd byte %s object at 0x%"PRIxPTR,
+		 xsize(obj), lparser->obj_type_string, (uintptr_t) obj);
 
-	return rc;
+	return obj;
 }
 
-extern void init_op_config(void)
+extern void free_parser_obj(const parser_t *const parser, void *ptr)
 {
-	bind_operation_handler("/slurmdb/v0.0.38/config", _op_handler_config,
-			       CONFIG_OP_TAG);
-}
+	const parser_t *const lparser =
+		find_parser_by_type(parser->pointer_type);
 
-extern void destroy_op_config(void)
-{
-	unbind_operation_handler(_op_handler_config);
+	check_parser(parser);
+	check_parser(lparser);
+
+	if (!ptr)
+		return;
+
+	xassert(xsize(ptr) == lparser->size);
+
+	log_flag(DATA, "destroying %zd byte %s object at 0x%"PRIxPTR,
+		 xsize(ptr), lparser->obj_type_string, (uintptr_t) ptr);
+
+	if (parser->free)
+		parser->free(ptr);
+	else
+		xfree_ptr(ptr);
 }

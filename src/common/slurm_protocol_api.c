@@ -2157,8 +2157,7 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	 * Skip sending an auth credential on the reply. Clients don't need
 	 * it, and already implicitly trust the connection.
 	 */
-	if (resp_msg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION)
-		resp_msg->flags |= SLURM_NO_AUTH_CRED;
+	resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
 
 /**********************************************************************\

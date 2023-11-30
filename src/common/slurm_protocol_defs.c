@@ -5275,18 +5275,6 @@ extern void slurm_copy_priority_factors(priority_factors_t *dest,
 	}
 }
 
-/* this can be removed 2 versions after 23.02 */
-extern void slurm_free_priority_factors_request_msg(
-	priority_factors_request_msg_t *msg)
-{
-	if (msg) {
-		FREE_NULL_LIST(msg->job_id_list);
-		xfree(msg->partitions);
-		FREE_NULL_LIST(msg->uid_list);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
@@ -5644,7 +5632,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_shares_response_msg(data);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
-		slurm_free_priority_factors_request_msg(data);
 		break;
 	case RESPONSE_PRIORITY_FACTORS:
 		slurm_free_priority_factors_response_msg(data);

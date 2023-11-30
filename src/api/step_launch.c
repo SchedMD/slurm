@@ -1636,16 +1636,6 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	else
 		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 
-	/*
-	 * Prior to Slurm 23.02 --slurmd-debug was interpreted as offset to
-	 * LOG_LEVEL_ERROR, so we need to adjust the value. This can be removed
-	 * 2 versions after 23.02.
-	 */
-	if (ctx->step_resp->use_protocol_ver < SLURM_23_02_PROTOCOL_VERSION) {
-		launch_msg->slurmd_debug-= LOG_LEVEL_ERROR;
-	}
-
-
 #ifdef HAVE_FRONT_END
 	cred_args = slurm_cred_get_args(ctx->step_resp->cred);
 	//info("hostlist=%s", cred_args->step_hostlist);

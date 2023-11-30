@@ -369,12 +369,8 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
 
 	xassert(switch_context_cnt >= 0);
 
-	if (!switch_context_cnt) {
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			pack32(SWITCH_PLUGIN_NONE, buffer);
-		}
+	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
-	}
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -400,14 +396,8 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
 
 	xassert(switch_context_cnt >= 0);
 
-	if (!switch_context_cnt) {
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			uint32_t plugin_id;
-			safe_unpack32(&plugin_id, buffer);
-			*jobinfo = NULL;
-		}
+	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
-	}
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;

@@ -672,13 +672,6 @@ typedef struct shares_response_msg {
 	char **tres_names;
 } shares_response_msg_t;
 
-/* this can be removed 2 versions after 23.02 */
-typedef struct priority_factors_request_msg {
-	List	 job_id_list;
-	char    *partitions;
-	List	 uid_list;
-} priority_factors_request_msg_t;
-
 typedef struct job_notify_msg {
 	char *   message;
 	slurm_step_id_t step_id;
@@ -1659,9 +1652,6 @@ extern void slurm_destroy_priority_factors(void *object);
 extern void slurm_destroy_priority_factors_object(void *object);
 extern void slurm_copy_priority_factors(priority_factors_t *dest,
 					priority_factors_t *src);
-/* this can be removed 2 versions after 23.02 */
-extern void slurm_free_priority_factors_request_msg(
-	priority_factors_request_msg_t *msg);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
 extern void slurm_free_comp_msg_list(void *x);
 extern void slurm_free_composite_msg(composite_msg_t *msg);

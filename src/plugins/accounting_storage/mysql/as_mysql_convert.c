@@ -41,14 +41,12 @@
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: 11 was the first version of 22.05.
- * NOTE: 12 was the second version of 22.05.
  * NOTE: 13 was the first version of 23.02.
  * NOTE: 14 was the first version of 23.11.
  */
 #define CONVERT_VERSION 14
 
-#define MIN_CONVERT_VERSION 11
+#define MIN_CONVERT_VERSION 13
 
 #define JOB_CONVERT_LIMIT_CNT 1000
 
@@ -103,59 +101,12 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (db_curr_ver < 12) {
-		char *table_name;
-		char *query;
-
-		table_name = xstrdup_printf("\"%s_%s\"",
-					    cluster_name, job_table);
-		/* Update kill_requid to NULL instead of -1 for not set */
-		query = xstrdup_printf("alter table %s modify kill_requid "
-				       "int default null;", table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS) {
-			xfree(query);
-			return rc;
-		}
-		xfree(query);
-		query = xstrdup_printf("update %s set kill_requid=null where "
-				       "kill_requid=-1;", table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		xfree(table_name);
-	}
-
 	return rc;
 }
 
 static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-
-	if (db_curr_ver < 12) {
-		char *table_name;
-		char *query;
-
-		table_name = xstrdup_printf("\"%s_%s\"",
-					    cluster_name, step_table);
-		/* temporarily "not null" from req_uid */
-		query = xstrdup_printf("alter table %s modify kill_requid "
-				       "int default null;", table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS) {
-			xfree(query);
-			return rc;
-		}
-		xfree(query);
-		/* update kill_requid = -1 to NULL */
-		query = xstrdup_printf("update %s set kill_requid=null where "
-				       "kill_requid=-1;", table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		xfree(table_name);
-	}
 
 	return rc;
 }

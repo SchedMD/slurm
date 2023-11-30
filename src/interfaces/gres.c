@@ -4657,7 +4657,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 		gres_ns = _build_gres_node_state();
 
-		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -4691,13 +4691,6 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 					    buffer);
 			safe_unpackstr_array(&gres_ns->topo_type_name,
 					     &tmp_uint32, buffer);
-		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			safe_unpack32(&magic, buffer);
-			if (magic != GRES_MAGIC)
-				goto unpack_error;
-			safe_unpack32(&plugin_id, buffer);
-			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
-			safe_unpack16(&gres_bitmap_size, buffer);
 		} else {
 			error("%s: protocol_version %hu not supported",
 			      __func__, protocol_version);

@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for openapi/dbv0.0.38 plugin
+# Makefile for data_parser/v0.0.41 plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/slurmrestd/plugins/openapi/dbv0.0.38
+subdir = src/plugins/data_parser/v0.0.41
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -180,23 +180,23 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
-LTLIBRARIES = $(noinst_LTLIBRARIES) $(pkglib_LTLIBRARIES)
-libopenapi_ref_la_LIBADD =
-am_libopenapi_ref_la_OBJECTS =
-libopenapi_ref_la_OBJECTS = $(am_libopenapi_ref_la_OBJECTS)
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
+am_data_parser_v0_0_41_la_OBJECTS = data_parser_v0_0_41_la-api.lo \
+	data_parser_v0_0_41_la-slurmdb_helpers.lo \
+	data_parser_v0_0_41_la-events.lo \
+	data_parser_v0_0_41_la-alloc.lo \
+	data_parser_v0_0_41_la-openapi.lo \
+	data_parser_v0_0_41_la-parsing.lo \
+	data_parser_v0_0_41_la-parsers.lo
+data_parser_v0_0_41_la_OBJECTS = $(am_data_parser_v0_0_41_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-openapi_dbv0_0_38_la_DEPENDENCIES = openapi_ref.lo
-am_openapi_dbv0_0_38_la_OBJECTS = accounts.lo associations.lo api.lo \
-	cluster.lo config.lo diag.lo jobs.lo qos.lo parse.lo tres.lo \
-	users.lo wckeys.lo
-openapi_dbv0_0_38_la_OBJECTS = $(am_openapi_dbv0_0_38_la_OBJECTS)
-openapi_dbv0_0_38_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+data_parser_v0_0_41_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(openapi_dbv0_0_38_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) \
+	$(data_parser_v0_0_41_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -212,12 +212,13 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/accounts.Plo ./$(DEPDIR)/api.Plo \
-	./$(DEPDIR)/associations.Plo ./$(DEPDIR)/cluster.Plo \
-	./$(DEPDIR)/config.Plo ./$(DEPDIR)/diag.Plo \
-	./$(DEPDIR)/jobs.Plo ./$(DEPDIR)/parse.Plo ./$(DEPDIR)/qos.Plo \
-	./$(DEPDIR)/tres.Plo ./$(DEPDIR)/users.Plo \
-	./$(DEPDIR)/wckeys.Plo
+am__depfiles_remade = ./$(DEPDIR)/data_parser_v0_0_41_la-alloc.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-api.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-events.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-openapi.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-parsers.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-parsing.Plo \
+	./$(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -237,7 +238,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libopenapi_ref_la_SOURCES) $(openapi_dbv0_0_38_la_SOURCES)
+SOURCES = $(data_parser_v0_0_41_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -523,23 +524,24 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = *.bino
-EXTRA_DIST = LICENSE-openapi.json
-REF = openapi.json
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
-BIN_REF = $(REF:.json=.bino)
-libopenapi_ref_la_SOURCES = 
-libopenapi_ref_la_DEPENDENCIES = openapi_ref.lo
-pkglib_LTLIBRARIES = openapi_dbv0_0_38.la
-noinst_LTLIBRARIES = libopenapi_ref.la
-openapi_dbv0_0_38_la_SOURCES = \
-	accounts.c associations.c api.h api.c cluster.c \
-	config.c diag.c jobs.c qos.c parse.c parse.h \
-	tres.c users.c wckeys.c
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
+	      -I$(top_srcdir)/src/plugin/data_parser/v0.0.41/
 
-openapi_dbv0_0_38_la_LDFLAGS = $(PLUGIN_FLAGS)
-openapi_dbv0_0_38_la_LIBADD = openapi_ref.lo
+pkglib_LTLIBRARIES = data_parser_v0_0_41.la
+data_parser_v0_0_41_la_SOURCES = \
+	api.h api.c \
+	slurmdb_helpers.h slurmdb_helpers.c \
+	events.h events.c \
+	alloc.h alloc.c \
+	openapi.h openapi.c \
+	parsing.h parsing.c \
+	parsers.h parsers.c
+
+data_parser_v0_0_41_la_DEPENDENCIES = 
+data_parser_v0_0_41_la_LDFLAGS = $(PLUGIN_FLAGS)
+data_parser_v0_0_41_la_LIBADD = 
+data_parser_v0_0_41_la_CFLAGS = -DDATA_VERSION=v0.0.41 -DPLUGIN_ID=12003
 all: all-am
 
 .SUFFIXES:
@@ -553,9 +555,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/slurmrestd/plugins/openapi/dbv0.0.38/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/data_parser/v0.0.41/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/slurmrestd/plugins/openapi/dbv0.0.38/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/data_parser/v0.0.41/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -573,17 +575,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-
-clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
-	locs=`for p in $$list; do echo $$p; done | \
-	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
-	      sort -u`; \
-	test -z "$$locs" || { \
-	  echo rm -f $${locs}; \
-	  rm -f $${locs}; \
-	}
 
 install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -620,11 +611,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libopenapi_ref.la: $(libopenapi_ref_la_OBJECTS) $(libopenapi_ref_la_DEPENDENCIES) $(EXTRA_libopenapi_ref_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libopenapi_ref_la_OBJECTS) $(libopenapi_ref_la_LIBADD) $(LIBS)
-
-openapi_dbv0_0_38.la: $(openapi_dbv0_0_38_la_OBJECTS) $(openapi_dbv0_0_38_la_DEPENDENCIES) $(EXTRA_openapi_dbv0_0_38_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(openapi_dbv0_0_38_la_LINK) -rpath $(pkglibdir) $(openapi_dbv0_0_38_la_OBJECTS) $(openapi_dbv0_0_38_la_LIBADD) $(LIBS)
+data_parser_v0_0_41.la: $(data_parser_v0_0_41_la_OBJECTS) $(data_parser_v0_0_41_la_DEPENDENCIES) $(EXTRA_data_parser_v0_0_41_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(data_parser_v0_0_41_la_LINK) -rpath $(pkglibdir) $(data_parser_v0_0_41_la_OBJECTS) $(data_parser_v0_0_41_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -632,18 +620,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounts.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/associations.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobs.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/users.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wckeys.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-alloc.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-api.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-events.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-openapi.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-parsers.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-parsing.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -671,6 +654,55 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+data_parser_v0_0_41_la-api.lo: api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-api.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-api.Tpo -c -o data_parser_v0_0_41_la-api.lo `test -f 'api.c' || echo '$(srcdir)/'`api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-api.Tpo $(DEPDIR)/data_parser_v0_0_41_la-api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='api.c' object='data_parser_v0_0_41_la-api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-api.lo `test -f 'api.c' || echo '$(srcdir)/'`api.c
+
+data_parser_v0_0_41_la-slurmdb_helpers.lo: slurmdb_helpers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-slurmdb_helpers.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Tpo -c -o data_parser_v0_0_41_la-slurmdb_helpers.lo `test -f 'slurmdb_helpers.c' || echo '$(srcdir)/'`slurmdb_helpers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Tpo $(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmdb_helpers.c' object='data_parser_v0_0_41_la-slurmdb_helpers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-slurmdb_helpers.lo `test -f 'slurmdb_helpers.c' || echo '$(srcdir)/'`slurmdb_helpers.c
+
+data_parser_v0_0_41_la-events.lo: events.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-events.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-events.Tpo -c -o data_parser_v0_0_41_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-events.Tpo $(DEPDIR)/data_parser_v0_0_41_la-events.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='events.c' object='data_parser_v0_0_41_la-events.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+
+data_parser_v0_0_41_la-alloc.lo: alloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-alloc.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-alloc.Tpo -c -o data_parser_v0_0_41_la-alloc.lo `test -f 'alloc.c' || echo '$(srcdir)/'`alloc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-alloc.Tpo $(DEPDIR)/data_parser_v0_0_41_la-alloc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='alloc.c' object='data_parser_v0_0_41_la-alloc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-alloc.lo `test -f 'alloc.c' || echo '$(srcdir)/'`alloc.c
+
+data_parser_v0_0_41_la-openapi.lo: openapi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-openapi.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-openapi.Tpo -c -o data_parser_v0_0_41_la-openapi.lo `test -f 'openapi.c' || echo '$(srcdir)/'`openapi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-openapi.Tpo $(DEPDIR)/data_parser_v0_0_41_la-openapi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='openapi.c' object='data_parser_v0_0_41_la-openapi.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-openapi.lo `test -f 'openapi.c' || echo '$(srcdir)/'`openapi.c
+
+data_parser_v0_0_41_la-parsing.lo: parsing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-parsing.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-parsing.Tpo -c -o data_parser_v0_0_41_la-parsing.lo `test -f 'parsing.c' || echo '$(srcdir)/'`parsing.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-parsing.Tpo $(DEPDIR)/data_parser_v0_0_41_la-parsing.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parsing.c' object='data_parser_v0_0_41_la-parsing.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-parsing.lo `test -f 'parsing.c' || echo '$(srcdir)/'`parsing.c
+
+data_parser_v0_0_41_la-parsers.lo: parsers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_41_la-parsers.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_41_la-parsers.Tpo -c -o data_parser_v0_0_41_la-parsers.lo `test -f 'parsers.c' || echo '$(srcdir)/'`parsers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_41_la-parsers.Tpo $(DEPDIR)/data_parser_v0_0_41_la-parsers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parsers.c' object='data_parser_v0_0_41_la-parsers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_41_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_41_la-parsers.lo `test -f 'parsers.c' || echo '$(srcdir)/'`parsers.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -758,7 +790,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -769,22 +800,17 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-pkglibLTLIBRARIES mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/accounts.Plo
-	-rm -f ./$(DEPDIR)/api.Plo
-	-rm -f ./$(DEPDIR)/associations.Plo
-	-rm -f ./$(DEPDIR)/cluster.Plo
-	-rm -f ./$(DEPDIR)/config.Plo
-	-rm -f ./$(DEPDIR)/diag.Plo
-	-rm -f ./$(DEPDIR)/jobs.Plo
-	-rm -f ./$(DEPDIR)/parse.Plo
-	-rm -f ./$(DEPDIR)/qos.Plo
-	-rm -f ./$(DEPDIR)/tres.Plo
-	-rm -f ./$(DEPDIR)/users.Plo
-	-rm -f ./$(DEPDIR)/wckeys.Plo
+		-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-alloc.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-api.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-openapi.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-parsers.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-parsing.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -830,18 +856,13 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/accounts.Plo
-	-rm -f ./$(DEPDIR)/api.Plo
-	-rm -f ./$(DEPDIR)/associations.Plo
-	-rm -f ./$(DEPDIR)/cluster.Plo
-	-rm -f ./$(DEPDIR)/config.Plo
-	-rm -f ./$(DEPDIR)/diag.Plo
-	-rm -f ./$(DEPDIR)/jobs.Plo
-	-rm -f ./$(DEPDIR)/parse.Plo
-	-rm -f ./$(DEPDIR)/qos.Plo
-	-rm -f ./$(DEPDIR)/tres.Plo
-	-rm -f ./$(DEPDIR)/users.Plo
-	-rm -f ./$(DEPDIR)/wckeys.Plo
+		-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-alloc.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-api.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-openapi.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-parsers.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-parsing.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_41_la-slurmdb_helpers.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -863,41 +884,26 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-pkglibLTLIBRARIES cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkglibLTLIBRARIES \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am \
+	clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
 
-%.bino: %.json
-	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; cd $$curr_dir
-	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
-
-openapi_ref.lo: $(BIN_REF)
-	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
-	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
-	$(AM_V_at)echo "#" >>"$@"
-	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
-	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
-	$(AM_V_at)echo "pic_object='$(BIN_REF)'" >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
-	$(AM_V_at)echo "non_pic_object=''" >>"$@"
-	$(AM_V_at)echo >>"$@"
+force:
+$(data_parser_v0_0_41_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

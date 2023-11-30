@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  api.h - Slurm data parsing handlers
  *****************************************************************************
- *  Copyright (C) 2019-2020 SchedMD LLC.
+ *  Copyright (C) 2022 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,44 +34,43 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_OPENAPI_V0038
-#define SLURMRESTD_OPENAPI_V0038
+#ifndef DATA_PARSER_EVENTS
+#define DATA_PARSER_EVENTS
 
-#include "config.h"
+#include "parsers.h"
 
-#include "slurm/slurm.h"
-
-#include "src/common/data.h"
-
-extern int get_date_param(data_t *query, const char *param, time_t *time);
-
-/*
- * Fill out boilerplate for every data response
- * RET ptr to errors dict
- */
-extern data_t *populate_response_format(data_t *resp);
+typedef enum {
+	PARSE_INVALID = 0,
+	PARSING = 0xeaea,
+	DUMPING = 0xaeae,
+	QUERYING = 0xdaab, /* only used for prereqs currently */
+} parse_op_t;
 
 /*
- * Add a response error to errors
- * IN errors - data list to append a new error
- * IN why - description of error or NULL
- * IN error_code - Error number
- * IN source - Where the error was generated
- * RET value of error_code
+ * helper to call the correct error hook
+ * IN op - operation type
+ * IN type - parsing type
+ * IN args - ptr to args
+ * IN error_code - numeric code of this error
+ * IN source - which slurmdb function triggered error or sent it
+ * IN caller - function calling source()
+ * IN why - long form explanation of error
+ * RET SLURM_SUCCESS to ignore error or error code to fail on
  */
-extern int resp_error(data_t *errors, int error_code, const char *source,
-		      const char *why, ...)
-	__attribute__((format(printf, 4, 5)));
+extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
+		    int error_code, const char *source, const char *caller,
+		    const char *why, ...) __attribute__((format(printf, 7, 8)));
 
-extern void init_op_diag(void);
-extern void init_op_jobs(void);
-extern void init_op_nodes(void);
-extern void init_op_partitions(void);
-extern void init_op_reservations(void);
-extern void destroy_op_diag(void);
-extern void destroy_op_jobs(void);
-extern void destroy_op_nodes(void);
-extern void destroy_op_partitions(void);
-extern void destroy_op_reservations(void);
-
+/*
+ * helper to call the correct warning hook
+ * IN op - operation type
+ * IN type - parsing type
+ * IN args - ptr to args
+ * IN source - which slurmdb function triggered warning or sent it
+ * IN caller - function calling source()
+ * IN why - long form explanation of warning
+ */
+extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
+		    const char *source, const char *caller, const char *why,
+		    ...) __attribute__((format(printf, 6, 7)));
 #endif

@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  priority.h - Define priority plugin functions
+ *  api.h - Slurm data parsing handlers
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2022 SchedMD LLC.
+ *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,39 +34,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PRIORITY_H
-#define _INTERFACES_PRIORITY_H
+#ifndef DATA_PARSER_ALLOC
+#define DATA_PARSER_ALLOC
 
-#include <inttypes.h>
-
-#include "src/slurmctld/slurmctld.h"
-#include "src/interfaces/accounting_storage.h"
+#include "api.h"
+#include "parsers.h"
 
 /*
- * Sort partitions on Priority Tier.
+ * Create new object for parser
  */
-extern int priority_sort_part_tier(void *x, void *y);
+extern void *alloc_parser_obj(const parser_t *const parser);
 
-extern int priority_g_init(void);
-extern int priority_g_fini(void);
-extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
-extern void priority_g_reconfig(bool assoc_clear);
-extern uint32_t priority_g_recover(uint32_t prio_boost);
-
-/* sets up the normalized usage and the effective usage of an
- * association.
- * IN/OUT: assoc - association to have usage set.
+/*
+ * Free object for parser
  */
-extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
-extern double priority_g_calc_fs_factor(long double usage_efctv,
-					long double shares_norm);
-
-extern List priority_g_get_priority_factors_list(uid_t uid);
-
-/* Call at end of job to remove decayable limits at the end of the job
- * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this
- */
-extern void priority_g_job_end(job_record_t *job_ptr);
+extern void free_parser_obj(const parser_t *const parser, void *ptr);
 
 #endif

@@ -627,19 +627,9 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 		     uint16_t protocol_version)
 {
-	/* TODO: remove this 2 versions after 23.02 release */
-	if (protocol_version < SLURM_23_02_PROTOCOL_VERSION) {
+	if ((msg->user_id == NO_VAL) || (msg->group_id == NO_VAL)) {
 		/*
-		 * Correct uid/gid with value NO_VAL set by
-		 * slurm_init_job_desc_msg() in prior releases
-		 */
-		if (msg->user_id == NO_VAL)
-			msg->user_id = uid;
-		if (msg->group_id == NO_VAL)
-			msg->group_id = gid;
-	} else if ((msg->user_id == NO_VAL) || (msg->group_id == NO_VAL)) {
-		/*
-		 * Catch and reject NO_VAL in >= 23.02.
+		 * Catch and reject NO_VAL.
 		 */
 		error("%s: rejecting requested UID=NO_VAL or GID=NO_VAL as invalid",
 		      caller);
@@ -1602,8 +1592,6 @@ static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	/* req_msg can be removed 2 versions after 23.02 */
-	priority_factors_request_msg_t *req_msg = msg->data;
 	priority_factors_response_msg_t resp_msg;
 	slurm_msg_t response_msg;
 	/* Read lock on jobs, nodes, and partitions */
@@ -1621,9 +1609,8 @@ static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	assoc_mgr_lock(&qos_read_locks);
 
-	/* req_msg can be removed 2 versions after 23.02 */
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
-		req_msg, msg->auth_uid);
+		msg->auth_uid);
 	response_init(&response_msg, msg, RESPONSE_PRIORITY_FACTORS, &resp_msg);
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	assoc_mgr_unlock(&qos_read_locks);
@@ -2456,16 +2443,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		}
 		job_step_resp.cred           = slurm_cred;
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
-
-		/*
-		 * select_jobinfo can be removed from
-		 * job_step_create_response_msg_t 2 versions after 23.02 */
-		if (job_step_resp.use_protocol_ver <
-		    SLURM_23_02_PROTOCOL_VERSION) {
-			select_jobinfo = select_g_select_jobinfo_copy(
-				step_rec->select_jobinfo);
-			job_step_resp.select_jobinfo = select_jobinfo;
-		}
 
 		if (step_rec->switch_job)
 			switch_g_duplicate_jobinfo(step_rec->switch_job,
@@ -4122,16 +4099,6 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 	unlock_slurmctld(fed_read_lock);
 
 	START_TIMER;
-	if ((job_desc_msg->user_id == NO_VAL) &&
-	    (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION)) {
-		/* older scontrol used NO_VAL instead of SLURM_AUTH_NOBODY */
-		job_desc_msg->user_id = SLURM_AUTH_NOBODY;
-	}
-	if ((job_desc_msg->group_id == NO_VAL) &&
-	    (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION)) {
-		/* older scontrol used NO_VAL instead of SLURM_AUTH_NOBODY */
-		job_desc_msg->group_id = SLURM_AUTH_NOBODY;
-	}
 
 	/* job_desc_msg->user_id is set when the uid has been overriden with
 	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
@@ -5003,23 +4970,6 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 		return;
 	}
 	unlock_slurmctld(fed_read_lock);
-
-	/*
-	 * Pre-23.02 slurmd would send either JOB_PENDING or
-	 * (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED) from _launch_job_fail()
-	 * depending on whether nohold_on_prolog_fail was set.
-	 * (Handling for that option is now in _job_requeue_op().)
-	 *
-	 * Fortunately nothing else used the JOB_PENDING or JOB_LAUNCH_FAILED
-	 * flags so we can safely normalize to the new 23.02 behavior here.
-	 *
-	 * Remove this two versions after 23.02.
-	 */
-	if (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION) {
-		if ((req_ptr->flags == JOB_PENDING) ||
-		    (req_ptr->flags & JOB_LAUNCH_FAILED))
-			req_ptr->flags = JOB_LAUNCH_FAILED;
-	}
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);

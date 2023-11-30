@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 23.11
+RELEASE NOTES FOR SLURM VERSION 24.08
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,231 +6,32 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 23.11 slurmdbd will work with Slurm daemons of version 22.05 and above.
+The 24.08 slurmdbd will work with Slurm daemons of version 23.02 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 22.05 or 23.02 to version 23.11 without loss
+Slurm can be upgraded from version 23.02 or 23.11 to version 24.08 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 All SPANK plugins must be recompiled when upgrading from any Slurm version
-prior to 23.11.
+prior to 24.08.
 
 HIGHLIGHTS
 ==========
- -- Remove 'none' plugins for all but auth and cred. scontrol show config
-    will report (null) now.
- -- Removed select/cons_res. Please update your configuration to
-    select/cons_tres.
- -- Change TreeWidth default from 50 to 16.
- -- job_submit/throttle - improve reset of submitted job counts per user in
-    order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
- -- Allow SlurmUser/root to use reservations without specific permissions.
- -- Add TopologyParam=RoutePart to route communications based on partition node
-    lists.
- -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
- -- Added --external-launcher option to srun to allow different MPI
-    implementations to run their launcher (orte, hydra, etc.) inside a special
-    step with access to all the allocated resources in the node, and without
-    consuming any of them, allowing for other steps to run concurrently now.
- -- Replace SRUN_CPUS_PER_TASK with SLURM_CPUS_PER_TASK and get back to the
-    behavior before Slurm 22.05. Starting in Slurm 22.05, --cpus-per-task
-    implies --exact which is why we needed to make srun not read
-    SLURM_CPUS_PER_TASK. Since now we have the new external launcher step,
-    (srun --external-launcher), srun can read this env variable from within
-    an allocation again, so even if -c1 is set, mpirun will run and won't be
-    bound to a single cpu.
- -- Enable streaming replication for Galera 4 during upgrades.
- -- Remove cloud_reg_addrs and make it default behavior. Slurm will
-    automatically manage NodeHostName and NodeAddr for cloud nodes.
- -- Remove NoAddrCache CommunicationParameter.
- -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
-    percentages of a cluster/partition instead of absolutes.
- -- The warning printed when using configure --without-PACKAGE has been changed
-    to a notice.
- -- Userspace governor will now *not* accept a frequency range of min and max,
-    and will simply statically set the required frequency. If the frequency is
-    out of range, the closest value to the cpu limits will be chosen.
- -- PMIx support is nolonger built by default.  Passing --with-pmix option is
-    now required to build with PMIx.
- -- Update slurmstepd processes with current SlurmctldHost settings, allowing
-    for controller changes without draining all compute jobs.
- -- sreport - cluster Utilization PlannedDown field now includes the time that
-    all nodes were in the POWERED_DOWN state instead of just cloud nodes.
- -- Remove SLURM_NODE_ALIASES env variable. Client code now uses slurm_addr_t's
-    passed from controller.
- -- Enable fanout for dynamic and unaddresable cloud nodes.
- -- Make it so reservations can reserve GRES.
- -- The rpmbuild "--with mysql" option has been removed. The rpm has long
-    required sql development libraries to build and the existence of this option
-    was confusing. The default behavior now is to always require one of the sql
-    development libraries.
- -- The reference slurmctld and slurmdbd service files now run under User=slurm
-    and Group=slurm. (These are installed automatically for RPMs.)
- -- Added support for Debian packaging.  Please note that this set of packages
-    is new and subject to more change than the long-standing and more stable
-    spec file.
- -- switch/hpe_slingshot - Add support for collectives.
- -- Rename topology/none plugin to topology/default.
- -- Add gpu/nrt plugin for nodes using Trainium/Inferentia devices.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- -- Removed JobCredentialPrivateKey and JobCredentialPublicCertificate
-    parameters.
- -- Added max_submit_line_size to SchedulerParameters.
- -- cgroup.conf - Removed deprecated parameters AllowedKmemSpace,
-    ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace.
- -- proctrack/cgroup - Add "SignalChildrenProcesses=<yes|no>" option to
-    cgroup.conf. This allows signals for cancelling, suspending, resuming, etc.
-    to be sent to children processes in a step/job rather than just the parent.
- -- Add PreemptParameters=suspend_grace_time parameter to control amount of
-    time between SIGTSTP and SIGSTOP signals when suspending jobs.
- -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
-    over the old slurmctld on accident.
- -- Changed the default SelectType to select/cons_tres (from select/linear).
- -- Remove CgroupAutomount= option from cgroup.conf. Modern kernels mount the
-    cgroup file system automatically. CgroupAutomount could cause a cgroup v2
-    system to be configured in a hybrid v1 and v2 system. The cgroup/v1 plugin
-    will now fail if the cgroup filesystem is not mounted.
- -- Prolog and Epilog do not have to be fully qualified pathnames.
- -- Changed default value of PriorityType from priority/basic to
-    priority/multifactor.
- -- Allow for a shared suffix to be used with the hostlist format. E.g.,
-    "node[0001-0010]-int".
- -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
- -- Add SelectTypeParameters=LL_SHARED_GRES.
- -- Add SwitchParameters=hwcoll_addrs_per_job, hwcoll_num_nodes, fm_url,
-    fm_auth, and fm_authdir to support collectives.
- -- Deprecate the ExtSensorsType and ExtSensorsFreq options.
- -- Cray XC support has been deprecated. Use '--enable-deprecated' to allow the
-    the build to continue. Sites are encouraged to contact SchedMD about the EOL
-    date for Cray XC support.
- -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
- -- Add SchedulerParameters=extra_constraints. This enables various node
-    filtering options in the --extra flag of salloc, sbatch, and srun.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- scontrol show assoc_mgr will display Lineage instead of Lft for
-    associations.
- -- sacctmgr list associations 'lft' column is removed.
- -- sacctmgr list associations 'lineage' has been added.
- -- Fix --cpus-per-gpu for step allocations, which was previously ignored for
-    job steps. --cpus-per-gpu implies --exact.
- -- Fix mutual exclusivity of --cpus-per-gpu and --cpus-per-task: fatal if both
-    options are requested in the commandline or both are requested in the
-    environment. If one option is requested in the command line, it will
-    override the other option in the environment.
- -- slurmrestd - new argument '-s' has been added to allow explicit loading of
-    data_parser plugins or '-s list' to list possible plugins.
- -- All commands supporting '--yaml' and '--json' arguments will now use the
-    data_parser/v0.0.40 plugin for formatting the output by default.
- -- torque/mpiexec - Propagate exit code from launched process.
- -- sbatch - removed --export-file option (used with defunct Moab integration).
- -- Define SPANK options environment variables when --export=[NIL|NONE] is
-    specified.
- -- Reject reservation update if it will result in previously submitted
-    jobs losing access to the reservation.
- -- scontrol/sview - Remove FIRST_CORES flag from reservations.
- -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
- -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
- -- slurmd - add "instance-id", "instance-type", and "extra" options to allow
-    them to be set on startup.
- -- scontrol - add InstanceId and InstanceType to node records.
- -- sacctmgr - add 'show instance' for cloud instance accounting data
- -- salloc/sbatch/srun --mem-per-cpu and select/linear: Fix memory calculation
-    with --threads-per-core or --hint=nomultithread and --mem-per-cpu:
-    Previously, memory = mem-per-cpu * all cpus including unusable threads.
-    Now, memory = mem-per-cpu * only usuable threads. This behavior matches
-    the documentation and select/cons_tres.
- -- salloc/srun - Remove --uid/--gid options.
- -- scrontab - Add @fika and @teatime as valid repetition times.
- -- scontrol update partition now allows Nodes+=<node-list> and
-    Nodes-=<node-list> to add/delete nodes from the existing partition node
-    list. Nodes=+host1,-host2 is also allowed.
- -- salloc/sbatch/srun - Modify the '--constraint' option to require square
-    brackets around requests with multiple features that include node counts.
- -- sdiag - Added statistics on why the main and backfill schedulers have
-    stopped evaluation on each scheduling cycle.
- -- Rename sbcast --fanout to --treewidth.
- -- salloc/sbatch/srun - When requesting --tres-per-task alter incorrect
-    request for TRES, it should be TRESType/TRESName not TRESType:TRESName.
- -- salloc/sbatch/srun - Add disable_rdzv_get option to --network to disable
-    rendezvous gets when using the switch/hpe_slingshot plugin.
- -- Requesting --cpus-per-task will now set SLURM_TRES_PER_TASK=cpu:# in the
-    environment.
 
 API CHANGES
 ===========
- -- cli_filter/lua - return nil for unset time options rather than the string
-    "2982616-04:14:00" (which is the internal macro "NO_VAL" represented as
-    time string).
- -- "flags" argument was added to slurm_kill_job_step().
- -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
- -- SPANK - added new spank_prepend_task_argv() function.
- -- SPANK - Failures from most spank functions (not epilog or exit) will now
-    cause the step to be marked as failed and the command (srun, salloc,
-    sbatch --wait) to return 1.
- -- "node_list" argument was added to slurm_print_topo_info_msg().
- -- remove slurm_print_topo_record().
 
 SLURMRESTD CHANGES
 ==================
- -- openapi/dbv0.0.37 and openapi/v0.0.37 plugins have been removed.
- -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been tagged as
+ -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been removed.
+ -- openapi/dbv0.0.39 and openapi/v0.0.39 plugins have been tagged as
     deprecated to warn of their removal in the next release.
- -- New openapi plugins will no longer be versioned. Existing versioned openapi
-    plugins will follow normal deprecation and removal schedule. Data format
-    versioning will now be handled by the data_parser plugins which will now be
-    used by the openapi plugins.
- -- data_parser plugins will now generate all schemas related to object
-    formatting and structure. The openapi.json files in the openapi/slurmctld
-    and openapi/slurmdbd directories should be considered templates only. All
-    openapi specifications should be queried from slurmsrestd directly as they
-    change depending on the loaded plugins and settings.
- -- The version field in the info object of the OpenAPI specfication will now
-    list the Slurm version running and list out the loaded openapi plugins at
-    time of generation using '&' as a delimiter in loading order.
- -- OpenAPI specfication from openapi/slurmctld and openapi/slurmdbd plugins is
-    known to be incompatible with OpenAPI Generator version 5 and below. Sites
-    are advised to port to OpenAPI Generator version 6 or greater for generated
-    clients.
- -- Path parameters fields in OpenAPI specifications will now only give type as
-    strings for openapi/slurmctld and openapi/slurmdbd end points. The 'enum'
-    will now be auto-populated when parameter has list of known valid values.
-    Prior more detailed formatting information was found to conflict with
-    generated OpenAPI clients forcing limitations on the possible values not
-    present in Slurm's parsing capabilities.
- -- openapi/v0.0.40 - add /instance and /instances endpoints.
- -- slurmrestd - OperationIDs may have changed during conversion to v0.0.40
-    from v0.0.39 paths to better match their paths.
- -- slurmrestd - Default to not query assocations or coordinators with
-    'GET /slurmdb/v0.0.40/accounts'. To query account with assocations, query
-    'GET /slurmdb/v0.0.40/accounts?with_assocs'. To query account with
-    coordinators, query 'GET /slurmdb/v0.0.40/accounts?with_coords'. To query
-    both assocations and coordinators with accounts, query
-    'GET /slurmdb/v0.0.40/accounts?with_coords&with_assocs'.
- -- slurmrestd - Default to not query assocations, wckeys or coordinators with
-    'GET /slurmdb/v0.0.40/user'. To query user with assocations, query
-    'GET /slurmdb/v0.0.40/user?with_assocs'. To query user with
-    coordinators, query 'GET /slurmdb/v0.0.40/user?with_coords'. To query user
-    with wckeys, query 'GET /slurmdb/v0.0.40/user?with_wckeys'. To query
-    both assocations, wckeys, and coordinators with user, query
-    'GET /slurmdb/v0.0.40/user?with_coords&with_assocs&with_wckeys'.
- -- slurmrestd - 'POST /slurm/v0.0.40/job/submit' will return "step_id" as
-    OpenAPI string instead of OpenAPI integer type to provide descriptive step
-    names (batch, extern, interactive, TBD) for non-numeric steps.
- -- slurmrestd - Tagged "result" field from 'POST /slurm/v0.0.40/job/submit'
-    as deprecated which may be removed in a future release. Field was added in
-    v0.0.39 to unify response formats but prior fields were kept to avoid
-    breaking existing clients. The additional benefit was found to be
-    insufficent for the change.
- -- slurmrestd - Tagged "job_id", "step_id", and "job_submit_user_msg" fields
-    from 'POST /slurm/v0.0.40/job/{job_id}' response as deprecated due their
-    only being valid for the first entry in the "result" field array. The
-    "result" field should be used instead to get the detailed result of the
-    update request.
- -- openapi/v0.0.40 - add /{accounts,users}_association endpoints.

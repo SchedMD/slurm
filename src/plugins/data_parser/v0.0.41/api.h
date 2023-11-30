@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  diag.c - Slurm REST API accounting diag http operations handlers
+ *  api.h - Slurm data parsing handlers
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) 2022 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,61 +34,47 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
+#ifndef DATA_PARSER_API
+#define DATA_PARSER_API
 
-#include <stdint.h>
+#include "src/interfaces/data_parser.h"
 
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
+/*
+ * These macros are defined by the Makefile.am:
+ * DATA_VERSION
+ * PLUGIN_ID
+ */
 
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/uid.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#define MAGIC_ARGS 0x2ea1bebb
+#define is_fast_mode(args) (args->flags & FLAG_FAST)
+#define is_complex_mode(args) (args->flags & FLAG_COMPLEX_VALUES)
 
-#include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/plugins/openapi/dbv0.0.38/api.h"
+typedef enum {
+	FLAG_NONE = 0,
+	/* only dump the OpenAPI Specification instead of the requested data */
+	FLAG_SPEC_ONLY = SLURM_BIT(0),
+	/* attempt to run as fast as possible, skipping more expensive checks */
+	FLAG_FAST = SLURM_BIT(1),
+	/* use null/false/Infinity/NaN for *_NO_VALs */
+	FLAG_COMPLEX_VALUES = SLURM_BIT(2),
+} data_parser_flags_t;
 
-/* based on sacctmgr_list_stats() */
-static int _op_handler_diag(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser)
-{
-	data_t *errors = populate_response_format(resp);
-	parser_env_t penv = { 0 };
-	slurmdb_stats_rec_t *stats_rec = NULL;
-	int rc = SLURM_SUCCESS;
+typedef struct {
+	int magic; /* MAGIC_ARGS */
+	data_parser_on_error_t on_parse_error;
+	data_parser_on_error_t on_dump_error;
+	data_parser_on_error_t on_query_error;
+	void *error_arg;
+	data_parser_on_warn_t on_parse_warn;
+	data_parser_on_warn_t on_dump_warn;
+	data_parser_on_warn_t on_query_warn;
+	void *warn_arg;
 	void *db_conn;
+	bool close_db_conn;
+	List tres_list;
+	List qos_list;
+	List assoc_list;
+	data_parser_flags_t flags;
+} args_t;
 
-	debug4("%s:[%s] diag handler called", __func__, context_id);
-
-	if (!(db_conn = openapi_get_db_conn(auth)))
-		resp_error(errors, ESLURM_DB_CONNECTION_INVALID, NULL,
-			   "openapi_get_db_conn");
-	else if ((rc = slurmdb_get_stats(db_conn, &stats_rec)))
-		resp_error(errors, rc, NULL, "slurmdb_get_stats");
-	else
-		rc = dump(PARSE_STATS_REC, stats_rec,
-			  data_set_dict(data_key_set(resp, "statistics")),
-			  &penv);
-
-	slurmdb_destroy_stats_rec(stats_rec);
-
-	return rc;
-}
-
-extern void init_op_diag(void)
-{
-	bind_operation_handler("/slurmdb/v0.0.38/diag/", _op_handler_diag, 0);
-}
-
-extern void destroy_op_diag(void)
-{
-	unbind_operation_handler(_op_handler_diag);
-}
+#endif

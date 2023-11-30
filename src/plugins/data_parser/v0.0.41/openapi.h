@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  priority.h - Define priority plugin functions
+ *  openapi.h - Slurm data parser openapi specifier
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2023 SchedMD LLC.
+ *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,39 +34,42 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PRIORITY_H
-#define _INTERFACES_PRIORITY_H
+#ifndef _DATA_PARSER_OPENAPI_H
+#define _DATA_PARSER_OPENAPI_H
 
-#include <inttypes.h>
-
-#include "src/slurmctld/slurmctld.h"
-#include "src/interfaces/accounting_storage.h"
+#include "parsers.h"
+#include "src/common/openapi.h"
+#include "src/interfaces/data_parser.h"
 
 /*
- * Sort partitions on Priority Tier.
+ * Populate OpenAPI specification field with reference to parser
+ * IN obj - data_t ptr to specific field in OpenAPI schema
+ * 	Sets "$ref" key in obj to path of parser schema.
+ * 	Parser must be an OBJECT or ARRAY OpenAPI type.
+ * IN parser - populate field with $ref to parser
+ * IN spec - entire OpenAPI specification
+ * IN args - parser args
  */
-extern int priority_sort_part_tier(void *x, void *y);
+extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
+				  data_t *spec, args_t *args);
 
-extern int priority_g_init(void);
-extern int priority_g_fini(void);
-extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
-extern void priority_g_reconfig(bool assoc_clear);
-extern uint32_t priority_g_recover(uint32_t prio_boost);
-
-/* sets up the normalized usage and the effective usage of an
- * association.
- * IN/OUT: assoc - association to have usage set.
+/*
+ * Populate OpenAPI specification field
+ * IN obj - data_t ptr to specific field in OpenAPI schema
+ * IN format - OpenAPI format to use
+ * IN desc - Description of field to use
+ * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
-extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
-extern double priority_g_calc_fs_factor(long double usage_efctv,
-					long double shares_norm);
+extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
+				 const char *desc);
 
-extern List priority_g_get_priority_factors_list(uid_t uid);
-
-/* Call at end of job to remove decayable limits at the end of the job
- * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this
+/*
+ * Populate dst with OpenAPI specification schema
+ * IN dst - data_t ptr to populate with schema
+ * IN parser - schema parser to specify
+ * IN args - parser args
  */
-extern void priority_g_job_end(job_record_t *job_ptr);
+extern void set_openapi_schema(data_t *dst, const parser_t *parser,
+			       args_t *args);
 
 #endif

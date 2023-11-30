@@ -1456,110 +1456,6 @@ static priority_factors_object_t *_create_prio_factors_obj(
 	return obj;
 }
 
-/* this function can be removed 2 versions after 23.02 */
-/* If the specified job record satisfies the filter specifications in req_msg
- * and part_ptr_list (partition name filters), then add its priority specs
- * to ret_list */
-static void _filter_job(job_record_t *job_ptr,
-			priority_factors_request_msg_t *req_msg,
-			List part_ptr_list, List ret_list)
-{
-	part_record_t *job_part_ptr = NULL, *filter_part_ptr = NULL;
-	List req_job_list, req_user_list;
-	int filter = 0;
-	ListIterator iterator, job_iter, filter_iter;
-	uint32_t *job_id;
-	uint32_t *user_id;
-
-	/* Filter by job ID */
-	req_job_list = req_msg->job_id_list;
-	if (req_job_list) {
-		filter = 1;
-		iterator = list_iterator_create(req_job_list);
-		while ((job_id = list_next(iterator))) {
-			if (*job_id == job_ptr->job_id) {
-				filter = 0;
-				break;
-			}
-		}
-		list_iterator_destroy(iterator);
-		if (filter == 1)
-			return;
-	}
-
-	/* Filter by user/UID */
-	req_user_list = req_msg->uid_list;
-	if (req_user_list) {
-		filter = 1;
-		iterator = list_iterator_create(req_user_list);
-		while ((user_id = list_next(iterator))) {
-			if (*user_id == job_ptr->user_id) {
-				filter = 0;
-				break;
-			}
-		}
-		list_iterator_destroy(iterator);
-		if (filter == 1)
-			return;
-	}
-
-	/*
-	 * Job is not in any partition, so there is nothing to return.
-	 * This can happen if the Partition was deleted, CALCULATE_RUNNING
-	 * is enabled, and this job is still waiting out MinJobAge before
-	 * being removed from the system.
-	 */
-	if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
-		return;
-
-	/* Filter by partition, job in one partition */
-	if (!job_ptr->part_ptr_list) {
-		job_part_ptr =  job_ptr->part_ptr;
-		filter = 0;
-		if (part_ptr_list) {
-			filter = 1;
-			filter_iter = list_iterator_create(part_ptr_list);
-			while ((filter_part_ptr = list_next(filter_iter))) {
-				if (filter_part_ptr == job_part_ptr) {
-					filter = 0;
-					break;
-				}
-			}
-			list_iterator_destroy(filter_iter);
-		}
-
-		if (filter == 0) {
-			list_append(ret_list,
-				    _create_prio_factors_obj(job_ptr, NULL));
-		}
-		return;
-	}
-
-	/* Filter by partition, job in multiple partitions */
-	job_iter = list_iterator_create(job_ptr->part_ptr_list);
-	while ((job_part_ptr = list_next(job_iter))) {
-		filter = 0;
-		if (part_ptr_list) {
-			filter = 1;
-			filter_iter = list_iterator_create(part_ptr_list);
-			while ((filter_part_ptr = list_next(filter_iter))) {
-				if (filter_part_ptr == job_part_ptr) {
-					filter = 0;
-					break;
-				}
-			}
-			list_iterator_destroy(filter_iter);
-		}
-
-		if (filter == 0) {
-			list_append(ret_list,
-				    _create_prio_factors_obj(job_ptr,
-							     job_part_ptr));
-		}
-	}
-	list_iterator_destroy(job_iter);
-}
-
 static void _internal_setup(void)
 {
 	damp_factor = (long double) slurm_conf.fs_dampening_factor;
@@ -1925,32 +1821,17 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	return priority_fs;
 }
 
-/* req_msg can be removed 2 versions after 23.02 */
-extern List priority_p_get_priority_factors_list(
-	priority_factors_request_msg_t *req_msg, uid_t uid)
+extern List priority_p_get_priority_factors_list(uid_t uid)
 {
-	List ret_list = NULL, part_filter_list = NULL;
+	List ret_list = NULL;
 	ListIterator itr, job_iter;
 	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr, *job_part_ptr = NULL;
+	part_record_t *job_part_ptr = NULL;
 	time_t start_time = time(NULL);
-	char *part_str, *tok, *last = NULL;
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
-
-	if (req_msg && req_msg->partitions) {
-		part_filter_list = list_create(NULL);
-		part_str = xstrdup(req_msg->partitions);
-		tok = strtok_r(part_str, ",", &last);
-		while (tok) {
-			if ((part_ptr = find_part_record(tok)))
-				list_append(part_filter_list, part_ptr);
-			tok = strtok_r(NULL, ",", &last);
-		}
-		xfree(part_str);
-	}
 
 	if (job_list && list_count(job_list)) {
 		time_t use_time;
@@ -1994,13 +1875,6 @@ extern List priority_p_get_priority_factors_list(
 						     false) != 0))))
 				continue;
 
-			/* this can be removed 2 versions after 23.02 */
-			if(req_msg) {
-				_filter_job(job_ptr, req_msg, part_filter_list,
-					    ret_list);
-				continue;
-			}
-
 			/*
 			 * Job is not in any partition, so there is nothing to
 			 * return. This can happen if the Partition was deleted,
@@ -2032,7 +1906,6 @@ extern List priority_p_get_priority_factors_list(
 		if (!list_count(ret_list))
 			FREE_NULL_LIST(ret_list);
 	}
-	FREE_NULL_LIST(part_filter_list);
 
 	return ret_list;
 }

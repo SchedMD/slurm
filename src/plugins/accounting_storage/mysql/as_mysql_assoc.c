@@ -717,7 +717,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 {
 	int rc = SLURM_SUCCESS;
 
-	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+	if (rpc_version < SLURM_23_11_PROTOCOL_VERSION) {
 		rc = _move_parent_legacy(mysql_conn, uid, lft, rgt,
 					 cluster, id, old_parent,
 					 new_parent, now);
@@ -1927,7 +1927,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		if (!moved_parent &&
 		    (!vals || !vals[0] ||
-		     ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
+		     ((rpc_version < SLURM_23_11_PROTOCOL_VERSION) &&
 		      moved_parent)))
 			slurmdb_destroy_assoc_rec(mod_assoc);
 		else if (addto_update_list(mysql_conn->update_list,
@@ -1969,7 +1969,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) && moved_parent) {
+	if ((rpc_version < SLURM_23_11_PROTOCOL_VERSION) && moved_parent) {
 		List local_assoc_list = NULL;
 		slurmdb_assoc_cond_t local_assoc_cond;
 		/* now we need to send the update of the new parents and
@@ -2793,7 +2793,7 @@ static void _post_add_assoc_cond_cluster(add_assoc_cond_t *add_assoc_cond)
 				     add_assoc_cond) < 0)
 			return;
 
-	if (add_assoc_cond->rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+	if (add_assoc_cond->rpc_version < SLURM_23_11_PROTOCOL_VERSION) {
 		add_assoc_cond->rc = _handle_post_add_lft(
 			add_assoc_cond->mysql_conn,
 			add_assoc_cond->add_assoc->assoc.cluster,
@@ -3090,8 +3090,8 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 
 	if (!add_assoc_cond->moved_parent) {
 		_set_assoc_limits_for_add(mysql_conn, assoc);
-		if ((add_assoc_cond->rpc_version <=
-		     SLURM_23_02_PROTOCOL_VERSION) &&
+		if ((add_assoc_cond->rpc_version <
+		     SLURM_23_11_PROTOCOL_VERSION) &&
 		    (assoc->lft == NO_VAL))
 			_set_assoc_lft_rgt(mysql_conn, assoc);
 	}
@@ -3111,8 +3111,8 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 			slurmdb_destroy_assoc_rec(assoc);
 			xfree(add_assoc_cond->ret_str);
 			rc = ESLURM_NO_REMOVE_DEFAULT_QOS;
-			if (add_assoc_cond->rpc_version <=
-			    SLURM_23_02_PROTOCOL_VERSION) {
+			if (add_assoc_cond->rpc_version <
+			    SLURM_23_11_PROTOCOL_VERSION) {
 				add_assoc_cond->ret_str =
 					xstrdup(slurm_strerror(rc));
 			}

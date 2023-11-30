@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  priority.h - Define priority plugin functions
+ *  parsing.h - Slurm data parsing handlers
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2022 SchedMD LLC.
+ *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,39 +34,42 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PRIORITY_H
-#define _INTERFACES_PRIORITY_H
+#ifndef DATA_PARSER_PARSING
+#define DATA_PARSER_PARSING
 
-#include <inttypes.h>
-
-#include "src/slurmctld/slurmctld.h"
-#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/data_parser.h"
+#include "src/slurmrestd/openapi.h"
+#include "api.h"
+#include "parsers.h"
 
 /*
- * Sort partitions on Priority Tier.
+ * All parsing uses a parent path (list of path components) to track parsing
+ * path to provide client a useful error/warning message about issues. OpenAPI
+ * specifies how path strings are to be constructed.
  */
-extern int priority_sort_part_tier(void *x, void *y);
+#define set_source_path(path_ptr, args, parent_path)      \
+	(is_fast_mode(args) ? NULL :                      \
+	 openapi_fmt_rel_path_str(path_ptr, parent_path))
+#define clone_source_path_index(parent_path, index) \
+	openapi_fork_rel_path_list(parent_path, index)
 
-extern int priority_g_init(void);
-extern int priority_g_fini(void);
-extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
-extern void priority_g_reconfig(bool assoc_clear);
-extern uint32_t priority_g_recover(uint32_t prio_boost);
-
-/* sets up the normalized usage and the effective usage of an
- * association.
- * IN/OUT: assoc - association to have usage set.
+/*
+ * Remove macros to avoid calling them after this point since all calls should
+ * be done against PARSE() or DUMP() instead.
  */
-extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
-extern double priority_g_calc_fs_factor(long double usage_efctv,
-					long double shares_norm);
+#undef DATA_DUMP
+#undef DATA_PARSE
 
-extern List priority_g_get_priority_factors_list(uid_t uid);
+extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
+		data_t *dst, args_t *args);
+#define DUMP(type, src, dst, args)                                            \
+	dump(&src, sizeof(src), find_parser_by_type(DATA_PARSER_##type), dst, \
+	     args)
 
-/* Call at end of job to remove decayable limits at the end of the job
- * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this
- */
-extern void priority_g_job_end(job_record_t *job_ptr);
+extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
+		 data_t *src, args_t *args, data_t *parent_path);
+#define PARSE(type, dst, src, parent_path, args)                               \
+	parse(&dst, sizeof(dst), find_parser_by_type(DATA_PARSER_##type), src, \
+	      args, parent_path)
 
 #endif
