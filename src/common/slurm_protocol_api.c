@@ -129,7 +129,6 @@ static void _slurm_api_free_comm_config(slurm_protocol_config_t *proto_conf)
 static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 {
 	slurm_protocol_config_t *proto_conf = NULL;
-	slurm_addr_t controller_addr;
 	slurm_conf_t *conf;
 
 	conf = slurm_conf_lock();
@@ -144,22 +143,12 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		goto cleanup;
 	}
 
-	memset(&controller_addr, 0, sizeof(slurm_addr_t));
-	slurm_set_addr(&controller_addr, conf->slurmctld_port,
-		       conf->control_addr[0]);
-	if (slurm_addr_is_unspec(&controller_addr)) {
-		error("Unable to establish control machine address");
-		goto cleanup;
-	}
-
 	proto_conf = xmalloc(sizeof(slurm_protocol_config_t));
 	proto_conf->controller_addr = xcalloc(conf->control_cnt,
 					      sizeof(slurm_addr_t));
 	proto_conf->control_cnt = conf->control_cnt;
-	memcpy(&proto_conf->controller_addr[0], &controller_addr,
-	       sizeof(slurm_addr_t));
 
-	for (int i = 1; i < proto_conf->control_cnt; i++) {
+	for (int i = 0; i < proto_conf->control_cnt; i++) {
 		if (conf->control_addr[i]) {
 			slurm_set_addr(&proto_conf->controller_addr[i],
 				       conf->slurmctld_port,
