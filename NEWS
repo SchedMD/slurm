@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     query parameter.
  -- Fix issue where TRES for energy wasn't always set before sending it to the
     jobcomp plugin.
+ -- jobcomp/[kafka|elastisearch] Print raw TRES values along with the
+    formatted versions as tres_[req|alloc]_raw.
 
 * Changes in Slurm 23.11.0
 ==========================
