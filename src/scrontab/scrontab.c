@@ -97,7 +97,6 @@ static void _parse_args(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
-		/* invalid option definition; needed for suggest_completion() */
 		{NULL, no_argument, 0, 'e'},
 		{NULL, no_argument, 0, 'l'},
 		{NULL, no_argument, 0, 'r'},
