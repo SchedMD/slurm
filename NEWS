@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     the pmi2 plugin and using the route/topology plugin.
  -- Fix sgather not gathering from all nodes when using CR_PACK_NODES/--m pack.
  -- Fix mysql query syntax error when getting jobs with private data.
+ -- Fix sanity check to prevent deleting default account of users.
 
 * Changes in Slurm 23.11.0
 ==========================
