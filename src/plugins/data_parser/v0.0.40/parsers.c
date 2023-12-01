@@ -2126,7 +2126,7 @@ static int PARSE_FUNC(INT32)(const parser_t *const parser, void *obj,
 	if ((rc = PARSE_FUNC(INT64)(parser, &num, str, args, parent_path)))
 		return rc;
 
-	if ((num > INT32_MAX) || (num > INT32_MIN))
+	if ((num > INT32_MAX) || (num < INT32_MIN))
 		return EINVAL;
 
 	*dst = num;
