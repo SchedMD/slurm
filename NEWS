@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sanity check to prevent deleting default account of users.
  -- data_parser/v0.0.40 - Fix the parsing for /slurmdb/v0.0.40/jobs exit_code
     query parameter.
+ -- Fix issue where TRES for energy wasn't always set before sending it to the
+    jobcomp plugin.
 
 * Changes in Slurm 23.11.0
 ==========================
