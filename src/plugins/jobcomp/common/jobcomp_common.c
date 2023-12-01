@@ -327,9 +327,17 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	if (job_ptr->wckey)
 		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
 
+	if (job_ptr->tres_req_str)
+		data_set_string(data_key_set(record, "tres_req_raw"),
+				job_ptr->tres_req_str);
+
 	if (job_ptr->tres_fmt_req_str)
 		data_set_string(data_key_set(record, "tres_req"),
 				job_ptr->tres_fmt_req_str);
+
+	if (job_ptr->tres_alloc_str)
+		data_set_string(data_key_set(record, "tres_alloc_raw"),
+				job_ptr->tres_alloc_str);
 
 	if (job_ptr->tres_fmt_alloc_str)
 		data_set_string(data_key_set(record, "tres_alloc"),

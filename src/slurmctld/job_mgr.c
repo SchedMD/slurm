@@ -15973,12 +15973,12 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 		}
 	}
 
-	jobcomp_g_write(job_ptr);
-
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
 		set_job_tres_alloc_str(job_ptr, false);
+
+	jobcomp_g_write(job_ptr);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
