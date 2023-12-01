@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sgather not gathering from all nodes when using CR_PACK_NODES/--m pack.
  -- Fix mysql query syntax error when getting jobs with private data.
  -- Fix sanity check to prevent deleting default account of users.
+ -- data_parser/v0.0.40 - Fix the parsing for /slurmdb/v0.0.40/jobs exit_code
+    query parameter.
 
 * Changes in Slurm 23.11.0
 ==========================
