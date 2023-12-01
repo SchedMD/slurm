@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/[kafka|elastisearch] Print raw TRES values along with the
     formatted versions as tres_[req|alloc]_raw.
  -- Fix inconsistencies with --cpu-bind/SLURM_CPU_BIND and --hint/SLURM_HINT.
+ -- Fix ignoring invalid json in various subsystems.
 
 * Changes in Slurm 23.11.0
 ==========================
