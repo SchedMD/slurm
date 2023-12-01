@@ -130,7 +130,7 @@ Identical to the \fBremove\fR command.
 .IP
 
 .TP
-\fBdump\fR <\fIENTITY\fR> [File=<\fIFILENAME\fR>]
+\fBdump\fR <\fIcluster\fR>
 Dump cluster data to the specified file. If the filename is not specified
 it uses clustername.cfg filename by default.
 .IP
@@ -2949,28 +2949,65 @@ dash, space, entity value, then specifications. Specifications are colon
 separated. If any variable, such as an Organization name, has a space in it,
 surround the name with single or double quotes.
 
-To create a file of associations you can run
-.RS
-\fBsacctmgr dump tux file=tux.cfg\fP
-.RE
-
-To load a previously created file you can run
-.RS
-\fBsacctmgr load file=tux.cfg\fP
-.RE
-
+.P
 sacctmgr dump/load must be run as a Slurm administrator or root. If using
 sacctmgr load on a database without any associations, it must be run as root
 (because there aren't any users in the database yet).
 
-Other options for load are:
+.SS dump
+Dump cluster associations from the database into a file. If no file is given
+then one will be generated, using the cluster name for the file name. That
+file will be created in the current working directory.
+
+.P
+To create a file with the association information you can run:
+
+.nf
+sacctmgr dump tux file=tux.cfg
+.fi
+
 .RS
-\fBclean\fP     \- delete what was already there and start from scratch with
-this information.
-.br
-\fBCluster=\fP  \- specify a different name for the cluster than that which is
-in the file.
+.TP
+\fBCluster=\fR
+Specify the cluster to dump the information for.
+.IP
+
+.TP
+\fBFile=\fR
+Specify a file to save flat file data to.
+If the filename is not specified it uses clustername.cfg filename by default.
+.IP
 .RE
+
+.SS load
+Load cluster associations into the database. The imported associations will be
+reconciled with existing ones.
+
+.P
+To load a previously created file you can run:
+
+.nf
+sacctmgr load file=tux.cfg
+.fi
+
+.RS
+.TP
+\fBclean\fR
+Delete what was already there and start from scratch with this information.
+.IP
+
+.TP
+\fBCluster=\fR
+Specify a different name for the cluster than that which is in the file.
+.IP
+
+.TP
+\fBFile=\fR
+Specify a flat file to load from.
+.IP
+.RE
+
+.SH "SPECIFICATIONS FOR FLAT FILE"
 
 Since the associations in the system follow a hierarchy, so does the
 file.  Anything that is a parent needs to be defined before any
@@ -3247,6 +3284,7 @@ This operation cannot be rolled back
 once executed. If one of the following options is not specified when sacctmgr
 is called, the value configured in slurmdbd.conf is used.
 
+.RS
 .TP
 \fBDirectory=\fR
 Directory to store the archive data.
@@ -3311,6 +3349,8 @@ all step data removed will be lost permanently.
 \fBSuspend\fR
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
+.IP
+.RE
 
 .SS archive load
 Load in to the database previously archived data. The archive file will not be
@@ -3325,6 +3365,7 @@ will have duplicate records.
 Archive files from the current or any prior Slurm release may be loaded
 through \fBarchive load\fR.
 
+.RS
 .TP
 \fBFile=\fR
 File to load into database. The specified file must exist on the slurmdbd host,
@@ -3336,6 +3377,7 @@ which is not necessarily the machine running the command.
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
 .IP
+.RE
 
 .SH "PERFORMANCE"
 .PP
