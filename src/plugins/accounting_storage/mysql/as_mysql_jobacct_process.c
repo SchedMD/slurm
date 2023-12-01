@@ -523,6 +523,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			}
 			list_iterator_destroy(itr);
 		}
+		xstrcatchar(extra, ')');
 	}
 
 	setup_job_cluster_cond_limits(mysql_conn, job_cond,

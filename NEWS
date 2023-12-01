@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix crash in slurmstepd that can occur when launching tasks via mpi using
     the pmi2 plugin and using the route/topology plugin.
  -- Fix sgather not gathering from all nodes when using CR_PACK_NODES/--m pack.
+ -- Fix mysql query syntax error when getting jobs with private data.
 
 * Changes in Slurm 23.11.0
 ==========================
