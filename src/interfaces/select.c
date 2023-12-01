@@ -339,19 +339,6 @@ again:
 	return i;
 }
 
-/* Get the plugin ID number. Unique for each select plugin type */
-extern int select_get_plugin_id(void)
-{
-	int plugin_pos;
-
-	xassert(select_context_cnt >= 0);
-
-	plugin_pos = working_cluster_rec ?
-		working_cluster_rec->plugin_id_select : select_context_default;
-
-	return *(ops[plugin_pos].plugin_id);
-}
-
 /* If the slurmctld is running a linear based select plugin return 1
  * else 0. */
 extern int select_running_linear_based(void)
@@ -756,17 +743,13 @@ unpack_error:
 extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
 {
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
-	uint32_t plugin_id;
 
 	xassert(select_context_cnt >= 0);
-
-	plugin_id = working_cluster_rec ?
-		working_cluster_rec->plugin_id_select : select_context_default;
+	xassert(!working_cluster_rec);
 
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	nodeinfo_ptr->plugin_id = plugin_id;
-	nodeinfo_ptr->data = (*(ops[plugin_id].
-				nodeinfo_alloc))();
+	nodeinfo_ptr->plugin_id = select_context_default;
+	nodeinfo_ptr->data = (*(ops[select_context_default].nodeinfo_alloc))();
 	return nodeinfo_ptr;
 }
 
@@ -824,17 +807,13 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-	uint32_t plugin_id;
 
 	xassert(select_context_cnt >= 0);
-
-	plugin_id = working_cluster_rec ?
-		working_cluster_rec->plugin_id_select : select_context_default;
+	xassert(!working_cluster_rec);
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	jobinfo_ptr->plugin_id = plugin_id;
-	jobinfo_ptr->data =  (*(ops[plugin_id].
-				jobinfo_alloc))();
+	jobinfo_ptr->plugin_id = select_context_default;
+	jobinfo_ptr->data = (*(ops[select_context_default].jobinfo_alloc))();
 	return jobinfo_ptr;
 }
 

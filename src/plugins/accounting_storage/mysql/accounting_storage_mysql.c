@@ -599,8 +599,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "rpc_version", "smallint unsigned not null default 0" },
 		{ "classification", "smallint unsigned default 0" },
 		{ "dimensions", "smallint unsigned default 1" },
-		/* Remove plugin_id_select 2 versions after 23.02 */
-		{ "plugin_id_select", "smallint unsigned default 0" },
 		{ "flags", "int unsigned default 0" },
 		{ "federation", "tinytext not null" },
 		{ "features", "text not null default ''" },

@@ -5065,7 +5065,6 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", NULL),
 	add_parse(STRING, nodes, "nodes", NULL),
-	add_parse(SELECT_PLUGIN_ID, plugin_id_select, "select_plugin", NULL),
 	add_parse(ASSOC_SHORT_PTR, root_assoc, "associations/root", NULL),
 	add_parse(UINT16, rpc_version, "rpc_version", NULL),
 	add_skip(send_rpc), /* not packed */

@@ -2544,7 +2544,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	cluster.control_port = register_ctld_msg->port;
 	cluster.dimensions = register_ctld_msg->dimensions;
 	cluster.flags = register_ctld_msg->flags;
-	cluster.plugin_id_select = register_ctld_msg->plugin_id_select;
 	cluster.rpc_version = slurmdbd_conn->conn->version;
 
 	if ((cluster.flags != NO_VAL) &&

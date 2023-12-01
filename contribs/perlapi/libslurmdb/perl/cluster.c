@@ -437,7 +437,6 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, flags,          uint32_t);
     STORE_FIELD(hv, rec, name,           charp);
     STORE_FIELD(hv, rec, nodes,          charp);
-    STORE_FIELD(hv, rec, plugin_id_select, uint32_t);
     /* slurmdb_assoc_rec_t* root_assoc; */
     STORE_FIELD(hv, rec, rpc_version,    uint16_t);
     STORE_FIELD(hv, rec, tres_str,          charp);

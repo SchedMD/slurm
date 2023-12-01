@@ -679,8 +679,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 			packnull(buffer);
 
-			pack32(NO_VAL, buffer);		/* plugin_id_select */
-
 			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
 
 			pack16(0, buffer);
@@ -711,8 +709,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->name, buffer);
 		packstr(object->nodes, buffer);
-
-		pack32(object->plugin_id_select, buffer);
 
 		slurmdb_pack_assoc_rec(object->root_assoc,
 				       protocol_version, buffer);
@@ -776,7 +772,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		packstr(object->name, buffer);
 		packstr(object->nodes, buffer);
 
-		pack32(object->plugin_id_select, buffer);
+		pack32(NO_VAL, buffer);
 
 		slurmdb_pack_assoc_rec(object->root_assoc,
 				       protocol_version, buffer);
@@ -840,7 +836,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		packstr(object->name, buffer);
 		packstr(object->nodes, buffer);
 
-		pack32(object->plugin_id_select, buffer);
+		pack32(NO_VAL, buffer);
 
 		slurmdb_pack_assoc_rec(object->root_assoc,
 				       protocol_version, buffer);
@@ -923,8 +919,6 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
-		safe_unpack32(&object_ptr->plugin_id_select, buffer);
-
 		if (slurmdb_unpack_assoc_rec(
 			    (void **)&object_ptr->root_assoc,
 			    protocol_version, buffer)
@@ -997,7 +991,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
-		safe_unpack32(&object_ptr->plugin_id_select, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
 
 		if (slurmdb_unpack_assoc_rec(
 			    (void **)&object_ptr->root_assoc,
@@ -1071,7 +1065,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
-		safe_unpack32(&object_ptr->plugin_id_select, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
 
 		if (slurmdb_unpack_assoc_rec(
 			    (void **)&object_ptr->root_assoc,

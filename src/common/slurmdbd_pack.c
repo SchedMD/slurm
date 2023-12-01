@@ -827,12 +827,11 @@ static void _pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 	if (rpc_version >= SLURM_24_08_PROTOCOL_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
-		pack32(msg->plugin_id_select, buffer);
 		pack16(msg->port, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
-		pack32(msg->plugin_id_select, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(msg->port, buffer);
 	}
 }
@@ -847,12 +846,12 @@ static int _unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 	if (rpc_version >= SLURM_24_08_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
-		safe_unpack32(&msg_ptr->plugin_id_select, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t tmp_uint32;
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
-		safe_unpack32(&msg_ptr->plugin_id_select, buffer);
+		safe_unpack32(&tmp_uint32, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 	}
 

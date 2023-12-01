@@ -726,7 +726,6 @@ struct slurmdb_cluster_rec {
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;
-	uint32_t plugin_id_select; /* Remove 2 versions after 23.02 */
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* rpc version this cluster is running */
@@ -1828,9 +1827,8 @@ extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 /*
  * Get information about requested cluster(s). Similar to
  * slurmdb_clusters_get, but should be used when setting up the
- * working_cluster_rec.  It replaces the plugin_id_select with
- * the position of the id in the select plugin array, as well as sets up the
- * control_addr and dim_size parts of the structure.
+ * working_cluster_rec.  It sets up the control_addr and dim_size parts of the
+ * structure.
  *
  * IN: cluster_names - comma separated string of cluster names
  * RET: List of slurmdb_cluster_rec_t *
