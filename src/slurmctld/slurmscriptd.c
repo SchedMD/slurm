@@ -62,7 +62,6 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"
-#include "src/interfaces/select.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
