@@ -1,5 +1,5 @@
-slurm-smd (23.11.0-1) UNRELEASED; urgency=medium
+slurm-smd (24.08.0-0rc1) UNRELEASED; urgency=medium
 
   * Initial release.
 
- -- Tim McMullan <mcmullan@schedmd.com>  Tue, 12 Sep 2023 15:54:59 -0400
+ -- Tim McMullan <mcmullan@schedmd.com>  Tue, 05 Dec 2023 15:25:59 -0400
