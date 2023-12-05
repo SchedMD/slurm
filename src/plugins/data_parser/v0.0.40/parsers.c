@@ -341,7 +341,8 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				      data_t *parent_path);
 
 #ifndef NDEBUG
-static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit)
+static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
+			    ssize_t parser_size)
 {
 	xassert(bit->magic == MAGIC_FLAG_BIT);
 	xassert(bit->type > FLAG_BIT_TYPE_INVALID);
@@ -355,6 +356,26 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit)
 	xassert(bit->mask_size <= sizeof(bit->value));
 	xassert(bit->mask_size > 0);
 	xassert(bit->mask_name && bit->mask_name[0]);
+
+	/* Bit values must fit in parser->size bits */
+	switch (parser_size) {
+	case sizeof(uint8_t):
+		xassert((bit->value & UINT8_MAX) == bit->value);
+		break;
+	case sizeof(uint16_t):
+		xassert((bit->value & UINT16_MAX) == bit->value);
+		break;
+	case sizeof(uint32_t):
+		xassert((bit->value & UINT32_MAX) == bit->value);
+		break;
+	case sizeof(uint64_t):
+		xassert((bit->value & UINT64_MAX) == bit->value);
+		break;
+	default:
+		error("Parser->size (%ld) is invalid. This should never happen.",
+		      parser_size);
+		xassert(false);
+	}
 
 	if (bit->type == FLAG_BIT_TYPE_BIT) {
 		/* atleast one bit must be set */
@@ -415,7 +436,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 		for (int8_t i = 0; i < parser->flag_bit_array_count; i++) {
 			_check_flag_bit(i, &parser->flag_bit_array[i],
-					&found_bit_type);
+					&found_bit_type, parser->size);
 
 			/* check for duplicate flag names */
 			for (int8_t j = 0; j < parser->flag_bit_array_count;
