@@ -225,7 +225,8 @@ extern int task_cgroup_devices_add_pid(stepd_step_rec_t *step, pid_t pid,
 }
 
 extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
-					 uint32_t taskid)
+					 uint32_t node_tid,
+					 uint32_t global_tid)
 {
 	List device_list = NULL;
 	handle_dev_args_t handle_args;
@@ -248,20 +249,20 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
 	 */
 	device_list = gres_g_get_devices(step->step_gres_list, false,
 					 step->accel_bind_type, step->tres_bind,
-					 taskid, step);
+					 node_tid, step);
 	if (device_list) {
 		int tmp;
 
 		handle_args.cgroup_type = CG_LEVEL_TASK;
 		handle_args.step = step;
-		handle_args.taskid = taskid;
+		handle_args.taskid = global_tid;
 		tmp = list_for_each(device_list, _handle_device_access,
 				    &handle_args);
 		FREE_NULL_LIST(device_list);
 		if (tmp < 0)
 			return SLURM_ERROR;
 
-                cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK, taskid);
+		cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK, global_tid);
 	}
 
 	return SLURM_SUCCESS;
