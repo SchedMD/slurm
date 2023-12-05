@@ -416,6 +416,7 @@ static void *_set_db_inx_thread(void *no_data)
 			   amount of messages at once.
 			*/
 			if (list_count(local_job_list) > 1000) {
+				log_flag(DBD_AGENT, "local_job_list size limit reached");
 				more_jobs = true;
 				break;
 			}
