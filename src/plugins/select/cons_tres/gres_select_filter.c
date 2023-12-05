@@ -374,7 +374,11 @@ static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 		if (!use_total_gres)
 			cnt -= gres_ns->topo_gres_cnt_alloc[i];
 
-		task_limit += cnt / gres_js->gres_per_task;
+		if ((slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
+			task_limit += cnt / gres_js->gres_per_task;
+		else
+			task_limit = MAX(task_limit,
+					 (cnt / gres_js->gres_per_task));
 	}
 	return task_limit;
 }
