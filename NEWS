@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Update service files to start slurmd, slurmctld, and slurmdbd after sssd.
  -- data_parser/v0.0.40 - Fix output of DefMemPerCpu, MaxMemPerCpu, and
     max_shares.
+ -- When determining a jobs index in the database don't wait if there are more
+    jobs waiting.
 
 * Changes in Slurm 23.11.0
 ==========================
