@@ -6025,12 +6025,17 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 
 extern int validate_hint_option(slurm_opt_t *opt)
 {
+	cpu_bind_type_t cpu_bind_type = 0;
+
+	if (opt->srun_opt)
+		cpu_bind_type = opt->srun_opt->cpu_bind_type;
+
 	if (slurm_option_set_by_cli(opt, LONG_OPT_HINT) &&
 	    ((slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
 	      slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 	      slurm_option_set_by_cli(opt, 'B') ||
 	      (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
-	       (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE))))) {
+	       (cpu_bind_type & ~CPU_BIND_VERBOSE))))) {
 		if (opt->verbose)
 			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind (other then --cpu-bind=verbose). Ignoring --hint.");
 		slurm_option_reset(opt, "hint");
@@ -6039,14 +6044,13 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		slurm_option_reset(opt, "ntasks-per-core");
 		slurm_option_reset(opt, "threads-per-core");
 		slurm_option_reset(opt, "extra-node-info");
-		if (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE) {
+		if (cpu_bind_type & ~CPU_BIND_VERBOSE) {
 			bool has_verbose;
 
-			has_verbose = (opt->srun_opt->cpu_bind_type &
-				       CPU_BIND_VERBOSE);
+			has_verbose = (cpu_bind_type & CPU_BIND_VERBOSE);
 			/* Completely clear cpu_bind */
 			slurm_option_reset(opt, "cpu-bind");
-			if (has_verbose) {
+			if (has_verbose && opt->srun_opt) {
 				/* Add verbose back in */
 				opt->srun_opt->cpu_bind_type = CPU_BIND_VERBOSE;
 				opt->srun_opt->cpu_bind = xstrdup("verbose");
@@ -6056,7 +6060,7 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 		   slurm_option_set_by_cli(opt, 'B') ||
 		   (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
-		    (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE))) {
+		    (cpu_bind_type & ~CPU_BIND_VERBOSE))) {
 		slurm_option_reset(opt, "hint");
 		return SLURM_ERROR;
 	} else if (slurm_option_set_by_env(opt, LONG_OPT_HINT) &&
@@ -6064,7 +6068,7 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		    slurm_option_set_by_env(opt, LONG_OPT_THREADSPERCORE) ||
 		    slurm_option_set_by_env(opt, 'B') ||
 		    (slurm_option_set_by_env(opt, LONG_OPT_CPU_BIND) &&
-		     (opt->srun_opt->cpu_bind_type & ~CPU_BIND_VERBOSE)))) {
+		     (cpu_bind_type & ~CPU_BIND_VERBOSE)))) {
 		if (opt->verbose)
 			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind, but more than one set by environment variables. Ignoring SLURM_HINT.");
 		slurm_option_reset(opt, "hint");
