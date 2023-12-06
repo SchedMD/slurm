@@ -107,6 +107,11 @@ throughput. Disable collection of accounting by using the
 Disabling recording of job completion information will improve job
 throughput. Disable recording of job completion information by using the
 <i>jobcomp/none</i> plugin.</li>
+<li><b>JobSubmitPlugins</b>:
+Use of a lua job submit plugin is not recommended. slurmctld runs this
+script while holding internal locks, and only a single copy of this script
+can run at a time. This blocks most concurrency in slurmctld. Therefore, we
+do not recommend using it in a high throughput environment.</li>
 <li><b>MaxJobCount</b>:
 Controls how many jobs may be in the <b>slurmctld</b> daemon records at any
 point in time (pending, running, suspended or completed[temporarily]).
@@ -127,6 +132,12 @@ the slurmctld daemon.</li>
 <li><b>PriorityType</b>:
 The <i>priority/basic</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
+<li><b>PrologSlurmctld/EpilogSlurmctld</b>:
+Neither of these is recommended for a high throughput environment. When they
+are enabled a separate slurmctld thread has to be created for every job start
+(or task for a job array).
+Current architecture requires acquisition of a job write lock in every thread,
+which is a costly operation that severely limits scheduler throughput.
 <li><b>SchedulerParameters</b>:
 Many scheduling parameters are available.
 <ul>
@@ -185,21 +196,15 @@ in every case, but it may serve as a good starting point.</li>
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
 recommended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
 and eliminates logic used to sort the queue by priority.
+<li><b>SlurmctldDebug</b>:
+More detailed logging will decrease system throughput. Set to <i>error</i> or
+<i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
-<li><b>PrologSlurmctld/EpilogSlurmctld</b>:
-Neither of these is recommended for a high throughput environment. When they
-are enabled a separate slurmctld thread has to be created for every job start
-(or task for a job array).
-Current architecture requires acquisition of a job write lock in every thread,
-which is a costly operation that severely limits scheduler throughput.
-<li><b>SlurmctldDebug</b>:
-More detailed logging will decrease system throughput. Set to <i>error</i> or
-<i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmdDebug</b>:
 More detailed logging will decrease system throughput. Set to <i>error</i> or
 <i>info</i> for regular operations with high throughput workload.</li>
@@ -244,6 +249,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 18 April 2023</p>
+<p style="text-align:center;">Last modified 6 December 2023</p>
 
 <!--#include virtual="footer.txt"-->
