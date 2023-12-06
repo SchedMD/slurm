@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+# shellcheck shell=bash
 ################################################################################
 # slurm_completion.sh - bash completion script for Slurm client commands.
 #
