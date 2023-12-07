@@ -346,6 +346,10 @@ static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				      data_t *str, args_t *args,
 				      data_t *parent_path);
+static int PARSE_FUNC(STRING)(const parser_t *const parser, void *obj,
+			      data_t *str, args_t *args, data_t *parent_path);
+static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
+			     data_t *data, args_t *args);
 
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
