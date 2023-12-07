@@ -142,13 +142,13 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		slurm_make_time_str(&end_time,
 				    time_str,
 				    sizeof(time_str));
+		job->end_time = xstrdup(time_str);
 
 		if (end_time && start_time && start_time < end_time)
 			job->elapsed_time = end_time - start_time;
 		else
 			job->elapsed_time = 0;
 
-		job->end_time = xstrdup(time_str);
 		if (row[JOBCOMP_REQ_UID])
 			job->uid = slurm_atoul(row[JOBCOMP_REQ_UID]);
 		job->uid_name = xstrdup(row[JOBCOMP_REQ_USER_NAME]);
