@@ -365,8 +365,8 @@ typedef enum {
 	DATA_PARSER_JOB_RES_NODES, /* job_resources_t->nodes,core_bitmap,nhosts */
 	DATA_PARSER_JOB_MAIL_FLAGS, /* uint16_t & MAIL_JOB_* */
 	DATA_PARSER_NICE, /* uint32_t - nice value - NICE_OFFSET */
-	DATA_PARSER_JOB_MEM_PER_CPU, /* uint64_t & MEM_PER_CPU */
-	DATA_PARSER_JOB_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */
+	DATA_PARSER_MEM_PER_CPUS, /* uint64_t & MEM_PER_CPU */
+	DATA_PARSER_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */
 	DATA_PARSER_ACCT_GATHER_PROFILE, /* uint32_t - ACCT_GATHER_PROFILE_* */
 	DATA_PARSER_ACCT_GATHER_ENERGY, /* acct_gather_energy_t */
 	DATA_PARSER_ACCT_GATHER_ENERGY_PTR, /* acct_gather_energy_t* */
@@ -499,6 +499,8 @@ typedef enum {
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, /* assoc_shares_object_wrap_t->tres_cnt&obj->usage_tres_raw */
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TYPE, /* assoc_shares_object_wrap_t.obj->user */
 	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_PTR, /* assoc_shares_object_t* */
+	DATA_PARSER_OVERSUBSCRIBE_JOBS, /* max_share */
+	DATA_PARSER_OVERSUBSCRIBE_FLAGS, /* max_share */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

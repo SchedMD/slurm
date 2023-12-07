@@ -1749,6 +1749,18 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(OVERSUBSCRIBE_JOBS)
+
+static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj,
+				 data_t *dst, args_t *args)
+{
+	uint16_t *state = obj;
+	uint16_t val = *state & (~SHARED_FORCE);
+
+	data_set_int(dst, val);
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
@@ -3594,9 +3606,9 @@ static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
-				       data_t *src, args_t *args,
-				       data_t *parent_path)
+static int PARSE_FUNC(MEM_PER_CPUS)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int rc;
 	uint64_t *mem = obj;
@@ -3640,8 +3652,8 @@ static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
+static int DUMP_FUNC(MEM_PER_CPUS)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
 	uint64_t cpu_mem = NO_VAL64;
@@ -3652,9 +3664,9 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, cpu_mem, dst, args);
 }
 
-static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
-					data_t *src, args_t *args,
-					data_t *parent_path)
+static int PARSE_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int rc;
 	uint64_t *mem = obj;
@@ -3698,8 +3710,8 @@ static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
-				       data_t *dst, args_t *args)
+static int DUMP_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
 	uint64_t node_mem = NO_VAL64;
@@ -6128,8 +6140,8 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
 	add_parse(QOS_ID, qosid, "qos", NULL),
 	add_parse(UINT32, req_cpus, "required/CPUs", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, req_mem, 1, "required/memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, req_mem, 1, "required/memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, req_mem, 1, "required/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, req_mem, 1, "required/memory_per_node", NULL),
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(UINT32, resvid, "reservation/id", NULL),
 	add_parse(STRING, resv_name, "reservation/name", NULL),
@@ -6842,6 +6854,10 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
 	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(OVERSUBSCRIBE_FLAGS)[] = {
+	add_flag_bit(SHARED_FORCE, "force"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path, desc) \
@@ -6939,8 +6955,8 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, num_tasks, "tasks", NULL),
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(STRING, prefer, "prefer", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, pn_min_memory, 1, "memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, pn_min_memory, 1, "memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
 	add_parse(UINT16_NO_VAL, pn_min_cpus, "minimum_cpus_per_node", NULL),
 	add_parse(UINT32_NO_VAL, pn_min_tmp_disk, "minimum_tmp_disk_per_node", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, POWER_FLAGS, false, power_flags, "power/flags", NULL),
@@ -7076,6 +7092,8 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(partition_info_t, mtype, false, field, overloads, path, desc)
 #define add_skip(field) \
 	add_parser_skip(partition_info_t, field)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
@@ -7088,7 +7106,9 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, cluster_name, "cluster", NULL),
 	add_skip(cr_type), //TODO: add parsing for consumable resource type
 	add_parse(UINT32, cpu_bind, "cpus/task_binding", NULL),
-	add_parse(UINT64, def_mem_per_cpu, "defaults/memory_per_cpu", NULL),
+	add_parse_overload(UINT64, def_mem_per_cpu, 2, "defaults/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 2, "defaults/partition_memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 2, "defaults/partition_memory_per_node", NULL),
 	add_parse(UINT32_NO_VAL, default_time, "defaults/time", NULL),
 	add_parse(STRING, deny_accounts, "accounts/deny", NULL),
 	add_parse(STRING, deny_qos, "qos/deny", NULL),
@@ -7098,9 +7118,13 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, job_defaults_str, "defaults/job", NULL),
 	add_parse(UINT32_NO_VAL, max_cpus_per_node, "maximums/cpus_per_node", NULL),
 	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket", NULL),
-	add_parse(UINT64, max_mem_per_cpu, "maximums/memory_per_cpu", NULL),
+	add_parse_overload(UINT64, max_mem_per_cpu, 2, "maximums/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 2, "maximums/partition_memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", NULL),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", NULL),
-	add_parse(UINT16, max_share, "maximums/shares", NULL),
+	add_parse_overload(UINT16, max_share, 2, "maximums/shares", NULL),
+	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", NULL),
+	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", NULL),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", NULL),
 	add_parse(UINT32, min_nodes, "minimums/nodes", NULL),
 	add_parse(STRING, name, "name", NULL),
@@ -7122,6 +7146,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_parse_overload
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(sinfo_data_t, mtype, false, field, 0, path, desc)
@@ -7535,8 +7560,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, ntasks_per_board, "tasks_per_board", NULL),
 	add_parse(UINT16, ntasks_per_tres, "ntasks_per_tres", NULL),
 	add_parse(UINT16, pn_min_cpus, "minimum_cpus_per_node", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, pn_min_memory, 1, "memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, pn_min_memory, 1, "memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
 	add_parse(UINT32, pn_min_tmp_disk, "temporary_disk_per_node", NULL),
 	add_parse(STRING, req_context, "selinux_context", NULL),
 	add_parse(UINT32_NO_VAL, req_switch, "required_switches", NULL),
@@ -8658,6 +8683,7 @@ static const parser_t parsers[] = {
 	addpsp(WCKEY_TAG, WCKEY_TAG_STRUCT, char *, NEED_NONE, "WCKey ID with tagging"),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(OVERSUBSCRIBE_JOBS, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
@@ -8666,8 +8692,8 @@ static const parser_t parsers[] = {
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
-	addpsp(JOB_MEM_PER_CPU, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
-	addpsp(JOB_MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
+	addpsp(MEM_PER_CPUS, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
+	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
@@ -8924,6 +8950,7 @@ static const parser_t parsers[] = {
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
+	addfa(OVERSUBSCRIBE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */

@@ -3208,9 +3208,9 @@ static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
-				       data_t *src, args_t *args,
-				       data_t *parent_path)
+static int PARSE_FUNC(MEM_PER_CPUS)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int rc;
 	uint64_t *mem = obj;
@@ -3277,8 +3277,8 @@ static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
+static int DUMP_FUNC(MEM_PER_CPUS)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
 	uint64_t cpu_mem = NO_VAL64;
@@ -3292,9 +3292,9 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, cpu_mem, dst, args);
 }
 
-static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
-					data_t *src, args_t *args,
-					data_t *parent_path)
+static int PARSE_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int rc;
 	uint64_t *mem = obj;
@@ -3361,8 +3361,8 @@ static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
-				       data_t *dst, args_t *args)
+static int DUMP_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
 	uint64_t node_mem = NO_VAL64;
@@ -4747,8 +4747,8 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_parse(QOS_ID, qosid, "qos", NULL),
 	add_parse(UINT32, req_cpus, "required/CPUs", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, req_mem, 2, "required/memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, req_mem, 2, "required/memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, req_mem, 2, "required/memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, req_mem, 2, "required/memory_per_node", NULL),
 
 	/*
 	 * This will give a large negative value instead of the slurm.conf
@@ -5504,8 +5504,8 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, num_tasks, "tasks", NULL),
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(STRING, prefer, "prefer", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, pn_min_memory, 1, "memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, pn_min_memory, 1, "memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
 	add_parse(UINT16_NO_VAL, pn_min_cpus, "minimum_cpus_per_node", NULL),
 	add_parse(UINT32_NO_VAL, pn_min_tmp_disk, "minimum_tmp_disk_per_node", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, POWER_FLAGS, false, power_flags, "power/flags", NULL),
@@ -6091,8 +6091,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, ntasks_per_board, "tasks_per_board", NULL),
 	add_parse(UINT16, ntasks_per_tres, "ntasks_per_tres", NULL),
 	add_parse(UINT16, pn_min_cpus, "minimum_cpus_per_node", NULL),
-	add_parse_overload(JOB_MEM_PER_CPU, pn_min_memory, 1, "memory_per_cpu", NULL),
-	add_parse_overload(JOB_MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
+	add_parse_overload(MEM_PER_CPUS, pn_min_memory, 1, "memory_per_cpu", NULL),
+	add_parse_overload(MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
 	add_parse(UINT32, pn_min_tmp_disk, "temporary_disk_per_node", NULL),
 	add_parse(STRING, req_context, "selinux_context", NULL),
 	add_parse(UINT32_NO_VAL, req_switch, "required_switches", NULL),
@@ -6390,8 +6390,8 @@ static const parser_t parsers[] = {
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL),
-	addpsp(JOB_MEM_PER_CPU, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
-	addpsp(JOB_MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
+	addpsp(MEM_PER_CPUS, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
+	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),
