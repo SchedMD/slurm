@@ -8247,6 +8247,14 @@ static const parser_t PARSER_ARRAY(WCKEY_TAG_STRUCT)[] = {
 };
 #undef add_parse_req
 
+static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
+	add_flag_equal(NEED_NONE, INFINITE16, "NONE"),
+	add_flag_bit(NEED_AUTH, "AUTH"),
+	add_flag_bit(NEED_TRES, "TRES"),
+	add_flag_bit(NEED_QOS, "QOS"),
+	add_flag_bit(NEED_ASSOC, "ASSOC"),
+};
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8975,6 +8983,7 @@ static const parser_t parsers[] = {
 	addfa(STEP_NAMES, uint32_t),
 	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
 	addfa(WCKEY_TAG_FLAGS, WCKEY_TAG_FLAGS_t),
+	addfa(NEED_PREREQS_FLAGS, need_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
