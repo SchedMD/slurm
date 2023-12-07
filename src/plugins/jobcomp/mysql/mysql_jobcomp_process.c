@@ -128,6 +128,9 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	xfree(query);
 
 	while ((row = mysql_fetch_row(result))) {
+		time_t start_time = atoi(row[JOBCOMP_REQ_STARTTIME]);
+		time_t end_time = atoi(row[JOBCOMP_REQ_ENDTIME]);
+
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
 		if (row[JOBCOMP_REQ_JOBID])
 			job->jobid = slurm_atoul(row[JOBCOMP_REQ_JOBID]);
@@ -143,8 +146,10 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				    time_str,
 				    sizeof(time_str));
 
-		job->elapsed_time = atoi(row[JOBCOMP_REQ_ENDTIME])
-			- atoi(row[JOBCOMP_REQ_STARTTIME]);
+		if (end_time && start_time && start_time < end_time)
+			job->elapsed_time = end_time - start_time;
+		else
+			job->elapsed_time = 0;
 
 		job->end_time = xstrdup(time_str);
 		if (row[JOBCOMP_REQ_UID])
