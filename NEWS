@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
  -- Prevent jobs using none typed gpus from being killed by the controller after
     a reconfig or restart.
  -- Fix deadlock situation in the dbd when adding associations.
+ -- Update default values of text/blob columns when updating from old mysql
+    versions in more situations.  This improves a previous fix to handle an
+    uncommon case when upgrading mysql/mariadb.
 
 * Changes in Slurm 23.11.1
 ==========================
