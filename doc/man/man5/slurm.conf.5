@@ -449,6 +449,15 @@ Absolute path to JWT key file. Key must be HS256. Key should be owned by
 SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
 0400. It must not be accessible by 'other'.
 If not set, the default key file is jwt_hs256.key in \fIStateSaveLocation\fR.
+.IP
+
+.TP
+\fBuserclaimfield=\fR
+Use an alternative claim field for the Slurm UserName \fBsun\fR field. This
+option is designed to allow compatibility with tokens generated outside of
+Slurm. (This field may also be known as a grant.)
+.NR
+Default: (disabled)
 .RE
 .IP
 
@@ -484,15 +493,6 @@ Used by \fIauth/munge\fR and \fIcred/munge\fR.
 Credential lifetime, in seconds (e.g. "ttl=300").
 The default value is dependent upon the MUNGE installation, but is typically
 300 seconds.
-.IP
-
-.TP
-\fBuserclaimfield=\fR
-Use an alternative claim field for the Slurm UserName \fBsun\fR field. This
-option is designed to allow compatibility with tokens generated outside of
-Slurm. (This field may also be known as a grant.)
-.NR
-Default: (disabled)
 .RE
 .IP
 
