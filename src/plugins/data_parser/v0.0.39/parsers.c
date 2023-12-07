@@ -5129,6 +5129,7 @@ static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 	add_parse(FLOAT128, usage_efctv, "effective_normalized_usage", NULL),
 	add_parse(FLOAT128, usage_norm, "normalized_usage", NULL),
 	add_parse(FLOAT128, usage_raw, "raw_usage", NULL),
+	add_skip(usage_tres_raw), /* not packed */
 	add_parse(UINT32, used_jobs, "active_jobs", NULL),
 	add_parse(UINT32, used_submit_jobs, "job_count", NULL),
 	add_parse(FLOAT128, level_fs, "fairshare_level", NULL),
