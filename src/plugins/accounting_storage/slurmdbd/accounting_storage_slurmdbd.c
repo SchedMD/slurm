@@ -333,6 +333,7 @@ static void *_set_db_inx_thread(void *no_data)
 	ListIterator itr;
 	struct timeval tvnow;
 	struct timespec abs;
+	bool more_jobs;
 
 	/* Read lock on jobs */
 	slurmctld_lock_t job_read_lock =
@@ -362,6 +363,7 @@ static void *_set_db_inx_thread(void *no_data)
 		slurm_mutex_lock(&db_inx_lock);
 		/* info("in lock db_thread"); */
 		running_db_inx = 1;
+		more_jobs = false;
 
 		/* Here we have off loaded starting
 		 * jobs in the database out of band
@@ -413,8 +415,10 @@ static void *_set_db_inx_thread(void *no_data)
 			/* Just so we don't have a crazy
 			   amount of messages at once.
 			*/
-			if (list_count(local_job_list) > 1000)
+			if (list_count(local_job_list) > 1000) {
+				more_jobs = true;
 				break;
+			}
 		}
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_read_lock);
@@ -484,6 +488,7 @@ static void *_set_db_inx_thread(void *no_data)
 				list_for_each(job_list,
 					      _reset_db_inx_for_each, NULL);
 				unlock_slurmctld(job_read_lock);
+				more_jobs = true;
 			}
 		}
 		running_db_inx = 0;
@@ -497,11 +502,12 @@ static void *_set_db_inx_thread(void *no_data)
 		   haven't had the start rpc come through.
 		*/
 
-		gettimeofday(&tvnow, NULL);
-		abs.tv_sec = tvnow.tv_sec + 5;
-		abs.tv_nsec = tvnow.tv_usec * 1000;
-
-		slurm_cond_timedwait(&db_inx_cond, &db_inx_lock, &abs);
+		if (!more_jobs) {
+			gettimeofday(&tvnow, NULL);
+			abs.tv_sec = tvnow.tv_sec + 5;
+			abs.tv_nsec = tvnow.tv_usec * 1000;
+			slurm_cond_timedwait(&db_inx_cond, &db_inx_lock, &abs);
+		}
 
 		slurm_mutex_unlock(&db_inx_lock);
 	}
