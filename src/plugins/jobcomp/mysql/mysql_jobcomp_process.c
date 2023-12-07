@@ -61,7 +61,6 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	int i;
 	jobcomp_job_rec_t *job = NULL;
 	char time_str[256];
-	time_t temp_time;
 	List job_list = list_create(jobcomp_destroy_job);
 
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
@@ -135,14 +134,12 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		if (row[JOBCOMP_REQ_JOBID])
 			job->jobid = slurm_atoul(row[JOBCOMP_REQ_JOBID]);
 		job->partition = xstrdup(row[JOBCOMP_REQ_PARTITION]);
-		temp_time = atoi(row[JOBCOMP_REQ_STARTTIME]);
-		slurm_make_time_str(&temp_time,
+		slurm_make_time_str(&start_time,
 				    time_str,
 				    sizeof(time_str));
 
 		job->start_time = xstrdup(time_str);
-		temp_time = atoi(row[JOBCOMP_REQ_ENDTIME]);
-		slurm_make_time_str(&temp_time,
+		slurm_make_time_str(&end_time,
 				    time_str,
 				    sizeof(time_str));
 
