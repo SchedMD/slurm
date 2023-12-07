@@ -604,14 +604,14 @@ static void *_agent(void *x)
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 
-	log_flag(AGENT, "slurmdbd agent_count=%d with msg_type=%s",
+	log_flag(DBD_AGENT, "slurmdbd agent_count=%d with msg_type=%s",
 		 list_count(agent_list),
 		 slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
-			log_flag(AGENT, "slurmdbd agent halt with agent_count=%d",
+			log_flag(DBD_AGENT, "slurmdbd agent halt with agent_count=%d",
 				 list_count(agent_list));
 
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
@@ -625,7 +625,7 @@ static void *_agent(void *x)
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
-				log_flag(AGENT, "slurmdbd disconnected with agent_count=%d",
+				log_flag(DBD_AGENT, "slurmdbd disconnected with agent_count=%d",
 					 list_count(agent_list));
 			}
 		}
@@ -637,7 +637,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
 			END_TIMER2("slurmdbd agent: sleep");
-			log_flag(AGENT, "slurmdbd agent sleeping with agent_count=%d",
+			log_flag(DBD_AGENT, "slurmdbd agent sleeping with agent_count=%d",
 				 list_count(agent_list));
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
@@ -646,7 +646,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&agent_lock);
 			continue;
 		} else if (((cnt > 0) && ((cnt % 100) == 0)) ||
-		           (slurm_conf.debug_flags & DEBUG_FLAG_AGENT))
+		           (slurm_conf.debug_flags & DEBUG_FLAG_DBD_AGENT))
 			info("agent_count:%d", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
@@ -745,7 +745,7 @@ static void *_agent(void *x)
 
 			fail_time = time(NULL);
 
-			if (slurm_conf.debug_flags & DEBUG_FLAG_AGENT) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_DBD_AGENT) {
 				info("slurmdbd agent failed with rc:%d",
 				     rc);
 				_print_agent_list_msg_types();
