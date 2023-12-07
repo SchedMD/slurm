@@ -40,6 +40,9 @@ documents those changes that are of interest to users and administrators.
     max_shares.
  -- When determining a jobs index in the database don't wait if there are more
     jobs waiting.
+ -- If a job requests more shards which would allocate more than one sharing
+    GRES (gpu) per node refuse it unless SelectTypeparameters has
+    MULTIPLE_SHARING_GRES_PJ.
 
 * Changes in Slurm 23.11.0
 ==========================
