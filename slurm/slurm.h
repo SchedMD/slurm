@@ -2759,7 +2759,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_FEDR         SLURM_BIT(48) /* Federation debug */
 #define DEBUG_FLAG_HETJOB	SLURM_BIT(49) /* Heterogeneous job debug */
 #define DEBUG_FLAG_ACCRUE       SLURM_BIT(50) /* Accrue counters debug */
-/* #define     		 	SLURM_BIT(51) /\* UNUSED *\/ */
+#define DEBUG_FLAG_DBD_AGENT	SLURM_BIT(51) /* DBD Agent debug */
 #define DEBUG_FLAG_AGENT	SLURM_BIT(52) /* RPC Agent debug */
 #define DEBUG_FLAG_DEPENDENCY	SLURM_BIT(53) /* Dependency debug */
 #define DEBUG_FLAG_JAG		SLURM_BIT(54) /* Job Account Gather debug */
