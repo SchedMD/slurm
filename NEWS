@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix inconsistencies with --cpu-bind/SLURM_CPU_BIND and --hint/SLURM_HINT.
  -- Fix ignoring invalid json in various subsystems.
  -- Remove shebang from bash completion script.
+ -- Fix elapsed time in JobComp being set from invalid start and end times.
 
 * Changes in Slurm 23.11.0
 ==========================

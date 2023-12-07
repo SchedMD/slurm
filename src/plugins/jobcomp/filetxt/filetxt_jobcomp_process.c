@@ -169,7 +169,11 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 			      jobcomp_info->val);
 		}
 	}
-	job->elapsed_time = end_time - start_time;
+
+	if (end_time && start_time && start_time < end_time)
+		job->elapsed_time = end_time - start_time;
+	else
+		job->elapsed_time = 0;
 	list_iterator_destroy(itr);
 
 	return job;
