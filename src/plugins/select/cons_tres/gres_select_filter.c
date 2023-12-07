@@ -374,7 +374,11 @@ static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 		if (!use_total_gres)
 			cnt -= gres_ns->topo_gres_cnt_alloc[i];
 
-		task_limit += cnt / gres_js->gres_per_task;
+		if ((slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
+			task_limit += cnt / gres_js->gres_per_task;
+		else
+			task_limit = MAX(task_limit,
+					 (cnt / gres_js->gres_per_task));
 	}
 	return task_limit;
 }
@@ -1168,13 +1172,13 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
  *		  gres_bit_select
  * job_id IN - job ID for logging
  */
-static void _set_shared_node_bits(struct job_resources *job_res, int node_inx,
-				  int job_node_inx, sock_gres_t *sock_gres,
-				  uint32_t job_id)
+static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
+				 int job_node_inx, sock_gres_t *sock_gres,
+				 uint32_t job_id)
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	gres_job_state_t *gres_js;
 	uint32_t *used_sock = NULL;
 	uint64_t gres_needed = 0;
@@ -1188,13 +1192,13 @@ static void _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 	if (rc != SLURM_SUCCESS) {
 		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
-		return;
+		return rc;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
 		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
-		return;
+		return SLURM_ERROR;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
@@ -1225,10 +1229,13 @@ static void _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 		_pick_shared_gres(&gres_needed, used_sock, sock_gres,
 				  node_inx, use_busy_dev, false);
 
-	if (gres_needed)
+	if (gres_needed) {
 		error("Not enough shared gres available to satisfy gres per node request");
+		rc = ESLURM_INVALID_GRES;
+	}
 
 	xfree(used_sock);
+	return rc;
 }
 
 /*
@@ -1240,18 +1247,19 @@ static void _set_shared_node_bits(struct job_resources *job_res, int node_inx,
  * job_id IN - job ID for logging
  * tasks_per_socket IN - Task count for each socket
  */
-static void _set_shared_task_bits(int node_inx,
-				  sock_gres_t *sock_gres,
-				  uint32_t job_id,
-				  uint32_t *tasks_per_socket)
+static int _set_shared_task_bits(int node_inx,
+				 sock_gres_t *sock_gres,
+				 uint32_t job_id,
+				 uint32_t *tasks_per_socket)
 {
 	gres_job_state_t *gres_js;
+	int rc = SLURM_SUCCESS;
 	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
 
 	if (!tasks_per_socket) {
 		error("%s: tasks_per_socket unset for job %u on node %d",
 		      __func__, job_id, node_inx);
-		return;
+		return SLURM_ERROR;
 	}
 
 	gres_js = sock_gres->gres_state_job->gres_data;
@@ -1264,8 +1272,10 @@ static void _set_shared_task_bits(int node_inx,
 
 		_pick_shared_gres(&gres_needed, tasks_per_socket, sock_gres,
 				  node_inx, use_busy_dev, true);
-		if (gres_needed)
-			error("Not enough shared gres available to satisfy gres per task request");
+		if (gres_needed) {
+			error("Not enough shared gres available on one sharing gres to satisfy gres per task request");
+			rc = ESLURM_INVALID_GRES;
+		}
 	} else {
 		/* Allow only one sharing gres per task */
 		uint32_t *used_sock = xcalloc(sock_gres->sock_cnt, sizeof(int));
@@ -1276,13 +1286,17 @@ static void _set_shared_task_bits(int node_inx,
 				_pick_shared_gres(&gres_needed, used_sock,
 						  sock_gres, node_inx,
 						  use_busy_dev, true);
-				if (gres_needed)
+				if (gres_needed) {
 					error("Not enough shared gres available to satisfy gres per task request");
+					rc = ESLURM_INVALID_GRES;
+					break;
+				}
 			}
 			used_sock[s] = 0;
 		}
 		xfree(used_sock);
 	}
+	return rc;
 }
 
 /*
@@ -2464,16 +2478,17 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				    sock_gres->gres_state_job->config_flags)) {
 				_init_gres_per_bit_select(gres_js, i);
 				if (gres_js->gres_per_node) {
-					_set_shared_node_bits(
+					rc = _set_shared_node_bits(
 						job_res, i, job_node_inx,
 						sock_gres, job_id);
 				} else if (gres_js->gres_per_task) {
-					_set_shared_task_bits(
+					rc = _set_shared_task_bits(
 						i, sock_gres, job_id,
 						tasks_per_node_socket[i]);
 				} else {
 					error("%s job %u job_spec lacks valid shared GRES counter",
 					      __func__, job_id);
+					rc = ESLURM_INVALID_GRES;
 				}
 			} else if (gres_js->gres_per_node) {
 				_set_node_bits(job_res, i, job_node_inx,
