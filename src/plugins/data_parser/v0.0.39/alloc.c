@@ -125,6 +125,7 @@ static const struct {
 	add(ACCOUNT, slurmdb_destroy_account_rec, NULL),
 	add(ASSOC_SHORT, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
 	add(ASSOC, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
+	add(ASSOC_USAGE, slurmdb_destroy_assoc_usage, NULL),
 	add(CLUSTER_ACCT_REC, slurmdb_destroy_clus_res_rec, NULL),
 	add(CLUSTER_REC, slurmdb_destroy_cluster_rec, _create_cluster_rec_obj),
 	add(COORD, slurmdb_destroy_coord_rec, NULL),
@@ -158,8 +159,12 @@ extern void *alloc_parser_obj(const parser_t *const parser)
 		}
 	}
 
-	log_flag(DATA, "created %zd byte %s object at 0x%"PRIxPTR,
-		 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
+	if (obj)
+		log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR,
+			 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
+	else
+		log_flag(DATA, "unable to create %s object",
+			 parser->obj_type_string);
 
 	return obj;
 }
