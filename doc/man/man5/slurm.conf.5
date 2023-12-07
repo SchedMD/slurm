@@ -4671,8 +4671,9 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 
 .TP
 \fBMULTIPLE_SHARING_GRES_PJ\fR
-Allow multiple sharing gres to be selected to satisfy shared gres requirement
-per job.
+By default, only one sharing gres per job is allowed on each node from shared
+gres requests. This allows multiple sharing gres' to be used on a single node
+to satisfy shared gres requirements per job.
 Example: If there are 10 shards to a gpu and 12 shards are requested, instead of
 being denied the job will be allocated with 2 gpus. 1 using 10 shards and the
 other using 2 shards.
