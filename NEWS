@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix ignoring invalid json in various subsystems.
  -- Remove shebang from bash completion script.
  -- Fix elapsed time in JobComp being set from invalid start and end times.
+ -- Update service files to start slurmd, slurmctld, and slurmdbd after sssd.
 
 * Changes in Slurm 23.11.0
 ==========================
