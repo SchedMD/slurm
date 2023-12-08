@@ -153,7 +153,14 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 	struct http_parser_url url;
 	request_t *request = parser->data;
 	xassert(request->magic == MAGIC_REQUEST_T);
-	xassert(request->path == NULL);
+
+	if (request->path) {
+		error("%s: [%s] rejecting unexpected path: %s",
+		      __func__,
+		      conmgr_fd_get_name(request->context->con),
+		      request->path);
+		return 1;
+	}
 
 	_http_parser_url_init(&url);
 
