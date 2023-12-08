@@ -2171,6 +2171,8 @@ _slurmd_init(void)
 	 */
 	cgroup_conf_init();
 
+	xcpuinfo_refresh_hwloc(original);
+
 	/*
 	 * auth and hash plugins must be initialized before the first dynamic
 	 * future registration is send.
