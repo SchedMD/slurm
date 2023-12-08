@@ -196,6 +196,8 @@ void free_buf(buf_t *my_buf)
 /* Grow a buffer by the specified amount */
 void grow_buf(buf_t *buffer, uint32_t size)
 {
+	xassert(buffer->magic == BUF_MAGIC);
+
 	if (buffer->mmaped)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if (buffer->shadow)
