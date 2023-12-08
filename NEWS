@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
     an issue seen with CoreSpecCount used on nodes with Intel E-cores.
  -- Trigger fatal exit when Slurm API function is called before slurm_init() is
     called.
+ -- slurmd - Fix issue with 'scontrol reconfigure' when started with '-c'.
 
 * Changes in Slurm 23.11.0
 ==========================
