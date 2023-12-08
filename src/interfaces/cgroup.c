@@ -733,7 +733,9 @@ extern int cgroup_g_init(void)
 	if (g_context)
 		goto done;
 
-	cgroup_conf_init();
+	if (cgroup_conf_init() != SLURM_SUCCESS)
+		log_flag(CGROUP, "cgroup conf was already initialized.");
+
 	type = slurm_cgroup_conf.cgroup_plugin;
 
 	if (!xstrcmp(type, "autodetect")) {

@@ -2178,7 +2178,8 @@ _slurmd_init(void)
 	 * This needs to happen before _read_config where we will try to read
 	 * cgroup.conf values
 	 */
-	cgroup_conf_init();
+	if (cgroup_conf_init() != SLURM_SUCCESS)
+		log_flag(CGROUP, "cgroup conf was already initialized.");
 
 	xcpuinfo_refresh_hwloc(original);
 
