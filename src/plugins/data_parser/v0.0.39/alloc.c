@@ -159,12 +159,10 @@ extern void *alloc_parser_obj(const parser_t *const parser)
 		}
 	}
 
-	if (obj)
-		log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR,
-			 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
-	else
-		log_flag(DATA, "unable to create %s object",
-			 parser->obj_type_string);
+	xassert(obj);
+
+	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, xsize(obj),
+		 parser->obj_type_string, (uintptr_t) obj);
 
 	return obj;
 }
