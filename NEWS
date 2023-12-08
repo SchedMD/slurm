@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     .process.terminal to true in generated config.json when step has
     pseudoterminal (--pty) requested.
  -- Fix loading in dyanmic/cloud node jobs after net_cred expired.
+ -- Fix cgroup null path error on slurmd/slurmstepd tear down.
 
 * Changes in Slurm 23.11.1
 ==========================
