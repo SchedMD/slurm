@@ -487,13 +487,16 @@ extern int cgroup_conf_init(void)
 	if (!cg_conf_inited) {
 		_init_slurm_cgroup_conf();
 		_read_slurm_cgroup_conf();
-		/*
-		 * Initialize and pack cgroup.conf info into a buffer that can
-		 * be used by slurmd to send to stepd every time, instead of
-		 * re-packing every time we want to send to slurmstepd
-		 */
-		cg_conf_buf = init_buf(0);
-		_pack_cgroup_conf(cg_conf_buf);
+		if (running_in_slurmd()) {
+			/*
+			 * Initialize and pack cgroup.conf info into a buffer
+			 * that can be used by slurmd to send to stepd every
+			 * time, instead of re-packing every time we want to
+			 * send to slurmstepd
+			 */
+			cg_conf_buf = init_buf(0);
+			_pack_cgroup_conf(cg_conf_buf);
+		}
 		cg_conf_inited = true;
 	} else
 		rc = SLURM_ERROR;
