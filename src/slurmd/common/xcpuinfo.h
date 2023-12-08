@@ -73,6 +73,8 @@ extern int xcpuinfo_hwloc_topo_get(
  */
 int xcpuinfo_init(void);
 
+extern void xcpuinfo_refresh_hwloc(bool refresh);
+
 /*
  * Destroy xcpuinfo internal data
  *

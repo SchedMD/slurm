@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- If a job requests more shards which would allocate more than one sharing
     GRES (gpu) per node refuse it unless SelectTypeparameters has
     MULTIPLE_SHARING_GRES_PJ.
+ -- Avoid refreshing the hwloc xml file when slurmd is reconfigured. This fixes
+    an issue seen with CoreSpecCount used on nodes with Intel E-cores.
 
 * Changes in Slurm 23.11.0
 ==========================

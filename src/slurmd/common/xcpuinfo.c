@@ -84,6 +84,8 @@ uint16_t block_map_size;
 uint16_t *block_map, *block_map_inv;
 extern slurmd_conf_t *conf;
 
+static bool refresh_hwloc = false;
+
 /*
  * get_procs - Return the count of procs on this system
  * Input: procs - buffer for the CPU count
@@ -248,7 +250,7 @@ extern int xcpuinfo_hwloc_topo_load(
 
 	if (full && first_full) {
 		/* Always regenerate file on slurmd startup */
-		if (running_in_slurmd())
+		if (refresh_hwloc)
 			check_file = false;
 		first_full = false;
 	}
@@ -1049,6 +1051,11 @@ xcpuinfo_init(void)
 	initialized = true ;
 
 	return SLURM_SUCCESS;
+}
+
+extern void xcpuinfo_refresh_hwloc(bool refresh)
+{
+	refresh_hwloc = refresh;
 }
 
 int
