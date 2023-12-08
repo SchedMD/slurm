@@ -198,7 +198,8 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 		rc = SLURM_ERROR;
 
 	if (use_devices &&
-	    (task_cgroup_devices_constrain(step, global_tid) != SLURM_SUCCESS))
+	    (task_cgroup_devices_constrain(step, node_tid, global_tid) !=
+	     SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	return rc;
