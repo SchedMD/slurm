@@ -1637,7 +1637,8 @@ _process_cmdline(int ac, char **av)
 			conf->boot_time = 1;
 			break;
 		case 'c':
-			conf->cleanstart = 1;
+			if (original)
+				conf->cleanstart = 1;
 			break;
 		case 'C':
 			_print_config();
