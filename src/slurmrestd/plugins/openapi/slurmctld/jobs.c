@@ -49,6 +49,10 @@
 
 #include "api.h"
 
+static const slurm_err_t nonfatal_errors[] = {
+	ESLURM_JOB_HELD,
+};
+
 static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_query_t query = {0};
@@ -246,11 +250,12 @@ static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
 	if (!resp || !(rc = resp->error_code))
 		return;
 
-	if (rc == ESLURM_JOB_HELD) {
-		/* Job submitted with held state is not an error */
-		resp_warn(ctxt, "slurm_submit_batch_job()",
-			"%s", slurm_strerror(rc));
-		return;
+	for (int i = 0; i < ARRAY_SIZE(nonfatal_errors); i++) {
+		if (rc == nonfatal_errors[i]) {
+			resp_warn(ctxt, "slurm_submit_batch_job()",
+				"%s", slurm_strerror(rc));
+			return;
+		}
 	}
 
 	resp_error(ctxt, rc, src, NULL);
