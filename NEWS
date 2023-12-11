@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Trigger fatal exit when Slurm API function is called before slurm_init() is
     called.
  -- slurmd - Fix issue with 'scontrol reconfigure' when started with '-c'.
+ -- data_parser/v0.0.40 - Fix handling of negative job nice values.
 
 * Changes in Slurm 23.11.0
 ==========================

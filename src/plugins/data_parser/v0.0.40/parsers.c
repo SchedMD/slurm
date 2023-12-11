@@ -3596,10 +3596,10 @@ PARSE_DISABLED(NICE)
 static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 			   args_t *args)
 {
-	uint32_t *nice = obj;
+	int64_t nice = *(uint32_t *) obj;
 
-	if ((*nice != NO_VAL) && (*nice != NICE_OFFSET))
-		data_set_int(dst, (*nice - NICE_OFFSET));
+	if ((nice != NO_VAL) && (nice != NICE_OFFSET))
+		data_set_int(dst, nice - NICE_OFFSET);
 	else
 		data_set_int(dst, 0);
 
