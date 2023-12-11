@@ -1024,8 +1024,10 @@ extern bool power_save_test(void)
 extern void power_save_fini(void)
 {
 	slurm_cond_signal(&power_cond);
-	if (power_thread)
+	if (power_thread) {
 		pthread_join(power_thread, NULL);
+		power_thread = 0;
+	}
 
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */
