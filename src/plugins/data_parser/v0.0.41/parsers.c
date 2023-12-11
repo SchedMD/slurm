@@ -341,7 +341,8 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				      data_t *parent_path);
 
 #ifndef NDEBUG
-static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit)
+static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
+			    ssize_t parser_size)
 {
 	xassert(bit->magic == MAGIC_FLAG_BIT);
 	xassert(bit->type > FLAG_BIT_TYPE_INVALID);
@@ -355,6 +356,26 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit)
 	xassert(bit->mask_size <= sizeof(bit->value));
 	xassert(bit->mask_size > 0);
 	xassert(bit->mask_name && bit->mask_name[0]);
+
+	/* Bit values must fit in parser->size bits */
+	switch (parser_size) {
+	case sizeof(uint8_t):
+		xassert((bit->value & UINT8_MAX) == bit->value);
+		break;
+	case sizeof(uint16_t):
+		xassert((bit->value & UINT16_MAX) == bit->value);
+		break;
+	case sizeof(uint32_t):
+		xassert((bit->value & UINT32_MAX) == bit->value);
+		break;
+	case sizeof(uint64_t):
+		xassert((bit->value & UINT64_MAX) == bit->value);
+		break;
+	default:
+		error("Parser->size (%ld) is invalid. This should never happen.",
+		      parser_size);
+		xassert(false);
+	}
 
 	if (bit->type == FLAG_BIT_TYPE_BIT) {
 		/* atleast one bit must be set */
@@ -415,7 +436,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 		for (int8_t i = 0; i < parser->flag_bit_array_count; i++) {
 			_check_flag_bit(i, &parser->flag_bit_array[i],
-					&found_bit_type);
+					&found_bit_type, parser->size);
 
 			/* check for duplicate flag names */
 			for (int8_t j = 0; j < parser->flag_bit_array_count;
@@ -7341,9 +7362,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_CORES"),
 	add_flag_equal(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_SOCKETS"),
 	add_flag_equal(CPU_BIND_TO_LDOMS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_LDOMS"),
-	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_THREADS"),
-	add_flag_equal(CPU_AUTO_BIND_TO_CORES, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_CORES"),
-	add_flag_equal(CPU_AUTO_BIND_TO_SOCKETS, CPU_BIND_T_AUTO_TO_MASK, "CPU_AUTO_BIND_TO_SOCKETS"),
 	add_flag_equal(CPU_BIND_NONE, CPU_BIND_T_MASK, "CPU_BIND_NONE"),
 	add_flag_equal(CPU_BIND_RANK, CPU_BIND_T_MASK, "CPU_BIND_RANK"),
 	add_flag_equal(CPU_BIND_MAP, CPU_BIND_T_MASK, "CPU_BIND_MAP"),
@@ -7353,8 +7371,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_LDMASK, CPU_BIND_T_MASK, "CPU_BIND_LDMASK"),
 	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
 	add_flag_masked_bit(CPU_BIND_ONE_THREAD_PER_CORE, CPU_BIND_ONE_THREAD_PER_CORE, "CPU_BIND_ONE_THREAD_PER_CORE"),
-	add_flag_masked_bit(SLURMD_OFF_SPEC, CPU_BIND_T_TASK_PARAMS_MASK, "SLURMD_OFF_SPEC"),
-	add_flag_masked_bit(CPU_BIND_OFF, CPU_BIND_T_TASK_PARAMS_MASK, "CPU_BIND_OFF"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {

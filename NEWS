@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - Fix handling of negative job nice values.
  -- data_parser/v0.0.40 - Fill the "id" object for associations with the
     cluster, account, partition, and user in addition to the assoc id.
+ -- data_parser/v0.0.40 - Remove unusable cpu_binding_flags enums from
+    v0.0.40_job_desc_msg.
 
 * Changes in Slurm 23.11.0
 ==========================
