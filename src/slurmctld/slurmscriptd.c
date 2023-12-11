@@ -561,6 +561,11 @@ static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill all running scripts */
 	track_script_flush();
+	/*
+	 * DO NOT CALL _wait_for_powersave_scripts HERE. That would result in
+	 * reconfigure waiting for up to MAX_SHUTDOWN_DELAY seconds, which is
+	 * an unacceptably long time for reconfigure.
+	 */
 
 	/* We need to respond to slurmctld that we are done */
 	_respond_to_slurmctld(recv_msg->key, 0, NULL,
@@ -1112,13 +1117,16 @@ static void _kill_slurmscriptd(void)
 	shutting_down = true;
 	slurmscriptd_flush();
 
+	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
+	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
+				   NULL);
 	/*
 	 * Wait until all script complete messages have been processed or until
 	 * the readfd is closed, in which case we know we'll never get more
 	 * messages from slurmscriptd.
 	 */
 	slurm_mutex_lock(&script_count_mutex);
-	while (slurmctld_readfd > 0) {
+	while ((rc == SLURM_SUCCESS) && (slurmctld_readfd > 0)) {
 		if (!script_count)
 			break;
 		if (last_pc != script_count)
@@ -1130,9 +1138,6 @@ static void _kill_slurmscriptd(void)
 	}
 	slurm_mutex_unlock(&script_count_mutex);
 
-	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
-	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
-				  NULL);
 	if (rc != SLURM_SUCCESS) {
 		/* Shutdown signal failed. Try to reap slurmscriptd now. */
 		if (waitpid(slurmscriptd_pid, &status, WNOHANG) == 0) {
