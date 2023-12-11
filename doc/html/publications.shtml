@@ -2,10 +2,12 @@
 
 <h1>Presentations</h1>
 
-<p>Note that some of the older material contains dated information.</p>
+<p>Note that older presentations may contain outdated information.</p>
 
-<h2>Presentations from SC23, November 2022</h2>
+<h2>Presentations from SC23, November 2023</h2>
 <ul>
+<li><a href="SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs Kubernetes</a>,
+Tim Wickberg, SchedMD</li>
 <li><a href="SC23/Slurm-SC23-BOF.pdf">Slurm 23.02, 23.11, and Beyond</a>,
 Tim Wickberg, SchedMD</li>
 </ul>
@@ -79,14 +81,14 @@ Tim Wickberg, SchedMD</li>
 <h2>Presentations from Dell HPC Community, September 2023</h2>
 <ul>
 <li><a href="MISC23/DellHPC_20230906.pdf">Slurm and/or/vs Kubernetes</a>,
-Tim Wickberg, SchedMD
+Tim Wickberg, SchedMD</li>
 </li>
 </ul>
 
 <h2>Presentations from Cray User Group, May 2023</h2>
 <ul>
 <li><a href="MISC23/CUG23-Slurm-Roadmap.pdf">Slurm 23.02, 23.11, and Beyond</a>,
-Tim Wickberg, SchedMD
+Tim Wickberg, SchedMD</li>
 </li>
 </ul>
 
@@ -1256,6 +1258,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 24 September 2023</p>
+<p style="text-align:center;">Last modified 11 December 2023</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,0 +1,67 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Kubernetes Guide</h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+
+<ul>
+  <li><a href="#overview">Overview</a></li>
+  <li><a href="#sunk">SUNK</a></li>
+  <li><a href="#presentations">Presentations</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p><a href="https://kubernetes.io/">Kubernetes</a> is being adopted into HPC
+clusters to orchestrate deployments (e.g. software, infrastructure) and run
+certain workloads (e.g. AI/ML inference). There is ongoing interest in
+integrating Kubernetes and Slurm to achieve a unified cluster, optimized
+resource utilization, and workflows that leverage each system.</p>
+
+<p>The ways in which Slurm and Kubernetes are designed to handle certain types
+of workloads may change over time. Additionally, how they interact with each
+other may change, allowing for new possibilities. This is still an evolving
+area.</p>
+
+<h2 id="sunk">SUNK &mdash; Slurm on Kubernetes<a class="slurm_link" href="#sunk"></a></h2>
+
+<p>SUNK ("<b>S</b>l<b>u</b>rm o<b>n</b> <b>K</b>ubernetes") is an effort under
+development with <a href="https://www.coreweave.com/">CoreWeave</a> that
+provides a converged Slurm and Kubernetes environment.</p>
+
+<p>Their recent blog post,
+<a href="https://www.coreweave.com/blog/sunk-slurm-on-kubernetes-implementations">
+Introducing SUNK: A Slurm on Kubernetes Implementation for HPC and Large Scale AI</a>,
+provides an overview of the architecture and use cases.</p>
+
+<p>SUNK is expected to be open-sourced in early 2024.</p>
+
+<h2 id="presentations">Presentations
+<a class="slurm_link" href="#presentations"></a>
+</h2>
+
+<p>Note that older presentations may contain outdated information.</p>
+
+<h3>Presentations from 2023</h3>
+
+<ul>
+  <li>
+    <a href="SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs
+    Kubernetes</a>, Tim Wickberg, SchedMD (SC23, November 2023)
+  </li>
+
+  <li>
+    <a href="SLUG23/CoreWeave-SLUG23.pdf">The Best of Both Worlds: Slurm on
+    Kubernetes</a>, Navarre Pratt and Jacob Feldman, CoreWeave (SLUG23,
+    November 2023)
+  </li>
+
+  <li>
+    <a href="SLUG23/NERSC-SLUG23.pdf">Never use Slurm HA again: Solve all
+    your problems with Kubernetes</a>, Chris Samuel and Doug Jacobsen, NERSC
+    (SLUG23, November 2023)
+  </li>
+</ul>
+
+<p style="text-align:center;">Last modified 11 December 2023</p>
+<!--#include virtual="footer.txt"-->
