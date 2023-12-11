@@ -3820,7 +3820,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xfree(add_assoc_cond.cols);
 		xfree(add_assoc_cond.extra);
-		/* The caller can't recieve this so don't send it */
+		/* The caller can't receive this, so don't send it */
 		xfree(add_assoc_cond.ret_str);
 		xfree(add_assoc_cond.vals);
 	}
