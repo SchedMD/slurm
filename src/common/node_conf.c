@@ -380,6 +380,7 @@ extern config_record_t *config_record_from_conf_node(
 	config_ptr->mem_spec_limit = conf_node->mem_spec_limit;
 	config_ptr->nodes = xstrdup(conf_node->nodenames);
 	config_ptr->real_memory = conf_node->real_memory;
+	config_ptr->res_cores_per_gpu = conf_node->res_cores_per_gpu;
 	config_ptr->threads = conf_node->threads;
 	config_ptr->tmp_disk = conf_node->tmp_disk;
 	config_ptr->tot_sockets = conf_node->tot_sockets;

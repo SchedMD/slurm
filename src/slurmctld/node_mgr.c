@@ -2875,6 +2875,75 @@ static void _split_node_config(node_record_t *node_ptr,
 	config_ptr->tot_sockets = reg_msg->sockets;
 }
 
+static int _set_gpu_spec(node_record_t *node_ptr)
+{
+	static uint32_t gpu_plugin_id = NO_VAL;
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+	uint32_t res_cnt = node_ptr->config_ptr->res_cores_per_gpu;
+
+	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
+
+	if (!res_cnt)
+		return SLURM_SUCCESS;
+
+	if (gpu_plugin_id == NO_VAL)
+		gpu_plugin_id = gres_build_id("gpu");
+
+	if (!(gres_state_node = list_find_first(node_ptr->gres_list,
+						gres_find_id,
+						&gpu_plugin_id))) {
+		/* No GPUS but we throught there were */
+		error("RestrictedCoresPerGPU=%u but no gpus on node %s",
+		      res_cnt, node_ptr->name);
+		return SLURM_ERROR;
+	}
+
+	gres_ns = gres_state_node->gres_data;
+	if (!gres_ns->topo_cnt || !gres_ns->topo_core_bitmap) {
+		error("RestrictedCoresPerGPU=%u but the gpus given don't have any topology on node %s.",
+		      res_cnt, node_ptr->name);
+		return SLURM_ERROR;
+	}
+
+	node_ptr->gpu_spec_bitmap = bit_alloc(node_ptr->tot_cores);
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		int cnt = 0;
+		if (!gres_ns->topo_core_bitmap[i])
+			continue;
+		/* info("%d has %s", i, */
+		/*      bit_fmt_full(gres_ns->topo_core_bitmap[i])); */
+		for (int j = 0; j < node_ptr->tot_cores; j++) {
+			/* Only look at the ones set */
+			if (!bit_test(gres_ns->topo_core_bitmap[i], j))
+				continue;
+			/* Skip any already set */
+			if (bit_test(node_ptr->gpu_spec_bitmap, j))
+				continue;
+			/* info("setting %d", j); */
+			bit_set(node_ptr->gpu_spec_bitmap, j);
+			if (++cnt >= res_cnt)
+				break;
+		}
+
+		if (cnt != res_cnt) {
+			error("On node %s we can't restrict %u cores per gpu. GPU %s(%d) doesn't have access to that many unique cores (%d).",
+			      node_ptr->name,
+			      res_cnt, gres_ns->topo_type_name[i], i, cnt);
+			return SLURM_ERROR;
+		}
+	}
+
+	/*
+	 * We want the opposite of the possible cores so
+	 * we can do a simple & on it when selecting.
+	 */
+	/* info("set %s", bit_fmt_full(node_ptr->gpu_spec_bitmap)); */
+	bit_not(node_ptr->gpu_spec_bitmap);
+	/* info("sending back %s", bit_fmt_full(node_ptr->gpu_spec_bitmap)); */
+
+	return SLURM_SUCCESS;
+}
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
@@ -3021,6 +3090,14 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		/* reason_down set in function above */
 	}
 	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
+
+	if (node_ptr->config_ptr->res_cores_per_gpu) {
+		/*
+		 * We need to make gpu_spec_bitmap now that we know the cores
+		 * used per gres.
+		 */
+		error_code = _set_gpu_spec(node_ptr);
+	}
 
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		/* sockets1, cores1, and threads1 are set above */

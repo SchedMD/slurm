@@ -72,6 +72,8 @@ typedef struct {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 	char *nodes;		/* name of nodes with this configuration */
 	uint64_t real_memory;	/* MB real memory on the node */
+	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
+				     * to only GPU jobs */
 	uint16_t threads;	/* number of threads per core */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint16_t tot_sockets;	/* number of sockets per node */
@@ -122,6 +124,8 @@ struct node_record {
 					 * use for scheduling purposes */
 	List gres_list;			/* list of gres state info managed by
 					 * plugins */
+	bitstr_t *gpu_spec_bitmap;	/* node gpu core specialization
+					 * bitmap */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */
 	char *instance_type;		/* cloud instance type */
