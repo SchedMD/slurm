@@ -367,9 +367,7 @@ extern void read_conf_recv_stepd(int fd);
  * IN: char *key
  * IN: char *value
  */
-extern void read_config_add_key_pair(list_t *key_pair_list,
-				     char *key,
-				     char *value);
+extern void add_config_key_pair(list_t *key_pair_list, char *key, char *value);
 
 
 /*
