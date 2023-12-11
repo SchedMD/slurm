@@ -136,8 +136,10 @@ static xhash_t *script_resp_map = NULL;
  */
 static int slurmscriptd_readfd = -1;
 static int slurmscriptd_writefd = -1;
-static pthread_mutex_t powersave_script_count_mutex;
+static pthread_mutex_t powersave_script_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t powersave_script_cond = PTHREAD_COND_INITIALIZER;
 static int powersave_script_count = 0;
+static bool powersave_wait_called = false;
 
 
 /* Function definitions: */
@@ -217,8 +219,11 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 
 static void _wait_for_powersave_scripts()
 {
-	static bool called = false;
-	int i, cnt;
+	int cnt;
+	struct timespec ts = {0, 0};
+	time_t start;
+	time_t now;
+	bool first = true;
 
 	/*
 	 * Only do this wait once. Under normal operation, this is called twice:
@@ -229,27 +234,33 @@ static void _wait_for_powersave_scripts()
 	 * SLURMSCRIPTD_SHUTDOWN, then only _handle_close() is called. So, we
 	 * need this to be called from both places but only happen once.
 	 */
-	if (called)
+	if (powersave_wait_called)
 		return;
-	called = true;
+	powersave_wait_called = true;
 
 	/*
 	 * ResumeProgram has a temporary file open held in memory.
-	 * Wait a short time for powersave scripts to finish before
-	 * shutting down (which will close the temporary file).
+	 * Wait up to MAX_SHUTDOWN_DELAY seconds for powersave scripts to
+	 * finish before shutting down (which will close the temporary file).
 	 */
-	for (i = 0; i < MAX_SHUTDOWN_DELAY; i++) {
-		slurm_mutex_lock(&powersave_script_count_mutex);
+	slurm_mutex_lock(&powersave_script_count_mutex);
+	start = now = time(NULL);
+	while (now < (start + MAX_SHUTDOWN_DELAY)) {
 		cnt = powersave_script_count;
-		slurm_mutex_unlock(&powersave_script_count_mutex);
 		if (!cnt)
 			break;
-		if (i == 0)
+		if (first) {
 			log_flag(SCRIPT, "Waiting up to %d seconds for %d powersave scripts to complete",
 				 MAX_SHUTDOWN_DELAY, cnt);
+			first = false;
+		}
 
-		sleep(1);
+		ts.tv_sec = now + 2;
+		slurm_cond_timedwait(&powersave_script_cond,
+				     &powersave_script_count_mutex, &ts);
+		now = time(NULL);
 	}
+	slurm_mutex_unlock(&powersave_script_count_mutex);
 
 	/* Kill or orphan running scripts. */
 	run_command_shutdown();
@@ -262,12 +273,15 @@ static void _wait_for_powersave_scripts()
 		 * sent to slurmctld, otherwise slurmctld may wait forever for
 		 * a message that won't come.
 		 */
+		slurm_mutex_lock(&powersave_script_count_mutex);
 		while (cnt) {
-			slurm_mutex_lock(&powersave_script_count_mutex);
+			ts.tv_sec = time(NULL) + 2;
+			slurm_cond_timedwait(&powersave_script_cond,
+					     &powersave_script_count_mutex,
+					     &ts);
 			cnt = powersave_script_count;
-			slurm_mutex_unlock(&powersave_script_count_mutex);
-			usleep(100000); /* 100 ms */
 		}
+		slurm_mutex_unlock(&powersave_script_count_mutex);
 	}
 
 }
@@ -799,6 +813,8 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	if (script_msg->script_type == SLURMSCRIPTD_POWER) {
 		slurm_mutex_lock(&powersave_script_count_mutex);
 		powersave_script_count--;
+		if (!powersave_script_count && powersave_wait_called)
+			slurm_cond_signal(&powersave_script_cond);
 		slurm_mutex_unlock(&powersave_script_count_mutex);
 	}
 	xfree(resp_msg);
