@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 24.08.0rc1
 =============================
  -- Make slurmstepd retry REQUEST_COMPLETE_BATCH_SCRIPT indefinitely.
+ -- Always load serializer/json when using any data_parser plugins.
 
 * Changes in Slurm 23.11.2
 ==========================
