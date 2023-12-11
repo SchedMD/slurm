@@ -792,7 +792,7 @@ static char *_print_data_t(const data_t *d, char *buffer, uint16_t size)
 {
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
-	 * This is to handle the fact that we can't remove the job_ptr
+	 * This is to handle the fact that we can't remove the data_t
 	 * argument from the va_list directly. So when we call vsnprintf()
 	 * to handle the va_list this will effectively skip this argument.
 	 */
