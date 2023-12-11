@@ -931,53 +931,51 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
 	int rc = SLURM_ERROR;
-	slurmdb_assoc_rec_t assoc;
-	uint32_t id = 0, *id_ptr = obj;
+	slurmdb_assoc_rec_t *assoc = obj;
+	slurmdb_assoc_rec_t assoc_short;
 
-	slurmdb_init_assoc_rec(&assoc, false);
+	slurmdb_init_assoc_rec(&assoc_short, false);
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	if (data_get_type(src) == DATA_TYPE_INT_64) {
-		if ((rc = PARSE(UINT32, id, src, parent_path, args)) || !id)
+		if ((rc = PARSE(UINT32, assoc->id, src, parent_path, args)) ||
+		    !assoc->id)
 			goto cleanup;
 
-		assoc.id = id;
+		assoc_short.id = assoc->id;
 	} else if (data_get_type(src) == DATA_TYPE_NULL) {
 		rc = SLURM_SUCCESS;
 	} else {
 		slurmdb_assoc_rec_t *match;
 
-		if ((rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args)))
+		if ((rc = PARSE(ASSOC_SHORT, assoc_short, src, parent_path,
+				args)))
 			goto cleanup;
 
 		if ((match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc,
-					     &assoc))) {
-			id = match->id;
+					     &assoc_short))) {
+			assoc->id = match->id;
 		} else {
 			rc = ESLURM_INVALID_ASSOC;
 		}
 	}
 
 cleanup:
-	slurmdb_free_assoc_rec_members(&assoc);
-	*id_ptr = id;
+	slurmdb_free_assoc_rec_members(&assoc_short);
 	return rc;
 }
 
 static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
-	uint32_t *id_ptr = obj;
-	slurmdb_assoc_rec_t key = {
-		.id = *id_ptr,
-	};
+	slurmdb_assoc_rec_t *assoc = obj;
 
-	if (key.id && (key.id < NO_VAL)) {
+	if (assoc->id && (assoc->id < NO_VAL)) {
 		slurmdb_assoc_rec_t *match;
 
 		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc, &key)))
+					     (ListFindF) compare_assoc, assoc)))
 			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
 	}
 
@@ -985,7 +983,7 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	return DUMP(ASSOC_SHORT, key, dst, args);
+	return DUMP(ASSOC_SHORT, *assoc, dst, args);
 }
 
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
@@ -5971,7 +5969,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(grp_tres_run_mins_ctld),
 	add_parse(TRES_STR, max_tres_run_mins, "max/tres/minutes/total", NULL),
 	add_parse(UINT32_NO_VAL, grp_wall, "max/per/account/wall_clock", NULL),
-	add_parse(ASSOC_ID, id, "id", NULL),
+	add_complex_parser(slurmdb_assoc_rec_t, ASSOC_ID, false, "id", NULL),
 	add_parse(BOOL16, is_def, "is_default", NULL),
 	add_skip(leaf_usage),
 	add_skip(lft),
@@ -8722,9 +8720,9 @@ static const parser_t parsers[] = {
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
-	addpsp(ASSOC_ID, ASSOC_SHORT, uint32_t, NEED_ASSOC, "Association ID"),
 
 	/* Complex type parsers */
+	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
