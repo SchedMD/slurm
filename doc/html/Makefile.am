@@ -42,6 +42,7 @@ generated_html = \
 	job_launch.html \
 	job_submit_plugins.html \
 	jwt.html \
+	kubernetes.html \
 	licenses.html \
 	fair_tree.html \
 	mail.html \
