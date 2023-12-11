@@ -6,6 +6,7 @@
 
 <ul>
   <li><a href="#overview">Overview</a></li>
+  <li><a href="#sunk">SUNK</a></li>
   <li><a href="#presentations">Presentations</a></li>
 </ul>
 
@@ -21,6 +22,19 @@ resource utilization, and workflows that leverage each system.</p>
 of workloads may change over time. Additionally, how they interact with each
 other may change, allowing for new possibilities. This is still an evolving
 area.</p>
+
+<h2 id="sunk">SUNK &mdash; Slurm on Kubernetes<a class="slurm_link" href="#sunk"></a></h2>
+
+<p>SUNK ("<b>S</b>l<b>u</b>rm o<b>n</b> <b>K</b>ubernetes") is an effort under
+development with <a href="https://www.coreweave.com/">CoreWeave</a> that
+provides a converged Slurm and Kubernetes environment.</p>
+
+<p>Their recent blog post,
+<a href="https://www.coreweave.com/blog/sunk-slurm-on-kubernetes-implementations">
+Introducing SUNK: A Slurm on Kubernetes Implementation for HPC and Large Scale AI</a>,
+provides an overview of the architecture and use cases.</p>
+
+<p>SUNK is expected to be open-sourced in early 2024.</p>
 
 <h2 id="presentations">Presentations
 <a class="slurm_link" href="#presentations"></a>
