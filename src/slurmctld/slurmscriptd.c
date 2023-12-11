@@ -340,7 +340,9 @@ static int _write_msg(int fd, int req, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 rwfail:
-	error("%s: read/write op failed, restart slurmctld now: %m", __func__);
+	if (running_in_slurmctld())
+		error("%s: read/write op failed, restart slurmctld now: %m",
+		      __func__);
 	slurm_mutex_unlock(&write_mutex);
 	return SLURM_ERROR;
 }
