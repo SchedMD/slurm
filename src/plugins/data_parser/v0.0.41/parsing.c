@@ -871,12 +871,13 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	 */
 	on_warn(PARSING, parser->type, args,
 		set_source_path(&path, args, parent_path), __func__,
-		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
+		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s): %pd",
 		oas_type, (oas_format ? " format=" : ""),
 		(oas_format ? oas_format : ""),
 		data_type_to_string(oas_data_type), found_type,
 		(found_format ? " format=" : ""),
-		(found_format ? found_format : ""), data_get_type_string(src));
+		(found_format ? found_format : ""), data_get_type_string(src),
+		src);
 
 	xfree(path);
 }
