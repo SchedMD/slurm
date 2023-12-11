@@ -793,6 +793,8 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+		config_power_mgr_fini();
+
 		/* stop the heartbeat last */
 		heartbeat_stop();
 

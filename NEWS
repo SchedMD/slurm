@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
       'associations/max/tres/total'
       'associations/max/tres/minutes/per/job'
       'associations/max/tres/minutes/total'
+ -- Fix power_save operation after recovering from a failed reconfigure.
 
 * Changes in Slurm 23.11.8
 ==========================
