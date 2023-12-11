@@ -117,12 +117,14 @@ typedef struct {
 
 static void _incr_script_cnt(void);
 
+static bool shutting_down = false;
 static int slurmctld_readfd = -1;
 static int slurmctld_writefd = -1;
 static pid_t slurmscriptd_pid;
 static pthread_t slurmctld_listener_tid;
 static int script_count = 0;
 static pthread_mutex_t script_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t script_count_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t script_resp_map_mutex = PTHREAD_MUTEX_INITIALIZER;
 static xhash_t *script_resp_map = NULL;
@@ -436,6 +438,8 @@ static void _decr_script_cnt(void)
 {
 	slurm_mutex_lock(&script_count_mutex);
 	script_count--;
+	if (!script_count && shutting_down)
+		slurm_cond_signal(&script_count_cond);
 	slurm_mutex_unlock(&script_count_mutex);
 }
 
@@ -1074,22 +1078,12 @@ static void *_slurmctld_listener_thread(void *x)
 	return NULL;
 }
 
-static int _script_cnt(void)
-{
-	int cnt;
-
-	slurm_mutex_lock(&script_count_mutex);
-	cnt = script_count;
-	slurm_mutex_unlock(&script_count_mutex);
-
-	return cnt;
-}
-
 static void _kill_slurmscriptd(void)
 {
 	int status;
 	int rc;
-	int pc, last_pc = 0;
+	int last_pc = 0;
+	struct timespec ts = {0, 0};
 
 	if (slurmscriptd_pid <= 0) {
 		error("%s: slurmscriptd_pid < 0, we don't know the PID of slurmscriptd.",
@@ -1097,6 +1091,7 @@ static void _kill_slurmscriptd(void)
 		return;
 	}
 
+	shutting_down = true;
 	slurmscriptd_flush();
 
 	/*
@@ -1104,13 +1099,18 @@ static void _kill_slurmscriptd(void)
 	 * the readfd is closed, in which case we know we'll never get more
 	 * messages from slurmscriptd.
 	 */
-	while (((pc = _script_cnt()) > 0) && (slurmctld_readfd > 0)) {
-		if ((last_pc != 0) && (last_pc != pc)) {
-			info("waiting for %d running processes", pc);
-		}
-		last_pc = pc;
-		usleep(100000);
+	slurm_mutex_lock(&script_count_mutex);
+	while (slurmctld_readfd > 0) {
+		if (!script_count)
+			break;
+		if (last_pc != script_count)
+			info("waiting for %d running processes", script_count);
+		last_pc = script_count;
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&script_count_cond, &script_count_mutex,
+				     &ts);
 	}
+	slurm_mutex_unlock(&script_count_mutex);
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
 	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
