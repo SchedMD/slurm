@@ -93,8 +93,6 @@ const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
-static int tres_mem_pos = -1;
-static int tres_util_pos = -1;
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
@@ -772,20 +770,7 @@ static List _get_system_gpu_list_fake(void)
 
 extern int init(void)
 {
-	slurmdb_tres_rec_t tres_rec;
-
 	debug("loaded");
-
-	if (!running_in_slurmstepd())
-		return SLURM_SUCCESS;
-
-	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
-	tres_rec.type = "gres";
-	tres_rec.name = "gpumem";
-	tres_mem_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
-	tres_rec.type = "gres";
-	tres_rec.name = "gpuutil";
-	tres_util_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
