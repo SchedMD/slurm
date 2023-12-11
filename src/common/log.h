@@ -284,6 +284,7 @@ extern char *log_build_step_id_str(
  * - %m expands to strerror(errno)
  * - %M expand to time stamp, format is configuration dependent
  * - %pA expands to "AAA.BBB.CCC.DDD:XXXX" for the given slurm_addr_t.
+ * - %pd expands to compact JSON serialization for the given data_t*.
  * - %pD expands to "type(0xDEADBEEF)" for the given data_t*.
  * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
  *       format for job arrays and hetjob components.
