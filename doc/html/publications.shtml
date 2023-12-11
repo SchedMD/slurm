@@ -6,6 +6,8 @@
 
 <h2>Presentations from SC23, November 2022</h2>
 <ul>
+<li><a href="SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs Kubernetes</a>,
+Tim Wickberg, SchedMD</li>
 <li><a href="SC23/Slurm-SC23-BOF.pdf">Slurm 23.02, 23.11, and Beyond</a>,
 Tim Wickberg, SchedMD</li>
 </ul>
