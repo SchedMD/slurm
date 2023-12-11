@@ -2,7 +2,7 @@
 
 <h1>Presentations</h1>
 
-<p>Note that some of the older material contains dated information.</p>
+<p>Note that older presentations may contain outdated information.</p>
 
 <h2>Presentations from SC23, November 2023</h2>
 <ul>
@@ -1258,6 +1258,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 24 September 2023</p>
+<p style="text-align:center;">Last modified 11 December 2023</p>
 
 <!--#include virtual="footer.txt"-->
