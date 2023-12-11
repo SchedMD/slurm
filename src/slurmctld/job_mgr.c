@@ -5219,7 +5219,12 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 		 (error_code == ESLURM_PARTITION_DOWN) ||
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE)) {
-		/* Not fatal error, but job can't be scheduled right now */
+		/*
+		 * Non-fatal error, but job can't be scheduled right now.
+		 *
+		 * Note: Keep list in sync with nonfatal_errors[] in
+		 * openapi/slurmctld.
+		 */
 		if (immediate) {
 			job_ptr->job_state  = JOB_FAILED;
 			job_ptr->exit_code  = 1;

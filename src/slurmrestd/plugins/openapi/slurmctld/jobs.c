@@ -49,6 +49,21 @@
 
 #include "api.h"
 
+/* list from job_allocate() */
+static const slurm_err_t nonfatal_errors[] = {
+	ESLURM_NODES_BUSY,
+	ESLURM_RESERVATION_BUSY,
+	ESLURM_JOB_HELD,
+	ESLURM_NODE_NOT_AVAIL,
+	ESLURM_QOS_THRES,
+	ESLURM_ACCOUNTING_POLICY,
+	ESLURM_RESERVATION_NOT_USABLE,
+	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
+	ESLURM_BURST_BUFFER_WAIT,
+	ESLURM_PARTITION_DOWN,
+	ESLURM_LICENSES_UNAVAILABLE,
+};
+
 static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_query_t query = {0};
@@ -246,11 +261,12 @@ static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
 	if (!resp || !(rc = resp->error_code))
 		return;
 
-	if (rc == ESLURM_JOB_HELD) {
-		/* Job submitted with held state is not an error */
-		resp_warn(ctxt, "slurm_submit_batch_job()",
-			"%s", slurm_strerror(rc));
-		return;
+	for (int i = 0; i < ARRAY_SIZE(nonfatal_errors); i++) {
+		if (rc == nonfatal_errors[i]) {
+			resp_warn(ctxt, "slurm_submit_batch_job()",
+				"%s", slurm_strerror(rc));
+			return;
+		}
 	}
 
 	resp_error(ctxt, rc, src, NULL);
