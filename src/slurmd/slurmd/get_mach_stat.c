@@ -195,6 +195,12 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
+	if (conf->boot_time) {
+		/* Make node look like it rebooted when slurmd started */
+		*up_time = time(NULL) - conf->boot_time;
+		return 0;
+	}
+
 #if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	clock_t tm;
 	struct tms buf;
@@ -218,16 +224,7 @@ extern int get_up_time(uint32_t *up_time)
 		return errno;
 	}
 
-
-	if (conf->boot_time) {
-		/* Make node look like it rebooted when slurmd started */
-		static uint32_t orig_uptime = 0;
-		if (orig_uptime == 0)
-			orig_uptime = info.uptime;
-		*up_time = info.uptime - orig_uptime;
-	} else {
-		*up_time = info.uptime;
-	}
+	*up_time = info.uptime;
 #endif
 	return 0;
 }

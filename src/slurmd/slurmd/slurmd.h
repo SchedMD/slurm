@@ -132,7 +132,7 @@ typedef struct slurmd_config {
 	log_options_t log_opts;         /* current logging options         */
 	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
-	bool	      boot_time;	/* Report node boot time now (-b)  */
+	time_t	      boot_time;	/* Use this as node boot time if set */
 	bool	      daemonize;	/* daemonize flag (-D)		   */
 	bool          setwd;		/* setwd flag (-s)		   */
 	bool          def_config;       /* We haven't read in the config yet */

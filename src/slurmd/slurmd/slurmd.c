@@ -1634,7 +1634,7 @@ _process_cmdline(int ac, char **av)
 	while ((c = getopt_long(ac, av, opt_string, long_options, NULL)) > 0) {
 		switch (c) {
 		case 'b':
-			conf->boot_time = 1;
+			conf->boot_time = time(NULL);
 			break;
 		case 'c':
 			if (original)
