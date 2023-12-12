@@ -219,8 +219,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 
-	if (parser->model ==
-	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+	if ((parser->model ==
+	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
+	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
 		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {

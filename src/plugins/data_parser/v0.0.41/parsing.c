@@ -755,6 +755,15 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 			openapi_append_rel_path(ppath, parser->key);
 	}
 
+	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
+		log_flag(DATA, "%s: skip parsing removed %s object %s(0x%" PRIxPTR ") via parser %s(0x%" PRIxPTR ")",
+			__func__, set_source_path(&path, args, ppath),
+			parser->obj_type_string, (uintptr_t) dst,
+			parser->type_string, (uintptr_t) src);
+		rc = SLURM_SUCCESS;
+		goto cleanup;
+	}
+
 	if (!src) {
 		if (parser->required) {
 			if ((rc = on_error(PARSING, parser->type, args,
@@ -1015,6 +1024,9 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 			    __func__, parser->model);
 	case PARSER_MODEL_ARRAY_SKIP_FIELD:
 		fatal_abort("%s: skip model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_ARRAY_REMOVED_FIELD:
+		fatal_abort("%s: removed model not allowed %u",
 			    __func__, parser->model);
 	case PARSER_MODEL_INVALID:
 	case PARSER_MODEL_MAX:
@@ -1365,6 +1377,36 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 		return SLURM_SUCCESS;
 	}
 
+	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
+		const parser_t *const rparser =
+			find_parser_by_type(parser->type);
+		uint64_t zero = 0;
+
+		log_flag(DATA, "removed: %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ") for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
+			 parser->obj_type_string,
+			 array->type_string,
+			 parser->type_string, (uintptr_t)
+			 parser, array->obj_type_string,
+			 (uintptr_t) src, (uintptr_t) dst,
+			 array->key, (uintptr_t) dst);
+
+		if (rparser->size <= sizeof(zero))
+			src = &zero;
+		else
+			src = xmalloc(rparser->size);
+
+		/*
+		 * Pass zeroed memory of the correct size to the parser to have
+		 * it dump the defaults as there is no source field to dump.
+		 */
+		rc = dump(src, rparser->size, rparser, dst, args);
+
+		if (src != &zero)
+			xfree(src);
+
+		return rc;
+	}
+
 	if (parser->model ==
 	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
 		uint64_t used_equal_bits = 0;
@@ -1520,6 +1562,9 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 			    __func__, parser->model);
 	case PARSER_MODEL_ARRAY_SKIP_FIELD:
 		fatal_abort("%s: skip model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_ARRAY_REMOVED_FIELD:
+		fatal_abort("%s: removed model not allowed %u",
 			    __func__, parser->model);
 	case PARSER_MODEL_INVALID:
 	case PARSER_MODEL_MAX:

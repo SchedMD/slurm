@@ -412,8 +412,28 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 	xassert(parser->model > PARSER_MODEL_INVALID);
 	xassert(parser->model < PARSER_MODEL_MAX);
-	xassert(parser->size > 0);
 	xassert(parser->obj_type_string && parser->obj_type_string[0]);
+
+	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
+		xassert(!parser->size);
+		xassert(!parser->field_name);
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(parser->key && parser->key[0]);
+		xassert(parser->deprecated);
+		xassert(!parser->flag_bit_array_count);
+		xassert(parser->type_string && parser->type_string[0]);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
+		xassert(parser->obj_openapi == OPENAPI_FORMAT_INVALID);
+		return;
+	}
+
+	xassert(parser->size > 0);
 
 	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
 		/* field is only a place holder so most assert()s dont apply */
@@ -584,6 +604,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 			fatal_abort("linked parsers must not link to other linked parsers");
 		case PARSER_MODEL_ARRAY_SKIP_FIELD:
 			fatal_abort("linked parsers must not link to a skip parsers");
+		case PARSER_MODEL_ARRAY_REMOVED_FIELD:
+			fatal_abort("linked parsers must not link to a removed parser");
 		case PARSER_MODEL_INVALID:
 		case PARSER_MODEL_MAX:
 			fatal_abort("invalid model");
@@ -5765,6 +5787,20 @@ static void FREE_FUNC(SHARES_REQ_MSG)(void *ptr)
 	.obj_desc = desc,                                                 \
 	.obj_type_string = XSTRINGIFY(stype),                             \
 	.size = sizeof(((stype *) NULL)->field),                          \
+	.needs = NEED_NONE,                                               \
+	.deprecated = deprec,                                             \
+}
+#define add_parser_removed(stype, mtype, req, path, desc, deprec)                                        \
+{                                                                         \
+	.magic = MAGIC_PARSER,                                            \
+	.model = PARSER_MODEL_ARRAY_REMOVED_FIELD,                        \
+	.ptr_offset = NO_VAL,                                             \
+	.key = path,                                                      \
+	.required = req,                                                  \
+	.type = DATA_PARSER_ ## mtype,                                    \
+	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),                 \
+	.obj_desc = desc,                                                 \
+	.obj_type_string = XSTRINGIFY(stype),                             \
 	.needs = NEED_NONE,                                               \
 	.deprecated = deprec,                                             \
 }

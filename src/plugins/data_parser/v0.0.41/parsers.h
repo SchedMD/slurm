@@ -82,6 +82,7 @@ typedef enum {
 	PARSER_MODEL_ARRAY_LINKED_FIELD, /* link to parser in a parser array */
 	PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD, /* link to parser in a parser array of exploded flag array */
 	PARSER_MODEL_ARRAY_SKIP_FIELD, /* parser to mark field as not being parsed in a parser array */
+	PARSER_MODEL_ARRAY_REMOVED_FIELD, /* parser to mark field as placeholder for field already removed from struct */
 
 	PARSER_MODEL_SIMPLE, /* parser for single field in struct */
 	PARSER_MODEL_COMPLEX, /* parser for uses multiple fields in struct */
