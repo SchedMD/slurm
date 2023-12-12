@@ -2843,7 +2843,7 @@ int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
  */
 static int _filter_job(job_info_t * job)
 {
-	int i, filter;
+	int i;
 	ListIterator iterator;
 	uint32_t *user;
 	uint32_t *state_id;
@@ -2855,7 +2855,7 @@ static int _filter_job(job_info_t * job)
 		return 1;
 
 	if (params.job_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
 			if (((job_step_id->array_id == NO_VAL)             &&
@@ -2866,7 +2866,7 @@ static int _filter_job(job_info_t * job)
 			    ((job_step_id->array_id == job->array_task_id) &&
 			     (job_step_id->step_id.job_id ==
 			      job->array_job_id))) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 			if ((job_step_id->array_id != NO_VAL)             &&
@@ -2875,25 +2875,25 @@ static int _filter_job(job_info_t * job)
 			    (job->array_bitmap &&
 			     bit_test(job->array_bitmap,
 				      job_step_id->array_id))) {
-				filter = 0;
+				filter = false;
 				partial_array = true;
 				break;
 			}
 			if (job_step_id->step_id.job_id == job->het_job_id) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 1;
 	}
 
 	if (params.licenses_list) {
 		char *token = NULL, *last = NULL, *tmp_name = NULL;
 		char *tmp_token;
+		bool filter = true;
 
-		filter = 1;
 		if (job->licenses) {
 			tmp_name = xstrdup(job->licenses);
 			token = strtok_r(tmp_name, ",", &last);
@@ -2911,7 +2911,7 @@ static int _filter_job(job_info_t * job)
 			iterator = list_iterator_create(params.licenses_list);
 			while ((license = list_next(iterator))) {
 				if (xstrcmp(token, license) == 0) {
-					filter = 0;
+					filter = false;
 					break;
 				}
 			}
@@ -2919,43 +2919,43 @@ static int _filter_job(job_info_t * job)
 			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_name);
-		if (filter == 1)
+		if (filter)
 			return 2;
 	}
 
 	if (params.account_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.account_list);
 		while ((account = list_next(iterator))) {
 			 if ((job->account != NULL) &&
 			     (xstrcasecmp(account, job->account) == 0)) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 2;
 	}
 
 	if (params.qos_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.qos_list);
 		while ((qos = list_next(iterator))) {
 			 if ((job->qos != NULL) &&
 			     (xstrcasecmp(qos, job->qos) == 0)) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 2;
 	}
 
 	if (params.all_states) {
 	} else if (params.state_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.state_list);
 		while ((state_id = list_next(iterator))) {
 			bool match = false;
@@ -2966,12 +2966,12 @@ static int _filter_job(job_info_t * job)
 			} else if (*state_id == job->job_state)
 				match = true;
 			if (match) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 3;
 	} else {
 		if (!IS_JOB_PENDING(job) &&
@@ -2988,16 +2988,16 @@ static int _filter_job(job_info_t * job)
 		return 5;
 
 	if (params.user_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.user_list);
 		while ((user = list_next(iterator))) {
 			if (*user == job->user_id) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 6;
 	}
 
@@ -3009,17 +3009,17 @@ static int _filter_job(job_info_t * job)
 	}
 
 	if (params.name_list) {
-		filter = 1;
+		bool filter = true;
 		iterator = list_iterator_create(params.name_list);
 		while ((name = list_next(iterator))) {
 			if ((job->name != NULL) &&
 			     (xstrcasecmp(name, job->name) == 0)) {
-				filter = 0;
+				filter = false;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1)
+		if (filter)
 			return 8;
 	}
 
