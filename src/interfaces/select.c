@@ -726,6 +726,14 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
+
+		/* cons_res was removed; convert to cons_tres */
+		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
+			plugin_id = SELECT_PLUGIN_CONS_TRES;
+		} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
+			plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
+		}
+
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      select_plugin_id_to_string(plugin_id));
@@ -1022,6 +1030,14 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
+
+		/* cons_res was removed; convert to cons_tres */
+		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
+			plugin_id = SELECT_PLUGIN_CONS_TRES;
+		} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
+			plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
+		}
+
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      select_plugin_id_to_string(plugin_id));
