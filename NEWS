@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
     ESLURM_RESERVATION_NOT_USABLE, ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
     ESLURM_BURST_BUFFER_WAIT, ESLURM_PARTITION_DOWN,
     ESLURM_LICENSES_UNAVAILABLE.
+ -- Fix issue with node appearing to reboot on every "scontrol reconfigure"
+    when slurmd was started with the '-b' flag.
 
 * Changes in Slurm 23.11.0
 ==========================

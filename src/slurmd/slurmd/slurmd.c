@@ -1328,6 +1328,8 @@ static void _try_to_reconfig(void)
 
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMD_RECONF", "1");
+	if (conf->boot_time)
+		setenvf(&child_env, "SLURMD_BOOT_TIME", "%ld", conf->boot_time);
 	if (conf->conf_cache)
 		setenvf(&child_env, "SLURMD_RECONF_CONF_CACHE", "%s",
 			conf->conf_cache);
@@ -1634,8 +1636,14 @@ _process_cmdline(int ac, char **av)
 	while ((c = getopt_long(ac, av, opt_string, long_options, NULL)) > 0) {
 		switch (c) {
 		case 'b':
-			conf->boot_time = time(NULL);
+		{
+			char *boot = getenv("SLURMD_BOOT_TIME");
+			if (boot)
+				conf->boot_time = strtol(boot, NULL, 10);
+			else
+				conf->boot_time = time(NULL);
 			break;
+		}
 		case 'c':
 			if (original)
 				conf->cleanstart = 1;
