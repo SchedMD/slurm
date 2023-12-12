@@ -172,6 +172,10 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
 		_set_ref(obj, find_parser_by_type(parser->type), sargs);
 		return NULL;
+	} else if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
+		_set_ref(obj, find_parser_by_type(parser->type), sargs);
+		return NULL;
+
 	} else if (parser->pointer_type) {
 		_set_ref(obj, find_parser_by_type(parser->pointer_type), sargs);
 		return NULL;
@@ -214,6 +218,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			for (int i = 0; i < parser->flag_bit_array_count; i++)
 				data_set_string(data_list_append(fenums),
 						parser->flag_bit_array[i].name);
+		} else if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
+			_set_ref(props, find_parser_by_type(parser->type),
+				 sargs);
 		} else if (parser->fields) {
 			data_t *required =
 				data_set_list(data_key_set(obj, "required"));
