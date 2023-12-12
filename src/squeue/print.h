@@ -71,9 +71,6 @@ typedef struct squeue_job_rec {
 
 long job_time_used(job_info_t * job_ptr);
 
-int print_jobs_list(List jobs, List format);
-int print_steps_list(List steps, List format);
-
 int print_jobs_array(job_info_t * jobs, int size, List format);
 int print_steps_array(job_step_info_t * steps, int size, List format);
 
