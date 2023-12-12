@@ -97,8 +97,7 @@ decl_static_data(usage_txt);
 /*
  * parse_command_line
  */
-extern void
-parse_command_line( int argc, char* *argv )
+extern void parse_command_line(int argc, char **argv)
 {
 	char *env_val = NULL;
 	bool override_format_env = false;
@@ -495,8 +494,7 @@ parse_command_line( int argc, char* *argv )
  * OUT states - enum job_states value corresponding to str
  * RET 0 or error code
  */
-static int
-_parse_state( char* str, uint32_t* states )
+static int _parse_state(char *str, uint32_t *states)
 {
 	uint32_t i;
 	char *state_names;
@@ -548,7 +546,7 @@ _parse_state( char* str, uint32_t* states )
  * IN format - user's format specification
  * RET zero or error code
  */
-extern int parse_format( char* format )
+extern int parse_format(char *format)
 {
 	int field_size;
 	bool right_justify;
@@ -943,7 +941,7 @@ extern int parse_format( char* format )
 	return SLURM_SUCCESS;
 }
 
-extern int parse_long_format( char* format_long )
+extern int parse_long_format(char *format_long)
 {
 	int field_size;
 	bool right_justify;
@@ -1755,8 +1753,7 @@ extern int parse_long_format( char* format_long )
  * IN/OUT token - input specification, everything before "%" is removed
  * RET - everything before "%" in the token
  */
-static char *
-_get_prefix( char *token )
+static char *_get_prefix(char *token)
 {
 	char *pos, *prefix;
 
@@ -1784,9 +1781,8 @@ _get_prefix( char *token )
  * OUT right_justify - true of field to be right justified
  * OUT suffix - string containing everything after the field specification
  */
-static void
-_parse_token( char *token, char *field, int *field_size, bool *right_justify,
-	      char **suffix)
+static void _parse_token(char *token, char *field, int *field_size,
+			 bool *right_justify, char **suffix)
 {
 	int i = 0;
 
@@ -1807,9 +1803,8 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 	*suffix = xstrdup(&token[i]);
 }
 
-static void
-_parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
-		   char **suffix)
+static void _parse_long_token(char *token, char *sep, int *field_size,
+			      bool *right_justify, char **suffix)
 {
 	char *end_ptr = NULL, *ptr;
 
@@ -1834,8 +1829,7 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 }
 
 /* print the parameters specified */
-static void
-_print_options(void)
+static void _print_options(void)
 {
 	list_itr_t *iterator;
 	int i;
