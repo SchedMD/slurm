@@ -72,7 +72,7 @@ typedef struct squeue_job_rec {
 long job_time_used(job_info_t * job_ptr);
 
 extern void print_jobs_array(job_info_t *jobs, int size, list_t *format);
-int print_steps_array(job_step_info_t * steps, int size, List format);
+extern void print_steps_array(job_step_info_t *steps, int size, list_t *format);
 
 /*****************************************************************************
  * Job Line Format Options

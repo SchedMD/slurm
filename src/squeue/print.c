@@ -138,7 +138,7 @@ extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 	FREE_NULL_LIST(l);
 }
 
-int print_steps_array(job_step_info_t * steps, int size, List format)
+extern void print_steps_array(job_step_info_t *steps, int size, list_t *format)
 {
 	if (!params.no_header)
 		_print_step_from_format(NULL, format);
@@ -162,8 +162,6 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		list_for_each(step_list, _print_step_from_format, format);
 		FREE_NULL_LIST(step_list);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /* Combine a job array's task "reason" into the master job array record
