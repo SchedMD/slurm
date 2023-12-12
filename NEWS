@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     ESLURM_LICENSES_UNAVAILABLE.
  -- Fix issue with node appearing to reboot on every "scontrol reconfigure"
     when slurmd was started with the '-b' flag.
+ -- Fix a slurmctld fatal error when upgrading to 23.11 and changing from
+    select/cons_res to select/cons_tres at the same time.
 
 * Changes in Slurm 23.11.0
 ==========================

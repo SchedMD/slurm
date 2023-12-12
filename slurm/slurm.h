@@ -658,14 +658,24 @@ enum hash_plugin_type {
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */
-	/* 101 unused (originally used for cons_res) */
+	/*
+	 * 101 cons_res was removed in 23.11. However, this is needed for
+	 * systems that are upgrading from an older version and were using
+	 * cons_res. This can be removed two versions after 23.11.
+	 */
+	SELECT_PLUGIN_CONS_RES = 101,
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
 	/* 104 unused (originally used for Cray/ALPS with select/linear) */
 	/* 105 unused (originally used for Cray/ALPS with select/cons_res) */
 	SELECT_PLUGIN_SERIAL         = 106, /* Serial */
 	SELECT_PLUGIN_CRAY_LINEAR    = 107, /* Linear on a Native Cray */
-	/* 108 unused (originally used for cons_res on a Native Cray */
+	/*
+	 * 108 cons_res on a cray was removed in 23.11. However, this is needed
+	 * for systems that are upgrading from an older version and were using
+	 * cons_res. This can be removed two versions after 23.11.
+	 */
+	SELECT_PLUGIN_CRAY_CONS_RES  = 108, /* Cons Res on a Native Cray */
 	SELECT_PLUGIN_CONS_TRES      = 109, /* Cons TRES on a normal system */
 	SELECT_PLUGIN_CRAY_CONS_TRES = 110  /* Cons TRES on a Native Cray */
 };
