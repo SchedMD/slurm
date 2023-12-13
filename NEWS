@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 23.02.8
+==========================
+
 * Changes in Slurm 23.02.7
 ==========================
  -- libslurm_nss - Avoid causing glibc to assert due to an unexpected return
