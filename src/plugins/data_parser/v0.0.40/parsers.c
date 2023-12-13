@@ -1488,26 +1488,15 @@ static int PARSE_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 					data_t *src, args_t *args,
 					data_t *parent_path)
 {
-	int *id = obj;
-
-	if (data_get_type(src) == DATA_TYPE_NULL)
-		return ESLURM_PLUGIN_INVALID;
-	else if (data_convert_type(src, DATA_TYPE_STRING) == DATA_TYPE_STRING &&
-		 (*id = select_string_to_plugin_id(data_get_string(src)) > 0))
-		return SLURM_SUCCESS;
-
-	return ESLURM_DATA_CONV_FAILED;
+	/* select plugin removed - no-op place holder */
+	return SLURM_SUCCESS;
 }
 
 static int DUMP_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 				       data_t *dst, args_t *args)
 {
-	int *id = obj;
-	char *s = select_plugin_id_to_string(*id);
-
-	if (s) {
-		data_set_string(dst, s);
-	} else
+	/* select plugin removed - default to empty string */
+	if (!is_complex_mode(args))
 		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
