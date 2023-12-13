@@ -378,9 +378,8 @@ static int _modify_config(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
-	/* Disable terminal to ensure stdin/err/out are used */
 	data_set_bool(data_define_dict_path(c->config, "/process/terminal/"),
-		      false);
+		      (step->flags & LAUNCH_PTY));
 
 	/* point to correct rootfs */
 	data_set_string(data_define_dict_path(c->config, "/root/path/"),
