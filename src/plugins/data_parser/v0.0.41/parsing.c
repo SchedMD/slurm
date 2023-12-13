@@ -1362,7 +1362,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 			 (uintptr_t) src, array->field_name,
 			 array->ptr_offset, (uintptr_t) dst,
 			 array->key, (uintptr_t) dst);
-		goto cleanup;
+		return SLURM_SUCCESS;
 	}
 
 	if (parser->model ==
@@ -1381,7 +1381,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 						  bit, true, &used_equal_bits);
 		}
 
-		goto cleanup;
+		return SLURM_SUCCESS;
 	}
 
 	xassert(parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD);
@@ -1402,7 +1402,6 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 		 array->ptr_offset, (uintptr_t) dst, array->key,
 		 (uintptr_t) dst);
 
-cleanup:
 	return rc;
 }
 
