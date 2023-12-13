@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Fix subsequent reconfigure hanging after a failed reconfigure.
  -- slurmctld - Reject arbitrary distribution jobs that have a minimum node
     count that differs from the number of unique nodes in the hostlist.
+ -- Prevent slurmdbd errors when updating reservations with names containing
+    apostrophes.
 
 * Changes in Slurm 23.11.0
 ==========================
