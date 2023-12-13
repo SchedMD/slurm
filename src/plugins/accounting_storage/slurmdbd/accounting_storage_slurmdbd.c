@@ -488,7 +488,6 @@ static void *_set_db_inx_thread(void *no_data)
 				list_for_each(job_list,
 					      _reset_db_inx_for_each, NULL);
 				unlock_slurmctld(job_read_lock);
-				more_jobs = true;
 			}
 		}
 		running_db_inx = 0;
