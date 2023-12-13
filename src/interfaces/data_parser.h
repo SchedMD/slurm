@@ -214,7 +214,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY, /* openapi_qos_query_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY_PTR, /* openapi_qos_query_t* */
 	DATA_PARSER_RPC_ID, /* slurmdbd_msg_type_t */
-	DATA_PARSER_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
+	DATA_PARSER_SELECT_PLUGIN_ID, /* DEPRECATED 24.08: int (SELECT_PLUGIN_*) -> string */
 	DATA_PARSER_STATS_REC_PTR, /* slurmdb_stats_rec_t* */
 	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP, /* openapi_resp_single_t */
