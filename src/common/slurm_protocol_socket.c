@@ -144,7 +144,8 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	/*
 	 *  Allocate memory on heap for message
 	 */
-	*pbuf = xmalloc_nz(msglen);
+	if (!(*pbuf = try_xmalloc(msglen)))
+		slurm_seterrno_ret(ENOMEM);
 
 	if (slurm_recv_timeout(fd, *pbuf, msglen, 0, tmout) != msglen) {
 		xfree(*pbuf);

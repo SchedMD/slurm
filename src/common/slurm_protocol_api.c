@@ -1041,7 +1041,7 @@ skip_auth:
 
 	msg->body_offset =  get_buf_offset(buffer);
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -1331,7 +1331,7 @@ skip_auth:
 	msg.msg_type = header.msg_type;
 	msg.flags = header.flags;
 
-	if ((header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		auth_g_destroy(auth_cred);
@@ -1717,6 +1717,9 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		}
 	}
 
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
+
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
 		/* peer may have not been resolved already */
 		if (!peer)
@@ -1751,6 +1754,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
 	msg->auth_ids_set = true;
 
+skip_auth:
 	/*
 	 * Unpack message body
 	 */
@@ -1758,7 +1762,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	if ( (header.body_length > remaining_buf(buffer)) ||
+	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		auth_g_destroy(auth_cred);
@@ -2102,7 +2106,7 @@ extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
 	slurm_addr_t *addr_array = NULL;
 
 	safe_unpack32(size_val, buffer);
-	addr_array = xcalloc(*size_val, sizeof(slurm_addr_t));
+	safe_xcalloc(addr_array, *size_val, sizeof(slurm_addr_t));
 
 	for (int i = 0; i < *size_val; i++) {
 		if (slurm_unpack_addr_no_alloc(&addr_array[i], buffer))
