@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a slurmctld fatal error when upgrading to 23.11 and changing from
     select/cons_res to select/cons_tres at the same time.
  -- slurmctld - Fix subsequent reconfigure hanging after a failed reconfigure.
+ -- slurmctld - Reject arbitrary distribution jobs that have a minimum node
+    count that differs from the number of unique nodes in the hostlist.
 
 * Changes in Slurm 23.11.0
 ==========================

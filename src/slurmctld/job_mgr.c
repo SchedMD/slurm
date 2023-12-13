@@ -201,7 +201,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
-static void _calc_arbitrary_tpn(job_record_t *job_ptr);
+static int _calc_arbitrary_tpn(job_record_t *job_ptr);
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -2870,9 +2870,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
 
-	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
-	    SLURM_DIST_ARBITRARY)
-		_calc_arbitrary_tpn(job_ptr);
+	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) && _calc_arbitrary_tpn(job_ptr))
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 
@@ -8380,17 +8380,16 @@ static int _comp_node_inx(const void *n1, const void *n2)
 	return node1->node_index - node2->node_index;
 }
 
-static void _calc_arbitrary_tpn(job_record_t *job_ptr)
+static int _calc_arbitrary_tpn(job_record_t *job_ptr)
 {
 	uint16_t *arbitrary_tasks_np = NULL;
+	int rc = SLURM_SUCCESS;
 	int cur_node = 0;
 	int num_nodes = job_ptr->details->min_nodes;
 	char *host, *prev_host = NULL;
 	node_inx_cnt_t *node_inx_cnts;
 	hostlist_t *hl = hostlist_create(job_ptr->details->req_nodes);
 	hostlist_sort(hl);
-
-	xassert(num_nodes == hostlist_count(hl));
 
 	arbitrary_tasks_np = xcalloc(num_nodes, sizeof(uint16_t));
 	node_inx_cnts = xcalloc(num_nodes, sizeof(node_inx_cnt_t));
@@ -8402,12 +8401,30 @@ static void _calc_arbitrary_tpn(job_record_t *job_ptr)
 			node_inx_cnts[cur_node].node_index =
 				node_name_get_inx(prev_host);
 			cur_node++;
+			if (cur_node >= num_nodes) {
+				free(host);
+				free(prev_host);
+				error("Minimum number of nodes (%d) for %pJ is not sufficent for the requested arbitrary node list (%s).",
+				      num_nodes, job_ptr, job_ptr->details->req_nodes);
+				rc = ESLURM_INVALID_NODE_COUNT;
+				goto cleanup;
+			}
+
 			node_inx_cnts[cur_node].node_count += 1;
 		}
 
 		free(prev_host);
 		prev_host = host;
 	}
+
+	if ((cur_node + 1) != num_nodes) {
+		free(prev_host);
+		error("Minimum number of nodes (%d) for %pJ is too large for the requested arbitrary node list (%s).",
+		      num_nodes, job_ptr, job_ptr->details->req_nodes);
+		rc = ESLURM_INVALID_NODE_COUNT;
+		goto cleanup;
+	}
+
 	node_inx_cnts[cur_node].node_index = node_name_get_inx(prev_host);
 	free(prev_host);
 
@@ -8416,10 +8433,15 @@ static void _calc_arbitrary_tpn(job_record_t *job_ptr)
 	for (int i = 0; i < num_nodes; i++)
 		arbitrary_tasks_np[i] = node_inx_cnts[i].node_count;
 
+	job_ptr->details->arbitrary_tpn = arbitrary_tasks_np;
+	arbitrary_tasks_np = NULL;
+
+cleanup:
+	xfree(arbitrary_tasks_np);
 	hostlist_destroy(hl);
 	xfree(node_inx_cnts);
 
-	job_ptr->details->arbitrary_tpn = arbitrary_tasks_np;
+	return rc;
 }
 
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
@@ -8614,7 +8636,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		if ((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
 		    SLURM_DIST_ARBITRARY) {
 			detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
-			_calc_arbitrary_tpn(job_ptr);
+			if ((error_code = _calc_arbitrary_tpn(job_ptr)))
+				return error_code;
 		} else {
 			detail_ptr->req_nodes =
 				_copy_nodelist_no_dup(job_desc->req_nodes);
