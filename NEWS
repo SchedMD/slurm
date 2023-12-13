@@ -931,6 +931,9 @@ documents those changes that are of interest to users and administrators.
     are no longer used unless explicitly requested as an argument. They are
     left as SLURM_AUTH_NOBODY (99) by default.
 
+* Changes in Slurm 22.05.12
+===========================
+
 * Changes in Slurm 22.05.11
 ===========================
  -- Prevent message extension attacks that could bypass the message hash.
