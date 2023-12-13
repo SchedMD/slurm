@@ -100,6 +100,13 @@
 		fatal_abort("parsing of DATA_PARSER_%s is not implemented",  \
 			    XSTRINGIFY(type));                               \
 	}
+#define DUMP_DISABLED(type)                                                  \
+	static int DUMP_FUNC(type)(const parser_t *const parser, void *src,  \
+				    data_t *dst, args_t *args)               \
+	{                                                                    \
+		fatal_abort("dumping of DATA_PARSER_%s is not implemented",  \
+			    XSTRINGIFY(type));                               \
+	}
 
 #define parse_error(parser, args, parent_path, error, fmt, ...)    \
 	_parse_error_funcname(parser, args, parent_path, __func__, \
