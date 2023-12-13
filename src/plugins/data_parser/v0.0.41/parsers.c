@@ -6513,6 +6513,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
 	add_parser_skip(slurmdb_cluster_rec_t, field)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_cluster_rec_t, mtype, false, field, 0, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(slurmdb_cluster_rec_t, mtype, false, path, desc, deprec)
 /* should mirror the structure of slurmdb_cluster_rec_t */
 static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(classification), /* to be deprecated */
@@ -6526,6 +6528,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", NULL),
 	add_parse(STRING, nodes, "nodes", NULL),
+	add_removed(SELECT_PLUGIN_ID, "select_plugin", NULL, SLURM_24_08_PROTOCOL_VERSION),
 	add_parse(ASSOC_SHORT_PTR, root_assoc, "associations/root", NULL),
 	add_parse(UINT16, rpc_version, "rpc_version", NULL),
 	add_skip(send_rpc), /* not packed */
@@ -6533,6 +6536,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_cluster_accounting_rec_t, mtype, false, field, 0, path, desc)
