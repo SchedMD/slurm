@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-23.11.0-0rc1&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-23.11.0&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -225,6 +225,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -317,6 +318,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -403,6 +405,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -612,6 +615,7 @@
   },
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -1397,6 +1401,7 @@
   },
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -2190,6 +2195,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -2540,6 +2546,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -2884,6 +2891,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -3013,8 +3021,8 @@
       "infinite" : true
     },
     "priority" : {
-      "tier" : 2,
-      "job_factor" : 3
+      "tier" : 4,
+      "job_factor" : 2
     },
     "node_sets" : "node_sets",
     "maximums" : {
@@ -3039,9 +3047,23 @@
         "set" : false,
         "infinite" : true
       },
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
+      "oversubscribe" : {
+        "jobs" : 9,
+        "flags" : [ "force", "force" ]
+      },
       "memory_per_cpu" : 2,
       "time" : {
         "number" : 5,
+        "set" : false,
+        "infinite" : true
+      },
+      "partition_memory_per_cpu" : {
+        "number" : 1,
         "set" : false,
         "infinite" : true
       }
@@ -3060,13 +3082,23 @@
       "assigned" : "assigned"
     },
     "defaults" : {
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
       "memory_per_cpu" : 5,
       "time" : {
         "number" : 5,
         "set" : false,
         "infinite" : true
       },
-      "job" : "job"
+      "job" : "job",
+      "partition_memory_per_cpu" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "name" : "name",
     "tres" : {
@@ -3078,7 +3110,7 @@
       "allowed" : "allowed"
     },
     "minimums" : {
-      "nodes" : 9
+      "nodes" : 3
     },
     "grace_time" : 5
   }, {
@@ -3109,8 +3141,8 @@
       "infinite" : true
     },
     "priority" : {
-      "tier" : 2,
-      "job_factor" : 3
+      "tier" : 4,
+      "job_factor" : 2
     },
     "node_sets" : "node_sets",
     "maximums" : {
@@ -3135,9 +3167,23 @@
         "set" : false,
         "infinite" : true
       },
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
+      "oversubscribe" : {
+        "jobs" : 9,
+        "flags" : [ "force", "force" ]
+      },
       "memory_per_cpu" : 2,
       "time" : {
         "number" : 5,
+        "set" : false,
+        "infinite" : true
+      },
+      "partition_memory_per_cpu" : {
+        "number" : 1,
         "set" : false,
         "infinite" : true
       }
@@ -3156,13 +3202,23 @@
       "assigned" : "assigned"
     },
     "defaults" : {
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
       "memory_per_cpu" : 5,
       "time" : {
         "number" : 5,
         "set" : false,
         "infinite" : true
       },
-      "job" : "job"
+      "job" : "job",
+      "partition_memory_per_cpu" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "name" : "name",
     "tres" : {
@@ -3174,12 +3230,13 @@
       "allowed" : "allowed"
     },
     "minimums" : {
-      "nodes" : 9
+      "nodes" : 3
     },
     "grace_time" : 5
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -3303,8 +3360,8 @@
       "infinite" : true
     },
     "priority" : {
-      "tier" : 2,
-      "job_factor" : 3
+      "tier" : 4,
+      "job_factor" : 2
     },
     "node_sets" : "node_sets",
     "maximums" : {
@@ -3329,9 +3386,23 @@
         "set" : false,
         "infinite" : true
       },
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
+      "oversubscribe" : {
+        "jobs" : 9,
+        "flags" : [ "force", "force" ]
+      },
       "memory_per_cpu" : 2,
       "time" : {
         "number" : 5,
+        "set" : false,
+        "infinite" : true
+      },
+      "partition_memory_per_cpu" : {
+        "number" : 1,
         "set" : false,
         "infinite" : true
       }
@@ -3350,13 +3421,23 @@
       "assigned" : "assigned"
     },
     "defaults" : {
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
       "memory_per_cpu" : 5,
       "time" : {
         "number" : 5,
         "set" : false,
         "infinite" : true
       },
-      "job" : "job"
+      "job" : "job",
+      "partition_memory_per_cpu" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "name" : "name",
     "tres" : {
@@ -3368,7 +3449,7 @@
       "allowed" : "allowed"
     },
     "minimums" : {
-      "nodes" : 9
+      "nodes" : 3
     },
     "grace_time" : 5
   }, {
@@ -3399,8 +3480,8 @@
       "infinite" : true
     },
     "priority" : {
-      "tier" : 2,
-      "job_factor" : 3
+      "tier" : 4,
+      "job_factor" : 2
     },
     "node_sets" : "node_sets",
     "maximums" : {
@@ -3425,9 +3506,23 @@
         "set" : false,
         "infinite" : true
       },
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
+      "oversubscribe" : {
+        "jobs" : 9,
+        "flags" : [ "force", "force" ]
+      },
       "memory_per_cpu" : 2,
       "time" : {
         "number" : 5,
+        "set" : false,
+        "infinite" : true
+      },
+      "partition_memory_per_cpu" : {
+        "number" : 1,
         "set" : false,
         "infinite" : true
       }
@@ -3446,13 +3541,23 @@
       "assigned" : "assigned"
     },
     "defaults" : {
+      "partition_memory_per_node" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      },
       "memory_per_cpu" : 5,
       "time" : {
         "number" : 5,
         "set" : false,
         "infinite" : true
       },
-      "job" : "job"
+      "job" : "job",
+      "partition_memory_per_cpu" : {
+        "number" : 1,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "name" : "name",
     "tres" : {
@@ -3464,12 +3569,13 @@
       "allowed" : "allowed"
     },
     "minimums" : {
-      "nodes" : 9
+      "nodes" : 3
     },
     "grace_time" : 5
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -3561,6 +3667,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -3658,6 +3765,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -3845,6 +3953,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4031,6 +4140,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4268,6 +4378,7 @@
   },
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4374,6 +4485,7 @@
   "job_id" : "job_id",
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4496,6 +4608,7 @@
   "job_id" : 1,
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4603,6 +4716,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4697,6 +4811,7 @@
   "removed_accounts" : [ "removed_accounts", "removed_accounts" ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4824,6 +4939,7 @@
   "removed_associations" : [ "removed_associations", "removed_associations" ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -4951,6 +5067,7 @@
   "removed_associations" : [ "removed_associations", "removed_associations" ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5067,6 +5184,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5160,6 +5278,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5253,6 +5372,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5346,6 +5466,7 @@
   "deleted_wckeys" : [ "deleted_wckeys", "deleted_wckeys" ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5448,6 +5569,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -5597,6 +5719,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -6167,6 +6290,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -6686,6 +6810,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -6802,6 +6927,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -6973,6 +7099,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -8070,6 +8197,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -8464,6 +8592,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -8631,6 +8760,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -8750,6 +8880,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -8842,6 +8973,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -10135,6 +10267,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -11831,6 +11964,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -12402,6 +12536,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -12488,6 +12623,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -12603,6 +12739,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -12894,6 +13031,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13234,6 +13372,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13407,6 +13546,7 @@
   } ],
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13506,6 +13646,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13605,6 +13746,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13705,6 +13847,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13804,6 +13947,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -13903,6 +14047,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14002,6 +14147,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14101,6 +14247,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14200,6 +14347,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14300,6 +14448,7 @@
   "added_users" : "added_users",
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14399,6 +14548,7 @@
     <pre class="example"><code>{
   "meta" : {
     "slurm" : {
+      "cluster" : "cluster",
       "release" : "release",
       "version" : {
         "major" : "major",
@@ -14592,6 +14742,7 @@
     <li><a href="#v0_0_40_partition_info_defaults"><code>v0_0_40_partition_info_defaults</code> - </a></li>
     <li><a href="#v0_0_40_partition_info_groups"><code>v0_0_40_partition_info_groups</code> - </a></li>
     <li><a href="#v0_0_40_partition_info_maximums"><code>v0_0_40_partition_info_maximums</code> - </a></li>
+    <li><a href="#v0_0_40_partition_info_maximums_oversubscribe"><code>v0_0_40_partition_info_maximums_oversubscribe</code> - </a></li>
     <li><a href="#v0_0_40_partition_info_minimums"><code>v0_0_40_partition_info_minimums</code> - </a></li>
     <li><a href="#v0_0_40_partition_info_nodes"><code>v0_0_40_partition_info_nodes</code> - </a></li>
     <li><a href="#v0_0_40_partition_info_partition"><code>v0_0_40_partition_info_partition</code> - </a></li>
@@ -16360,6 +16511,7 @@
     <div class="field-items">
       <div class="param">version (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_openapi_meta_slurm_version">v0_0_40_openapi_meta_slurm_version</a></span>  </div>
 <div class="param">release (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Slurm release string </div>
+<div class="param">cluster (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Slurm cluster name </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -16392,6 +16544,8 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+<div class="param">partition_memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
+<div class="param">partition_memory_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
 <div class="param">time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
     </div>  <!-- field-items -->
@@ -16410,10 +16564,23 @@
       <div class="param">cpus_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">cpus_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+<div class="param">partition_memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
+<div class="param">partition_memory_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">shares (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_partition_info_maximums_oversubscribe">v0_0_40_partition_info_maximums_oversubscribe</a></span>  </div>
 <div class="param">time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">over_time_limit (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint16_no_val">v0.0.40_uint16_no_val</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0_0_40_partition_info_maximums_oversubscribe"><code>v0_0_40_partition_info_maximums_oversubscribe</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+        <div class="param-enum-header">Enum:</div>
+        
     </div>  <!-- field-items -->
   </div>
   <div class="model">
