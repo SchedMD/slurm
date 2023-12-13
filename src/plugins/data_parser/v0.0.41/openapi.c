@@ -351,6 +351,9 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	if (desc && !data_key_get(obj, "description"))
 		data_set_string(data_key_set(obj, "description"), desc);
 
+	if (parser->deprecated || (parent && parent->deprecated))
+		data_set_bool(data_key_set(obj, "deprecated"), true);
+
 	_add_parser(parser, sargs);
 }
 
