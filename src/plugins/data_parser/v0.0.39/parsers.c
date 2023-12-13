@@ -1346,33 +1346,14 @@ static int PARSE_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 					data_t *src, args_t *args,
 					data_t *parent_path)
 {
-	int *id = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	if (data_get_type(src) == DATA_TYPE_NULL)
-		return ESLURM_REST_FAIL_PARSING;
-	else if (data_convert_type(src, DATA_TYPE_STRING) == DATA_TYPE_STRING &&
-		 (*id = select_string_to_plugin_id(data_get_string(src)) > 0))
-		return SLURM_SUCCESS;
-
-	return ESLURM_REST_FAIL_PARSING;
+	/* select plugin removed - no-op place holder */
+	return SLURM_SUCCESS;
 }
 
 static int DUMP_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 				       data_t *dst, args_t *args)
 {
-	int *id = obj;
-	char *s = select_plugin_id_to_string(*id);
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	if (s) {
-		data_set_string(dst, s);
-	} else
-		data_set_string(dst, "");
-
+	data_set_string(dst, "");
 	return SLURM_SUCCESS;
 }
 
