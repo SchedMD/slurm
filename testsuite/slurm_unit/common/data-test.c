@@ -307,6 +307,19 @@ START_TEST(test_dict_typeset)
 	ck_assert_msg(data_get_float(d) == 3.14,
 		      "check string conversion from 3.14");
 
+	data_set_float(d, -3.14);
+	ck_assert_msg(data_get_type(d) == DATA_TYPE_FLOAT, "float type");
+
+	str = NULL;
+	ck_assert_msg(data_get_string_converted(d, &str) == 0,
+		      "convert -3.14 to string");
+	ck_assert_msg(xstrcmp(str, "-3.140000") == 0,
+		      "check -3.14 got converted");
+	xfree(str);
+	ck_assert_msg(data_get_type(d) == DATA_TYPE_FLOAT, "float type");
+	ck_assert_msg(data_get_float(d) == -3.14,
+		      "check string conversion from -3.14");
+
 	data_set_null(d);
 	ck_assert_msg(data_get_type(d) == DATA_TYPE_NULL, "default type");
 
