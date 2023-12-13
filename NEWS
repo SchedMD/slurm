@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 24.08.0rc1
 =============================
 
+* Changes in Slurm 23.11.2
+==========================
+
 * Changes in Slurm 23.11.1
 ==========================
  -- Fix scontrol update job=... TimeLimit+=/-= when used with a raw JobId of job
@@ -433,6 +436,9 @@ documents those changes that are of interest to users and administrators.
     filtering options in the --extra flag of salloc, sbatch, and srun.
  -- Improve scontrol show node -d information of used shared gres (shard/mps)
     topology.
+
+* Changes in Slurm 23.02.8
+==========================
 
 * Changes in Slurm 23.02.7
 ==========================
@@ -1365,6 +1371,9 @@ documents those changes that are of interest to users and administrators.
  -- Added support for Linux kernel user namespaces. Process user and group ids
     are no longer used unless explicitly requested as an argument. They are
     left as SLURM_AUTH_NOBODY (99) by default.
+
+* Changes in Slurm 22.05.12
+===========================
 
 * Changes in Slurm 22.05.11
 ===========================
