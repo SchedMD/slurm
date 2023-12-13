@@ -431,6 +431,9 @@ documents those changes that are of interest to users and administrators.
  -- Improve scontrol show node -d information of used shared gres (shard/mps)
     topology.
 
+* Changes in Slurm 23.02.8
+==========================
+
 * Changes in Slurm 23.02.7
 ==========================
  -- libslurm_nss - Avoid causing glibc to assert due to an unexpected return
@@ -1362,6 +1365,9 @@ documents those changes that are of interest to users and administrators.
  -- Added support for Linux kernel user namespaces. Process user and group ids
     are no longer used unless explicitly requested as an argument. They are
     left as SLURM_AUTH_NOBODY (99) by default.
+
+* Changes in Slurm 22.05.12
+===========================
 
 * Changes in Slurm 22.05.11
 ===========================
