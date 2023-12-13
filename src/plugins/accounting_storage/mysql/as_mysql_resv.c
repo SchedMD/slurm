@@ -473,7 +473,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		// record, no need to create a new one since
 		// this doesn't really effect the
 		// reservation accounting wise
-		resv->name = xstrdup(row[RESV_NAME]);
+		resv->name = slurm_add_slash_to_quotes(row[RESV_NAME]);
 
 	if (xstrcmp(resv->assocs, row[RESV_ASSOCS]) ||
 	    (resv->flags != slurm_atoul(row[RESV_FLAGS])) ||
