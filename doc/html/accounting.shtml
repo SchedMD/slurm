@@ -13,7 +13,6 @@
 <ul>
 <li><a href="#slurmdbd-archive-purge">  SlurmDBD Archive and Purge</a></li>
 </ul>
-<li
 <li><a href="#mysql-configuration">MySQL Configuration</a></li>
 <li><a href="#archive">Archive Server</a></li>
 <li><a href="#tools">Tools</a></li>

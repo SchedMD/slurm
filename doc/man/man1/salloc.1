@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "November 2023" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "December 2023" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -559,9 +559,14 @@ variable if desired for the task(s).
 
 .TP
 \fB\-\-deadline\fR=<\fIOPT\fR>
-remove the job if no ending is possible before
+Remove the job if no ending is possible before
 this deadline (start > (deadline \- time[\-min])).
-Default is no deadline.  Valid time formats are:
+Default is no deadline. Note that if neither \fBDefaultTime\fR nor
+\fBMaxTime\fR are configured on the partition the job is in, the job will
+need to specify some form of time limit (\-\-time[\-min]) if a deadline
+is to be used.
+
+Valid time formats are:
 .br
 HH:MM[:SS] [AM|PM]
 .br

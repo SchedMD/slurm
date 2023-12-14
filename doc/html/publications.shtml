@@ -82,14 +82,12 @@ Tim Wickberg, SchedMD</li>
 <ul>
 <li><a href="MISC23/DellHPC_20230906.pdf">Slurm and/or/vs Kubernetes</a>,
 Tim Wickberg, SchedMD</li>
-</li>
 </ul>
 
 <h2>Presentations from Cray User Group, May 2023</h2>
 <ul>
 <li><a href="MISC23/CUG23-Slurm-Roadmap.pdf">Slurm 23.02, 23.11, and Beyond</a>,
 Tim Wickberg, SchedMD</li>
-</li>
 </ul>
 
 <h2>Presentations from SC22, November 2022</h2>
@@ -517,8 +515,8 @@ Tim Wickberg, SchedMD</li>
 <h2>Presentations from Slurm User Group Meeting, September 2016</h2>
 <ul>
 
-<!--- <li>Welcome: <a href="SLUG16/welcome.pdf">SLUG 2016 Welcome</a>,
-Nikos Nikoloutsakos, GRNET</li> --->
+<!-- <li>Welcome: <a href="SLUG16/welcome.pdf">SLUG 2016 Welcome</a>,
+Nikos Nikoloutsakos, GRNET</li> -->
 
 <li>Keynote: <a href="SLUG16/Cournia-SLURM2016.pdf">Computer-aided drug design for novel anti-cancer agents</a>,
 Dr. Zoe Cournia (Biomedical Research Foundation, Academy of Athens)</li>
@@ -1102,7 +1100,7 @@ Alejandro Lucero, BSC</li>
 <li><a href="slurm_ug_2011/SLURM_Grid_Ideas.pdf">Proposed Design for Enhanced Enterprise-wide Scheduling</a>,
 Don Lipari, LLNL</li>
 
-<li><a href="slurm_ug_2011/Bright_Computing_SLURM_integration.pdf">Bright Cluster Manager &amp; SLURM</ Slurm</a>,
+<li><a href="slurm_ug_2011/Bright_Computing_SLURM_integration.pdf">Bright Cluster Manager &amp; SLURM</a>,
 Robert Stober, Bright Computing</li>
 
 <li><a href="slurm_ug_2011/User.steps.design.pdf">Job Step Management in User Space</a>,
@@ -1206,7 +1204,7 @@ Yiannis Georgiou, et. al.
 (ICDCN 2014, January 2014)</li>
 
 <li><a href="http://www.cs.huji.ac.il/~feit/parsched/jsspp12/p8-georgiou.pdf">
-Evaluating scalability and efficiency of the Resource and Job Management System on large HPC Clusters</b></a>,
+<b>Evaluating scalability and efficiency of the Resource and Job Management System on large HPC Clusters</b></a>,
 Yiannis Georgiou (BULL S.A.S, France); Matthieu Hautreux (CEA-DAM, France)
 (16th Workshop on Job Scheduling Strategies for Parallel Processing, May 2012)</li>
 

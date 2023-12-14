@@ -516,14 +516,24 @@ will be unchanged.</p>
 
 <p><a id="terminal"><b>Can tasks be launched with a remote (pseudo)
 terminal?</b></a><br>
-You have several ways to do so, the recommended ones are the following:<br>
-The simplest method is to make use of srun's <i>--pty</i> option,
-(e.g. <i>srun --pty bash -i</i>).
+The best method is to use <code>salloc</code> with
+<b>use_interactive_step</b> set in the <b>LaunchParameters</b> option in
+<i>slurm.conf</i>. See
+<a href="#prompt">getting shell prompts in interactive mode</a>.</p>
+
+<p>An alternative but not recommended method is to make use of srun's
+<i>--pty</i> option, (e.g. <i>srun --pty bash -i</i>).
 Srun's <i>--pty</i> option runs task zero in pseudo terminal mode. Bash's
-<i>-i</i> option instructs it to run in interactive mode (with prompts).<br>
-In addition to that method you have the option to automatically have salloc
-place terminals on the compute nodes by setting "use_interactive_step" as
-an option in LaunchParameters.</p>
+<i>-i</i> option instructs it to run in interactive mode (with prompts).
+However, unlike the batch or interactive steps, this launches a step which
+consumes all resources in the job. This means that subsequent steps cannot be
+launched in the job unless they use the <i>--overlap</i> option. If task plugins
+are configured, the shell is limited to CPUs of the first task. Subsequent
+steps (which must be launched with <i>--overlap</i>) may be limited to fewer
+resources than expected or may fail to launch tasks altogether if multiple
+nodes were requested.  Therefore, this alternative should rarely be used;
+<code>salloc</code> should be used instead.
+</p>
 
 <p><a id="force"><b>What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
@@ -2421,6 +2431,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 11 December 2023</p>
+<p style="text-align:center;">Last modified 14 December 2023</p>
 
 <!--#include virtual="footer.txt"-->
