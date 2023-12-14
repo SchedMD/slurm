@@ -3541,7 +3541,27 @@ static int DUMP_FUNC(JOB_INFO_GRES_DETAIL)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NICE)
+static int PARSE_FUNC(NICE)(const parser_t *const parser, void *obj,
+			    data_t *src, args_t *args, data_t *parent_path)
+{
+	int32_t *nice_ptr = obj, nice;
+	char *path = NULL;
+	int rc;
+
+	rc = PARSE(INT32, nice, src, parent_path, args);
+	if (rc == EINVAL || (!rc && (llabs(nice) > (NICE_OFFSET - 3)))) {
+		rc = on_error(PARSING, parser->type, args,
+				ESLURM_INVALID_NICE,
+				set_source_path(&path, args, parent_path),
+				__func__,
+				"Nice value not within +/- 2147483645");
+	} else if (!rc) {
+		*nice_ptr = nice + NICE_OFFSET;
+	}
+
+	xfree(path);
+	return rc;
+}
 
 static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 			   args_t *args)

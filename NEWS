@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     connections instead of forcing a fatal exit due to lack of memory.
  -- data_parser/v0.0.41 - Avoid aborting when invoking a not implemented
     parser.
+ -- data_parser/v0.0.41 - Fix how nice values are parsed for job submissions.
 
 * Changes in Slurm 23.11.2
 ==========================
