@@ -1165,6 +1165,8 @@ static char *_get_autodetect_flags_str(void)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI)
 			xstrfmtcat(flags, "%soneapi", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_HLML)
+			xstrfmtcat(flags, "%shlml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT)
 			xstrfmtcat(flags, "%snrt", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
@@ -1185,6 +1187,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_RSMI;
 	else if (xstrcasestr(str, "oneapi"))
 		flags |= GRES_AUTODETECT_GPU_ONEAPI;
+	else if (xstrcasestr(str, "hlml"))
+		flags |= GRES_AUTODETECT_GPU_HLML;
 	else if (xstrcasestr(str, "nrt"))
 		flags |= GRES_AUTODETECT_GPU_NRT;
 	else if (!xstrcasecmp(str, "off"))

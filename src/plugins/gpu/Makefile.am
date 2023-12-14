@@ -14,4 +14,8 @@ if BUILD_ONEAPI
 SUBDIRS += oneapi
 endif
 
+if BUILD_HLML
+SUBDIRS += hlml
+endif
+
 SUBDIRS += nrt
