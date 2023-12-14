@@ -201,7 +201,7 @@ which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.
 </li>
 
-<li>oci.conf example for hpcng singularity v3.8.0:
+<li>oci.conf example for hpcng Singularity v3.8.0:
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
