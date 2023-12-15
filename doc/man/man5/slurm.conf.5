@@ -4098,7 +4098,8 @@ The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur, however the frequency
 with which the scheduler is run may be limited by using the \fBdefer\fR or
 \fBsched_min_interval\fR parameters described below.
-The full queue will be tested on a less frequent basis as defined by the
+The main scheduling loop will run (ignoring this limit)
+on a less frequent basis as defined by the
 \fBsched_interval\fR option described below. The default value is 100.
 See the \fBpartition_job_depth\fR option to limit depth by partition.
 .IP
@@ -4285,6 +4286,7 @@ This may reduce resource fragmentation for some workloads.
 \fBpartition_job_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth)
 from each partition/queue in Slurm's main scheduling logic.
+This limit will be enforced for all main scheduler cycles.
 The functionality is similar to that provided by the \fBbf_max_job_part\fR
 option for the backfill scheduling logic.
 The default value is 0 (no limit).
@@ -4339,7 +4341,7 @@ parameter.
 .TP
 \fBsched_interval=#\fR
 How frequently, in seconds, the main scheduling loop will execute and test all
-pending jobs.
+pending jobs, with only the \fBpartition_job_depth\fR limit in place.
 The default value is 60 seconds.
 A setting of \-1 will disable the main scheduling loop.
 .IP
