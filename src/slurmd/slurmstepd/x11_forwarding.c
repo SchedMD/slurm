@@ -67,7 +67,7 @@ static uint32_t job_id = NO_VAL;
 static uid_t job_uid;
 
 static bool local_xauthority = false;
-static char hostname[256] = {0};
+static char hostname[HOST_NAME_MAX] = {0};
 
 static eio_handle_t *eio_handle;
 

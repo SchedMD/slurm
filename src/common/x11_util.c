@@ -244,7 +244,7 @@ extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 	char **xauth_argv;
 	char template[] = "/tmp/xauth-source-XXXXXX";
 	char *contents = NULL;
-	char host[256];
+	char host[HOST_NAME_MAX];
 	int fd;
 	run_command_args_t run_command_args = {
 		.max_wait = 10000,
