@@ -5003,10 +5003,10 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	log_flag(SELECT_TYPE, "evaluating %pJ on %u nodes",
 	         job_ptr, bit_set_count(node_bitmap));
-	info("here!!!!!!!!!");
+
 	orig_node_map = bit_copy(node_bitmap);
 	avail_cores = cons_helpers_mark_avail_cores(
-		node_bitmap, job_ptr);
+		node_bitmap, job_ptr->details->core_spec);
 
 	/*
 	 * test to make sure that this job can succeed with all avail_cores

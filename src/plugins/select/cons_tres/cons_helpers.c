@@ -134,8 +134,14 @@ extern uint16_t cons_helpers_cpus_per_core(job_details_t *details, int node_inx)
 	return threads_per_core;
 }
 
+/*
+ * Bit a core bitmap array of available cores
+ * node_bitmap IN - Nodes available for use
+ * core_spec IN - Specialized core specification, NO_VAL16 if none
+ * RET core bitmap array, one per node. Use free_core_array() to release memory
+ */
 extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, job_record_t *job_ptr)
+	bitstr_t *node_bitmap, uint16_t core_spec)
 {
 	bitstr_t **avail_cores;
 	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
@@ -145,20 +151,8 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	node_record_t *node_ptr;
 	bitstr_t *core_map = NULL;
 	uint16_t use_spec_cores = slurm_conf.conf_flags & CTL_CONF_ASRU;
-	uint16_t core_spec = job_ptr->details->core_spec;
 	uint32_t coff;
-	bool req_gpu = false;
-	static uint32_t gpu_plugin_id = NO_VAL;
 
-	if (gpu_plugin_id == NO_VAL)
-		gpu_plugin_id = gres_build_id("gpu");
-
-	if ((job_ptr->details->whole_node == 1) ||
-	    (job_ptr->gres_list_req &&
-	     list_find_first(job_ptr->gres_list_req,
-			     gres_find_id, &gpu_plugin_id)))
-		req_gpu = true;
-	info("got here %d", req_gpu);
 	avail_cores = build_core_array();
 
 	if ((core_spec != NO_VAL16) &&
@@ -180,18 +174,6 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 		}
 
 		bit_nset(core_map, c, coff - 1);
-
-		/*
-		 * If the job isn't requesting a GPU we will remove those cores
-		 * that are reserved for gpu jobs.
-		 */
-		if (node_ptr->gpu_spec_bitmap && !req_gpu) {
-			for (int i = 0; i < node_ptr->tot_cores; i++) {
-				if (!bit_test(node_ptr->gpu_spec_bitmap, i)) {
-					bit_clear(core_map, c + i);
-				}
-			}
-		}
 
 		/* Job can't over-ride system defaults */
 		if (use_spec_cores && (core_spec == 0))
