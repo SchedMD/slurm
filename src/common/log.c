@@ -788,7 +788,7 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 }
 
-static char *_print_data_t(const data_t *d, char *buffer, uint16_t size)
+static char *_print_data_t(const data_t *d, char *buffer, int size)
 {
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
