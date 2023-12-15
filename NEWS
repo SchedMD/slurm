@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.2
 ==========================
+ -- slurmrestd - Reject single http query with multiple path requests.
 
 * Changes in Slurm 23.11.1
 ==========================
