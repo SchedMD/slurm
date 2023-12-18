@@ -10,6 +10,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.2
 ==========================
  -- slurmrestd - Reject single http query with multiple path requests.
+ -- Fix launching Singularity v4.x containers with srun --container by setting
+    .process.terminal to true in generated config.json when step has
+    pseudoterminal (--pty) requested.
 
 * Changes in Slurm 23.11.1
 ==========================
