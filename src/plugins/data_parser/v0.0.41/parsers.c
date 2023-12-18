@@ -1082,9 +1082,11 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			.cluster = assoc->cluster,
 		};
 
-		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)) ||
-		    !key.id)
+		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)))
 			return rc;
+
+		if (!key.id)
+			return ESLURM_INVALID_ASSOC;
 
 		if ((match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc,
