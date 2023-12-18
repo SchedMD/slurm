@@ -1071,7 +1071,6 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_ERROR;
 	slurmdb_assoc_rec_t *assoc = obj;
-	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	switch (data_get_type(src)) {
 	case DATA_TYPE_STRING:
