@@ -1071,41 +1071,43 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_ERROR;
 	slurmdb_assoc_rec_t *assoc = obj;
-	slurmdb_assoc_rec_t assoc_short;
-
-	slurmdb_init_assoc_rec(&assoc_short, false);
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	switch (data_get_type(src)) {
 	case DATA_TYPE_INT_64:
-		if ((rc = PARSE(UINT32, assoc->id, src, parent_path, args)) ||
-		    !assoc->id)
-			goto cleanup;
+	{
+		slurmdb_assoc_rec_t *match;
+		slurmdb_assoc_rec_t key = {
+			.id = assoc->id,
+			.cluster = assoc->cluster,
+		};
 
-		assoc_short.id = assoc->id;
+		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)) ||
+		    !key.id)
+			return rc;
+
+		if ((match = list_find_first(args->assoc_list,
+					     (ListFindF) compare_assoc,
+					     &key))) {
+			assoc->id = match->id;
+		} else {
+			rc = parse_error(parser, args, parent_path,
+					 ESLURM_INVALID_ASSOC,
+					 "Unable to find association id %u in cluster %s. Unable to parse association.",
+					 key.id, key.cluster);
+		}
 		break;
+	}
 	case DATA_TYPE_NULL:
 		rc = SLURM_SUCCESS;
 		break;
 	default:
-		slurmdb_assoc_rec_t *match;
-
-		if ((rc = PARSE(ASSOC_SHORT, assoc_short, src, parent_path,
-				args)))
-			goto cleanup;
-
-		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc,
-					     &assoc_short))) {
-			assoc->id = match->id;
-		} else {
-			rc = ESLURM_INVALID_ASSOC;
-		}
-		break;
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_INVALID_ASSOC,
+				 "ASSOC_ID should be an integer, but is type %s.",
+				 data_type_to_string(data_get_type(src)));
 	}
 
-cleanup:
-	slurmdb_free_assoc_rec_members(&assoc_short);
 	return rc;
 }
 
@@ -1113,20 +1115,22 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
 	slurmdb_assoc_rec_t *assoc = obj;
+	uint32_t id = 0;
 
 	if (assoc->id && (assoc->id < NO_VAL)) {
 		slurmdb_assoc_rec_t *match;
 
 		if ((match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc, assoc)))
-			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
+			id = match->id;
 	}
 
 	if (is_complex_mode(args)) {
+		data_set_null(dst);
 		return SLURM_SUCCESS;
 	}
 
-	return DUMP(ASSOC_SHORT, *assoc, dst, args);
+	return DUMP(UINT32, id, dst, args);
 }
 
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
@@ -8889,7 +8893,7 @@ static const parser_t parsers[] = {
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
+	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),

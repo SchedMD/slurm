@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- Print an error message in 'scontrol reboot' when a node reboot request
     is ignored due to the current node state.
  -- squeue - Add "--notme" option.
+ -- data_parser/v0.0.41 - change "association.id" to just include the int "id"
+    rather than include redundant assoc info (cluster, user, partition, account)
+    that's already included in the "association" object.
 
 * Changes in Slurm 23.11.2
 ==========================
