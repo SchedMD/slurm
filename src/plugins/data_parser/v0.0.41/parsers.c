@@ -1134,14 +1134,18 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		slurmdb_free_assoc_rec_members(&key);
 		return rc;
 	}
-	default:
-		rc = parse_error(parser, args, parent_path,
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_BOOL:
+		return parse_error(parser, args, parent_path,
 				 ESLURM_INVALID_ASSOC,
 				 "ASSOC_ID should be an integer, but is type %s.",
 				 data_type_to_string(data_get_type(src)));
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		/* fall through */
 	}
 
-	return rc;
+	fatal_abort("invalid type");
 }
 
 static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
