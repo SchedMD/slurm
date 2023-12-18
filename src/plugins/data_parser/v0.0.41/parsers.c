@@ -1121,6 +1121,19 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_NULL:
 		rc = SLURM_SUCCESS;
 		break;
+	case DATA_TYPE_DICT:
+	{
+		int rc;
+		slurmdb_assoc_rec_t key;
+		slurmdb_init_assoc_rec(&key, false);
+
+		if (!(rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+			rc = _find_assoc(parser, assoc, src, &key, args,
+					 parent_path);
+
+		slurmdb_free_assoc_rec_members(&key);
+		return rc;
+	}
 	default:
 		rc = parse_error(parser, args, parent_path,
 				 ESLURM_INVALID_ASSOC,
