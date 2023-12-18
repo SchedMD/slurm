@@ -1076,15 +1076,18 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	slurmdb_init_assoc_rec(&assoc_short, false);
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
-	if (data_get_type(src) == DATA_TYPE_INT_64) {
+	switch (data_get_type(src)) {
+	case DATA_TYPE_INT_64:
 		if ((rc = PARSE(UINT32, assoc->id, src, parent_path, args)) ||
 		    !assoc->id)
 			goto cleanup;
 
 		assoc_short.id = assoc->id;
-	} else if (data_get_type(src) == DATA_TYPE_NULL) {
+		break;
+	case DATA_TYPE_NULL:
 		rc = SLURM_SUCCESS;
-	} else {
+		break;
+	default:
 		slurmdb_assoc_rec_t *match;
 
 		if ((rc = PARSE(ASSOC_SHORT, assoc_short, src, parent_path,
@@ -1098,6 +1101,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		} else {
 			rc = ESLURM_INVALID_ASSOC;
 		}
+		break;
 	}
 
 cleanup:
