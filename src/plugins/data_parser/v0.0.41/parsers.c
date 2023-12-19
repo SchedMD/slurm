@@ -1816,10 +1816,8 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 
 	switch (data_convert_type(src, DATA_TYPE_NONE)) {
 	case DATA_TYPE_INT_64:
-	{
 		gid = data_get_int(src);
 		break;
-	}
 	case DATA_TYPE_STRING:
 	{
 		int rc;
