@@ -1793,11 +1793,9 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 		return parse_error(parser, args, parent_path,
 				   ESLURM_DATA_CONV_FAILED,
 				   "Invalid user field: %pd", src);
-	default:
-		return parse_error(parser, args, parent_path,
-				   ESLURM_DATA_CONV_FAILED,
-				   "Invalid user field value type: %s",
-				   data_get_type_string(src));
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
 	if (uid >= INT_MAX)
