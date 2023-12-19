@@ -9,8 +9,9 @@ events such as job submission or completion and configuration changes.
 During these event-triggered scheduling events, <b>default_queue_depth</b>
 (default is 100) number of jobs will be considered.</P>
 
-<P>At less frequent intervals, defined by <b>sched_interval</b>, all jobs will
-be considered for scheduling.</P>
+<p>At less frequent intervals, defined by <b>sched_interval</b>, the main
+scheduling loop will run, considering all jobs while still honoring the
+<b>partition_job_depth</b> limit.</p>
 
 <P>In either case, once any job or job array task in a partition is left
 pending, no other jobs in that partition will be scheduled.</P>
@@ -46,8 +47,8 @@ desired number of leaf switches. Default value is 300 seconds.</LI>
 <LI><B>partition_job_depth=#</B> - Specifies how many jobs are tested in any
 single partition, default value is 0 (no limit).</LI>
 <LI><B>sched_interval=#</B> - Specifies how frequently, in seconds, the main
-scheduling loop will execute and test all pending jobs. The default value is
-60 seconds.</LI>
+scheduling loop will execute and test all pending jobs, with the
+<b>partition_job_depth</b> limit in place. The default value is 60 seconds.</LI>
 </UL>
 
 <h2 id="backfill">Backfill Scheduling
@@ -171,6 +172,6 @@ the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 21 January 2022</p>
+<p style="text-align:center;">Last modified 19 December 2023</p>
 
 <!--#include virtual="footer.txt"-->
