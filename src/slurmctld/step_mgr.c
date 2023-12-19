@@ -4012,19 +4012,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	if ((step_layout = slurm_step_layout_create(&step_layout_req))) {
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
 
-		if (job_ptr->node_addrs) {
-			step_layout->alias_addrs =
-				xmalloc(sizeof(slurm_node_alias_addrs_t));
-			step_layout->alias_addrs->node_cnt = job_ptr->node_cnt;
-			step_layout->alias_addrs->node_addrs =
-				xcalloc(job_ptr->node_cnt,
-					sizeof(slurm_addr_t));
-			memcpy(step_layout->alias_addrs->node_addrs,
-			       job_ptr->node_addrs,
-			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-			step_layout->alias_addrs->node_list =
-				xstrdup(job_ptr->nodes);
-		}
+		if (job_ptr->node_addrs)
+			step_layout->alias_addrs = build_alias_addrs(job_ptr);
 	}
 
 	return step_layout;
