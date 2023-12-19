@@ -1787,6 +1787,10 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_NULL:
 		*uid_ptr = SLURM_AUTH_NOBODY;
 		return SLURM_SUCCESS;
+	case DATA_TYPE_BOOL:
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Invalid user field: %pd", src);
 	default:
 		return parse_error(parser, args, parent_path,
 				   ESLURM_DATA_CONV_FAILED,
