@@ -1089,7 +1089,6 @@ static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
-	int rc = SLURM_ERROR;
 	slurmdb_assoc_rec_t *assoc = obj;
 
 	switch (data_get_type(src)) {
@@ -1105,6 +1104,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		/* fall through */
 	case DATA_TYPE_INT_64:
 	{
+		int rc;
 		slurmdb_assoc_rec_t key = {
 			.id = assoc->id,
 			.cluster = assoc->cluster,
@@ -1119,8 +1119,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		return _find_assoc(parser, assoc, src, &key, args, parent_path);
 	}
 	case DATA_TYPE_NULL:
-		rc = SLURM_SUCCESS;
-		break;
+		return SLURM_SUCCESS;
 	case DATA_TYPE_DICT:
 	{
 		int rc;
