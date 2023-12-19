@@ -1823,6 +1823,12 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
+		char *str = data_get_string(src);
+
+		if (!str || !str[0]) {
+			*gid_ptr = SLURM_AUTH_NOBODY;
+			return SLURM_SUCCESS;
+		}
 
 		if ((rc = gid_from_string(data_get_string(src), &gid)))
 		{
