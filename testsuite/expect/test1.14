@@ -92,9 +92,9 @@ proc test_cpus {} {
 	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job ($job_id) should start"
 	subtest {![wait_for_file $test_dir/step1]} "File ($test_dir/step1) should be created by step1"
 	subtest {![wait_for_file $test_dir/step2]} "File ($test_dir/step2) should be created by step2"
-	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File ($test_dir/step3) shouldn't exists yet"
+	subtest { [wait_for_file -timeout 30 $test_dir/step3]} "File ($test_dir/step3) shouldn't exist yet"
 	run_command -fail "$bin_touch $test_dir/next"
-	subtest {![wait_for_file -timeout 5 $test_dir/step3]} "File ($test_dir/step3) should be created by step3"
+	subtest {![wait_for_file $test_dir/step3]} "File ($test_dir/step3) should be created by step3"
 	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job ($job_id) should finish"
 }
 
