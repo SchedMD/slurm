@@ -1815,6 +1815,13 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	gid_t gid;
 
 	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve group",
+					   src);
+		/* fall through */
 	case DATA_TYPE_INT_64:
 		gid = data_get_int(src);
 		break;
