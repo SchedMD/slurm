@@ -1759,6 +1759,12 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
+		char *str = data_get_string(src);
+
+		if (!str || !str[0]) {
+			*uid_ptr = SLURM_AUTH_NOBODY;
+			return SLURM_SUCCESS;
+		}
 
 		if ((rc = uid_from_string(data_get_string(src), &uid)))
 		{
