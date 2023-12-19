@@ -311,8 +311,8 @@ static void _read_slurm_cgroup_conf(void)
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		log_flag(CGROUP, "%s: No cgroup.conf file (%s)", __func__,
-			 conf_path);
+		info("%s: No cgroup.conf file (%s), using defaults",
+		     __func__, conf_path);
 		cg_conf_exist = false;
 	} else {
 		debug("Reading cgroup.conf file %s", conf_path);
