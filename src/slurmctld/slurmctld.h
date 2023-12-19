@@ -2540,6 +2540,11 @@ extern int job_mgr_load_job_state(buf_t *buffer, job_record_t **job_ptr_out,
  * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
 extern void build_array_str(job_record_t *job_ptr);
 
+/*
+ * build_alias_addrs - build alias_addrs for step_layout
+ */
+extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
+
 /* Return true if ALL tasks of specific array job ID are complete */
 extern bool test_job_array_complete(uint32_t array_job_id);
 
