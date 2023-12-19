@@ -1121,8 +1121,9 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)))
 			return rc;
 
+		/* treat 0 same as null */
 		if (!key.id)
-			return ESLURM_INVALID_ASSOC;
+			return SLURM_SUCCESS;
 
 		return _find_assoc(parser, assoc, src, &key, args, parent_path);
 	}
