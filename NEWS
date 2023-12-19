@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.41 - change "association.id" to just include the int "id"
     rather than include redundant assoc info (cluster, user, partition, account)
     that's already included in the "association" object.
+ -- data_parser/v0.0.41 - Improve parsing of numeric user id.
 
 * Changes in Slurm 23.11.2
 ==========================
