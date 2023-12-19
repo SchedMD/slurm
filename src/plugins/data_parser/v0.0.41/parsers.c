@@ -1072,8 +1072,16 @@ static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 {
 	slurmdb_assoc_rec_t *match;
 
-	if (!(match = list_find_first(args->assoc_list,
-				     (ListFindF) compare_assoc, key)))
+	if (!key->cluster)
+		key->cluster = slurm_conf.cluster_name;
+
+	match = list_find_first(args->assoc_list, (ListFindF) compare_assoc,
+				key);
+
+	if (key->cluster == slurm_conf.cluster_name)
+		key->cluster = NULL;
+
+	if (!match)
 		return parse_error(parser, args, parent_path,
 				 ESLURM_INVALID_ASSOC,
 				 "Unable to find association: %pd", src);
