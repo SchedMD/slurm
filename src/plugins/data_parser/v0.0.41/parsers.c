@@ -1843,6 +1843,9 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 
 		break;
 	}
+	case DATA_TYPE_NULL:
+		*gid_ptr = SLURM_AUTH_NOBODY;
+		return SLURM_SUCCESS;
 	default:
 		return parse_error(parser, args, parent_path,
 				   ESLURM_DATA_CONV_FAILED,
