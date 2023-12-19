@@ -1751,6 +1751,13 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	switch (data_get_type(src)) {
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve user",
+					   src);
+		/* fall through */
 	case DATA_TYPE_INT_64:
 		uid = data_get_int(src);
 		break;
