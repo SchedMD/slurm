@@ -4922,6 +4922,7 @@ extern int dump_job_step_state(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
 	buf_t *buffer = (buf_t *) arg;
+	slurm_node_alias_addrs_t *alias_addrs_tmp;
 
 	if (step_ptr->state < JOB_RUNNING)
 		return 0;
@@ -4973,9 +4974,14 @@ extern int dump_job_step_state(void *x, void *arg)
 	(void) gres_step_state_pack(step_ptr->gres_list_alloc, buffer,
 				    &step_ptr->step_id,
 				    SLURM_PROTOCOL_VERSION);
-
+	/*
+	 * Don't dump alias_addrs
+	 */
+	alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
+	step_ptr->step_layout->alias_addrs = NULL;
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
 			       SLURM_PROTOCOL_VERSION);
+	step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
 
 	if (step_ptr->switch_job) {
 		pack8(1, buffer);
