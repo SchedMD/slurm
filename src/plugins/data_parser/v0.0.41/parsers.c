@@ -1101,7 +1101,15 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 
 	switch (data_get_type(src)) {
 	case DATA_TYPE_STRING:
-		/* fall through */
+	{
+		char *str = data_get_string(src);
+
+		/* treat "" same as null */
+		if (!str || !str[0])
+			return SLURM_SUCCESS;
+
+		/* fall through for non-empty strings */
+	}
 	case DATA_TYPE_FLOAT:
 		if (data_convert_type(src, DATA_TYPE_INT_64) !=
 		    DATA_TYPE_INT_64)
