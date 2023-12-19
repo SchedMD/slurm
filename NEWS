@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     rather than include redundant assoc info (cluster, user, partition, account)
     that's already included in the "association" object.
  -- data_parser/v0.0.41 - Improve parsing of numeric user id.
+ -- data_parser/v0.0.41 - Improve parsing of numeric group id.
 
 * Changes in Slurm 23.11.2
 ==========================
