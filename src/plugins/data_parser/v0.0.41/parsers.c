@@ -1066,6 +1066,26 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
+		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
+		       data_t *parent_path)
+{
+	slurmdb_assoc_rec_t *match;
+
+	if (!(match = list_find_first(args->assoc_list,
+				     (ListFindF) compare_assoc, key)))
+		return parse_error(parser, args, parent_path,
+				 ESLURM_INVALID_ASSOC,
+				 "Unable to find association: %pd", src);
+
+	xassert(!dst->id || (dst->id == NO_VAL) || (dst->id == match->id));
+
+	if (!(dst->id = match->id))
+		return ESLURM_INVALID_ASSOC;
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1085,7 +1105,6 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		/* fall through */
 	case DATA_TYPE_INT_64:
 	{
-		slurmdb_assoc_rec_t *match;
 		slurmdb_assoc_rec_t key = {
 			.id = assoc->id,
 			.cluster = assoc->cluster,
@@ -1097,17 +1116,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		if (!key.id)
 			return ESLURM_INVALID_ASSOC;
 
-		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc,
-					     &key))) {
-			assoc->id = match->id;
-		} else {
-			rc = parse_error(parser, args, parent_path,
-					 ESLURM_INVALID_ASSOC,
-					 "Unable to find association id %u in cluster %s. Unable to parse association.",
-					 key.id, key.cluster);
-		}
-		break;
+		return _find_assoc(parser, assoc, src, &key, args, parent_path);
 	}
 	case DATA_TYPE_NULL:
 		rc = SLURM_SUCCESS;
