@@ -3566,6 +3566,14 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	while ((step_ptr = list_next(itr))) {
 		if (!verify_step_id(&step_ptr->step_id, req))
 			continue;
+		/*
+		 * Rebuild alias_addrs if need after restart of slurmctld
+		 */
+		 if (job_ptr->node_addrs &&
+		     !step_ptr->step_layout->alias_addrs) {
+			step_ptr->step_layout->alias_addrs =
+				build_alias_addrs(job_ptr);
+		}
 
 		if (step_layout)
 			slurm_step_layout_merge(step_layout,

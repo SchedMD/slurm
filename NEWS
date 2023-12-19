@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix launching Singularity v4.x containers with srun --container by setting
     .process.terminal to true in generated config.json when step has
     pseudoterminal (--pty) requested.
+ -- Fix loading in dyanmic/cloud node jobs after net_cred expired.
 
 * Changes in Slurm 23.11.1
 ==========================
