@@ -1133,6 +1133,10 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	{
 		int rc;
 		slurmdb_assoc_rec_t key;
+
+		if (!data_get_dict_length(src))
+			return SLURM_SUCCESS;
+
 		slurmdb_init_assoc_rec(&key, false);
 
 		if (!(rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
