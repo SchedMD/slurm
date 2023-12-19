@@ -1136,9 +1136,9 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_LIST:
 	case DATA_TYPE_BOOL:
 		return parse_error(parser, args, parent_path,
-				 ESLURM_INVALID_ASSOC,
-				 "ASSOC_ID should be an integer, but is type %s.",
-				 data_type_to_string(data_get_type(src)));
+				   ESLURM_INVALID_ASSOC,
+				   "Expected numeric Association ID but got %pd",
+				   src);
 	case DATA_TYPE_NONE:
 	case DATA_TYPE_MAX:
 		/* fall through */
