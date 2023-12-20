@@ -2038,6 +2038,9 @@ function __slurm_comp_sacctmgr_spec_associations() {
 		"maxtresperjob="
 		"maxwalldurationperjob="
 		"priority="
+		"qos="
+		"qos\+="
+		"qos\-="
 		"qoslevel="
 		"qoslevel\+="
 		"qoslevel\-="
@@ -2070,7 +2073,7 @@ function __slurm_comp_sacctmgr_spec_associations() {
 	defaultqos) __slurm_compreply "$(__slurm_qos)" ;;
 	partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	parent?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
+	qos?(s)?(+|-)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	qoslevel?(s)?(+|-)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
@@ -2439,6 +2442,8 @@ function __slurm_comp_sacctmgr_spec_qos() {
 	)
 	local parameters_set=(
 		"flags="
+		"flags\-="
+		"flags\+="
 		"gracetime="
 		"grpjobs="
 		"grpjobsaccrue="
@@ -2507,7 +2512,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
-	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
+	flag?(s)?(+|-)) __slurm_compreply_list "${flags[*]}" ;;
 	id?(s)) __slurm_compreply_list "$(__slurm_qosid)" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	preempt?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
