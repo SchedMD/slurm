@@ -259,7 +259,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
 
-	if (parser->obj_desc)
+	if (parser->obj_desc && !desc)
 		desc = parser->obj_desc;
 
 	if ((props = set_openapi_props(obj, format, desc))) {
