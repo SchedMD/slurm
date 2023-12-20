@@ -361,6 +361,37 @@ typedef struct {
 	int64_t number;
 } INT64_NO_VAL_t;
 
+typedef enum {
+	JOB_RES_CORE_INVALID = 0,
+	JOB_RES_CORE_UNALLOC = NO_VAL64,
+	JOB_RES_CORE_ALLOC = SLURM_BIT(1),
+	JOB_RES_CORE_IN_USE = SLURM_BIT(2),
+} JOB_RES_CORE_status_t;
+
+typedef struct {
+	uint32_t index;
+	JOB_RES_CORE_status_t status;
+} JOB_RES_CORE_t;
+
+typedef struct {
+	uint32_t index;
+	JOB_RES_CORE_t *cores;
+} JOB_RES_SOCKET_t;
+
+typedef struct {
+	uint32_t index;
+	const char *name;
+	struct {
+		uint16_t count;
+		uint16_t used;
+	} cpus;
+	struct {
+		uint64_t used;
+		uint64_t allocated;
+	} memory;
+	JOB_RES_SOCKET_t *sockets;
+} JOB_RES_NODE_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -3709,72 +3740,68 @@ static int DUMP_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, node_mem, dst, args);
 }
 
-static void _dump_node_res(data_t *dnodes, job_resources_t *j,
-			   const size_t node_inx, const char *nodename,
-			   const size_t sock_inx, size_t *bit_inx,
-			   const size_t array_size)
+static int _dump_node_res(data_t *dst, job_resources_t *j,
+			  const size_t node_inx, const char *nodename,
+			  const size_t sock_inx, size_t *bit_inx,
+			  const size_t array_size, args_t *args)
 {
-	size_t bit_reps, spn, cps;
-	data_t *dnode = data_set_dict(data_list_append(dnodes));
-	data_t *dsockets = data_set_dict(data_key_set(dnode, "sockets"));
-	data_t **sockets;
+	JOB_RES_NODE_t node = {
+		.index = node_inx,
+		.name = nodename,
+		.cpus.count = j->cpus[node_inx],
+		.cpus.used = j->cpus_used[node_inx],
+		.memory.used = j->memory_used[node_inx],
+		.memory.allocated = j->memory_allocated[node_inx],
+	};
+	const uint32_t bit_reps = (j->sockets_per_node[sock_inx] *
+				 j->cores_per_socket[sock_inx]);
+	int rc = SLURM_SUCCESS;
 
-	sockets = xcalloc(j->sockets_per_node[sock_inx], sizeof(*sockets));
+	node.sockets = xcalloc((j->sockets_per_node[sock_inx] + 1),
+			       sizeof(*node.sockets));
+	for (uint32_t i = 0; i < j->sockets_per_node[sock_inx]; i++)
+		node.sockets[i].cores = xcalloc((j->cores_per_socket[i] + 1),
+						sizeof(*node.sockets[i].cores));
 
-	/* per node */
-
-	data_set_string(data_key_set(dnode, "nodename"), nodename);
-
-	data_set_int(data_key_set(dnode, "cpus_used"), j->cpus_used[node_inx]);
-	data_set_int(data_key_set(dnode, "memory_used"),
-		     j->memory_used[node_inx]);
-	data_set_int(data_key_set(dnode, "memory_allocated"),
-		     j->memory_allocated[node_inx]);
-
-	/* set the used cores as found */
-	spn = j->sockets_per_node[sock_inx];
-	cps = j->cores_per_socket[sock_inx];
-	bit_reps = spn * cps;
-	for (size_t i = 0; i < bit_reps; i++) {
-		size_t socket_inx = i / j->cores_per_socket[sock_inx];
-		size_t core_inx = i % j->cores_per_socket[sock_inx];
+	for (uint32_t i = 0; i < bit_reps; i++) {
+		uint32_t socket_inx = i / j->cores_per_socket[sock_inx];
+		uint32_t core_inx = i % j->cores_per_socket[sock_inx];
+		JOB_RES_SOCKET_t *socket = &node.sockets[socket_inx];
+		JOB_RES_CORE_t *core = &socket->cores[core_inx];
 
 		xassert(*bit_inx < array_size);
-
 		if (*bit_inx >= array_size) {
-			error("%s: unexpected invalid bit index:%zu/%zu",
-			      __func__, *bit_inx, array_size);
+			rc = on_error(DUMPING, DATA_PARSER_JOB_RES_NODE, args,
+				      ESLURM_BAD_TASK_COUNT, "job_resources_t",
+				      __func__,
+				      "unexpected invalid bit index: %zu/%zu",
+				      *bit_inx, array_size);
 			break;
 		}
 
+		socket->index = socket_inx;
+		core->index = core_inx;
+
 		if (bit_test(j->core_bitmap, *bit_inx)) {
-			data_t *dcores;
+			core->status |= JOB_RES_CORE_ALLOC;
 
-			if (!sockets[socket_inx]) {
-				sockets[socket_inx] = data_set_dict(
-					data_key_set_int(dsockets, socket_inx));
-				dcores = data_set_dict(data_key_set(
-					sockets[socket_inx], "cores"));
-			} else {
-				dcores = data_key_get(sockets[socket_inx],
-						      "cores");
-			}
-
-			if (bit_test(j->core_bitmap_used, *bit_inx)) {
-				data_set_string(data_key_set_int(dcores,
-								 core_inx),
-						"allocated_and_in_use");
-			} else {
-				data_set_string(data_key_set_int(dcores,
-								 core_inx),
-						"allocated");
-			}
+			if (bit_test(j->core_bitmap_used, *bit_inx))
+				core->status |= JOB_RES_CORE_IN_USE;
+		} else {
+			core->status = JOB_RES_CORE_UNALLOC;
 		}
 
 		(*bit_inx)++;
 	}
 
-	xfree(sockets);
+	if (!rc)
+		rc = DUMP(JOB_RES_NODE, node, dst, args);
+
+	for (uint32_t i = 0; i < j->sockets_per_node[sock_inx]; i++)
+		xfree(node.sockets[i].cores);
+	xfree(node.sockets);
+
+	return rc;
 }
 
 PARSE_DISABLED(JOB_RES_NODES)
@@ -3787,6 +3814,7 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 	size_t bit_inx = 0;
 	size_t array_size;
 	size_t sock_inx = 0, sock_reps = 0;
+	int rc = SLURM_SUCCESS;
 
 	xassert(j);
 	data_set_list(dst);
@@ -3801,7 +3829,7 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 	hl = hostlist_create(j->nodes);
 	array_size = bit_size(j->core_bitmap);
 
-	for (size_t node_inx = 0; node_inx < j->nhosts; node_inx++) {
+	for (size_t node_inx = 0; !rc && (node_inx < j->nhosts); node_inx++) {
 		char *nodename = hostlist_nth(hl, node_inx);
 
 		if (sock_reps >= j->sock_core_rep_count[sock_inx]) {
@@ -3810,21 +3838,15 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 		}
 		sock_reps++;
 
-		_dump_node_res(dst, j, node_inx, nodename, sock_inx, &bit_inx,
-			       array_size);
+		rc = _dump_node_res(data_list_append(dst), j, node_inx,
+				    nodename, sock_inx, &bit_inx, array_size,
+				    args);
 
 		free(nodename);
 	}
 
 	FREE_NULL_HOSTLIST(hl);
 	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(JOB_RES_NODES)(const parser_t *const parser, args_t *args,
-				     data_t *spec, data_t *dst)
-{
-	//FIXME: output of JOB_RES_NODES is not OpenAPI compliant
-	set_openapi_props(dst, OPENAPI_FORMAT_ARRAY, "job node resources");
 }
 
 PARSE_DISABLED(JOB_INFO_MSG)
@@ -6994,17 +7016,75 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 #undef add_cparse
 #undef add_skip
 
-#define add_parse(mtype, field, path, desc) \
-	add_parser(job_resources_t, mtype, false, field, 0, path, desc)
-#define add_cparse(mtype, path, desc) \
-	add_complex_parser(job_resources_t, mtype, false, path, desc)
-static const parser_t PARSER_ARRAY(JOB_RES)[] = {
-	add_parse(STRING, nodes, "nodes", NULL),
-	add_parse(UINT32, nhosts, "allocated_hosts", NULL),
-	add_cparse(JOB_RES_NODES, "allocated_nodes", NULL),
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_RES_CORE_STATUS)[] = {
+	add_flag_equal(JOB_RES_CORE_INVALID, INFINITE64, "INVALID"),
+	add_flag_equal(JOB_RES_CORE_UNALLOC, INFINITE64, "UNALLOCATED"),
+	add_flag_bit(JOB_RES_CORE_ALLOC, "ALLOCATED"),
+	add_flag_bit(JOB_RES_CORE_IN_USE , "IN_USE"),
 };
-#undef add_parse
-#undef add_cparse
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(JOB_RES_CORE_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_RES_CORE)[] = {
+	add_parse_req(UINT32, index, "index", "Core index"),
+	add_parse_req(JOB_RES_CORE_STATUS, status, "status", "Core status"),
+};
+#undef add_parse_req
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(JOB_RES_SOCKET_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_RES_SOCKET)[] = {
+	add_parse_req(UINT32, index, "index", "Core index"),
+	add_parse_req(JOB_RES_CORE_ARRAY, cores, "cores", "Core in socket"),
+};
+#undef add_parse_req
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(JOB_RES_NODE_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_RES_NODE)[] = {
+	add_parse_req(UINT32, index, "index", "Node index"),
+	add_parse_req(STRING, name, "name", "Node name"),
+	add_parse_req(UINT16, cpus.count, "cpus/count", "Total number of CPUs assigned to job"),
+	add_parse_req(UINT16, cpus.used, "cpus/used", "Total number of CPUs used by job"),
+	add_parse_req(UINT64, memory.used, "memory/used", "Total memory (MiB) used by job"),
+	add_parse_req(UINT64, memory.allocated, "memory/allocated", "Total memory (MiB) allocated to job"),
+	add_parse_req(JOB_RES_SOCKET_ARRAY, sockets, "sockets", "Socket allocations in node"),
+};
+#undef add_parse_req
+
+#define add_skip(field) \
+	add_parser_skip(job_resources_t, field)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(job_resources_t, mtype, true, field, 0, path, desc)
+#define add_cparse_req(mtype, path, desc) \
+	add_complex_parser(job_resources_t, mtype, true, path, desc)
+static const parser_t PARSER_ARRAY(JOB_RES)[] = {
+	add_skip(core_bitmap),
+	add_skip(core_bitmap_used),
+	add_skip(cpu_array_cnt),
+	add_skip(cpu_array_value),
+	add_skip(cpu_array_reps),
+	add_skip(cpus),
+	add_skip(cpus_used),
+	add_skip(cores_per_socket),
+	add_parse_req(CR_TYPE, cr_type, "select_type", "Scheduling consumption resource selection type"),
+	add_skip(memory_allocated),
+	add_skip(memory_used),
+	add_parse_req(UINT32, nhosts, "nodes/count", "Number of nodes assigned to job"),
+	add_skip(node_bitmap),
+	add_parse_req(NODE_CR_TYPE, node_req, "nodes/select_type", "Node scheduling selection request"),
+	add_parse_req(STRING, nodes, "nodes/list", "host list for job"),
+	add_parse_req(UINT32, ncpus, "cpus", "Number of processors in the allocation"),
+	add_skip(sock_core_rep_count),
+	add_skip(sockets_per_node),
+	add_skip(tasks_per_node), /* not packed */
+	add_parse_req(UINT16_NO_VAL, threads_per_core, "threads_per_core", "Number of processor threads per CPU core"),
+	add_parse_req(BOOL, whole_node, "nodes/whole", "Job allocated full nodes"),
+	add_cparse_req(JOB_RES_NODES, "nodes/allocation", "resource allocations by node"),
+};
+#undef add_parse_req
+#undef add_cparse_req
+#undef add_skip
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(controller_ping_t, mtype, false, field, 0, path, desc)
@@ -8791,7 +8871,7 @@ static const parser_t parsers[] = {
 	addpc(NODE_SELECT_TRES_WEIGHTED, node_info_t, NEED_NONE, DOUBLE, NULL),
 	addpca(NODES, NODE, node_info_msg_t, NEED_NONE, NULL),
 	addpca(JOB_INFO_GRES_DETAIL, STRING, slurm_job_info_t, NEED_NONE, NULL),
-	addpcs(JOB_RES_NODES, job_resources_t, NEED_NONE, ARRAY, NULL),
+	addpca(JOB_RES_NODES, JOB_RES_NODE, JOB_RES_NODE_t, NEED_NONE, "Job resources for a node"),
 	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t, NEED_TRES, NULL),
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
@@ -8828,6 +8908,8 @@ static const parser_t parsers[] = {
 	addntp(STEP_INFO_ARRAY, STEP_INFO),
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY),
+	addnt(JOB_RES_SOCKET_ARRAY, JOB_RES_SOCKET),
+	addnt(JOB_RES_CORE_ARRAY, JOB_RES_CORE),
 
 	/* Pointer model parsers */
 	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false, NULL, NULL),
@@ -8933,6 +9015,9 @@ static const parser_t parsers[] = {
 	addpap(UINT32_NO_VAL_STRUCT, UINT32_NO_VAL_t, NULL, NULL),
 	addpap(UINT16_NO_VAL_STRUCT, UINT16_NO_VAL_t, NULL, NULL),
 	addpap(INT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
+	addpap(JOB_RES_NODE, JOB_RES_NODE_t, NULL, NULL),
+	addpap(JOB_RES_SOCKET, JOB_RES_SOCKET_t, NULL, NULL),
+	addpap(JOB_RES_CORE, JOB_RES_CORE_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -9007,6 +9092,7 @@ static const parser_t parsers[] = {
 	addfa(NEED_PREREQS_FLAGS, need_t),
 	addfa(CR_TYPE, uint16_t),
 	addfa(NODE_CR_TYPE, uint32_t),
+	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
