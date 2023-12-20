@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.41 - Fix how nice values are parsed for job submissions.
  -- data_parser/v0.0.41 - Fix regression where parsing error did not result in
     invalid request being rejected.
+ -- Print an error message in 'scontrol reboot' when a node reboot request
+    is ignored due to the current node state.
 
 * Changes in Slurm 23.11.2
 ==========================
