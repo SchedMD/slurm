@@ -349,6 +349,12 @@ typedef struct {
 	uint32_t number;
 } UINT32_NO_VAL_t;
 
+typedef struct {
+	bool set;
+	bool infinite;
+	uint16_t number;
+} UINT16_NO_VAL_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -2185,19 +2191,18 @@ static int DUMP_FUNC(UINT16)(const parser_t *const parser, void *obj,
 }
 
 static int PARSE_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
-				     data_t *str, args_t *args,
+				     data_t *src, args_t *args,
 				     data_t *parent_path)
 {
 	int rc;
 	uint16_t *dst = obj;
 	uint64_t num;
 
-	if ((rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args,
-					    parent_path)))
+	if ((rc = PARSE(UINT64_NO_VAL, num, src, parent_path, args)))
 		; /* do nothing on error */
 	else if (num == NO_VAL64)
 		*dst = NO_VAL16;
-	else if (num >= NO_VAL16)
+	else if (num >= NO_VAL)
 		*dst = INFINITE16;
 	else
 		*dst = num;
@@ -2209,7 +2214,7 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint16_t *src = obj;
-	data_t *set, *inf, *num;
+	UINT16_NO_VAL_t istruct = {0};
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE16)
@@ -2221,32 +2226,16 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	data_set_dict(dst);
-	set = data_key_set(dst, "set");
-	inf = data_key_set(dst, "infinite");
-	num = data_key_set(dst, "number");
-
 	if (*src == INFINITE16) {
-		data_set_bool(set, false);
-		data_set_bool(inf, true);
-		data_set_int(num, 0);
+		istruct.infinite = true;
 	} else if (*src == NO_VAL16) {
-		data_set_bool(set, false);
-		data_set_bool(inf, false);
-		data_set_int(num, 0);
+		/* nothing to do */
 	} else {
-		data_set_bool(set, true);
-		data_set_bool(inf, false);
-		data_set_int(num, *src);
+		istruct.set = true;
+		istruct.number = *src;
 	}
 
-	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(UINT16_NO_VAL)(const parser_t *const parser, args_t *args,
-				     data_t *spec, data_t *dst)
-{
-	//return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
+	return DUMP(UINT16_NO_VAL_STRUCT, istruct, dst, args);
 }
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
@@ -8224,6 +8213,15 @@ static const parser_t PARSER_ARRAY(UINT32_NO_VAL_STRUCT)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(UINT16_NO_VAL_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(UINT16_NO_VAL_STRUCT)[] = {
+	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
+	add_parse(UINT16, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8655,7 +8653,7 @@ static const parser_t parsers[] = {
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
 	addpsp(UINT64_NO_VAL, UINT64_NO_VAL_STRUCT, uint64_t, NEED_NONE, "64 bit integer number with flags"),
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
-	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addpsp(UINT16_NO_VAL, UINT16_NO_VAL_STRUCT, uint16_t, NEED_NONE, "16 bit integer number with flags"),
 	addps(INT32, int32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(INT64, int64_t, NEED_NONE, INT64, NULL, NULL, NULL),
 	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
@@ -8885,6 +8883,7 @@ static const parser_t parsers[] = {
 	addpap(FLOAT64_NO_VAL_STRUCT, FLOAT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT32_NO_VAL_STRUCT, UINT32_NO_VAL_t, NULL, NULL),
+	addpap(UINT16_NO_VAL_STRUCT, UINT16_NO_VAL_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
