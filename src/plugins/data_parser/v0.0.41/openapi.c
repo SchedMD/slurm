@@ -311,16 +311,16 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	char *str;
 	const char *desc = NULL;
 
-	if (parser->obj_desc)
-		desc = parser->obj_desc;
-	else if (parent && parent->obj_desc)
+	if (parent && parent->obj_desc)
 		desc = parent->obj_desc;
+	else if (parser->obj_desc)
+		desc = parser->obj_desc;
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
 	while (parser->pointer_type) {
-		if (parser->obj_desc)
+		if (parser->obj_desc && !desc)
 			desc = parser->obj_desc;
 
 		parser = find_parser_by_type(parser->pointer_type);
