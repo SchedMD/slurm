@@ -355,6 +355,12 @@ typedef struct {
 	uint16_t number;
 } UINT16_NO_VAL_t;
 
+typedef struct {
+	bool set;
+	bool infinite;
+	int64_t number;
+} INT64_NO_VAL_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -2105,19 +2111,74 @@ static int DUMP_FUNC(INT64)(const parser_t *const parser, void *obj,
 }
 
 static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
-			     data_t *str, args_t *args, data_t *parent_path)
+				    data_t *src, args_t *args, data_t *parent_path)
 {
 	int64_t *dst = obj;
-	int rc;
-	uint64_t num;
 
-	/* data_t already handles the parsing of signed */
-	rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args, parent_path);
+	switch (data_get_type(src)) {
+	case DATA_TYPE_NULL:
+		*dst = NO_VAL64;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_FLOAT:
+	{
+		double value;
+		int rc;
 
-	if (!rc)
-		*dst = num;
+		if ((rc = PARSE_FUNC(FLOAT64_NO_VAL)(parser, &value, src, args,
+						     parent_path)))
+			return rc;
 
-	return rc;
+		if (isinf(value))
+			*dst = INFINITE64;
+		else if (isnan(value))
+			*dst = NO_VAL64;
+		else
+			*dst = value;
+
+		return rc;
+	}
+	case DATA_TYPE_DICT:
+	{
+		int rc;
+		INT64_NO_VAL_t istruct = {0};
+
+		if ((rc = PARSE(INT64_NO_VAL_STRUCT, istruct, src, parent_path,
+				args)))
+			return rc;
+
+		if (istruct.infinite)
+			*dst = INFINITE64;
+		else if (!istruct.set)
+			*dst = NO_VAL64;
+		else if (istruct.set)
+			*dst = istruct.number;
+		else
+			rc = parse_error(parser, args, parent_path,
+					 ESLURM_DATA_CONV_FAILED,
+					 "Expected \"number\" field when \"set\"=True but field not present");
+
+		return rc;
+	}
+	case DATA_TYPE_STRING:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED,
+					   "Expected integer but got %pd", src);
+		/* fall through */
+	case DATA_TYPE_INT_64:
+		return PARSE(INT64, *dst, src, parent_path, args);
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_BOOL:
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Expected integer but got %pd", src);
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		/* fall through */
+	}
+
+	fatal_abort("invalid type");
 }
 
 static int DUMP_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
@@ -2125,13 +2186,28 @@ static int DUMP_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 {
 	int64_t *src = obj;
 
-	return DUMP_FUNC(UINT64_NO_VAL)(parser, src, dst, args);
-}
+	INT64_NO_VAL_t istruct = {0};
 
-static void SPEC_FUNC(INT64_NO_VAL)(const parser_t *const parser, args_t *args,
-				    data_t *spec, data_t *dst)
-{
-	//return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
+	if (is_complex_mode(args)) {
+		if (*src == INFINITE64)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL64)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
+	if (*src == INFINITE64) {
+		istruct.infinite = true;
+	} else if (*src == NO_VAL64) {
+		/* nothing to do */
+	} else {
+		istruct.set = true;
+		istruct.number = *src;
+	}
+
+	return DUMP(INT64_NO_VAL_STRUCT, istruct, dst, args);
 }
 
 static int PARSE_FUNC(INT32)(const parser_t *const parser, void *obj,
@@ -8222,6 +8298,15 @@ static const parser_t PARSER_ARRAY(UINT16_NO_VAL_STRUCT)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(INT64_NO_VAL_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(INT64_NO_VAL_STRUCT)[] = {
+	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
+	add_parse(INT64, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8656,7 +8741,7 @@ static const parser_t parsers[] = {
 	addpsp(UINT16_NO_VAL, UINT16_NO_VAL_STRUCT, uint16_t, NEED_NONE, "16 bit integer number with flags"),
 	addps(INT32, int32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(INT64, int64_t, NEED_NONE, INT64, NULL, NULL, NULL),
-	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addpsp(INT64_NO_VAL, INT64_NO_VAL_STRUCT, int64_t, NEED_NONE, "64 bit signed integer number with flags"),
 	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL, NULL, NULL),
 	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL, NULL, NULL),
 	addpsp(FLOAT64_NO_VAL, FLOAT64_NO_VAL_STRUCT, double, NEED_NONE, "64 bit floating point number with flags"),
@@ -8884,6 +8969,7 @@ static const parser_t parsers[] = {
 	addpap(UINT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT32_NO_VAL_STRUCT, UINT32_NO_VAL_t, NULL, NULL),
 	addpap(UINT16_NO_VAL_STRUCT, UINT16_NO_VAL_t, NULL, NULL),
+	addpap(INT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
