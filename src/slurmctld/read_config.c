@@ -129,7 +129,7 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover);
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
-static int  _sync_nodes_to_jobs(bool reconfig);
+static int _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(job_record_t *job_ptr);
 static void _sync_nodes_to_suspended_job(job_record_t *job_ptr);
 static void _sync_part_prio(void);
@@ -1840,7 +1840,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rc = bb_g_load_state(true);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
-	(void) _sync_nodes_to_jobs(reconfig);
+	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
@@ -3108,7 +3108,7 @@ static void _update_preempt(uint16_t old_preempt_mode)
  * RET count of nodes having state changed
  * Note: Operates on common variables, no arguments
  */
-static int _sync_nodes_to_jobs(bool reconfig)
+static int _sync_nodes_to_jobs(void)
 {
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
@@ -3116,8 +3116,7 @@ static int _sync_nodes_to_jobs(bool reconfig)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		if (!reconfig &&
-		    job_ptr->details && job_ptr->details->prolog_running) {
+		if (job_ptr->details && job_ptr->details->prolog_running) {
 			job_ptr->details->prolog_running = 0;
 			if (IS_JOB_CONFIGURING(job_ptr)) {
 				prolog_slurmctld(job_ptr);
