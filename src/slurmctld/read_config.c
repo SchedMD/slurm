@@ -110,7 +110,7 @@ static void _build_bitmaps(void);
 static int  _compare_hostnames(node_record_t **old_node_table,
 			       int old_node_count, node_record_t **node_table,
 			       int node_count);
-static void _gres_reconfig(bool reconfig);
+static void _gres_reconfig(void);
 static void _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
@@ -1797,7 +1797,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 */
 	_build_node_config_bitmaps();
 	/* _gres_reconfig needs to happen before restore_node_features */
-	_gres_reconfig(reconfig);
+	_gres_reconfig();
 	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
 
@@ -2222,16 +2222,11 @@ extern void update_feature_list(List feature_list, char *new_features,
 	node_features_updated = true;
 }
 
-static void _gres_reconfig(bool reconfig)
+static void _gres_reconfig(void)
 {
 	node_record_t *node_ptr;
 	char *gres_name;
 	int i;
-
-	if (reconfig) {
-		gres_reconfig();
-		return;
-	}
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->gres)
