@@ -1930,6 +1930,11 @@ static void _attempt_backfill(void)
 			break;
 		}
 
+		if (window_end < now) {
+			log_flag(BACKFILL, "Now after current backfill window");
+			_set_bf_exit(BF_EXIT_TIMEOUT);
+			break;
+		}
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
