@@ -7166,7 +7166,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, alternate, "alternate", NULL),
 	add_parse(STRING, billing_weights_str, "tres/billing_weights", NULL),
 	add_parse(STRING, cluster_name, "cluster", NULL),
-	add_skip(cr_type), //TODO: add parsing for consumable resource type
+	add_parse(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection types"),
 	add_parse(UINT32, cpu_bind, "cpus/task_binding", NULL),
 	add_parse_overload(UINT64, def_mem_per_cpu, 2, "defaults/memory_per_cpu", NULL),
 	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 2, "defaults/partition_memory_per_cpu", NULL),
