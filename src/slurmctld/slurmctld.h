@@ -2614,9 +2614,6 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 extern int update_job_wckey(char *module, job_record_t *job_ptr,
 			    char *new_wckey);
 
-/* Reset nodes_completing, nodes_pr fields for all jobs */
-extern void update_job_nodes_strings(void);
-
 /*
  * Update log levels given requested levels
  * IN req_slurmctld_debug - requested debug level

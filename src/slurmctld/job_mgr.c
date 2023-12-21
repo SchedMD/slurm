@@ -17538,16 +17538,6 @@ static int _update_job_nodes_str(void *x, void *arg)
 	return 0;
 }
 
-/* Reset nodes_completing, nodes_pr fields for all jobs. */
-extern void update_job_nodes_strings(void)
-{
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-
-	if (!job_list)
-		return;
-	list_for_each(job_list, _update_job_nodes_str, NULL);
-}
-
 /*
  * job_hold_by_assoc_id - Hold all pending jobs with a given
  *	association ID. This happens when an association is deleted (e.g. when
