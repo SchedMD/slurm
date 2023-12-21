@@ -3709,36 +3709,6 @@ static int DUMP_FUNC(MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, node_mem, dst, args);
 }
 
-PARSE_DISABLED(ALLOCATED_CORES)
-
-static int DUMP_FUNC(ALLOCATED_CORES)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
-{
-	uint32_t *cores = obj;
-
-	if (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET))
-		data_set_int(dst, *cores);
-	else
-		data_set_int(dst, 0);
-
-	return SLURM_SUCCESS;
-}
-
-PARSE_DISABLED(ALLOCATED_CPUS)
-
-static int DUMP_FUNC(ALLOCATED_CPUS)(const parser_t *const parser, void *obj,
-				     data_t *dst, args_t *args)
-{
-	uint32_t *cpus = obj;
-
-	if (slurm_conf.select_type_param & (CR_CPU))
-		data_set_int(dst, *cpus);
-	else
-		data_set_int(dst, 0);
-
-	return SLURM_SUCCESS;
-}
-
 static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 			   const size_t node_inx, const char *nodename,
 			   const size_t sock_inx, size_t *bit_inx,
@@ -7026,19 +6996,14 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_resources_t, mtype, false, field, 0, path, desc)
-#define add_parse_overload(mtype, field, overloads, path, desc) \
-	add_parser(job_resources_t, mtype, false, field, overloads, path, desc)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(job_resources_t, mtype, false, path, desc)
 static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 	add_parse(STRING, nodes, "nodes", NULL),
-	add_parse_overload(ALLOCATED_CORES, ncpus, 1, "allocated_cores", NULL),
-	add_parse_overload(ALLOCATED_CPUS, ncpus, 1, "allocated_cpus", NULL),
 	add_parse(UINT32, nhosts, "allocated_hosts", NULL),
 	add_cparse(JOB_RES_NODES, "allocated_nodes", NULL),
 };
 #undef add_parse
-#undef add_parse_overload
 #undef add_cparse
 
 #define add_parse(mtype, field, path, desc) \
@@ -8769,8 +8734,6 @@ static const parser_t parsers[] = {
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addpsp(MEM_PER_CPUS, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
-	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
-	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
