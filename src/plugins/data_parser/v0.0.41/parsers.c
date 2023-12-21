@@ -1478,89 +1478,6 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(ROLLUP_STATS)
-
-static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
-				   data_t *dst, args_t *args)
-{
-	slurmdb_rollup_stats_t *rollup_stats = obj;
-	data_set_list(dst);
-
-	if (!rollup_stats) {
-		return on_error(DUMPING, parser->type, args,
-				ESLURM_DATA_CONV_FAILED, "slurmctld", __func__,
-				"rollup stats not provided by controller");
-	}
-
-	for (int i = 0; i < DBD_ROLLUP_COUNT; i++) {
-		data_t *d;
-		uint64_t roll_ave;
-
-		if (rollup_stats->time_total[i] == 0)
-			continue;
-
-		d = data_set_dict(data_list_append(dst));
-
-		if (i == 0)
-			data_set_string(data_key_set(d, "type"), "internal");
-		else if (i == 1)
-			data_set_string(data_key_set(d, "type"), "user");
-		else
-			data_set_string(data_key_set(d, "type"), "unknown");
-
-		data_set_int(data_key_set(d, "last_run"),
-			     rollup_stats->timestamp[i]);
-
-		roll_ave = rollup_stats->time_total[i];
-		if (rollup_stats->count[i] > 1)
-			roll_ave /= rollup_stats->count[i];
-
-		data_set_int(data_key_set(d, "last_cycle"),
-			     rollup_stats->time_last[i]);
-		data_set_int(data_key_set(d, "max_cycle"),
-			     rollup_stats->time_max[i]);
-		data_set_int(data_key_set(d, "total_time"),
-			     rollup_stats->time_total[i]);
-		data_set_int(data_key_set(d, "total_cycles"),
-			     rollup_stats->count[i]);
-		data_set_int(data_key_set(d, "mean_cycles"), roll_ave);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(ROLLUP_STATS)(const parser_t *const parser, args_t *args,
-				    data_t *spec, data_t *dst)
-{
-	data_t *items, *rec, *type, *types;
-
-	items = set_openapi_props(dst, OPENAPI_FORMAT_ARRAY,
-				  "list of recorded rollup statistics");
-
-	rec = set_openapi_props(items, OPENAPI_FORMAT_OBJECT,
-				"recorded rollup statistics");
-
-	type = data_key_set(rec, "type");
-	set_openapi_props(type, OPENAPI_FORMAT_STRING, "type");
-	types = data_set_list(data_key_set(type, "enum"));
-	data_set_string(data_list_append(types), "internal");
-	data_set_string(data_list_append(types), "user");
-	data_set_string(data_list_append(types), "unknown");
-
-	set_openapi_props(data_key_set(rec, "last run"), OPENAPI_FORMAT_INT32,
-			  "Last time rollup ran (UNIX timestamp)");
-	set_openapi_props(data_key_set(rec, "max_cycle"), OPENAPI_FORMAT_INT64,
-			  "longest rollup time (seconds)");
-	set_openapi_props(data_key_set(rec, "total_time"), OPENAPI_FORMAT_INT64,
-			  "total time spent doing rollups (seconds)");
-	set_openapi_props(data_key_set(rec, "total_cycles"),
-			  OPENAPI_FORMAT_INT64,
-			  "number of rollups since last_run");
-	set_openapi_props(data_key_set(rec, "mean_cycles"),
-			  OPENAPI_FORMAT_INT64,
-			  "average time for rollup (seconds)");
-}
-
 PARSE_DISABLED(RPC_ID)
 
 static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
@@ -8352,6 +8269,31 @@ static const parser_t PARSER_ARRAY(INT64_NO_VAL_STRUCT)[] = {
 };
 #undef add_parse
 
+#define add_skip(field) \
+	add_parser_skip(slurmdb_rollup_stats_t, field)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_rollup_stats_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(ROLLUP_STATS)[] = {
+	add_skip(cluster_name), /* not packed */
+	add_parse_req(UINT16, count[DBD_ROLLUP_HOUR], "hourly/count", "number of hourly rollups since last_run"),
+	add_parse_req(UINT16, count[DBD_ROLLUP_DAY], "daily/count", "number of daily rollups since last_run"),
+	add_parse_req(UINT16, count[DBD_ROLLUP_MONTH], "monthly/count", "number of monthly rollups since last_run"),
+	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_HOUR], "hourly/last_run", "Last time hourly rollup ran (UNIX timestamp)"),
+	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_DAY], "daily/last_run", "Last time daily rollup ran (UNIX timestamp)"),
+	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_MONTH], "monthly/last_run", "Last time monthly rollup ran (UNIX timestamp)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_HOUR], "hourly/duration/last", "total time spent doing last daily rollup (seconds)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_DAY], "daily/duration/last", "total time spent doing daily daily rollup (seconds)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_MONTH], "monthly/duration/last", "total time spent doing monthly daily rollup (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_HOUR], "hourly/duration/max", "longest hourly rollup time (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_DAY], "daily/duration/max", "longest daily rollup time (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_MONTH], "monthly/duration/max", "longest monthly rollup time (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_HOUR], "hourly/duration/time", "total time spent doing hourly rollups (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_DAY], "daily/duration/time", "total time spent doing daily rollups (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_MONTH], "monthly/duration/time", "total time spent doing monthly rollups (seconds)"),
+};
+#undef add_parse_req
+#undef add_skip
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8825,7 +8767,6 @@ static const parser_t parsers[] = {
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(JOB_ARRAY_RESPONSE_MSG, JOB_ARRAY_RESPONSE_ARRAY, job_array_resp_msg_t, NEED_NONE, "Job update results"),
-	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
@@ -8912,7 +8853,6 @@ static const parser_t parsers[] = {
 	addnt(JOB_RES_CORE_ARRAY, JOB_RES_CORE),
 
 	/* Pointer model parsers */
-	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false, NULL, NULL),
 	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG, false, NULL, NULL),
 	addpp(NODES_PTR, node_info_msg_t *, NODES, false, NULL, NULL),
 	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES, false, NULL, NULL),
@@ -9018,6 +8958,7 @@ static const parser_t parsers[] = {
 	addpap(JOB_RES_NODE, JOB_RES_NODE_t, NULL, NULL),
 	addpap(JOB_RES_SOCKET, JOB_RES_SOCKET_t, NULL, NULL),
 	addpap(JOB_RES_CORE, JOB_RES_CORE_t, NULL, NULL),
+	addpap(ROLLUP_STATS, slurmdb_rollup_stats_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
