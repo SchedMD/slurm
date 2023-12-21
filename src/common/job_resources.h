@@ -84,7 +84,7 @@
  * tasks_per_node	- Expected tasks to launch per node. Currently used only
  *			  by cons_tres for tres_per_task support at resource
  *			  allocation time. No need to save/restore or pack.
- * whole_node		- Job allocated full node (used only by select/cons_res)
+ * whole_node		- Job allocated full node (used only by select/cons_tres)
  *
  * NOTES:
  * cpu_array_* contains the same information as "cpus", but in a more compact
