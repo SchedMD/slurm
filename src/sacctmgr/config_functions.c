@@ -46,6 +46,8 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurm_time.h"
 
+#include "src/interfaces/data_parser.h"
+
 static uint16_t track_wckey;
 
 static List dbd_config_list = NULL;
@@ -250,6 +252,14 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 	notice_thread_fini();
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
+
+	if (mime_type) {
+		int rc;
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_STATS_RESP, stats_rec, argc, argv,
+				     db_conn, mime_type, data_parser, rc);
+		slurmdb_destroy_stats_rec(stats_rec);
+		return rc;
+	}
 
 	rollup_stats = stats_rec->dbd_rollup_stats;
 	printf("*******************************************************************\n");
