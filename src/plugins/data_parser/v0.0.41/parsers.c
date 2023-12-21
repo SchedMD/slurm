@@ -8297,6 +8297,27 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 	add_flag_bit(NEED_ASSOC, "ASSOC"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
+	add_flag_equal(CR_CPU, (CR_CPU|CR_SOCKET|CR_CORE), "CPU"),
+	add_flag_equal(CR_SOCKET, (CR_CPU|CR_SOCKET|CR_CORE), "SOCKET"),
+	add_flag_equal(CR_CORE, (CR_CPU|CR_SOCKET|CR_CORE), "CORE"),
+	add_flag_bit(CR_BOARD, "BOARD"),
+	add_flag_bit(CR_MEMORY, "MEMORY"),
+	add_flag_bit(CR_ONE_TASK_PER_CORE, "ONE_TASK_PER_CORE"),
+	add_flag_bit(CR_PACK_NODES, "PACK_NODES"),
+	add_flag_bit(CR_OTHER_CONS_TRES, "OTHER_CONS_TRES"),
+	add_flag_bit(CR_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
+	add_flag_bit(CR_LLN, "LLN"),
+	add_flag_bit(CR_LINEAR, "LINEAR"),
+};
+
+/* Descriptions from _node_state_str() */
+static const flag_bit_t PARSER_FLAG_ARRAY(NODE_CR_TYPE)[] = {
+	add_flag_equal(NODE_CR_AVAILABLE, INFINITE, "AVAILABLE"),
+	add_flag_equal(NODE_CR_ONE_ROW, INFINITE, "ONE_ROW"),
+	add_flag_equal(NODE_CR_RESERVED , INFINITE, "RESERVED"),
+};
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -9027,6 +9048,8 @@ static const parser_t parsers[] = {
 	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
 	addfa(WCKEY_TAG_FLAGS, WCKEY_TAG_FLAGS_t),
 	addfa(NEED_PREREQS_FLAGS, need_t),
+	addfa(CR_TYPE, uint16_t),
+	addfa(NODE_CR_TYPE, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
