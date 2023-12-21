@@ -1837,10 +1837,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * The burst buffer plugin must be initialized and state loaded before
 	 * _sync_nodes_to_jobs(), which calls bb_g_job_init().
 	 */
-	if (reconfig)
-		rc =  bb_g_reconfig();
-	else
-		rc = bb_g_load_state(true);
+	rc = bb_g_load_state(true);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	(void) _sync_nodes_to_jobs(reconfig);
