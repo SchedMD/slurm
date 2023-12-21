@@ -506,12 +506,6 @@ extern void cgroup_conf_destroy(void)
 	_cgroup_conf_fini();
 }
 
-extern void cgroup_conf_reinit(void)
-{
-	cgroup_conf_destroy();
-	cgroup_conf_init();
-}
-
 extern void cgroup_free_limits(cgroup_limits_t *limits)
 {
 	if (!limits)
