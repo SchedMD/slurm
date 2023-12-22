@@ -64,11 +64,6 @@ extern int job_submit_g_fini(bool locked);
  */
 
 /*
- * Perform reconfig, re-read any configuration files
- */
-extern int job_submit_g_reconfig(void);
-
-/*
  * Execute the job_submit() function in each job submit plugin.
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.

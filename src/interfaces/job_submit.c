@@ -175,35 +175,6 @@ fini:
  */
 
 /*
- * Perform reconfig, re-read any configuration files
- */
-extern int job_submit_g_reconfig(void)
-{
-	int rc = SLURM_SUCCESS;
-	bool plugin_change;
-
-	if (!slurm_conf.job_submit_plugins && !submit_plugin_list)
-		return rc;
-
-	slurm_rwlock_wrlock(&context_lock);
-	if (xstrcmp(slurm_conf.job_submit_plugins, submit_plugin_list))
-		plugin_change = true;
-	else
-		plugin_change = false;
-
-	if (plugin_change) {
-		info("JobSubmitPlugins changed to %s",
-		     slurm_conf.job_submit_plugins);
-		rc = job_submit_g_fini(true);
-		if (rc == SLURM_SUCCESS)
-			rc = job_submit_g_init(true);
-	}
-	slurm_rwlock_unlock(&context_lock);
-
-	return rc;
-}
-
-/*
  * Execute the job_submit() function in each job submit plugin.
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
