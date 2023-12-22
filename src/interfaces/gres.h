@@ -830,10 +830,10 @@ extern List gres_job_state_list_dup(List gres_list);
 /*
  * Create a (partial) copy of a job's gres state for a particular node index
  * IN gres_list - List of Gres records for this job to track usage
- * IN node_index - zero-origin index to the node
+ * IN job_node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-extern List gres_job_state_extract(List gres_list, int node_index);
+extern List gres_job_state_extract(List gres_list, int job_node_index);
 
 /*
  * Pack a job's current gres status, called from slurmctld for save/restore
@@ -927,10 +927,10 @@ List gres_step_state_list_dup(List gres_list);
 /*
  * Create a copy of a step's gres state for a particular node index
  * IN gres_list - List of Gres records for this step to track usage
- * IN node_index - zero-origin index to the node
+ * IN job_node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-List gres_step_state_extract(List gres_list, int node_index);
+List gres_step_state_extract(List gres_list, int job_node_index);
 
 /*
  * Pack a step's current gres status, called from slurmctld for save/restore

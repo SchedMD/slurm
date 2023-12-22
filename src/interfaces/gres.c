@@ -261,7 +261,7 @@ static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      int gres_name_colon_len);
 static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
-static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
+static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -289,7 +289,8 @@ static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 					const char *line, char **leftover);
 static int	_post_plugin_gres_conf(void *x, void *arg);
 static void *	_step_state_dup(gres_step_state_t *gres_ss);
-static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
+static void *	_step_state_dup2(gres_step_state_t *gres_ss,
+				 int job_node_index);
 static void	_step_state_log(gres_step_state_t *gres_ss,
 				slurm_step_id_t *step_id,
 				char *gres_name);
@@ -6657,7 +6658,7 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 }
 
 /* Copy gres_job_state_t record for one specific node (stepd) */
-static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
+static void *_job_state_dup2(gres_job_state_t *gres_js, int job_node_index)
 {
 	gres_job_state_t *new_gres_js;
 
@@ -6671,21 +6672,25 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 	if (gres_js->gres_cnt_node_alloc) {
 		new_gres_js->gres_cnt_node_alloc = xmalloc(sizeof(uint64_t));
 		new_gres_js->gres_cnt_node_alloc[0] =
-			gres_js->gres_cnt_node_alloc[node_index];
+			gres_js->gres_cnt_node_alloc[job_node_index];
 	}
-	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_index]) {
+	if (gres_js->gres_bit_alloc &&
+	    gres_js->gres_bit_alloc[job_node_index]) {
 		new_gres_js->gres_bit_alloc	= xmalloc(sizeof(bitstr_t *));
 		new_gres_js->gres_bit_alloc[0] =
-			bit_copy(gres_js->gres_bit_alloc[node_index]);
+			bit_copy(gres_js->gres_bit_alloc[job_node_index]);
 	}
 	if (gres_js->gres_per_bit_alloc &&
-	    gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_index]) {
+	    gres_js->gres_bit_alloc &&
+	    gres_js->gres_bit_alloc[job_node_index]) {
 		new_gres_js->gres_per_bit_alloc = xmalloc(sizeof(uint64_t *));
 		new_gres_js->gres_per_bit_alloc[0] = xcalloc(
-			bit_size(gres_js->gres_bit_alloc[node_index]), sizeof(uint64_t));
+			bit_size(gres_js->gres_bit_alloc[job_node_index]),
+			sizeof(uint64_t));
 		memcpy(new_gres_js->gres_per_bit_alloc[0],
-		       gres_js->gres_per_bit_alloc[node_index],
-		       bit_size(gres_js->gres_bit_alloc[node_index]) * sizeof(uint64_t));
+		       gres_js->gres_per_bit_alloc[job_node_index],
+		       bit_size(gres_js->gres_bit_alloc[job_node_index]) *
+		       sizeof(uint64_t));
 	}
 
 	/*
@@ -6704,10 +6709,10 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 /*
  * Create a (partial) copy of a job's gres state for a particular node index
  * IN gres_list - List of Gres records for this job to track usage
- * IN node_index - zero-origin index to the node
+ * IN job_node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-extern List gres_job_state_extract(List gres_list, int node_index)
+extern List gres_job_state_extract(List gres_list, int job_node_index)
 {
 	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job, *new_gres_state;
@@ -6722,13 +6727,13 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		if (node_index == -1)
+		if (job_node_index == -1)
 			new_gres_data = gres_job_state_dup(
 				gres_state_job->gres_data);
 		else {
 			new_gres_data = _job_state_dup2(
 				gres_state_job->gres_data,
-				node_index);
+				job_node_index);
 		}
 		if (new_gres_data == NULL)
 			break;
@@ -8822,7 +8827,7 @@ static void *_step_state_dup(gres_step_state_t *gres_ss)
 	return new_gres_ss;
 }
 
-static void *_step_state_dup2(gres_step_state_t *gres_ss, int node_index)
+static void *_step_state_dup2(gres_step_state_t *gres_ss, int job_node_index)
 {
 	gres_step_state_t *new_gres_ss;
 
@@ -8843,24 +8848,24 @@ static void *_step_state_dup2(gres_step_state_t *gres_ss, int node_index)
 	if (gres_ss->gres_cnt_node_alloc) {
 		new_gres_ss->gres_cnt_node_alloc = xmalloc(sizeof(uint64_t));
 		new_gres_ss->gres_cnt_node_alloc[0] =
-			gres_ss->gres_cnt_node_alloc[node_index];
+			gres_ss->gres_cnt_node_alloc[job_node_index];
 	}
 
-	if ((node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
-	    gres_ss->gres_bit_alloc[node_index]) {
+	if ((job_node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[job_node_index]) {
 		new_gres_ss->gres_bit_alloc = xmalloc(sizeof(bitstr_t *));
 		new_gres_ss->gres_bit_alloc[0] =
-			bit_copy(gres_ss->gres_bit_alloc[node_index]);
+			bit_copy(gres_ss->gres_bit_alloc[job_node_index]);
 	}
 	if (gres_ss->gres_per_bit_alloc &&
-	    (node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
-	    gres_ss->gres_bit_alloc[node_index]) {
-		int bit_cnt = bit_size(gres_ss->gres_bit_alloc[node_index]);
+	    (job_node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[job_node_index]) {
+		int bit_cnt = bit_size(gres_ss->gres_bit_alloc[job_node_index]);
 		new_gres_ss->gres_per_bit_alloc = xmalloc(sizeof(uint64_t *));
 		new_gres_ss->gres_per_bit_alloc[0] = xcalloc(bit_cnt,
 							     sizeof(uint64_t));
 		memcpy(new_gres_ss->gres_per_bit_alloc[0],
-		       gres_ss->gres_per_bit_alloc[node_index],
+		       gres_ss->gres_per_bit_alloc[job_node_index],
 		       bit_cnt * sizeof(uint64_t));
 	}
 	return new_gres_ss;
@@ -8879,10 +8884,10 @@ List gres_step_state_list_dup(List gres_list)
 /*
  * Create a copy of a step's gres state for a particular node index
  * IN gres_list - List of Gres records for this step to track usage
- * IN node_index - zero-origin index to the node
+ * IN job_node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-List gres_step_state_extract(List gres_list, int node_index)
+List gres_step_state_extract(List gres_list, int job_node_index)
 {
 	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step, *new_gres_state_step;
@@ -8897,12 +8902,12 @@ List gres_step_state_extract(List gres_list, int node_index)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
-		if (node_index == -1)
+		if (job_node_index == -1)
 			new_gres_data = _step_state_dup(
 				gres_state_step->gres_data);
 		else {
 			new_gres_data = _step_state_dup2(
-				gres_state_step->gres_data, node_index);
+				gres_state_step->gres_data, job_node_index);
 		}
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(gres_step_list_delete);
