@@ -280,23 +280,6 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	return props;
 }
 
-extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
-				  data_t *spec, args_t *args)
-{
-	spec_args_t sargs = {
-		.magic = MAGIC_SPEC_ARGS,
-		.args = args,
-		.spec = spec,
-	};
-
-	xassert(parser->magic == MAGIC_PARSER);
-	xassert(args->magic == MAGIC_ARGS);
-
-	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
-
-	_set_ref(obj, NULL, parser, &sargs);
-}
-
 extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs)
 {
