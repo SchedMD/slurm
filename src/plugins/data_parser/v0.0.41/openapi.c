@@ -71,6 +71,15 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs);
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst);
 
+static const parser_t *_resolve_parser(const char *type, spec_args_t *sargs)
+{
+	for (int i = 0; i < sargs->parser_count; i++)
+		if (!xstrcmp(sargs->parsers[i].type_string, type))
+			return &sargs->parsers[i];
+
+	return NULL;
+}
+
 static char *_get_parser_key(const parser_t *parser)
 {
 	char *stype;
@@ -562,17 +571,9 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
 {
 	spec_args_t *args = arg;
-	const parser_t *parser = NULL;
+	const parser_t *parser;
 
-	for (int i = 0; i < args->parser_count; i++) {
-		if (!xstrcmp(args->parsers[i].type_string,
-			     data_get_string(ref))) {
-			parser = &args->parsers[i];
-			break;
-		}
-	}
-
-	if (!parser) {
+	if (!(parser = _resolve_parser(data_get_string(ref), args))) {
 		error("%s: Unable to find parser for $ref = %s",
 		      __func__, data_get_string(ref));
 		return DATA_FOR_EACH_FAIL;
