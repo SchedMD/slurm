@@ -1637,18 +1637,16 @@ int read_slurm_conf(int recover, bool reconfig)
 	build_all_frontend_info(false);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	if (!reconfig) {
-		restore_front_end_state(recover);
+	restore_front_end_state(recover);
 
-		/* currently load/dump_state_lite has to run before
-		 * load_all_job_state. */
+	/*
+	 * Currently load/dump_state_lite has to run before load_all_job_state.
+	 * FIXME: this stores a single string, this should probably move into
+	 * the job state file as it's only pertinent to job accounting.
+	 */
+	load_config_state_lite();
+	dump_config_state_lite();
 
-		/* load old config */
-		load_config_state_lite();
-
-		/* store new config */
-		dump_config_state_lite();
-	}
 	update_logging();
 	if (jobcomp_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize jobcomp plugin");
