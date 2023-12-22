@@ -1560,7 +1560,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_suspend_exc_states = NULL;
 	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
-	uint32_t old_max_node_cnt = 0;
 
 	/* initialization */
 	START_TIMER;
@@ -1569,7 +1568,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		/* save node and partition states for reconfig RPC */
 		old_node_record_count = node_record_count;
 		old_node_table_ptr    = node_record_table_ptr;
-		old_max_node_cnt = slurm_conf.max_node_cnt;
 
 		for (i = 0; i < node_record_count; i++) {
 			if (!(node_ptr = old_node_table_ptr[i]) ||
@@ -1636,13 +1634,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		 */
 		node_record_count = 1;
 		grow_node_record_table_ptr();
-	}
-
-	if (reconfig &&
-	    old_max_node_cnt &&
-	    (old_max_node_cnt != slurm_conf.max_node_cnt)) {
-		fatal("MaxNodeCount has changed (%u->%u) during reconfig, slurmctld must be restarted",
-		      old_max_node_cnt, slurm_conf.max_node_cnt);
 	}
 
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
