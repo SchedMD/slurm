@@ -51,7 +51,6 @@
 typedef struct slurm_power_ops {
 	void		(*job_resume)	(job_record_t *job_ptr);
 	void		(*job_start)	(job_record_t *job_ptr);
-	void		(*reconfig)	(void);
 } slurm_power_ops_t;
 
 /*
@@ -61,7 +60,6 @@ typedef struct slurm_power_ops {
 static const char *syms[] = {
 	"power_p_job_resume",
 	"power_p_job_start",
-	"power_p_reconfig"
 };
 
 static int g_context_cnt = -1;
@@ -138,18 +136,6 @@ extern void power_g_fini(void)
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return;
-}
-
-/* Read the configuration file */
-extern void power_g_reconfig(void)
-{
-	int i;
-
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++)
-		(*(ops[i].reconfig))();
-	slurm_mutex_unlock(&g_context_lock);
 }
 
 /* Note that a suspended job has been resumed */

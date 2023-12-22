@@ -1736,14 +1736,6 @@ extern void fini(void)
 	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
-/* Read the configuration file */
-extern void power_p_reconfig(void)
-{
-	slurm_mutex_lock(&thread_flag_mutex);
-	_load_config();
-	slurm_mutex_unlock(&thread_flag_mutex);
-}
-
 /* Note that a suspended job has been resumed */
 extern void power_p_job_resume(job_record_t *job_ptr)
 {

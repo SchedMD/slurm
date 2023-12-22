@@ -50,9 +50,6 @@ extern int power_g_init(void);
 /* Terminate the power plugin and free all memory */
 extern void power_g_fini(void);
 
-/* Read the configuration file */
-extern void power_g_reconfig(void);
-
 /* Note that a suspended job has been resumed */
 extern void power_g_job_resume(job_record_t *job_ptr);
 
