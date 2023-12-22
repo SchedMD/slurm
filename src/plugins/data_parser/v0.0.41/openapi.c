@@ -62,14 +62,27 @@ typedef struct {
 	data_t *spec;
 	data_t *path_params; /* dict of each path param */
 	data_t *params; /* current parameters target */
+	int *references; /* references[i] = count(parsers[i]) */
 	bool disable_refs;
 } spec_args_t;
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
 static void _replace_refs(data_t *data, spec_args_t *sargs);
+static void _count_refs(data_t *data, spec_args_t *sargs);
 extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs);
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst);
+
+static uint32_t _resolve_parser_index(const parser_t *parser,
+				      spec_args_t *sargs)
+{
+	for (int i = 0; i < sargs->parser_count; i++)
+		if (parser->type == sargs->parsers[i].type)
+			return i;
+
+	xassert(false);
+	return NO_VAL;
+}
 
 static const parser_t *_resolve_parser(const char *type, spec_args_t *sargs)
 {
@@ -482,6 +495,78 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
+static data_for_each_cmd_t _count_list_entry(data_t *data, void *arg)
+{
+	spec_args_t *sargs = arg;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if ((data_get_type(data) == DATA_TYPE_LIST) ||
+	    (data_get_type(data) == DATA_TYPE_DICT))
+		_count_refs(data, sargs);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static void _increment_ref(const parser_t *parent, const parser_t *parser,
+			   spec_args_t *sargs)
+{
+	uint32_t parser_index;
+
+	while (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
+
+	if ((parser_index = _resolve_parser_index(parser, sargs)) != NO_VAL) {
+		sargs->references[parser_index]++;
+
+		debug4("%s: %s->%s incremented references=%u",
+		       __func__, (parent ? parent->type_string : "*" ),
+		       parser->type_string, sargs->references[parser_index]);
+	}
+}
+
+static data_for_each_cmd_t _count_dict_entry(const char *key, data_t *data,
+					     void *arg)
+{
+	spec_args_t *sargs = arg;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if (!xstrcmp(key, "$ref") &&
+	    (data_get_type(data) == DATA_TYPE_STRING) &&
+	    !xstrncmp(data_get_string(data), TYPE_PREFIX,
+		      strlen(TYPE_PREFIX)))
+		_increment_ref(NULL, _resolve_parser(data_get_string(data),
+						     sargs), sargs);
+
+	if ((data_get_type(data) == DATA_TYPE_LIST) ||
+	    (data_get_type(data) == DATA_TYPE_DICT))
+		_count_refs(data, sargs);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+/*
+ * Find every $ref = DATA_PARSER_* and count references
+ */
+static void _count_refs(data_t *data, spec_args_t *sargs)
+{
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+	xassert(sargs->parsers);
+	xassert(sargs->parser_count > 0);
+
+	if (!data)
+		return;
+
+	if (data_get_type(data) == DATA_TYPE_DICT)
+		(void) data_dict_for_each(data, _count_dict_entry, sargs);
+	else if (data_get_type(data) == DATA_TYPE_LIST)
+		(void) data_list_for_each(data, _count_list_entry, sargs);
+}
+
 static data_t *_add_param(data_t *param, const char *name,
 			  openapi_type_format_t format, bool allow_empty,
 			  const char *desc, bool deprecated, bool required,
@@ -711,6 +796,7 @@ static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
 	data_t *path = data_key_set(args->paths, key);
 
 	data_move(path, data);
+	_count_refs(path, args);
 	_replace_refs(path, args);
 
 	return DATA_FOR_EACH_CONT;
@@ -737,10 +823,13 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 			     OPENAPI_SCHEMAS_PATH);
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
+	sargs.references = xcalloc(sargs.parser_count,
+				   sizeof(*sargs.references));
 
 	(void) data_dict_for_each(sargs.paths, _foreach_path, &sargs);
 	(void) data_dict_for_each(sargs.new_paths, _foreach_join_path, &sargs);
 	FREE_NULL_DATA(sargs.new_paths);
+	xfree(sargs.references);
 
 	return SLURM_SUCCESS;
 }
