@@ -392,6 +392,20 @@ typedef struct {
 	JOB_RES_SOCKET_t *sockets;
 } JOB_RES_NODE_t;
 
+typedef struct {
+	uint16_t id;
+	uint32_t count;
+	uint64_t time;
+	uint64_t average_time;
+} STATS_MSG_RPC_TYPE_t;
+
+typedef struct {
+	uint32_t id;
+	uint32_t count;
+	uint64_t time;
+	uint64_t average_time;
+} STATS_MSG_RPC_USER_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -2873,61 +2887,31 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 					     void *obj, data_t *dst,
 					     args_t *args)
 {
-	uint32_t *rpc_type_ave_time;
 	stats_info_response_msg_t *stats = obj;
+	int rc = SLURM_SUCCESS;
 
 	data_set_list(dst);
 
 	if (!stats->rpc_type_size)
 		return SLURM_SUCCESS;
 
-	rpc_type_ave_time =
-		xcalloc(stats->rpc_type_size, sizeof(*rpc_type_ave_time));
+	for (int i = 0; !rc && (i < stats->rpc_type_size); i++) {
+		STATS_MSG_RPC_TYPE_t rpc = {
+			.id = stats->rpc_type_id[i],
+			.count = stats->rpc_type_cnt[i],
+			.time = stats->rpc_type_time[i],
+			.average_time = NO_VAL64,
+		};
 
-	for (int i = 0; i < stats->rpc_type_size; i++) {
 		if ((stats->rpc_type_time[i] > 0) &&
 		    (stats->rpc_type_cnt[i] > 0))
-			rpc_type_ave_time[i] = stats->rpc_type_time[i] /
-					       stats->rpc_type_cnt[i];
-		else
-			rpc_type_ave_time[i] = 0;
+			rpc.average_time = stats->rpc_type_time[i] /
+				stats->rpc_type_cnt[i];
+
+		rc = DUMP(STATS_MSG_RPC_TYPE, rpc, data_list_append(dst), args);
 	}
 
-	for (int i = 0; i < stats->rpc_type_size; i++) {
-		data_t *r = data_set_dict(data_list_append(dst));
-		data_set_string(data_key_set(r, "message_type"),
-				rpc_num2string(stats->rpc_type_id[i]));
-		data_set_int(data_key_set(r, "type_id"), stats->rpc_type_id[i]);
-		data_set_int(data_key_set(r, "count"), stats->rpc_type_cnt[i]);
-		data_set_int(data_key_set(r, "average_time"),
-			     rpc_type_ave_time[i]);
-		data_set_int(data_key_set(r, "total_time"),
-			     stats->rpc_type_time[i]);
-	}
-
-	xfree(rpc_type_ave_time);
-	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
-					      args_t *args, data_t *spec,
-					      data_t *dst)
-{
-	data_t *items = set_openapi_props(dst, OPENAPI_FORMAT_ARRAY,
-					  "RPCs by message type");
-	data_t *props = set_openapi_props(items, OPENAPI_FORMAT_OBJECT, "RPC");
-	set_openapi_props(data_key_set(props, "message_type"),
-			  OPENAPI_FORMAT_STRING, "Message type as string");
-	set_openapi_props(data_key_set(props, "type_id"), OPENAPI_FORMAT_INT32,
-			  "Message type as integer");
-	set_openapi_props(data_key_set(props, "count"), OPENAPI_FORMAT_INT64,
-			  "Number of RPCs received");
-	set_openapi_props(data_key_set(props, "average_time"),
-			  OPENAPI_FORMAT_INT64,
-			  "Average time spent processing RPC in seconds");
-	set_openapi_props(data_key_set(props, "total_time"),
-			  OPENAPI_FORMAT_INT64,
-			  "Total time spent processing RPC in seconds");
+	return rc;
 }
 
 PARSE_DISABLED(STATS_MSG_RPCS_BY_USER)
@@ -2936,67 +2920,31 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 					     void *obj, data_t *dst,
 					     args_t *args)
 {
-	uint32_t *rpc_user_ave_time;
 	stats_info_response_msg_t *stats = obj;
+	int rc = SLURM_SUCCESS;
 
 	data_set_list(dst);
 
 	if (!stats->rpc_user_size)
 		return SLURM_SUCCESS;
 
-	rpc_user_ave_time =
-		xcalloc(stats->rpc_user_size, sizeof(*rpc_user_ave_time));
+	for (int i = 0; !rc && (i < stats->rpc_user_size); i++) {
+		STATS_MSG_RPC_USER_t rpc = {
+			.id = stats->rpc_user_id[i],
+			.count = stats->rpc_user_cnt[i],
+			.time = stats->rpc_user_time[i],
+			.average_time = NO_VAL64,
+		};
 
-	for (int i = 0; i < stats->rpc_user_size; i++) {
 		if ((stats->rpc_user_time[i] > 0) &&
 		    (stats->rpc_user_cnt[i] > 0))
-			rpc_user_ave_time[i] = stats->rpc_user_time[i] /
-					       stats->rpc_user_cnt[i];
-		else
-			rpc_user_ave_time[i] = 0;
+			rpc.average_time = stats->rpc_user_time[i] /
+				stats->rpc_user_cnt[i];
+
+		rc = DUMP(STATS_MSG_RPC_USER, rpc, data_list_append(dst), args);
 	}
 
-	for (int i = 0; i < stats->rpc_user_size; i++) {
-		data_t *u = data_set_dict(data_list_append(dst));
-		data_t *un = data_key_set(u, "user");
-		char *user = uid_to_string_or_null(stats->rpc_user_id[i]);
-
-		data_set_int(data_key_set(u, "user_id"), stats->rpc_user_id[i]);
-		data_set_int(data_key_set(u, "count"), stats->rpc_user_cnt[i]);
-		data_set_int(data_key_set(u, "average_time"),
-			     rpc_user_ave_time[i]);
-		data_set_int(data_key_set(u, "total_time"),
-			     stats->rpc_user_time[i]);
-
-		if (!user)
-			data_set_string_fmt(un, "%u", stats->rpc_user_id[i]);
-		else
-			data_set_string_own(un, user);
-	}
-
-	xfree(rpc_user_ave_time);
-	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
-					      args_t *args, data_t *spec,
-					      data_t *dst)
-{
-	data_t *items =
-		set_openapi_props(dst, OPENAPI_FORMAT_ARRAY, "RPCs by user");
-	data_t *props = set_openapi_props(items, OPENAPI_FORMAT_OBJECT, "user");
-	set_openapi_props(data_key_set(props, "user"), OPENAPI_FORMAT_STRING,
-			  "user name");
-	set_openapi_props(data_key_set(props, "user_id"), OPENAPI_FORMAT_INT32,
-			  "user id (numeric)");
-	set_openapi_props(data_key_set(props, "count"), OPENAPI_FORMAT_INT64,
-			  "Number of RPCs received");
-	set_openapi_props(data_key_set(props, "average_time"),
-			  OPENAPI_FORMAT_INT64,
-			  "Average time spent processing RPC in seconds");
-	set_openapi_props(data_key_set(props, "total_time"),
-			  OPENAPI_FORMAT_INT64,
-			  "Total time spent processing RPC in seconds");
+	return rc;
 }
 
 static data_for_each_cmd_t _parse_foreach_CSV_STRING_list(data_t *data,
@@ -8306,6 +8254,34 @@ static const parser_t PARSER_ARRAY(ROLLUP_STATS)[] = {
 #undef add_parse_req
 #undef add_skip
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(STATS_MSG_RPC_TYPE_t, mtype, true, field, 0, path, desc)
+#define add_parse_req_overload(mtype, field, overloads, path, desc) \
+	add_parser(STATS_MSG_RPC_TYPE_t, mtype, true, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(STATS_MSG_RPC_TYPE)[] = {
+	add_parse_req_overload(UINT16, id, 1, "type_id", "Message type as integer"),
+	add_parse_req_overload(RPC_ID, id, 1, "message_type", "Message type as string"),
+	add_parse_req(UINT32, count, "count", "Number of RPCs received"),
+	add_parse_req(UINT64, time, "total_time", "Total time spent processing RPC in seconds"),
+	add_parse_req(UINT64_NO_VAL, average_time, "average_time", "Average time spent processing RPC in seconds"),
+};
+#undef add_parse_req
+#undef add_parse_req_overload
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(STATS_MSG_RPC_USER_t, mtype, true, field, 0, path, desc)
+#define add_parse_req_overload(mtype, field, overloads, path, desc) \
+	add_parser(STATS_MSG_RPC_USER_t, mtype, true, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(STATS_MSG_RPC_USER)[] = {
+	add_parse_req_overload(UINT32, id, 1, "user_id", "user id (numeric)"),
+	add_parse_req_overload(USER_ID, id, 1, "user", "user name"),
+	add_parse_req(UINT32, count, "count", "Number of RPCs received"),
+	add_parse_req(UINT64, time, "total_time", "Total time spent processing RPC in seconds"),
+	add_parse_req(UINT64_NO_VAL, average_time, "average_time", "Average time spent processing RPC in seconds"),
+};
+#undef add_parse_req
+#undef add_parse_req_overload
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8816,8 +8792,8 @@ static const parser_t parsers[] = {
 	addpc(STATS_MSG_BF_TABLE_SIZE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_BF_ACTIVE, stats_info_response_msg_t, NEED_NONE, BOOL, NULL),
 	addpcp(STATS_MSG_BF_EXIT, BF_EXIT_FIELDS, stats_info_response_msg_t, NEED_NONE, NULL),
-	addpcs(STATS_MSG_RPCS_BY_TYPE, stats_info_response_msg_t, NEED_NONE, ARRAY, NULL),
-	addpcs(STATS_MSG_RPCS_BY_USER, stats_info_response_msg_t, NEED_NONE, ARRAY, NULL),
+	addpca(STATS_MSG_RPCS_BY_TYPE, STATS_MSG_RPC_TYPE, stats_info_response_msg_t, NEED_NONE, "RPCs by type"),
+	addpca(STATS_MSG_RPCS_BY_USER, STATS_MSG_RPC_USER, stats_info_response_msg_t, NEED_NONE, "RPCs by user"),
 	addpc(NODE_SELECT_ALLOC_MEMORY, node_info_t, NEED_NONE, INT64, NULL),
 	addpc(NODE_SELECT_ALLOC_CPUS, node_info_t, NEED_NONE, INT32, NULL),
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
@@ -8972,6 +8948,8 @@ static const parser_t parsers[] = {
 	addpap(JOB_RES_SOCKET, JOB_RES_SOCKET_t, NULL, NULL),
 	addpap(JOB_RES_CORE, JOB_RES_CORE_t, NULL, NULL),
 	addpap(ROLLUP_STATS, slurmdb_rollup_stats_t, NULL, NULL),
+	addpap(STATS_MSG_RPC_TYPE, STATS_MSG_RPC_TYPE_t, NULL, NULL),
+	addpap(STATS_MSG_RPC_USER, STATS_MSG_RPC_USER_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

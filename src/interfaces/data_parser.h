@@ -313,7 +313,11 @@ typedef enum {
 	DATA_PARSER_STATS_MSG_BF_TABLE_SIZE_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_BF_ACTIVE, /* stats_info_response_msg_t-> computed bool */
 	DATA_PARSER_STATS_MSG_BF_EXIT, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_RPC_TYPE, /* STATS_MSG_RPC_TYPE_t */
+	DATA_PARSER_STATS_MSG_RPC_TYPE_PTR, /* STATS_MSG_RPC_TYPE_t* */
 	DATA_PARSER_STATS_MSG_RPCS_BY_TYPE, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_STATS_MSG_RPC_USER, /* STATS_MSG_RPC_USER_t */
+	DATA_PARSER_STATS_MSG_RPC_USER_PTR, /* STATS_MSG_RPC_USER_t* */
 	DATA_PARSER_STATS_MSG_RPCS_BY_USER, /* stats_info_response_msg_t-> computed bool */
 	DATA_PARSER_BF_EXIT_FIELDS, /* bf_exit_fields_t */
 	DATA_PARSER_BF_EXIT_FIELDS_PTR, /* bf_exit_fields_t* */
