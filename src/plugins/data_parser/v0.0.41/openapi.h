@@ -54,16 +54,6 @@ extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
 				  data_t *spec, args_t *args);
 
 /*
- * Populate OpenAPI specification field
- * IN obj - data_t ptr to specific field in OpenAPI schema
- * IN format - OpenAPI format to use
- * IN desc - Description of field to use
- * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
- */
-extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
-				 const char *desc);
-
-/*
  * Populate dst with OpenAPI specification schema
  * IN dst - data_t ptr to populate with schema
  * IN parser - schema parser to specify

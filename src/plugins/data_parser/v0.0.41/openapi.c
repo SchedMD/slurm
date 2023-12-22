@@ -99,8 +99,15 @@ static char *_get_parser_path(const parser_t *parser)
 	return path;
 }
 
-extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
-				 const char *desc)
+/*
+ * Populate OpenAPI specification field
+ * IN obj - data_t ptr to specific field in OpenAPI schema
+ * IN format - OpenAPI format to use
+ * IN desc - Description of field to use
+ * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
+ */
+static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
+				  const char *desc)
 {
 	data_t *dtype;
 	const char *format_str;
@@ -160,7 +167,7 @@ static void _add_eflags(data_t *props, const parser_t *parser,
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
 		data_t *dchild = data_key_set(props, bit->name);
 
-		set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
+		_set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
 	}
 }
 
@@ -247,7 +254,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	if (parser->obj_desc && !desc)
 		desc = parser->obj_desc;
 
-	if ((props = set_openapi_props(obj, format, desc))) {
+	if ((props = _set_openapi_props(obj, format, desc))) {
 		if (parser->array_type) {
 			_set_ref(props, parser,
 				 find_parser_by_type(parser->array_type),
