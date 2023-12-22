@@ -1197,12 +1197,14 @@ extern void slurmscriptd_flush(void)
 
 extern void slurmscriptd_flush_job(uint32_t job_id)
 {
-	flush_job_msg_t msg;
+	flush_job_msg_t *msg = xmalloc(sizeof(*msg));
+	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 
-	msg.job_id = job_id;
+	msg->job_id = job_id;
+	send_args->msg_data = msg;
+	send_args->msg_type = SLURMSCRIPTD_REQUEST_FLUSH_JOB;
 
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg, false,
-			      NULL, NULL);
+	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
 }
 
 extern void slurmscriptd_reconfig(void)
@@ -1265,44 +1267,37 @@ extern void slurmscriptd_run_power(char *script_path, char *hosts,
 				   char *script_name, uint32_t timeout,
 				   char *tmp_file_env_name, char *tmp_file_str)
 {
-	run_script_msg_t run_script_msg;
+	run_script_msg_t *run_script_msg;
+	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 	int argc;
 	char **env, **argv;
 
 	argc = 3;
 	argv = xcalloc(argc + 1, sizeof(char*)); /* Null terminated */
-	argv[0] = script_path;
-	argv[1] = hosts;
-	argv[2] = features;
+	argv[0] = xstrdup(script_path);
+	argv[1] = xstrdup(hosts);
+	argv[2] = xstrdup(features);
 
 	env = env_array_create();
 	env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
 	if (job_id)
 		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
 
-	memset(&run_script_msg, 0, sizeof(run_script_msg));
-
 	/* Init run_script_msg */
-	run_script_msg.argc = argc;
-	run_script_msg.argv = argv;
-	run_script_msg.env = env;
-	run_script_msg.job_id = job_id;
-	run_script_msg.script_name = script_name;
-	run_script_msg.script_path = script_path;
-	run_script_msg.script_type = SLURMSCRIPTD_POWER;
-	run_script_msg.timeout = timeout;
-	run_script_msg.tmp_file_env_name = tmp_file_env_name;
-	run_script_msg.tmp_file_str = tmp_file_str;
+	run_script_msg = _init_run_script_msg(NULL, script_name, script_path,
+					      SLURMSCRIPTD_POWER, timeout);
+
+	run_script_msg->argc = argc;
+	run_script_msg->argv = argv;
+	run_script_msg->env = env;
+	run_script_msg->job_id = job_id;
+	run_script_msg->tmp_file_env_name = xstrdup(tmp_file_env_name);
+	run_script_msg->tmp_file_str = xstrdup(tmp_file_str);
 
 	/* Send message; don't wait for response */
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-			      &run_script_msg, false, NULL, NULL);
-
-
-	/* Cleanup */
-	/* Don't free contents of argv since those were not xstrdup()'d */
-	xfree(argv);
-	xfree_array(env);
+	send_args->msg_data = run_script_msg;
+	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
+	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
@@ -1401,21 +1396,21 @@ extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 				  uint32_t timeout, char *script_name)
 {
-	run_script_msg_t run_script_msg;
+	run_script_msg_t *run_script_msg;
+	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 
 	memset(&run_script_msg, 0, sizeof(run_script_msg));
 
 	/* Init run_script_msg */
-	run_script_msg.argc = argc;
-	run_script_msg.argv = argv;
-	run_script_msg.script_name = script_name;
-	run_script_msg.script_path = script_path;
-	run_script_msg.script_type = SLURMSCRIPTD_RESV;
-	run_script_msg.timeout = timeout;
+	run_script_msg = _init_run_script_msg(NULL, script_name, script_path,
+					      SLURMSCRIPTD_RESV, timeout);
+	run_script_msg->argc = argc;
+	run_script_msg->argv = slurm_char_array_copy(argc, argv);
 
 	/* Send message; don't wait for response */
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-			      &run_script_msg, false, NULL, NULL);
+	send_args->msg_data = run_script_msg;
+	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
+	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
 }
 
 extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
