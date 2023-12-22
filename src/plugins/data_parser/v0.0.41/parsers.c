@@ -1478,9 +1478,9 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(RPC_ID)
+PARSE_DISABLED(SLURMDB_RPC_ID)
 
-static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
+static int DUMP_FUNC(SLURMDB_RPC_ID)(const parser_t *const parser, void *obj,
 			     data_t *dst, args_t *args)
 {
 	slurmdbd_msg_type_t *id = obj;
@@ -6351,7 +6351,7 @@ static const parser_t PARSER_ARRAY(STATS_USER)[] = {
 	add_parser(slurmdb_rpc_obj_t, mtype, false, field, 0, path, desc)
 /* should mirror the structure of slurmdb_rpc_obj_t */
 static const parser_t PARSER_ARRAY(STATS_RPC)[] = {
-	add_parse(RPC_ID, id, "rpc", NULL),
+	add_parse(SLURMDB_RPC_ID, id, "rpc", NULL),
 	add_parse(UINT32, cnt, "count", NULL),
 	add_parse(UINT64, time_ave, "time/average", NULL),
 	add_parse(UINT64, time, "time/total", NULL),
@@ -8738,7 +8738,7 @@ static const parser_t parsers[] = {
 	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL, NULL, NULL),
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL, NULL, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, list_t *, NEED_QOS, "List of QOS names"),
-	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(SLURMDB_RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
