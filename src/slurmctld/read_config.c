@@ -1924,8 +1924,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	_update_preempt(old_preempt_mode);
 
 	/* Update plugin parameters as possible */
-	if (reconfig && (job_submit_g_reconfig() != SLURM_SUCCESS))
-		fatal("Failed to reconfigure job_submit plugin");
 	rc = prep_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = switch_g_reconfig();
