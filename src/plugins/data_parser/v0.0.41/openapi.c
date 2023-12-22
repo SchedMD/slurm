@@ -167,8 +167,20 @@ static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
 	return NULL;
 }
 
-static bool _should_be_ref(const parser_t *parser)
+static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 {
+	uint32_t parser_index = _resolve_parser_index(parser, sargs);
+
+	/* parser with single reference doesn't need to be a $ref */
+	if (parser_index != NO_VAL) {
+		debug4("%s: %s references=%u",
+		       __func__, parser->type_string,
+		       sargs->references[parser_index]);
+
+		if (sargs->references[parser_index] <= 1)
+			return false;
+	}
+
 	if ((parser->obj_openapi == OPENAPI_FORMAT_OBJECT) ||
 	    (parser->obj_openapi == OPENAPI_FORMAT_ARRAY))
 		return true;
@@ -323,7 +335,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		parser = find_parser_by_type(parser->pointer_type);
 	}
 
-	if (sargs->disable_refs || !_should_be_ref(parser)) {
+	if (sargs->disable_refs || !_should_be_ref(parser, sargs)) {
 		_set_openapi_parse(obj, parser, sargs, desc);
 		return;
 	}
@@ -398,7 +410,7 @@ static void _add_parser(const parser_t *parser, spec_args_t *sargs)
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (!_should_be_ref(parser)) {
+	if (!_should_be_ref(parser, sargs)) {
 	       debug3("%s: skip adding %s as simple type=%s format=%s",
 		      __func__, parser->type_string,
 		      openapi_type_format_to_type_string(
@@ -565,6 +577,30 @@ static void _count_refs(data_t *data, spec_args_t *sargs)
 		(void) data_dict_for_each(data, _count_dict_entry, sargs);
 	else if (data_get_type(data) == DATA_TYPE_LIST)
 		(void) data_list_for_each(data, _count_list_entry, sargs);
+}
+
+static void _count_parser_refs(spec_args_t *sargs)
+{
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+	xassert(sargs->parsers);
+	xassert(sargs->parser_count > 0);
+
+	for (int ip = 0; ip < sargs->parser_count; ip++) {
+		const parser_t *parser = &sargs->parsers[ip];
+
+		if ((parser->model != PARSER_MODEL_ARRAY) ||
+		    !parser->field_count)
+			continue;
+
+		for (int i = 0; i < parser->field_count; i++) {
+			const parser_t *pchild =
+				find_parser_by_type(parser->fields[i].type);
+
+			if (pchild)
+				_increment_ref(parser, pchild, sargs);
+		}
+	}
 }
 
 static data_t *_add_param(data_t *param, const char *name,
@@ -797,6 +833,7 @@ static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
 
 	data_move(path, data);
 	_count_refs(path, args);
+	_count_parser_refs(args);
 	_replace_refs(path, args);
 
 	return DATA_FOR_EACH_CONT;
