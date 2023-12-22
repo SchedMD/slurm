@@ -1162,6 +1162,33 @@ static void _kill_slurmscriptd(void)
 	}
 }
 
+/*
+ * Initialize a run_script_msg_t. This doesn't set all fields in
+ * run_script_msg_t but sets the ones most likely to just be duplicate code
+ * everywhere else. Use this when you need to allocate run_script_msg on the
+ * heap.
+ *
+ * Return a heap allocated structure that must be free'd with
+ * slurmscriptd_free_run_script_msg().
+ */
+static run_script_msg_t *_init_run_script_msg(char **env,
+					      char *script_name,
+					      char *script_path,
+					      script_type_t script_type,
+					      uint32_t timeout)
+{
+	run_script_msg_t *run_script_msg;
+
+	run_script_msg = xmalloc(sizeof(*run_script_msg));
+	run_script_msg->env = env_array_copy((const char **) env);
+	run_script_msg->script_name = xstrdup(script_name);
+	run_script_msg->script_path = xstrdup(script_path);
+	run_script_msg->script_type = script_type;
+	run_script_msg->timeout = timeout;
+
+	return run_script_msg;
+}
+
 extern void slurmscriptd_flush(void)
 {
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
@@ -1317,24 +1344,26 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 				      char *script, char **env)
 {
-	run_script_msg_t *run_script_msg = xmalloc(sizeof(*run_script_msg));
+	run_script_msg_t *run_script_msg;
 	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
+	char *script_name;
+	script_type_t script_type;
 
+	if (is_epilog) {
+		script_name = "EpilogSlurmctld";
+		script_type = SLURMSCRIPTD_EPILOG;
+	} else {
+		script_name = "PrologSlurmctld";
+		script_type = SLURMSCRIPTD_PROLOG;
+	}
+
+	run_script_msg = _init_run_script_msg(env, script_name, script,
+					      script_type,
+					      slurm_conf.prolog_epilog_timeout);
 	run_script_msg->argc = 1;
 	run_script_msg->argv = xcalloc(2, sizeof(char *)); /* NULL terminated */
 	run_script_msg->argv[0] = xstrdup(script);
-
-	run_script_msg->env = env_array_copy((const char **) env);
 	run_script_msg->job_id = job_id;
-	if (is_epilog) {
-		run_script_msg->script_name = xstrdup("EpilogSlurmctld");
-		run_script_msg->script_type = SLURMSCRIPTD_EPILOG;
-	} else {
-		run_script_msg->script_name = xstrdup("PrologSlurmctld");
-		run_script_msg->script_type = SLURMSCRIPTD_PROLOG;
-	}
-	run_script_msg->script_path = xstrdup(script);
-	run_script_msg->timeout = (uint32_t) slurm_conf.prolog_epilog_timeout;
 
 	/*
 	 * Because this thread is holding the job write lock, do the write in
