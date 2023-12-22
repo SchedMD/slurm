@@ -340,11 +340,15 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		return;
 	}
 
-	data_set_dict(obj);
+	if (data_get_type(obj) == DATA_TYPE_NULL)
+		data_set_dict(obj);
+
+	xassert(data_get_type(obj) == DATA_TYPE_DICT);
+
 	str = _get_parser_path(parser);
 	data_set_string_own(data_key_set(obj, "$ref"), str);
 
-	if (desc)
+	if (desc && !data_key_get(obj, "description"))
 		data_set_string(data_key_set(obj, "description"), desc);
 
 	_add_parser(parser, sargs);
