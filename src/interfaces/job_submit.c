@@ -75,7 +75,6 @@ static const char *syms[] = {
 static int g_context_cnt = -1;
 static slurm_submit_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
-static char *submit_plugin_list = NULL;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /*
@@ -95,12 +94,12 @@ extern int job_submit_g_init(bool locked)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	submit_plugin_list = xstrdup(slurm_conf.job_submit_plugins);
 	g_context_cnt = 0;
-	if ((submit_plugin_list == NULL) || (submit_plugin_list[0] == '\0'))
+	if (!slurm_conf.job_submit_plugins ||
+	    (slurm_conf.job_submit_plugins[0] == '\0'))
 		goto fini;
 
-	tmp_plugin_list = xstrdup(submit_plugin_list);
+	tmp_plugin_list = xstrdup(slurm_conf.job_submit_plugins);
 	names = tmp_plugin_list;
 	while ((type = strtok_r(names, ",", &last))) {
 		xrecalloc(ops, g_context_cnt + 1, sizeof(slurm_submit_ops_t));
@@ -159,7 +158,6 @@ extern int job_submit_g_fini(bool locked)
 	}
 	xfree(ops);
 	xfree(g_context);
-	xfree(submit_plugin_list);
 	g_context_cnt = -1;
 
 fini:
