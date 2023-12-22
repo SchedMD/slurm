@@ -1714,8 +1714,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	rehash_node();
 	topology_g_build_config();
-	if (reconfig)
-		power_g_reconfig();
 
 	rehash_jobs();
 	_validate_slurmd_addr();
