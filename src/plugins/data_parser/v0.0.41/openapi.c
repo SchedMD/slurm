@@ -457,30 +457,6 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (!xstrcmp(key, "$ref") &&
-	    (data_get_type(data) == DATA_TYPE_STRING) &&
-	    !xstrncmp(data_get_string(data), TYPE_PREFIX,
-		      strlen(TYPE_PREFIX))) {
-		const parser_t *parser = NULL;
-		char *str;
-
-		for (int i = 0; i < sargs->parser_count; i++) {
-			if (!xstrcmp(sargs->parsers[i].type_string,
-				     data_get_string(data))) {
-				parser = &sargs->parsers[i];
-				break;
-			}
-		}
-
-		if (!parser)
-			fatal_abort("%s: unknown %s",
-				    __func__, data_get_string(data));
-
-		str = _get_parser_path(parser);
-		data_set_string_own(data, str);
-		_add_parser(parser, sargs);
-	}
-
 	if ((data_get_type(data) == DATA_TYPE_LIST) ||
 	    (data_get_type(data) == DATA_TYPE_DICT))
 		_replace_refs(data, sargs);
@@ -493,6 +469,8 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
  */
 static void _replace_refs(data_t *data, spec_args_t *sargs)
 {
+	data_t *ref;
+
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(sargs->parsers);
@@ -501,10 +479,34 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 	if (!data)
 		return;
 
-	if (data_get_type(data) == DATA_TYPE_DICT)
-		(void) data_dict_for_each(data, _convert_dict_entry, sargs);
-	else if (data_get_type(data) == DATA_TYPE_LIST)
+	if (data_get_type(data) == DATA_TYPE_LIST)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return;
+
+	if ((ref = data_key_get(data, "$ref")) &&
+	     (data_get_type(ref) == DATA_TYPE_STRING) &&
+	     !xstrncmp(data_get_string(ref), TYPE_PREFIX,
+		       strlen(TYPE_PREFIX))) {
+		const parser_t *parser = NULL;
+
+		for (int i = 0; i < sargs->parser_count; i++) {
+			if (!xstrcmp(sargs->parsers[i].type_string,
+				     data_get_string(ref))) {
+				parser = &sargs->parsers[i];
+				break;
+			}
+		}
+
+		if (!parser)
+			fatal_abort("%s: unknown %s",
+				    __func__, data_get_string(ref));
+
+		_set_ref(data, NULL, parser, sargs);
+	} else {
+		(void) data_dict_for_each(data, _convert_dict_entry, sargs);
+	}
 }
 
 static data_for_each_cmd_t _count_list_entry(data_t *data, void *arg)
