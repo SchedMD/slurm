@@ -89,7 +89,6 @@
 #define PARSER_FLAG_ARRAY(type) _v41_parser_flag_array_##type
 #define PARSE_FUNC(type) _v41_parse_##type
 #define DUMP_FUNC(type) _v41_dump_##type
-#define SPEC_FUNC(type) _v41_openapi_spec_##type
 #define NEW_FUNC(type) _v41_openapi_new_##type
 #define FREE_FUNC(type) _v41_openapi_free_##type
 #define PARSE_DISABLED(type)                                                 \
@@ -717,18 +716,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 			 */
 			if (parser->array_type) {
 				xassert(!parser->pointer_type);
-				xassert(!parser->openapi_spec);
 			} else if (parser->pointer_type) {
 				xassert(!parser->array_type);
-				xassert(!parser->openapi_spec);
-			} else if (parser->openapi_spec) {
-				xassert(!parser->array_type);
-				xassert(!parser->pointer_type);
-
-				xassert(parser->obj_openapi >
-					OPENAPI_FORMAT_INVALID);
-				xassert(parser->obj_openapi <
-					OPENAPI_FORMAT_MAX);
 			} else {
 				fatal_abort("invalid openapi override");
 			}
@@ -737,7 +726,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 			xassert(parser->obj_openapi < OPENAPI_FORMAT_MAX);
 			xassert(!parser->pointer_type);
 			xassert(!parser->array_type);
-			xassert(!parser->openapi_spec);
 		}
 	} else if (parser->model == PARSER_MODEL_PTR) {
 		xassert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
@@ -8709,7 +8697,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_USERS_ADD_COND_RESP)[] = {
 		.new = newf,                                                   \
 		.free = freef,                                                 \
 		.needs = need,                                                 \
-		.openapi_spec = SPEC_FUNC(typev),                              \
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
@@ -8776,7 +8763,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_USERS_ADD_COND_RESP)[] = {
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
 		.size = sizeof(typet),                                         \
 		.needs = need,                                                 \
-		.openapi_spec = SPEC_FUNC(typev),                              \
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \

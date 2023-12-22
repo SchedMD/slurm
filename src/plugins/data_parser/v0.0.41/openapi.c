@@ -203,9 +203,6 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * IN parser - populate field with info from parser
  * IN description - description from parent pointer parser or NULL
  *
- * If parser is an ARRAY or OBJECT, the openapi_spec() function will be called
- * from the parser to populate the child fields.
- *
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
@@ -231,18 +228,6 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	} else if (parser->pointer_type) {
 		_set_ref(obj, parser, find_parser_by_type(parser->pointer_type),
 			 sargs);
-		return NULL;
-	}
-
-	/* parser explicitly overrides the specification */
-	if (parser->openapi_spec) {
-		parser->openapi_spec(parser, sargs->args, sargs->spec, obj);
-
-		/* the resultant type must match the obj_openapi type */
-		xassert(is_complex_mode(sargs->args) ||
-			!xstrcmp(data_get_string(data_key_get(obj, "type")),
-				 openapi_type_format_to_type_string(
-					 parser->obj_openapi)));
 		return NULL;
 	}
 
