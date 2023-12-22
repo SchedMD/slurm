@@ -737,6 +737,19 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern char **slurm_char_array_copy(int n, char **src)
+{
+	char **dst = xmalloc((n+1) * sizeof(char *));
+	int i;
+
+	for (i = 0; i < n; i++) {
+		dst[i] = xstrdup(src[i]);
+	}
+	dst[n] = NULL;
+
+	return dst;
+}
+
 extern char *slurm_sort_node_list_str(char *node_list)
 {
 	char *sorted_node_list;
