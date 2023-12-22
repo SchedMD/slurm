@@ -319,6 +319,12 @@ typedef enum {
 	DATA_PARSER_STATS_MSG_RPC_USER, /* STATS_MSG_RPC_USER_t */
 	DATA_PARSER_STATS_MSG_RPC_USER_PTR, /* STATS_MSG_RPC_USER_t* */
 	DATA_PARSER_STATS_MSG_RPCS_BY_USER, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_STATS_MSG_RPC_QUEUE, /* STATS_MSG_RPC_QUEUE_t */
+	DATA_PARSER_STATS_MSG_RPC_QUEUE_PTR, /* STATS_MSG_RPC_QUEUE_t* */
+	DATA_PARSER_STATS_MSG_RPCS_QUEUE, /* stats_info_response_msg_t-> computed */
+	DATA_PARSER_STATS_MSG_RPC_DUMP, /* STATS_MSG_RPC_DUMP_t */
+	DATA_PARSER_STATS_MSG_RPC_DUMP_PTR, /* STATS_MSG_RPC_DUMP_t* */
+	DATA_PARSER_STATS_MSG_RPCS_DUMP, /* stats_info_response_msg_t-> computed */
 	DATA_PARSER_BF_EXIT_FIELDS, /* bf_exit_fields_t */
 	DATA_PARSER_BF_EXIT_FIELDS_PTR, /* bf_exit_fields_t* */
 	DATA_PARSER_SCHEDULE_EXIT_FIELDS, /* schedule_exit_fields_t */

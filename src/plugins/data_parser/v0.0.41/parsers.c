@@ -406,6 +406,16 @@ typedef struct {
 	uint64_t average_time;
 } STATS_MSG_RPC_USER_t;
 
+typedef struct {
+	uint16_t id;
+	uint32_t count;
+} STATS_MSG_RPC_QUEUE_t;
+
+typedef struct {
+	uint16_t id;
+	const char *hostlist;
+} STATS_MSG_RPC_DUMP_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -2942,6 +2952,57 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 				stats->rpc_user_cnt[i];
 
 		rc = DUMP(STATS_MSG_RPC_USER, rpc, data_list_append(dst), args);
+	}
+
+	return rc;
+}
+
+PARSE_DISABLED(STATS_MSG_RPCS_QUEUE)
+
+static int DUMP_FUNC(STATS_MSG_RPCS_QUEUE)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	stats_info_response_msg_t *stats = obj;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!stats->rpc_queue_type_count)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; !rc && (i < stats->rpc_queue_type_count); i++) {
+		STATS_MSG_RPC_QUEUE_t rpc = {
+			.id = stats->rpc_queue_type_id[i],
+			.count = stats->rpc_queue_count[i],
+		};
+
+		rc = DUMP(STATS_MSG_RPC_QUEUE, rpc, data_list_append(dst),
+			  args);
+	}
+
+	return rc;
+}
+
+PARSE_DISABLED(STATS_MSG_RPCS_DUMP)
+
+static int DUMP_FUNC(STATS_MSG_RPCS_DUMP)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	stats_info_response_msg_t *stats = obj;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!stats->rpc_dump_count)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; !rc && (i < stats->rpc_dump_count); i++) {
+		STATS_MSG_RPC_DUMP_t rpc = {
+			.id = stats->rpc_dump_types[i],
+			.hostlist = stats->rpc_dump_hostlist[i],
+		};
+
+		rc = DUMP(STATS_MSG_RPC_DUMP, rpc, data_list_append(dst), args);
 	}
 
 	return rc;
@@ -6486,12 +6547,14 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_skip(rpc_user_id), /* handled by STATS_MSG_RPCS_BY_TYPE */
 	add_skip(rpc_user_cnt), /* handled by STATS_MSG_RPCS_BY_TYPE */
 	add_skip(rpc_user_time), /* handled by STATS_MSG_RPCS_BY_TYPE */
-	add_skip(rpc_queue_type_count), /* TODO: implement */
-	add_skip(rpc_queue_type_id ), /* TODO: implement */
-	add_skip(rpc_queue_count), /* TODO: implement */
-	add_skip(rpc_dump_count), /* TODO: implement */
-	add_skip(rpc_dump_types), /* TODO: implement */
-	add_skip(rpc_dump_hostlist), /* TODO: implement */
+	add_cparse(STATS_MSG_RPCS_QUEUE, "pending_rpcs", "Pending RPC statistics"),
+	add_skip(rpc_queue_type_count), /* handled by STATS_MSG_RPCS_QUEUE */
+	add_skip(rpc_queue_type_id), /* handled by STATS_MSG_RPCS_QUEUE */
+	add_skip(rpc_queue_count), /* handled by STATS_MSG_RPCS_QUEUE */
+	add_cparse(STATS_MSG_RPCS_DUMP, "pending_rpcs_by_hostlist", "Pending RPCs hostlists"),
+	add_skip(rpc_dump_count), /* handled by STATS_MSG_RPCS_DUMP */
+	add_skip(rpc_dump_types), /* handled by STATS_MSG_RPCS_DUMP */
+	add_skip(rpc_dump_hostlist), /* handled by STATS_MSG_RPCS_DUMP */
 };
 #undef add_parse
 #undef add_cparse
@@ -8282,6 +8345,30 @@ static const parser_t PARSER_ARRAY(STATS_MSG_RPC_USER)[] = {
 #undef add_parse_req
 #undef add_parse_req_overload
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(STATS_MSG_RPC_QUEUE_t, mtype, true, field, 0, path, desc)
+#define add_parse_req_overload(mtype, field, overloads, path, desc) \
+	add_parser(STATS_MSG_RPC_QUEUE_t, mtype, true, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(STATS_MSG_RPC_QUEUE)[] = {
+	add_parse_req_overload(UINT16, id, 1, "type_id", "Message type as integer"),
+	add_parse_req_overload(RPC_ID, id, 1, "message_type", "Message type as string"),
+	add_parse_req(UINT32, count, "count", "Number of pending RPCs queued"),
+};
+#undef add_parse_req
+#undef add_parse_req_overload
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(STATS_MSG_RPC_DUMP_t, mtype, true, field, 0, path, desc)
+#define add_parse_req_overload(mtype, field, overloads, path, desc) \
+	add_parser(STATS_MSG_RPC_DUMP_t, mtype, true, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(STATS_MSG_RPC_DUMP)[] = {
+	add_parse_req_overload(UINT16, id, 1, "type_id", "Message type as integer"),
+	add_parse_req_overload(RPC_ID, id, 1, "message_type", "Message type as string"),
+	add_parse_req(HOSTLIST_STRING, hostlist, "count", "Number of RPCs received"),
+};
+#undef add_parse_req
+#undef add_parse_req_overload
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8794,6 +8881,8 @@ static const parser_t parsers[] = {
 	addpcp(STATS_MSG_BF_EXIT, BF_EXIT_FIELDS, stats_info_response_msg_t, NEED_NONE, NULL),
 	addpca(STATS_MSG_RPCS_BY_TYPE, STATS_MSG_RPC_TYPE, stats_info_response_msg_t, NEED_NONE, "RPCs by type"),
 	addpca(STATS_MSG_RPCS_BY_USER, STATS_MSG_RPC_USER, stats_info_response_msg_t, NEED_NONE, "RPCs by user"),
+	addpca(STATS_MSG_RPCS_QUEUE, STATS_MSG_RPC_QUEUE, stats_info_response_msg_t, NEED_NONE, "Pending RPCs"),
+	addpca(STATS_MSG_RPCS_DUMP, STATS_MSG_RPC_DUMP, stats_info_response_msg_t, NEED_NONE, "Pending RPCs by hostlist"),
 	addpc(NODE_SELECT_ALLOC_MEMORY, node_info_t, NEED_NONE, INT64, NULL),
 	addpc(NODE_SELECT_ALLOC_CPUS, node_info_t, NEED_NONE, INT32, NULL),
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
@@ -8950,6 +9039,8 @@ static const parser_t parsers[] = {
 	addpap(ROLLUP_STATS, slurmdb_rollup_stats_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_TYPE, STATS_MSG_RPC_TYPE_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_USER, STATS_MSG_RPC_USER_t, NULL, NULL),
+	addpap(STATS_MSG_RPC_QUEUE, STATS_MSG_RPC_QUEUE_t, NULL, NULL),
+	addpap(STATS_MSG_RPC_DUMP, STATS_MSG_RPC_DUMP_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
