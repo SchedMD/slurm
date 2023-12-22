@@ -1525,7 +1525,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 
 /*
  * Deallocate resource from a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * IN job_gres_list - job's allocated gres list
  * IN node_gres_list - node's gres_list built by
  *		gres_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
