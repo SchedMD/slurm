@@ -107,9 +107,6 @@ static void _add_config_feature(List feature_list, char *feature,
 static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
-static int  _compare_hostnames(node_record_t **old_node_table,
-			       int old_node_count, node_record_t **node_table,
-			       int node_count);
 static void _gres_reconfig(void);
 static void _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
@@ -1638,14 +1635,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	build_all_frontend_info(false);
-	if (reconfig) {
-		if (_compare_hostnames(old_node_table_ptr,
-				       old_node_record_count,
-				       node_record_table_ptr,
-				       node_record_count) < 0) {
-			fatal("%s: hostnames inconsistency detected", __func__);
-		}
-	}
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
 	if (!reconfig) {
@@ -3414,59 +3403,6 @@ static void _acct_restore_active_jobs(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
-}
-
-/* _compare_hostnames()
- */
-static int _compare_hostnames(node_record_t **old_node_table,
-			      int old_node_count, node_record_t **node_table,
-			      int node_count)
-{
-	int cc;
-	char *old_ranged;
-	char *ranged;
-	hostset_t *old_set;
-	hostset_t *set;
-
-	/*
-	 * Don't compare old DYNAMIC_NORM nodes because they don't rely on
-	 * fanout communications. Plus they haven't been loaded from state yet
-	 * into the new node_record_table_ptr.
-	 */
-	old_set = hostset_create("");
-	for (cc = 0; cc < old_node_count; cc++)
-		if (old_node_table[cc] &&
-		    !IS_NODE_DYNAMIC_NORM(old_node_table[cc]))
-			hostset_insert(old_set, old_node_table[cc]->name);
-
-	set = hostset_create("");
-	for (cc = 0; cc < node_count; cc++)
-		if (node_table && node_table[cc])
-			hostset_insert(set, node_table[cc]->name);
-
-	old_ranged = hostset_ranged_string_xmalloc(old_set);
-	ranged = hostset_ranged_string_xmalloc(set);
-
-	if (hostset_count(old_set) != hostset_count(set)) {
-		error("%s: node count has changed before reconfiguration "
-		      "from %d to %d. You have to restart slurmctld.",
-		      __func__, hostset_count(old_set), hostset_count(set));
-		return -1;
-	}
-
-	cc = 0;
-	if (xstrcmp(old_ranged, ranged) != 0) {
-		error("%s: node names changed before reconfiguration. "
-		      "You have to restart slurmctld.", __func__);
-		cc = -1;
-	}
-
-	hostset_destroy(old_set);
-	hostset_destroy(set);
-	xfree(old_ranged);
-	xfree(ranged);
-
-	return cc;
 }
 
 extern int dump_config_state_lite(void)
