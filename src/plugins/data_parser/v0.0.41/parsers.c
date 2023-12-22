@@ -5608,6 +5608,18 @@ static void FREE_FUNC(SHARES_REQ_MSG)(void *ptr)
 	slurm_free_shares_request_msg(msg);
 }
 
+PARSE_DISABLED(RPC_ID)
+
+static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
+			       data_t *dst, args_t *args)
+{
+	uint16_t *id = obj;
+
+	data_set_string(dst, rpc_num2string(*id));
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8782,6 +8794,7 @@ static const parser_t parsers[] = {
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addpsp(ASSOC_ID, ASSOC_SHORT, uint32_t, NEED_ASSOC, "Association ID"),
+	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
