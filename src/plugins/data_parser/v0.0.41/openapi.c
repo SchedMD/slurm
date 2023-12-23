@@ -311,15 +311,15 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	bool deprecated = (parser->deprecated ||
 			   (parent && parent->deprecated));
 
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
 	if (desc)
 		/* do nothing */;
 	else if (parent && parent->obj_desc)
 		desc = parent->obj_desc;
 	else if (parser->obj_desc)
 		desc = parser->obj_desc;
-
-	xassert(sargs->magic == MAGIC_SPEC_ARGS);
-	xassert(sargs->args->magic == MAGIC_ARGS);
 
 	if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
 	    (parser->model ==
