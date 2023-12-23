@@ -308,8 +308,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 {
 	char *str, *key;
 	const char *desc = NULL;
-	bool deprecated = (parser->deprecated ||
-			   (parent && parent->deprecated));
+	bool deprecated = (parent && parent->deprecated);
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
@@ -321,6 +320,10 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 			desc = parent->obj_desc;
 		else if (parser->obj_desc)
 			desc = parser->obj_desc;
+
+		/* All children are deprecated once the parent is */
+		if (parser->deprecated)
+			deprecated = true;
 
 		if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
 		    (parser->model ==
