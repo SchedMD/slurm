@@ -242,11 +242,13 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * IN obj - data_t ptr to specific field in OpenAPI schema
  * IN parser - populate field with info from parser
  * IN description - description from parent pointer parser or NULL
+ * IN deprecated - parser marked as deprecated
  *
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
-				  spec_args_t *sargs, const char *desc)
+				  spec_args_t *sargs, const char *desc,
+				  bool deprecated)
 {
 	data_t *props;
 	openapi_type_format_t format;
@@ -300,6 +302,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 		}
 	}
 
+	if (deprecated)
+		data_set_bool(data_key_set(obj, "deprecated"), true);
+
 	return props;
 }
 
@@ -345,7 +350,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	}
 
 	if (sargs->disable_refs || !_should_be_ref(parser, sargs)) {
-		_set_openapi_parse(obj, parser, sargs, desc);
+		_set_openapi_parse(obj, parser, sargs, desc, deprecated);
 		return;
 	}
 
@@ -370,7 +375,8 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 
 	if (data_get_type(obj) == DATA_TYPE_NULL) {
 		debug4("%s: adding schema %s", __func__, key);
-		_set_openapi_parse(data_set_dict(obj), parser, sargs, NULL);
+		_set_openapi_parse(data_set_dict(obj), parser, sargs, NULL,
+				   parser->deprecated);
 	} else {
 		debug4("%s: skip adding duplicate schema %s", __func__, key);
 	}
@@ -886,5 +892,5 @@ extern void set_openapi_schema(data_t *dst, const parser_t *parser,
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 
-	(void) _set_openapi_parse(dst, parser, &sargs, NULL);
+	(void) _set_openapi_parse(dst, parser, &sargs, NULL, false);
 }
