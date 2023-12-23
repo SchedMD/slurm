@@ -308,6 +308,8 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 {
 	char *str, *key;
 	const char *desc = NULL;
+	bool deprecated = (parser->deprecated ||
+			   (parent && parent->deprecated));
 
 	if (parent && parent->obj_desc)
 		desc = parent->obj_desc;
@@ -349,7 +351,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	if (desc && !data_key_get(obj, "description"))
 		data_set_string(data_key_set(obj, "description"), desc);
 
-	if (parser->deprecated || (parent && parent->deprecated))
+	if (deprecated)
 		data_set_bool(data_key_set(obj, "deprecated"), true);
 
 	/* Add schema for $ref target */
