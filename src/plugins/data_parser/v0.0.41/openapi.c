@@ -314,27 +314,31 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (desc)
-		/* do nothing */;
-	else if (parent && parent->obj_desc)
-		desc = parent->obj_desc;
-	else if (parser->obj_desc)
-		desc = parser->obj_desc;
-
-	if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
-	    (parser->model ==
-	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
-		/* resolve to linked parser */
-		parent = parser;
-		parser = find_parser_by_type(parser->type);
-	}
-
-	while (parser->pointer_type) {
-		if (parser->obj_desc && !desc)
+	while (true) {
+		if (desc)
+			/* do nothing */;
+		else if (parent && parent->obj_desc)
+			desc = parent->obj_desc;
+		else if (parser->obj_desc)
 			desc = parser->obj_desc;
 
-		parser = find_parser_by_type(parser->pointer_type);
+		if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
+		    (parser->model ==
+		     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
+		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
+			/* resolve to linked parser */
+			parent = parser;
+			parser = find_parser_by_type(parser->type);
+
+			continue;
+		}
+
+		if (parser->pointer_type) {
+			parser = find_parser_by_type(parser->pointer_type);
+			continue;
+		}
+
+		break;
 	}
 
 	if (sargs->disable_refs || !_should_be_ref(parser, sargs)) {
