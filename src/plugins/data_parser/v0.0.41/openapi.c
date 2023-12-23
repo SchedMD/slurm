@@ -168,7 +168,12 @@ static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
 
 static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 {
-	uint32_t parser_index = _resolve_parser_index(parser, sargs);
+	uint32_t parser_index;
+
+	if (sargs->disable_refs)
+		return false;
+
+	parser_index = _resolve_parser_index(parser, sargs);
 
 	/* parser with single reference doesn't need to be a $ref */
 	if (parser_index != NO_VAL) {
@@ -349,7 +354,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		break;
 	}
 
-	if (sargs->disable_refs || !_should_be_ref(parser, sargs)) {
+	if (!_should_be_ref(parser, sargs)) {
 		_set_openapi_parse(obj, parser, sargs, desc, deprecated);
 		return;
 	}
