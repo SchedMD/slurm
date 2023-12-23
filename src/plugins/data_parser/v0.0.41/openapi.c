@@ -311,7 +311,9 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	bool deprecated = (parser->deprecated ||
 			   (parent && parent->deprecated));
 
-	if (parent && parent->obj_desc)
+	if (desc)
+		/* do nothing */;
+	else if (parent && parent->obj_desc)
 		desc = parent->obj_desc;
 	else if (parser->obj_desc)
 		desc = parser->obj_desc;
