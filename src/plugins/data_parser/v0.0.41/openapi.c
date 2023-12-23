@@ -256,14 +256,11 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(!parser->pointer_type);
+	xassert(parser->model != PARSER_MODEL_ARRAY_LINKED_FIELD);
 
 	if ((parser->model ==
 	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
 	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
-		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
-		return NULL;
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
-		/* find all parsers that should be references */
 		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	}
@@ -323,6 +320,12 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+		/* resolve to linked parser */
+		parent = parser;
+		parser = find_parser_by_type(parser->type);
+	}
 
 	while (parser->pointer_type) {
 		if (parser->obj_desc && !desc)
