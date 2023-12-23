@@ -257,13 +257,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(!parser->pointer_type);
 	xassert(parser->model != PARSER_MODEL_ARRAY_LINKED_FIELD);
-
-	if ((parser->model ==
-	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
-		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
-		return NULL;
-	}
+	xassert(parser->model !=
+		PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD);
+	xassert(parser->model != PARSER_MODEL_ARRAY_REMOVED_FIELD);
 
 	if (parser->array_type || parser->list_type ||
 	    (parser->flag_bit_array && !parser->single_flag))
@@ -321,7 +317,10 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+	if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
+	    (parser->model ==
+	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
+	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
 		/* resolve to linked parser */
 		parent = parser;
 		parser = find_parser_by_type(parser->type);
