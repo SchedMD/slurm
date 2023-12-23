@@ -66,7 +66,6 @@ typedef struct {
 	bool disable_refs;
 } spec_args_t;
 
-static void _add_parser(const parser_t *parser, spec_args_t *sargs);
 static void _replace_refs(data_t *data, spec_args_t *sargs);
 static void _count_refs(data_t *data, spec_args_t *sargs);
 extern void _set_ref(data_t *obj, const parser_t *parent,
@@ -317,7 +316,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs)
 {
-	char *str;
+	char *str, *key;
 	const char *desc = NULL;
 
 	if (parent && parent->obj_desc)
@@ -354,7 +353,19 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	if (parser->deprecated || (parent && parent->deprecated))
 		data_set_bool(data_key_set(obj, "deprecated"), true);
 
-	_add_parser(parser, sargs);
+	/* Add schema for $ref target */
+
+	key = _get_parser_key(parser);
+	obj = data_key_set(sargs->schemas, key);
+
+	if (data_get_type(obj) == DATA_TYPE_NULL) {
+		debug4("%s: adding schema %s", __func__, key);
+		_set_openapi_parse(data_set_dict(obj), parser, sargs, NULL);
+	} else {
+		debug4("%s: skip adding duplicate schema %s", __func__, key);
+	}
+
+	xfree(key);
 }
 
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
@@ -407,39 +418,6 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 
 	FREE_NULL_DATA(path);
 	return dst;
-}
-
-static void _add_parser(const parser_t *parser, spec_args_t *sargs)
-{
-	data_t *obj;
-	char *key;
-
-	xassert(sargs->magic == MAGIC_SPEC_ARGS);
-	xassert(sargs->args->magic == MAGIC_ARGS);
-
-	if (!_should_be_ref(parser, sargs)) {
-	       debug3("%s: skip adding %s as simple type=%s format=%s",
-		      __func__, parser->type_string,
-		      openapi_type_format_to_type_string(
-			      parser->obj_openapi),
-		      openapi_type_format_to_format_string(
-			      parser->obj_openapi));
-	       return;
-	}
-
-	key = _get_parser_key(parser);
-	obj = data_key_set(sargs->schemas, key);
-
-	if (data_get_type(obj) != DATA_TYPE_NULL) {
-		debug3("%s: skip adding duplicate schema %s",
-		      __func__, key);
-		xfree(key);
-		return;
-	}
-	xfree(key);
-
-	data_set_dict(obj);
-	_set_openapi_parse(obj, parser, sargs, NULL);
 }
 
 static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
