@@ -50,6 +50,11 @@
 #include "parsing.h"
 #include "slurmdb_helpers.h"
 
+typedef struct {
+	char *pos;
+	char *str;
+} list_to_str_args_t;
+
 extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
 				  args_t *args, List *list,
 				  db_list_query_func_t func, void *cond,
@@ -236,6 +241,32 @@ done:
 	return SLURM_SUCCESS;
 }
 
+static data_for_each_cmd_t _concat_data_to_str(data_t *data, void *arg)
+{
+	list_to_str_args_t *args = arg;
+	char *flag_str = NULL;
+
+	if (args->str)
+		xstrcatat(args->str, &args->pos, ",");
+
+	if (data_get_string_converted(data, &flag_str))
+		error("%s: Could not convert data to string", __func__);
+
+	xstrcatat(args->str, &args->pos, flag_str);
+	xfree(flag_str);
+	return DATA_FOR_EACH_CONT;
+}
+
+static char *_data_list_to_str(data_t *data)
+{
+	list_to_str_args_t args = { 0 };
+
+	xassert(data_get_type(data) == DATA_TYPE_LIST);
+
+	data_list_for_each(data, _concat_data_to_str, &args);
+	return args.str;
+}
+
 extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 				 args_t *args, const char *func_name)
 {
@@ -244,6 +275,29 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 	check_parser(parser);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert((op == PARSING) || (op == DUMPING) || (op == QUERYING));
+
+	if (parser->needs && !slurm_conf.accounting_storage_type) {
+		char *needs = NULL;
+		data_t *needs_data = data_new();
+		need_t src = parser->needs;
+
+		DUMP(NEED_PREREQS_FLAGS, src, needs_data, args);
+		needs = _data_list_to_str(needs_data);
+		data_free(needs_data);
+
+		if (!args->tres_list && (parser->needs & NEED_TRES))
+			args->tres_list = list_create(NULL);
+		if (!args->assoc_list && (parser->needs & NEED_ASSOC))
+			args->assoc_list = list_create(NULL);
+		if (!args->qos_list && (parser->needs & NEED_QOS))
+			args->qos_list = list_create(NULL);
+
+		on_warn(op, parser->type, args, NULL, __func__,
+			"Slurm accounting storage is disabled. Could not query the following: [%s].",
+			needs);
+		xfree(needs);
+		return SLURM_SUCCESS;
+	}
 
 	if (parser->needs && !args->db_conn) {
 		args->db_conn = slurmdb_connection_get(NULL);

@@ -339,6 +339,10 @@ static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				      data_t *str, args_t *args,
 				      data_t *parent_path);
+static int PARSE_FUNC(STRING)(const parser_t *const parser, void *obj,
+			      data_t *str, args_t *args, data_t *parent_path);
+static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
+			     data_t *data, args_t *args);
 
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
@@ -747,11 +751,7 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 static int DUMP_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
-	char **name = obj;
-
-	(void) data_set_string(dst, *name);
-
-	return SLURM_SUCCESS;
+	return DUMP_FUNC(STRING)(parser, obj, dst, args);
 }
 
 static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
@@ -5640,6 +5640,14 @@ static int DUMP_FUNC(ASSOC_SHARES_OBJ_LIST)(const parser_t *const parser,
 
 	data_set_list(dst);
 
+	if (!resp->assoc_shares_list) {
+		if (!slurm_conf.accounting_storage_type) {
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Shares list is empty because slurm accounting storage is disabled.");
+		}
+		return SLURM_SUCCESS;
+	}
+
 	if (list_for_each(resp->assoc_shares_list,
 			  _foreach_dump_ASSOC_SHARES_OBJ_LIST, &fargs) < 0)
 		xassert(fargs.rc);
@@ -8275,6 +8283,14 @@ static const parser_t PARSER_ARRAY(WCKEY_TAG_STRUCT)[] = {
 };
 #undef add_parse_req
 
+static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
+	add_flag_equal(NEED_NONE, INFINITE16, "NONE"),
+	add_flag_bit(NEED_AUTH, "AUTH"),
+	add_flag_bit(NEED_TRES, "TRES"),
+	add_flag_bit(NEED_QOS, "QOS"),
+	add_flag_bit(NEED_ASSOC, "ASSOC"),
+};
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -9003,6 +9019,7 @@ static const parser_t parsers[] = {
 	addfa(STEP_NAMES, uint32_t),
 	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
 	addfa(WCKEY_TAG_FLAGS, WCKEY_TAG_FLAGS_t),
+	addfa(NEED_PREREQS_FLAGS, need_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
