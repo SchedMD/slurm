@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmscriptd processing delays from blocking other threads in
     slurmctld while trying to launch various scripts. This is additional work
     for a fix in 23.02.6.
+ -- Fix memory leak when receiving alias addrs from controller.
 
 * Changes in Slurm 23.11.1
 ==========================

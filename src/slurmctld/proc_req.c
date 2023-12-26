@@ -6558,6 +6558,7 @@ end_it:
 
 	xfree(alias_addrs.node_addrs);
 	xfree(alias_addrs.node_list);
+	FREE_NULL_BITMAP(node_bitmap);
 }
 
 slurmctld_rpc_t slurmctld_rpcs[] =
