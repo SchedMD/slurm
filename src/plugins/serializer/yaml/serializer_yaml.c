@@ -941,7 +941,9 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	data_t *data = data_new();
 	yaml_parser_t parser;
 
-	xassert(length < strlen(src));
+	/* string must be NULL terminated */
+	if (!length || (src[length] && (strnlen(src, length) >= length)))
+		return EINVAL;
 
 	if (_parse_yaml(src, &parser, data)) {
 		FREE_NULL_DATA(data);
