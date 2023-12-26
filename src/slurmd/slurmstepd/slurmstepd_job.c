@@ -68,7 +68,6 @@
 #include "src/slurmd/slurmstepd/multi_prog.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static char **_array_copy(int n, char **src);
 static void _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
 				char *ifname, char *ofname, char *efname);
 static void _srun_info_destructor(void *arg);
@@ -188,20 +187,6 @@ _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
 					    step->argc, step->argv);
 		}
 	}
-}
-
-static char **
-_array_copy(int n, char **src)
-{
-	char **dst = xmalloc((n+1) * sizeof(char *));
-	int i;
-
-	for (i = 0; i < n; i++) {
-		dst[i] = xstrdup(src[i]);
-	}
-	dst[n] = NULL;
-
-	return dst;
 }
 
 /* destructor for list routines */
@@ -357,7 +342,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->cpu_freq_gov = msg->cpu_freq_gov;
 	step->cpus_per_task = msg->cpus_per_task;
 
-	step->env     = _array_copy(msg->envc, msg->env);
+	step->env = slurm_char_array_copy(msg->envc, msg->env);
 	step->array_job_id  = msg->step_id.job_id;
 	step->array_task_id = NO_VAL;
 	/* Used for env vars */
@@ -462,7 +447,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->task_epilog = xstrdup(msg->task_epilog);
 
 	step->argc    = msg->argc;
-	step->argv    = _array_copy(step->argc, msg->argv);
+	step->argv = slurm_char_array_copy(step->argc, msg->argv);
 
 	step->nnodes  = msg->nnodes;
 	step->nodeid  = nodeid;
@@ -592,7 +577,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		step->container = c;
 	}
 
-	step->env     = _array_copy(msg->envc, msg->environment);
+	step->env = slurm_char_array_copy(msg->envc, msg->environment);
 	step->eio     = eio_handle_create(0);
 	step->sruns   = list_create((ListDelF) _srun_info_destructor);
 	step->envtp   = xmalloc(sizeof(env_t));
@@ -630,7 +615,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	if (msg->argc) {
 		step->argc    = msg->argc;
-		step->argv    = _array_copy(step->argc, msg->argv);
+		step->argv = slurm_char_array_copy(step->argc, msg->argv);
 	} else {
 		step->argc    = 1;
 		/* step script has not yet been written out to disk --

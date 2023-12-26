@@ -1578,6 +1578,8 @@ extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
+extern char **slurm_char_array_copy(int n, char **src);
+
 /*
  * Sort an unordered node_list string and remove duplicate node names.
  *
