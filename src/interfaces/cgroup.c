@@ -235,6 +235,8 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 		return SLURM_SUCCESS;
 	}
 
+	_clear_slurm_cgroup_conf();
+
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_mountpoint,
 			       &uint32_tmp, buffer);
 
@@ -670,9 +672,6 @@ extern int cgroup_read_conf(int fd)
 	buf_t *buffer = NULL;
 
 	slurm_rwlock_wrlock(&cg_conf_lock);
-
-	if (cg_conf_inited)
-		_clear_slurm_cgroup_conf();
 
 	safe_read(fd, &len, sizeof(int));
 	buffer = init_buf(len);
