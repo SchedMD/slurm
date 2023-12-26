@@ -177,7 +177,8 @@ function __slurm_comp() {
 	local suffix="$4"
 	local ifs="${5-" "}"
 	local IFS=$' \t\n'
-	COMPREPLY=() # reset
+
+	__slurm_comp_reset
 
 	__slurm_log_debug "$(__func__): prefix='$prefix' _cur='$_cur' suffix='$suffix' ifs='$ifs'"
 	__slurm_log_debug "$(__func__): options='$options'"
@@ -201,6 +202,10 @@ function __slurm_comp() {
 
 	__slurm_log_info "$(__func__): #COMPREPLY[@]='${#COMPREPLY[@]}'"
 	__slurm_log_info "$(__func__): COMPREPLY[*]='${COMPREPLY[*]}'"
+}
+
+function __slurm_comp_reset() {
+	COMPREPLY=()
 }
 
 # Slurm completion helper for count notation
@@ -279,7 +284,7 @@ function __slurm_compreply_param() {
 	for param in $options; do
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
-		[[ $p != "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${param}[^[:space:]]+[[:space:]]+ ]] && continue
+		[[ $p != "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${param}[^[:space:]]*[[:space:]]+ ]] && continue
 		[[ $p == "$param" ]] && [[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
@@ -2033,6 +2038,9 @@ function __slurm_comp_sacctmgr_spec_associations() {
 		"maxtresperjob="
 		"maxwalldurationperjob="
 		"priority="
+		"qos="
+		"qos\+="
+		"qos\-="
 		"qoslevel="
 		"qoslevel\+="
 		"qoslevel\-="
@@ -2057,7 +2065,7 @@ function __slurm_comp_sacctmgr_spec_associations() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2065,7 +2073,7 @@ function __slurm_comp_sacctmgr_spec_associations() {
 	defaultqos) __slurm_compreply "$(__slurm_qos)" ;;
 	partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	parent?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
+	qos?(s)?(+|-)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	qoslevel?(s)?(+|-)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
@@ -2110,7 +2118,7 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2171,7 +2179,7 @@ function __slurm_comp_sacctmgr_spec_clusters() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2211,7 +2219,7 @@ function __slurm_comp_sacctmgr_spec_coordinators() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2275,7 +2283,7 @@ function __slurm_comp_sacctmgr_spec_events() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2318,7 +2326,7 @@ function __slurm_comp_sacctmgr_spec_federations() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)?(+|-)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2359,7 +2367,7 @@ function __slurm_comp_sacctmgr_spec_instances() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2407,7 +2415,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2434,6 +2442,8 @@ function __slurm_comp_sacctmgr_spec_qos() {
 	)
 	local parameters_set=(
 		"flags="
+		"flags\-="
+		"flags\+="
 		"gracetime="
 		"grpjobs="
 		"grpjobsaccrue="
@@ -2499,10 +2509,10 @@ function __slurm_comp_sacctmgr_spec_qos() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
-	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
+	flag?(s)?(+|-)) __slurm_compreply_list "${flags[*]}" ;;
 	id?(s)) __slurm_compreply_list "$(__slurm_qosid)" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	preempt?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
@@ -2544,7 +2554,7 @@ function __slurm_comp_sacctmgr_spec_reservations() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2597,7 +2607,7 @@ function __slurm_comp_sacctmgr_spec_resources() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
@@ -2642,7 +2652,7 @@ function __slurm_comp_sacctmgr_spec_transactions() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
@@ -2689,7 +2699,7 @@ function __slurm_comp_sacctmgr_spec_tres() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	type?(s)) __slurm_compreply "${types[*]}" ;;
@@ -2744,7 +2754,7 @@ function __slurm_comp_sacctmgr_spec_users() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
@@ -2790,7 +2800,7 @@ function __slurm_comp_sacctmgr_spec_wckeys() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	__slurm_compreply_param "${parameters[*]}"
-	$split || return
+	$split && __slurm_comp_reset || return 1
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
