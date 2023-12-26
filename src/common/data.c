@@ -2110,11 +2110,13 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_list_length(b));
 		return rc;
-	default:
-		fatal_abort("%s: unexpected data type", __func__);
+	case TYPE_NONE:
+	case TYPE_START:
+	case TYPE_MAX:
+		/* fall through */
 	}
 
-	return rc;
+	fatal_abort("%s: unexpected data type", __func__);
 }
 
 extern data_t *data_resolve_dict_path(data_t *data, const char *path)
