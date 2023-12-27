@@ -78,6 +78,9 @@
 const char plugin_name[] = "Serializer YAML plugin";
 const char plugin_type[] = "serializer/yaml";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+#define YAML_MAX_DEPTH 124
+
 /*
  * YAML doesn't have an IANA registered mime type yet
  * so we are gonna match ruby on rails.
@@ -332,10 +335,10 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 	       __func__, (uintptr_t) d, depth, _yaml_parse_mode_string(mode));
 
 	/* sanity check nesting depth */
-	if (depth > 124) {
-		error("%s: YAML nested too deep (%d layers) for data (0x%"PRIXPTR")",
-		      __func__, depth, (uintptr_t)d);
-		return SLURM_ERROR;
+	if (depth > YAML_MAX_DEPTH) {
+		error("%s: YAML nested too deep (%d layers) at %pD",
+		      __func__, depth, d);
+		return ESLURM_DATA_PARSING_DEPTH;
 	}
 
 	while (rc == SLURM_SUCCESS) {
