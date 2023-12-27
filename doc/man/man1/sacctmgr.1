@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "November 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "December 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -597,6 +597,11 @@ See the \fBEXAMPLES\fR section below.
 
 .SH "SPECIFICATIONS FOR ACCOUNTS"
 
+.LP
+Accounts can be created, modified, and deleted with sacctmgr. These options
+allow you to set the corresponding attributes or filter on them when
+querying for Accounts.
+
 .TP
 \fBCluster\fR=<\fIcluster\fR>
 Specific cluster to add account to.  Default is all in system.
@@ -661,6 +666,12 @@ ASSOCIATION BASED ENTITIES\fP section.
 
 .SH "LIST/SHOW ACCOUNT FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing Account records by using the \fIformat=\fR
+option. The default format is:
+.br
+Account,Description,Organization
+
 .TP
 \fBAccount\fR
 The name of a bank account.
@@ -691,6 +702,11 @@ described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
+
+.LP
+Associations can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Associations.
 
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
@@ -765,6 +781,10 @@ from the parent).
 
 
 .SH "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
+
+.LP
+Fields you can display when viewing Association records by using the
+\fIformat=\fR option.
 
 .TP
 \fBAccount\fR
@@ -958,6 +978,11 @@ was assigned, added or filtered in the hierarchy.
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
 
+.LP
+Clusters can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Clusters.
+
 .TP
 \fBClassification\fR=<\fIclassification\fR>
 Type of machine, current classifications are capability, capacity and
@@ -1046,6 +1071,10 @@ default format of Cluster,ControlHost,ControlPort,RPC
 
 
 .SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
+
+.LP
+Fields you can display when viewing Cluster records by using the \fIformat=\fR
+option.
 
 .TP
 \fBClassification\fR
@@ -1137,6 +1166,11 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 .SH "SPECIFICATIONS FOR COORDINATOR"
 
+.LP
+Coordinators can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Coordinators.
+
 .TP
 \fBAccount\fR=<\fIaccount_name\fR>[,<\fIaccount_name\fR>,...]
 Account name to add this user as a coordinator to.
@@ -1154,7 +1188,8 @@ account or list user.
 .SH "SPECIFICATIONS FOR EVENTS"
 
 .LP
-Options you can specify to filter for specific types of events.
+Events are automatically generated and sent to slurmdbd to be stored.
+These are options you can specify to filter for specific types of events.
 
 .TP
 \fBAll_Clusters\fR
@@ -1269,8 +1304,9 @@ event.
 .SH "LIST/SHOW EVENT FORMAT OPTIONS"
 
 .LP
-Fields you can display when viewing event records by using the \fIformat=\fR
+Fields you can display when viewing Event records by using the \fIformat=\fR
 option. The default format is:
+.br
 Cluster,NodeName,TimeStart,TimeEnd,State,Reason,User
 
 .TP
@@ -1342,6 +1378,11 @@ On a node event this is the user who caused the event to happen.
 
 .SH "SPECIFICATIONS FOR FEDERATION"
 
+.LP
+Federations can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Federations.
+
 .TP
 \fBClusters\fR[+|\-]=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List of clusters to add/remove to a federation. A blank value (e.g. clusters=)
@@ -1369,6 +1410,12 @@ the \fBWithDeleted\fR flag.
 .IP
 
 .SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
+
+.LP
+Fields you can display when viewing Federation records by using the
+\fIformat=\fR option. The default format is:
+.br
+Federation,Cluster,Features,FedState
 
 .TP
 \fBCluster\fR
@@ -1401,6 +1448,10 @@ The index of the cluster in the federation.
 .IP
 
 .SH "SPECIFICATIONS FOR INSTANCES"
+
+.LP
+Information about cloud node instances is sent to slurmdbd to be stored.
+These are options you can specify to filter for specific instances.
 
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
@@ -1464,7 +1515,12 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 
 .SH "LIST/SHOW INSTANCE FORMAT OPTIONS"
-Show time periods for when cloud nodes were active.
+
+.LP
+Fields you can display when viewing Instance records by using the \fIformat=\fR
+option. The default format is:
+.br
+Cluster,NodeName,Start,End,InstanceID,InstanceType,Extra
 
 .TP
 \fBCluster\fR
@@ -1504,6 +1560,11 @@ Time when instance started.
 
 
 .SH "SPECIFICATIONS FOR JOB"
+
+.LP
+Job information is automatically sent to slurmdbd to be stored.
+These are options you can specify to filter for specific jobs. There are also
+some attributes you can modify for a job record.
 
 .TP
 \fBAdminComment\fR=<\fIadmin_comment\fR>
@@ -1594,6 +1655,12 @@ The \fBsacct\fR command is the exclusive command to display job
 records from the Slurm database.
 
 .SH "SPECIFICATIONS FOR QOS"
+
+.LP
+A QOS can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for a QOS.
+
 \fBNOTE\fR: The group limits (GrpJobs, GrpTRES, etc.) are tested when a job is
 being considered for being allocated resources.
 If starting a job would cause any of its group limit to be exceeded,
@@ -2140,6 +2207,10 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .SH "LIST/SHOW QOS FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing QOS records by using the \fIformat=\fR
+option.
+
 .TP
 \fBDescription\fR
 An arbitrary string describing a QOS.
@@ -2361,6 +2432,11 @@ the \fBWithDeleted\fR flag.
 
 .SH "SPECIFICATIONS FOR RESERVATIONS"
 
+.LP
+Reservations are created with the scontrol command and information about the
+reservations is sent to slurmdbd to be stored.
+These are options you can specify to filter for specific reservations.
+
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List the reservations of the cluster(s).  Default is the cluster where the
@@ -2418,6 +2494,12 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 .SH "LIST/SHOW RESERVATION FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing Reservation records by using the
+\fIformat=\fR option. The default format is:
+.br
+Cluster,Name,TRES,Start,End,UnusedWall
+
 .TP
 \fBAssociations\fR
 The id's of the associations able to run in the reservation.
@@ -2473,6 +2555,11 @@ for 1 minute would reduce unused_wall by 1 minute.
 
 
 .SH "SPECIFICATIONS FOR RESOURCE"
+
+.LP
+Resources can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Resources.
 
 .TP
 \fBLastConsumed\fR=<\fIOPT\fR>
@@ -2568,6 +2655,12 @@ available for usage by Slurm clusters.
 
 .SH "LIST/SHOW RESOURCE FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing Resource records by using the
+\fIformat=\fR option. The default format is:
+.br
+Name,Server,Type,Count,LastConsumed,Allocated,ServerType,Flags
+
 .TP
 \fBAllocated\fR
 The percent/count of licenses allocated to a cluster.
@@ -2616,6 +2709,13 @@ Type of resource this record represents.
 
 .SH "LIST/SHOW RUNAWAYJOB FORMAT OPTIONS"
 
+.LP
+Under certain circumstances, jobs can complete without having that completion
+recorded by slurmdbd. This results in a "runaway job", where slurmdbd is not
+going to record a completion time for that job without intervention.
+This command allows you to identify jobs that are in this state and have
+slurmdbd clean up the job record.
+
 .TP
 \fBCluster\fR
 Name of cluster job ran on.
@@ -2652,6 +2752,11 @@ Time job started running.
 .IP
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
+
+.LP
+Information about changes to clusters, resources, accounts, associations,
+etc., are recorded as transactions by slurmdbd.
+These are options you can specify to filter for specific transactions.
 
 .TP
 \fBAccounts\fR=<\fIaccount_name\fR>[,<\fIaccount_name\fR>,...]
@@ -2708,6 +2813,12 @@ Get information about which associations were affected by the transactions.
 
 .SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing Transaction records by using the
+\fIformat=\fR option. The default format is:
+.br
+Time,Action,Actor,Where,Info
+
 .TP
 \fBAction\fR
 Displays the type of Action that took place.
@@ -2740,6 +2851,11 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "SPECIFICATIONS FOR USERS"
+
+.LP
+Users can be created, modified, and deleted with sacctmgr. These
+options allow you to set the corresponding attributes or filter on them
+when querying for Users.
 
 .TP
 \fBAccount\fR=<\fIaccount\fR>
@@ -2823,6 +2939,12 @@ ASSOCIATION BASED ENTITIES\fP section.
 
 .SH "LIST/SHOW USER FORMAT OPTIONS"
 
+.LP
+Fields you can display when viewing User records by using the
+\fIformat=\fR option. The default format is:
+.br
+User,DefaultAccount,DefaultWCKey,AdminLevel
+
 .TP
 \fBAdminLevel\fR
 Admin level of user.
@@ -2859,6 +2981,12 @@ described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 .SH "LIST/SHOW WCKey"
 
+.LP
+Fields you can display when viewing WCKey records by using the
+\fIformat=\fR option. The default format is:
+.br
+WCKey,Cluster,User
+
 .TP
 \fBCluster\fR
 Specific cluster for the WCKey.
@@ -2889,6 +3017,12 @@ the \fBWithDeleted\fR flag.
 .IP
 
 .SH "LIST/SHOW TRES"
+
+.LP
+Fields you can display when viewing TRES records by using the
+\fIformat=\fR option. The default format is:
+.br
+Type,Name,ID
 
 .TP
 \fBID\fR
