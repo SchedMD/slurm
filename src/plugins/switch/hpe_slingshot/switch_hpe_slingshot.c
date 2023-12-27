@@ -572,7 +572,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	 * If this is not the first component in a heterogeneous step, copy the
 	 * jobinfo struct from the first component.
 	 */
-	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL)) {
+	if (job_ptr->het_job_id) {
 		/* This is a het step in a het job */
 		if (_copy_het_job_jobinfo(job, step_ptr))
 			return SLURM_SUCCESS;
