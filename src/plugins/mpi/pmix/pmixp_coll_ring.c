@@ -536,14 +536,9 @@ inline static int _pmixp_coll_contrib(pmixp_coll_ring_ctx_t *coll_ctx,
 	coll->ts = time(NULL);
 
 	/* save contribution */
-	if (!size_buf(coll_ctx->ring_buf)) {
-		grow_buf(coll_ctx->ring_buf, size * coll->peers_cnt);
-	} else if(remaining_buf(coll_ctx->ring_buf) < size) {
-		uint32_t new_size = size_buf(coll_ctx->ring_buf) + size *
-			_ring_remain_contrib(coll_ctx);
-		grow_buf(coll_ctx->ring_buf, new_size);
-	}
-	grow_buf(coll_ctx->ring_buf, size);
+	if (try_grow_buf_remaining(coll_ctx->ring_buf, size))
+		return SLURM_ERROR;
+
 	data_ptr = get_buf_data(coll_ctx->ring_buf) +
 		get_buf_offset(coll_ctx->ring_buf);
 	memcpy(data_ptr, data, size);
