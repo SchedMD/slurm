@@ -174,14 +174,9 @@ static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
 
-/*
- * DCMI context cannot be reused between threads and this plugin can be called
- * from different slurmd threads, so we need the __thread specifier.
- */
-__thread ipmi_ctx_t ipmi_dcmi_ctx = NULL;
 static int dcmi_cnt = 0;
 
-static int _read_ipmi_dcmi_values(void);
+static int _read_ipmi_dcmi_values(ipmi_ctx_t *ipmi_dcmi_ctx_p);
 static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts);
 
 static int _running_profile(void)
@@ -212,11 +207,12 @@ static uint64_t _get_additional_consumption(time_t time0, time_t time1,
 /*
  * _open_dcmi_context opens the inband ipmi device for DCMI power reading
  */
-static int _open_dcmi_context(void)
+static int _open_dcmi_context(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	int ret;
+	ipmi_ctx_t ipmi_dcmi_ctx;
 
-	if (!dcmi_cnt || ipmi_dcmi_ctx)
+	if (!dcmi_cnt || *ipmi_dcmi_ctx_p)
 		return SLURM_SUCCESS;
 
 	ipmi_dcmi_ctx = ipmi_ctx_create();
@@ -246,17 +242,18 @@ static int _open_dcmi_context(void)
 		return SLURM_ERROR;
 	}
 
+	*ipmi_dcmi_ctx_p = ipmi_dcmi_ctx;
 	return SLURM_SUCCESS;
 }
 
-static void _close_dcmi_context(void)
+static void _close_dcmi_context(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
-	if (!ipmi_dcmi_ctx)
+	if (!*ipmi_dcmi_ctx_p)
 		return;
 
-	ipmi_ctx_close(ipmi_dcmi_ctx);
-	ipmi_ctx_destroy(ipmi_dcmi_ctx);
-	ipmi_dcmi_ctx = NULL;
+	ipmi_ctx_close(*ipmi_dcmi_ctx_p);
+	ipmi_ctx_destroy(*ipmi_dcmi_ctx_p);
+	*ipmi_dcmi_ctx_p = NULL;
 }
 
 /*
@@ -476,10 +473,12 @@ static int _find_power_sensor(void)
  * _get_dcmi_power_reading reads current power in Watt from the ipmi context
  * returns power in watts on success, a negative value on failure
  */
-static int _get_dcmi_power_reading(uint16_t dcmi_mode)
+static int _get_dcmi_power_reading(uint16_t dcmi_mode,
+				   ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	uint8_t mode;
 	uint8_t mode_attributes = 0;
+	ipmi_ctx_t ipmi_dcmi_ctx = *ipmi_dcmi_ctx_p;
 
 	uint64_t current_power;
 	fiid_obj_t dcmi_rs;
@@ -532,7 +531,7 @@ static int _get_dcmi_power_reading(uint16_t dcmi_mode)
 	return current_power;
 }
 
-static int _read_ipmi_dcmi_values(void)
+static int _read_ipmi_dcmi_values(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	int i, dcmi_res;
 
@@ -540,7 +539,8 @@ static int _read_ipmi_dcmi_values(void)
 		if ((sensors[i].id != DCMI_MODE) &&
 		    (sensors[i].id != DCMI_ENH_MODE))
 			continue;
-		dcmi_res = _get_dcmi_power_reading(sensors[i].id);
+		dcmi_res = _get_dcmi_power_reading(sensors[i].id,
+						   ipmi_dcmi_ctx_p);
 		if (dcmi_res < 0)
 			return SLURM_ERROR;
 		sensors[i].last_update_watt = dcmi_res;
@@ -649,14 +649,14 @@ static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts)
 /*
  * _read_ipmi_values read the Power sensor and update last_update_watt and times
  */
-static int _read_ipmi_values(void)
+static int _read_ipmi_values(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	uint32_t non_dcmi_cnt = sensors_len - dcmi_cnt;
 	int rc1 = 0, rc2 = 0;
 
 	/* Start by reading DCMI sensors */
 	if (dcmi_cnt)
-		rc1 = _read_ipmi_dcmi_values();
+		rc1 = _read_ipmi_dcmi_values(ipmi_dcmi_ctx_p);
 
 	if (non_dcmi_cnt)
 		rc2 = _read_ipmi_non_dcmi_values(false);
@@ -704,13 +704,13 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt,
  * _thread_update_node_energy calls _read_ipmi_values and updates all values
  * for node consumption
  */
-static int _thread_update_node_energy(void)
+static int _thread_update_node_energy(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
 	static uint32_t readings = 0;
 
-	rc = _read_ipmi_values();
+	rc = _read_ipmi_values(ipmi_dcmi_ctx_p);
 
 	if (rc == SLURM_SUCCESS) {
 		/* sensors list */
@@ -756,14 +756,14 @@ static int _thread_update_node_energy(void)
 /*
  * _thread_init initializes values and conf for the ipmi thread
  */
-static int _thread_init(void)
+static int _thread_init(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 {
 	static bool first = true;
 	static bool first_init = SLURM_ERROR;
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
 
-	if (_open_dcmi_context() != SLURM_SUCCESS) {
+	if (_open_dcmi_context(ipmi_dcmi_ctx_p) != SLURM_SUCCESS) {
 		error("Cannot open dcmi context for this thread.");
 		return SLURM_ERROR;
 	}
@@ -866,6 +866,7 @@ static void *_thread_ipmi_run(void *no_data)
 // need input (attr)
 	struct timeval tvnow;
 	struct timespec abs;
+	ipmi_ctx_t ipmi_dcmi_ctx = NULL;
 
 	flag_energy_accounting_shutdown = false;
 	log_flag(ENERGY, "ipmi-thread: launched");
@@ -874,7 +875,7 @@ static void *_thread_ipmi_run(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
-	if (_thread_init() != SLURM_SUCCESS) {
+	if (_thread_init(&ipmi_dcmi_ctx) != SLURM_SUCCESS) {
 		log_flag(ENERGY, "ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
@@ -903,7 +904,7 @@ static void *_thread_ipmi_run(void *no_data)
 	while (!flag_energy_accounting_shutdown) {
 		slurm_mutex_lock(&ipmi_mutex);
 
-		_thread_update_node_energy();
+		_thread_update_node_energy(&ipmi_dcmi_ctx);
 
 		/* Sleep until the next time. */
 		abs.tv_sec += slurm_ipmi_conf.freq;
@@ -912,7 +913,7 @@ static void *_thread_ipmi_run(void *no_data)
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
-	_close_dcmi_context();
+	_close_dcmi_context(&ipmi_dcmi_ctx);
 	log_flag(ENERGY, "ipmi-thread: ended");
 
 	return NULL;
