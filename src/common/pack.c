@@ -250,11 +250,10 @@ buf_t *init_buf(uint32_t size)
 {
 	buf_t *my_buf;
 
-	if (size > MAX_BUF_SIZE) {
-		error("%s: Buffer size limit exceeded (%u > %u)",
-		      __func__, size, MAX_BUF_SIZE);
-		return NULL;
-	}
+	if (size > MAX_BUF_SIZE)
+		fatal_abort("%s: Buffer size limit exceeded (%u > %u)",
+			    __func__, size, MAX_BUF_SIZE);
+
 	if (size <= 0)
 		size = BUF_SIZE;
 	my_buf = xmalloc(sizeof(*my_buf));
