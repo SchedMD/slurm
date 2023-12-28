@@ -917,7 +917,7 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 			 void *arg)
 {
 	ssize_t read_c;
-	int readable;
+	int readable, rc;
 
 	con->can_read = false;
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -943,18 +943,11 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 #endif /* FIONREAD */
 
 	/* Grow buffer as needed to handle the incoming data */
-	if (remaining_buf(con->in) < readable) {
-		int need = readable - remaining_buf(con->in);
-
-		if ((need + size_buf(con->in)) >= MAX_BUF_SIZE) {
-			error("%s: [%s] out of buffer space.",
-			      __func__, con->name);
-
-			_close_con(false, con);
-			return;
-		}
-
-		grow_buf(con->in, need);
+	if ((rc = try_grow_buf_remaining(con->in, readable))) {
+		error("%s: [%s] unable to allocate larger input buffer: %s",
+		      __func__, con->name, slurm_strerror(rc));
+		_close_con(false, con);
+		return;
 	}
 
 	/* check for errors with a NULL read */
