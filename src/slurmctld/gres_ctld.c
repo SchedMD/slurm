@@ -1827,13 +1827,77 @@ extern void gres_ctld_job_clear_alloc(List job_gres_list)
 	list_for_each(job_gres_list, _foreach_clear_job_gres, NULL);
 }
 
+static char *_build_shared_gres_details(char *nodes, int node_index,
+					gres_state_t *gres_state_job,
+					gres_job_state_t *gres_js)
+{
+	int gres_cnt_on_node = 0;
+	gres_node_state_t *gres_ns = NULL;
+	gres_state_t *gres_state_node;
+	hostlist_t *host_list;
+	char *node;
+	node_record_t *node_ptr = NULL;
+	char *pos = NULL;
+	char *shared_gres_details_str = NULL;
+
+	/* Use host list so that gres_js node index matches correct gres_ns */
+	if (!(host_list = hostlist_create(nodes))) {
+		error("Could not create hostlist from nodes '%s'", nodes);
+		return NULL;
+	}
+
+	/* Find node record based on host list and node index */
+	if (!(node = hostlist_nth(host_list, node_index))) {
+		hostlist_destroy(host_list);
+		return NULL;
+	}
+	hostlist_destroy(host_list);
+
+	if (!(node_ptr = find_node_record(node))) {
+		error("Could not find record for node '%s'", node);
+		free(node);
+		return NULL;
+	}
+	free(node);
+
+	/* Find gres_state_node with plugin_id that matches gres_state_job */
+	gres_state_node = list_find_first(node_ptr->gres_list, gres_find_id,
+					  &gres_state_job->plugin_id);
+	gres_ns = gres_state_node->gres_data;
+
+	if (!gres_ns)
+		return NULL;
+
+	/*
+	 * Fill shared gres details string with info about allocated shared gres
+	 * from gres_js->gres_bit_alloc, and info about available shared gres
+	 * from gres_ns->topo_gres_cnt_avail
+	 */
+	gres_cnt_on_node = bit_size(gres_js->gres_bit_alloc[node_index]);
+	for (int i = 0; i < gres_cnt_on_node; i++) {
+		xstrfmtcatat(shared_gres_details_str, &pos,
+			     "%"PRIu64"/%"PRIu64",",
+			     gres_js->gres_per_bit_alloc[node_index][i],
+			     gres_ns->topo_gres_cnt_avail[i]);
+	}
+
+	if (pos) {
+		/* Strip the last comma off. */
+		pos--;
+		pos[0] = '\0';
+	}
+
+	return shared_gres_details_str;
+}
+
 /* Given a job's GRES data structure, return the indecies for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
+ * IN nodes - list of nodes allocated to job
  * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
  */
-extern void gres_ctld_job_build_details(List job_gres_list,
+extern void gres_ctld_job_build_details(List job_gres_list, char *nodes,
 					uint32_t *gres_detail_cnt,
 					char ***gres_detail_str,
 					char **total_gres_str)
@@ -1899,7 +1963,19 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 
 			gres_cnt += alloc_cnt;
 
-			if (gres_js->gres_bit_alloc[j]) {
+			if (gres_js->gres_bit_alloc[j] &&
+			    (gres_js->gres_per_bit_alloc &&
+			     gres_js->gres_per_bit_alloc[j])) {
+				char *shared_gres_details =
+					_build_shared_gres_details(
+						nodes, j, gres_state_job, gres_js);
+				xstrfmtcat(my_gres_details[j],
+					   "%s%s:%" PRIu64 "(%s)", sep1,
+					   gres_name, alloc_cnt,
+					   shared_gres_details);
+				xfree(shared_gres_details);
+
+			} else if (gres_js->gres_bit_alloc[j]) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
 					gres_js->gres_bit_alloc[j]);
 				xstrfmtcat(my_gres_details[j],

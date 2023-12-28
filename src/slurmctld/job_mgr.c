@@ -2705,7 +2705,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	assoc_mgr_unlock(&locks);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
-	gres_ctld_job_build_details(job_ptr->gres_list_alloc,
+	gres_ctld_job_build_details(job_ptr->gres_list_alloc, job_ptr->nodes,
 				    &job_ptr->gres_detail_cnt,
 				    &job_ptr->gres_detail_str,
 				    &job_ptr->gres_used);
@@ -4242,6 +4242,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				(void) gs_job_start(job_ptr);
 				gres_ctld_job_build_details(
 					job_ptr->gres_list_alloc,
+					job_ptr->nodes,
 					&job_ptr->gres_detail_cnt,
 					&job_ptr->gres_detail_str,
 					&job_ptr->gres_used);
@@ -12783,6 +12784,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			FREE_NULL_BITMAP(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			gres_ctld_job_build_details(job_ptr->gres_list_alloc,
+						    job_ptr->nodes,
 						    &job_ptr->gres_detail_cnt,
 						    &job_ptr->gres_detail_str,
 						    &job_ptr->gres_used);
@@ -14464,6 +14466,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			update_accounting = false;
 		}
 		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
+					    job_ptr->nodes,
 					    &job_ptr->gres_detail_cnt,
 					    &job_ptr->gres_detail_str,
 					    &job_ptr->gres_used);

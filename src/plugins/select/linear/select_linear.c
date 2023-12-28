@@ -2191,6 +2191,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 
 	if (alloc_all) {
 		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
+					    job_ptr->nodes,
 					    &job_ptr->gres_detail_cnt,
 					    &job_ptr->gres_detail_str,
 					    &job_ptr->gres_used);
