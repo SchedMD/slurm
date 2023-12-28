@@ -41,6 +41,8 @@
 
 #include "config.h"
 
+#include <limits.h>
+
 #include "scontrol.h"
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
@@ -920,7 +922,11 @@ static void _fetch_token(int argc, char **argv)
 	for (int i = 1; i < argc; i++) {
 		if (!xstrncasecmp("lifespan=", argv[i], 9)) {
 			char *val = argv[i] + 9;
-			lifespan = parse_int("lifespan", val, true);
+			if ((!xstrcasecmp("infinite", val)) ||
+			    (!xstrcasecmp("unlimited", val)))
+				lifespan = INT_MAX - 1;
+			else
+				lifespan = parse_int("lifespan", val, true);
 		} else if (!xstrncasecmp("username=", argv[i], 9))
 			username = argv[i] + 9;
 		else {

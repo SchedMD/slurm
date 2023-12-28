@@ -661,7 +661,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 			exit(1);
 		return false;
 	} else if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
+		error("Numeric argument (%ld) too large for %s.", result, what);
 		if (isFatal)
 			exit(1);
 		return false;
@@ -689,7 +689,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 			exit(1);
 		return false;
 	} else if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
+		error("Numeric argument (%ld) too large for %s.", result, what);
 		if (isFatal)
 			exit(1);
 		return false;
@@ -1401,7 +1401,7 @@ extern int parse_int(const char *name, const char *val, bool positive)
 		error ("Invalid numeric value \"%s\" for %s.", val, name);
 		exit(1);
 	} else if (result >= INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, name);
+		error("Numeric argument (%ld) too large for %s.", result, name);
 		exit(1);
 	} else if (result <= INT_MIN) {
 		error ("Numeric argument (%ld) to small for %s.", result, name);
