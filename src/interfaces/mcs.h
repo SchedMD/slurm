@@ -43,7 +43,6 @@
 
 extern int mcs_g_init(void);
 extern int mcs_g_fini(void);
-extern int slurm_mcs_reconfig(void);
 extern char *slurm_mcs_get_params_specific(void);
 extern int slurm_mcs_reset_params(void);
 extern int slurm_mcs_get_select(job_record_t *job_ptr);

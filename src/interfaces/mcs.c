@@ -144,12 +144,6 @@ extern int mcs_g_fini(void)
 	return rc;
 }
 
-extern int slurm_mcs_reconfig(void)
-{
-	mcs_g_fini();
-	return mcs_g_init();
-}
-
 /* slurm_mcs_get_params_specific
  * RET mcs_params_common_spec, must be xfreed by caller
  */
