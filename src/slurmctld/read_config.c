@@ -1599,8 +1599,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (jobcomp_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize jobcomp plugin");
 	if (controller_init_scheduling(
-		    (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG))) !=
-	    SLURM_SUCCESS) {
+		(old_preempt_mode & PREEMPT_MODE_GANG)) != SLURM_SUCCESS) {
 		fatal("Failed to initialize the various schedulers");
 	}
 
