@@ -267,6 +267,41 @@ buf_t *init_buf(uint32_t size)
 	return my_buf;
 }
 
+extern buf_t *try_init_buf(uint32_t size)
+{
+	buf_t *buf;
+
+	if (!size)
+		size = BUF_SIZE;
+
+	if (size > MAX_BUF_SIZE) {
+		error("%s: Buffer size limit exceeded (%u > %u)",
+		      __func__, size, MAX_BUF_SIZE);
+		return NULL;
+	}
+
+	if (!(buf = try_xmalloc(sizeof(*buf)))) {
+		error("%s: Unable to allocate memory for %zu bytes",
+		      __func__, sizeof(*buf));
+		return NULL;
+	}
+
+	if (!(buf->head = try_xmalloc(size))) {
+		error("%s: Unable to allocate memory for %u bytes",
+		      __func__, size);
+		buf->magic = ~BUF_MAGIC;
+		xfree(buf);
+		return NULL;
+	}
+
+	buf->magic = BUF_MAGIC;
+	buf->size = size;
+	buf->processed = 0;
+	buf->mmaped = false;
+	buf->shadow = false;
+	return buf;
+}
+
 /* xfer_buf_data - return a pointer to the buffer's data and release the
  * buffer's structure */
 void *xfer_buf_data(buf_t *my_buf)

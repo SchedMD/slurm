@@ -91,6 +91,12 @@ extern buf_t *create_mmap_buf(const char *file);
 extern buf_t *create_shadow_buf(char *data, uint32_t size);
 extern void free_buf(buf_t *my_buf);
 extern buf_t *init_buf(uint32_t size);
+/*
+ * Try to create buffer by given number of bytes.
+ * IN size - number of bytes in buffer
+ * RET ptr to buffer or NULL on error
+ */
+extern buf_t *try_init_buf(uint32_t size);
 extern void grow_buf(buf_t *my_buf, uint32_t size);
 /*
  * Try to grow buffer by given number of bytes.
