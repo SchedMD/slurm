@@ -3374,9 +3374,15 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 				       size_buf(con->in))))
 			return EINVAL;
 
+		if (!(con->in->head = try_xmalloc(BUFFER_START_SIZE))) {
+			error("%s: [%s] Unable to allocate replacement input buffer",
+			      __func__, con->name);
+			FREE_NULL_BUFFER(buf);
+			return ENOMEM;
+		}
+
 		*buffer_ptr = buf;
 
-		con->in->head = xmalloc_nz(BUFFER_START_SIZE);
 		set_buf_offset(con->in, 0);
 		con->in->size = BUFFER_START_SIZE;
 
