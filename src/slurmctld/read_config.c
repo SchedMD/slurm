@@ -1565,10 +1565,10 @@ extern int read_slurm_conf(int recover)
 		fatal("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
-		error("read_slurm_conf: default partition not set.");
+		error("%s: default partition not set.", __func__);
 
 	if (node_record_count < 1) {
-		error("read_slurm_conf: no nodes configured.");
+		error("%s: no nodes configured.", __func__);
 		error_code = EINVAL;
 		goto end_it;
 	}
