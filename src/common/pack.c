@@ -196,19 +196,21 @@ void free_buf(buf_t *my_buf)
 /* Grow a buffer by the specified amount */
 void grow_buf(buf_t *buffer, uint32_t size)
 {
+	uint64_t new_size = (uint64_t) size + buffer->size;
+
 	xassert(buffer->magic == BUF_MAGIC);
 
 	if (buffer->mmaped)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if (buffer->shadow)
 		fatal_abort("attempt to grow shadow buffer not supported");
-	if ((buffer->size + size) > MAX_BUF_SIZE) {
-		error("%s: Buffer size limit exceeded (%u > %u)",
-		      __func__, (buffer->size + size), MAX_BUF_SIZE);
+	if (new_size > MAX_BUF_SIZE) {
+		error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
+		      __func__, new_size, MAX_BUF_SIZE);
 		return;
 	}
 
-	buffer->size += size;
+	buffer->size = new_size;
 	xrealloc_nz(buffer->head, buffer->size);
 }
 
