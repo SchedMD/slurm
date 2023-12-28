@@ -114,7 +114,6 @@ static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
                                        uint16_t old_select_type_p);
 static void _purge_old_node_state(node_record_t **old_node_table_ptr,
 				  int old_node_record_count);
-static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
 static void _restore_job_accounting();
 
@@ -1604,7 +1603,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		error("read_slurm_conf: no nodes configured.");
 		_purge_old_node_state(old_node_table_ptr,
 				      old_node_record_count);
-		_purge_old_part_state(NULL, NULL);
 		error_code = EINVAL;
 		goto end_it;
 	}
@@ -1721,7 +1719,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
-	_purge_old_part_state(NULL, NULL);
 
 	reserve_port_config(slurm_conf.mpi_params);
 
@@ -2539,16 +2536,6 @@ static void _purge_old_node_state(node_record_t **old_node_table_ptr,
 				purge_node_rec(old_node_table_ptr[i]);
 		xfree(old_node_table_ptr);
 	}
-}
-
-/* Purge old partition state information */
-static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
-{
-	xfree(old_def_part_name);
-
-	if (!old_part_list)
-		return;
-	FREE_NULL_LIST(old_part_list);
 }
 
 /*
