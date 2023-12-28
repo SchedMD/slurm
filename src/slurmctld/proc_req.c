@@ -5776,6 +5776,8 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 	if (request_msg->command_id == STAT_COMMAND_RESET) {
 		reset_stats(1);
 		_clear_rpc_stats();
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		return;
 	}
 
 	buffer = pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
