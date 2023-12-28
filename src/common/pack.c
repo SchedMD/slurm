@@ -293,16 +293,8 @@ void pack_time(time_t val, buf_t *buffer)
 {
 	int64_t n64 = HTON_int64((int64_t) val);
 
-	if (remaining_buf(buffer) < sizeof(n64)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(n64)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &n64, sizeof(n64));
 	buffer->processed += sizeof(n64);
@@ -342,16 +334,9 @@ void packdouble(double val, buf_t *buffer)
 	 */
 	uval.d =  (val * FLOAT_MULT);
 	nl =  HTON_uint64(uval.u);
-	if (remaining_buf(buffer) < sizeof(nl)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+
+	if (try_grow_buf_remaining(buffer, sizeof(nl)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
 	buffer->processed += sizeof(nl);
@@ -478,16 +463,8 @@ void pack64(uint64_t val, buf_t *buffer)
 {
 	uint64_t nl =  HTON_uint64(val);
 
-	if (remaining_buf(buffer) < sizeof(nl)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(nl)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
 	buffer->processed += sizeof(nl);
@@ -517,16 +494,8 @@ void pack32(uint32_t val, buf_t *buffer)
 {
 	uint32_t nl = htonl(val);
 
-	if (remaining_buf(buffer) < sizeof(nl)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(nl)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
 	buffer->processed += sizeof(nl);
@@ -711,16 +680,8 @@ void pack16(uint16_t val, buf_t *buffer)
 {
 	uint16_t ns = htons(val);
 
-	if (remaining_buf(buffer) < sizeof(ns)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(ns)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
 	buffer->processed += sizeof(ns);
@@ -749,16 +710,8 @@ int unpack16(uint16_t *valp, buf_t *buffer)
  */
 void pack8(uint8_t val, buf_t *buffer)
 {
-	if (remaining_buf(buffer) < sizeof(uint8_t)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(uint8_t)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &val, sizeof(uint8_t));
 	buffer->processed += sizeof(uint8_t);
@@ -818,16 +771,8 @@ extern void packbuf(buf_t *source, buf_t *buffer)
 	if (!size_val)
 		return;
 
-	if (remaining_buf(buffer) < size_val) {
-		if ((buffer->size + size_val) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + size_val),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += size_val;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, size_val))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], get_buf_data(source), size_val);
 	buffer->processed += size_val;
@@ -847,16 +792,9 @@ extern void packmem(void *valp, uint32_t size_val, buf_t *buffer)
 		      __func__, size_val, MAX_PACK_MEM_LEN);
 		return;
 	}
-	if (remaining_buf(buffer) < (sizeof(ns) + size_val)) {
-		if ((buffer->size + size_val + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + size_val + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += (size_val + BUF_SIZE);
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+
+	if (try_grow_buf_remaining(buffer, (sizeof(ns) + size_val)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
 	buffer->processed += sizeof(ns);
@@ -1058,16 +996,8 @@ void packstr_array(char **valp, uint32_t size_val, buf_t *buffer)
 	int i;
 	uint32_t ns = htonl(size_val);
 
-	if (remaining_buf(buffer) < sizeof(ns)) {
-		if ((buffer->size + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += BUF_SIZE;
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, sizeof(ns)))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
 	buffer->processed += sizeof(ns);
@@ -1114,16 +1044,8 @@ unpack_error:
  */
 void packmem_array(char *valp, uint32_t size_val, buf_t *buffer)
 {
-	if (remaining_buf(buffer) < size_val) {
-		if ((buffer->size + size_val + BUF_SIZE) > MAX_BUF_SIZE) {
-			error("%s: Buffer size limit exceeded (%u > %u)",
-			      __func__, (buffer->size + size_val + BUF_SIZE),
-			      MAX_BUF_SIZE);
-			return;
-		}
-		buffer->size += (size_val + BUF_SIZE);
-		xrealloc_nz(buffer->head, buffer->size);
-	}
+	if (try_grow_buf_remaining(buffer, size_val))
+		return;
 
 	memcpy(&buffer->head[buffer->processed], valp, size_val);
 	buffer->processed += size_val;
