@@ -1502,7 +1502,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
 	char *old_cred_type = xstrdup(slurm_conf.cred_type);
 	char *old_job_container_type = xstrdup(slurm_conf.job_container_plugin);
-	uint16_t old_preempt_mode = slurm_conf.preempt_mode;
 	char *old_preempt_type = xstrdup(slurm_conf.preempt_type);
 	char *old_sched_type = xstrdup(slurm_conf.schedtype);
 	char *old_select_type = xstrdup(slurm_conf.select_type);
@@ -1599,7 +1598,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (jobcomp_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize jobcomp plugin");
 	if (controller_init_scheduling(
-		(old_preempt_mode & PREEMPT_MODE_GANG)) != SLURM_SUCCESS) {
+		(slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) != SLURM_SUCCESS) {
 		fatal("Failed to initialize the various schedulers");
 	}
 
