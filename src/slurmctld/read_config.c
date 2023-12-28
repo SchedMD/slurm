@@ -1476,47 +1476,6 @@ void _sync_jobs_to_conf(void)
 	last_job_update = now;
 }
 
-static int _find_config_ptr(void *x, void *arg)
-{
-	return (x == arg);
-}
-
-static void _preserve_dynamic_nodes(node_record_t **old_node_table_ptr,
-				    int old_node_record_count,
-				    List old_config_list)
-{
-	for (int i = 0; i < old_node_record_count; i++) {
-		node_record_t *node_ptr = old_node_table_ptr[i];
-
-		if (!node_ptr ||
-		    !IS_NODE_DYNAMIC_NORM(node_ptr))
-			continue;
-
-		/*
-		 * reset values that will be set later in
-		 * _sync_nodes_to_jobs()
-		 */
-		node_ptr->comp_job_cnt = 0;
-		node_ptr->no_share_job_cnt = 0;
-		node_ptr->owner = NO_VAL;
-		node_ptr->owner_job_cnt = 0;
-		node_ptr->run_job_cnt = 0;
-		node_ptr->sus_job_cnt = 0;
-		xfree(node_ptr->mcs_label);
-
-		insert_node_record(node_ptr);
-		old_node_table_ptr[i] = NULL;
-
-		/*
-		 * insert_node_record() appends node_ptr->config_ptr to the
-		 * global config_list. remove from old config_list so it
-		 * doesn't get free'd.
-		 */
-		list_remove_first(old_config_list, _find_config_ptr,
-				  node_ptr->config_ptr);
-	}
-}
-
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1677,9 +1636,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
-			_preserve_dynamic_nodes(old_node_table_ptr,
-						old_node_record_count,
-						old_config_list);
 
 			_set_features(old_node_table_ptr, old_node_record_count,
 				      recover);
