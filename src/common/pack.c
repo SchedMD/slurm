@@ -204,11 +204,9 @@ void grow_buf(buf_t *buffer, uint32_t size)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if (buffer->shadow)
 		fatal_abort("attempt to grow shadow buffer not supported");
-	if (new_size > MAX_BUF_SIZE) {
-		error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
-		      __func__, new_size, MAX_BUF_SIZE);
-		return;
-	}
+	if (new_size > MAX_BUF_SIZE)
+		fatal_abort("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
+			    __func__, new_size, MAX_BUF_SIZE);
 
 	buffer->size = new_size;
 	xrealloc_nz(buffer->head, buffer->size);
