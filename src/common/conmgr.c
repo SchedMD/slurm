@@ -2462,7 +2462,10 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 		/* we must ensure that all deferred writes maintain
 		 * their order or rpcs may get sliced.
 		 */
-		buf_t *buf = init_buf(bytes);
+		buf_t *buf;
+
+		if (!(buf = try_init_buf(bytes)))
+			return ENOMEM;
 
 		/* TODO: would be nice to avoid this copy */
 		memmove(get_buf_data(buf), buffer, bytes);
