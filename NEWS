@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     slurmctld while trying to launch various scripts. This is additional work
     for a fix in 23.02.6.
  -- Fix memory leak when receiving alias addrs from controller.
+ -- scontrol - Accept `scontrol token lifespan=infinite` to create tokens that
+    effectively do not expire.
 
 * Changes in Slurm 23.11.1
 ==========================
