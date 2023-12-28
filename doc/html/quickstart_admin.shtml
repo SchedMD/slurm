@@ -406,6 +406,16 @@ information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 
+<p>A backup instance of slurmdbd can also be configured by specifying
+<a href="slurm.conf.html#OPT_AccountingStorageBackupHost">
+AccountingStorageBackupHost</a> in slurm.conf, as well as
+<a href="slurmdbd.conf.html#OPT_DbdBackupHost">DbdBackupHost</a> in
+slurmdbd.conf. The backup host should be on a different machine than the one
+hosting the primary instance of slurmdbd. Both instances of slurmdbd should
+have access to the same database. The
+<a href="network.html#failover">network page</a> has a visual representation
+of how this might look.</p>
+
 <h2 id="infrastructure">Infrastructure
 <a class="slurm_link" href="#infrastructure"></a>
 </h2>
@@ -967,6 +977,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 01 January 2024</p>
+<p style="text-align:center;">Last modified 12 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
