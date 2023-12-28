@@ -3332,14 +3332,9 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 		int rc;
 
 		buf = *buffer_ptr;
-		xassert(buf->magic == BUF_MAGIC);
 
-		if (!get_buf_offset(buf) && !buf->mmaped) {
-			SWAP(buf->head, con->in->head);
-			SWAP(buf->processed, con->in->processed);
-			SWAP(buf->size, con->in->size);
+		if (!swap_buf_data(buf, con->in))
 			return SLURM_SUCCESS;
-		}
 
 		if ((rc = try_grow_buf_remaining(buf, get_buf_offset(con->in))))
 			return rc;
