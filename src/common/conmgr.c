@@ -658,14 +658,14 @@ extern void free_conmgr(void)
 			fatal("%s: timer_delete() failed: %m", __func__);
 	}
 
-	slurm_mutex_destroy(&mgr.mutex);
-	slurm_cond_destroy(&mgr.cond);
-
 	if (close(mgr.event_fd[0]) || close(mgr.event_fd[1]))
 		error("%s: unable to close event_fd: %m", __func__);
 
 	if (close(mgr.signal_fd[0]) || close(mgr.signal_fd[1]))
 		error("%s: unable to close signal_fd: %m", __func__);
+
+	slurm_mutex_destroy(&mgr.mutex);
+	slurm_cond_destroy(&mgr.cond);
 }
 
 /*
