@@ -1104,17 +1104,14 @@ static int _pack_part(void *object, void *arg)
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
- * OUT buffer_ptr - the pointer is set to the allocated buffer.
- * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - partition filtering options
  * IN uid - uid of user making request (for partition filtering)
  * global: part_list - global list of partition records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * OUT buffer
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
-			  uint16_t protocol_version)
+extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
+			    uint16_t protocol_version)
 {
 	int tmp_offset;
 	time_t now = time(NULL);
@@ -1129,9 +1126,6 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 		.visible_parts = build_visible_parts(uid, privileged),
 	};
 
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-
 	/* write header: version and time */
 	pack32(0, pack_info.buffer);
 	pack_time(now, pack_info.buffer);
@@ -1144,9 +1138,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	pack32(pack_info.parts_packed, pack_info.buffer);
 	set_buf_offset(pack_info.buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(pack_info.buffer);
-	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
 	xfree(pack_info.visible_parts);
+	return pack_info.buffer;
 }
 
 

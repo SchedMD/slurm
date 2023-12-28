@@ -1808,8 +1808,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 static void _slurm_rpc_dump_partitions(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 	part_info_request_msg_t *part_req_msg = msg->data;
 
@@ -1835,20 +1834,19 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t *msg)
 		debug2("%s, no change", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_part(&dump, &dump_size, part_req_msg->show_flags,
-			      msg->auth_uid, msg->protocol_version);
+		buffer = pack_all_part(part_req_msg->show_flags, msg->auth_uid,
+				       msg->protocol_version);
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(part_read_lock);
 		END_TIMER2(__func__);
-		debug2("%s, size=%d %s", __func__, dump_size, TIME_STR);
 
 		response_init(&response_msg, msg, RESPONSE_PARTITION_INFO,
-			      dump);
-		response_msg.data_size = dump_size;
+			      buffer->head);
+		response_msg.data_size = buffer->processed;
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(dump);
+		FREE_NULL_BUFFER(buffer);
 	}
 }
 
