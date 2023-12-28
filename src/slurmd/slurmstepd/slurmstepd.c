@@ -834,7 +834,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
 
-	/* Reset addrs for dyanmic/cloud nodes to hash tables*/
+	/* Reset addrs for dynamic/cloud nodes to hash tables */
 	if (step->node_addrs &&
 	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
 		error("%s: failed to add node addrs: %s", __func__,

@@ -1560,7 +1560,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
-	/* Increase node table to handle dyanmic nodes. */
+	/* Increase node table to handle dynamic nodes. */
 	if ((slurm_conf.max_node_cnt != NO_VAL) &&
 	    node_record_count < slurm_conf.max_node_cnt) {
 		node_record_count = slurm_conf.max_node_cnt;
