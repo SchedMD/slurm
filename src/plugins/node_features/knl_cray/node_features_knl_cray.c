@@ -177,8 +177,6 @@ static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
 static char *numa_cpu_bind = NULL;
 static char *syscfg_path = NULL;
-static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool reconfig = false;
 static uint32_t ume_check_interval = 0;
 static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t ume_thread = 0;
@@ -2001,15 +1999,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-/* Reload configuration */
-extern int node_features_p_reconfig(void)
-{
-	slurm_mutex_lock(&config_mutex);
-	reconfig = true;
-	slurm_mutex_unlock(&config_mutex);
-	return SLURM_SUCCESS;
-}
-
 /* Put any nodes NOT found by "capmc node_status" into DRAIN state */
 static void _check_node_status(void)
 {
@@ -2215,13 +2204,6 @@ static int _update_node_state(char *node_list, bool set_locks)
 	node_record_t *node_ptr;
 	hostlist_t *host_list;
 	char *node_name;
-
-	slurm_mutex_lock(&config_mutex);
-	if (reconfig) {
-		(void) init();
-		reconfig = false;
-	}
-	slurm_mutex_unlock(&config_mutex);
 
 	_check_node_status();	/* Drain nodes not found by capmc */
 	_check_node_disabled();	/* Drain disabled nodes */

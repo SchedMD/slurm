@@ -1019,11 +1019,6 @@ extern uint32_t node_features_p_boot_time(void)
 	return boot_time;
 }
 
-extern int node_features_p_reconfig(void)
-{
-	return _read_config_file();
-}
-
 extern bool node_features_p_user_update(uid_t uid)
 {
 	/* Default is ALL users allowed to update */

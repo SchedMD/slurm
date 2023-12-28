@@ -165,14 +165,12 @@ static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
 static int allowed_uid_cnt = 0;
 static uint32_t boot_time = (5 * 60);	/* 5 minute estimated boot time */
-static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
 static char *numa_cpu_bind = NULL;
 static uint32_t syscfg_timeout = 0;
-static bool reconfig = false;
 static time_t shutdown_time = 0;
 static int syscfg_found = -1;
 static char *syscfg_path = NULL;
@@ -984,25 +982,10 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-/* Reload configuration */
-extern int node_features_p_reconfig(void)
-{
-	slurm_mutex_lock(&config_mutex);
-	reconfig = true;
-	slurm_mutex_unlock(&config_mutex);
-	return SLURM_SUCCESS;
-}
-
 /* Update active and available features on specified nodes,
  * sets features on all nodes if node_list is NULL */
 extern int node_features_p_get_node(char *node_list)
 {
-	slurm_mutex_lock(&config_mutex);
-	if (reconfig) {
-		(void) init();
-		reconfig = false;
-	}
-	slurm_mutex_unlock(&config_mutex);
 	return SLURM_SUCCESS;
 }
 

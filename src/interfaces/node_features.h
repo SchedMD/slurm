@@ -50,9 +50,6 @@ extern int node_features_g_fini(void);
 /* Return count of node_feature plugins configured */
 extern int node_features_g_count(void);
 
-/* Reset plugin configuration information */
-extern int node_features_g_reconfig(void);
-
 /* Return TRUE if this (one) feature name is under this plugin's control */
 extern bool node_features_g_changeable_feature(char *feature);
 
