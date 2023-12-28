@@ -265,7 +265,7 @@ void run_backup(void)
 		abort();
 	}
 	slurmctld_config.shutdown_time = (time_t) 0;
-	if (read_slurm_conf(2, false)) {	/* Recover all state */
+	if (read_slurm_conf(2)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();
 	}

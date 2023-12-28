@@ -61,12 +61,10 @@ extern void cluster_rec_free(void);
  *              1 = recover saved job and trigger state,
  *                  node DOWN/DRAIN/FAIL state and reason information
  *              2 = recover all saved state
- * IN reconfig - true if SIGHUP or "scontrol reconfig" and there is state in
- *		 memory to preserve, otherwise recover state from disk
  * RET SLURM_SUCCESS if no error, otherwise an error code
  * Note: Operates on common variables only
  */
-extern int read_slurm_conf(int recover, bool reconfig);
+extern int read_slurm_conf(int recover);
 
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);

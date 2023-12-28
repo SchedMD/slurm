@@ -601,7 +601,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize priority plugin");
 
 		if (slurmctld_primary && !reconfiguring) {
-			if ((error_code = read_slurm_conf(recover, false))) {
+			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
 				      slurm_strerror(error_code));
