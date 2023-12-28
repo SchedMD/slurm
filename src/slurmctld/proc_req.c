@@ -5808,8 +5808,7 @@ static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 		return;
 	}
 
-	get_all_license_info(&dump, &dump_size, msg->auth_uid,
-			     msg->protocol_version);
+	get_all_license_info(&dump, &dump_size, msg->protocol_version);
 
 	END_TIMER2(__func__);
 	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);

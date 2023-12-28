@@ -186,7 +186,6 @@ extern char *license_list_to_string(list_t *license_list);
 extern void
 get_all_license_info(char **buffer_ptr,
                      int *buffer_size,
-                     uid_t uid,
                      uint16_t protocol_version);
 
 /*

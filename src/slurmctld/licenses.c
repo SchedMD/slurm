@@ -874,7 +874,6 @@ extern bool license_list_overlap(list_t *list_1, List list_2)
 extern void
 get_all_license_info(char **buffer_ptr,
                      int *buffer_size,
-                     uid_t uid,
                      uint16_t protocol_version)
 {
 	list_itr_t *iter;
