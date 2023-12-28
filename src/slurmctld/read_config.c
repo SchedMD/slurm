@@ -1491,7 +1491,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
 	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
-	int old_node_record_count = 0;
 	node_record_t **old_node_table_ptr = NULL, *node_ptr;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
@@ -1510,7 +1509,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if (reconfig) {
 		/* save node and partition states for reconfig RPC */
-		old_node_record_count = node_record_count;
 		old_node_table_ptr    = node_record_table_ptr;
 
 		for (i = 0; i < node_record_count; i++) {
@@ -1601,8 +1599,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		_purge_old_node_state(old_node_table_ptr,
-				      old_node_record_count);
+		_purge_old_node_state(old_node_table_ptr, 0);
 		error_code = EINVAL;
 		goto end_it;
 	}
@@ -1615,10 +1612,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
 
-			_set_features(old_node_table_ptr, old_node_record_count,
-				      recover);
-			rc = _restore_node_state(recover, old_node_table_ptr,
-						 old_node_record_count);
+			_set_features(old_node_table_ptr, 0, recover);
+			rc = _restore_node_state(recover, old_node_table_ptr, 0);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
@@ -1631,8 +1626,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		(void) load_all_front_end_state(true);
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
-		_set_features(old_node_table_ptr, old_node_record_count,
-			      recover);
+		_set_features(old_node_table_ptr, 0, recover);
 		(void) load_all_front_end_state(false);
 	}
 
@@ -1718,7 +1712,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
-	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
+	_purge_old_node_state(old_node_table_ptr, 0);
 
 	reserve_port_config(slurm_conf.mpi_params);
 
