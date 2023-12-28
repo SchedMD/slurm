@@ -106,14 +106,12 @@ static void _setup_header(buf_t *buf, dmdx_type_t t,
 	char *str;
 	/* 1. pack message type */
 	unsigned char type = (char)t;
-	grow_buf(buf, sizeof(char));
 	pack8(type, buf);
 
 	/* 2. pack namespace _with_ '\0' (strlen(nspace) + 1)! */
 	packmem((char *)nspace, strlen(nspace) + 1, buf);
 
 	/* 3. pack rank */
-	grow_buf(buf, sizeof(int));
 	pack32((uint32_t)rank, buf);
 
 	/* 4. pack my rendezvous point - local namespace
