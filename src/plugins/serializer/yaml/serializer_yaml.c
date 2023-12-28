@@ -825,6 +825,7 @@ yaml_fail:
 
 static int _yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 {
+	int rc;
 	buf_t *buf = data;
 	xassert(buf->magic == BUF_MAGIC);
 
@@ -833,15 +834,8 @@ static int _yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 	 * still want to grow to allocate space for an extra '\0'. That's why in
 	 * this case we compare with '<=' instead of '<'.
 	 */
-	if (remaining_buf(buf) <= size) {
-		if ((size + size_buf(buf)) >= MAX_BUF_SIZE) {
-			error("%s: attempting to write too large of YAML output",
-			      __func__);
-			return 0;
-		}
-
-		grow_buf(buf, size);
-	}
+	if ((rc = try_grow_buf_remaining(buf, (size + 1))))
+		return rc;
 
 	memcpy(buf->head + buf->processed, buffer, size);
 
