@@ -428,8 +428,10 @@ be comma separated.
 Disable "scontrol token" use by non\-SlurmUser accounts.
 .TP
 \fBmax_token_lifespan\fR=<seconds>
-Set max lifespan (in seconds) for any token generated for user accounts.
-(This limit does not apply to SlurmUser.)
+Set max lifespan (in seconds) for any token generated for user accounts. Limit
+applies to all users except SlurmUser. Sites wishing to have per user limits
+should generate tokens using JWT\-compatible tools, and\/or an authenticating
+proxy, instead of using \fIscontrol token\fR.
 .IP
 
 .TP
