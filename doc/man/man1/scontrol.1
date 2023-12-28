@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "November 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "December 2023" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -635,7 +635,10 @@ Return an auth token which can be used to support JWT authentication if
 \fIAuthAltTypes=auth/jwt\fP has been enabled on the system.
 Supports two optional arguments. \fBlifespan=\fP may be used to specify the
 token's lifespan in seconds. \fBusername\fP (only available to SlurmUser/root)
-may be used to request a token for a different username.
+may be used to request a token for a different username. Maximum lifespan is
+2147483646 seconds (~68 years). Sites are suggested to use the smallest
+lifespan required and generate tokens more often instead of using longer lived
+tokens.
 .IP
 
 .TP
