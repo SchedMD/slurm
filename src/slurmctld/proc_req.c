@@ -4645,9 +4645,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t *msg)
 		unlock_slurmctld(node_read_lock);
 		END_TIMER2(__func__);
 
-		response_init(&response_msg, msg, RESPONSE_RESERVATION_INFO,
-			      buffer->head);
-		response_msg.data_size = buffer->processed;
+		response_init(&response_msg, msg, RESPONSE_RESERVATION_INFO, buffer);
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
