@@ -5793,10 +5793,9 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size;
-	slurm_msg_t response_msg;
 	license_info_request_msg_t *lic_req_msg = msg->data;
+	buf_t *buffer = NULL;
+	slurm_msg_t response_msg;
 
 	START_TIMER;
 	if ((lic_req_msg->last_update - 1) >= last_license_update) {
@@ -5808,16 +5807,14 @@ static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 		return;
 	}
 
-	get_all_license_info(&dump, &dump_size, msg->protocol_version);
-
+	buffer = get_all_license_info(msg->protocol_version);
 	END_TIMER2(__func__);
-	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
 
-	response_init(&response_msg, msg, RESPONSE_LICENSE_INFO, dump);
-	response_msg.data_size = dump_size;
+	response_init(&response_msg, msg, RESPONSE_LICENSE_INFO, buffer->head);
+	response_msg.data_size = buffer->processed;
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 static void _slurm_rpc_kill_job(slurm_msg_t *msg)

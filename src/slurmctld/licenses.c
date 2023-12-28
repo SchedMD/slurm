@@ -871,10 +871,7 @@ extern bool license_list_overlap(list_t *list_1, List list_2)
  *
  * Return license counters to the library.
  */
-extern void
-get_all_license_info(char **buffer_ptr,
-                     int *buffer_size,
-                     uint16_t protocol_version)
+extern buf_t *get_all_license_info(uint16_t protocol_version)
 {
 	list_itr_t *iter;
 	licenses_t *lic_entry;
@@ -884,9 +881,6 @@ get_all_license_info(char **buffer_ptr,
 	time_t now = time(NULL);
 
 	debug2("%s: calling for all licenses", __func__);
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	buffer = init_buf(BUF_SIZE);
 
@@ -919,8 +913,7 @@ get_all_license_info(char **buffer_ptr,
 	pack32(lics_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	return buffer;
 }
 
 extern uint32_t get_total_license_cnt(char *name)

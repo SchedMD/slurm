@@ -183,10 +183,7 @@ extern char *license_list_to_string(list_t *license_list);
  * Get the licenses and the usage counters in the io buffer
  * to be sent out to the library
  */
-extern void
-get_all_license_info(char **buffer_ptr,
-                     int *buffer_size,
-                     uint16_t protocol_version);
+extern buf_t *get_all_license_info(uint16_t protocol_version);
 
 /*
  * get_total_license_cnt - give me the total count of a given license name.
