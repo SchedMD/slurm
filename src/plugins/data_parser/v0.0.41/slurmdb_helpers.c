@@ -73,21 +73,17 @@ extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
 	if (errno) {
 		FREE_NULL_LIST(l);
 		rc = on_error(op, type, args, errno, func_name,
-			      func_caller_name,
-			      "function 0x%" PRIxPTR " failed",
-			      (uintptr_t) func);
+			      func_caller_name, "Slurmdb query failed");
 	} else if (!l) {
 		rc = on_error(op, type, args, ESLURM_REST_INVALID_QUERY,
 			      func_name, func_caller_name,
-			      "function 0x%" PRIxPTR " returned NULL list",
-			      (uintptr_t) func);
+			      "Slurmdbd query unexpectedly failed without a result");
 	} else if (!list_count(l)) {
 		FREE_NULL_LIST(l);
 
 		rc = on_error(op, type, args, ESLURM_REST_EMPTY_RESULT,
 			      func_name, func_caller_name,
-			      "function 0x%" PRIxPTR " returned empty list",
-			      (uintptr_t) func);
+			      "Slurmdbd query returned with empty list");
 	} else {
 		rc = SLURM_SUCCESS;
 	}
