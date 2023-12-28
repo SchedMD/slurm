@@ -772,10 +772,19 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 	};
 
 	if (!is_listen) {
-		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
-				     BUFFER_START_SIZE);
-		con->out = create_buf(xmalloc(BUFFER_START_SIZE),
-				      BUFFER_START_SIZE);
+		con->in = try_init_buf(BUFFER_START_SIZE);
+		con->out = try_init_buf(BUFFER_START_SIZE);
+
+		if (!con->in || !con->out) {
+			FREE_NULL_BUFFER(con->in);
+			FREE_NULL_BUFFER(con->out);
+
+			error("%s: [fd:%d->fd:%d] Unable to allocate buffers for connection.",
+			      __func__, input_fd, output_fd);
+
+			_connection_fd_delete(con);
+			return NULL;
+		}
 	}
 
 	/* listen on unix socket */
