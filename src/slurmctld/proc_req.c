@@ -5758,8 +5758,6 @@ static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 /* _slurm_rpc_dump_stats - process RPC for statistics information */
 static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 {
-	char *dump;
-	int dump_size;
 	stats_info_request_msg_t *request_msg = msg->data;
 	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
@@ -5780,13 +5778,11 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 		_clear_rpc_stats();
 	}
 
-	pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
-		      &dump, &dump_size, msg->protocol_version);
-	buffer = create_buf(dump, dump_size);
-	set_buf_offset(buffer, dump_size);
+	buffer = pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
+			       msg->protocol_version);
 	_pack_rpc_stats(buffer, msg->protocol_version);
 
-	response_init(&response_msg, msg, RESPONSE_STATS_INFO, dump);
+	response_init(&response_msg, msg, RESPONSE_STATS_INFO, buffer->head);
 	response_msg.data_size = get_buf_offset(buffer);
 
 	/* send message */

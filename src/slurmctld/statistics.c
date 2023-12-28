@@ -46,8 +46,7 @@
 #include "src/common/slurmdbd_defs.h"
 
 /* Pack all scheduling statistics */
-extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
-			  uint16_t protocol_version)
+extern buf_t *pack_all_stat(int resp, uint16_t protocol_version)
 {
 	buf_t *buffer;
 	int parts_packed;
@@ -56,9 +55,6 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	int agent_thread_count;
 	int slurmdbd_queue_size = 0;
 	time_t now = time(NULL);
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	if (resp) {
 		if (acct_storage_g_get_data(acct_db_conn,
@@ -215,8 +211,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 		}
 	}
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	return buffer;
 }
 
 /* Reset all scheduling statistics
