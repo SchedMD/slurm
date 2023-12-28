@@ -280,6 +280,18 @@ static int _prereqs_placeholder(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+static char *_needs_to_string(need_t needs, args_t *args)
+{
+	char *str = NULL;
+	data_t *d = data_new();
+
+	DUMP(NEED_PREREQS_FLAGS, needs, d, args);
+	str = _data_list_to_str(d);
+	FREE_NULL_DATA(d);
+
+	return str;
+}
+
 extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 				 args_t *args, const char *func_name)
 {
@@ -290,13 +302,7 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 	xassert((op == PARSING) || (op == DUMPING) || (op == QUERYING));
 
 	if (parser->needs && !slurm_conf.accounting_storage_type) {
-		char *needs = NULL;
-		data_t *needs_data = data_new();
-		need_t src = parser->needs;
-
-		DUMP(NEED_PREREQS_FLAGS, src, needs_data, args);
-		needs = _data_list_to_str(needs_data);
-		data_free(needs_data);
+		char *needs = _needs_to_string(parser->needs, args);
 
 		on_warn(op, parser->type, args, NULL, __func__,
 			"Slurm accounting storage is disabled. Could not query the following: [%s].",
