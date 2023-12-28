@@ -1949,7 +1949,7 @@ extern int load_last_job_id( void );
  *	if required (updated group file or force set)
  * IN force - if set then always reload the allow_uid list
  */
-extern void load_part_uid_allow_list ( int force );
+extern void load_part_uid_allow_list(bool force);
 
 /*
  * load_all_part_state - load the partition state from file, recover from

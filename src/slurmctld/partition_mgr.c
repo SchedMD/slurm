@@ -2061,7 +2061,7 @@ static int _find_acct_in_list(void *x, void *arg)
  *	if required (updated group file or force set)
  * IN force - if set then always reload the allow_uid list
  */
-void load_part_uid_allow_list(int force)
+void load_part_uid_allow_list(bool force)
 {
 	static time_t last_update_time;
 	int updated = 0;
@@ -2070,7 +2070,7 @@ void load_part_uid_allow_list(int force)
 
 	START_TIMER;
 	temp_time = get_group_tlm();
-	if ((force == 0) && (temp_time == last_update_time))
+	if (!force && (temp_time == last_update_time))
 		return;
 	debug("Updating partition uid access list");
 	last_update_time = temp_time;
