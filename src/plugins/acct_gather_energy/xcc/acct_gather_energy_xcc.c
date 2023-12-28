@@ -252,9 +252,6 @@ static pthread_t thread_ipmi_id_run = 0;
 static stepd_step_rec_t *step = NULL;
 static int context_id = -1;
 
-/* Thread scope global vars */
-__thread ipmi_ctx_t ipmi_ctx = NULL;
-
 static void _reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
 	if (slurm_ipmi_conf) {
@@ -301,22 +298,24 @@ static int _running_profile(void)
 	return run;
 }
 
-static void _close_ipmi_context(void)
+static void _close_ipmi_context(ipmi_ctx_t *ipmi_ctx_p)
 {
-	if (!ipmi_ctx)
+	if (!*ipmi_ctx_p)
 		return;
 
-	ipmi_ctx_close(ipmi_ctx);
-	ipmi_ctx_destroy(ipmi_ctx);
-	ipmi_ctx = NULL;
+	ipmi_ctx_close(*ipmi_ctx_p);
+	ipmi_ctx_destroy(*ipmi_ctx_p);
+	*ipmi_ctx_p = NULL;
 }
 
 /*
  * _init_ipmi_config initializes parameters for freeipmi library
  */
-static int _init_ipmi_config(void)
+static int _init_ipmi_config(ipmi_ctx_t *ipmi_ctx_p)
 {
 	int ret = 0;
+	ipmi_ctx_t ipmi_ctx = *ipmi_ctx_p;
+
 	unsigned int workaround_flags_mask =
 		(IPMI_WORKAROUND_FLAGS_INBAND_ASSUME_IO_BASE_ADDRESS
 		 | IPMI_WORKAROUND_FLAGS_INBAND_SPIN_POLL);
@@ -429,19 +428,22 @@ static int _init_ipmi_config(void)
 		}
 	}
 
+	*ipmi_ctx_p = ipmi_ctx;
+
 	return SLURM_SUCCESS;
 
 cleanup:
-	_close_ipmi_context();
+	_close_ipmi_context(&ipmi_ctx);
 	return SLURM_ERROR;
 }
 
 /*
  * _read_ipmi_values read the Power sensor and update last_update_watt and times
  */
-static xcc_raw_single_data_t *_read_ipmi_values(void)
+static xcc_raw_single_data_t *_read_ipmi_values(ipmi_ctx_t *ipmi_ctx_p)
 {
 	xcc_raw_single_data_t *xcc_reading;
+	ipmi_ctx_t ipmi_ctx = *ipmi_ctx_p;
 	uint8_t buf_rs[IPMI_RAW_MAX_ARGS];
 	int rs_len = 0;
 
@@ -656,12 +658,12 @@ static void _sd650v2_update_node_energy(xcc_raw_single_data_t *xcc_raw)
  * _thread_update_node_energy calls _read_ipmi_values and updates all values
  * for node consumption.
  */
-static int _thread_update_node_energy(void)
+static int _thread_update_node_energy(ipmi_ctx_t *ipmi_ctx_p)
 {
 	int rc = SLURM_SUCCESS;
 	xcc_raw_single_data_t *xcc_raw;
 
-	xcc_raw = _read_ipmi_values();
+	xcc_raw = _read_ipmi_values(ipmi_ctx_p);
 
 	if (!xcc_raw) {
 		error("%s could not read XCC ipmi values", __func__);
@@ -746,6 +748,7 @@ static void *_thread_ipmi_run(void *no_data)
 // need input (attr)
 	struct timeval tvnow;
 	struct timespec abs;
+	ipmi_ctx_t ipmi_ctx = NULL;
 
 	flag_energy_accounting_shutdown = false;
 	log_flag(ENERGY, "ipmi-thread: launched");
@@ -754,7 +757,7 @@ static void *_thread_ipmi_run(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
-	if (_init_ipmi_config() != SLURM_SUCCESS) {
+	if (_init_ipmi_config(&ipmi_ctx) != SLURM_SUCCESS) {
 		log_flag(ENERGY, "ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
@@ -779,7 +782,7 @@ static void *_thread_ipmi_run(void *no_data)
 	while (!flag_energy_accounting_shutdown) {
 		slurm_mutex_lock(&ipmi_mutex);
 
-		_thread_update_node_energy();
+		_thread_update_node_energy(&ipmi_ctx);
 
 		/* Sleep until the next time. */
 		abs.tv_sec += slurm_ipmi_conf.freq;
@@ -788,7 +791,7 @@ static void *_thread_ipmi_run(void *no_data)
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
-	_close_ipmi_context();
+	_close_ipmi_context(&ipmi_ctx);
 	log_flag(ENERGY, "ipmi-thread: ended");
 
 	return NULL;
