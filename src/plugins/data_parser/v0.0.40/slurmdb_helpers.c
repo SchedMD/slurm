@@ -267,6 +267,19 @@ static char *_data_list_to_str(data_t *data)
 	return args.str;
 }
 
+static int _prereqs_placeholder(const parser_t *const parser,
+				args_t *args)
+{
+	if (!args->tres_list && (parser->needs & NEED_TRES))
+		args->tres_list = list_create(NULL);
+	if (!args->assoc_list && (parser->needs & NEED_ASSOC))
+		args->assoc_list = list_create(NULL);
+	if (!args->qos_list && (parser->needs & NEED_QOS))
+		args->qos_list = list_create(NULL);
+
+	return SLURM_SUCCESS;
+}
+
 extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 				 args_t *args, const char *func_name)
 {
@@ -285,18 +298,13 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 		needs = _data_list_to_str(needs_data);
 		data_free(needs_data);
 
-		if (!args->tres_list && (parser->needs & NEED_TRES))
-			args->tres_list = list_create(NULL);
-		if (!args->assoc_list && (parser->needs & NEED_ASSOC))
-			args->assoc_list = list_create(NULL);
-		if (!args->qos_list && (parser->needs & NEED_QOS))
-			args->qos_list = list_create(NULL);
-
 		on_warn(op, parser->type, args, NULL, __func__,
 			"Slurm accounting storage is disabled. Could not query the following: [%s].",
 			needs);
+
 		xfree(needs);
-		return SLURM_SUCCESS;
+
+		return _prereqs_placeholder(parser, args);
 	}
 
 	if (parser->needs && !args->db_conn) {
