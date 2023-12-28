@@ -416,17 +416,17 @@ static void _build_node_config_bitmaps(void)
 
 static int _reset_node_bitmaps(void *x, void *arg)
 {
-	config_record_t *config_ptr = (config_record_t *) x;
+	config_record_t *config_ptr = x;
 
 	FREE_NULL_BITMAP(config_ptr->node_bitmap);
-	config_ptr->node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
 
 	return 0;
 }
 
 static int _set_share_node_bitmap(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
+	job_record_t *job_ptr = x;
 
 	if (!IS_JOB_RUNNING(job_ptr) ||
 	    (job_ptr->node_bitmap == NULL)        ||
@@ -948,7 +948,7 @@ static void _build_all_partitionline_info(void)
 
 static int _set_max_part_prio(void *x, void *arg)
 {
-	part_record_t *part_ptr = (part_record_t *) x;
+	part_record_t *part_ptr = x;
 
 	if (part_ptr->priority_job_factor > part_max_priority)
 		part_max_priority = part_ptr->priority_job_factor;
@@ -958,7 +958,7 @@ static int _set_max_part_prio(void *x, void *arg)
 
 static int _reset_part_prio(void *x, void *arg)
 {
-	part_record_t *part_ptr = (part_record_t *) x;
+	part_record_t *part_ptr = x;
 
 	/* protect against div0 if all partition priorities are zero */
 	if (part_max_priority == 0) {
@@ -1046,21 +1046,21 @@ static void _abort_job(job_record_t *job_ptr, uint32_t job_state,
 
 static int _mark_het_job_unused(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
+	job_record_t *job_ptr = x;
 	job_ptr->bit_flags &= (~HET_JOB_FLAG);
 	return 0;
 }
 
 static int _mark_het_job_used(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
+	job_record_t *job_ptr = x;
 	job_ptr->bit_flags |= HET_JOB_FLAG;
 	return 0;
 }
 
 static int _test_het_job_used(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
+	job_record_t *job_ptr = x;
 
 	if ((job_ptr->het_job_id == 0) || IS_JOB_FINISHED(job_ptr))
 		return 0;
@@ -1880,7 +1880,7 @@ static void _add_config_feature_inx(List feature_list, char *feature,
  *	see list.h for documentation */
 static void _list_delete_feature(void *feature_entry)
 {
-	node_feature_t *feature_ptr = (node_feature_t *) feature_entry;
+	node_feature_t *feature_ptr = feature_entry;
 
 	xassert(feature_ptr);
 	xassert(feature_ptr->magic == FEATURE_MAGIC);
