@@ -112,8 +112,6 @@ static void _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
                                        uint16_t old_select_type_p);
-static void _purge_old_node_state(node_record_t **old_node_table_ptr,
-				  int old_node_record_count);
 static int  _reset_node_bitmaps(void *x, void *arg);
 static void _restore_job_accounting();
 
@@ -1582,7 +1580,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		_purge_old_node_state(NULL, 0);
 		error_code = EINVAL;
 		goto end_it;
 	}
@@ -1687,7 +1684,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
-	_purge_old_node_state(NULL, 0);
 
 	reserve_port_config(slurm_conf.mpi_params);
 
@@ -2281,20 +2277,6 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			_merge_changeable_features(old_node_ptr->features_act,
 						   &node_ptr->features_act);
 		}
-	}
-}
-
-/* Purge old node state information */
-static void _purge_old_node_state(node_record_t **old_node_table_ptr,
-				  int old_node_record_count)
-{
-	int i;
-
-	if (old_node_table_ptr) {
-		for (i = 0; i < old_node_record_count; i++)
-			if (old_node_table_ptr[i])
-				purge_node_rec(old_node_table_ptr[i]);
-		xfree(old_node_table_ptr);
 	}
 }
 
