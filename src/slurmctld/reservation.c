@@ -4063,8 +4063,7 @@ extern slurmctld_resv_t *find_resv_name(char *resv_name)
 }
 
 /* Dump the reservation records to a buffer */
-extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
-		      uint16_t protocol_version)
+extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
@@ -4080,9 +4079,6 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 
 	START_TIMER;
 	_create_resv_lists(false);
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	buffer = init_buf(BUF_SIZE);
 
@@ -4134,9 +4130,8 @@ no_assocs:
 	pack32(resv_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
 	END_TIMER2(__func__);
+	return buffer;
 }
 
 /* Save the state of all reservations to file */

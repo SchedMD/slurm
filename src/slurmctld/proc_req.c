@@ -4628,13 +4628,12 @@ static void _slurm_rpc_resv_delete(slurm_msg_t *msg)
 static void _slurm_rpc_resv_show(slurm_msg_t *msg)
 {
 	resv_info_request_msg_t *resv_req_msg = msg->data;
+	buf_t *buffer = NULL;
 	DEF_TIMERS;
 	/* Locks: read node */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	slurm_msg_t response_msg;
-	char *dump;
-	int dump_size;
 
 	START_TIMER;
 	if ((resv_req_msg->last_update - 1) >= last_resv_update) {
@@ -4642,18 +4641,17 @@ static void _slurm_rpc_resv_show(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		lock_slurmctld(node_read_lock);
-		show_resv(&dump, &dump_size, msg->auth_uid,
-			  msg->protocol_version);
+		buffer = show_resv(msg->auth_uid, msg->protocol_version);
 		unlock_slurmctld(node_read_lock);
 		END_TIMER2(__func__);
 
 		response_init(&response_msg, msg, RESPONSE_RESERVATION_INFO,
-			      dump);
-		response_msg.data_size = dump_size;
+			      buffer->head);
+		response_msg.data_size = buffer->processed;
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(dump);
+		FREE_NULL_BUFFER(buffer);
 	}
 }
 

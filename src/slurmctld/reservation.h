@@ -63,8 +63,7 @@ extern void reservation_delete_resv_exc(resv_exc_t *resv_exc);
 extern slurmctld_resv_t *find_resv_name(char *resv_name);
 
 /* Dump the reservation records to a buffer */
-extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
-		      uint16_t protocol_version);
+extern buf_t *show_resv(uid_t uid, uint16_t protocol_version);
 
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void);
