@@ -5810,8 +5810,7 @@ static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 	buffer = get_all_license_info(msg->protocol_version);
 	END_TIMER2(__func__);
 
-	response_init(&response_msg, msg, RESPONSE_LICENSE_INFO, buffer->head);
-	response_msg.data_size = buffer->processed;
+	response_init(&response_msg, msg, RESPONSE_LICENSE_INFO, buffer);
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_BUFFER(buffer);

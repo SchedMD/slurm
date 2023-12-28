@@ -9785,9 +9785,9 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case RESPONSE_PARTITION_INFO:
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_ASSOC_MGR_INFO:
-	case RESPONSE_LICENSE_INFO:
 		_pack_buffer_msg(msg, buffer);
 		break;
+	case RESPONSE_LICENSE_INFO:
 	case RESPONSE_STATS_INFO:
 		_pack_buf_msg(msg, buffer);
 		break;
