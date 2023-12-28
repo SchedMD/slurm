@@ -5783,8 +5783,7 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 	buffer = pack_all_stat(msg->protocol_version);
 	_pack_rpc_stats(buffer, msg->protocol_version);
 
-	response_init(&response_msg, msg, RESPONSE_STATS_INFO, buffer->head);
-	response_msg.data_size = get_buf_offset(buffer);
+	response_init(&response_msg, msg, RESPONSE_STATS_INFO, buffer);
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);

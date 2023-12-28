@@ -2711,6 +2711,12 @@ static void _pack_buffer_msg(const slurm_msg_t *msg, buf_t *buffer)
 	packmem_array(msg->data, msg->data_size, buffer);
 }
 
+static void _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
+{
+	buf_t *msg_buffer = msg->data;
+	packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
+}
+
 static void _pack_job_script_msg(buf_t *msg, buf_t *buffer,
 				 uint16_t protocol_version)
 {
@@ -9777,11 +9783,13 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case RESPONSE_FRONT_END_INFO:
 	case RESPONSE_NODE_INFO:
 	case RESPONSE_PARTITION_INFO:
-	case RESPONSE_STATS_INFO:
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_LICENSE_INFO:
 		_pack_buffer_msg(msg, buffer);
+		break;
+	case RESPONSE_STATS_INFO:
+		_pack_buf_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO:
 		_pack_node_info_request_msg(msg, buffer);
