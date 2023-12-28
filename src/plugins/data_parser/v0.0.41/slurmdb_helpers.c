@@ -292,6 +292,21 @@ static char *_needs_to_string(need_t needs, args_t *args)
 	return str;
 }
 
+static int _slurmdb_query_failed(parse_op_t op, const parser_t *const parser,
+				 args_t *args, int rc, const char *source,
+				 const char *what, const char *func_name)
+{
+	char *needs = _needs_to_string(parser->needs, args);
+
+	on_warn(op, parser->type, args, source, __func__,
+		"%s: Unable to query %s from Slurm accounting storage. Could not query the following [%s]: %s",
+		func_name, what, needs, slurm_strerror(rc));
+
+	xfree(needs);
+
+	return _prereqs_placeholder(parser, args);
+}
+
 extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 				 args_t *args, const char *func_name)
 {
@@ -314,7 +329,11 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 	}
 
 	if (parser->needs && !args->db_conn) {
-		args->db_conn = slurmdb_connection_get(NULL);
+		errno = SLURM_ERROR;
+		if (!(args->db_conn = slurmdb_connection_get(NULL)))
+			return _slurmdb_query_failed(op, parser, args, errno,
+						     "slurmdb_connection_get",
+						     "connection", func_name);
 		args->close_db_conn = true;
 	}
 
@@ -326,11 +345,9 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 		if ((rc = _db_query_list(QUERYING, parser->type, args,
 					 &args->tres_list, slurmdb_tres_get,
 					 &cond))) {
-			error("%s: loading TRES for parser 0x%" PRIxPTR
-			      " failed[%d]: %s",
-			      __func__, (uintptr_t) args, rc,
-			      slurm_strerror(rc));
-			return rc;
+			return _slurmdb_query_failed(op, parser, args, errno,
+						     "slurmdb_tres_get", "TRES",
+						     func_name);
 		}
 
 		log_flag(DATA, "loaded %u TRES for parser 0x%" PRIxPTR,
@@ -345,11 +362,9 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 		if ((rc = _db_query_list(QUERYING, parser->type, args,
 					 &args->qos_list, slurmdb_qos_get,
 					 &cond))) {
-			error("%s: loading QOS for parser 0x%" PRIxPTR
-			      " failed[%d]: %s",
-			      __func__, (uintptr_t) args, rc,
-			      slurm_strerror(rc));
-			return rc;
+			return _slurmdb_query_failed(op, parser, args, errno,
+						     "slurmdb_qos_get", "QOS",
+						     func_name);
 		}
 
 		log_flag(DATA, "loaded %u QOS for parser 0x%" PRIxPTR,
@@ -364,11 +379,9 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 		if ((rc = _db_query_list(QUERYING, parser->type, args,
 					 &args->assoc_list,
 					 slurmdb_associations_get, &cond))) {
-			error("%s: loading ASSOCS for parser 0x%" PRIxPTR
-			      " failed[%d]: %s",
-			      __func__, (uintptr_t) args, rc,
-			      slurm_strerror(rc));
-			return rc;
+			return _slurmdb_query_failed(op, parser, args, errno,
+						     "slurmdb_associations_get",
+						     "Associations", func_name);
 		}
 
 		log_flag(DATA, "loaded %u ASSOCS for parser 0x%" PRIxPTR,
