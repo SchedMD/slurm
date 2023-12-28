@@ -3329,28 +3329,20 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 		return EINVAL;
 
 	if (*buffer_ptr) {
-		bool will_fit;
+		int rc;
 
 		buf = *buffer_ptr;
 		xassert(buf->magic == BUF_MAGIC);
 
-		will_fit = remaining_buf(buf) >= get_buf_offset(con->in);
-
-		if (buf->mmaped) {
-			/* can't grow a mmaped buffer */
-			if (!will_fit)
-				return ENOMEM;
-		} else if (!get_buf_offset(buf)) {
+		if (!get_buf_offset(buf) && !buf->mmaped) {
 			SWAP(buf->head, con->in->head);
 			SWAP(buf->processed, con->in->processed);
 			SWAP(buf->size, con->in->size);
 			return SLURM_SUCCESS;
-		} else if (!will_fit) {
-			int rc;
-
-			if ((rc = try_grow_buf(buf, get_buf_offset(con->in))))
-				return rc;
 		}
+
+		if ((rc = try_grow_buf_remaining(buf, get_buf_offset(con->in))))
+			return rc;
 
 		memcpy(get_buf_data(buf) + get_buf_offset(buf),
 		       get_buf_data(con->in), get_buf_offset(con->in));
