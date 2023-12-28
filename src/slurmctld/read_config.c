@@ -1706,14 +1706,10 @@ int read_slurm_conf(int recover, bool reconfig)
 	load_part_uid_allow_list(1);
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
-	if (reconfig) {
-		load_all_resv_state(0);
-	} else {
-		load_all_resv_state(recover);
-		if (recover >= 1) {
-			trigger_state_restore();
-			controller_reconfig_scheduling();
-		}
+	load_all_resv_state(recover);
+	if (recover >= 1) {
+		trigger_state_restore();
+		controller_reconfig_scheduling();
 	}
 
 	_restore_job_accounting();
