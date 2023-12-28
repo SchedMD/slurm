@@ -3625,7 +3625,8 @@ The default value is 60 seconds.
 .TP
 \fBResvEpilog\fR
 Fully qualified pathname of a program for the slurmctld to execute
-when a reservation ends. The program can be used to cancel jobs, modify
+when a reservation ends. It does not run when a running reservation is
+deleted. The program can be used to cancel jobs, modify
 partition configuration, etc.
 The reservation named will be passed as an argument to the program.
 By default there is no epilog.
