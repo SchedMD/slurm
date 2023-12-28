@@ -487,8 +487,6 @@ static const data_t *_find_spec_path(const char *str_path, data_t **spec)
 					     &args) < 0)
 			continue;
 
-		args.path_list = NULL;
-
 		if (args.found) {
 			*spec = specs[i];
 			break;
