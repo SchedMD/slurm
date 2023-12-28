@@ -1663,13 +1663,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/*
 	 * Set standard features and preserve the plugin controlled ones.
-	 * A reconfig always imply load the state from slurm.conf
 	 */
-	if (reconfig) {		/* Preserve state from memory */
-		load_last_job_id();
-		reset_first_job_id();
-		controller_reconfig_scheduling();
-	} else if (recover == 0) {	/* Build everything from slurm.conf */
+	if (recover == 0) {		/* Build everything from slurm.conf */
 		load_last_job_id();
 		reset_first_job_id();
 		controller_reconfig_scheduling();
