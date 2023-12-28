@@ -1498,7 +1498,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	node_record_t **old_node_table_ptr = NULL, *node_ptr;
-	List old_part_list = NULL, old_config_list = NULL;
+	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
@@ -1533,7 +1533,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			node_ptr->port   = node_ptr->config_ptr->cpus;
 			node_ptr->weight = node_ptr->config_ptr->weight;
 		}
-		old_config_list = config_list;
 		config_list = NULL;
 		FREE_NULL_LIST(front_end_list);
 		node_record_table_ptr = NULL;
@@ -1755,7 +1754,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
-	FREE_NULL_LIST(old_config_list);
 
 	reserve_port_config(slurm_conf.mpi_params);
 
