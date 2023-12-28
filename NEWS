@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Reject single http query with multiple path requests.
  -- slurmrestd - Add time/planned field to slurmdb/v0.0.41/job/{job_id}.
  -- Improve Power Save's Resume/Suspend rate limiting.
+ -- slurmrestd - Improve reliablity under high memory pressure by closing
+    connections instead of forcing a fatal exit due to lack of memory.
 
 * Changes in Slurm 23.11.2
 ==========================
