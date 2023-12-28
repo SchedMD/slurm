@@ -665,6 +665,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Request to parse empty string rejected"},
 	{ ERRTAB_ENTRY(ESLURM_DATA_INVALID_PARSER),
 	  "Invalid parser requested"},
+	{ ERRTAB_ENTRY(ESLURM_DATA_PARSING_DEPTH),
+	  "Parsing tree too deep. Possible cyclic parsing detected"},
 
 	/* container  errors */
 	{ ERRTAB_ENTRY(ESLURM_CONTAINER_NOT_CONFIGURED),
