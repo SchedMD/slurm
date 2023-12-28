@@ -3346,7 +3346,10 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 			SWAP(buf->size, con->in->size);
 			return SLURM_SUCCESS;
 		} else if (!will_fit) {
-			grow_buf(buf, get_buf_offset(con->in));
+			int rc;
+
+			if ((rc = try_grow_buf(buf, get_buf_offset(con->in))))
+				return rc;
 		}
 
 		memcpy(get_buf_data(buf) + get_buf_offset(buf),
