@@ -1490,8 +1490,8 @@ int read_slurm_conf(int recover, bool reconfig)
 {
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
-	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
-	node_record_t **old_node_table_ptr = NULL, *node_ptr;
+	int rc = 0, load_job_ret = SLURM_SUCCESS;
+	node_record_t **old_node_table_ptr = NULL;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
 	char *old_cred_type = xstrdup(slurm_conf.cred_type);
@@ -1511,18 +1511,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		/* save node and partition states for reconfig RPC */
 		old_node_table_ptr    = node_record_table_ptr;
 
-		for (i = 0; i < node_record_count; i++) {
-			if (!(node_ptr = old_node_table_ptr[i]) ||
-			    IS_NODE_DYNAMIC_NORM(node_ptr))
-				continue;
-			/*
-			 * Store the original configured CPU count somewhere
-			 * (port is reused here for that purpose) so we can
-			 * report changes in its configuration.
-			 */
-			node_ptr->port   = node_ptr->config_ptr->cpus;
-			node_ptr->weight = node_ptr->config_ptr->weight;
-		}
 		config_list = NULL;
 		FREE_NULL_LIST(front_end_list);
 		node_record_table_ptr = NULL;
