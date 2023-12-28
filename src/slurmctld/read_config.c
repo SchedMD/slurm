@@ -1502,15 +1502,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* initialization */
 	START_TIMER;
 
-	if (reconfig) {
-		/* save node and partition states for reconfig RPC */
-		config_list = NULL;
-		FREE_NULL_LIST(front_end_list);
-		node_record_table_ptr = NULL;
-		node_record_count = 0;
-		xhash_free(node_hash_table);
-	}
-
 	_init_all_slurm_conf();
 
 	cgroup_conf_init();
