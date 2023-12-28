@@ -100,6 +100,14 @@ extern void grow_buf(buf_t *my_buf, uint32_t size);
  * RET SLURM_SUCCESS or error
  */
 extern int try_grow_buf(buf_t *buffer, uint32_t size);
+/*
+ * Ensure buffer has enough remaining bytes
+ * Note: Buffer's head pointer may be resized or replaced.
+ * IN my_buf - pointer to buffer
+ * IN size - number of bytes to grow buffer by
+ * RET SLURM_SUCCESS or error
+ */
+extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
 extern void *xfer_buf_data(buf_t *my_buf);
 
 extern void pack_time(time_t val, buf_t *buffer);
