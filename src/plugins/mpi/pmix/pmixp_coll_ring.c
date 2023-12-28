@@ -281,7 +281,8 @@ static int _ring_forward_data(pmixp_coll_ring_ctx_t *coll_ctx, uint32_t contrib_
 
 	/* insert payload to buf */
 	offset = get_buf_offset(buf);
-	pmixp_server_buf_reserve(buf, size);
+	if ((rc = try_grow_buf_remaining(buf, size)))
+		goto exit;
 	memcpy(get_buf_data(buf) + offset, data, size);
 	set_buf_offset(buf, offset + size);
 

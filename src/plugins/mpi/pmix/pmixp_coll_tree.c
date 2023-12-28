@@ -531,7 +531,8 @@ static int _progress_collect(pmixp_coll_t *coll)
 			tree->ufwd_offset;
 		size_t size = get_buf_offset(tree->ufwd_buf) -
 			tree->ufwd_offset;
-		pmixp_server_buf_reserve(tree->dfwd_buf, size);
+		if (try_grow_buf_remaining(tree->dfwd_buf, size))
+			return 0;
 		dst = get_buf_data(tree->dfwd_buf) + tree->dfwd_offset;
 		memcpy(dst, src, size);
 		set_buf_offset(tree->dfwd_buf, tree->dfwd_offset + size);
@@ -959,7 +960,8 @@ int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 
 	/* save & mark local contribution */
 	tree->contrib_local = true;
-	pmixp_server_buf_reserve(tree->ufwd_buf, size);
+	if ((ret = try_grow_buf_remaining(tree->ufwd_buf, size)))
+		goto exit;
 	memcpy(get_buf_data(tree->ufwd_buf) + get_buf_offset(tree->ufwd_buf),
 	       data, size);
 	set_buf_offset(tree->ufwd_buf, get_buf_offset(tree->ufwd_buf) + size);
@@ -1115,7 +1117,8 @@ int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t peerid, uint32_t seq,
 
 	data_src = get_buf_data(buf) + get_buf_offset(buf);
 	size = remaining_buf(buf);
-	pmixp_server_buf_reserve(tree->ufwd_buf, size);
+	if (try_grow_buf_remaining(tree->ufwd_buf, size))
+		goto error;
 	data_dst = get_buf_data(tree->ufwd_buf) +
 		get_buf_offset(tree->ufwd_buf);
 	memcpy(data_dst, data_src, size);
@@ -1269,8 +1272,8 @@ int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t peerid, uint32_t seq,
 
 	data_src = get_buf_data(buf) + get_buf_offset(buf);
 	size = remaining_buf(buf);
-	pmixp_server_buf_reserve(tree->dfwd_buf, size);
-
+	if (try_grow_buf_remaining(tree->dfwd_buf, size))
+		goto error;
 	data_dst = get_buf_data(tree->dfwd_buf) +
 		get_buf_offset(tree->dfwd_buf);
 	memcpy(data_dst, data_src, size);

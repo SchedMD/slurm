@@ -121,12 +121,4 @@ void pmixp_server_run_cperf(void);
 #define pmixp_server_run_cperf();
 #endif
 
-static inline void pmixp_server_buf_reserve(buf_t *buf, uint32_t size)
-{
-	if (remaining_buf(buf) < size) {
-		uint32_t to_reserve = size - remaining_buf(buf);
-		grow_buf(buf, to_reserve);
-	}
-}
-
 #endif /* PMIXP_SERVER_H */
