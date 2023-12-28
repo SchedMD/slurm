@@ -2438,18 +2438,13 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 	}
 
 	if (con->work_active) {
+		int rc;
+
 		/* Grow buffer as needed to handle the outgoing data */
-		if (remaining_buf(con->out) < bytes) {
-			int need = bytes - remaining_buf(con->out);
-
-			if ((need + size_buf(con->out)) >= MAX_BUF_SIZE) {
-				error("%s: [%s] out of buffer space.",
-				      __func__, con->name);
-
-				return SLURM_ERROR;
-			}
-
-			grow_buf(con->out, need);
+		if ((rc = try_grow_buf_remaining(con->out, bytes))) {
+			error("%s: [%s] unable to increase buffer by %zu bytes: %s",
+			      __func__, con->name, bytes, slurm_strerror(rc));
+			return rc;
 		}
 
 		memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
