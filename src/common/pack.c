@@ -212,6 +212,28 @@ void grow_buf(buf_t *buffer, uint32_t size)
 	xrealloc_nz(buffer->head, buffer->size);
 }
 
+extern int try_grow_buf(buf_t *buffer, uint32_t size)
+{
+	uint64_t new_size = ((uint64_t) size) + buffer->size;
+
+	xassert(buffer->magic == BUF_MAGIC);
+
+	if (buffer->mmaped || buffer->shadow)
+		return EINVAL;
+	if (new_size > MAX_BUF_SIZE) {
+		error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
+		      __func__, new_size, MAX_BUF_SIZE);
+		return ESLURM_DATA_TOO_LARGE;
+	}
+
+	if (!try_xrealloc(buffer->head, new_size))
+		return ENOMEM;
+
+	buffer->size = new_size;
+
+	return SLURM_SUCCESS;
+}
+
 /* init_buf - create an empty buffer of the given size */
 buf_t *init_buf(uint32_t size)
 {

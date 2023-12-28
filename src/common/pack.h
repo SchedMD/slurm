@@ -92,6 +92,14 @@ extern buf_t *create_shadow_buf(char *data, uint32_t size);
 extern void free_buf(buf_t *my_buf);
 extern buf_t *init_buf(uint32_t size);
 extern void grow_buf(buf_t *my_buf, uint32_t size);
+/*
+ * Try to grow buffer by given number of bytes.
+ * Buffer's head pointer may be resized or replaced.
+ * IN my_buf - pointer to buffer
+ * IN size - number of bytes to grow buffer by
+ * RET SLURM_SUCCESS or error
+ */
+extern int try_grow_buf(buf_t *buffer, uint32_t size);
 extern void *xfer_buf_data(buf_t *my_buf);
 
 extern void pack_time(time_t val, buf_t *buffer);
