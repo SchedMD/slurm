@@ -1081,12 +1081,10 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	}
 
 	need = sizeof(con->msglen) + con->msglen;
-	if (size_buf(con->in) < need) {
-		uint32_t delta = (need - size_buf(con->in));
-		log_flag(NET, "%s: [%s] increasing buffer %u bytes for  RPC message length: %u",
-			 __func__, con->name, delta, con->msglen);
-
-		grow_buf(con->in, delta);
+	if ((rc = try_grow_buf_remaining(con->in, need))) {
+		log_flag(NET, "%s: [%s] unable to increase buffer %u bytes for RPC message: %s",
+			 __func__, con->name, need, slurm_strerror(rc));
+		return rc;
 	}
 
 	if (size_buf(con->in) >= need) {
