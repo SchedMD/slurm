@@ -1603,7 +1603,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	if (switch_init(1) != SLURM_SUCCESS)
-			fatal("Failed to initialize switch plugin");
+		fatal("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");
