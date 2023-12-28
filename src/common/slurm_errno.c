@@ -667,6 +667,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid parser requested"},
 	{ ERRTAB_ENTRY(ESLURM_DATA_PARSING_DEPTH),
 	  "Parsing tree too deep. Possible cyclic parsing detected"},
+	{ ERRTAB_ENTRY(ESLURM_DATA_PARSER_INVALID_STATE),
+	  "Parser went into an invalid state. Possible library issue."},
 
 	/* container  errors */
 	{ ERRTAB_ENTRY(ESLURM_CONTAINER_NOT_CONFIGURED),
