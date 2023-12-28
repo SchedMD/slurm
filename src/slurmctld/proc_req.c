@@ -5780,8 +5780,7 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 		return;
 	}
 
-	buffer = pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
-			       msg->protocol_version);
+	buffer = pack_all_stat(msg->protocol_version);
 	_pack_rpc_stats(buffer, msg->protocol_version);
 
 	response_init(&response_msg, msg, RESPONSE_STATS_INFO, buffer->head);

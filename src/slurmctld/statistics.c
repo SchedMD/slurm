@@ -46,30 +46,24 @@
 #include "src/common/slurmdbd_defs.h"
 
 /* Pack all scheduling statistics */
-extern buf_t *pack_all_stat(int resp, uint16_t protocol_version)
+extern buf_t *pack_all_stat(uint16_t protocol_version)
 {
 	buf_t *buffer;
-	int parts_packed;
 	int agent_queue_size;
 	int agent_count;
 	int agent_thread_count;
 	int slurmdbd_queue_size = 0;
 	time_t now = time(NULL);
 
-	if (resp) {
-		if (acct_storage_g_get_data(acct_db_conn,
-					    ACCT_STORAGE_INFO_AGENT_COUNT,
-					    &slurmdbd_queue_size)
-		    != SLURM_SUCCESS)
-			slurmdbd_queue_size = 0;
-	}
+	if (acct_storage_g_get_data(acct_db_conn, ACCT_STORAGE_INFO_AGENT_COUNT,
+				    &slurmdbd_queue_size) != SLURM_SUCCESS)
+		slurmdbd_queue_size = 0;
 
 	buffer = init_buf(BUF_SIZE);
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		parts_packed = resp;
-		pack32(parts_packed, buffer);
+		pack32(1, buffer); /* please remove on next version */
 
-		if (resp) {
+		if (true) {
 			pack_time(now, buffer);
 			debug3("%s: time = %u", __func__,
 			       (uint32_t) last_proc_req_start);
@@ -140,10 +134,9 @@ extern buf_t *pack_all_stat(int resp, uint16_t protocol_version)
 				     BF_EXIT_COUNT, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		parts_packed = resp;
-		pack32(parts_packed, buffer);
+		pack32(1, buffer);
 
-		if (resp) {
+		if (true) {
 			pack_time(now, buffer);
 			debug3("%s: time = %u", __func__,
 			       (uint32_t) last_proc_req_start);

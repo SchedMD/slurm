@@ -2085,7 +2085,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t protocol_version);
 
 /* Pack all scheduling statistics */
-extern buf_t *pack_all_stat(int resp, uint16_t protocol_version);
+extern buf_t *pack_all_stat(uint16_t protocol_version);
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
