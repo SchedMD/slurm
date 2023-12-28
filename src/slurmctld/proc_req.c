@@ -5703,15 +5703,11 @@ static void _clear_rpc_stats(void)
 	slurm_mutex_unlock(&rpc_mutex);
 }
 
-static void _pack_rpc_stats(char **buffer_ptr, int *buffer_size,
-			    uint16_t protocol_version)
+static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t i;
-	buf_t *buffer;
 
 	slurm_mutex_lock(&rpc_mutex);
-	buffer = create_buf(*buffer_ptr, *buffer_size);
-	set_buf_offset(buffer, *buffer_size);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		for (i = 0; i < RPC_TYPE_SIZE; i++) {
@@ -5737,9 +5733,6 @@ static void _pack_rpc_stats(char **buffer_ptr, int *buffer_size,
 	}
 
 	slurm_mutex_unlock(&rpc_mutex);
-
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
 static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
@@ -5768,6 +5761,7 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 	char *dump;
 	int dump_size;
 	stats_info_request_msg_t *request_msg = msg->data;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 
 	if ((request_msg->command_id == STAT_COMMAND_RESET) &&
@@ -5788,14 +5782,16 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 
 	pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
 		      &dump, &dump_size, msg->protocol_version);
-	_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
+	buffer = create_buf(dump, dump_size);
+	set_buf_offset(buffer, dump_size);
+	_pack_rpc_stats(buffer, msg->protocol_version);
 
 	response_init(&response_msg, msg, RESPONSE_STATS_INFO, dump);
-	response_msg.data_size = dump_size;
+	response_msg.data_size = get_buf_offset(buffer);
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
