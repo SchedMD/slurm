@@ -5306,32 +5306,6 @@ extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 	}
 }
 
-extern void slurm_free_comp_msg_list(void *x)
-{
-	slurm_msg_t *msg = (slurm_msg_t*)x;
-	if (msg) {
-		if (msg->data_size)
-			FREE_NULL_BUFFER(msg->data);
-		else
-			slurm_free_msg_data(msg->msg_type, msg->data);
-
-		/* make sure the data is NULL here or we could cause a
-		 * double free in slurm_free_msg
-		 */
-		msg->data = NULL;
-
-		slurm_free_msg(msg);
-	}
-}
-
-extern void slurm_free_composite_msg(composite_msg_t *msg)
-{
-	if (msg) {
-		FREE_NULL_LIST(msg->msg_list);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg)
 {

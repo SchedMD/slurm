@@ -1014,11 +1014,6 @@ typedef struct network_callerid_resp {
 	char *node_name;
 } network_callerid_resp_t;
 
-typedef struct composite_msg {
-	slurm_addr_t sender;	/* address of sending node/port */
-	List	 msg_list;
-} composite_msg_t;
-
 typedef struct set_fs_dampening_factor_msg {
 	uint16_t dampening_factor;
 } set_fs_dampening_factor_msg_t;
@@ -1654,8 +1649,6 @@ extern void slurm_destroy_priority_factors_object(void *object);
 extern void slurm_copy_priority_factors(priority_factors_t *dest,
 					priority_factors_t *src);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
-extern void slurm_free_comp_msg_list(void *x);
-extern void slurm_free_composite_msg(composite_msg_t *msg);
 extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
