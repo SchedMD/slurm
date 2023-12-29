@@ -929,8 +929,6 @@ static int _run_lua_script(run_lua_args_t *args)
 {
 	int rc;
 	buf_t *info_buf = NULL;
-	int job_buf_size = 0;
-	char *job_buf = NULL;
 	List job_ids = NULL;
 	job_record_t *job_ptr;
 	slurmctld_lock_t job_read_lock = {
@@ -961,10 +959,9 @@ static int _run_lua_script(run_lua_args_t *args)
 		}
 		job_ids = list_create(NULL);
 		list_append(job_ids, &job_ptr->job_id);
-		pack_spec_jobs(&job_buf, &job_buf_size, job_ids, SHOW_DETAIL,
-			       slurm_conf.slurm_user_id, NO_VAL,
-			       SLURM_PROTOCOL_VERSION);
-		info_buf = create_buf(job_buf, job_buf_size);
+		info_buf = pack_spec_jobs(job_ids, SHOW_DETAIL,
+					  slurm_conf.slurm_user_id, NO_VAL,
+					  SLURM_PROTOCOL_VERSION);
 
 		if (!args->have_job_lock)
 			unlock_slurmctld(job_read_lock);

@@ -1456,8 +1456,6 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	buf_t *buffer = NULL;
-	char *dump;
-	int dump_size;
 	slurm_msg_t response_msg;
 	job_info_request_msg_t *job_info_request_msg = msg->data;
 	/* Locks: Read config job part */
@@ -1475,12 +1473,10 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		if (job_info_request_msg->job_ids) {
-			pack_spec_jobs(&dump, &dump_size,
-				       job_info_request_msg->job_ids,
-				       job_info_request_msg->show_flags,
-				       msg->auth_uid, NO_VAL,
-				       msg->protocol_version);
-			buffer = create_buf(dump, dump_size);
+			buffer = pack_spec_jobs(job_info_request_msg->job_ids,
+						job_info_request_msg->show_flags,
+						msg->auth_uid, NO_VAL,
+						msg->protocol_version);
 		} else {
 			buffer = pack_all_jobs(job_info_request_msg->show_flags,
 					       msg->auth_uid, NO_VAL,

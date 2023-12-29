@@ -2115,10 +2115,8 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	List jobids;
         slurm_msg_t req_msg, job_msg;
 	sib_msg_t sib_msg = {0};
-	char *dump = NULL;
-	int dump_size = 0;
 	slurmdb_cluster_rec_t *sibling;
-	buf_t *buffer;
+	buf_t *job_buffer = NULL, *buffer = NULL;
 	time_t sync_time = 0;
 	char *sib_name = job_update_info->submit_cluster;
 
@@ -2149,9 +2147,8 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 
 	sync_time = time(NULL);
 	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
-	pack_spec_jobs(&dump, &dump_size, jobids, SHOW_ALL,
-	               slurm_conf.slurm_user_id, NO_VAL,
-	               sibling->rpc_version);
+	job_buffer = pack_spec_jobs(jobids, SHOW_ALL, slurm_conf.slurm_user_id,
+				    NO_VAL, sibling->rpc_version);
 	FREE_NULL_LIST(jobids);
 
 	unlock_slurmctld(job_read_lock);
@@ -2159,8 +2156,8 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	slurm_msg_t_init(&job_msg);
 	job_msg.protocol_version = sibling->rpc_version;
 	job_msg.msg_type         = RESPONSE_JOB_INFO;
-	job_msg.data             = dump;
-	job_msg.data_size        = dump_size;
+	job_msg.data = job_buffer->head;
+	job_msg.data_size = job_buffer->processed;
 
 	buffer = init_buf(BUF_SIZE);
 	pack_msg(&job_msg, buffer);
@@ -2181,8 +2178,8 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 
 	rc = _queue_rpc(sibling, &req_msg, 0, false);
 
+	FREE_NULL_BUFFER(job_buffer);
 	FREE_NULL_BUFFER(buffer);
-	xfree(dump);
 
 	return rc;
 }

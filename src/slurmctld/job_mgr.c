@@ -10241,18 +10241,16 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 /*
  * pack_spec_jobs - dump job information for specified jobs in
  *	machine independent form (for network transmission)
- * OUT buffer_ptr - the pointer is set to the allocated buffer.
- * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN job_ids - list of job_ids to pack
  * IN uid - uid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
+ * OUT buffer
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  */
-extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
-			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
-			   uint16_t protocol_version)
+extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
+			     uint32_t filter_uid, uint16_t protocol_version)
 {
 	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {
@@ -10270,9 +10268,6 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 
 	xassert(job_ids);
 
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
@@ -10288,9 +10283,9 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	pack32(pack_info.jobs_packed, pack_info.buffer);
 	set_buf_offset(pack_info.buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(pack_info.buffer);
-	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
 	xfree(pack_info.visible_parts);
+
+	return pack_info.buffer;
 }
 
 static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
