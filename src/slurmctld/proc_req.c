@@ -1679,8 +1679,7 @@ static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
 		debug3("%s, no change", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_front_end(&dump, &dump_size, msg->auth_uid,
-				   msg->protocol_version);
+		pack_all_front_end(&dump, &dump_size, msg->protocol_version);
 		unlock_slurmctld(node_read_lock);
 		END_TIMER2(__func__);
 		debug2("%s, size=%d %s", __func__, dump_size, TIME_STR);

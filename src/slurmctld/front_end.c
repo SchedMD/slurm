@@ -607,7 +607,7 @@ extern void restore_front_end_state(int recover)
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: READ lock_slurmctld config before entry
  */
-extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
+extern void pack_all_front_end(char **buffer_ptr, int *buffer_size,
 			       uint16_t protocol_version)
 {
 	time_t now = time(NULL);
