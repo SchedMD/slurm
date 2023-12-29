@@ -3770,7 +3770,7 @@ extern int validate_nodes_via_front_end(
 	list_iterator_destroy(job_iterator);
 
 	(void) gres_node_config_unpack(reg_msg->gres_info,
-				       node_record_table_ptr[i]->name);
+				       node_record_table_ptr[0]->name);
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		bool acct_updated = false;
 
