@@ -928,6 +928,7 @@ static int _start_lua_script(char *func, uint32_t job_id, uint32_t argc,
 static int _run_lua_script(run_lua_args_t *args)
 {
 	int rc;
+	buf_t *info_buf = NULL;
 	int job_buf_size = 0;
 	char *job_buf = NULL;
 	List job_ids = NULL;
@@ -963,6 +964,7 @@ static int _run_lua_script(run_lua_args_t *args)
 		pack_spec_jobs(&job_buf, &job_buf_size, job_ids, SHOW_DETAIL,
 			       slurm_conf.slurm_user_id, NO_VAL,
 			       SLURM_PROTOCOL_VERSION);
+		info_buf = create_buf(job_buf, job_buf_size);
 
 		if (!args->have_job_lock)
 			unlock_slurmctld(job_read_lock);
@@ -975,32 +977,22 @@ static int _run_lua_script(run_lua_args_t *args)
 					     args->argc,
 					     args->argv,
 					     args->timeout,
-					     job_buf,
-					     job_buf_size,
+					     info_buf->head,
+					     info_buf->processed,
 					     args->resp_msg,
 					     args->track_script_signal);
 	} else {
 		job_info_msg_t *job_info = NULL;
 
-		if (job_buf) {
-			buf_t *info_buf;
+		if (info_buf) {
 			slurm_msg_t *info_msg = xmalloc(sizeof *info_msg);
 
 			slurm_msg_t_init(info_msg);
 			info_msg->protocol_version = SLURM_PROTOCOL_VERSION;
 			info_msg->msg_type = RESPONSE_JOB_INFO;
-			info_buf = create_buf(job_buf, job_buf_size);
 			unpack_msg(info_msg, info_buf);
 			job_info = info_msg->data;
 			info_msg->data = NULL;
-
-			/*
-			 * create_buf() does not duplicate the data, just
-			 * points to it.  So just NULL it out here. It will get
-			 * free'd later.
-			 */
-			info_buf->head = NULL;
-			FREE_NULL_BUFFER(info_buf);
 			slurm_free_msg(info_msg);
 		}
 		rc = _start_lua_script(args->lua_func, args->job_id, args->argc,
@@ -1010,7 +1002,7 @@ static int _run_lua_script(run_lua_args_t *args)
 	_decr_lua_thread_cnt();
 
 	FREE_NULL_LIST(job_ids);
-	xfree(job_buf);
+	FREE_NULL_BUFFER(info_buf);
 
 	return rc;
 }
