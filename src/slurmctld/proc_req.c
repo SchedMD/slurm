@@ -1729,8 +1729,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 			unlock_slurmctld(node_write_lock);
 		END_TIMER2(__func__);
 
-		response_init(&response_msg, msg, RESPONSE_NODE_INFO, buffer->head);
-		response_msg.data_size = buffer->processed;
+		response_init(&response_msg, msg, RESPONSE_NODE_INFO, buffer);
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1770,8 +1769,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 
-	response_init(&response_msg, msg, RESPONSE_NODE_INFO, buffer->head);
-	response_msg.data_size = buffer->processed;
+	response_init(&response_msg, msg, RESPONSE_NODE_INFO, buffer);
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);

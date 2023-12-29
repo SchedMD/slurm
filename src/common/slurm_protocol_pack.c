@@ -2705,12 +2705,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_buffer_msg(const slurm_msg_t *msg, buf_t *buffer)
-{
-	xassert(msg);
-	packmem_array(msg->data, msg->data_size, buffer);
-}
-
 static void _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
 {
 	buf_t *msg_buffer = msg->data;
@@ -9777,15 +9771,13 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	}
 
 	switch (msg->msg_type) {
-	case RESPONSE_NODE_INFO:
-		_pack_buffer_msg(msg, buffer);
-		break;
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_BURST_BUFFER_INFO:
 	case RESPONSE_FRONT_END_INFO:
 	case RESPONSE_JOB_INFO:
 	case RESPONSE_JOB_STEP_INFO:
 	case RESPONSE_LICENSE_INFO:
+	case RESPONSE_NODE_INFO:
 	case RESPONSE_PARTITION_INFO:
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_STATS_INFO:
