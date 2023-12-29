@@ -79,7 +79,7 @@ const char plugin_name[] = "Serializer YAML plugin";
 const char plugin_type[] = "serializer/yaml";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#define YAML_MAX_DEPTH 124
+#define YAML_MAX_DEPTH 64
 
 /*
  * YAML doesn't have an IANA registered mime type yet
