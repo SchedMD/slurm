@@ -595,10 +595,7 @@ static void _save_jobcomp_kafka_state(void)
 	buf_t *buffer = NULL;
 	DEF_TIMERS;
 
-	if (!(buffer = init_buf(high_buffer_size))) {
-		error("%s: init_buf() failed. Can't save state.", plugin_type);
-		return;
-	}
+	buffer = init_buf(high_buffer_size);
 
 	START_TIMER;
 	_pack_jobcomp_kafka_state(buffer);
