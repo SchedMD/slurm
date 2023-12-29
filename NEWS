@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when receiving alias addrs from controller.
  -- scontrol - Accept `scontrol token lifespan=infinite` to create tokens that
     effectively do not expire.
+ -- Avoid errors when Slurmdb accounting disabled when '--json' or '--yaml' is
+    invoked with CLI commands and slurmrestd. Add warnings when query would
+    have populated data from Slurmdb instead of errors.
 
 * Changes in Slurm 23.11.1
 ==========================
