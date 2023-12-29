@@ -1455,6 +1455,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t *msg)
 static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
+	buf_t *buffer = NULL;
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
@@ -1479,11 +1480,11 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 				       job_info_request_msg->show_flags,
 				       msg->auth_uid, NO_VAL,
 				       msg->protocol_version);
+			buffer = create_buf(dump, dump_size);
 		} else {
-			pack_all_jobs(&dump, &dump_size,
-				      job_info_request_msg->show_flags,
-				      msg->auth_uid, NO_VAL,
-				      msg->protocol_version);
+			buffer = pack_all_jobs(job_info_request_msg->show_flags,
+					       msg->auth_uid, NO_VAL,
+					       msg->protocol_version);
 		}
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
@@ -1492,12 +1493,12 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		info("%s, size=%d %s", __func__, dump_size, TIME_STR);
 #endif
 
-		response_init(&response_msg, msg, RESPONSE_JOB_INFO, dump);
-		response_msg.data_size = dump_size;
+		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
+		response_msg.data_size = buffer->processed;
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(dump);
+		FREE_NULL_BUFFER(buffer);
 	}
 }
 
@@ -1505,8 +1506,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 	job_user_id_msg_t *job_info_request_msg = msg->data;
 	/* Locks: Read config job part */
@@ -1516,9 +1516,9 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	pack_all_jobs(&dump, &dump_size, job_info_request_msg->show_flags,
-		      msg->auth_uid, job_info_request_msg->user_id,
-		      msg->protocol_version);
+	buffer = pack_all_jobs(job_info_request_msg->show_flags, msg->auth_uid,
+			       job_info_request_msg->user_id,
+			       msg->protocol_version);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
@@ -1526,12 +1526,12 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	info("%s, size=%d %s", __func__, dump_size, TIME_STR);
 #endif
 
-	response_init(&response_msg, msg, RESPONSE_JOB_INFO, dump);
-	response_msg.data_size = dump_size;
+	response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
+	response_msg.data_size = buffer->processed;
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 /* _slurm_rpc_dump_job_single - process RPC for one job's state information */
