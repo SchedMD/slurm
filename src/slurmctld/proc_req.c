@@ -4686,8 +4686,6 @@ static int _is_prolog_finished(uint32_t job_id)
 /* get node select info plugin */
 static void _slurm_rpc_burst_buffer_info(slurm_msg_t *msg)
 {
-	void *resp_buffer = NULL;
-	int resp_buffer_size = 0;
 	int error_code = SLURM_SUCCESS;
 	buf_t *buffer;
 	uid_t uid = msg->auth_uid;
@@ -4706,13 +4704,11 @@ static void _slurm_rpc_burst_buffer_info(slurm_msg_t *msg)
 	} else {
 		slurm_msg_t response_msg;
 
-		resp_buffer_size = get_buf_offset(buffer);
-		resp_buffer = xfer_buf_data(buffer);
 		response_init(&response_msg, msg, RESPONSE_BURST_BUFFER_INFO,
-			      resp_buffer);
-		response_msg.data_size = resp_buffer_size;
+			      buffer);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(resp_buffer);
+
+		FREE_NULL_BUFFER(buffer);
 	}
 }
 

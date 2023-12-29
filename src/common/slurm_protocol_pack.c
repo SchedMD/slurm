@@ -9777,11 +9777,11 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	}
 
 	switch (msg->msg_type) {
-	case RESPONSE_BURST_BUFFER_INFO:
 	case RESPONSE_NODE_INFO:
 		_pack_buffer_msg(msg, buffer);
 		break;
 	case RESPONSE_ASSOC_MGR_INFO:
+	case RESPONSE_BURST_BUFFER_INFO:
 	case RESPONSE_FRONT_END_INFO:
 	case RESPONSE_JOB_INFO:
 	case RESPONSE_JOB_STEP_INFO:
