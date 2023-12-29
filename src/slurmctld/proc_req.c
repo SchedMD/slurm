@@ -1683,8 +1683,7 @@ static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
 		END_TIMER2(__func__);
 
 		response_init(&response_msg, msg, RESPONSE_FRONT_END_INFO,
-			      buffer->head);
-		response_msg.data_size = buffer->processed;
+			      buffer);
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
