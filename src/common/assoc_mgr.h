@@ -326,15 +326,13 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 /*
  * get the state of the association manager and pack it up in buffer
- * OUT buffer_ptr - the pointer is set to the allocated buffer.
- * OUT buffer_size - set to size of the buffer in bytes
  * IN: msg: request for various states
  * IN: uid: uid_t of user issuing the request
  * IN: db_conn: needed if not already connected to the database or DBD
  * IN: protocol_version: version of Slurm we are sending to.
+ * OUT: buffer
  */
-extern void assoc_mgr_info_get_pack_msg(
-	char **buffer_ptr, int *buffer_size,
+extern buf_t *assoc_mgr_info_get_pack_msg(
 	assoc_mgr_info_request_msg_t *msg, uid_t uid,
 	void *db_conn, uint16_t protocol_version);
 

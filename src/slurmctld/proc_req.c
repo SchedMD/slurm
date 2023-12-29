@@ -5887,25 +5887,26 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 static void _slurm_rpc_assoc_mgr_info(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump = NULL;
-	int dump_size = 0;
+	buf_t *buffer;
 	slurm_msg_t response_msg;
 
 	START_TIMER;
 	/* Security is handled in the assoc_mgr */
-	assoc_mgr_info_get_pack_msg(&dump, &dump_size,
-				    (assoc_mgr_info_request_msg_t *)msg->data,
-				    msg->auth_uid, acct_db_conn,
-				    msg->protocol_version);
-
+	buffer = assoc_mgr_info_get_pack_msg(msg->data, msg->auth_uid,
+					     acct_db_conn,
+					     msg->protocol_version);
 	END_TIMER2(__func__);
-	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
 
-	response_init(&response_msg, msg, RESPONSE_ASSOC_MGR_INFO, dump);
-	response_msg.data_size = dump_size;
+	if (!buffer) {
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
+	response_init(&response_msg, msg, RESPONSE_ASSOC_MGR_INFO, buffer->head);
+	response_msg.data_size = buffer->processed;
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 /* Take a persist_msg_t and handle it like a normal slurm_msg_t */

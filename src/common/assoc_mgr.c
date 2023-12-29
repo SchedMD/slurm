@@ -3536,8 +3536,7 @@ end_it:
 	return;
 }
 
-extern void assoc_mgr_info_get_pack_msg(
-	char **buffer_ptr, int *buffer_size,
+extern buf_t *assoc_mgr_info_get_pack_msg(
 	assoc_mgr_info_request_msg_t *msg, uid_t uid,
 	void *db_conn, uint16_t protocol_version)
 {
@@ -3555,10 +3554,7 @@ extern void assoc_mgr_info_get_pack_msg(
 
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK };
-	buf_t *buffer;
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
+	buf_t *buffer = NULL;
 
 	if (msg) {
 		if (msg->user_list && list_count(msg->user_list))
@@ -3750,10 +3746,6 @@ no_users:
 
 	assoc_mgr_unlock(&locks);
 
-	/* put the real record count in the message body header */
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
-
 end_it:
 	if (user_itr)
 		list_iterator_destroy(user_itr);
@@ -3762,7 +3754,7 @@ end_it:
 	if (qos_itr)
 		list_iterator_destroy(qos_itr);
 
-	return;
+	return buffer;
 }
 
 extern int assoc_mgr_info_unpack_msg(assoc_mgr_info_msg_t **object,
