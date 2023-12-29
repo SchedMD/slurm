@@ -1678,7 +1678,8 @@ extern char *log_build_step_id_str(
 	return buf;
 }
 
-extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
+extern void _log_flag_hex(const void *data, size_t len, ssize_t start,
+			  ssize_t end, const char *fmt, ...)
 {
 	va_list ap;
 	char *prepend;
@@ -1687,17 +1688,22 @@ extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
 	if (!data || !len)
 		return;
 
+	if (start < 0)
+		start = 0;
+	if ((end < 0) || (end > len))
+		end = len;
+
 	va_start(ap, fmt);
 	prepend = vxstrfmt(fmt, ap);
 	va_end(ap);
 
-	for (int i = 0; (i < len); ) {
-		int remain = len - i;
+	for (size_t i = start; (i < end); ) {
+		int remain = end - i;
 		int print = (remain < hex_cols) ? remain : hex_cols;
 		char *phex = xstring_bytes2hex((data + i), print, " ");
 		char *pstr = xstring_bytes2printable((data + i), print, '.');
 
-		format_print(LOG_LEVEL_VERBOSE, "%s [%04d/%04zu] 0x%s \"%s\"",
+		format_print(LOG_LEVEL_VERBOSE, "%s [%04zu/%04zu] 0x%s \"%s\"",
 			     prepend, i, len, phex, pstr);
 
 		i += print;
