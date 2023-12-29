@@ -601,14 +601,11 @@ extern void restore_front_end_state(int recover)
 /*
  * pack_all_front_end - dump all front_end node information for all nodes
  *	in machine independent form (for network transmission)
- * OUT buffer_ptr - pointer to the stored data
- * OUT buffer_size - set to size of the buffer in bytes
  * IN protocol_version - slurm protocol version of client
- * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * OUT buffer
  * NOTE: READ lock_slurmctld config before entry
  */
-extern void pack_all_front_end(char **buffer_ptr, int *buffer_size,
-			       uint16_t protocol_version)
+extern buf_t *pack_all_front_end(uint16_t protocol_version)
 {
 	time_t now = time(NULL);
 	uint32_t nodes_packed = 0;
@@ -617,9 +614,6 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size,
 	uint32_t tmp_offset;
 	front_end_record_t *front_end_ptr;
 	int i;
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	buffer = init_buf(BUF_SIZE * 2);
 	nodes_packed = 0;
@@ -646,18 +640,12 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size,
 	set_buf_offset(buffer, 0);
 	pack32(nodes_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
-
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
 #else
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 	buffer = init_buf(64);
 	pack32(nodes_packed, buffer);
 	pack_time(now, buffer);
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
 #endif
+	return buffer;
 }
 
 /* dump_all_front_end_state - save the state of all front_end nodes to file */

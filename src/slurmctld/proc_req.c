@@ -1663,8 +1663,7 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump = NULL;
-	int dump_size = 0;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 	front_end_info_request_msg_t *front_end_req_msg = msg->data;
 	/* Locks: Read config, read node */
@@ -1679,18 +1678,17 @@ static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
 		debug3("%s, no change", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_front_end(&dump, &dump_size, msg->protocol_version);
+		buffer = pack_all_front_end(msg->protocol_version);
 		unlock_slurmctld(node_read_lock);
 		END_TIMER2(__func__);
-		debug2("%s, size=%d %s", __func__, dump_size, TIME_STR);
 
 		response_init(&response_msg, msg, RESPONSE_FRONT_END_INFO,
-			      dump);
-		response_msg.data_size = dump_size;
+			      buffer->head);
+		response_msg.data_size = buffer->processed;
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(dump);
+		FREE_NULL_BUFFER(buffer);
 	}
 }
 
