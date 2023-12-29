@@ -1005,9 +1005,7 @@ static int _run_lua_script(run_lua_args_t *args)
 		}
 		rc = _start_lua_script(args->lua_func, args->job_id, args->argc,
 				       args->argv, job_info, args->resp_msg);
-		if (job_buf) {
-			slurm_free_job_info_msg(job_info);
-		}
+		slurm_free_job_info_msg(job_info);
 	}
 	_decr_lua_thread_cnt();
 
