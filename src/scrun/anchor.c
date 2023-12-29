@@ -1316,7 +1316,6 @@ static int _send_state(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	state_msg = slurm_create_container_state_msg();
 	msg->data = state_msg;
-	msg->data_size = sizeof(*state_msg);
 
 	read_lock_state();
 	state_msg->oci_version = xstrdup(state.oci_version);

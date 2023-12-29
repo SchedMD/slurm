@@ -269,7 +269,6 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		};
 
 		response_init(&resp_msg, msg, RESPONSE_SLURM_RC, &rc_msg);
-		resp_msg.data_size = sizeof(rc_msg);
 
 		rc = conmgr_queue_write_msg(con, &resp_msg);
 		/* nothing to xfree() */

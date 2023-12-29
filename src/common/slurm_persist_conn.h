@@ -63,7 +63,6 @@ typedef enum {
 typedef struct {
 	void *conn;		/* slurm_persist_conn_t */
 	void *data;		/* pointer to a message type below */
-	uint32_t data_size;     /* size of data */
 	uint16_t msg_type;	/* slurmdbd_msg_type_t / slurm_msg_type_t */
 } persist_msg_t;
 

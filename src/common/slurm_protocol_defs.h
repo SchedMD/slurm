@@ -580,7 +580,6 @@ typedef struct slurm_msg {
 	int conn_fd; /* Only used when the message isn't on a persistent
 		      * connection. */
 	void *data;
-	uint32_t data_size;
 	uint16_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.
 				 * index value copied from incoming connection,

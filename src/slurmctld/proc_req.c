@@ -3405,7 +3405,6 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 			      &resp);
 		response_msg.restrict_uid = msg->auth_uid;
 		response_msg.restrict_uid_set = true;
-		response_msg.data_size = sizeof(resp);
 
 		if (req->container_id && req->container_id[0])
 			_find_stepids_by_container_id(msg->auth_uid, req->uid,
@@ -5702,9 +5701,6 @@ static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 						      msg->auth_gid);
 	response_init(&response_msg, msg, RESPONSE_BURST_BUFFER_STATUS,
 		      &status_resp_msg);
-	if (status_resp_msg.status_resp)
-		response_msg.data_size =
-			strlen(status_resp_msg.status_resp) + 1;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(status_resp_msg.status_resp);
 }

@@ -1029,7 +1029,6 @@ extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 		slurm_msg_t_init(&msg);
 
 		msg.data      = req_msg->data;
-		msg.data_size = req_msg->data_size;
 		msg.msg_type  = req_msg->msg_type;
 		msg.protocol_version = persist_conn->version;
 
