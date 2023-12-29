@@ -5902,8 +5902,7 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t *msg)
 		return;
 	}
 
-	response_init(&response_msg, msg, RESPONSE_ASSOC_MGR_INFO, buffer->head);
-	response_msg.data_size = buffer->processed;
+	response_init(&response_msg, msg, RESPONSE_ASSOC_MGR_INFO, buffer);
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_BUFFER(buffer);
