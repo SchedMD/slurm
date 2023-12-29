@@ -9777,7 +9777,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	}
 
 	switch (msg->msg_type) {
-	case RESPONSE_JOB_STEP_INFO:
 	case RESPONSE_BURST_BUFFER_INFO:
 	case RESPONSE_NODE_INFO:
 	case RESPONSE_ASSOC_MGR_INFO:
@@ -9785,6 +9784,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case RESPONSE_FRONT_END_INFO:
 	case RESPONSE_JOB_INFO:
+	case RESPONSE_JOB_STEP_INFO:
 	case RESPONSE_LICENSE_INFO:
 	case RESPONSE_PARTITION_INFO:
 	case RESPONSE_RESERVATION_INFO:

@@ -2466,8 +2466,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	void *resp_buffer = NULL;
-	int resp_buffer_size = 0;
+	buf_t *buffer = NULL;
 	int error_code = SLURM_SUCCESS;
 	job_step_info_request_msg_t *request = msg->data;
 	/* Locks: Read config, job, part */
@@ -2482,7 +2481,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 		log_flag(STEPS, "%s: no change", __func__);
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		buf_t *buffer = init_buf(BUF_SIZE);
+		buffer = init_buf(BUF_SIZE);
 		error_code = pack_ctld_job_step_info_response_msg(
 			&request->step_id, msg->auth_uid, request->show_flags,
 			buffer, msg->protocol_version);
@@ -2493,12 +2492,6 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 			\* error message is printed elsewhere    */
 			log_flag(STEPS, "%s: %s",
 				 __func__, slurm_strerror(error_code));
-			FREE_NULL_BUFFER(buffer);
-		} else {
-			resp_buffer_size = get_buf_offset(buffer);
-			resp_buffer = xfer_buf_data(buffer);
-			log_flag(STEPS, "%s size=%d %s",
-				 __func__, resp_buffer_size, TIME_STR);
 		}
 	}
 
@@ -2507,11 +2500,11 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 	else {
 		slurm_msg_t response_msg;
 		response_init(&response_msg, msg, RESPONSE_JOB_STEP_INFO,
-			      resp_buffer);
-		response_msg.data_size = resp_buffer_size;
+			      buffer);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(resp_buffer);
 	}
+
+	FREE_NULL_BUFFER(buffer);
 }
 
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
