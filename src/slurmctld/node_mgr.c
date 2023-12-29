@@ -1122,7 +1122,7 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	buffer = init_buf (BUF_SIZE);
+	buffer = init_buf(BUF_SIZE);
 	nodes_packed = 0;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -1155,14 +1155,14 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 			}
 		}
 	} else {
-		error("select_g_select_jobinfo_pack: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 
-	tmp_offset = get_buf_offset (buffer);
-	set_buf_offset (buffer, 0);
-	pack32  (nodes_packed, buffer);
-	set_buf_offset (buffer, tmp_offset);
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(nodes_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
 
 	_free_pack_node_info_members(&pack_info);
 
