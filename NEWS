@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid errors when Slurmdb accounting disabled when '--json' or '--yaml' is
     invoked with CLI commands and slurmrestd. Add warnings when query would
     have populated data from Slurmdb instead of errors.
+ -- Fix slurmctld memory leak when running job with --tres-per-task=gres:shard:#
 
 * Changes in Slurm 23.11.1
 ==========================
