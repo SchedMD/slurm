@@ -873,7 +873,6 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
 
 	yaml_emitter_set_output(emitter, _yaml_write_handler, buf);
 
-	//TODO defaulted to UTF8 but maybe this should be a flag?
 	if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
 		_yaml_emitter_error;
 
