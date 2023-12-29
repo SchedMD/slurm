@@ -2141,18 +2141,15 @@ extern void pack_part(part_record_t *part_ptr, buf_t *buffer,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
- * OUT buffer_ptr - the pointer is set to the allocated buffer.
- * OUT buffer_size - set to size of the buffer in bytes
  * IN job_id - ID of job that we want info for
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * OUT buffer
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern int pack_one_job(char **buffer_ptr, int *buffer_size,
-			uint32_t job_id, uint16_t show_flags, uid_t uid,
-			uint16_t protocol_version);
+extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
+			   uint16_t protocol_version);
 
 /*
  * pack_one_node - dump all configuration and node information for one node

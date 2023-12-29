@@ -10316,16 +10316,13 @@ static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
- * OUT buffer_ptr - the pointer is set to the allocated buffer.
- * OUT buffer_size - set to size of the buffer in bytes
  * IN job_id - ID of job that we want info for
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * OUT buffer
  */
-extern int pack_one_job(char **buffer_ptr, int *buffer_size,
-			uint32_t job_id, uint16_t show_flags, uid_t uid,
-			uint16_t protocol_version)
+extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
+			   uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
@@ -10334,9 +10331,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	slurmdb_user_rec_t user_rec = { 0 };
 	bool hide_job = false;
 	bool valid_operator;
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	buffer = _pack_init_job_info(protocol_version);
 
@@ -10409,7 +10403,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 
 	if (jobs_packed == 0) {
 		FREE_NULL_BUFFER(buffer);
-		return ESLURM_INVALID_JOB_ID;
+		return NULL;
 	}
 
 	/* put the real record count in the message body header */
@@ -10418,10 +10412,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack32(jobs_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
-
-	return SLURM_SUCCESS;
+	return buffer;
 }
 
 static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,

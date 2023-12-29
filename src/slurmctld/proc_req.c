@@ -1534,8 +1534,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump = NULL;
-	int dump_size, rc;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 	job_id_msg_t *job_id_msg = msg->data;
 	/* Locks: Read config, job, and node info */
@@ -1545,25 +1544,21 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	rc = pack_one_job(&dump, &dump_size, job_id_msg->job_id,
-			  job_id_msg->show_flags, msg->auth_uid,
-			  msg->protocol_version);
+	buffer = pack_one_job(job_id_msg->job_id, job_id_msg->show_flags,
+			      msg->auth_uid, msg->protocol_version);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
-#if 0
-	info("%s, size=%d %s", __func__, dump_size, TIME_STR);
-#endif
 
 	/* init response_msg structure */
-	if (rc != SLURM_SUCCESS) {
-		slurm_send_rc_msg(msg, rc);
+	if (!buffer) {
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 	} else {
-		response_init(&response_msg, msg, RESPONSE_JOB_INFO, dump);
-		response_msg.data_size = dump_size;
+		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
+		response_msg.data_size = buffer->processed;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 static void _slurm_rpc_get_shares(slurm_msg_t *msg)
