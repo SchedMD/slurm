@@ -1489,8 +1489,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		info("%s, size=%d %s", __func__, dump_size, TIME_STR);
 #endif
 
-		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
-		response_msg.data_size = buffer->processed;
+		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer);
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1522,8 +1521,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	info("%s, size=%d %s", __func__, dump_size, TIME_STR);
 #endif
 
-	response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
-	response_msg.data_size = buffer->processed;
+	response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer);
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1554,8 +1552,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	if (!buffer) {
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 	} else {
-		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer->head);
-		response_msg.data_size = buffer->processed;
+		response_init(&response_msg, msg, RESPONSE_JOB_INFO, buffer);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
 	FREE_NULL_BUFFER(buffer);

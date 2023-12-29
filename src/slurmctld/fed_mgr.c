@@ -2156,8 +2156,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	slurm_msg_t_init(&job_msg);
 	job_msg.protocol_version = sibling->rpc_version;
 	job_msg.msg_type         = RESPONSE_JOB_INFO;
-	job_msg.data = job_buffer->head;
-	job_msg.data_size = job_buffer->processed;
+	job_msg.data = job_buffer;
 
 	buffer = init_buf(BUF_SIZE);
 	pack_msg(&job_msg, buffer);
