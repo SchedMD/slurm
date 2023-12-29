@@ -994,20 +994,17 @@ static void _free_pack_node_info_members(pack_node_info_t *pack_info)
 }
 
 /*
- * pack_all_node - dump all configuration and node information for all nodes
+ * pack_all_nodes - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
- * OUT buffer_ptr - pointer to the stored data
- * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
  * IN protocol_version - slurm protocol version of client
+ * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  */
-extern void pack_all_node(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
-			  uint16_t protocol_version)
+extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
+			     uint16_t protocol_version)
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
@@ -1025,9 +1022,6 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
 
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
@@ -1089,9 +1083,9 @@ pack_empty:
 	pack32  (nodes_packed, buffer);
 	set_buf_offset (buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset (buffer);
-	buffer_ptr[0] = xfer_buf_data (buffer);
 	_free_pack_node_info_members(&pack_info);
+
+	return buffer;
 }
 
 /*

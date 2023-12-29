@@ -2063,21 +2063,18 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 			     uint32_t filter_uid, uint16_t protocol_version);
 
 /*
- * pack_all_node - dump all configuration and node information for all nodes
+ * pack_all_nodes - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
- * OUT buffer_ptr - pointer to the stored data
- * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
  * IN protocol_version - slurm protocol version of client
+ * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid,
-			   uint16_t protocol_version);
+extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
+			     uint16_t protocol_version);
 
 /* Pack all scheduling statistics */
 extern buf_t *pack_all_stat(uint16_t protocol_version);
