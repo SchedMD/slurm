@@ -1746,8 +1746,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size;
+	buf_t *buffer = NULL;
 	slurm_msg_t response_msg;
 	node_info_single_msg_t *node_req_msg = msg->data;
 	/* Locks: Read config, read node, read part (for part_is_visible) */
@@ -1770,22 +1769,17 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 	 * our use here. Node write lock is needed if this function is used */
 	select_g_select_nodeinfo_set_all();
 #endif
-	pack_one_node(&dump, &dump_size, node_req_msg->show_flags,
-		      msg->auth_uid, node_req_msg->node_name,
-		      msg->protocol_version);
+	buffer = pack_one_node(node_req_msg->show_flags, msg->auth_uid,
+			       node_req_msg->node_name, msg->protocol_version);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
-#if 0
-	info("%s, name=%s size=%d %s",
-	     __func__, node_req_msg->node_name, dump_size, TIME_STR);
-#endif
 
-	response_init(&response_msg, msg, RESPONSE_NODE_INFO, dump);
-	response_msg.data_size = dump_size;
+	response_init(&response_msg, msg, RESPONSE_NODE_INFO, buffer->head);
+	response_msg.data_size = buffer->processed;
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	xfree(dump);
+	FREE_NULL_BUFFER(buffer);
 }
 
 /* _slurm_rpc_dump_partitions - process RPC for partition state information */
