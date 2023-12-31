@@ -1930,6 +1930,11 @@ static void _attempt_backfill(void)
 			break;
 		}
 
+		if (window_end < now) {
+			log_flag(BACKFILL, "Now after current backfill window");
+			_set_bf_exit(BF_EXIT_TIMEOUT);
+			break;
+		}
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
@@ -2427,6 +2432,14 @@ next_task:
 		} else if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_conf.preempt_mode)
 			job_ptr->time_limit = time_limit;
+
+		if (window_end < start_res) {
+			log_flag(BACKFILL, "%pJ start_res after current backfill window",
+				 job_ptr);
+			_set_job_time_limit(job_ptr, orig_time_limit);
+			continue;
+		}
+
 		if (start_res > now)
 			end_time = (time_limit * 60) + start_res;
 		else
