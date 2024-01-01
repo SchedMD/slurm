@@ -531,6 +531,17 @@ state save directories, etc. are not created by Slurm.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
 starting Slurm daemons.</p>
 
+<p>The <b>StateSaveLocation</b> is used to store information about the current
+state of the cluster, including information about queued, running and recently
+completed jobs. The directory used should be on a low-latency local disk to
+prevent file system delays from affecting Slurm performance. If using a backup
+host, the StateSaveLocation should reside on a file system shared by the two
+hosts. We do not recommend using NFS to make the directory accessible to both
+hosts, but do recommend a shared mount that is accessible to the two
+controllers and allows low-latency reads and writes to the disk. If a
+controller comes up without access to the state information, queued and
+running jobs will be cancelled.</p>
+
 <p>A description of the nodes and their grouping into partitions is required.
 A simple node range expression may optionally be used to specify
 ranges of nodes to avoid building a configuration file with large
@@ -956,6 +967,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 18 December 2023</p>
+<p style="text-align:center;">Last modified 01 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
