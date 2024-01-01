@@ -335,6 +335,7 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 static void _init_bitmaps(void)
 {
 	/* initialize the idle and up bitmaps */
+	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
@@ -347,6 +348,7 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(rs_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
+	asap_node_bitmap = bit_alloc(node_record_count);
 	avail_node_bitmap = bit_alloc(node_record_count);
 	bf_ignore_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);

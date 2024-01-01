@@ -293,7 +293,7 @@ extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 
 /*****************************************************************************\
  *  NODE states and bitmaps
- *
+ *  asap_node_bitmap 	    Set if the node is marked to be rebooted asap
  *  avail_node_bitmap       Set if node's state is not DOWN, DRAINING/DRAINED,
  *                          FAILING or NO_RESPOND (i.e. available to run a job)
  *  booting_node_bitmap     Set if node in process of booting
@@ -309,6 +309,7 @@ extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
  *                          configured for the job's partition)
  *  up_node_bitmap          Set if the node's state is not DOWN
 \*****************************************************************************/
+extern bitstr_t *asap_node_bitmap; /* reboot asap nodes */
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * state not DOWN, DRAIN or FAILING */
 extern bitstr_t *bf_ignore_node_bitmap;	/* bitmap of nodes made available during
