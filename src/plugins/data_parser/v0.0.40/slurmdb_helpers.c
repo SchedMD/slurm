@@ -259,7 +259,7 @@ static char *_data_list_to_str(data_t *data)
 
 	xassert(data_get_type(data) == DATA_TYPE_LIST);
 
-	data_list_for_each(data, _concat_data_to_str, &args);
+	(void) data_list_for_each(data, _concat_data_to_str, &args);
 	return args.str;
 }
 
