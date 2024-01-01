@@ -39,6 +39,10 @@ Partition one. This Partition level bound can be ignored if
 the respective QOS PartitionTimeLimit and/or Partition[Max|Min]Nodes flags
 are set, then the job would be enforced the limits imposed at QOS
 and/or association level respecting the order above.
+<b>Grp*</b> limits are also an exception. A more restrictive limit at the
+Account level will be enforced before a less restrictive limit at the User
+level. This is due to the nature of the limit being enforced, requiring that
+the limit at the highest level not be exceeded.
 </p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
@@ -1278,6 +1282,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 09 June 2023</p>
+<p style="text-align: center;">Last modified 01 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
