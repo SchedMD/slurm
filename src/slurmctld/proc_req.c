@@ -5450,6 +5450,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 
 				node_ptr->node_state |= NODE_STATE_DRAIN;
 				bit_clear(avail_node_bitmap, node_ptr->index);
+				bit_set(asap_node_bitmap, node_ptr->index);
 
 				if (node_ptr->reason == NULL) {
 					node_ptr->reason =

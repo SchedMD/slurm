@@ -2191,6 +2191,9 @@ static void _queue_reboot_msg(void)
 		bit_clear(avail_node_bitmap, node_ptr->index);
 		bit_clear(idle_node_bitmap, node_ptr->index);
 
+		/* Unset this as this node is not in reboot ASAP anymore. */
+		bit_clear(asap_node_bitmap, node_ptr->index);
+
 		node_ptr->boot_req_time = now;
 
 		set_node_reason(node_ptr, "reboot issued", now);

@@ -104,6 +104,7 @@ typedef struct {
 } pack_node_info_t;
 
 /* Global variables */
+bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 					 * backfill cycle */
@@ -2223,6 +2224,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			}
 		}
 
+		/*
+		 * After all the possible state changes, check if we need to
+		 * clear the asap_node_bitmap.
+		 */
+		if (!IS_NODE_REBOOT_ASAP(node_ptr))
+			bit_clear(asap_node_bitmap, node_ptr->index);
+
 		if (!acct_updated && !IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			/* reason information is handled in
@@ -3531,6 +3539,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			node_ptr->next_state = NO_VAL;
 			node_ptr->resume_after = 0;
 			bit_clear(rs_node_bitmap, node_ptr->index);
+			bit_clear(asap_node_bitmap, node_ptr->index);
 
 			info("node %s returned to service",
 			     reg_msg->node_name);
@@ -4886,6 +4895,7 @@ extern void node_fini (void)
 {
 	FREE_NULL_LIST(active_feature_list);
 	FREE_NULL_LIST(avail_feature_list);
+	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
@@ -5375,6 +5385,7 @@ static void _remove_node_from_features(node_record_t *node_ptr)
  */
 static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 {
+	bit_clear(asap_node_bitmap, node_ptr->index);
 	bit_clear(avail_node_bitmap, node_ptr->index);
 	bit_clear(bf_ignore_node_bitmap, node_ptr->index);
 	bit_clear(booting_node_bitmap, node_ptr->index);
