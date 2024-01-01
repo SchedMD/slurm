@@ -218,7 +218,7 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 
 static void _wait_for_powersave_scripts()
 {
-	int cnt;
+	int cnt = 0;
 	struct timespec ts = {0, 0};
 	time_t start;
 	time_t now;
