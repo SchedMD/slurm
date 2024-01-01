@@ -215,6 +215,15 @@ different locations. Otherwise, these same libraries might end up being
 installed under standard locations like /usr/lib64 and the
 package manager would error out, reporting the conflict.</p>
 
+<p><b>NOTE</b>: Any application compiled against PMIx should use the same PMIx
+or at least a PMIx with the same security domain than the one Slurm is using,
+otherwise there could be authentication issues. E.g. one PMIx compiled
+--with-munge while another compiled --without-munge (the default since PMIx
+4.2.4). A workaround which might work is to specify the desired security method
+adding "--mca psec native" to the cli or exporting PMIX_MCA_psec=native
+environment variable.
+</p>
+
 <p><b>NOTE</b>: If you are setting up a test environment using multiple-slurmd,
 the TmpFS option in your slurm.conf needs to be specified and the number of
 directory paths created needs to equal the number of nodes. These directories
