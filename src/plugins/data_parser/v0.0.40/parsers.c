@@ -97,13 +97,31 @@
 				    data_t *dst, args_t *args,               \
 				    data_t *parent_path)                     \
 	{                                                                    \
-		fatal_abort("parsing of DATA_PARSER_%s is not implemented",  \
-			    XSTRINGIFY(type));                               \
+		return PARSE_FUNC(disabled)(parser, src, dst, args,          \
+					    parent_path);                    \
 	}
 
 #define parse_error(parser, args, parent_path, error, fmt, ...)    \
 	_parse_error_funcname(parser, args, parent_path, __func__, \
 			      XSTRINGIFY(__LINE__), error, fmt, ##__VA_ARGS__)
+
+static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
+				data_t *dst, args_t *args, data_t *parent_path)
+{
+	char *path = NULL;
+	int rc;
+
+	/* Disabled plugin should never be executed! */
+	xassert(false);
+
+	rc = on_error(PARSING, parser->type, args, ESLURM_REST_FAIL_PARSING,
+		      set_source_path(&path, args, parent_path), __func__,
+		      "parsing of DATA_PARSER_%s is not implemented",
+		      XSTRINGIFY(parser_type));
+
+	xfree(path);
+	return rc;
+}
 
 static int _parse_error_funcname(const parser_t *const parser, args_t *args,
 				 data_t *parent_path, const char *funcname,
@@ -3610,7 +3628,27 @@ static int DUMP_FUNC(JOB_INFO_GRES_DETAIL)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NICE)
+static int PARSE_FUNC(NICE)(const parser_t *const parser, void *obj,
+			    data_t *src, args_t *args, data_t *parent_path)
+{
+	int32_t *nice_ptr = obj, nice;
+	char *path = NULL;
+	int rc;
+
+	rc = PARSE(INT32, nice, src, parent_path, args);
+	if (rc == EINVAL || (!rc && (llabs(nice) > (NICE_OFFSET - 3)))) {
+		rc = on_error(PARSING, parser->type, args,
+				ESLURM_INVALID_NICE,
+				set_source_path(&path, args, parent_path),
+				__func__,
+				"Nice value not within +/- 2147483645");
+	} else if (!rc) {
+		*nice_ptr = nice + NICE_OFFSET;
+	}
+
+	xfree(path);
+	return rc;
+}
 
 static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 			   args_t *args)
