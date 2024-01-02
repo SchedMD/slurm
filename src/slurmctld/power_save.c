@@ -508,9 +508,13 @@ static void _do_power_work(time_t now)
 			bit_set(wake_node_bitmap,    node_ptr->index);
 
 			bit_clear(job_power_node_bitmap, node_ptr->index);
-
-			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
-						      now);
+			if (IS_NODE_DRAIN(node_ptr) || IS_NODE_DOWN(node_ptr))
+				clusteracct_storage_g_node_down(
+					acct_db_conn, node_ptr, now,
+					node_ptr->reason, node_ptr->reason_uid);
+			else
+				clusteracct_storage_g_node_up(acct_db_conn,
+							      node_ptr, now);
 			nodes_updated = true;
 		}
 

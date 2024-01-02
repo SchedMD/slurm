@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld memory leak when running job with --tres-per-task=gres:shard:#
  -- Fix backfill trying to start jobs outside of backfill window.
  -- Fix oversubscription on partitions with PreemptMode=OFF.
+ -- Preserve node reason on power up if the node is downed or drained.
 
 * Changes in Slurm 23.11.1
 ==========================
