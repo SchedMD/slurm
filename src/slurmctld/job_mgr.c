@@ -165,6 +165,12 @@ typedef struct {
 	int node_count;
 } node_inx_cnt_t;
 
+typedef struct {
+	int rc;
+	uint16_t *jobs_count_ptr;
+	job_state_response_job_t **jobs_pptr;
+} job_state_args_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -10528,6 +10534,113 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
 	}
 
 	return buffer;
+}
+
+static job_state_response_job_t *_append_job_state(job_state_args_t *args,
+						   uint32_t job_id)
+{
+	job_state_response_job_t *rjob;
+
+	xassert(job_id > 0);
+
+	xassert(*args->jobs_count_ptr >= 0);
+	(*args->jobs_count_ptr)++;
+	if (!try_xrecalloc((*args->jobs_pptr), *args->jobs_count_ptr,
+			   sizeof(**args->jobs_pptr))) {
+		args->rc = ENOMEM;
+		return NULL;
+	}
+
+	rjob = &((*args->jobs_pptr)[*args->jobs_count_ptr - 1]);
+
+	return rjob;
+}
+
+static bitstr_t *_job_state_array_bitmap(const job_record_t *job_ptr)
+{
+	if (!job_ptr->array_recs)
+		return NULL;
+
+	if (job_ptr->array_recs->task_id_bitmap &&
+	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) != -1))
+		return bit_copy(job_ptr->array_recs->task_id_bitmap);
+
+	return NULL;
+}
+
+static int _add_job_state_job(job_state_args_t *args,
+			      const job_record_t *job_ptr)
+{
+	job_state_response_job_t *rjob;
+
+	if (!(rjob = _append_job_state(args, job_ptr->job_id)))
+		return SLURM_ERROR;
+
+	rjob->job_id = job_ptr->job_id;
+	rjob->array_job_id = job_ptr->array_job_id;
+	rjob->array_task_id = job_ptr->array_task_id;
+	rjob->array_task_id_bitmap = _job_state_array_bitmap(job_ptr);
+	rjob->het_job_id = job_ptr->het_job_id;
+	rjob->state = job_ptr->job_state;
+	return SLURM_SUCCESS;
+}
+
+static int _add_job_state_by_job_id(const uint32_t job_id,
+				    job_state_args_t *args)
+{
+	const job_record_t *job_ptr;
+
+	if (!(job_ptr = find_job_record(job_id)))
+		return SLURM_SUCCESS;
+
+	if (!job_ptr->array_recs)
+		return _add_job_state_job(args, job_ptr);
+
+	/* array meta job */
+	for (int i = -1; i != -1;
+	     i = bit_ffs_from_bit(job_ptr->array_recs->task_id_bitmap, i)) {
+		int rc;
+		job_record_t *ajob = find_job_array_rec(job_ptr->job_id, i);
+
+		if (ajob && (rc = _add_job_state_job(args, ajob)))
+			return rc;
+	}
+
+	return args->rc;
+}
+
+static int _foreach_job_state_filter(void *object, void *arg)
+{
+	const job_record_t *job_ptr = object;
+	job_state_args_t *args = arg;
+
+	if ((args->rc = _add_job_state_job(args, job_ptr)))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int dump_job_state(const uint16_t filter_jobs_count,
+			  const uint32_t *filter_jobs_ptr,
+			  uint16_t *jobs_count_ptr,
+			  job_state_response_job_t **jobs_pptr)
+{
+	job_state_args_t args = {
+		.rc = SLURM_SUCCESS,
+		.jobs_count_ptr = jobs_count_ptr,
+		.jobs_pptr = jobs_pptr,
+	};
+
+	if (!filter_jobs_count) {
+		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
+					&args);
+		return args.rc;
+	}
+
+	for (int i = 0; !args.rc && (i < filter_jobs_count); i++)
+		args.rc = _add_job_state_by_job_id(filter_jobs_ptr[i], &args);
+
+	return args.rc;
 }
 
 /*

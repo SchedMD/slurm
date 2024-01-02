@@ -1544,6 +1544,37 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	xfree(dump);
 }
 
+static void _slurm_rpc_job_state(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	job_state_request_msg_t *js = msg->data;
+	job_state_response_msg_t *jsr = NULL;
+	int rc;
+
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
+	jsr = xmalloc(sizeof(*jsr));
+
+	START_TIMER;
+	lock_slurmctld(job_read_lock);
+
+	rc = dump_job_state(js->job_id_count, js->job_ids, &jsr->jobs_count,
+			    &jsr->jobs);
+
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
+
+	if (rc) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		slurm_msg_t response_msg = {0};
+		response_init(&response_msg, msg, RESPONSE_JOB_STATE, jsr);
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	}
+
+	slurm_free_job_state_response_msg(jsr);
+}
+
 /* _slurm_rpc_dump_job_single - process RPC for one job's state information */
 static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 {
@@ -6587,6 +6618,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.part = READ_LOCK,
 			.fed = READ_LOCK,
 		},
+	},{
+		.msg_type = REQUEST_JOB_STATE,
+		.func = _slurm_rpc_job_state,
 	},{
 		.msg_type = REQUEST_JOB_USER_INFO,
 		.func = _slurm_rpc_dump_jobs_user,

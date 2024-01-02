@@ -1578,6 +1578,44 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	return rc;
 }
 
+extern int slurm_load_job_state(int job_id_count, uint32_t *job_ids,
+				job_state_response_msg_t **jsr_pptr)
+{
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	int rc = SLURM_SUCCESS;
+	job_state_request_msg_t req = {
+		.job_id_count = job_id_count,
+		.job_ids = job_ids,
+	};
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type = REQUEST_JOB_STATE;
+	req_msg.data = &req;
+
+	if ((rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, 0))) {
+		error("%s: Unable to query jobs state: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_STATE:
+		*jsr_pptr = resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return rc;
+}
+
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
  *	on this machine

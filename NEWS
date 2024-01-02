@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Ensure agent queue is flushed correctly at shutdown time.
  -- slurmdbd - correct lineage construction during assoc table conversion for
     partition based associations.
+ -- Add new RPCs and API call for faster querying of job states from slurmctld.
 
 * Changes in Slurm 23.11.4
 ==========================

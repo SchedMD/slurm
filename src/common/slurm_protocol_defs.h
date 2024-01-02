@@ -317,6 +317,8 @@ typedef enum {
 	RESPONSE_CONTROL_STATUS,
 	REQUEST_BURST_BUFFER_STATUS,
 	RESPONSE_BURST_BUFFER_STATUS,
+	REQUEST_JOB_STATE,
+	RESPONSE_JOB_STATE,
 
 	REQUEST_CRONTAB = 2200,
 	RESPONSE_CRONTAB,
@@ -700,6 +702,11 @@ typedef struct job_info_request_msg {
 	List   job_ids;		/* Optional list of job_ids, otherwise show all
 				 * jobs. */
 } job_info_request_msg_t;
+
+typedef struct {
+	uint16_t job_id_count;
+	uint32_t *job_ids;
+} job_state_request_msg_t;
 
 typedef struct {
 	uint16_t show_flags;
@@ -1642,6 +1649,7 @@ extern void slurm_free_container_id_request_msg(
 extern void slurm_free_container_id_response_msg(
 	container_id_response_msg_t *msg);
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
+extern void slurm_free_job_state_request_msg(job_state_request_msg_t *msg);
 extern void slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
 extern void slurm_free_front_end_info_request_msg(
