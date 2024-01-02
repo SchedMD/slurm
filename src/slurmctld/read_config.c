@@ -1683,7 +1683,7 @@ extern int read_slurm_conf(int recover)
 	init_depend_policy();
 
 	/*
-	 * Must be at after nodes and partitons (e.g.
+	 * Must be at after nodes and partitions (e.g.
 	 * _build_part_bitmaps()) have been created and before
 	 * _sync_nodes_to_comp_job().
 	 */
