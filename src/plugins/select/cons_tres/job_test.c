@@ -5208,6 +5208,16 @@ try_next_nodes_cnt:
 				         p_ptr->part_ptr->name);
 				continue;
 			}
+			/*
+			 * If the partition allows oversubscription we can't
+			 * easily determine if the job can start. It
+			 * may be that it won't be able to start because of
+			 * preemption, but it may be able to start on different
+			 * row.
+			 */
+			if ((p_ptr->part_ptr == jp_ptr->part_ptr) &&
+			    (p_ptr->num_rows > 1))
+				continue;
 			if (!p_ptr->row)
 				continue;
 			for (i = 0; i < p_ptr->num_rows; i++) {
