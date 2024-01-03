@@ -1460,6 +1460,12 @@ equivalent).
 .IP
 
 .TP
+\fB\-\-state\-only\fR
+Limit query to only grab job state. Query utilizes RPC that only retains JobID
+and State information reducing work required by slurmctld to respond.
+.IP
+
+.TP
 \fB\-s\fR, \fB\-\-steps\fR[=<\fIstep_list\fR>]
 Specify the job steps to view.  This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).

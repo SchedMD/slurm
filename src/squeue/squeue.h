@@ -98,6 +98,7 @@ struct squeue_parameters {
 	char* reservation;
 	char* sort;
 	char* states;
+	bool state_only; /* limit query to only job states */
 	char* steps;
 	char* users;
 

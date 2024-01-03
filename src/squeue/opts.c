@@ -74,6 +74,7 @@
 #define OPT_LONG_HELPSTATE    0x114
 #define OPT_LONG_HELPFORMAT   0x115
 #define OPT_LONG_HELPFORMAT2  0x116
+#define OPT_LONG_STATE_ONLY   0x117
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -148,6 +149,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"start",      no_argument,       0, OPT_LONG_START},
 		{"steps",      optional_argument, 0, 's'},
 		{"states",     required_argument, 0, 't'},
+		{"state-only", no_argument,       0, OPT_LONG_STATE_ONLY},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
@@ -358,6 +360,9 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_START:
 			params.start_flag = true;
 			override_format_env = true;
+			break;
+		case OPT_LONG_STATE_ONLY:
+			params.state_only = true;
 			break;
 		case OPT_LONG_NOCONVERT:
 			params.convert_flags |= CONVERT_NUM_UNIT_NO;
