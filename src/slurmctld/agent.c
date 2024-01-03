@@ -123,7 +123,7 @@ typedef enum {
 	DSH_DUP_JOBID	/* Request resulted in duplicate job ID error */
 } state_t;
 
-typedef struct thd_complete {
+typedef struct {
 	bool work_done; 	/* assume all threads complete */
 	int fail_cnt;		/* assume no threads failures */
 	int no_resp_cnt;	/* assume all threads respond */
@@ -132,7 +132,7 @@ typedef struct thd_complete {
 	time_t now;
 } thd_complete_t;
 
-typedef struct thd {
+typedef struct {
 	pthread_t thread;		/* thread ID */
 	state_t state;			/* thread state */
 	time_t start_time;		/* start time */
@@ -145,7 +145,7 @@ typedef struct thd {
 	List ret_list;
 } thd_t;
 
-typedef struct agent_info {
+typedef struct {
 	pthread_mutex_t thread_mutex;	/* agent specific mutex */
 	pthread_cond_t thread_cond;	/* agent specific condition */
 	uint32_t thread_count;		/* number of threads records */
@@ -160,7 +160,7 @@ typedef struct agent_info {
 	uint16_t protocol_version;	/* if set, use this version */
 } agent_info_t;
 
-typedef struct task_info {
+typedef struct {
 	pthread_mutex_t *thread_mutex_ptr; /* pointer to agent specific
 					    * mutex */
 	pthread_cond_t *thread_cond_ptr;/* pointer to agent specific
@@ -175,14 +175,14 @@ typedef struct task_info {
 	uint16_t protocol_version;	/* if set, use this version */
 } task_info_t;
 
-typedef struct queued_request {
+typedef struct {
 	agent_arg_t* agent_arg_ptr;	/* The queued request */
 	time_t       first_attempt;	/* Time of first check for batch
 					 * launch RPC *only* */
 	time_t       last_attempt;	/* Time of last xmit attempt */
 } queued_request_t;
 
-typedef struct mail_info {
+typedef struct {
 	char *user_name;
 	char *message;
 	char **environment; /* MailProg environment variables */
