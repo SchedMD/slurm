@@ -4726,9 +4726,7 @@ extern void node_fini (void)
 /* Reset a node's CPU load value */
 extern void reset_node_load(char *node_name, uint32_t cpu_load)
 {
-#ifdef HAVE_FRONT_END
-	return;
-#else
+#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
@@ -4745,9 +4743,7 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 /* Reset a node's free memory value */
 extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 {
-#ifdef HAVE_FRONT_END
-	return;
-#else
+#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);

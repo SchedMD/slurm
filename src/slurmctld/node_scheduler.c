@@ -213,8 +213,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		/* set addrs if the job is coming from a different cluster */
 		set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
 	}
-
-	return;
 }
 
 /*
@@ -487,7 +485,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->msg_args = kill_job;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
@@ -689,8 +686,6 @@ extern void build_active_feature_bitmap(job_record_t *job_ptr,
 	}
 	bit_and(tmp_bitmap, avail_bitmap);
 	*active_bitmap = tmp_bitmap;
-
-	return;
 }
 
 /* Return bitmap of nodes with all specified features currently active */
@@ -2273,8 +2268,6 @@ static void _handle_explicit_req(void *x, void *arg)
 			    GRES_STATE_SRC_STATE_PTR,
 			    GRES_STATE_TYPE_JOB,
 			    gres_job_state_dup(gres_state_job->gres_data)));
-
-	return;
 }
 
 static void _gres_select_explicit(
@@ -4549,5 +4542,4 @@ extern void re_kill_job(job_record_t *job_ptr)
 		create_kill_job_msg(job_ptr, agent_args->protocol_version);
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }

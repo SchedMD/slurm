@@ -1707,8 +1707,6 @@ static void _agent_defer(void)
 
 	slurm_mutex_unlock(&defer_mutex);
 	unlock_slurmctld(job_write_lock);
-
-	return;
 }
 
 static int _find_request(void *x, void *key)
@@ -1822,8 +1820,6 @@ next:
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);
 	}
-
-	return;
 }
 
 /*
@@ -2282,7 +2278,6 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 		mail_list = list_create(_mail_free);
 	list_enqueue(mail_list, mi);
 	slurm_mutex_unlock(&mail_mutex);
-	return;
 }
 
 /* Test if a batch launch request should be defered

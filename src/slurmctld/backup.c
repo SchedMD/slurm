@@ -271,8 +271,6 @@ void run_backup(void)
 	}
 	unlock_slurmctld(config_write_lock);
 	select_g_select_nodeinfo_set_all();
-
-	return;
 }
 
 /*
@@ -612,7 +610,6 @@ static void _backup_reconfig(void)
 	slurm_conf_reinit(NULL);
 	update_logging();
 	slurm_conf.last_update = time(NULL);
-	return;
 }
 
 static void *_shutdown_controller(void *arg)

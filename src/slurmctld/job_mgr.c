@@ -540,8 +540,8 @@ static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 			bit_alloc(max_array_size);
 	}
 	loc_resp->resp_array_cnt++;
-	return;
 }
+
 /* Add record to resp_array_struct_t, free with _resp_array_free().
  * This is a variant of _resp_array_add for the case where a job/task ID
  * is not found, so we use a dummy job record based upon the input IDs. */
@@ -6008,7 +6008,6 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	agent_args->msg_args = signal_tasks_msg;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 /*
@@ -7080,8 +7079,6 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	xfree(job_desc->licenses_tot);
 	job_desc->licenses_tot = lic_req;
 	lic_req = NULL;
-
-	return;
 }
 
 /*
@@ -9547,8 +9544,6 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
-
-	return;
 }
 
 /*
@@ -9623,7 +9618,6 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 		deallocate_nodes(job_ptr, !preempted, false, preempted);
 	} else
 		job_signal(job_ptr, SIGKILL, 0, 0, false);
-	return;
 }
 
 /* _validate_job_desc - validate that a job descriptor for job submit or
@@ -10718,9 +10712,6 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 
 	*cpu_cnt_ptr  = max_cpu_cnt;
 	*core_cnt_ptr = max_core_cnt;
-
-	return;
-
 }
 
 /* pack default job details for "get_job_info" RPC */
@@ -11385,7 +11376,6 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	FREE_NULL_LIST(expand_job_ptr->license_list);
 	FREE_NULL_LIST(shrink_job_ptr->license_list);
 	license_job_merge(expand_job_ptr);
-	return;
 }
 
 static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
@@ -14692,7 +14682,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 	agent_args->msg_args = kill_job;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 /* Record accounting information for a job immediately before changing size */
@@ -14909,8 +14898,6 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 		       reg_msg->node_name, reg_msg->job_count, jobs_on_node);
 		reg_msg->job_count = jobs_on_node;
 	}
-
-	return;
 }
 
 /* Purge any batch job that should have its script running on node
@@ -16190,7 +16177,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->msg_args = signal_job_msg;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 /* Send suspend request to slumrd of all nodes associated with a job
@@ -16248,7 +16234,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 	agent_args->msg_args = sus_ptr;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 /*

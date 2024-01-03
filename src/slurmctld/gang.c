@@ -600,8 +600,6 @@ static void _preempt_job_dequeue(void)
 			}
 		}
 	}
-
-	return;
 }
 
 /* This is the reverse order defined by list.h so to generated a list in
@@ -856,8 +854,6 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr,
 	}
 	j_ptr->job_ptr = NULL;
 	xfree(j_ptr);
-
-	return;
 }
 
 /* Add the given job to the given partition, and if it remains running
@@ -1017,8 +1013,6 @@ static void _scan_slurm_job_list(void)
 	/* now that all of the old jobs have been flushed out,
 	 * update the active row of all partitions */
 	_update_all_active_rows();
-
-	return;
 }
 
 

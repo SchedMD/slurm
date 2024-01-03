@@ -1013,8 +1013,6 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
-
-	return;
 }
 
 /*

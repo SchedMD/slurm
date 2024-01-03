@@ -331,5 +331,4 @@ rwfail:
 	close(fd);
 	xfree(file);
 	xfree(lines);
-	return;
 }

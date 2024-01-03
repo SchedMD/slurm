@@ -900,7 +900,6 @@ static void _bf_data_free(bf_part_data_t **datap)
 	xfree(data);
 
 	*datap = NULL;
-	return;
 }
 
 /*
@@ -2304,7 +2303,6 @@ extern void part_list_update_assoc_lists(void)
 	list_for_each(part_list, part_update_assoc_lists, NULL);
 	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(part_write_lock);
-	return;
 }
 
 extern int part_update_assoc_lists(void *x, void *arg)

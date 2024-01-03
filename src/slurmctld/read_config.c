@@ -1203,7 +1203,6 @@ static void _sync_steps_to_conf(job_record_t *job_ptr)
 	}
 
 	list_iterator_destroy (step_iterator);
-	return;
 }
 
 static int _sync_detail_bitmaps(job_record_t *job_ptr)
@@ -2486,8 +2485,6 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	}
 
 	set_job_alias_list(job_ptr);
-
-	return;
 }
 
 /*

@@ -2798,8 +2798,6 @@ static void _get_accrue_create_cnt(uint32_t *max_jobs_accrue, int *create_cnt,
 		*create_cnt = *max_jobs_accrue - in_used;
 	else
 		*create_cnt = 0;
-
-	return;
 }
 
 static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
@@ -4984,8 +4982,6 @@ extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 			*qos_ptr_1 = job_ptr->qos_ptr;
 	} else if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
 		*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
-
-	return;
 }
 
 /*

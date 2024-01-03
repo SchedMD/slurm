@@ -715,7 +715,6 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	agent_args->msg_args = signal_tasks_msg;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 /*
@@ -761,7 +760,6 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 	agent_args->msg_args = signal_tasks_msg;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 typedef struct {
@@ -3052,8 +3050,6 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 			 job_ptr, tmp_str);
 
 	}
-
-	return;
 }
 
 /*
@@ -4602,8 +4598,6 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
-
-	return;
 }
 
 static int _suspend_job_step(void *x, void *arg)
@@ -5207,7 +5201,6 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	agent_args->msg_args = kill_step;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
-	return;
 }
 
 extern int check_job_step_time_limit(void *x, void *arg)

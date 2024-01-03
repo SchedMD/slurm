@@ -931,7 +931,6 @@ static void _job_alloc_explicit(
 	(void) list_for_each(req_gres_list,
 			     (ListForF) _handle_explicit_alloc,
 			     explicit_alloc);
-	return;
 }
 
 static int _foreach_clear_job_gres(void *x, void *arg)
@@ -1814,7 +1813,6 @@ step2:	if (!from_job_gres_list)
 step3:
 	if (free_to_job_gres_list)
 		FREE_NULL_LIST(to_job_gres_list);
-	return;
 }
 
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
@@ -2077,8 +2075,6 @@ static void _set_type_tres_cnt(List gres_list,
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
-
-	return;
 }
 extern void gres_ctld_set_job_tres_cnt(List gres_list,
 				       uint32_t node_cnt,
@@ -2803,8 +2799,6 @@ void gres_ctld_step_state_rebase(List gres_list,
 		gres_ss->gres_bit_alloc = new_gres_bit_alloc;
 	}
 	list_iterator_destroy(gres_iter);
-
-	return;
 }
 
 static void _gres_add_2_tres_str(char **tres_str, slurmdb_tres_rec_t *tres_rec,
@@ -3330,6 +3324,4 @@ extern void gres_ctld_step_test_per_step(List step_gres_list,
 		xfree(gres_cnts);
 	}
 	list_iterator_destroy(step_gres_iter);
-
-	return;
 }

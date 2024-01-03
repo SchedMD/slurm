@@ -6212,7 +6212,6 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(full_resp_list);
 	FREE_NULL_BUFFER(resp_buf);
-	return;
 }
 
 /* Route msg to federated job's origin.
