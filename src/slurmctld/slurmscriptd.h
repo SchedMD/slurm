@@ -62,6 +62,7 @@ extern void slurmscriptd_flush_job(uint32_t job_id);
  * IN argc - number of arguments
  * IN argv - arguments for the script
  * IN timeout - timeout in seconds
+ * IN job_buf - packed job info, or NULL
  * OUT resp - response message from the script
  * OUT track_script_signalled - true if the script was killed by track_script,
  *                              false otherwise.
@@ -69,8 +70,8 @@ extern void slurmscriptd_flush_job(uint32_t job_id);
  */
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
-				   char *job_buf, int job_buf_size,
-				   char **resp, bool *track_script_signalled);
+				   buf_t *job_buf, char **resp,
+				   bool *track_script_signalled);
 
 extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 				 char **env, uint32_t timeout, char **resp);

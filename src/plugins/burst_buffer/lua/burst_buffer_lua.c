@@ -974,8 +974,7 @@ static int _run_lua_script(run_lua_args_t *args)
 					     args->argc,
 					     args->argv,
 					     args->timeout,
-					     info_buf->head,
-					     info_buf->processed,
+					     info_buf,
 					     args->resp_msg,
 					     args->track_script_signal);
 	} else {
