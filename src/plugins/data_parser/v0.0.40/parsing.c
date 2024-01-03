@@ -371,7 +371,8 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
 		/* Assume List is just a single entry */
-		(void) _foreach_parse_list(src, &list_args);
+		if (_foreach_parse_list(src, &list_args) != DATA_FOR_EACH_CONT)
+			rc = ESLURM_REST_FAIL_PARSING;
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
@@ -379,7 +380,9 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 			      __func__, "Expected List but found a %s",
 			      data_get_type_string(src));
 	} else {
-		(void) data_list_for_each(src, _foreach_parse_list, &list_args);
+		if (data_list_for_each(src, _foreach_parse_list,
+				       &list_args) < 0)
+			rc = ESLURM_REST_FAIL_PARSING;
 	}
 
 	if (!rc) {
