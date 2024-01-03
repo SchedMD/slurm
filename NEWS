@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     partition based associations.
  -- Add new RPCs and API call for faster querying of job states from slurmctld.
  -- slurmrestd - Add endpoint '/slurm/{data_parser}/jobs/state'.
+ -- squeue - Add `--state-only` argument to use faster query of job states.
 
 * Changes in Slurm 23.11.4
 ==========================

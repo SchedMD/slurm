@@ -37,6 +37,7 @@ Usage: squeue [OPTIONS]
   -t, --states=states             comma separated list of states to view,
                                   default is pending and running,
                                   '--states=all' reports all states
+      --state-only                Only query job or step state
   -u, --user=user_name(s)         comma separated list of users to view
       --name=job_name(s)          comma separated list of job names to view
   -v, --verbose                   verbosity level
