@@ -860,7 +860,7 @@ extern void packmem(void *valp, uint32_t size_val, buf_t *buffer)
 
 
 /*
- * Given a buffer containing a network byte order 16-bit integer,
+ * Given a buffer containing a network byte order 32-bit integer,
  * and an arbitrary data string, return a pointer to the
  * data string in 'valp'.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
@@ -895,7 +895,7 @@ unpack_error:
 }
 
 /*
- * Given a buffer containing a network byte order 16-bit integer,
+ * Given a buffer containing a network byte order 32-bit integer,
  * and an arbitrary data string, copy the data string into the location
  * specified by valp.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
@@ -932,7 +932,7 @@ unpack_error:
 }
 
 /*
- * Given a buffer containing a network byte order 16-bit integer,
+ * Given a buffer containing a network byte order 32-bit integer,
  * and an arbitrary data string, copy the data string into the location
  * specified by valp.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
@@ -970,7 +970,7 @@ unpack_error:
 }
 
 /*
- * Given a buffer containing a network byte order 16-bit integer,
+ * Given a buffer containing a network byte order 32-bit integer,
  * and an arbitrary char string, copy the data string into the location
  * specified by valp and escape ' and \ to be database safe.
  * Also return the sizes of 'valp' in bytes.
