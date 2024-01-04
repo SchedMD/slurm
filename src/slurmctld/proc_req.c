@@ -5559,7 +5559,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 			bit_set(cant_reboot_nodes, node_ptr->index);
 			debug2("Skipping reboot of node %s in state %s",
 			       node_ptr->name,
-			       node_state_string_complete(node_ptr->node_state));
+			       node_state_string(node_ptr->node_state));
 			continue;
 		}
 		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
