@@ -70,6 +70,7 @@
 #define OPT_LONG_JSON         0x110
 #define OPT_LONG_YAML         0x111
 #define OPT_LONG_AUTOCOMP     0x112
+#define OPT_LONG_NOTME        0x113
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -127,6 +128,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"nodes",      required_argument, 0, 'w'},
 		{"nodelist",   required_argument, 0, 'w'},
 		{"noheader",   no_argument,       0, 'h'},
+		{"notme",      no_argument,       0, OPT_LONG_NOTME},
 		{"partitions", required_argument, 0, 'p'},
 		{"priority",   no_argument,       0, 'P'},
 		{"qos",        required_argument, 0, 'q'},
@@ -350,6 +352,9 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_NOCONVERT:
 			params.convert_flags |= CONVERT_NUM_UNIT_NO;
+			break;
+		case OPT_LONG_NOTME:
+			params.notme_flag = true;
 			break;
 		case OPT_LONG_USAGE:
 			_usage();

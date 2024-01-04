@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "May 2023" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "January 2024" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -1375,6 +1375,11 @@ A node_name of \fBlocalhost\fR is mapped to the current host name.
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
+.IP
+
+.TP
+\fB\-\-notme\fR
+Opposite of \fB\-\-me\fR; only display jobs that are not from the invoking user.
 .IP
 
 .TP

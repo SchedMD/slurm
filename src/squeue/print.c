@@ -2983,6 +2983,9 @@ static int _filter_job(job_info_t * job)
 		|| (!hostset_intersects(params.nodes, job->nodes))))
 		return 5;
 
+	if (params.notme_flag && (getuid() == job->user_id))
+		return 6;
+
 	if (params.user_list) {
 		bool filter = true;
 		iterator = list_iterator_create(params.user_list);

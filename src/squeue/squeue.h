@@ -72,6 +72,7 @@ struct squeue_parameters {
 	int  iterate;
 	bool job_flag;
 	bool local_flag;
+	bool notme_flag;
 	bool sibling_flag;
 	bool start_flag;
 	bool step_flag;

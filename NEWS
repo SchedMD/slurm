@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     invalid request being rejected.
  -- Print an error message in 'scontrol reboot' when a node reboot request
     is ignored due to the current node state.
+ -- squeue - Add "--notme" option.
 
 * Changes in Slurm 23.11.2
 ==========================
