@@ -60,7 +60,7 @@
 #include "src/squeue/squeue.h"
 
 static void	_combine_pending_array_tasks(List l);
-static int	_filter_job(job_info_t * job);
+static bool _filter_job(job_info_t *job);
 static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
 static void	_job_list_del(void *x);
@@ -2833,11 +2833,10 @@ int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
 }
 
 /*
- * Filter job records per input specifications,
- * Returns >0 if job should be filter out (not printed)
- * Returns 0 if job record should be printed
+ * Filter job records per input specifications.
+ * Returns true if the job should be filtered out (not printed).
  */
-static int _filter_job(job_info_t * job)
+static bool _filter_job(job_info_t *job)
 {
 	int i;
 	ListIterator iterator;
@@ -2848,7 +2847,7 @@ static int _filter_job(job_info_t * job)
 	bool partial_array = false;
 
 	if (job->job_id == 0)
-		return 1;
+		return true;
 
 	if (params.job_list) {
 		bool filter = true;
@@ -2882,7 +2881,7 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 1;
+			return true;
 	}
 
 	if (params.licenses_list) {
@@ -2916,7 +2915,7 @@ static int _filter_job(job_info_t * job)
 		}
 		xfree(tmp_name);
 		if (filter)
-			return 2;
+			return true;
 	}
 
 	if (params.account_list) {
@@ -2931,7 +2930,7 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 2;
+			return true;
 	}
 
 	if (params.qos_list) {
@@ -2946,7 +2945,7 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 2;
+			return true;
 	}
 
 	if (params.all_states) {
@@ -2968,23 +2967,23 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 3;
+			return true;
 	} else {
 		if (!IS_JOB_PENDING(job) &&
 		    !IS_JOB_RUNNING(job) &&
 		    !IS_JOB_STAGE_OUT(job) &&
 		    !IS_JOB_SUSPENDED(job) &&
 		    !IS_JOB_COMPLETING(job))
-			return 4;
+			return true;
 	}
 
 	if ((params.nodes)
 	    && ((job->nodes == NULL)
 		|| (!hostset_intersects(params.nodes, job->nodes))))
-		return 5;
+		return true;
 
 	if (params.notme_flag && (getuid() == job->user_id))
-		return 6;
+		return true;
 
 	if (params.user_list) {
 		bool filter = true;
@@ -2997,13 +2996,13 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 6;
+			return true;
 	}
 
 	if (params.reservation) {
 		if ((job->resv_name == NULL) ||
 		    (xstrcmp(job->resv_name, params.reservation))) {
-			return 7;
+			return true;
 		}
 	}
 
@@ -3019,7 +3018,7 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter)
-			return 8;
+			return true;
 	}
 
 	if (partial_array) {
@@ -3051,7 +3050,7 @@ static int _filter_job(job_info_t * job)
 		}
 	}
 
-	return 0;
+	return false;
 }
 
 /* Return 0 if supplied partition name is to be printed, otherwise return 2 */
