@@ -5508,7 +5508,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = msg->data;
 	char *nodelist = NULL;
-	bitstr_t *bitmap = NULL, *cant_reboot_nodes = NULL;
+	bitstr_t *bitmap = NULL, *cannot_reboot_nodes = NULL;
 	char *err_msg = NULL;
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
@@ -5546,7 +5546,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		}
 	}
 
-	cant_reboot_nodes = bit_alloc(node_record_count);
+	cannot_reboot_nodes = bit_alloc(node_record_count);
 	lock_slurmctld(node_write_lock);
 	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
@@ -5556,7 +5556,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr)) {
 			bit_clear(bitmap, node_ptr->index);
-			bit_set(cant_reboot_nodes, node_ptr->index);
+			bit_set(cannot_reboot_nodes, node_ptr->index);
 			debug2("Skipping reboot of node %s in state %s",
 			       node_ptr->name,
 			       node_state_string(node_ptr->node_state));
@@ -5608,13 +5608,13 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		info("reboot request queued for nodes %s", nodelist);
 		xfree(nodelist);
 	}
-	if (bit_ffs(cant_reboot_nodes) != -1) {
-		nodelist = bitmap2node_name(cant_reboot_nodes);
+	if (bit_ffs(cannot_reboot_nodes) != -1) {
+		nodelist = bitmap2node_name(cannot_reboot_nodes);
 		xstrfmtcat(err_msg, "Skipping reboot of nodes %s due to current node state.",
 			   nodelist);
 		xfree(nodelist);
 	}
-	FREE_NULL_BITMAP(cant_reboot_nodes);
+	FREE_NULL_BITMAP(cannot_reboot_nodes);
 	FREE_NULL_BITMAP(bitmap);
 	rc = SLURM_SUCCESS;
 #endif
