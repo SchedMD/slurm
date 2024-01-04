@@ -118,9 +118,6 @@ to build Slurm's power/cray_aries plugin, which must parse JSON format data.
 See Slurm's <a href="download.html#json">JSON installation information</a>
 for details.</p>
 
-<p><b>Note for Cray systems:</b> Power management is provided for native
-Slurm configurations (i.e. without the ALPS resource manager).</p>
-
 <p><b>Note for Cray systems:</b> Use of the capmc command requires either 
 specifying its absolute path ("/opt/cray/capmc/default/bin/capmc" by default)
 or loading the capmc module:</p>
@@ -245,6 +242,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 Sep 2023</p>
+<p style="text-align:center;">Last modified 04 January 2024</p>
 
 <!--#include virtual="footer.txt"-->

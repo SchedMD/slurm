@@ -49,7 +49,7 @@ gang scheduling:
 nodes allocated by the <I>select/linear</I> plugin,
 socket/core/CPU resources allocated by the
 <I>select/cons_tres</I> plugin, or <I>select/cray_aries</I> for Cray XC
-systems without ALPS.
+systems.
 </LI>
 <LI>
 <B>SelectTypeParameters</B>: Since resources will be getting overallocated
@@ -531,6 +531,6 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 07 April 2023</p>
+<p style="text-align:center;">Last modified 04 January 2024</p>
 
 <!--#include virtual="footer.txt"-->

@@ -33,7 +33,7 @@ There are several important configuration parameters relating to preemption:
 nodes allocated by the <I>select/linear</I> plugin,
 socket/core/CPU resources allocated by the
 <I>select/cons_tres</I> plugin, or <I>select/cray_aries</I> for Cray XC
-systems without ALPS.
+systems.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources may be getting over-allocated
@@ -536,6 +536,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 30 August 2023</p>
+<p style="text-align:center;">Last modified 04 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
