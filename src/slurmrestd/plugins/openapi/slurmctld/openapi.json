@@ -199,6 +199,49 @@
         }
       }
     },
+    "/slurm/{data_parser}/jobs/state": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "summary": "get list of job states",
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_JOB_STATE_QUERY"
+        },
+        "responses": {
+          "200": {
+            "description": "job(s) state information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "no jobs found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/slurm/{data_parser}/jobs/": {
       "get": {
         "tags": [
