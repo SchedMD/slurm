@@ -5795,6 +5795,103 @@ static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(JOB_STATE_RESP_MSG)
+
+static int DUMP_FUNC(JOB_STATE_RESP_MSG)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	job_state_response_msg_t *msg = obj;
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && (i < msg->jobs_count); i++) {
+		const job_state_response_job_t *state = &msg->jobs[i];
+
+		if (state->array_task_id_bitmap) {
+			/*
+			 * Explicitly expanding all array jobs to avoid
+			 * forcing clients to parse 10_[22-91919]
+			 */
+			bitstr_t *bits = state->array_task_id_bitmap;
+			job_state_response_job_t job = {
+				.job_id = state->job_id,
+				.array_job_id = state->array_job_id,
+				.state = state->state,
+			};
+
+			for (bitoff_t bit = bit_ffs(bits);
+			     !rc && ((bit = bit_ffs_from_bit(bits, bit)) >= 0);
+			     bit++) {
+				job.array_task_id = bit;
+				rc = DUMP(JOB_STATE_RESP_JOB, job,
+					  data_list_append(dst), args);
+			}
+		} else {
+			rc = DUMP(JOB_STATE_RESP_JOB, msg->jobs[i],
+				  data_list_append(dst), args);
+		}
+	}
+
+	return rc;
+}
+
+PARSE_DISABLED(JOB_STATE_RESP_JOB_JOB_ID)
+
+static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	job_state_response_job_t *src = obj;
+
+	if (!src->job_id) {
+		if (!is_complex_mode(args))
+			data_set_string(dst, "");
+	} else if (src->het_job_id) {
+		data_set_string_fmt(dst, "%u+%u", src->job_id,
+				    (src->job_id - src->het_job_id));
+	} else if (!src->array_job_id) {
+		data_set_string_fmt(dst, "%u", src->job_id);
+	} else if (src->array_task_id_bitmap) {
+		data_t *dtasks = data_new();
+
+		xassert(bit_ffs(src->array_task_id_bitmap) >= 0);
+
+		if (!(rc = DUMP(BITSTR_PTR, src->array_task_id_bitmap, dtasks,
+				args))) {
+			xassert(data_get_string(dtasks)[0]);
+
+			if (data_convert_type(dtasks, DATA_TYPE_STRING) !=
+			    DATA_TYPE_STRING)
+				on_error(
+					DUMPING, parser->type, args,
+					ESLURM_DATA_CONV_FAILED,
+					"job_state_response_msg_t->array_task_id_bitmap",
+					__func__,
+					"Unable to convert BITSTR to string");
+			else
+				data_set_string_fmt(dst, "%u_[%s]", src->job_id,
+						    data_get_string(dtasks));
+		}
+
+		FREE_NULL_DATA(dtasks);
+	} else if (src->array_task_id != NO_VAL) {
+		data_set_string_fmt(dst, "%u_%u", src->job_id,
+				    src->array_task_id);
+	} else {
+		if (!is_complex_mode(args))
+			data_set_string(dst, "");
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      "job_state_response_msg_t", __func__,
+			      "Unable to dump JobId from job state");
+	}
+
+	xassert(data_get_string(dst)[0]);
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8540,6 +8637,30 @@ static const parser_t PARSER_ARRAY(STATS_MSG_RPC_DUMP)[] = {
 #undef add_parse_req
 #undef add_parse_req_overload
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(job_state_response_job_t, mtype, true, field, 0, path, desc)
+#define add_cparse_req(mtype, path, desc) \
+	add_complex_parser(job_state_response_job_t, mtype, true, path, desc)
+#define add_skip(field) \
+	add_parser_skip(job_state_response_job_t, field)
+static const parser_t PARSER_ARRAY(JOB_STATE_RESP_JOB)[] = {
+	add_cparse_req(JOB_STATE_RESP_JOB_JOB_ID, "job_id", "JobId"),
+	add_skip(job_id),
+	add_skip(array_task_id),
+	add_skip(array_task_id_bitmap),
+	add_parse_req(JOB_STATE, state, "state", "Job state"),
+};
+#undef add_parse_req
+#undef add_cparse_req
+#undef add_skip
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_state_query_t , mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_QUERY)[] = {
+	add_parse(SELECTED_STEP_LIST, job_id_list, "job_id", "Search for CSV list of JobIds"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8724,6 +8845,16 @@ static const parser_t PARSER_ARRAY(OPENAPI_USERS_ADD_COND_RESP)[] = {
 	add_openapi_response_meta(openapi_resp_users_add_cond_t),
 	add_openapi_response_errors(openapi_resp_users_add_cond_t),
 	add_openapi_response_warnings(openapi_resp_users_add_cond_t),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_job_state_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
+	add_parse(JOB_STATE_RESP_MSG_PTR, jobs, "jobs", "List of job states"),
+	add_openapi_response_meta(openapi_resp_job_state_t),
+	add_openapi_response_errors(openapi_resp_job_state_t),
+	add_openapi_response_warnings(openapi_resp_job_state_t),
 };
 #undef add_parse
 
@@ -9027,6 +9158,7 @@ static const parser_t parsers[] = {
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
+	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
@@ -9089,6 +9221,7 @@ static const parser_t parsers[] = {
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, SHARES_FLOAT128_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
+	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -9111,6 +9244,7 @@ static const parser_t parsers[] = {
 	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false, NULL, NULL),
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG, false, NULL, NULL),
 	addpp(BITSTR_PTR, bitstr_t *, BITSTR, false, NULL, NULL),
+	addpp(JOB_STATE_RESP_MSG_PTR, job_state_response_msg_t *, JOB_STATE_RESP_MSG, false, NULL, NULL),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
@@ -9212,6 +9346,8 @@ static const parser_t parsers[] = {
 	addpap(STATS_MSG_RPC_USER, STATS_MSG_RPC_USER_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_QUEUE, STATS_MSG_RPC_QUEUE_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_DUMP, STATS_MSG_RPC_DUMP_t, NULL, NULL),
+	addpap(JOB_STATE_RESP_JOB, job_state_response_job_t, NULL, NULL),
+	addpap(OPENAPI_JOB_STATE_QUERY, openapi_job_state_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -9246,6 +9382,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_SHARES_RESP),
 	addoar(OPENAPI_SINFO_RESP),
 	addpap(OPENAPI_STEP_INFO_MSG, openapi_resp_job_step_info_msg_t, NULL, NULL),
+	addpap(OPENAPI_JOB_STATE_RESP, openapi_resp_job_state_t, NULL, NULL),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
@@ -9319,6 +9456,7 @@ static const parser_t parsers[] = {
 	addpl(JOB_STATE_ID_STRING_LIST, JOB_STATE_ID_STRING, NEED_NONE),
 	addpl(SHARES_UINT64_TRES_LIST, SHARES_UINT64_TRES_PTR, NEED_NONE),
 	addpl(SHARES_FLOAT128_TRES_LIST, SHARES_FLOAT128_TRES_PTR, NEED_NONE),
+	addpl(SLURM_STEP_ID_STRING_LIST, SLURM_STEP_ID_STRING_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps

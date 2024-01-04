@@ -399,4 +399,16 @@ typedef struct {
 	slurmdb_user_rec_t *user;
 } openapi_resp_users_add_cond_t;
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	time_t last_update;
+	job_state_response_msg_t *jobs;
+} openapi_resp_job_state_t;
+
+typedef struct {
+	list_t *job_id_list; /* list of slurm_selected_step_t* */
+} openapi_job_state_query_t;
+
 #endif /* SLURM_OPENAPI_H */

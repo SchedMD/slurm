@@ -245,6 +245,7 @@ typedef enum {
 	DATA_PARSER_SLURM_STEP_ID_PTR, /* slurm_step_id_t* */
 	DATA_PARSER_SLURM_STEP_ID_STRING, /* slurm_step_id_t -> SELECTED_STEP */
 	DATA_PARSER_SLURM_STEP_ID_STRING_PTR, /* slurm_step_id_t* -> SLURM_STEP_ID_STRING */
+	DATA_PARSER_SLURM_STEP_ID_STRING_LIST, /* list_t of slurm_step_id_t* */
 	DATA_PARSER_STEP_ID, /* uint32_t of job step id */
 	DATA_PARSER_STEP_ID_PTR, /* uint32_t* of job step id */
 	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
@@ -536,6 +537,15 @@ typedef enum {
 	DATA_PARSER_JOB_PLANNED_TIME, /* slurmdb_job_rec_t->start - slurmdb_job_rec_t->eligible */
 	DATA_PARSER_CR_TYPE, /* uint16_t - CR_* */
 	DATA_PARSER_NODE_CR_TYPE, /* enum node_cr_state - uint32_t - NODE_CR_* */
+	DATA_PARSER_OPENAPI_JOB_STATE_RESP, /* openapi_resp_job_state_t */
+	DATA_PARSER_OPENAPI_JOB_STATE_RESP_PTR, /* openapi_resp_job_state_t* */
+	DATA_PARSER_OPENAPI_JOB_STATE_QUERY, /* openapi_job_state_query_t */
+	DATA_PARSER_OPENAPI_JOB_STATE_QUERY_PTR, /* openapi_job_state_query_t* */
+	DATA_PARSER_JOB_STATE_RESP_MSG, /* job_state_response_msg_t */
+	DATA_PARSER_JOB_STATE_RESP_MSG_PTR, /* job_state_response_msg_t* */
+	DATA_PARSER_JOB_STATE_RESP_JOB, /* job_state_response_job_t */
+	DATA_PARSER_JOB_STATE_RESP_JOB_PTR, /* job_state_response_job_t* */
+	DATA_PARSER_JOB_STATE_RESP_JOB_JOB_ID, /* job_state_response_job_t->job_id,array_job_id,array_task_id_bitmap */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

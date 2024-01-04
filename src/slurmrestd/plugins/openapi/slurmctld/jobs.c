@@ -461,3 +461,50 @@ extern int op_handler_submit_job(openapi_ctxt_t *ctxt)
 
 	return ctxt->rc;
 }
+
+extern int op_handler_job_states(openapi_ctxt_t *ctxt)
+{
+	openapi_job_state_query_t query = { 0 };
+	openapi_resp_job_state_t resp = { 0 };
+	int job_id_count = 0;
+	uint32_t *job_ids = NULL;
+	int rc;
+
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		return resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY),
+				  __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	}
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_STATE_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Rejecting request. Failure parsing query");
+	}
+
+	if (query.job_id_list && !list_is_empty(query.job_id_list)) {
+		slurm_selected_step_t *id = NULL;
+
+		job_ids = xcalloc(list_count(query.job_id_list),
+				  sizeof(*job_ids));
+
+		while ((id = list_pop(query.job_id_list))) {
+			job_ids[job_id_count] = id->step_id.job_id;
+			xfree(id);
+			job_id_count++;
+		}
+	}
+
+	if ((rc = slurm_load_job_state(job_id_count, job_ids, &resp.jobs))) {
+		resp_error(ctxt, rc, "slurm_load_job_state()",
+			   "Unable to query job states");
+	}
+
+	rc = DATA_DUMP(ctxt->parser, OPENAPI_JOB_STATE_RESP, resp, ctxt->resp);
+
+	slurm_free_job_state_response_msg(resp.jobs);
+	FREE_NULL_LIST(query.job_id_list);
+	xfree(job_ids);
+	return rc;
+}

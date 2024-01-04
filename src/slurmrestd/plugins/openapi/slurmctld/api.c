@@ -232,6 +232,24 @@ const openapi_path_binding_t openapi_paths[] = {
 		.flags = op_flags,
 	},
 	{
+		.path = "/slurm/{data_parser}/jobs/state/",
+		.callback = op_handler_job_states,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get list of job states",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_INFO_RESP,
+					.description = "job(s) state information",
+				},
+				.query = DATA_PARSER_OPENAPI_JOB_INFO_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
 		.path = "/slurm/{data_parser}/job/{job_id}",
 		.callback = op_handler_job,
 		.methods = (openapi_path_binding_method_t[]) {

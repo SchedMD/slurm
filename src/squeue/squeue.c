@@ -173,7 +173,6 @@ _get_window_width( void )
 	return width;
 }
 
-
 /* _print_job - print the specified job's information */
 static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		      char **argv)
