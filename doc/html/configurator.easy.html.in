@@ -389,8 +389,6 @@ Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="cons_tres" checked>
 <b>cons_tres</b>: Allocate individual processors, memory, GPUs, and other
 trackable resources<br />
-<input type="radio" name="select_type" value="cray_aries">
-<B>Cray XC</B>: Cray XC systems running native Slurm without ALPS<BR>
 <input type="radio" name="select_type" value="linear">
 <B>Linear</B>: Node-base
 resource allocation, does not manage individual processor allocation<BR>
@@ -467,6 +465,6 @@ Specify a specify the fully qualified pathname for the file.
 <hr>
 <p>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 10 April 2018</p>
+Last modified 04 January 2024</p>
 </body>
 </html>

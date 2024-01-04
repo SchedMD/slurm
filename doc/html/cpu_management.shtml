@@ -29,8 +29,6 @@ option. The following html documents may also be useful:</p>
 Architectures</a><br>
 <a href="dist_plane.html">Plane distribution</a></p>
 
-<p>This document describes Slurm CPU management for conventional Linux clusters only.  For
-information on Cray ALPS systems, please refer to the appropriate documents.</p><br>
 <h2 id="Section1">CPU Management Steps performed by Slurm
 <a class="slurm_link" href="#Section1"></a>
 </h2>
@@ -3538,6 +3536,6 @@ used with the task/cgroup plugin:
 </p>
 <pre>TaskPlugin=task/cgroup,task/affinity</pre>
 
-<p style="text-align:center;">Last modified 16 March 2022</p>
+<p style="text-align:center;">Last modified 04 January 2024</p>
 
 <!--#include virtual="footer.txt"-->

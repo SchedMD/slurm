@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "January 2024" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -61,8 +61,8 @@ Note that the SlurmDBD must be up for this option to work properly.
 \fB\-\-ctld\fR
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
-This is the default behavior on architectures using front end nodes (e.g.
-Cray ALPS computers) or when the \fB\-\-clusters\fR option is used.
+This is the default behavior on architectures using front end nodes,
+or when the \fB\-\-clusters\fR option is used.
 .IP
 
 .TP
@@ -334,12 +334,6 @@ time for the running job/step(s) to clean up.
 .LP
 If a signal value of "KILL" is sent to an entire job, this will cancel
 the active job steps but not cancel the job itself.
-.LP
-On Cray systems, all signals \fBexcept\fR
-SIGCHLD, SIGCONT, SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, or SIGWINCH
-cause the ALPS reservation to be released.
-The job however will not be terminated except in the case of SIGKILL and
-may then be used for post processing.
 
 .SH "AUTHORIZATION"
 

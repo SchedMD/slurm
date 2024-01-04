@@ -661,11 +661,7 @@ components of a heterogeneous job.</p>
 
 <p>Heterogeneous jobs are not supported on GANG scheduling operations.</p>
 
-<p>Heterogeneous jobs are not supported on Cray ALPS systems.</p>
-
-<p>Heterogeneous jobs are not supported on IBM PE systems.</p>
-
-<p>Slurm's PERL APIs currently do not support heterogeneous jobs.</p>
+<p>Slurm's Perl APIs do not support heterogeneous jobs.</p>
 
 <p>The srun --multi-prog option can not be used to span more than one
 heterogeneous job component.</p>
@@ -789,6 +785,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 21 October 2022</p>
+<p style="text-align:center;">Last modified 04 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
