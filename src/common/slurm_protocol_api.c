@@ -2352,7 +2352,6 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	int fd = -1;
 	int rc = 0;
 	time_t start_time = time(NULL);
-	int retry = 1;
 	slurm_conf_t *conf;
 	bool have_backup;
 	uint16_t slurmctld_timeout;
@@ -2372,26 +2371,21 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
 tryagain:
-	retry = 1;
 	if (comm_cluster_rec)
 		request_msg->flags |= SLURM_GLOBAL_AUTH_KEY;
-
-	if ((fd = _open_controller(&ctrl_addr, &index, comm_cluster_rec)) < 0) {
-		rc = -1;
-		goto cleanup;
-	}
 
 	conf = slurm_conf_lock();
 	have_backup = conf->control_cnt > 1;
 	slurmctld_timeout = conf->slurmctld_timeout;
 	slurm_conf_unlock();
 
-	while (retry) {
-		/*
-		 * If the backup controller is in the process of assuming
-		 * control, we sleep and retry later
-		 */
-		retry = 0;
+	while (true) {
+		if ((fd = _open_controller(&ctrl_addr, &index,
+					   comm_cluster_rec)) < 0) {
+			rc = -1;
+			break;
+		}
+
 		rc = _send_and_recv_msg(fd, request_msg, response_msg, 0);
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
@@ -2419,16 +2413,10 @@ tryagain:
 			}
 
 			slurm_free_return_code_msg(response_msg->data);
-			if ((fd = _open_controller(&ctrl_addr, &index,
-						   comm_cluster_rec)) < 0) {
-				rc = -1;
-			} else {
-				retry = 1;
-			}
+			continue;
 		}
 
-		if (rc == -1)
-			break;
+		break;
 	}
 
 	if (!rc && (response_msg->msg_type == RESPONSE_SLURM_RC) &&
@@ -2465,7 +2453,6 @@ tryagain:
 	if (comm_cluster_rec != save_comm_cluster_rec)
 		slurmdb_destroy_cluster_rec(comm_cluster_rec);
 
-cleanup:
 	if (rc != 0)
  		_remap_slurmctld_errno();
 
