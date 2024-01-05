@@ -781,12 +781,12 @@ int slurm_open_msg_conn(slurm_addr_t * slurm_address)
  * Calls connect to make a connection-less datagram connection
  *	primary or secondary slurmctld message engine
  * IN/OUT addr       - address of controller contacted
- * IN/OUT use_backup - IN: whether to try the backup first or not
- *                     OUT: set to true if connection established with backup
+ * IN/OUT index      - IN: which controller to start from
+ *                   - OUT: which controller is connected
  * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET slurm_fd	- file descriptor of the connection created
  */
-static int _open_controller(slurm_addr_t *addr, bool *use_backup,
+static int _open_controller(slurm_addr_t *addr, int *index,
 			    slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
@@ -844,18 +844,18 @@ static int _open_controller(slurm_addr_t *addr, bool *use_backup,
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
 				 __func__, &proto_conf->vip_addr);
 		} else {
-			if (!*use_backup) {
+			if (!*index) {
 				fd = slurm_open_msg_conn(
 						&proto_conf->controller_addr[0]);
 				if (fd >= 0) {
-					*use_backup = false;
+					*index = false;
 					goto end_it;
 				}
 				log_flag(NET,"%s: Failed to contact primary controller(%pA): %m",
 					 __func__,
 					 &proto_conf->controller_addr[0]);
 			}
-			if ((proto_conf->control_cnt > 1) || *use_backup) {
+			if ((proto_conf->control_cnt > 1) || *index) {
 				for (i = 1; i < proto_conf->control_cnt; i++) {
 					fd = slurm_open_msg_conn(
 						&proto_conf->controller_addr[i]);
@@ -864,11 +864,11 @@ static int _open_controller(slurm_addr_t *addr, bool *use_backup,
 							 __func__,
 							 &proto_conf->controller_addr[i],
 							 (i - 1));
-						*use_backup = true;
+						*index = i;
 						goto end_it;
 					}
 				}
-				*use_backup = false;
+				*index = 0;
 				log_flag(NET, "%s: Failed to contact backup controller: %m",
 					 __func__);
 			}
@@ -2370,7 +2370,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	bool have_backup;
 	uint16_t slurmctld_timeout;
 	slurm_addr_t ctrl_addr;
-	static bool use_backup = false;
+	static int index = 0;
 	slurmdb_cluster_rec_t *save_comm_cluster_rec = comm_cluster_rec;
 	int ratelimited = 0;
 
@@ -2389,8 +2389,7 @@ tryagain:
 	if (comm_cluster_rec)
 		request_msg->flags |= SLURM_GLOBAL_AUTH_KEY;
 
-	if ((fd = _open_controller(&ctrl_addr, &use_backup,
-				   comm_cluster_rec)) < 0) {
+	if ((fd = _open_controller(&ctrl_addr, &index, comm_cluster_rec)) < 0) {
 		rc = -1;
 		goto cleanup;
 	}
@@ -2425,14 +2424,14 @@ tryagain:
 				log_flag(NET, "%s: Primary not responding, backup not in control. Sleeping and retry.",
 					 __func__);
 				sleep(slurmctld_timeout / 2);
-				use_backup = false;
+				index = 0;
 			} else {
 				log_flag(NET, "%s: Primary was contacted, but says it is the backup in standby.  Trying the backup",
 					 __func__);
-				use_backup = true;
+				index = 1;
 			}
 			slurm_free_return_code_msg(response_msg->data);
-			if ((fd = _open_controller(&ctrl_addr, &use_backup,
+			if ((fd = _open_controller(&ctrl_addr, &index,
 						   comm_cluster_rec)) < 0) {
 				rc = -1;
 			} else {
@@ -2522,12 +2521,12 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	int      rc = SLURM_SUCCESS;
 	int fd = -1;
 	slurm_addr_t ctrl_addr;
-	bool     use_backup = false;
+	int index = 0;
 
 	/*
 	 *  Open connection to Slurm controller:
 	 */
-	if ((fd = _open_controller(&ctrl_addr, &use_backup,
+	if ((fd = _open_controller(&ctrl_addr, &index,
 				   comm_cluster_rec)) < 0) {
 		rc = SLURM_ERROR;
 		goto cleanup;
