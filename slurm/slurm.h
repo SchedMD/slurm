@@ -1113,7 +1113,10 @@ enum node_states {
 #define PRIORITY_FLAGS_NO_NORMAL_QOS	 SLURM_BIT(9)
 #define PRIORITY_FLAGS_NO_NORMAL_TRES	 SLURM_BIT(10)
 
-/* These bits are set in the bitflags field of job_desc_msg_t */
+/*
+ * These bits are set in the bitflags field of job_desc_msg_t and
+ * job_flags in slurm_opt_t
+ */
 #define KILL_INV_DEP       SLURM_BIT(0) /* Kill job on invalid dependency */
 #define NO_KILL_INV_DEP    SLURM_BIT(1) /* Don't kill job on invalid
 					 * dependency */
