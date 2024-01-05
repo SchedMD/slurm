@@ -185,6 +185,8 @@ void run_backup(void)
 			 */
 			break;
 		} else {
+			char *abort_msg = NULL;
+			bool abort_takeover = false;
 			time_t use_time, last_heartbeat;
 			int server_inx = -1;
 			last_heartbeat = get_last_heartbeat(&server_inx);
@@ -205,11 +207,21 @@ void run_backup(void)
 				use_time = last_heartbeat;
 			}
 
+			if (!last_heartbeat) {
+				/*
+				 * Failed to read the heartbeat file, abort
+				 * takeover because the StateSaveLocation is
+				 * broken.
+				 */
+				abort_takeover = 1;
+				abort_msg = "Not taking control. Heartbeat file could not be read and the primary slurmctld is unresponsive. Something is wrong with your StateSaveLocation.";
+			}
+
 			if (((time(NULL) - use_time) >
 			    slurm_conf.slurmctld_timeout)) {
-				if (last_heartbeat)
+				if (!abort_takeover)
 					break;
-				error("Not taking control. Heartbeat file could not be read and the primary slurmctld is unresponsive. Something is wrong with your StateSaveLocation.");
+				error("%s", abort_msg);
 			}
 		}
 	}
