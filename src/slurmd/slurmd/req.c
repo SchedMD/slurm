@@ -4280,11 +4280,13 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		      key.uid, key.gid, key.fname);
 	}
 	if ((req->flags & FILE_BCAST_LAST_BLOCK) && req->atime) {
-		struct utimbuf time_buf;
-		time_buf.actime  = req->atime;
-		time_buf.modtime = req->mtime;
-		if (utime(key.fname, &time_buf)) {
-			error("sbcast: uid:%u can't utime `%s`: %m",
+		struct timespec time_buf[2];
+		time_buf[0].tv_sec = req->atime;
+		time_buf[0].tv_nsec = 0;
+		time_buf[1].tv_sec = req->mtime;
+		time_buf[1].tv_nsec = 0;
+		if (futimens(file_info->fd, time_buf)) {
+			error("sbcast: uid:%u can't futimens `%s`: %m",
 			      key.uid, key.fname);
 		}
 	}
