@@ -187,8 +187,10 @@ void run_backup(void)
 		} else {
 			char *abort_msg = NULL;
 			bool abort_takeover = false;
+			static time_t prev_heartbeat = 0;
 			time_t use_time, last_heartbeat;
 			int server_inx = -1;
+
 			last_heartbeat = get_last_heartbeat(&server_inx);
 			debug("%s: last_heartbeat %ld from server %d",
 			      __func__, last_heartbeat, server_inx);
@@ -214,13 +216,33 @@ void run_backup(void)
 				 * broken.
 				 */
 				abort_takeover = 1;
-				abort_msg = "Not taking control. Heartbeat file could not be read and the primary slurmctld is unresponsive. Something is wrong with your StateSaveLocation.";
+				abort_msg = "Not taking control. Primary slurmctld is unresponsive, but heartbeat file could not be read. Something is wrong with your StateSaveLocation.";
+			} else if (!prev_heartbeat) {
+				/*
+				 * Need at least one loop to detect if the
+				 * primary is still running.
+				 */
+				abort_takeover = 1;
+				abort_msg = "Not taking control. Primary slurmctld is unresponsive, but not yet able to determine if primary may actually be running.";
+			} else if (last_heartbeat != prev_heartbeat) {
+				/*
+				 * If the primary is unresponsive but the
+				 * heartbeat is getting updated, consider the
+				 * controller still "working" and abort the
+				 * takeover.
+				 */
+				abort_takeover = 1;
+				abort_msg = "Not taking control. Primary slurmctld is unresponsive, but is still updating the heartbeat file. Check for clock skew.";
 			}
+
+			prev_heartbeat = last_heartbeat;
 
 			if (((time(NULL) - use_time) >
 			    slurm_conf.slurmctld_timeout)) {
-				if (!abort_takeover)
+				if (!abort_takeover) {
+					prev_heartbeat = 0;
 					break;
+				}
 				error("%s", abort_msg);
 			}
 		}

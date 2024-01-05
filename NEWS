@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Correct description fields in generated openapi.json where
     descriptions were not present or too generic.
  -- Remove support for Cray XC ("cray_aries") systems.
+ -- Prevent backup slurmctld from taking over if the heartbeat file is
+    still being updated.  Failure to ping may have been due to clock skew.
 
 * Changes in Slurm 23.11.2
 ==========================
