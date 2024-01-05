@@ -130,6 +130,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 {
 	slurm_protocol_config_t *proto_conf = NULL;
 	slurm_conf_t *conf;
+	uint16_t port;
 
 	conf = slurm_conf_lock();
 
@@ -143,22 +144,25 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		goto cleanup;
 	}
 
+	port = slurm_conf.slurmctld_port;
+	port += (time(NULL) + getpid()) % slurm_conf.slurmctld_port_count;
+
 	proto_conf = xmalloc(sizeof(slurm_protocol_config_t));
 	proto_conf->controller_addr = xcalloc(conf->control_cnt,
 					      sizeof(slurm_addr_t));
 	proto_conf->control_cnt = conf->control_cnt;
 
 	for (int i = 0; i < proto_conf->control_cnt; i++) {
+
 		if (conf->control_addr[i]) {
 			slurm_set_addr(&proto_conf->controller_addr[i],
-				       conf->slurmctld_port,
-				       conf->control_addr[i]);
+				       port, conf->control_addr[i]);
 		}
 	}
 
 	if (conf->slurmctld_addr) {
 		proto_conf->vip_addr_set = true;
-		slurm_set_addr(&proto_conf->vip_addr, conf->slurmctld_port,
+		slurm_set_addr(&proto_conf->vip_addr, port,
 			       conf->slurmctld_addr);
 	}
 
@@ -780,27 +784,12 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 {
 	int fd = -1;
 	slurm_protocol_config_t *proto_conf = NULL;
-	int i, retry, max_retry_period;
-	uint16_t port;
+	int retry, max_retry_period;
 
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
 		if (!(proto_conf = _slurm_api_get_comm_config()))
 			return SLURM_ERROR;
-
-		for (i = 0; i < proto_conf->control_cnt; i++) {
-			port = slurm_conf.slurmctld_port +
-				((time(NULL) + getpid()) %
-				 slurm_conf.slurmctld_port_count);
-			slurm_set_port(&(proto_conf->controller_addr[i]), port);
-		}
-
-		if (proto_conf->vip_addr_set) {
-			port = slurm_conf.slurmctld_port +
-				((time(NULL) + getpid()) %
-				 slurm_conf.slurmctld_port_count);
-			slurm_set_port(&(proto_conf->vip_addr), port);
-		}
 	}
 
 #ifdef HAVE_NATIVE_CRAY
