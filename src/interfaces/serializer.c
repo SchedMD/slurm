@@ -135,7 +135,7 @@ extern int serialize_g_data_to_string(char **dest, size_t *length,
 	const funcs_t *func_ptr;
 	plugin_mime_type_t *pmt = NULL;
 
-	xassert(dest && (*dest == NULL));
+	xassert(dest && ((*dest == NULL) || (*dest[0] == '\0')));
 
 	pmt = _find_serializer(mime_type);
 	if (!pmt)

@@ -1066,65 +1066,128 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
+		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
+		       data_t *parent_path)
+{
+	slurmdb_assoc_rec_t *match;
+
+	if (!key->cluster)
+		key->cluster = slurm_conf.cluster_name;
+
+	match = list_find_first(args->assoc_list, (ListFindF) compare_assoc,
+				key);
+
+	if (key->cluster == slurm_conf.cluster_name)
+		key->cluster = NULL;
+
+	if (!match)
+		return parse_error(parser, args, parent_path,
+				 ESLURM_INVALID_ASSOC,
+				 "Unable to find association: %pd", src);
+
+	xassert(!dst->id || (dst->id == NO_VAL) || (dst->id == match->id));
+
+	if (!(dst->id = match->id))
+		return ESLURM_INVALID_ASSOC;
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
-	int rc = SLURM_ERROR;
-	slurmdb_assoc_rec_t assoc;
-	uint32_t id = 0, *id_ptr = obj;
+	slurmdb_assoc_rec_t *assoc = obj;
 
-	slurmdb_init_assoc_rec(&assoc, false);
-	(void) data_convert_type(src, DATA_TYPE_NONE);
+	switch (data_get_type(src)) {
+	case DATA_TYPE_STRING:
+	{
+		char *str = data_get_string(src);
 
-	if (data_get_type(src) == DATA_TYPE_INT_64) {
-		if ((rc = PARSE(UINT32, id, src, parent_path, args)) || !id)
-			goto cleanup;
+		/* treat "" same as null */
+		if (!str || !str[0])
+			return SLURM_SUCCESS;
 
-		assoc.id = id;
-	} else if (data_get_type(src) == DATA_TYPE_NULL) {
-		rc = SLURM_SUCCESS;
-	} else {
-		slurmdb_assoc_rec_t *match;
+		/* fall through for non-empty strings */
+	}
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED,
+					   "Unable to convert %pd to integer for association id",
+					   src);
+		/* fall through */
+	case DATA_TYPE_INT_64:
+	{
+		int rc;
+		slurmdb_assoc_rec_t key = {
+			.id = assoc->id,
+			.cluster = assoc->cluster,
+		};
 
-		if ((rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args)))
-			goto cleanup;
+		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)))
+			return rc;
 
-		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc,
-					     &assoc))) {
-			id = match->id;
-		} else {
-			rc = ESLURM_INVALID_ASSOC;
-		}
+		/* treat 0 same as null */
+		if (!key.id)
+			return SLURM_SUCCESS;
+
+		return _find_assoc(parser, assoc, src, &key, args, parent_path);
+	}
+	case DATA_TYPE_NULL:
+		return SLURM_SUCCESS;
+	case DATA_TYPE_DICT:
+	{
+		int rc;
+		slurmdb_assoc_rec_t key;
+
+		if (!data_get_dict_length(src))
+			return SLURM_SUCCESS;
+
+		slurmdb_init_assoc_rec(&key, false);
+
+		if (!(rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+			rc = _find_assoc(parser, assoc, src, &key, args,
+					 parent_path);
+
+		slurmdb_free_assoc_rec_members(&key);
+		return rc;
+	}
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_BOOL:
+		return parse_error(parser, args, parent_path,
+				   ESLURM_INVALID_ASSOC,
+				   "Expected numeric Association ID but got %pd",
+				   src);
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		/* fall through */
 	}
 
-cleanup:
-	slurmdb_free_assoc_rec_members(&assoc);
-	*id_ptr = id;
-	return rc;
+	fatal_abort("invalid type");
 }
 
 static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
-	uint32_t *id_ptr = obj;
-	slurmdb_assoc_rec_t key = {
-		.id = *id_ptr,
-	};
+	slurmdb_assoc_rec_t *assoc = obj;
+	uint32_t id = 0;
 
-	if (key.id && (key.id < NO_VAL)) {
+	if (assoc->id && (assoc->id < NO_VAL)) {
 		slurmdb_assoc_rec_t *match;
 
 		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc, &key)))
-			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
+					     (ListFindF) compare_assoc, assoc)))
+			id = match->id;
 	}
 
 	if (is_complex_mode(args)) {
+		data_set_null(dst);
 		return SLURM_SUCCESS;
 	}
 
-	return DUMP(ASSOC_SHORT, key, dst, args);
+	return DUMP(UINT32, id, dst, args);
 }
 
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
@@ -1688,14 +1751,25 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	switch (data_get_type(src)) {
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve user",
+					   src);
+		/* fall through */
 	case DATA_TYPE_INT_64:
-	{
 		uid = data_get_int(src);
 		break;
-	}
 	case DATA_TYPE_STRING:
 	{
 		int rc;
+		char *str = data_get_string(src);
+
+		if (!str || !str[0]) {
+			*uid_ptr = SLURM_AUTH_NOBODY;
+			return SLURM_SUCCESS;
+		}
 
 		if ((rc = uid_from_string(data_get_string(src), &uid)))
 		{
@@ -1710,11 +1784,18 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 
 		break;
 	}
-	default:
+	case DATA_TYPE_NULL:
+		*uid_ptr = SLURM_AUTH_NOBODY;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_DICT:
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_BOOL:
 		return parse_error(parser, args, parent_path,
 				   ESLURM_DATA_CONV_FAILED,
-				   "Invalid user field value type: %s",
-				   data_get_type_string(src));
+				   "Invalid user field: %pd", src);
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
 	if (uid >= INT_MAX)
@@ -1734,14 +1815,25 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	gid_t gid;
 
 	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve group",
+					   src);
+		/* fall through */
 	case DATA_TYPE_INT_64:
-	{
 		gid = data_get_int(src);
 		break;
-	}
 	case DATA_TYPE_STRING:
 	{
 		int rc;
+		char *str = data_get_string(src);
+
+		if (!str || !str[0]) {
+			*gid_ptr = SLURM_AUTH_NOBODY;
+			return SLURM_SUCCESS;
+		}
 
 		if ((rc = gid_from_string(data_get_string(src), &gid)))
 		{
@@ -1756,11 +1848,18 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 
 		break;
 	}
-	default:
+	case DATA_TYPE_NULL:
+		*gid_ptr = SLURM_AUTH_NOBODY;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_DICT:
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_BOOL:
 		return parse_error(parser, args, parent_path,
 				   ESLURM_DATA_CONV_FAILED,
-				   "Invalid group field value type: %s",
-				   data_get_type_string(src));
+				   "Invalid group field: %pd", src);
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
 	if (gid >= INT_MAX)
@@ -5927,7 +6026,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(grp_tres_run_mins_ctld),
 	add_parse(TRES_STR, max_tres_run_mins, "max/tres/minutes/total", NULL),
 	add_parse(UINT32_NO_VAL, grp_wall, "max/per/account/wall_clock", NULL),
-	add_parse(ASSOC_ID, id, "id", NULL),
+	add_complex_parser(slurmdb_assoc_rec_t, ASSOC_ID, false, "id", NULL),
 	add_parse(BOOL16, is_def, "is_default", NULL),
 	add_skip(leaf_usage),
 	add_skip(lft),
@@ -8884,10 +8983,10 @@ static const parser_t parsers[] = {
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
-	addpsp(ASSOC_ID, ASSOC_SHORT, uint32_t, NEED_ASSOC, "Association ID"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 
 	/* Complex type parsers */
+	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
