@@ -131,7 +131,6 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	slurm_protocol_config_t *proto_conf = NULL;
 	slurm_addr_t controller_addr;
 	slurm_conf_t *conf;
-	int i;
 
 	conf = slurm_conf_lock();
 
@@ -142,10 +141,6 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	}
 	if (conf->slurmctld_port == 0) {
 		error("Unable to establish controller port");
-		goto cleanup;
-	}
-	if (conf->control_cnt == 0) {
-		error("No slurmctld servers configured");
 		goto cleanup;
 	}
 
@@ -164,7 +159,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	memcpy(&proto_conf->controller_addr[0], &controller_addr,
 	       sizeof(slurm_addr_t));
 
-	for (i = 1; i < proto_conf->control_cnt; i++) {
+	for (int i = 1; i < proto_conf->control_cnt; i++) {
 		if (conf->control_addr[i]) {
 			slurm_set_addr(&proto_conf->controller_addr[i],
 				       conf->slurmctld_port,
