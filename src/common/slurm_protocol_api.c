@@ -844,34 +844,21 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
 				 __func__, &proto_conf->vip_addr);
 		} else {
-			if (!*index) {
-				fd = slurm_open_msg_conn(
-						&proto_conf->controller_addr[0]);
+			for (int i = 0; i < proto_conf->control_cnt; i++) {
+				int inx = (*index + i) % proto_conf->control_cnt;
+				slurm_addr_t *ctrl_addr =
+					&proto_conf->controller_addr[inx];
+				fd = slurm_open_msg_conn(ctrl_addr);
 				if (fd >= 0) {
-					*index = false;
+					log_flag(NET, "%s: Contacted SlurmctldHost[%d](%pA)",
+						 __func__, inx, ctrl_addr);
+					*index = inx;
 					goto end_it;
 				}
-				log_flag(NET,"%s: Failed to contact primary controller(%pA): %m",
-					 __func__,
-					 &proto_conf->controller_addr[0]);
+				log_flag(NET, "%s: Failed to contact SlurmctldHost[%d](%pA): %m",
+					 __func__, inx, ctrl_addr);
 			}
-			if ((proto_conf->control_cnt > 1) || *index) {
-				for (i = 1; i < proto_conf->control_cnt; i++) {
-					fd = slurm_open_msg_conn(
-						&proto_conf->controller_addr[i]);
-					if (fd >= 0) {
-						log_flag(NET, "%s: Contacted backup controller(%pA) attempt:%d",
-							 __func__,
-							 &proto_conf->controller_addr[i],
-							 (i - 1));
-						*index = i;
-						goto end_it;
-					}
-				}
-				*index = 0;
-				log_flag(NET, "%s: Failed to contact backup controller: %m",
-					 __func__);
-			}
+			*index = 0;
 		}
 	}
 	addr = NULL;
