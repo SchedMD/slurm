@@ -786,8 +786,8 @@ int slurm_open_msg_conn(slurm_addr_t * slurm_address)
  * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET slurm_fd	- file descriptor of the connection created
  */
-extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
-				      slurmdb_cluster_rec_t *comm_cluster_rec)
+static int _open_controller(slurm_addr_t *addr, bool *use_backup,
+			    slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
 	slurm_protocol_config_t *proto_conf = NULL;
@@ -2389,8 +2389,8 @@ tryagain:
 	if (comm_cluster_rec)
 		request_msg->flags |= SLURM_GLOBAL_AUTH_KEY;
 
-	if ((fd = slurm_open_controller_conn(&ctrl_addr, &use_backup,
-					     comm_cluster_rec)) < 0) {
+	if ((fd = _open_controller(&ctrl_addr, &use_backup,
+				   comm_cluster_rec)) < 0) {
 		rc = -1;
 		goto cleanup;
 	}
@@ -2432,10 +2432,8 @@ tryagain:
 				use_backup = true;
 			}
 			slurm_free_return_code_msg(response_msg->data);
-			if ((fd = slurm_open_controller_conn(&ctrl_addr,
-							     &use_backup,
-							     comm_cluster_rec))
-			    < 0) {
+			if ((fd = _open_controller(&ctrl_addr, &use_backup,
+						   comm_cluster_rec)) < 0) {
 				rc = -1;
 			} else {
 				retry = 1;
@@ -2529,8 +2527,8 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	/*
 	 *  Open connection to Slurm controller:
 	 */
-	if ((fd = slurm_open_controller_conn(&ctrl_addr, &use_backup,
-					     comm_cluster_rec)) < 0) {
+	if ((fd = _open_controller(&ctrl_addr, &use_backup,
+				   comm_cluster_rec)) < 0) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
