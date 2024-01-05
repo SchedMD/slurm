@@ -2405,18 +2405,19 @@ tryagain:
 		    && (have_backup)
 		    && (difftime(time(NULL), start_time)
 			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
-			if (((return_code_msg_t *)
-			     response_msg->data)->return_code
-			     == ESLURM_IN_STANDBY_MODE) {
-				log_flag(NET, "%s: Primary not responding, backup not in control. Sleeping and retry.",
-					 __func__);
-				sleep(slurmctld_timeout / 2);
+			log_flag(NET, "%s: SlurmctldHost[%d] is in standby, trying next",
+				 __func__, index);
+			index++;
+
+			/*
+			 * After running through all backups, pause to
+			 * give the primary some time to come back up.
+			 */
+			if (index == conf->control_cnt) {
 				index = 0;
-			} else {
-				log_flag(NET, "%s: Primary was contacted, but says it is the backup in standby.  Trying the backup",
-					 __func__);
-				index = 1;
+				sleep(slurmctld_timeout / 2);
 			}
+
 			slurm_free_return_code_msg(response_msg->data);
 			if ((fd = _open_controller(&ctrl_addr, &index,
 						   comm_cluster_rec)) < 0) {
