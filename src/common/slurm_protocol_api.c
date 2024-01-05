@@ -143,10 +143,6 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		error("Unable to establish controller port");
 		goto cleanup;
 	}
-	if (conf->control_cnt == 0) {
-		error("No slurmctld servers configured");
-		goto cleanup;
-	}
 
 	memset(&controller_addr, 0, sizeof(slurm_addr_t));
 	slurm_set_addr(&controller_addr, conf->slurmctld_port,
