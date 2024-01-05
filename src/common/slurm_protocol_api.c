@@ -848,6 +848,8 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 				int inx = (*index + i) % proto_conf->control_cnt;
 				slurm_addr_t *ctrl_addr =
 					&proto_conf->controller_addr[inx];
+				if (slurm_addr_is_unspec(ctrl_addr))
+					continue;
 				fd = slurm_open_msg_conn(ctrl_addr);
 				if (fd >= 0) {
 					log_flag(NET, "%s: Contacted SlurmctldHost[%d](%pA)",
