@@ -123,9 +123,9 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     # if only 1 is requested, so the 3 steps won't run in parallel due lack of
     # CPUs instead of lack of MPS (that it's what we want to test).
     atf.make_bash_script(file_in2, f"""
-    srun --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
-    srun --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
-    srun --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
+    srun -vv --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
+    srun -vv --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
+    srun -vv --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
     wait
     date
     """)
@@ -142,7 +142,8 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     match = re.findall(r"(?s)CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:(\d+)", file_output)
     assert len(match) == 3, "Bad CUDA information about job (match != 3)"
     assert sum(map(int, match)) == 75, f"Bad CUDA percentage information about job (total percent != 75)"
-    assert re.search(r"step creation temporarily disabled", file_output) is not None, "Failed to delay step for sufficient MPS resources (match != 1)"
+    assert atf.check_steps_delayed(job_id, file_output, 1), \
+            "Failed to delay step for sufficient MPS resources (match != 1)"
 
 
 def test_consume_more_gresMps_than_allocated(mps_nodes, file_in_1a):
