@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "Slurm Configuration File" "October 2023" "Slurm Configuration File"
+.TH "acct_gather.conf" "5" "Slurm Configuration File" "December 2023" "Slurm Configuration File"
 
 .SH "NAME"
 \fBacct_gather.conf\fR \- Slurm configuration file for the acct_gather plugins
@@ -39,6 +39,18 @@ If the respective plugin for an option is not loaded then that option will
 be unknown to Slurm, causing the daemon to fatal on initialization.
 If you decide to change plugin types in \fBslurm.conf\fR, also make sure to
 change the related options in \fBacct_gather.conf\fR.
+
+.SH acct_gather_energy/gpu
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/gpu
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Dataset provided by the plugin is: Energy.
+.IP
 
 .SH acct_gather_energy/IPMI
 Required entry in slurm.conf:
