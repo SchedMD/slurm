@@ -769,7 +769,6 @@ test39.13  Validate proper GRES operation under heavy load (many jobs)
 test39.14  Increase size of job with allocated GPUs
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
-test39.17  Test allocating sub-sets of GRES to job steps
 test39.18  Test gres.conf and system GPU normalization and merging logic
 test39.19  Test accounting for GPU resources with various allocation options
 test39.20  Test GPU resource limits with various allocation options
@@ -1033,3 +1032,4 @@ test_144_2   Test enforce-binding with GPUs that share cores
 test_144_3   Test --exact with GPUs and multiple steps
 test_144_4   Test gres with file or type and --overlap
 test_144_6   Test gres with no_consume flag
+test_144_7   Test allocating sub-sets of GRES to job steps

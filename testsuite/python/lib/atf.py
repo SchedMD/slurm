@@ -1909,6 +1909,101 @@ def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeou
         return False
 
 
+def check_steps_delayed(job_id, job_output, expected_delayed):
+    """Check the output file of a job for expected delayed steps.
+
+    Check that the output file for a job contains the expected pattern of
+    delayed job steps. Note that at time of writing, this requires srun steps
+    to have at least a verbosity level of "-vv" to log their f"srun: Step
+    completed in JobId={job_id}, retrying" notification.
+
+    Args:
+        job_id (int): The job id that we're interested in.
+        job_output (str): The content of the output file of the job.
+        expected_delayed (int): The initial number of delayed job steps. It is
+            verified that this initial number of job steps are delayed and then
+            this number of delayed job steps decrements one by one as running
+            job steps finish.
+
+    Returns:
+        True if steps were delayed in the correct amounts and order, else False.
+    """
+
+    # Iterate through each group of expected delayed steps. For example,
+    # if there was a job that had 5 steps that could run in parallel but, due to
+    # resource constrains, only allowed 3 steps to run at a time, we would
+    # expect a group of 2 delayed job steps followed by a group of 1 delayed job
+    # steps. For this example job, expected_delayed=2.
+    #
+    # The idea of the for loop below is to iterate through each group of delayed
+    # job steps and replace the expected output as we go with re.sub. This
+    # ensures that the delayed job step groups occur in the correct order.
+    #
+    # Each regex pattern matches part of the pattern we'd expect to see in the
+    # output, replaces the matched text (see previous paragraph), and then makes
+    # sure there is still text left to match for the rest of the pattern. If the
+    # regex pattern doesn't match anything, then re.sub will match and replace
+    # all the rest of the output and leave job_output empty.
+    for delayed_grp_size in range(expected_delayed, 0, -1):
+        # Match all lines before receiving an exit notification. This regex
+        # pattern will match any line that doesn't contain "srun: Received task
+        # exit notification".
+        before_start_pattern = r"(^((?!srun: Received task exit notification).)*$\n)*"
+        job_output = re.sub(before_start_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {before_start_pattern}")
+            return False
+
+        # Match receiving the next exit notification. This regex pattern will
+        # match the line where the exit notification is received when a step
+        # that was already running finishes.
+        exit_pattern = rf"srun: Received task exit notification for \[0-9]+ task of StepId={job_id}\.[0-9]+ \(status=0x[0-9A-Fa-f]+\)\.\n"
+        job_output = re.sub(exit_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {exit_pattern}")
+            return False
+
+        # Match lines we don't want before a step completion. After the exit
+        # notification, we now match all lines that don't contain "srun: Step
+        # completed". Sometimes an exit notification can be received multiple
+        # times and any redundant exit notifications are also matched by this
+        # pattern.
+        before_completed_pattern = r"(^((?!srun: Step completed).)*$\n)*"
+        job_output = re.sub(before_completed_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {before_completed_pattern}")
+            return False
+
+        # Match number of lines retrying to start a delayed job step. Note that
+        # this pattern searched for steps retrying "delayed_grp_size" number of
+        # times. This is because every step that is delayed retries every time a
+        # previously running step finishes.
+        completed_pattern = rf"(srun: Step completed in JobId={job_id}, retrying\n){{{delayed_grp_size}}}"
+        job_output = re.sub(completed_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {completed_pattern}")
+            return False
+
+        # Match lines we don't want before a step creation. Due to steps running
+        # in parallel, other lines of text can be output from already running
+        # steps before we're told a new step has been created. This regex
+        # pattern matches all lines that don't contain "srun: Step created".
+        before_created_pattern = r"(^((?!srun: Step created).)*$\n)*"
+        job_output = re.sub(before_created_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {before_created_pattern}")
+            return False
+
+        # Match the step creation line for the delayed step
+        created_pattern = rf"srun: Step created for StepId={job_id}\.[0-9]+"
+        job_output = re.sub(created_pattern, "", job_output, 1, re.MULTILINE)
+        if not job_output:
+            logging.error(f"Pattern not found: {created_pattern}")
+            return False
+
+    return True
+
+
 def create_node(node_dict):
     """Creates a node with the properties described by the supplied dictionary.
 
