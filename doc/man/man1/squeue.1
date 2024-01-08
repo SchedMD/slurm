@@ -1301,8 +1301,8 @@ By default, prints a time stamp with the header.
 .IP
 
 .TP
-\fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
-Requests a comma separated list of job IDs to display.  Defaults to all jobs.
+\fB\-j\fR, \fB\-\-jobs\fR[=<\fIjob_id_list\fR>]
+Specify a comma separated list of job IDs to display. Defaults to all jobs.
 The \fB\-\-jobs\fR=<\fIjob_id_list\fR> option may be used in conjunction with
 the \fB\-\-steps\fR option to print step information about specific jobs.
 Note: If a list of job IDs is provided, the jobs are displayed even if
@@ -1454,7 +1454,7 @@ equivalent).
 .IP
 
 .TP
-\fB\-s\fR, \fB\-\-steps\fR
+\fB\-s\fR, \fB\-\-steps\fR[=<\fIstep_list\fR>]
 Specify the job steps to view.  This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).
 The job step format is "job_id[_array_id].step_id". Defaults to all job
