@@ -1161,11 +1161,12 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				   "Expected numeric Association ID but got %pd",
 				   src);
 	case DATA_TYPE_NONE:
-	case DATA_TYPE_MAX:
 		/* fall through */
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
-	fatal_abort("invalid type");
+	fatal_abort("should never run");
 }
 
 static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
