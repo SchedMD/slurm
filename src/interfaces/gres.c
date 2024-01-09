@@ -3274,8 +3274,8 @@ extern void gres_init_node_config(char *orig_config, List *gres_list)
 				gres_state_node_shared->gres_data;
 			gres_node_state_t *gres_ns_sharing =
 				gres_state_node_sharing->gres_data;
-			gres_ns_shared->alt_gres_ns = gres_ns_sharing;
-			gres_ns_sharing->alt_gres_ns = gres_ns_shared;
+			gres_ns_shared->alt_gres = gres_state_node_sharing;
+			gres_ns_sharing->alt_gres = gres_state_node_shared;
 		}
 	}
 }
@@ -3911,10 +3911,11 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 		return;
 
 	sharing_gres_ns = sharing_gres_state_node->gres_data;
-	shared_gres_ns = sharing_gres_ns->alt_gres_ns;
 
-	if (!shared_gres_ns)
+	if (!sharing_gres_ns->alt_gres)
 		return;
+
+	shared_gres_ns = sharing_gres_ns->alt_gres->gres_data;
 
 	sharing_cnt = sharing_gres_ns->gres_cnt_avail;
 	if (shared_gres_ns->gres_bit_alloc) {

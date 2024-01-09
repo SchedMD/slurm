@@ -171,7 +171,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		return NULL;
 
 	if (!use_total_gres)
-		alt_gres_ns = gres_ns->alt_gres_ns;
+		alt_gres_ns = gres_ns->alt_gres ?
+			gres_ns->alt_gres->gres_data : NULL;
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
 	sock_gres->sock_cnt = sockets;

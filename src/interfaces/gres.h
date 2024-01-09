@@ -186,7 +186,7 @@ typedef struct {
 
 /* Current GRES state information managed by slurmctld daemon */
 typedef struct gres_node_state {
-	struct gres_node_state *alt_gres_ns;
+	struct gres_state *alt_gres;
 	/* Actual hardware found */
 	uint64_t gres_cnt_found;
 
