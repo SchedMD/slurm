@@ -261,12 +261,12 @@ static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
 			if (result) {
 				/*
 				 * row[4] holds the column's default value and
-				 * if it's NULL then it will need to be altered
-				 * and an upgrade is assumed
+				 * if it's not empty ('') then it will need to
+				 * be altered and an upgrade is assumed
 				 */
 				if ((row = mysql_fetch_row(result)) &&
 				    !xstrcasecmp(row[1], "text") &&
-				    !row[4])
+				    xstrcmp(row[4], "''"))
 					upgraded = true;
 				mysql_free_result(result);
 			}
