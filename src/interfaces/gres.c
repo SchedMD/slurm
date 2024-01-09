@@ -6397,12 +6397,11 @@ static bool _validate_node_gres_type(uint32_t job_id, List job_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		gres_js = gres_state_job->gres_data;
-		if (!gres_js || !gres_js->gres_bit_alloc)
-			continue;
-		if ((node_inx >= gres_js->node_cnt) ||
+		if (!gres_js ||
+		    !gres_js->type_id ||
+		    !gres_js->gres_bit_alloc ||
+		    (gres_js->node_cnt <= node_inx) ||
 		    !gres_js->gres_bit_alloc[node_inx])
-			continue;
-		if (!gres_js->type_id || (gres_js->type_id == NO_VAL))
 			continue;
 
 		if (!node_gres_list)

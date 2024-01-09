@@ -779,7 +779,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	if (gres_ns->type_cnt == 0) {
 		gres_js_alloc = _get_job_alloc_gres_ptr(
 			job_gres_list_alloc, gres_state_job,
-			NO_VAL, NULL, node_cnt);
+			0, NULL, node_cnt);
 		gres_cnt = gres_ns->gres_cnt_alloc - pre_alloc_gres_cnt;
 		if (gres_ns->no_consume) {
 			gres_ns->gres_cnt_alloc = pre_alloc_gres_cnt;
