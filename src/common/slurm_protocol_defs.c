@@ -5108,6 +5108,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 	if (msg) {
 		xfree(msg->block);
 		xfree(msg->fname);
+		xfree(msg->exe_fname);
 		xfree(msg->user_name);
 		delete_sbcast_cred(msg->cred);
 		xfree(msg);

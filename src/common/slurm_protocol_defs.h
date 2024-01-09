@@ -1224,6 +1224,7 @@ typedef enum {
 
 typedef struct file_bcast_msg {
 	char *fname;		/* name of the destination file */
+	char *exe_fname;	/* name of the executable file */
 	uint32_t block_no;	/* block number of this data */
 	uint16_t compress;	/* compress file if set, use compress_type */
 	uint16_t flags;		/* flags from file_bcast_flags_t */
