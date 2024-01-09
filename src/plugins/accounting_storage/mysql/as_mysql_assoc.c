@@ -3921,6 +3921,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!is_user_any_coord_locked(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators can add associations");
+			assoc_mgr_unlock(&locks);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
