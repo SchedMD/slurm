@@ -2430,6 +2430,7 @@ extern char *data_type_to_string(data_type_t type)
 		case DATA_TYPE_BOOL:
 			return "boolean";
 		case DATA_TYPE_NONE:
+			/* fall through */
 		case DATA_TYPE_MAX:
 			return "INVALID";
 	}
