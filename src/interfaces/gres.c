@@ -6402,7 +6402,7 @@ static bool _validate_node_gres_type(uint32_t job_id, List job_gres_list,
 		if ((node_inx >= gres_js->node_cnt) ||
 		    !gres_js->gres_bit_alloc[node_inx])
 			continue;
-		if (gres_js->type_id == NO_VAL)
+		if (!gres_js->type_id || (gres_js->type_id == NO_VAL))
 			continue;
 
 		if (!node_gres_list)
