@@ -2252,11 +2252,12 @@ static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 				   ESLURM_DATA_CONV_FAILED,
 				   "Expected integer but got %pd", src);
 	case DATA_TYPE_NONE:
-	case DATA_TYPE_MAX:
 		/* fall through */
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
-	fatal_abort("invalid type");
+	fatal_abort("should never run");
 }
 
 static int DUMP_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
