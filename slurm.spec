@@ -93,7 +93,7 @@ Obsoletes: slurm-plugins <= %{version}
 
 %define use_mysql_devel %(perl -e '`rpm -q mysql-devel`; print !$?;')
 # Default for OpenSUSE/SLES builds
-%define use_libmariadbd_devel %(perl -e '`rpm -q libmariadbd-devel`; print !$?;')
+%define use_libmariadb_devel %(perl -e '`rpm -q libmariadb-devel`; print !$?;')
 # Package name from the official MariaDB version
 %define use_MariaDB_devel %(perl -e '`rpm -q MariaDB-devel`; print !$?;')
 # Oracle mysql community
@@ -110,8 +110,9 @@ BuildRequires: mysql-community-devel >= 5.0.0
 %if 0%{?use_mysql_commercial}
 BuildRequires: mysql-commercial-devel >= 5.0.0
 %else
-%if 0%{?use_libmariadbd_devel}
-BuildRequires: libmariadbd-devel >= 5.0.0
+%if 0%{?use_libmariadb_devel}
+# OpenSUSE/SLES has a different versioning scheme, so skip the version check
+BuildRequires: libmariadb-devel
 %else
 %if 0%{?use_MariaDB_devel}
 BuildRequires: MariaDB-devel >= 5.0.0

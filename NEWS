@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
  -- Update default values of text/blob columns when updating from old mysql
     versions in more situations.  This improves a previous fix to handle an
     uncommon case when upgrading mysql/mariadb.
+ -- Fix rpmbuild in openSUSE/SLES due to incorrect mariadb dependency.
 
 * Changes in Slurm 23.11.1
 ==========================
