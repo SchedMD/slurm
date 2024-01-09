@@ -247,14 +247,14 @@ static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
 
 	/* check to see if upgrade has happened */
 	if (!have_value) {
-		const char *info;
+		const char *tmp_char;
 		char *query;
 		/*
 		 * confirm MariaDB is being used to avoid any ambiguity with
 		 * MySQL versions
 		 */
-		info = mysql_get_server_info(mysql_conn->db_conn);
-		if (xstrcasestr(info, "mariadb") &&
+		tmp_char = mysql_get_server_info(mysql_conn->db_conn);
+		if (xstrcasestr(tmp_char, "mariadb") &&
 		    (mysql_get_server_version(mysql_conn->db_conn) >= 100201)) {
 			query = "show columns from `qos_table` like 'preempt'";
 			result = mysql_db_query_ret(mysql_conn, query, 0);
