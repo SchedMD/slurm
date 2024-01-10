@@ -324,6 +324,7 @@ static int _bcast_file(struct bcast_parameters *params)
 
 	memset(&bcast_msg, 0, sizeof(file_bcast_msg_t));
 	bcast_msg.fname		= params->dst_fname;
+	bcast_msg.exe_fname = params->exe_fname;
 	bcast_msg.block_no	= 1;
 	if (params->flags & BCAST_FLAG_FORCE)
 		bcast_msg.flags |= FILE_BCAST_FORCE;
@@ -604,6 +605,7 @@ static int _bcast_shared_objects(struct bcast_parameters *params,
 		goto fini;
 	}
 
+	params->exe_fname = save_dst;
 	params->flags |= BCAST_FLAG_SHARED_OBJECT;
 	excl_paths = _fill_in_excluded_paths(params);
 	args.params = params;
@@ -611,6 +613,7 @@ static int _bcast_shared_objects(struct bcast_parameters *params,
 
 	list_for_each(lib_paths, _foreach_shared_object, &args);
 	params->flags &= ~BCAST_FLAG_SHARED_OBJECT;
+	params->exe_fname = NULL;
 	params->dst_fname = save_dst;
 	params->src_fname = save_src;
 

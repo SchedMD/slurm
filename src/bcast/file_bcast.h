@@ -50,6 +50,7 @@ struct bcast_parameters {
 	uint16_t compress;
 	char *exclude;
 	char *dst_fname;
+	char *exe_fname;
 	uint16_t flags;
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
