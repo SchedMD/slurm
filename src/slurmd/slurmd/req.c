@@ -125,6 +125,7 @@ typedef struct {
 	uint32_t uid;
 	uint32_t job_id;
 	uint32_t step_id;
+	char *exe_fname;
 	char *directory;
 	time_t last_update;
 } libdir_rec_t;
@@ -1406,6 +1407,8 @@ static int _find_libdir_record(void *x, void *arg)
 	if (l->job_id != key->job_id)
 		return 0;
 	if (l->step_id != key->step_id)
+		return 0;
+	if (xstrcmp(l->exe_fname, key->exe_fname))
 		return 0;
 
 	return 1;
@@ -4036,6 +4039,7 @@ static void _free_libdir_rec_t(void *x)
 		return;
 
 	xfree(l->directory);
+	xfree(l->exe_fname);
 	xfree(l);
 }
 
@@ -4158,6 +4162,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 			.uid = key.uid,
 			.job_id = key.job_id,
 			.step_id = key.step_id,
+			.exe_fname = req->exe_fname,
 		};
 		char *fname = NULL;
 
@@ -4323,6 +4328,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		libdir->job_id = key->job_id;
 		libdir->step_id = key->step_id;
 		libdir->directory = directory;
+		libdir->exe_fname = xstrdup(key->fname);
 		libdir->last_update = time(NULL);
 	}
 
