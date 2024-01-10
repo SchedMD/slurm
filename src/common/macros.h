@@ -343,6 +343,21 @@
 		slurm_attr_destroy(&attr);				\
 	} while (0)
 
+/*
+ * The retval argument is intentionally omitted. We never use it.
+ */
+#define slurm_thread_join(id)						\
+	do {								\
+		int err = 0;						\
+		if (id) {						\
+			err = pthread_join(id, NULL);			\
+			id = (pthread_t) 0;				\
+		}							\
+		if (err) {						\
+			errno = err;					\
+			error("%s: pthread_join(): %m", __func__);	\
+		}							\
+	} while (0)
 
 #define slurm_atoul(str) strtoul(str, NULL, 10)
 #define slurm_atoull(str) strtoull(str, NULL, 10)
