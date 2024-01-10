@@ -11,6 +11,7 @@ import re
 def setup():
     atf.require_auto_config('wants to add custom gres')
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter('GresTypes', 'r1,r2')
     atf.require_nodes(1,
             [('Gres', 'r1:no_consume:1,r2:1'), ('CPUs', 2), ('RealMemory', 2)])
