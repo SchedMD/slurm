@@ -65,7 +65,7 @@
 #include "src/common/xstring.h"
 
 /* global variables */
-struct bcast_parameters params;	/* program parameters */
+struct bcast_parameters params = {0};	/* program parameters */
 
 int main(int argc, char **argv)
 {
