@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     among all tasks when binding GPUs to specific tasks.
  -- Fix issue with CUDA_VISIBLE_DEVICES showing the same MIG device for all
     tasks when using MIGs with --tres-per-task or --gpus-per-task.
+ -- slurmctld - Prevent a potential hang during shutdown/reconfigure if the
+    association cache thread was previously shut down.
 
 * Changes in Slurm 23.11.3
 ==========================
