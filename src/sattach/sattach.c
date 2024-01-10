@@ -499,7 +499,7 @@ static void _msg_thr_wait(message_thread_state_t *mts)
 static void _msg_thr_destroy(message_thread_state_t *mts)
 {
 	eio_signal_shutdown(mts->msg_handle);
-	pthread_join(mts->msg_thread, NULL);
+	slurm_thread_join(mts->msg_thread);
 	eio_handle_destroy(mts->msg_handle);
 	slurm_mutex_destroy(&mts->lock);
 	slurm_cond_destroy(&mts->cond);

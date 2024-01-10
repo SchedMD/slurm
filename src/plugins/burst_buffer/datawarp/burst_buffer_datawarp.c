@@ -2571,9 +2571,8 @@ extern int fini(void)
 
 	if (bb_state.bb_thread) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
-		pthread_join(bb_state.bb_thread, NULL);
+		slurm_thread_join(bb_state.bb_thread);
 		slurm_mutex_lock(&bb_state.bb_mutex);
-		bb_state.bb_thread = 0;
 	}
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);

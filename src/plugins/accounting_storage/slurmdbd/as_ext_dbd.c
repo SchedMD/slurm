@@ -218,9 +218,7 @@ static void _destroy_ext_thread(void)
 	slurm_cond_broadcast(&ext_thread_cond);
 	slurm_mutex_unlock(&ext_thread_mutex);
 
-	if (ext_thread_tid)
-		pthread_join(ext_thread_tid,  NULL);
-	ext_thread_tid = 0;
+	slurm_thread_join(ext_thread_tid);
 }
 
 extern void ext_dbd_init(void)

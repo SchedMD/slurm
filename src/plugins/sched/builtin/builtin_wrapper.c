@@ -82,8 +82,7 @@ void fini(void)
 	if ( builtin_thread ) {
 		verbose( "Built-in scheduler plugin shutting down" );
 		stop_builtin_agent();
-		pthread_join(builtin_thread, NULL);
-		builtin_thread = 0;
+		slurm_thread_join(builtin_thread);
 	}
 	slurm_mutex_unlock( &thread_flag_mutex );
 }

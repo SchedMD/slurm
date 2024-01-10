@@ -1249,7 +1249,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 fail1:
 	if (x11_signal_handler_thread) {
 		(void) pthread_kill(x11_signal_handler_thread, SIGTERM);
-		pthread_join(x11_signal_handler_thread, NULL);
+		slurm_thread_join(x11_signal_handler_thread);
 	}
 
 	debug2("%s: Before call to spank_fini()", __func__);

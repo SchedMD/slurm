@@ -557,10 +557,10 @@ int main(int argc, char **argv)
 				   &_xtconsumer_listen, NULL))
 			fatal("pthread_create %m");
 		slurm_attr_destroy(&thread_attr);
-		pthread_join(xtc_thread, NULL);
+		slurm_thread_join(xtc_thread);
 	}
 
-	pthread_join(processing_thread, NULL);
+	slurm_thread_join(processing_thread);
 	slurm_mutex_destroy(&down_node_lock);
 	return 0;
 }

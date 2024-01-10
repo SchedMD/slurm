@@ -395,8 +395,7 @@ int pmixp_abort_agent_stop(void)
 {
 	if (_abort_tid) {
 		eio_signal_shutdown(_abort_handle);
-		pthread_join(_abort_tid, NULL);
-		_abort_tid = 0;
+		slurm_thread_join(_abort_tid);
 	}
 	return pmixp_abort_code_get();
 }
@@ -458,16 +457,14 @@ int pmixp_agent_stop(void)
 	if (_agent_tid) {
 		eio_signal_shutdown(_io_handle);
 		/* wait for the agent thread to stop */
-		pthread_join(_agent_tid, NULL);
-		_agent_tid = 0;
+		slurm_thread_join(_agent_tid);
 	}
 
 	if (_timer_tid) {
 		/* cancel timer */
 		if (write(timer_data.stop_out, &c, 1) == -1)
 			rc = SLURM_ERROR;
-		pthread_join(_timer_tid, NULL);
-		_timer_tid = 0;
+		slurm_thread_join(_timer_tid);
 
 		/* close timer fds */
 		_shutdown_timeout_fds();

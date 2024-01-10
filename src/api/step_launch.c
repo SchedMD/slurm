@@ -735,7 +735,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 
 	slurm_mutex_unlock(&sls->lock);
 	if (sls->msg_thread)
-		pthread_join(sls->msg_thread, NULL);
+		slurm_thread_join(sls->msg_thread);
 	slurm_mutex_lock(&sls->lock);
 	pmi_kvs_free();
 
@@ -750,7 +750,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		slurm_cond_broadcast(&sls->cond);
 
 		slurm_mutex_unlock(&sls->lock);
-		pthread_join(sls->io_timeout_thread, NULL);
+		slurm_thread_join(sls->io_timeout_thread);
 		slurm_mutex_lock(&sls->lock);
 	}
 

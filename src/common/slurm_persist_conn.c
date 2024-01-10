@@ -422,7 +422,7 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			 * remove itself but could be waiting on the
 			 * thread_count mutex which this has locked. */
 			slurm_mutex_unlock(&thread_count_lock);
-			pthread_join(thread_id, NULL);
+			slurm_thread_join(thread_id);
 			slurm_mutex_lock(&thread_count_lock);
 		}
 		_destroy_persist_service(persist_service_conn[i]);

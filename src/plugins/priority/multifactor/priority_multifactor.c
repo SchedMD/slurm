@@ -1708,8 +1708,7 @@ int fini ( void )
 	slurm_mutex_unlock(&decay_lock);
 
 	/* Now join outside the lock */
-	if (decay_handler_thread)
-		pthread_join(decay_handler_thread, NULL);
+	slurm_thread_join(decay_handler_thread);
 
 	site_factor_g_fini();
 

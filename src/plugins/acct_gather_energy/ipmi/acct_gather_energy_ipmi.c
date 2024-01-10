@@ -1100,8 +1100,7 @@ extern int fini(void)
 	slurm_cond_signal(&launch_cond);
 	slurm_mutex_unlock(&launch_mutex);
 
-	if (thread_ipmi_id_launcher)
-		pthread_join(thread_ipmi_id_launcher, NULL);
+	slurm_thread_join(thread_ipmi_id_launcher);
 
 	slurm_mutex_lock(&ipmi_mutex);
 	/* clean up the run thread */
@@ -1118,8 +1117,7 @@ extern int fini(void)
 
 	slurm_mutex_unlock(&ipmi_mutex);
 
-	if (thread_ipmi_id_run)
-		pthread_join(thread_ipmi_id_run, NULL);
+	slurm_thread_join(thread_ipmi_id_run);
 
 	/*
 	 * We don't really want to destroy the sensors nor the initial state,

@@ -1385,8 +1385,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 
 rwfail: /* Ignore safe_write issues. */
 	log_flag(CGROUP, "attempt to join oom_thread.");
-	if (oom_thread && pthread_join(oom_thread, NULL) != 0)
-		error("pthread_join(): %m");
+	slurm_thread_join(oom_thread);
 
 	slurm_mutex_lock(&oom_mutex);
 	results->oom_kill_cnt = oom_kill_count;

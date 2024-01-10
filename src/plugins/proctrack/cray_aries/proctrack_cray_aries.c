@@ -125,8 +125,7 @@ static void _end_container_thread(void)
 		slurm_cond_signal(&notify);
 		slurm_mutex_unlock(&notify_mutex);
 
-		pthread_join(threadid, NULL);
-		threadid = 0;
+		slurm_thread_join(threadid);
 		slurm_mutex_unlock(&thread_mutex);
 	}
 }

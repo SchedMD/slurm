@@ -836,8 +836,7 @@ static void _shutdown_agent(void)
 	}
 
 fini:
-	pthread_join(agent_tid,  NULL);
-	agent_tid = 0;
+	slurm_thread_join(agent_tid);
 }
 
 /****************************************************************************

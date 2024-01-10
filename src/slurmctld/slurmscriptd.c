@@ -1570,7 +1570,7 @@ extern int slurmscriptd_fini(void)
 
 	/* Now shutdown communications. */
 	eio_signal_shutdown(msg_handle);
-	pthread_join(slurmctld_listener_tid, NULL);
+	slurm_thread_join(slurmctld_listener_tid);
 	slurm_mutex_destroy(&script_resp_map_mutex);
 	xhash_clear(script_resp_map);
 	slurm_mutex_destroy(&write_mutex);

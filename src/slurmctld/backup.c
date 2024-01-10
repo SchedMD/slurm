@@ -260,7 +260,7 @@ void run_backup(void)
 			        slurm_conf.slurmctld_pidfile);
 
 		info("BackupController terminating");
-		pthread_join(slurmctld_config.thread_id_sig, NULL);
+		slurm_thread_join(slurmctld_config.thread_id_sig);
 		log_fini();
 		if (dump_core)
 			abort();
@@ -279,8 +279,8 @@ void run_backup(void)
 	trigger_backup_ctld_as_ctrl();
 
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
-	pthread_join(slurmctld_config.thread_id_sig, NULL);
-	pthread_join(slurmctld_config.thread_id_rpc, NULL);
+	slurm_thread_join(slurmctld_config.thread_id_sig);
+	slurm_thread_join(slurmctld_config.thread_id_rpc);
 
 	/*
 	 * The job list needs to be freed before we run
@@ -611,7 +611,7 @@ extern int ping_controllers(bool active_controller)
 	for (i = 0; i < ping_target_cnt; i++) {
 		if (i == backup_inx)	/* Avoid pinging ourselves */
 			continue;
-		pthread_join(ping_tids[i], NULL);
+		slurm_thread_join(ping_tids[i]);
 	}
 	xfree(ping_tids);
 

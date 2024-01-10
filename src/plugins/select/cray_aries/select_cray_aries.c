@@ -694,7 +694,7 @@ static void _stop_aeld_thread(void)
 	_aeld_cleanup();
 
 	pthread_cancel(aeld_thread);
-	pthread_join(aeld_thread, NULL);
+	slurm_thread_join(aeld_thread);
 }
 #endif
 

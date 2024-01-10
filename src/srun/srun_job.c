@@ -1567,7 +1567,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 	if (signal_thread) {
 		srun_shutdown = true;
 		pthread_kill(signal_thread, SIGINT);
-		pthread_join(signal_thread,  NULL);
+		slurm_thread_join(signal_thread);
 	}
 
 	_run_srun_epilog(job);

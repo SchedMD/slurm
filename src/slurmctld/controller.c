@@ -723,19 +723,14 @@ int main(int argc, char **argv)
 		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond); /* wake up last time */
 		slurm_mutex_unlock(&purge_thread_lock);
-		pthread_join(slurmctld_config.thread_id_purge_files, NULL);
-		pthread_join(slurmctld_config.thread_id_sig,  NULL);
-		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
-		pthread_join(slurmctld_config.thread_id_save, NULL);
+		slurm_thread_join(slurmctld_config.thread_id_purge_files);
+		slurm_thread_join(slurmctld_config.thread_id_sig);
+		slurm_thread_join(slurmctld_config.thread_id_rpc);
+		slurm_thread_join(slurmctld_config.thread_id_save);
 		slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 		slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
 		slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
-		pthread_join(slurmctld_config.thread_id_acct_update, NULL);
-		slurmctld_config.thread_id_purge_files = (pthread_t) 0;
-		slurmctld_config.thread_id_sig  = (pthread_t) 0;
-		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
-		slurmctld_config.thread_id_save = (pthread_t) 0;
-		slurmctld_config.thread_id_acct_update = (pthread_t) 0;
+		slurm_thread_join(slurmctld_config.thread_id_acct_update);
 
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
@@ -753,10 +748,7 @@ int main(int argc, char **argv)
 			running_cache = RUNNING_CACHE_STATE_EXITING;
 			slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
-			if (assoc_cache_thread) {
-				pthread_join(assoc_cache_thread, NULL);
-				assoc_cache_thread = 0;
-			}
+			slurm_thread_join(assoc_cache_thread);
 		}
 
 		/* Save any pending state save RPCs */

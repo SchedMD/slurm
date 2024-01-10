@@ -360,7 +360,7 @@ void *agent(void *args)
 	}
 
 	/* Wait for termination of remaining threads */
-	pthread_join(thread_wdog, NULL);
+	slurm_thread_join(thread_wdog);
 	delay = (int) difftime(time(NULL), begin_time);
 	if (delay > (slurm_conf.msg_timeout * 2)) {
 		info("agent msg_type=%s ran for %d seconds",
@@ -372,7 +372,7 @@ void *agent(void *args)
 				&agent_info_ptr->thread_mutex);
 	}
 	for (i = 0; i < agent_info_ptr->thread_count; i++)
-		pthread_join(thread_ptr[i].thread, NULL);
+		slurm_thread_join(thread_ptr[i].thread);
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
 	log_flag(AGENT, "%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
@@ -1837,7 +1837,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		pthread_t agent_thread = 0;
 		slurm_thread_create(&agent_thread, agent, agent_arg_ptr);
-		pthread_join(agent_thread, NULL);
+		slurm_thread_join(agent_thread);
 		return;
 	}
 

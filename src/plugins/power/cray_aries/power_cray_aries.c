@@ -1728,8 +1728,7 @@ extern void fini(void)
 	slurm_mutex_lock(&thread_flag_mutex);
 	if (power_thread) {
 		_stop_power_agent();
-		pthread_join(power_thread, NULL);
-		power_thread = 0;
+		slurm_thread_join(power_thread);
 		xfree(capmc_path);
 		xfree(full_nid_string);
 	}

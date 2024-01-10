@@ -351,7 +351,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
-		pthread_join(load_thread[i], NULL);
+		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
 	iter = list_iterator_create(resp_msg_list);

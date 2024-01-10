@@ -5695,8 +5695,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	if (remove_running)
 		_remove_job_running_prolog(job_env->jobid);
 
-	if (timer_id)
-		pthread_join(timer_id, NULL);
+	slurm_thread_join(timer_id);
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
 

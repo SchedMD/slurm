@@ -2973,20 +2973,11 @@ extern int fed_mgr_fini(void)
 	slurm_cond_signal(&origin_dep_cond);
 	/* _job_watch_thread signaled by _leave_federation() */
 
-	if (agent_thread_id)
-		pthread_join(agent_thread_id, NULL);
-
-	if (fed_job_update_thread_id)
-		pthread_join(fed_job_update_thread_id, NULL);
-
-	if (remote_dep_thread_id)
-		pthread_join(remote_dep_thread_id, NULL);
-
-	if (dep_job_thread_id)
-		pthread_join(dep_job_thread_id, NULL);
-
-	if (origin_dep_thread_id)
-		pthread_join(origin_dep_thread_id, NULL);
+	slurm_thread_join(agent_thread_id);
+	slurm_thread_join(fed_job_update_thread_id);
+	slurm_thread_join(remote_dep_thread_id);
+	slurm_thread_join(dep_job_thread_id);
+	slurm_thread_join(origin_dep_thread_id);
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	FREE_NULL_LIST(fed_job_list);

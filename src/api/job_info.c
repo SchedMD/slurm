@@ -1275,7 +1275,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
-		pthread_join(load_thread[i], NULL);
+		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
 	/* Merge the responses into a single response message */
@@ -2165,7 +2165,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
-		pthread_join(load_thread[i], NULL);
+		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
 	/* Move the response from the local cluster (if any) to top of list */

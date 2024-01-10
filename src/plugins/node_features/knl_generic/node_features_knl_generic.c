@@ -966,10 +966,7 @@ extern int fini(void)
 {
 	shutdown_time = time(NULL);
 	slurm_mutex_lock(&ume_mutex);
-	if (ume_thread) {
-		pthread_join(ume_thread, NULL);
-		ume_thread = 0;
-	}
+	slurm_thread_join(ume_thread);
 	slurm_mutex_unlock(&ume_mutex);
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;

@@ -158,7 +158,7 @@ extern void slurm_allocation_msg_thr_destroy(
 
 	debug2("slurm_allocation_msg_thr_destroy: clearing up message thread");
 	eio_signal_shutdown(msg_thr->handle);
-	pthread_join(msg_thr->id, NULL);
+	slurm_thread_join(msg_thr->id);
 	eio_handle_destroy(msg_thr->handle);
 	xfree(msg_thr);
 }

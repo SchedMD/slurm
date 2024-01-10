@@ -422,7 +422,7 @@ extern int init(void)
 extern int fini(void)
 {
 	thread_shutdown = true;
-	pthread_join(job_handler_thread, NULL);
+	slurm_thread_join(job_handler_thread);
 
 	_save_state();
 	FREE_NULL_LIST(jobslist);

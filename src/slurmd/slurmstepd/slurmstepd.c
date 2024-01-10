@@ -203,7 +203,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 		/* signal the message thread to shutdown, and wait for it */
 		if (step->msg_handle)
 			eio_signal_shutdown(step->msg_handle);
-		pthread_join(step->msgid, NULL);
+		slurm_thread_join(step->msgid);
 	}
 
 	mpi_fini();

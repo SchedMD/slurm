@@ -504,7 +504,7 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
-		pthread_join(load_thread[i], NULL);
+		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
 	return resp_msg_list;

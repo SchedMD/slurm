@@ -5284,6 +5284,5 @@ void main_sched_fini(void)
 	slurm_mutex_lock(&sched_mutex);
 	slurm_cond_broadcast(&sched_cond);
 	slurm_mutex_unlock(&sched_mutex);
-	pthread_join(thread_id_sched, NULL);
-	thread_id_sched = 0;
+	slurm_thread_join(thread_id_sched);
 }

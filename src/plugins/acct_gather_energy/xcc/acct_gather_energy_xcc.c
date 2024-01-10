@@ -910,8 +910,7 @@ extern int fini(void)
 	/* clean up the launch thread */
 	slurm_cond_signal(&launch_cond);
 
-	if (thread_ipmi_id_launcher)
-		pthread_join(thread_ipmi_id_launcher, NULL);
+	slurm_thread_join(thread_ipmi_id_launcher);
 
 	/* clean up the run thread */
 	slurm_cond_signal(&ipmi_cond);
@@ -927,8 +926,7 @@ extern int fini(void)
 
 	slurm_mutex_unlock(&ipmi_mutex);
 
-	if (thread_ipmi_id_run)
-		pthread_join(thread_ipmi_id_run, NULL);
+	slurm_thread_join(thread_ipmi_id_run);
 
 	return SLURM_SUCCESS;
 }

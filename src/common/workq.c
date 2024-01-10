@@ -223,7 +223,7 @@ extern void quiesce_workq(workq_t *workq)
 		slurm_mutex_unlock(&workq->mutex);
 
 		log_flag(WORKQ, "%s: waiting on %d workers", __func__, count);
-		pthread_join(tid, NULL);
+		slurm_thread_join(tid);
 	}
 
 	xassert(list_count(workq->workers) == 0);

@@ -638,8 +638,7 @@ extern int fini ( void )
 	slurm_mutex_unlock(&db_inx_lock);
 
 	/* Now join outside the lock */
-	if (db_inx_handler_thread)
-		pthread_join(db_inx_handler_thread, NULL);
+	slurm_thread_join(db_inx_handler_thread);
 
 	ext_dbd_fini();
 	xfree(cluster_nodes);

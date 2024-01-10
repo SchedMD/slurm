@@ -195,7 +195,7 @@ extern void rpc_queue_shutdown(void)
 		if (!q->queue_enabled)
 			continue;
 
-		pthread_join(q->thread, NULL);
+		slurm_thread_join(q->thread);
 		FREE_NULL_LIST(q->work);
 	}
 }

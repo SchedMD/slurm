@@ -570,7 +570,7 @@ extern void acct_gather_profile_endpoll(void)
 	slurm_mutex_lock(&timer_thread_mutex);
 	slurm_cond_signal(&timer_thread_cond);
 	slurm_mutex_unlock(&timer_thread_mutex);
-	pthread_join(timer_thread_id, NULL);
+	slurm_thread_join(timer_thread_id);
 	timer_thread_id = 0;
 }
 

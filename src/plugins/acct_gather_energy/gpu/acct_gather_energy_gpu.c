@@ -577,16 +577,14 @@ extern int fini(void)
 	slurm_cond_signal(&launch_cond);
 	slurm_mutex_unlock(&launch_mutex);
 
-	if (thread_gpu_id_launcher)
-		pthread_join(thread_gpu_id_launcher, NULL);
+	slurm_thread_join(thread_gpu_id_launcher);
 
 	slurm_mutex_lock(&gpu_mutex);
 	/* clean up the run thread */
 	slurm_cond_signal(&gpu_cond);
 	slurm_mutex_unlock(&gpu_mutex);
 
-	if (thread_gpu_id_run)
-		pthread_join(thread_gpu_id_run, NULL);
+	slurm_thread_join(thread_gpu_id_run);
 
 	/*
 	 * We don't really want to destroy the the state, so those values

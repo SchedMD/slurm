@@ -516,7 +516,7 @@ static void _validate_slurmd_addr(void)
 	for (int i = 0; i < threads_num; i++)
 		slurm_thread_create(&work_threads[i], _set_node_addrs, nodes);
 	for (int i = 0; i < threads_num; i++)
-		pthread_join(work_threads[i], NULL);
+		slurm_thread_join(work_threads[i]);
 	xfree(work_threads);
 	xassert(list_is_empty(nodes));
 	FREE_NULL_LIST(nodes);

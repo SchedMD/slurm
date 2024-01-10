@@ -364,8 +364,7 @@ pmi2_stop_agent(void)
 	if (_agent_tid) {
 		eio_signal_shutdown(pmi2_handle);
 		/* wait for the agent thread to stop */
-		pthread_join(_agent_tid, NULL);
-		_agent_tid = 0;
+		slurm_thread_join(_agent_tid);
 	}
 
 	slurm_mutex_unlock(&agent_mutex);

@@ -94,8 +94,7 @@ void step_terminate_monitor_stop(void)
 	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
 
-	if (pthread_join(tid, NULL) != 0)
-		error("%s pthread_join: %m", __func__);
+	slurm_thread_join(tid);
 
 	xfree(program_name);
 }

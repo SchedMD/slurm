@@ -611,9 +611,7 @@ static void _terminate_poll_handler(void)
 	terminate = true;
 	slurm_cond_broadcast(&poll_stop_cond);
 	slurm_mutex_unlock(&poll_mutex);
-	if (pthread_join(poll_thread, NULL))
-		error("%s: pthread_join() on poll thread failed: %m",
-		      plugin_type);
+	slurm_thread_join(poll_thread);
 }
 
 extern int jobcomp_kafka_message_init(void)
