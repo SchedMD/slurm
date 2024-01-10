@@ -13,6 +13,7 @@ def setup():
     atf.require_accounting()
     atf.require_config_parameter('AccountingStorageTRES', 'gres/r1')
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter('GresTypes', 'r1,r2')
     atf.require_nodes(1, [('Gres', 'r1:1,r2:2')])
     atf.require_config_parameter('Name', {'r2': {'Flags': 'explicit'}}, source='gres')

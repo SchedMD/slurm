@@ -12,6 +12,7 @@ def setup():
     atf.require_auto_config("wants to create custom topology.conf")
     atf.require_nodes(2)
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter('TopologyPlugin', 'topology/tree')
 
     # Mark topology for teardown and overwrite with proper data.
