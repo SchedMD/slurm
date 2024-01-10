@@ -18,6 +18,7 @@ def setup():
     global job_file, step_file, job_output_file, constrain_devices
 
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes('GresTypes', 'gpu')
 
     # Require 8 tty because one test requests 8 "GPU"s (4 GPUS each for 2 nodes)
