@@ -11,6 +11,7 @@ import re
 def setup():
     atf.require_auto_config('wants to create custom gres and resource file')
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter('AccountingStorageType', 'accounting_storage/slurmdbd')
     atf.require_config_parameter('GresTypes', 'r1,r2')
     atf.require_nodes(1, [('Gres', 'r1:1,r2:a:1'), ('CPUs', '2')])

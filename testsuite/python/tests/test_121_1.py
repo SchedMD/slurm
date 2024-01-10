@@ -21,6 +21,7 @@ step_mps = int(job_mps * .5)
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes('GresTypes', 'gpu')
     atf.require_config_parameter_includes('GresTypes', 'mps')
     atf.require_tty(0)

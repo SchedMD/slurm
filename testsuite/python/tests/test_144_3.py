@@ -11,6 +11,7 @@ def setup():
     atf.require_auto_config('wants to create sh files')
     atf.require_config_parameter('GresTypes', 'gpu')
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_nodes(2, [('Gres', 'gpu:2'), ('CPUs', 4)])
 
     gpu_file_pattern = make_gpu_files(4)

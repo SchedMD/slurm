@@ -10,6 +10,7 @@ import re
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_tty(0)
     atf.require_config_parameter('Name', {'gpu': {'File': '/dev/tty0'}}, source='gres')
     atf.require_config_parameter_includes('GresTypes', 'gpu')

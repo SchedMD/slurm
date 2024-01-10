@@ -11,6 +11,7 @@ import re
 def setup():
     atf.require_auto_config('wants to create custom gpu files and custom gres')
     atf.require_config_parameter('SelectType', 'select/cons_tres')
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter('GresTypes', 'gpu')
     atf.require_nodes(1, [('Gres','gpu:2 Sockets=2 CoresPerSocket=1')])
     # GPU's need to point to existing files
