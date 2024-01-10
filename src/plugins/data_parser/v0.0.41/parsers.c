@@ -2125,11 +2125,12 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				   "Expected floating point number but got %pd",
 				   src);
 	case DATA_TYPE_NONE:
-	case DATA_TYPE_MAX:
 		/* fall through */
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
 	}
 
-	fatal_abort("invalid type");
+	fatal_abort("should never run");
 }
 
 static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
