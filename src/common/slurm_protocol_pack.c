@@ -8060,6 +8060,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 		pack_time(msg->mtime, buffer);
 
 		packstr(msg->fname, buffer);
+		packstr(msg->exe_fname, buffer);
 		pack32(msg->block_len, buffer);
 		pack32(msg->uncomp_len, buffer);
 		pack64(msg->block_offset, buffer);
@@ -8114,6 +8115,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 		safe_unpack_time(&msg->mtime, buffer);
 
 		safe_unpackstr(&msg->fname, buffer);
+		safe_unpackstr(&msg->exe_fname, buffer);
 		safe_unpack32(&msg->block_len, buffer);
 		safe_unpack32(&msg->uncomp_len, buffer);
 		safe_unpack64(&msg->block_offset, buffer);
