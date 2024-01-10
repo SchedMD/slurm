@@ -2352,6 +2352,9 @@ extern void save_all_state(void);
  * restored */
 extern void ctld_assoc_mgr_init(void);
 
+/* Make sure the assoc_mgr thread is terminated */
+extern void ctld_assoc_mgr_fini(void);
+
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
 extern void set_cluster_tres(bool assoc_mgr_locked);

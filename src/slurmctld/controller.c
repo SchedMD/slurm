@@ -740,16 +740,7 @@ int main(int argc, char **argv)
 		mcs_g_fini();
 		fed_mgr_fini();
 
-		if (running_cache != RUNNING_CACHE_STATE_NOTRUNNING) {
-			/* break out and end the association cache
-			 * thread since we are shutting down, no reason
-			 * to wait for current info from the database */
-			slurm_mutex_lock(&assoc_cache_mutex);
-			running_cache = RUNNING_CACHE_STATE_EXITING;
-			slurm_cond_signal(&assoc_cache_cond);
-			slurm_mutex_unlock(&assoc_cache_mutex);
-			slurm_thread_join(assoc_cache_thread);
-		}
+		ctld_assoc_mgr_fini();
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
@@ -2518,6 +2509,22 @@ extern void ctld_assoc_mgr_init(void)
 				    _assoc_cache_mgr, NULL);
 	}
 
+}
+
+/* Make sure the assoc_mgr thread is terminated */
+extern void ctld_assoc_mgr_fini(void)
+{
+	if (running_cache == RUNNING_CACHE_STATE_NOTRUNNING)
+		return;
+
+	/* break out and end the association cache
+	 * thread since we are shutting down, no reason
+	 * to wait for current info from the database */
+	slurm_mutex_lock(&assoc_cache_mutex);
+	running_cache = RUNNING_CACHE_STATE_EXITING;
+	slurm_cond_signal(&assoc_cache_cond);
+	slurm_mutex_unlock(&assoc_cache_mutex);
+	slurm_thread_join(assoc_cache_thread);
 }
 
 static int _add_node_gres_tres(void *x, void *arg)
