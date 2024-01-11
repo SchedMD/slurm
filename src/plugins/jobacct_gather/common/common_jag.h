@@ -44,6 +44,7 @@
 typedef struct jag_prec {	/* process record */
 	bool	visited;
 	int	act_cpufreq;	/* actual average cpu frequency */
+	bool    completed;       /* the process no longer exists */
 	int	last_cpu;	/* last cpu */
 	pid_t	pid;
 	pid_t	ppid;
@@ -59,7 +60,7 @@ typedef struct jag_callbacks {
 	List (*get_precs) (List task_list, uint64_t cont_id,
 			   struct jag_callbacks *callbacks);
 	void (*get_offspring_data) (List prec_list,
-				    jag_prec_t *ancestor, pid_t pid);
+				    jag_prec_t *ancestor, pid_t pid, jag_prec_t * permanent_ancestor);
 } jag_callbacks_t;
 
 extern void jag_common_init(long in_hertz);

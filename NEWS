@@ -109,6 +109,8 @@ documents those changes that are of interest to users and administrators.
     'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
     OpenAPI plugin versions.
  -- Fix salloc/sbatch/srun crashing with certain invalid nodelist requests.
+ -- Optimize jobacctgather by not iterating every time over pids that have
+    already finished.
 
 * Changes in Slurm 23.11.6
 ==========================

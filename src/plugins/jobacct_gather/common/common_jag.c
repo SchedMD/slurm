@@ -638,6 +638,15 @@ bail_out:
 	return;
 }
 
+static int _mark_as_completed(void *x, void *empty)
+{
+	jag_prec_t *prec = (jag_prec_t *) x;
+
+	prec->completed = true;
+
+	return SLURM_SUCCESS;
+}
+
 static List _get_precs(List task_list, uint64_t cont_id,
 		       jag_callbacks_t *callbacks)
 {
@@ -648,6 +657,16 @@ static List _get_precs(List task_list, uint64_t cont_id,
 	xassert(task_list);
 
 	jobacct = list_peek(task_list);
+
+	/*
+	 * Mark all the processes as completed as if they were terminated,
+	 * even if they might still be alive. If that is the case, the next call
+	 * to _handle_stats will reset this flag for each pid which is found to
+	 * be alive. Otherwise the pid statistics will be aggregated into its
+	 * ancestor and the prec be removed from the list in order to avoid
+	 * aggregating it on each iteration.
+	 */
+	list_for_each(prec_list, _mark_as_completed, NULL);
 
 	/* get only the processes in the proctrack container */
 	proctrack_g_get_pids(cont_id, &pids, &npids);
@@ -970,14 +989,17 @@ static void _aggregate_prec(jag_prec_t *prec, jag_prec_t *ancestor)
  *			tree.
  *	pid		The process for which we are currently looking
  *			for offspring.
- *
- * OUT:	none.
+ * IN/OUT:
+ *      permanent_anc Pointer to the original ancestor. Changes to
+ *	              it are saved, so we can permanently save
+ *		      the values from completed processes.
  *
  * RETVAL:	none.
  *
  * THREADSAFE! Only one thread ever gets here.
  */
-static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
+static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid,
+				jag_prec_t *permanent_anc)
 {
 	jag_prec_t *prec = NULL;
 	jag_prec_t *prec_tmp = NULL;
@@ -1000,6 +1022,18 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 					      _list_find_prec_by_ppid,
 					       &(prec_tmp->pid)))) {
 			_aggregate_prec(prec, ancestor);
+			/*
+			 * If the prec disappeared (pid is dead) aggregate its
+			 * statistics and remove it from the prec_list to avoid
+			 * having to agreggate it on every iteration.
+			 */
+			if (prec->completed) {
+				_aggregate_prec(prec, permanent_anc);
+				log_flag(JAG, "Removing completed process %d",
+					 prec->pid);
+				list_remove_first(prec_list, _find_prec,
+						  &prec->pid);
+			}
 			list_append(tmp_list, prec);
 		}
 	}
@@ -1054,6 +1088,7 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 	while ((jobacct = list_next(itr))) {
 		double cpu_calc;
 		double last_total_cputime;
+		jag_prec_t *permanent_anc;
 		if (!(prec = list_find_first(prec_list, _find_prec,
 					     &jobacct->pid)))
 			continue;
@@ -1063,6 +1098,7 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		 * keeping around precs after they end.
 		 */
 		memcpy(&tmp_prec, prec, sizeof(*prec));
+		permanent_anc = prec;
 		prec = &tmp_prec;
 
 		if (acct_gather_filesystem_g_get_data(prec->tres_data) < 0) {
@@ -1075,7 +1111,7 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		/* find all my descendents */
 		if (callbacks->get_offspring_data)
 			(*(callbacks->get_offspring_data))
-				(prec_list, prec, prec->pid);
+				(prec_list, prec, prec->pid, permanent_anc);
 
 		/*
 		 * Only jobacct_gather/cgroup uses prec_extra, and we want to
