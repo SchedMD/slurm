@@ -6862,6 +6862,13 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	} else if (opt_local->ntasks_set && (opt_local->ntasks == 0)) {
 		job_desc->min_nodes = 0;
 		job_desc->job_size_str = NULL;
+	} else if (opt_local->ntasks_set &&
+		   (opt_local->ntasks_per_node != NO_VAL)) {
+		job_desc->min_nodes =
+			(job_desc->num_tasks /
+			 opt_local->ntasks_per_node) +
+			((job_desc->num_tasks %
+			  opt_local->ntasks_per_node) ? 1 : 0);
 	}
 
 	/* boards_per_node not filled in here */
