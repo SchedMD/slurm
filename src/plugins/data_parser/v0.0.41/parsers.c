@@ -114,18 +114,14 @@ static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
 				data_t *dst, args_t *args, data_t *parent_path)
 {
 	char *path = NULL;
-	int rc;
 
-	/* Disabled plugin should never be executed! */
-	xassert(false);
-
-	rc = on_error(PARSING, parser->type, args, ESLURM_REST_FAIL_PARSING,
-		      set_source_path(&path, args, parent_path), __func__,
-		      "parsing of DATA_PARSER_%s is not implemented",
-		      XSTRINGIFY(parser_type));
+	on_warn(PARSING, parser->type, args,
+		set_source_path(&path, args, parent_path), __func__,
+		"data_parser/v0.0.41 does not support parser %u for parsing. Output may be incomplete.",
+		parser->type);
 
 	xfree(path);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int DUMP_FUNC(disabled)(const parser_t *const parser, void *src,
