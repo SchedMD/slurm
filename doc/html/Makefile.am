@@ -5,6 +5,7 @@ generated_html = \
 	accounting.html \
 	add.html \
 	api.html \
+	authentication.html \
 	big_sys.html \
 	burst_buffer.html \
 	cgroups.html \

@@ -38,6 +38,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
 <li><a href="reservations.html">Advanced Resource Reservation Guide</a></li>
+<li><a href="authentication.html">Authentication Plugins</a></li>
 <li><a href="burst_buffer.html">Burst Buffer Guide</a></li>
 <li><a href="cgroups.html">Cgroups Guide</a></li>
 <li><a href="configless_slurm.html">"Configless" Slurm Operation</a></li>
@@ -132,6 +133,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 December 2023</p>
+<p style="text-align:center;">Last modified 11 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
