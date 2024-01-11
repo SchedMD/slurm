@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -508,11 +508,15 @@ The default value is dependent upon the MUNGE installation, but is typically
 \fBAuthType\fR
 The authentication method for communications between Slurm
 components.
-Acceptable values at present include "auth/munge", which is the default.
-"auth/munge" indicates that MUNGE is to be used.
-(See "https://dun.github.io/munge/" for more information).
 All Slurm daemons and commands must be terminated prior to changing
 the value of \fBAuthType\fR and later restarted.
+Acceptable values at present:
+.RS
+.TP
+\fBauth/munge\fR
+Indicates that MUNGE is to be used (default).
+(See "https://dun.github.io/munge/" for more information).
+.RE
 .IP
 
 .TP
@@ -856,7 +860,12 @@ Default: OnDemand, Performance and UserSpace.
 The cryptographic signature tool to be used in the creation of
 job step credentials.
 A restart of slurmctld is required for changes to this parameter to take effect.
-The default (and recommended) value is "cred/munge".
+Acceptable values at present are:
+.RS
+.TP
+\fBcred/munge\fR
+Indicates that Munge is to be used (default).
+.RE
 .IP
 
 .TP
