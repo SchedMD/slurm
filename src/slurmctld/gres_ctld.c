@@ -999,12 +999,27 @@ extern int gres_ctld_job_select_whole_node(
 		if (!gres_ns->gres_cnt_config)
 			continue;
 
-		/* Never allocate any shared GRES. */
-		if (gres_id_shared(gres_state_node->config_flags))
-			continue;
-
 		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT)
 			continue;
+
+		/* Select shared GRES if requested */
+		if (gres_id_shared(gres_state_node->config_flags)) {
+			/*
+			 * If we find it, delete it and add back to the list as
+			 * a whole node selection.
+			 * This is because we didn't delete it in
+			 * _handle_explicit_req() in node_scheduler.c
+			 */
+			if (!list_delete_first(*job_gres_list, gres_find_id,
+					       &gres_state_node->plugin_id))
+				continue;
+		}
+		/* If we select the shared gres don't select sharing gres */
+		if (gres_id_sharing(gres_state_node->plugin_id)) {
+			if (list_find_first(*job_gres_list, gres_find_id,
+					    &(gres_ns->alt_gres->plugin_id)))
+				continue;
+		}
 
 		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
@@ -1183,9 +1198,18 @@ extern int gres_ctld_job_alloc_whole_node(
 		if (!gres_ns->gres_cnt_config)
 			continue;
 
-		/* Never allocate any shared GRES. */
-		if (gres_id_shared(gres_state_node->config_flags))
-			continue;
+		/* Allocate shared GRES if requested */
+		if (gres_id_shared(gres_state_node->config_flags)) {
+			if (!list_find_first(job_gres_list, gres_find_id,
+					       &gres_state_node->plugin_id))
+				continue;
+		}
+		/* If we allocate the shared gres don't allocate sharing gres */
+		if (gres_id_sharing(gres_state_node->plugin_id)) {
+			if (list_find_first(job_gres_list, gres_find_id,
+					    &(gres_ns->alt_gres->plugin_id)))
+				continue;
+		}
 
 		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT) {
 			if (job_gres_list) {
