@@ -149,6 +149,14 @@ typedef struct {
 	uint32_t job_id;
 } active_job_t;
 
+typedef struct {
+	uint32_t uid;
+	uint32_t job_id;
+	uint32_t step_id;
+	char *new_path;
+	char *pos;
+} foreach_libdir_args_t;
+
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
@@ -1414,34 +1422,49 @@ static int _find_libdir_record(void *x, void *arg)
 	return 1;
 }
 
+static int _foreach_libdir_set_path(void *x, void *arg)
+{
+	libdir_rec_t *l = x;
+	foreach_libdir_args_t *key = arg;
+
+	if (l->uid != key->uid)
+		return 1;
+	if (l->job_id != key->job_id)
+		return 1;
+	if (l->step_id != key->step_id)
+		return 1;
+
+	if (key->new_path)
+		xstrfmtcatat(key->new_path, &key->pos, "%s%s",
+			     key->new_path ? ":" : "", l->directory);
+	else
+		xstrfmtcatat(key->new_path, &key->pos, "%s", l->directory);
+
+	return 1;
+}
+
 static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
 				 uid_t auth_uid)
 {
-	libdir_rec_t libdir_args = {
+	foreach_libdir_args_t arg = {
 		.uid = auth_uid,
 		.job_id = req->step_id.job_id,
 		.step_id = req->step_id.step_id,
+		.new_path = NULL,
+		.pos = NULL,
 	};
-	libdir_rec_t *libdir;
-	char *orig, *new;
+	char *orig;
 
 	slurm_rwlock_rdlock(&file_bcast_lock);
-	if (!(libdir = list_find_first(bcast_libdir_list,
-				       _find_libdir_record,
-				       &libdir_args))) {
-		slurm_rwlock_unlock(&file_bcast_lock);
-		return;
-	}
-
-	new = xstrdup(libdir->directory);
+	list_for_each_ro(bcast_libdir_list, _foreach_libdir_set_path, &arg);
 	slurm_rwlock_unlock(&file_bcast_lock);
 
 	if ((orig = getenvp(req->env, "LD_LIBRARY_PATH")))
-		xstrfmtcat(new, ":%s", orig);
+		xstrfmtcatat(arg.new_path, &arg.pos, ":%s", orig);
 
-	env_array_overwrite(&req->env, "LD_LIBRARY_PATH", new);
+	env_array_overwrite(&req->env, "LD_LIBRARY_PATH", arg.new_path);
 	req->envc = envcount(req->env);
-	xfree(new);
+	xfree(arg.new_path);
 }
 
 static void
