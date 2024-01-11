@@ -103,8 +103,7 @@
 	static int DUMP_FUNC(type)(const parser_t *const parser, void *src,  \
 				    data_t *dst, args_t *args)               \
 	{                                                                    \
-		fatal_abort("dumping of DATA_PARSER_%s is not implemented",  \
-			    XSTRINGIFY(type));                               \
+		return DUMP_FUNC(disabled)(parser, src, dst, args);	     \
 	}
 
 #define parse_error(parser, args, parent_path, error, fmt, ...)    \
@@ -127,6 +126,16 @@ static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
 
 	xfree(path);
 	return rc;
+}
+
+static int DUMP_FUNC(disabled)(const parser_t *const parser, void *src,
+			       data_t *dst, args_t *args)
+{
+	on_warn(DUMPING, parser->type, args, NULL, __func__,
+		"data_parser/v0.0.41 does not support parser %u for dumping. Output may be incomplete.",
+		parser->type);
+
+	return SLURM_SUCCESS;
 }
 
 static int _parse_error_funcname(const parser_t *const parser, args_t *args,
