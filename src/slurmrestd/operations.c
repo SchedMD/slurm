@@ -155,7 +155,8 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 	slurm_rwlock_wrlock(&paths_lock);
 
 	debug3("%s: binding %s to 0x%"PRIxPTR,
-	       __func__, str_path, (uintptr_t) callback);
+	       __func__, str_path,
+	       (callback ? (uintptr_t) callback : (uintptr_t) ctxt_callback));
 
 	path_tag = register_path_tag(str_path);
 	if (path_tag == -1)
