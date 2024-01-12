@@ -306,6 +306,18 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
+static int _foreach_set_lineage(void *x, void *arg)
+{
+	char *query = x;
+	mysql_conn_t *mysql_conn = arg;
+
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
+		return -1; /* Abort list_for_each */
+
+	return 0; /* Continue list_for_each */
+}
+
 static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 				     char *cluster_name)
 {
@@ -315,8 +327,10 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 		MYSQL_ROW row;
 		MYSQL_RES *result = NULL;
 		char *insert_pos = NULL;
+		uint64_t max_query_size = 0;
 		char *table_name = xstrdup_printf("\"%s_%s\"",
 						  cluster_name, assoc_table);;
+		list_t *query_list = list_create(xfree_ptr);
 		/* fill in the id_parent */
 		char *query = xstrdup_printf(
 			"update %s as t1 inner join %s as t2 on t1.acct=t2.acct and t1.user!='' and t1.id_assoc!=t2.id_assoc set t1.id_parent=t2.id_assoc;",
@@ -332,6 +346,22 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
 			goto endit;
 		xfree(query);
+
+		/*
+		 * Determine max query size to avoid possibly generating
+		 * something too long for the sql server to process.
+		 *
+		 * This is primarily to support older MySQL servers, but also
+		 * supports very large association tables.
+		 */
+		if (mysql_db_get_var_u64(mysql_conn, "max_allowed_packet",
+					 &max_query_size))
+			max_query_size = 1024 * 1024;
+		/*
+		 * Safety margin of 10% of the possible size.  A single set
+		 * lineage call should not exceeed 1KiB.
+		 */
+		max_query_size = (max_query_size * 0.9);
 
 		/*
 		 * Now set the lineage for the associations.
@@ -359,13 +389,22 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 			xstrfmtcatat(query, &insert_pos,
 				     "call set_lineage(%s, '%s', '%s', '%s');",
 				     row[0], row[1], row[2], table_name);
+			if ((insert_pos - query) > max_query_size) {
+				list_append(query_list, query);
+				query = NULL;
+				insert_pos = NULL;
+			}
+		}
+		if (query) {
+			list_append(query_list, query);
+			query = NULL;
 		}
 		mysql_free_result(result);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-			goto endit;
+		if (list_for_each(query_list, _foreach_set_lineage,
+				  mysql_conn) < 0)
+			rc = SLURM_ERROR;
 	endit:
-		xfree(query);
+		FREE_NULL_LIST(query_list);
 		xfree(table_name);
 	}
 
