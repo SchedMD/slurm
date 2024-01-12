@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix Debian package build on systems that are not able to query the systemd
     package.
+ -- data_parser/v0.0.40 - Emit a warning instead of an error if a disabled
+    parser is invoked.
 
 * Changes in Slurm 23.11.4
 ==========================
