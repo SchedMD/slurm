@@ -179,6 +179,7 @@ API CHANGES
     sbatch --wait) to return 1.
  -- "node_list" argument was added to slurm_print_topo_info_msg().
  -- remove slurm_print_topo_record().
+ -- submit filters should use new --tres-per-task format: TRESType/TRESName
 
 SLURMRESTD CHANGES
 ==================
