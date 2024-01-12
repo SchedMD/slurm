@@ -507,9 +507,12 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 			}
 		}
 
-		if (!parser)
-			fatal_abort("%s: unknown %s",
-				    __func__, data_get_string(ref));
+		if (!parser) {
+			debug("%s: skipping unknown %s",
+			      __func__, data_get_string(data));
+			data_set_null(data);
+			return;
+		}
 
 		_set_ref(data, NULL, parser, sargs);
 	} else {
