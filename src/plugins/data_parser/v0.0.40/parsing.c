@@ -1390,7 +1390,6 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
 		const parser_t *const rparser =
 			find_parser_by_type(parser->type);
-		uint64_t zero = 0;
 
 		log_flag(DATA, "removed: %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ") for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
 			 parser->obj_type_string,
@@ -1400,21 +1399,35 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 			 (uintptr_t) src, (uintptr_t) dst,
 			 array->key, (uintptr_t) dst);
 
-		if (rparser->size <= sizeof(zero))
-			src = &zero;
-		else
-			src = xmalloc(rparser->size);
+		switch (rparser->obj_openapi) {
+			case OPENAPI_FORMAT_INT:
+			case OPENAPI_FORMAT_INT32:
+			case OPENAPI_FORMAT_INT64:
+				data_set_int(dst, 0);
+				break;
+			case OPENAPI_FORMAT_NUMBER:
+			case OPENAPI_FORMAT_FLOAT:
+			case OPENAPI_FORMAT_DOUBLE:
+				data_set_float(dst, 0);
+				break;
+			case OPENAPI_FORMAT_STRING:
+			case OPENAPI_FORMAT_PASSWORD:
+				data_set_string(dst, "");
+				break;
+			case OPENAPI_FORMAT_BOOL:
+				data_set_bool(dst, false);
+			case OPENAPI_FORMAT_OBJECT:
+				data_set_dict(dst);
+				break;
+			case OPENAPI_FORMAT_ARRAY:
+				data_set_list(dst);
+				break;
+			case OPENAPI_FORMAT_MAX:
+			case OPENAPI_FORMAT_INVALID:
+				fatal_abort("invalid type");
+		};
 
-		/*
-		 * Pass zeroed memory of the correct size to the parser to have
-		 * it dump the defaults as there is no source field to dump.
-		 */
-		rc = dump(src, rparser->size, rparser, dst, args);
-
-		if (src != &zero)
-			xfree(src);
-
-		return rc;
+		return SLURM_SUCCESS;
 	}
 
 	if (parser->model ==
