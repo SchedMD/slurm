@@ -228,7 +228,7 @@ extern int bind_operation_ctxt_handler(const char *str_path,
 		char *path = NULL;
 
 		/*
-		 * Skip parser is openapi resp is not supported
+		 * Skip parser if openapi resp is not supported
 		 * TODO: check to be removed after data_parser/v0.0.39 removed
 		 */
 		data_set_null(resp);
