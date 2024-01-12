@@ -129,6 +129,11 @@ extern int topology_g_init(void);
 extern int topology_g_fini(void);
 
 /*
+ * Get the plugin ID number. Unique for each topology plugin type
+ */
+extern int topology_get_plugin_id(void);
+
+/*
  **************************************************************************
  *                          P L U G I N   C A L L S                       *
  **************************************************************************

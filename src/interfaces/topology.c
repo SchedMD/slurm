@@ -165,6 +165,13 @@ extern int topology_g_fini(void)
 	return rc;
 }
 
+extern int topology_get_plugin_id(void)
+{
+	xassert(plugin_inited);
+
+	return *(ops.plugin_id);
+}
+
 extern int topology_g_build_config(void)
 {
 	int rc;
