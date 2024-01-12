@@ -88,13 +88,12 @@ extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
 	xassert(dst && (data_get_type(dst) == DATA_TYPE_NULL));
 
 	if (!parser) {
-		int rc;
 		char *path = NULL;
-		rc = on_error(DUMPING, type, args, ESLURM_DATA_INVALID_PARSER,
-			      NULL, __func__,
-			      "Invalid or unsupported dumping requested. Output may be incomplete.");
+		on_warn(DUMPING, type, args, NULL, __func__,
+			"%s does not support parser %u for dumping. Output may be incomplete.",
+			plugin_type, type);
 		xfree(path);
-		return rc;
+		return ESLURM_NOT_SUPPORTED;
 	}
 
 	return dump(src, src_bytes, parser, dst, args);
@@ -114,14 +113,13 @@ extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
 	xassert(dst_bytes > 0);
 
 	if (!parser) {
-		int rc;
 		char *path = NULL;
-		rc = on_error(PARSING, type, args, ESLURM_DATA_INVALID_PARSER,
-			      set_source_path(&path, args, parent_path),
-			      __func__,
-			      "Invalid or unsupported parsing requested. Input may not be fully parsed.");
+		on_warn(PARSING, type, args,
+			set_source_path(&path, args, parent_path), __func__,
+			"%s does not support parser %u for parsing. Output may be incomplete.",
+			plugin_type, type);
 		xfree(path);
-		return rc;
+		return ESLURM_NOT_SUPPORTED;
 	}
 
 	return parse(dst, dst_bytes, parser, src, args, parent_path);
