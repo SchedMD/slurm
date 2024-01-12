@@ -38,6 +38,7 @@
 #define _COMMON_TOPO_H
 
 #include <slurm/slurm.h>
+#include "src/interfaces/topology.h"
 
 /*
  * common_topo_split_hostlist_treewidth - logic to split an input hostlist into
