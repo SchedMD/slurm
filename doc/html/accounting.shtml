@@ -5,7 +5,10 @@
 <h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
 <li><a href="#Overview">Overview</a></li>
-<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#infrastructure">Infrastructure</a>
+<ul>
+<li><a href="#backup-host">Storage Backup Host</a></li>
+</ul></li>
 <li><a href="#slurm-jobcomp-configuration">Slurm JobComp Configuration</a></li>
 <li><a href="#slurm-accounting-configuration-before-build">Slurm Accounting Configuration Before Build</a></li>
 <li><a href="#slurm-accounting-configuration-after-build">Slurm Accounting Configuration After Build</a></li>
@@ -190,6 +193,21 @@ add anyone you want to be an administrator or operator to the passwd file.
 If they plan on running sacctmgr or any of the accounting tools they
 should have the same UID, or they will not authenticate correctly.  An
 LDAP server could also serve as a way to gather this information.</p>
+
+<h3 id="backup-host">Storage Backup Host
+<a class="slurm_link" href="#backup-host"></a>
+</h3>
+
+<p>A backup instance of slurmdbd can be configured by specifying
+<a href="slurm.conf.html#OPT_AccountingStorageBackupHost">
+AccountingStorageBackupHost</a> in slurm.conf, as well as
+<a href="slurmdbd.conf.html#OPT_DbdBackupHost">DbdBackupHost</a> in
+slurmdbd.conf. The backup host should be on a different machine than the one
+hosting the primary instance of slurmdbd. Both instances of slurmdbd should
+have access to the same database, share the same munge key(s), and have the
+same users with the same UID/GIDs. The
+<a href="network.html#failover">network page</a> has a visual representation
+of how this might look.</p>
 
 <h2 id="slurm-jobcomp-configuration">Slurm JobComp Configuration
 <a class="slurm_link" href="#slurm-jobcomp-configuration"></a>
@@ -926,7 +944,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 18 December 2023</p>
+<p style="text-align:center;">Last modified 12 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
 
