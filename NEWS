@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - Fix PrivateData=User when listing associations.
  -- Disable sorting of dynamic nodes to avoid issues when restarting with
     heterogenous jobs that cause jobs to abort on restart.
+ -- Don't allow deletion of non-dynamic nodes.
 
 * Changes in Slurm 23.11.1
 ==========================

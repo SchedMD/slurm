@@ -114,8 +114,8 @@ scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSoc
 </h2>
 <p>
 Nodes can be deleted using <b>scontrol delete nodename=&lt;nodelist&gt;</b>.
-Nodes can only be deleted if they have no jobs running on them and aren't part
-of a reservation.
+Only dynamic nodes that have no running jobs and that are not part of a
+reservation can be deleted.
 </p>
 
 <h2 id="LIMITATIONS">Limitations
