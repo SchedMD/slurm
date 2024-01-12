@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     instead of lft/rgt.
  -- slurmrestd - Improve handling of missing parsers when content plugins
     expect parsers not loaded.
+ -- slurmrestd - Correct parsing of StepIds when querying jobs.
 
 * Changes in Slurm 23.11.1
 ==========================
