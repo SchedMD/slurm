@@ -344,7 +344,6 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			  avail_res_t **avail_res_array, bool first_pass,
 			  uint16_t cr_type)
 {
-	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
 	uint32_t min_cores_this_node = 0;
 	job_details_t *details_ptr = job_ptr->details;
@@ -403,7 +402,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 	/* Determine how many tasks can be started on this node */
 	if ((!details_ptr || !details_ptr->overcommit)) {
-		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
+		int alloc_tasks = avail_res_array[node_inx]->avail_cpus /
 			      mc_ptr->cpus_per_task;
 		if (alloc_tasks < min_tasks_this_node)
 			max_tasks_this_node = 0;
