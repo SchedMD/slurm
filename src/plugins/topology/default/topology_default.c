@@ -95,6 +95,11 @@ extern int topology_p_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern bool topology_p_generate_node_ranking(void)
 {
 	return false;

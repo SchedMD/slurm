@@ -68,6 +68,8 @@ char *topo_conf = NULL;
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	int		(*build_config)		( void );
+	int (*eval_nodes) (topology_eval_t *topo_eval);
+
 	bool		(*node_ranking)		( void );
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
@@ -92,6 +94,7 @@ typedef struct slurm_topo_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"topology_p_build_config",
+	"topology_p_eval_nodes",
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
@@ -174,6 +177,13 @@ extern int topology_g_build_config(void)
 	END_TIMER3(__func__, 20000);
 
 	return rc;
+}
+
+extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
+{
+	xassert(plugin_inited);
+
+	return (*(ops.eval_nodes))(topo_eval);
 }
 
 /*

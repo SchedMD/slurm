@@ -430,6 +430,11 @@ extern int topology_p_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 /*
  * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
  * node_rank for all nodes belonging to the same bblock.
