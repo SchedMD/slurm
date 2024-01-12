@@ -375,7 +375,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 			rc = ESLURM_REST_FAIL_PARSING;
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID_TYPE,
+			      ESLURM_DATA_EXPECTED_LIST,
 			      set_source_path(&path, args, parent_path),
 			      __func__, "Expected List but found a %s",
 			      data_get_type_string(src));
