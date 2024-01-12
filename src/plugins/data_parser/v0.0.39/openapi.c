@@ -408,9 +408,12 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 			}
 		}
 
-		if (!parser)
-			fatal_abort("%s: unknown %s",
-				    __func__, data_get_string(data));
+		if (!parser) {
+			debug("%s: skipping unknown %s",
+			      __func__, data_get_string(data));
+			data_set_null(data);
+			return DATA_FOR_EACH_CONT;
+		}
 
 		str = _get_parser_path(parser);
 		data_set_string_own(data, str);
