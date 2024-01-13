@@ -130,15 +130,10 @@ names represent topology of the nodes &mdash; until a reconfigure or a restart
 is performed. If using a <a href="topology.html">Topology Plugin</a>, the
 topology will also be out of date until a reconfigure/restart is performed.
 </li>
-<li>
-The <a href="slurm.conf.html#OPT_route/topology">route/toplogy</a> plugin is
-not supported since dynamic nodes require that the Fanout/Treewidth be
-disabled.
-</li>
 </ol>
 </p>
 
 
-<p style="text-align:center;">Last modified 15 August 2023</p>
+<p style="text-align:center;">Last modified 12 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
