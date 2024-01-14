@@ -124,16 +124,14 @@ of a reservation.
 <p>
 <ol>
 <li>
-When dynamic nodes are added to Slurm they will potentially be alphabetically
-out of order internally &mdash; leading to suboptimal job allocations if node
-names represent topology of the nodes &mdash; until a reconfigure or a restart
-is performed. If using a <a href="topology.html">Topology Plugin</a>, the
-topology will also be out of date until a reconfigure/restart is performed.
+Dynamic nodes are not sorted internally and when added to Slurm they will
+potentially be alphabetically out of order internally &mdash; leading to
+suboptimal job allocations if node names represent topology of the nodes.
 </li>
 </ol>
 </p>
 
 
-<p style="text-align:center;">Last modified 12 January 2024</p>
+<p style="text-align:center;">Last modified 13 January 2024</p>
 
 <!--#include virtual="footer.txt"-->

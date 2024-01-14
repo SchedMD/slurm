@@ -75,6 +75,8 @@ HIGHLIGHTS
  -- switch/hpe_slingshot - Add support for collectives.
  -- Rename topology/none plugin to topology/default.
  -- Add gpu/nrt plugin for nodes using Trainium/Inferentia devices.
+ -- Disable sorting of dynamic nodes to avoid issues when restarting with
+    heterogenous jobs that cause jobs to abort on restart.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
