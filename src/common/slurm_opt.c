@@ -6617,9 +6617,9 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 	if (!(opt->job_flags & GRES_DISABLE_BIND) &&
 	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
 		opt->job_flags |= GRES_ENFORCE_BIND;
-
-	if (opt->job_flags & GRES_ALLOW_TASK_SHARING)
-		opt->job_flags &= ~GRES_NO_TASK_SHARING;
+	if (!(opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
+	    (slurm_conf.select_type_param & NO_TASK_SHARING_GRES))
+		opt->job_flags |= GRES_NO_TASK_SHARING;
 }
 
 /* Validate shared options between srun, salloc, and sbatch */

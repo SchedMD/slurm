@@ -1027,7 +1027,7 @@ enum node_states {
 				 * not over-committed when selected as a CR. */
 /* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
 #define ENFORCE_BINDING_GRES 0x0040
-/* was CR_NHC_NO 0x0080, removed v19.05 */
+#define NO_TASK_SHARING_GRES 0x0080
 
 /* By default, schedule only one task per core.
  * Without this option, tasks would be allocated threads. */
