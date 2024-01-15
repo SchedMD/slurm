@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "December 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "January 2024" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2856,6 +2856,14 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 Users can be created, modified, and deleted with sacctmgr. These
 options allow you to set the corresponding attributes or filter on them
 when querying for Users.
+
+.LP
+It is important to recognize the difference between a User and an Association.
+There is a User entity that exists for each unique username. However, there
+can be multiple User Associations for the same User. The combination of a
+Cluster, Account, User, and optionally a Partition constitute a User
+Association. When adding an existing User to another Account, you are creating
+an additional User Association rather than modifying an existing User.
 
 .TP
 \fBAccount\fR=<\fIaccount\fR>
