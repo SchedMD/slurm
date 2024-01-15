@@ -2288,16 +2288,10 @@ static int arg_set_data_gres_flags(slurm_opt_t *opt, const data_t *arg,
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
-		/* clear both flag options first */
-		opt->job_flags &= ~(GRES_DISABLE_BIND|GRES_ENFORCE_BIND);
-		if (!xstrcasecmp(str, "disable-binding")) {
-			opt->job_flags |= GRES_DISABLE_BIND;
-		} else if (!xstrcasecmp(str, "enforce-binding")) {
-			opt->job_flags |= GRES_ENFORCE_BIND;
-		} else {
-			rc = SLURM_ERROR;
+		rc = arg_set_gres_flags(opt, str);
+
+		if (rc != SLURM_SUCCESS)
 			ADD_DATA_ERROR("Invalid GRES flags", rc);
-		}
 	}
 
 	xfree(str);
