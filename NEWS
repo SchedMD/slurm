@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     argument to configure.
  -- accounting_storage/mysql - Fix usage query to use new lineage column
     instead of lft/rgt.
+ -- slurmrestd - Improve handling of missing parsers when content plugins
+    expect parsers not loaded.
 
 * Changes in Slurm 23.11.1
 ==========================
