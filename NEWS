@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     expect parsers not loaded.
  -- slurmrestd - Correct parsing of StepIds when querying jobs.
  -- slurmrestd - Improve error from parsing failures of lists.
+ -- slurmrestd - Improve parsing of singular values for lists.
 
 * Changes in Slurm 23.11.1
 ==========================
