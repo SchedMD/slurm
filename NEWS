@@ -23,6 +23,18 @@ documents those changes that are of interest to users and administrators.
     that's already included in the "association" object.
  -- data_parser/v0.0.41 - Improve parsing of numeric user id.
  -- data_parser/v0.0.41 - Improve parsing of numeric group id.
+ -- slurmrestd - Generated openapi.json will only populate "deprecated" fields
+    if true. False is the default value and does not require being present.
+ -- slurmrestd - Populate missing "deprecated" fields in  openapi.json.
+ -- slurmrestd - Corrected deprecated fields in generated openapi.json not
+    getting populated.
+ -- slurmrestd - Generated openapi.json will have reduced number of "$ref"
+    fields. Where there was only 1 reference for the schema, the "$ref" schema
+    will be directly populated in place.
+ -- slurmrestd - Rename *_NO_VAL schemas in generated openapi.json to have
+    _struct and to pass along correct integer sizing when possible.
+ -- slurmrestd - Correct description fields in generated openapi.json where
+    descriptions were not present or too generic.
 
 * Changes in Slurm 23.11.2
 ==========================
