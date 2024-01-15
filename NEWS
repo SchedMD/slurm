@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Improve handling of missing parsers when content plugins
     expect parsers not loaded.
  -- slurmrestd - Correct parsing of StepIds when querying jobs.
+ -- slurmrestd - Improve error from parsing failures of lists.
 
 * Changes in Slurm 23.11.1
 ==========================
