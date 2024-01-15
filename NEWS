@@ -62,6 +62,9 @@ documents those changes that are of interest to users and administrators.
     uncommon case when upgrading mysql/mariadb.
  -- Fix rpmbuild in openSUSE/SLES due to incorrect mariadb dependency.
  -- Fix compilation on RHEL 7.
+ -- When upgrading the slurmdbd to 23.11, avoid generating a query to update
+    the association table that is larger than max_allowed_packet which would
+    result in an upgrade failure.
 
 * Changes in Slurm 23.11.1
 ==========================
