@@ -6905,6 +6905,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(BACKFILL_LAST, "SCHEDULING_ATTEMPTED"),
 	add_flag_bit(JOB_SEND_SCRIPT, "SAVE_BATCH_SCRIPT"),
 	add_flag_bit(GRES_NO_TASK_SHARING, "GRES_NO_TASK_SHARING"),
+	add_flag_bit(GRES_ALLOW_TASK_SHARING, "GRES_ALLOW_TASK_SHARING"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHOW_FLAGS)[] = {

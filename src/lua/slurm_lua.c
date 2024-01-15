@@ -301,6 +301,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "GRES_DISABLE_BIND");
 	lua_pushnumber(L, GRES_ENFORCE_BIND);
 	lua_setfield(L, -2, "GRES_ENFORCE_BIND");
+	lua_pushnumber(L, GRES_ALLOW_TASK_SHARING);
+	lua_setfield(L, -2, "GRES_ALLOW_TASK_SHARING");
 	lua_pushnumber(L, GRES_NO_TASK_SHARING);
 	lua_setfield(L, -2, "GRES_NO_TASK_SHARING");
 	lua_pushnumber(L, KILL_INV_DEP);

@@ -2282,6 +2282,8 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 			opt->job_flags |= GRES_DISABLE_BIND;
 		} else if (!xstrcasecmp(tok, "enforce-binding")) {
 			opt->job_flags |= GRES_ENFORCE_BIND;
+		} else if (!xstrcasecmp(tok, "allow-task-sharing")) {
+			opt->job_flags |= GRES_ALLOW_TASK_SHARING;
 		} else if (!xstrcasecmp(tok, "no-task-sharing")) {
 			opt->job_flags |= GRES_NO_TASK_SHARING;
 		} else {
@@ -2299,6 +2301,11 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
+	if ((opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
+	    (opt->job_flags & GRES_NO_TASK_SHARING)) {
+		error("Invalid --gres-flags combo: no-task-sharing and allow-task-sharing are mutually exclusive.");
+		return SLURM_ERROR;
+	}
 
 	if ((opt->job_flags & GRES_NO_TASK_SHARING) &&
 	    !(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
@@ -2334,6 +2341,8 @@ static char *arg_get_gres_flags(slurm_opt_t *opt)
 		xstrcatat(tmp, &tmp_pos, "disable-binding,");
 	if (opt->job_flags & GRES_ENFORCE_BIND)
 		xstrcatat(tmp, &tmp_pos, "enforce-binding,");
+	if (opt->job_flags & GRES_ALLOW_TASK_SHARING)
+		xstrcatat(tmp, &tmp_pos, "allow-task-sharing,");
 	if (opt->job_flags & GRES_NO_TASK_SHARING)
 		xstrcatat(tmp, &tmp_pos, "no-task-sharing,");
 
@@ -2350,6 +2359,7 @@ static void arg_reset_gres_flags(slurm_opt_t *opt)
 {
 	opt->job_flags &= ~(GRES_DISABLE_BIND);
 	opt->job_flags &= ~(GRES_ENFORCE_BIND);
+	opt->job_flags &= ~(GRES_ALLOW_TASK_SHARING);
 	opt->job_flags &= ~(GRES_NO_TASK_SHARING);
 }
 static slurm_cli_opt_t slurm_opt_gres_flags = {
@@ -6607,6 +6617,9 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 	if (!(opt->job_flags & GRES_DISABLE_BIND) &&
 	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
 		opt->job_flags |= GRES_ENFORCE_BIND;
+
+	if (opt->job_flags & GRES_ALLOW_TASK_SHARING)
+		opt->job_flags &= ~GRES_NO_TASK_SHARING;
 }
 
 /* Validate shared options between srun, salloc, and sbatch */
