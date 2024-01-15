@@ -1026,7 +1026,7 @@ enum node_states {
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-committed when selected as a CR. */
 /* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
-/* was CR_NHC_STEP_NO 0x0040, removed v19.05 */
+#define ENFORCE_BINDING_GRES 0x0040
 /* was CR_NHC_NO 0x0080, removed v19.05 */
 
 /* By default, schedule only one task per core.

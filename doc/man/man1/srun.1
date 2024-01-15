@@ -1444,12 +1444,13 @@ Specify generic resource task binding options.
 .RS
 .TP
 .B disable\-binding
-Cancel \fBenforce\-binding\fR.
+Cancel \fBenforce\-binding\fR. This is useful if it is set by default in
+\fBSelectTypeParameters\fR.
 .IP
 
 .TP
 .B enforce\-binding
-The only CPUs available to the job/step will be those bound to the selected
+The only CPUs available to the job will be those bound to the selected
 GRES (i.e. the CPUs identified in the gres.conf file will be strictly
 enforced). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
@@ -1458,7 +1459,8 @@ sockets, however, the application performance may be improved due to improved
 communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
-\fBNOTE\fR: Job steps that don't use \fB--exact\fR will not be affected.
+.br
+\fBNOTE\fR: This option can be set by default in \fBSelectTypeParameters\fR.
 .br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR for job
 allocations.

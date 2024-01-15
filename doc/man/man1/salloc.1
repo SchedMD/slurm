@@ -1073,7 +1073,8 @@ Specify generic resource task binding options.
 .RS
 .TP
 .B disable\-binding
-Cancel \fBenforce\-binding\fR.
+Cancel \fBenforce\-binding\fR. This is useful if it is set by default in
+\fBSelectTypeParameters\fR.
 .IP
 
 .TP
@@ -1087,6 +1088,8 @@ sockets, however, the application performance may be improved due to improved
 communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
+.br
+\fBNOTE\fR: This option can be set by default in \fBSelectTypeParameters\fR.
 .br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
 .RE

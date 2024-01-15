@@ -4709,6 +4709,12 @@ being denied the job will be allocated with 2 gpus. 1 using 10 shards and the
 other using 2 shards.
 .IP
 
+.TP
+\ENFORCE_BINDING_GRES\fR
+Set \fB\-\-gres\-flags=enforce\-binding\fR as the default in every job.
+This can be overridden with \fB\-\-gres\-flags=disable\-binding\fR.
+.IP
+
 .LP
 \fBNOTE\fR: If memory isn't configured as a consumable resource (CR_CPU,
 CR_Core or CR_Socket without _Memory) memory can be oversubscribed and will not

@@ -6591,8 +6591,9 @@ static void _validate_arbitrary(slurm_opt_t *opt)
 
 static void _validate_gres_flags(slurm_opt_t *opt)
 {
-	if (opt->job_flags & GRES_DISABLE_BIND)
-		opt->job_flags &= ~GRES_ENFORCE_BIND;
+	if (!(opt->job_flags & GRES_DISABLE_BIND) &&
+	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
+		opt->job_flags |= GRES_ENFORCE_BIND;
 }
 
 /* Validate shared options between srun, salloc, and sbatch */
