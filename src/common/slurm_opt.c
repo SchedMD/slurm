@@ -2266,14 +2266,33 @@ static slurm_cli_opt_t slurm_opt_gres = {
 
 static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 {
+	char *tmp_str, *tok, *last = NULL;
+
 	/* clear both flag options first */
 	opt->job_flags &= ~(GRES_DISABLE_BIND|GRES_ENFORCE_BIND);
-	if (!xstrcasecmp(arg, "disable-binding")) {
-		opt->job_flags |= GRES_DISABLE_BIND;
-	} else if (!xstrcasecmp(arg, "enforce-binding")) {
-		opt->job_flags |= GRES_ENFORCE_BIND;
-	} else {
-		error("Invalid --gres-flags specification");
+
+	if (!arg)
+		return SLURM_ERROR;
+
+	tmp_str = xstrdup(arg);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (!xstrcasecmp(tok, "disable-binding")) {
+			opt->job_flags |= GRES_DISABLE_BIND;
+		} else if (!xstrcasecmp(tok, "enforce-binding")) {
+			opt->job_flags |= GRES_ENFORCE_BIND;
+		} else {
+			error("Invalid --gres-flags specification: %s", tok);
+			xfree(tmp_str);
+			return SLURM_ERROR;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	if ((opt->job_flags & GRES_DISABLE_BIND) &&
+	    (opt->job_flags & GRES_ENFORCE_BIND)) {
+		error("Invalid --gres-flags combo: disable-binding and enforce-binding are mutually exclusive.");
 		return SLURM_ERROR;
 	}
 
@@ -2299,11 +2318,21 @@ static int arg_set_data_gres_flags(slurm_opt_t *opt, const data_t *arg,
 }
 static char *arg_get_gres_flags(slurm_opt_t *opt)
 {
+	char *tmp = NULL, *tmp_pos = NULL;
+
 	if (opt->job_flags & GRES_DISABLE_BIND)
-		return xstrdup("disable-binding");
-	else if (opt->job_flags & GRES_ENFORCE_BIND)
-		return xstrdup("enforce-binding");
-	return xstrdup("unset");
+		xstrcatat(tmp, &tmp_pos, "disable-binding,");
+	if (opt->job_flags & GRES_ENFORCE_BIND)
+		xstrcatat(tmp, &tmp_pos, "enforce-binding,");
+
+	if (!tmp_pos)
+		xstrcat(tmp, "unset");
+	else {
+		tmp_pos--;
+		tmp_pos[0] = '\0'; /* remove trailing ',' */
+	}
+
+	return tmp;
 }
 static void arg_reset_gres_flags(slurm_opt_t *opt)
 {
@@ -6560,6 +6589,12 @@ static void _validate_arbitrary(slurm_opt_t *opt)
 	exit(error_exit);
 }
 
+static void _validate_gres_flags(slurm_opt_t *opt)
+{
+	if (opt->job_flags & GRES_DISABLE_BIND)
+		opt->job_flags &= ~GRES_ENFORCE_BIND;
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6572,6 +6607,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_cpus_per_tres(opt);
 	_validate_nodelist(opt);
 	_validate_arbitrary(opt);
+	_validate_gres_flags(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
