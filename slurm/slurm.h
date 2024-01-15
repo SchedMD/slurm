@@ -1167,6 +1167,8 @@ enum node_states {
 #define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
 #define RESET_LIC_TASK     SLURM_BIT(36) /* Reset licenses per task */
 #define RESET_LIC_JOB      SLURM_BIT(37) /* Reset licenses per job */
+#define GRES_NO_TASK_SHARING SLURM_BIT(38) /* Don't let tasks in the same job
+					    * share the same gres */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
