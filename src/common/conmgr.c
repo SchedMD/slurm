@@ -2101,10 +2101,10 @@ watch:
 			log_flag(NET, "%s: detected %u events from event fd",
 				 __func__, event_read);
 			mgr.event_signaled = 0;
-		} else if (event_read == 0)
+		} else if (!event_read || (errno == EWOULDBLOCK) ||
+			   (errno == EAGAIN))
 			log_flag(NET, "%s: nothing to read from event fd", __func__);
-		else if (errno == EAGAIN || errno == EWOULDBLOCK ||
-			 errno == EINTR)
+		else if (errno == EINTR)
 			log_flag(NET, "%s: try again on read of event fd: %m",
 				 __func__);
 		else
