@@ -882,8 +882,9 @@ Use Slurm's internal credential format.
 \fBDebugFlags\fR
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
-Most DebugFlags will result in verbose\-level logging for the identified
-subsystems, and could impact performance.
+Most DebugFlags will result in additional logging messages for the identified
+subsystems if \fBSlurmctldDebug\fR is at 'verbose' or higher.
+More logging may impact performance.
 
 \fBNOTE\fR: You can also set debug flags by having the \fBSLURM_DEBUG_FLAGS\fR
 environment variable defined with the desired flags when the process (client
