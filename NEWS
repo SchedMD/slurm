@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
     topology.
  -- Allow Slurm to compile without MUNGE if --without-munge is used as an
     argument to configure.
+ -- accounting_storage/mysql - Fix usage query to use new lineage column
+    instead of lft/rgt.
 
 * Changes in Slurm 23.11.1
 ==========================
