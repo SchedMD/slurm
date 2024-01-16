@@ -90,7 +90,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_JWT_TRUE@am__append_1 = jwt slurm
+@WITH_MUNGE_TRUE@am__append_1 = munge
+@WITH_JWT_TRUE@am__append_2 = jwt slurm
 subdir = src/plugins/auth
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -202,7 +203,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = munge none jwt slurm
+DIST_SUBDIRS = none munge jwt slurm
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -465,7 +466,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = munge none $(am__append_1)
+SUBDIRS = none $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:
