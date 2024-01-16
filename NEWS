@@ -86,6 +86,13 @@ documents those changes that are of interest to users and administrators.
     topology.
  -- Allow Slurm to compile without MUNGE if --without-munge is used as an
     argument to configure.
+ -- accounting_storage/mysql - Fix usage query to use new lineage column
+    instead of lft/rgt.
+ -- slurmrestd - Improve handling of missing parsers when content plugins
+    expect parsers not loaded.
+ -- slurmrestd - Correct parsing of StepIds when querying jobs.
+ -- slurmrestd - Improve error from parsing failures of lists.
+ -- slurmrestd - Improve parsing of singular values for lists.
 
 * Changes in Slurm 23.11.1
 ==========================

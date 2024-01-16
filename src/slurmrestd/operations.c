@@ -155,12 +155,16 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 	slurm_rwlock_wrlock(&paths_lock);
 
 	debug3("%s: binding %s to 0x%"PRIxPTR,
-	       __func__, str_path, (uintptr_t) callback);
+	       __func__, str_path,
+	       (callback ? (uintptr_t) callback : (uintptr_t) ctxt_callback));
 
 	path_tag = register_path_tag(str_path);
-	if (path_tag == -1)
-		fatal_abort("%s: failure registering OpenAPI for path: %s",
-			    __func__, str_path);
+	if (path_tag == -1) {
+		debug("%s: skipping path: %s",
+		      __func__, str_path);
+		slurm_rwlock_unlock(&paths_lock);
+		return ESLURM_DATA_PATH_NOT_FOUND;
+	}
 
 	if ((path = list_find_first(paths, _match_path_key, &path_tag)))
 		goto exists;
@@ -228,7 +232,7 @@ extern int bind_operation_ctxt_handler(const char *str_path,
 		char *path = NULL;
 
 		/*
-		 * Skip parser is openapi resp is not supported
+		 * Skip parser if openapi resp is not supported
 		 * TODO: check to be removed after data_parser/v0.0.39 removed
 		 */
 		data_set_null(resp);
@@ -244,7 +248,7 @@ extern int bind_operation_ctxt_handler(const char *str_path,
 
 		xfree(path);
 
-		if (rc)
+		if (rc && (rc != ESLURM_DATA_PATH_NOT_FOUND))
 			break;
 	}
 

@@ -369,20 +369,21 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	xassert(list_count(list_args.list) >= 0);
 
-	if (data_get_type(src) == DATA_TYPE_STRING) {
-		/* Assume List is just a single entry */
-		if (_foreach_parse_list(src, &list_args) != DATA_FOR_EACH_CONT)
-			rc = ESLURM_REST_FAIL_PARSING;
-	} else if (data_get_type(src) != DATA_TYPE_LIST) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID_TYPE,
-			      set_source_path(&path, args, parent_path),
-			      __func__, "Expected List but found a %s",
-			      data_get_type_string(src));
-	} else {
+	if (data_get_type(src) == DATA_TYPE_LIST) {
 		if (data_list_for_each(src, _foreach_parse_list,
 				       &list_args) < 0)
 			rc = ESLURM_REST_FAIL_PARSING;
+	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
+		   DATA_TYPE_STRING) {
+		/* Assume List is just a single entry */
+		if (_foreach_parse_list(src, &list_args) != DATA_FOR_EACH_CONT)
+			rc = ESLURM_REST_FAIL_PARSING;
+	} else {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_EXPECTED_LIST,
+			      set_source_path(&path, args, parent_path),
+			      __func__, "Expected List but found a %s",
+			      data_get_type_string(src));
 	}
 
 	if (!rc) {
@@ -504,9 +505,10 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (data_get_type(src) != DATA_TYPE_LIST) {
+	if ((data_get_type(src) != DATA_TYPE_LIST) &&
+	    (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)) {
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID_TYPE,
+			      ESLURM_DATA_EXPECTED_LIST,
 			      set_source_path(&path, args, parent_path),
 			      __func__, "Expected List but found a %s",
 			      data_get_type_string(src));
@@ -521,8 +523,14 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 		fargs.sarray = xcalloc(data_get_list_length(src) + 1,
 				       sizeof(fargs.parser->size));
 
-	if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
-		goto cleanup;
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
+			goto cleanup;
+	} else if (data_get_type(src) == DATA_TYPE_STRING) {
+		/* Assume List is just a single entry */
+		if (_foreach_array_entry(src, &fargs) != DATA_FOR_EACH_CONT)
+			rc = ESLURM_REST_FAIL_PARSING;
+	}
 
 	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
 		void ***array_ptr = dst;
