@@ -217,7 +217,16 @@ configuration of <I>OverSubscribe=FORCE:1</I> will only permit one job per
 resource normally, but a second job can be started if done so through
 preemption based upon QOS.
 </LI>
+<LI>
+<B>ExclusiveUser</B>: In partitions with <I>ExclusiveUser=YES</I>, jobs will be
+prevented from preempting or being preempted by any job from any other user.
+The one exception is that these ExclusiveUser jobs will be able to preempt
+(but not be preempted by) fully "--exclusive" jobs from other users.
+This is for the same reason that "--exclusive=user" blocks preemption, but this
+partition-level setting can only be overridden by making a job fully exclusive.
+</LI>
 </UL>
+
 <P>
 To enable preemption after making the configuration changes described above,
 restart Slurm if it is already running. Any change to the plugin settings in
@@ -229,10 +238,13 @@ Slurm requires a full restart of the daemons. If you just change the partition
 <P>
 If a job request restricts Slurm's ability to run jobs from multiple users or
 accounts on a node by using the "--exclusive=user" or "--exclusive=mcs" job
-options, that may prevent preemption of jobs to start jobs with preempting
-privileges. If preemption is used, it is generally advisable to disable the
-"--exclusive=user" and "--exclusive=mcs" job options by using a job_submit
-plugin (set the value of "shared" to "NO_VAL16").
+options, the job will be prevented from preempting or being preempted by any job
+that does not match the user or MCS. The one exception is that these
+exclusive=user jobs will be able to preempt (but not be preempted by)
+fully "--exclusive" jobs from other users. If preemption is used, it is
+generally advisable to disable the "--exclusive=user" and "--exclusive=mcs"
+job options by using a job_submit plugin (set the value of "job_desc.shared"
+to "NO_VAL16").
 </P>
 
 <P>
@@ -536,6 +548,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 04 January 2024</p>
+<p style="text-align:center;">Last modified 19 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
