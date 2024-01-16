@@ -1098,18 +1098,17 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 
 	if (size_buf(con->in) >= need) {
 		/* there is enough data to unpack now */
+		buf_t *rpc = create_shadow_buf((get_buf_data(con->in) +
+						sizeof(con->msglen)),
+					       con->msglen);
+
 		msg = xmalloc(sizeof(*msg));
 		slurm_msg_t_init(msg);
 
-		/* shift the data pointer up by sizeof(msglen) */
-		get_buf_data(con->in) += sizeof(con->msglen);
+		log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
+			     "%s: [%s] unpacking RPC", __func__, con->name);
 
-		log_flag_hex(NET_RAW, get_buf_data(con->in),
-			     size_buf(con->in), "%s: [%s] unpacking RPC",
-			     __func__, con->name);
-
-		if ((rc = slurm_unpack_received_msg(msg, con->input_fd,
-						    con->in))) {
+		if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
 			rc = errno;
 			error("%s: [%s] unpack_msg() failed: %s",
 			      __func__, con->name, slurm_strerror(rc));
@@ -1121,14 +1120,13 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 				 rpc_num2string(msg->msg_type));
 		}
 
-		/* unshift the data pointer */
-		get_buf_data(con->in) -= sizeof(con->msglen);
-
 		/* notify conmgr we processed some data */
 		set_buf_offset(con->in, need);
 
 		/* reset message length to start all over again */
 		con->msglen = 0;
+
+		FREE_NULL_BUFFER(rpc);
 	} else {
 		log_flag(NET, "%s: [%s] waiting for message length %u/%u for RPC message",
 			 __func__, con->name, size_buf(con->in), need);
