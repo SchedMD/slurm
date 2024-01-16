@@ -4954,10 +4954,10 @@ extern void consolidate_config_list(bool is_locked, bool force)
 	if (is_locked)
 		xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
-	slurm_mutex_lock(&config_list_update_mutex);
 	if (force || config_list_update) {
 		if (!is_locked)
 			lock_slurmctld(node_write_lock);
+		slurm_mutex_lock(&config_list_update_mutex);
 
 		config_list_update = false;
 
@@ -4968,10 +4968,10 @@ extern void consolidate_config_list(bool is_locked, bool force)
 		}
 		list_iterator_destroy(iter);
 
+		slurm_mutex_unlock(&config_list_update_mutex);
 		if (!is_locked)
 			unlock_slurmctld(node_write_lock);
 	}
-	slurm_mutex_unlock(&config_list_update_mutex);
 }
 
 extern int create_nodes(char *nodeline, char **err_msg)
