@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     tasks when using MIGs with --tres-per-task or --gpus-per-task.
  -- slurmctld - Prevent a potential hang during shutdown/reconfigure if the
     association cache thread was previously shut down.
+ -- scrun - Avoid race condition that could cause scrun to hang during
+    shutdown when connections have pending events.
 
 * Changes in Slurm 23.11.3
 ==========================
