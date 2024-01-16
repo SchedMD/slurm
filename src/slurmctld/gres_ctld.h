@@ -172,11 +172,12 @@ extern void gres_ctld_job_clear_alloc(List job_gres_list);
 
 /* Given a job's GRES data structure, return the indecies for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
+ * IN nodes - list of nodes allocated to job
  * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
  */
-extern void gres_ctld_job_build_details(List job_gres_list,
+extern void gres_ctld_job_build_details(List job_gres_list, char *nodes,
 					uint32_t *gres_detail_cnt,
 					char ***gres_detail_str,
 					char **total_gres_str);

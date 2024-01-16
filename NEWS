@@ -82,6 +82,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix build issue on 32-bit systems.
  -- data_parser/v0.0.40 - Fix enumerated strings in OpenAPI specification not
     have type field specified.
+ -- Improve scontrol show job -d information of used shared gres (shard/mps)
+    topology.
 
 * Changes in Slurm 23.11.1
 ==========================
