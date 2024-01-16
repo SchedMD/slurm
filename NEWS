@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- When upgrading the slurmdbd to 23.11, avoid generating a query to update
     the association table that is larger than max_allowed_packet which would
     result in an upgrade failure.
+ -- Fix rare deadlock when a dynamic node registers at the same time that a
+    once per minute background task occurs.
 
 * Changes in Slurm 23.11.1
 ==========================
