@@ -1863,6 +1863,10 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
 	/* Find gres_state_node with plugin_id that matches gres_state_job */
 	gres_state_node = list_find_first(node_ptr->gres_list, gres_find_id,
 					  &gres_state_job->plugin_id);
+
+	if (!gres_state_node)
+		return NULL;
+
 	gres_ns = gres_state_node->gres_data;
 
 	if (!gres_ns)
