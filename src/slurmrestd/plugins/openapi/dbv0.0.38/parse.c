@@ -2323,7 +2323,8 @@ static int _dump_coord_list(const parser_t *const parse, void *obj, data_t *dst,
 		.penv = penv,
 	};
 
-	if (list_for_each(*coord_list, _foreach_coordinator, &args) < 0)
+	if (*coord_list &&
+	    (list_for_each(*coord_list, _foreach_coordinator, &args) < 0))
 		return ESLURM_DATA_CONV_FAILED;
 
 	return SLURM_SUCCESS;
