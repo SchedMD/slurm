@@ -27449,12 +27449,7 @@ fi
 printf "%s\n" "$x_ac_cv_munge_dir" >&6; }
 
     if test -z "$x_ac_cv_munge_dir"; then
-      if test -z "$with_munge"; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate munge installation" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate munge installation" >&2;}
-      else
-        as_fn_error $? "unable to locate munge installation" "$LINENO" 5
-      fi
+      as_fn_error $? "unable to locate munge installation" "$LINENO" 5
     else
       MUNGE_LIBS="-lmunge"
       MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"

@@ -51,11 +51,7 @@ AC_DEFUN([X_AC_MUNGE], [
       ])
 
     if test -z "$x_ac_cv_munge_dir"; then
-      if test -z "$with_munge"; then
-        AC_MSG_WARN([unable to locate munge installation])
-      else
-        AC_MSG_ERROR([unable to locate munge installation])
-      fi
+      AC_MSG_ERROR([unable to locate munge installation])
     else
       MUNGE_LIBS="-lmunge"
       MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
