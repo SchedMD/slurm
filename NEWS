@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
     result in an upgrade failure.
  -- Fix rare deadlock when a dynamic node registers at the same time that a
     once per minute background task occurs.
+ -- Fix build issue on 32-bit systems.
 
 * Changes in Slurm 23.11.1
 ==========================
