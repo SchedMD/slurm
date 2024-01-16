@@ -190,6 +190,8 @@ static void _add_field(data_t *obj, data_t *required,
 static void _add_param_flag_enum(data_t *param, const parser_t *parser)
 {
 	data_t *fenums = data_set_list(data_key_set(param, "enum"));
+	data_set_string(data_key_set(param, "type"),
+		openapi_type_format_to_type_string(OPENAPI_FORMAT_STRING));
 
 	for (int i = 0; i < parser->flag_bit_array_count; i++)
 		if (!parser->flag_bit_array[i].hidden)

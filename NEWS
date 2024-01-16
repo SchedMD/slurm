@@ -80,6 +80,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix rare deadlock when a dynamic node registers at the same time that a
     once per minute background task occurs.
  -- Fix build issue on 32-bit systems.
+ -- data_parser/v0.0.40 - Fix enumerated strings in OpenAPI specification not
+    have type field specified.
 
 * Changes in Slurm 23.11.1
 ==========================
