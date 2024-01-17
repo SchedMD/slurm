@@ -996,6 +996,12 @@ static int _run_lua_script(run_lua_args_t *args)
 			job_info = info_msg->data;
 			info_msg->data = NULL;
 			slurm_free_msg(info_msg);
+			/*
+			 * If info_buf is non-NULL then we should always have
+			 * gotten a job. This assert catches if something
+			 * went wrong with the pack or unpack.
+			 */
+			xassert(job_info->record_count);
 		}
 		rc = _start_lua_script(args->lua_func, args->job_id, args->argc,
 				       args->argv, job_info, args->resp_msg);
