@@ -179,7 +179,7 @@ typedef struct {
 /*
  * Global instance of conmgr
  */
-struct {
+struct conmgr_s {
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -219,6 +219,8 @@ struct {
 	 * Sends all new work to deferred_funcs() while true
 	 */
 	bool quiesced;
+	/* at fork handler installed */
+	bool at_fork_installed;
 	/* thread pool */
 	workq_t *workq;
 	/* will inspect connections (not listeners */
@@ -486,6 +488,78 @@ static void _fini_signal_handler(void)
 	mgr.signal_handler_count = 0;
 }
 
+#ifdef MEMORY_LEAK_DEBUG
+
+static void _atfork_flush_work_list(list_t *list)
+{
+	work_t *work;
+
+	if (!list)
+		return;
+
+	while ((work = list_pop(list))) {
+		xassert(work->magic == MAGIC_WORK);
+		/* FIXME: Not possible to safely free work->arg here */
+		work->magic = ~MAGIC_WORK;
+		xfree(work);
+	}
+}
+
+static void _atfork_flush_con_list(list_t *list)
+{
+	conmgr_fd_t *con;
+
+	if (!list)
+		return;
+
+	while ((con = list_pop(list))) {
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+
+		_atfork_flush_work_list(con->work);
+		_atfork_flush_work_list(con->write_complete_work);
+
+		FREE_NULL_LIST(con->out);
+		FREE_NULL_BUFFER(con->in);
+		xfree(con->unix_socket);
+		xfree(con->name);
+		FREE_NULL_LIST(con->work);
+		FREE_NULL_LIST(con->write_complete_work);
+
+		con->magic = ~MAGIC_CON_MGR_FD;
+		xfree(con);
+	}
+}
+
+#endif /* MEMORY_LEAK_DEBUG */
+
+static void _atfork_child(void)
+{
+#ifdef MEMORY_LEAK_DEBUG
+	_atfork_flush_con_list(mgr.connections);
+	_atfork_flush_con_list(mgr.listen);
+	_atfork_flush_con_list(mgr.complete);
+
+	FREE_NULL_LIST(mgr.connections);
+	FREE_NULL_LIST(mgr.listen);
+	FREE_NULL_LIST(mgr.complete);
+	FREE_NULL_LIST(mgr.delayed_work);
+	FREE_NULL_LIST(mgr.deferred_funcs);
+	xfree(mgr.signal_handlers);
+	xfree(mgr.signal_work);
+	/*
+	 * It is not possible to safely free workq after a fork as threads will
+	 * never cleanup their structs.
+	 *	FREE_NULL_WORKQ(mgr.workq);
+	 */
+#endif /* MEMORY_LEAK_DEBUG */
+
+	/*
+	 * Force conmgr to return to default state before it was initialized at
+	 * forking as all of the prior state is completely unusable.
+	 */
+	mgr = CONMGR_MGR_DEFAULT;
+}
+
 extern void init_conmgr(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks)
 {
@@ -497,6 +571,16 @@ extern void init_conmgr(int thread_count, int max_connections,
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown = false;
+
+	if (!mgr.at_fork_installed) {
+		int rc;
+
+		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+			fatal_abort("%s: pthread_atfork() failed: %s",
+				    __func__, slurm_strerror(rc));
+
+		mgr.at_fork_installed = true;
+	}
 
 	if (mgr.workq) {
 		/* already initialized */
