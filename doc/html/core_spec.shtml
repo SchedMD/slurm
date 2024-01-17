@@ -81,9 +81,6 @@ $ sacct -j 4152 -ojobid%20,alloccpus
 <p>The specific resources to be used for specialization may be identified using
 the <i>CPUSpecList</i> configuration parameter associated with each node in
 the <i>slurm.conf</i> file.
-Note that the <i>core_spec/cray_aries</i> does not currently support identification of
-specific cores, so that plugin should not be used in conjunction with the
-<i>CPUSpecList</i> configuration parameter, even on Cray systems.
 If <i>CoreSpecCount</i> is configured, but not <i>CPUSpecList</i>, the cores
 selected for specialization will follow the assignment algorithm
 described below .
@@ -122,18 +119,9 @@ job allocation request options, especially --cores-per-socket.</p>
 <a class="slurm_link" href="#system"></a>
 </h2>
 
-<p>There are two fundamentally different mechanisms for core specialization;
-one for Cray systems and a different model for other systems.</p>
-
-<p>For Cray systems, configure <i>SelectType=select/cray_aries</i> and
-<i>CoreSpecPlugin=core_spec/cray_aries</i>.
-By default, no resources will be reserved for system use.
-The user must explicitly set a specialized core count as described above.</p>
-
-<p>For all other systems, configure SelectType to <i>cons_tres</i>,
-configure CoreSpecPlugin to <i>core_spec/none</i> (the
-default), and enable the <i>task/cgroup</i> TaskPlugin.
-In addition, specialized resources should be configured in slurm.conf on the
+<p>Core specialization requires SelectType=cons_tres and the
+<i>task/cgroup</i> TaskPlugin.
+Specialized resources should be configured in slurm.conf on the
 node specification line using the <i>CoreSpecCount</i> or <i>CPUSpecList</i>
 options to identify the CPUs to reserve.
 The <i>MemSpecLimit</i> option can be used to reserve memory.
@@ -153,6 +141,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 19 May 2023</p>
+<p style="text-align:center;">Last modified 16 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
