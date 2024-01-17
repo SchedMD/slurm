@@ -278,7 +278,7 @@ struct {
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
 typedef struct {
-	int magic;
+	int magic; /* MAGIC_WORK */
 	conmgr_fd_t *con;
 	conmgr_work_func_t func;
 	void *arg;
