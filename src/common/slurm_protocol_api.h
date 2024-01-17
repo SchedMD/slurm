@@ -165,10 +165,6 @@ bool is_cray_select_type(void);
  */
 uint16_t *slurm_get_srun_port_range(void);
 
-/* slurm_get_core_spec_plugin
- * RET core_spec plugin name, must be xfreed by caller */
-char *slurm_get_core_spec_plugin(void);
-
 /*
  * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value

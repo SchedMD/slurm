@@ -688,19 +688,6 @@ slurm_get_srun_port_range(void)
 	return ports;	/* CLANG false positive */
 }
 
-/* slurm_get_core_spec_plugin
- * RET core_spec plugin name, must be xfreed by caller */
-char *slurm_get_core_spec_plugin(void)
-{
-	char *core_spec_plugin = NULL;
-	slurm_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	core_spec_plugin = xstrdup(conf->core_spec_plugin);
-	slurm_conf_unlock();
-	return core_spec_plugin;
-}
-
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {

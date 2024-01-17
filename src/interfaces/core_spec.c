@@ -79,7 +79,7 @@ extern int core_spec_g_init(void)
 	if (g_core_spec_context_num >= 0)
 		goto done;
 
-	core_spec_plugin_type = slurm_get_core_spec_plugin();
+	core_spec_plugin_type = NULL;
 	g_core_spec_context_num = 0; /* mark it before anything else */
 	if ((core_spec_plugin_type == NULL) ||
 	    (core_spec_plugin_type[0] == '\0'))
