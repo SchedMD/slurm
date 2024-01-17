@@ -3875,7 +3875,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->wait_time, buffer);
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *tmp_char;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -3982,10 +3981,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
 		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
 
-		safe_unpackstr(&tmp_char, buffer);
-		xfree(tmp_char);
-		safe_unpackstr(&tmp_char, buffer);
-		xfree(tmp_char);
+		safe_skipstr(buffer);
+		safe_skipstr(buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 		                      job_defaults_unpack, xfree_ptr,
 		                      buffer,protocol_version) != SLURM_SUCCESS)
@@ -4088,8 +4085,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->resv_prolog, buffer);
 		safe_unpack16(&build_ptr->ret2service, buffer);
 
-		safe_unpackstr(&tmp_char, buffer);
-		xfree(tmp_char);
+		safe_skipstr(buffer);
 		safe_unpackstr(&build_ptr->sched_params, buffer);
 		safe_unpackstr(&build_ptr->sched_logfile, buffer);
 		safe_unpack16(&build_ptr->sched_log_level, buffer);
@@ -5824,15 +5820,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->x11_target, buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *tmp_char;
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&uint32_tmp, buffer); /* was launch_uid */
 		safe_unpack32(&uint32_tmp, buffer); /* was launch_gid */
-		safe_unpackstr(&tmp_char, buffer); /* was user_name */
-		xfree(tmp_char);
+		safe_skipstr(buffer); /* was user_name */
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
 		safe_unpack32(&msg->het_job_node_offset, buffer);
@@ -6319,7 +6313,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 						    smsg->protocol_version)))
 			goto unpack_error;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *tmp_char;
 		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
 				     smsg->protocol_version))
 			goto unpack_error;
@@ -6330,10 +6323,8 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpackstr(&msg->alias_list, buffer);
 		safe_unpackstr(&msg->nodes, buffer);
-		safe_unpackstr(&tmp_char, buffer); /* was std_err */
-		xfree(tmp_char);
-		safe_unpackstr(&tmp_char, buffer); /* was std_out */
-		xfree(tmp_char);
+		safe_skipstr(buffer); /* was std_err */
+		safe_skipstr(buffer); /* was std_out */
 		safe_unpackstr(&msg->work_dir, buffer);
 
 		safe_unpack16(&msg->x11, buffer);
@@ -7211,13 +7202,11 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&launch_msg_ptr->tres_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *tmp_char;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&uint32_tmp, buffer); /* was uid */
 		safe_unpack32(&uint32_tmp, buffer); /* was gid */
-		safe_unpackstr(&tmp_char, buffer); /* was user_name */
-		xfree(tmp_char);
+		safe_skipstr(buffer); /* was user_name */
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
