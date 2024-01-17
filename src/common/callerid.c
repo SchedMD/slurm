@@ -218,7 +218,8 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
-	snprintf(dirpath, 1024, "/proc/%d/fd", (pid_t)pid);
+	if (snprintf(dirpath, 1024, "/proc/%d/fd", (pid_t)pid) >= 1024)
+		return SLURM_ERROR;
 	if ((dirp = opendir(dirpath)) == NULL) {
 		return SLURM_ERROR;
 	}
@@ -231,7 +232,10 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 			continue;
 
 		/* This is a symlink. Follow it to get destination's inode. */
-		snprintf(fdpath, sizeof(fdpath), "%s/%s", dirpath, entryp->d_name);
+		if (snprintf(fdpath, sizeof(fdpath), "%s/%s", dirpath,
+			     entryp->d_name) >= sizeof(fdpath))
+			continue;
+
 		if (stat(fdpath, &statbuf) != 0)
 			continue;
 		if (statbuf.st_ino == inode) {
@@ -357,7 +361,9 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 		else if (!xstrncmp(entryp->d_name, ".", 1))
 			continue;
 
-		snprintf(fdpath, PATH_MAX, "%s/%s", dirpath, entryp->d_name);
+		if (snprintf(fdpath, PATH_MAX, "%s/%s", dirpath,
+			     entryp->d_name) >= PATH_MAX)
+			continue;
 		debug3("callerid_get_own_netinfo: checking %s", fdpath);
 		/* This is a symlink. Follow it to get destination's inode. */
 		if (stat(fdpath, &statbuf) != 0) {
