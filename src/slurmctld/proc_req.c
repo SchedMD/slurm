@@ -5503,12 +5503,12 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 {
 	int rc;
+	char *err_msg = NULL;
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = msg->data;
 	char *nodelist = NULL;
 	bitstr_t *bitmap = NULL, *cannot_reboot_nodes = NULL;
-	char *err_msg = NULL;
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
