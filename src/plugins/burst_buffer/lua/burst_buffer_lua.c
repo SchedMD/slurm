@@ -986,6 +986,12 @@ static int _run_lua_script(run_lua_args_t *args)
 			slurm_msg_t_init(info_msg);
 			info_msg->protocol_version = SLURM_PROTOCOL_VERSION;
 			info_msg->msg_type = RESPONSE_JOB_INFO;
+			/*
+			 * Since we are directly unpacking the buffer that we
+			 * just packed, we need to reset the "processed" value
+			 * of the buffer because unpacking starts from there.
+			 */
+			set_buf_offset(info_buf, 0);
 			unpack_msg(info_msg, info_buf);
 			job_info = info_msg->data;
 			info_msg->data = NULL;
