@@ -151,12 +151,12 @@ struct conmgr_fd_s {
 	bool work_active;
 	/*
 	 * list of non-IO work pending
-	 * type: wrap_work_arg_t
+	 * type: work_t*
 	 */
 	list_t *work;
 	/*
 	 * list of non-IO work pending out buffer being full sent
-	 * type: wrap_work_arg_t
+	 * type: work_t*
 	 */
 	list_t *write_complete_work;
 };
