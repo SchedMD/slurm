@@ -178,8 +178,8 @@ am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
 libslurmctld_interfaces_la_OBJECTS =  \
 	$(am_libslurmctld_interfaces_la_OBJECTS)
 libslurmd_interfaces_la_LIBADD =
-am_libslurmd_interfaces_la_OBJECTS = core_spec.lo job_container.lo \
-	proctrack.lo task.lo
+am_libslurmd_interfaces_la_OBJECTS = job_container.lo proctrack.lo \
+	task.lo
 libslurmd_interfaces_la_OBJECTS =  \
 	$(am_libslurmd_interfaces_la_OBJECTS)
 am_libcommon_interfaces_o_OBJECTS =
@@ -213,10 +213,9 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/acct_gather_interconnect.Plo \
 	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
 	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/core_spec.Plo \
-	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/data_parser.Plo \
-	./$(DEPDIR)/ext_sensors.Plo ./$(DEPDIR)/gpu.Plo \
-	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cred.Plo \
+	./$(DEPDIR)/data_parser.Plo ./$(DEPDIR)/ext_sensors.Plo \
+	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
 	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
 	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
 	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
@@ -613,8 +612,6 @@ libslurmctld_interfaces_la_SOURCES = \
 	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES = \
-	core_spec.c \
-	core_spec.h \
 	job_container.c \
 	job_container.h \
 	proctrack.c \
@@ -713,7 +710,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_spec.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ext_sensors.Plo@am__quote@ # am--include-marker
@@ -875,7 +871,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
-	-rm -f ./$(DEPDIR)/core_spec.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
 	-rm -f ./$(DEPDIR)/ext_sensors.Plo
@@ -956,7 +951,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
-	-rm -f ./$(DEPDIR)/core_spec.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
 	-rm -f ./$(DEPDIR)/ext_sensors.Plo

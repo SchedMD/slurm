@@ -86,8 +86,6 @@ libslurmctld_interfaces_la_SOURCES =    \
 	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES =    \
-	core_spec.c \
-	core_spec.h \
 	job_container.c \
 	job_container.h \
 	proctrack.c \
