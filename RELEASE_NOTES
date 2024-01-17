@@ -20,6 +20,7 @@ prior to 24.08.
 
 HIGHLIGHTS
 ==========
+ -- Remove support for Cray XC ("cray_aries") systems.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
