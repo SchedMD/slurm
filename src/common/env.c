@@ -2281,6 +2281,16 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	return env;
 }
 
+static void _set_ext_launcher_hydra(char ***dest, char *b_env, char *extra)
+{
+	char *bootstrap = getenv(b_env);
+
+	if (!bootstrap || !xstrcmp(bootstrap, "slurm")) {
+		env_array_append(dest, b_env, "slurm");
+		env_array_append(dest, extra, "--external-launcher");
+	}
+}
+
 /*
  * Set TRES related env vars. Set here rather than env_array_for_job() since
  * we don't have array of opt values and the raw values are not stored in the
@@ -2342,11 +2352,16 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 			 "--external-launcher");
 	env_array_append(dest, "PRTE_MCA_plm_slurm_args",
 			 "--external-launcher");
-	env_array_append(dest, "HYDRA_LAUNCHER_EXTRA_ARGS",
-			 "--external-launcher");
-	env_array_append(dest, "I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS",
-			 "--external-launcher");
 
+	/*
+	 * Some mpirun implementations like intel will pass the
+	 * bootstrap exec extra args to any bootstrap method (e.g. ssh,
+	 * rsh), so force 'slurm' bootstrap if no other one is set.
+	 */
+	_set_ext_launcher_hydra(dest, "HYDRA_BOOTSTRAP",
+				"HYDRA_LAUNCHER_EXTRA_ARGS");
+	_set_ext_launcher_hydra(dest, "I_MPI_HYDRA_BOOTSTRAP",
+				"I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS");
 }
 
 extern char *find_quote_token(char *tmp, char *sep, char **last)

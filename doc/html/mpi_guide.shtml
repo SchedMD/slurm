@@ -342,6 +342,20 @@ $ export I_MPI_PMI_LIBRARY=/path/to/slurm/lib/libpmi2.so
 $ mpirun -np &lt;num_procs&gt; user_app.bin
 </pre>
 
+<p>Note that by default Slurm will inject two environment variables to ensure
+mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
+With these, Hydra will also pass the argument '--external-launcher' to srun in
+order to not consider these hydra processes as regular steps.</p>
+
+<p>It is possible to run Intel MPI using a different bootstrap mechanism. To do
+so, explicitly set the following environment variable prior to submitting the
+job with sbatch or salloc:</p>
+<pre>
+$ export I_MPI_HYDRA_BOOTSTRAP=ssh
+$ salloc -N10
+$ mpirun -np &lt;num_procs&gt; user_app.bin
+</pre>
+
 <h3 id="intel_srun">The srun Command (Slurm, recommended)
 <a class="slurm_link" href="#intel_srun"></a>
 </h3>
@@ -386,6 +400,20 @@ compatibility in future versions.</p>
 Both modes of operation are described below. The MPICH implementation supports
 PMI-1, PMI-2 and PMIx (starting with MPICH v4).
 </p>
+
+<p>Note that by default Slurm will inject two environment variables to ensure
+mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
+With these, Hydra will also pass the argument '--external-launcher' to srun in
+order to not consider these hydra processes as regular steps.</p>
+
+<p>It is possible to run MPICH using a different bootstrap mechanism. To do
+so, explicitly set the following environment variable prior to submitting the
+job with sbatch or salloc:</p>
+<pre>
+$ export HYDRA_BOOTSTRAP=ssh
+$ salloc -N10
+$ mpirun -np &lt;num_procs&gt; user_app.bin
+</pre>
 
 <h3 id="mpich_pmi_slurm">
 MPICH with srun and linked with Slurm's PMI-1 or PMI-2 libs
@@ -532,6 +560,20 @@ daemons. It does not link to the Slurm API, which means that during an upgrade
 of Slurm there is no need to recompile MVAPICH2. By default it will use the
 internal PMI implementation.</p>
 
+<p>Note that by default Slurm will inject two environment variables to ensure
+mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
+With these, Hydra will also pass the argument '--external-launcher' to srun in
+order to not consider these hydra processes as regular steps.</p>
+
+<p>It is possible to run MVAPICH2 using a different bootstrap mechanism. To do
+so, explicitly set the following environment variable prior to submitting the
+job with sbatch or salloc:</p>
+<pre>
+$ export HYDRA_BOOTSTRAP=ssh
+$ salloc -N10
+$ mpirun -np &lt;num_procs&gt; user_app.bin
+</pre>
+
 <h3 id="mvapich_pmi_slurm">
 MVAPICH2 with srun and linked with Slurm's PMI-1 or PMI-2 libs
 <a class="slurm_link" href="#mvapich_pmi_slurm"></a>
@@ -635,6 +677,6 @@ using the same <b>PMI_CONTROL_PORT</b>.</p>
 <p>This plugin does not support MPMD/heterogeneous jobs and it requires
 <i>libpals >= 0.2.8</i>.</p>
 
-<p style="text-align:center;">Last modified 05 July 2023</p>
+<p style="text-align:center;">Last modified 17 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
