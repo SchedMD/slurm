@@ -279,6 +279,17 @@ static void _queue_consolidate_config_list(void)
 	slurm_mutex_unlock(&config_list_update_mutex);
 }
 
+static bool _get_config_list_update(void)
+{
+       bool rc;
+
+       slurm_mutex_lock(&config_list_update_mutex);
+       rc = config_list_update;
+       slurm_mutex_unlock(&config_list_update_mutex);
+
+       return rc;
+}
+
 /*
  * _dump_node_state - dump the state of a specific node to a buffer
  * IN dump_node_ptr - pointer to node for which information is requested
@@ -4954,7 +4965,7 @@ extern void consolidate_config_list(bool is_locked, bool force)
 	if (is_locked)
 		xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
-	if (force || config_list_update) {
+	if (force || _get_config_list_update()) {
 		if (!is_locked)
 			lock_slurmctld(node_write_lock);
 		slurm_mutex_lock(&config_list_update_mutex);
