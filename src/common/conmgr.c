@@ -94,7 +94,7 @@
  * Connection tracking structure
  */
 struct conmgr_fd_s {
-	int magic;
+	int magic; /* MAGIC_CON_MGR_FD */
 	conmgr_con_type_t type;
 	/* input and output may be a different fd to inet mode */
 	int input_fd;
