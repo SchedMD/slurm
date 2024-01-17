@@ -95,7 +95,6 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/acct_gather_profile.h"
-#include "src/interfaces/core_spec.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
@@ -2149,10 +2148,6 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 #endif
 	if (container_g_add_cont(jobid, step->cont_id) != SLURM_SUCCESS)
 		error("container_g_add_cont(%u): %m", step->step_id.job_id);
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    core_spec_g_set(step->cont_id, step->job_core_spec) &&
-	    (step->step_id.step_id == 0))
-		error("core_spec_g_set: %m");
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.

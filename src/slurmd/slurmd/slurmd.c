@@ -100,7 +100,6 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
-#include "src/interfaces/core_spec.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
@@ -365,8 +364,6 @@ main (int argc, char **argv)
 		error("Unable to restore job_container state.");
 	if (prep_g_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
-	if (core_spec_g_init() < 0)
-		fatal("Unable to initialize core specialization plugin.");
 	if (switch_init(0) < 0)
 		fatal("Unable to initialize switch plugin.");
 	if (node_features_g_init() != SLURM_SUCCESS)
@@ -2331,7 +2328,6 @@ _slurmd_fini(void)
 	assoc_mgr_fini(false);
 	mpi_fini();
 	node_features_g_fini();
-	core_spec_g_fini();
 	jobacct_gather_fini();
 	acct_gather_profile_fini();
 	cred_state_fini();

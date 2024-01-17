@@ -64,7 +64,6 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
-#include "src/interfaces/core_spec.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
@@ -239,7 +238,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
-	(void) core_spec_g_fini();
 	_step_cleanup(step, msg, rc);
 
 	fini_setproctitle();
@@ -691,7 +689,6 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
-	    (core_spec_g_init() != SLURM_SUCCESS) ||
 	    (proctrack_g_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
