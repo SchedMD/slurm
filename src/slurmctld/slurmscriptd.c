@@ -1344,8 +1344,6 @@ extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 	run_script_msg_t *run_script_msg;
 	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 
-	memset(&run_script_msg, 0, sizeof(run_script_msg));
-
 	/* Init run_script_msg */
 	run_script_msg = _init_run_script_msg(NULL, script_name, script_path,
 					      SLURMSCRIPTD_RESV, timeout);
