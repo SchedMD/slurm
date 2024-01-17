@@ -252,7 +252,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BcastParameters", S_P_STRING},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
-	{"CoreSpecPlugin", S_P_STRING},
+	{"CoreSpecPlugin", S_P_STRING, _defunct_option},
 	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CommunicationParameters", S_P_STRING},
@@ -4067,13 +4067,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else {
 		slurm_conf.getnameinfo_cache_timeout =
 			DEFAULT_GETNAMEINFO_CACHE_TIMEOUT;
-	}
-
-	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
-			    hashtbl)) {
-		/* empty */
-	} else if (xstrcasestr(conf->core_spec_plugin, "none")) {
-		xfree(conf->core_spec_plugin);
 	}
 
 	if (!s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",

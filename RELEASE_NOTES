@@ -24,6 +24,7 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
+ -- CoreSpecPlugin has been removed.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

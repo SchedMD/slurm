@@ -18,7 +18,6 @@ def setup():
     atf.require_accounting(modify=False)
     atf.require_config_parameter('SelectType', 'select/cons_tres')
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
-    atf.require_config_parameter('CoreSpecPlugin', None)
     atf.require_config_parameter('TaskPlugin', 'task/cgroup')
     atf.require_config_parameter('AllowSpecResourcesUsage', '1')
     atf.require_nodes(2, [('Cores', 3)])
