@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <signal.h>
+
 #include "src/common/env.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
