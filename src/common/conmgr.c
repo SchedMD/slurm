@@ -399,6 +399,8 @@ static void _connection_fd_delete(void *x)
 {
 	conmgr_fd_t *con = x;
 
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
 	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
