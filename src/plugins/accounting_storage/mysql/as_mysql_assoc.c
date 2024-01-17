@@ -2187,16 +2187,20 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	 */
 	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
 		int set = 0;
-		query = xstrdup_printf("select lft from \"%s_%s\" where user='%s'",
+		query = xstrdup_printf("select lineage from \"%s_%s\" where user='%s'",
 				       cluster_name, assoc_table, user->name);
-		if (user->coord_accts) {
+		if (user->coord_accts && list_count(user->coord_accts)) {
 			slurmdb_coord_rec_t *coord = NULL;
+			bool added = false;
+			xstrcat(query, " || (user='' && (");
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
-				xstrfmtcat(query, " || acct='%s'",
-					   coord->name);
+				xstrfmtcat(query, "%sacct='%s'",
+					   added ? " || " : "", coord->name);
+				added = true;
 			}
 			list_iterator_destroy(itr);
+			xstrcat(query, "))");
 		}
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
@@ -2210,12 +2214,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		while ((row = mysql_fetch_row(result))) {
 			if (set) {
 				xstrfmtcat(extra,
-					   " || (%s between t1.lft and t1.rgt)",
+					   " || (t1.lineage like '%s%%')",
 					   row[0]);
 			} else {
 				set = 1;
 				xstrfmtcat(extra,
-					   " && ((%s between t1.lft and t1.rgt)",
+					   " && ((t1.lineage like '%s%%')",
 					   row[0]);
 			}
 		}
