@@ -203,7 +203,6 @@ static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
-static bool      _is_core_spec_cray(void);
 static int       _memory_spec_init(void);
 static void      _msg_engine(void);
 static void _notify_parent_of_success(void);
@@ -2555,17 +2554,6 @@ static int _resource_spec_init(void)
 	return SLURM_SUCCESS;
 }
 
-/* Return true if CoreSpecPlugin=core_spec/cray */
-static bool _is_core_spec_cray(void)
-{
-	bool use_core_spec_cray = false;
-	char *core_spec_plugin = slurm_get_core_spec_plugin();
-	if (core_spec_plugin && strstr(core_spec_plugin, "cray"))
-		use_core_spec_cray = true;
-	xfree(core_spec_plugin);
-	return use_core_spec_cray;
-}
-
 /*
  * If configured, initialize core specialization
  */
@@ -2584,10 +2572,6 @@ static int _core_spec_init(void)
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
 		debug("Resource spec: No specialized cores configured by "
 		      "default on this node");
-		return SLURM_SUCCESS;
-	}
-	if (_is_core_spec_cray()) {	/* No need to use cgroups */
-		debug("Using core_spec/cray to manage specialized cores");
 		return SLURM_SUCCESS;
 	}
 
