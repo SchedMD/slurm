@@ -63,6 +63,9 @@ documents those changes that are of interest to users and administrators.
     heterogenous jobs that cause jobs to abort on restart.
  -- Don't allow deletion of non-dynamic nodes.
  -- accounting_storage/mysql - Fix issue adding partition based associations.
+ -- Respect non-"slurm" settings for I_MPI_HYDRA_BOOTSTRAP and HYDRA_BOOTSTRAP
+    and avoid injecting the --external-launcher option which will cause
+    mpirun/mpiexec to fail with an unexpected argument error.
 
 * Changes in Slurm 23.11.1
 ==========================
