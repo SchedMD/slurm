@@ -1704,8 +1704,20 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	/*
+	 * Node reordering may be done by the topology plugin.
+	 * Reordering the table must be done before hashing the
+	 * nodes, and before any position-relative bitmaps are created.
+	 *
+	 * Sort the nodes read in from the slurm.conf first before restoring
+	 * the dynamic nodes from the state file to prevent dynamic nodes from
+	 * being sorted -- which can cause problems with heterogenous jobs and
+	 * the order of the sockets changing on startup.
+	 */
+	_sort_node_record_table_ptr();
+
+	/*
 	 * Load node state which includes dynamic nodes so that dynamic nodes
-	 * can be sorted and included in topology.
+	 * can be included in topology.
 	 */
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
@@ -1734,13 +1746,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			      recover);
 		(void) load_all_front_end_state(false);
 	}
-
-	/*
-	 * Node reordering may be done by the topology plugin.
-	 * Reordering the table must be done before hashing the
-	 * nodes, and before any position-relative bitmaps are created.
-	 */
-	_sort_node_record_table_ptr();
 
 	rehash_node();
 	topology_g_build_config();

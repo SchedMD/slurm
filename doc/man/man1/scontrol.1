@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "December 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2024" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -154,10 +154,11 @@ COMPLETING or DOWN state.
 \fBdelete\fR <\fISPECIFICATION\fR>
 Delete the entry with the specified \fISPECIFICATION\fP.
 The three \fISPECIFICATION\fP choices are \fINodeName=<nodelist>\fP,
-\fIPartitionName=<name>\fP and \fIReservation=<name>\fP. Nodes can't be deleted
-if they are in a reservation or have jobs on running. Reservations and
-partitions should have no associated jobs at the time of their deletion (modify
-the jobs first). If the specified partition is in use, the request is denied.
+\fIPartitionName=<name>\fP and \fIReservation=<name>\fP. Only dynamic nodes
+that have no running jobs and that are not part of a reservation can be
+deleted. Reservations and partitions should have no associated jobs at the time
+of their deletion (modify the jobs first). If the specified partition is in
+use, the request is denied.
 .IP
 
 .TP

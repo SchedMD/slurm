@@ -114,8 +114,8 @@ scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSoc
 </h2>
 <p>
 Nodes can be deleted using <b>scontrol delete nodename=&lt;nodelist&gt;</b>.
-Nodes can only be deleted if they have no jobs running on them and aren't part
-of a reservation.
+Only dynamic nodes that have no running jobs and that are not part of a
+reservation can be deleted.
 </p>
 
 <h2 id="LIMITATIONS">Limitations
@@ -124,21 +124,14 @@ of a reservation.
 <p>
 <ol>
 <li>
-When dynamic nodes are added to Slurm they will potentially be alphabetically
-out of order internally &mdash; leading to suboptimal job allocations if node
-names represent topology of the nodes &mdash; until a reconfigure or a restart
-is performed. If using a <a href="topology.html">Topology Plugin</a>, the
-topology will also be out of date until a reconfigure/restart is performed.
-</li>
-<li>
-The <a href="slurm.conf.html#OPT_route/topology">route/toplogy</a> plugin is
-not supported since dynamic nodes require that the Fanout/Treewidth be
-disabled.
+Dynamic nodes are not sorted internally and when added to Slurm they will
+potentially be alphabetically out of order internally &mdash; leading to
+suboptimal job allocations if node names represent topology of the nodes.
 </li>
 </ol>
 </p>
 
 
-<p style="text-align:center;">Last modified 15 August 2023</p>
+<p style="text-align:center;">Last modified 13 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
