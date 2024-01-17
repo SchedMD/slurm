@@ -265,6 +265,8 @@ struct {
 } mgr = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
 	.cond = PTHREAD_COND_INITIALIZER,
+	.watch_mutex = PTHREAD_MUTEX_INITIALIZER,
+	.watch_cond = PTHREAD_COND_INITIALIZER,
 	.max_connections = -1,
 	.event_fd = { -1, -1 },
 	.signal_fd = { -1, -1 },
