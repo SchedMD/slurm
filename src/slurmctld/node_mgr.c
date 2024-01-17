@@ -5211,6 +5211,10 @@ static int _delete_node(char *name)
 		error("Unable to find node %s to delete", name);
 		return ESLURM_INVALID_NODE_NAME;
 	}
+	if (!IS_NODE_DYNAMIC_NORM(node_ptr)) {
+		error("Can't delete non-dynamic node '%s'.", name);
+		return ESLURM_INVALID_NODE_STATE;
+	}
 	if (IS_NODE_ALLOCATED(node_ptr) ||
 	    IS_NODE_COMPLETING(node_ptr)) {
 		error("Node '%s' can't be delete because it's still in use.",
