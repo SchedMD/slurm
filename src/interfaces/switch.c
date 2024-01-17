@@ -86,10 +86,6 @@ typedef struct slurm_switch_ops {
 					    char *nodelist );
 	int          (*state_clear)       ( void );
 	int          (*reconfig)          ( void );
-	int          (*job_step_pre_suspend)( stepd_step_rec_t *step );
-	int          (*job_step_post_suspend)( stepd_step_rec_t *step );
-	int          (*job_step_pre_resume)( stepd_step_rec_t *step );
-	int          (*job_step_post_resume)( stepd_step_rec_t *step );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
@@ -116,10 +112,6 @@ static const char *syms[] = {
 	"switch_p_job_step_allocated",
 	"switch_p_libstate_clear",
 	"switch_p_reconfig",
-	"switch_p_job_step_pre_suspend",
-	"switch_p_job_step_post_suspend",
-	"switch_p_job_step_pre_resume",
-	"switch_p_job_step_post_resume",
 	"switch_p_job_complete",
 };
 
@@ -553,46 +545,6 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	return (*(ops[plugin_id].step_allocated))(data, nodelist);
-}
-
-extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *step)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].job_step_pre_suspend))(step);
-}
-
-extern int switch_g_job_step_post_suspend(stepd_step_rec_t *step)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].job_step_post_suspend))(step);
-}
-
-extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].job_step_pre_resume))(step);
-}
-
-extern int switch_g_job_step_post_resume(stepd_step_rec_t *step)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].job_step_post_resume))(step);
 }
 
 extern void switch_g_job_complete(uint32_t job_id)

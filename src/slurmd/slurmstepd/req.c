@@ -1596,9 +1596,6 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (!step->batch && switch_g_job_step_pre_suspend(step))
-			error("switch_g_job_step_pre_suspend: %m");
-
 		if (suspend_grace_time == NO_VAL) {
 			char *suspend_grace_str = "suspend_grace_time=";
 
@@ -1643,8 +1640,6 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 		}
 		suspended = true;
 	}
-	if (!step->batch && switch_g_job_step_post_suspend(step))
-		error("switch_g_job_step_post_suspend: %m");
 
 	slurm_mutex_unlock(&suspend_mutex);
 
@@ -1689,8 +1684,6 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (!step->batch && switch_g_job_step_pre_resume(step))
-			error("switch_g_job_step_pre_resume: %m");
 		if (proctrack_g_signal(step->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %ps: %m", &step->step_id);
 		} else {
@@ -1698,8 +1691,6 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 		}
 		suspended = false;
 	}
-	if (!step->batch && switch_g_job_step_post_resume(step))
-		error("switch_g_job_step_post_resume: %m");
 
 	/*
 	 * Reset CPU frequencies if changed

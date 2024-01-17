@@ -1122,26 +1122,6 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *step)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_pre_resume(stepd_step_rec_t *step)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Free any job VNIs, as well as any Slingshot hardware collectives
  * multicast addresses associated with the job

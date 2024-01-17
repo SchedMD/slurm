@@ -239,28 +239,4 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
-/********************************************************************\
- * JOB STEP {PRE,POST}-SUSPEND and {PRE-POST}-RESUME FUNCTIONS      *
-\********************************************************************/
-
-/*
- * Do job-step-related pre-suspend actions
- */
-extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *step);
-
-/*
- * Do job-step-related post-suspend actions
- */
-extern int switch_g_job_step_post_suspend(stepd_step_rec_t *step);
-
-/*
- * Do job-step-related pre-resume actions
- */
-extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step);
-
-/*
- * Do job-step-related post-resume actions
- */
-extern int switch_g_job_step_post_resume(stepd_step_rec_t *step);
-
 #endif
