@@ -2425,6 +2425,13 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	if (buffers.auth)
 		msglen += get_buf_offset(buffers.auth);
 
+	if (msglen > MAX_MSG_SIZE) {
+		log_flag(NET, "%s: [%s] invalid RPC message length: %u",
+			 __func__, con->name, msglen);
+		rc = SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+		goto cleanup;
+	}
+
 	/* switch to network order */
 	msglen = htonl(msglen);
 
