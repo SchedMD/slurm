@@ -247,6 +247,10 @@ enum cluster_fed_states {
 /* Assoc flags */
 #define ASSOC_FLAG_DELETED  SLURM_BIT(0)
 #define ASSOC_FLAG_NO_UPDATE SLURM_BIT(1)
+#define ASSOC_FLAG_EXACT SLURM_BIT(2) /* If looking for a partition based
+				       * association don't return SUCCESS for a
+				       * non-partition based association when
+				       * calling assoc_mgr_fill_in_assoc() */
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */

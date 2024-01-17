@@ -3191,6 +3191,11 @@ static int _add_assoc_cond_partition(void *x, void *arg)
 	user_assoc.uid = add_assoc_cond->add_assoc->assoc.uid;
 	user_assoc.partition = add_assoc_cond->add_assoc->assoc.partition;
 
+	/*
+	 * We want to look for this exact assoc, not the non-partition version
+	 */
+	user_assoc.flags |= ASSOC_FLAG_EXACT;
+
 	rc = assoc_mgr_fill_in_assoc(add_assoc_cond->mysql_conn,
 				     &user_assoc,
 				     ACCOUNTING_ENFORCE_ASSOCS, NULL, true);
