@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
  -- Disable sorting of dynamic nodes to avoid issues when restarting with
     heterogenous jobs that cause jobs to abort on restart.
  -- Don't allow deletion of non-dynamic nodes.
+ -- accounting_storage/mysql - Fix issue adding partition based associations.
 
 * Changes in Slurm 23.11.1
 ==========================

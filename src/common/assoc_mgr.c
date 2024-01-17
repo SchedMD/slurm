@@ -2725,7 +2725,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	 * for the non-partition association if we don't find one.
 	 */
 	ret_assoc = _find_assoc_rec(assoc);
-	if (!ret_assoc && assoc->partition) {
+	if (!ret_assoc && assoc->partition &&
+	    !(assoc->flags & ASSOC_FLAG_EXACT)) {
 		char *part_holder = assoc->partition;
 		assoc->partition = NULL;
 		ret_assoc = _find_assoc_rec(assoc);
