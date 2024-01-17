@@ -2414,6 +2414,8 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	uint32_t msglen = 0;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(msg->protocol_version <= SLURM_PROTOCOL_VERSION);
+	xassert(msg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION);
 
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, false)))
 		goto cleanup;
