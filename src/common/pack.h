@@ -367,6 +367,15 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 	FREE_NULL_BITMAP(b);				\
 } while (0)
 
+#define safe_skipstr(buf) do {					\
+	char *valp = NULL;					\
+	uint32_t size_valp;					\
+	xassert(buf->magic == BUF_MAGIC);			\
+	if (unpackstr_xmalloc_chooser(&valp, &size_valp, buf))	\
+		goto unpack_error;				\
+	xfree(valp);						\
+} while (0)
+
 #define safe_unpackstr(valp, buf) do {				\
 	uint32_t size_valp;					\
 	xassert(buf->magic == BUF_MAGIC);		        \
