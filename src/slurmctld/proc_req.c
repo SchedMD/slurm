@@ -5524,6 +5524,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		return;
 	}
 #ifdef HAVE_FRONT_END
+	err_msg = xstrdup("Node reboot is not supported in configuration when Slurm is built with --enable-front-end node support.");
 	rc = ESLURM_NOT_SUPPORTED;
 #else
 	/* do RPC call */
