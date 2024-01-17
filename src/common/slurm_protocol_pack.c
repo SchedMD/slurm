@@ -3057,7 +3057,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		              build_ptr->control_cnt, buffer);
 		packstr_array(build_ptr->control_machine,
 		              build_ptr->control_cnt, buffer);
-		packstr(build_ptr->core_spec_plugin, buffer);
+		packnull(buffer); /* was core_spec_plugin */
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
 		packstr(build_ptr->cred_type, buffer);
@@ -3349,7 +3349,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		              build_ptr->control_cnt, buffer);
 		packstr_array(build_ptr->control_machine,
 		              build_ptr->control_cnt, buffer);
-		packstr(build_ptr->core_spec_plugin, buffer);
+		packnull(buffer); /* was core_spec_plugin */
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
 		packstr(build_ptr->cred_type, buffer);
@@ -3640,7 +3640,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                     &uint32_tmp, buffer);
 		if (build_ptr->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->core_spec_plugin, buffer);
+		safe_skipstr(buffer); /* was core_spec_plugin */
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
 		safe_unpackstr(&build_ptr->cred_type, buffer);
@@ -3927,7 +3927,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                     &uint32_tmp, buffer);
 		if (build_ptr->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->core_spec_plugin, buffer);
+		safe_skipstr(buffer); /* was core_spec_plugin */
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
 		safe_unpackstr(&build_ptr->cred_type, buffer);

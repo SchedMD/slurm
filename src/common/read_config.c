@@ -2899,7 +2899,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->comm_params);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
-	xfree (ctl_conf_ptr->core_spec_plugin);
 	xfree (ctl_conf_ptr->cred_type);
 	xfree (ctl_conf_ptr->dependency_params);
 	xfree (ctl_conf_ptr->epilog);
@@ -3040,7 +3039,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->control_cnt = 0;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
-	xfree (ctl_conf_ptr->core_spec_plugin);
 	xfree (ctl_conf_ptr->cred_type);
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;

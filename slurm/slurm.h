@@ -2871,7 +2871,6 @@ typedef struct {
 	time_t boot_time;	/* time slurmctld last booted */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
-	char *core_spec_plugin;	/* core specialization plugin name */
 	char *cluster_name;     /* general name of the entire cluster */
 	char *comm_params;     /* Communication parameters */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
