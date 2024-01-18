@@ -78,6 +78,13 @@ HIGHLIGHTS
  -- Disable sorting of dynamic nodes to avoid issues when restarting with
     heterogenous jobs that cause jobs to abort on restart.
  -- Don't allow deletion of non-dynamic nodes.
+ -- cgroup/v2 does not return Virtual Memory metrics for accounting anymore.
+    As the kernel cgroups interface did not provide any interface to gather
+    these values, the returned value was an unreliable approximation based on
+    other cgroup metrics. This has been corrected and from now on a value of 0
+    should be expected in the accounting for AveVMSize, MaxVMSize,
+    MaxVMSizeNode, MaxVMSizeTask and vmem in TRESUsageInTot if using
+    jobacct_gather/cgroup and cgroup/v2.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

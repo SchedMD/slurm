@@ -2026,13 +2026,11 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
-	char *cpu_stat = NULL, *memory_stat = NULL, *memory_swap_current = NULL;
-	char *memory_current = NULL;
+	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
-	uint64_t tmp = 0;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
@@ -2078,27 +2076,15 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				 task_id);
 	}
 
-	if (common_cgroup_get_param(&task_cg_info->task_cg,
-				    "memory.swap.current",
-				    &memory_swap_current,
-				    &tmp_sz) != SLURM_SUCCESS) {
-		if (task_id == task_special_id)
-			log_flag(CGROUP, "Cannot read task_special memory.swap.current file");
-		else
-			log_flag(CGROUP, "Cannot read task %d memory.swap.current file",
-				 task_id);
-	}
-
 	/*
 	 * Initialize values. A NO_VAL64 will indicate the caller that something
-	 * happened here.
+	 * happened here. Values that aren't set here are returned as 0.
 	 */
 	stats = xmalloc(sizeof(*stats));
 	stats->usec = NO_VAL64;
 	stats->ssec = NO_VAL64;
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
-	stats->total_vmem = NO_VAL64;
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
@@ -2128,33 +2114,6 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	}
 
 	if (memory_stat) {
-		if (stats->total_rss != NO_VAL64) {
-			stats->total_vmem = stats->total_rss;
-
-			/* Remove swap cache from VMem before adding all swap */
-			if (tmp != NO_VAL64)
-				stats->total_vmem -= tmp;
-
-			ptr = xstrstr(memory_stat, "file");
-			if (ptr && (sscanf(ptr, "file %"PRIu64, &tmp) != 1))
-				log_flag(CGROUP, "Cannot parse file field in memory.stat file");
-			else
-				stats->total_vmem += tmp;
-
-			if (memory_swap_current) {
-				if (sscanf(memory_swap_current,
-					   "%"PRIu64, &tmp) != 1)
-					log_flag(CGROUP, "Cannot parse file memory.swap.current file");
-				else
-					stats->total_vmem += tmp;
-			}
-		}
-
-		/*
-		 * Future: we can add more here or do a more fine-grain control
-		 * with shmem or others depending on NoShare or UsePSS.
-		 */
-
 		ptr = xstrstr(memory_stat, "pgmajfault");
 		if (ptr && (sscanf(ptr, "pgmajfault %"PRIu64,
 				   &stats->total_pgmajfault) != 1))
@@ -2162,7 +2121,6 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		xfree(memory_stat);
 	}
 
-	xfree(memory_swap_current);
 	return stats;
 }
 

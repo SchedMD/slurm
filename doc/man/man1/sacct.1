@@ -304,6 +304,11 @@ average/total at the moment the command was run.
 \fBNOTE\fR: TRESUsage*Min* values represent the lowest highwater mark in the
 step.
 
+\fBNOTE\fR: Availability of metrics rely on the \fBjobacct_gather\fP plugin
+used. For example the jobacct_gather/cgroup in combination with cgroup/v2 does
+not provide Virtual Memory metrics due to limitations in the kernel cgroups
+interfaces and will show a 0 for the related fields.
+
 The section titled "Job Accounting Fields" describes these fields.
 .IP
 
