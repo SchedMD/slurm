@@ -605,7 +605,7 @@ static void _do_power_work(time_t now)
 		     (node_ptr->boot_req_time + node_ptr->resume_timeout)) &&
 		    IS_NODE_POWERING_UP(node_ptr) &&
 		    IS_NODE_NO_RESPOND(node_ptr)) {
-			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
+			info("node %s not resumed by ResumeTimeout(%d), setting DOWN and POWERED_DOWN",
 			     node_ptr->name, node_ptr->resume_timeout);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
