@@ -891,13 +891,13 @@ def require_tool(tool):
         pytest.skip(msg, allow_module_level=True)
 
 
-def require_whereami(is_cray=False):
+def require_whereami():
     """Compiles the whereami.c program to be used by tests
 
     This function installs the whereami program.  To get the
     correct output, TaskPlugin is required in the slurm.conf
     file before slurm starts up.
-    ex: TaskPlugin=task/cray_aries,task/cgroup,task/affinity
+    ex: TaskPlugin=task/cgroup,task/affinity
 
     The file will be installed in the testsuite/python/lib/scripts
     directory where the whereami.c file is located
@@ -909,11 +909,6 @@ def require_whereami(is_cray=False):
         >>>     user=atf.properties['slurm-user'])
     """
     require_config_parameter("TaskPlugin", "task/cgroup,task/affinity")
-
-    # Set requirement for cray systems
-    if is_cray:
-        require_config_parameter("TaskPlugin",
-            "task/cray_aries,task/cgroup,task/affinity")
 
     # If the file already exists and we don't need to recompile
     dest_file = f"{properties['testsuite_scripts_dir']}/whereami"
