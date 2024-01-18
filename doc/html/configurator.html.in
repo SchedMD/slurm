@@ -498,8 +498,6 @@ Define a task launch plugin. This may be used to
 provide resource management within a node (e.g. pinning
 tasks to specific processors).
 Select one value for <B>TaskPlugin</B>:<BR>
-<input type="checkbox" name="task_plugin" value="task/cray_aries"> <B>Cray XC</B>: Cray XC proprietary
-task launch<BR>
 <input type="checkbox" name="task_plugin" value="task/none"> <B>None</B>: No task launch actions<BR>
 <input type="checkbox" name="task_plugin" value="task/affinity" checked> <B>Affinity</B>:
 CPU affinity support

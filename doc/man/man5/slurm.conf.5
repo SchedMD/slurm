@@ -5742,12 +5742,6 @@ when configuring TaskPlugin, and setting \fBConstrainCores=yes\fR in
 \fBcgroup.conf\fR. This setup uses the task/affinity plugin for setting the
 cpu mask for tasks and uses the task/cgroup plugin to fence tasks into the
 allocated cpus.
-
-\fBNOTE\fR: For CRAY systems only: task/cgroup must be used with task/cray_aries
-in TaskPlugin. For CRAY systems a configuration like this is recommended:
-.nf
-TaskPlugin=task/cray_aries,task/cgroup,task/affinity
-.fi
 .RE
 .IP
 
@@ -5791,7 +5785,6 @@ If specialized cores or CPUs are identified for the node (i.e. the
 then Slurm daemons running on the compute node (i.e. slurmd and slurmstepd)
 should run outside of those resources (i.e. specialized resources are
 completely unavailable to Slurm daemons and jobs spawned by Slurm).
-This option may not be used with the \fBtask/cray_aries\fR plugin.
 .IP
 
 .TP
