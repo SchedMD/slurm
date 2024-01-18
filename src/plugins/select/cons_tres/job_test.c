@@ -2283,6 +2283,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	uint64_t block_lowest_weight = 0;
 	int block_cnt = -1, bblock_per_block;
 	int prev_rem_nodes;
+	int block_level;
 
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
@@ -2297,8 +2298,8 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 	bblock_per_block = ((rem_nodes + bblock_node_cnt - 1) /
 			    bblock_node_cnt);
-	bblock_per_block = ceil(log(bblock_per_block) / log(2)); //block level
-	bblock_per_block = bit_ffs_from_bit(block_levels, bblock_per_block);
+	block_level = ceil(log(bblock_per_block) / log(2));
+	block_level = bit_ffs_from_bit(block_levels, block_level);
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -2394,13 +2395,13 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		(void) list_for_each(node_weight_list, _topo_weight_log, NULL);
 
-	if (bblock_per_block < 0) {
+	if (block_level < 0) {
 		/* Number of base blocks in block */
 		bblock_per_block = block_record_cnt;
 		block_cnt = 1;
 	} else {
 		/* Number of base blocks in block */
-		bblock_per_block = pow(2, bblock_per_block);
+		bblock_per_block = pow(2, block_level);
 		block_cnt = (block_record_cnt + bblock_per_block - 1) /
 			bblock_per_block;
 	}
