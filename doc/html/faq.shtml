@@ -153,6 +153,7 @@
   Slurm?</a></li>
 <li><a href="#git_patch">How can a patch file be generated from a Slurm commit
   in GitHub?</a></li>
+<li><a href="#apply_patch">How can I apply a patch to my Slurm source?</a></li>
 <li><a href="#enforce_limits">Why are the resource limits set in the database
   not being enforced?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
@@ -1713,6 +1714,32 @@ the resulting file. For an example, see:
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
 </p>
 
+<p><a id="apply_patch"><b>How can I apply a patch to my Slurm source?</b></a>
+<br>
+If you have a patch file that you need to apply to your source, such as a
+security or bug fix patch supplied by SchedMD's support, you can do
+so with the <b>patch</b> command. You would first extract the contents of the
+source tarball for the version you are using. You can then apply the patch
+to the extracted source. Below is an example of how to do this with the
+source for Slurm 23.11.1:
+<pre>
+$ tar xjvf slurm-23.11.1.tar.bz2 > /dev/null
+$ patch -p1 -d slurm-23.11.1/ < example.patch
+patching file src/slurmctld/step_mgr.c
+</pre>
+</p>
+
+<p>Once the patch has been applied to the source code, you can proceed to
+build Slurm as you would normally if you build with <b>make</b>. If you use
+<b>rpmbuild</b> to build Slurm, you will have to create a tarball with the
+patched files. The filename of the tarball must match the original filename
+to avoid errors.
+<pre>
+$ tar cjvf slurm-23.11.1.tar.bz2 slurm-23.11.1/ > /dev/null
+$ rpmbuild -ta slurm-23.11.1.tar.bz2 > /dev/null
+</pre>
+</p>
+
 <p><a id="enforce_limits"><b>Why are the resource limits set in the
 database not being enforced?</b></a><br>
 In order to enforce resource limits, set the value of
@@ -2431,6 +2458,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 18 December 2023</p>
+<p style="text-align:center;">Last modified 17 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
