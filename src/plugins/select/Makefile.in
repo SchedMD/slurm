@@ -464,9 +464,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# NOTE: other must be in the list before cray_aries lest the build break
-SUBDIRS = other cons_tres cray_aries linear
+SUBDIRS = cons_tres linear
 all: all-recursive
 
 .SUFFIXES:
@@ -733,10 +731,10 @@ uninstall-am:
 # alps + linear            = 104 ==> Not currently used
 # alps + cons_res          = 105 ==> Not currently used
 # serial                   = 106 ==> Not currently used
-# cray_aries + linear      = 107
+# cray_aries + linear      = 107 ==> Not currently used
 # cray_aries + cons_res    = 108 ==> Not currently used
 # cons_tres                = 109
-# cray_aries + cons_tres   = 110
+# cray_aries + cons_tres   = 110 ==> Not currently used
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

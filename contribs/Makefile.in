@@ -88,7 +88,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@LINUX_BUILD_TRUE@am__append_1 = cray pam_slurm_adopt
+@LINUX_BUILD_TRUE@am__append_1 = pam_slurm_adopt
 subdir = contribs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -201,7 +201,7 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 DIST_SUBDIRS = lua nss_slurm openlava pam perlapi pmi pmi2 seff \
-	sgather sjobexit torque cray pam_slurm_adopt
+	sgather sjobexit torque pam_slurm_adopt
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@

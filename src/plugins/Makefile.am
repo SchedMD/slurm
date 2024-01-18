@@ -20,7 +20,6 @@ SUBDIRS = \
 	mcs			\
 	mpi			\
 	node_features		\
-	power			\
 	preempt			\
 	prep			\
 	priority		\

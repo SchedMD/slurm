@@ -464,7 +464,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = helpers knl_cray knl_generic
+SUBDIRS = helpers knl_generic
 all: all-recursive
 
 .SUFFIXES:

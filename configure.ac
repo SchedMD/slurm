@@ -353,9 +353,6 @@ dnl All slurm Makefiles:
 AC_CONFIG_FILES([Makefile
 		 auxdir/Makefile
 		 contribs/Makefile
-		 contribs/cray/Makefile
-		 contribs/cray/csm/Makefile
-		 contribs/cray/slurmsmwd/Makefile
 		 contribs/lua/Makefile
 		 contribs/nss_slurm/Makefile
 		 contribs/openlava/Makefile
@@ -486,11 +483,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/helpers/Makefile
-		 src/plugins/node_features/knl_cray/Makefile
 		 src/plugins/node_features/knl_generic/Makefile
-		 src/plugins/power/Makefile
-		 src/plugins/power/common/Makefile
-		 src/plugins/power/cray_aries/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/partition_prio/Makefile
 		 src/plugins/preempt/qos/Makefile
@@ -501,7 +494,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
-		 src/plugins/proctrack/cray_aries/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/sched/Makefile
@@ -509,9 +501,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/cons_tres/Makefile
-		 src/plugins/select/cray_aries/Makefile
 		 src/plugins/select/linear/Makefile
-		 src/plugins/select/other/Makefile
 		 src/plugins/serializer/Makefile
 		 src/plugins/serializer/json/Makefile
 		 src/plugins/serializer/url-encoded/Makefile
@@ -519,12 +509,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/site_factor/Makefile
 		 src/plugins/site_factor/example/Makefile
 		 src/plugins/switch/Makefile
-		 src/plugins/switch/cray_aries/Makefile
 		 src/plugins/switch/hpe_slingshot/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
-		 src/plugins/task/cray_aries/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile
 		 src/plugins/topology/block/Makefile
