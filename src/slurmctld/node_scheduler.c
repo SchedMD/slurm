@@ -304,10 +304,8 @@ extern void set_job_features_use(job_details_t *details_ptr)
 extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted)
 {
-	int node_count = 0;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
-	int down_node_cnt = 0;
 	node_record_t *node_ptr;
 	hostlist_t *hostlist = NULL;
 	uint16_t use_protocol_version = 0;
@@ -341,7 +339,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			/* Issue the KILL RPC, but don't verify response */
 			front_end_ptr->job_cnt_comp = 0;
 			front_end_ptr->job_cnt_run  = 0;
-			down_node_cnt++;
 			if (job_ptr->node_bitmap_cg) {
 				bit_clear_all(job_ptr->node_bitmap_cg);
 			} else {
@@ -383,7 +380,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 		if (hostlist)
 			hostlist_push_host(hostlist, job_ptr->batch_host);
-		node_count++;
 	}
 #else
 	if (!job_ptr->node_bitmap_cg)
@@ -397,7 +393,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
-			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_tres_cnt(job_ptr, i);
 			/*
@@ -415,7 +410,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			use_protocol_version = node_ptr->protocol_version;
 		if (hostlist)
 			hostlist_push_host(hostlist, node_ptr->name);
-		node_count++;
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			msg_flags |= SLURM_PACK_ADDRS;
 	}
@@ -452,13 +446,13 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		return;
 	}
 
-	if ((node_count - down_node_cnt) == 0) {
+	if (!job_ptr->node_cnt) {
 		/* Can not wait for epilog complete to release licenses and
 		 * update gang scheduling table */
 		cleanup_completing(job_ptr);
 	}
 
-	if (node_count == 0) {
+	if (!hostlist || !hostlist_count(hostlist)) {
 		hostlist_destroy(hostlist);
 		return;
 	}
@@ -473,7 +467,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->protocol_version = use_protocol_version;
 	agent_args->hostlist = hostlist;
-	agent_args->node_count = node_count;
+	agent_args->node_count = hostlist_count(hostlist);
 	agent_args->msg_flags = msg_flags;
 
 	last_node_update = time(NULL);
