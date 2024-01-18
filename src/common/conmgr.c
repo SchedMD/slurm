@@ -1105,7 +1105,7 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 
 		if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
 			rc = errno;
-			error("%s: [%s] unpack_msg() failed: %s",
+			error("%s: [%s] slurm_unpack_received_msg() failed: %s",
 			      __func__, con->name, slurm_strerror(rc));
 			slurm_free_msg(msg);
 			msg = NULL;
