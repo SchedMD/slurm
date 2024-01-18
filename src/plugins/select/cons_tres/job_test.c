@@ -2254,8 +2254,8 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	List *block_gres = NULL;		/* available GRES on block */
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
-	int *block_node_cnt = NULL;	/* total nodes on block */
-	int *nodes_on_bblock = NULL;	/* total nodes on nblock */
+	uint32_t *block_node_cnt = NULL;	/* total nodes on block */
+	uint32_t *nodes_on_bblock = NULL;	/* total nodes on bblock */
 	bitstr_t *avail_nodes_bitmap = NULL;	/* nodes on any block */
 	bitstr_t *req_nodes_bitmap = NULL;	/* required node bitmap */
 	bitstr_t *req2_nodes_bitmap = NULL;	/* required+lowest prio nodes */
@@ -2411,7 +2411,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	block_cpu_cnt = xcalloc(block_cnt, sizeof(uint32_t));
 	block_gres = xcalloc(block_cnt, sizeof(List));
 	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
-	block_node_cnt = xcalloc(block_cnt, sizeof(int));
+	block_node_cnt = xcalloc(block_cnt, sizeof(*block_node_cnt));
 	bblock_required = xcalloc(block_record_cnt, sizeof(bool));
 	bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
 
@@ -2705,7 +2705,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		}
 	}
 
-	nodes_on_bblock = xcalloc(block_record_cnt, sizeof(int));
+	nodes_on_bblock = xcalloc(block_record_cnt, sizeof(*nodes_on_bblock));
 	bblock_node_bitmap = xcalloc(block_record_cnt, sizeof(bitstr_t *));
 	for (i = 0; i < block_record_cnt; i++) {
 		if (block_inx != bblock_block_inx[i])
