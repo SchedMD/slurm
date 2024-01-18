@@ -16431,7 +16431,6 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 		if (!IS_JOB_SUSPENDED(job_ptr))
 			return ESLURM_JOB_NOT_SUSPENDED;
 		rc = _resume_job_nodes(job_ptr, indf_susp);
-		power_g_job_resume(job_ptr);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 		_suspend_job(job_ptr, op);

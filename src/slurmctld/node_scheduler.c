@@ -2815,7 +2815,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);
-	power_g_job_start(job_ptr);
 
 	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
 		job_ptr->job_state |= JOB_POWER_UP_NODE;

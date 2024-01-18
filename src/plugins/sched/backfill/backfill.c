@@ -3248,7 +3248,6 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		last_job_update = time(NULL);
 		info("Started %pJ in %s on %s",
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
-		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr);
 		else if (!IS_JOB_CONFIGURING(job_ptr))
