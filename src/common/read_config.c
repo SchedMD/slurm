@@ -5437,11 +5437,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 					return SLURM_ERROR;
 				}
 			} else if (xstrcasecmp(tok, "SlurmdOffSpec") == 0) {
-				if (xstrcasestr(conf->task_plugin,
-						"cray_aries")) {
-					error("TaskPluginParam=SlurmdOffSpec invalid with TaskPlugin=task/cray_aries");
-					return SLURM_ERROR;
-				}
 				conf->task_plugin_param |= SLURMD_OFF_SPEC;
 			} else {
 				error("Bad TaskPluginParam: %s", tok);
