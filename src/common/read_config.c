@@ -3902,8 +3902,7 @@ static int _sort_plugins_by_name(void *x, void *y)
 /*
  * Sort the TaskPlugin= parameters in reverse alphabetical order.
  * This provides a convenient shortcut to following these rules:
- * a) task/cray_aries must be listed before task/cgroup
- * b) task/cgroup must be listed before task/affinity.
+ * a) task/cgroup must be listed before task/affinity.
  *    (This is due to a bug in kernels < 6.2 with cgroup/v2.)
  */
 static void _sort_task_plugin(char **task_plugin)
