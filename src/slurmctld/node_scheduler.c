@@ -459,10 +459,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	}
 
 	if (node_count == 0) {
-		if (job_ptr->details->expanding_jobid == 0) {
-			error("%s: %pJ allocated no nodes to be killed on",
-			      __func__, job_ptr);
-		}
 		hostlist_destroy(hostlist);
 		return;
 	}
