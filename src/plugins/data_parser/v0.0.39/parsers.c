@@ -3627,36 +3627,6 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
-{
-	foreach_hostlist_parse_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_HOSTLIST);
-
-	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		char *path = NULL;
-		on_error(PARSING, args->parser->type, args->args,
-			 ESLURM_DATA_CONV_FAILED,
-			 set_source_path(&path, args->parent_path), __func__,
-			 "string expected but got %s",
-			 data_get_type_string(data));
-		xfree(path);
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	if (!hostlist_push(args->host_list, data_get_string(data))) {
-		char *path = NULL;
-		on_error(PARSING, args->parser->type, args->args,
-			 ESLURM_DATA_CONV_FAILED,
-			 set_source_path(&path, args->parent_path), __func__,
-			 "Invalid host string: %s", data_get_string(data));
-		xfree(path);
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	return DATA_FOR_EACH_CONT;
-}
-
 static int PARSE_FUNC(HOLD)(const parser_t *const parser, void *obj,
 			    data_t *src, args_t *args, data_t *parent_path)
 {
@@ -3691,6 +3661,36 @@ static int DUMP_FUNC(HOLD)(const parser_t *const parser, void *obj, data_t *dst,
 		data_set_bool(dst, false);
 
 	return SLURM_SUCCESS;
+}
+
+static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
+{
+	foreach_hostlist_parse_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_HOSTLIST);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		char *path = NULL;
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED,
+			 set_source_path(&path, args->parent_path), __func__,
+			 "string expected but got %s",
+			 data_get_type_string(data));
+		xfree(path);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	if (!hostlist_push(args->host_list, data_get_string(data))) {
+		char *path = NULL;
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED,
+			 set_source_path(&path, args->parent_path), __func__,
+			 "Invalid host string: %s", data_get_string(data));
+		xfree(path);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	return DATA_FOR_EACH_CONT;
 }
 
 static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
