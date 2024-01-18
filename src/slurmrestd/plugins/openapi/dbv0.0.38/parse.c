@@ -2641,7 +2641,8 @@ static int _dump_stats_user_list(const parser_t *const parse, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	args.users = data_set_list(dst);
 
-	if (list_for_each(*user_list, _foreach_stats_user_rpc, &args) < 0)
+	if (*user_list &&
+	    list_for_each(*user_list, _foreach_stats_user_rpc, &args) < 0)
 		return ESLURM_DATA_CONV_FAILED;
 
 	return SLURM_SUCCESS;
