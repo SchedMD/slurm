@@ -2264,7 +2264,7 @@ static bool _bblocks_in_same_block(int block_inx1, int block_inx2,
 	return false;
 }
 
-static void _choose_best_bblock(bool *bblock_required,
+static void _choose_best_bblock(bitstr_t *bblock_required,
 				int llblock_level, int rem_nodes,
 				uint32_t *nodes_on_bblock,
 				uint32_t *nodes_on_llblock,
@@ -2279,7 +2279,7 @@ static void _choose_best_bblock(bool *bblock_required,
 		     ((j < block_record_cnt) &&
 		      (j <= (i | ~(~0 << llblock_level))));
 		     j++) {
-			if (!bblock_required[j])
+			if (!bit_test(bblock_required, j))
 				continue;
 			if ((same_block =
 			     _bblocks_in_same_block(j, i, llblock_level)))
@@ -2340,7 +2340,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	bitstr_t *best_nodes_bitmap = NULL;	/* required+low prio nodes */
 	bitstr_t *bblock_bitmap = NULL;
 	int *bblock_block_inx = NULL;
-	bool *bblock_required = NULL;
+	bitstr_t *bblock_required = NULL;
 	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt, best_node_cnt, req_node_cnt = 0;
 	List best_gres = NULL;
@@ -2514,7 +2514,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	block_gres = xcalloc(block_cnt, sizeof(List));
 	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
 	block_node_cnt = xcalloc(block_cnt, sizeof(*block_node_cnt));
-	bblock_required = xcalloc(block_record_cnt, sizeof(bool));
+	bblock_required = bit_alloc(block_record_cnt);
 	bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
 
 	for (i = 0, block_ptr = block_record_table; i < block_record_cnt;
@@ -2613,7 +2613,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 			if (bit_overlap_any(
 				    req_nodes_bitmap,
 				    block_record_table[i].node_bitmap)) {
-				bblock_required[i] = true;
+				bit_set(bblock_required, i);
 				if (!_bblocks_in_same_block(last_llblock, i,
 							    llblock_level)) {
 					max_llblock--;
@@ -2778,14 +2778,14 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		for (i = 0; i < block_record_cnt; i++) {
 			if (block_inx != bblock_block_inx[i])
 				continue;
-			if (bblock_required[i]) {
+			if (bit_test(bblock_required, i)) {
 				last_llblock = i;
 				continue;
 			}
 			if (bit_overlap_any(
 				    req2_nodes_bitmap,
 				    block_record_table[i].node_bitmap)) {
-				bblock_required[i] = true;
+				bit_set(bblock_required, i);
 				if (!_bblocks_in_same_block(last_llblock, i,
 							    llblock_level)) {
 					max_llblock--;
@@ -2805,7 +2805,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	/* Add additional resources for already required base block */
 	if (req_nodes_bitmap || req2_nodes_bitmap) {
 		for (i = 0; i < block_record_cnt; i++) {
-			if (!bblock_required[i])
+			if (!bit_test(bblock_required, i))
 				continue;
 			if (!bblock_bitmap)
 				bblock_bitmap = bit_copy(
@@ -2858,7 +2858,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	for (i = 0; i < block_record_cnt; i++) {
 		if (block_inx != bblock_block_inx[i])
 			continue;
-		if (bblock_required[i])
+		if (bit_test(bblock_required, i))
 			continue;
 		bblock_node_bitmap[i] =
 			bit_copy(block_record_table[i].node_bitmap);
@@ -2883,7 +2883,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		for (i = 0; i < block_record_cnt; i++) {
 			if (block_inx != bblock_block_inx[i])
 				continue;
-			if (bblock_required[i])
+			if (bit_test(bblock_required, i))
 				continue;
 
 			_choose_best_bblock(bblock_required, llblock_level,
@@ -2906,7 +2906,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 		best_bblock_bitmap = bblock_node_bitmap[best_bblock_inx];
 		bit_and_not(best_bblock_bitmap, node_map);
-		bblock_required[best_bblock_inx] = true;
+		bit_set(bblock_required, best_bblock_inx);
 		/*
 		 * NOTE: Ideally we would add nodes in order of resource
 		 * availability rather than in order of bitmap position, but
@@ -2976,7 +2976,7 @@ fini:
 	xfree(block_node_cnt);
 	xfree(nodes_on_bblock);
 	xfree(nodes_on_llblock);
-	xfree(bblock_required);
+	FREE_NULL_BITMAP(bblock_required);
 	return rc;
 }
 
