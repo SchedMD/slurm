@@ -2243,6 +2243,84 @@ fini:
 	return rc;
 }
 
+static int _cmp_bblock(const void *a, const void *b)
+{
+	int ca = *((int *) a);
+	int cb = *((int *) b);
+
+	if (ca < cb)
+		return 1;
+	else if (ca > cb)
+		return -1;
+
+	return 0;
+}
+
+static bool _bblocks_in_same_block(int block_inx1, int block_inx2,
+				   int block_level)
+{
+	if ((block_inx1 >> block_level) == (block_inx2 >> block_level))
+		return true;
+	return false;
+}
+
+static void _choose_best_bblock(bool *bblock_required,
+				int llblock_level, int rem_nodes,
+				uint32_t *nodes_on_bblock,
+				uint32_t *nodes_on_llblock,
+				int i, bool *best_same_block,
+				bool *best_fit, int *best_bblock_inx)
+{
+	bool fit = (nodes_on_bblock[i] >= rem_nodes);
+	bool same_block = false;
+	if (nodes_on_llblock &&
+	    !_bblocks_in_same_block(*best_bblock_inx, i, llblock_level)) {
+		for (int j = (i & (~0 << llblock_level));
+		     ((j < block_record_cnt) &&
+		      (j <= (i | ~(~0 << llblock_level))));
+		     j++) {
+			if (!bblock_required[j])
+				continue;
+			if ((same_block =
+			     _bblocks_in_same_block(j, i, llblock_level)))
+				break;
+		}
+
+		if ((*best_bblock_inx == -1) ||
+		    (same_block && !(*best_same_block))) {
+			*best_bblock_inx = i;
+			*best_fit = fit;
+			*best_same_block = same_block;
+			return;
+		}
+
+		if (!same_block && (*best_same_block))
+			return;
+
+		if (nodes_on_llblock[(i >> llblock_level)] >
+		    nodes_on_llblock[(*best_bblock_inx >> llblock_level)]) {
+			*best_bblock_inx = i;
+			*best_fit = fit;
+			*best_same_block = same_block;
+			return;
+		}
+
+		if (nodes_on_llblock[(i >> llblock_level)] <
+		    nodes_on_llblock[(*best_bblock_inx >> llblock_level)])
+			return;
+	}
+
+	if (*best_bblock_inx == -1 || (fit && !(*best_fit)) ||
+	    (!fit && !(*best_fit) && (nodes_on_bblock[i] >=
+				      nodes_on_bblock[*best_bblock_inx])) ||
+	    (fit && (nodes_on_bblock[i] <=
+		     nodes_on_bblock[*best_bblock_inx]))) {
+		*best_bblock_inx = i;
+		*best_fit = fit;
+		return;
+	}
+}
+
 static int _eval_nodes_block(job_record_t *job_ptr,
 			     gres_mc_data_t *mc_ptr, bitstr_t *node_map,
 			     bitstr_t **avail_core, uint32_t min_nodes,
@@ -2283,7 +2361,13 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	uint64_t block_lowest_weight = 0;
 	int block_cnt = -1, bblock_per_block;
 	int prev_rem_nodes;
+	int max_llblock;
+	int llblock_level;
+	int llblock_size;
+	int llblock_cnt = 0;
+	uint32_t *nodes_on_llblock = NULL;
 	int block_level;
+	int bblock_per_llblock;
 
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
@@ -2299,7 +2383,17 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	bblock_per_block = ((rem_nodes + bblock_node_cnt - 1) /
 			    bblock_node_cnt);
 	block_level = ceil(log2(bblock_per_block));
+	if (block_level > 0)
+		llblock_level = bit_fls_from_bit(block_levels, block_level - 1);
+	else
+		llblock_level = 0;
 	block_level = bit_ffs_from_bit(block_levels, block_level);
+
+	xassert(llblock_level >= 0);
+
+	bblock_per_llblock = (1 << llblock_level);
+	llblock_size = bblock_per_llblock * bblock_node_cnt;
+	max_llblock = (rem_nodes + llblock_size - 1) / llblock_size;
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -2406,8 +2500,15 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 			bblock_per_block;
 	}
 
-	log_flag(SELECT_TYPE, "%s: bblock_per_block:%u rem_nodes:%u ",
-		 __func__, bblock_per_block, rem_nodes);
+	if (bblock_per_block != (bblock_per_llblock * max_llblock)) {
+		llblock_cnt = (block_record_cnt + bblock_per_llblock - 1) /
+			      bblock_per_llblock;
+		nodes_on_llblock = xcalloc(llblock_cnt, sizeof(uint32_t));
+	}
+
+	log_flag(SELECT_TYPE, "%s: bblock_per_block:%u rem_nodes:%u llblock_cnt:%u max_llblock:%d llblock_level:%d",
+		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
+		 max_llblock, llblock_level);
 
 	block_cpu_cnt = xcalloc(block_cnt, sizeof(uint32_t));
 	block_gres = xcalloc(block_cnt, sizeof(List));
@@ -2426,12 +2527,28 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 			block_node_bitmap[block_inx] =
 				bit_copy(block_ptr->node_bitmap);
 		bblock_block_inx[i] = block_inx;
+		if (nodes_on_llblock) {
+			int llblock_inx = i / bblock_per_llblock;
+			nodes_on_llblock[llblock_inx] +=
+				bit_overlap(block_ptr->node_bitmap, node_map);
+		}
 	}
 
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
 		bit_and(block_node_bitmap[i], node_map);
-		block_node_cnt[i] = bit_set_count(block_node_bitmap[i]);
+		if (!nodes_on_llblock) {
+			block_node_cnt[i] = bit_set_count(block_node_bitmap[i]);
+		} else {
+			int llblock_per_block = (bblock_per_block /
+						 bblock_per_llblock);
+			int offset = i * llblock_per_block;
+			qsort(&nodes_on_llblock[offset], llblock_per_block,
+			      sizeof(int), _cmp_bblock);
+			for (j = 0; j < max_llblock; j++)
+				block_node_cnt[i] +=
+					nodes_on_llblock[offset + j];
+		}
 		/*
 		 * Count total CPUs of the intersection of node_map and
 		 * block_node_bitmap.
@@ -2487,7 +2604,29 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	}
 
 	if (req_nodes_bitmap) {
+		int last_llblock = -1;
 		bit_and(node_map, req_nodes_bitmap);
+
+		for (i = 0; (i < block_record_cnt) && nodes_on_llblock; i++) {
+			if (block_inx != bblock_block_inx[i])
+				continue;
+			if (bit_overlap_any(
+				    req_nodes_bitmap,
+				    block_record_table[i].node_bitmap)) {
+				bblock_required[i] = true;
+				if (!_bblocks_in_same_block(last_llblock, i,
+							    llblock_level)) {
+					max_llblock--;
+					last_llblock = i;
+				}
+			}
+		}
+		if (max_llblock < 0) {
+			rc = SLURM_ERROR;
+			info("%pJ requires nodes exceed maximum llblock limit due to required nodes",
+			     job_ptr);
+			goto fini;
+		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
 			/* Required nodes completely satisfied the request */
@@ -2500,17 +2639,6 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 			     job_ptr);
 			goto fini;
 		}
-
-		for (i = 0; i < block_record_cnt; i++) {
-			if (block_inx != bblock_block_inx[i])
-				continue;
-			if (bit_overlap_any(
-				    req_nodes_bitmap,
-				    block_record_table[i].node_bitmap)) {
-				bblock_required[i] = true;
-			}
-		}
-
 	}
 
 	requested = false;
@@ -2609,6 +2737,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 	 * Job will still need to add some higher weight nodes later.
 	 */
 	if (req2_nodes_bitmap) {
+		int last_llblock = -1;
 		for (i = 0;
 		     next_node_bitmap(req2_nodes_bitmap, &i) && (max_nodes > 0);
 		     i++) {
@@ -2649,16 +2778,30 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		for (i = 0; i < block_record_cnt; i++) {
 			if (block_inx != bblock_block_inx[i])
 				continue;
-			if (bblock_required[i])
+			if (bblock_required[i]) {
+				last_llblock = i;
 				continue;
+			}
 			if (bit_overlap_any(
 				    req2_nodes_bitmap,
 				    block_record_table[i].node_bitmap)) {
 				bblock_required[i] = true;
+				if (!_bblocks_in_same_block(last_llblock, i,
+							    llblock_level)) {
+					max_llblock--;
+					last_llblock = i;
+				}
 			}
+
 		}
 	}
 
+	if (max_llblock < 0) {
+		rc = SLURM_ERROR;
+		info("%pJ requires nodes exceed maximum llblock limit due to node weights",
+		     job_ptr);
+		goto fini;
+	}
 	/* Add additional resources for already required base block */
 	if (req_nodes_bitmap || req2_nodes_bitmap) {
 		for (i = 0; i < block_record_cnt; i++) {
@@ -2708,6 +2851,10 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 	nodes_on_bblock = xcalloc(block_record_cnt, sizeof(*nodes_on_bblock));
 	bblock_node_bitmap = xcalloc(block_record_cnt, sizeof(bitstr_t *));
+
+	if (nodes_on_llblock)
+		memset(nodes_on_llblock, 0, llblock_cnt * sizeof(uint32_t));
+
 	for (i = 0; i < block_record_cnt; i++) {
 		if (block_inx != bblock_block_inx[i])
 			continue;
@@ -2718,38 +2865,44 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		bit_and(bblock_node_bitmap[i], block_node_bitmap[block_inx]);
 		bit_and(bblock_node_bitmap[i], best_nodes_bitmap);
 		nodes_on_bblock[i] = bit_set_count(bblock_node_bitmap[i]);
+		if (nodes_on_llblock) {
+			int llblock_inx = i / bblock_per_llblock;
+			nodes_on_llblock[llblock_inx] += nodes_on_bblock[i];
+		}
 	}
 
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
 		int best_bblock_inx = -1;
-		bool best_fit, fit;
+		bool best_fit = false, best_same_block = true;
 		bitstr_t *best_bblock_bitmap = NULL;
 		if (prev_rem_nodes == rem_nodes)
 			break; 	/* Stalled */
 		prev_rem_nodes = rem_nodes;
+
 		for (i = 0; i < block_record_cnt; i++) {
 			if (block_inx != bblock_block_inx[i])
 				continue;
 			if (bblock_required[i])
 				continue;
-			fit = (nodes_on_bblock[i] >= rem_nodes);
 
-			if (best_bblock_inx == -1 ||
-			    (fit && !best_fit) ||
-			    (!fit && !best_fit &&
-			     (nodes_on_bblock[i] >
-			      nodes_on_bblock[best_bblock_inx])) ||
-			    (fit && (nodes_on_bblock[i] <=
-				     nodes_on_bblock[best_bblock_inx]))) {
-				best_bblock_inx = i;
-				best_fit = fit;
-			}
+			_choose_best_bblock(bblock_required, llblock_level,
+					    rem_nodes, nodes_on_bblock,
+					    nodes_on_llblock, i,
+					    &best_same_block, &best_fit,
+					    &best_bblock_inx);
 		}
+
 		log_flag(SELECT_TYPE, "%s: rem_nodes:%d  best_bblock_inx:%d",
 			 __func__, rem_nodes, best_bblock_inx);
 		if (best_bblock_inx == -1)
 			break;
+
+		if ((max_llblock <= 0) && !best_same_block) {
+			log_flag(SELECT_TYPE, "%s: min_rem_nodes:%d can't add more bblocks due to llblock limit",
+				 __func__, min_rem_nodes);
+			break;
+		}
 
 		best_bblock_bitmap = bblock_node_bitmap[best_bblock_inx];
 		bit_and_not(best_bblock_bitmap, node_map);
@@ -2787,6 +2940,8 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 				goto fini;
 			}
 		}
+		if (!best_same_block)
+			max_llblock--;
 	}
 
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2820,6 +2975,7 @@ fini:
 	}
 	xfree(block_node_cnt);
 	xfree(nodes_on_bblock);
+	xfree(nodes_on_llblock);
 	xfree(bblock_required);
 	return rc;
 }
