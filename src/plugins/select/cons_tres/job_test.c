@@ -2298,7 +2298,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 	bblock_per_block = ((rem_nodes + bblock_node_cnt - 1) /
 			    bblock_node_cnt);
-	block_level = ceil(log(bblock_per_block) / log(2));
+	block_level = ceil(log2(bblock_per_block));
 	block_level = bit_ffs_from_bit(block_levels, block_level);
 
 	/* Validate availability of required nodes */
@@ -2401,7 +2401,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		block_cnt = 1;
 	} else {
 		/* Number of base blocks in block */
-		bblock_per_block = pow(2, block_level);
+		bblock_per_block = (1 << block_level);
 		block_cnt = (block_record_cnt + bblock_per_block - 1) /
 			bblock_per_block;
 	}
