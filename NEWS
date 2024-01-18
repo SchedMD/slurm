@@ -106,6 +106,7 @@ documents those changes that are of interest to users and administrators.
     implicitly defined node counts.
  -- data_parser/v0.0.40 - Fix regression of support for "hold" in
     job description.
+ -- Avoid sending KILL RPCs to unresolvable POWERING_UP and POWERED_DOWN nodes.
 
 * Changes in Slurm 23.11.1
 ==========================
