@@ -24,20 +24,11 @@
 /* Make sure we get the 1.8 HDF5 API */
 #undef H5_USE_18_API
 
-/* Define to 1 if 3-dimensional architecture */
-#undef HAVE_3D
-
 /* Define if you are compiling with bpf. */
 #undef HAVE_BPF
 
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
-
-/* Define to 1 for systems with a Cray Aries network */
-#undef HAVE_CRAY_NETWORK
-
-/* Define to 1 if DataWarp library found */
-#undef HAVE_DATAWARP
 
 /* Define to 1 if you have the declaration of `hstrerror', and to 0 if you
    don't. */
@@ -159,9 +150,6 @@
 
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
-
-/* Define to 1 for running on a Cray Aries system */
-#undef HAVE_NATIVE_CRAY
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
@@ -562,7 +550,7 @@
 /* Define path to su command */
 #undef SUCMD
 
-/* 3-dimensional architecture */
+/* Define system dimension count */
 #undef SYSTEM_DIMENSIONS
 
 /* Define slurm_ prefix function aliases for plugins */

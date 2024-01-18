@@ -247,7 +247,6 @@ PKG_CHECK_MODULES([CHECK], [check >= 0.9.8], [ac_have_check="yes"], [ac_have_che
 AM_CONDITIONAL(HAVE_CHECK, test "x$ac_have_check" = "xyes")
 
 X_AC_SVIEW
-X_AC_CRAY
 X_AC_HPE_SLINGSHOT
 
 dnl checks for system services.
@@ -261,7 +260,7 @@ dnl check for how to emulate setproctitle
 dnl
 X_AC_SETPROCTITLE
 
-dnl check for debug compilation, must follow X_AC_CRAY
+dnl check for debug compilation
 dnl
 X_AC_DEBUG
 
