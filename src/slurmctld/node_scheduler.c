@@ -408,8 +408,11 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 		if (use_protocol_version > node_ptr->protocol_version)
 			use_protocol_version = node_ptr->protocol_version;
-		if (hostlist)
+		if (hostlist &&
+		    !IS_NODE_POWERED_DOWN(node_ptr) &&
+		    !IS_NODE_POWERING_UP(node_ptr)) {
 			hostlist_push_host(hostlist, node_ptr->name);
+		}
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			msg_flags |= SLURM_PACK_ADDRS;
 	}
