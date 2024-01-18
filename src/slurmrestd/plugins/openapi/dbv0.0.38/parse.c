@@ -2731,7 +2731,8 @@ static int _dump_clust_acct_rec_list(const parser_t *const parse, void *obj,
 
 	data_set_list(dst);
 
-	if (list_for_each(*acct_list, _foreach_clust_acct_rec, &args) < 0)
+	if (*acct_list &&
+	    list_for_each(*acct_list, _foreach_clust_acct_rec, &args) < 0)
 		return ESLURM_REST_FAIL_PARSING;
 
 	return SLURM_SUCCESS;
