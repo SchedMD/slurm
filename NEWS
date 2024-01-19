@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - return 1 when a step lauch fails
  -- scrun - Avoid race condition that could cause deadlock during shutdown.
  -- Fix scontrol listpids to work under dynamic node scenarios.
+ -- Add --tres-bind to --help and --usage output.
 
 * Changes in Slurm 23.11.3
 ==========================

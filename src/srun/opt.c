@@ -1483,7 +1483,7 @@ static void _usage(void)
 "            [--mpi-combine=yes|no] [--het-group=value]\n"
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
-"            [--mem-per-gpu=MB] [--tres-per-task=list]\n"
+"            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            executable [args...]\n");
 
 }
@@ -1587,6 +1587,7 @@ static void _help(void)
 "  -T, --threads=threads       set srun launch fanout\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
+"      --tres-bind=...         task to tres binding options\n"
 "      --tres-per-task=list    list of tres required per task\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
 "      --use-min-nodes         if a range of node counts is given, prefer the\n"
