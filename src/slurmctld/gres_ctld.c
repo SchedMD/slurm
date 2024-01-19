@@ -617,39 +617,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 			len = MIN(len, gres_ns->gres_cnt_config);
 		}
 
-		if ((gres_ns->topo_cnt == 0) && shared_gres) {
-			/*
-			 * Need to add node topo arrays for slurmctld restart
-			 * and job state recovery (with GRES counts per topo)
-			 */
-			gres_ns->topo_cnt =
-				bit_size(gres_js->
-					 gres_bit_alloc[node_offset]);
-			gres_ns->topo_core_bitmap =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(bitstr_t *));
-			gres_ns->topo_gres_bitmap =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(bitstr_t *));
-			gres_ns->topo_gres_cnt_alloc =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(uint64_t));
-			gres_ns->topo_gres_cnt_avail =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(uint64_t));
-			gres_ns->topo_type_id =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(uint32_t));
-			gres_ns->topo_type_name =
-				xcalloc(gres_ns->topo_cnt,
-					sizeof(char *));
-			for (i = 0; i < gres_ns->topo_cnt; i++) {
-				gres_ns->topo_gres_bitmap[i] =
-					bit_alloc(gres_ns->topo_cnt);
-				bit_set(gres_ns->topo_gres_bitmap[i], i);
-			}
-		}
-
 		for (i = 0; i < len; i++) {
 			gres_cnt = 0;
 			if (!bit_test(gres_js->
