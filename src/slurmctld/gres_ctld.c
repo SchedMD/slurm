@@ -523,12 +523,11 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		}
 	} else if (gres_ns->gres_bit_alloc) {
 		int64_t gres_avail = gres_ns->gres_cnt_avail;
-
-		i = bit_size(gres_ns->gres_bit_alloc);
-		if (i < gres_avail) {
+		int64_t gres_bits = bit_size(gres_ns->gres_bit_alloc);
+		if (gres_bits < gres_avail) {
 			error("gres/%s: node %s gres bitmap size bad (%"PRIi64" < %"PRIi64")",
 			      gres_name, node_name,
-			      i, gres_avail);
+			      gres_bits, gres_avail);
 			bit_realloc(gres_ns->gres_bit_alloc, gres_avail);
 		}
 
