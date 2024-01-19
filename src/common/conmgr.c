@@ -938,6 +938,11 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 		/* Didn't fail but buffer is empty so this may be EOF */
 		readable = 1;
 	}
+
+	if (readable < 0) {
+		/* invalid FIONREAD response */
+		readable = DEFAULT_READ_BYTES;
+	}
 #else
 	/* default to at least 512 available in buffer */
 	readable = DEFAULT_READ_BYTES;
