@@ -6949,8 +6949,13 @@ extern int slurm_get_next_tres(
 		*save_ptr = in_val;
 	}
 
-	if (*tres_type)
+	if (*tres_type) {
 		tres_type_len = strlen(*tres_type);
+		if (!tres_type_len) {
+			fatal_abort("tres_type is blank. If you don't want to specify a tres_type send in NULL not "".");
+			return SLURM_ERROR;
+		}
+	}
 
 next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		*save_ptr = NULL;
