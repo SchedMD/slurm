@@ -237,6 +237,35 @@ static void _copy_matching_gres_per_bit(gres_job_state_t *gres_js,
 	}
 }
 
+static void _allocate_gres_bits(gres_node_state_t *gres_ns,
+				gres_job_state_t *gres_js,
+				int64_t gres_avail,
+				int64_t *gres_cnt,
+				int node_offset,
+				bitstr_t *core_bitmap,
+				bool overlap_all_cores)
+{
+	bitstr_t *alloc_core_bitmap = NULL;
+
+	if (core_bitmap && overlap_all_cores)
+		alloc_core_bitmap = bit_alloc(bit_size(core_bitmap));
+
+	for (int i = 0; i < gres_avail && *gres_cnt > 0; i++) {
+		if (bit_test(gres_ns->gres_bit_alloc, i))
+			continue;
+		if (core_bitmap &&
+		    !_cores_on_gres(core_bitmap, alloc_core_bitmap, gres_ns, i,
+				    gres_js))
+			continue;
+		bit_set(gres_ns->gres_bit_alloc, i);
+		bit_set(gres_js->gres_bit_alloc[node_offset], i);
+		gres_ns->gres_cnt_alloc++;
+		(*gres_cnt)--;
+	}
+	FREE_NULL_BITMAP(alloc_core_bitmap);
+}
+
+
 static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		      gres_state_t *gres_state_node,
 		      int node_cnt, int node_index,
@@ -251,7 +280,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	int j, sz1, sz2, rc = SLURM_SUCCESS;
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
-	bitstr_t *alloc_core_bitmap = NULL, *left_over_bits = NULL;
+	bitstr_t *left_over_bits = NULL;
 	bool log_cnt_err = true;
 	char *log_type;
 	bool shared_gres = false;
@@ -502,46 +531,22 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		gres_js->gres_bit_alloc[node_offset] =
 			bit_alloc(gres_avail);
 
-		if (core_bitmap)
-			alloc_core_bitmap = bit_alloc(bit_size(core_bitmap));
 		/* Pass 1: Allocate GRES overlapping all allocated cores */
-		for (i=0; i<gres_avail && gres_cnt>0; i++) {
-			if (bit_test(gres_ns->gres_bit_alloc, i))
-				continue;
-			if (!_cores_on_gres(core_bitmap, alloc_core_bitmap,
-					    gres_ns, i, gres_js))
-				continue;
-			bit_set(gres_ns->gres_bit_alloc, i);
-			bit_set(gres_js->gres_bit_alloc[node_offset], i);
-			gres_ns->gres_cnt_alloc++;
-			gres_cnt--;
-		}
-		FREE_NULL_BITMAP(alloc_core_bitmap);
+		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+				    &gres_cnt, node_offset,
+				    core_bitmap, true);
 		/* Pass 2: Allocate GRES overlapping any allocated cores */
-		for (i=0; i<gres_avail && gres_cnt>0; i++) {
-			if (bit_test(gres_ns->gres_bit_alloc, i))
-				continue;
-			if (!_cores_on_gres(core_bitmap, NULL, gres_ns, i,
-					    gres_js))
-				continue;
-			bit_set(gres_ns->gres_bit_alloc, i);
-			bit_set(gres_js->gres_bit_alloc[node_offset], i);
-			gres_ns->gres_cnt_alloc++;
-			gres_cnt--;
-		}
+		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+				    &gres_cnt, node_offset,
+				    core_bitmap, false);
 		if (gres_cnt) {
 			verbose("gres/%s topology sub-optimal for job %u",
 				gres_name, job_id);
 		}
 		/* Pass 3: Allocate any available GRES */
-		for (i=0; i<gres_avail && gres_cnt>0; i++) {
-			if (bit_test(gres_ns->gres_bit_alloc, i))
-				continue;
-			bit_set(gres_ns->gres_bit_alloc, i);
-			bit_set(gres_js->gres_bit_alloc[node_offset], i);
-			gres_ns->gres_cnt_alloc++;
-			gres_cnt--;
-		}
+		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+				    &gres_cnt, node_offset,
+				    NULL, false);
 	} else {
 		gres_ns->gres_cnt_alloc += gres_cnt;
 	}
