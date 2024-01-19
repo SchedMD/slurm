@@ -454,9 +454,12 @@ extern void run_health_check(void)
 		    (node_test_cnt++ >= node_limit))
 				break;
 		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
-		    IS_NODE_POWERING_DOWN(node_ptr))
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			continue;
 		if (node_states != HEALTH_CHECK_NODE_ANY) {
 			uint16_t cpus_total, cpus_used = 0;
@@ -555,9 +558,12 @@ extern void update_nodes_acct_gather_data(void)
 #else
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
-		    IS_NODE_POWERING_DOWN(node_ptr))
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			continue;
 		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
