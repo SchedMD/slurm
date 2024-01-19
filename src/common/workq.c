@@ -190,7 +190,7 @@ extern workq_t *new_workq(int count)
 	return workq;
 }
 
-extern void quiesce_workq(workq_t *workq)
+static void _wait_work_complete(workq_t *workq)
 {
 	if (!workq)
 		return;
@@ -198,13 +198,8 @@ extern void quiesce_workq(workq_t *workq)
 	_check_magic_workq(workq);
 
 	slurm_mutex_lock(&workq->mutex);
-
-	log_flag(WORKQ, "%s: shutting down with %u queued jobs",
+	log_flag(WORKQ, "%s: waiting for %u queued workers",
 		 __func__, list_count(workq->work));
-
-	/* notify of shutdown */
-	workq->shutdown = true;
-	slurm_cond_broadcast(&workq->cond);
 	slurm_mutex_unlock(&workq->mutex);
 
 	while (true) {
@@ -225,6 +220,26 @@ extern void quiesce_workq(workq_t *workq)
 		log_flag(WORKQ, "%s: waiting on %d workers", __func__, count);
 		pthread_join(tid, NULL);
 	}
+}
+
+extern void quiesce_workq(workq_t *workq)
+{
+	if (!workq)
+		return;
+
+	_check_magic_workq(workq);
+
+	slurm_mutex_lock(&workq->mutex);
+
+	log_flag(WORKQ, "%s: shutting down with %u queued jobs",
+		 __func__, list_count(workq->work));
+
+	/* notify of shutdown */
+	workq->shutdown = true;
+	slurm_cond_broadcast(&workq->cond);
+	slurm_mutex_unlock(&workq->mutex);
+
+	_wait_work_complete(workq);
 
 	xassert(list_count(workq->workers) == 0);
 	xassert(list_count(workq->work) == 0);
