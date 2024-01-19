@@ -252,6 +252,7 @@ extern void free_workq(workq_t *workq)
 
 	_check_magic_workq(workq);
 
+	_wait_work_complete(workq);
 	quiesce_workq(workq);
 
 	FREE_NULL_LIST(workq->workers);
