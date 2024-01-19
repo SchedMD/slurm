@@ -6617,8 +6617,31 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 	if (!(opt->job_flags & GRES_DISABLE_BIND) &&
 	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
 		opt->job_flags |= GRES_ENFORCE_BIND;
-	if (!(opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
-	    (slurm_conf.select_type_param & NO_TASK_SHARING_GRES))
+
+	if (opt->job_flags & GRES_NO_TASK_SHARING) {
+		char *tres_type = "gres";
+		bool found = false;
+		char *name, *type, *save_ptr = NULL;
+		uint64_t cnt;
+
+		/* Sanity check to assure --tres-per-task has the shared GRES */
+		while ((slurm_get_next_tres(&tres_type,
+					    opt->tres_per_task,
+					    &name, &type,
+					    &cnt, &save_ptr) ==
+			SLURM_SUCCESS) && save_ptr) {
+			/* Skip if gres isn't shared */
+			if (gres_is_shared_name(name)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			fatal("--gres-flags=no-task-sharing requested, but that shared gres needs to appear in --tres-per-task as well.");
+		}
+	} else if (!(opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
+		   (slurm_conf.select_type_param & NO_TASK_SHARING_GRES))
 		opt->job_flags |= GRES_NO_TASK_SHARING;
 }
 
