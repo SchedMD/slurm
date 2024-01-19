@@ -242,6 +242,7 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 				int64_t gres_avail,
 				int64_t *gres_cnt,
 				int node_offset,
+				bool shared_gres,
 				bitstr_t *core_bitmap,
 				bool overlap_all_cores)
 {
@@ -259,8 +260,15 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 			continue;
 		bit_set(gres_ns->gres_bit_alloc, i);
 		bit_set(gres_js->gres_bit_alloc[node_offset], i);
-		gres_ns->gres_cnt_alloc++;
-		(*gres_cnt)--;
+		if (shared_gres) { /* Allocate whole sharing gres */
+			int n = gres_ns->topo_gres_cnt_avail[i];
+			gres_js->gres_per_bit_alloc[node_offset][i] = n;
+			gres_ns->gres_cnt_alloc += n;
+			(*gres_cnt) -= n;
+		} else {
+			gres_ns->gres_cnt_alloc++;
+			(*gres_cnt)--;
+		}
 	}
 	FREE_NULL_BITMAP(alloc_core_bitmap);
 }
@@ -513,10 +521,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		} else {
 			gres_ns->gres_cnt_alloc += gres_cnt;
 		}
-	} else if (shared_gres) {
-		error("Use of shared gres requires the use of gres_select_filter. But there is no select data.");
-		rc = SLURM_ERROR;
-		goto cleanup;
 	} else if (gres_ns->gres_bit_alloc) {
 		int64_t gres_avail = gres_ns->gres_cnt_avail;
 
@@ -531,13 +535,22 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		gres_js->gres_bit_alloc[node_offset] =
 			bit_alloc(gres_avail);
 
+		if (shared_gres) {
+			if (!gres_js->gres_per_bit_alloc) {
+				gres_js->gres_per_bit_alloc = xcalloc(
+					gres_js->node_cnt, sizeof(uint64_t *));
+			}
+			gres_js->gres_per_bit_alloc[node_offset] = xcalloc(
+				bit_size(gres_js->gres_bit_alloc[node_offset]),
+				sizeof(uint64_t));
+		}
 		/* Pass 1: Allocate GRES overlapping all allocated cores */
 		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
-				    &gres_cnt, node_offset,
+				    &gres_cnt, node_offset, shared_gres,
 				    core_bitmap, true);
 		/* Pass 2: Allocate GRES overlapping any allocated cores */
 		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
-				    &gres_cnt, node_offset,
+				    &gres_cnt, node_offset, shared_gres,
 				    core_bitmap, false);
 		if (gres_cnt) {
 			verbose("gres/%s topology sub-optimal for job %u",
@@ -545,7 +558,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		}
 		/* Pass 3: Allocate any available GRES */
 		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
-				    &gres_cnt, node_offset,
+				    &gres_cnt, node_offset, shared_gres,
 				    NULL, false);
 	} else {
 		gres_ns->gres_cnt_alloc += gres_cnt;
