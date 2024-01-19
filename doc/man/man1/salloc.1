@@ -1071,16 +1071,17 @@ Examples of use include "\-\-gres=gpu:2", "\-\-gres=gpu:kepler:2", and
 Specify generic resource task binding options.
 .IP
 .RS
+
+.TP
+.B allow\-task\-sharing
+Cancel \fBno\-task\-sharing\fR. This is useful if it is set by default in
+\fBSelectTypeParameters\fR.
+.IP
+
 .TP
 .B disable\-binding
-Disable filtering of CPUs with respect to generic resource locality.
-This option is currently required to use more CPUs than are bound to a GRES
-(i.e. if a GPU is bound to the CPUs on one socket, but resources on more than
-one socket are required to run the job).
-This option may permit a job to be allocated resources sooner than otherwise
-possible, but may result in lower job performance.
-.br
-\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+Cancel \fBenforce\-binding\fR. This is useful if it is set by default in
+\fBSelectTypeParameters\fR.
 .IP
 
 .TP
@@ -1095,7 +1096,23 @@ communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
 .br
+\fBNOTE\fR: This option can be set by default in \fBSelectTypeParameters\fR.
+.br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+.IP
+
+.TP
+.B no\-task\-sharing
+Do not allow different tasks in to be allocated shared gres from the same
+sharing gres.
+.br
+\fBNOTE\fR: This flag is only enforced if shared gres are requested with
+\-\-tres\-per\-task.
+.br
+\fBNOTE\fR: This option can be set by default in \fBSelectTypeParameters\fR.
+.br
+\fBNOTE\fR: This option is specific to
+\fBSelectTypeParameters=MULTIPLE_SHARING_GRES_PJ\fR
 .RE
 .IP
 

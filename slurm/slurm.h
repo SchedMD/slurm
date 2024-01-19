@@ -1026,8 +1026,8 @@ enum node_states {
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-committed when selected as a CR. */
 /* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
-/* was CR_NHC_STEP_NO 0x0040, removed v19.05 */
-/* was CR_NHC_NO 0x0080, removed v19.05 */
+#define ENFORCE_BINDING_GRES 0x0040
+#define NO_TASK_SHARING_GRES 0x0080
 
 /* By default, schedule only one task per core.
  * Without this option, tasks would be allocated threads. */
@@ -1113,7 +1113,10 @@ enum node_states {
 #define PRIORITY_FLAGS_NO_NORMAL_QOS	 SLURM_BIT(9)
 #define PRIORITY_FLAGS_NO_NORMAL_TRES	 SLURM_BIT(10)
 
-/* These bits are set in the bitflags field of job_desc_msg_t */
+/*
+ * These bits are set in the bitflags field of job_desc_msg_t and
+ * job_flags in slurm_opt_t
+ */
 #define KILL_INV_DEP       SLURM_BIT(0) /* Kill job on invalid dependency */
 #define NO_KILL_INV_DEP    SLURM_BIT(1) /* Don't kill job on invalid
 					 * dependency */
@@ -1164,6 +1167,9 @@ enum node_states {
 #define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
 #define RESET_LIC_TASK     SLURM_BIT(36) /* Reset licenses per task */
 #define RESET_LIC_JOB      SLURM_BIT(37) /* Reset licenses per job */
+#define GRES_NO_TASK_SHARING SLURM_BIT(38) /* Don't let tasks in the same job
+					    * share the same gres */
+#define GRES_ALLOW_TASK_SHARING SLURM_BIT(39) /* Prevent GRES_NO_TASK_SHARING */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

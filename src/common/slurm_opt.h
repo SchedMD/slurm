@@ -321,7 +321,7 @@ typedef struct {
 	bool nodes_set;			/* nodes explicitly set		*/
 	int sockets_per_node;		/* --sockets-per-node=n		*/
 	int cores_per_socket;		/* --cores-per-socket=n		*/
-	uint32_t job_flags;		/* --kill_invalid_dep, --gres-flags */
+	uint64_t job_flags;		/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;		/* --threads-per-core=n		*/
 	int ntasks_per_node;		/* --ntasks-per-node=n		*/
 	int ntasks_per_gpu;		/* --ntasks-per-gpu=n		*/
