@@ -1383,14 +1383,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->billing_weights_str &&
 	    set_partition_billing_weights(part_desc->billing_weights_str,
 					  part_ptr, false)) {
-
-		if (create_flag)
-			list_delete_all(part_list, &list_find_part,
-					part_desc->name);
-
-		return ESLURM_INVALID_TRES_BILLING_WEIGHTS;
+		error_code = ESLURM_INVALID_TRES_BILLING_WEIGHTS;
+		goto fini;
 	}
-
 	if (part_desc->cpu_bind) {
 		char tmp_str[128];
 		slurm_sprint_cpu_bind_type(tmp_str, part_desc->cpu_bind);
@@ -1928,7 +1923,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 					      __func__, tok);
 					xfree(tmp);
 					hostset_destroy(hs);
-					return ESLURM_INVALID_NODE_NAME;
+					error_code = ESLURM_INVALID_NODE_NAME;
+					goto fini;
 				}
 				p = NULL;
 			}
@@ -1961,11 +1957,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
 	}
 
+fini:
 	if (error_code == SLURM_SUCCESS) {
 		gs_reconfig();
 		select_g_reconfigure();		/* notify select plugin too */
+	} else if (create_flag) {
+		/* Delete the created partition in case of failure */
+		list_delete_all(part_list, &list_find_part, part_desc->name);
 	}
-
 	return error_code;
 }
 
