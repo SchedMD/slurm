@@ -1892,8 +1892,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			.qos = WRITE_LOCK,
 			.tres = READ_LOCK,
 		};
-		char *backup_node_list = part_ptr->nodes;
 		int rc;
+		char *backup_orig_nodes = xstrdup(part_ptr->orig_nodes);
 
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
@@ -1936,13 +1936,27 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
 		if ((rc = build_part_bitmap(part_ptr))) {
-			xfree(part_ptr->nodes);
-			part_ptr->nodes = backup_node_list;
 			error_code = rc;
+
+			if (!create_flag) {
+				/* Restore previous nodes */
+				xfree(part_ptr->orig_nodes);
+				part_ptr->orig_nodes = backup_orig_nodes;
+
+				/*
+				 * build_part_bitmap() is destructive of the
+				 * partition record. We need to rebuild the
+				 * partition record with the original nodelists
+				 * and nodesets.
+				 */
+				(void) build_part_bitmap(part_ptr);
+			} else {
+				xfree(backup_orig_nodes);
+			}
 		} else {
 			info("%s: setting nodes to %s for partition %s",
 			     __func__, part_ptr->nodes, part_desc->name);
-			xfree(backup_node_list);
+			xfree(backup_orig_nodes);
 
 			update_part_nodes_in_resv(part_ptr);
 			power_save_set_timeouts(NULL);
