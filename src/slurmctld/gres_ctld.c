@@ -239,7 +239,7 @@ static void _copy_matching_gres_per_bit(gres_job_state_t *gres_js,
 
 static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 				gres_job_state_t *gres_js,
-				int64_t gres_avail,
+				int64_t gres_bits,
 				int64_t *gres_cnt,
 				int node_offset,
 				bool shared_gres,
@@ -251,7 +251,7 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 	if (core_bitmap && overlap_all_cores)
 		alloc_core_bitmap = bit_alloc(bit_size(core_bitmap));
 
-	for (int i = 0; i < gres_avail && *gres_cnt > 0; i++) {
+	for (int i = 0; i < gres_bits && *gres_cnt > 0; i++) {
 		if (bit_test(gres_ns->gres_bit_alloc, i))
 			continue;
 		if (core_bitmap &&
@@ -528,11 +528,12 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 			error("gres/%s: node %s gres bitmap size bad (%"PRIi64" < %"PRIi64")",
 			      gres_name, node_name,
 			      gres_bits, gres_avail);
-			bit_realloc(gres_ns->gres_bit_alloc, gres_avail);
+			gres_bits = gres_ns->gres_cnt_avail;
+			bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 		}
 
 		gres_js->gres_bit_alloc[node_offset] =
-			bit_alloc(gres_avail);
+			bit_alloc(gres_bits);
 
 		if (shared_gres) {
 			if (!gres_js->gres_per_bit_alloc) {
@@ -544,11 +545,11 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 				sizeof(uint64_t));
 		}
 		/* Pass 1: Allocate GRES overlapping all allocated cores */
-		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+		_allocate_gres_bits(gres_ns, gres_js, gres_bits,
 				    &gres_cnt, node_offset, shared_gres,
 				    core_bitmap, true);
 		/* Pass 2: Allocate GRES overlapping any allocated cores */
-		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+		_allocate_gres_bits(gres_ns, gres_js, gres_bits,
 				    &gres_cnt, node_offset, shared_gres,
 				    core_bitmap, false);
 		if (gres_cnt) {
@@ -556,7 +557,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 				gres_name, job_id);
 		}
 		/* Pass 3: Allocate any available GRES */
-		_allocate_gres_bits(gres_ns, gres_js, gres_avail,
+		_allocate_gres_bits(gres_ns, gres_js, gres_bits,
 				    &gres_cnt, node_offset, shared_gres,
 				    NULL, false);
 	} else {
