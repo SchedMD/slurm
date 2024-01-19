@@ -2214,15 +2214,13 @@ watch:
 		 * and wait for the thread to return
 		 */
 		_signal_change(true);
-		if (!mgr.shutdown)
-			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		goto watch;
 	}
 
 	if (work) {
 		/* wait until something happens */
-		if (!mgr.shutdown)
-			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		goto watch;
 	}
 

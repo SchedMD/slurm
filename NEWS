@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
     association cache thread was previously shut down.
  -- scrun - Avoid race condition that could cause scrun to hang during
     shutdown when connections have pending events.
+ -- scrun - Avoid excessive polling of connections during shutdown that could
+    needlessly cause 100% CPU usage on a thread.
 
 * Changes in Slurm 23.11.3
 ==========================
