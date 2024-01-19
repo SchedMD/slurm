@@ -1903,9 +1903,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
 		else if ((part_desc->nodes[0] != '+') &&
-			 (part_desc->nodes[0] != '-'))
+			 (part_desc->nodes[0] != '-')) {
+			xfree(part_ptr->nodes);
 			part_ptr->nodes = xstrdup(part_desc->nodes);
-		else {
+		} else {
 			char *p, *tmp, *tok, *save_ptr = NULL;
 			hostset_t *hs = hostset_create(part_ptr->nodes);
 

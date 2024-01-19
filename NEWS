@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.4
 ==========================
+ -- Fix a memory leak when updating partition nodes.
 
 * Changes in Slurm 23.11.3
 ==========================
