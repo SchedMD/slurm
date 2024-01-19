@@ -1943,15 +1943,16 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			info("%s: setting nodes to %s for partition %s",
 			     __func__, part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
-		}
-		update_part_nodes_in_resv(part_ptr);
-		power_save_set_timeouts(NULL);
 
-		assoc_mgr_lock(&assoc_tres_read_lock);
-		if (part_ptr->qos_ptr)
-			part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
-		_calc_part_tres(part_ptr, NULL);
-		assoc_mgr_unlock(&assoc_tres_read_lock);
+			update_part_nodes_in_resv(part_ptr);
+			power_save_set_timeouts(NULL);
+
+			assoc_mgr_lock(&assoc_tres_read_lock);
+			if (part_ptr->qos_ptr)
+				part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
+			_calc_part_tres(part_ptr, NULL);
+			assoc_mgr_unlock(&assoc_tres_read_lock);
+		}
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
