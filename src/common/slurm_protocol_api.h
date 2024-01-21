@@ -289,18 +289,6 @@ int slurm_send_node_msg(int open_fd, slurm_msg_t *msg);
 \**********************************************************************/
 
 /*
- * Calls connect to make a connection-less datagram connection to the
- *	primary or secondary slurmctld message engine
- * IN/OUT addr       - address of controller contacted
- * IN/OUT use_backup - IN: whether to try the backup first or not
- *                     OUT: set to true if connection established with backup
- * IN comm_cluster_rec	- Communication record (host/port/version)/
- * RET slurm_fd	- file descriptor of the connection created
- */
-extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
-				      slurmdb_cluster_rec_t *comm_cluster_rec);
-
-/*
  * Calls connect to make a connection-less datagram connection to a specific
  *	primary or backup slurmctld message engine
  * IN dest      - controller to contact (0=primary, 1=backup, 2=backup2, etc.)

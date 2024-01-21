@@ -51,6 +51,7 @@
 #include <sys/socket.h>
 
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
 #include "src/common/macros.h"
@@ -301,12 +302,12 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 
 	err = getaddrinfo(hostname, serv, &hints, &result);
 	if (err == EAI_SYSTEM) {
-		error("%s: getaddrinfo(%s:%s) failed: %s: %m",
-		      __func__, hostname, serv, gai_strerror(err));
+		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s: %m",
+				__func__, hostname, serv, gai_strerror(err));
 		return NULL;
 	} else if (err != 0) {
-		error("%s: getaddrinfo(%s:%s) failed: %s",
-		      __func__, hostname, serv, gai_strerror(err));
+		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s",
+				__func__, hostname, serv, gai_strerror(err));
 		return NULL;
 	}
 

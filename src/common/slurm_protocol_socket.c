@@ -739,7 +739,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	ai_start = xgetaddrinfo_port(host, port);
 
 	if (!ai_start) {
-		error("%s: Unable to resolve \"%s\"", __func__, host);
+		error_in_daemon("%s: Unable to resolve \"%s\"", __func__, host);
 		addr->ss_family = AF_UNSPEC;
 		return;
 	}
