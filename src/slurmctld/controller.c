@@ -1050,8 +1050,23 @@ static int _try_to_reconfig(void)
 	}
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);
-	if (!daemonize && !under_systemd)
+	if (!daemonize && !under_systemd) {
+		/*
+		 * If in attached mode, the slurmctld does not fork() so it
+		 * does not change its PID. The slurmctld needs to call
+		 * slurmscriptd_fini() to reap the slurmscriptd PID, otherwise
+		 * the slurmscriptd PID would be a defunct entry in the process
+		 * table.
+		 * For detached mode, the parent slurmctld needs to keep the
+		 * slurmscriptd running in order to recover if the child
+		 * slurmctld fails to start. If the child slurmctld starts
+		 * successfully, then when the parent slurmctld shuts down the
+		 * corresponding slurmscriptd is reparented to init, shuts itself
+		 * down, and init will reap the PID for us.
+		 */
+		slurmscriptd_fini();
 		goto start_child;
+	}
 
 	if (pipe(to_parent) < 0) {
 		error("%s: pipe() failed: %m", __func__);
