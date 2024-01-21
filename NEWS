@@ -82,6 +82,7 @@ documents those changes that are of interest to users and administrators.
  -- Alter the name resolution to only log at verbose() in client commands
     on failures. This allows for HA setups where the DNS entries are withdrawn
     for some SlurmctldHost entries without flooding the user with errors.
+ -- Prevent slurmscriptd PID leaks when running slurmctld in foreground mode.
 
 * Changes in Slurm 23.11.1
 ==========================
