@@ -129,9 +129,8 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
 {
-	if (running_in_daemon())
-		error("The option \"%s\" is defunct, please remove it from cgroup.conf.",
-		      key);
+	error_in_daemon("The option \"%s\" is defunct, please remove it from cgroup.conf.",
+			key);
 	return 0;
 }
 

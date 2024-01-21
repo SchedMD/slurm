@@ -498,9 +498,8 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
 {
-	if (running_in_daemon())
-		error("The option \"%s\" is defunct, please remove it from slurm.conf.",
-		      key);
+	error_in_daemon("The option \"%s\" is defunct, please remove it from slurm.conf.",
+			key);
 	return 0;
 }
 
@@ -4528,14 +4527,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
-	else if ((conf->msg_timeout > 100) && running_in_daemon())
-		error("MessageTimeout is too high for effective fault-tolerance");
+	else if (conf->msg_timeout > 100)
+		error_in_daemon("MessageTimeout is too high for effective fault-tolerance");
 
 	if (!s_p_get_uint32(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
 	else if (conf->min_job_age < 2) {
-		if (running_in_slurmctld())
-			error("MinJobAge must be at least 2");
+		error_in_daemon("MinJobAge must be at least 2");
 		conf->min_job_age = 2;
 	}
 
@@ -5268,9 +5266,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->conf_flags |= CTL_CONF_NNSOCK;
 
 	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket") &&
-	    xstrcasestr(conf->slurmd_params, "numa_node_as_socket") &&
-	    running_in_daemon())
-		error("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
+	    xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
+		error_in_daemon("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
 
 	if (xstrcasestr(conf->slurmd_params, "allow_ecores"))
 		conf->conf_flags |= CTL_CONF_ECORE;
