@@ -6952,7 +6952,7 @@ extern int slurm_get_next_tres(
 	if (*tres_type) {
 		tres_type_len = strlen(*tres_type);
 		if (!tres_type_len) {
-			fatal_abort("tres_type is blank. If you don't want to specify a tres_type send in NULL not "".");
+			fatal_abort("tres_type is blank. If you don't want to specify a tres_type send in NULL not \"\".");
 			return SLURM_ERROR;
 		}
 	}
