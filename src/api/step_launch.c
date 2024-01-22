@@ -1285,6 +1285,12 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	int i, j;
 	int node_id, num_tasks;
 
+	if (sls->job_id && (nf->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_NODE_FAIL for JobId=%u (our JobId=%u)",
+			nf->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	error("Node failure on %s", nf->nodelist);
 
 	fail_nodes = hostlist_create(nf->nodelist);
