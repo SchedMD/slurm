@@ -309,6 +309,7 @@ int main(int argc, char **argv)
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
 	};
 	bool create_clustername_file;
+	bool backup_has_control = false;
 	char *conf_file;
 
 	main_argc = argc;
@@ -499,7 +500,7 @@ int main(int argc, char **argv)
 
 	if (!original && !slurmctld_primary) {
 		info("Restarted while operating as primary, resuming operation as primary.");
-		slurmctld_primary = true;
+		backup_has_control = true;
 	}
 
 	/*
@@ -546,7 +547,7 @@ int main(int argc, char **argv)
 		reconfig = false;
 
 		/* start in primary or backup mode */
-		if (!slurmctld_primary) {
+		if (!slurmctld_primary && !backup_has_control) {
 			controller_fini_scheduling(); /* make sure shutdown */
 			_run_primary_prog(false);
 			if (acct_storage_g_init() != SLURM_SUCCESS)
@@ -605,7 +606,8 @@ int main(int argc, char **argv)
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 
-		if (slurmctld_primary && !reconfiguring) {
+		if ((slurmctld_primary || backup_has_control) &&
+		    !reconfiguring) {
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -621,7 +623,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (slurmctld_primary) {
+		if (slurmctld_primary || backup_has_control) {
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
 
