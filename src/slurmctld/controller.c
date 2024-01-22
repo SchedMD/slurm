@@ -696,7 +696,12 @@ int main(int argc, char **argv)
 		slurm_thread_create(&slurmctld_config.thread_id_acct_update,
 				    _acct_update_thread, NULL);
 
-		if (controller_init_scheduling(false) != SLURM_SUCCESS)
+		/*
+		 * If reconfiguring, we need to restart the gang scheduler.
+		 * Otherwise, gang scheduling was already started by
+		 * read_slurm_conf().
+		 */
+		if (controller_init_scheduling(reconfiguring) != SLURM_SUCCESS)
 			fatal("Failed to initialize the various schedulers");
 
 		if (!original && !reconfiguring) {
