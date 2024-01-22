@@ -304,6 +304,14 @@ void run_backup(void)
 		error("Unable to recover slurm state");
 		abort();
 	}
+	configless_update();
+	if (conf_includes_list) {
+		/*
+		 * clear included files so that subsequent conf
+		 * parsings refill it with updated information.
+		 */
+		list_flush(conf_includes_list);
+	}
 	unlock_slurmctld(config_write_lock);
 	select_g_select_nodeinfo_set_all();
 }

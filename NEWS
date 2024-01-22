@@ -132,6 +132,8 @@ documents those changes that are of interest to users and administrators.
     rapidly-reused TCP port.
  -- srun - Prevent step launch failure while waiting for step allocation if
     a stray message is received.
+ -- Fix backup slurmctld to be able to respond to configless config file
+    requests correctly.
 
 * Changes in Slurm 23.11.1
 ==========================
