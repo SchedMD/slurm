@@ -75,6 +75,8 @@ struct step_launch_state {
 	bool abort;
 	bool abort_action_taken;
 
+	uint32_t job_id;
+
 	/* message thread variables */
 	eio_handle_t *msg_handle;
 	pthread_t msg_thread;
