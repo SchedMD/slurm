@@ -222,6 +222,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
+	ctx->launch_state->job_id = ctx->step_req->step_id.job_id;
+
 	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
 	if (!mpi_plugin_id) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
@@ -1146,6 +1148,12 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	launch_tasks_response_msg_t *msg = resp->data;
 	int i;
 
+	if (sls->job_id && (msg->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring RESPONSE_LAUNCH_TASKS for JobId=%u (our JobId=%u)",
+			msg->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	slurm_mutex_lock(&sls->lock);
 	if ((msg->count_of_pids > 0) &&
 	    bit_test(sls->tasks_started, msg->task_ids[0])) {
@@ -1218,6 +1226,12 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 {
 	srun_job_complete_msg_t *step_msg = complete_msg->data;
 
+	if (sls->job_id && (step_msg->job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_JOB_COMPLETE for stray JobId=%u (our JobId=%u)",
+			step_msg->job_id, sls->job_id);
+		return;
+	}
+
 	if (step_msg->step_id == NO_VAL) {
 		verbose("Complete job %u received",
 			step_msg->job_id);
@@ -1239,6 +1253,12 @@ static void
 _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
 	srun_timeout_msg_t *step_msg = timeout_msg->data;
+
+	if (sls->job_id && (step_msg->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_TIMEOUT for JobId=%u (our JobId=%u)",
+			step_msg->step_id.job_id, sls->job_id);
+		return;
+	}
 
 	if (sls->callback.step_timeout)
 		(sls->callback.step_timeout)(step_msg);
@@ -1264,6 +1284,12 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	int *node_ids;
 	int i, j;
 	int node_id, num_tasks;
+
+	if (sls->job_id && (nf->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_NODE_FAIL for JobId=%u (our JobId=%u)",
+			nf->step_id.job_id, sls->job_id);
+		return;
+	}
 
 	error("Node failure on %s", nf->nodelist);
 
@@ -1342,6 +1368,12 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	bool  test_message_sent;
 	int   num_tasks;
 	bool  active;
+
+	if (sls->job_id && (step_missing->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_STEP_MISSING for JobId=%u (our JobId=%u)",
+			step_missing->step_id.job_id, sls->job_id);
+		return;
+	}
 
 	debug("Step %ps missing from node(s) %s",
 	      &step_missing->step_id, step_missing->nodelist);
@@ -1452,6 +1484,13 @@ static void
 _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 {
 	job_step_kill_msg_t *step_signal = signal_msg->data;
+
+	if (sls->job_id && (step_signal->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_STEP_SIGNAL for JobId=%u (our JobId=%u)",
+			step_signal->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	debug2("Signal %u requested for step %ps", step_signal->signal,
 	       &step_signal->step_id);
 	if (sls->callback.step_signal)
