@@ -1484,6 +1484,13 @@ static void
 _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 {
 	job_step_kill_msg_t *step_signal = signal_msg->data;
+
+	if (sls->job_id && (step_signal->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_STEP_SIGNAL for JobId=%u (our JobId=%u)",
+			step_signal->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	debug2("Signal %u requested for step %ps", step_signal->signal,
 	       &step_signal->step_id);
 	if (sls->callback.step_signal)
