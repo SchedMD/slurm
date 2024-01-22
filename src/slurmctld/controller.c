@@ -498,7 +498,7 @@ int main(int argc, char **argv)
 	}
 
 	if (!original && !slurmctld_primary) {
-		info("Restarted restarted while operating as primary, resuming operation as primary.");
+		info("Restarted while operating as primary, resuming operation as primary.");
 		slurmctld_primary = true;
 	}
 
