@@ -1254,6 +1254,12 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
 	srun_timeout_msg_t *step_msg = timeout_msg->data;
 
+	if (sls->job_id && (step_msg->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_TIMEOUT for JobId=%u (our JobId=%u)",
+			step_msg->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	if (sls->callback.step_timeout)
 		(sls->callback.step_timeout)(step_msg);
 
