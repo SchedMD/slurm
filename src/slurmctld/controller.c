@@ -1292,14 +1292,9 @@ static void _sig_handler(int signal)
 static void _open_ports(void)
 {
 	slurm_addr_t srv_addr;
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* initialize ports for RPCs */
-	lock_slurmctld(config_read_lock);
-	if (listen_nports) {
-		info("Resuming operation with already established listening sockets");
-	} else if (original) {
+	if (original) {
 		if (!(listen_nports = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
@@ -1326,7 +1321,6 @@ static void _open_ports(void)
 			pos++; /* skip comma */
 		}
 	}
-	unlock_slurmctld(config_read_lock);
 }
 
 static void _close_ports(void)
