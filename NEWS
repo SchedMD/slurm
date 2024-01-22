@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
     took control.
  -- Fix race condition that delayed the primary slurmctld resuming when taking
     control from a backup controller.
+ -- srun - Ensure processed messages are meant for this job in case of a
+    rapidly-reused TCP port.
 
 * Changes in Slurm 23.11.1
 ==========================
