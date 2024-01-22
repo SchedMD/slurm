@@ -3358,11 +3358,11 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		 */
 		ts.tv_sec = now + CONTROL_TIMEOUT - 1;
 
-		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 		slurm_cond_timedwait(&slurmctld_config.backup_finish_cond,
-				     &slurmctld_config.thread_count_lock,
+				     &slurmctld_config.backup_finish_lock,
 				     &ts);
-		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+		slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
 
 		if (slurmctld_config.resume_backup)
 			error("%s: REQUEST_CONTROL reply but backup not completely done relinquishing control.  Old state possible", __func__);

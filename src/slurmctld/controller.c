@@ -1013,6 +1013,7 @@ static void  _init_config(void)
 	slurm_mutex_init(&slurmctld_config.acct_update_lock);
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
+	slurm_mutex_init(&slurmctld_config.backup_finish_lock);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
