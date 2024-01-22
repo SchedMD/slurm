@@ -312,8 +312,7 @@ extern bool track_script_killed(pthread_t tid, int status,
 	tmp_rec.status = status;
 
 	slurm_mutex_lock(&flush_mutex);
-	if (flush_script_thd_list &&
-	    (list_find_first(flush_script_thd_list,
+	if ((list_find_first(flush_script_thd_list,
 			     _signal_wait_thd,
 			     &tmp_rec))) {
 		slurm_mutex_unlock(&flush_mutex);
