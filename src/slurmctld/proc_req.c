@@ -3305,6 +3305,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 	if (error_code);
 	else if (msg->msg_type == REQUEST_CONTROL) {
 		info("Performing RPC: REQUEST_CONTROL");
+		slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 		/* resume backup mode */
 		slurmctld_config.resume_backup = true;
 	} else {
@@ -3358,7 +3359,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		 */
 		ts.tv_sec = now + CONTROL_TIMEOUT - 1;
 
-		slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 		slurm_cond_timedwait(&slurmctld_config.backup_finish_cond,
 				     &slurmctld_config.backup_finish_lock,
 				     &ts);

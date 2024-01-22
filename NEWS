@@ -88,6 +88,8 @@ documents those changes that are of interest to users and administrators.
     range, instead of only the first.
  -- Fix backup slurmctld shutting down instead of resuming standby duty if it
     took control.
+ -- Fix race condition that delayed the primary slurmctld resuming when taking
+    control from a backup controller.
 
 * Changes in Slurm 23.11.1
 ==========================
