@@ -1369,6 +1369,12 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	int   num_tasks;
 	bool  active;
 
+	if (sls->job_id && (step_missing->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_STEP_MISSING for JobId=%u (our JobId=%u)",
+			step_missing->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	debug("Step %ps missing from node(s) %s",
 	      &step_missing->step_id, step_missing->nodelist);
 
