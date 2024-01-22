@@ -256,6 +256,7 @@ static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
 static void         _become_slurm_user(void);
+static void _close_ports(void);
 static void         _create_clustername_file(void);
 static void _flush_agent_queue(int tenths);
 static void _flush_rpcs(void);
@@ -264,6 +265,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
+static void _open_ports(void);
 static void         _parse_commandline(int argc, char **argv);
 static void _post_reconfig(void);
 static void *       _purge_files_thread(void *no_data);
@@ -1280,25 +1282,13 @@ static void _sig_handler(int signal)
 }
 
 /*
- * _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each
+ * _open_ports - Open all ports for the slurmctld to listen on.
  */
-static void *_slurmctld_rpc_mgr(void *no_data)
+static void _open_ports(void)
 {
-	int *newsockfd;
-	slurm_addr_t cli_addr, srv_addr;
-	int fd_next = 0, i;
-	/* Locks: Read config */
+	slurm_addr_t srv_addr;
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	int sigarray[] = {SIGUSR1, 0};
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
-	}
-#endif
-
-	debug3("%s pid = %u", __func__, getpid());
 
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
@@ -1308,7 +1298,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if (!(listen_nports = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
-		for (i = 0; i < listen_nports; i++) {
+		for (int i = 0; i < listen_nports; i++) {
 			listen_fds[i].fd = slurm_init_msg_engine_port(
 				slurm_conf.slurmctld_port + i);
 			listen_fds[i].events = POLLIN;
@@ -1332,6 +1322,36 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 	}
 	unlock_slurmctld(config_read_lock);
+}
+
+static void _close_ports(void)
+{
+	for (int i = 0; i < listen_nports; i++)
+		close(listen_fds[i].fd);
+	xfree(listen_fds);
+}
+
+
+/*
+ * _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each
+ */
+static void *_slurmctld_rpc_mgr(void *no_data)
+{
+	int *newsockfd;
+	slurm_addr_t cli_addr;
+	int fd_next = 0, i;
+	/* Locks: Read config */
+	int sigarray[] = {SIGUSR1, 0};
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
+	}
+#endif
+
+	debug3("%s pid = %u", __func__, getpid());
+
+	 _open_ports();
 
 	rate_limit_init();
 	rpc_queue_init();
@@ -1394,9 +1414,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		return NULL;
 
 	debug3("%s shutting down", __func__);
-	for (i = 0; i < listen_nports; i++)
-		close(listen_fds[i].fd);
-	xfree(listen_fds);
+	_close_ports();
 
 	rate_limit_shutdown();
 	rpc_queue_shutdown();
