@@ -1429,6 +1429,8 @@ function __slurm_comp_common_flags() {
 	local gres_flags=(
 		"disable-binding"
 		"enforce-binding"
+		"multiple-tasks-per-sharing"
+		"one-task-per-sharing"
 	)
 	local hints=(
 		"compute_bound"
