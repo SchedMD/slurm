@@ -124,12 +124,6 @@ typedef struct _expline_values_st {
 
 List conf_includes_list = NULL;
 
-static bool _run_in_daemon(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmctld,slurmd,slurmdbd");
-}
-
 /*
  * NOTE - "key" is case insensitive.
  */
@@ -539,9 +533,8 @@ static int _handle_common(s_p_values_t *v,
 			  void* (*convert)(const char* key, const char* value))
 {
 	if (v->data_count != 0) {
-		if (_run_in_daemon())
-			error("%s 1 specified more than once, latest value used",
-			      v->key);
+		error_in_daemon("%s 1 specified more than once, latest value used",
+				v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -661,9 +654,8 @@ static int _handle_pointer(s_p_values_t *v, const char *value,
 			return rc == 0 ? 0 : -1;
 	} else {
 		if (v->data_count != 0) {
-			if (_run_in_daemon())
-				error("%s 2 specified more than once, latest value used",
-				      v->key);
+			error_in_daemon("%s 2 specified more than once, latest value used",
+					v->key);
 			xfree(v->data);
 			v->data_count = 0;
 		}
