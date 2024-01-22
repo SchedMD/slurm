@@ -1148,6 +1148,12 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	launch_tasks_response_msg_t *msg = resp->data;
 	int i;
 
+	if (sls->job_id && (msg->step_id.job_id != sls->job_id)) {
+		verbose("Ignoring RESPONSE_LAUNCH_TASKS for JobId=%u (our JobId=%u)",
+			msg->step_id.job_id, sls->job_id);
+		return;
+	}
+
 	slurm_mutex_lock(&sls->lock);
 	if ((msg->count_of_pids > 0) &&
 	    bit_test(sls->tasks_started, msg->task_ids[0])) {
