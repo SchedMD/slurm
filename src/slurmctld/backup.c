@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <errno.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -339,24 +340,14 @@ static void _sig_handler(int signal)
  */
 static void *_background_rpc_mgr(void *no_data)
 {
-	int newsockfd, sockfd;
+	int newsockfd;
+	int fd_next = 0, i;
 	slurm_addr_t cli_addr;
 	slurm_msg_t msg;
 
-	/* Read configuration only */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
 
 	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
-
-	/* initialize port for RPCs */
-	lock_slurmctld(config_read_lock);
-
-	if ((sockfd = slurm_init_msg_engine_port(slurm_conf.slurmctld_port))
-	    == SLURM_ERROR)
-		fatal("slurm_init_msg_engine_port error %m");
-	unlock_slurmctld(config_read_lock);
 
 	/*
 	 * Prepare to catch SIGUSR1 to interrupt accept().  This signal is
@@ -371,11 +362,23 @@ static void *_background_rpc_mgr(void *no_data)
 	 * Process incoming RPCs indefinitely
 	 */
 	while (slurmctld_config.shutdown_time == 0) {
-		/*
-		 * accept needed for stream implementation is a no-op in
-		 * message implementation that just passes sockfd to newsockfd
-		 */
-		if ((newsockfd = slurm_accept_msg_conn(sockfd, &cli_addr))
+		if (poll(listen_fds, listen_nports, -1) == -1) {
+			if (errno != EINTR)
+				error("slurm_accept_msg_conn poll: %m");
+			continue;
+		}
+
+		/* find one to process */
+		for (i = 0; i < listen_nports; i++) {
+			if (listen_fds[(fd_next + i) % listen_nports].revents) {
+				i = (fd_next + i) % listen_nports;
+				break;
+			}
+		}
+		fd_next = (i + 1) % listen_nports;
+
+		if ((newsockfd = slurm_accept_msg_conn(listen_fds[i].fd,
+						       &cli_addr))
 		    == SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
@@ -397,7 +400,6 @@ static void *_background_rpc_mgr(void *no_data)
 	}
 
 	debug3("_background_rpc_mgr shutting down");
-	close(sockfd);	/* close the main socket */
 	return NULL;
 }
 
