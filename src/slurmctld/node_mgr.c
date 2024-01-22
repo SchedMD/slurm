@@ -2166,12 +2166,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 						(~NODE_STATE_POWERING_UP);
 				}
 
-				if (IS_NODE_POWERED_DOWN(node_ptr)) {
+				if (IS_NODE_POWERED_DOWN(node_ptr))
 					info("power down request repeating for node %s",
 					     this_node_name);
-					node_ptr->node_state &=
-						(~NODE_STATE_POWERED_DOWN);
-				} else
+				else
 					info("powering down node %s",
 					     this_node_name);
 
