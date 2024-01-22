@@ -1073,14 +1073,14 @@ Specify generic resource task binding options.
 .RS
 
 .TP
-.B allow\-task\-sharing
-Cancel \fBno\-task\-sharing\fR. This is useful if it is set by default in
+.B multiple\-tasks\-per\-sharing
+Negate \fBone\-task\-per\-sharing\fR. This is useful if it is set by default in
 \fBSelectTypeParameters\fR.
 .IP
 
 .TP
 .B disable\-binding
-Cancel \fBenforce\-binding\fR. This is useful if it is set by default in
+Negate \fBenforce\-binding\fR. This is useful if it is set by default in
 \fBSelectTypeParameters\fR.
 .IP
 
@@ -1102,14 +1102,15 @@ filtering will be performed on a per\-socket basis.
 .IP
 
 .TP
-.B no\-task\-sharing
+.B one\-task\-per\-sharing
 Do not allow different tasks in to be allocated shared gres from the same
 sharing gres.
 .br
 \fBNOTE\fR: This flag is only enforced if shared gres are requested with
 \-\-tres\-per\-task.
 .br
-\fBNOTE\fR: This option can be set by default in \fBSelectTypeParameters\fR.
+\fBNOTE\fR: This option can be set by default with
+\fBSelectTypeParameters=ONE_TASK_PER_SHARING_GRES\fR.
 .br
 \fBNOTE\fR: This option is specific to
 \fBSelectTypeParameters=MULTIPLE_SHARING_GRES_PJ\fR

@@ -2270,7 +2270,7 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 
 	/* clear gres flag options first */
 	opt->job_flags &= ~(GRES_DISABLE_BIND | GRES_ENFORCE_BIND |
-			    GRES_NO_TASK_SHARING);
+			    GRES_ONE_TASK_PER_SHARING);
 
 	if (!arg)
 		return SLURM_ERROR;
@@ -2282,10 +2282,10 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 			opt->job_flags |= GRES_DISABLE_BIND;
 		} else if (!xstrcasecmp(tok, "enforce-binding")) {
 			opt->job_flags |= GRES_ENFORCE_BIND;
-		} else if (!xstrcasecmp(tok, "allow-task-sharing")) {
-			opt->job_flags |= GRES_ALLOW_TASK_SHARING;
-		} else if (!xstrcasecmp(tok, "no-task-sharing")) {
-			opt->job_flags |= GRES_NO_TASK_SHARING;
+		} else if (!xstrcasecmp(tok, "multiple-tasks-per-sharing")) {
+			opt->job_flags |= GRES_MULT_TASKS_PER_SHARING;
+		} else if (!xstrcasecmp(tok, "one-task-per-sharing")) {
+			opt->job_flags |= GRES_ONE_TASK_PER_SHARING;
 		} else {
 			error("Invalid --gres-flags specification: %s", tok);
 			xfree(tmp_str);
@@ -2301,15 +2301,15 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
-	if ((opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
-	    (opt->job_flags & GRES_NO_TASK_SHARING)) {
-		error("Invalid --gres-flags combo: no-task-sharing and allow-task-sharing are mutually exclusive.");
+	if ((opt->job_flags & GRES_MULT_TASKS_PER_SHARING) &&
+	    (opt->job_flags & GRES_ONE_TASK_PER_SHARING)) {
+		error("Invalid --gres-flags combo: one-task-per-sharing and multiple-tasks-per-sharing are mutually exclusive.");
 		return SLURM_ERROR;
 	}
 
-	if ((opt->job_flags & GRES_NO_TASK_SHARING) &&
+	if ((opt->job_flags & GRES_ONE_TASK_PER_SHARING) &&
 	    !(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
-		error("In order to use --gres-flags=no-task-sharing you must also have SelectTypeParameters=MULTIPLE_SHARING_GRES_PJ in your slurm.conf");
+		error("In order to use --gres-flags=one-task-per-sharing you must also have SelectTypeParameters=MULTIPLE_SHARING_GRES_PJ in your slurm.conf");
 		return SLURM_ERROR;
 	}
 
@@ -2341,10 +2341,10 @@ static char *arg_get_gres_flags(slurm_opt_t *opt)
 		xstrcatat(tmp, &tmp_pos, "disable-binding,");
 	if (opt->job_flags & GRES_ENFORCE_BIND)
 		xstrcatat(tmp, &tmp_pos, "enforce-binding,");
-	if (opt->job_flags & GRES_ALLOW_TASK_SHARING)
-		xstrcatat(tmp, &tmp_pos, "allow-task-sharing,");
-	if (opt->job_flags & GRES_NO_TASK_SHARING)
-		xstrcatat(tmp, &tmp_pos, "no-task-sharing,");
+	if (opt->job_flags & GRES_MULT_TASKS_PER_SHARING)
+		xstrcatat(tmp, &tmp_pos, "multiple-tasks-per-sharing,");
+	if (opt->job_flags & GRES_ONE_TASK_PER_SHARING)
+		xstrcatat(tmp, &tmp_pos, "one-task-per-sharing,");
 
 	if (!tmp_pos)
 		xstrcat(tmp, "unset");
@@ -2359,8 +2359,8 @@ static void arg_reset_gres_flags(slurm_opt_t *opt)
 {
 	opt->job_flags &= ~(GRES_DISABLE_BIND);
 	opt->job_flags &= ~(GRES_ENFORCE_BIND);
-	opt->job_flags &= ~(GRES_ALLOW_TASK_SHARING);
-	opt->job_flags &= ~(GRES_NO_TASK_SHARING);
+	opt->job_flags &= ~(GRES_MULT_TASKS_PER_SHARING);
+	opt->job_flags &= ~(GRES_ONE_TASK_PER_SHARING);
 }
 static slurm_cli_opt_t slurm_opt_gres_flags = {
 	.name = "gres-flags",
@@ -6618,7 +6618,7 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
 		opt->job_flags |= GRES_ENFORCE_BIND;
 
-	if (opt->job_flags & GRES_NO_TASK_SHARING) {
+	if (opt->job_flags & GRES_ONE_TASK_PER_SHARING) {
 		char *tres_type = "gres";
 		bool found = false;
 		char *name, *type, *save_ptr = NULL;
@@ -6638,11 +6638,11 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 		}
 
 		if (!found) {
-			fatal("--gres-flags=no-task-sharing requested, but that shared gres needs to appear in --tres-per-task as well.");
+			fatal("--gres-flags=one-task-per-sharing requested, but that shared gres needs to appear in --tres-per-task as well.");
 		}
-	} else if (!(opt->job_flags & GRES_ALLOW_TASK_SHARING) &&
-		   (slurm_conf.select_type_param & NO_TASK_SHARING_GRES))
-		opt->job_flags |= GRES_NO_TASK_SHARING;
+	} else if (!(opt->job_flags & GRES_MULT_TASKS_PER_SHARING) &&
+		   (slurm_conf.select_type_param & ONE_TASK_PER_SHARING_GRES))
+		opt->job_flags |= GRES_ONE_TASK_PER_SHARING;
 }
 
 /* Validate shared options between srun, salloc, and sbatch */

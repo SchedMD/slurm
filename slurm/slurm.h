@@ -1027,7 +1027,7 @@ enum node_states {
 				 * not over-committed when selected as a CR. */
 /* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
 #define ENFORCE_BINDING_GRES 0x0040
-#define NO_TASK_SHARING_GRES 0x0080
+#define ONE_TASK_PER_SHARING_GRES 0x0080
 
 /* By default, schedule only one task per core.
  * Without this option, tasks would be allocated threads. */
@@ -1167,9 +1167,10 @@ enum node_states {
 #define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
 #define RESET_LIC_TASK     SLURM_BIT(36) /* Reset licenses per task */
 #define RESET_LIC_JOB      SLURM_BIT(37) /* Reset licenses per job */
-#define GRES_NO_TASK_SHARING SLURM_BIT(38) /* Don't let tasks in the same job
-					    * share the same gres */
-#define GRES_ALLOW_TASK_SHARING SLURM_BIT(39) /* Prevent GRES_NO_TASK_SHARING */
+#define GRES_ONE_TASK_PER_SHARING SLURM_BIT(38) /* Don't let tasks in the same
+						 * job share the same gres */
+#define GRES_MULT_TASKS_PER_SHARING SLURM_BIT(39)/* Negate
+						  * GRES_ONE_TASK_PER_SHARING */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
