@@ -399,6 +399,9 @@ int main(int argc, char **argv)
 		_become_slurm_user();
 	}
 
+	/* open ports must happen after _become_slurm_user() */
+	 _open_ports();
+
 	/*
 	 * Create StateSaveLocation directory if necessary.
 	 */
@@ -870,6 +873,8 @@ int main(int argc, char **argv)
 	 */
 	_flush_agent_queue(30);
 #endif
+
+	_close_ports();
 
 	log_fini();
 	sched_log_fini();
@@ -1351,8 +1356,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	debug3("%s pid = %u", __func__, getpid());
 
-	 _open_ports();
-
 	rate_limit_init();
 	rpc_queue_init();
 
@@ -1414,7 +1417,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		return NULL;
 
 	debug3("%s shutting down", __func__);
-	_close_ports();
 
 	rate_limit_shutdown();
 	rpc_queue_shutdown();
