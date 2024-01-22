@@ -1220,6 +1220,12 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 {
 	srun_job_complete_msg_t *step_msg = complete_msg->data;
 
+	if (sls->job_id && (step_msg->job_id != sls->job_id)) {
+		verbose("Ignoring SRUN_JOB_COMPLETE for stray JobId=%u (our JobId=%u)",
+			step_msg->job_id, sls->job_id);
+		return;
+	}
+
 	if (step_msg->step_id == NO_VAL) {
 		verbose("Complete job %u received",
 			step_msg->job_id);
