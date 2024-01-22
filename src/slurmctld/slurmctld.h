@@ -251,6 +251,8 @@ extern int   batch_sched_delay;
 extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
+extern int listen_nports;
+extern struct pollfd *listen_fds;
 extern int max_depend_depth;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
