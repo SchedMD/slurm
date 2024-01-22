@@ -97,6 +97,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix backup slurmctld to be able to respond to configless config file
     requests correctly.
  -- Fix slurmctld crashing when recovering from a failed reconfigure.
+ -- Fix slurmscriptd operation after recovering from a failed reconfigure.
 
 * Changes in Slurm 23.11.1
 ==========================
