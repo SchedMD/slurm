@@ -119,6 +119,13 @@ documents those changes that are of interest to users and administrators.
     on failures. This allows for HA setups where the DNS entries are withdrawn
     for some SlurmctldHost entries without flooding the user with errors.
  -- Prevent slurmscriptd PID leaks when running slurmctld in foreground mode.
+ -- Open all slurmctld listening ports at startup, and persist throughout.
+    This also changes the backup slurmctld process to open the SlurmctldPort
+    range, instead of only the first.
+ -- Fix backup slurmctld shutting down instead of resuming standby duty if it
+    took control.
+ -- Fix race condition that delayed the primary slurmctld resuming when taking
+    control from a backup controller.
 
 * Changes in Slurm 23.11.1
 ==========================

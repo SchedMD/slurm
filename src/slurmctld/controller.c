@@ -179,6 +179,8 @@ bool cloud_dns = false;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
 bool disable_remote_singleton = false;
+int listen_nports = 0;
+struct pollfd *listen_fds = NULL;
 int max_depend_depth = 10;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
@@ -209,8 +211,6 @@ static int	debug_level = 0;
 static char *	debug_logfile = NULL;
 static bool	dump_core = false;
 static int      job_sched_cnt = 0;
-static int listen_nports = 0;
-static struct pollfd *listen_fds = NULL;
 static int main_argc = 0;
 static char **main_argv = NULL;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
@@ -256,6 +256,7 @@ static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
 static void         _become_slurm_user(void);
+static void _close_ports(void);
 static void         _create_clustername_file(void);
 static void _flush_agent_queue(int tenths);
 static void _flush_rpcs(void);
@@ -264,6 +265,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
+static void _open_ports(void);
 static void         _parse_commandline(int argc, char **argv);
 static void _post_reconfig(void);
 static void *       _purge_files_thread(void *no_data);
@@ -307,6 +309,7 @@ int main(int argc, char **argv)
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
 	};
 	bool create_clustername_file;
+	bool backup_has_control = false;
 	char *conf_file;
 
 	main_argc = argc;
@@ -396,6 +399,9 @@ int main(int argc, char **argv)
 		_init_pidfile();
 		_become_slurm_user();
 	}
+
+	/* open ports must happen after _become_slurm_user() */
+	 _open_ports();
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
@@ -493,8 +499,8 @@ int main(int argc, char **argv)
 	}
 
 	if (!original && !slurmctld_primary) {
-		info("Restarted restarted while operating as primary, resuming operation as primary.");
-		slurmctld_primary = true;
+		info("Restarted while operating as primary, resuming operation as primary.");
+		backup_has_control = true;
 	}
 
 	/*
@@ -541,7 +547,7 @@ int main(int argc, char **argv)
 		reconfig = false;
 
 		/* start in primary or backup mode */
-		if (!slurmctld_primary) {
+		if (!slurmctld_primary && !backup_has_control) {
 			controller_fini_scheduling(); /* make sure shutdown */
 			_run_primary_prog(false);
 			if (acct_storage_g_init() != SLURM_SUCCESS)
@@ -600,7 +606,8 @@ int main(int argc, char **argv)
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 
-		if (slurmctld_primary && !reconfiguring) {
+		if ((slurmctld_primary || backup_has_control) &&
+		    !reconfiguring) {
 			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -616,7 +623,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (slurmctld_primary) {
+		if (slurmctld_primary || backup_has_control) {
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
 
@@ -866,6 +873,8 @@ int main(int argc, char **argv)
 	_flush_agent_queue(30);
 #endif
 
+	_close_ports();
+
 	log_fini();
 	sched_log_fini();
 
@@ -1001,6 +1010,7 @@ static void  _init_config(void)
 	slurm_mutex_init(&slurmctld_config.acct_update_lock);
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
+	slurm_mutex_init(&slurmctld_config.backup_finish_lock);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
@@ -1277,35 +1287,18 @@ static void _sig_handler(int signal)
 }
 
 /*
- * _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each
+ * _open_ports - Open all ports for the slurmctld to listen on.
  */
-static void *_slurmctld_rpc_mgr(void *no_data)
+static void _open_ports(void)
 {
-	int *newsockfd;
-	slurm_addr_t cli_addr, srv_addr;
-	int fd_next = 0, i;
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	int sigarray[] = {SIGUSR1, 0};
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
-	}
-#endif
-
-	debug3("%s pid = %u", __func__, getpid());
+	slurm_addr_t srv_addr;
 
 	/* initialize ports for RPCs */
-	lock_slurmctld(config_read_lock);
-	if (listen_nports) {
-		info("Resuming operation with already established listening sockets");
-	} else if (original) {
+	if (original) {
 		if (!(listen_nports = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
-		for (i = 0; i < listen_nports; i++) {
+		for (int i = 0; i < listen_nports; i++) {
 			listen_fds[i].fd = slurm_init_msg_engine_port(
 				slurm_conf.slurmctld_port + i);
 			listen_fds[i].events = POLLIN;
@@ -1328,7 +1321,34 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			pos++; /* skip comma */
 		}
 	}
-	unlock_slurmctld(config_read_lock);
+}
+
+static void _close_ports(void)
+{
+	for (int i = 0; i < listen_nports; i++)
+		close(listen_fds[i].fd);
+	xfree(listen_fds);
+}
+
+
+/*
+ * _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each
+ */
+static void *_slurmctld_rpc_mgr(void *no_data)
+{
+	int *newsockfd;
+	slurm_addr_t cli_addr;
+	int fd_next = 0, i;
+	/* Locks: Read config */
+	int sigarray[] = {SIGUSR1, 0};
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
+	}
+#endif
+
+	debug3("%s pid = %u", __func__, getpid());
 
 	rate_limit_init();
 	rpc_queue_init();
@@ -1391,9 +1411,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		return NULL;
 
 	debug3("%s shutting down", __func__);
-	for (i = 0; i < listen_nports; i++)
-		close(listen_fds[i].fd);
-	xfree(listen_fds);
 
 	rate_limit_shutdown();
 	rpc_queue_shutdown();

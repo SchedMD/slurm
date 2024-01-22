@@ -134,7 +134,8 @@ typedef struct slurmctld_config {
 	List acct_update_list;
 	pthread_cond_t acct_update_cond;
 	pthread_mutex_t acct_update_lock;
-	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
+	pthread_cond_t backup_finish_cond;
+	pthread_mutex_t backup_finish_lock;
 	time_t	boot_time;
 	char    node_name_long[HOST_NAME_MAX];
 	char    node_name_short[HOST_NAME_MAX];
@@ -251,6 +252,8 @@ extern int   batch_sched_delay;
 extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
+extern int listen_nports;
+extern struct pollfd *listen_fds;
 extern int max_depend_depth;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
