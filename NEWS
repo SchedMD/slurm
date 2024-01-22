@@ -73,9 +73,9 @@ documents those changes that are of interest to users and administrators.
  -- Avoid sending KILL RPCs to unresolvable POWERING_UP and POWERED_DOWN nodes.
  -- data_parser/v0.0.38 - Fix several potential NULL dereferences that could
     cause slurmrestd to crash.
- -- Add --gres-flags=no-task-sharing. Do not allow different tasks in to be
+ -- Add --gres-flags=one-task-per-sharing. Do not allow different tasks in to be
     allocated shared gres from the same sharing gres.
- -- Add SelectTypeParameters=ENFORCE_BINDING_GRES and NO_TASK_SHARING_GRES.
+ -- Add SelectTypeParameters=ENFORCE_BINDING_GRES and ONE_TASK_PER_SHARING_GRES.
     This gives default behavior for a job's --gres-flags.
  -- Alter the networking code to try connecting to the backup controllers
     if the DNS lookup for the primary SlurmctldHost fails.

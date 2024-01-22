@@ -1277,7 +1277,7 @@ static int _set_shared_task_bits(int node_inx,
 				       _get_task_cnt_node(tasks_per_socket,
 							  sock_gres->sock_cnt);
 		if (no_task_sharing)
-			error("no-task-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring.");
+			error("one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring.");
 
 		_pick_shared_gres(&gres_needed, tasks_per_socket, sock_gres,
 				  node_inx, use_busy_dev, true, false);
@@ -2493,7 +2493,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					rc = _set_shared_task_bits(
 						i, sock_gres, job_id,
 						(job_ptr->bit_flags &
-						 GRES_NO_TASK_SHARING),
+						 GRES_ONE_TASK_PER_SHARING),
 						tasks_per_node_socket[i]);
 				} else {
 					error("%s job %u job_spec lacks valid shared GRES counter",

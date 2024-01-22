@@ -7543,9 +7543,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((job_desc->bitflags & GRES_NO_TASK_SHARING) &&
+	if ((job_desc->bitflags & GRES_ONE_TASK_PER_SHARING) &&
 	     (!(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))){
-		info("%s: no-task-sharing requires MULTIPLE_SHARING_GRES_PJ",
+		info("%s: one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ",
 		     __func__);
 		error_code = ESLURM_INVALID_GRES;
 		goto cleanup_fail;
