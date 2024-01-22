@@ -324,21 +324,11 @@ extern bool track_script_killed(pthread_t tid, int status,
 	tmp_rec.status = status;
 
 	slurm_mutex_lock(&flush_mutex);
-	if (flush_called) {
-		if (!flush_script_thd_list) {
-			slurm_mutex_unlock(&flush_mutex);
-			return true;
-		}
+	if (flush_script_thd_list &&
+	    (list_find_first(flush_script_thd_list,
+			     _signal_wait_thd,
+			     &tmp_rec))) {
 		slurm_mutex_unlock(&flush_mutex);
-		/*
-		 * If waitpid_called is true, then that means that the caller
-		 * called waitpid and waitpid returned, so the process has
-		 * been reaped. In that case, signal the flush thread that it
-		 * doesn't need to wait for the script to finish anymore.
-		 */
-		if (waitpid_called)
-			list_for_each(flush_script_thd_list, _signal_wait_thd,
-				      &tmp_rec);
 		return true;
 	}
 	slurm_mutex_unlock(&flush_mutex);
