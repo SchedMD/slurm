@@ -4901,11 +4901,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (tot_prio_weight > 0xffffffff)
 		error("PriorityWeight values too high, job priority value may overflow");
 
-	/* Out of order due to use with ProctrackType */
-	(void) s_p_get_string(&conf->switch_type, "SwitchType", hashtbl);
-	if (xstrcasestr(conf->switch_type, "none"))
-		xfree(conf->switch_type);
-
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
@@ -5319,7 +5314,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->switch_param, "SwitchParameters",
 			      hashtbl);
 
-	/* see above for switch_type, order dependent */
+	(void) s_p_get_string(&conf->switch_type, "SwitchType", hashtbl);
+	if (xstrcasestr(conf->switch_type, "none"))
+		xfree(conf->switch_type);
 
 	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl)) {
 		/* empty */
