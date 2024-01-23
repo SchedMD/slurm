@@ -607,48 +607,6 @@ static void _parse_pbs_resource_list(char *rl)
 					false, false);
 				xfree(temp);
 			}
-#ifdef HAVE_NATIVE_CRAY
-			/*
-			 * NB: no "mppmem" here since it specifies per-PE memory units,
-			 *     whereas Slurm uses per-node and per-CPU memory units.
-			 */
-		} else if (!xstrncmp(rl + i, "mppdepth=", 9)) {
-			/* Cray: number of CPUs (threads) per processing element */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				slurm_process_option_or_exit(&opt, 'c', temp,
-							     false, false);
-			}
-			xfree(temp);
-		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
-			/* Cray `nodes' variant: hostlist without prefix */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for mppnodes");
-				exit(error_exit);
-			}
-			slurm_process_option_or_exit(&opt, 'w', temp, false,
-						     false);
-		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
-			/* Cray: number of processing elements per node */
-			i += 8;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				slurm_process_option_or_exit(
-					&opt, LONG_OPT_NTASKSPERNODE, temp,
-					false, false);
-			xfree(temp);
-		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
-			/* Cray: task width (number of processing elements) */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				slurm_process_option_or_exit(&opt, 'n', temp,
-							     false, false);
-			xfree(temp);
-#endif /* HAVE_NATIVE_CRAY */
 		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
