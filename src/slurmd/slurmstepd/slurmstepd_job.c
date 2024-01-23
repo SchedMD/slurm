@@ -143,18 +143,6 @@ _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
 	if (step->het_job_offset != NO_VAL)
 		het_job_offset = step->het_job_offset;
 
-#if defined(HAVE_NATIVE_CRAY)
-	for (i = 0; i < step->nnodes; i++) {
-		int j;
-		for (j = 1; j < step->task_cnts[i]; j++) {
-			if (gtid[i][j] != gtid[i][j-1] + 1) {
-				step->non_smp = 1;
-				break;
-			}
-		}
-	}
-#endif
-
 	step->task = (stepd_step_task_info_t **)
 		xmalloc(step->node_tasks * sizeof(stepd_step_task_info_t *));
 
