@@ -1537,21 +1537,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
-		uint32_t jobid;
 
 		cred_insert_jobid(req->step_id.job_id);
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-#ifdef HAVE_NATIVE_CRAY
-		if (req->het_job_id && (req->het_job_id != NO_VAL))
-			jobid = req->het_job_id;
-		else
-			jobid = req->step_id.job_id;
-#else
-		jobid = req->step_id.job_id;
-#endif
-		if (container_g_create(jobid, msg->auth_uid))
+		if (container_g_create(req->step_id.job_id, msg->auth_uid))
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -2293,16 +2284,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 
-#ifdef HAVE_NATIVE_CRAY
-		if (req->het_job_id && (req->het_job_id != NO_VAL))
-			jobid = req->het_job_id;
-		else
-			jobid = req->job_id;
-#else
-		jobid = req->job_id;
-#endif
-
-		if ((rc = container_g_create(jobid, req->uid)))
+		if ((rc = container_g_create(req->job_id, req->uid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, false);
@@ -2458,7 +2440,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	if (first_job_run) {
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
-		uint32_t jobid;
 
 		cred_insert_jobid(req->job_id);
 		_add_job_running_prolog(req->job_id);
@@ -2490,16 +2471,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 	 * Run job prolog on this node
 	 	 */
 
-#ifdef HAVE_NATIVE_CRAY
-		if (req->het_job_id && (req->het_job_id != NO_VAL))
-			jobid = req->het_job_id;
-		else
-			jobid = req->job_id;
-#else
-		jobid = req->job_id;
-#endif
-
-		if ((rc = container_g_create(jobid, batch_uid)))
+		if ((rc = container_g_create(req->job_id, batch_uid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, true);
@@ -4178,14 +4150,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		goto done;
 	}
 
-#ifdef HAVE_NATIVE_CRAY
-	if (cred_arg->het_job_id && (cred_arg->het_job_id != NO_VAL))
-		key.job_id = cred_arg->het_job_id;
-	else
-		key.job_id = cred_arg->job_id;
-#else
 	key.job_id = cred_arg->job_id;
-#endif
 	key.step_id = cred_arg->step_id;
 
 #if 0
@@ -5110,7 +5075,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 	kill_job_msg_t *req    = msg->data;
 	job_env_t       job_env;
 	int		node_id = 0;
-	uint32_t        jobid;
 
 	debug("%s: uid = %u", __func__, msg->auth_uid);
 	/*
@@ -5188,16 +5152,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_run_epilog(&job_env, req->cred);
 	_free_job_env(&job_env);
 
-#ifdef HAVE_NATIVE_CRAY
-	if (req->het_job_id && (req->het_job_id != NO_VAL))
-		jobid = req->het_job_id;
-	else
-		jobid = req->step_id.job_id;
-#else
-	jobid = req->step_id.job_id;
-#endif
-
-	if (container_g_delete(jobid))
+	if (container_g_delete(req->step_id.job_id))
 		error("container_g_delete(%u): %m", req->step_id.job_id);
 	_launch_complete_rm(req->step_id.job_id);
 }
@@ -5211,7 +5166,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	int		node_id = 0;
 	job_env_t       job_env;
-	uint32_t        jobid;
 
 	debug("%s: uid = %u %ps", __func__, msg->auth_uid, &req->step_id);
 	/*
@@ -5224,16 +5178,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-
-	/* Use this when dealing with the job container */
-#ifdef HAVE_NATIVE_CRAY
-	if (req->het_job_id && (req->het_job_id != NO_VAL))
-		jobid = req->het_job_id;
-	else
-		jobid = req->step_id.job_id;
-#else
-	jobid = req->step_id.job_id;
-#endif
 
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another
@@ -5375,7 +5319,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			_epilog_complete(req->step_id.job_id, rc);
 		}
 
-		if (container_g_delete(jobid))
+		if (container_g_delete(req->step_id.job_id))
 			error("container_g_delete(%u): %m", req->step_id.job_id);
 		_launch_complete_rm(req->step_id.job_id);
 		return;
@@ -5452,7 +5396,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", req->step_id.job_id);
-	if (container_g_delete(jobid))
+	if (container_g_delete(req->step_id.job_id))
 		error("container_g_delete(%u): %m", req->step_id.job_id);
 	_launch_complete_rm(req->step_id.job_id);
 
