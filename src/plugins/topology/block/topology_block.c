@@ -190,7 +190,24 @@ extern bool topology_p_generate_node_ranking(void)
 extern int topology_p_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern)
 {
-	return SLURM_SUCCESS;
+	node_record_t *node_ptr = find_node_record(node_name);
+
+	/* node not found in configuration */
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	for (int i = 0; i < block_record_cnt; i++) {
+		if (bit_test(block_record_table[i].node_bitmap,
+			     node_ptr->index)) {
+			*paddr = xstrdup_printf("%s.%s",
+						block_record_table[i].name,
+						node_name);
+			*ppattern = xstrdup("block.node");
+			return SLURM_SUCCESS;
+		}
+	}
+
+	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }
 
 extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
