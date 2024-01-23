@@ -37,8 +37,10 @@
 #include "src/common/slurm_xlator.h"
 
 #include "common_topo.h"
+#include "eval_nodes.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/core_array.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_conf.h"
@@ -58,8 +60,10 @@
 
 #if defined (__APPLE__)
 extern List part_list __attribute__((weak_import));
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
 List part_list = NULL;
+bitstr_t *idle_node_bitmap;
 #endif
 
 typedef struct {
@@ -312,4 +316,135 @@ extern bool common_topo_route_part(void)
 	}
 
 	return route_part;
+}
+
+extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
+{
+	avail_res_t **avail_res_array = topo_eval->avail_res_array;
+	job_record_t *job_ptr = topo_eval->job_ptr;
+
+	int i, count, ec, most_res = 0;
+	bitstr_t *orig_node_map, *req_node_map = NULL;
+	bitstr_t **orig_core_array;
+	int rem_nodes;
+
+	if (job_ptr->details->req_node_bitmap)
+		req_node_map = job_ptr->details->req_node_bitmap;
+
+	/* clear nodes from the bitmap that don't have available resources */
+	for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+		/*
+		 * Make sure we don't say we can use a node exclusively
+		 * that is bigger than our whole-job maximum CPU count.
+		 */
+		if (((job_ptr->details->whole_node == 1) &&
+		     (job_ptr->details->max_cpus != NO_VAL) &&
+		     (job_ptr->details->max_cpus <
+		      avail_res_array[i]->avail_cpus)) ||
+		/* OR node has no CPUs */
+		    (avail_res_array[i]->avail_cpus < 1)) {
+
+			if (req_node_map && bit_test(req_node_map, i)) {
+				/* can't clear a required node! */
+				return SLURM_ERROR;
+			}
+			bit_clear(topo_eval->node_map, i);
+		}
+	}
+
+	if (job_ptr->details->num_tasks &&
+	    !(job_ptr->details->ntasks_per_node) &&
+	    (topo_eval->max_nodes > job_ptr->details->num_tasks))
+		topo_eval->max_nodes =
+			MAX(job_ptr->details->num_tasks, topo_eval->min_nodes);
+
+	/*
+	 * common_topo_eval_nodes() might need to be called more than once and
+	 * is destructive of node_map and avail_core. Copy those bitmaps.
+	 */
+	orig_node_map = bit_copy(topo_eval->node_map);
+	orig_core_array = copy_core_array(topo_eval->avail_core);
+
+	topo_eval->first_pass = true;
+
+	ec = eval_nodes(topo_eval);
+	if (ec == SLURM_SUCCESS)
+		goto fini;
+
+	topo_eval->first_pass = false;
+
+	bit_or(topo_eval->node_map, orig_node_map);
+	core_array_or(topo_eval->avail_core, orig_core_array);
+
+	rem_nodes = bit_set_count(topo_eval->node_map);
+	if (rem_nodes <= topo_eval->min_nodes) {
+		/* Can not remove any nodes, enable use of non-local GRES */
+		ec = eval_nodes(topo_eval);
+		goto fini;
+	}
+
+	/*
+	 * This nodeset didn't work. To avoid a possible knapsack problem,
+	 * incrementally remove nodes with low resource counts (sum of CPU and
+	 * GPU count if using GPUs, otherwise the CPU count) and retry
+	 */
+	for (i = 0; next_node(&i); i++) {
+		if (avail_res_array[i]) {
+			most_res = MAX(most_res,
+				       avail_res_array[i]->avail_res_cnt);
+		}
+	}
+
+	for (count = 1; count < most_res; count++) {
+		int nochange = 1;
+		bit_or(topo_eval->node_map, orig_node_map);
+		core_array_or(topo_eval->avail_core, orig_core_array);
+		for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+			if ((avail_res_array[i]->avail_res_cnt > 0) &&
+			    (avail_res_array[i]->avail_res_cnt <= count)) {
+				if (req_node_map && bit_test(req_node_map, i))
+					continue;
+				nochange = 0;
+				bit_clear(topo_eval->node_map, i);
+				bit_clear(orig_node_map, i);
+				if (--rem_nodes <= topo_eval->min_nodes)
+					break;
+			}
+		}
+		if (nochange && (count != 1))
+			continue;
+		ec = eval_nodes(topo_eval);
+		if (ec == SLURM_SUCCESS)
+			break;
+		if (rem_nodes <= topo_eval->min_nodes)
+			break;
+	}
+
+fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
+	     orig_core_array) {
+		/*
+		 * Update available CPU count for any removed cores.
+		 * Cores are only removed for jobs with GRES to enforce binding.
+		 */
+		for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+			if (!orig_core_array[i] || !topo_eval->avail_core[i])
+				continue;
+			count = bit_set_count(topo_eval->avail_core[i]);
+			count *= node_record_table_ptr[i]->tpc;
+			avail_res_array[i]->avail_cpus =
+				MIN(count, avail_res_array[i]->avail_cpus);
+			if (avail_res_array[i]->avail_cpus == 0) {
+				error("avail_cpus underflow for %pJ",
+				      job_ptr);
+				if (req_node_map && bit_test(req_node_map, i)) {
+					/* can't clear a required node! */
+					ec = SLURM_ERROR;
+				}
+				bit_clear(topo_eval->node_map, i);
+			}
+		}
+	}
+	FREE_NULL_BITMAP(orig_node_map);
+	free_core_array(&orig_core_array);
+	return ec;
 }

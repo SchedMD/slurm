@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  gres_sched.h - Scheduling functions used by cons_tres
+ *  gres_sched.h - Scheduling functions used by topology with cons_tres
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
  *  Derived in large part from code previously in interfaces/gres.h
@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_TRES_GRES_SCHED_H
-#define _CONS_TRES_GRES_SCHED_H
+#ifndef _COMMON_TOPO_GRES_SCHED_H
+#define _COMMON_TOPO_GRES_SCHED_H
 
 #include "src/interfaces/gres.h"
 
@@ -118,4 +118,4 @@ extern List gres_sched_create_sock_gres_list(
 	bitstr_t **req_sock_map, uint32_t user_id,
 	const uint32_t node_inx);
 
-#endif /* _CONS_TRES_GRES_SCHED_H */
+#endif /* _COMMON_TOPO_GRES_SCHED_H */

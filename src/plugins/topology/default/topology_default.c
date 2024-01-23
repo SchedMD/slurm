@@ -97,7 +97,7 @@ extern int topology_p_build_config(void)
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
-	return ESLURM_NOT_SUPPORTED;
+	return common_topo_choose_nodes(topo_eval);
 }
 
 extern bool topology_p_generate_node_ranking(void)
