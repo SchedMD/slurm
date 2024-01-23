@@ -74,11 +74,7 @@ extern bool is_cray_system(void)
 	if (working_cluster_rec)
 		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY;
 
-#ifdef HAVE_NATIVE_CRAY
-	return true;
-#else
 	return false;
-#endif
 }
 
 extern uint16_t slurmdb_setup_cluster_name_dims(void)
@@ -104,9 +100,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #endif
 #ifdef HAVE_FRONT_END
 	cluster_flags |= CLUSTER_FLAG_FE;
-#endif
-#ifdef HAVE_NATIVE_CRAY
-	cluster_flags |= CLUSTER_FLAG_CRAY;
 #endif
 	return cluster_flags;
 }
