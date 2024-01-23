@@ -4293,15 +4293,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
 
-
-	if (!s_p_get_string(&conf->job_container_plugin, "JobContainerType",
-	    hashtbl)) {
-#ifdef HAVE_NATIVE_CRAY
-		conf->job_container_plugin = xstrdup("job_container/cncu");
-#else
-		/* empty */
-#endif
-	} else if (xstrcasestr(conf->job_container_plugin, "none"))
+	(void) s_p_get_string(&conf->job_container_plugin, "JobContainerType",
+			      hashtbl);
+	if (xstrcasestr(conf->job_container_plugin, "none"))
 		xfree(conf->job_container_plugin);
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
@@ -4545,13 +4539,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	(void) s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
-#if defined(HAVE_NATIVE_CRAY)
-	if (conf->mpi_params == NULL ||
-	    strstr(conf->mpi_params, "ports=") == NULL) {
-		error("MpiParams=ports= is required on Cray/Aries systems");
-		return SLURM_ERROR;
-	}
-#endif
 
 	if (s_p_get_boolean((bool *)&truth, "TrackWCKey", hashtbl) && truth)
 		conf->conf_flags |= CTL_CONF_WCKEY;
@@ -4915,25 +4902,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		error("PriorityWeight values too high, job priority value may overflow");
 
 	/* Out of order due to use with ProctrackType */
-	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl)) {
-#if defined HAVE_NATIVE_CRAY
-		conf->switch_type = xstrdup("switch/cray_aries");
-#else
-		/* empty */
-#endif
-	} else if (xstrcasestr(conf->switch_type, "none"))
+	(void) s_p_get_string(&conf->switch_type, "SwitchType", hashtbl);
+	if (xstrcasestr(conf->switch_type, "none"))
 		xfree(conf->switch_type);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
-#ifdef HAVE_NATIVE_CRAY
-	if (xstrcmp(conf->proctrack_type, "proctrack/cray_aries")) {
-		error("On a Cray/Aries ProctrackType=proctrack/cray_aries "
-		      "is required");
-		return SLURM_ERROR;
-	}
-#endif
 
 	conf->private_data = 0; /* Set to default before parsing PrivateData */
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
@@ -5135,17 +5110,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->slurm_user_id = my_uid;
 		}
 	}
-#ifdef HAVE_NATIVE_CRAY
-	/*
-	 * When running on Native Cray the SlurmUser must be root
-	 * to access the needed libraries.
-	 */
-	if (conf->slurm_user_id != 0) {
-		error("Cray/Aries requires SlurmUser=root (default), but have '%s'.",
-			conf->slurm_user_name);
-		return SLURM_ERROR;
-	}
-#endif
 
 	if (!s_p_get_string( &conf->slurmd_user_name, "SlurmdUser", hashtbl)) {
 		conf->slurmd_user_name = xstrdup("root");

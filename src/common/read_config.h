@@ -98,11 +98,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_INTERACTIVE_STEP_OPTS "--interactive --preserve-env --pty $SHELL"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
-#if defined HAVE_NATIVE_CRAY
-#  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 1
-#else
-#  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
-#endif
+#define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
@@ -139,11 +135,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/backfill"
-#if defined HAVE_NATIVE_CRAY
-#  define DEFAULT_SELECT_TYPE       "select/cray_aries"
-#else
-#  define DEFAULT_SELECT_TYPE       "select/cons_tres"
-#endif
+#define DEFAULT_SELECT_TYPE         "select/cons_tres"
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
