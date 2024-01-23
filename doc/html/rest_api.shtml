@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-23.11.0&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-23.11.1&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -863,6 +863,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 5,
       "set" : false,
@@ -1203,6 +1204,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 5,
       "set" : false,
@@ -1649,6 +1651,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 5,
       "set" : false,
@@ -1989,6 +1992,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 5,
       "set" : false,
@@ -9022,6 +9026,7 @@
         "infinite" : true
       }
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -9582,6 +9587,7 @@
         "infinite" : true
       }
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -10316,6 +10322,7 @@
         "infinite" : true
       }
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -10876,6 +10883,7 @@
         "infinite" : true
       }
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -15050,6 +15058,7 @@
 <div class="param">mcs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_job_mcs">v0_0_40_job_mcs</a></span>  </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Job held </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">required (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_job_required">v0_0_40_job_required</a></span>  </div>
@@ -15149,6 +15158,7 @@
         <div class="param-enum-header">Enum:</div>
         
 <div class="param">prefer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Job held </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
@@ -15315,6 +15325,7 @@
 <div class="param">preempt_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
 <div class="param">preemptable_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
 <div class="param">pre_sus_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint64_no_val">v0.0.40_uint64_no_val</a></span>  </div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Job held </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
