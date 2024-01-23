@@ -535,7 +535,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 
 		cpus = job_res->cpus[i];
-		vpus = cons_helpers_cpus_per_core(job_ptr->details, n);
+		vpus = job_mgr_determine_cpus_per_core(job_ptr->details, n);
 
 		/* compute still required cores on the node */
 		req_cores = cpus / vpus;
@@ -914,7 +914,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &n)); n++) {
 		sockets = node_ptr->tot_sockets;
 		cps     = node_ptr->cores;
-		vpus    = cons_helpers_cpus_per_core(job_ptr->details, n);
+		vpus    = job_mgr_determine_cpus_per_core(job_ptr->details, n);
 
 		log_flag(SELECT_TYPE, "%pJ node %s vpus %u cpus %u",
 			 job_ptr, node_ptr->name, vpus, job_res->cpus[i]);

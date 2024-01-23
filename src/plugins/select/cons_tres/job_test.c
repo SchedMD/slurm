@@ -229,7 +229,7 @@ static void _cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 		return;
 
 	resv_cpus = MAX((rem_nodes - 1), 0);
-	resv_cpus *= cons_helpers_cpus_per_core(details_ptr, node_inx);
+	resv_cpus *= job_mgr_determine_cpus_per_core(details_ptr, node_inx);
 	if (topo_eval->cr_type & CR_SOCKET)
 		resv_cpus *= node_record_table_ptr[node_inx]->cores;
 	rem_max_cpus -= resv_cpus;
@@ -405,7 +405,7 @@ static void _select_cores(topology_eval_t *topo_eval,
 		*avail_cpus = bit_set_count(avail_core[node_inx]);
 	}
 	avail_res_array[node_inx]->gres_min_cpus =
-		cons_helpers_cpus_per_core(job_ptr->details, node_inx) *
+		job_mgr_determine_cpus_per_core(job_ptr->details, node_inx) *
 		min_cores_this_node;
 	avail_res_array[node_inx]->gres_max_tasks = max_tasks_this_node;
 }
@@ -6571,7 +6571,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = cons_helpers_cpus_per_core(details_ptr, node_i);
+	threads_per_core = job_mgr_determine_cpus_per_core(details_ptr, node_i);
 
 	/* Are enough CPUs available compared with required ones? */
 	if ((free_core_count * threads_per_core) < details_ptr->pn_min_cpus) {

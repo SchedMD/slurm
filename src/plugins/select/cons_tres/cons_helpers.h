@@ -54,10 +54,6 @@ extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
  */
 extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
 
-/* Determine how many cpus per core we can use */
-extern uint16_t cons_helpers_cpus_per_core(
-	job_details_t *details, int node_inx);
-
 /*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
