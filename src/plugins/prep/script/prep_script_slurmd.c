@@ -155,12 +155,6 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	char *path = is_epilog ? slurm_conf.epilog : slurm_conf.prolog;
 	char **env = NULL;
 	int rc = SLURM_SUCCESS;
-	uint32_t jobid = job_env->jobid;
-
-#ifdef HAVE_NATIVE_CRAY
-	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
-		jobid = job_env->het_job_id;
-#endif
 
 	/*
 	 *  Always run both spank prolog/epilog and real prolog/epilog script,
@@ -172,7 +166,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	    (!is_epilog && spank_has_prolog())) {
 		if (!env)
 			env = _build_env(job_env, cred, is_epilog);
-		rc = _run_spank_job_script(name, env, jobid,
+		rc = _run_spank_job_script(name, env, job_env->jobid,
 					   job_env->container_join);
 	}
 
@@ -183,7 +177,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		List path_list;
 		run_command_args_t run_command_args = {
 			.container_join = job_env->container_join,
-			.job_id = jobid,
+			.job_id = job_env->jobid,
 			.script_argv = cmd_argv,
 			.script_type = name,
 			.status = &status,
