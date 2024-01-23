@@ -182,18 +182,6 @@ extern int select_g_init(bool only_default)
 	if ( select_context )
 		goto done;
 
-	if (working_cluster_rec) {
-		/* just ignore warnings here */
-	} else {
-#ifdef HAVE_NATIVE_CRAY
-		if (xstrcasecmp(slurm_conf.select_type, "select/cray_aries")) {
-			error("%s is incompatible with a Cray/Aries system.",
-			      slurm_conf.select_type);
-			fatal("Use SelectType=select/cray_aries");
-		}
-#endif
-	}
-
 	select_context_cnt = 0;
 
 	plugin_args.plugin_type    = plugin_type;
