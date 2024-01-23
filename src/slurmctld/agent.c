@@ -287,14 +287,10 @@ void *agent(void *args)
 	slurm_mutex_lock(&agent_cnt_mutex);
 
 	if (sched_update != slurm_conf.last_update) {
-#ifdef HAVE_NATIVE_CRAY
-		reboot_from_ctld = true;
-#else
 		reboot_from_ctld = false;
 		if (xstrcasestr(slurm_conf.slurmctld_params,
 		                "reboot_from_controller"))
 			reboot_from_ctld = true;
-#endif
 		sched_update = slurm_conf.last_update;
 	}
 
