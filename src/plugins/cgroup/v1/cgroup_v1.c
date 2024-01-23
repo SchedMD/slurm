@@ -924,10 +924,6 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 	int rc = SLURM_SUCCESS;
 	task_cg_info_t *task_cg_info;
 	char *dev_str = NULL;
-#ifdef HAVE_NATIVE_CRAY
-	char expected_usage[32];
-	uint64_t exp;
-#endif
 
 	if (!limits)
 		return SLURM_ERROR;
@@ -956,23 +952,6 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 			    != SLURM_SUCCESS)
 				rc = SLURM_ERROR;
 		}
-#ifdef HAVE_NATIVE_CRAY
-		/*
-		 * on Cray systems, set the expected usage in bytes.
-		 * This is used by the Cray OOM killer
-		 */
-		if (level == CG_LEVEL_STEP) {
-			exp = (uint64_t) (limits->step)->step_mem * 1024 * 1024;
-			snprintf(expected_usage, sizeof(expected_usage),
-				 "%"PRIu64, exp);
-
-			if (common_cgroup_set_param(
-				    &int_cg[sub][level],
-				    "cpuset.expected_usage_in_bytes",
-				    expected_usage) != SLURM_SUCCESS)
-				rc = SLURM_ERROR;
-		}
-#endif
 		break;
 	case CG_MEMORY:
 		if ((level == CG_LEVEL_JOB) &&

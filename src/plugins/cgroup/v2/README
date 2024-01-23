@@ -8,7 +8,6 @@ memory.soft_limit_in_bytes	memory.high
 memory.memsw_limit_in_bytes 	memory.swap.max
 memory.swappiness		none
 freezer.state			cgroup.freeze
-cpuset.expected_usage_in_bytes	none (HAVE_NATIVE_CRAY only)
 cpuset.cpus			cpuset.cpus.effective and cpuset.cpus
 cpuset.mems			cpuset.mems.effective and cpuset.mem
 cpuacct.stat			cpu.stat
