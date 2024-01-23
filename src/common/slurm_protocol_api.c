@@ -771,7 +771,6 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 {
 	int fd = -1;
 	slurm_protocol_config_t *proto_conf = NULL;
-	int retry, max_retry_period;
 
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
@@ -779,12 +778,7 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			return SLURM_ERROR;
 	}
 
-#ifdef HAVE_NATIVE_CRAY
-	max_retry_period = 180;
-#else
-	max_retry_period = slurm_conf.msg_timeout;
-#endif
-	for (retry = 0; retry < max_retry_period; retry++) {
+	for (int retry = 0; retry < slurm_conf.msg_timeout; retry++) {
 		if (retry)
 			sleep(1);
 		if (comm_cluster_rec) {
