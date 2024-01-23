@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 23.11.3
+==========================
+
 * Changes in Slurm 23.11.2
 ==========================
  -- slurmrestd - Reject single http query with multiple path requests.
