@@ -3190,13 +3190,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
 	uint32_t max_tasks;
-	uint32_t jobid;
 	uint32_t over_time_limit;
 	slurm_step_layout_t *step_layout = NULL;
 	bool tmp_step_layout_used = false;
-#ifdef HAVE_NATIVE_CRAY
-	slurm_step_layout_t tmp_step_layout;
-#endif
 
 	*new_step_record = NULL;
 	if (step_specs->array_task_id != NO_VAL)
@@ -3598,138 +3594,11 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		}
 	}
 
-#ifdef HAVE_NATIVE_CRAY
-	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL)) {
-		job_record_t *het_job_ptr;
-		step_record_t *het_step_ptr;
-		bitstr_t *het_grp_bits = NULL;
-		uint32_t tmp_job_id = step_ptr->step_id.job_id;
-
-		/*
-		 * Het job compontents are sent across on the network
-		 * variable.
-		 */
-		if (!step_specs->step_het_grps) {
-			het_job_ptr = find_job_record(job_ptr->het_job_id);
-			/*
-			 * Temporarily set the job_id to that of the het_job_ptr
-			 * or find_step_record will not work correctly.  This is
-			 * only needed for a regular het job not for the
-			 * het step code on the else below here.
-			 */
-			step_ptr->step_id.job_id = het_job_ptr->job_id;
-		} else {
-			int first_bit = 0;
-			het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
-			if (bit_unfmt_hexmask(het_grp_bits,
-					      step_specs->step_het_grps)) {
-				error("%s: bad het group given", __func__);
-				FREE_NULL_BITMAP(het_grp_bits);
-				delete_step_record(job_ptr, step_ptr);
-				return ESLURM_INTERCONNECT_FAILURE;
-			}
-			if ((first_bit = bit_ffs(het_grp_bits)) == -1) {
-				error("%s: no components given from srun for hetstep %pS",
-				      __func__, step_ptr);
-				delete_step_record(job_ptr, step_ptr);
-				return ESLURM_INTERCONNECT_FAILURE;
-			}
-			/* The het step might not start on the 0 component. */
-			het_job_ptr = find_het_job_record(
-				job_ptr->het_job_id, first_bit);
-		}
-
-		/* Get the step record from the first component in the step */
-		het_step_ptr = find_step_record(het_job_ptr,
-						&step_ptr->step_id);
-
-		step_ptr->step_id.job_id = tmp_job_id;
-		jobid = job_ptr->het_job_id;
-		if (!het_step_ptr || !het_step_ptr->switch_job) {
-			job_record_t *het_job_comp_ptr;
-			hostlist_t *hl = hostlist_create(NULL);
-			ListIterator itr;
-
-			/* Now let's get the real het_job_ptr */
-			het_job_ptr = find_job_record(job_ptr->het_job_id);
-			itr = list_iterator_create(het_job_ptr->het_job_list);
-			while ((het_job_comp_ptr = list_next(itr))) {
-				if (het_grp_bits &&
-				    !bit_test(het_grp_bits,
-					      het_job_comp_ptr->het_job_offset))
-					continue;
-				hostlist_push(hl, het_job_comp_ptr->nodes);
-			}
-			list_iterator_destroy(itr);
-			FREE_NULL_BITMAP(het_grp_bits);
-
-			hostlist_uniq(hl);
-
-			memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
-			step_layout = &tmp_step_layout;
-			step_layout->node_list =
-				hostlist_ranged_string_xmalloc(hl);
-			step_layout->node_cnt = hostlist_count(hl);
-			hostlist_destroy(hl);
-			tmp_step_layout_used = true;
-		} else {
-
-			if (!het_step_ptr->switch_job) {
-				delete_step_record(job_ptr, step_ptr);
-				return ESLURM_INTERCONNECT_FAILURE;
-			}
-
-			switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
-						   &step_ptr->switch_job);
-			/*
-			 * Prevent switch_g_build_jobinfo from getting a new
-			 * cookie below.
-			 */
-			step_layout = NULL;
-		}
-	} else if (step_specs->step_id.step_het_comp != NO_VAL) {
-		slurm_step_id_t step_id = {
-			.job_id = step_ptr->step_id.job_id,
-			.step_id = step_ptr->step_id.step_id,
-			.step_het_comp = 0,
-		};
-		/* get the first het step component */
-		step_record_t *het_step_ptr =
-			find_step_record(job_ptr, &step_id);
-
-		jobid = job_ptr->job_id;
-		if (!het_step_ptr || !het_step_ptr->switch_job) {
-			memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
-			step_layout = &tmp_step_layout;
-			step_layout->node_list = xstrdup(job_ptr->nodes);
-			step_layout->node_cnt = job_ptr->node_cnt;
-			tmp_step_layout_used = true;
-		} else {
-			if (!het_step_ptr->switch_job) {
-				delete_step_record(job_ptr, step_ptr);
-				return ESLURM_INTERCONNECT_FAILURE;
-			}
-
-			switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
-						   &step_ptr->switch_job);
-			/*
-			 * Prevent switch_g_build_jobinfo from getting a new
-			 * cookie below.
-			 */
-			step_layout = NULL;
-		}
-	} else {
-		step_layout = step_ptr->step_layout;
-		jobid = job_ptr->job_id;
-	}
-#else
 	step_layout = step_ptr->step_layout;
-	jobid = job_ptr->job_id;
-#endif
 
 	if (step_layout) {
 		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
-					   jobid,
+					   job_ptr->job_id,
 					   step_ptr->step_id.step_id) < 0)
 			fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
