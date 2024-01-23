@@ -223,17 +223,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	run_command_shutdown();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
-		uint32_t jobid;
-#ifdef HAVE_NATIVE_CRAY
-		if (step->het_job_id && (step->het_job_id != NO_VAL))
-			jobid = step->het_job_id;
-		else
-			jobid = step->step_id.job_id;
-#else
-		jobid = step->step_id.job_id;
-#endif
-		if (container_g_stepd_delete(jobid))
-			error("container_g_stepd_delete(%u): %m", jobid);
+		if (container_g_stepd_delete(step->step_id.job_id))
+			error("container_g_stepd_delete(%u): %m",
+			      step->step_id.job_id);
 	}
 
 #ifdef MEMORY_LEAK_DEBUG
