@@ -650,20 +650,6 @@ char *slurm_get_select_type(void)
 	return select_type;
 }
 
-/** Return true if (remote) system runs Cray Aries */
-bool is_cray_select_type(void)
-{
-	bool result = false;
-
-	if (slurmdbd_conf) {
-	} else {
-		slurm_conf_t *conf = slurm_conf_lock();
-		result = !xstrcasecmp(conf->select_type, "select/cray_aries");
-		slurm_conf_unlock();
-	}
-	return result;
-}
-
 /*  slurm_get_srun_port_range()
  */
 uint16_t *

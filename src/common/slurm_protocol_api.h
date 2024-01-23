@@ -155,9 +155,6 @@ extern uint16_t slurm_get_ext_sensors_freq(void);
  */
 char *slurm_get_select_type(void);
 
-/** Return true if (remote) system runs Cray XT/XE */
-bool is_cray_select_type(void);
-
 /* slurm_get_srun_port_range()
  *
  * Return the array with 2 members indicating the
