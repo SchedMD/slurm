@@ -547,41 +547,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	int retry_cnt;
 	int fd;
 
-#ifdef HAVE_NATIVE_CRAY
-	static int check_quiesce = -1;
-	if (check_quiesce == -1) {
-		if (xstrcasestr(slurm_conf.comm_params, "CheckGhalQuiesce"))
-			check_quiesce = 1;
-		else
-			check_quiesce = 0;
-	}
-
-	if (check_quiesce) {
-		char buffer[20];
-		char *quiesce_status = "/sys/class/gni/ghal0/quiesce_status";
-		int max_retry = 300;
-		int quiesce_fd = open(quiesce_status, O_RDONLY);
-
-		retry_cnt = 0;
-		while (quiesce_fd >= 0 && retry_cnt < max_retry) {
-			if (read(quiesce_fd, buffer, sizeof(buffer)) > 0) {
-				if (buffer[0] == '0')
-					break;
-			}
-			usleep(500000);
-			if (retry_cnt % 10 == 0)
-				debug3("WARNING: ghal0 quiesce status: %c, retry count %d",
-				       buffer[0], retry_cnt);
-			retry_cnt++;
-			close(quiesce_fd);
-			quiesce_fd = open(quiesce_status,
-					  (O_RDONLY | O_CLOEXEC));
-		}
-		if (quiesce_fd >= 0)
-			close(quiesce_fd);
-	}
-#endif
-
 	if ((slurm_addr_is_unspec(addr)) || (slurm_get_port(addr) == 0)) {
 		error("Error connecting, bad data: family = %u, port = %u",
 		      addr->ss_family, slurm_get_port(addr));
