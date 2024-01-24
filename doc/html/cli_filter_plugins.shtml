@@ -188,6 +188,53 @@ here</a>.</p>
 example shows a way of displaying the configured options by using
 <span class="commandline">slurm.json_cli_options(options)</span>.</p>
 
-<p style="text-align:center;">Last modified 7 July 2022</p>
+<h2 id="defaults">User Defaults<a class="slurm_link" href="#defaults"></a></h2>
+<p>Setting <b>CliFilterPlugins=cli_filter/user_defaults</b> in slurm.conf will
+allow users to define their own defaults for jobs submitted from the machine(s)
+with the configured file. The plugin looks for the definition file in
+<code>$HOME/.slurm/defaults</code>. It will read each line as a
+<code>component=value</code> pair, where <code>component</code> is any of the
+job submission options available to salloc, sbatch, or srun and
+<code>value</code> is a default value defined by the user. The following
+example would configure each job to have a default name, time limit, amount
+of memory, and error and output files:
+<pre>
+job-name=default_name
+time=10:00
+mem=256
+error = slurm-%j.errfile
+output = slurm-%j.logfile
+</pre></p>
+
+<p>You can also specify different default settings for jobs based on the
+command being used to submit the job and/or the cluster being submitted to.
+The syntax for this would be:<br>
+<code>&lt;command&gt;:&lt;cluster&gt;:&lt;component&gt;</code></p>
+
+<p><code>&lt;command&gt;</code> could be one of:
+<ul>
+<li><b>salloc</b>: Jobs submitted with the salloc command.</li>
+<li><b>sbatch</b>: Jobs submitted with the sbatch command.</li>
+<li><b>srun</b>: Jobs submitted with the srun command.</li>
+<li><b>*</b>: Jobs submitted with any submission command.</li>
+</ul></p>
+
+<p><code>&lt;cluster&gt;</code> could be any defined cluster on your system,
+or <b>*</b> to have it match any cluster.</p>
+
+<p><code>&lt;component&gt;</code> is any of the job submission options
+available to salloc, sbatch, or srun.</p>
+
+<p>The following example would assign different default partitions based on
+the command used to submit the job. It would also assign different partitions
+for jobs submitted with salloc, depending on the cluster being used:
+<pre>
+salloc:cluster1:partition = interactive
+salloc:cluster2:partition = member
+sbatch:*:partition = high
+srun:*:partition = short
+</pre></p>
+
+<p style="text-align:center;">Last modified 19 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
