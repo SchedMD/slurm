@@ -38,6 +38,12 @@
 
 #include "common_topo.h"
 
+typedef struct topo_weight_info {
+	bitstr_t *node_bitmap;
+	int node_cnt;
+	uint64_t weight;
+} topo_weight_info_t;
+
 /*
  * This is the heart of the selection process
  *
@@ -59,5 +65,36 @@
  * RET SLURM_SUCCESS or an error code
  */
 extern int eval_nodes(topology_eval_t *topo_eval);
+
+/*
+ * Determine how many CPUs on the node can be used based upon the resource
+ * allocation unit (node, socket, core, etc.) and making sure that
+ * resources will be available for nodes considered later in the
+ * scheduling process
+ */
+extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
+				   int64_t rem_max_cpus, int rem_nodes);
+
+/*
+ * Identify the specific cores and GRES available to this job on this node.
+ * The job's requirements for tasks-per-socket, cpus-per-task, etc. are
+ * not considered at this point, but must be considered later.
+ */
+extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
+				    int node_inx, int rem_nodes);
+
+/*
+ * Return the max amount of cpus still remaining to search for.
+ */
+extern int64_t eval_nodes_get_rem_max_cpus(
+	job_details_t *details_ptr, int rem_nodes);
+
+extern int eval_nodes_topo_weight_find(void *x, void *key);
+extern int eval_nodes_topo_node_find(void *x, void *key);
+extern void eval_nodes_topo_weight_free(void *x);
+extern int eval_nodes_topo_weight_log(void *x, void *arg);
+extern int eval_nodes_topo_weight_sort(void *x, void *y);
+extern bool eval_nodes_enough_nodes(int avail_nodes, int rem_nodes,
+				    uint32_t min_nodes, uint32_t req_nodes);
 
 #endif
