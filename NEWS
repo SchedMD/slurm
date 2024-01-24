@@ -149,6 +149,8 @@ documents those changes that are of interest to users and administrators.
  -- Pass multi-partition job priorities to job for squeue to display.
  -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
  -- Add RestrictedCoresPerGPU configuration option.
+ -- Fix how ntasks is inferred from --cpus-per-task when using --nodes,
+    --threads-per-core, or --hint=nomultithread.
 
 * Changes in Slurm 23.11.7
 ==========================
