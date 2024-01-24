@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.3
 ==========================
+ -- Fix debian/changelog file to reflect the correct version so the packages
+    are generated correctly.
 
 * Changes in Slurm 23.11.2
 ==========================
