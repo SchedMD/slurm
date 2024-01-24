@@ -255,7 +255,7 @@ set cnt 0
 foreach option [array names sq_format] {
 	incr cnt 1
 	set this_match 0
-	spawn $squeue --job=$job_id --noheader -O$option:99
+	spawn $squeue --job=$job_id --noheader -O$option:256
 	expect {
 		-re "$sq_format($option)" {
 			incr match 1
