@@ -1,0 +1,274 @@
+<!--#include virtual="header.txt"-->
+
+<h1>REST API Quick Start Guide</h1>
+
+<p>Slurm provides a <a href="rest.html">REST API</a> through the slurmrestd
+daemon, using <a href="jwt.html">JSON Web Tokens</a> for authentication.
+This page provides a brief tutorial for setting up these components.</p>
+
+<p>
+See also:
+<ul>
+<li><a href="rest.html">REST API Reference</a></li>
+<li><a href="rest_api.html">REST API Implementation Details</a></li>
+<li><a href="slurmrestd.html">slurmrestd man page</a></li>
+</ul>
+</p>
+
+<h2 id="prereq">Prerequisites
+<a class="slurm_link" href="#prereq"></a></h2>
+<p>The following development libraries are required at compile time
+in order for slurmrestd to be compiled:</p>
+<ul>
+	<li><a href="download.html#httpparser">HTTP Parser</a> (&gt;= v2.6.0)
+	</li>
+	<li><a href="download.html#yaml">LibYAML</a> (optional, &gt;= v0.2.5)
+	</li>
+	<li><a href="download.html#json">JSON-C</a> (&gt;= v1.12.0)</li>
+	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
+</ul>
+
+<h2 id="quick_start">Quick Start
+<a class="slurm_link" href="#quick_start"></a></h2>
+
+<p>This may be done on a dedicated REST API machine or
+your existing 'slurmctld' machine, depending on demand.</p>
+
+<ol>
+<li>Install components for slurmrestd
+<ul>
+<li>DEB: <code>slurm-smd slurm-smd-slurmrestd</code></li>
+<li>RPM: <code>slurm slurm-slurmrestd</code> (requires
+<code>--with slurmrestd</code> at build time)</li>
+</ul></li>
+<li>Set up <a href="jwt.html">JSON Web Tokens</a> for authentication</li>
+<li>Ensure <code>/etc/slurm/slurm.conf</code> is present and correct for your
+cluster (see <a href="quickstart_admin.html">Quick Start Admin Guide</a> and
+<a href="slurm.conf.html">slurm.conf man page</a>)</li>
+<li>Run <b>slurmrestd</b> (see <a href="#systemd">below</a> for systemd
+instructions) on your preferred [HOST]:PORT combination
+(':6820' is the default for production)
+<pre>export SLURM_JWT=daemon
+export SLURMRESTD_DEBUG=debug
+slurmrestd &lt;host&gt;:&lt;port&gt;
+</pre>
+Adjust SLURMRESTD_DEBUG to the desired level of output (as described on the
+<a href="slurmrestd.html#OPT_SLURMRESTD_DEBUG">man page</a>)</li>
+</ol>
+
+<h3 id="systemd">Running with systemd
+<a class="slurm_link" href="#systemd"></a></h3>
+
+Slurm ships with a <b>slurmrestd</b> service for systemd,
+however, it might require some additional setup to run properly.
+This section assumes you have either installed slurmrestd using DEB/RPM packages
+or built it manually such that the files are in the same places.
+
+<ol>
+<li>Select a local user account to use to run the slurmrestd
+(<b>not</b> root or SlurmUser to prevent privilege escalation)</li>
+<li>Configure slurmrestd service to use this user and associated group.
+This can be accomplished in either of two ways:
+<ul>
+<li>Edit <code>/etc/default/slurmrestd</code>
+or <code>/etc/sysconfig/slurmrestd</code>
+<br>Add <code>-u USERNAME</code> and <code>-g GROUPNAME</code>
+to <code>SLURMRESTD_OPTIONS</code></li>
+<li>Run <code>systemctl edit slurmrestd</code> to edit overrides for the
+service.
+<br>Add content like this to the prescribed location in the overrides file:
+<pre>
+[Service]
+User=USERNAME
+Group=GROUPNAME
+</pre></li>
+</ul>
+</li>
+<li>Configure the socket for slurmrestd. This may be accomplished by
+creating/changing permissions on the parent directory and/or changing the path
+to the socket in the service file.
+<ul>
+<li><b>Permissions</b>: The user running the service must have write+execute
+permissions on directory that will contain the socket</li>
+<li><b>Changing socket</b>: Currently the way to change or disable the socket
+is to modify the 'ExecStart' line of the service (this is known to be an
+inelegant procedure and will be changed in the next major release)
+<ol>
+<li>Run <code>systemctl edit slurmrestd</code></li>
+<li>Add the following contents to the <code>[Service]</code> section:
+<pre>
+ExecStart=
+ExecStart=/usr/sbin/slurmrestd $SLURMRESTD_OPTIONS
+Environment=SLURMRESTD_LISTEN=:6820
+</pre></li>
+<li>Adjust the assignment of SLURMRESTD_LISTEN to contain the socket(s) you want
+the daemon to listen on.</li>
+</ol>
+<p><b>NOTE</b>: Currently the way to change or disable the socket is to modify
+the 'ExecStart' line of the service. This is known to be an inelegant procedure
+and will be changed in the next major release (after 23.11).</p>
+</li>
+</ul>
+</li>
+</ol>
+
+<h3 id="customization">Customizing slurmrestd.service
+<a class="slurm_link" href="#customization"></a></h3>
+
+<p>The next major release (after 23.11) changes the operation of
+the default service file and may break existing overrides. If you have
+overridden <code>ExecStart=</code> to contain any TCP/UNIX sockets directly, it
+will cause the service to fail if it duplicates any sockets contained in
+SLURMRESTD_LISTEN. These overrides will need to be changed after upgrading.</p>
+
+<p>The default <code>slurmrestd.service</code> file has two intended ways of
+customizing its operation:</p>
+
+<ol>
+<li><b>Environment files</b>:
+The service will read environment variables from two files:
+<code>/etc/default/slurmrestd</code> and <code>/etc/sysconfig/slurmrestd</code>.
+You may set any environment variables recognized by
+<a href="slurmrestd.html#SECTION_ENVIRONMENT-VARIABLES">slurmrestd</a>,
+but the following are particularly relevant:
+<ul>
+<li>SLURMRESTD_OPTIONS: CLI options to add to the slurmrestd command (see
+<a href="slurmrestd.html">slurmrestd</a>)</li>
+<li>SLURMRESTD_LISTEN: Comma-delimited list of host:port pairs or unix sockets
+to listen on
+<br><b>NOTE</b>: if this duplicates what is already set in the
+'ExecStart' line in the service file, it will fail</li>
+</ul>
+</li>
+<li><b>Service editing</b>: Systemd has a built in way to edit services
+by running <code>systemctl edit slurmrestd</code>.
+<ul>
+<li>This will create an override file in '/etc/systemd/' containing directives
+that will add to or replace directives in the default unit in '/lib/systemd/'.
+</li>
+<li>Note that the override file must have the appropriate section declaration(s)
+for the directives you use (e.g., <code>[Service]</code>).</li>
+<li>Changes may be reverted by running <code>systemctl revert slurmrestd</code>
+</li>
+</ul>
+</li>
+</ol>
+
+<h2 id="basic_usage">Basic Usage
+<a class="slurm_link" href="#basic_usage"></a></h2>
+
+<ol>
+<li>Find the latest supported API version
+<pre>slurmrestd -d list</pre></li>
+<li>Get an authentication token for JWT
+<pre>unset SLURM_JWT; export $(scontrol token)</pre>
+<ul>
+<li>This ensures an old token doesn't prevent a new one from being issued</li>
+<li>By default, tokens will expire after 1800 seconds (30 minutes).
+Add <code>lifespan=SECONDS</code> to the 'scontrol' command to change this.</li>
+</ul>
+</li>
+<li>Run a basic curl command to hit the API when listening on a TCP host:port
+<pre>curl -s -o "/tmp/curl.log" -k -vvvv \
+-H X-SLURM-USER-TOKEN:$SLURM_JWT \
+-X GET 'http://&lt;server&gt;:&lt;port&gt;/slurm/v0.0.&lt;api-version&gt;/diag'
+</pre>
+<ul>
+<li>Replace the <b>server</b>, <b>port</b>, and <b>api-version</b>
+with the appropriate values.</li>
+<li>Examine the output to ensure the response was <b>200 OK</b>,
+and examine <b>/tmp/curl.log</b> for a valid JSON response.</li>
+<li>Try other endpoints described in the <a href="rest_api.html">API Reference
+</a>. Change <b>GET</b> to the correct method for the endpoint.</li>
+</ul>
+</li>
+<li>Alternate command to use the UNIX socket instead
+<pre>
+curl -s -o "/tmp/curl.log" -k -vvvv \
+-H X-SLURM-USER-TOKEN:$SLURM_JWT \
+--unix-socket /path/to/slurmrestd.socket \
+'http://&lt;server&gt;/slurm/v0.0.&lt;api-version&gt;/diag'
+</pre>
+<ul>
+<li>Replace the <b>path</b>, <b>server</b>, and <b>api-version</b>
+with the appropriate values.</li>
+<li>Examine the output to ensure the response was <b>200 OK</b>,
+and examine <b>/tmp/curl.log</b> for a valid JSON response.</li>
+</ul>
+</li>
+</ol>
+
+<h3 id="tokens">Token management
+<a class="slurm_link" href="#tokens"></a></h3>
+
+<p>This guide provides a simple overview using <code>scontrol</code> to
+obtain tokens. This is a basic introductory approach that in many cases
+should be disabled in favor of more sophisticated token management.
+Refer to the <a href="jwt.html">JWT page</a> for more details.</p>
+
+<h2 id="common_issues">Common Issues
+<a class="slurm_link" href="#common_issues"></a></h2>
+
+<p>In general, look out for these things:</p>
+
+<ol>
+<li>Validity of authentication token in <code>SLURM_JWT</code></li>
+<li>Hostname and port number</li>
+<li>API version and endpoint</li>
+<li>Log output of slurmrestd</li>
+</ol>
+
+<h3 id="bind_socket">Unable to bind socket
+<a class="slurm_link" href="#bind_socket"></a></h3>
+
+<p>This may be due to a permissions issue while attempting to set up the socket.
+Check the log output from slurmrestd for the path to the socket.
+Ensure that the user running the slurmrestd service has permissions to the
+parent directory of the configured socket path, or change/remove the socket path
+as <a href="#systemd">described above</a>.</p>
+
+<p>If it says "<b>Address already in use</b>", check the command being run
+and the contents of "SLURMRESTD_LISTEN" for duplicates of the same TCP or UNIX
+socket.</p>
+
+<h3 id="connection_refused">Connection refused
+<a class="slurm_link" href="#connection_refused"></a></h3>
+
+<p>Verify that slurmrestd is running and listening on the port you are
+attempting to connect to.</p>
+
+<h3 id="authentication_error">Protocol authentication error (HTTP 500)
+<a class="slurm_link" href="#authentication_error"></a></h3>
+
+<p>One common authentication problem is an expired token. Request a new one:
+<pre>unset SLURM_JWT; export $(scontrol token)</pre></p>
+
+<p>Otherwise, consult the logs on the <b>slurmctld</b> and <b>slurmdbd</b>.</p>
+
+<h3 id="invalid_url">Unable to find requested URL (HTTP 404)
+<a class="slurm_link" href="#invalid_url"></a></h3>
+
+<p>Check the <a href="rest_api.html">API Reference</a> page to ensure you're
+using a valid URL and the correct method for it. Pay attention to the path as
+there are different endpoints for <b>slurm</b> and <b>slurmdbd</b>.</p>
+
+<h3 id="rejected_token">Rejecting thread config token (HTTP 401)
+<a class="slurm_link" href="#rejected_token"></a></h3>
+
+<p>Check that slurmrestd has loaded the <b>auth/jwt</b> plugin.
+You should see a debug message like this:
+<pre>slurmrestd: debug:  auth/jwt: init: JWT authentication plugin loaded</pre>
+If it didn't load jwt, run this in the terminal you're using for slurmrestd:
+<pre>export SLURM_JWT=daemon</pre>
+</p>
+
+<h3 id="slurm_commands">Other slurm commands not working
+<a class="slurm_link" href="#slurm_commands"></a></h3>
+
+<p>If SLURM_JWT is set, other slurm commands will attempt to use JWT
+authentication, causing failures. This can be fixed by clearing the variable:
+<pre>unset SLURM_JWT</pre></p>
+
+<p style="text-align:center;">Last modified 14 February 2024</p>
+
+<!--#include virtual="footer.txt"-->

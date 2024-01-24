@@ -1,5 +1,5 @@
 <!--#include virtual="header.txt"--><link rel="stylesheet" type="text/css" href="openapi.css" /> <body>
-  <h1>Slurm REST API</h1>
+  <h1>REST API Implementation Details</h1>
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
@@ -7,6 +7,14 @@
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
+  <br>
+  <p>See also:
+    <ul>
+      <li><a href="rest_quickstart.html">REST API Quick Start Guide</a></li>
+      <li><a href="rest.html">REST API Reference</a></li>
+      <li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
+    </ul>
+  </p>
   <h2>Access</h2>
     <ol>
       <li>APIKey KeyParamName:X-SLURM-USER-NAME KeyInQuery:false KeyInHeader:true</li>
