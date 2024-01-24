@@ -1285,14 +1285,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->billing_weights_str &&
 	    set_partition_billing_weights(part_desc->billing_weights_str,
 					  part_ptr, false)) {
-
-		if (create_flag)
-			list_delete_all(part_list, &list_find_part,
-					part_desc->name);
-
-		return ESLURM_INVALID_TRES_BILLING_WEIGHTS;
+		error_code = ESLURM_INVALID_TRES_BILLING_WEIGHTS;
+		goto fini;
 	}
-
 	if (part_desc->cpu_bind) {
 		char tmp_str[128];
 		slurm_sprint_cpu_bind_type(tmp_str, part_desc->cpu_bind);
@@ -1799,15 +1794,16 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			.qos = WRITE_LOCK,
 			.tres = READ_LOCK,
 		};
-		char *backup_node_list = part_ptr->nodes;
 		int rc;
+		char *backup_orig_nodes = xstrdup(part_ptr->orig_nodes);
 
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
 		else if ((part_desc->nodes[0] != '+') &&
-			 (part_desc->nodes[0] != '-'))
+			 (part_desc->nodes[0] != '-')) {
+			xfree(part_ptr->nodes);
 			part_ptr->nodes = xstrdup(part_desc->nodes);
-		else {
+		} else {
 			char *p, *tmp, *tok, *save_ptr = NULL;
 			hostset_t *hs = hostset_create(part_ptr->nodes);
 
@@ -1829,7 +1825,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 					      __func__, tok);
 					xfree(tmp);
 					hostset_destroy(hs);
-					return ESLURM_INVALID_NODE_NAME;
+					error_code = ESLURM_INVALID_NODE_NAME;
+					goto fini;
 				}
 				p = NULL;
 			}
@@ -1841,32 +1838,50 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
 		if ((rc = build_part_bitmap(part_ptr))) {
-			xfree(part_ptr->nodes);
-			part_ptr->nodes = backup_node_list;
 			error_code = rc;
+
+			if (!create_flag) {
+				/* Restore previous nodes */
+				xfree(part_ptr->orig_nodes);
+				part_ptr->orig_nodes = backup_orig_nodes;
+
+				/*
+				 * build_part_bitmap() is destructive of the
+				 * partition record. We need to rebuild the
+				 * partition record with the original nodelists
+				 * and nodesets.
+				 */
+				(void) build_part_bitmap(part_ptr);
+			} else {
+				xfree(backup_orig_nodes);
+			}
 		} else {
 			info("%s: setting nodes to %s for partition %s",
 			     __func__, part_ptr->nodes, part_desc->name);
-			xfree(backup_node_list);
-		}
-		update_part_nodes_in_resv(part_ptr);
-		power_save_set_timeouts(NULL);
+			xfree(backup_orig_nodes);
 
-		assoc_mgr_lock(&assoc_tres_read_lock);
-		if (part_ptr->qos_ptr)
-			part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
-		_calc_part_tres(part_ptr, NULL);
-		assoc_mgr_unlock(&assoc_tres_read_lock);
+			update_part_nodes_in_resv(part_ptr);
+			power_save_set_timeouts(NULL);
+
+			assoc_mgr_lock(&assoc_tres_read_lock);
+			if (part_ptr->qos_ptr)
+				part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
+			_calc_part_tres(part_ptr, NULL);
+			assoc_mgr_unlock(&assoc_tres_read_lock);
+		}
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
 	}
 
+fini:
 	if (error_code == SLURM_SUCCESS) {
 		gs_reconfig();
 		select_g_reconfigure();		/* notify select plugin too */
+	} else if (create_flag) {
+		/* Delete the created partition in case of failure */
+		list_delete_all(part_list, &list_find_part, part_desc->name);
 	}
-
 	return error_code;
 }
 

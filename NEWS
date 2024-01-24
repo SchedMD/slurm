@@ -41,6 +41,10 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.4
 ==========================
+ -- Fix a memory leak when updating partition nodes.
+ -- Don't leave a partition around if it fails to create with scontrol.
+ -- Fix segfault when creating partition with bad node list from scontrol.
+ -- Fix preserving partition nodes on bad node list update from scontrol.
 
 * Changes in Slurm 23.11.3
 ==========================
