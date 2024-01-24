@@ -46,13 +46,14 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
-typedef struct {
+typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
 	uint16_t avail_cpus; /* How many cpus available, UPDATED */
 	avail_res_t **avail_res_array; /* available resources on the node,
 					* UPDATED */
 	uint16_t cr_type; /* allocation type (sockets, cores, etc.) */
 	bool enforce_binding; /* Enforce GPU Binding or not */
+	int (*eval_nodes)(struct topology_eval *topo_eval);
 	bool first_pass; /* First pass through eval_nodes() or not */
 	job_record_t *job_ptr; /* pointer to the job requesting resources */
 	uint32_t max_nodes; /* maximum number of nodes requested */
