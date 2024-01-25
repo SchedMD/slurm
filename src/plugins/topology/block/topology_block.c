@@ -49,7 +49,7 @@
 
 #include "../common/common_topo.h"
 
-#include "block_record.h"
+#include "eval_nodes_block.h"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -159,6 +159,9 @@ extern int topology_p_build_config(void)
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
+	topo_eval->eval_nodes = eval_nodes_block;
+	topo_eval->trump_others = true;
+
 	return common_topo_choose_nodes(topo_eval);
 }
 

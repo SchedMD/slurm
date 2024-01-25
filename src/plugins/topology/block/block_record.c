@@ -42,6 +42,12 @@ typedef struct slurm_conf_block {
 	char *nodes; /* names of nodes directly connect to this block */
 } slurm_conf_block_t;
 
+bitstr_t *blocks_nodes_bitmap = NULL;	/* nodes on any bblock */
+block_record_t *block_record_table = NULL;
+uint16_t bblock_node_cnt = 0;
+bitstr_t *block_levels = NULL;
+int block_record_cnt = 0;
+
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
 static void _destroy_block(void *ptr)

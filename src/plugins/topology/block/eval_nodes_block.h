@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  block_record.h - Determine order of nodes for job using block algo.
+ *  eval_nodes_block.c - Determine order of nodes for job using tree algo.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC
  *
@@ -33,29 +33,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _TOPO_TREE_BLOCK_RECORD_H
-#define _TOPO_TREE_BLOCK_RECORD_H
+#ifndef _TOPO_BLOCK_EVAL_NODES_H
+#define _TOPO_BLOCK_EVAL_NODES_H
 
-#include "../common/common_topo.h"
+#include "block_record.h"
 
-typedef struct {
-	int level;
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
-					 * this block */
-	char *nodes;			/* name if direct descendant nodes */
-	uint16_t block_index;
-} block_record_t;
-
-extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
-extern block_record_t *block_record_table;  /* ptr to block records */
-extern uint16_t bblock_node_cnt;
-extern bitstr_t *block_levels;
-extern int block_record_cnt;
-
-/* Free all memory associated with block_record_table structure */
-extern void block_record_table_destroy(void);
-
-extern void block_record_validate(void);
+extern int eval_nodes_block(topology_eval_t *topo_eval);
 
 #endif

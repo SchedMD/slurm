@@ -139,6 +139,7 @@ extern int topology_p_build_config(void)
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
 	topo_eval->eval_nodes = eval_nodes_tree;
+	topo_eval->trump_others = false;
 
 	return common_topo_choose_nodes(topo_eval);
 }
