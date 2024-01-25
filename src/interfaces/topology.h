@@ -48,6 +48,7 @@
 
 typedef enum {
 	TOPO_DATA_TOPOLOGY_PTR,
+	TOPO_DATA_REC_CNT,
 } topology_data_t;
 
 

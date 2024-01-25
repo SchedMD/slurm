@@ -509,6 +509,12 @@ extern int topology_p_get(topology_data_t type, void *data)
 		}
 		break;
 	}
+	case TOPO_DATA_REC_CNT:
+	{
+		int *rec_cnt = data;
+		*rec_cnt = switch_record_cnt;
+		break;
+	}
 	default:
 		error("Unsupported option %d", type);
 		rc = SLURM_ERROR;
