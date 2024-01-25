@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "March 2024" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2024" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -503,8 +503,9 @@ all record types are displayed.
 
 .TP
 \fBbbstat\fR
-Displays output from Cray's burst buffer status tool. Options following
-\fBbbstat\fR are passed directly to the dwstat command by the slurmctld daemon
+Displays output from the current burst buffer plugin's status tool
+(slurm_bb_get_status for lua or dwstat for datawarp). Options following
+\fBbbstat\fR are passed directly to the status tool by the slurmctld daemon
 and the response returned to the user. Equivalent to \fBdwstat\fR.
 .IP
 
@@ -527,8 +528,9 @@ Reports which daemons should be running on this node.
 
 .TP
 \fBdwstat\fR
-Displays output from Cray's burst buffer status tool. Options following
-\fBdwstat\fR are passed directly to the dwstat command by the slurmctld daemon
+Displays output from the current burst buffer plugin's status tool
+(slurm_bb_get_status for lua or dwstat for datawarp). Options following
+\fBdwstat\fR are passed directly to the status tool by the slurmctld daemon
 and the response returned to the user. Equivalent to \fBbbstat\fR.
 .IP
 
