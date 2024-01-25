@@ -1101,11 +1101,13 @@ Full Container staging using rsync:
 This is full example that will stage container as given by \fBdocker\fR(1) or
 \fBpodman\fR(1). Container's config.json is modified to remove unwanted
 functions that may cause container run to under \fBcrun\fR(1) or \fBcrun\fR(1).
-Script uses rsync to move container to an shared /home filesystem.
+The script uses rsync to move the container to a shared filesystem
+under the \fIscratch_path\fR variable.
 
 .nf
 local json = require 'json'
 local open = io.open
+local scratch_path = "/run/user/"
 
 local function read_file(path)
 	local file = open(path, "rb")
@@ -1132,7 +1134,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	local src_rootfs = config["root"]["path"]
 	rc, user = slurm.allocator_command(string.format("id -un %d", user_id))
 	user = string.gsub(user, "%s+", "")
-	local root = "/home/"..user.."/containers/"
+	local root = scratch_path..math.floor(user_id).."/slurm/scrun/"
 	local dst_bundle = root.."/"..id.."/"
 	local dst_config = root.."/"..id.."/config.json"
 	local dst_rootfs = root.."/"..id.."/rootfs/"
