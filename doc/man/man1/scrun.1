@@ -1104,7 +1104,7 @@ Full Container staging using rsync:
 This is full example that will stage container as given by \fBdocker\fR(1) or
 \fBpodman\fR(1). Container's config.json is modified to remove unwanted
 functions that may cause container run to under \fBcrun\fR(1) or \fBcrun\fR(1).
-The script uses rsync to move the container to a shared filesystem
+The script uses \fBrsync\fR(1) to move the container to a shared filesystem
 under the \fIscratch_path\fR variable.
 
 .nf
