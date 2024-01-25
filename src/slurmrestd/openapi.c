@@ -146,6 +146,106 @@ static openapi_spec_flags_t *spec_flags = NULL;
 static plugins_t *plugins = NULL;
 static data_parser_t **parsers = NULL; /* symlink to parser array */
 
+static const struct {
+	char *openapi_version;
+	struct {
+		char *title;
+		char *desc;
+		char *tos;
+		struct {
+			char *name;
+			char *url;
+			char *email;
+		} contact;
+		struct {
+			char *name;
+			char *url;
+		} license;
+	} info;
+	struct {
+		char *name;
+		char *desc;
+	} tags[3];
+	struct {
+		char *url;
+	} servers[1];
+	/* security is too complex for here */
+	struct {
+		struct security_scheme_s {
+			char *key;
+			char *type;
+			char *desc;
+			char *name;
+			char *in;
+			char *scheme;
+			char *bearer_format;
+		} security_schemes[3];
+	} components;
+} openapi_spec = {
+	.openapi_version = "3.0.3",
+	.info = {
+		.title = "Slurm REST API",
+		.desc = "API to access and control Slurm",
+		.tos = "https://github.com/SchedMD/slurm/blob/master/DISCLAIMER",
+		.contact = {
+			.name = "SchedMD LLC",
+			.url = "https://www.schedmd.com/",
+			.email = "sales@schedmd.com",
+		},
+		.license = {
+			.name = "Apache 2.0",
+			.url = "https://www.apache.org/licenses/LICENSE-2.0.html",
+		},
+	},
+	.tags = {
+		{
+			.name = "slurm",
+			.desc = "methods that query slurmctld",
+		},
+		{
+			.name = "slurmdb",
+			.desc = "methods that query slurmdbd",
+		},
+		{
+			.name = "openapi",
+			.desc = "methods that query for generated OpenAPI specifications",
+		},
+	},
+	.servers = {
+		{
+			.url = "/",
+		},
+	},
+	.components = {
+		.security_schemes = {
+			{
+#define SEC_SCHEME_USER_INDEX 0
+				.key = "user",
+				.type = "apiKey",
+				.desc = "User name",
+				.name = "X-SLURM-USER-NAME",
+				.in = "header",
+			},
+			{
+#define SEC_SCHEME_TOKEN_INDEX 1
+				.key = "token",
+				.type = "apiKey",
+				.desc = "User access token",
+				.name = "X-SLURM-USER-TOKEN",
+				.in = "header",
+			},
+			{
+#define SEC_SCHEME_BEARER_INDEX 2
+				.key = "bearerAuth",
+				.type = "http",
+				.desc = "Bearer Authentication",
+				.scheme = "bearer",
+				.bearer_format = "JWT",
+			},
+		},
+	},
+};
+
 static char *_entry_to_string(entry_t *entry);
 
 static const char *_get_entry_type_string(entry_type_t type)
@@ -1022,61 +1122,6 @@ static data_for_each_cmd_t _merge_schema(const char *key, data_t *data,
 	return DATA_FOR_EACH_CONT;
 }
 
-/* find matching value of name in list of dictionary with "name" entry */
-static data_for_each_cmd_t _list_find_dict_name(data_t *data, void *arg)
-{
-	list_find_dict_name_t *args = arg;
-	data_t *name;
-
-	if (data_get_type(data) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_FAIL;
-
-	if (!(name = data_key_get(data, "name")))
-		return DATA_FOR_EACH_FAIL;
-
-	if (data_convert_type(name, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-
-	if (!xstrcmp(args->name, data_get_string(name))) {
-		args->found = true;
-		return DATA_FOR_EACH_STOP;
-	}
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
-{
-	data_t *tags = arg;
-	data_t *name, *desc, *e;
-	list_find_dict_name_t tag_name_args = { 0 };
-
-	if (data_get_type(data) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_FAIL;
-
-	name = data_key_get(data, "name");
-	desc = data_key_get(data, "description");
-
-	if (data_convert_type(name, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-	if (data_convert_type(desc, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-
-	/* only add if not already defined */
-	tag_name_args.name = data_get_string(name);
-	if (data_list_for_each(tags, _list_find_dict_name, &tag_name_args) < 0)
-		return DATA_FOR_EACH_FAIL;
-
-	if (tag_name_args.found)
-		return DATA_FOR_EACH_CONT;
-
-	e = data_set_dict(data_list_append(tags));
-	data_copy(data_key_set(e, "name"), name);
-	data_copy(data_key_set(e, "description"), desc);
-
-	return DATA_FOR_EACH_CONT;
-}
-
 static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 {
 	id_merge_path_t *args = arg;
@@ -1371,68 +1416,97 @@ extern int get_openapi_specification(data_t *resp)
 	data_t *components = data_set_dict(data_key_set(j, "components"));
 	data_t *components_schemas = data_set_dict(
 		data_key_set(components, "schemas"));
+	data_t *security_schemas =
+		data_set_dict(data_key_set(components, "securitySchemes"));
+	data_t *info = data_set_dict(data_key_set(j, "info"));
+	data_t *contact = data_set_dict(data_key_set(info, "contact"));
+	data_t *license = data_set_dict(data_key_set(info, "license"));
+	data_t *servers = data_set_list(data_key_set(j, "servers"));
+	data_t *security = data_set_list(data_key_set(j, "security"));
+	data_t *security1 = data_set_dict(data_list_append(security));
+	data_t *security2 = data_set_dict(data_list_append(security));
+	data_t *security3 = data_set_dict(data_list_append(security));
 	char *version_at = NULL;
 	char *version = xstrdup_printf("Slurm-%s", SLURM_VERSION_STRING);
 
-	/* copy the generic info from the first spec with defined */
-	for (int i = 0; i < plugins->count; i++) {
-		data_t *src = data_key_get(specs[i], "openapi");
-
-		if (!src)
-			continue;
-
-		data_copy(data_key_set(j, "openapi"), src);
-		break;
-	}
-	for (int i = 0; i < plugins->count; i++) {
-		data_t *src = data_key_get(specs[i], "info");
-
-		if (!src)
-			continue;
-
-		data_copy(data_key_set(j, "info"), src);
-		break;
-	}
-	for (int i = 0; i < plugins->count; i++) {
-		data_t *src = data_key_get(specs[i], "security");
-
-		if (!src)
-			continue;
-
-		(void) data_copy(data_key_set(j, "security"), src);
-		break;
-	}
-	for (int i = 0; i < plugins->count; i++) {
-		data_t *src = data_resolve_dict_path(
-			specs[i], "/components/securitySchemes");
-
-		if (!src)
-			continue;
-
-		data_copy(data_set_dict(
-				  data_key_set(components, "securitySchemes")),
-			  src);
-		break;
-	}
+	data_set_string(data_key_set(j, "openapi"),
+			openapi_spec.openapi_version);
+	data_set_string(data_key_set(info, "title"), openapi_spec.info.title);
+	data_set_string(data_key_set(info, "description"),
+			openapi_spec.info.desc);
+	data_set_string(data_key_set(info, "termsOfService"),
+			openapi_spec.info.tos);
 
 	/* Populate OAS version */
 	for (int i = 0; i < plugins->count; i++)
 		xstrfmtcatat(version, &version_at, "&%s", plugins->types[i]);
-	data_set_string_own(data_define_dict_path(j, "/info/version"), version);
+	data_set_string_own(data_key_set(info, "version"), version);
 
-	/* set single server at "/" */
-	data_set_string(
-		data_key_set(data_set_dict(data_list_append(data_set_list(
-				     data_key_set(j, "servers")))),
-			     "url"),
-		"/");
+	data_set_string(data_key_set(contact, "name"),
+			openapi_spec.info.contact.name);
+	data_set_string(data_key_set(contact, "url"),
+			openapi_spec.info.contact.url);
+	data_set_string(data_key_set(contact, "email"),
+			openapi_spec.info.contact.email);
+	data_set_string(data_key_set(license, "name"),
+			openapi_spec.info.license.name);
+	data_set_string(data_key_set(license, "url"),
+			openapi_spec.info.license.url);
 
-	/* merge all the unique tags together */
-	for (int i = 0; i < plugins->count; i++) {
-		data_t *src_tags = data_key_get(specs[i], "tags");
-		if (src_tags &&
-		    (data_list_for_each(src_tags, _merge_tag, tags) < 0))
-			fatal("%s: unable to merge tags", __func__);
+	for (int i = 0; i < ARRAY_SIZE(openapi_spec.tags); i++) {
+		data_t *tag = data_set_dict(data_list_append(tags));
+		data_set_string(data_key_set(tag, "name"),
+				openapi_spec.tags[i].name);
+		data_set_string(data_key_set(tag, "description"),
+				openapi_spec.tags[i].desc);
+	}
+	for (int i = 0; i < ARRAY_SIZE(openapi_spec.servers); i++) {
+		data_t *server = data_set_dict(data_list_append(servers));
+		data_set_string(data_key_set(server, "name"),
+				openapi_spec.servers[i].url);
+	}
+
+	/* Add default of no auth required */
+	data_set_dict(data_list_append(security));
+	/* Add user and token auth */
+	data_set_list(data_key_set(
+		security1,
+		openapi_spec.components.security_schemes[SEC_SCHEME_USER_INDEX]
+			.key));
+	data_set_list(data_key_set(
+		security1,
+		openapi_spec.components.security_schemes[SEC_SCHEME_TOKEN_INDEX]
+			.key));
+	/* Add only token auth */
+	data_set_list(data_key_set(
+		security2,
+		openapi_spec.components.security_schemes[SEC_SCHEME_TOKEN_INDEX]
+			.key));
+	/* Add only bearer */
+	data_set_list(data_key_set(
+		security3, openapi_spec.components
+				   .security_schemes[SEC_SCHEME_BEARER_INDEX]
+				   .key));
+
+	for (int i = 0;
+	     i < ARRAY_SIZE(openapi_spec.components.security_schemes); i++) {
+		const struct security_scheme_s *s =
+			&openapi_spec.components.security_schemes[i];
+		data_t *schema =
+			data_set_dict(data_key_set(security_schemas, s->key));
+		data_set_string(data_key_set(schema, "type"), s->type);
+		data_set_string(data_key_set(schema, "description"), s->desc);
+
+		if (s->name)
+			data_set_string(data_key_set(schema, "name"), s->name);
+		if (s->in)
+			data_set_string(data_key_set(schema, "in"), s->in);
+		if (s->scheme)
+			data_set_string(data_key_set(schema, "scheme"),
+					s->scheme);
+		if (s->bearer_format)
+			data_set_string(data_key_set(schema, "bearerFormat"),
+					s->bearer_format);
 	}
 
 	/* merge all the unique paths together */
