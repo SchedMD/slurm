@@ -1236,7 +1236,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		config["mounts"] = mounts
 	end
 
-	-- Merge in Job environment into container
+	-- Merge in Job environment into container -- this is optional!
 	if (config["process"]["env"] == nil)
 	then
 		config["process"]["env"] = {}
