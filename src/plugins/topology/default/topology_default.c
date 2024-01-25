@@ -123,7 +123,7 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_get(void **topoinfo_pptr)
+extern int topology_p_get(topology_data_t type, void *data)
 {
 	return SLURM_SUCCESS;
 }

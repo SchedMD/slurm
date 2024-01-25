@@ -476,31 +476,46 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_get(void **topoinfo_pptr)
+extern int topology_p_get(topology_data_t type, void *data)
 {
-	int i = 0;
-	topoinfo_tree_t *topoinfo_ptr =
-		xmalloc(sizeof(topoinfo_tree_t));
+	int rc = SLURM_SUCCESS;
 
-	*topoinfo_pptr = topoinfo_ptr;
-	topoinfo_ptr->record_count = switch_record_cnt;
-	topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
-					   sizeof(topoinfo_switch_t));
+	switch (type) {
+	case TOPO_DATA_TOPOLOGY_PTR:
+	{
+		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topoinfo_tree_t *topoinfo_ptr =
+			xmalloc(sizeof(topoinfo_tree_t));
 
-	for (i = 0; i < topoinfo_ptr->record_count; i++) {
-		topoinfo_ptr->topo_array[i].level =
-			switch_record_table[i].level;
-		topoinfo_ptr->topo_array[i].link_speed =
-			switch_record_table[i].link_speed;
-		topoinfo_ptr->topo_array[i].name =
-			xstrdup(switch_record_table[i].name);
-		topoinfo_ptr->topo_array[i].nodes =
-			xstrdup(switch_record_table[i].nodes);
-		topoinfo_ptr->topo_array[i].switches =
-			xstrdup(switch_record_table[i].switches);
+		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
+		(*topoinfo_pptr)->data = topoinfo_ptr;
+		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		topoinfo_ptr->record_count = switch_record_cnt;
+		topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
+						   sizeof(topoinfo_switch_t));
+
+		for (int i = 0; i < topoinfo_ptr->record_count; i++) {
+			topoinfo_ptr->topo_array[i].level =
+				switch_record_table[i].level;
+			topoinfo_ptr->topo_array[i].link_speed =
+				switch_record_table[i].link_speed;
+			topoinfo_ptr->topo_array[i].name =
+				xstrdup(switch_record_table[i].name);
+			topoinfo_ptr->topo_array[i].nodes =
+				xstrdup(switch_record_table[i].nodes);
+			topoinfo_ptr->topo_array[i].switches =
+				xstrdup(switch_record_table[i].switches);
+		}
+		break;
+	}
+	default:
+		error("Unsupported option %d", type);
+		rc = SLURM_ERROR;
+		break;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,

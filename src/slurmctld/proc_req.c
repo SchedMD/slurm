@@ -5041,7 +5041,8 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(node_read_lock);
 	if (msg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		topology_g_topology_get(&topo_resp_msg->topo_info);
+		(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR,
+				      &topo_resp_msg->topo_info);
 	} else {
 		topo_resp_msg->record_count = switch_record_cnt;
 		topo_resp_msg->topo_array =

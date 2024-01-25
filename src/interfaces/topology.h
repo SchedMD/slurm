@@ -46,6 +46,11 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
+typedef enum {
+	TOPO_DATA_TOPOLOGY_PTR,
+} topology_data_t;
+
+
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
 	uint16_t avail_cpus; /* How many cpus available, UPDATED */
@@ -188,12 +193,15 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 				     int *count,
 				     uint16_t tree_width);
 
-/* unpack a system topology from a buffer
- * OUT topoinfo - the system topology
+/* Get various information from the topology plugin
+ * IN - type see topology_data_t
+ * OUT data
+ *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
+ *                                     be freed using topology_g_topology_free.
  * RET         - slurm error code
  * NOTE: returned value must be freed using topology_g_topology_free
  */
-extern int topology_g_topology_get(dynamic_plugin_data_t **topoinfo);
+extern int topology_g_get(topology_data_t type, void *data);
 
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended

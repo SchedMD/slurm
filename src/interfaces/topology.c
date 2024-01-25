@@ -79,7 +79,7 @@ typedef struct slurm_topo_ops {
 			       int *count,
 			       uint16_t tree_width);
 	int (*topoinfo_free) (void *topoinfo_ptr);
-	int (*topoinfo_get) (void **topoinfo_pptr);
+	int (*get) (topology_data_t type, void *data);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
@@ -99,7 +99,7 @@ static const char *syms[] = {
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
 	"topology_p_topology_free",
-	"topology_p_topology_get",
+	"topology_p_get",
 	"topology_p_topology_pack",
 	"topology_p_topology_print",
 	"topology_p_topology_unpack",
@@ -258,18 +258,11 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 	return rc;
 }
 
-extern int topology_g_topology_get(dynamic_plugin_data_t **topoinfo)
+extern int topology_g_get(topology_data_t type, void *data)
 {
-	dynamic_plugin_data_t *topoinfo_ptr = NULL;
-
 	xassert(plugin_inited);
 
-	topoinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*topoinfo = topoinfo_ptr;
-	topoinfo_ptr->plugin_id = active_topo_id;
-
-	return (*(ops.topoinfo_get))(&topoinfo_ptr->data);
-
+	return (*(ops.get))(type, data);
 }
 
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
