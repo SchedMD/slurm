@@ -1318,6 +1318,9 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 	then
 		-- rsync can fail due to permissions which may not matter
 		slurm.log_info("rsync failed")
+	else
+		-- cleanup temporary after they have been synced backed to source
+		slurm.allocator_command(string.format("/usr/bin/rm --preserve-root=all --one-file-system -dr -- %s", bundle))
 	end
 
 	return slurm.SUCCESS
