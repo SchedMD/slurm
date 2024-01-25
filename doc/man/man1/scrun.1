@@ -1164,10 +1164,32 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	config["root"]["path"] = dst_rootfs
 
 	-- Always force user namespace support in container or runc will reject
+	local process_user_id = 0
+	local process_group_id = 0
+
 	if ((config["process"] ~= nil) and (config["process"]["user"] ~= nil))
 	then
+		-- resolve out user in the container
+		if (config["process"]["user"]["uid"] ~= nil)
+		then
+			process_user_id=config["process"]["user"]["uid"]
+		else
+			process_user_id=0
+		end
+
+		-- resolve out group in the container
+		if (config["process"]["user"]["gid"] ~= nil)
+		then
+			process_group_id=config["process"]["user"]["gid"]
+		else
+			process_group_id=0
+		end
+
 		-- purge additionalGids as they are not supported in rootless
-		config["process"]["user"]["additionalGids"] = nil
+		if (config["process"]["user"]["additionalGids"] ~= nil)
+		then
+			config["process"]["user"]["additionalGids"] = nil
+		end
 	end
 
 	if (config["linux"] ~= nil)
@@ -1191,9 +1213,20 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 			table.insert(config["linux"]["namespaces"], {type= "user"})
 		end
 
-		-- clear all attempts to map uid/gids
-		config["linux"]["uidMappings"] = nil
-		config["linux"]["gidMappings"] = nil
+		-- Provide default user map as root if one not provided
+		if (true or config["linux"]["uidMappings"] == nil)
+		then
+			config["linux"]["uidMappings"] =
+				{{containerID=process_user_id, hostID=math.floor(user_id), size=1}}
+		end
+
+		-- Provide default group map as root if one not provided
+		-- mappings fail with build???
+		if (true or config["linux"]["gidMappings"] == nil)
+		then
+			config["linux"]["gidMappings"] =
+				{{containerID=process_group_id, hostID=math.floor(group_id), size=1}}
+		end
 
 		-- disable trying to use a specific cgroup
 		config["linux"]["cgroupsPath"] = nil
