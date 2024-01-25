@@ -1084,6 +1084,9 @@ Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
 
 .TP
 Minimal required for \fBscrun\fR operation:
+This script should be used when \fBdocker\fR(1) or
+\fBpodman\fR(1) have been configured to use a shared filesystem for container
+storage removing the need to copy around the container files.
 .nf
 function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
 	return slurm.SUCCESS
