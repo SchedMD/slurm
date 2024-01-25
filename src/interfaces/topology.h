@@ -70,32 +70,6 @@ typedef struct topology_eval {
 	uint32_t req_nodes; /* number of requested nodes */
 } topology_eval_t;
 
-/*****************************************************************************\
- *  SWITCH topology data structures
- *  defined here but is really tree plugin related
-\*****************************************************************************/
-typedef struct {
-	int level;			/* level in hierarchy, leaf=0 */
-	uint32_t link_speed;		/* link speed, arbitrary units */
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
-					 * this switch */
-	char *nodes;			/* name if direct descendant nodes */
-	uint16_t  num_desc_switches;	/* number of descendant switches */
-	uint16_t  num_switches;		/* number of direct descendant
-					   switches */
-	uint16_t  parent;		/* index of parent switch */
-	char *switches;			/* name of direct descendant switches */
-	uint32_t *switches_dist;
-	uint16_t *switch_desc_index;	/* indexes of child descendant
-					 * switches */
-	uint16_t *switch_index;		/* indexes of child direct descendant
-					   switches */
-} switch_record_t;
-
-extern switch_record_t *switch_record_table;  /* ptr to switch records */
-extern int switch_record_cnt;		/* size of switch_record_table */
-extern int switch_levels;               /* number of switch levels     */
 extern char *topo_conf;
 
 /*****************************************************************************\

@@ -5031,7 +5031,6 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 {
 	topo_info_response_msg_t *topo_resp_msg;
 	slurm_msg_t response_msg;
-	int i;
 	/* Locks: read node lock */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -5044,22 +5043,7 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 		(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR,
 				      &topo_resp_msg->topo_info);
 	} else {
-		topo_resp_msg->record_count = switch_record_cnt;
-		topo_resp_msg->topo_array =
-			xmalloc(sizeof(topo_info_t) *
-				topo_resp_msg->record_count);
-		for (i=0; i<topo_resp_msg->record_count; i++) {
-			topo_resp_msg->topo_array[i].level =
-				switch_record_table[i].level;
-			topo_resp_msg->topo_array[i].link_speed =
-				switch_record_table[i].link_speed;
-			topo_resp_msg->topo_array[i].name =
-				xstrdup(switch_record_table[i].name);
-			topo_resp_msg->topo_array[i].nodes =
-				xstrdup(switch_record_table[i].nodes);
-			topo_resp_msg->topo_array[i].switches =
-				xstrdup(switch_record_table[i].switches);
-		}
+		topo_resp_msg->record_count = 0;
 	}
 	unlock_slurmctld(node_read_lock);
 	END_TIMER2(__func__);

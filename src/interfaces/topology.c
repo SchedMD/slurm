@@ -51,11 +51,6 @@ strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 
 static uint32_t active_topo_id;
 
-/* defined here but is really tree plugin related */
-switch_record_t *switch_record_table = NULL;
-int switch_record_cnt = 0;
-int switch_levels = 0;               /* number of switch levels     */
-
 /* defined here but is really block plugin related */
 bitstr_t *blocks_nodes_bitmap = NULL;	/* nodes on any bblock */
 block_record_t *block_record_table = NULL;

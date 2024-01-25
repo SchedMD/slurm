@@ -46,6 +46,10 @@ typedef struct slurm_conf_switches {
 				 * connected to this switch, if any */
 } slurm_conf_switches_t;
 
+switch_record_t *switch_record_table = NULL;
+int switch_record_cnt = 0;
+int switch_levels = 0; /* number of switch levels */
+
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
 static void _log_switches(void)
