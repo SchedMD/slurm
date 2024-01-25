@@ -14441,7 +14441,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		 * did not proactively clear it. (Which, instead, may cause
 		 * a memory leak. But that's preferrable.)
 		 */
-		xassert(msg->data);
+		xassert(!msg->data);
 		msg->data = NULL;
 	}
 	return rc;
