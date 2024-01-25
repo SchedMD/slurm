@@ -26,12 +26,14 @@ jobs will be killed.
 
 .TP
 \fB\-d\fR
-Run \fBslurmctld\fR in the background.
+Run \fBslurmctld\fR in the background. This is the default behavior.
 .IP
 
 .TP
 \fB\-D\fR
 Run \fBslurmctld\fR in the foreground with logging copied to stdout.
+This limits the resilience of 'scontrol reconfigure' and should be
+avoided in production.
 .IP
 
 .TP

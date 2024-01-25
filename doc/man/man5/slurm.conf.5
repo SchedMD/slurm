@@ -21,6 +21,7 @@ as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
 Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
+Changes to TCP listening settings will require a daemon restart.
 .LP
 If a line begins with the word "Include" followed by whitespace
 and then a file name, that file will be included inline with the current
@@ -89,8 +90,6 @@ association or qos violates the updated limits.
 
 With \fIqos\fR and/or \fIwckeys\fR enforced jobs will not be scheduled unless
 a valid qos and/or workload characterization key is specified.
-
-A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -510,6 +509,8 @@ The authentication method for communications between Slurm
 components.
 All Slurm daemons and commands must be terminated prior to changing
 the value of \fBAuthType\fR and later restarted.
+Changes to this value will interrupt outstanding job steps and prevent them
+from completing.
 Acceptable values at present:
 .RS
 .TP
@@ -778,8 +779,6 @@ Deprecated option, see \fBSlurmctldHost\fR.
 .TP
 \fBCoreSpecPlugin\fR
 Identifies the plugins to be used for enforcement of core specialization.
-A restart of the slurmd daemons is required for changes to this parameter
-to take effect.
 Acceptable values at present include:
 .IP
 .RS
@@ -864,7 +863,6 @@ Default: OnDemand, Performance and UserSpace.
 \fBCredType\fR
 The cryptographic signature tool to be used in the creation of
 job step credentials.
-A restart of slurmctld is required for changes to this parameter to take effect.
 Acceptable values at present are:
 .RS
 .TP
@@ -1339,8 +1337,6 @@ additional functionality.
 No generic resources are managed by default.
 Ensure this parameter is consistent across all nodes in the cluster for
 proper operation.
-A restart of slurmctld and the slurmd daemons is required for this to take
-effect.
 .IP
 
 .TP
@@ -1702,9 +1698,6 @@ information: <https://slurm.schedmd.com/jobcomp_kafka.html>
 
 \fBNOTE\fR: The target Kafka topic and other plugin parameters can be configured
 via \fBJobCompParams\fR.
-
-\fBNOTE\fR: The \fBlibrdkafka\fR parameters configured in the file referenced by
-this option take effect upon slurmctld restart.
 .IP
 
 .TP
@@ -1862,7 +1855,6 @@ Only used for database type storage plugins, ignored otherwise.
 .TP
 \fBJobContainerType\fR
 Identifies the plugin to be used for job tracking.
-A restart of slurmctld is required for changes to this parameter to take effect.
 \fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
@@ -2287,7 +2279,6 @@ Setting per MaxSubmitJobs per user is generally valuable to prevent a single
 user from filling the system with jobs.
 This is accomplished using Slurm's database and configuring enforcement of
 resource limits.
-A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -2342,8 +2333,7 @@ Maximum count of nodes which may exist in the controller. By default MaxNodeCoun
 will be set to the number of nodes found in the slurm.conf. MaxNodeCount will
 be ignored if less than the number of nodes found in the slurm.conf. Increase
 MaxNodeCount to accommodate dynamically created nodes with dynamic node
-registrations and nodes created with scontrol. The slurmctld daemon must be
-restarted for changes to this parameter to take effect.
+registrations and nodes created with scontrol.
 .IP
 
 .TP
@@ -2463,8 +2453,6 @@ Identifies the places in which to look for Slurm plugins.
 This is a colon\-separated list of directories, like the PATH
 environment variable.
 The default value is the prefix given at configure time + "/lib/slurm".
-A restart of slurmctld and the slurmd daemons is required for changes to
-this parameter to take effect.
 .IP
 
 .TP
@@ -2611,7 +2599,6 @@ Identifies the plugin used for system power management.
 Currently supported plugins include:
 \fBcray_aries\fR and
 \fBnone\fR.
-A restart of slurmctld is required for changes to this parameter to take effect.
 More information about system power management is available here
 <https://slurm.schedmd.com/power_mgmt.html>.
 By default, no power plugin is loaded.
@@ -3222,7 +3209,6 @@ coordinator of, but can only see themselves when listing users.
 Identifies the plugin to be used for process tracking on a job step basis.
 The slurmd daemon uses this mechanism to identify all processes
 which are children of processes it spawns for a user job step.
-A restart of slurmctld is required for changes to this parameter to take effect.
 \fBNOTE\fR: "proctrack/linuxproc" and "proctrack/pgid" can fail to
 identify all processes associated with a job since processes
 can become a child of the init process (when the parent process
@@ -4291,7 +4277,6 @@ If used, the backup controller will not schedule jobs when it takes over. The
 backup controller will allow jobs to be submitted, modified and cancelled but
 won't schedule new jobs. This is useful in Cray environments when the backup
 controller resides on an external Cray node.
-A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -4454,7 +4439,6 @@ The default value is 30 seconds.
 .TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used.
-A restart of slurmctld is required for changes to this parameter to take effect.
 The \fBscontrol\fR command can be used to manually change job priorities
 if desired.
 Acceptable values include:
@@ -4505,8 +4489,7 @@ cancelling the job with the --cron flag in scancel.
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
-A restart of slurmctld and slurmd is required for changes to this parameter to
-take effect. When changed, all job information (running and pending) will be
+When changed, all job information (running and pending) will be
 lost, since the job state save format used by each plugin is different.
 The only exception to this is when changing from the legacy cons_res to
 cons_tres.
@@ -4559,8 +4542,6 @@ By default \fBSelectType=select/cons_tres\fR, and
 \fBSelectType=select/cray_aries\fR use
 \fBCR_Core_Memory\fR, which allocates Core
 to jobs with considering their memory consumption.
-
-A restart of slurmctld is required for changes to this parameter to take effect.
 
 The following options are supported for \fBSelectType=select/cray_aries\fR:
 .IP
@@ -4883,7 +4864,6 @@ When enabled the slurmd will be permitted to retrieve config files and
 \fBProlog\fR and \fBEpilog\fR scripts from the slurmctld, and on any 'scontrol
 reconfigure' command new configs and scripts will be automatically pushed out
 and applied to nodes that are running in this "configless" mode.
-A restart of slurmctld is required for changes to this parameter to take effect.
 See https://slurm.schedmd.com/configless_slurm.html for more details.
 
 \fBNOTE\fR: Included files with the \fBInclude\fR directive will only be pushed
@@ -5033,7 +5013,6 @@ build time. If none is explicitly specified, it will be set to 6817.
 \fBSlurmctldPort\fR may also be configured to support a range of port
 numbers in order to accept larger bursts of incoming messages by specifying
 two numbers separated by a dash (e.g. \fBSlurmctldPort=6817\-6818\fR).
-A restart of slurmctld is required for changes to this parameter to take effect.
 \fBNOTE\fR: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not
 execute on the same nodes or the values of \fBSlurmctldPort\fR and
 \fBSlurmdPort\fR must be different.
@@ -5268,7 +5247,6 @@ The default value is "/var/run/slurmd.pid".
 The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work. The default value is SLURMD_PORT as established at system
 build time. If none is explicitly specified, its value will be 6818.
-A restart of slurmctld is required for changes to this parameter to take effect.
 \fBNOTE\fR: Either slurmctld and slurmd daemons must not execute
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
@@ -5484,7 +5462,6 @@ readable and writable by both systems.
 Since all running and pending job information is stored here, the use of
 a reliable file system (e.g. RAID) is recommended.
 The default value is "/var/spool".
-A restart of slurmctld is required for changes to this parameter to take effect.
 If any slurm daemons terminate abnormally, their core files will also be written
 into this directory.
 .IP
@@ -5726,8 +5703,8 @@ Acceptable values include
 "switch/hpe_slingshot" for HPE Slingshot systems.
 The default value is no special plugin requiring special processing for job
 launch or termination (Ethernet, and InfiniBand).
-All Slurm daemons, commands and running jobs must be restarted for a
-change in \fBSwitchType\fR to take effect.
+All Slurm daemons, commands and running jobs must be restarted or reconfigured
+for a change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
 .IP

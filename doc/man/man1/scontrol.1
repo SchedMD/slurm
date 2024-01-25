@@ -266,17 +266,15 @@ A node will be marked "DOWN" if it doesn't reboot within \fBResumeTimeout\fR.
 
 .TP
 \fBreconfigure\fR
-Instruct all Slurm daemons to re\-read the configuration file.
-This command does not restart the daemons.
+Instruct all slurmctld and slurmd daemons to re\-read the configuration file.
 This mechanism can be used to modify configuration parameters set in
-slurm.conf.
-The Slurm controller (slurmctld) forwards the request to all other daemons
-(slurmd daemon on each compute node). Running jobs continue execution.
-Most configuration parameters can be changed by just running this command;
-however, there are parameters that require a restart of the relevant Slurm
-daemons. Parameters requiring a restart will be noted in the
-\fBslurm.conf\fR(5) man page. The slurmctld daemon and all slurmd daemons
-must also be restarted if nodes are added to or removed from the cluster.
+\fBslurm.conf\fR(5) without interrupting running jobs.
+Starting in 23.11, this command operates by creating new processes for the
+daemons, then passing control to the new processes when or if they
+start up successfully. This allows it to gracefully catch configuration
+problems and keep running with the previous configuration if there is a problem.
+This will \fBnot\fR be able to change the daemons' listening TCP port settings
+or authentication mechanism.
 .IP
 
 .TP
