@@ -1264,6 +1264,11 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 end
 
 function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
+	if (root_path == nil)
+	then
+		root_path = ""
+	end
+
 	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
 		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
 
