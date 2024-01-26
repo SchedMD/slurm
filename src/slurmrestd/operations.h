@@ -83,6 +83,7 @@ extern int bind_operation_handler(const char *path, openapi_handler_t callback,
  * IN path - url path to match
  * IN callback - handler function for callback
  * IN tag - arbitrary tag passed to handler when path matched
+ * IN meta - meta info about plugin that owns callback or NULL
  * RET SLURM_SUCCESS or error
  */
 extern int bind_operation_ctxt_handler(const char *path,
