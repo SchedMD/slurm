@@ -508,8 +508,15 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 		if (escape_flag) {
 			escape_flag = false;
 		} else if (*ptr == '\\') {
-			escape_flag = true;
 			ptr++;
+			if (*ptr == ' ') {
+				if (!argument)
+					argument = xmalloc(strlen(line) + 1);
+				argument[i++] = *(ptr++);
+				escape_flag = false;
+			} else
+				escape_flag = true;
+
 			continue;
 		} else if (quoted) {
 			if (*ptr == q_char) {
