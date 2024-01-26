@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't leave a partition around if it fails to create with scontrol.
  -- Fix segfault when creating partition with bad node list from scontrol.
  -- Fix preserving partition nodes on bad node list update from scontrol.
+ -- Fix assertion in developer mode on a failed message unpack.
 
 * Changes in Slurm 23.11.3
 ==========================
@@ -585,6 +586,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix rare deadlock when a dynamic node registers at the same time that a
     once per minute background task occurs.
+ -- Fix assertion in developer mode on a failed message unpack.
 
 * Changes in Slurm 23.02.7
 ==========================
