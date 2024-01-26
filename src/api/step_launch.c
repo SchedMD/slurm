@@ -1171,6 +1171,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 			bit_set(sls->tasks_started, msg->task_ids[i]);
 			bit_set(sls->tasks_exited, msg->task_ids[i]);
 		}
+		sls->ret_code = 1;
 	} else {
 		for (i = 0; i < msg->count_of_pids; i++)
 			bit_set(sls->tasks_started, msg->task_ids[i]);
