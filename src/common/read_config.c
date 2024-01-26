@@ -5456,7 +5456,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!xstrcasecmp(conf->select_type, "select/linear") &&
 	    !xstrcasecmp(conf->topology_plugin, "topology/tree"))
-		error_in_daemon("select/linear with topology/tree will not be supported in the next major release. Please switch to select/cons_tres or stop using topology/tree.");
+		fatal("select/linear with topology/tree is not supported. Please switch to select/cons_tres or stop using topology/tree.");
 
 	if (((conf->tree_width = (getenv("SLURM_TREE_WIDTH") ?
 				  atoi(getenv("SLURM_TREE_WIDTH")) : 0)) > 0) ||

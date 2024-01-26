@@ -25,6 +25,8 @@ HIGHLIGHTS
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
  -- CoreSpecPlugin has been removed.
+ -- Removed TopologyPlugin tree and dragonfly support from select/linear.
+    If those topology plugins are desired please switch to select/cons_tres.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
