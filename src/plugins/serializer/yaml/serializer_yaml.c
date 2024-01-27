@@ -735,12 +735,14 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 extern int serialize_p_string_to_data(data_t **dest, const char *src,
 				      size_t length)
 {
-	data_t *data = data_new();
+	data_t *data;
 	yaml_parser_t parser;
 
 	/* string must be NULL terminated */
 	if (!length || (src[length] && (strnlen(src, length) >= length)))
 		return EINVAL;
+
+	data = data_new();
 
 	if (_parse_yaml(src, &parser, data)) {
 		FREE_NULL_DATA(data);
