@@ -321,7 +321,7 @@ static void _list_delete_path_t(void *x)
 	xfree(path);
 }
 
-static entry_t *_parse_openapi_path(const char *str_path)
+static entry_t *_parse_openapi_path(const char *str_path, int *count_ptr)
 {
 	char *save_ptr = NULL;
 	char *buffer = xstrdup(str_path);
@@ -381,6 +381,8 @@ again:
 	/* last is always NULL */
 	xassert(!entry->type);
 	xfree(buffer);
+	if (count_ptr)
+		*count_ptr = count;
 	return entries;
 
 fail:
@@ -389,6 +391,8 @@ fail:
 
 	xfree(entries);
 	xfree(buffer);
+	if (count_ptr)
+		*count_ptr = -1;
 	return NULL;
 }
 
@@ -718,7 +722,7 @@ extern int register_path_tag(const char *str_path)
 	populate_methods_t args = {
 		.str_path = str_path,
 	};
-	entry_t *entries = _parse_openapi_path(str_path);
+	entry_t *entries = _parse_openapi_path(str_path, NULL);
 
 	if (!entries) {
 		debug4("%s: _parse_openapi_path(%s) failed",
