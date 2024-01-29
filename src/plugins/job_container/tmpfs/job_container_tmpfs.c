@@ -655,11 +655,6 @@ end_it:
 	return rc;
 }
 
-extern int container_p_create(uint32_t job_id, uid_t uid)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int container_p_join_external(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;

@@ -1542,9 +1542,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-		if (container_g_create(req->step_id.job_id, msg->auth_uid))
-			error("container_g_create(%u): %m", req->step_id.job_id);
-
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
@@ -1714,11 +1711,6 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	int rc = 0;
 
 	*fd = -1;
-
-	if ((rc = container_g_create(jobid, uid))) {
-		error("%s: container_g_create(%u): %m", __func__, jobid);
-		return SLURM_ERROR;
-	}
 
 	/* child process will setuid to the user, register the process
 	 * with the container, and open the file for us. */
@@ -2284,10 +2276,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 
-		if ((rc = container_g_create(req->job_id, req->uid)))
-			error("container_g_create(%u): %m", req->job_id);
-		else
-			rc = _run_prolog(&job_env, req->cred, false);
+		rc = _run_prolog(&job_env, req->cred, false);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2471,10 +2460,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 	 * Run job prolog on this node
 	 	 */
 
-		if ((rc = container_g_create(req->job_id, batch_uid)))
-			error("container_g_create(%u): %m", req->job_id);
-		else
-			rc = _run_prolog(&job_env, req->cred, true);
+		rc = _run_prolog(&job_env, req->cred, true);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;

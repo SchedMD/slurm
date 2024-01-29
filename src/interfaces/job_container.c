@@ -48,7 +48,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct job_container_ops {
-	int	(*container_p_create)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_join)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_join_external)(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
@@ -64,7 +63,6 @@ typedef struct job_container_ops {
  * Must be synchronized with job_container_ops_t above.
  */
 static const char *syms[] = {
-	"container_p_create",
 	"container_p_join",
 	"container_p_join_external",
 	"container_p_restore",
@@ -167,21 +165,6 @@ extern int job_container_fini(void)
 
 done:
 	slurm_mutex_unlock(&g_container_context_lock);
-	return rc;
-}
-
-/* Create a container for the specified job */
-extern int container_g_create(uint32_t job_id, uid_t uid)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_container_context_num >= 0);
-
-	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
-	     i++) {
-		rc = (*(ops[i].container_p_create))(job_id, uid);
-	}
-
 	return rc;
 }
 
