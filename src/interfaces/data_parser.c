@@ -79,6 +79,9 @@ typedef struct {
 	void (*free)(void *arg);
 	int (*assign)(void *arg, data_parser_attr_type_t type, void *obj);
 	int (*specify)(void *arg, data_t *dst);
+	openapi_type_t (*resolve_openapi_type)(void *arg,
+					       data_parser_type_t type,
+					       const char *field);
 } parse_funcs_t;
 
 typedef struct {
@@ -96,6 +99,7 @@ static const char *parse_syms[] = {
 	"data_parser_p_free",
 	"data_parser_p_assign",
 	"data_parser_p_specify",
+	"data_parser_p_resolve_openapi_type",
 };
 
 static plugins_t *plugins = NULL;
@@ -794,4 +798,24 @@ extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+extern openapi_type_t data_parser_g_resolve_openapi_type(
+	data_parser_t *parser,
+	data_parser_type_t type,
+	const char *field)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return ESLURM_DATA_INVALID_PARSER;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser);
+	xassert(plugins);
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->resolve_openapi_type(parser->arg, type, field);
 }

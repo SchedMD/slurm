@@ -830,4 +830,15 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
  */
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst);
 
+/*
+ * Get the OpenAPI type for a given parser's field
+ * IN parser - parser to query
+ * IN field - field name or NULL to get parser's type
+ * RET openapi type or OPENAPI_TYPE_INVALID if not found
+ */
+extern openapi_type_t data_parser_g_resolve_openapi_type(
+	data_parser_t *parser,
+	data_parser_type_t type,
+	const char *field);
+
 #endif

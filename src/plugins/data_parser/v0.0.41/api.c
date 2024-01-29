@@ -253,3 +253,33 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 		return EINVAL;
 	}
 }
+
+extern openapi_type_t data_parser_p_resolve_openapi_type(
+	args_t *args,
+	data_parser_type_t type,
+	const char *field)
+{
+	const parser_t *const parser = find_parser_by_type(type);
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (!parser)
+		return OPENAPI_TYPE_INVALID;
+
+	if (!field)
+		return parser->obj_openapi;
+
+	for (int i = 0; i < parser->field_count; i++) {
+		if (!xstrcasecmp(parser->fields[i].field_name, field)) {
+			const parser_t *p =
+				find_parser_by_type(parser->fields[i].type);
+
+			while (p->pointer_type)
+				p = find_parser_by_type(p->pointer_type);
+
+			return p->obj_openapi;
+		}
+	}
+
+	return OPENAPI_TYPE_INVALID;
+}
