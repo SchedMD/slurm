@@ -1194,13 +1194,13 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		for (uint32_t i = 0; i < step->node_tasks; i++)
 			if (step->task[i]->estatus <= 0)
 				step->task[i]->estatus = W_EXITCODE(1, 0);
-
-		/* let the slurmd know the setup failed */
-		close_slurmd_conn(rc);
-		goto fail1;
 	}
 
-	/* let the slurmd know we actually are done with the setup */
+	/*
+	 * Tell slurmd the setup status; slurmd will handle a failure and
+	 * cleanup the sleep task launched above, so we do not need to do
+	 * anything special here to handle a setup failure.
+	 */
 	close_slurmd_conn(rc);
 
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
