@@ -1074,9 +1074,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		const funcs_t *funcs = plugins->functions[i];
 
 		spec_flags[i] = OAS_FLAG_NONE;
-		if (!(specs[i] = funcs->get_oas(&(spec_flags[i]))))
-			fatal("Loading OpenAPI specification from %s failed",
-			      plugins->types[i]);
+		specs[i] = funcs->get_oas(&(spec_flags[i]));
 
 		debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
 		       __func__, plugins->types[i], spec_flags[i]);
