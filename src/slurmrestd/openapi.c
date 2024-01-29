@@ -640,6 +640,23 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
+static void _clone_entries(entry_t **dst_ptr, entry_t *src, int count)
+{
+	entry_t *dst = xcalloc((count + 1), sizeof(*dst));
+
+	xassert(!*dst_ptr);
+	xassert(count > 0);
+
+	*dst_ptr = dst;
+
+	for (; src->type; src++, dst++) {
+		dst->entry = xstrdup(src->entry);
+		dst->name = xstrdup(src->name);
+		dst->type = src->type;
+		dst->parameter = src->parameter;
+	}
+}
+
 static data_for_each_cmd_t _populate_methods(const char *key,
 					     const data_t *data,
 					     void *arg)
@@ -669,17 +686,8 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 		count++;
 
 	if (!method->entries) {
-		/* only add entries on first method parse */
-		method->entries = xcalloc((count + 1), sizeof(entry_t));
 		/* Copy spec entry list into method entry list */
-		entry_t *dest = method->entries;
-		for (entry_t *src = args->entries; src->type; src++) {
-			dest->entry = xstrdup(src->entry);
-			dest->name = xstrdup(src->name);
-			dest->type = src->type;
-			dest->parameter = src->parameter;
-			dest++;
-		}
+		_clone_entries(&method->entries, args->entries, count);
 	}
 
 	/* point to new entries clone */
