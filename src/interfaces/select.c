@@ -285,7 +285,6 @@ extern int select_running_linear_based(void)
 
 	switch (*(ops[select_context_default].plugin_id)) {
 	case SELECT_PLUGIN_LINEAR: // select/linear
-	case SELECT_PLUGIN_CRAY_LINEAR: // select/cray -> linear
 		rc = 1;
 		break;
 	default:
@@ -653,8 +652,6 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		/* cons_res was removed; convert to cons_tres */
 		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
 			plugin_id = SELECT_PLUGIN_CONS_TRES;
-		} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-			plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
 		}
 
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
@@ -920,8 +917,6 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		/* cons_res was removed; convert to cons_tres */
 		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
 			plugin_id = SELECT_PLUGIN_CONS_TRES;
-		} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-			plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
 		}
 
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
