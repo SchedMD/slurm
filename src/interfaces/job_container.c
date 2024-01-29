@@ -54,7 +54,6 @@ typedef struct job_container_ops {
 	int	(*container_p_join_external)(uint32_t job_id);
 	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
-	void	(*container_p_reconfig)	(void);
 	int	(*container_p_stepd_create)	(uint32_t job_id,
 					         stepd_step_rec_t *step);
 	int	(*container_p_stepd_delete)	(uint32_t job_id);
@@ -73,7 +72,6 @@ static const char *syms[] = {
 	"container_p_join_external",
 	"container_p_delete",
 	"container_p_restore",
-	"container_p_reconfig",
 	"container_p_stepd_create",
 	"container_p_stepd_delete",
 	"container_p_send_stepd",
@@ -271,20 +269,6 @@ extern int container_g_restore(char * dir_name, bool recover)
 	}
 
 	return rc;
-}
-
-/* Note change in configuration (e.g. "DebugFlag=JobContainer" set) */
-extern void container_g_reconfig(void)
-{
-	int i;
-
-	xassert(g_container_context_num >= 0);
-
-	for (i = 0; i < g_container_context_num;i++) {
-		(*(ops[i].container_p_reconfig))();
-	}
-
-	return;
 }
 
 /* Create a container for the specified job, actions run in slurmstepd */

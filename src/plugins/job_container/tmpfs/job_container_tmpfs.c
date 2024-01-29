@@ -141,11 +141,6 @@ static int _restore_ns(List steps, const char *d_name)
 	return SLURM_SUCCESS;
 }
 
-extern void container_p_reconfig(void)
-{
-	return;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
