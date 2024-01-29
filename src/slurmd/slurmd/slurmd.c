@@ -2902,8 +2902,6 @@ extern int run_script_health_check(void)
 		 * pointing to the wrong place otherwise.
 		 */
 		run_command_args.env = env;
-		if (xstrstr(slurm_conf.job_container_plugin, "cncu"))
-			run_command_args.container_join = container_g_join;
 
 		resp = run_command(&run_command_args);
 		if (rc) {
