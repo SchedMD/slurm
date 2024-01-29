@@ -265,63 +265,14 @@ fini:	slurm_mutex_unlock(&select_context_lock);
 /* Get this plugin's sequence number in Slurm's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id)
 {
-	int i;
-	static bool cray_other_cons_tres = false;
-
 	xassert(select_context_cnt >= 0);
-again:
-	for (i = 0; i < select_context_cnt; i++) {
+
+	for (int i = 0; i < select_context_cnt; i++) {
 		if (*(ops[i].plugin_id) == plugin_id)
-			break;
+			return i;
 	}
-	if (i >= select_context_cnt) {
-		/*
-		 * Put on the extra Cray select plugins that do not get
-		 * generated automatically.
-		 */
-		if (!cray_other_cons_tres &&
-		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
-		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
-			char *type = "select", *name = "select/cray_aries";
-			uint16_t save_params = slurm_conf.select_type_param;
-			uint16_t params;
-			int cray_plugin_id;
 
-			cray_other_cons_tres = true;
-
-			if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR) {
-				params = save_params & ~CR_OTHER_CONS_TRES;
-				cray_plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
-			} else {	/* SELECT_PLUGIN_CRAY_CONS_TRES */
-				params = save_params | CR_OTHER_CONS_TRES;
-				cray_plugin_id = SELECT_PLUGIN_CRAY_LINEAR;
-			}
-
-			for (i = 0; i < select_context_cnt; i++) {
-				if (*(ops[i].plugin_id) == cray_plugin_id)
-					break;
-			}
-
-			if (i >= select_context_cnt)
-				goto end_it;	/* No match */
-
-			slurm_mutex_lock(&select_context_lock);
-			slurm_conf.select_type_param = params;
-			plugin_context_destroy(select_context[i]);
-			select_context[i] =
-				plugin_context_create(type, name,
-						      (void **)&ops[i],
-						      node_select_syms,
-						      sizeof(node_select_syms));
-			slurm_conf.select_type_param = save_params;
-			slurm_mutex_unlock(&select_context_lock);
-			goto again;
-		}
-
-	end_it:
-		return SLURM_ERROR;
-	}
-	return i;
+	return SLURM_ERROR;
 }
 
 /* If the slurmctld is running a linear based select plugin return 1
