@@ -270,7 +270,6 @@ static bool _node_state_suspendable(node_record_t *node_ptr)
 	/* Must not have these flags */
 	if (IS_NODE_COMPLETING(node_ptr) ||
 	    IS_NODE_POWERING_UP(node_ptr) ||
-	    IS_NODE_POWERED_DOWN(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_REBOOT_ISSUED(node_ptr) ||
 	    IS_NODE_REBOOT_REQUESTED(node_ptr))
@@ -543,6 +542,7 @@ static void _do_power_work(time_t now)
 			_rl_spend_token(&suspend_rl_config);
 			node_ptr->node_state |= NODE_STATE_POWERING_DOWN;
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
+			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			bit_set(power_node_bitmap,   node_ptr->index);
 			bit_set(sleep_node_bitmap,   node_ptr->index);

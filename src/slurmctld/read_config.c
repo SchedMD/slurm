@@ -2474,7 +2474,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	    (job_ptr->front_end_ptr != NULL))
 		job_ptr->front_end_ptr->job_cnt_run++;
 
-	set_job_alias_list(job_ptr);
+	set_initial_job_alias_list(job_ptr);
 
 	return cnt;
 }
@@ -2489,7 +2489,7 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 		node_ptr->sus_job_cnt++;
 	}
 
-	set_job_alias_list(job_ptr);
+	set_initial_job_alias_list(job_ptr);
 }
 
 /*

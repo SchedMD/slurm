@@ -169,6 +169,20 @@ static uint16_t _get_ntasks_per_core(job_details_t *details)
 extern void allocate_nodes(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		make_node_alloc(node_ptr, job_ptr);
+	}
+
+	last_node_update = time(NULL);
+	license_job_get(job_ptr, false);
+	set_initial_job_alias_list(job_ptr);
+}
+
+extern void set_initial_job_alias_list(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	bool has_dynamic_norm = false;
 
@@ -189,11 +203,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 			    IS_NODE_POWERING_UP(node_ptr))
 				has_cloud_power_save = true;
 		}
-		make_node_alloc(node_ptr, job_ptr);
 	}
-
-	last_node_update = time(NULL);
-	license_job_get(job_ptr, false);
 
 	if (has_cloud) {
 		if (has_cloud_power_save &&
