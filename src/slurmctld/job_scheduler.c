@@ -3793,11 +3793,9 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		 * Determine if the select plugin supports heterogeneous
 		 * GRES allocations (count differ by node): 1=yes, 0=no
 		 */
-		if ((xstrstr(slurm_conf.select_type, "cons_tres") ||
-		     (xstrstr(slurm_conf.select_type, "cray_aries") &&
-		      (slurm_conf.select_type_param & CR_OTHER_CONS_TRES)))) {
+		if (xstrstr(slurm_conf.select_type, "cons_tres"))
 			select_hetero = 1;
-		} else
+		else
 			select_hetero = 0;
 	}
 

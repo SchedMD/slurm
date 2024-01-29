@@ -1603,12 +1603,9 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 		 * GRES allocations (count differ by node): 1=yes, 0=no
 		 */
 		char *select_type = slurm_get_select_type();
-		if (select_type &&
-		    (strstr(select_type, "cons_tres") ||
-		     (strstr(select_type, "cray_aries") &&
-		      (slurm_conf.select_type_param & CR_OTHER_CONS_TRES)))) {
+		if (xstrstr(select_type, "cons_tres"))
 			select_hetero = 1;
-		} else
+		else
 			select_hetero = 0;
 		xfree(select_type);
 	}
