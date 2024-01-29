@@ -505,7 +505,7 @@ extern void run_health_check(void)
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
-	if (base_node_loc >= node_record_count)
+	if (!node_ptr)
 		base_node_loc = 0;
 #endif
 

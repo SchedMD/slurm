@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     variable. This was a regression in 23.11.
  -- Add warning for using select/linear with topology/tree.
     This combination will not be supported in the next major version.
+ -- Fix health check program not being run after first pass of all nodes when
+    using MaxNodeCount.
 
 * Changes in Slurm 23.11.3
 ==========================
