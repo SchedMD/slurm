@@ -3817,7 +3817,6 @@ function __scontrol_setdebugflags() {
 		"selecttype"
 		"steps"
 		"switch"
-		"timecray"
 		"tracejobs"
 		"triggers"
 		"workqueue"

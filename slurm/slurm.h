@@ -2768,7 +2768,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BURST_BUF    SLURM_BIT(40) /* Burst buffer plugin */
 #define DEBUG_FLAG_CPU_FREQ     SLURM_BIT(41) /* --cpu_freq debug */
 #define DEBUG_FLAG_POWER        SLURM_BIT(42) /* Power plugin debug */
-#define DEBUG_FLAG_TIME_CRAY    SLURM_BIT(43) /* Time Cray components */
+/* #define			SLURM_BIT(43) /\* UNUSED *\/ */
 #define DEBUG_FLAG_DB_ARCHIVE	SLURM_BIT(44) /* DBD Archiving/Purging */
 #define DEBUG_FLAG_DB_TRES      SLURM_BIT(45) /* Database TRES debug */
 #define DEBUG_FLAG_JOBCOMP      SLURM_BIT(46) /* JobComp debug */

@@ -5908,11 +5908,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
 	}
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "TimeCray");
-	}
 	if (debug_flags & DEBUG_FLAG_TRACE_JOBS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -6069,8 +6064,6 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 		else if ((xstrcasecmp(tok, "Power") == 0) ||
 			 (xstrcasecmp(tok, "PowerSave") == 0))
 			(*flags_out) |= DEBUG_FLAG_POWER;
-		else if (xstrcasecmp(tok, "TimeCray") == 0)
-			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
 		else if (xstrcasecmp(tok, "WorkQueue") == 0 ||
 			 xstrcasecmp(tok, "WorkQ") == 0)
 			(*flags_out) |= DEBUG_FLAG_WORKQ;
