@@ -668,7 +668,7 @@ enum select_plugin_type {
 	/* 103 unused (originally used for BGQ) */
 	/* 104 unused (originally used for Cray/ALPS with select/linear) */
 	/* 105 unused (originally used for Cray/ALPS with select/cons_res) */
-	SELECT_PLUGIN_SERIAL         = 106, /* Serial */
+	/* 106 unused (originally used for Serial) */
 	SELECT_PLUGIN_CRAY_LINEAR    = 107, /* Linear on a Native Cray */
 	/*
 	 * 108 cons_res on a cray was removed in 23.11. However, this is needed

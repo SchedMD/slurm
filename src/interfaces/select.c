@@ -108,7 +108,6 @@ typedef struct {
 
 const plugin_id_name plugin_ids[] = {
 	{ SELECT_PLUGIN_LINEAR, "linear" },
-	{ SELECT_PLUGIN_SERIAL, "serial" },
 	{ SELECT_PLUGIN_CRAY_LINEAR, "cray_aries+linear" },
 	{ SELECT_PLUGIN_CONS_TRES, "cons_tres" },
 	{ SELECT_PLUGIN_CRAY_CONS_TRES, "cray_aries+cons_tres" },
