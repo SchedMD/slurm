@@ -1043,6 +1043,8 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	if (specs)
 		fatal("%s called twice", __func__);
 
+	paths = list_create(_list_delete_path_t);
+
 	/* must have JSON plugin to parse the openapi.json */
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		fatal("Plugin serializer/json failed to load: %s",
@@ -1065,7 +1067,6 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		fatal("No OpenAPI plugins loaded.");
 
 	parsers = parsers_ptr;
-	paths = list_create(_list_delete_path_t);
 	specs = xcalloc((plugins->count + 1), sizeof(*specs));
 	spec_flags = xcalloc((plugins->count + 1), sizeof(*spec_flags));
 
