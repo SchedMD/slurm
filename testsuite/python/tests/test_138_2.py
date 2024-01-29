@@ -10,7 +10,7 @@ def setup():
     atf.require_slurm_running()
 
 
-def make_and_run_bash(lines : list[str]) -> None:
+def make_and_run_bash(lines: list[str]) -> None:
     """Make and run the bash script.
     Input is a list of lines to be run as bash script."""
     script_name = "script.sh"
@@ -19,10 +19,13 @@ def make_and_run_bash(lines : list[str]) -> None:
     atf.run_command(f"bash {script_name}")
 
 
-@pytest.mark.parametrize("command, phrase", [
-    ("sinfo", "NODELIST"),
-    ("scontrol show node", "NodeName="),
-])
+@pytest.mark.parametrize(
+    "command, phrase",
+    [
+        ("sinfo", "NODELIST"),
+        ("scontrol show node", "NodeName="),
+    ],
+)
 def test_parallel(command, phrase):
     """Test that sinfo and scontrol can be run in parallel. We submit
     1000 user commands to slurm to make sure that it doesn't crash. We then
@@ -33,16 +36,17 @@ def test_parallel(command, phrase):
     atf.cancel_all_jobs()
 
     script_lines = [
-        'for i in $(seq 1 1000)',
-        f'    do {command} &',
-        f'done > {script_out}',
-        'wait',
+        "for i in $(seq 1 1000)",
+        f"    do {command} &",
+        f"done > {script_out}",
+        "wait",
     ]
     make_and_run_bash(script_lines)
 
     output = atf.run_command_output(f"cat {script_out} | grep -c '{phrase}'")
-    assert int(output) == 1000, \
-        f"We expected 1000 commands to be run in parallel, but got {output}"
+    assert (
+        int(output) == 1000
+    ), f"We expected 1000 commands to be run in parallel, but got {output}"
 
 
 def test_squeue_parallel():
@@ -58,16 +62,17 @@ def test_squeue_parallel():
         atf.submit_job_sbatch("--wrap='sleep 100'")
 
     script_lines = [
-        'for i in $(seq 1 1000)',
-        '    do squeue &',
-        f'done > {script_out}',
-        'wait',
+        "for i in $(seq 1 1000)",
+        "    do squeue &",
+        f"done > {script_out}",
+        "wait",
     ]
     make_and_run_bash(script_lines)
 
     output = atf.run_command_output(f"cat {script_out} | grep -c 'JOBID'")
-    assert int(output) == 1000, \
-        f"We expected 1000 user commands to run, but got {int(output)}"
+    assert (
+        int(output) == 1000
+    ), f"We expected 1000 user commands to run, but got {int(output)}"
 
 
 def test_show_jobs_parallel():
@@ -81,13 +86,14 @@ def test_show_jobs_parallel():
     job_id = atf.submit_job_srun("true")
 
     script_lines = [
-        'for i in $(seq 1 1000)',
-        f'    do scontrol show job {job_id} &',
-        f'done > {script_out}',
-        'wait'
+        "for i in $(seq 1 1000)",
+        f"    do scontrol show job {job_id} &",
+        f"done > {script_out}",
+        "wait",
     ]
     make_and_run_bash(script_lines)
 
     output = atf.run_command_output(f'cat {script_out} | grep -c "JobId="')
-    assert int(output) == 1000, \
-        f"We expected 1000 commands to be run in parallel, but got {output}"
+    assert (
+        int(output) == 1000
+    ), f"We expected 1000 commands to be run in parallel, but got {output}"

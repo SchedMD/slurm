@@ -49,9 +49,8 @@ def run_unit_tests(db_name, test_data_list, UNIT_DIR, LOG_DIR, resume=False):
     # Handle already ran tests if resume mode is on
     if resume:
         stats_dict, test_data_list, result_data_list = filter_resume_data(
-                                                            stats_dict,
-                                                            test_data_list,
-                                                            result_data_list)
+            stats_dict, test_data_list, result_data_list
+        )
         print(f"~ Resuming from {len(result_data_list)} previously ran tests ~")
 
     # Change to slurm_build_dir/testsuite/slurm_unit & run make

@@ -14,11 +14,7 @@ from ..log import (
 
 
 def get_unit_tl_from_build_dir(build_unit_base_dir):
-    return perform(
-        "Running Make(s)",
-        setup_unit_tests,
-        build_unit_base_dir
-    )
+    return perform("Running Make(s)", setup_unit_tests, build_unit_base_dir)
 
 
 def setup_unit_tests(build_unit_base_dir):
@@ -42,7 +38,7 @@ def setup_unit_tests(build_unit_base_dir):
                             test_list.append(f"{subdir}/{name}.c")
 
                 # NOTE: Uncomment for more verbosity if adding a -v option later
-                #else:
+                # else:
                 #    print(f"Warning bad make output: {result.stdout}{result.stderr}")
 
     return list(set(test_list))

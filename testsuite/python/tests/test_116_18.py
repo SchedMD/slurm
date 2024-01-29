@@ -11,7 +11,7 @@ import re
 def setup():
     atf.require_config_parameter("SelectType", "select/linear")
     atf.require_config_parameter_excludes("SelectTypeParameters", "CR_Core")
-    atf.require_config_parameter('FrontendName', None)
+    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 
@@ -20,5 +20,7 @@ def test_ntasks_per_node():
 
     task_num = 2
     output = atf.run_job_output(f"-N1 --ntasks-per-node={task_num} -O -l id")
-    match = re.findall(r'\d+: uid=', output)
-    assert len(match) == task_num, f"Failed to get output from all tasks. Got {len(match)} expected {task_num}"
+    match = re.findall(r"\d+: uid=", output)
+    assert (
+        len(match) == task_num
+    ), f"Failed to get output from all tasks. Got {len(match)} expected {task_num}"

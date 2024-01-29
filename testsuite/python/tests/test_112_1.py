@@ -41,11 +41,24 @@ def test_s():
 def test_get_a_rest_auth():
     """Check response to GET with -a rest_auth"""
 
-    assert atf.run_command_exit("slurmrestd -a rest_auth/local", input="GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n") == 0
-    assert atf.run_command_exit("slurmrestd -a rest_auth/invalid", input="GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n") != 0
+    assert (
+        atf.run_command_exit(
+            "slurmrestd -a rest_auth/local",
+            input="GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n",
+        )
+        == 0
+    )
+    assert (
+        atf.run_command_exit(
+            "slurmrestd -a rest_auth/invalid",
+            input="GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n",
+        )
+        != 0
+    )
 
 
 # Subtests related to bug 10388
+
 
 def test_invalid_input():
     """Check response to invalid input (bug 10388)"""
@@ -53,4 +66,9 @@ def test_invalid_input():
     assert atf.run_command_exit("slurmrestd", input="INVALID") != 0
     assert atf.run_command_exit("slurmrestd", input="INVALID\r\n\r\n") != 0
     assert atf.run_command_exit("slurmrestd", input="INVALID\r\nINVALID\r\n\r\n") != 0
-    assert atf.run_command_exit("slurmrestd", input="GET /openapi HTTP/1.1\r\nINVALID\r\n\r\n") != 0
+    assert (
+        atf.run_command_exit(
+            "slurmrestd", input="GET /openapi HTTP/1.1\r\nINVALID\r\n\r\n"
+        )
+        != 0
+    )

@@ -12,7 +12,7 @@ import re
 import shutil
 import sys
 
-sys.path.append(sys.path[0] + '/lib')
+sys.path.append(sys.path[0] + "/lib")
 import atf
 
 
@@ -25,19 +25,45 @@ def pytest_itemcollected(item):
 
 
 def pytest_addoption(parser):
-    config_group = parser.getgroup('config mode')
-    config_group.addoption('--auto-config', action='store_true', help="the slurm configuration will be altered as needed by the test")
-    config_group.addoption('--local-config', action='store_false', dest='auto_config', help="the slurm configuration will not be altered")
+    config_group = parser.getgroup("config mode")
+    config_group.addoption(
+        "--auto-config",
+        action="store_true",
+        help="the slurm configuration will be altered as needed by the test",
+    )
+    config_group.addoption(
+        "--local-config",
+        action="store_false",
+        dest="auto_config",
+        help="the slurm configuration will not be altered",
+    )
 
 
 def color_log_level(level, **color_kwargs):
     # Adapted from depricated py.io TerminalWriter source
     # https://py.readthedocs.io/en/latest/_modules/py/_io/terminalwriter.html
-    _esctable = dict(black=30, red=31, green=32, yellow=33,
-        blue=34, purple=35, cyan=36, white=37,
-        Black=40, Red=41, Green=42, Yellow=43,
-        Blue=44, Purple=45, Cyan=46, White=47,
-        bold=1, light=2, blink=5, invert=7)
+    _esctable = dict(
+        black=30,
+        red=31,
+        green=32,
+        yellow=33,
+        blue=34,
+        purple=35,
+        cyan=36,
+        white=37,
+        Black=40,
+        Red=41,
+        Green=42,
+        Yellow=43,
+        Blue=44,
+        Purple=45,
+        Cyan=46,
+        White=47,
+        bold=1,
+        light=2,
+        blink=5,
+        invert=7,
+    )
 
     for handler in logging.getLogger().handlers:
         if isinstance(handler, _pytest.logging.LogCaptureHandler):
@@ -45,7 +71,7 @@ def color_log_level(level, **color_kwargs):
             if match := formatter.LEVELNAME_FMT_REGEX.search(formatter._fmt):
                 levelname_fmt = match.group()
                 formatted_levelname = levelname_fmt % {
-                    'levelname': logging.getLevelName(level)
+                    "levelname": logging.getLevelName(level)
                 }
 
                 esc = []
@@ -53,21 +79,22 @@ def color_log_level(level, **color_kwargs):
                     esc.append(_esctable[option])
 
                 colorized_formatted_levelname = (
-                    ''.join(['\x1b[%sm' % cod for cod in esc])
+                    "".join(["\x1b[%sm" % cod for cod in esc])
                     + formatted_levelname
-                    + '\x1b[0m'
+                    + "\x1b[0m"
                 )
 
-                formatter._level_to_fmt_mapping[level] = formatter.LEVELNAME_FMT_REGEX.sub(
+                formatter._level_to_fmt_mapping[
+                    level
+                ] = formatter.LEVELNAME_FMT_REGEX.sub(
                     colorized_formatted_levelname, formatter._fmt
                 )
 
 
 @pytest.fixture(scope="session", autouse=True)
 def session_setup(request):
-
     # Set the auto-config property from the option
-    atf.properties['auto-config'] = request.config.getoption("--auto-config")
+    atf.properties["auto-config"] = request.config.getoption("--auto-config")
 
     # Customize logging level colors
     color_log_level(logging.CRITICAL, red=True, bold=True)
@@ -100,7 +127,7 @@ def update_tmp_path_exec_permissions():
     if os.path.isdir(path):
         os.chmod(path, 0o777)
         for root, dirs, files in os.walk(path):
-            for d in dirs :
+            for d in dirs:
                 os.chmod(os.path.join(root, d), 0o777)
 
 
@@ -111,14 +138,14 @@ def tmp_path_setup(request):
 
 @pytest.fixture(scope="module", autouse=True)
 def module_setup(request, tmp_path_factory):
-    atf.properties['slurm-started'] = False
-    atf.properties['configurations-modified'] = set()
-    atf.properties['accounting-database-modified'] = False
-    atf.properties['orig-environment'] = dict(os.environ)
+    atf.properties["slurm-started"] = False
+    atf.properties["configurations-modified"] = set()
+    atf.properties["accounting-database-modified"] = False
+    atf.properties["orig-environment"] = dict(os.environ)
 
     # Creating a module level tmp_path mimicing what tmp_path does
     name = request.node.name
-    name = re.sub(r'[\W]', '_', name)
+    name = re.sub(r"[\W]", "_", name)
     name = name[:30]
     atf.module_tmp_path = tmp_path_factory.mktemp(name, numbered=True)
     update_tmp_path_exec_permissions()
@@ -127,8 +154,10 @@ def module_setup(request, tmp_path_factory):
     os.chdir(atf.module_tmp_path)
 
     # Stop Slurm if using auto-config and Slurm is already running
-    if atf.properties['auto-config'] and atf.is_slurmctld_running(quiet=True):
-        logging.warning("Auto-config requires Slurm to be initially stopped but Slurm was found running. Stopping Slurm")
+    if atf.properties["auto-config"] and atf.is_slurmctld_running(quiet=True):
+        logging.warning(
+            "Auto-config requires Slurm to be initially stopped but Slurm was found running. Stopping Slurm"
+        )
         atf.stop_slurm(quiet=True)
 
     yield
@@ -143,9 +172,8 @@ def module_setup(request, tmp_path_factory):
 def module_teardown():
     failures = []
 
-    if atf.properties['auto-config']:
-        if atf.properties['slurm-started'] == True:
-
+    if atf.properties["auto-config"]:
+        if atf.properties["slurm-started"] == True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
                 failures.append("Not all jobs were successfully cancelled")
@@ -155,19 +183,19 @@ def module_teardown():
                 failures.append("Not all Slurm daemons were successfully stopped")
 
         # Restore any backed up configuration files
-        for config in set(atf.properties['configurations-modified']):
+        for config in set(atf.properties["configurations-modified"]):
             atf.restore_config_file(config)
 
         # Restore the Slurm database if modified
-        if atf.properties['accounting-database-modified']:
+        if atf.properties["accounting-database-modified"]:
             atf.restore_accounting_database()
 
     else:
-        atf.cancel_jobs(atf.properties['submitted-jobs'])
+        atf.cancel_jobs(atf.properties["submitted-jobs"])
 
     # Restore the prior environment
     os.environ.clear()
-    os.environ.update(atf.properties['orig-environment'])
+    os.environ.update(atf.properties["orig-environment"])
 
     if failures:
         pytest.fail(failures[0])
@@ -175,7 +203,6 @@ def module_teardown():
 
 @pytest.fixture(scope="function", autouse=True)
 def function_setup(request, monkeypatch, tmp_path):
-
     # Log function docstring (test description) if present
     if request.function.__doc__ is not None:
         logging.info(request.function.__doc__)
@@ -186,19 +213,17 @@ def function_setup(request, monkeypatch, tmp_path):
 
 @pytest.fixture(scope="class", autouse=True)
 def class_setup(request):
-
     # Log class docstring (test description) if present
     if request.cls.__doc__ is not None:
         logging.info(request.cls.__doc__)
 
 
 def pytest_fixture_setup(fixturedef, request):
-
     # Log fixture docstring when invoked if present
     if fixturedef.func.__doc__ is not None:
         logging.info(fixturedef.func.__doc__)
 
 
 def pytest_keyboard_interrupt(excinfo):
-    """ Called for keyboard interrupt """
+    """Called for keyboard interrupt"""
     module_teardown()

@@ -20,10 +20,18 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def setup_account():
-    atf.run_command(f"sacctmgr -vi add account {approved_account}", user=atf.properties['slurm-user'], fatal=True)
-    atf.run_command(f"sacctmgr -vi add user {test_user} account={approved_account}", user=atf.properties['slurm-user'], fatal=True)
+    atf.run_command(
+        f"sacctmgr -vi add account {approved_account}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -vi add user {test_user} account={approved_account}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
 
 
 def test_approved_association(setup_account):
