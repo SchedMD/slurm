@@ -47,14 +47,18 @@ across the cluster.</li>
 authentication. Make sure that all nodes in your cluster have the
 same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>,
 is started before you start the Slurm daemons.</li>
-<li>bunzip2 the distributed tar-ball and untar the files:<br>
-<i>tar --bzip -x -f slurm*tar.bz2</i></li>
-<li><i>cd</i> to the directory containing the Slurm source and type
-<i>./configure</i> with appropriate options, typically <i>--prefix=</i>
-and <i>--sysconfdir=</i></li>
-<li>Type <i>make</i> to compile Slurm.</li>
-<li>Type <i>make install</i> to install the programs, documentation, libraries,
-header files, etc.</li>
+<li><a href="download.html">Download</a> the latest version of Slurm</li>
+<li>Install Slurm using one of the following methods:
+<ul>
+<li>Build <a href="#rpmbuild">RPM</a> or <a href="#debuild">DEB</a> packages
+(recommended for production)</li>
+<li><a href="#manual_build">Build Manually</a> from source
+(for developers or advanced users)</li>
+<li><b>NOTE</b>: Some Linux distributions may have <b>unofficial</b>
+Slurm packages available in software repositories. SchedMD does not maintain
+or recommend these packages.</li>
+</ul>
+</li>
 <li>Build a configuration file using your favorite web browser and the
 <a href="configurator.html">Slurm Configuration Tool</a>.<br>
 <b>NOTE</b>: The <i>SlurmUser</i> must exist prior to starting Slurm
@@ -69,8 +73,6 @@ those directories will have access rights equal to read/write/execute for
 everyone minus the umask value (e.g. umask=0022 generates directories with
 permissions of "drwxr-r-x" and mask=0000 generates directories with
 permissions of "drwxrwrwx" which is a security problem).</li>
-<li>Type <i>ldconfig -n &lt;library_location&gt;</i> so that the Slurm libraries
-can be found by applications that intend to use Slurm APIs directly.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
 <b>NOTE</b>: You will need to install this configuration file on all nodes of
 the cluster.</li>
@@ -81,11 +83,6 @@ the cluster.</li>
 <li>Compute Nodes: <code>systemctl enable slurmd</code>
 </ul></li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
-</ol>
-<p><b>NOTE</b>: Items 3 through 8 can be replaced with</p>
-<ol>
-<li><code>rpmbuild -ta slurm*.tar.bz2</code></li>
-<li><code>rpm --install &lt;the rpm files&gt;</code></li>
 </ol>
 
 <p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
@@ -176,6 +173,9 @@ required software to build these plugins.</p>
 </h3>
 
 <p>Instructions to build and install Slurm manually are shown below.
+This is significantly more complicated to manage than the RPM and DEB build
+procedures, so this approach is only recommended for developers or
+advanced users who are looking for a more customized install.
 See the README and INSTALL files in the source distribution for more details.
 </p>
 <ol>
