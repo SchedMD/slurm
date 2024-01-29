@@ -6,7 +6,7 @@ import pytest
 import re
 
 sleep_time = 90
-kill_wait =  30
+kill_wait = 30
 
 
 # Setup
@@ -32,8 +32,10 @@ def test_t():
     # prior to the message from slurmd being processed.
 
     timeout = sleep_time + kill_wait
-    error = atf.run_command_error(f"srun -t1 sleep {sleep_time}", timeout=timeout, xfail=True)
-    assert re.search(r'time limit|terminated', error, re.IGNORECASE) is not None
+    error = atf.run_command_error(
+        f"srun -t1 sleep {sleep_time}", timeout=timeout, xfail=True
+    )
+    assert re.search(r"time limit|terminated", error, re.IGNORECASE) is not None
 
     error = atf.run_command_error(f"srun -t4 sleep {sleep_time}", timeout=timeout)
-    assert not (re.search(r'time limit|terminated', error, re.IGNORECASE)) is not None
+    assert not (re.search(r"time limit|terminated", error, re.IGNORECASE)) is not None

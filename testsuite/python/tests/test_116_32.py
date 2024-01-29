@@ -25,11 +25,11 @@ def test_input_output_error(tmp_path):
 
     # Test --input with a file that would fail and --error catching the error
     atf.run_command(f"srun --input={str(file_in)} --error={str(file_err)} -t1 bash")
-    assert re.search(sleep_err_message,file_err.read_text()) is not None
+    assert re.search(sleep_err_message, file_err.read_text()) is not None
 
     # Test --output's file gets the echoed message
     atf.run_command(f"srun --output={str(file_out)} -t1 echo {echo_output}")
-    assert file_out.read_text().strip('\n') == echo_output
+    assert file_out.read_text().strip("\n") == echo_output
 
     # Test the none parameter
     stderr = atf.run_command_error(f"srun --input={str(file_in)} --error=none -t1 bash")

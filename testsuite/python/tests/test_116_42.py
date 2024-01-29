@@ -20,7 +20,9 @@ def test_threads():
 
     node_count = "1-64"
     threads = 0
-    output = atf.run_command_output(f"srun -N{node_count} -l --threads=1 printenv SLURMD_NODENAME")
+    output = atf.run_command_output(
+        f"srun -N{node_count} -l --threads=1 printenv SLURMD_NODENAME"
+    )
     assert re.search(r"0: (\S+)", output) is not None, f"Did not get hostname of task 0"
 
     task_num = int(atf.get_config_parameter("MaxTasksPerNode"))
@@ -29,6 +31,12 @@ def test_threads():
     else:
         threads = 32
     task_num = threads * 2
-    output = atf.run_command(f"srun -N{node_count} -n{task_num} -O -l --threads={threads} printenv SLURMD_NODENAME")
-    assert output['exit_code'] == 0 , f'srun failed to run with {threads} threads and {task_num} tasks'
-    assert re.search(r"0: (\S+)", output['stdout']) is not None, f"Did not get hostname of task 0 when running {threads} threads"
+    output = atf.run_command(
+        f"srun -N{node_count} -n{task_num} -O -l --threads={threads} printenv SLURMD_NODENAME"
+    )
+    assert (
+        output["exit_code"] == 0
+    ), f"srun failed to run with {threads} threads and {task_num} tasks"
+    assert (
+        re.search(r"0: (\S+)", output["stdout"]) is not None
+    ), f"Did not get hostname of task 0 when running {threads} threads"

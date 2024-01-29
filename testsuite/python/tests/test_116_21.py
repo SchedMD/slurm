@@ -16,11 +16,14 @@ def setup():
 def test_task_prolog(tmp_path):
     """Test srun --task-prolog"""
 
-    task_prolog = str(tmp_path / 'task_prolog.sh')
-    touched_file = str(tmp_path / 'touched_file')
-    atf.make_bash_script(task_prolog, f"""touch {touched_file}
+    task_prolog = str(tmp_path / "task_prolog.sh")
+    touched_file = str(tmp_path / "touched_file")
+    atf.make_bash_script(
+        task_prolog,
+        f"""touch {touched_file}
 exit 0
-""")
+""",
+    )
 
     # Verify task prolog ran by checking for the file creation
     atf.run_job(f"-t1 --task-prolog={task_prolog} true", fatal=True)

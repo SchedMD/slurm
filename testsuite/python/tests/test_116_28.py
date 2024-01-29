@@ -12,7 +12,6 @@ def setup():
 
 
 class Test_mem_mincpus_tmp:
-
     def test_mincpus(self):
         """Verify node configuration specification --mincpus option"""
 
@@ -26,7 +25,6 @@ class Test_mem_mincpus_tmp:
         exit_code = atf.run_command_exit(f"srun --mincpus={min_cpus} true")
         assert exit_code == 0, f"srun did not run with a valid value for --mincpus"
 
-
     def test_mem(self):
         """Verify node configuration specification --mem option"""
 
@@ -39,7 +37,6 @@ class Test_mem_mincpus_tmp:
         mem = 1
         exit_code = atf.run_command_exit(f"srun --mem={mem} true")
         assert exit_code == 0, "srun did not run with a valid value for --mem"
-
 
     def test_tmp(self):
         """Verify node configuration specification --tmp option"""
