@@ -321,11 +321,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 	else if (select_type_param & CR_MEMORY)
 		strcat(select_str, "CR_MEMORY");
 
-	if (select_type_param & CR_OTHER_CONS_TRES) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "OTHER_CONS_TRES");
-	}
 	if (select_type_param & CR_ONE_TASK_PER_CORE) {
 		if (select_str[0])
 			strcat(select_str, ",");

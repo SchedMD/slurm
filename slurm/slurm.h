@@ -1033,9 +1033,7 @@ enum node_states {
 #define CR_PACK_NODES  0x0200
 
 #define LL_SHARED_GRES 0x0400 /* Prefer least-loaded device for shared GRES */
-#define CR_OTHER_CONS_TRES   0x0800 /* if layering select plugins use
-				     * cons_tres instead of linear (default)
-				     */
+/* was CR_OTHER_CONS_TRES   0x0800, removed v24.08 */
 /* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 #define CR_LLN		0x4000  /* Select nodes by "least loaded." */

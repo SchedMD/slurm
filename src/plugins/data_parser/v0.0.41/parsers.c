@@ -8407,7 +8407,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
 	add_flag_bit(CR_MEMORY, "MEMORY"),
 	add_flag_bit(CR_ONE_TASK_PER_CORE, "ONE_TASK_PER_CORE"),
 	add_flag_bit(CR_PACK_NODES, "PACK_NODES"),
-	add_flag_bit(CR_OTHER_CONS_TRES, "OTHER_CONS_TRES"),
 	add_flag_bit(CR_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
 	add_flag_bit(CR_LLN, "LLN"),
 	add_flag_bit(CR_LINEAR, "LINEAR"),

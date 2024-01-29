@@ -3832,13 +3832,6 @@ static int _parse_select_type_param(
 			*param |= CR_CPU;
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!xstrcasecmp(str_parameters, "other_cons_res")) {
-			error("other_cons_res is no longer a valid configuration. Please use other_cons_tres instead.");
-			rc = SLURM_ERROR;
-			xfree(st_str);
-			return rc;
-		} else if (!xstrcasecmp(str_parameters, "other_cons_tres")) {
-			*param |= CR_OTHER_CONS_TRES;
 		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= CR_ONE_TASK_PER_CORE;
