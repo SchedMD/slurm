@@ -62,9 +62,7 @@ extern int job_container_fini(void);
 /* Create a container for the specified job */
 extern int container_g_create(uint32_t job_id, uid_t uid);
 
-/* Add the calling process's pid to the specified job's container.
- * A proctrack container will be generated containing the process
- * before container_g_add_cont() is called (see below). */
+/* Add the calling process's pid to the specified job's container. */
 extern int container_g_join(uint32_t job_id, uid_t uid);
 
 /*
@@ -72,10 +70,6 @@ extern int container_g_join(uint32_t job_id, uid_t uid);
  * (eg. via PAM)
  */
 extern int container_g_join_external(uint32_t job_id);
-
-/* Add a proctrack container (PAGG) to the specified job's container
- * The PAGG will be the job's cont_id returned by proctrack/sgi_job */
-extern int container_g_add_cont(uint32_t job_id, uint64_t cont_id);
 
 /* Delete the container for the specified job */
 extern int container_g_delete(uint32_t job_id);

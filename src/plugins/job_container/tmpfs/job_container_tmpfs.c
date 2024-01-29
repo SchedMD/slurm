@@ -681,11 +681,6 @@ extern int container_p_join_external(uint32_t job_id)
 	return step_ns_fd;
 }
 
-extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int container_p_join(uint32_t job_id, uid_t uid)
 {
 	char *job_mount = NULL, *ns_holder = NULL;

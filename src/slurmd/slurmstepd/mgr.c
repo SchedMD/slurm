@@ -1160,7 +1160,6 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	jobacct_id.step = step;
 	jobacct_gather_set_proctrack_container_id(step->cont_id);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
-	container_g_add_cont(jobid, step->cont_id);
 
 	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
@@ -2127,8 +2126,6 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		}
 	}
 //	jobacct_gather_set_proctrack_container_id(step->cont_id);
-	if (container_g_add_cont(step->step_id.job_id, step->cont_id))
-		error("container_g_add_cont(%u): %m", step->step_id.job_id);
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
