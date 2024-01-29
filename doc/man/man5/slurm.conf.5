@@ -3731,10 +3731,7 @@ nodes that are in use.
 This will tend to leave currently idle resources available for backfilling
 longer running jobs, but may result in allocations having less than optimal
 network topology.
-This option is currently only supported by the
-select/cons_tres plugin (or select/cray_aries with SelectTypeParameters set to
-"OTHER_CONS_TRES", which layers the select/cray_aries plugin
-over the select/cons_tres plugin).
+This option is currently only supported by the select/cons_tres plugin.
 .IP
 
 .TP
@@ -4495,12 +4492,6 @@ This is the default value.
 .IP
 
 .TP
-\fBselect/cray_aries\fR
-for a Cray system.
-The default value is "select/cray_aries" for all Cray systems.
-.IP
-
-.TP
 \fBselect/linear\fR
 for allocation of entire nodes assuming a one\-dimensional array of nodes in
 which sequentially ordered nodes are preferable.
@@ -4525,23 +4516,10 @@ The only supported options for \fBSelectType=select/linear\fR are
 prevents memory over subscription with job preemption or gang scheduling.
 By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
 considering their memory consumption.
-By default \fBSelectType=select/cons_tres\fR, and
-\fBSelectType=select/cray_aries\fR use
-\fBCR_Core_Memory\fR, which allocates Core
-to jobs with considering their memory consumption.
+By default \fBSelectType=select/cons_tres\fR uses \fBCR_Core_Memory\fR, which
+allocates Core to jobs while considering their memory consumption.
 
 A restart of slurmctld is required for changes to this parameter to take effect.
-
-The following options are supported for \fBSelectType=select/cray_aries\fR:
-.IP
-.RS
-.TP
-\fBOTHER_CONS_TRES\fR
-Layer the select/cons_tres plugin under the select/cray_aries plugin, the default is
-to layer on select/linear.  This also allows all the options available for
-\fBSelectType=select/cons_tres\fR.
-.IP
-.RE
 
 The following options are supported by the \fBSelectType=select/cons_tres\fR
 plugin:

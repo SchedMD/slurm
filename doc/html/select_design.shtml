@@ -9,8 +9,6 @@ allocated to a job, plus allocating and deallocating those resources.
 The select plugin is aware of the systems topology, based upon data structures
 established by the topology plugin. It can also over-subscribe resources to
 support gang scheduling (time slicing of parallel jobs), if so configured.
-The select plugin is also capable of communicating with an external entity
-to perform these actions (the select/cray_aries plugin is one example).
 Other architectures would rely upon the select/linear
 or select/cons_tres plugins. The select/linear plugin allocates
 whole nodes to jobs and is the simplest implementation.
@@ -69,6 +67,6 @@ jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
-<p style="text-align:center;">Last modified 19 May 2023</p>
+<p style="text-align:center;">Last modified 29 January 2024</p>
 
 <!--#include virtual="footer.txt"-->

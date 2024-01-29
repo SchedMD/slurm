@@ -29,11 +29,9 @@ There are several important configuration parameters relating to preemption:
 </P>
 <UL>
 <LI>
-<B>SelectType</B>: Slurm job preemption logic supports
-nodes allocated by the <I>select/linear</I> plugin,
-socket/core/CPU resources allocated by the
-<I>select/cons_tres</I> plugin, or <I>select/cray_aries</I> for Cray XC
-systems.
+<B>SelectType</B>: Slurm job preemption logic supports nodes allocated by the
+<I>select/linear</I> plugin, socket/core/CPU resources allocated by the
+<I>select/cons_tres</I> plugin.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources may be getting over-allocated
@@ -536,6 +534,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 04 January 2024</p>
+<p style="text-align:center;">Last modified 29 January 2024</p>
 
 <!--#include virtual="footer.txt"-->
