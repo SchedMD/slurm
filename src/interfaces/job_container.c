@@ -51,7 +51,6 @@ typedef struct job_container_ops {
 	int	(*container_p_create)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_join)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_join_external)(uint32_t job_id);
-	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
 	int	(*container_p_stepd_create)	(uint32_t job_id,
 					         stepd_step_rec_t *step);
@@ -68,7 +67,6 @@ static const char *syms[] = {
 	"container_p_create",
 	"container_p_join",
 	"container_p_join_external",
-	"container_p_delete",
 	"container_p_restore",
 	"container_p_stepd_create",
 	"container_p_stepd_delete",
@@ -216,21 +214,6 @@ extern int container_g_join_external(uint32_t job_id)
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_join_external))(job_id);
-	}
-
-	return rc;
-}
-
-/* Delete the container for the specified job */
-extern int container_g_delete(uint32_t job_id)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_container_context_num >= 0);
-
-	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
-	     i++) {
-		rc = (*(ops[i].container_p_delete))(job_id);
 	}
 
 	return rc;

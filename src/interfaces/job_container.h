@@ -71,9 +71,6 @@ extern int container_g_join(uint32_t job_id, uid_t uid);
  */
 extern int container_g_join_external(uint32_t job_id);
 
-/* Delete the container for the specified job */
-extern int container_g_delete(uint32_t job_id);
-
 /* Restore container information */
 extern int container_g_restore(char * dir_name, bool recover);
 

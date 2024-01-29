@@ -5152,8 +5152,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_run_epilog(&job_env, req->cred);
 	_free_job_env(&job_env);
 
-	if (container_g_delete(req->step_id.job_id))
-		error("container_g_delete(%u): %m", req->step_id.job_id);
 	_launch_complete_rm(req->step_id.job_id);
 }
 
@@ -5319,8 +5317,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			_epilog_complete(req->step_id.job_id, rc);
 		}
 
-		if (container_g_delete(req->step_id.job_id))
-			error("container_g_delete(%u): %m", req->step_id.job_id);
 		_launch_complete_rm(req->step_id.job_id);
 		return;
 	}
@@ -5396,8 +5392,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", req->step_id.job_id);
-	if (container_g_delete(req->step_id.job_id))
-		error("container_g_delete(%u): %m", req->step_id.job_id);
 	_launch_complete_rm(req->step_id.job_id);
 
 done:

@@ -783,11 +783,6 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int container_p_delete(uint32_t job_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
