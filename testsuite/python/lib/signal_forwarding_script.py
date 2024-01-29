@@ -2,11 +2,11 @@ import signal, os, time
 
 
 def receiveSignal(signalNumber, frame):
-    print('Received:', signalNumber)
+    print("Received:", signalNumber)
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Register the signals to be caught
     signal.signal(signal.SIGHUP, receiveSignal)
     signal.signal(signal.SIGINT, receiveSignal)
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGABRT, receiveSignal)
     signal.signal(signal.SIGBUS, receiveSignal)
     signal.signal(signal.SIGFPE, receiveSignal)
-    #signal.signal(signal.SIGKILL, receiveSignal)
+    # signal.signal(signal.SIGKILL, receiveSignal)
     signal.signal(signal.SIGUSR1, receiveSignal)
     signal.signal(signal.SIGSEGV, receiveSignal)
     signal.signal(signal.SIGUSR2, receiveSignal)

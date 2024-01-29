@@ -12,7 +12,6 @@ def setup():
 
 
 def test_job_name():
-
     # Compare the job name given too the JobName field in scontrol
     job_name = "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIIIJJJJJKKKKKLLLLLMMMMM"
     job_id = atf.submit_job_srun(f"--job-name={job_name} true")

@@ -29,12 +29,7 @@ stats_dict = {}
 
 
 def run_regressions_tests(
-    db_name,
-    test_data_list,
-    APP_DIR,
-    LOG_DIR,
-    test_env,
-    resume=False
+    db_name, test_data_list, APP_DIR, LOG_DIR, test_env, resume=False
 ):
     global stats_dict
 
@@ -56,9 +51,8 @@ def run_regressions_tests(
     # Handle already ran tests if resume mode is on
     if resume:
         stats_dict, test_data_list, result_data_list = filter_resume_data(
-                                                            stats_dict,
-                                                            test_data_list,
-                                                            result_data_list)
+            stats_dict, test_data_list, result_data_list
+        )
         print(f"~ Resuming from {len(result_data_list)} previously ran tests ~")
 
     # Prepare environment

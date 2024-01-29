@@ -33,7 +33,7 @@ def get_args(argv=None):
         "--output",
         dest="output_dir",
         type=str,
-        help="where you'd like the logs stored (supply absolute path)"
+        help="where you'd like the logs stored (supply absolute path)",
     )
 
     parser.add_argument(

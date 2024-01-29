@@ -27,4 +27,5 @@ def kill_pids_from_exe(exe_path):
 
 def is_tool(tool):
     from shutil import which
+
     return which(tool) is not None
