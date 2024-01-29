@@ -1,6 +1,6 @@
 # Makefile for job_container plugins
 
-SUBDIRS = cncu
+SUBDIRS =
 
 if LINUX_BUILD
 SUBDIRS += tmpfs

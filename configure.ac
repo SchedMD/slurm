@@ -449,7 +449,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/hash/Makefile
 		 src/plugins/hash/k12/Makefile
 		 src/plugins/job_container/Makefile
-		 src/plugins/job_container/cncu/Makefile
 		 src/plugins/job_container/tmpfs/Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
