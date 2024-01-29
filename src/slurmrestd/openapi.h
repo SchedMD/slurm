@@ -50,6 +50,27 @@
 
 #include "src/interfaces/data_parser.h"
 
+typedef struct {
+	int rc;
+	list_t *errors;
+	list_t *warnings;
+	data_parser_t *parser;
+	const char *id; /* string identifying client (usually IP) */
+	void *db_conn;
+	http_request_method_t method;
+	data_t *parameters;
+	data_t *query;
+	data_t *resp;
+	data_t *parent_path;
+	int tag;
+} openapi_ctxt_t;
+
+/*
+ * Callback from openapi caller.
+ * RET SLURM_SUCCESS or error to kill the connection
+ */
+typedef int (*openapi_ctxt_handler_t)(openapi_ctxt_t *ctxt);
+
 /*
  * Callback from openapi caller.
  * we are not passing any http information to make this generic.
@@ -137,27 +158,6 @@ extern int get_openapi_specification(data_t *resp);
  * Note: This must be implemented in process calling openapi functions.
  */
 extern void *openapi_get_db_conn(void *ctxt);
-
-typedef struct {
-	int rc;
-	list_t *errors;
-	list_t *warnings;
-	data_parser_t *parser;
-	const char *id; /* string identifying client (usually IP) */
-	void *db_conn;
-	http_request_method_t method;
-	data_t *parameters;
-	data_t *query;
-	data_t *resp;
-	data_t *parent_path;
-	int tag;
-} openapi_ctxt_t;
-
-/*
- * Callback from openapi caller.
- * RET SLURM_SUCCESS or error to kill the connection
- */
-typedef int (*openapi_ctxt_handler_t)(openapi_ctxt_t *ctxt);
 
 /* Wraps ctxt callback to apply standardised response schema */
 extern int wrap_openapi_ctxt_callback(const char *context_id,
