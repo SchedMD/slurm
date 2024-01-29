@@ -2400,6 +2400,13 @@ extern void server_thread_incr(void);
 extern void set_job_node_addrs(job_record_t *job_ptr,
 			       const char *origin_cluster);
 
+/*
+ * Set a job's initial alias_list/node_addrs.
+ *
+ * If the job's node list has powering up nodes then set alias_list to "TBD".
+ */
+extern void set_initial_job_alias_list(job_record_t *job_ptr);
+
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr);
 

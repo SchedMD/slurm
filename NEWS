@@ -8,6 +8,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault when creating partition with bad node list from scontrol.
  -- Fix preserving partition nodes on bad node list update from scontrol.
  -- Fix assertion in developer mode on a failed message unpack.
+ -- Fix repeat POWER_DOWN requests making the nodes available for ping.
+ -- Fix rebuilding job alias_list on restart when nodes are still powering up.
+ -- Fix INVALID nodes running health check.
+ -- Fix cloud/future nodes not setting addresses on invalid registration.
 
 * Changes in Slurm 23.11.3
 ==========================

@@ -2166,12 +2166,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 						(~NODE_STATE_POWERING_UP);
 				}
 
-				if (IS_NODE_POWERED_DOWN(node_ptr)) {
+				if (IS_NODE_POWERED_DOWN(node_ptr))
 					info("power down request repeating for node %s",
 					     this_node_name);
-					node_ptr->node_state &=
-						(~NODE_STATE_POWERED_DOWN);
-				} else
+				else
 					info("powering down node %s",
 					     this_node_name);
 
@@ -3555,10 +3553,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	*newly_up = (!orig_node_avail &&
 		     bit_test(avail_node_bitmap, node_ptr->index));
 
-	if (!error_code &&
-	    (IS_NODE_CLOUD(node_ptr) ||
-	     IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
-	     IS_NODE_DYNAMIC_NORM(node_ptr))) {
+	if (IS_NODE_CLOUD(node_ptr) ||
+	    IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
+	    IS_NODE_DYNAMIC_NORM(node_ptr)) {
 		slurm_addr_t addr;
 		char *comm_name = NULL;
 
