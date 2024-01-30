@@ -42,8 +42,7 @@
 
 static void _topo_add_dist(uint32_t *dist, int inx)
 {
-	int i;
-	for (i = 0; i < switch_record_cnt; i++) {
+	for (int i = 0; i < switch_record_cnt; i++) {
 		if (switch_record_table[inx].switches_dist[i] == INFINITE ||
 		    dist[i] == INFINITE) {
 			dist[i] = INFINITE;

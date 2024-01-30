@@ -93,22 +93,21 @@ static void _log_switches(void)
 /* Free all memory associated with switch_record_table structure */
 extern void switch_record_table_destroy(void)
 {
-	int i;
+	if (!switch_record_table)
+		return;
 
-	if (switch_record_table) {
-		for (i = 0; i < switch_record_cnt; i++) {
-			xfree(switch_record_table[i].name);
-			xfree(switch_record_table[i].nodes);
-			xfree(switch_record_table[i].switches);
-			xfree(switch_record_table[i].switches_dist);
-			xfree(switch_record_table[i].switch_desc_index);
-			xfree(switch_record_table[i].switch_index);
-			FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
-		}
-		xfree(switch_record_table);
-		switch_record_cnt = 0;
-		switch_levels = 0;
+	for (int i = 0; i < switch_record_cnt; i++) {
+		xfree(switch_record_table[i].name);
+		xfree(switch_record_table[i].nodes);
+		xfree(switch_record_table[i].switches);
+		xfree(switch_record_table[i].switches_dist);
+		xfree(switch_record_table[i].switch_desc_index);
+		xfree(switch_record_table[i].switch_index);
+		FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
 	}
+	xfree(switch_record_table);
+	switch_record_cnt = 0;
+	switch_levels = 0;
 }
 
 static void _destroy_switches(void *ptr)

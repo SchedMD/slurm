@@ -203,17 +203,16 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 
 extern void block_record_table_destroy(void)
 {
-	int i;
+	if (!block_record_table)
+		return;
 
-	if (block_record_table) {
-		for (i = 0; i < block_record_cnt; i++) {
-			xfree(block_record_table[i].name);
-			xfree(block_record_table[i].nodes);
-			FREE_NULL_BITMAP(block_record_table[i].node_bitmap);
-		}
-		xfree(block_record_table);
-		block_record_cnt = 0;
+	for (int i = 0; i < block_record_cnt; i++) {
+		xfree(block_record_table[i].name);
+		xfree(block_record_table[i].nodes);
+		FREE_NULL_BITMAP(block_record_table[i].node_bitmap);
 	}
+	xfree(block_record_table);
+	block_record_cnt = 0;
 }
 
 extern void block_record_validate(void)
