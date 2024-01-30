@@ -85,7 +85,9 @@ typedef struct {
 	http_request_method_t method;
 } entry_method_t;
 
+#define MAGIC_PATH 0x0a0b09fd
 typedef struct {
+	int magic; /* MAGIC_PATH */
 	entry_method_t *methods;
 	int tag;
 } path_t;
@@ -305,6 +307,7 @@ static void _list_delete_path_t(void *x)
 		return;
 
 	path_t *path = x;
+	xassert(path->magic == MAGIC_PATH);
 	xassert(path->tag != -1);
 	em = path->methods;
 
@@ -318,6 +321,7 @@ static void _list_delete_path_t(void *x)
 	}
 
 	xfree(path->methods);
+	path->magic = ~MAGIC_PATH;
 	xfree(path);
 }
 
@@ -400,6 +404,8 @@ static int _print_path_tag_methods(void *x, void *arg)
 {
 	path_t *path = (path_t *) x;
 	int *tag = (int *) arg;
+
+	xassert(path->magic == MAGIC_PATH);
 
 	if (path->tag != *tag)
 		return 0;
@@ -753,6 +759,7 @@ extern int register_path_tag(const char *str_path)
 	}
 
 	path = xmalloc(sizeof(*path));
+	path->magic = MAGIC_PATH;
 	path->tag = path_tag_counter++;
 	path->methods = xcalloc((data_get_dict_length(spec_entry) + 1),
 				sizeof(*path->methods));
@@ -778,6 +785,8 @@ static int _rm_path_by_tag(void *x, void *tptr)
 {
 	path_t *path = (path_t *)x;
 	const int tag = *(int*)tptr;
+
+	xassert(path->magic == MAGIC_PATH);
 
 	if (path->tag != tag)
 		return 0;
@@ -926,6 +935,8 @@ static int _match_path_from_data(void *x, void *key)
 	path_t *path = x;
 	entry_method_t *method;
 	bool matched = false;
+
+	xassert(path->magic == MAGIC_PATH);
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		serialize_g_data_to_string(&dst_path, NULL, args->dpath,
