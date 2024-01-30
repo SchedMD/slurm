@@ -318,6 +318,8 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack16  (dump_node_ptr->core_spec_cnt, buffer);
 	pack16  (dump_node_ptr->threads, buffer);
 	pack64  (dump_node_ptr->real_memory, buffer);
+	pack16(dump_node_ptr->config_ptr->res_cores_per_gpu, buffer);
+	pack_bit_str_hex(dump_node_ptr->gpu_spec_bitmap, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
@@ -375,6 +377,8 @@ extern int load_all_node_state ( bool state_only )
 	int error_code = SLURM_SUCCESS, node_cnt = 0;
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
+	uint16_t res_cores_per_gpu = 0;
+	bitstr_t *gpu_spec_bitmap = NULL;
 	uint64_t real_memory;
 	uint32_t tmp_disk, weight = 0;
 	uint32_t reason_uid = NO_VAL;
@@ -467,6 +471,8 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack16(&core_spec_cnt, buffer);
 			safe_unpack16(&threads, buffer);
 			safe_unpack64(&real_memory, buffer);
+			safe_unpack16(&res_cores_per_gpu, buffer);
+			unpack_bit_str_hex(&gpu_spec_bitmap, buffer);
 			safe_unpack32(&tmp_disk, buffer);
 			safe_unpack32(&reason_uid, buffer);
 			safe_unpack_time(&reason_time, buffer);
@@ -597,6 +603,7 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->node_bitmap = bit_alloc(node_record_count);
 			config_ptr->nodes = xstrdup(node_name);
 			config_ptr->real_memory = real_memory;
+			config_ptr->res_cores_per_gpu = res_cores_per_gpu;
 			config_ptr->threads = threads;
 			config_ptr->tmp_disk = tmp_disk;
 			config_ptr->tot_sockets = sockets;
@@ -730,6 +737,9 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->tot_cores = sockets * cores;
 					node_ptr->threads       = threads;
 					node_ptr->real_memory   = real_memory;
+					node_ptr->config_ptr->
+						res_cores_per_gpu =
+						res_cores_per_gpu;
 					node_ptr->tmp_disk      = tmp_disk;
 				}
 				if (node_state & NODE_STATE_MAINT)
@@ -783,6 +793,8 @@ extern int load_all_node_state ( bool state_only )
 			features_act		= NULL;	/* Nothing to free */
 			node_ptr->gres_list	= gres_list;
 			gres_list		= NULL;	/* Nothing to free */
+			node_ptr->gpu_spec_bitmap = gpu_spec_bitmap;
+			gpu_spec_bitmap = NULL; /* Nothing to free */
 		} else {
 			if ((!power_save_mode) &&
 			    ((node_state & NODE_STATE_POWERED_DOWN) ||
@@ -844,6 +856,10 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->tot_cores = sockets * cores;
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
+			node_ptr->config_ptr->res_cores_per_gpu =
+				res_cores_per_gpu;
+			node_ptr->gpu_spec_bitmap = gpu_spec_bitmap;
+			gpu_spec_bitmap = NULL; /* Nothing to free */
 			node_ptr->tmp_disk      = tmp_disk;
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label	= mcs_label;
@@ -904,6 +920,7 @@ extern int load_all_node_state ( bool state_only )
 		xfree(instance_type);
 		xfree(reason);
 		xfree(cpu_spec_list);
+		FREE_NULL_BITMAP(gpu_spec_bitmap);
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
@@ -978,6 +995,7 @@ static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
 	    (!xstrcmp(c1->gres, c2->gres)) &&
 	    (c1->mem_spec_limit == c2->mem_spec_limit) &&
 	    (c1->real_memory == c2->real_memory) &&
+	    (c1->res_cores_per_gpu == c2->res_cores_per_gpu) &&
 	    (c1->threads == c2->threads) &&
 	    (c1->tmp_disk == c2->tmp_disk) &&
 	    (c1->tot_sockets == c2->tot_sockets) &&
@@ -1252,8 +1270,10 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack16(dump_node_ptr->config_ptr->cores, buffer);
 		pack16(dump_node_ptr->config_ptr->threads, buffer);
 		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
+		pack16(dump_node_ptr->config_ptr->res_cores_per_gpu, buffer);
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
+		packstr(dump_node_ptr->gpu_spec, buffer);
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
@@ -2394,6 +2414,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 	new_config_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	new_config_ptr->threads     = config_ptr->threads;
 	new_config_ptr->real_memory = config_ptr->real_memory;
+	new_config_ptr->res_cores_per_gpu = config_ptr->res_cores_per_gpu;
 	new_config_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
 	new_config_ptr->weight      = config_ptr->weight;
@@ -2996,6 +3017,82 @@ static void _split_node_config(node_record_t *node_ptr,
 	config_ptr->tot_sockets = reg_msg->sockets;
 }
 
+static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
+{
+	static uint32_t gpu_plugin_id = NO_VAL;
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+	uint32_t res_cnt = node_ptr->config_ptr->res_cores_per_gpu;
+
+	xassert(reason_down);
+
+	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
+
+	if (!res_cnt)
+		return SLURM_SUCCESS;
+
+	if (gpu_plugin_id == NO_VAL)
+		gpu_plugin_id = gres_build_id("gpu");
+
+	if (!(gres_state_node = list_find_first(node_ptr->gres_list,
+						gres_find_id,
+						&gpu_plugin_id))) {
+		/* No GPUs but we throught there were */
+		xstrfmtcat(*reason_down, "%sRestrictedCoresPerGPU=%u but no gpus on node %s",
+			   *reason_down ? ", " : "", res_cnt, node_ptr->name);
+		return ESLURM_RES_CORES_PER_GPU_NO;
+	}
+
+	gres_ns = gres_state_node->gres_data;
+	if (!gres_ns->topo_cnt || !gres_ns->topo_core_bitmap) {
+		xstrfmtcat(*reason_down, "%sRestrictedCoresPerGPU=%u but the gpus given don't have any topology on node %s.",
+			   *reason_down ? ", " : "", res_cnt, node_ptr->name);
+		return ESLURM_RES_CORES_PER_GPU_TOPO;
+	}
+
+	node_ptr->gpu_spec_bitmap = bit_alloc(node_ptr->tot_cores);
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		int cnt = 0;
+		uint32_t this_gpu_res_cnt;
+		if (!gres_ns->topo_core_bitmap[i])
+			continue;
+		this_gpu_res_cnt = res_cnt * gres_ns->topo_gres_cnt_avail[i];
+		/* info("%d has %s", i, */
+		/*      bit_fmt_full(gres_ns->topo_core_bitmap[i])); */
+		for (int j = 0; j < node_ptr->tot_cores; j++) {
+			/* Only look at the ones set */
+			if (!bit_test(gres_ns->topo_core_bitmap[i], j))
+				continue;
+			/* Skip any already set */
+			if (bit_test(node_ptr->gpu_spec_bitmap, j))
+				continue;
+			/* info("setting %d", j); */
+			bit_set(node_ptr->gpu_spec_bitmap, j);
+			if (++cnt >= this_gpu_res_cnt)
+				break;
+		}
+
+		if (cnt != this_gpu_res_cnt) {
+			FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
+			xstrfmtcat(*reason_down, "%sRestrictedCoresPerGPU: We can't restrict %u core(s) per gpu. GPU %s(%d) doesn't have access to that many unique cores (%d).",
+				   *reason_down ? ", " : "",
+				   res_cnt, gres_ns->topo_type_name[i], i, cnt);
+			return ESLURM_RES_CORES_PER_GPU_UNIQUE;
+		}
+	}
+
+	/*
+	 * We want the opposite of the possible cores so
+	 * we can do a simple & on it when selecting.
+	 */
+	/* info("set %s", bit_fmt_full(node_ptr->gpu_spec_bitmap)); */
+	node_ptr->gpu_spec = bit_fmt_full(node_ptr->gpu_spec_bitmap);
+	bit_not(node_ptr->gpu_spec_bitmap);
+	/* info("sending back %s", bit_fmt_full(node_ptr->gpu_spec_bitmap)); */
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
@@ -3142,6 +3239,24 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		/* reason_down set in function above */
 	}
 	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
+
+	if (node_ptr->config_ptr->res_cores_per_gpu) {
+		/*
+		 * We need to make gpu_spec_bitmap now that we know the cores
+		 * used per gres.
+		 */
+		error_code = _set_gpu_spec(node_ptr, &reason_down);
+	} else {
+		FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
+	}
+
+	if (node_ptr->config_ptr->res_cores_per_gpu) {
+		/*
+		 * We need to make gpu_spec_bitmap now that we know the cores
+		 * used per gres.
+		 */
+		error_code = _set_gpu_spec(node_ptr, &reason_down);
+	}
 
 	if (!(slurm_conf.conf_flags & CONF_FLAG_OR)) {
 		/* sockets1, cores1, and threads1 are set above */

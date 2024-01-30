@@ -6278,6 +6278,16 @@ Use quotes to enclose a reason having more than one word.
 .IP
 
 .TP
+\fBRestrictedCoresPerGPU\fR
+Number of cores per GPU restricted for only GPU use. If a job does not request a
+GPU it will not have access to these cores.
+
+\fBNOTE\fR: Configuring multiple GPU types on overlapping sockets can result in
+erroneous GPU type and restricted core pairings in allocations requsting gpus
+without specifying a type.
+.IP
+
+.TP
 \fBSockets\fR
 Number of physical processor sockets/chips on the node (e.g. "2").
 If Sockets is omitted, it will be inferred from
