@@ -100,14 +100,8 @@ extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list)
 	return mem_per_gpu;
 }
 
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
 extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec)
+	bitstr_t *node_bitmap, job_record_t *job_ptr)
 {
 	bitstr_t **avail_cores;
 	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
@@ -117,6 +111,7 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	node_record_t *node_ptr;
 	bitstr_t *core_map = NULL;
 	uint16_t use_spec_cores = slurm_conf.conf_flags & CONF_FLAG_ASRU;
+	uint16_t core_spec = job_ptr->details->core_spec;
 	uint32_t coff;
 
 	avail_cores = build_core_array();
