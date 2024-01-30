@@ -2536,6 +2536,13 @@ extern void build_array_str(job_record_t *job_ptr);
  */
 extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
 
+/*
+ * Return the number of usable logical processors by a given job on
+ * some specified node. Returns INFINITE16 if no limit.
+ */
+extern uint16_t job_mgr_determine_cpus_per_core(
+	job_details_t *details, int node_inx);
+
 /* Return true if ALL tasks of specific array job ID are complete */
 extern bool test_job_array_complete(uint32_t array_job_id);
 

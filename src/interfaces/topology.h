@@ -43,52 +43,36 @@
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
 
-/*****************************************************************************\
- *  SWITCH topology data structures
- *  defined here but is really tree plugin related
-\*****************************************************************************/
-typedef struct {
-	int level;			/* level in hierarchy, leaf=0 */
-	uint32_t link_speed;		/* link speed, arbitrary units */
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
-					 * this switch */
-	char *nodes;			/* name if direct descendant nodes */
-	uint16_t  num_desc_switches;	/* number of descendant switches */
-	uint16_t  num_switches;		/* number of direct descendant
-					   switches */
-	uint16_t  parent;		/* index of parent switch */
-	char *switches;			/* name of direct descendant switches */
-	uint32_t *switches_dist;
-	uint16_t *switch_desc_index;	/* indexes of child descendant
-					 * switches */
-	uint16_t *switch_index;		/* indexes of child direct descendant
-					   switches */
-} switch_record_t;
+#include "src/interfaces/gres.h"
+#include "src/interfaces/select.h"
 
-extern switch_record_t *switch_record_table;  /* ptr to switch records */
-extern int switch_record_cnt;		/* size of switch_record_table */
-extern int switch_levels;               /* number of switch levels     */
+typedef enum {
+	TOPO_DATA_TOPOLOGY_PTR,
+	TOPO_DATA_REC_CNT,
+} topology_data_t;
+
+
+typedef struct topology_eval {
+	bitstr_t **avail_core; /* available core bitmap, UPDATED */
+	uint16_t avail_cpus; /* How many cpus available, UPDATED */
+	avail_res_t **avail_res_array; /* available resources on the node,
+					* UPDATED */
+	uint16_t cr_type; /* allocation type (sockets, cores, etc.) */
+	bool enforce_binding; /* Enforce GPU Binding or not */
+	int (*eval_nodes)(struct topology_eval *topo_eval);
+	bool first_pass; /* First pass through eval_nodes() or not */
+	job_record_t *job_ptr; /* pointer to the job requesting resources */
+	uint32_t max_nodes; /* maximum number of nodes requested */
+	gres_mc_data_t *mc_ptr; /* job's GRES multi-core options */
+	uint32_t min_nodes; /* minimum number of nodes required */
+	bitstr_t *node_map; /* bitmap of available/selected nodes, UPDATED */
+	bool prefer_alloc_nodes; /* prefer use of already allocated nodes */
+	uint32_t req_nodes; /* number of requested nodes */
+	bool trump_others; /* If ->eval_nodes and set do not consider other
+			    * algorithms. Only use ->eval_nodes. */
+} topology_eval_t;
+
 extern char *topo_conf;
-
-/*****************************************************************************\
- * defined here but is really block plugin related
-\*****************************************************************************/
-typedef struct {
-	int level;
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
-					 * this block */
-	char *nodes;			/* name if direct descendant nodes */
-	uint16_t block_index;
-} block_record_t;
-
-
-extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
-extern block_record_t *block_record_table;  /* ptr to block records */
-extern uint16_t bblock_node_cnt;
-extern bitstr_t *block_levels;
-extern int block_record_cnt;
 
 /*****************************************************************************\
  *  Slurm topology functions
@@ -109,6 +93,11 @@ extern int topology_g_init(void);
 extern int topology_g_fini(void);
 
 /*
+ * Get the plugin ID number. Unique for each topology plugin type
+ */
+extern int topology_get_plugin_id(void);
+
+/*
  **************************************************************************
  *                          P L U G I N   C A L L S                       *
  **************************************************************************
@@ -119,6 +108,12 @@ extern int topology_g_fini(void);
  *	after a system startup or reconfiguration.
  */
 extern int topology_g_build_config(void);
+
+/*
+ * topology_g_eval_nodes - Evaluate topology based on the topology plugin when
+ *                         selecting nodes in the select plugin.
+ */
+extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
 
 /*
  * topology_g_generate_node_ranking  -  populate node_rank fields
@@ -156,12 +151,15 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 				     int *count,
 				     uint16_t tree_width);
 
-/* unpack a system topology from a buffer
- * OUT topoinfo - the system topology
+/* Get various information from the topology plugin
+ * IN - type see topology_data_t
+ * OUT data
+ *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
+ *                                     be freed using topology_g_topology_free.
  * RET         - slurm error code
  * NOTE: returned value must be freed using topology_g_topology_free
  */
-extern int topology_g_topology_get(dynamic_plugin_data_t **topoinfo);
+extern int topology_g_get(topology_data_t type, void *data);
 
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended

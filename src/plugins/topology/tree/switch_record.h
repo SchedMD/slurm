@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  cons_helpers.h - Helper functions for the select/cons_tres plugin
+ *  switch_record.h - Determine order of nodes for job using tree algo.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC
- *  Derived in large part from select/cons_tres plugins
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,33 +33,41 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_HELPERS_H
-#define _CONS_HELPERS_H
+#ifndef _TOPO_TREE_SWITCH_RECORD_H
+#define _TOPO_TREE_SWITCH_RECORD_H
 
-#include "src/interfaces/gres.h"
-#include "src/slurmctld/slurmctld.h"
+#include "../common/common_topo.h"
 
-/*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
+/*****************************************************************************\
+ *  SWITCH topology data structures
+ *  defined here but is really tree plugin related
+\*****************************************************************************/
+typedef struct {
+	int level;			/* level in hierarchy, leaf=0 */
+	uint32_t link_speed;		/* link speed, arbitrary units */
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
+					 * this switch */
+	char *nodes;			/* name if direct descendant nodes */
+	uint16_t  num_desc_switches;	/* number of descendant switches */
+	uint16_t  num_switches;		/* number of direct descendant
+					   switches */
+	uint16_t  parent;		/* index of parent switch */
+	char *switches;			/* name of direct descendant switches */
+	uint32_t *switches_dist;
+	uint16_t *switch_desc_index;	/* indexes of child descendant
+					 * switches */
+	uint16_t *switch_index;		/* indexes of child direct descendant
+					   switches */
+} switch_record_t;
 
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
+extern switch_record_t *switch_record_table;  /* ptr to switch records */
+extern int switch_record_cnt;		/* size of switch_record_table */
+extern int switch_levels;               /* number of switch levels     */
 
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec);
+/* Free all memory associated with switch_record_table structure */
+extern void switch_record_table_destroy(void);
 
-#endif /* _CONS_HELPERS_H */
+extern void switch_record_validate(void);
+
+#endif

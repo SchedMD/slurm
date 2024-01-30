@@ -1594,6 +1594,12 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 */
 	uint64_t smallest_min_mem = INFINITE64;
 	uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
+	static int loc_topo_record_cnt = -1;
+
+	if (loc_topo_record_cnt == -1) {
+		loc_topo_record_cnt = 0;
+		(void) topology_g_get(TOPO_DATA_REC_CNT, &loc_topo_record_cnt);
+	}
 
 	if (test_only)
 		select_mode = SELECT_MODE_TEST_ONLY;
@@ -1837,7 +1843,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			if ((shared || preempt_flag ||
-			    (switch_record_cnt > 1))     &&
+			    (loc_topo_record_cnt > 1))     &&
 			    ((i+1) < node_set_size)	 &&
 			    (min_feature == max_feature) &&
 			    (node_set_ptr[i].sched_weight ==

@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  cons_helpers.h - Helper functions for the select/cons_tres plugin
+ *  eval_nodes_tree.h - Determine order of nodes for job using tree algo.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC
- *  Derived in large part from select/cons_tres plugins
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,33 +33,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_HELPERS_H
-#define _CONS_HELPERS_H
+#ifndef _TOPO_TREE_EVAL_NODES_H
+#define _TOPO_TREE_EVAL_NODES_H
 
-#include "src/interfaces/gres.h"
-#include "src/slurmctld/slurmctld.h"
+#include "switch_record.h"
 
-/*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
+extern int eval_nodes_tree(topology_eval_t *topo_eval);
 
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
-
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec);
-
-#endif /* _CONS_HELPERS_H */
+#endif

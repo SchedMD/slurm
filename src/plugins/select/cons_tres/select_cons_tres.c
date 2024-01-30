@@ -66,8 +66,6 @@ extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
-extern switch_record_t *switch_record_table __attribute__((weak_import));
-extern int switch_record_cnt __attribute__((weak_import));
 extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
@@ -80,8 +78,6 @@ List part_list;
 List job_list;
 int node_record_count;
 time_t last_node_update;
-switch_record_t *switch_record_table;
-int switch_record_cnt;
 bitstr_t *avail_node_bitmap;
 int slurmctld_tres_cnt = 0;
 slurmctld_config_t slurmctld_config;
@@ -93,12 +89,9 @@ list_t *cluster_license_list;
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
 bool     gang_mode            = false;
-bool     have_dragonfly       = false;
-bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 bool     spec_cores_first     = false;
-bool     topo_optional        = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -209,11 +202,6 @@ static void _check_allocatable_sockets(node_record_t *node_ptr)
  */
 extern int init(void)
 {
-	if (xstrcasestr(slurm_conf.topology_param, "dragonfly"))
-		have_dragonfly = true;
-	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
-		topo_optional = true;
-
 	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gang_mode = true;
 	else
@@ -329,10 +317,6 @@ extern int select_p_node_init(void)
 	} else
 		bf_window_scale = 0;
 
-	if (xstrcasestr(slurm_conf.sched_params, "pack_serial_at_end"))
-		pack_serial_at_end = true;
-	else
-		pack_serial_at_end = false;
 	if (xstrcasestr(slurm_conf.sched_params, "spec_cores_first"))
 		spec_cores_first = true;
 	else

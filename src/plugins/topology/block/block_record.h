@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  cons_helpers.h - Helper functions for the select/cons_tres plugin
+ *  block_record.h - Determine order of nodes for job using block algo.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC
- *  Derived in large part from select/cons_tres plugins
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,33 +33,29 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_HELPERS_H
-#define _CONS_HELPERS_H
+#ifndef _TOPO_TREE_BLOCK_RECORD_H
+#define _TOPO_TREE_BLOCK_RECORD_H
 
-#include "src/interfaces/gres.h"
-#include "src/slurmctld/slurmctld.h"
+#include "../common/common_topo.h"
 
-/*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
+typedef struct {
+	int level;
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
+					 * this block */
+	char *nodes;			/* name if direct descendant nodes */
+	uint16_t block_index;
+} block_record_t;
 
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
+extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
+extern block_record_t *block_record_table;  /* ptr to block records */
+extern uint16_t bblock_node_cnt;
+extern bitstr_t *block_levels;
+extern int block_record_cnt;
 
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec);
+/* Free all memory associated with block_record_table structure */
+extern void block_record_table_destroy(void);
 
-#endif /* _CONS_HELPERS_H */
+extern void block_record_validate(void);
+
+#endif

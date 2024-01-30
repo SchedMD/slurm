@@ -109,6 +109,11 @@ extern int topology_p_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	return common_topo_choose_nodes(topo_eval);
+}
+
 /*
  * topo_generate_node_ranking  -  populate node_rank fields
  */
@@ -142,7 +147,7 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_get(void **topoinfo_pptr)
+extern int topology_p_get(topology_data_t type, void *data)
 {
 	return SLURM_SUCCESS;
 }

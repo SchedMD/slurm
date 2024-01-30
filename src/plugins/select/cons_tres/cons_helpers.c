@@ -101,40 +101,6 @@ extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list)
 }
 
 /*
- * Return the number of usable logical processors by a given job on
- * some specified node. Returns INFINITE16 if no limit.
- */
-extern uint16_t cons_helpers_cpus_per_core(job_details_t *details, int node_inx)
-{
-	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
-	uint16_t threads_per_core = node_record_table_ptr[node_inx]->tpc;
-
-	if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
-	    (details->min_gres_cpu > 0)) {
-		/* May override default of 1 CPU per core */
-		return node_record_table_ptr[node_inx]->tpc;
-	}
-
-	if (details && details->mc_ptr) {
-		multi_core_data_t *mc_ptr = details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
-		    (mc_ptr->ntasks_per_core)) {
-			ncpus_per_core = MIN(threads_per_core,
-					     (mc_ptr->ntasks_per_core *
-					      details->cpus_per_task));
-		}
-		if ((mc_ptr->threads_per_core != NO_VAL16) &&
-		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
-			ncpus_per_core = mc_ptr->threads_per_core;
-		}
-	}
-
-	threads_per_core = MIN(threads_per_core, ncpus_per_core);
-
-	return threads_per_core;
-}
-
-/*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
  * core_spec IN - Specialized core specification, NO_VAL16 if none

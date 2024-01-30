@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     still being updated.  Failure to ping may have been due to clock skew.
  -- serializer/yaml - Converted to new parsing interface in libyaml to improve
     parsing compatibility.
+ -- Removed TopologyPlugin tree and dragonfly support from select/linear.
+    If those topology plugins are desired please switch to select/cons_tres.
 
 * Changes in Slurm 23.11.4
 ==========================

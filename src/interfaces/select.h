@@ -46,6 +46,22 @@
 #include "src/common/plugrack.h"
 #include "src/slurmctld/slurmctld.h"
 
+typedef struct avail_res {	/* Per-node resource availability */
+	uint16_t avail_cpus;	/* Count of available CPUs for this job
+				   limited by options like --ntasks-per-node */
+	uint16_t avail_gpus;	/* Count of available GPUs */
+	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
+	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
+	uint32_t gres_min_cpus; /* Minimum required cpus for gres */
+	uint32_t gres_max_tasks; /* Maximum tasks for gres */
+	uint16_t max_cpus;	/* Maximum available CPUs on the node */
+	uint16_t min_cpus;	/* Minimum allocated CPUs */
+	uint16_t sock_cnt;	/* Number of sockets on this node */
+	List sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */
+	uint16_t spec_threads;	/* Specialized threads to be reserved */
+	uint16_t tpc;		/* Threads/cpus per core */
+} avail_res_t;
+
 /*
  * Local data
  */

@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  cons_helpers.h - Helper functions for the select/cons_tres plugin
+ *  gres_sock_list.h - Create Scheduling functions used by topology with cons_tres
  *****************************************************************************
- *  Copyright (C) SchedMD LLC
- *  Derived in large part from select/cons_tres plugins
+ *  Copyright (C) SchedMD LLC.
+ *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,33 +34,41 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_HELPERS_H
-#define _CONS_HELPERS_H
+#ifndef _GRES_SCHED_H
+#define _GRES_SCHED_H
 
 #include "src/interfaces/gres.h"
-#include "src/slurmctld/slurmctld.h"
 
 /*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
+ * Determine how many cores on each socket of a node can be used by this job
+ * IN job_gres_list   - job's gres_list built by gres_job_state_validate()
+ * IN node_gres_list  - node's gres_list built by gres_node_config_validate()
+ * IN resv_exc_ptr - gres that can be included (gres_list_inc)
+ *                   or excluded (gres_list_exc)
+ * IN use_total_gres  - if set then consider all gres resources as available,
+ *			and none are committed to running jobs
+ * IN/OUT core_bitmap - Identification of available cores on this node
+ * IN sockets         - Count of sockets on the node
+ * IN cores_per_sock  - Count of cores per socket on this node
+ * IN job_id          - job's ID (for logging)
+ * IN node_name       - name of the node (for logging)
+ * IN enforce_binding - if true then only use GRES with direct access to cores
+ * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
+ * OUT req_sock_map   - bitmap of specific requires sockets
+ * IN user_id         - job's user ID
+ * IN node_inx        - index of node to be evaluated
+ * RET: List of sock_gres_t entries identifying what resources are available on
+ *	each socket. Returns NULL if none available. Call FREE_NULL_LIST() to
+ *	release memory.
  */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
+extern List gres_sock_list_create(
+	List job_gres_list, List node_gres_list,
+	resv_exc_t *resv_exc_ptr,
+	bool use_total_gres, bitstr_t *core_bitmap,
+	uint16_t sockets, uint16_t cores_per_sock,
+	uint32_t job_id, char *node_name,
+	bool enforce_binding, uint32_t s_p_n,
+	bitstr_t **req_sock_map, uint32_t user_id,
+	const uint32_t node_inx);
 
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
-
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec);
-
-#endif /* _CONS_HELPERS_H */
+#endif /* _GRES_SCHED_H */

@@ -12,7 +12,7 @@ pkglib_LTLIBRARIES = select_cons_tres.la
 select_cons_tres_la_SOURCES = \
 	cons_helpers.c cons_helpers.h \
 	dist_tasks.c dist_tasks.h \
-	gres_sched.c gres_sched.h \
+	gres_sock_list.c gres_sock_list.h \
 	gres_select_filter.c gres_select_filter.h \
 	gres_select_util.c gres_select_util.h \
 	job_resources.c job_resources.h \

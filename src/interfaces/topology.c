@@ -51,23 +51,13 @@ strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 
 static uint32_t active_topo_id;
 
-/* defined here but is really tree plugin related */
-switch_record_t *switch_record_table = NULL;
-int switch_record_cnt = 0;
-int switch_levels = 0;               /* number of switch levels     */
-
-/* defined here but is really block plugin related */
-bitstr_t *blocks_nodes_bitmap = NULL;	/* nodes on any bblock */
-block_record_t *block_record_table = NULL;
-uint16_t bblock_node_cnt = 0;
-bitstr_t *block_levels = NULL;
-int block_record_cnt = 0;
-
 char *topo_conf = NULL;
 
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	int		(*build_config)		( void );
+	int (*eval_nodes) (topology_eval_t *topo_eval);
+
 	bool		(*node_ranking)		( void );
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
@@ -77,7 +67,7 @@ typedef struct slurm_topo_ops {
 			       int *count,
 			       uint16_t tree_width);
 	int (*topoinfo_free) (void *topoinfo_ptr);
-	int (*topoinfo_get) (void **topoinfo_pptr);
+	int (*get) (topology_data_t type, void *data);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
@@ -92,11 +82,12 @@ typedef struct slurm_topo_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"topology_p_build_config",
+	"topology_p_eval_nodes",
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
 	"topology_p_topology_free",
-	"topology_p_topology_get",
+	"topology_p_get",
 	"topology_p_topology_pack",
 	"topology_p_topology_print",
 	"topology_p_topology_unpack",
@@ -162,6 +153,13 @@ extern int topology_g_fini(void)
 	return rc;
 }
 
+extern int topology_get_plugin_id(void)
+{
+	xassert(plugin_inited);
+
+	return *(ops.plugin_id);
+}
+
 extern int topology_g_build_config(void)
 {
 	int rc;
@@ -174,6 +172,13 @@ extern int topology_g_build_config(void)
 	END_TIMER3(__func__, 20000);
 
 	return rc;
+}
+
+extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
+{
+	xassert(plugin_inited);
+
+	return (*(ops.eval_nodes))(topo_eval);
 }
 
 /*
@@ -241,18 +246,11 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 	return rc;
 }
 
-extern int topology_g_topology_get(dynamic_plugin_data_t **topoinfo)
+extern int topology_g_get(topology_data_t type, void *data)
 {
-	dynamic_plugin_data_t *topoinfo_ptr = NULL;
-
 	xassert(plugin_inited);
 
-	topoinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*topoinfo = topoinfo_ptr;
-	topoinfo_ptr->plugin_id = active_topo_id;
-
-	return (*(ops.topoinfo_get))(&topoinfo_ptr->data);
-
+	return (*(ops.get))(type, data);
 }
 
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,

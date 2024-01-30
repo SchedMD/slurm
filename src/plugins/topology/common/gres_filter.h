@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  cons_helpers.h - Helper functions for the select/cons_tres plugin
+ *  gres_filter.h - Filters used on gres to determine order of nodes for job.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC
- *  Derived in large part from select/cons_tres plugins
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,33 +33,48 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_HELPERS_H
-#define _CONS_HELPERS_H
+#ifndef _COMMON_TOPO_GRES_FILTER_H
+#define _COMMON_TOPO_GRES_FILTER_H
 
-#include "src/interfaces/gres.h"
-#include "src/slurmctld/slurmctld.h"
-
-/*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
+#include "common_topo.h"
 
 /*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
+ * Determine how many tasks can be started on a given node and which
+ *	sockets/cores are required
+ * IN job_ptr - job's pointer
+ * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
+ * IN sock_gres_list - list of sock_gres_t entries built by
+ *	gres_sched_create_sock_gres_list()
+ * IN sockets - Count of sockets on the node
+ * IN cores_per_socket - Count of cores per socket on the node
+ * IN cpus_per_core - Count of CPUs per core on the node
+ * IN avail_cpus - Count of available CPUs on the node, UPDATED
+ * IN min_tasks_this_node - Minimum count of tasks that can be started on this
+ *                          node, UPDATED
+ * IN max_tasks_this_node - Maximum count of tasks that can be started on this
+ *                          node or NO_VAL, UPDATED
+ * IN rem_nodes - desired additional node count to allocate, including this node
+ * IN enforce_binding - GRES must be co-allocated with cores
+ * IN first_pass - set if first scheduling attempt for this job, use
+ *		   co-located GRES and cores if possible
+ * IN avail_core - cores available on this node, UPDATED
+ * IN node_name - name of the node
  */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
+extern void gres_filter_sock_core(job_record_t *job_ptr,
+				  gres_mc_data_t *mc_ptr,
+				  List sock_gres_list,
+				  uint16_t sockets,
+				  uint16_t cores_per_socket,
+				  uint16_t cpus_per_core,
+				  uint16_t *avail_cpus,
+				  uint32_t *min_tasks_this_node,
+				  uint32_t *max_tasks_this_node,
+				  uint32_t *min_cores_this_node,
+				  int rem_nodes,
+				  bool enforce_binding,
+				  bool first_pass,
+				  bitstr_t *avail_core,
+				  char *node_name,
+				  uint16_t cr_type);
 
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **cons_helpers_mark_avail_cores(
-	bitstr_t *node_bitmap, uint16_t core_spec);
-
-#endif /* _CONS_HELPERS_H */
+#endif

@@ -44,11 +44,12 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
-#include "src/interfaces/topology.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 #include "../common/common_topo.h"
+
+#include "eval_nodes_block.h"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -57,20 +58,10 @@
 #if defined (__APPLE__)
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
-extern uint16_t bblock_node_cnt __attribute__((weak_import));
-extern block_record_t *block_record_table __attribute__((weak_import));
-extern bitstr_t *block_levels __attribute__((weak_import));
-extern bitstr_t *blocks_nodes_bitmap __attribute__((weak_import));
-extern int block_record_cnt __attribute__((weak_import));
 extern int active_node_record_count __attribute__((weak_import));
 #else
 node_record_t **node_record_table_ptr;
 int node_record_count;
-uint16_t bblock_node_cnt;
-block_record_t *block_record_table;
-bitstr_t *block_levels;
-bitstr_t *blocks_nodes_bitmap;
-int block_record_cnt;
 int active_node_record_count;
 #endif
 
@@ -103,11 +94,6 @@ const char plugin_type[]        = "topology/block";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-typedef struct slurm_conf_block {
-	char *block_name; /* name of this block */
-	char *nodes; /* names of nodes directly connect to this block */
-} slurm_conf_block_t;
-
 typedef struct topoinfo_bblock {
 	uint16_t block_index;
 	char *name;
@@ -118,266 +104,6 @@ typedef struct topoinfo_block {
 	uint32_t record_count; /* number of records */
 	topoinfo_bblock_t *topo_array;/* the block topology records */
 } topoinfo_block_t;
-
-
-static s_p_hashtbl_t *conf_hashtbl = NULL;
-
-static void _destroy_block(void *ptr)
-{
-	slurm_conf_block_t *s = ptr;
-	if (!s)
-		return;
-
-	xfree(s->nodes);
-	xfree(s->block_name);
-	xfree(s);
-}
-
-static int  _parse_block(void **dest, slurm_parser_enum_t type,
-			 const char *key, const char *value,
-			 const char *line, char **leftover)
-{
-	s_p_hashtbl_t *tbl;
-	slurm_conf_block_t *b;
-	static s_p_options_t _block_options[] = {
-		{"Nodes", S_P_STRING},
-		{NULL}
-	};
-
-	tbl = s_p_hashtbl_create(_block_options);
-	s_p_parse_line(tbl, *leftover, leftover);
-
-	b = xmalloc(sizeof(slurm_conf_block_t));
-	b->block_name = xstrdup(value);
-	s_p_get_string(&b->nodes, "Nodes", tbl);
-	s_p_hashtbl_destroy(tbl);
-
-	if (!b->nodes) {
-		error("block %s hasn't got nodes",
-		      b->block_name);
-		_destroy_block(b);
-		return -1;
-	}
-
-	*dest = (void *)b;
-
-	return 1;
-}
-
-/* Return count of block configuration entries read */
-static int _read_topo_file(slurm_conf_block_t **ptr_array[])
-{
-	static s_p_options_t block_options[] = {
-		{"BlockName", S_P_ARRAY, _parse_block, _destroy_block},
-		{"BlockLevels", S_P_STRING},
-		{NULL}
-	};
-	int count;
-	slurm_conf_block_t **ptr;
-	char *tmp_str = NULL;
-
-	xassert(topo_conf);
-	debug("Reading the %s file", topo_conf);
-
-	conf_hashtbl = s_p_hashtbl_create(block_options);
-	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, false, NULL) ==
-	    SLURM_ERROR) {
-		s_p_hashtbl_destroy(conf_hashtbl);
-		fatal("something wrong with opening/reading %s: %m",
-		      topo_conf);
-	}
-
-	FREE_NULL_BITMAP(block_levels);
-	block_levels = bit_alloc(16);
-
-	if (!s_p_get_string(&tmp_str, "BlockLevels", conf_hashtbl)) {
-		bit_nset(block_levels, 0, 4);
-	} else if (bit_unfmt(block_levels, tmp_str)) {
-		s_p_hashtbl_destroy(conf_hashtbl);
-		fatal("Invalid BlockLevels");
-	}
-	xfree(tmp_str);
-
-	if (s_p_get_array((void ***)&ptr, &count, "BlockName", conf_hashtbl))
-		*ptr_array = ptr;
-	else {
-		*ptr_array = NULL;
-		count = 0;
-	}
-	return count;
-}
-
-static void _log_blocks(void)
-{
-	int i;
-	block_record_t *block_ptr;
-
-	block_ptr = block_record_table;
-	for (i = 0; i < block_record_cnt; i++, block_ptr++) {
-		debug("Block name:%s nodes:%s",
-		      block_ptr->name, block_ptr->nodes);
-	}
-}
-
-/*
- * _node_name2bitmap - given a node name regular expression, build a bitmap
- *	representation, any invalid hostnames are added to a hostlist
- * IN node_names  - set of node namess
- * OUT bitmap     - set to bitmap, may not have all bits set on error
- * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
- * RET 0 if no error, otherwise EINVAL
- * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
- *       to free memory when variables are no longer required
- */
-static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			     hostlist_t **invalid_hostlist)
-{
-	char *this_node_name;
-	bitstr_t *my_bitmap;
-	hostlist_t *host_list;
-
-	my_bitmap = bit_alloc(node_record_count);
-	*bitmap = my_bitmap;
-
-	if (!node_names) {
-		error("_node_name2bitmap: node_names is NULL");
-		return EINVAL;
-	}
-
-	if (!(host_list = hostlist_create(node_names))) {
-		/* likely a badly formatted hostlist */
-		error("_node_name2bitmap: hostlist_create(%s) error",
-		      node_names);
-		return EINVAL;
-	}
-
-	while ((this_node_name = hostlist_shift(host_list)) ) {
-		node_record_t *node_ptr;
-		node_ptr = find_node_record(this_node_name);
-		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
-		} else {
-			debug2("invalid node specified %s", this_node_name);
-			if (*invalid_hostlist) {
-				hostlist_push_host(*invalid_hostlist,
-						   this_node_name);
-			} else {
-				*invalid_hostlist =
-					hostlist_create(this_node_name);
-			}
-		}
-		free(this_node_name);
-	}
-	hostlist_destroy(host_list);
-
-	return SLURM_SUCCESS;
-}
-
-/* Free all memory associated with block_record_table structure */
-static void _free_block_record_table(void)
-{
-	int i;
-
-	if (block_record_table) {
-		for (i = 0; i < block_record_cnt; i++) {
-			xfree(block_record_table[i].name);
-			xfree(block_record_table[i].nodes);
-			FREE_NULL_BITMAP(block_record_table[i].node_bitmap);
-		}
-		xfree(block_record_table);
-		block_record_cnt = 0;
-	}
-}
-
-static void _validate_blocks(void)
-{
-	slurm_conf_block_t *ptr, **ptr_array;
-	int i, j;
-	block_record_t *block_ptr, *prior_ptr;
-	hostlist_t *invalid_hl = NULL;
-	char *buf;
-
-	_free_block_record_table();
-
-	block_record_cnt = _read_topo_file(&ptr_array);
-	if (block_record_cnt == 0) {
-		error("No blocks configured");
-		s_p_hashtbl_destroy(conf_hashtbl);
-		return;
-	}
-
-	block_record_table = xcalloc(block_record_cnt,
-				     sizeof(block_record_t));
-	block_ptr = block_record_table;
-	for (i = 0; i < block_record_cnt; i++, block_ptr++) {
-		ptr = ptr_array[i];
-		block_ptr->name = xstrdup(ptr->block_name);
-		/* See if block name has already been defined. */
-		prior_ptr = block_record_table;
-		for (j = 0; j < i; j++, prior_ptr++) {
-			if (xstrcmp(block_ptr->name, prior_ptr->name) == 0) {
-				fatal("Block (%s) has already been defined",
-				      prior_ptr->name);
-			}
-		}
-
-		block_ptr->block_index = i;
-
-		if (ptr->nodes) {
-			block_ptr->nodes = xstrdup(ptr->nodes);
-			if (_node_name2bitmap(ptr->nodes,
-					      &block_ptr->node_bitmap,
-					      &invalid_hl)) {
-				fatal("Invalid node name (%s) in block "
-				      "config (%s)",
-				      ptr->nodes, ptr->block_name);
-			}
-			if (blocks_nodes_bitmap) {
-				bit_or(blocks_nodes_bitmap,
-				       block_ptr->node_bitmap);
-			} else {
-				blocks_nodes_bitmap = bit_copy(block_ptr->
-							       node_bitmap);
-			}
-			if (bblock_node_cnt == 0) {
-				bblock_node_cnt =
-					bit_set_count(block_ptr->node_bitmap);
-			} else if (bit_set_count(block_ptr->node_bitmap) !=
-				   bblock_node_cnt) {
-				fatal("Block configuration (%s) children count no equal bblock_node_cnt",
-				      ptr->block_name);
-			}
-		} else {
-			fatal("Block configuration (%s) lacks children",
-			      ptr->block_name);
-		}
-	}
-
-	if (blocks_nodes_bitmap) {
-		i = bit_clear_count(blocks_nodes_bitmap);
-		if (i > 0) {
-			char *tmp_nodes;
-			bitstr_t *tmp_bitmap = bit_copy(blocks_nodes_bitmap);
-			bit_not(tmp_bitmap);
-			tmp_nodes = bitmap2node_name(tmp_bitmap);
-			warning("blocks lack access to %d nodes: %s",
-				i, tmp_nodes);
-			xfree(tmp_nodes);
-			FREE_NULL_BITMAP(tmp_bitmap);
-		}
-	} else
-		fatal("blocks contain no nodes");
-
-	if (invalid_hl) {
-		buf = hostlist_ranged_string_xmalloc(invalid_hl);
-		warning("Invalid hostnames in block configuration: %s", buf);
-		xfree(buf);
-		hostlist_destroy(invalid_hl);
-	}
-
-	s_p_hashtbl_destroy(conf_hashtbl);
-	_log_blocks();
-}
 
 static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 {
@@ -415,7 +141,7 @@ extern int init(void)
  */
 extern int fini(void)
 {
-	_free_block_record_table();
+	block_record_table_destroy();
 	FREE_NULL_BITMAP(blocks_nodes_bitmap);
 	return SLURM_SUCCESS;
 }
@@ -427,8 +153,16 @@ extern int fini(void)
 extern int topology_p_build_config(void)
 {
 	if (node_record_count)
-		_validate_blocks();
+		block_record_validate();
 	return SLURM_SUCCESS;
+}
+
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	topo_eval->eval_nodes = eval_nodes_block;
+	topo_eval->trump_others = true;
+
+	return common_topo_choose_nodes(topo_eval);
 }
 
 /*
@@ -478,27 +212,48 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_get(void **topoinfo_pptr)
+extern int topology_p_get(topology_data_t type, void *data)
 {
-	int i = 0;
-	topoinfo_block_t *topoinfo_ptr =
-		xmalloc(sizeof(topoinfo_block_t));
+	int rc = SLURM_SUCCESS;
 
-	*topoinfo_pptr = topoinfo_ptr;
-	topoinfo_ptr->record_count = block_record_cnt;
-	topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
-					   sizeof(topoinfo_bblock_t));
+	switch (type) {
+	case TOPO_DATA_TOPOLOGY_PTR:
+	{
+		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topoinfo_block_t *topoinfo_ptr =
+			xmalloc(sizeof(topoinfo_block_t));
 
-	for (i = 0; i < topoinfo_ptr->record_count; i++) {
-		topoinfo_ptr->topo_array[i].block_index =
-			block_record_table[i].block_index;
-		topoinfo_ptr->topo_array[i].name =
-			xstrdup(block_record_table[i].name);
-		topoinfo_ptr->topo_array[i].nodes =
-			xstrdup(block_record_table[i].nodes);
+		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
+		(*topoinfo_pptr)->data = topoinfo_ptr;
+		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		topoinfo_ptr->record_count = block_record_cnt;
+		topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
+						   sizeof(topoinfo_bblock_t));
+
+		for (int i = 0; i < topoinfo_ptr->record_count; i++) {
+			topoinfo_ptr->topo_array[i].block_index =
+				block_record_table[i].block_index;
+			topoinfo_ptr->topo_array[i].name =
+				xstrdup(block_record_table[i].name);
+			topoinfo_ptr->topo_array[i].nodes =
+				xstrdup(block_record_table[i].nodes);
+		}
+		break;
+	}
+	case TOPO_DATA_REC_CNT:
+	{
+		int *rec_cnt = data;
+		*rec_cnt = block_record_cnt;
+		break;
+	}
+	default:
+		error("Unsupported option %d", type);
+		rc = SLURM_ERROR;
+		break;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
