@@ -302,8 +302,9 @@ slurm.conf file.
 \fBDebugFlags\fR
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
-Most DebugFlags will result in verbose logging for the identified subsystems
-and could impact performance.
+Most DebugFlags will result in additional logging messages for the identified
+subsystems if \fBDebugLevel\fR is at 'verbose' or higher.
+More logging may impact performance.
 Valid subsystems available today (with more to come) include:
 .IP
 .RS
@@ -372,6 +373,16 @@ SQL statements/queries when dealing with wckeys in the database.
 .TP
 \fBFEDERATION\fR
 SQL statements/queries when dealing with federations in the database.
+.IP
+
+.TP
+\fBNetwork\fR
+Network details.
+.IP
+
+.TP
+\fBNetworkRaw\fR
+Dump raw hex values of key Network communications.
 .RE
 .IP
 
