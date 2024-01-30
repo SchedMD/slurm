@@ -47,8 +47,8 @@ typedef struct node_weight_struct {
 /* Find node_weight_type element from list with same weight as node config */
 static int _node_weight_find(void *x, void *key)
 {
-	node_weight_type *nwt = (node_weight_type *) x;
-	node_record_t *node_ptr = (node_record_t *) key;
+	node_weight_type *nwt = x;
+	node_record_t *node_ptr = key;
 	if (nwt->weight == node_ptr->sched_weight)
 		return 1;
 	return 0;
@@ -57,7 +57,7 @@ static int _node_weight_find(void *x, void *key)
 /* Free node_weight_type element from list */
 static void _node_weight_free(void *x)
 {
-	node_weight_type *nwt = (node_weight_type *) x;
+	node_weight_type *nwt = x;
 	FREE_NULL_BITMAP(nwt->node_bitmap);
 	xfree(nwt);
 }
@@ -219,7 +219,7 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 		all_done = true;
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
-	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
+	while (!all_done && (nwt = list_next(iter))) {
 		for (idle_test = 0; idle_test < 2; idle_test++) {
 			for (i = i_start; i <= i_end; i++) {
 				if (!avail_res_array[i] ||
@@ -946,7 +946,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 		all_done = true;
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
-	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
+	while (!all_done && (nwt = list_next(iter))) {
 		int last_max_cpu_cnt = -1;
 		while (!all_done) {
 			int max_cpu_idx = -1;
@@ -1145,7 +1145,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 		all_done = true;
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
-	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
+	while (!all_done && (nwt = list_next(iter))) {
 		for (i = i_end;
 		     ((i >= i_start) && (topo_eval->max_nodes > 0));
 		     i--) {
@@ -1315,7 +1315,7 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 		all_done = true;
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
-	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
+	while (!all_done && (nwt = list_next(iter))) {
 		for (i = i_start; i <= i_end; i++) {
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
@@ -1610,8 +1610,8 @@ extern int64_t eval_nodes_get_rem_max_cpus(
 
 extern int eval_nodes_topo_weight_find(void *x, void *key)
 {
-	topo_weight_info_t *nw = (topo_weight_info_t *) x;
-	topo_weight_info_t *nw_key = (topo_weight_info_t *) key;
+	topo_weight_info_t *nw = x;
+	topo_weight_info_t *nw_key = key;
 	if (nw->weight == nw_key->weight)
 		return 1;
 	return 0;
@@ -1619,8 +1619,8 @@ extern int eval_nodes_topo_weight_find(void *x, void *key)
 
 extern int eval_nodes_topo_node_find(void *x, void *key)
 {
-	topo_weight_info_t *nw = (topo_weight_info_t *) x;
-	bitstr_t *nw_key = (bitstr_t *) key;
+	topo_weight_info_t *nw = x;
+	bitstr_t *nw_key = key;
 	if (bit_overlap_any(nw->node_bitmap, nw_key))
 		return 1;
 	return 0;
@@ -1628,14 +1628,14 @@ extern int eval_nodes_topo_node_find(void *x, void *key)
 
 extern void eval_nodes_topo_weight_free(void *x)
 {
-	topo_weight_info_t *nw = (topo_weight_info_t *) x;
+	topo_weight_info_t *nw = x;
 	FREE_NULL_BITMAP(nw->node_bitmap);
 	xfree(nw);
 }
 
 extern int eval_nodes_topo_weight_log(void *x, void *arg)
 {
-	topo_weight_info_t *nw = (topo_weight_info_t *) x;
+	topo_weight_info_t *nw = x;
 	char *node_names = bitmap2node_name(nw->node_bitmap);
 	info("Topo:%s weight:%"PRIu64, node_names, nw->weight);
 	xfree(node_names);

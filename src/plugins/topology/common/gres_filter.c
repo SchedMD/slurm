@@ -183,7 +183,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 
 	list_sort(sock_gres_list, _sock_gres_sort);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
-	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+	while ((sock_gres = list_next(sock_gres_iter))) {
 		gres_job_state_t *gres_js;
 		bool sufficient_gres;
 		uint64_t cnt_avail_total, max_tasks;
