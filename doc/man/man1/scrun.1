@@ -1,4 +1,4 @@
-.TH scrun "1" "Slurm Commands" "February 2023" "Slurm Commands"
+.TH scrun "1" "Slurm Commands" "January 2024" "Slurm Commands"
 
 .SH "NAME"
 \fBscrun\fR \- an OCI runtime proxy for Slurm.
@@ -51,10 +51,12 @@ arguments for \fBcrun\fR(1) and \fBrunc\fR(1) will be accepted for compatibility
 but may be ignored depending on their applicability.
 
 .SH "DESCRIPTION"
-\fBscrun\fR is an OCI runtime proxy for Slurm. \fBscrun\fR will accept all
-commands as an OCI compliant runtime but will instead proxy the container and
-all STDIO to Slurm for scheduling and execution. The containers will be
-executed remotely on Slurm compute nodes according to settings in
+\fBscrun\fR is an OCI runtime proxy for Slurm. It acts as a common interface to
+\fBDOCKER\fR(1) or \fBpodman\fR(1) to allow container operations to be executed
+under Slurm as jobs. \fBscrun\fR will accept all commands as an OCI compliant
+runtime but will proxy the container and all STDIO to Slurm for scheduling and
+execution. The containers will be executed remotely on Slurm compute nodes
+according to settings in
 \fBoci.conf\fR(5).
 
 \fBscrun\fR requires all containers to be OCI image compliant per:
@@ -1084,6 +1086,9 @@ Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
 
 .TP
 Minimal required for \fBscrun\fR operation:
+This script should be used when \fBdocker\fR(1) or
+\fBpodman\fR(1) have been configured to use a shared filesystem for container
+storage removing the need to copy around the container files.
 .nf
 function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
 	return slurm.SUCCESS
@@ -1098,14 +1103,17 @@ return slurm.SUCCESS
 
 .TP
 Full Container staging using rsync:
-This is full example that will stage container as given by \fBdocker\fR(1) or
-\fBpodman\fR(1). Container's config.json is modified to remove unwanted
-functions that may cause container run to under \fBcrun\fR(1) or \fBcrun\fR(1).
-Script uses rsync to move container to an shared /home filesystem.
+This full example will stage a container as given by \fBdocker\fR(1) or
+\fBpodman\fR(1). The container's config.json is modified to remove unwanted
+functions that may cause the container run to under \fBcrun\fR(1) or
+\fBrunc\fR(1).
+The script uses \fBrsync\fR(1) to move the container to a shared filesystem
+under the \fIscratch_path\fR variable.
 
 .nf
 local json = require 'json'
 local open = io.open
+local scratch_path = "/run/user/"
 
 local function read_file(path)
 	local file = open(path, "rb")
@@ -1132,7 +1140,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	local src_rootfs = config["root"]["path"]
 	rc, user = slurm.allocator_command(string.format("id -un %d", user_id))
 	user = string.gsub(user, "%s+", "")
-	local root = "/home/"..user.."/containers/"
+	local root = scratch_path..math.floor(user_id).."/slurm/scrun/"
 	local dst_bundle = root.."/"..id.."/"
 	local dst_config = root.."/"..id.."/config.json"
 	local dst_rootfs = root.."/"..id.."/rootfs/"
@@ -1164,10 +1172,32 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	config["root"]["path"] = dst_rootfs
 
 	-- Always force user namespace support in container or runc will reject
+	local process_user_id = 0
+	local process_group_id = 0
+
 	if ((config["process"] ~= nil) and (config["process"]["user"] ~= nil))
 	then
+		-- resolve out user in the container
+		if (config["process"]["user"]["uid"] ~= nil)
+		then
+			process_user_id=config["process"]["user"]["uid"]
+		else
+			process_user_id=0
+		end
+
+		-- resolve out group in the container
+		if (config["process"]["user"]["gid"] ~= nil)
+		then
+			process_group_id=config["process"]["user"]["gid"]
+		else
+			process_group_id=0
+		end
+
 		-- purge additionalGids as they are not supported in rootless
-		config["process"]["user"]["additionalGids"] = nil
+		if (config["process"]["user"]["additionalGids"] ~= nil)
+		then
+			config["process"]["user"]["additionalGids"] = nil
+		end
 	end
 
 	if (config["linux"] ~= nil)
@@ -1191,9 +1221,20 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 			table.insert(config["linux"]["namespaces"], {type= "user"})
 		end
 
-		-- clear all attempts to map uid/gids
-		config["linux"]["uidMappings"] = nil
-		config["linux"]["gidMappings"] = nil
+		-- Provide default user map as root if one not provided
+		if (true or config["linux"]["uidMappings"] == nil)
+		then
+			config["linux"]["uidMappings"] =
+				{{containerID=process_user_id, hostID=math.floor(user_id), size=1}}
+		end
+
+		-- Provide default group map as root if one not provided
+		-- mappings fail with build???
+		if (true or config["linux"]["gidMappings"] == nil)
+		then
+			config["linux"]["gidMappings"] =
+				{{containerID=process_group_id, hostID=math.floor(group_id), size=1}}
+		end
 
 		-- disable trying to use a specific cgroup
 		config["linux"]["cgroupsPath"] = nil
@@ -1236,7 +1277,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		config["mounts"] = mounts
 	end
 
-	-- Merge in Job environment into container
+	-- Merge in Job environment into container -- this is optional!
 	if (config["process"]["env"] == nil)
 	then
 		config["process"]["env"] = {}
@@ -1264,6 +1305,11 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 end
 
 function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
+	if (root_path == nil)
+	then
+		root_path = ""
+	end
+
 	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
 		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
 
@@ -1278,6 +1324,9 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 	then
 		-- rsync can fail due to permissions which may not matter
 		slurm.log_info("rsync failed")
+	else
+		-- cleanup temporary after they have been synced backed to source
+		slurm.allocator_command(string.format("/usr/bin/rm --preserve-root=all --one-file-system -dr -- %s", bundle))
 	end
 
 	return slurm.SUCCESS

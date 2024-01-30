@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix rebuilding job alias_list on restart when nodes are still powering up.
  -- Fix INVALID nodes running health check.
  -- Fix cloud/future nodes not setting addresses on invalid registration.
+ -- scrun - Remove the requirement to set the SCRUN_WORKING_DIR environment
+    variable. This was a regression in 23.11.
 
 * Changes in Slurm 23.11.3
 ==========================
