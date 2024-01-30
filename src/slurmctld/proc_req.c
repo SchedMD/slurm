@@ -5106,10 +5106,15 @@ static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 	trigger_info_msg_t *trigger_ptr = msg->data;
 	bool allow_user_triggers = xstrcasestr(slurm_conf.slurmctld_params,
 	                                       "allow_user_triggers");
+	bool disable_triggers = xstrcasestr(slurm_conf.slurmctld_params,
+					    "disable_triggers");
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (validate_slurm_user(msg->auth_uid) || allow_user_triggers) {
+	if (disable_triggers) {
+		rc = ESLURM_DISABLED;
+		error("Request to set trigger, but disable_triggers is set.");
+	} else if (validate_slurm_user(msg->auth_uid) || allow_user_triggers) {
 		rc = trigger_set(msg->auth_uid, msg->auth_gid, trigger_ptr);
 	} else {
 		rc = ESLURM_ACCESS_DENIED;
