@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix cloud/future nodes not setting addresses on invalid registration.
  -- scrun - Remove the requirement to set the SCRUN_WORKING_DIR environment
     variable. This was a regression in 23.11.
+ -- Add warning for using select/linear with topology/tree.
+    This combination will not be supported in the next major version.
 
 * Changes in Slurm 23.11.3
 ==========================
