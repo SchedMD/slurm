@@ -8950,6 +8950,7 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 			pack64(gres_ss->gres_per_task, buffer);
 			pack64(gres_ss->mem_per_gres, buffer);
 			pack64(gres_ss->total_gres, buffer);
+			packstr(gres_ss->type_name, buffer);
 			pack32(gres_ss->node_cnt, buffer);
 			pack_bit_str_hex(gres_ss->node_in_use, buffer);
 			if (gres_ss->gres_cnt_node_alloc) {
@@ -9123,6 +9124,8 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack64(&gres_ss->gres_per_task, buffer);
 			safe_unpack64(&gres_ss->mem_per_gres, buffer);
 			safe_unpack64(&gres_ss->total_gres, buffer);
+			safe_unpackstr(&gres_ss->type_name, buffer);
+			gres_ss->type_id = gres_build_id(gres_ss->type_name);
 			safe_unpack32(&gres_ss->node_cnt, buffer);
 			if (gres_ss->node_cnt > NO_VAL)
 				goto unpack_error;

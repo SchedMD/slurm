@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix how gres are allocated per job when using multiple gres types.
  -- Log an error when UnkillableStepTimeout is less than five times
     MessageTimeout.
+ -- Avoid step gres dealloc count underflow errors after reconfiguring or
+    restarting slurmctld.
 
 * Changes in Slurm 23.11.4
 ==========================
