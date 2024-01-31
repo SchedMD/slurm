@@ -67,8 +67,8 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
 <p>The following configuration parameters of interest include:</p>
 
 <dl>
-  <dt id="DebugFlags"><b>DebugFlags<a class="slurm_link" href=
-  "#DebugFlags"></a></b>
+  <dt id="DebugFlags"><b>DebugFlags</b><a class="slurm_link" href=
+  "#DebugFlags"></a>
   </dt>
 
   <dd>
@@ -76,7 +76,7 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     logging. Options of interest include:</p>
 
     <dl>
-      <dt id="Power"><b>Power<a class="slurm_link" href="#Power"></a></b>
+      <dt id="Power"><b>Power</b><a class="slurm_link" href="#Power"></a>
       </dt>
 
       <dd>
@@ -86,8 +86,8 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     </dl>
   </dd>
 
-  <dt id="ReconfigFlags"><b>ReconfigFlags<a class="slurm_link" href=
-  "#ReconfigFlags"></a></b>
+  <dt id="ReconfigFlags"><b>ReconfigFlags</b><a class="slurm_link" href=
+  "#ReconfigFlags"></a>
   </dt>
 
   <dd>
@@ -96,8 +96,8 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     include:</p>
 
     <dl>
-      <dt id="KeepPowerSaveSettings"><b>KeepPowerSaveSettings<a class=
-      "slurm_link" href="#KeepPowerSaveSettings"></a></b>
+      <dt id="KeepPowerSaveSettings"><b>KeepPowerSaveSettings</b><a class=
+      "slurm_link" href="#KeepPowerSaveSettings"></a>
       </dt>
 
       <dd>
@@ -108,8 +108,8 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     </dl>
   </dd>
 
-  <dt id="ResumeFailProgram"><b>ResumeFailProgram<a class="slurm_link" href=
-  "#ResumeFailProgram"></a></b>
+  <dt id="ResumeFailProgram"><b>ResumeFailProgram</b><a class="slurm_link" href=
+  "#ResumeFailProgram"></a>
   </dt>
 
   <dd>
@@ -118,8 +118,8 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     the failed nodes (using Slurm's hostlist expression format).</p>
   </dd>
 
-  <dt id="ResumeProgram"><b>ResumeProgram<a class="slurm_link" href=
-  "#ResumeProgram"></a></b>
+  <dt id="ResumeProgram"><b>ResumeProgram</b><a class="slurm_link" href=
+  "#ResumeProgram"></a>
   </dt>
 
   <dd>
@@ -191,8 +191,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     "download.html#json">JSON-C</a> serializer library.</p>
   </dd>
 
-  <dt id="ResumeRate"><b>ResumeRate<a class="slurm_link" href=
-  "#ResumeRate"></a></b>
+  <dt id="ResumeRate"><b>ResumeRate</b><a class="slurm_link" href=
+  "#ResumeRate"></a>
   </dt>
 
   <dd>
@@ -202,8 +202,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     consumption.</p>
   </dd>
 
-  <dt id="ResumeTimeout"><b>ResumeTimeout<a class="slurm_link" href=
-  "#ResumeTimeout"></a></b>
+  <dt id="ResumeTimeout"><b>ResumeTimeout</b><a class="slurm_link" href=
+  "#ResumeTimeout"></a>
   </dt>
 
   <dd>
@@ -215,8 +215,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     default value is 60 seconds.</p>
   </dd>
 
-  <dt id="SchedulerParameters"><b>SchedulerParameters<a class="slurm_link"
-  href="#SchedulerParameters"></a></b>
+  <dt id="SchedulerParameters"><b>SchedulerParameters</b><a class="slurm_link"
+  href="#SchedulerParameters"></a>
   </dt>
 
   <dd>
@@ -224,8 +224,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     options may be comma separated. Options of interest include:</p>
 
     <dl>
-      <dt id="salloc_wait_nodes"><b>salloc_wait_nodes<a class="slurm_link"
-      href="#salloc_wait_nodes"></a></b>
+      <dt id="salloc_wait_nodes"><b>salloc_wait_nodes</b><a class="slurm_link"
+      href="#salloc_wait_nodes"></a>
       </dt>
 
       <dd>
@@ -237,8 +237,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         parameter.</p>
       </dd>
 
-      <dt id="sbatch_wait_nodes"><b>sbatch_wait_nodes<a class="slurm_link"
-      href="#sbatch_wait_nodes"></a></b>
+      <dt id="sbatch_wait_nodes"><b>sbatch_wait_nodes</b><a class="slurm_link"
+      href="#sbatch_wait_nodes"></a>
       </dt>
 
       <dd>
@@ -252,8 +252,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     </dl>
   </dd>
 
-  <dt id="SlurmctldParameters"><b>SlurmctldParameters<a class="slurm_link"
-  href="#SlurmctldParameters"></a></b>
+  <dt id="SlurmctldParameters"><b>SlurmctldParameters</b><a class="slurm_link"
+  href="#SlurmctldParameters"></a>
   </dt>
 
   <dd>
@@ -261,8 +261,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     interest include:</p>
 
     <dl>
-      <dt id="cloud_dns"><b>cloud_dns<a class="slurm_link" href=
-      "#cloud_dns"></a></b>
+      <dt id="cloud_dns"><b>cloud_dns</b><a class="slurm_link" href=
+      "#cloud_dns"></a>
       </dt>
 
       <dd>
@@ -276,8 +276,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         option.</p>
       </dd>
 
-      <dt id="idle_on_node_suspend"><b>idle_on_node_suspend<a class=
-      "slurm_link" href="#idle_on_node_suspend"></a></b>
+      <dt id="idle_on_node_suspend"><b>idle_on_node_suspend</b><a class=
+      "slurm_link" href="#idle_on_node_suspend"></a>
       </dt>
 
       <dd>
@@ -286,8 +286,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         resumed at a later time.</p>
       </dd>
 
-      <dt id="node_reg_mem_percent"><b>node_reg_mem_percent=#<a class=
-      "slurm_link" href="#node_reg_mem_percent"></a></b>
+      <dt id="node_reg_mem_percent"><b>node_reg_mem_percent=#</b><a class=
+      "slurm_link" href="#node_reg_mem_percent"></a>
       </dt>
 
       <dd>
@@ -296,8 +296,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         State=CLOUD nodes, the default is 90.</p>
       </dd>
 
-      <dt id="power_save_interval"><b>power_save_interval=#<a class=
-      "slurm_link" href="#power_save_interval"></a></b>
+      <dt id="power_save_interval"><b>power_save_interval=#</b><a class=
+      "slurm_link" href="#power_save_interval"></a>
       </dt>
 
       <dd>
@@ -306,8 +306,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         changes. Default is 10 seconds.</p>
       </dd>
 
-      <dt id="power_save_min_interval"><b>power_save_min_interval=#<a class=
-      "slurm_link" href="#power_save_min_interval"></a></b>
+      <dt id="power_save_min_interval"><b>power_save_min_interval=#</b><a class=
+      "slurm_link" href="#power_save_min_interval"></a>
       </dt>
 
       <dd>
@@ -317,8 +317,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     </dl>
   </dd>
 
-  <dt id="SuspendExcNodes"><b>SuspendExcNodes<a class="slurm_link" href=
-  "#SuspendExcNodes"></a></b>
+  <dt id="SuspendExcNodes"><b>SuspendExcNodes</b><a class="slurm_link" href=
+  "#SuspendExcNodes"></a>
   </dt>
 
   <dd>
@@ -336,8 +336,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.</p>
   </dd>
 
-  <dt id="SuspendExcParts"><b>SuspendExcParts<a class="slurm_link" href=
-  "#SuspendExcParts"></a></b>
+  <dt id="SuspendExcParts"><b>SuspendExcParts</b><a class="slurm_link" href=
+  "#SuspendExcParts"></a>
   </dt>
 
   <dd>
@@ -347,8 +347,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.</p>
   </dd>
 
-  <dt id="SuspendExcStates"><b>SuspendExcStates<a class="slurm_link" href=
-  "#SuspendExcStates"></a></b>
+  <dt id="SuspendExcStates"><b>SuspendExcStates</b><a class="slurm_link" href=
+  "#SuspendExcStates"></a>
   </dt>
 
   <dd>
@@ -361,8 +361,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     persistence.</p>
   </dd>
 
-  <dt id="SuspendProgram"><b>SuspendProgram<a class="slurm_link" href=
-  "#SuspendProgram"></a></b>
+  <dt id="SuspendProgram"><b>SuspendProgram</b><a class="slurm_link" href=
+  "#SuspendProgram"></a>
   </dt>
 
   <dd>
@@ -373,8 +373,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     expression format).</p>
   </dd>
 
-  <dt id="SuspendRate"><b>SuspendRate<a class="slurm_link" href=
-  "#SuspendRate"></a></b>
+  <dt id="SuspendRate"><b>SuspendRate</b><a class="slurm_link" href=
+  "#SuspendRate"></a>
   </dt>
 
   <dd>
@@ -383,8 +383,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     value is 60. Use this to prevent rapid drops in power consumption.</p>
   </dd>
 
-  <dt id="SuspendTime"><b>SuspendTime<a class="slurm_link" href=
-  "#SuspendTime"></a></b>
+  <dt id="SuspendTime"><b>SuspendTime</b><a class="slurm_link" href=
+  "#SuspendTime"></a>
   </dt>
 
   <dd>
@@ -393,8 +393,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     The default value is -1 (disabled).</p>
   </dd>
 
-  <dt id="SuspendTimeout"><b>SuspendTimeout<a class="slurm_link" href=
-  "#SuspendTimeout"></a></b>
+  <dt id="SuspendTimeout"><b>SuspendTimeout</b><a class="slurm_link" href=
+  "#SuspendTimeout"></a>
   </dt>
 
   <dd>
@@ -411,7 +411,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
 <p>Node parameters of interest include:</p>
 
 <dl>
-  <dt id="Feature"><b>Feature<a class="slurm_link" href="#Feature"></a></b>
+  <dt id="Feature"><b>Feature</b><a class="slurm_link" href="#Feature"></a>
   </dt>
 
   <dd>
@@ -420,8 +420,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     the <code>--constraint</code> option.</p>
   </dd>
 
-  <dt id="NodeName"><b>NodeName<a class="slurm_link" href=
-  "#NodeName"></a></b>
+  <dt id="NodeName"><b>NodeName</b><a class="slurm_link" href=
+  "#NodeName"></a>
   </dt>
 
   <dd>
@@ -429,7 +429,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     a numeric suffix is recommended for convenience.</p>
   </dd>
 
-  <dt id="State"><b>State<a class="slurm_link" href="#State"></a></b>
+  <dt id="State"><b>State</b><a class="slurm_link" href="#State"></a>
   </dt>
 
   <dd>
@@ -437,7 +437,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     <i>CLOUD</i>.</p>
   </dd>
 
-  <dt id="Weight"><b>Weight<a class="slurm_link" href="#Weight"></a></b>
+  <dt id="Weight"><b>Weight</b><a class="slurm_link" href="#Weight"></a>
   </dt>
 
   <dd>
@@ -453,8 +453,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
 <p>Partition parameters of interest include:</p>
 
 <dl>
-  <dt id="PowerDownOnIdle"><b>PowerDownOnIdle<a class="slurm_link" href=
-  "#PowerDownOnIdle"></a></b>
+  <dt id="PowerDownOnIdle"><b>PowerDownOnIdle</b><a class="slurm_link" href=
+  "#PowerDownOnIdle"></a>
   </dt>
 
   <dd>
@@ -483,8 +483,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     for <b>SuspendTime</b> when PowerDownOnIdle is set to NO.</p>
   </dd>
 
-  <dt id="ResumeTimeout_1"><b>ResumeTimeout<a class="slurm_link" href=
-  "#ResumeTimeout_1"></a></b>
+  <dt id="ResumeTimeout_1"><b>ResumeTimeout</b><a class="slurm_link" href=
+  "#ResumeTimeout_1"></a>
   </dt>
 
   <dd>
@@ -500,8 +500,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     use the <b>ResumeTimeout</b> value set for the entire cluster.</p>
   </dd>
 
-  <dt id="SuspendTime_1"><b>SuspendTime<a class="slurm_link" href=
-  "#SuspendTime_1"></a></b>
+  <dt id="SuspendTime_1"><b>SuspendTime</b><a class="slurm_link" href=
+  "#SuspendTime_1"></a>
   </dt>
 
   <dd>
@@ -515,8 +515,8 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     this partition.</p>
   </dd>
 
-  <dt id="SuspendTimeout_1"><b>SuspendTimeout<a class="slurm_link" href=
-  "#SuspendTimeout_1"></a></b>
+  <dt id="SuspendTimeout_1"><b>SuspendTimeout</b><a class="slurm_link" href=
+  "#SuspendTimeout_1"></a>
   </dt>
 
   <dd>
@@ -531,7 +531,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
   </dd>
 </dl>
 
-<h2 id="lifecycle">Node Lifecycle<a class="slurm_link" href=
+<h2 id="lifecycle">Node Lifecycle</b><a class="slurm_link" href=
 "#lifecycle"></a></h2>
 
 <p>When Slurm is configured for Power Saving operation, nodes have an
@@ -610,8 +610,8 @@ scontrol update nodename=&lt;nodename&gt; state=power_&lt;down|down_asap|down_fo
 <p><code>scontrol update</code> command actions/states of interest:</p>
 
 <dl>
-  <dt id="POWER_DOWN"><b>POWER_DOWN<a class="slurm_link" href=
-  "#POWER_DOWN"></a></b>
+  <dt id="POWER_DOWN"><b>POWER_DOWN</b><a class="slurm_link" href=
+  "#POWER_DOWN"></a>
   </dt>
 
   <dd>Will use the configured <b>SuspendProgram</b> program to explicitly
@@ -620,23 +620,23 @@ scontrol update nodename=&lt;nodename&gt; state=power_&lt;down|down_asap|down_fo
   won't have any effect until the configured <b>SuspendTimeout</b> is
   reached.</dd>
 
-  <dt id="POWER_DOWN_ASAP"><b>POWER_DOWN_ASAP<a class="slurm_link" href=
-  "#POWER_DOWN_ASAP"></a></b>
+  <dt id="POWER_DOWN_ASAP"><b>POWER_DOWN_ASAP</b><a class="slurm_link" href=
+  "#POWER_DOWN_ASAP"></a>
   </dt>
 
   <dd>Will drain the node and mark it for power down. Currently running jobs
   will complete first and no additional jobs will be allocated to the
   node.</dd>
 
-  <dt id="POWER_DOWN_FORCE"><b>POWER_DOWN_FORCE<a class="slurm_link" href=
-  "#POWER_DOWN_FORCE"></a></b>
+  <dt id="POWER_DOWN_FORCE"><b>POWER_DOWN_FORCE</b><a class="slurm_link" href=
+  "#POWER_DOWN_FORCE"></a>
   </dt>
 
   <dd>Will cancel all jobs on the node, power it down, and reset its state to
   <i>IDLE</i>.</dd>
 
-  <dt id="POWER_UP"><b>POWER_UP<a class="slurm_link" href=
-  "#POWER_UP"></a></b>
+  <dt id="POWER_UP"><b>POWER_UP</b><a class="slurm_link" href=
+  "#POWER_UP"></a>
   </dt>
 
   <dd>Will use the configured <b>ResumeProgram</b> program to explicitly move
@@ -645,7 +645,7 @@ scontrol update nodename=&lt;nodename&gt; state=power_&lt;down|down_asap|down_fo
   won't have any effect until the configured <b>ResumeTimeout</b> is
   reached.</dd>
 
-  <dt id="RESUME"><b>RESUME<a class="slurm_link" href="#RESUME"></a></b>
+  <dt id="RESUME"><b>RESUME</b><a class="slurm_link" href="#RESUME"></a>
   </dt>
 
   <dd>Not an actual node state, but will change a node state from DRAIN,
