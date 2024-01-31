@@ -120,6 +120,24 @@ struct squeue_parameters {
 
 extern struct squeue_parameters params;
 
+
+/* Flags for fmt_data_job_t, fmt_data_step_t */
+#define FMT_FLAG_HIDDEN		SLURM_BIT(0)
+
+typedef struct fmt_data_job {
+	char *name;		/* long format name */
+	char c;			/* short format character, prefixed by '%' */
+	int (*fn)(job_info_t *job, int width, bool right, char *suffix);
+	uint32_t flags;		/* FMT_FLAG_* */
+} fmt_data_job_t;
+
+typedef struct fmt_data_step {
+	char *name;		/* long format name */
+	char c;			/* short format character, prefixed by '%' */
+	int (*fn)(job_step_info_t *step, int width, bool right, char *suffix);
+	uint32_t flags;		/* FMT_FLAG_* */
+} fmt_data_step_t;
+
 extern void parse_command_line( int argc, char* *argv );
 extern int  parse_format( char* format );
 extern int  parse_long_format( char* format_long);

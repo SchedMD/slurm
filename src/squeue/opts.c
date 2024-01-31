@@ -576,6 +576,178 @@ static void _print_job_states(void)
 	xfree(states);
 }
 
+static fmt_data_job_t fmt_data_job[] = {
+	{"Account", 'a', _print_job_account, 0},
+	{"AccrueTime", 0, _print_job_accrue_time, 0},
+	{"admin_comment", 0, _print_job_admin_comment, 0},
+	{"AllocNodes", 0, _print_job_alloc_nodes, 0},
+	{"AllocSID", 0, _print_job_alloc_sid, 0},
+	{"ArrayJobId", 'F', _print_job_array_job_id, 0},
+	{"ArrayTaskId", 'K', _print_job_array_task_id, 0},
+	{"AssocId", 0, _print_job_assoc_id, 0},
+	{"BatchFlag", 0, _print_job_batch_flag, 0},
+	{"BatchHost", 'B', _print_job_batch_host, 0},
+	{"BoardsPerNode", 0, _print_job_boards_per_node, 0},
+	{"BurstBuffer", 0, _print_job_burst_buffer, 0},
+	{"BurstBufferState", 0, _print_job_burst_buffer_state, 0},
+	{"Cluster", 0, _print_job_cluster_name, 0},
+	{"ClusterFeature", 0, _print_job_cluster_features, 0},
+	{"Command", 'o', _print_job_command, 0},
+	{"Comment", 'k', _print_job_comment, 0},
+	{"Container", 0, _print_job_container, 0},
+	{"ContainerId", 0, _print_job_container_id, 0},
+	{"Contiguous", 'O', _print_job_contiguous, 0},
+	{"Cores", 'I', _print_cores, 0},
+	{"CoreSpec", 'X', _print_job_core_spec, 0},
+	{"CPUsPerTask", 0, _print_job_cpus_per_task, 0},
+	{"cpus-per-task", 0, _print_job_cpus_per_task, 0},
+	{"cpus-per-tres", 0, _print_job_cpus_per_tres, 0},
+	{"Deadline", 0, _print_job_deadline, 0},
+	{"DelayBoot", 0, _print_job_delay_boot, 0},
+	{"Dependency", 'E', _print_job_dependency, 0},
+	{"DerivedEC", 0, _print_job_derived_ec, 0},
+	{"EligibleTime", 0, _print_job_eligible_time, 0},
+	{"EndTime", 'e', _print_job_time_end, 0},
+	{NULL, 'x', _print_job_exc_nodes, 0},
+	{"exit_code", 0, _print_job_exit_code, 0},
+	{"Feature", 'f', _print_job_features, 0},
+	{"Gres", 'b', _print_job_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial*/
+	{"GroupId", 'G', _print_job_group_id, 0},
+	{"GroupName", 'g', _print_job_group_name, 0},
+	{"HetJobId", 0, _print_job_het_job_id, 0},
+	{"HetJobIdSet", 0, _print_job_het_job_id_set, 0},
+	{"HetJobOffset", 0, _print_job_het_job_offset, 0},
+	{"JobArrayId", 'i', _print_job_job_id, 0},
+	{"JobId", 'A', _print_job_job_id2, 0},
+	{"LastSchedEval", 0, _print_job_last_sched_eval, 0},
+	{"Licenses", 'W', _print_job_licenses, 0},
+	{"MaxCPUs", 0, _print_job_max_cpus, 0},
+	{"MaxNodes", 0, _print_job_max_nodes, 0},
+	{"mem-per-tres", 0, _print_job_mem_per_tres, 0},
+	{"MCSLabel", 0, _print_job_mcs_label, 0},
+	{"MinCPUs", 'c', _print_pn_min_cpus, 0},
+	{"MinMemory", 'm', _print_pn_min_memory, 0},
+	{"MinTime", 0, _print_job_min_time, 0},
+	{"MinTmpDisk", 'd', _print_pn_min_tmp_disk, 0},
+	{"Name", 'j', _print_job_name, 0},
+	{"Network", 0, _print_job_network, 0},
+	{"Nice", 'y', _print_job_nice, 0},
+	{"NodeList", 'N', _print_job_nodes, 0},
+	{"NTPerCore", 0, _print_job_ntasks_per_core, 0},
+	{"NTPerNode", 0, _print_job_ntasks_per_node, 0},
+	{"NTPerSocket", 0, _print_job_ntasks_per_socket, 0},
+	{"NTPerBoard", 0, _print_job_ntasks_per_board, 0},
+	{"NumCPUs", 'C', _print_job_num_cpus, 0},
+	{"NumNodes", 'D', _print_job_num_nodes, 0},
+	{"NumTasks", 0, _print_job_num_tasks, 0},
+	{"Origin", 0, _print_job_fed_origin, 0},
+	{"OriginRaw", 0, _print_job_fed_origin_raw, 0},
+	{"OverSubscribe", 'h', _print_job_over_subscribe, 0},
+	{"PackJobId", 0, _print_job_het_job_id, FMT_FLAG_HIDDEN},
+	{"PackJobIdSet", 0, _print_job_het_job_id_set, FMT_FLAG_HIDDEN},
+	{"PackJobOffset", 0, _print_job_het_job_offset, FMT_FLAG_HIDDEN},
+	{"Partition", 'P', _print_job_partition, 0},
+	{"PendingTime", 0, _print_job_time_pending, 0},
+	{"PreemptTime", 0, _print_job_preempt_time, 0},
+	{"Prefer", 0, _print_job_prefer, 0},
+	{"Priority", 'p', _print_job_priority, 0},
+	{"PriorityLong", 'Q', _print_job_priority_long, 0},
+	{"Profile", 0, _print_job_profile, 0},
+	{"QOS", 'q', _print_job_qos, 0},
+	{"Reason", 'r', _print_job_reason, 0},
+	{"ReasonList", 'R', _print_job_reason_list, 0},
+	{"Reboot", 0, _print_job_reboot, 0},
+	{"ReqNodes", 'n', _print_job_req_nodes, 0},
+	{"ReqSwitch", 0, _print_job_req_switch, 0},
+	{"Requeue", 0, _print_job_requeue, 0},
+	{"Reservation", 'v', _print_job_reservation, 0},
+	{"ResizeTime", 0, _print_job_resize_time, 0},
+	{"RestartCnt", 0, _print_job_restart_cnt, 0},
+	{"SchedNodes", 'Y', _print_job_schednodes, 0},
+	{"SCT", 'z', _print_job_num_sct, 0},
+	{"SiblingsActive", 0, _print_job_fed_siblings_active, 0},
+	{"SiblingsActiveRaw", 0, _print_job_fed_siblings_active_raw, 0},
+	{"SiblingsViable", 0, _print_job_fed_siblings_viable, 0},
+	{"SiblingsViableRaw", 0, _print_job_fed_siblings_viable_raw, 0},
+	{"Shared", 'h', _print_job_over_subscribe, FMT_FLAG_HIDDEN},
+	{"Sockets", 'H', _print_sockets, 0},
+	{"SPerBoard", 0, _print_job_sockets_per_board, 0},
+	{"StartTime", 'S', _print_job_time_start, 0},
+	{"State", 'T', _print_job_job_state, 0},
+	{"StateCompact", 't', _print_job_job_state_compact, 0},
+	{"StdErr", 0, _print_job_std_err, 0},
+	{"StdIn", 0, _print_job_std_in, 0},
+	{"StdOut", 0, _print_job_std_out, 0},
+	{"SubmitTime", 'V', _print_job_time_submit, 0},
+	{"system_comment", 0, _print_job_system_comment, 0},
+	{"Threads", 'J', _print_threads, 0},
+	{"TimeLeft", 'L', _print_job_time_left, 0},
+	{"TimeLimit", 'l', _print_job_time_limit, 0},
+	{"TimeUsed", 'M', _print_job_time_used, 0},
+	{"Tres", 0, _print_job_tres_alloc, FMT_FLAG_HIDDEN},
+	{"tres-alloc", 0, _print_job_tres_alloc, 0},
+	{"tres-bind", 0, _print_job_tres_bind, 0},
+	{"tres-freq", 0, _print_job_tres_freq, 0},
+	{"tres-per-job", 0, _print_job_tres_per_job, 0},
+	{"tres-per-node", 0, _print_job_tres_per_node,
+	 FMT_FLAG_HIDDEN}, /* vestigial */
+	{"tres-per-socket", 0, _print_job_tres_per_socket, 0},
+	{"tres-per-task", 0, _print_job_tres_per_task, 0},
+	{"UserId", 'U', _print_job_user_id, 0},
+	{"UserName", 'u', _print_job_user_name, 0},
+	{"Wait4Switch", 0, _print_job_wait4switch, 0},
+	{"WCKey", 'w', _print_job_wckey, 0},
+	{"WorkDir", 'Z', _print_job_work_dir, 0},
+	{NULL, 0, NULL, 0},
+};
+
+static fmt_data_step_t fmt_data_step[] = {
+	{"ArrayJobId", 0, _print_step_array_job_id, 0},
+	{"ArrayTaskId", 0, _print_step_array_task_id, 0},
+	{"Cluster", 0, _print_step_cluster_name, 0},
+	{"Container", 0, _print_step_container, 0},
+	{"ContainerId", 0, _print_step_container_id, 0},
+	{"CPUFreq", 0, _print_step_cpu_freq, 0},
+	{"cpus-per-tres", 0, _print_step_cpus_per_tres, 0},
+	{"Gres", 0, _print_step_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial */
+	{"JobId", 0, _print_step_job_id, 0},
+	{"mem-per-tres", 0, _print_step_mem_per_tres, 0},
+	{"Network", 0, _print_step_network, 0},
+	{"Nodes", 0, _print_step_nodes, 0},
+	{"NumCPUs", 0, _print_step_num_cpus, 0},
+	{"NumTasks", 0, _print_step_num_tasks, 0},
+	{"Partition", 0, _print_step_partition, 0},
+	{"ResvPorts", 0, _print_step_resv_ports, 0},
+	{"StartTime", 0, _print_step_time_start, 0},
+	{"StepId", 0, _print_step_id, 0},
+	{"StepName", 0, _print_step_name, 0},
+	{"StepState", 0, _print_step_state, 0},
+	{"TimeLimit", 0, _print_step_time_limit, 0},
+	{"TimeUsed", 0, _print_step_time_used, 0},
+	{"tres-bind", 0, _print_step_tres_bind, 0},
+	{"tres-freq", 0, _print_step_tres_freq, 0},
+	{"tres-per-job", 0, _print_step_tres_per_step, 0},
+	{"tres-per-node", 0, _print_step_tres_per_node,
+	 FMT_FLAG_HIDDEN}, /* vestigial */
+	{"tres-per-socket", 0, _print_step_tres_per_socket, 0},
+	{"tres-per-step", 0, _print_step_tres_per_step, 0},
+	{"tres-per-task", 0, _print_step_tres_per_task, 0},
+	{"UserId", 0, _print_step_user_id, 0},
+	{"UserName", 0, _print_step_user_name, 0},
+	{NULL, 'A', _print_step_num_tasks, 0},
+	{NULL, 'b', _print_step_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial */
+	{NULL, 'i', _print_step_id, 0},
+	{NULL, 'j', _print_step_name, 0},
+	{NULL, 'l', _print_step_time_limit, 0},
+	{NULL, 'M', _print_step_time_used, 0},
+	{NULL, 'N', _print_step_nodes, 0},
+	{NULL, 'P', _print_step_partition, 0},
+	{NULL, 'S', _print_step_time_start, 0},
+	{NULL, 'u', _print_step_user_name, 0},
+	{NULL, 'U', _print_step_user_id, 0},
+	{NULL, 0, NULL, 0},
+};
+
 /*
  * parse_format - Take the user's format specification and use it to build
  *	build the format specifications (internalize it to print.c data
@@ -592,6 +764,7 @@ extern int parse_format(char *format)
 	char field[1];
 	bool format_all = false;
 	int i;
+	bool found = false;
 
 	if (format == NULL) {
 		error ("Format option lacks specification.");
@@ -624,63 +797,24 @@ extern int parse_format(char *format)
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
 	while (token) {
+		found = false;
 		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
+
 		if (params.step_flag) {
-			if      (field[0] == 'A')
-				step_format_add_num_tasks( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'b')
-				/* Vestigial option */
-				step_format_add_tres_per_node(
-							params.format_list,
-						  	field_size,
-						  	right_justify, suffix );
-			else if (field[0] == 'i')
-				step_format_add_id( params.format_list,
-						    field_size,
-						    right_justify, suffix );
-			else if (field[0] == 'j')
-				step_format_add_name( params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (field[0] == 'l')
-				step_format_add_time_limit( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (field[0] == 'M')
-				step_format_add_time_used( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'N')
-				step_format_add_nodes( params.format_list,
-						       field_size,
-						       right_justify, suffix );
-			else if (field[0] == 'P')
-				step_format_add_partition( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'S')
-				step_format_add_time_start( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (field[0] == 'U')
-				step_format_add_user_id( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'u')
-				step_format_add_user_name( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+			for (i = 0; fmt_data_step[i].name || fmt_data_step[i].c;
+			     i++) {
+				if (field[0] == fmt_data_step[i].c) {
+					found = true;
+					step_format_add_function(
+						params.format_list, field_size,
+						right_justify, suffix,
+						fmt_data_step[i].fn);
+					break;
+				}
+			}
+			if (found)
+				; /* NO-OP */
 			else if (format_all)
 				xfree(suffix);	/* ignore */
 			else {
@@ -698,263 +832,19 @@ extern int parse_format(char *format)
 					field[0] );
 			}
 		} else {
-			if (field[0] == 'a')
-				job_format_add_account( params.format_list,
-							field_size,
-							right_justify,
-							suffix  );
-			else if (field[0] == 'A')
-				job_format_add_job_id2(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix);
-			else if (field[0] == 'b')
-				/* Vestigial option */
-				job_format_add_tres_per_node(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (field[0] == 'B')
-				job_format_add_batch_host( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'c')
-				job_format_add_min_cpus( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix  );
-			else if (field[0] == 'C')
-				job_format_add_num_cpus( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix  );
-			else if (field[0] == 'd')
-				job_format_add_min_tmp_disk(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix  );
-			else if (field[0] == 'D')
-				job_format_add_num_nodes( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
-			else if (field[0] == 'e')
-				job_format_add_time_end( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'E')
-				job_format_add_dependency( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'f')
-				job_format_add_features( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'F')
-				job_format_add_array_job_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (field[0] == 'g')
-				job_format_add_group_name( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'G')
-				job_format_add_group_id( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'h')
-				job_format_add_over_subscribe(
-						       params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (field[0] == 'H')
-				job_format_add_sockets( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (field[0] == 'i')
-				job_format_add_job_id( params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (field[0] == 'I')
-				job_format_add_cores( params.format_list,
-						      field_size,
-						      right_justify, suffix );
-			else if (field[0] == 'j')
-				job_format_add_name( params.format_list,
-						     field_size,
-						     right_justify, suffix );
-			else if (field[0] == 'J')
-				job_format_add_threads( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (field[0] == 'k')
-				job_format_add_comment( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (field[0] == 'K')
-				job_format_add_array_task_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (field[0] == 'l')
-				job_format_add_time_limit( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'L')
-				job_format_add_time_left( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'm')
-				job_format_add_min_memory( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'M')
-				job_format_add_time_used( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'n')
-				job_format_add_req_nodes( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'N')
-				job_format_add_nodes( params.format_list,
-						      field_size,
-						      right_justify, suffix );
-			else if (field[0] == 'o')
-				job_format_add_command( params.format_list,
-							field_size,
-							right_justify, suffix);
-			else if (field[0] == 'O')
-				job_format_add_contiguous( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'p')
-				job_format_add_priority( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'P')
-				job_format_add_partition( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'q')
-				job_format_add_qos( params.format_list,
-						    field_size,
-						    right_justify,
-						    suffix );
-			else if (field[0] == 'Q')
-				job_format_add_priority_long(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (field[0] == 'r')
-				job_format_add_reason( params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (field[0] == 'R')
-				job_format_add_reason_list( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (field[0] == 'S')
-				job_format_add_time_start( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 't')
-				job_format_add_job_state_compact(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (field[0] == 'T')
-				job_format_add_job_state( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'U')
-				job_format_add_user_id( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (field[0] == 'u')
-				job_format_add_user_name( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'v')
-				job_format_add_reservation( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (field[0] == 'V')
-				job_format_add_time_submit( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (field[0] == 'w')
-				job_format_add_wckey( params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (field[0] == 'W')
-				job_format_add_licenses( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (field[0] == 'x')
-				job_format_add_exc_nodes( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'X')
-				job_format_add_core_spec( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (field[0] == 'y')
-				job_format_add_nice( params.format_list,
-						     field_size, right_justify,
-						     suffix );
-			else if (field[0] == 'Y')
-				job_format_add_schednodes( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (field[0] == 'z')
-				job_format_add_num_sct( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (field[0] == 'Z')
-				job_format_add_work_dir( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
+			for (i = 0; fmt_data_job[i].name || fmt_data_job[i].c;
+			     i++) {
+				if (field[0] == fmt_data_job[i].c) {
+					found = true;
+					job_format_add_function(
+						params.format_list, field_size,
+						right_justify, suffix,
+						fmt_data_job[i].fn);
+					break;
+				}
+			}
+			if (found)
+				; /* NO-OP */
 			else if (format_all)
 				xfree(suffix);	/* ignore */
 			else {
@@ -985,6 +875,8 @@ extern int parse_long_format(char *format_long)
 	char *tmp_format = NULL, *token = NULL, *str_tmp = NULL;
 	char *sep = NULL;
 	char* suffix = NULL;
+	bool found = false;
+	int i = 0;
 
 	if (format_long == NULL) {
 		error("Format long option lacks specification");
@@ -995,171 +887,23 @@ extern int parse_long_format(char *format_long)
 	tmp_format = xstrdup(format_long);
 	token = strtok_r(tmp_format, ",",&str_tmp);
 	while (token) {
+		found = false;
 		_parse_long_token( token, sep, &field_size, &right_justify,
 				   &suffix);
 
 		if (params.step_flag) {
-
-			if (!xstrcasecmp(token, "cluster"))
-				step_format_add_cluster_name(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix);
-			else if (!xstrncasecmp(token, "container",
-					       strlen("container")))
-				step_format_add_container(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix);
-			else if (!xstrncasecmp(token, "containerid",
-					       strlen("containerid")))
-				step_format_add_container_id(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix);
-			else if (!xstrncasecmp(token, "numtasks",
-					       strlen("numtask")))
-				step_format_add_num_tasks( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "gres"))
-				/* Vestigial option */
-				step_format_add_tres_per_node(
-							params.format_list,
-							field_size,
-							right_justify, suffix );
-			else if (!xstrcasecmp(token, "stepid"))
-				step_format_add_id( params.format_list,
-						    field_size,
-						    right_justify, suffix );
-			else if (!xstrcasecmp(token, "stepname"))
-				step_format_add_name( params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (!xstrcasecmp(token, "timelimit"))
-				step_format_add_time_limit( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "timeused"))
-				step_format_add_time_used( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "nodes"))
-				step_format_add_nodes( params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "partition"))
-				step_format_add_partition( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "starttime"))
-				step_format_add_time_start( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "userid"))
-				step_format_add_user_id( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if  (!xstrcasecmp(token, "username"))
-				step_format_add_user_name( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "arrayjobid"))
-				step_format_add_array_job_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "arraytaskid"))
-				step_format_add_array_task_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if ( !xstrcasecmp(token, "jobid"))
-				step_format_add_job_id( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if ( !xstrcasecmp(token, "network"))
-				step_format_add_network( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if ( !xstrcasecmp(token, "numcpus"))
-				step_format_add_num_cpus( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if ( !xstrcasecmp(token, "cpufreq"))
-				step_format_add_cpu_freq( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if ( !xstrcasecmp(token, "resvports"))
-				step_format_add_resv_ports( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if ( !xstrcasecmp(token, "stepstate"))
-				step_format_add_step_state( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "cpus-per-tres"))
-				step_format_add_cpus_per_tres(params.format_list,
-							      field_size,
-							      right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "mem-per-tres"))
-				step_format_add_mem_per_tres(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "tres-bind"))
-				step_format_add_tres_bind(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "tres-freq"))
-				step_format_add_tres_freq(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "tres-per-job") ||
-				 !xstrcasecmp(token, "tres-per-step"))
-				step_format_add_tres_per_step(params.format_list,
-							     field_size,
-							     right_justify,
-							      suffix );
-			else if (!xstrcasecmp(token, "tres-per-node"))
-				step_format_add_tres_per_node(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "tres-per-socket"))
-				step_format_add_tres_per_socket(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "tres-per-task"))
-				step_format_add_tres_per_task(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else {
+			for (i = 0; fmt_data_step[i].name || fmt_data_step[i].c;
+			     i++) {
+				if (!xstrcasecmp(token, fmt_data_step[i].name)) {
+					found = true;
+					step_format_add_function(
+						params.format_list, field_size,
+						right_justify, suffix,
+						fmt_data_step[i].fn);
+					break;
+				}
+			}
+			if (!found) {
 				step_format_add_invalid( params.format_list,
 							 field_size,
 							 right_justify,
@@ -1168,607 +912,19 @@ extern int parse_long_format(char *format_long)
 					"specification: %s",
 					token );
 			}
-
 		} else {
-
-			if (!xstrcasecmp(token,"account"))
-				job_format_add_account( params.format_list,
-							field_size,
-							right_justify,
-							suffix  );
-			else if (!xstrcasecmp(token, "container"))
-				job_format_add_container(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "jobid"))
-				job_format_add_job_id2(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "gres"))
-				/* Vestigial option */
-				job_format_add_tres_per_node(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token,"batchhost"))
-				job_format_add_batch_host(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "burstbuffer"))
-				job_format_add_burst_buffer(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix);
-			else if (!xstrcasecmp(token, "burstbufferstate"))
-				job_format_add_burst_buffer_state(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix);
-			else if (!xstrcasecmp(token, "cluster"))
-				job_format_add_cluster_name(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix);
-			else if (!xstrcasecmp(token, "container"))
-				job_format_add_container(params.format_list,
-							 field_size,
-							 right_justify, suffix);
-			else if (!xstrcasecmp(token, "containerid"))
-				job_format_add_container_id(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix);
-			else if (!xstrcasecmp(token, "delayboot"))
-				job_format_add_delay_boot(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix);
-			else if (!xstrcasecmp(token,"mincpus"))
-				job_format_add_min_cpus( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix  );
-			else if (!xstrcasecmp(token,"numcpus"))
-				job_format_add_num_cpus( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix  );
-			else if (!xstrcasecmp(token, "mintmpdisk"))
-				job_format_add_min_tmp_disk(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix  );
-			else if (!xstrcasecmp(token, "numnodes"))
-				job_format_add_num_nodes( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
-			else if (!xstrncasecmp(token, "numtasks",
-					       strlen("numtask")))
-				job_format_add_num_tasks( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
-			else if (!xstrcasecmp(token, "endtime"))
-				job_format_add_time_end( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-
-			else if (!xstrcasecmp(token, "dependency"))
-				job_format_add_dependency( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "feature"))
-				job_format_add_features( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "clusterfeature"))
-				job_format_add_cluster_features(
-							params.format_list,
-							field_size,
-							right_justify, suffix);
-			else if (!xstrcasecmp(token, "prefer"))
-				job_format_add_prefer(params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix);
-			else if (!xstrcasecmp(token, "arrayjobid"))
-				job_format_add_array_job_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token,"groupname"))
-				job_format_add_group_name( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token,"groupid"))
-				job_format_add_group_id( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "oversubscribe") ||
-				 !xstrcasecmp(token, "shared"))
-				job_format_add_over_subscribe(
-						       params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-
-			else if (!xstrcasecmp(token, "sockets"))
-				job_format_add_sockets( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token,"jobarrayid"))
-				job_format_add_job_id( params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "cores"))
-				job_format_add_cores( params.format_list,
-						      field_size,
-						      right_justify, suffix );
-			else if (!xstrcasecmp(token, "name"))
-				job_format_add_name( params.format_list,
-						     field_size,
-						     right_justify, suffix );
-			else if (!xstrcasecmp(token, "threads"))
-				job_format_add_threads( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "admin_comment"))
-				job_format_add_admin_comment( params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-			else if (!xstrcasecmp(token, "system_comment"))
-				job_format_add_system_comment(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "comment"))
-				job_format_add_comment( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "arraytaskid"))
-				job_format_add_array_task_id(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "timelimit"))
-				job_format_add_time_limit( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "timeleft"))
-				job_format_add_time_left( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "minmemory"))
-				job_format_add_min_memory( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token,"timeused"))
-				job_format_add_time_used( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "reqnodes"))
-				job_format_add_req_nodes( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "nodelist"))
-				job_format_add_nodes( params.format_list,
-						      field_size,
-						      right_justify, suffix );
-			else if (!xstrcasecmp(token, "command"))
-				job_format_add_command( params.format_list,
-							field_size,
-							right_justify, suffix);
-			else if (!xstrcasecmp(token, "contiguous"))
-				job_format_add_contiguous( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "priority"))
-				job_format_add_priority( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "partition"))
-				job_format_add_partition( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "qos"))
-				job_format_add_qos( params.format_list,
-						    field_size,
-						    right_justify,
-						    suffix );
-			else if (!xstrcasecmp(token, "prioritylong"))
-				job_format_add_priority_long(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "reason"))
-				job_format_add_reason( params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "reasonlist"))
-				job_format_add_reason_list( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "starttime"))
-				job_format_add_time_start( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "lastschedeval"))
-				job_format_add_job_last_sched_eval(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "statecompact"))
-				job_format_add_job_state_compact(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "state"))
-				job_format_add_job_state( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "userid"))
-				job_format_add_user_id( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "username"))
-				job_format_add_user_name( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "reservation"))
-				job_format_add_reservation( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "submittime"))
-				job_format_add_time_submit( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "pendingtime"))
-				job_format_add_time_pending(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix);
-			else if (!xstrcasecmp(token, "wckey"))
-				job_format_add_wckey( params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (!xstrcasecmp(token, "licenses"))
-				job_format_add_licenses( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "corespec"))
-				job_format_add_core_spec( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "nice"))
-				job_format_add_nice( params.format_list,
-						     field_size, right_justify,
-						     suffix );
-			else if (!xstrcasecmp(token, "schednodes"))
-				job_format_add_schednodes( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "sct"))
-				job_format_add_num_sct( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "workdir"))
-				job_format_add_work_dir( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-
-			else if (!xstrcasecmp(token, "accruetime"))
-				job_format_add_accrue_time(params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix);
-			else if (!xstrcasecmp(token, "allocnodes"))
-				job_format_add_alloc_nodes( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "allocsid"))
-				job_format_add_alloc_sid(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token,"associd"))
-				job_format_add_assoc_id(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "batchflag"))
-				job_format_add_batch_flag(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "boardspernode"))
-				job_format_add_boards_per_node(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "cpuspertask") ||
-				 !xstrcasecmp(token, "cpus-per-task"))
-				job_format_add_cpus_per_task(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-
-			else if (!xstrcasecmp(token, "derivedec"))
-				job_format_add_derived_ec(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "eligibletime"))
-				job_format_add_eligible_time(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "exit_code"))
-				job_format_add_exit_code(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "origin"))
-				job_format_add_fed_origin(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "originraw"))
-				job_format_add_fed_origin_raw(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "siblingsactive"))
-				job_format_add_fed_siblings_active(
-							params.format_list,
-							field_size,
-							right_justify, suffix );
-			else if (!xstrcasecmp(token, "siblingsactiveraw"))
-				job_format_add_fed_siblings_active_raw(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "siblingsviable"))
-				job_format_add_fed_siblings_viable(
-							params.format_list,
-							field_size,
-							right_justify, suffix );
-			else if (!xstrcasecmp(token, "siblingsviableraw"))
-				job_format_add_fed_siblings_viable_raw(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "maxcpus"))
-				job_format_add_max_cpus(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "maxnodes"))
-				job_format_add_max_nodes(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "network"))
-				job_format_add_network(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "ntpercore"))
-				job_format_add_ntasks_per_core(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "ntpernode"))
-				job_format_add_ntasks_per_node(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "ntpersocket"))
-				job_format_add_ntasks_per_socket(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "ntperboard"))
-				job_format_add_ntasks_per_board(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "preempttime"))
-				job_format_add_preempt_time(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "profile"))
-				job_format_add_profile(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "reboot"))
-				job_format_add_reboot(params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (!xstrcasecmp(token, "reqswitch"))
-				job_format_add_req_switch(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "requeue"))
-				job_format_add_requeue(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "resizetime"))
-				job_format_add_resize_time(params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "restartcnt"))
-				job_format_add_restart_cnt(params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "sperboard"))
-				job_format_add_sockets_per_board(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-			else if (!xstrcasecmp(token, "stderr"))
-				job_format_add_std_err(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "stdin"))
-				job_format_add_std_in(params.format_list,
-						      field_size,
-						      right_justify,
-						      suffix );
-			else if (!xstrcasecmp(token, "stdout"))
-				job_format_add_std_out(params.format_list,
-						       field_size,
-						       right_justify,
-						       suffix );
-			else if (!xstrcasecmp(token, "mintime"))
-				job_format_add_min_time(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "wait4switch"))
-				job_format_add_wait4switch(params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
-			else if (!xstrcasecmp(token, "cpus-per-tres"))
-				job_format_add_cpus_per_tres(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "mem-per-tres"))
-				job_format_add_mem_per_tres(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "tres") ||
-				 !xstrcasecmp(token, "tres-alloc"))
-				job_format_add_tres_alloc(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "tres-bind"))
-				job_format_add_tres_bind(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "tres-freq"))
-				job_format_add_tres_freq(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "tres-per-job"))
-				job_format_add_tres_per_job(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "tres-per-node"))
-				job_format_add_tres_per_node(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "tres-per-socket"))
-				job_format_add_tres_per_socket(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			else if (!xstrcasecmp(token, "tres-per-task"))
-				job_format_add_tres_per_task(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-			else if (!xstrcasecmp(token, "mcslabel"))
-				job_format_add_mcs_label(params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
-			else if (!xstrcasecmp(token, "deadline"))
-				job_format_add_deadline(params.format_list,
-							field_size,
-							right_justify,
-							suffix );
-			/* Maintaining "pack*" for retrocompatibility */
-			else if (!xstrcasecmp(token, "packjobid") ||
-				 !xstrcasecmp(token, "hetjobid"))
-				job_format_add_het_job_id(params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if (!xstrcasecmp(token, "packjoboffset") ||
-				 !xstrcasecmp(token, "hetjoboffset"))
-				job_format_add_het_job_offset(params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-			else if (!xstrcasecmp(token, "packjobidset") ||
-				 !xstrcasecmp(token, "hetjobidset"))
-				job_format_add_het_job_id_set(params.format_list,
-							      field_size,
-							      right_justify,
-							      suffix );
-			else {
+			for (i = 0; fmt_data_job[i].name || fmt_data_job[i].c;
+			     i++) {
+				if (!xstrcasecmp(token, fmt_data_job[i].name)) {
+					found = true;
+					job_format_add_function(
+						params.format_list, field_size,
+						right_justify, suffix,
+						fmt_data_job[i].fn);
+					break;
+				}
+			}
+			if (!found) {
 				job_format_add_invalid( params.format_list,
 							field_size,
 							right_justify,
