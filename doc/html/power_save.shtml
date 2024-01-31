@@ -64,7 +64,7 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<p>The following configuration parameters are available:</p>
+<p>The following configuration parameters of interest include:</p>
 
 <dl>
   <dt id="DebugFlags"><b>DebugFlags<a class="slurm_link" href=
