@@ -1846,8 +1846,6 @@ static void _poll_connections(void *x)
 		goto done;
 	}
 
-	fds_ptr = args->fds;
-
 	xrecalloc(args->fds, ((count * 2) + 2), sizeof(*args->fds));
 
 	args->nfds = 0;
