@@ -2,6 +2,24 @@
 
 <h1>Slurm Power Saving Guide</h1>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+
+<ul>
+  <li><a href="#overview">Overview</a></li>
+  <li><a href="#config">Configuration</a></li>
+  <li><a href="#lifecycle">Node Lifecycle</a></li>
+  <li><a href="#manual">Manual Power Saving</a></li>
+  <li><a href="#resume_suspend">Resume and Suspend Programs</a></li>
+  <li><a href="#tolerance">Fault Tolerance</a></li>
+  <li><a href="#images">Booting Different Images</a></li>
+  <li><a href="#allocations">Use of Allocations</a></li>
+  <li><a href="#nodefeatures">Node Features</a></li>
+  <li><a href="#hybrid">Hybrid Cluster</a></li>
+  <li><a href="#accounting">Cloud Accounting</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
 <p>Slurm provides an integrated mechanism for nodes being suspended (powered
 down, placed into power saving mode) and resumed (powered up, restored from
 power saving mode) on demand or by request. Nodes that remain <i>IDLE</i> for
@@ -918,5 +936,5 @@ $ curl -k -s \
 ]
 </pre>
 
-<p style="text-align:center;">Last modified 10 November 2023</p>
+<p style="text-align:center;">Last modified 02 February 2024</p>
 <!--#include virtual="footer.txt"-->
