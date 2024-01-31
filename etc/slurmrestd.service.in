@@ -14,10 +14,11 @@ EnvironmentFile=-/etc/default/slurmrestd
 # an unpriviledged user to run as.
 # User=
 # Group=
-# Default to listen on slurmrestd port
-ExecStart=@sbindir@/slurmrestd $SLURMRESTD_OPTIONS 0.0.0.0:@SLURMRESTD_PORT@
+ExecStart=@sbindir@/slurmrestd $SLURMRESTD_OPTIONS
 # Enable auth/jwt be default, comment out the line to disable it for slurmrestd
 Environment=SLURM_JWT=daemon
+# Listen on TCP socket by default.
+Environment=SLURMRESTD_LISTEN=:@SLURMRESTD_PORT@
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
