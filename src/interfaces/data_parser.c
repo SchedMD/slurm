@@ -82,6 +82,7 @@ typedef struct {
 	openapi_type_t (*resolve_openapi_type)(void *arg,
 					       data_parser_type_t type,
 					       const char *field);
+	const char *(*resolve_type_str)(void *arg, data_parser_type_t type);
 } parse_funcs_t;
 
 typedef struct {
@@ -100,6 +101,7 @@ static const char *parse_syms[] = {
 	"data_parser_p_assign",
 	"data_parser_p_specify",
 	"data_parser_p_resolve_openapi_type",
+	"data_parser_p_resolve_type_string",
 };
 
 static plugins_t *plugins = NULL;
@@ -818,4 +820,21 @@ extern openapi_type_t data_parser_g_resolve_openapi_type(
 	xassert(parser->plugin_offset < plugins->count);
 
 	return funcs->resolve_openapi_type(parser->arg, type, field);
+}
+
+extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
+						     data_parser_type_t type)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return NULL;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(plugins);
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->resolve_type_str(parser->arg, type);
 }

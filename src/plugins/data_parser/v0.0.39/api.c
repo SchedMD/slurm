@@ -240,3 +240,19 @@ extern openapi_type_t data_parser_p_resolve_openapi_type(
 
 	return OPENAPI_TYPE_INVALID;
 }
+
+extern const char *data_parser_p_resolve_type_string(args_t *args,
+						     data_parser_type_t type)
+{
+	const parser_t *parser = find_parser_by_type(type);
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (!parser)
+		return OPENAPI_TYPE_INVALID;
+
+	while (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
+
+	return parser->type_string;
+}

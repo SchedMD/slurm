@@ -841,4 +841,13 @@ extern openapi_type_t data_parser_g_resolve_openapi_type(
 	data_parser_type_t type,
 	const char *field);
 
+/*
+ * Get stringified type from parser
+ * IN parser - parser to query
+ * IN type - parser type
+ * RET string of parser type or NULL if not known to plugin
+ */
+extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
+						     data_parser_type_t type);
+
 #endif
