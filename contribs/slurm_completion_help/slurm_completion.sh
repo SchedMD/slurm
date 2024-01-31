@@ -4842,32 +4842,6 @@ function __slurm_comp_squeue_flags() {
 		"wckey"
 		"workdir"
 	)
-	local states=(
-		"boot_fail"
-		"cancelled"
-		"completed"
-		"completing"
-		"configuring"
-		"deadline"
-		"failed"
-		"node_fail"
-		"out_of_memory"
-		"pending"
-		"preempted"
-		"running"
-		"requeued"
-		"requeue_fed"
-		"requeue_hold"
-		"resizing"
-		"revoked"
-		"resv_del_hold"
-		"signaling"
-		"special_exit"
-		"stage_out"
-		"stopped"
-		"suspended"
-		"timeout"
-	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
@@ -4887,7 +4861,7 @@ function __slurm_comp_squeue_flags() {
 	-R | --reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	-s | --steps) __slurm_compreply_list "$(__slurm_jobsteps)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
-	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
+	-t | --state?(s)) __slurm_compreply_list "$(__slurm_helpstate "$cmd")" "ALL" ;;
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
 	--yaml) __slurm_compreply "list $(__slurm_dataparser_yaml "$cmd")" ;;

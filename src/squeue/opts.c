@@ -71,6 +71,7 @@
 #define OPT_LONG_YAML         0x111
 #define OPT_LONG_AUTOCOMP     0x112
 #define OPT_LONG_NOTME        0x113
+#define OPT_LONG_HELPSTATE    0x114
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -85,6 +86,7 @@ static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
 static void _parse_long_token( char *token, char *sep, int *field_size,
 			       bool *right_justify, char **suffix);
+static void _print_job_states(void);
 static void  _print_options( void );
 static void  _usage( void );
 static void _filter_nodes(void);
@@ -113,6 +115,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"format",     required_argument, 0, 'o'},
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
+		{"helpstate",  no_argument,       0, OPT_LONG_HELPSTATE},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
@@ -377,6 +380,10 @@ extern void parse_command_line(int argc, char **argv)
 			suggest_completion(long_options, optarg);
 			exit(0);
 			break;
+		case OPT_LONG_HELPSTATE:
+			_print_job_states();
+			exit(0);
+			break;
 		}
 	}
 
@@ -493,25 +500,16 @@ extern void parse_command_line(int argc, char **argv)
 		_print_options();
 }
 
-/*
- * _parse_state - convert job state name string to numeric value
- * IN str - state name
- * OUT states - enum job_states value corresponding to str
- * RET 0 or error code
- */
-static int _parse_state(char *str, uint32_t *states)
+static const char *_job_state_list(void)
 {
-	uint32_t i;
-	char *state_names;
+	int i;
+	static char *state_names = NULL;
 
-	if ((i = job_state_num(str)) != NO_VAL) {
-		*states = i;
-		return SLURM_SUCCESS;
-	}
+	if (state_names)
+		return state_names;
 
-	error("Invalid job state specified: %s", str);
 	state_names = xstrdup(job_state_string(0));
-	for (i=1; i<JOB_END; i++) {
+	for (i = 1; i < JOB_END; i++) {
 		xstrcat(state_names, ",");
 		xstrcat(state_names, job_state_string(i));
 	}
@@ -539,9 +537,43 @@ static int _parse_state(char *str, uint32_t *states)
 	xstrcat(state_names, job_state_string(JOB_STAGE_OUT));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_STOPPED));
-	error("Valid job states include: %s\n", state_names);
-	xfree (state_names);
+
+	for (i = 0; i < strlen(state_names); i++)
+		state_names[i] = tolower(state_names[i]);
+
+	return state_names;
+}
+
+/*
+ * _parse_state - convert job state name string to numeric value
+ * IN str - state name
+ * OUT states - enum job_states value corresponding to str
+ * RET 0 or error code
+ */
+static int
+_parse_state( char* str, uint32_t* states )
+{
+	if (job_state_num(str) != NO_VAL)
+		return SLURM_SUCCESS;
+
+	error("Invalid job state specified: %s", str);
+	error("Valid job states include: %s\n", _job_state_list());
 	return SLURM_ERROR;
+}
+
+static void _print_job_states(void)
+{
+	char *states = xstrdup(_job_state_list());
+
+	for (uint32_t i = 0; states[i]; i++){
+		if (states[i] == ',')
+			states[i] = '\n';
+	}
+
+	if (states)
+		printf("%s\n", states);
+
+	xfree(states);
 }
 
 /*

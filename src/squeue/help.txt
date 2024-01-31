@@ -46,4 +46,6 @@ Usage: squeue [OPTIONS]
 
 Help options:
   --help                          show this help message
+  --helpstate                     print a list of states that can use specified
+                                  with '--states=' option
   --usage                         display a brief summary of squeue options
