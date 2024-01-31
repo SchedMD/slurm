@@ -72,6 +72,8 @@
 #define OPT_LONG_AUTOCOMP     0x112
 #define OPT_LONG_NOTME        0x113
 #define OPT_LONG_HELPSTATE    0x114
+#define OPT_LONG_HELPFORMAT   0x115
+#define OPT_LONG_HELPFORMAT2  0x116
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -81,6 +83,8 @@ static list_t *_build_step_list(char *str);
 static list_t *_build_user_list(char *str);
 static char *_get_prefix(char *token);
 static void  _help( void );
+static void _help_format(bool step);
+static void _help_format2(bool step);
 static int   _parse_state( char* str, uint32_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
@@ -116,6 +120,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"helpstate",  no_argument,       0, OPT_LONG_HELPSTATE},
+		{"helpformat", no_argument,       0, OPT_LONG_HELPFORMAT},
+		{"helpFormat", no_argument,       0, OPT_LONG_HELPFORMAT2},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
@@ -382,6 +388,14 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_HELPSTATE:
 			_print_job_states();
+			exit(0);
+			break;
+		case OPT_LONG_HELPFORMAT:
+			_help_format(params.step_flag);
+			exit(0);
+			break;
+		case OPT_LONG_HELPFORMAT2:
+			_help_format2(params.step_flag);
 			exit(0);
 			break;
 		}
@@ -1355,6 +1369,110 @@ static void _usage(void)
 	static_ref_to_cstring(txt, usage_txt);
 	printf("%s", txt);
 	xfree(txt);
+}
+
+static void _print_job_fmt_fields(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data_job[i].c || fmt_data_job[i].name; i++) {
+		if (!fmt_data_job[i].c)
+			continue;
+		if (fmt_data_job[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 8) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%%%-5c", fmt_data_job[i].c);
+	}
+	printf("\n");
+}
+
+static void _print_step_fmt_fields(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data_step[i].c || fmt_data_step[i].name; i++) {
+		if (!fmt_data_step[i].c)
+			continue;
+		if (fmt_data_step[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 8) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%%%-5c", fmt_data_step[i].c);
+	}
+	printf("\n");
+}
+
+static void _help_format(bool step_flag)
+{
+	if (step_flag)
+		_print_step_fmt_fields();
+	else
+		_print_job_fmt_fields();
+}
+
+static void _print_job_fmt_fields2(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data_job[i].c || fmt_data_job[i].name; i++) {
+		if (!fmt_data_job[i].name)
+			continue;
+		if (fmt_data_job[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 4) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%-20s", fmt_data_job[i].name);
+	}
+	printf("\n");
+}
+
+static void _print_step_fmt_fields2(void)
+{
+	int i = 0;
+	int cnt = 0;
+
+	for (i = 0; fmt_data_step[i].c || fmt_data_step[i].name; i++) {
+		if (!fmt_data_step[i].name)
+			continue;
+		if (fmt_data_step[i].flags & FMT_FLAG_HIDDEN)
+			continue;
+
+		if (cnt & 4) {
+			cnt = 0;
+			printf("\n");
+		}
+
+		cnt++;
+		printf("%-20s", fmt_data_step[i].name);
+	}
+	printf("\n");
+}
+
+static void _help_format2(bool step_flag)
+{
+	if (step_flag)
+		_print_step_fmt_fields2();
+	else
+		_print_job_fmt_fields2();
 }
 
 /*

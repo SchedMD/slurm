@@ -46,6 +46,10 @@ Usage: squeue [OPTIONS]
 
 Help options:
   --help                          show this help message
+  --helpformat                    print a list of fields that can be specified
+                                  with '--format=' option
+  --helpFormat                    print a list of fields that can be specified
+                                  with '--Format=' option
   --helpstate                     print a list of states that can use specified
                                   with '--states=' option
   --usage                         display a brief summary of squeue options

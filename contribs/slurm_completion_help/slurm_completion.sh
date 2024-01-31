@@ -913,6 +913,30 @@ function __slurm_helpformat() {
 	echo "${output}"
 }
 
+# Slurm helper function to get format list
+#
+# $1: slurm command to run helpFormat against
+# $2: output case
+# RET: space delimited list
+function __slurm_helpformat2() {
+	local cmd="$1"
+	local case="${2:-lower}"
+	local output=""
+
+	if [[ -z $cmd ]]; then
+		__slurm_log_error "$(__func__): command context is empty"
+		return 1
+	fi
+
+	output="$(__slurm_func_wrapper "$cmd --helpFormat")"
+	if [[ $case == "lower" ]]; then
+		output=${output,,} # force lowercase
+	elif [[ $case == "upper" ]]; then
+		output=${output^^} # force uppercase
+	fi
+	echo "${output}"
+}
+
 # Slurm helper function to get job reason list
 #
 # $1: slurm command to run --helpreason against
@@ -4693,155 +4717,9 @@ complete -o nospace -F _sprio sprio
 # RET: 0 = did completion; 1 = no completion
 function __slurm_comp_squeue_flags() {
 	local cmd="$1"
-	local fields=(
-		"%ALL"
-		"%a" "%A"
-		"%b" "%B"
-		"%c" "%C"
-		"%d" "%D"
-		"%e" "%E"
-		"%f" "%F"
-		"%g" "%G"
-		"%h" "%H"
-		"%i" "%I"
-		"%j" "%J"
-		"%k" "%K"
-		"%l" "%L"
-		"%m" "%M"
-		"%n" "%N"
-		"%o" "%O"
-		"%p" "%P"
-		"%q" "%Q"
-		"%r" "%R"
-		"%s" "%S"
-		"%t" "%T"
-		"%u" "%U"
-		"%v" "%V"
-		"%w" "%W"
-		"%x" "%X"
-		"%y" "%Y"
-		"%z" "%Z"
-	)
-	local fields_long=(
-		"ALL"
-		"account"
-		"accruetime"
-		"admin_comment"
-		"allocnodes"
-		"allocsid"
-		"arrayjobid"
-		"arraytaskid"
-		"associd"
-		"batchflag"
-		"batchhost"
-		"boardspernode"
-		"burstbuffer"
-		"burstbufferstate"
-		"cluster"
-		"clusterfeature"
-		"command"
-		"comment"
-		"contiguous"
-		"container"
-		"cores"
-		"corespec"
-		"cpufreq"
-		"cpus-per-task"
-		"cpus-per-tres"
-		"deadline"
-		"delayboot"
-		"dependency"
-		"derivedec"
-		"eligibletime"
-		"endtime"
-		"exit_code"
-		"feature"
-		"groupid"
-		"groupname"
-		"hetjobid"
-		"hetjobidset"
-		"hetjoboffset"
-		"jobarrayid"
-		"jobid"
-		"lastschedeval"
-		"licenses"
-		"maxcpus"
-		"maxnodes"
-		"mcslabel"
-		"mem-per-tres"
-		"mincpus"
-		"minmemory"
-		"mintime"
-		"mintmpdisk"
-		"name"
-		"network"
-		"nice"
-		"nodelist"
-		"nodes"
-		"ntperboard"
-		"ntpercore"
-		"ntpernode"
-		"ntpersocket"
-		"numcpus"
-		"numnodes"
-		"numtasks"
-		"origin"
-		"originraw"
-		"oversubscribe"
-		"partition"
-		"preempttime"
-		"pendingtime"
-		"priority"
-		"prioritylong"
-		"profile"
-		"qos"
-		"reason"
-		"reasonlist"
-		"reboot"
-		"reqnodes"
-		"reqswitch"
-		"requeue"
-		"reservation"
-		"resizetime"
-		"restartcnt"
-		"resvport"
-		"schednodes"
-		"sct"
-		"siblingsactive"
-		"siblingsactiveraw"
-		"siblingsviable"
-		"siblingsviableraw"
-		"sockets"
-		"sperboard"
-		"starttime"
-		"state"
-		"statecompact"
-		"stderr"
-		"stdin"
-		"stdout"
-		"stepid"
-		"stepname"
-		"stepstate"
-		"submittime"
-		"system_comment"
-		"threads"
-		"timeleft"
-		"timelimit"
-		"timeused"
-		"tres-alloc"
-		"tres-bind"
-		"tres-freq"
-		"tres-per-job"
-		"tres-per-node"
-		"tres-per-socket"
-		"tres-per-step"
-		"tres-per-task"
-		"userid"
-		"username"
-		"wait4switch"
-		"wckey"
-		"workdir"
-	)
+	local _options=()
+	local _compreply=()
+	local steps_flag
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur' cmd='$cmd'"
 
@@ -4851,8 +4729,14 @@ function __slurm_comp_squeue_flags() {
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-i | --iterate) ;;
-	-o | --format) __slurm_compreply_list "${fields[*]}" ;;      # TODO: want --helpformat
-	-O | --Format) __slurm_compreply_list "${fields_long[*]}" ;; # TODO: want --helpformat2
+	-o | --format)
+		steps_flag="$(__slurm_find_param "-s --steps")"
+		__slurm_compreply_list "$(__slurm_helpformat "$cmd $steps_flag" "nocase")" "%ALL"
+		;;
+	-O | --Format)
+		steps_flag="$(__slurm_find_param "-s --steps")"
+		__slurm_compreply_list "$(__slurm_helpformat2 "$cmd $steps_flag")"
+		;;
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	-L | --license?(s)) __slurm_compreply_list "$(__slurm_licenses)" ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
@@ -4860,7 +4744,13 @@ function __slurm_comp_squeue_flags() {
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	-R | --reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	-s | --steps) __slurm_compreply_list "$(__slurm_jobsteps)" ;;
-	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
+	-S | --sort)
+		_options=("$(__slurm_helpformat "$cmd" "nocase")")
+		_options=("${_options//%/}")                          # remove '%' prefix
+		_compreply+=("$(compgen -W "${_options[*]}" -P "+")") # ascending
+		_compreply+=("$(compgen -W "${_options[*]}" -P "-")") # descending
+		__slurm_compreply_list "${_compreply[*]}"
+		;;
 	-t | --state?(s)) __slurm_compreply_list "$(__slurm_helpstate "$cmd")" "ALL" ;;
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	--json) __slurm_compreply "list $(__slurm_dataparser_json "$cmd")" ;;
