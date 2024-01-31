@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 		    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
 			print_fields_header(print_fields_list);
 		if (get_data() == SLURM_ERROR)
-			exit(errno);
+			exit(1);
 		if (params.opt_completion)
 			do_list_completion();
 		else
