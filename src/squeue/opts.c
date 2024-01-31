@@ -608,7 +608,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"DerivedEC", 0, _print_job_derived_ec, 0},
 	{"EligibleTime", 0, _print_job_eligible_time, 0},
 	{"EndTime", 'e', _print_job_time_end, 0},
-	{NULL, 'x', _print_job_exc_nodes, 0},
+	{"ExcNodes", 'x', _print_job_exc_nodes, 0},
 	{"exit_code", 0, _print_job_exit_code, 0},
 	{"Feature", 'f', _print_job_features, 0},
 	{"Gres", 'b', _print_job_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial*/
