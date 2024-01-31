@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix health check program not being run after first pass of all nodes when
     using MaxNodeCount.
  -- sacct - Set process exit code to one for all errors.
+ -- Add SlurmctldParameters=disable_triggers option.
 
 * Changes in Slurm 23.11.3
 ==========================
