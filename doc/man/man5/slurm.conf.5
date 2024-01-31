@@ -1232,8 +1232,8 @@ completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute path name
 directory as the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
 be used to run more than one epilog script (e.g. "/etc/slurm/epilog.d/*").
 When more than one epilog script is configured, they are executed in reverse
-order. The Epilog script or scripts may be used to purge files, disable user
-login, etc.
+alphabetical order (z-a -> Z-A -> 9-0). The Epilog script(s) may be used
+to purge files, disable user login, etc.
 By default there is no epilog.
 See \fBProlog and Epilog Scripts\fR for more information.
 .IP
@@ -3237,8 +3237,8 @@ job step from a new job allocation. If it is not an absolute path name (i.e. it
 does not start with a slash), it will be searched for in the same directory as
 the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
 specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
-than one prolog script is configured, they are executed in reverse order.
-The slurmd executes the prolog before starting
+than one prolog script is configured, they are executed in reverse alphabetical
+order (z-a -> Z-A -> 9-0). The slurmd executes the prolog before starting
 the first job step.  The prolog script or scripts may be used to purge files,
 enable user login, etc.  By default there is no prolog. Any configured script
 is expected to complete execution quickly (in less time than
@@ -4920,7 +4920,7 @@ steady\-state RPC load established by the refill period and rate.
 .IP
 
 .TP
-\fBrl_log_freq\fR
+\fBrl_log_freq=\fR
 The maximum frequency (in seconds) for which logs about RPC limit being exceeded
 by an individual user are printed to the logs. Set to 0 to see every incidence.
 Set to -1 to disable the log message entirely.
