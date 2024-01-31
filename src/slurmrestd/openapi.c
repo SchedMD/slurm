@@ -127,13 +127,17 @@ typedef struct {
 	bool found;
 } list_find_dict_name_t;
 
+#define MAGIC_MERGE_PATH 0x22b2ae44
 typedef struct {
+	int magic; /* MAGIC_MERGE_PATH */
 	data_t *paths;
 	data_t *server_path;
 	openapi_spec_flags_t flags;
 } merge_path_t;
 
+#define MAGIC_MERGE_ID_PATH 0x22b2aeae
 typedef struct {
+	int magic; /* MAGIC_MERGE_ID_PATH */
 	data_t *server_path;
 	char *operation;
 	char *at;
@@ -1149,6 +1153,9 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 	id_merge_path_t *args = arg;
 	char *p;
 
+	xassert(args->magic == MAGIC_MERGE_ID_PATH);
+	xassert(args->merge_args->magic == MAGIC_MERGE_PATH);
+
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
@@ -1244,6 +1251,9 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 	id_merge_path_t *args = arg;
 	data_t *op = NULL;
 
+	xassert(args->magic == MAGIC_MERGE_ID_PATH);
+	xassert(args->merge_args->magic == MAGIC_MERGE_PATH);
+
 	if (data_get_type(data) != DATA_TYPE_DICT)
 		return DATA_FOR_EACH_CONT;
 
@@ -1334,10 +1344,13 @@ static data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	data_t *merge[3] = { 0 }, *merged = NULL;
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 	id_merge_path_t id_merge = {
+		.magic = MAGIC_MERGE_ID_PATH,
 		.merge_args = args,
 	};
 	bool free_0 = false; /* free merge[0] ? */
 	char *path = NULL;
+
+	xassert(args->magic == MAGIC_MERGE_PATH);
 
 	if (data_get_type(data) != DATA_TYPE_DICT) {
 		rc = DATA_FOR_EACH_FAIL;
@@ -1404,6 +1417,7 @@ static data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 {
 	merge_path_server_t *args = arg;
 	merge_path_t p_args = {
+		.magic = MAGIC_MERGE_PATH,
 		.paths = args->dst_paths,
 		.flags = args->flags,
 	};
@@ -1549,6 +1563,7 @@ extern int get_openapi_specification(data_t *resp)
 		} else {
 			/* servers is not populated, default to '/' */
 			merge_path_t p_args = {
+				.magic = MAGIC_MERGE_PATH,
 				.server_path = NULL,
 				.paths = paths,
 				.flags = spec_flags[i],
