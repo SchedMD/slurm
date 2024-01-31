@@ -48,6 +48,7 @@
 
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/sprio/sprio.h"
@@ -72,6 +73,9 @@ static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
+
+decl_static_data(help_txt);
+decl_static_data(usage_txt);
 
 static void _opt_env(void)
 {
@@ -525,39 +529,20 @@ static list_t *_build_user_list(char *str)
 	return my_list;
 }
 
-static void _usage(void)
+static void _usage( void )
 {
-	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions]\n");
-	printf("   [--federation] [--local] [--sibling] [--usage] [-hlnvVw]\n");
+	char *txt;
+	static_ref_to_cstring(txt, usage_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
-static void _help(void)
+static void _help( void )
 {
-	printf("\
-Usage: sprio [OPTIONS]\n\
-      --federation                display jobs in federation if a member of one\n\
-  -h, --noheader                  no headers on output\n\
-  -j, --jobs                      comma separated list of jobs\n\
-                                  to view, default is all\n\
-      --local                     display jobs on local cluster only\n\
-  -l, --long                      long report\n\
-  -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
-                                  current cluster.  cluster with no name will\n\
-                                  reset to default.\n\
-                                  NOTE: SlurmDBD must be up.\n\
-  -n, --norm                      display normalized values\n\
-  -o, --format=format             format specification\n\
-      --sibling                   display job records separately for each federation cluster\n\
-  -p, --partition=partition_name  comma separated list of partitions\n\
-  -u, --user=user_name            comma separated list of users to view\n\
-  -v, --verbose                   verbosity level\n\
-  -V, --version                   output version information and exit\n\
-  -w, --weights                   show the weights for each priority factor\n\
-\nHelp options:\n\
-  --help                          show this help message\n\
-  --helpformat                    print a list of fields that can be specified\n\
-                                  with '--format=' option\n\
-  --usage                         display a brief summary of sprio options\n");
+	char *txt;
+	static_ref_to_cstring(txt, help_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
 static void _help_format(void)

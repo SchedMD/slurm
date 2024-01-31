@@ -1,0 +1,25 @@
+Usage: sprio [OPTIONS]
+      --federation                display jobs in federation if a member of one
+  -h, --noheader                  no headers on output
+  -j, --jobs                      comma separated list of jobs
+                                  to view, default is all
+      --local                     display jobs on local cluster only
+  -l, --long                      long report
+  -M, --cluster=cluster_name      cluster to issue commands to.  Default is
+                                  current cluster.  cluster with no name will
+                                  reset to default.
+                                  NOTE: SlurmDBD must be up.
+  -n, --norm                      display normalized values
+  -o, --format=format             format specification
+      --sibling                   display job records separately for each federation cluster
+  -p, --partition=partition_name  comma separated list of partitions
+  -u, --user=user_name            comma separated list of users to view
+  -v, --verbose                   verbosity level
+  -V, --version                   output version information and exit
+  -w, --weights                   show the weights for each priority factor
+
+Help options:
+  --help                          show this help message
+  --helpformat                    print a list of fields that can be specified
+                                  with '--format=' option
+  --usage                         display a brief summary of sprio options
