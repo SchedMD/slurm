@@ -2265,7 +2265,8 @@ static void _handle_explicit_req(void *x, void *arg)
 	list_t **ret_gres_list = arg;
 
 	/* Copy over the explicit gres, skip others */
-	if (!(gres_state_job->config_flags & GRES_CONF_EXPLICIT))
+	if (!(gres_state_job->config_flags & GRES_CONF_EXPLICIT) &&
+	    !gres_id_shared(gres_state_job->config_flags))
 		return;
 
 	if (!*ret_gres_list)

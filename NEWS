@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     using MaxNodeCount.
  -- sacct - Set process exit code to one for all errors.
  -- Add SlurmctldParameters=disable_triggers option.
+ -- Fix issue running steps when the allocation requested an exclusive
+    allocation shards along with shards.
 
 * Changes in Slurm 23.11.3
 ==========================
