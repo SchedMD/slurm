@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     up locally on the node.
  -- scontrol - Remove "abort" option handling.
  -- Fix an error message referring to the wrong RPC.
+ -- Fix memory leak on error when creating dynamic nodes.
 
 * Changes in Slurm 23.11.3
 ==========================
