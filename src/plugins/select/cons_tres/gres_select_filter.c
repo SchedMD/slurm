@@ -1027,7 +1027,7 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
-	if (gres_js->gres_per_job == gres_js->total_gres) {
+	if (gres_js->gres_per_job <= gres_js->total_gres) {
 		fini = 1;
 		return fini;
 	}
@@ -1114,7 +1114,7 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 			}
 		}
 	}
-	if (gres_js->gres_per_job == gres_js->total_gres)
+	if (gres_js->gres_per_job <= gres_js->total_gres)
 		fini = 1;
 	return fini;
 }
@@ -1768,11 +1768,13 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				_set_task_bits(i, sock_gres, job_id,
 					       tasks_per_node_socket[i]);
 			} else if (gres_js->gres_per_job) {
-				job_fini = _set_job_bits1(
+				bool tmp = _set_job_bits1(
 					job_res, i, job_node_inx,
 					rem_node_cnt, sock_gres,
 					job_id, tres_mc_ptr,
 					node_ptr->tpc);
+				if (job_fini != 0)
+					job_fini = tmp;
 			} else {
 				error("%s job %u job_spec lacks GRES counter",
 				      __func__, job_id);
@@ -1798,19 +1800,21 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 		 */
 		job_node_inx = -1;
 		for (i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
+			job_fini = -1;
 			sock_gres_iter = list_iterator_create(
 				sock_gres_list[++job_node_inx]);
 			while ((sock_gres = (sock_gres_t *)
 				list_next(sock_gres_iter))) {
+				bool tmp;
 				if (!sock_gres->gres_state_job->gres_data ||
 				    !sock_gres->gres_state_node->gres_data)
 					continue;
-				job_fini = _set_job_bits2(job_res, i,
-							  job_node_inx,
-							  sock_gres, job_id,
-							  tres_mc_ptr);
-				if (job_fini == 1)
-					break;
+				tmp = _set_job_bits2(job_res, i,
+						     job_node_inx,
+						     sock_gres, job_id,
+						     tres_mc_ptr);
+				if (job_fini != 0)
+					job_fini = tmp;
 			}
 			list_iterator_destroy(sock_gres_iter);
 			if (job_fini == 1)
