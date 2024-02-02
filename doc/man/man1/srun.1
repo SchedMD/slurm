@@ -1363,7 +1363,9 @@ An optional GPU type specification can be supplied.
 See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 .br
-\fBNOTE\fR: The allocation has to contain at least one GPU per node.
+\fBNOTE\fR: The allocation has to contain at least one GPU per node, or one of
+each GPU type per node if types are used. Use heterogeneous jobs if different
+nodes need different GPU types.
 .IP
 
 .TP
