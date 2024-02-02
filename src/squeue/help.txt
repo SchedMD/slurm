@@ -6,7 +6,7 @@ Usage: squeue [OPTIONS]
                                   of one
   -h, --noheader                  no headers on output
       --hide                      do not display jobs in hidden partitions
-  -i, --iterate=seconds           specify an interation period
+  -i, --iterate=seconds           specify an iteration period
   -j, --job=job(s)                comma separated list of jobs IDs
                                   to view, default is all
       --json[=data_parser]        Produce JSON output
