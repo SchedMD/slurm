@@ -894,8 +894,18 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	}
 	if ((max_gres > 1) && (gres_ns->link_len == gres_cnt))
 		pick_gres  = NO_VAL16;
-	else
-		pick_gres = max_gres;
+	else {
+		/*
+		 * max_gres can be < 1 if gres_per_job < rem_nodes. Pick at
+		 * least one gpu on the node anyway.
+		 * For example --gpus=typeA:2,typeB:1 where there is only one
+		 * typeA on each node then two nodes are required. Because this
+		 * is not a heterogenous job a typeB gpu does have to be
+		 * allocated on each node even though they only requested one
+		 * for the job.
+		 */
+		pick_gres = MAX(max_gres, 1);
+	}
 	/*
 	 * Now pick specific GRES for these sockets.
 	 * First select all GRES that we might possibly use, starting with
