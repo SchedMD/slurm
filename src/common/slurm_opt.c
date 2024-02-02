@@ -2278,7 +2278,14 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 	tmp_str = xstrdup(arg);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (!xstrcasecmp(tok, "disable-binding")) {
+		if (!xstrcasecmp(tok, "allow-task-sharing")) {
+			if (!opt->srun_opt) {
+				error("--gres-flags=allow-task-sharing is only used with srun.");
+				xfree(tmp_str);
+				return SLURM_ERROR;
+			}
+			opt->job_flags |= GRES_ALLOW_TASK_SHARING;
+		} else if (!xstrcasecmp(tok, "disable-binding")) {
 			opt->job_flags |= GRES_DISABLE_BIND;
 		} else if (!xstrcasecmp(tok, "enforce-binding")) {
 			opt->job_flags |= GRES_ENFORCE_BIND;
@@ -2337,6 +2344,8 @@ static char *arg_get_gres_flags(slurm_opt_t *opt)
 {
 	char *tmp = NULL, *tmp_pos = NULL;
 
+	if (opt->job_flags & GRES_ALLOW_TASK_SHARING)
+		xstrcatat(tmp, &tmp_pos, "allow-task-sharing,");
 	if (opt->job_flags & GRES_DISABLE_BIND)
 		xstrcatat(tmp, &tmp_pos, "disable-binding,");
 	if (opt->job_flags & GRES_ENFORCE_BIND)

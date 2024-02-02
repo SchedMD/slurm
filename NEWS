@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- scrun - Avoid race condition that could cause deadlock during shutdown.
  -- Fix scontrol listpids to work under dynamic node scenarios.
  -- Add --tres-bind to --help and --usage output.
+ -- Add --gres-flags=allow-task-sharing to allow GPUs to still be accessible
+    among all tasks when binding GPUs to specific tasks.
 
 * Changes in Slurm 23.11.3
 ==========================

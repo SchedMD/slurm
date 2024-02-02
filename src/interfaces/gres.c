@@ -238,6 +238,8 @@ static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
+static bool use_local_index = false;
+static bool dev_index_mode_set = false;
 
 /* Local functions */
 static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
@@ -405,12 +407,10 @@ extern int gres_find_step_by_key(void *x, void *key)
 extern bool gres_use_local_device_index(void)
 {
 	bool use_cgroup = false;
-	static bool use_local_index = false;
-	static bool is_set = false;
 
-	if (is_set)
+	if (dev_index_mode_set)
 		return use_local_index;
-	is_set = true;
+	dev_index_mode_set = true;
 
 	if (!slurm_conf.task_plugin)
 		return use_local_index;
@@ -9840,6 +9840,20 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		sep += 8;
 		if (flags)
 			*flags |= GRES_INTERNAL_FLAG_VERBOSE;
+	}
+
+	if (step->flags & LAUNCH_GRES_ALLOW_TASK_SHARING) {
+		if (get_devices)
+			return SLURM_SUCCESS;
+		/*
+		* Overwrite device index setting to use the global node GRES
+		* index, rather than the index local to the task. This ensures
+		* that the GRES environment variable is set correctly on the
+		* task when multiple devices are constrained to the task, and
+		* only the environment variables are bound to specific GRES.
+		*/
+		use_local_index = false;
+		dev_index_mode_set = true;
 	}
 
 	if (!gres_id_shared(gres_context[context_inx].config_flags)) {

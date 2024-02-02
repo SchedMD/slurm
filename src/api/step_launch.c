@@ -329,6 +329,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.flags |= LAUNCH_OVERCOMMIT;
 	if (ctx->step_req->flags & SSF_EXT_LAUNCHER)
 		launch.flags |= LAUNCH_EXT_LAUNCHER;
+	if (ctx->step_req->flags & SSF_GRES_ALLOW_TASK_SHARING)
+		launch.flags |= LAUNCH_GRES_ALLOW_TASK_SHARING;
 
 	launch.task_dist	= params->task_dist;
 	if (params->pty)
