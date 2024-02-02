@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Changed slurmrestd.service to only listen on TCP socket by default.
     Environments with existing drop-in units for the service may need
     further adjustments to work after upgrading.
+ -- Fix how gres are allocated per job when using multiple gres types.
 
 * Changes in Slurm 23.11.4
 ==========================
