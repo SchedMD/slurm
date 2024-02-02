@@ -42,6 +42,9 @@ documents those changes that are of interest to users and administrators.
     parsing compatibility.
  -- Removed TopologyPlugin tree and dragonfly support from select/linear.
     If those topology plugins are desired please switch to select/cons_tres.
+ -- Changed slurmrestd.service to only listen on TCP socket by default.
+    Environments with existing drop-in units for the service may need
+    further adjustments to work after upgrading.
 
 * Changes in Slurm 23.11.4
 ==========================

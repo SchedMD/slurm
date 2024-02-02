@@ -39,3 +39,6 @@ SLURMRESTD CHANGES
  -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been removed.
  -- openapi/dbv0.0.39 and openapi/v0.0.39 plugins have been tagged as
     deprecated to warn of their removal in the next release.
+ -- Changed slurmrestd.service to only listen on TCP socket by default.
+    Environments with existing drop-in units for the service may need
+    further adjustments to work after upgrading.
