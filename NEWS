@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
     allocation shards along with shards.
  -- Fix cleaning up the sleep process and the cgroup of the extern step if
     slurm_spank_task_post_fork returns an error.
+ -- slurm_completion - Add missing --gres-flags= options
+    multiple-tasks-per-sharing and one-task-per-sharing.
 
 * Changes in Slurm 23.11.3
 ==========================
