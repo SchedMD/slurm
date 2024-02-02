@@ -4286,8 +4286,8 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 	START_TIMER;
 	if (!validate_super_user(msg->auth_uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, DELETE_NODE RPC from uid=%u",
-		      msg->auth_uid);
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
 	}
 
 	if (error_code == SLURM_SUCCESS) {
