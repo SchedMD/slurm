@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Remove "abort" option handling.
  -- Fix an error message referring to the wrong RPC.
  -- Fix memory leak on error when creating dynamic nodes.
+ -- Fix a slurmctld segfault when a cloud/dynamic node changes hostname on
+    registration.
 
 * Changes in Slurm 23.11.3
 ==========================

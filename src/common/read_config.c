@@ -2694,12 +2694,8 @@ static void _reset_hostname(names_ll_t *p, char *node_hostname)
 	old_hostname_idx = _get_hash_idx(p->hostname);
 	new_hostname_idx = _get_hash_idx(node_hostname);
 
-	/* reset hostname */
-	xfree(p->hostname);
-	p->hostname = xstrdup(node_hostname);
-
 	if (old_hostname_idx == new_hostname_idx)
-		return;
+		goto end_it;
 
 	/* remove old link */
 	_remove_host_to_node_link(p);
@@ -2713,6 +2709,11 @@ static void _reset_hostname(names_ll_t *p, char *node_hostname)
 	} else {
 		host_to_node_hashtbl[new_hostname_idx] = p;
 	}
+
+end_it:
+	/* reset hostname */
+	xfree(p->hostname);
+	p->hostname = xstrdup(node_hostname);
 }
 
 /*
