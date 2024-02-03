@@ -71,6 +71,11 @@ documents those changes that are of interest to users and administrators.
     slurm_spank_task_post_fork returns an error.
  -- slurm_completion - Add missing --gres-flags= options
     multiple-tasks-per-sharing and one-task-per-sharing.
+ -- scrun - Avoid race condition that could cause outbound network
+    communications to incorrectly rejected with an incomplete packet error.
+ -- scrun - Gracefully handle kernel giving invalid expected number of incoming
+    bytes for a connection causing incoming packet corruption resulting in
+    connection getting closed.
 
 * Changes in Slurm 23.11.3
 ==========================

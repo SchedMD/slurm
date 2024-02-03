@@ -88,6 +88,7 @@
 #define BUFFER_START_SIZE 4096
 #define MAX_CONNECTIONS_DEFAULT 150
 #define THREAD_COUNT_DEFAULT 10
+#define DEFAULT_READ_BYTES 512
 
 /*
  * Connection tracking structure
@@ -946,9 +947,14 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 		/* Didn't fail but buffer is empty so this may be EOF */
 		readable = 1;
 	}
+
+	if (readable < 0) {
+		/* invalid FIONREAD response */
+		readable = DEFAULT_READ_BYTES;
+	}
 #else
 	/* default to at least 512 available in buffer */
-	readable = 512;
+	readable = DEFAULT_READ_BYTES;
 #endif /* FIONREAD */
 
 	/* Grow buffer as needed to handle the incoming data */
@@ -1098,18 +1104,17 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 
 	if (size_buf(con->in) >= need) {
 		/* there is enough data to unpack now */
+		buf_t *rpc = create_shadow_buf((get_buf_data(con->in) +
+						sizeof(con->msglen)),
+					       con->msglen);
+
 		msg = xmalloc(sizeof(*msg));
 		slurm_msg_t_init(msg);
 
-		/* shift the data pointer up by sizeof(msglen) */
-		get_buf_data(con->in) += sizeof(con->msglen);
+		log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
+			     "%s: [%s] unpacking RPC", __func__, con->name);
 
-		log_flag_hex(NET_RAW, get_buf_data(con->in),
-			     size_buf(con->in), "%s: [%s] unpacking RPC",
-			     __func__, con->name);
-
-		if ((rc = slurm_unpack_received_msg(msg, con->input_fd,
-						    con->in))) {
+		if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
 			rc = errno;
 			error("%s: [%s] unpack_msg() failed: %s",
 			      __func__, con->name, slurm_strerror(rc));
@@ -1121,14 +1126,13 @@ static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 				 rpc_num2string(msg->msg_type));
 		}
 
-		/* unshift the data pointer */
-		get_buf_data(con->in) -= sizeof(con->msglen);
-
 		/* notify conmgr we processed some data */
 		set_buf_offset(con->in, need);
 
 		/* reset message length to start all over again */
 		con->msglen = 0;
+
+		FREE_NULL_BUFFER(rpc);
 	} else {
 		log_flag(NET, "%s: [%s] waiting for message length %u/%u for RPC message",
 			 __func__, con->name, size_buf(con->in), need);
