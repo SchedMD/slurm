@@ -9,7 +9,7 @@ Slurm.
 </p>
 
 <h2 id="communications">Dynamic Node Communications
-<a class="slurm_link" href="#config"></a>
+<a class="slurm_link" href="#communications"></a>
 </h2>
 <p>
 For regular, non-dynamically created nodes, Slurm knows how to communicate with
@@ -38,7 +38,7 @@ more details.
 </dl>
 </p>
 
-<h3 id="config">Partition Assignment
+<h3 id="partitions">Partition Assignment
 <a class="slurm_link" href="#partitions"></a>
 </h3>
 <p>
@@ -61,7 +61,7 @@ PartitionName=dyn3 Nodes=ns1,ns2
 </pre>
 </a>
 
-<h2 id="config">Creating Nodes
+<h2 id="create">Creating Nodes
 <a class="slurm_link" href="#create"></a>
 </h2>
 
@@ -109,8 +109,8 @@ scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSoc
 </ol>
 </p>
 
-<h2 id="config">Deleting Nodes
-<a class="slurm_link" href="#create"></a>
+<h2 id="delete">Deleting Nodes
+<a class="slurm_link" href="#delete"></a>
 </h2>
 <p>
 Nodes can be deleted using <b>scontrol delete nodename=&lt;nodelist&gt;</b>.
@@ -118,7 +118,7 @@ Only dynamic nodes that have no running jobs and that are not part of a
 reservation can be deleted.
 </p>
 
-<h2 id="LIMITATIONS">Limitations
+<h2 id="limitations">Limitations
 <a class="slurm_link" href="#limitations"></a>
 </h2>
 <p>
