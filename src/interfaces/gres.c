@@ -2608,8 +2608,9 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
-	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS)
-		return rc;
+	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS) {
+		goto fini;
+	}
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		node_conf.gres_name = gres_context[i].gres_name;

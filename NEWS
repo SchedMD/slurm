@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak on error when creating dynamic nodes.
  -- Fix a slurmctld segfault when a cloud/dynamic node changes hostname on
     registration.
+ -- Prevent a slurmctld deadlock if the gpu plugin fails to load when
+    creating a node.
 
 * Changes in Slurm 23.11.3
 ==========================
