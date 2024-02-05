@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     shutdown when connections have pending events.
  -- scrun - Avoid excessive polling of connections during shutdown that could
     needlessly cause 100% CPU usage on a thread.
+ -- scrun - Avoid race condition where outbound RPCs could be corrupted.
 
 * Changes in Slurm 23.11.3
 ==========================

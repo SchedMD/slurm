@@ -112,9 +112,7 @@ struct conmgr_fd_s {
 	/* has on_data already tried to parse data */
 	bool on_data_tried;
 	/* list of buf_t to write (in order) */
-	list_t *deferred_out;
-	/* buffer holding out going to be written data */
-	buf_t *out;
+	list_t *out;
 	/* this is a socket fd */
 	bool is_socket;
 	/* path to unix socket if it is one */
@@ -355,9 +353,6 @@ static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
 			       conmgr_work_status_t status, const char *tag,
 			       void *arg);
-static void _deferred_write_fd(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg);
 static void _cancel_delayed_work(bool locked);
 static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
@@ -406,10 +401,9 @@ static void _connection_fd_delete(void *x)
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	FREE_NULL_BUFFER(con->in);
-	FREE_NULL_BUFFER(con->out);
+	FREE_NULL_LIST(con->out);
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
-	FREE_NULL_LIST(con->deferred_out);
 	xfree(con->name);
 	xfree(con->unix_socket);
 
@@ -769,14 +763,12 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
-		.deferred_out = list_create((ListDelF) free_buf),
 	};
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
 				     BUFFER_START_SIZE);
-		con->out = create_buf(xmalloc(BUFFER_START_SIZE),
-				      BUFFER_START_SIZE);
+		con->out = list_create((ListDelF) free_buf);
 	}
 
 	/* listen on unix socket */
@@ -1001,28 +993,35 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 			  conmgr_work_status_t status, const char *tag,
 			  void *arg)
 {
+	buf_t *out;
 	ssize_t wrote;
+	int bytes;
+	void *buffer;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (get_buf_offset(con->out) == 0) {
-		log_flag(NET, "%s: [%s] skipping attempt to write 0 bytes",
+	if (!(out = list_peek(con->out))) {
+		log_flag(NET, "%s: [%s] skipping attempt with zero writes",
 			 __func__, con->name);
 		return;
 	}
 
-	log_flag(NET, "%s: [%s] attempting to write %u bytes to fd %u",
-		 __func__, con->name, get_buf_offset(con->out), con->output_fd);
+	xassert(out->magic == BUF_MAGIC);
+	bytes = remaining_buf(out);
+	buffer = get_buf_data(out) + get_buf_offset(out);
+
+	xassert(bytes > 0);
+
+	log_flag(NET, "%s: [%s] attempting %u writes bytes to fd %u",
+		 __func__, con->name, bytes, con->output_fd);
 
 	/* write in non-blocking fashion as we can always continue later */
 	if (con->is_socket)
 		/* avoid ESIGPIPE on sockets and never block */
-		wrote = send(con->output_fd, get_buf_data(con->out),
-			     get_buf_offset(con->out),
+		wrote = send(con->output_fd, buffer, bytes,
 			     (MSG_DONTWAIT | MSG_NOSIGNAL));
 	else /* normal write for non-sockets */
-		wrote = write(con->output_fd, get_buf_data(con->out),
-			      get_buf_offset(con->out));
+		wrote = write(con->output_fd, buffer, bytes);
 
 	if (wrote == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -1033,7 +1032,7 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 
 		error("%s: [%s] error while write: %m", __func__, con->name);
 		/* drop outbound data on the floor */
-		set_buf_offset(con->out, 0);
+		list_flush(con->out);
 		_close_con(false, con);
 		return;
 	} else if (wrote == 0) {
@@ -1042,23 +1041,20 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 
 	log_flag(NET, "%s: [%s] wrote %zu/%u bytes",
-		 __func__, con->name, wrote, get_buf_offset(con->out));
-	log_flag_hex(NET_RAW, get_buf_data(con->out), wrote,
+		 __func__, con->name, wrote, bytes);
+	log_flag_hex(NET_RAW, get_buf_data(out), wrote,
 		     "%s: [%s] wrote", __func__, con->name);
 
-	if (wrote != get_buf_offset(con->out)) {
-		/*
-		 * not all data written, need to shift it to start of
-		 * buffer and fix offset
-		 */
-		memmove(get_buf_data(con->out),
-			(get_buf_data(con->out) + wrote),
-			(get_buf_offset(con->out) - wrote));
+	if (wrote != bytes) {
+		/* Update offset with bytes written so far */
+		set_buf_offset(out, (get_buf_offset(out) + wrote));
+	} else {
+		buf_t *cleanup = list_pop(con->out);
 
-		/* reset start of offset to end of previous data */
-		set_buf_offset(con->out, (get_buf_offset(con->out) - wrote));
-	} else
-		set_buf_offset(con->out, 0);
+		xassert(cleanup == out);
+
+		FREE_NULL_BUFFER(cleanup);
+	}
 }
 
 static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
@@ -1451,7 +1447,7 @@ static int _handle_connection(void *x, void *arg)
 
 	/* handle out going data */
 	if (!con->is_listen && con->output_fd != -1 &&
-	    (count = get_buf_offset(con->out))) {
+	    !list_is_empty(con->out)) {
 		if (con->can_write) {
 			log_flag(NET, "%s: [%s] need to write %u bytes",
 				 __func__, con->name, count);
@@ -1460,8 +1456,8 @@ static int _handle_connection(void *x, void *arg)
 				  "_handle_write");
 		} else {
 			/* must wait until poll allows write of this socket */
-			log_flag(NET, "%s: [%s] waiting to write %u bytes",
-				 __func__, con->name, get_buf_offset(con->out));
+			log_flag(NET, "%s: [%s] waiting for %u writes",
+				 __func__, con->name, list_count(con->out));
 		}
 		return 0;
 	}
@@ -1502,9 +1498,9 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(NET, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		else
-			log_flag(NET, "%s: [%s] waiting to read pending_read=%u pending_write=%u work_active=%c",
+			log_flag(NET, "%s: [%s] waiting to read pending_read=%u pending_writes=%u work_active=%c",
 				 __func__, con->name, get_buf_offset(con->in),
-				 get_buf_offset(con->out),
+				 list_count(con->out),
 				 (con->work_active ? 'T' : 'F'));
 		return 0;
 	}
@@ -1873,9 +1869,9 @@ static void _poll_connections(void *x)
 		if (con->work_active)
 			continue;
 
-		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u work_active=%c",
+		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u outputs=%u work_active=%c",
 			 __func__, con->name, (con->read_eof ? "T" : "F"),
-			 get_buf_offset(con->in), get_buf_offset(con->out),
+			 get_buf_offset(con->in), list_count(con->out),
 			 (con->work_active ? 'T' : 'F'));
 
 		if (con->input_fd == con->output_fd) {
@@ -1885,7 +1881,7 @@ static void _poll_connections(void *x)
 
 			if (con->input_fd != -1)
 				fds_ptr->events |= POLLIN;
-			if (get_buf_offset(con->out))
+			if (!list_is_empty(con->out))
 				fds_ptr->events |= POLLOUT;
 
 			fds_ptr++;
@@ -1902,7 +1898,7 @@ static void _poll_connections(void *x)
 				args->nfds++;
 			}
 
-			if (get_buf_offset(con->out)) {
+			if (!list_is_empty(con->out)) {
 				fds_ptr->fd = con->output_fd;
 				fds_ptr->events = POLLOUT;
 				fds_ptr++;
@@ -2395,100 +2391,25 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 		  "_wrap_on_connection");
 }
 
-static void _deferred_write_fd(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
-{
-	/*
-	 * make sure to trigger a write as the deferred buffers will get
-	 * written first before anything else to maintain order.
-	 */
-
-	(void) conmgr_queue_write_fd(con, NULL, 0);
-}
-
-static int _for_each_deferred_write(void *x, void *arg)
-{
-	buf_t *buf = x;
-	conmgr_fd_t *con = arg;
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	(void) conmgr_queue_write_fd(con, get_buf_data(buf),
-				     get_buf_offset(buf));
-
-	return SLURM_SUCCESS;
-}
-
 extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 				 const size_t bytes)
 {
+	buf_t *buf;
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (list_count(con->deferred_out)) {
-		/* handle deferred first */
-		list_t *deferred = list_create((ListDelF) free_buf);
-		list_transfer(deferred, con->deferred_out);
+	buf = init_buf(bytes);
 
-		(void) list_for_each_ro(deferred, _for_each_deferred_write,
-					con);
+	/* TODO: would be nice to avoid this copy */
+	memmove(get_buf_data(buf), buffer, bytes);
 
-		FREE_NULL_LIST(deferred);
-	}
+	log_flag(NET, "%s: [%s] write of %zu bytes queued",
+		 __func__, con->name, bytes);
 
-	if (!bytes) {
-		log_flag(NET, "%s: [%s] write 0 bytes ignored",
-			 __func__, con->name);
-		return SLURM_SUCCESS;
-	}
+	log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
+		     "%s: queuing up write", __func__);
 
-	if (con->work_active) {
-		/* Grow buffer as needed to handle the outgoing data */
-		if (remaining_buf(con->out) < bytes) {
-			int need = bytes - remaining_buf(con->out);
-
-			if ((need + size_buf(con->out)) >= MAX_BUF_SIZE) {
-				error("%s: [%s] out of buffer space.",
-				      __func__, con->name);
-
-				return SLURM_ERROR;
-			}
-
-			grow_buf(con->out, need);
-		}
-
-		memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
-			bytes);
-
-		log_flag_hex(NET_RAW,
-			     (get_buf_data(con->out) + get_buf_offset(con->out)), bytes,
-			     "%s: queued up write", __func__);
-
-		con->out->processed += bytes;
-
-		log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",
-			 __func__, con->name, bytes, get_buf_offset(con->out));
-	} else {
-		/* we must ensure that all deferred writes maintain
-		 * their order or rpcs may get sliced.
-		 */
-		buf_t *buf = init_buf(bytes);
-
-		/* TODO: would be nice to avoid this copy */
-		memmove(get_buf_data(buf), buffer, bytes);
-		set_buf_offset(buf, bytes);
-
-		log_flag(NET, "%s: [%s] deferred write of %zu bytes queued",
-			 __func__, con->name, bytes);
-
-		log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
-			     "%s: queuing up deferred write", __func__);
-
-		list_append(con->deferred_out, buf);
-
-		_add_work(false, con, _deferred_write_fd,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
-	}
-
+	list_append(con->out, buf);
 	_signal_change(false);
 	return SLURM_SUCCESS;
 }
@@ -2538,10 +2459,6 @@ cleanup:
 		log_flag(NET, "%s: [%s] sending RPC %s packed into %u bytes",
 			 __func__, con->name, rpc_num2string(msg->msg_type),
 			 ntohl(msglen));
-		log_flag_hex(NET_RAW, get_buf_data(con->out),
-			     get_buf_offset(con->out),
-			     "%s: [%s] sending RPC %s", __func__, con->name,
-			     rpc_num2string(msg->msg_type));
 	} else {
 		log_flag(NET, "%s: [%s] error packing RPC %s: %s",
 			 __func__, con->name, rpc_num2string(msg->msg_type),
