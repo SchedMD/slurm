@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2023" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "February 2024" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -890,12 +890,16 @@ exit code of zero).
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
 in some failed state (non\-zero exit code, node failure, timed out, etc).
+This job must be submitted while the specified job is still active or within
+\fBMinJobAge\fR seconds after the specified job has ended.
 .IP
 
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
+This job must be submitted while the specified job is still active or within
+\fBMinJobAge\fR seconds after the specified job has ended.
 .IP
 
 .TP
