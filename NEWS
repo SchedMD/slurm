@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
     registration.
  -- Prevent a slurmctld deadlock if the gpu plugin fails to load when
     creating a node.
+ -- Change a slurmctld fatal() to an error() when attempting to create a
+    dynamic node with a global autodetect set in gres.conf.
 
 * Changes in Slurm 23.11.3
 ==========================
