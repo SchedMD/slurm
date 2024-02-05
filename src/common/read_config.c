@@ -5477,6 +5477,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint16(&conf->unkillable_timeout,
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
+	if (conf->unkillable_timeout < (conf->msg_timeout * 5))
+		error_in_daemon("UnkillableStepTimeout must be at least 5 times greater than MessageTimeout, otherwise nodes may go down with the reason \"KillTaskFailed\". Current values: UnkillableStepTimeout=%u, MessageTimeout=%u",
+				conf->unkillable_timeout, conf->msg_timeout);
 
 	(void) s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 
