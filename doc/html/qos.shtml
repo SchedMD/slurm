@@ -169,7 +169,7 @@ with the <b>UsageFactor</b> applied.
   which has been selected for preemption.
 
 <li><p><b>UsageFactor</b>
-A float that is factored into a job’s TRES usage (e.g. RawUsage, TRESMins,
+A float that is factored into a job's TRES usage (e.g. RawUsage, TRESMins,
 TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
 second a job ran it would count for 2. If the usagefactor was .5, every second
 would only count for half of the time. A setting of 0 would add no timed usage

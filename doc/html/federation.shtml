@@ -254,7 +254,7 @@ submission hosts for this to work.
 <br>
 <b>NOTE</b>: The current implementation of the MPI interfaces in Slurm require
 the SlurmdSpooldir to be the same on the host where the srun is being run as it
-is on the compute nodes in the allocation. If they aren’t, a workaround is to
+is on the compute nodes in the allocation. If they aren't, a workaround is to
 get an allocation that puts the user on the actual compute node. Then the sruns
 on the compute nodes will be using the slurm.conf that corresponds to the
 correct cluster. Setting <b>LaunchParameters=use_interactive_step</b>
@@ -308,7 +308,7 @@ local view for the given cluster(s).
 
 <p>
 Using the existing <b>--clusters,-M option</b>, the status commands will output
-the information in the same format that exists today where each cluster’s
+the information in the same format that exists today where each cluster's
 information is listed separately.
 </p>
 
@@ -364,7 +364,7 @@ the <b>-S %[+-]V</b> option.
 In a federated view, sprio displays the job information from the local cluster
 or from the first cluster to report the job. Since each sibling job could have a
 different priority on each cluster it may be helpful to use the <b>--sibling</b>
-option to show all records of a job to get a better picture of a job’s priority.
+option to show all records of a job to get a better picture of a job's priority.
 The name of the cluster reporting the job record can be displayed using the
 <b>%c</b> format option. The cluster name is shown by default when using
 <b>--sibling</b> option.
