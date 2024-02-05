@@ -507,7 +507,7 @@ is treated as a Max limit.</p>
 
 <dt id="qos_usagefactor"><b>UsageFactor</b>
 <a class="slurm_link" href="#qos_usagefactor"></a></dt>
-<dd>A float that is factored into a job’s TRES usage (e.g. RawUsage,
+<dd>A float that is factored into a job's TRES usage (e.g. RawUsage,
   TRESMins, TRESRunMins). For example, if the usagefactor was 2, for every
   TRESBillingUnit second a job ran it would count for 2. If the usagefactor
   was .5, every second would only count for half of the time.

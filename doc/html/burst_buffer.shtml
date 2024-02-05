@@ -56,13 +56,13 @@ lifetime of a job:</p>
 <ol>
 <li>At job submission</li>
 <li>While the job is pending after an estimated start time is
-established. This is called “stage-in.”</li>
+established. This is called "stage-in."</li>
 <li>Once the job has been scheduled but has not started running yet.
-This is called “pre-run.”</li>
+This is called "pre-run."</li>
 <li>Once the job has completed or been cancelled, but Slurm has not
-released resources for the job yet. This is called “stage-out.”</li>
+released resources for the job yet. This is called "stage-out."</li>
 <li>Once the job has completed, and Slurm has released resources for
-the job. This is called “teardown.”</li>
+the job. This is called "teardown."</li>
 </ol>
 
 <p>This script runs on the slurmctld node. These are the supported plugins:</p>
@@ -75,7 +75,7 @@ the job. This is called “teardown.”</li>
 <a class="slurm_link" href="#overview-dw"></a>
 </h3>
 
-<p>This plugin provides hooks to Cray’s Datawarp APIs. Datawarp implements burst
+<p>This plugin provides hooks to Cray's Datawarp APIs. Datawarp implements burst
 buffers, which are a shared high-speed storage resource. Slurm provides support
 for allocating these resources, staging files in, scheduling compute nodes for
 jobs using these resources, and staging files out. Burst buffers can also be
@@ -89,7 +89,7 @@ specific job.</p>
 
 <p>This plugin provides hooks to an API that is defined by a Lua script. This
 plugin was developed to provide system administrators with a way to do any task
-(not only file staging) at different points in a job’s life cycle. These tasks
+(not only file staging) at different points in a job's life cycle. These tasks
 might include file staging, node maintenance, or any other task that is desired
 to run during one or more of the five job states listed above.</p>
 
@@ -130,7 +130,7 @@ Configuration settings include things like which users may use burst buffers,
 timeouts, paths to burst buffer scripts, etc. See the
 <a href="burst_buffer.conf.html">burst_buffer.conf</a> manual
 for more information.</li>
-<li>The JSON-C library must be installed in order to build Slurm’s
+<li>The JSON-C library must be installed in order to build Slurm's
 <code>burst_buffer/datawarp</code> and <code>burst_buffer/lua</code> plugins,
 which must parse JSON format data. See Slurm's
 <a href="download.html#json">JSON installation information</a> for details.</li>
@@ -280,13 +280,13 @@ to burst_buffer.lua is completed, which results in a crash.</p>
 <a class="slurm_link" href="#resources"></a>
 </h2>
 
-<p>The burst buffer API may define burst buffer resource “pools” from which a
+<p>The burst buffer API may define burst buffer resource "pools" from which a
 job may request a certain amount of pool space. If a pool does not have
-sufficient space to fulfill a job’s request, that job will remain pending until
+sufficient space to fulfill a job's request, that job will remain pending until
 the pool does have enough space. Once the pool has enough space, Slurm may begin
-stage-in for the job. When stage-in begins, Slurm subtracts the job’s requested
-space from the pool’s available space. When teardown completes, Slurm adds the
-job’s requested space back into the pool’s available space. The
+stage-in for the job. When stage-in begins, Slurm subtracts the job's requested
+space from the pool's available space. When teardown completes, Slurm adds the
+job's requested space back into the pool's available space. The
 <a href="#submit">Job Submission Commands</a> section explains how a job may
 request space from a pool. Pool space is a scalar quantity.</p>
 
