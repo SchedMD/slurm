@@ -1,4 +1,4 @@
-.TH "oci.conf" "5" "Slurm Configuration File" "September 2023" "Slurm Configuration File"
+.TH "oci.conf" "5" "Slurm Configuration File" "February 2024" "Slurm Configuration File"
 
 .SH "NAME"
 oci.conf \- Slurm configuration file for containers.
@@ -30,8 +30,8 @@ Default is unique directory generated in \fBSlurmdSpoolDir\fR.
 .TP
 \fBCreateEnvFile=(null|newline|disabled)\fR
 Create environment file for container. File will have one environment variable
-per line if value is "newline". File will have one environment
-variable terminated by NULL character (aka '\0') if value is "null". If value
+per line if value is "newline". File will have each environment
+variable terminated by a NUL (aka '\\0') if value is "null". If value
 is "disabled", then the environment file will not be created.
 
 Value of "true" is treated as "null" for backwards compatibility.
