@@ -287,6 +287,7 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 					const char *key, const char *value,
 					const char *line, char **leftover);
+static int	_post_plugin_gres_conf(void *x, void *arg);
 static void *	_step_state_dup(gres_step_state_t *gres_ss);
 static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
 static void	_step_state_log(gres_step_state_t *gres_ss,
@@ -1005,6 +1006,21 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+
+static int _post_plugin_gres_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	slurm_gres_context_t *gres_ctx = arg;
+
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
+		return 0;
+
+	if (gres_slurmd_conf->config_flags & GRES_CONF_GLOBAL_INDEX)
+		gres_ctx->config_flags |= GRES_CONF_GLOBAL_INDEX;
+
+	return 1;
 }
 
 /* Make sure that specified file name exists, wait up to 20 seconds or generate
@@ -2618,6 +2634,11 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 			       &gpu_plugin_id);
 
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		list_for_each(gres_conf_list, _post_plugin_gres_conf,
+			      &gres_context[i]);
+	}
 
 fini:
 	_pack_context_buf();
@@ -9852,6 +9873,11 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		* task when multiple devices are constrained to the task, and
 		* only the environment variables are bound to specific GRES.
 		*/
+		use_local_index = false;
+		dev_index_mode_set = true;
+	}
+
+	if (gres_context[context_inx].config_flags & GRES_CONF_GLOBAL_INDEX) {
 		use_local_index = false;
 		dev_index_mode_set = true;
 	}
