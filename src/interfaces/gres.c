@@ -9469,11 +9469,6 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 		devices = gres_ss->gres_bit_alloc[0];
 		if (settings)
 			debug2("settings: %s", settings);
-		if (devices) {
-			char *dev_str = bit_fmt_full(devices);
-			info("devices: %s", dev_str);
-			xfree(dev_str);
-		}
 		(*(gres_context[i].ops.step_hardware_init))(devices, settings);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
