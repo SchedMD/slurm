@@ -981,7 +981,8 @@ extern int gres_ctld_job_select_whole_node(
 				continue;
 		}
 		/* If we select the shared gres don't select sharing gres */
-		if (gres_id_sharing(gres_state_node->plugin_id)) {
+		if (gres_ns->alt_gres &&
+		    gres_id_sharing(gres_state_node->plugin_id)) {
 			if (list_find_first(*job_gres_list, gres_find_id,
 					    &(gres_ns->alt_gres->plugin_id)))
 				continue;
@@ -1171,7 +1172,8 @@ extern int gres_ctld_job_alloc_whole_node(
 				continue;
 		}
 		/* If we allocate the shared gres don't allocate sharing gres */
-		if (gres_id_sharing(gres_state_node->plugin_id)) {
+		if (gres_ns->alt_gres &&
+		    gres_id_sharing(gres_state_node->plugin_id)) {
 			if (list_find_first(job_gres_list, gres_find_id,
 					    &(gres_ns->alt_gres->plugin_id)))
 				continue;
