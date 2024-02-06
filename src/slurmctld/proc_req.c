@@ -2620,8 +2620,8 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 		int i;
 		time_t now;
 
-		debug2("finding available dynamic future node for %s",
-		       reg_msg->node_name);
+		debug2("finding available dynamic future node for %s/%s",
+		       reg_msg->node_name, reg_msg->hostname);
 
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			slurm_addr_t addr;
@@ -2666,8 +2666,8 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 			break;
 		}
 	} else {
-		debug2("found existing node %s for dynamic future node registration",
-		       reg_msg->node_name);
+		debug2("found existing node %s/%s for dynamic future node registration",
+		       reg_msg->node_name, reg_msg->hostname);
 		rc = FUTURE_MAP_EXISTING;
 	}
 
