@@ -1285,14 +1285,6 @@ $(VERSION_SCRIPT) :
 	 echo "   node_record_count;"; \
 	 echo "   active_node_record_count;"; \
 	 echo "   node_record_table_ptr;"; \
-	 echo "   switch_record_cnt;"; \
-	 echo "   switch_levels;"; \
-	 echo "   switch_record_table;"; \
-	 echo "   bblock_node_cnt;"; \
-	 echo "   block_levels;"; \
-	 echo "   block_record_cnt;"; \
-	 echo "   block_record_table;"; \
-	 echo "   blocks_nodes_bitmap;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
