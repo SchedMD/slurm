@@ -1446,6 +1446,16 @@ Specify generic resource task binding options.
 .RS
 
 .TP
+.B allow\-task\-sharing
+Allow tasks access to each GPU within the job's allocation that is on the same
+node as the task. This is useful when using \-\-gpu\-bind or
+\-\-tres\-bind=gres/gpu to bind GPUs to specific tasks, but GPU communication
+between tasks is also desired.
+.br
+\fBNOTE\fR: This option is specific to srun.
+.IP
+
+.TP
 .B multiple\-tasks\-per\-sharing
 Negate \fBone\-task\-per\-sharing\fR. This is useful if it is set by default in
 \fBSelectTypeParameters\fR.

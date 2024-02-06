@@ -238,6 +238,8 @@ static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
+static bool use_local_index = false;
+static bool dev_index_mode_set = false;
 
 /* Local functions */
 static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
@@ -285,6 +287,7 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 					const char *key, const char *value,
 					const char *line, char **leftover);
+static int	_post_plugin_gres_conf(void *x, void *arg);
 static void *	_step_state_dup(gres_step_state_t *gres_ss);
 static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
 static void	_step_state_log(gres_step_state_t *gres_ss,
@@ -405,12 +408,10 @@ extern int gres_find_step_by_key(void *x, void *key)
 extern bool gres_use_local_device_index(void)
 {
 	bool use_cgroup = false;
-	static bool use_local_index = false;
-	static bool is_set = false;
 
-	if (is_set)
+	if (dev_index_mode_set)
 		return use_local_index;
-	is_set = true;
+	dev_index_mode_set = true;
 
 	if (!slurm_conf.task_plugin)
 		return use_local_index;
@@ -1005,6 +1006,21 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+
+static int _post_plugin_gres_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	slurm_gres_context_t *gres_ctx = arg;
+
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
+		return 0;
+
+	if (gres_slurmd_conf->config_flags & GRES_CONF_GLOBAL_INDEX)
+		gres_ctx->config_flags |= GRES_CONF_GLOBAL_INDEX;
+
+	return 1;
 }
 
 /* Make sure that specified file name exists, wait up to 20 seconds or generate
@@ -2618,6 +2634,11 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 			       &gpu_plugin_id);
 
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		list_for_each(gres_conf_list, _post_plugin_gres_conf,
+			      &gres_context[i]);
+	}
 
 fini:
 	_pack_context_buf();
@@ -9827,6 +9848,25 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		sep += 8;
 		if (flags)
 			*flags |= GRES_INTERNAL_FLAG_VERBOSE;
+	}
+
+	if (step->flags & LAUNCH_GRES_ALLOW_TASK_SHARING) {
+		if (get_devices)
+			return SLURM_SUCCESS;
+		/*
+		* Overwrite device index setting to use the global node GRES
+		* index, rather than the index local to the task. This ensures
+		* that the GRES environment variable is set correctly on the
+		* task when multiple devices are constrained to the task, and
+		* only the environment variables are bound to specific GRES.
+		*/
+		use_local_index = false;
+		dev_index_mode_set = true;
+	}
+
+	if (gres_context[context_inx].config_flags & GRES_CONF_GLOBAL_INDEX) {
+		use_local_index = false;
+		dev_index_mode_set = true;
 	}
 
 	if (!gres_id_shared(gres_context[context_inx].config_flags)) {

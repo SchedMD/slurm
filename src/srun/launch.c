@@ -723,6 +723,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		debug("external launcher step request");
 		step_req->flags |= SSF_EXT_LAUNCHER;
 	}
+	if (opt_local->job_flags & GRES_ALLOW_TASK_SHARING)
+		step_req->flags |= SSF_GRES_ALLOW_TASK_SHARING;
 
 	if (opt_local->immediate == 1)
 		step_req->immediate = opt_local->immediate;

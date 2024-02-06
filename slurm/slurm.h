@@ -1166,6 +1166,7 @@ enum node_states {
 						 * job share the same gres */
 #define GRES_MULT_TASKS_PER_SHARING SLURM_BIT(39)/* Negate
 						  * GRES_ONE_TASK_PER_SHARING */
+#define GRES_ALLOW_TASK_SHARING SLURM_BIT(40) /* Allow tasks to share gres */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
@@ -1189,6 +1190,7 @@ typedef enum {
 				     * allocation */
 	SSF_NO_SIG_FAIL = 1 << 7, /* Don't fail step due to signal */
 	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
+	SSF_GRES_ALLOW_TASK_SHARING = 1 << 9,
 } step_spec_flags_t;
 
 enum topology_plugin_type {

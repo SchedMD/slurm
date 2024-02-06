@@ -1508,6 +1508,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 				gres_slurmd_conf.type_name =
 					nvml_mig.profile_name;
 				gres_slurmd_conf.unique_id = nvml_mig.unique_id;
+				gres_slurmd_conf.config_flags |=
+					GRES_CONF_GLOBAL_INDEX;
 
 				add_gres_to_list(gres_list_system,
 						 &gres_slurmd_conf);

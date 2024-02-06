@@ -1487,6 +1487,7 @@ function __slurm_comp_common_flags() {
 		"highm1"
 	)
 	local gres_flags=(
+		"allow-task-sharing"
 		"disable-binding"
 		"enforce-binding"
 		"multiple-tasks-per-sharing"

@@ -297,6 +297,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	/*
 	 * job_desc bitflags
 	 */
+	lua_pushnumber(L, GRES_ALLOW_TASK_SHARING);
+	lua_setfield(L, -2, "GRES_ALLOW_TASK_SHARING");
 	lua_pushnumber(L, GRES_DISABLE_BIND);
 	lua_setfield(L, -2, "GRES_DISABLE_BIND");
 	lua_pushnumber(L, GRES_ENFORCE_BIND);
