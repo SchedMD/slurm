@@ -58,11 +58,9 @@
 #if defined (__APPLE__)
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
-extern int active_node_record_count __attribute__((weak_import));
 #else
 node_record_t **node_record_table_ptr;
 int node_record_count;
-int active_node_record_count;
 #endif
 
 /*
