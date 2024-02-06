@@ -69,11 +69,6 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 	return NULL;
 }
 
-extern uint16_t slurmdb_setup_cluster_name_dims(void)
-{
-	return slurmdb_setup_cluster_dims();
-}
-
 extern uint32_t slurmdb_setup_cluster_flags(void)
 {
 	static uint32_t cluster_flags = NO_VAL;
