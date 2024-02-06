@@ -537,12 +537,14 @@ stepd_available(const char *directory, const char *nodename)
 	struct dirent *ent;
 	regex_t re;
 	struct stat stat_buf;
+	char *local_nodename = NULL;
 
 	if (nodename == NULL) {
-		if (!(nodename = _guess_nodename())) {
+		if (!(local_nodename = _guess_nodename())) {
 			error("%s: Couldn't find nodename", __func__);
 			return NULL;
 		}
+		nodename = local_nodename;
 	}
 	if (directory == NULL) {
 		slurm_conf_t *cf = slurm_conf_lock();
@@ -587,6 +589,7 @@ stepd_available(const char *directory, const char *nodename)
 
 	closedir(dp);
 done:
+	xfree(local_nodename);
 	regfree(&re);
 	return l;
 }
