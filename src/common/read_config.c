@@ -720,7 +720,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
-		if ((slurmdb_setup_cluster_name_dims() > 1)
+		if ((slurmdb_setup_cluster_dims() > 1)
 		    && conf_ptr->node_prefix == NULL)
 			_set_node_prefix(n->nodenames);
 
@@ -2366,7 +2366,7 @@ static void _init_slurmd_nodehash(void)
 	count = slurm_conf_nodename_array(&ptr_array);
 	for (i = 0; i < count; i++) {
 		expand_nodeline_info(ptr_array[i], NULL, NULL, _check_callback);
-		if ((slurmdb_setup_cluster_name_dims() > 1) &&
+		if ((slurmdb_setup_cluster_dims() > 1) &&
 		    !conf_ptr->node_prefix)
 			_set_node_prefix(ptr_array[i]->nodenames);
 	}

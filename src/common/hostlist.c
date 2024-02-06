@@ -455,7 +455,7 @@ static int host_prefix_end(const char *hostname, int dims)
 	xassert(hostname);
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	idx = strlen(hostname) - 1;
 
@@ -482,7 +482,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 	xassert(hostname);
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 	hostlist_base = hostlist_get_base(dims);
 
 	hn = xmalloc(sizeof(*hn));
@@ -520,7 +520,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
  */
 static hostname_t *hostname_create(const char *hostname)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	return hostname_create_dims(hostname, dims);
 }
@@ -765,7 +765,7 @@ static char *hostrange_pop(hostrange_t *hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	xassert(hr);
 
@@ -810,7 +810,7 @@ static char *hostrange_shift(hostrange_t *hr, int dims)
 	xassert(hr);
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	if (hr->singlehost) {
 		hr->lo++;
@@ -950,7 +950,7 @@ static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn, int dims)
 		int len1, len2, ldiff;
 
 		if (!dims)
-			dims = slurmdb_setup_cluster_name_dims();
+			dims = slurmdb_setup_cluster_dims();
 
 		if (dims != 1)
 			return 0;
@@ -1030,7 +1030,7 @@ static size_t hostrange_to_string(hostrange_t *hr, size_t n, char *buf,
 	char sep = separator == NULL ? ',' : separator[0];
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	if (n == 0)
 		return 0;
@@ -1081,7 +1081,7 @@ truncated:
 static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf)
 {
 	int len = 0;
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	xassert(buf && hr);
 
@@ -1808,13 +1808,13 @@ static void _hostlist_iterator_destroy(hostlist_iterator_t *i)
 hostlist_t *hostlist_create_dims(const char *str, int dims)
 {
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 	return _hostlist_create(str, "\t, \n", "-", dims);
 }
 
 hostlist_t *hostlist_create(const char *str)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_create_dims(str, dims);
 }
 
@@ -1881,7 +1881,7 @@ int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 		return 0;
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	hn = hostname_create_dims(str, dims);
 
@@ -1901,7 +1901,7 @@ int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 
 int hostlist_push_host(hostlist_t *hl, const char *str)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_push_host_dims(hl, str, dims);
 }
 
@@ -1978,7 +1978,7 @@ char *hostlist_shift_dims(hostlist_t *hl, int dims)
 	}
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	LOCK_HOSTLIST(hl);
 
@@ -2047,7 +2047,7 @@ static char *_hostrange_string(hostrange_t *hr, int depth)
 	char buf[HOST_NAME_MAX + 16];
 	const int size = sizeof(buf);
 	int  len = snprintf(buf, size, "%s", hr->prefix);
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	if (len < 0 || len + dims >= size)
 		return NULL;
@@ -2160,7 +2160,7 @@ int hostlist_find_dims(hostlist_t *hl, const char *hostname, int dims)
 		return -1;
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	hn = hostname_create_dims(hostname, dims);
 
@@ -2346,7 +2346,7 @@ char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims)
 	char *buf = xmalloc_nz(buf_size);
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	while (hostlist_deranged_string_dims(hl, buf_size, buf, dims) < 0) {
 		buf_size *= 2;
@@ -2357,7 +2357,7 @@ char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims)
 
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_deranged_string_xmalloc_dims(hl, dims);
 }
 
@@ -2388,7 +2388,7 @@ truncated:
 
 ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_deranged_string_dims(hl, n, buf, dims);
 }
 
@@ -2861,7 +2861,7 @@ char *hostlist_ranged_string_xmalloc_dims(hostlist_t *hl, int dims,
 
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_ranged_string_xmalloc_dims(hl, dims, 1);
 }
 
@@ -2878,7 +2878,7 @@ ssize_t hostlist_ranged_string_dims(hostlist_t *hl, size_t n, char *buf,
 //	DEF_TIMERS;
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 	hostlist_base = hostlist_get_base(dims);
 
 //	START_TIMER;
@@ -3012,7 +3012,7 @@ notbox:
 
 ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	return hostlist_ranged_string_dims(hl, n, buf, dims, 1);
 }
@@ -3099,7 +3099,7 @@ char *hostlist_next_dims(hostlist_iterator_t *i, int dims)
 	_iterator_advance(i);
 
 	if (!dims)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	if (i->idx > i->hl->nranges - 1)
 		goto no_next;
@@ -3134,7 +3134,7 @@ no_next:
 
 char *hostlist_next(hostlist_iterator_t *i)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
+	int dims = slurmdb_setup_cluster_dims();
 
 	return hostlist_next_dims(i, dims);
 }

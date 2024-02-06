@@ -224,7 +224,7 @@ extern int resv_port_alloc(step_record_t *step_ptr)
 	static int dims = -1;
 
 	if (dims == -1)
-		dims = slurmdb_setup_cluster_name_dims();
+		dims = slurmdb_setup_cluster_dims();
 
 	if (step_ptr->resv_port_cnt > port_resv_cnt) {
 		info("%pS needs %u reserved ports, but only %d exist",
