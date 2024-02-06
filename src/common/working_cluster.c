@@ -71,9 +71,6 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 
 extern bool is_cray_system(void)
 {
-	if (working_cluster_rec)
-		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY;
-
 	return false;
 }
 
@@ -112,9 +109,6 @@ static uint32_t _str_2_cluster_flags(char *flags_in)
 	if (xstrcasestr(flags_in, "MultipleSlurmd"))
 		return CLUSTER_FLAG_MULTSD;
 
-	if (xstrcasestr(flags_in, "Cray"))
-		return CLUSTER_FLAG_CRAY;
-
 	return (uint32_t) 0;
 }
 
@@ -150,12 +144,6 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "MultipleSlurmd");
-	}
-
-	if (flags_in & CLUSTER_FLAG_CRAY) {
-		if (cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "Cray");
 	}
 
 	if (flags_in & CLUSTER_FLAG_EXT) {

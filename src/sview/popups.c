@@ -246,9 +246,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	char *select_title = "Select Plugin Configuration";
 	char *tmp_title = NULL;
 
-	if (cluster_flags & CLUSTER_FLAG_CRAY)
-		select_title = "\nCray configuration\n";
-
 	if (!slurm_ctl_conf_ptr)
 		return;
 

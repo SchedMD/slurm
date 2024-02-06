@@ -472,11 +472,7 @@ void slurm_print_ctl_conf ( FILE* out,
 	char time_str[32], tmp_str[256];
 	void *ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *tmp2_str = NULL;
-
-	if (cluster_flags & CLUSTER_FLAG_CRAY)
-		select_title = "\nCray configuration\n";
 
 	if (slurm_ctl_conf_ptr == NULL)
 		return;
