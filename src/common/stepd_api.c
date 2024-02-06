@@ -207,14 +207,23 @@ _guess_nodename(void)
 	char host[HOST_NAME_MAX];
 	char *nodename = NULL;
 
+	/* If we are in a step just grab it from the ENV */
+	if ((nodename = getenv("SLURMD_NODENAME")))
+		return xstrdup(nodename);
+
 	if (gethostname_short(host, sizeof(host)) != 0)
 		return NULL;
-
 	nodename = slurm_conf_get_nodename(host);
 	if (nodename == NULL)
 		nodename = slurm_conf_get_aliased_nodename();
 	if (nodename == NULL) /* if no match, try localhost */
 		nodename = slurm_conf_get_nodename("localhost");
+	/*
+	 * If nothing above has given us a name, just return what
+	 * gethostname_short. This is helpful for dynamic nodes.
+	 */
+	if (!nodename)
+		nodename = xstrdup(host);
 
 	return nodename;
 }
