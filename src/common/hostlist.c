@@ -2430,26 +2430,6 @@ static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
 	int bracket_needed = brackets ? _is_bracket_needed(hl, i) : 0;
 	int zeropad = 0;
 
-	if (is_cray_system()) {
-		/*
-		 * Find minimum common zero-padding prefix. Cray has nid%05u
-		 * syntax, factoring this out makes host strings much shorter.
-		 */
-		zeropad = _zero_padded(hr[i]->hi, hr[i]->width);
-
-		/* Find the minimum common zero-padding prefix. */
-		for (m = i + 1; zeropad && m < hl->nranges; m++) {
-			int pad = 0;
-
-			if (!hostrange_within_range(hr[m], hr[m-1]))
-				break;
-			if (hl->hr[m]->width == hl->hr[m-1]->width)
-				pad = _zero_padded(hr[m]->hi, hr[m]->width);
-			if (pad < zeropad)
-				zeropad = pad;
-		}
-	}
-
 	if (zeropad)
 		len = snprintf(buf, n, "%s%0*u", hr[i]->prefix, zeropad, 0);
 	else
