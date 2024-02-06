@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid step gres dealloc count underflow errors after reconfiguring or
     restarting slurmctld.
  -- Fix controller not validating periodic dynamic future registrations.
+ -- Fix dynamic future nodes registering as new node when specifying -N<name>.
 
 * Changes in Slurm 23.11.4
 ==========================
