@@ -296,7 +296,7 @@ static int hostrange_join(hostrange_t *, hostrange_t *);
 static hostrange_t *hostrange_intersect(hostrange_t *, hostrange_t *);
 static int hostrange_hn_within(hostrange_t *, hostname_t *, int);
 static size_t hostrange_to_string(hostrange_t *hr, size_t, char *, char *, int);
-static size_t hostrange_numstr(hostrange_t *, size_t, char *, int);
+static size_t hostrange_numstr(hostrange_t *, size_t, char *);
 
 static hostlist_t *hostlist_new(void);
 static hostlist_t *_hostlist_create_bracketed(const char *, char *, char *, int);
@@ -1076,10 +1076,9 @@ truncated:
 }
 
 /* Place the string representation of the numeric part of hostrange into buf
- * writing at most n chars including NUL termination. The width argument
- * controls the number of leading zeroes.
+ * writing at most n chars including NUL termination.
  */
-static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf, int width)
+static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf)
 {
 	int len = 0;
 	int dims = slurmdb_setup_cluster_name_dims();
@@ -1091,9 +1090,6 @@ static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf, int width)
 	if (n <= dims)
 		return -1;
 
-	if (width < 0 || width > hr->width)
-		width = hr->width;
-
 	if ((dims > 1) && (hr->width == dims)) {
 		int i2 = 0;
 		int coord[dims];
@@ -1104,7 +1100,7 @@ static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf, int width)
 			buf[len++] = alpha_num[coord[i2++]];
 		buf[len] = '\0';
 	} else {
-		len = snprintf(buf, n, "%0*lu", hr->width - width, hr->lo);
+		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 		if (len < 0 || len >= n)
 			return -1;
 	}
@@ -1124,7 +1120,7 @@ static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf, int width)
 			buf[len] = '\0';
 		} else {
 			int len2 = snprintf(buf + len, n - len, "-%0*lu",
-					    hr->width - width, hr->hi);
+					    hr->width, hr->hi);
 			if (len2 < 0 || (len += len2) >= n)
 				return -1;
 		}
@@ -2439,7 +2435,7 @@ static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
 	do {
 		if (i > *start)
 			buf[len++] = ',';
-		m = hostrange_numstr(hr[i], n - len, buf + len, 0);
+		m = hostrange_numstr(hr[i], n - len, buf + len);
 		if (m < 0 || (len += m) >= n - 1)	/* insufficient space */
 			return n;
 	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
