@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     bytes for a connection causing incoming packet corruption resulting in
     connection getting closed.
  -- srun - return 1 when a step lauch fails
+ -- scrun - Avoid race condition that could cause deadlock during shutdown.
 
 * Changes in Slurm 23.11.3
 ==========================
