@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -7506,7 +7506,8 @@ Otherwise it will not be set.
 To reference this specific task of a job array, combine
 SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7516,7 +7517,8 @@ Otherwise it will not be set.
 To reference this specific task of a job array, combine
 SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7524,7 +7526,8 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 If this job is part of a job array, this will be set to the maximum
 task ID.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7532,7 +7535,8 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 If this job is part of a job array, this will be set to the minimum
 task ID.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7540,25 +7544,30 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 If this job is part of a job array, this will be set to the step
 size of task IDs.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
 \fBSLURM_CLUSTER_NAME\fR
-Name of the cluster executing the job.
+Name of the cluster executing the job. Available in \fBProlog\fR,
+\fBPrologSlurmctld\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
 \fBSLURM_CONF\fR
-Location of the slurm.conf file. Available in \fBProlog\fR and \fBEpilog\fR.
+Location of the slurm.conf file.
+Available in \fBProlog\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilog\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
 \fBSLURMD_NODENAME\fR
 Name of the node running the task. In the case of a parallel job executing
 on multiple compute nodes, the various tasks will have this environment
-variable set to different values on each compute node. Available in
-\fBProlog\fR and \fBEpilog\fR.
+variable set to different values on each compute node.
+Available in \fBProlog\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilog\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7622,7 +7631,8 @@ Group ID of the job's owner.
 .TP
 \fBSLURM_JOB_GPUS\fR
 The GPU IDs of GPUs in the job allocation (if any).
-Available in the \fBProlog\fR and \fBEpilog\fR.
+Available in the \fBProlog\fR, \fBSrunProlog\fR, \fBTaskProlog\fR, \fBEpilog\fR,
+\fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7644,7 +7654,8 @@ Job ID.
 .TP
 \fBSLURM_JOB_NAME\fR
 Name of the job.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBPrologSlurmctld\fR, \fBSrunProlog\fR, \fBTaskProlog\fR,
+\fBEpilogSlurmctld\fR, \fBSrunEpilog\fR, and \fBTaskEpilog\fR.
 .IP
 
 .TP
@@ -7652,14 +7663,11 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 Nodes assigned to job. A Slurm hostlist expression.
 "scontrol show hostnames" can be used to convert this to a
 list of individual host names.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Partition that job runs in.
-Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
-\fBEpilogSlurmctld\fR.
 .IP
 
 .TP
