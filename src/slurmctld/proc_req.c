@@ -2597,16 +2597,23 @@ static bool _node_has_feature(node_record_t *node_ptr, char *feature)
 	return false;
 }
 
+#define FUTURE_MAP_FAILED -1 /* failed to map registration to future node */
+#define FUTURE_MAP_SUCCESS 0 /* mapped the registration to a future node */
+#define FUTURE_MAP_EXISTING 1 /* found an existing mapped node */
+
 /*
  * Find available future node to associate slurmd with.
  *
  * Sets reg_msg->node_name to found node_name so subsequent calls to
  * find the node work.
+ *
+ * return: FUTURE_MAP_*
  */
-static void _find_avail_future_node(slurm_msg_t *msg)
+static int _find_avail_future_node(slurm_msg_t *msg)
 {
 	node_record_t *node_ptr;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
+	int rc = FUTURE_MAP_FAILED;
 
 	node_ptr = find_node_record2(reg_msg->node_name);
 	if (node_ptr == NULL) {
@@ -2655,14 +2662,16 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
 						      now);
 
+			rc = FUTURE_MAP_SUCCESS;
 			break;
 		}
 	} else {
 		debug2("found existing node %s for dynamic future node registration",
 		       reg_msg->node_name);
+		rc = FUTURE_MAP_EXISTING;
 	}
 
-	if (node_ptr) {
+	if (node_ptr && (rc != FUTURE_MAP_FAILED)) {
 		debug2("dynamic future node %s/%s/%s assigned to node %s",
 		       reg_msg->node_name, node_ptr->node_hostname,
 		       node_ptr->comm_name, node_ptr->name);
@@ -2673,7 +2682,12 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 		 */
 		xfree(reg_msg->node_name);
 		reg_msg->node_name = xstrdup(node_ptr->name);
+	} else if (rc == FUTURE_MAP_FAILED) {
+		error("Failed to map %s/%s to an available future node",
+		       reg_msg->node_name, reg_msg->hostname);
 	}
+
+	return rc;
 }
 
 static void _slurm_post_rpc_node_registration()
@@ -2734,6 +2748,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP)) {
 
 			if (node_reg_stat_msg->dynamic_type == DYN_NODE_FUTURE) {
+				int rc;
 				/*
 				 * dynamic future nodes doen't know what node
 				 * it's mapped to to be able to load all configs
@@ -2745,12 +2760,30 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 				 * Subsequent slurmd registrations will have the
 				 * mapped node_name.
 				 */
-				_find_avail_future_node(msg);
+				rc = _find_avail_future_node(msg);
 
-				if (!(msg->flags & CTLD_QUEUE_PROCESSING))
-					unlock_slurmctld(job_write_lock);
+				/*
+				 * FUTURE_MAP_SUCCESS: assigned registration to
+				 * a new nodename and the slurmd just needs the
+				 * mapped name so it can register again.
+				 *
+				 * FUTURE_MAP_FAILED: failed to find a future
+				 * not do map to so, just skip validating the
+				 * registration and return to the slurmd.
+				 *
+				 * FUTURE_MAP_EXISTING: the node is already
+				 * mapped and we need to validate the
+				 * registration.
+				 */
+				if (rc != FUTURE_MAP_EXISTING) {
+					if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+						unlock_slurmctld(job_write_lock);
 
-				goto send_resp;
+					if (rc == FUTURE_MAP_FAILED)
+						error_code = ESLURM_INVALID_NODE_NAME;
+
+					goto send_resp;
+				}
 			} else if (find_node_record2(
 					node_reg_stat_msg->node_name)) {
 				already_registered = true;
