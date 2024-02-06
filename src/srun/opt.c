@@ -786,16 +786,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
-#ifdef HAVE_NATIVE_CRAY
-	/* only fatal on the allocation */
-	if (opt.network && opt.shared && (sropt.jobid == NO_VAL))
-		fatal("Requesting network performance counters requires "
-		      "exclusive access.  Please add the --exclusive option "
-		      "to your request.");
-	if (opt.network)
-		setenv("SLURM_NETWORK", opt.network, 1);
-#endif
-
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
@@ -1671,12 +1661,6 @@ static void _help(void)
 		);
 
 	printf("\n"
-#ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
-"Cray related options:\n"
-"      --network=type          Use network performance counters\n"
-"                              (system, network, or processor)\n"
-"\n"
-#endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"
 "      --usage                 display brief usage message\n"

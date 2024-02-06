@@ -1209,9 +1209,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 	char *het_job_nodelist = NULL;
 	bool begin_error_logged = false;
 	bool core_spec_error_logged = false;
-#ifdef HAVE_NATIVE_CRAY
-	bool network_error_logged = false;
-#endif
 	bool node_cnt_error_logged = false;
 	bool tres_license_error_logged = false;
 	bool x11_error_logged = false;
@@ -1359,31 +1356,15 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 					      "at job allocation time.");
 					core_spec_error_logged = true;
 				}
-#ifdef HAVE_NATIVE_CRAY
-				if (opt_local->network &&
-				    !network_error_logged) {
-					if (slurm_option_set_by_env(opt_local,
-								    LONG_OPT_NETWORK)) {
-						debug2("Ignoring SLURM_NETWORK value for a "
-						       "job step within an existing job. "
-						       "Using what was set at job "
-						       "allocation time.  Most likely this "
-						       "variable was set by sbatch or salloc.");
-					} else {
-						error("Ignoring --network value for a job step "
-						      "within an existing job. Set network "
-						      "options at job allocation time.");
-					}
-					network_error_logged = true;
-				}
-				xfree(opt_local->network);
+
 				/*
 				 * Here we send the het job groups to the
 				 * slurmctld to set up the interconnect
 				 * correctly.  We only ever need to send it to
 				 * the first component of the step.
+				 *
+				 * FIXME - is this still needed post-Cray?
 				 */
-#endif
 				if (g_het_grp_bits) {
 					xfree(opt_local->step_het_grps);
 					opt_local->step_het_grps =

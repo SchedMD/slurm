@@ -868,16 +868,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (srun_opt->resv_port_cnt != NO_VAL) {
 		step_req->resv_port_cnt = srun_opt->resv_port_cnt;
 	} else {
-#if defined(HAVE_NATIVE_CRAY)
-		/*
-		 * On Cray systems default to reserving one port, or one
-		 * more than the number of multi prog commands, for Cray PMI
-		 */
-		step_req->resv_port_cnt = (srun_opt->multi_prog ?
-					   srun_opt->multi_prog_cmds + 1 : 1);
-#else
 		step_req->resv_port_cnt = NO_VAL16;
-#endif
 	}
 
 	step_req->srun_pid = (uint32_t) getpid();
