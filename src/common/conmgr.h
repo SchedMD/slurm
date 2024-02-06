@@ -395,7 +395,7 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
  * IN buffer_ptr - pointer to buf_t to add/set with incoming data
  * 	if *buffer_ptr is NULL, then a new buf_t will be created and caller must
  * 	call FREE_NULL_BUFFER()
- * 	if buffer->size is too small, then buffer will be grown to sufficent
+ * 	if buffer->size is too small, then buffer will be grown to sufficient
  * 	size.
  * 	buffer->processed will not be changed
  * 	if buffer->head is NULL, it will be set with a new xmalloc() buffer.
