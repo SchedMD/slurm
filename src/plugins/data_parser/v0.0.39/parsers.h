@@ -138,7 +138,7 @@ typedef struct parser_s {
 	/*
 	 * Populates OpenAPI specification.
 	 * 	For parsers where the normal OpenAPI specification generation is
-	 * 	insufficent. This allows the parser to explicitly set the
+	 * 	insufficient. This allows the parser to explicitly set the
 	 * 	specification for the type. General goal is to not to need to
 	 * 	use this function but some output formats are just too different
 	 * 	the original data source.

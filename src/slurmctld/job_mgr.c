@@ -8699,7 +8699,7 @@ static int _calc_arbitrary_tpn(job_record_t *job_ptr)
 			if (cur_node >= num_nodes) {
 				free(host);
 				free(prev_host);
-				error("Minimum number of nodes (%d) for %pJ is not sufficent for the requested arbitrary node list (%s).",
+				error("Minimum number of nodes (%d) for %pJ is not sufficient for the requested arbitrary node list (%s).",
 				      num_nodes, job_ptr, job_ptr->details->req_nodes);
 				rc = ESLURM_INVALID_NODE_COUNT;
 				goto cleanup;
