@@ -2615,7 +2615,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
 	int rc = FUTURE_MAP_FAILED;
 
-	node_ptr = find_node_record2(reg_msg->node_name);
+	node_ptr = find_node_record2(reg_msg->hostname);
 	if (node_ptr == NULL) {
 		int i;
 		time_t now;
