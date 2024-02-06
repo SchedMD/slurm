@@ -2428,12 +2428,8 @@ static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
 	int i = *start;
 	int m, len = 0;
 	int bracket_needed = brackets ? _is_bracket_needed(hl, i) : 0;
-	int zeropad = 0;
 
-	if (zeropad)
-		len = snprintf(buf, n, "%s%0*u", hr[i]->prefix, zeropad, 0);
-	else
-		len = snprintf(buf, n, "%s", hr[i]->prefix);
+	len = snprintf(buf, n, "%s", hr[i]->prefix);
 	if (len < 0 || len + 4 >= n)	/* min: '[', <digit>, ']', '\0' */
 		return n;		/* truncated, buffer filled */
 
@@ -2443,7 +2439,7 @@ static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
 	do {
 		if (i > *start)
 			buf[len++] = ',';
-		m = hostrange_numstr(hr[i], n - len, buf + len, zeropad);
+		m = hostrange_numstr(hr[i], n - len, buf + len, 0);
 		if (m < 0 || (len += m) >= n - 1)	/* insufficient space */
 			return n;
 	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
