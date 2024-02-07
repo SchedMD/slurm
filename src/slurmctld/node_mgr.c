@@ -5323,6 +5323,37 @@ static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 /*
  * Has to be in slurmctld code for locking.
  */
+static int _delete_node_ptr(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	if (!IS_NODE_DYNAMIC_NORM(node_ptr)) {
+		error("Can't delete non-dynamic node '%s'.", node_ptr->name);
+		return ESLURM_INVALID_NODE_STATE;
+	}
+	if (IS_NODE_ALLOCATED(node_ptr) ||
+	    IS_NODE_COMPLETING(node_ptr)) {
+		error("Node '%s' can't be delete because it's still in use.",
+		      node_ptr->name);
+		return ESLURM_NODES_BUSY;
+	}
+	if (node_ptr->node_state & NODE_STATE_RES) {
+		error("Node '%s' can't be delete because it's in a reservation.",
+		      node_ptr->name);
+		return ESLURM_NODES_BUSY;
+	}
+
+	_remove_node_from_all_bitmaps(node_ptr);
+	_remove_node_from_features(node_ptr);
+	gres_node_remove(node_ptr);
+
+	xhash_pop_str(node_hash_table, node_ptr->name);
+	slurm_conf_remove_node(node_ptr->name);
+	delete_node_record(node_ptr);
+
+	return SLURM_SUCCESS;
+}
+
 static int _delete_node(char *name)
 {
 	node_record_t *node_ptr;
@@ -5332,31 +5363,7 @@ static int _delete_node(char *name)
 		error("Unable to find node %s to delete", name);
 		return ESLURM_INVALID_NODE_NAME;
 	}
-	if (!IS_NODE_DYNAMIC_NORM(node_ptr)) {
-		error("Can't delete non-dynamic node '%s'.", name);
-		return ESLURM_INVALID_NODE_STATE;
-	}
-	if (IS_NODE_ALLOCATED(node_ptr) ||
-	    IS_NODE_COMPLETING(node_ptr)) {
-		error("Node '%s' can't be delete because it's still in use.",
-		      name);
-		return ESLURM_NODES_BUSY;
-	}
-	if (node_ptr->node_state & NODE_STATE_RES) {
-		error("Node '%s' can't be delete because it's in a reservation.",
-		      name);
-		return ESLURM_NODES_BUSY;
-	}
-
-	_remove_node_from_all_bitmaps(node_ptr);
-	_remove_node_from_features(node_ptr);
-	gres_node_remove(node_ptr);
-
-	xhash_pop_str(node_hash_table, node_ptr->name);
-	delete_node_record(node_ptr);
-	slurm_conf_remove_node(name);
-
-	return SLURM_SUCCESS;
+	return _delete_node_ptr(node_ptr);
 }
 
 extern int delete_nodes(char *names, char **err_msg)
