@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2024" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2024" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -915,12 +915,16 @@ This job can begin execution after the specified jobs have terminated.
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
 in some failed state (non\-zero exit code, node failure, timed out, etc).
+This dependency must be added while the specified job is still active or
+within \fBMinJobAge\fR seconds after the specified job has ended.
 .IP
 
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
+This dependency must be added while the specified job is still active or
+within \fBMinJobAge\fR seconds after the specified job has ended.
 .IP
 
 .TP
