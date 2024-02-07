@@ -125,6 +125,9 @@ typedef enum {
  */
 extern http_request_method_t get_http_method(const char *str);
 extern const char *get_http_method_string(const http_request_method_t method);
+/* Get lower case method string */
+extern const char *get_http_method_string_lc(
+	const http_request_method_t method);
 
 /*
  * Parses url path into a data struct.

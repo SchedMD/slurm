@@ -284,6 +284,15 @@ extern const char *get_http_method_string(http_request_method_t method)
 	return "INVALID";
 }
 
+extern const char *get_http_method_string_lc(http_request_method_t method)
+{
+	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
+		if (method_strings[i].method == method)
+			return method_strings[i].lc_text;
+
+	return "INVALID";
+}
+
 extern http_request_method_t get_http_method(const char *str)
 {
 	if (str == NULL)
