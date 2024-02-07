@@ -903,10 +903,10 @@ static void _job_select_whole_node_internal(
 	if (gres_ns->no_consume) {
 		gres_js->total_gres = NO_CONSUME_VAL64;
 	} else if (type_inx != -1)
-		gres_js->total_gres =
+		gres_js->total_gres +=
 			gres_ns->type_cnt_avail[type_inx];
 	else
-		gres_js->total_gres = gres_ns->gres_cnt_avail;
+		gres_js->total_gres += gres_ns->gres_cnt_avail;
 
 }
 

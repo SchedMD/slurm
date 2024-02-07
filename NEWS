@@ -26,6 +26,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix reservation update validation that resulted in reject of correct
     updates of reservation when the reservation was running jobs.
  -- Fix possible segfault when the backup slurmctld is asserting control.
+ -- Fix regression introduced in 23.02.4 where slurmctld was not properly
+    tracking the total GRES selected for exclusive multi-node jobs, potentially
+    and incorrectly bypassing limits.
 
 * Changes in Slurm 23.11.4
 ==========================
