@@ -753,7 +753,10 @@ int main(int argc, char **argv)
 			running_cache = RUNNING_CACHE_STATE_EXITING;
 			slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
-			pthread_join(assoc_cache_thread, NULL);
+			if (assoc_cache_thread) {
+				pthread_join(assoc_cache_thread, NULL);
+				assoc_cache_thread = 0;
+			}
 		}
 
 		/* Save any pending state save RPCs */
