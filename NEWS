@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- scrun/sackd - Avoid race condition where shutdown could deadlock.
  -- Fix a regression in 23.02.5 that caused pam_slurm_adopt to fail when
     the user has multiple jobs on a node.
+ -- Better handling of sending task exits to the slurmctld from a node if
+    there are network issues.
 
 * Changes in Slurm 23.11.3
 ==========================
