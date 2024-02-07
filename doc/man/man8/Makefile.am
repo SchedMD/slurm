@@ -1,6 +1,8 @@
 htmldir = ${datadir}/doc/${PACKAGE}-${SLURM_VERSION_STRING}/html
 
-man8_MANS = slurmctld.8 \
+man8_MANS = \
+	sackd.8 \
+	slurmctld.8 \
 	slurmd.8 \
 	slurmdbd.8 \
 	slurmrestd.8 \
@@ -10,6 +12,7 @@ man8_MANS = slurmctld.8 \
 if HAVE_MAN2HTML
 
 html_DATA = \
+	sackd.html \
 	slurmctld.html \
 	slurmd.html \
 	slurmdbd.html \
