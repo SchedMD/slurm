@@ -157,8 +157,16 @@ extern int topology_p_build_config(void)
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
-	topo_eval->eval_nodes = eval_nodes_block;
-	topo_eval->trump_others = true;
+	/*
+	 * Don't use eval_nodes_block() when there isn't any block node on
+	 * node_map. This allows the allocation of nodes not connected by block
+	 * topology (separated by partition or constraints).
+	 */
+	if (blocks_nodes_bitmap &&
+	    bit_overlap_any(blocks_nodes_bitmap, topo_eval->node_map)) {
+		topo_eval->eval_nodes = eval_nodes_block;
+		topo_eval->trump_others = true;
+	}
 
 	return common_topo_choose_nodes(topo_eval);
 }
