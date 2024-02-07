@@ -52,6 +52,9 @@ documents those changes that are of interest to users and administrators.
     restarting slurmctld.
  -- Fix controller not validating periodic dynamic future registrations.
  -- Fix dynamic future nodes registering as new node when specifying -N<name>.
+ -- Fix sbcast (or srun --bcast) --send-libs when it is used multiple times in
+    the same job. Previously, subsequent calls to sbcast --send-libs would
+    overwrite the libraries for the first executable.
 
 * Changes in Slurm 23.11.4
 ==========================
