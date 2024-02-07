@@ -110,6 +110,21 @@ static const http_status_code_txt_t http_status_codes[] = {
 	  "HTTP VERSION NOT SUPPORTED" },
 };
 
+static const struct {
+	http_request_method_t method;
+	const char *uc_text;
+	const char *lc_text;
+} method_strings[] = {
+	{ HTTP_REQUEST_GET, "GET", "get" },
+	{ HTTP_REQUEST_POST, "POST", "post" },
+	{ HTTP_REQUEST_PUT, "PUT", "put" },
+	{ HTTP_REQUEST_DELETE, "DELETE", "delete" },
+	{ HTTP_REQUEST_OPTIONS, "OPTIONS", "options" },
+	{ HTTP_REQUEST_HEAD, "HEAD", "head" },
+	{ HTTP_REQUEST_PATCH, "PATCH", "patch" },
+	{ HTTP_REQUEST_TRACE, "TRACE", "trace" },
+};
+
 /*
  * chars that can pass without decoding.
  * rfc3986: unreserved characters.
@@ -262,26 +277,11 @@ extern const char *get_http_status_code_string(http_status_code_t code)
 
 extern const char *get_http_method_string(http_request_method_t method)
 {
-	switch (method) {
-	case HTTP_REQUEST_GET:
-		return "GET";
-	case HTTP_REQUEST_POST:
-		return "POST";
-	case HTTP_REQUEST_PUT:
-		return "PUT";
-	case HTTP_REQUEST_DELETE:
-		return "DELETE";
-	case HTTP_REQUEST_OPTIONS:
-		return "OPTIONS";
-	case HTTP_REQUEST_HEAD:
-		return "HEAD";
-	case HTTP_REQUEST_PATCH:
-		return "PATCH";
-	case HTTP_REQUEST_TRACE:
-		return "TRACE";
-	default:
-		return "INVALID";
-	}
+	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
+		if (method_strings[i].method == method)
+			return method_strings[i].uc_text;
+
+	return "INVALID";
 }
 
 extern http_request_method_t get_http_method(const char *str)
