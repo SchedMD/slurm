@@ -1707,6 +1707,56 @@ extern void openapi_resp_warn(openapi_ctxt_t *ctxt, const char *source,
 	list_append(ctxt->warnings, w);
 }
 
+static void _populate_openapi_results(openapi_ctxt_t *ctxt,
+				      openapi_resp_meta_t *query_meta)
+{
+	data_t *errors, *warnings, *meta;
+	int rc;
+
+	/* need to populate meta, errors and warnings */
+	errors = data_key_set(ctxt->resp,
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME));
+	warnings = data_key_set(ctxt->resp,
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME));
+	meta = data_key_set(ctxt->resp,
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME));
+
+	if (data_get_type(meta) == DATA_TYPE_NULL)
+		DATA_DUMP(ctxt->parser, OPENAPI_META_PTR, query_meta, meta);
+
+	if (data_get_type(errors) == DATA_TYPE_LIST) {
+		if (!data_get_list_length(errors))
+			data_set_null(errors);
+		else
+			xassert(list_is_empty(ctxt->errors));
+	}
+
+	if ((data_get_type(errors) == DATA_TYPE_NULL) &&
+	    ((rc = DATA_DUMP(ctxt->parser, OPENAPI_ERRORS, ctxt->errors,
+			     errors)))) {
+		/* data_parser doesn't support OPENAPI_ERRORS parser */
+		data_t *e =
+			data_set_dict(data_list_append(data_set_list(errors)));
+		data_set_string(data_key_set(e, "description"),
+				"Requested data_parser plugin does not support OpenAPI plugin");
+		data_set_int(data_key_set(e, "error_number"),
+			     ESLURM_NOT_SUPPORTED);
+		data_set_string(data_key_set(e, "error"),
+				slurm_strerror(ESLURM_NOT_SUPPORTED));
+	}
+
+	if (data_get_type(warnings) == DATA_TYPE_LIST) {
+		if (!data_get_list_length(warnings))
+			data_set_null(warnings);
+		else
+			xassert(list_is_empty(ctxt->warnings));
+	}
+
+	if (data_get_type(warnings) == DATA_TYPE_NULL)
+		DATA_DUMP(ctxt->parser, OPENAPI_WARNINGS, ctxt->warnings,
+			  warnings);
+}
+
 extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      http_request_method_t method,
 				      data_t *parameters, data_t *query,
@@ -1716,7 +1766,6 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      const openapi_resp_meta_t *plugin_meta)
 {
 	int rc;
-	data_t *errors, *warnings, *meta;
 	openapi_ctxt_t ctxt = {
 		.id = context_id,
 		.method = method,
@@ -1761,52 +1810,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	if (data_get_type(ctxt.resp) == DATA_TYPE_NULL)
 		data_set_dict(ctxt.resp);
 
-	/* need to populate meta, errors and warnings */
-
-	errors = data_key_set(ctxt.resp,
-		XSTRINGIFY(OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME));
-	warnings = data_key_set(ctxt.resp,
-		XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME));
-	meta = data_key_set(ctxt.resp,
-		XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME));
-
-	if (data_get_type(meta) == DATA_TYPE_NULL) {
-		/* cast to remove const */
-		void *ptr = (void *) &query_meta;
-		DATA_DUMP(ctxt.parser, OPENAPI_META_PTR, ptr, meta);
-	}
-
-	if (data_get_type(errors) == DATA_TYPE_LIST) {
-		if (!data_get_list_length(errors))
-			data_set_null(errors);
-		else
-			xassert(list_is_empty(ctxt.errors));
-	}
-
-	if ((data_get_type(errors) == DATA_TYPE_NULL) &&
-	    ((rc = DATA_DUMP(ctxt.parser, OPENAPI_ERRORS, ctxt.errors,
-			     errors)))) {
-		/* data_parser doesn't support OPENAPI_ERRORS parser */
-		data_t *e =
-			data_set_dict(data_list_append(data_set_list(errors)));
-		data_set_string(data_key_set(e, "description"),
-				"Requested data_parser plugin does not support OpenAPI plugin");
-		data_set_int(data_key_set(e, "error_number"),
-			     ESLURM_NOT_SUPPORTED);
-		data_set_string(data_key_set(e, "error"),
-				slurm_strerror(ESLURM_NOT_SUPPORTED));
-	}
-
-	if (data_get_type(warnings) == DATA_TYPE_LIST) {
-		if (!data_get_list_length(warnings))
-			data_set_null(warnings);
-		else
-			xassert(list_is_empty(ctxt.warnings));
-	}
-
-	if (data_get_type(warnings) == DATA_TYPE_NULL)
-		DATA_DUMP(ctxt.parser, OPENAPI_WARNINGS, ctxt.warnings,
-			  warnings);
+	_populate_openapi_results(&ctxt, &query_meta);
 
 	if (!rc)
 		rc = ctxt.rc;
