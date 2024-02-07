@@ -2043,6 +2043,15 @@ static void _dynamic_init(void)
 
 	slurm_mutex_lock(&conf->config_mutex);
 
+	if ((conf->dynamic_type == DYN_NODE_FUTURE) && conf->node_name) {
+		/*
+		 * You can't specify a node name with dynamic future nodes,
+		 * otherwise the slurmd will keep registering as a new dynamic
+		 * future node because the node_name won't map to the hostname.
+		 */
+		fatal("Specifying a node name for dynamic future nodes is not supported.");
+	}
+
 	/* Use -N name if specified. */
 	if (!conf->node_name) {
 		char hostname[HOST_NAME_MAX];
