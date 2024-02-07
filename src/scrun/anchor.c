@@ -1636,15 +1636,26 @@ extern int spawn_anchor(void)
 	}
 
 	/* state must be rwlocked during conmgr_run() */
+#ifndef NDEBUG
+	slurm_mutex_lock(&state.debug_lock);
 	debug4("%s: BEGIN conmgr_run()", __func__);
 	xassert(!state.needs_lock);
 	xassert(!state.locked);
 	state.needs_lock = true;
+	slurm_mutex_unlock(&state.debug_lock);
+#endif
+
 	rc = conmgr_run(true);
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&state.debug_lock);
 	xassert(!state.locked);
 	xassert(state.needs_lock);
 	state.needs_lock = false;
 	debug4("%s: END conmgr_run()", __func__);
+	slurm_mutex_unlock(&state.debug_lock);
+#endif
+
 
 done:
 	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));

@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     versions of job submission commands (23.02 and older).
  -- cgroup/v2 - Return 0 for VSZ. Kernel cgroups do not provide this metric.
  -- scrun - Avoid race condition where outbound RPCs could be corrupted.
+ -- scrun - Avoid race condition that could cause a crash while compiled in
+    debug mode.
 
 * Changes in Slurm 23.11.3
 ==========================
