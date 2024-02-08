@@ -105,7 +105,15 @@ static void _gen_combs(int *comb_list, int n, int k)
 /* qsort compare function for ascending int list */
 static int _cmp_int_ascend(const void *a, const void *b)
 {
-	return (*(int*)a - *(int*)b);
+	int ca = *((int *) a);
+	int cb = *((int *) b);
+
+	if (ca < cb)
+		return -1;
+	else if (ca > cb)
+		return 1;
+
+	return 0;
 }
 
 /* qsort compare function for descending int list */
