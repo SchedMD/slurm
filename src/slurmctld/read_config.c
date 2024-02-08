@@ -205,7 +205,12 @@ static int _sort_nodes_by_rank(const void *a, const void *b)
 	if (!n2)
 		return -1;
 
-	return (n1->node_rank - n2->node_rank);
+	if (n1->node_rank < n2->node_rank)
+		return -1;
+	else if (n1->node_rank > n2->node_rank)
+		return 1;
+
+	return 0;
 }
 
 /*
