@@ -54,9 +54,13 @@ static int _compare_support(const void *v1, const void *v2)
 	s1 = (sort_support_t *) v1;
 	s2 = (sort_support_t *) v2;
 
-	if ((s1->jstart > s2->jstart) ||
-	    ((s1->jstart == s2->jstart) &&
-	     (s1->tmpjobs->ncpus > s2->tmpjobs->ncpus)))
+	if (s1->jstart < s2->jstart)
+		return -1;
+	else if (s1->jstart > s2->jstart)
+		return 1;
+	else if (s1->tmpjobs->ncpus < s2->tmpjobs->ncpus)
+		return -1;
+	else if (s1->tmpjobs->ncpus > s2->tmpjobs->ncpus)
 		return 1;
 
 	return 0;
