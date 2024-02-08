@@ -103,6 +103,12 @@ static int _op_handler_cluster(ctxt_t *ctxt)
 		       ctxt->parameters, ctxt->parent_path))
 		goto cleanup;
 
+	if (!params.name) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unable to parse cluster name");
+		goto cleanup;
+	}
+
 	cluster_cond.cluster_list = list_create(NULL);
 	list_append(cluster_cond.cluster_list, params.name);
 
