@@ -127,7 +127,15 @@ static int _cmp_int_descend(const void *a, const void *b)
  * NOTE: sockets_core_cnt is a global symbol in this module */
 static int _cmp_sock(const void *a, const void *b)
 {
-	return (sockets_core_cnt[*(int*)b] - sockets_core_cnt[*(int*)a]);
+	int ca = sockets_core_cnt[*((int *) a)];
+	int cb = sockets_core_cnt[*((int *) b)];
+
+	if (ca < cb)
+		return 1;
+	else if (ca > cb)
+		return -1;
+
+	return 0;
 }
 
 /* Enable detailed logging of cr_dist() node and core bitmaps */
