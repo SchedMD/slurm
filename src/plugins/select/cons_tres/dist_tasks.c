@@ -111,7 +111,15 @@ static int _cmp_int_ascend(const void *a, const void *b)
 /* qsort compare function for descending int list */
 static int _cmp_int_descend(const void *a, const void *b)
 {
-	return (*(int*)b - *(int*)a);
+	int ca = *((int *) a);
+	int cb = *((int *) b);
+
+	if (ca < cb)
+		return 1;
+	else if (ca > cb)
+		return -1;
+
+	return 0;
 }
 
 
