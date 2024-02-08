@@ -8383,7 +8383,12 @@ static int _comp_node_inx(const void *n1, const void *n2)
 	const node_inx_cnt_t *node1 = n1;
 	const node_inx_cnt_t *node2 = n2;
 
-	return node1->node_index - node2->node_index;
+	if (node1->node_index < node2->node_index)
+		return -1;
+	else if (node1->node_index > node2->node_index)
+		return 1;
+
+	return 0;
 }
 
 static int _calc_arbitrary_tpn(job_record_t *job_ptr)
