@@ -185,7 +185,13 @@ static int _uid_compare(const void *a, const void *b)
 {
 	uid_t ua = *(const uid_t *)a;
 	uid_t ub = *(const uid_t *)b;
-	return ua - ub;
+
+	if (ua < ub)
+		return -1;
+	else if (ua > ub)
+		return 1;
+
+	return 0;
 }
 
 extern void uid_cache_clear(void)
