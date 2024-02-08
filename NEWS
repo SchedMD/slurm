@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
     shutdown when connections have pending events.
  -- scrun - Avoid excessive polling of connections during shutdown that could
     needlessly cause 100% CPU usage on a thread.
+ -- sbcast - Use user identity from broadcast credential instead of looking it
+    up locally on the node.
 
 * Changes in Slurm 23.11.3
 ==========================

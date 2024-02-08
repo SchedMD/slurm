@@ -728,7 +728,7 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 		sbcast_cred->arg.id = fetch_identity(uid, gid, false);
 		if (!sbcast_cred->arg.id)
 			goto unpack_error;
-	} else {
+	} else if (!sbcast_cred->arg.id) {
 		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
 		sbcast_cred->arg.id->uid = uid;
 		sbcast_cred->arg.id->gid = gid;
