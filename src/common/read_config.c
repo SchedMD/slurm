@@ -5841,6 +5841,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Gang");
 	}
+	if (debug_flags & DEBUG_FLAG_GLOB_SILENCE) {
+                if (rc)
+                        xstrcat(rc, ",");
+                xstrcat(rc, "GLOB_SILENCE");
+        }
 	if (debug_flags & DEBUG_FLAG_GRES) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -6047,6 +6052,8 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FRONT_END;
 		else if (xstrcasecmp(tok, "Gang") == 0)
 			(*flags_out) |= DEBUG_FLAG_GANG;
+		else if (!xstrcasecmp(tok, "GLOB_SILENCE"))
+			(*flags_out) |= DEBUG_FLAG_GLOB_SILENCE;
 		else if (xstrcasecmp(tok, "Gres") == 0)
 			(*flags_out) |= DEBUG_FLAG_GRES;
 		else if (xstrcasecmp(tok, "Hetjob") == 0)
