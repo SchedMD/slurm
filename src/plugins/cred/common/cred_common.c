@@ -523,54 +523,46 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 {
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 	uint32_t cred_start = get_buf_offset(buffer);
-	uid_t uid = SLURM_AUTH_NOBODY;
-	gid_t gid = SLURM_AUTH_NOBODY;
-	char *user_name = NULL;
-	uint32_t ngids = 0, *gids = NULL;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_identity(&sbcast_cred->arg.id, buffer,
 				    protocol_version))
 			goto unpack_error;
-		uid = sbcast_cred->arg.id->uid;
-		gid = sbcast_cred->arg.id->gid;
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
 		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
+
+		if (!sbcast_cred->arg.id->pw_name) {
+			uid_t uid = sbcast_cred->arg.id->uid;
+			gid_t gid = sbcast_cred->arg.id->gid;
+
+			debug2("%s: need to fetch identity", __func__);
+			FREE_NULL_IDENTITY(sbcast_cred->arg.id);
+			sbcast_cred->arg.id = fetch_identity(uid, gid, false);
+			if (!sbcast_cred->arg.id)
+				goto unpack_error;
+		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp = 0;
+		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
+
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
 		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
 		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
-		safe_unpack32(&uid, buffer);
-		safe_unpack32(&gid, buffer);
-		safe_unpackstr(&user_name, buffer);
-		safe_unpack32_array(&gids, &ngids, buffer);
+		safe_unpack32(&sbcast_cred->arg.id->uid, buffer);
+		safe_unpack32(&sbcast_cred->arg.id->gid, buffer);
+		safe_unpackstr(&sbcast_cred->arg.id->pw_name, buffer);
+		safe_unpack32_array(&sbcast_cred->arg.id->gids, &uint32_tmp,
+				    buffer);
+		sbcast_cred->arg.id->ngids = uint32_tmp;
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 	} else
 		goto unpack_error;
-
-	if (sbcast_cred->arg.id && !sbcast_cred->arg.id->pw_name) {
-		debug2("%s: need to fetch identity", __func__);
-		FREE_NULL_IDENTITY(sbcast_cred->arg.id);
-	}
-
-	if (!user_name && !sbcast_cred->arg.id) {
-		sbcast_cred->arg.id = fetch_identity(uid, gid, false);
-		if (!sbcast_cred->arg.id)
-			goto unpack_error;
-	} else if (!sbcast_cred->arg.id) {
-		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
-		sbcast_cred->arg.id->uid = uid;
-		sbcast_cred->arg.id->gid = gid;
-		sbcast_cred->arg.id->pw_name = user_name;
-		sbcast_cred->arg.id->ngids = ngids;
-		sbcast_cred->arg.id->gids = gids;
-	}
 
 	identity_debug2(sbcast_cred->arg.id, __func__);
 
