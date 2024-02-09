@@ -398,7 +398,7 @@ static int _get_date(const char *time_str, int *pos, int *month, int *mday,
 /* Convert string to equivalent time value
  * input formats:
  *   today or tomorrow
- *   midnight, noon, fika (3 PM), teatime (4 PM)
+ *   midnight, noon, elevenses (11 AM), fika (3 PM), teatime (4 PM)
  *   HH:MM[:SS] [AM|PM]
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
  *   MM/DD[/YY]-HH:MM[:SS]
@@ -466,6 +466,13 @@ extern time_t parse_time(const char *time_str, int past)
 			minute = 0;
 			second = 0;
 			pos += 3;
+			continue;
+		}
+		if (!xstrncasecmp(time_str + pos, "elevenses", 9)) {
+			hour   = 11;
+			minute = 0;
+			second = 0;
+			pos += 8;
 			continue;
 		}
 		if (!xstrncasecmp(time_str + pos, "fika", 4)) {

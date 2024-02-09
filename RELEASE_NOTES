@@ -30,6 +30,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Add support for "elevenses" as an additional time specification.
 
 API CHANGES
 ===========
