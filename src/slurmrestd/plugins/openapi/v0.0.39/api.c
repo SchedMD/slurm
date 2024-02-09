@@ -362,3 +362,9 @@ extern void slurm_openapi_p_fini(void)
 	data_parser_g_free(global_parser, false);
 	global_parser = NULL;
 }
+
+extern int slurm_openapi_p_get_paths(const openapi_path_binding_t **paths_ptr,
+				     const openapi_resp_meta_t **meta_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
