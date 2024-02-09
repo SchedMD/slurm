@@ -44,7 +44,7 @@
 
 #include "api.h"
 
-static int _op_handler_diag(openapi_ctxt_t *ctxt)
+extern int op_handler_diag(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -71,7 +71,7 @@ static int _op_handler_diag(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
-static int _op_handler_ping(openapi_ctxt_t *ctxt)
+extern int op_handler_ping(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -91,7 +91,7 @@ static int _op_handler_ping(openapi_ctxt_t *ctxt)
 }
 
 /* based on _print_license_info() from scontrol */
-static int _op_handler_licenses(openapi_ctxt_t *ctxt)
+extern int op_handler_licenses(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	license_info_msg_t *msg = NULL;
@@ -114,18 +114,4 @@ static int _op_handler_licenses(openapi_ctxt_t *ctxt)
 
 	slurm_free_license_info_msg(msg);
 	return rc;
-}
-
-extern void init_op_diag(void)
-{
-	bind_handler("/slurm/{data_parser}/diag/", _op_handler_diag);
-	bind_handler("/slurm/{data_parser}/ping/", _op_handler_ping);
-	bind_handler("/slurm/{data_parser}/licenses/", _op_handler_licenses);
-}
-
-extern void destroy_op_diag(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_diag);
-	unbind_operation_ctxt_handler(_op_handler_ping);
-	unbind_operation_ctxt_handler(_op_handler_licenses);
 }

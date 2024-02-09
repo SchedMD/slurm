@@ -43,7 +43,6 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
-#include "src/common/ref.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -83,8 +82,6 @@ const char plugin_type[] = "openapi/slurmctld";
 const uint32_t plugin_id = 110;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-decl_static_data(openapi_json);
-
 const openapi_resp_meta_t plugin_meta = {
 	.plugin = {
 		.type = (char *) plugin_type,
@@ -100,40 +97,339 @@ const openapi_resp_meta_t plugin_meta = {
 	}
 };
 
+static const char *tags[] = {
+	"slurm",
+	NULL
+};
+
+static const op_bind_flags_t op_flags =
+	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT);
+
+const openapi_path_binding_t openapi_paths[] = {
+	{
+		.path = "/slurm/{data_parser}/shares",
+		.callback = op_handler_shares,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get fairshare info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_SHARES_RESP,
+					.description = "shares information",
+				},
+				.query = DATA_PARSER_SHARES_REQ_MSG,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/reconfigure/",
+		.callback = op_handler_reconfigure,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "request slurmctld reconfigure",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "reconfigure request result",
+				},
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/diag/",
+		.callback = op_handler_diag,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get diagnostics",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_DIAG_RESP,
+					.description = "diagnostic results",
+				},
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/ping/",
+		.callback = op_handler_ping,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "ping test",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_PING_ARRAY_RESP,
+					.description = "results of ping test",
+				},
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/licenses/",
+		.callback = op_handler_licenses,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get all Slurm tracked license info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_LICENSES_RESP,
+					.description = "results of get all licenses",
+				},
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/job/submit",
+		.callback = op_handler_submit_job,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "submit new job",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE,
+					.description = "job submission response",
+				},
+				.body = {
+					.type = DATA_PARSER_JOB_SUBMIT_REQ,
+					.description = "Job description",
+				},
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/jobs/",
+		.callback = op_handler_jobs,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get list of jobs",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_INFO_RESP,
+					.description = "job(s) information",
+				},
+				.query = DATA_PARSER_OPENAPI_JOB_INFO_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/job/{job_id}",
+		.callback = op_handler_job,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get job info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_INFO_RESP,
+					.description = "job(s) information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
+				.query = DATA_PARSER_OPENAPI_JOB_INFO_QUERY,
+			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "update job",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_POST_RESPONSE,
+					.description = "job update result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
+				.body = {
+					.type = DATA_PARSER_JOB_DESC_MSG,
+					.description = "Job update description",
+				},
+			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "cancel or signal job",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "job signal result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
+				.query = DATA_PARSER_OPENAPI_JOB_INFO_DELETE_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/nodes/",
+		.callback = op_handler_nodes,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get node(s) info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_NODES_RESP,
+					.description = "node(s) information",
+				},
+				.query = DATA_PARSER_OPENAPI_NODES_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/node/{node_name}",
+		.callback = op_handler_node,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get node info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_NODES_RESP,
+					.description = "node information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_NODE_PARAM,
+				.query = DATA_PARSER_OPENAPI_NODES_QUERY,
+			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "update node properties",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "node update request result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_NODE_PARAM,
+				.body = {
+					.type = DATA_PARSER_UPDATE_NODE_MSG,
+					.description = "Node update description",
+				},
+			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "delete node",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "node delete request result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_NODE_PARAM,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/partitions/",
+		.callback = op_handler_partitions,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get all partition info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_PARTITION_RESP,
+					.description = "partition information",
+				},
+				.query = DATA_PARSER_OPENAPI_PARTITIONS_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/partition/{partition_name}",
+		.callback = op_handler_partition,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get partition info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_PARTITION_RESP,
+					.description = "partition information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_PARTITION_PARAM,
+				.query = DATA_PARSER_OPENAPI_PARTITIONS_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/reservations/",
+		.callback = op_handler_reservations,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get all reservation info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESERVATION_RESP,
+					.description = "reservation information",
+				},
+				.query = DATA_PARSER_OPENAPI_RESERVATION_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{
+		.path = "/slurm/{data_parser}/reservation/{reservation_name}",
+		.callback = op_handler_reservation,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get reservation info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESERVATION_RESP,
+					.description = "reservation information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
+				.query = DATA_PARSER_OPENAPI_RESERVATION_QUERY,
+			},
+			{0}
+		},
+		.flags = op_flags,
+	},
+	{0}
+};
+
 extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
-	data_t *spec = NULL;
-
-	*flags |= OAS_FLAG_SET_OPID | OAS_FLAG_SET_DATA_PARSER_SPEC;
-
-	static_ref_json_to_data_t(spec, openapi_json);
-
-	return spec;
-}
-
-extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback)
-{
-	bind_operation_ctxt_handler(str_path, callback, 0, &plugin_meta);
+	return NULL;
 }
 
 extern void slurm_openapi_p_init(void)
 {
-	init_op_assoc_mgr();
-	init_op_control();
-	init_op_diag();
-	init_op_jobs();
-	init_op_nodes();
-	init_op_partitions();
-	init_op_reservations();
 }
 
 extern void slurm_openapi_p_fini(void)
 {
-	destroy_op_assoc_mgr();
-	destroy_op_control();
-	destroy_op_diag();
-	destroy_op_jobs();
-	destroy_op_nodes();
-	destroy_op_partitions();
-	destroy_op_reservations();
+}
+
+extern int slurm_openapi_p_get_paths(const openapi_path_binding_t **paths_ptr,
+				     const openapi_resp_meta_t **meta_ptr)
+{
+	*paths_ptr = openapi_paths;
+	*meta_ptr = &plugin_meta;
+	return SLURM_SUCCESS;
 }

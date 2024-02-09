@@ -42,7 +42,7 @@
 
 #include "api.h"
 
-extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
+extern int op_handler_partitions(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *part_info_ptr = NULL;
@@ -84,7 +84,7 @@ done:
 	return rc;
 }
 
-extern int _op_handler_partition(openapi_ctxt_t *ctxt)
+extern int op_handler_partition(openapi_ctxt_t *ctxt)
 {
 	openapi_partition_param_t params = {0};
 	openapi_partitions_query_t query = {0};
@@ -160,17 +160,4 @@ done:
 	slurm_free_partition_info_msg(part_info_ptr);
 	xfree(params.partition_name);
 	return rc;
-}
-
-extern void init_op_partitions(void)
-{
-	bind_handler("/slurm/{data_parser}/partitions/",
-		     _op_handler_partitions);
-	bind_handler("/slurm/{data_parser}/partition/{partition_name}",
-		     _op_handler_partition);
-}
-
-extern void destroy_op_partitions(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_partitions);
 }

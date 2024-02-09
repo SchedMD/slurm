@@ -44,7 +44,7 @@
 
 #include "api.h"
 
-static int _op_handler_reconfigure(openapi_ctxt_t *ctxt)
+extern int op_handler_reconfigure(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -56,15 +56,4 @@ static int _op_handler_reconfigure(openapi_ctxt_t *ctxt)
 		resp_error(ctxt, rc, __func__, "slurm_reconfigure() failed");
 
 	return rc;
-}
-
-extern void init_op_control(void)
-{
-	bind_handler("/slurm/{data_parser}/reconfigure/",
-		     _op_handler_reconfigure);
-}
-
-extern void destroy_op_control(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_reconfigure);
 }

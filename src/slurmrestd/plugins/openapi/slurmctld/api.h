@@ -48,24 +48,20 @@ typedef openapi_ctxt_t ctxt_t;
 #define resp_warn(ctxt, source, why, ...) \
 	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
 
-/* ------------ declarations for each operation --------------- */
-
-extern void init_op_assoc_mgr(void);
-extern void init_op_control(void);
-extern void init_op_diag(void);
-extern void init_op_jobs(void);
-extern void init_op_nodes(void);
-extern void init_op_partitions(void);
-extern void init_op_reservations(void);
-extern void destroy_op_assoc_mgr(void);
-extern void destroy_op_control(void);
-extern void destroy_op_diag(void);
-extern void destroy_op_jobs(void);
-extern void destroy_op_nodes(void);
-extern void destroy_op_partitions(void);
-extern void destroy_op_reservations(void);
-
-/* register handler against each parser */
-extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback);
+extern const openapi_path_binding_t openapi_paths[];
+extern int op_handler_shares(openapi_ctxt_t *ctxt);
+extern int op_handler_reconfigure(openapi_ctxt_t *ctxt);
+extern int op_handler_diag(openapi_ctxt_t *ctxt);
+extern int op_handler_ping(openapi_ctxt_t *ctxt);
+extern int op_handler_licenses(openapi_ctxt_t *ctxt);
+extern int op_handler_submit_job(openapi_ctxt_t *ctxt);
+extern int op_handler_job(openapi_ctxt_t *ctxt);
+extern int op_handler_jobs(openapi_ctxt_t *ctxt);
+extern int op_handler_nodes(openapi_ctxt_t *ctxt);
+extern int op_handler_node(openapi_ctxt_t *ctxt);
+extern int op_handler_partitions(openapi_ctxt_t *ctxt);
+extern int op_handler_partition(openapi_ctxt_t *ctxt);
+extern int op_handler_reservations(openapi_ctxt_t *ctxt);
+extern int op_handler_reservation(openapi_ctxt_t *ctxt);
 
 #endif

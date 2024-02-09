@@ -66,7 +66,7 @@ static const slurm_err_t nonfatal_errors[] = {
 	ESLURM_LICENSES_UNAVAILABLE,
 };
 
-static int _op_handler_jobs(openapi_ctxt_t *ctxt)
+extern int op_handler_jobs(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_query_t query = {0};
 	job_info_msg_t *job_info_ptr = NULL;
@@ -412,7 +412,7 @@ static void _job_post(ctxt_t *ctxt)
 	xfree(req.script);
 }
 
-static int _op_handler_job(openapi_ctxt_t *ctxt)
+extern int op_handler_job(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_param_t params = {{ 0 }};
 	slurm_selected_step_t *job_id;
@@ -449,7 +449,7 @@ static int _op_handler_job(openapi_ctxt_t *ctxt)
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_submit_job(openapi_ctxt_t *ctxt)
+extern int op_handler_submit_job(openapi_ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_POST) {
 		_job_post(ctxt);
@@ -460,18 +460,4 @@ static int _op_handler_submit_job(openapi_ctxt_t *ctxt)
 	}
 
 	return ctxt->rc;
-}
-
-extern void init_op_jobs(void)
-{
-	bind_handler("/slurm/{data_parser}/job/submit", _op_handler_submit_job);
-	bind_handler("/slurm/{data_parser}/jobs/", _op_handler_jobs);
-	bind_handler("/slurm/{data_parser}/job/{job_id}", _op_handler_job);
-}
-
-extern void destroy_op_jobs(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_submit_job);
-	unbind_operation_ctxt_handler(_op_handler_job);
-	unbind_operation_ctxt_handler(_op_handler_jobs);
 }

@@ -134,7 +134,7 @@ done:
 	slurm_free_node_info_msg(node_info_ptr);
 }
 
-static int _op_handler_nodes(openapi_ctxt_t *ctxt)
+extern int op_handler_nodes(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -149,7 +149,7 @@ static int _op_handler_nodes(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
-static int _op_handler_node(openapi_ctxt_t *ctxt)
+extern int op_handler_node(openapi_ctxt_t *ctxt)
 {
 	openapi_node_param_t params = {0};
 
@@ -186,15 +186,4 @@ static int _op_handler_node(openapi_ctxt_t *ctxt)
 done:
 	xfree(params.node_name);
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_nodes(void)
-{
-	bind_handler("/slurm/{data_parser}/nodes/", _op_handler_nodes);
-	bind_handler("/slurm/{data_parser}/node/{node_name}", _op_handler_node);
-}
-
-extern void destroy_op_nodes(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_nodes);
 }

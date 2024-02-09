@@ -75,7 +75,7 @@ static void _dump_shares(openapi_ctxt_t *ctxt)
 	slurm_free_shares_response_msg(resp);
 }
 
-static int _op_handler_shares(openapi_ctxt_t *ctxt)
+extern int op_handler_shares(openapi_ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		_dump_shares(ctxt);
@@ -86,14 +86,4 @@ static int _op_handler_shares(openapi_ctxt_t *ctxt)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_assoc_mgr(void)
-{
-	bind_handler("/slurm/{data_parser}/shares", _op_handler_shares);
-}
-
-extern void destroy_op_assoc_mgr(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_shares);
 }

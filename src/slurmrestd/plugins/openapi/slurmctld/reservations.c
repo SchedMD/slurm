@@ -44,7 +44,7 @@
 
 #include "api.h"
 
-extern int _op_handler_reservations(openapi_ctxt_t *ctxt)
+extern int op_handler_reservations(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
@@ -88,7 +88,7 @@ done:
 	return rc;
 }
 
-extern int _op_handler_reservation(openapi_ctxt_t *ctxt)
+extern int op_handler_reservation(openapi_ctxt_t *ctxt)
 {
 	openapi_reservation_param_t params = {0};
 	openapi_reservation_query_t query = {0};
@@ -159,17 +159,4 @@ done:
 	slurm_free_reservation_info_msg(res_info_ptr);
 	xfree(params.reservation_name);
 	return rc;
-}
-
-extern void init_op_reservations(void)
-{
-	bind_handler("/slurm/{data_parser}/reservations/",
-		     _op_handler_reservations);
-	bind_handler("/slurm/{data_parser}/reservation/{reservation_name}",
-		     _op_handler_reservation);
-}
-
-extern void destroy_op_reservations(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_reservations);
 }
