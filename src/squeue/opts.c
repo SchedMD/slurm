@@ -172,11 +172,8 @@ extern void parse_command_line(int argc, char **argv)
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
-		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
-			print_db_notok(env_val, 1);
-			exit(1);
-		}
-		working_cluster_rec = list_peek(params.clusters);
+		xfree(params.cluster_names);
+		params.cluster_names = xstrdup(env_val);
 		params.local_flag = true;
 	}
 	if (getenv("SQUEUE_FEDERATION"))
@@ -233,14 +230,8 @@ extern void parse_command_line(int argc, char **argv)
 			params.licenses_list = _build_str_list(params.licenses);
 			break;
 		case (int) 'M':
-			if (params.clusters)
-				FREE_NULL_LIST(params.clusters);
-			if (!(params.clusters =
-			      slurmdb_get_info_cluster(optarg))) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
-			working_cluster_rec = list_peek(params.clusters);
+			xfree(params.cluster_names);
+			params.cluster_names = xstrdup(optarg);
 			params.local_flag = true;
 			break;
 		case (int) 'n':
@@ -433,6 +424,17 @@ extern void parse_command_line(int argc, char **argv)
 			_usage();
 			exit(1);
 		}
+	}
+
+	FREE_NULL_LIST(params.clusters);
+	if (params.cluster_names) {
+		if (!(params.clusters =
+		      slurmdb_get_info_cluster(params.cluster_names))) {
+			print_db_notok(optarg, 0);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(params.clusters);
+		params.local_flag = true;
 	}
 
 	if ( params.job_flag && params.step_flag) {
