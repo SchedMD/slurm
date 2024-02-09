@@ -66,6 +66,13 @@ typedef struct {
 	bool disable_refs;
 } spec_args_t;
 
+#define MAGIC_REFS_PTR 0xaa910e8b
+
+typedef struct {
+	int magic; /* MAGIC_REFS_PTR */
+	int *references; /* references[i] = count(parsers[i]) */
+} refs_ptr_t;
+
 static void _replace_refs(data_t *data, spec_args_t *sargs);
 static void _count_refs(data_t *data, spec_args_t *sargs);
 extern void _set_ref(data_t *obj, const parser_t *parent,
@@ -903,4 +910,164 @@ extern void set_openapi_schema(data_t *dst, const parser_t *parser,
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 
 	(void) _set_openapi_parse(dst, parser, &sargs, NULL, false);
+}
+
+extern int data_parser_p_increment_reference(args_t *args,
+					     data_parser_type_t type,
+					     refs_ptr_t **references_ptr)
+{
+	spec_args_t sargs = {
+		.magic = MAGIC_SPEC_ARGS,
+		.args = args,
+	};
+	refs_ptr_t *refs = *references_ptr;
+	const parser_t *parser;
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+
+	if (!refs) {
+		refs = *references_ptr = xmalloc(sizeof(*refs));
+		refs->magic = MAGIC_REFS_PTR;
+		refs->references =
+			xcalloc(sargs.parser_count, sizeof(*refs->references));
+	}
+
+	if (!(parser = find_parser_by_type(type)))
+		return ESLURM_DATA_INVALID_PARSER;
+
+	xassert(refs->magic == MAGIC_REFS_PTR);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(sargs.parser_count > 0);
+
+	sargs.references = refs->references,
+	_increment_ref(NULL, parser, &sargs);
+
+	return SLURM_SUCCESS;
+}
+
+extern int data_parser_p_populate_schema(args_t *args, data_parser_type_t type,
+					 refs_ptr_t **references_ptr,
+					 data_t *dst, data_t *schemas)
+{
+	refs_ptr_t *refs = *references_ptr;
+	spec_args_t sargs = {
+		.magic = MAGIC_SPEC_ARGS,
+		.args = args,
+		.schemas = schemas,
+		.references = (*references_ptr)->references,
+	};
+	const parser_t *parser;
+
+	xassert(refs && refs->magic == MAGIC_REFS_PTR);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(data_get_type(dst) == DATA_TYPE_DICT);
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+	if (!(parser = find_parser_by_type(type)))
+		return ESLURM_DATA_INVALID_PARSER;
+
+	_set_ref(dst, NULL, parser, &sargs);
+
+	return SLURM_SUCCESS;
+}
+
+extern int data_parser_p_populate_parameters(args_t *args,
+					     data_parser_type_t parameter_type,
+					     data_parser_type_t query_type,
+					     refs_ptr_t **references_ptr,
+					     data_t *dst, data_t *schemas)
+{
+	refs_ptr_t *refs = *references_ptr;
+	spec_args_t sargs = {
+		.magic = MAGIC_SPEC_ARGS,
+		.args = args,
+		.schemas = schemas,
+		.references = (*references_ptr)->references,
+	};
+	const parser_t *param_parser = NULL, *query_parser = NULL;
+
+	xassert(refs && refs->magic == MAGIC_REFS_PTR);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(!parameter_type || (parameter_type > DATA_PARSER_TYPE_INVALID));
+	xassert(!parameter_type || (parameter_type < DATA_PARSER_TYPE_MAX));
+	xassert(!query_type || (query_type > DATA_PARSER_TYPE_INVALID));
+	xassert(!query_type || (query_type < DATA_PARSER_TYPE_MAX));
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+
+	sargs.path_params = data_set_dict(data_new());
+
+	if (parameter_type &&
+	    !(param_parser = find_parser_by_type(parameter_type)))
+		return ESLURM_DATA_INVALID_PARSER;
+	if (query_type && !(query_parser = find_parser_by_type(query_type)))
+		return ESLURM_DATA_INVALID_PARSER;
+
+	if (param_parser) {
+		while (param_parser->pointer_type)
+			param_parser =
+				find_parser_by_type(param_parser->pointer_type);
+
+		if (param_parser->model != PARSER_MODEL_ARRAY)
+			fatal_abort("parameters must be an array parser");
+
+		debug3("%s: adding parameter %s(0x%"PRIxPTR")=%s to %pd",
+		       __func__, param_parser->type_string,
+		       (uintptr_t) param_parser, param_parser->obj_type_string,
+		       dst);
+
+		for (int i = 0; i < param_parser->field_count; i++)
+			data_key_set(sargs.path_params,
+				     param_parser->fields[i].key);
+
+		for (int i = 0; i < param_parser->field_count; i++)
+			_add_param_linked(dst, &param_parser->fields[i],
+					  &sargs);
+	}
+	if (query_parser) {
+		while (query_parser->pointer_type)
+			query_parser =
+				find_parser_by_type(query_parser->pointer_type);
+
+		if (query_parser->model != PARSER_MODEL_ARRAY)
+			fatal_abort("parameters must be an array parser");
+
+		debug3("%s: adding parameter %s(0x%"PRIxPTR")=%s to %pd",
+		       __func__, query_parser->type_string,
+		       (uintptr_t) query_parser, query_parser->obj_type_string,
+		       dst);
+
+		for (int i = 0; i < query_parser->field_count; i++)
+			_add_param_linked(dst, &query_parser->fields[i],
+					  &sargs);
+	}
+
+	FREE_NULL_DATA(sargs.path_params);
+
+	return SLURM_SUCCESS;
+}
+
+extern void data_parser_p_release_references(args_t *args,
+					     refs_ptr_t **references_ptr)
+{
+	refs_ptr_t *refs = *references_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (!refs)
+		return;
+
+	*references_ptr = NULL;
+
+	xassert(refs->magic == MAGIC_REFS_PTR);
+	xfree(refs->references);
+	refs->magic = ~MAGIC_REFS_PTR;
+	xfree(refs);
 }
