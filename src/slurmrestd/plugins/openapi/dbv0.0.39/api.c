@@ -579,3 +579,9 @@ extern int username_to_uid(void *x, void *arg)
 	list_append(list, user);
 	return SLURM_SUCCESS;
 }
+
+extern int slurm_openapi_p_get_paths(const openapi_path_binding_t **paths_ptr,
+				     const openapi_resp_meta_t **meta_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
