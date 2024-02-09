@@ -33,3 +33,80 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
+
+#include "src/common/list.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+static int _match_and_setup_cluster_rec(void *x, void *key)
+{
+	list_t *cluster_name_list = key;
+	slurmdb_cluster_rec_t *cluster_rec = x;
+
+	if (slurmdb_setup_cluster_rec(cluster_rec))
+		/* setup failed */
+		return 0;
+
+	if (!cluster_name_list)
+		/* match all clusters */
+		return 1;
+
+	if (list_find_first(cluster_name_list, slurm_find_char_in_list,
+			    cluster_rec->name))
+		return 1;
+
+	return 0;
+}
+
+static int _get_clusters_from_fed(list_t **cluster_records, char *cluster_names)
+{
+	list_t *cluster_list = list_create(slurmdb_destroy_cluster_rec);
+	list_t *cluster_name_list = NULL;
+	slurmdb_federation_rec_t *fed = NULL;
+
+	if (slurm_load_federation((void *)&fed) || !fed) {
+		error("--federation set or \"fed_display\" configured, but could not load federation information: %m");
+		FREE_NULL_LIST(cluster_list);
+		return SLURM_ERROR;
+	}
+
+	if (xstrcasecmp(cluster_names, "all")) {
+		cluster_name_list = list_create(xfree_ptr);
+		slurm_addto_char_list(cluster_name_list, cluster_names);
+	}
+	list_transfer_match(fed->cluster_list, cluster_list,
+			    _match_and_setup_cluster_rec, cluster_name_list);
+
+	*cluster_records = cluster_list;
+
+	FREE_NULL_LIST(cluster_name_list);
+
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_get_cluster_info(list_t **cluster_records, char *cluster_names,
+				  uint16_t show_flags)
+{
+	xassert(cluster_records);
+
+	if (!cluster_records)
+		return SLURM_ERROR;
+
+	/* get cluster records from slurmctld federation record */
+	if ((show_flags & SHOW_FEDERATION) ||
+	    (xstrstr(slurm_conf.fed_params, "fed_display"))) {
+		if (!_get_clusters_from_fed(cluster_records, cluster_names))
+			return SLURM_SUCCESS;
+	}
+
+	/* get cluster records from slurmdbd */
+	if (!(*cluster_records = slurmdb_get_info_cluster(cluster_names))) {
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
