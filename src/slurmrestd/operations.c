@@ -218,6 +218,12 @@ extern int bind_operation_handler(const char *str_path,
 	return SLURM_SUCCESS;
 }
 
+extern int bind_operation_path(const openapi_path_binding_t *op_path,
+			       const openapi_resp_meta_t *meta)
+{
+	fatal_abort("not implemented yet");
+}
+
 extern int bind_operation_ctxt_handler(const char *str_path,
 				       openapi_ctxt_handler_t callback, int tag,
 				       const openapi_resp_meta_t *meta)
