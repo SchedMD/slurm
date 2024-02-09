@@ -96,6 +96,40 @@ typedef enum {
 	OAS_FLAG_MAX = SLURM_BIT(63) /* place holder */
 } openapi_spec_flags_t;
 
+typedef enum {
+	OP_BIND_INVALID = 0,
+	OP_BIND_NONE = SLURM_BIT(1),
+	OP_BIND_DATA_PARSER = SLURM_BIT(2),
+	OP_BIND_OPENAPI_RESP_FMT = SLURM_BIT(3), /* populate errors,warnings,meta */
+	OP_BIND_HIDDEN_OAS = SLURM_BIT(4), /* Hide from OpenAPI specification */
+	OP_BIND_INVALID_MAX = INFINITE16
+} op_bind_flags_t;
+
+typedef struct {
+	http_request_method_t method;
+	const char *const *tags;
+	const char *summary;
+	const char *description;
+	struct {
+		data_parser_type_t type;
+		const char *description;
+	} response;
+	data_parser_type_t parameters;
+	data_parser_type_t query;
+	struct {
+		data_parser_type_t type;
+		const char *description;
+		bool optional;
+	} body;
+} openapi_path_binding_method_t;
+
+typedef struct {
+	const char *path;
+	openapi_ctxt_handler_t callback;
+	const openapi_path_binding_method_t *methods;
+	op_bind_flags_t flags;
+} openapi_path_binding_t;
+
 /*
  * Register a given unique tag against a path.
  *
@@ -105,6 +139,23 @@ typedef enum {
  * Can safely be called multiple times for same path.
  */
 extern int register_path_tag(const char *path);
+
+/*
+ * Register a given unique tag against a path binding.
+ *
+ * IN in_path - string path to assign to given tag or
+ * 	NULL (to use path in op_path)
+ * IN op_path - Operation binding for path
+ * IN meta - Meta information from plugin (or NULL)
+ * IN parser - Relavent data_parser (or NULL)
+ * RET -1 on error or >0 tag value for path.
+ *
+ * Can safely be called multiple times for same path.
+ */
+extern int register_path_binding(const char *in_path,
+				 const openapi_path_binding_t *op_path,
+				 const openapi_resp_meta_t *meta,
+				 data_parser_t *parser);
 
 /*
  * Unregister a given unique tag against a path.

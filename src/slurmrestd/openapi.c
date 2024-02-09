@@ -732,6 +732,14 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
+extern int register_path_binding(const char *in_path,
+				 const openapi_path_binding_t *op_path,
+				 const openapi_resp_meta_t *meta,
+				 data_parser_t *parser)
+{
+	fatal_abort("not implemented");
+}
+
 extern int register_path_tag(const char *str_path)
 {
 	int rc = -1;
