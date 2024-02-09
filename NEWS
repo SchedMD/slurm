@@ -51,6 +51,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld crashes when using extra constraints with job arrays.
  -- sackd/slurmrestd/scrun - Avoid memory leak on new unix socket connection.
  -- The failed node field is filled when a node fails but does not time out.
+ -- slurmrestd - Remove requiring job script field and job component script
+    fields to both be populated in the `POST /slurm/v0.0.40/job/submit`
+    endpoint as there can only be one batch step script for a job.
 
 * Changes in Slurm 23.11.4
 ==========================

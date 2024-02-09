@@ -385,7 +385,8 @@ static void _job_post(ctxt_t *ctxt)
 		       ctxt->parent_path))
 		return;
 
-	if (!req.script || !req.script[0]) {
+	if (!req.jobs && (!req.script || !req.script[0]) &&
+	    (!req.job || !req.job->script)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
 		return;
