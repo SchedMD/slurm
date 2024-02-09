@@ -352,6 +352,11 @@ not</b> be granted to use this functionality.</p>
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html#SECTION_Example-<B>scrun.lua</B>-scripts">scrun.lua</a>
 must be configured for site storage configuration.</li>
+<li><a href="https://docs.docker.com/engine/security/rootless/#routing-ping-packets">
+	Configure kernel to allow pings</a></li>
+<li><a href="https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports">
+	Configure rootless dockerd to allow listening on privileged ports
+	</a></li>
 </ol>
 <h3>Limitations</h3>
 <ol>
@@ -837,6 +842,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 29 September 2023</p>
+<p style="text-align:center;">Last modified 09 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
