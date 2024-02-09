@@ -97,6 +97,7 @@ slurmapi_src =           \
 	burst_buffer_info.c \
 	assoc_mgr_info.c    \
 	cancel.c         \
+	cluster_info.c   \
 	complete.c       \
 	config_info.c    \
 	crontab.c        \
