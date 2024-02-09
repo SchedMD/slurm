@@ -429,9 +429,9 @@ be required if changes to the container filesystem are desired.</li>
 <li>Verify Docker is using scrun:
 <pre>export DOCKER_SECURITY="--security-opt label:disable --security-opt seccomp=unconfined  --security-opt apparmor=unconfined --net=none"
 docker run $DOCKER_SECURITY hello-world
-docker run $DOCKER_SECURITY alpine printenv SLURM_JOB_ID
-docker run $DOCKER_SECURITY alpine hostname
-docker run $DOCKER_SECURITY alpine -e SCRUN_JOB_NUM_NODES=10 hostname</pre>
+docker run $DOCKER_SECURITY alpine /bin/printenv SLURM_JOB_ID
+docker run $DOCKER_SECURITY alpine /bin/hostname
+docker run $DOCKER_SECURITY -e SCRUN_JOB_NUM_NODES=10 alpine /bin/hostname</pre>
 </li>
 </ol>
 
