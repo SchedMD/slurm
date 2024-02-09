@@ -50,6 +50,7 @@
 #define REF_PATH OPENAPI_PATH_REL SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
+#define OPENAPI_REF_PLACEHOLDER ((void *) 0x0aaaa01301120040)
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
@@ -61,6 +62,13 @@ typedef struct {
 	data_t *spec;
 	bool skip;
 } spec_args_t;
+
+#define MAGIC_REFS_PTR 0xaa910e8b
+
+typedef struct {
+	int magic; /* MAGIC_REFS_PTR */
+	int *references; /* references[i] = count(parsers[i]) */
+} refs_ptr_t;
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
 static void _replace_refs(data_t *data, spec_args_t *sargs);
@@ -499,4 +507,61 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 	_replace_refs(spec, &sargs);
 
 	return SLURM_SUCCESS;
+}
+
+extern int data_parser_p_increment_reference(args_t *args,
+					     data_parser_type_t type,
+					     refs_ptr_t **references_ptr)
+{
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(!*references_ptr ||
+		(*references_ptr == OPENAPI_REF_PLACEHOLDER));
+
+	/* refs are not tracked in v39 */
+	*references_ptr = OPENAPI_REF_PLACEHOLDER;
+
+	return SLURM_SUCCESS;
+}
+
+extern int data_parser_p_populate_schema(args_t *args, data_parser_type_t type,
+					 refs_ptr_t **references_ptr,
+					 data_t *dst, data_t *schemas)
+{
+	xassert(*references_ptr == OPENAPI_REF_PLACEHOLDER);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(data_get_type(dst) == DATA_TYPE_DICT);
+
+	return SLURM_SUCCESS;
+}
+
+extern int data_parser_p_populate_parameters(args_t *args,
+					     data_parser_type_t parameter_type,
+					     data_parser_type_t query_type,
+					     refs_ptr_t **references_ptr,
+					     data_t *dst, data_t *schemas)
+{
+	xassert(*references_ptr == OPENAPI_REF_PLACEHOLDER);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(!parameter_type || (parameter_type > DATA_PARSER_TYPE_INVALID));
+	xassert(!parameter_type || (parameter_type < DATA_PARSER_TYPE_MAX));
+	xassert(!query_type || (query_type > DATA_PARSER_TYPE_INVALID));
+	xassert(!query_type || (query_type < DATA_PARSER_TYPE_MAX));
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	return SLURM_SUCCESS;
+}
+
+extern void data_parser_p_release_references(args_t *args,
+					     refs_ptr_t **references_ptr)
+{
+	xassert(args->magic == MAGIC_ARGS);
+
+	/* refs are not tracked in v40 */
+	xassert(!*references_ptr ||
+		(*references_ptr == OPENAPI_REF_PLACEHOLDER));
+	*references_ptr = NULL;
 }
