@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid segfault in the slurmdbd when TrackWCKey=no but you are still using
     use WCKeys.
  -- Fix ctld segfault with TopologyParam=RoutePart and no partition defined.
+ -- slurmctld - Fix missing --deadline handling for jobs not evaluated by the
+    schedulers (i.e. non-runnable, skipped for other reasons, etc.).
 
 * Changes in Slurm 23.11.3
 ==========================
