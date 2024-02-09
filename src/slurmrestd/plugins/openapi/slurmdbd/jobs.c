@@ -69,7 +69,7 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 }
 
 /* based on get_data() in sacct/options.c */
-static int _op_handler_jobs(ctxt_t *ctxt)
+extern int op_handler_jobs(ctxt_t *ctxt)
 {
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -115,7 +115,7 @@ static int _op_handler_jobs(ctxt_t *ctxt)
 }
 
 /* based on get_data() in sacct/options.c */
-static int _op_handler_job(ctxt_t *ctxt)
+extern int op_handler_job(ctxt_t *ctxt)
 {
 	openapi_job_param_t params = { 0 };
 	slurmdb_job_cond_t job_cond = {
@@ -143,16 +143,4 @@ static int _op_handler_job(ctxt_t *ctxt)
 
 	FREE_NULL_LIST(job_cond.step_list);
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_job(void)
-{
-	bind_handler("/slurmdb/{data_parser}/jobs/", _op_handler_jobs, 0);
-	bind_handler("/slurmdb/{data_parser}/job/{job_id}", _op_handler_job, 0);
-}
-
-extern void destroy_op_job(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_job);
-	unbind_operation_ctxt_handler(_op_handler_jobs);
 }

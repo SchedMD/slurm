@@ -195,7 +195,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_single_qos(ctxt_t *ctxt)
+extern int op_handler_single_qos(ctxt_t *ctxt)
 {
 	int rc;
 	openapi_qos_param_t params = {0};
@@ -221,7 +221,7 @@ static int _op_handler_single_qos(ctxt_t *ctxt)
 	return rc;
 }
 
-static int _op_handler_multi_qos(ctxt_t *ctxt)
+extern int op_handler_multi_qos(ctxt_t *ctxt)
 {
 	int rc;
 	slurmdb_qos_cond_t *qos_cond = NULL;
@@ -237,17 +237,4 @@ static int _op_handler_multi_qos(ctxt_t *ctxt)
 	slurmdb_destroy_qos_cond(qos_cond);
 
 	return rc;
-}
-
-extern void init_op_qos(void)
-{
-	bind_handler("/slurmdb/{data_parser}/qos/", _op_handler_multi_qos, 0);
-	bind_handler("/slurmdb/{data_parser}/qos/{qos}", _op_handler_single_qos,
-		     0);
-}
-
-extern void destroy_op_qos(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_multi_qos);
-	unbind_operation_ctxt_handler(_op_handler_single_qos);
 }

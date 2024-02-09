@@ -97,7 +97,7 @@ static void _update_wckeys(ctxt_t *ctxt)
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
-static int _op_handler_wckey(ctxt_t *ctxt)
+extern int op_handler_wckey(ctxt_t *ctxt)
 {
 	slurmdb_wckey_cond_t wckey_cond = {0};
 	openapi_wckey_param_t params = {0};
@@ -132,7 +132,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_wckeys(ctxt_t *ctxt)
+extern int op_handler_wckeys(ctxt_t *ctxt)
 {
 	slurmdb_wckey_cond_t *wckey_cond = NULL;
 
@@ -153,16 +153,4 @@ static int _op_handler_wckeys(ctxt_t *ctxt)
 cleanup:
 	slurmdb_destroy_wckey_rec(wckey_cond);
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_wckeys(void)
-{
-	bind_handler("/slurmdb/{data_parser}/wckeys/", _op_handler_wckeys, 0);
-	bind_handler("/slurmdb/{data_parser}/wckey/{id}", _op_handler_wckey, 0);
-}
-
-extern void destroy_op_wckeys(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_wckeys);
-	unbind_operation_ctxt_handler(_op_handler_wckey);
 }

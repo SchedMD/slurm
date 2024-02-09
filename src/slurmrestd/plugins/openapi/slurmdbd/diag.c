@@ -49,7 +49,7 @@
 #include "api.h"
 
 /* based on sacctmgr_list_stats() */
-static int _op_handler_diag(ctxt_t *ctxt)
+extern int op_handler_diag(ctxt_t *ctxt)
 {
 	int rc;
 	slurmdb_stats_rec_t *stats_rec = NULL;
@@ -66,14 +66,4 @@ static int _op_handler_diag(ctxt_t *ctxt)
 cleanup:
 	slurmdb_destroy_stats_rec(stats_rec);
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_diag(void)
-{
-	bind_handler("/slurmdb/{data_parser}/diag/", _op_handler_diag, 0);
-}
-
-extern void destroy_op_diag(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_diag);
 }

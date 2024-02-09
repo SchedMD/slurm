@@ -143,45 +143,6 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
  */
 extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller);
 
-/* ------------ declarations for each operation --------------- */
-
-extern void init_op_associations(void);
-extern void destroy_op_associations(void);
-
-extern void init_op_accounts(void);
-extern void destroy_op_accounts(void);
-
-extern void init_op_cluster(void);
-extern void destroy_op_cluster(void);
-
-extern void init_op_config(void);
-extern void destroy_op_config(void);
-
-extern void init_op_diag(void);
-extern void destroy_op_diag(void);
-
-extern void init_op_instances(void);
-extern void destroy_op_instances(void);
-
-extern void init_op_job(void);
-extern void destroy_op_job(void);
-
-extern void init_op_tres(void);
-extern void destroy_op_tres(void);
-
-extern void init_op_users(void);
-extern void destroy_op_users(void);
-
-extern void init_op_wckeys(void);
-extern void destroy_op_wckeys(void);
-
-extern void init_op_qos(void);
-extern void destroy_op_qos(void);
-
-/* register handler against each parser */
-extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
-			 int tag);
-
 /*
  * Declarations for update handlers:
  * Most of the direct API calls need handlers to split up each updated entity
@@ -197,5 +158,28 @@ extern int update_qos(ctxt_t *ctxt, bool commit, list_t *qos_list);
 extern int update_tres(ctxt_t *ctxt, bool commit, list_t *tres_list);
 extern int update_users(ctxt_t *ctxt, bool commit, list_t *user_list);
 extern int update_wckeys(ctxt_t *ctxt, bool commit, list_t *wckey_list);
+
+extern int op_handler_accounts_association(ctxt_t *ctxt);
+extern int op_handler_accounts(ctxt_t *ctxt);
+extern int op_handler_account(ctxt_t *ctxt);
+extern int op_handler_associations(ctxt_t *ctxt);
+extern int op_handler_association(ctxt_t *ctxt);
+extern int op_handler_clusters(ctxt_t *ctxt);
+extern int op_handler_cluster(ctxt_t *ctxt);
+extern int op_handler_config(ctxt_t *ctxt);
+extern int op_handler_diag(ctxt_t *ctxt);
+extern int op_handler_instances(ctxt_t *ctxt);
+extern int op_handler_instance(ctxt_t *ctxt);
+extern int op_handler_jobs(ctxt_t *ctxt);
+extern int op_handler_job(ctxt_t *ctxt);
+extern int op_handler_multi_qos(ctxt_t *ctxt);
+extern int op_handler_single_qos(ctxt_t *ctxt);
+extern int op_handler_tres(ctxt_t *ctxt);
+extern int op_handler_users_association(ctxt_t *ctxt);
+extern int op_handler_users(ctxt_t *ctxt);
+extern int op_handler_user(ctxt_t *ctxt);
+extern int op_handler_wckeys(ctxt_t *ctxt);
+extern int op_handler_wckey(ctxt_t *ctxt);
+extern int op_handler_ping(openapi_ctxt_t *ctxt);
 
 #endif

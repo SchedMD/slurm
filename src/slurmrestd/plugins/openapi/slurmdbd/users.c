@@ -358,7 +358,7 @@ static void _parse_add_users_assoc(ctxt_t *ctxt)
 }
 
 /* based on sacctmgr_list_user() */
-static int _op_handler_users(ctxt_t *ctxt)
+extern int op_handler_users(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_user_cond_t *user_cond = NULL;
@@ -379,7 +379,7 @@ static int _op_handler_users(ctxt_t *ctxt)
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_user(ctxt_t *ctxt)
+extern int op_handler_user(ctxt_t *ctxt)
 {
 	openapi_user_param_t params = {0};
 
@@ -425,7 +425,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_users_association(ctxt_t *ctxt)
+extern int op_handler_users_association(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_POST)
 		_parse_add_users_assoc(ctxt);
@@ -435,19 +435,4 @@ static int _op_handler_users_association(ctxt_t *ctxt)
 			   get_http_method_string(ctxt->method));
 
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_users(void)
-{
-	bind_handler("/slurmdb/{data_parser}/users_association/",
-		     _op_handler_users_association, 0);
-	bind_handler("/slurmdb/{data_parser}/users/", _op_handler_users, 0);
-	bind_handler("/slurmdb/{data_parser}/user/{name}", _op_handler_user, 0);
-}
-
-extern void destroy_op_users(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_users_association);
-	unbind_operation_ctxt_handler(_op_handler_users);
-	unbind_operation_ctxt_handler(_op_handler_user);
 }

@@ -64,7 +64,7 @@ cleanup:
 	FREE_NULL_LIST(instance_list);
 }
 
-static int _op_handler_instance(ctxt_t *ctxt)
+extern int op_handler_instance(ctxt_t *ctxt)
 {
 	slurmdb_instance_cond_t *instance_cond = NULL;
 
@@ -85,7 +85,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_instances(ctxt_t *ctxt)
+extern int op_handler_instances(ctxt_t *ctxt)
 {
 	slurmdb_instance_cond_t *instance_cond = NULL;
 
@@ -104,18 +104,4 @@ static int _op_handler_instances(ctxt_t *ctxt)
 cleanup:
 	slurmdb_destroy_instance_cond(instance_cond);
 	return SLURM_SUCCESS;
-}
-
-extern void init_op_instances(void)
-{
-	bind_handler("/slurmdb/{data_parser}/instances/",
-		     _op_handler_instances, 0);
-	bind_handler("/slurmdb/{data_parser}/instance/",
-		     _op_handler_instance, 0);
-}
-
-extern void destroy_op_instances(void)
-{
-	unbind_operation_ctxt_handler(_op_handler_instances);
-	unbind_operation_ctxt_handler(_op_handler_instance);
 }
