@@ -83,6 +83,15 @@ typedef struct {
 					       data_parser_type_t type,
 					       const char *field);
 	const char *(*resolve_type_str)(void *arg, data_parser_type_t type);
+	int (*inc_ref)(void *arg, data_parser_type_t type,
+		       void **references_ptr);
+	int (*populate_schema)(void *arg, data_parser_type_t type,
+		       void **references_ptr, data_t *dst, data_t *schemas);
+	int (*populate_parameters)(void *arg, data_parser_type_t parameter_type,
+				   data_parser_type_t query_type,
+				   void **references_ptr, data_t *dst,
+				   data_t *schemas);
+	void (*release_refs)(void *arg, void **references_ptr);
 } parse_funcs_t;
 
 typedef struct {
@@ -102,6 +111,10 @@ static const char *parse_syms[] = {
 	"data_parser_p_specify",
 	"data_parser_p_resolve_openapi_type",
 	"data_parser_p_resolve_type_string",
+	"data_parser_p_increment_reference",
+	"data_parser_p_populate_schema",
+	"data_parser_p_populate_parameters",
+	"data_parser_p_release_references",
 };
 
 static plugins_t *plugins = NULL;
@@ -837,4 +850,77 @@ extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
 	xassert(parser->plugin_offset < plugins->count);
 
 	return funcs->resolve_type_str(parser->arg, type);
+}
+
+extern int data_parser_g_increment_reference(data_parser_t *parser,
+					     data_parser_type_t type,
+					     void **references_ptr)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return EINVAL;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->inc_ref(parser->arg, type, references_ptr);
+}
+
+extern int data_parser_g_populate_schema(data_parser_t *parser,
+					 data_parser_type_t type,
+					 void **references_ptr, data_t *dst,
+					 data_t *schemas)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return EINVAL;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->populate_schema(parser->arg, type, references_ptr, dst,
+				      schemas);
+}
+
+extern int data_parser_g_populate_parameters(data_parser_t *parser,
+					     data_parser_type_t parameter_type,
+					     data_parser_type_t query_type,
+					     void **references_ptr, data_t *dst,
+					     data_t *schemas)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return EINVAL;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->populate_parameters(parser->arg, parameter_type,
+					  query_type, references_ptr, dst,
+					  schemas);
+}
+
+extern void data_parser_g_release_references(data_parser_t *parser,
+					     void **references_ptr)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->release_refs(parser->arg, references_ptr);
 }

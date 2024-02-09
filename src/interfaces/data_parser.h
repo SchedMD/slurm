@@ -850,4 +850,56 @@ extern openapi_type_t data_parser_g_resolve_openapi_type(
 extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
 						     data_parser_type_t type);
 
+/*
+ * Add reference to type for given parser.
+ * 	Intended to be called before calling data_parser_g_populate_schema() to
+ * 	ensure the single referenced types are populated directly.
+ * IN parser - parser to query
+ * IN type - parser type
+ * IN/OUT references_ptr - Pointer to pointer to populate with (opaque) references.
+ * 	Must be released by call to data_parser_g_release_references().
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_increment_reference(data_parser_t *parser,
+					     data_parser_type_t type,
+					     void **references_ptr);
+/*
+ * Populate reference to type for given parser.
+ * IN parser - parser to query
+ * IN type - parser type
+ * IN/OUT references_ptr - Pointer to pointer to populate with (opaque) references.
+ * 	Must be released by call to data_parser_g_release_references().
+ * IN dst - Location to populate with schema or $ref to schema
+ * IN schemas - dictionary of schemas for OpenAPI spec to be populated as needed
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_populate_schema(data_parser_t *parser,
+					 data_parser_type_t type,
+					 void **references_ptr, data_t *dst,
+					 data_t *schemas);
+
+/*
+ * Populate reference to parameter type for given parser.
+ * IN parser - parser to query
+ * IN types - list of parser types (can be DATA_PARSER_TYPE_INVALID)
+ * IN/OUT references_ptr - Pointer to pointer to populate with (opaque) references.
+ * 	Must be released by call to data_parser_g_release_references().
+ * IN dst - Location to populate with schema or $ref to schema
+ * IN schemas - dictionary of schemas for OpenAPI spec to be populated as needed
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_populate_parameters(data_parser_t *parser,
+					     data_parser_type_t parameter_type,
+					     data_parser_type_t query_type,
+					     void **references_ptr, data_t *dst,
+					     data_t *schemas);
+
+/*
+ * Release memory used by referencesptr
+ * IN parser - parser to query
+ * IN/OUT references_ptr - Pointer to pointer to (opaque) references to release.
+ */
+extern void data_parser_g_release_references(data_parser_t *parser,
+					     void **references_ptr);
+
 #endif
