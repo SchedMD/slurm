@@ -43,6 +43,7 @@
 
 #include "src/interfaces/serializer.h"
 #include "src/slurmrestd/openapi.h"
+#include "src/slurmrestd/operations.h"
 
 #define OPENAPI_MAJOR_TYPE "openapi"
 
@@ -50,6 +51,8 @@ typedef struct {
 	int (*init)(void);
 	int (*fini)(void);
 	data_t *(*get_oas)(openapi_spec_flags_t *flags);
+	int (*get_paths)(const openapi_path_binding_t **paths_ptr,
+			 const openapi_resp_meta_t **meta_ptr);
 } funcs_t;
 
 /*
@@ -59,6 +62,7 @@ static const char *syms[] = {
 	"slurm_openapi_p_init",
 	"slurm_openapi_p_fini",
 	"slurm_openapi_p_get_specification",
+	"slurm_openapi_p_get_paths",
 };
 
 typedef enum {
@@ -81,6 +85,7 @@ typedef struct {
 } entry_t;
 
 typedef struct {
+	const openapi_path_binding_method_t *bound;
 	entry_t *entries;
 	http_request_method_t method;
 } entry_method_t;
@@ -88,6 +93,9 @@ typedef struct {
 #define MAGIC_PATH 0x0a0b09fd
 typedef struct {
 	int magic; /* MAGIC_PATH */
+	char *path; /* path as string */
+	const openapi_path_binding_t *bound;
+	data_parser_t *parser;
 	entry_method_t *methods;
 	int tag;
 } path_t;
@@ -144,6 +152,24 @@ typedef struct {
 	char *path;
 	merge_path_t *merge_args;
 } id_merge_path_t;
+
+#define MAGIC_OAS 0x1218eeee
+typedef struct {
+	int magic; /* MAGIC_OAS */
+	data_t *spec;
+	data_t *tags;
+	data_t *paths;
+	data_t *components;
+	data_t *components_schemas;
+	data_t *security_schemas;
+	data_t *info;
+	data_t *contact;
+	data_t *license;
+	data_t *servers;
+	data_t *security;
+	/* tracked references per data_parser */
+	void **references;
+} openapi_spec_t;
 
 static list_t *paths = NULL;
 static int path_tag_counter = 0;
@@ -252,6 +278,55 @@ static const struct {
 	},
 };
 
+static const openapi_path_binding_method_t openapi_methods[] = {
+	{
+		.method = HTTP_REQUEST_GET,
+		.tags = (const char*[]) { "openapi", NULL },
+		.summary = "Retrieve OpenAPI Specification",
+		.response = {
+			.type = DATA_PARSER_OPENAPI_SHARES_RESP,
+			.description = "OpenAPI Specification",
+		},
+		.parameters = DATA_PARSER_SHARES_REQ_MSG,
+	},
+	{0}
+};
+
+static int _op_handler_openapi(openapi_ctxt_t *ctxt);
+
+static const op_bind_flags_t op_flags = OP_BIND_HIDDEN_OAS;
+
+/*
+ * Paths to generate OpenAPI specification
+ */
+static const openapi_path_binding_t openapi_paths[] = {
+	{
+		.path = "/openapi.json",
+		.callback = _op_handler_openapi,
+		.methods = openapi_methods,
+		.flags = op_flags,
+	},
+	{
+		.path = "/openapi.yaml",
+		.callback = _op_handler_openapi,
+		.methods = openapi_methods,
+		.flags = op_flags,
+	},
+	{
+		.path = "/openapi",
+		.callback = _op_handler_openapi,
+		.methods = openapi_methods,
+		.flags = op_flags,
+	},
+	{
+		.path = "/openapi/v3",
+		.callback = _op_handler_openapi,
+		.methods = openapi_methods,
+		.flags = op_flags,
+	},
+	{0}
+};
+
 static char *_entry_to_string(entry_t *entry);
 
 static const char *_get_entry_type_string(entry_type_t type)
@@ -264,6 +339,15 @@ static const char *_get_entry_type_string(entry_type_t type)
 	default:
 		return "invalid";
 	}
+}
+
+static int _resolve_parser_index(data_parser_t *parser)
+{
+	for (int i = 0; parsers[i]; i++)
+		if (parsers[i] == parser)
+			return i;
+
+	fatal_abort("Unable to find parser. This should never happen!");
 }
 
 static const data_t *_resolve_ref(const data_t *spec, const data_t *dref)
@@ -732,12 +816,110 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
+static void _check_openapi_path_binding(const openapi_path_binding_t *op_path)
+{
+#ifndef NDEBUG
+	xassert(op_path->path);
+	xassert(op_path->callback);
+	xassert((op_path->flags == OP_BIND_NONE) ||
+		((op_path->flags > OP_BIND_NONE) &&
+		 (op_path->flags < OP_BIND_INVALID_MAX)));
+
+	for (int i = 0;; i++) {
+		const openapi_path_binding_method_t *method =
+			&op_path->methods[i];
+
+		if (method->method == HTTP_REQUEST_INVALID)
+			break;
+
+		xassert(method->summary && method->summary[0]);
+		xassert(method->response.description &&
+			method->response.description[0]);
+		xassert(method->method > HTTP_REQUEST_INVALID);
+		xassert(method->method < HTTP_REQUEST_MAX);
+		xassert(method->tags && method->tags[0]);
+		xassert(method->response.type > DATA_PARSER_TYPE_INVALID);
+		xassert(method->response.type < DATA_PARSER_TYPE_MAX);
+		xassert(method->parameters >= DATA_PARSER_TYPE_INVALID);
+		xassert(method->parameters < DATA_PARSER_TYPE_MAX);
+		xassert(method->query >= DATA_PARSER_TYPE_INVALID);
+		xassert(method->query < DATA_PARSER_TYPE_MAX);
+		xassert(method->body.type >= DATA_PARSER_TYPE_INVALID);
+		xassert(method->body.type < DATA_PARSER_TYPE_MAX);
+	}
+#endif /* !NDEBUG */
+}
+
 extern int register_path_binding(const char *in_path,
 				 const openapi_path_binding_t *op_path,
 				 const openapi_resp_meta_t *meta,
 				 data_parser_t *parser)
 {
-	fatal_abort("not implemented");
+	entry_t *entries = NULL;
+	int tag = -1, methods_count = 0, entries_count = 0;
+	path_t *p = NULL;
+	const char *path = (in_path ? in_path : op_path->path);
+
+	debug4("%s: binding %s for %s",
+	       __func__,
+	       (parser ? data_parser_get_plugin_version(parser) :
+		"data_parser/none"), path);
+
+	xassert(!!in_path == !!(op_path->flags & OP_BIND_DATA_PARSER));
+	_check_openapi_path_binding(op_path);
+
+	if (!(entries = _parse_openapi_path(path, &entries_count)))
+		fatal("%s: parse_openapi_path(%s) failed", __func__, path);
+
+	for (methods_count = 0;
+	     op_path->methods[methods_count].method != HTTP_REQUEST_INVALID;
+	     methods_count++)
+		/* do nothing */;
+
+	tag = path_tag_counter++;
+
+	p = xmalloc(sizeof(*p));
+	p->magic = MAGIC_PATH;
+	p->methods = xcalloc((methods_count + 1), sizeof(*p->methods));
+	p->tag = tag;
+	p->bound = op_path;
+	p->parser = parser;
+	p->path = xstrdup(path);
+
+	for (int i = 0;; i++) {
+		const openapi_path_binding_method_t *m = &op_path->methods[i];
+		entry_method_t *t = &p->methods[i];
+		entry_t *e;
+
+		if (m->method == HTTP_REQUEST_INVALID)
+			break;
+
+		t->method = m->method;
+		t->bound = m;
+
+		if (i != 0) {
+			_clone_entries(&t->entries, entries, entries_count);
+			e = t->entries;
+		} else {
+			p->methods[0].entries = e = entries;
+		}
+
+		for (; e->type; e++) {
+			if (e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER)
+				e->parameter =
+					data_parser_g_resolve_openapi_type(
+						parser, m->parameters, e->name);
+
+			debug5("%s: add binded path %s entry: method=%s tag=%d entry=%s name=%s parameter=%s entry_type=%s",
+			       __func__, path,
+			       get_http_method_string(m->method), tag, e->entry,
+			       e->name, openapi_type_to_string(e->parameter),
+			       _get_entry_type_string(e->type));
+		}
+	}
+
+	list_append(paths, p);
+	return tag;
 }
 
 extern int register_path_tag(const char *str_path)
@@ -1058,6 +1240,21 @@ static int _apply_data_parser_specs(int plugin_id)
 	return SLURM_SUCCESS;
 }
 
+static int _bind_paths(const openapi_path_binding_t *paths,
+		       const openapi_resp_meta_t *meta)
+{
+	int rc = SLURM_SUCCESS;
+
+	for (int i = 0; paths[i].path; i++) {
+		const openapi_path_binding_t *op_path = &paths[i];
+
+		if ((rc = bind_operation_path(op_path, meta)))
+			break;
+	}
+
+	return rc;
+}
+
 extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 			data_parser_t **parsers_ptr)
 {
@@ -1071,6 +1268,10 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	/* must have JSON plugin to parse the openapi.json */
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		fatal("Plugin serializer/json failed to load: %s",
+		      slurm_strerror(rc));
+
+	if ((rc = _bind_paths(openapi_paths, NULL)))
+		fatal("Unable to bind openapi specification paths: %s",
 		      slurm_strerror(rc));
 
 	rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
@@ -1097,13 +1298,26 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		const funcs_t *funcs = plugins->functions[i];
 
 		spec_flags[i] = OAS_FLAG_NONE;
-		specs[i] = funcs->get_oas(&(spec_flags[i]));
+		if ((specs[i] = funcs->get_oas(&(spec_flags[i])))) {
+			debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
+			       __func__, plugins->types[i], spec_flags[i]);
 
-		debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
-		       __func__, plugins->types[i], spec_flags[i]);
+			if (spec_flags[i] & OAS_FLAG_SET_DATA_PARSER_SPEC)
+				_apply_data_parser_specs(i);
+		} else {
+			const openapi_path_binding_t *paths;
+			const openapi_resp_meta_t *meta;
 
-		if (spec_flags[i] & OAS_FLAG_SET_DATA_PARSER_SPEC)
-			_apply_data_parser_specs(i);
+			rc = funcs->get_paths(&paths, &meta);
+
+			if (rc && (rc != ESLURM_NOT_SUPPORTED))
+				fatal("Failure loading plugin path bindings: %s",
+				      slurm_strerror(rc));
+
+			if ((rc = _bind_paths(paths, meta)))
+				fatal("Unable to bind openapi specification paths: %s",
+				      slurm_strerror(rc));
+		}
 	}
 
 	/* Call init() after all plugins are fully loaded */
@@ -1452,66 +1666,310 @@ static data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-extern int get_openapi_specification(data_t *resp)
+/* Caller must xfree() returned string */
+static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
+				     const openapi_path_binding_method_t
+					     *method)
 {
-	data_t *j = data_set_dict(resp);
-	data_t *tags = data_set_list(data_key_set(j, "tags"));
-	data_t *paths = data_set_dict(data_key_set(j, "paths"));
-	data_t *components = data_set_dict(data_key_set(j, "components"));
-	data_t *components_schemas = data_set_dict(
-		data_key_set(components, "schemas"));
-	data_t *security_schemas =
-		data_set_dict(data_key_set(components, "securitySchemes"));
-	data_t *info = data_set_dict(data_key_set(j, "info"));
-	data_t *contact = data_set_dict(data_key_set(info, "contact"));
-	data_t *license = data_set_dict(data_key_set(info, "license"));
-	data_t *servers = data_set_list(data_key_set(j, "servers"));
-	data_t *security = data_set_list(data_key_set(j, "security"));
-	data_t *security1 = data_set_dict(data_list_append(security));
-	data_t *security2 = data_set_dict(data_list_append(security));
-	data_t *security3 = data_set_dict(data_list_append(security));
+	data_t *merge[10] = {0}, *dpath, *merged = NULL, *last = NULL;
+	const char *method_str = get_http_method_string_lc(method->method);
+	int i = 0;
+	merge_path_t merge_args = {
+		.magic = MAGIC_MERGE_PATH,
+		.paths = spec->paths,
+		.flags = OAS_FLAG_NONE,
+	};
+	id_merge_path_t merge_id_args = {
+		.magic = MAGIC_MERGE_ID_PATH,
+		.merge_args = &merge_args,
+	};
+
+	dpath = parse_url_path(path->path, false, true);
+
+	xassert((data_get_list_length(dpath) + 1) < (ARRAY_SIZE(merge) - 1));
+
+	(void) data_list_for_each(dpath, _foreach_strip_params, &last);
+
+	if (data_get_list_length(dpath) < 3) {
+		/* unversioned paths */
+		merge[i++] = data_set_string(data_new(), method_str);
+	} else {
+		merge[i++] = data_list_dequeue(dpath); /* slurm vs slurmdb */
+		merge[i++] = data_list_dequeue(dpath); /* v0.0.XX */
+		merge[i++] = data_set_string(data_new(), method_str);
+	}
+
+	while (data_get_list_length(dpath) && (i < (ARRAY_SIZE(merge) - 1)))
+		merge[i++] = data_list_dequeue(dpath);
+
+	merged = data_list_join((const data_t **) merge, true);
+	if (data_list_for_each(merged, _merge_operationId_strings,
+			       &merge_id_args) < 0)
+		fatal_abort("_merge_operationId_strings() failed which should never happen");
+
+	for (i = 0; i < ARRAY_SIZE(merge); i++)
+		FREE_NULL_DATA(merge[i]);
+	FREE_NULL_DATA(merged);
+	FREE_NULL_DATA(dpath);
+
+	debug5("%s: [%s %s] setting OperationId: %s",
+	       __func__, method_str, path->path, merge_id_args.operation);
+
+	return merge_id_args.operation;
+}
+
+static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
+			    const openapi_path_binding_method_t *method)
+{
+	const char **mime_types = get_mime_type_array();
+	void *refs = &spec->references[_resolve_parser_index(path->parser)];
+	data_t *dmethod = data_set_dict(data_key_set(dpath,
+		get_http_method_string_lc(method->method)));
+	data_t *dtags = data_set_list(data_key_set(dmethod, "tags"));
+
+	for (int i = 0; method->tags[i]; i++)
+		data_set_string(data_list_append(dtags), method->tags[i]);
+
+	if (method->summary)
+		data_set_string(data_key_set(dmethod, "summary"),
+				method->summary);
+	if (method->description)
+		data_set_string(data_key_set(dmethod, "description"),
+				method->description);
+	data_set_string(data_key_set(dmethod, "operationId"),
+			_get_method_operationId(spec, path, method));
+
+	if (method->parameters || method->query) {
+		/*
+		 * Use existing replacements
+		 */
+		data_t *dst = data_key_set(dmethod, "parameters");
+
+		if (data_parser_g_populate_parameters(path->parser,
+						      method->parameters,
+						      method->query, refs, dst,
+						      spec->components_schemas))
+			fatal_abort("data_parser_g_populate_parameters() failed");
+	}
+
+	if (method->response.type) {
+		data_t *dresp = data_set_dict(data_key_set(dmethod, "responses"));
+		data_t *def = data_set_dict(data_key_set(dresp, "default"));
+		data_t *cnt = data_set_dict(data_key_set(def, "content"));
+
+		if (method->response.description)
+			data_set_string(data_set_dict(data_key_set(def,
+				"description")), method->response.description);
+
+		for (int i = 0; mime_types[i]; i++) {
+			data_t *dtype, *dschema;
+
+			/*
+			 * Never return URL encoded mimetype as it is only for
+			 * HTTP query
+			 */
+			if (!xstrcmp(mime_types[i], MIME_TYPE_URL_ENCODED))
+				continue;
+
+			dtype = data_set_dict(data_key_set(cnt, mime_types[i]));
+			dschema = data_set_dict(data_key_set(dtype, "schema"));
+
+			if (data_parser_g_populate_schema(path->parser,
+				method->response.type, refs, dschema,
+				spec->components_schemas))
+				fatal_abort("data_parser_g_populate_schema() failed");
+		}
+
+		data_copy(data_key_set(dresp, "200"), def);
+	}
+
+	if (method->body.type) {
+		data_t *dbody = data_set_dict(data_key_set(dmethod,
+							   "requestBody"));
+		data_t *cnt = data_set_dict(data_key_set(dbody, "content"));
+
+		if (method->body.description)
+			data_set_string(data_set_dict(data_key_set(dbody,
+				"description")), method->body.description);
+
+		for (int i = 0; mime_types[i]; i++) {
+			data_t *dtype, *dschema;
+
+			/*
+			 * Never return URL encoded mimetype as it is only for
+			 * HTTP query
+			 */
+			if (!xstrcmp(mime_types[i], MIME_TYPE_URL_ENCODED))
+				continue;
+
+			dtype = data_set_dict(data_key_set(cnt, mime_types[i]));
+			dschema = data_set_dict(data_key_set(dtype, "schema"));
+
+			if (data_parser_g_populate_schema(path->parser,
+				method->body.type, refs, dschema,
+				spec->components_schemas))
+				fatal_abort("data_parser_g_populate_schema() failed");
+		}
+
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_add_path(void *x, void *arg)
+{
+	int rc = SLURM_SUCCESS;
+	path_t *path = x;
+	openapi_spec_t *spec = arg;
+	const openapi_path_binding_t *bound = path->bound;
+	data_t *dpath;
+
+	xassert(spec->magic == MAGIC_OAS);
+	xassert(path->magic == MAGIC_PATH);
+
+	if (!bound)
+		return SLURM_SUCCESS;
+
+	if (bound->flags & OP_BIND_HIDDEN_OAS)
+		return SLURM_SUCCESS;
+
+	xassert(!data_key_get(spec->paths, path->path));
+	dpath = data_set_dict(data_key_set(spec->paths, path->path));
+
+	for (int i = 0; !rc && bound->methods[i].method; i++)
+		rc = _populate_method(path, spec, dpath, &bound->methods[i]);
+
+	return rc;
+}
+
+static int _foreach_count_path(void *x, void *arg)
+{
+	path_t *path = x;
+	openapi_spec_t *spec = arg;
+	const openapi_path_binding_t *bound = path->bound;
+	void *refs;
+
+	xassert(spec->magic == MAGIC_OAS);
+	xassert(path->magic == MAGIC_PATH);
+
+	if (!bound)
+		return SLURM_SUCCESS;
+
+	refs = &spec->references[_resolve_parser_index(path->parser)];
+
+	for (int i = 0; bound->methods[i].method; i++) {
+		const openapi_path_binding_method_t *method =
+			&bound->methods[i];
+		const char **mime_types = get_mime_type_array();
+
+		if (method->parameters &&
+		    data_parser_g_increment_reference(path->parser,
+						      method->parameters, refs))
+			fatal_abort("data_parser_g_increment_reference() failed");
+
+		if (method->query &&
+		    data_parser_g_increment_reference(path->parser,
+						      method->query, refs))
+			fatal_abort("data_parser_g_increment_reference() failed");
+
+		if (method->body.type) {
+			/*
+			 * Need to add 1 reference per mime type that will get
+			 * dumped
+			 */
+			for (int i = 0; mime_types[i]; i++)
+				if (data_parser_g_increment_reference(
+					path->parser, method->body.type, refs))
+					fatal_abort("data_parser_g_increment_reference() failed");
+		}
+
+		if (method->response.type) {
+			/*
+			 * Need to add 1 reference per mime type that will get
+			 * dumped
+			 */
+			for (int i = 0; mime_types[i]; i++)
+				if (data_parser_g_increment_reference(
+					path->parser, method->response.type,
+					refs))
+					fatal_abort("data_parser_g_increment_reference() failed");
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _op_handler_openapi(openapi_ctxt_t *ctxt)
+{
+	openapi_spec_t spec = {
+		.magic = MAGIC_OAS,
+		.spec = ctxt->resp,
+	};
+	data_t *security1, *security2, *security3;
 	char *version_at = NULL;
 	char *version = xstrdup_printf("Slurm-%s", SLURM_VERSION_STRING);
+	int parsers_count;
 
-	data_set_string(data_key_set(j, "openapi"),
+	/* count the parsers present to allocate refs counts */
+	for (parsers_count = 0; parsers[parsers_count]; parsers_count++);
+	spec.references = xcalloc(parsers_count, sizeof(*spec.references));
+
+	data_set_dict(spec.spec);
+	spec.tags = data_set_list(data_key_set(spec.spec, "tags"));
+	spec.paths = data_set_dict(data_key_set(spec.spec, "paths"));
+	spec.components = data_set_dict(data_key_set(spec.spec, "components"));
+	spec.components_schemas = data_set_dict(data_key_set(spec.components,
+							     "schemas"));
+	spec.security_schemas = data_set_dict(data_key_set(spec.components,
+							   "securitySchemes"));
+	spec.info = data_set_dict(data_key_set(spec.spec, "info"));
+	spec.contact = data_set_dict(data_key_set(spec.info, "contact"));
+	spec.license = data_set_dict(data_key_set(spec.info, "license"));
+	spec.servers = data_set_list(data_key_set(spec.spec, "servers"));
+	spec.security = data_set_list(data_key_set(spec.spec, "security"));
+	security1 = data_set_dict(data_list_append(spec.security));
+	security2 = data_set_dict(data_list_append(spec.security));
+	security3 = data_set_dict(data_list_append(spec.security));
+
+	data_set_string(data_key_set(spec.spec, "openapi"),
 			openapi_spec.openapi_version);
-	data_set_string(data_key_set(info, "title"), openapi_spec.info.title);
-	data_set_string(data_key_set(info, "description"),
+	data_set_string(data_key_set(spec.info, "title"), openapi_spec.info.title);
+	data_set_string(data_key_set(spec.info, "description"),
 			openapi_spec.info.desc);
-	data_set_string(data_key_set(info, "termsOfService"),
+	data_set_string(data_key_set(spec.info, "termsOfService"),
 			openapi_spec.info.tos);
 
 	/* Populate OAS version */
 	for (int i = 0; i < plugins->count; i++)
 		xstrfmtcatat(version, &version_at, "&%s", plugins->types[i]);
-	data_set_string_own(data_key_set(info, "version"), version);
+	data_set_string_own(data_key_set(spec.info, "version"), version);
 
-	data_set_string(data_key_set(contact, "name"),
+	data_set_string(data_key_set(spec.contact, "name"),
 			openapi_spec.info.contact.name);
-	data_set_string(data_key_set(contact, "url"),
+	data_set_string(data_key_set(spec.contact, "url"),
 			openapi_spec.info.contact.url);
-	data_set_string(data_key_set(contact, "email"),
+	data_set_string(data_key_set(spec.contact, "email"),
 			openapi_spec.info.contact.email);
-	data_set_string(data_key_set(license, "name"),
+	data_set_string(data_key_set(spec.license, "name"),
 			openapi_spec.info.license.name);
-	data_set_string(data_key_set(license, "url"),
+	data_set_string(data_key_set(spec.license, "url"),
 			openapi_spec.info.license.url);
 
 	for (int i = 0; i < ARRAY_SIZE(openapi_spec.tags); i++) {
-		data_t *tag = data_set_dict(data_list_append(tags));
+		data_t *tag = data_set_dict(data_list_append(spec.tags));
 		data_set_string(data_key_set(tag, "name"),
 				openapi_spec.tags[i].name);
 		data_set_string(data_key_set(tag, "description"),
 				openapi_spec.tags[i].desc);
 	}
 	for (int i = 0; i < ARRAY_SIZE(openapi_spec.servers); i++) {
-		data_t *server = data_set_dict(data_list_append(servers));
-		data_set_string(data_key_set(server, "name"),
+		data_t *server = data_set_dict(data_list_append(spec.servers));
+		data_set_string(data_key_set(server, "url"),
 				openapi_spec.servers[i].url);
 	}
 
 	/* Add default of no auth required */
-	data_set_dict(data_list_append(security));
+	data_set_dict(data_list_append(spec.security));
 	/* Add user and token auth */
 	data_set_list(data_key_set(
 		security1,
@@ -1537,7 +1995,8 @@ extern int get_openapi_specification(data_t *resp)
 		const struct security_scheme_s *s =
 			&openapi_spec.components.security_schemes[i];
 		data_t *schema =
-			data_set_dict(data_key_set(security_schemas, s->key));
+			data_set_dict(data_key_set(spec.security_schemas,
+						   s->key));
 		data_set_string(data_key_set(schema, "type"), s->type);
 		data_set_string(data_key_set(schema, "description"), s->desc);
 
@@ -1553,13 +2012,18 @@ extern int get_openapi_specification(data_t *resp)
 					s->bearer_format);
 	}
 
+	(void) list_for_each(paths, _foreach_count_path, &spec);
+
+	/* Add generated paths */
+	(void) list_for_each(paths, _foreach_add_path, &spec);
+
 	/* merge all the unique paths together */
 	for (int i = 0; i < plugins->count; i++) {
 		data_t *src_srvs = data_key_get(specs[i], "servers");
 
 		if (src_srvs) {
 			merge_path_server_t p_args = {
-				.dst_paths = paths,
+				.dst_paths = spec.paths,
 				.src_paths = data_key_get(specs[i], "paths"),
 				.flags = spec_flags[i],
 			};
@@ -1573,7 +2037,7 @@ extern int get_openapi_specification(data_t *resp)
 			merge_path_t p_args = {
 				.magic = MAGIC_MERGE_PATH,
 				.server_path = NULL,
-				.paths = paths,
+				.paths = spec.paths,
 				.flags = spec_flags[i],
 			};
 			data_t *src_paths = data_key_get(specs[i], "paths");
@@ -1591,11 +2055,17 @@ extern int get_openapi_specification(data_t *resp)
 			data_resolve_dict_path(specs[i], "/components/schemas");
 
 		if (src && (data_dict_for_each(src, _merge_schema,
-					       components_schemas) < 0)) {
+					       spec.components_schemas) < 0)) {
 			fatal("%s: unable to merge components schemas",
 			      __func__);
 		}
 	}
+
+	for (int i = 0; parsers[i]; i++)
+		if (spec.references[i])
+			data_parser_g_release_references(parsers[i],
+							 &spec.references[i]);
+	xfree(spec.references);
 
 	/*
 	 * We currently fatal instead of returning failure since openapi are
@@ -1770,7 +2240,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      data_t *parameters, data_t *query,
 				      int tag, data_t *resp, void *auth,
 				      data_parser_t *parser,
-				      openapi_ctxt_handler_t callback,
+				      const openapi_path_binding_t *op_path,
 				      const openapi_resp_meta_t *plugin_meta)
 {
 	int rc;
@@ -1782,7 +2252,11 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		.resp = resp,
 		.tag = tag,
 	};
-	openapi_resp_meta_t query_meta = *plugin_meta;
+	openapi_resp_meta_t query_meta = {0};
+	openapi_ctxt_handler_t callback = op_path->callback;
+
+	if (plugin_meta)
+		query_meta = *plugin_meta;
 
 	query_meta.plugin.data_parser = (char *) data_parser_get_plugin(parser);
 	query_meta.plugin.accounting_storage =
@@ -1818,7 +2292,8 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	if (data_get_type(ctxt.resp) == DATA_TYPE_NULL)
 		data_set_dict(ctxt.resp);
 
-	_populate_openapi_results(&ctxt, &query_meta);
+	if (op_path->flags & OP_BIND_OPENAPI_RESP_FMT)
+		_populate_openapi_results(&ctxt, &query_meta);
 
 	if (!rc)
 		rc = ctxt.rc;

@@ -495,14 +495,6 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	fprintf(stderr, "%s\n", full_type);
 }
 
-static int _op_handler_openapi(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth,
-			       data_parser_t *parser)
-{
-	return get_openapi_specification(resp);
-}
-
 static void _on_signal_interrupt(conmgr_fd_t *con, conmgr_work_type_t type,
 				 conmgr_work_status_t status, const char *tag,
 				 void *arg)
@@ -632,10 +624,6 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize OpenAPI structures");
 
 	xfree(oas_specs);
-	bind_operation_handler("/openapi.yaml", _op_handler_openapi, 0);
-	bind_operation_handler("/openapi.json", _op_handler_openapi, 0);
-	bind_operation_handler("/openapi", _op_handler_openapi, 0);
-	bind_operation_handler("/openapi/v3", _op_handler_openapi, 0);
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {
@@ -683,8 +671,6 @@ int main(int argc, char **argv)
 	 */
 	if (conmgr_get_exit_on_error())
 		parse_rc = conmgr_get_error();
-
-	unbind_operation_handler(_op_handler_openapi);
 
 	/* cleanup everything */
 	destroy_rest_auth();

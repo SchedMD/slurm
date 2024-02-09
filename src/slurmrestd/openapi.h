@@ -200,11 +200,6 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 extern void destroy_openapi(void);
 
 /*
- * Joins all of the loaded specs into a single spec
- */
-extern int get_openapi_specification(data_t *resp);
-
-/*
  * Extracts the db_conn using given auth context
  * Note: This must be implemented in process calling openapi functions.
  */
@@ -216,8 +211,8 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      data_t *parameters, data_t *query,
 				      int tag, data_t *resp, void *auth,
 				      data_parser_t *parser,
-				      openapi_ctxt_handler_t callback,
-				      const openapi_resp_meta_t *meta);
+				      const openapi_path_binding_t *op_path,
+				      const openapi_resp_meta_t *plugin_meta);
 
 /*
  * Macro to make a single response dumping easy
