@@ -250,7 +250,8 @@ static int _get_time(const char *time_str, int *pos, int *hour, int *minute,
 	while (isspace((int)time_str[offset])) {
 		offset++;
 	}
-	if (xstrncasecmp(time_str+offset, "pm", 2)== 0) {
+
+	if (!xstrncasecmp(time_str + offset, "pm", 2)) {
 		hr += 12;
 		if (hr > 23) {
 			if (hr == 24)
@@ -259,7 +260,7 @@ static int _get_time(const char *time_str, int *pos, int *hour, int *minute,
 				goto prob;
 		}
 		offset += 2;
-	} else if (xstrncasecmp(time_str+offset, "am", 2) == 0) {
+	} else if (!xstrncasecmp(time_str + offset, "am", 2)) {
 		if (hr > 11) {
 			if (hr == 12)
 				hr = 0;
@@ -419,7 +420,7 @@ extern time_t parse_time(const char *time_str, int past)
 	struct tm res_tm;
 	time_t ret_time;
 
-	if (xstrncasecmp(time_str, "uts", 3) == 0) {
+	if (!xstrncasecmp(time_str, "uts", 3)) {
 		char *last = NULL;
 		long uts = strtol(time_str+3, &last, 10);
 		if ((uts < 1000000) || (uts == LONG_MAX) ||
@@ -436,14 +437,14 @@ extern time_t parse_time(const char *time_str, int past)
 		if (isblank((int)time_str[pos]) ||
 		    (time_str[pos] == '-') || (time_str[pos] == 'T'))
 			continue;
-		if (xstrncasecmp(time_str+pos, "today", 5) == 0) {
+		if (!xstrncasecmp(time_str + pos, "today", 5)) {
 			month = time_now_tm.tm_mon;
 			mday = time_now_tm.tm_mday;
 			year = time_now_tm.tm_year;
 			pos += 4;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "tomorrow", 8) == 0) {
+		if (!xstrncasecmp(time_str + pos, "tomorrow", 8)) {
 			time_t later = time_now + (24 * 60 * 60);
 			struct tm later_tm;
 			localtime_r(&later, &later_tm);
@@ -453,35 +454,35 @@ extern time_t parse_time(const char *time_str, int past)
 			pos += 7;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "midnight", 8) == 0) {
+		if (!xstrncasecmp(time_str + pos, "midnight", 8)) {
 			hour   = 0;
 			minute = 0;
 			second = 0;
 			pos += 7;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "noon", 4) == 0) {
+		if (!xstrncasecmp(time_str + pos, "noon", 4)) {
 			hour   = 12;
 			minute = 0;
 			second = 0;
 			pos += 3;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "fika", 4) == 0) {
+		if (!xstrncasecmp(time_str + pos, "fika", 4)) {
 			hour   = 15;
 			minute = 0;
 			second = 0;
 			pos += 3;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "teatime", 7) == 0) {
+		if (!xstrncasecmp(time_str + pos, "teatime", 7)) {
 			hour   = 16;
 			minute = 0;
 			second = 0;
 			pos += 6;
 			continue;
 		}
-		if (xstrncasecmp(time_str+pos, "now", 3) == 0) {
+		if (!xstrncasecmp(time_str+pos, "now", 3)) {
 			int i;
 			long delta = 0;
 			time_t later;
@@ -668,7 +669,7 @@ static void _make_time_str_internal(time_t *time, bool utc, char *string,
 
 			if ((!fmt) || (!*fmt) || (!xstrcmp(fmt, "standard"))) {
 				;
-			} else if (xstrcmp(fmt, "relative") == 0) {
+			} else if (!xstrcmp(fmt, "relative")) {
 				display_fmt = _relative_date_fmt(&time_tm);
 			} else if ((strchr(fmt, '%')  == NULL) ||
 				   (strlen(fmt) >= sizeof(fmt_buf))) {
