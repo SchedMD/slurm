@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     dynamic node with a global autodetect set in gres.conf.
  -- Fix leaving node records on error when creating nodes with scontrol.
  -- scrun/sackd - Avoid race condition where shutdown could deadlock.
+ -- Fix a regression in 23.02.5 that caused pam_slurm_adopt to fail when
+    the user has multiple jobs on a node.
 
 * Changes in Slurm 23.11.3
 ==========================

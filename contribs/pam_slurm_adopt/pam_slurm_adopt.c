@@ -837,10 +837,12 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	}
 
 	/*
-	 * Initialize after root has been permitted access, which is critical
-	 * in case the config file won't load on this node for some reason.
+	 * Initialize Slurm after root has been granted access but before but
+	 * before any Slurm API calls are made.  It is critical this happens
+	 * after root is handled to prevent locking an admin out of a node if
+	 * there is a problem initializing Slurm.
 	 */
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	slurm_cgroup_conf_init();
 
 	/*
