@@ -976,21 +976,7 @@ static int _process_command (int argc, char **argv)
 		return 0;
 	}
 
-	if (!xstrncasecmp(tag, "abort", MAX(tag_len, 5))) {
-		/* require full command name */
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 tag);
-		}
-		error_code = slurm_shutdown (1);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_shutdown error");
-		}
-	} else if (!xstrncasecmp(tag, "all", MAX(tag_len, 2))) {
+	if (!xstrncasecmp(tag, "all", MAX(tag_len, 2))) {
 		all_flag = 1;
 	} else if (!xstrncasecmp(tag, "cancel_reboot", MAX(tag_len, 3))) {
 		if (argc > 2) {

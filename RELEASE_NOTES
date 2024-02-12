@@ -165,6 +165,7 @@ COMMAND CHANGES (see man pages for details)
     rendezvous gets when using the switch/hpe_slingshot plugin.
  -- Requesting --cpus-per-task will now set SLURM_TRES_PER_TASK=cpu:# in the
     environment.
+ -- scontrol - Removed "abort" command.
 
 API CHANGES
 ===========
