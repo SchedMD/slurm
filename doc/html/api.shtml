@@ -150,14 +150,6 @@ memory leak.</li>
 <li><b>slurm_free_resource_allocation_response_msg</b> &mdash;
 Frees memory allocated by <i>slurm_allocate_resources</i>.</li>
 
-<li><b>slurm_allocate_resources_and_run</b> &mdash; Allocate resources for a
-job and spawn a job step. Response message must be freed using
-<i>slurm_free_resource_allocation_and_run_response_msg</i> to avoid a
-memory leak.</li>
-
-<li><b>slurm_free_resource_allocation_and_run_response_msg</b> &mdash;
-Frees memory allocated by <i>slurm_allocate_resources_and_run</i>.</li>
-
 <li><b>slurm_submit_batch_job</b> &mdash; Submit a script for later
 execution. Response message must be freed using
 <i>slurm_free_submit_response_response_msg</i> to avoid a
@@ -165,13 +157,6 @@ memory leak.</li>
 
 <li><b>slurm_free_submit_response_response_msg</b> &mdash;
 Frees memory allocated by <i>slurm_submit_batch_job</i>.</li>
-
-<li><b>slurm_confirm_allocation</b> &mdash; Test if a resource allocation has
-already been made for a given job id. Response message must be freed using
-<i>slurm_free_resource_allocation_response_msg</i> to avoid a
-memory leak. This can be used to confirm that an
-allocation is still active or for error recovery.</li>
-
 </ul>
 
 
@@ -295,6 +280,6 @@ allocated by <i>slurm_hostlist_create</i>.
 
 </ul>
 
-<p style="text-align:center;">Last modified 23 November 2019</p>
+<p style="text-align:center;">Last modified 12 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
