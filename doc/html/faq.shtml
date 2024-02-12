@@ -1570,8 +1570,6 @@ core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a
 last resort.<br>
 SlurmUser must have write permission on the directories. If none of the above
 directories have write permission for SlurmUser, no core file will be produced.
-For testing purposes the command "scontrol abort" can be used to abort the
-slurmctld daemon and generate a core file.
 
 <p>If <i>slurmd</i> is started with the -D option, then the core file will also be
 written to the current working directory. If <i>SlurmdLogFile</i> is an
@@ -2458,6 +2456,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 17 January 2024</p>
+<p style="text-align:center;">Last modified 12 February 2024</p>
 
 <!--#include virtual="footer.txt"-->

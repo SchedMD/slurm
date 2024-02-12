@@ -4471,7 +4471,6 @@ function _scontrol() {
 
 	local comp_cmd="$1"
 	local subcmds=(
-		"abort"
 		"cancel_reboot"
 		"create"
 		"completing"

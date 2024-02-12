@@ -102,6 +102,7 @@ documents those changes that are of interest to users and administrators.
     needlessly cause 100% CPU usage on a thread.
  -- sbcast - Use user identity from broadcast credential instead of looking it
     up locally on the node.
+ -- scontrol - Remove "abort" option handling.
 
 * Changes in Slurm 23.11.3
 ==========================
