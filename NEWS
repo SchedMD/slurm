@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
     --gres=gpu:1,tmpfs:foo:2,tmpfs:bar:7). Otherwise, the job could bypass
     limits configured for the generic of the typed one (tmpfs in the example).
  -- Fix batch step not having SLURM_CLUSTER_NAME filled in.
+ -- slurmstepd - Avoid error during `--container` job cleanup about
+    RunTimeQuery never being configured. Results in cleanup where job steps not
+    fully started.
 
 * Changes in Slurm 23.11.4
 ==========================

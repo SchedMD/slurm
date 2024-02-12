@@ -1196,6 +1196,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 	/* cleanup may be called without ever setting up container */
 
+	_generate_patterns(step, NULL);
 	_kill_container();
 
 	if (oci_conf->disable_cleanup)
