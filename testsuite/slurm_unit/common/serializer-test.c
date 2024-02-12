@@ -32,8 +32,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef __GNUC__
+#define _GNU_SOURCE
+#include <limits.h>
+
+#if defined(__GLIBC__) && !defined(__UCLIBC__) && !defined(__MUSL__)
+#include <features.h>
+#if defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 33) && defined(__SIZEOF_INT128__)
+#define HAVE_MALLINFO2
 #include <malloc.h>
+#endif
+#endif
 #endif
 
 #include <check.h>
@@ -57,7 +66,8 @@
 
 #define BYTES_IN_MiB (1024 * 1024)
 
-#ifdef __GNUC__
+#ifdef HAVE_MALLINFO2
+
 typedef unsigned __int128 uint128_t;
 
 typedef struct {
@@ -78,7 +88,8 @@ typedef struct {
 	mallinfo2_128_t total;
 	int count;
 } mem_track_t;
-#endif /* __GNUC__ */
+
+#endif /* HAVE_MALLINFO2 */
 
 const char *mime_types[] = {
 	MIME_TYPE_YAML,
@@ -103,7 +114,7 @@ static const struct {
 	if (get_log_level() >= LOG_LEVEL_DEBUG) \
 		xassert(X OP NULL);             \
 	else                                    \
-		_ck_assert_ptr_null(d, ==);     \
+		ck_assert(X OP NULL);           \
 } while (0)
 
 #define assert_int_eq(X, Y) do {                \
@@ -466,7 +477,7 @@ START_TEST(test_mimetype)
 }
 END_TEST
 
-#ifdef __GNUC__
+#ifdef HAVE_MALLINFO2
 static void _track_mem(mem_track_t *track)
 {
 	struct mallinfo2 mi = mallinfo2();
@@ -530,12 +541,12 @@ static void _print_tracked_mem(mem_track_t *track, const char *type)
 	printf("\t%s Topmost releasable block (keepcost):   %zu/%zu\n\n",
 	       type, avg.keepcost, track->peak.keepcost);
 }
-#else /* __GNUC__ */
+#else /* !HAVE_MALLINFO2 */
 /* avoid compile errors for undefined/unused variables */
 typedef struct {int a; int b;} mem_track_t;
 #define _track_mem(track) ((void)(track))
 #define _print_tracked_mem(track, type) ((void)(track))
-#endif /* __GNUC__ */
+#endif /* !HAVE_MALLINFO2 */
 
 static void _test_bandwidth_str(const char *tag, const char *source,
 				const int run_count)
