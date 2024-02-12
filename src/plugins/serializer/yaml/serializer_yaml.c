@@ -341,7 +341,8 @@ static parse_state_t _yaml_to_data(int depth, yaml_parser_t *parser,
 	if (depth > YAML_MAX_DEPTH) {
 		error("%s: YAML nested too deep (%d layers) at %pD",
 		      __func__, depth, dst);
-		return ESLURM_DATA_PARSING_DEPTH;
+		*rc = ESLURM_DATA_PARSING_DEPTH;
+		return PARSE_FAIL;
 	}
 
 	while (state < PARSE_DONE) {
