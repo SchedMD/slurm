@@ -567,8 +567,12 @@ static const char *_job_state_list(void)
 static int
 _parse_state( char* str, uint32_t* states )
 {
-	if (job_state_num(str) != NO_VAL)
+	uint32_t i = 0;
+
+	if ((i = job_state_num(str)) != NO_VAL) {
+		*states = i;
 		return SLURM_SUCCESS;
+	}
 
 	error("Invalid job state specified: %s", str);
 	error("Valid job states include: %s\n", _job_state_list());
