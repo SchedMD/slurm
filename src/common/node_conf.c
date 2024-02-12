@@ -674,6 +674,7 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 							  slurm_strerror(rc),
 							  alias);
 			}
+			free(alias);
 			break;
 		}
 

@@ -2514,6 +2514,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
 		{NULL}
 	};
+	list_t *tmp_gres_conf_list = NULL;
 
 	int count = 0, i, rc, rc2;
 	struct stat config_stat;
@@ -2547,8 +2548,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		goto fini;
 	}
 
-	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(destroy_gres_slurmd_conf);
+	tmp_gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		info("Can not stat gres.conf file (%s), using slurm.conf data",
@@ -2575,27 +2575,33 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		if (running_in_slurmctld() &&
 		    autodetect_flags &&
 		    !((autodetect_flags & GRES_AUTODETECT_GPU_FLAGS) &
-		      GRES_AUTODETECT_GPU_OFF))
-			fatal("Cannot use AutoDetect on cloud node \"%s\"",
+		      GRES_AUTODETECT_GPU_OFF)) {
+			rc = ESLURM_UNSUPPORTED_GRES;
+			error("Cannot use AutoDetect on cloud/dynamic node \"%s\"",
 			      gres_node_name);
+			s_p_hashtbl_destroy(tbl);
+			goto fini;
+		}
 
 		if (s_p_get_array((void ***) &gres_array,
 				  &count, "Name", tbl)) {
 			for (i = 0; i < count; i++) {
-				list_append(gres_conf_list, gres_array[i]);
+				list_append(tmp_gres_conf_list, gres_array[i]);
 				gres_array[i] = NULL;
 			}
 		}
 		if (s_p_get_array((void ***) &gres_array,
 				  &count, "NodeName", tbl)) {
 			for (i = 0; i < count; i++) {
-				list_append(gres_conf_list, gres_array[i]);
+				list_append(tmp_gres_conf_list, gres_array[i]);
 				gres_array[i] = NULL;
 			}
 		}
 		s_p_hashtbl_destroy(tbl);
 	}
-	xfree(gres_conf_file);
+	FREE_NULL_LIST(gres_conf_list);
+	gres_conf_list = tmp_gres_conf_list;
+	tmp_gres_conf_list = NULL;
 
 	/* Validate gres.conf and slurm.conf somewhat before merging */
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -2608,8 +2614,9 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
-	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS)
-		return rc;
+	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS) {
+		goto fini;
+	}
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		node_conf.gres_name = gres_context[i].gres_name;
@@ -2641,6 +2648,8 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 
 fini:
+	xfree(gres_conf_file);
+	FREE_NULL_LIST(tmp_gres_conf_list);
 	_pack_context_buf();
 	_pack_gres_conf();
 	slurm_mutex_unlock(&gres_context_lock);

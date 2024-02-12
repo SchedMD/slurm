@@ -103,6 +103,15 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - Use user identity from broadcast credential instead of looking it
     up locally on the node.
  -- scontrol - Remove "abort" option handling.
+ -- Fix an error message referring to the wrong RPC.
+ -- Fix memory leak on error when creating dynamic nodes.
+ -- Fix a slurmctld segfault when a cloud/dynamic node changes hostname on
+    registration.
+ -- Prevent a slurmctld deadlock if the gpu plugin fails to load when
+    creating a node.
+ -- Change a slurmctld fatal() to an error() when attempting to create a
+    dynamic node with a global autodetect set in gres.conf.
+ -- Fix leaving node records on error when creating nodes with scontrol.
 
 * Changes in Slurm 23.11.3
 ==========================
