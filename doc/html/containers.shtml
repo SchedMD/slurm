@@ -534,6 +534,19 @@ salloc sh -c 'podman run -e SLURM_JOB_ID=$SLURM_JOB_ID alpine hostname'</pre>
 </li>
 </ol>
 
+<h3>Troubleshooting</h3>
+<ul>
+<li>Podman runs out of locks:
+<pre>$ podman run alpine uptime
+Error: allocating lock for new container: allocation failed; exceeded num_locks (2048)
+</pre>
+<ol>
+	<li>Try renumbering:<pre>podman system renumber</pre></li>
+	<li>Try reseting all storage:<pre>podman system reset</pre></li>
+</ol>
+</li>
+</ul>
+
 <h2 id="bundle">OCI Container bundle
 <a class="slurm_link" href="#bundle"></a>
 </h2>
@@ -842,6 +855,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 09 February 2024</p>
+<p style="text-align:center;">Last modified 22 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
