@@ -118,6 +118,7 @@ def test_core_spec_override(node_names):
         f"-w {node_names} --core-spec=0 -n{total_cores} --wrap='srun true'"
     )
     atf.wait_for_job_state(job_id, "DONE")
+    atf.wait_for_step_accounted(job_id, 0)
 
     output = int(
         re.findall(
@@ -130,6 +131,7 @@ def test_core_spec_override(node_names):
 
     job_id = atf.submit_job_sbatch(f"-w {node_names} --core-spec=0 --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
+    atf.wait_for_step_accounted(job_id, 0)
 
     output = int(
         re.findall(
@@ -146,6 +148,7 @@ def test_core_spec_override(node_names):
         f"-w {node_names} --core-spec=1 -n{total_cores - 2} --wrap='srun true'"
     )
     atf.wait_for_job_state(job_id, "DONE")
+    atf.wait_for_step_accounted(job_id, 0)
 
     output = int(
         re.findall(
@@ -162,6 +165,7 @@ def test_core_spec_override(node_names):
         f"-w {node_names} --core-spec=2 -n{total_cores - 4} --wrap='srun true'"
     )
     atf.wait_for_job_state(job_id, "DONE")
+    atf.wait_for_step_accounted(job_id, 0)
 
     output = int(
         re.findall(
@@ -189,6 +193,7 @@ def test_thread_spec_override(node_names):
         f"-w {node_names} --thread-spec=1 --wrap='srun true'"
     )
     atf.wait_for_job_state(job_id, "DONE")
+    atf.wait_for_step_accounted(job_id, 0)
 
     output = int(
         re.findall(

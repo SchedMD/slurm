@@ -2089,6 +2089,27 @@ def wait_for_step(job_id, step_id, **repeat_until_kwargs):
     )
 
 
+def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
+    """Waits for the specified step to be in the accounting DB.
+
+    Args:
+        job_id (integer): The job id.
+        step_id (integer): The step id (eg, 0, 1..).
+
+    * This function also accepts auxilliary arguments from repeat_until, viz.:
+        timeout (integer): Number of seconds to poll before timing out.
+        poll_interval (float): Number of seconds to wait between polls
+        fatal (boolean): If True, a timeout will result in the test failing.
+    """
+
+    step_str = f"{job_id}.{step_id}"
+    return repeat_until(
+        lambda: run_command_output(f"sacct -j {job_id} -o jobid"),
+        lambda out: re.search(f"{step_str}", out) is not None,
+        **repeat_until_kwargs,
+    )
+
+
 def wait_for_job_state(
     job_id,
     desired_job_state,
