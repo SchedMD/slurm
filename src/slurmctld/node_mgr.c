@@ -117,6 +117,7 @@ bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 
+static int _delete_node_ptr(node_record_t *node_ptr);
 static void 	_dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer);
 static void	_drain_node(node_record_t *node_ptr, char *reason,
 			    uint32_t reason_uid);
@@ -5026,10 +5027,10 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 				config_record_t *config_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	node_record_t *node_ptr;
+	node_record_t *node_ptr = NULL;
 
 	if ((rc = add_node_record(alias, config_ptr, &node_ptr)))
-		return rc;
+		goto fini;
 
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
@@ -5064,7 +5065,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 						  node_ptr->name,
 						  node_ptr->gres_list, NULL,
 						  NULL)))
-			return rc;
+			goto fini;
 
 		rc = gres_node_config_validate(
 			node_ptr->name, node_ptr->config_ptr->gres,
@@ -5074,6 +5075,11 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 			node_ptr->config_ptr->tot_sockets,
 			(slurm_conf.conf_flags & CTL_CONF_OR), NULL);
 	}
+
+fini:
+	if (rc && node_ptr)
+		_delete_node_ptr(node_ptr);
+
 	return rc;
 }
 
@@ -5153,10 +5159,11 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
 
 	if ((rc = expand_nodeline_info(conf_node, config_ptr, err_msg,
-				       _build_node_callback)))
+				       _build_node_callback))) {
 		error("Failed to create a node in '%s': %s",
 		      conf_node->nodenames, *err_msg);
-	s_p_hashtbl_destroy(node_hashtbl);
+		goto fini;
+	}
 
 	if (config_ptr->feature) {
 		update_feature_list(avail_feature_list, config_ptr->feature,
@@ -5174,6 +5181,7 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	select_g_reconfigure();
 
 fini:
+	s_p_hashtbl_destroy(node_hashtbl);
 	unlock_slurmctld(write_lock);
 
 	if (rc == SLURM_SUCCESS) {
