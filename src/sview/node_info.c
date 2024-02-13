@@ -566,13 +566,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	convert_num_unit((float)idle_cpus, tmp_idle_cpus, sizeof(tmp_idle_cpus),
 			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 
-	if (IS_NODE_DRAIN(node_ptr)) {
-		/* don't worry about mixed since the
-		 * whole node is being drained. */
-	} else if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
-		node_ptr->node_state &= NODE_STATE_FLAGS;
-		node_ptr->node_state |= NODE_STATE_MIXED;
-	}
 	tmp_state_upper = node_state_string(node_ptr->node_state);
 	tmp_state_lower = str_tolower(tmp_state_upper);
 
