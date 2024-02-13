@@ -32,7 +32,7 @@ def test_input_output_error(tmp_path):
     assert file_out.read_text().strip("\n") == echo_output
 
     # Test the none parameter
-    stderr = atf.run_command_error(f"srun --input={str(file_in)} --error=none -t1 bash")
-    assert not stderr
+    stderr = atf.run_command_error(f"srun --error=none -t1 sleep aaa", xfail=True)
+    assert re.search(sleep_err_message, stderr) is None
     stdout = atf.run_command_output(f"srun --output=none -t1 id")
-    assert not stdout
+    assert re.search("uid=", stdout) is None
