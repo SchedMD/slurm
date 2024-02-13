@@ -2120,13 +2120,31 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpackstr(&job_ptr->origin_cluster, buffer);
 
 		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
+		xstrsubstituteall(job_ptr->cpus_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
+		xstrsubstituteall(job_ptr->mem_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_bind, buffer);
 		safe_unpackstr(&job_ptr->tres_freq, buffer);
+
 		safe_unpackstr(&job_ptr->tres_per_job, buffer);
+		xstrsubstituteall(job_ptr->tres_per_job,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_node, buffer);
+		xstrsubstituteall(job_ptr->tres_per_node,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
+		xstrsubstituteall(job_ptr->tres_per_socket,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_task, buffer);
+		xstrsubstituteall(job_ptr->tres_per_task,
+				  "gres:", "gres/");
 
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -2340,13 +2358,31 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		safe_unpackstr(&job_ptr->origin_cluster, buffer);
 
 		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
+		xstrsubstituteall(job_ptr->cpus_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
+		xstrsubstituteall(job_ptr->mem_per_tres,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_bind, buffer);
 		safe_unpackstr(&job_ptr->tres_freq, buffer);
+
 		safe_unpackstr(&job_ptr->tres_per_job, buffer);
+		xstrsubstituteall(job_ptr->tres_per_job,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_node, buffer);
+		xstrsubstituteall(job_ptr->tres_per_node,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
+		xstrsubstituteall(job_ptr->tres_per_socket,
+				  "gres:", "gres/");
+
 		safe_unpackstr(&job_ptr->tres_per_task, buffer);
+		xstrsubstituteall(job_ptr->tres_per_task,
+				  "gres:", "gres/");
 
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
 	} else {
