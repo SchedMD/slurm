@@ -217,7 +217,9 @@ inline static int
 _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 {
 	int rc = SLURM_ERROR, retry = 0, max_retry = 0;
-	unsigned long delay = 100000;
+	static pthread_mutex_t msg_tmo_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t msg_tmo_cond = PTHREAD_COND_INITIALIZER;
+	struct timespec ts;
 
 	/* NOTE: Wait until suspended job step is resumed or the RPC
 	 * authentication credential from Munge may expire by the time
@@ -226,6 +228,7 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 	while (1) {
 		if (resp_msg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int msg_rc = 0;
+			clock_gettime(CLOCK_REALTIME, &ts);
 			msg_rc = slurm_send_recv_rc_msg_only_one(resp_msg,
 								 &rc, 0);
 			/* Both must be zero for a successful transmission. */
@@ -246,9 +249,10 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 		if (retry >= max_retry)
 			break;
 
-		usleep(delay);
-		if (delay < 800000)
-			delay *= 2;
+		pthread_mutex_lock(&msg_tmo_mutex);
+		ts.tv_sec += slurm_conf.msg_timeout;
+		pthread_cond_timedwait(&msg_tmo_cond, &msg_tmo_mutex, &ts);
+		pthread_mutex_unlock(&msg_tmo_mutex);
 		retry++;
 	}
 	return rc;
