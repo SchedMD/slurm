@@ -27,6 +27,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- CoreSpecPlugin has been removed.
  -- Removed TopologyPlugin tree and dragonfly support from select/linear.
     If those topology plugins are desired please switch to select/cons_tres.
+ -- Changed the default value for UnkillableStepTimeout to 60 seconds or five
+    times the value of MessageTimeout, whichever is greater.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

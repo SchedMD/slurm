@@ -3943,6 +3943,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	uint16_t uint16_tmp;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
 	uint64_t uint64_tmp;
+	uint32_t default_unkillable_timeout;
 	job_defaults_t *job_defaults;
 	int i;
 
@@ -5475,10 +5476,19 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	s_p_get_string(&conf->unkillable_program,
 		       "UnkillableStepProgram", hashtbl);
+	default_unkillable_timeout = conf->msg_timeout * 5;
 	if (!s_p_get_uint16(&conf->unkillable_timeout,
-			    "UnkillableStepTimeout", hashtbl))
-		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
-	if (conf->unkillable_timeout < (conf->msg_timeout * 5))
+			    "UnkillableStepTimeout", hashtbl)) {
+		if (default_unkillable_timeout > UINT16_MAX) {
+			error_in_daemon("The default value for UnkillableStepTimeout of MessageTimeout*5 (%u) is larger than the maximum allowed value for UnkillableStepTimeout (%u), setting UnkillableStepTimeout to the maximum value.",
+					default_unkillable_timeout,
+					UINT16_MAX);
+			conf->unkillable_timeout = UINT16_MAX;
+		} else
+			conf->unkillable_timeout =
+				MAX(DEFAULT_UNKILLABLE_TIMEOUT,
+				    default_unkillable_timeout);
+	} else if (conf->unkillable_timeout < default_unkillable_timeout)
 		error_in_daemon("UnkillableStepTimeout must be at least 5 times greater than MessageTimeout, otherwise nodes may go down with the reason \"KillTaskFailed\". Current values: UnkillableStepTimeout=%u, MessageTimeout=%u",
 				conf->unkillable_timeout, conf->msg_timeout);
 

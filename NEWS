@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
     overwrite the libraries for the first executable.
  -- Add support for sbcast --preserve when job_container/tmpfs configured
     (previously documented as unsupported).
+ -- Changed the default value for UnkillableStepTimeout to 60 seconds or five
+    times the value of MessageTimeout, whichever is greater.
 
 * Changes in Slurm 23.11.4
 ==========================
