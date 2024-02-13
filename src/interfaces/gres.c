@@ -2520,7 +2520,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
-	char *gres_conf_file;
+	char *gres_conf_file = NULL;
 	char *autodetect_string = NULL;
 	bool in_slurmd = running_in_slurmd();
 
