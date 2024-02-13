@@ -565,7 +565,7 @@ static const char *_job_state_list(void)
  * RET 0 or error code
  */
 static int
-_parse_state( char* str, uint32_t* states )
+_parse_state(char* str, uint32_t* states)
 {
 	uint32_t i = 0;
 
