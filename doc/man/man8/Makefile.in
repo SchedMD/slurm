@@ -452,7 +452,9 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-man8_MANS = slurmctld.8 \
+man8_MANS = \
+	sackd.8 \
+	slurmctld.8 \
 	slurmd.8 \
 	slurmdbd.8 \
 	slurmrestd.8 \
@@ -460,6 +462,7 @@ man8_MANS = slurmctld.8 \
 	spank.8
 
 @HAVE_MAN2HTML_TRUE@html_DATA = \
+@HAVE_MAN2HTML_TRUE@	sackd.html \
 @HAVE_MAN2HTML_TRUE@	slurmctld.html \
 @HAVE_MAN2HTML_TRUE@	slurmd.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.html \

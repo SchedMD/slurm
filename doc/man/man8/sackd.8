@@ -1,0 +1,73 @@
+.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "February 2024" "Slurm Auth and Cred Kiosk Daemon"
+
+.SH "NAME"
+sackd \- Slurm Auth and Cred Kiosk Daemon.
+
+.SH "SYNOPSIS"
+\fBsackd\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBsackd\fR is the Slurm Auth and Cred Kiosk Daemon. It can be used on login
+nodes that are not running slurmd daemons to allow authentication to the
+cluster. The program will run as the \fISlurmdUser\fR. When running in Slurm's
+"configless" mode, in which case configuration files are retrieved and written
+under the /run/slurm/conf directory.
+
+.SH "OPTIONS"
+.TP
+\fB\-\-conf\-server host[:port]\fR
+Retrieve configs from slurmctld running at \fIhost[:port]\fR.
+Requires slurmctld support provided by setting \fBenable_configless\fR in
+SlurmctldParameters.
+.IP
+
+.TP
+\fB\-f config\fR
+Read configuration from the specified file.
+.IP
+
+.TP
+\fB\-h\fR
+Help; print a brief summary of command options.
+.IP
+
+.TP
+\fB\-\-systemd\fR
+To be used when started from a systemd unit file.
+.IP
+
+.TP
+\fB-v\fR
+Verbose mode. Multiple -v's increase verbosity.
+.IP
+
+.SH "SIGNALS"
+
+.TP 6
+\fBSIGHUP\fR
+\fBsackd\fR will reconfigure.
+.IP
+
+.TP
+\fBSIGUSR2\fR
+This signal is explicitly ignored.
+.IP
+
+.SH "COPYING"
+Copyright (C) SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5), \fBslurmctld\fR(8)
