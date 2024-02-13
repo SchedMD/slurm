@@ -2115,14 +2115,11 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	/*
 	 * In cgroup/v1, total_rss was the hierarchical sum of # of bytes of
-	 * anonymous and swap cache memory (including transparent huge pages),
-	 * so let's make the sum here to make the same thing. In v2 anon_thp
-	 * are included in anon.
+	 * anonymous and swap cache memory (including transparent huge pages).
 	 *
 	 * In cgroup/v2 we use memory.current which includes all the
 	 * memory the app has touched. Using this value makes it consistent with
 	 * the OOM killer limit.
-	 *
 	 */
 	if (memory_current) {
 		if (sscanf(memory_current, "%"PRIu64, &stats->total_rss) != 1)
