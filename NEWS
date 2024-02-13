@@ -119,6 +119,8 @@ documents those changes that are of interest to users and administrators.
     the user has multiple jobs on a node.
  -- Better handling of sending task exits to the slurmctld from a node if
     there are network issues.
+ -- Add GLOB_SILENCE flag that silences the error message which will display if
+    an include directive attempts to use the "*" wildcard.
 
 * Changes in Slurm 23.11.3
 ==========================

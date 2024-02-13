@@ -2743,7 +2743,7 @@ typedef struct reservation_name_msg {
 						    * plugin */
 #define DEBUG_FLAG_INTERCONNECT	SLURM_BIT(22) /* AcctGatherInterconnect
 						    * plugin */
-/* #define 		 	SLURM_BIT(23) /\* UNUSED *\/ */
+#define DEBUG_FLAG_GLOB_SILENCE SLURM_BIT(23) /* Supresses the glob error */
 #define DEBUG_FLAG_JOB_CONT 	SLURM_BIT(24) /* JobContainer plugin */
 /* #define			SLURM_BIT(25) /\* UNUSED *\/ */
 #define DEBUG_FLAG_PROTOCOL	SLURM_BIT(26) /* Communication protocol */
