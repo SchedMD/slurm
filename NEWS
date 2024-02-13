@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     there are network issues.
  -- Add GLOB_SILENCE flag that silences the error message which will display if
     an include directive attempts to use the "*" wildcard.
+ -- Fix jobs getting rejected when submitting with --gpus option from older
+    versions of job submission commands (23.02 and older).
 
 * Changes in Slurm 23.11.3
 ==========================
