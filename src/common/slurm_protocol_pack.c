@@ -1399,7 +1399,11 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
+
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
+		xstrsubstituteall(tmp_ptr->tres_per_node,
+				  "gres:", "gres/");
+
 		safe_unpack32(&tmp_ptr->uid, buffer);
 		safe_unpackstr(&tmp_ptr->user_name, buffer);
 
@@ -2202,7 +2206,53 @@ static void _pack_job_step_create_request_msg(
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack32(msg->array_task_id, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		packstr(msg->container, buffer);
+		packstr(msg->container_id, buffer);
+		pack32(msg->cpu_count, buffer);
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		pack32(msg->time_limit, buffer);
+		pack16(msg->threads_per_core, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+
+		pack16(msg->relative, buffer);
+		pack32(msg->task_dist, buffer);
+		pack16(msg->plane_size, buffer);
+		pack16(msg->port, buffer);
+		pack16(msg->immediate, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+		pack32(msg->srun_pid, buffer);
+		pack32(msg->flags, buffer);
+
+		packstr(msg->host, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->network, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->exc_nodes, buffer);
+		packstr(msg->features, buffer);
+		pack32(msg->step_het_comp_cnt, buffer);
+		packstr(msg->step_het_grps, buffer);
+
+		packstr(msg->cpus_per_tres, buffer);
+		packstr(msg->mem_per_tres, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		packstr(msg->submit_line, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_step, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_socket, buffer);
+		packstr(msg->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
@@ -2262,7 +2312,7 @@ static int _unpack_job_step_create_request_msg(
 	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -2310,6 +2360,73 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&tmp_ptr->array_task_id, buffer);
+		safe_unpack32(&tmp_ptr->user_id, buffer);
+		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&tmp_ptr->max_nodes, buffer);
+		safe_unpackstr(&tmp_ptr->container, buffer);
+		safe_unpackstr(&tmp_ptr->container_id, buffer);
+		safe_unpack32(&tmp_ptr->cpu_count, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_min, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_max, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_gov, buffer);
+		safe_unpack32(&tmp_ptr->num_tasks, buffer);
+		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpack32(&tmp_ptr->time_limit, buffer);
+		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+
+		safe_unpack16(&tmp_ptr->relative, buffer);
+		safe_unpack32(&tmp_ptr->task_dist, buffer);
+		safe_unpack16(&tmp_ptr->plane_size, buffer);
+		safe_unpack16(&tmp_ptr->port, buffer);
+		safe_unpack16(&tmp_ptr->immediate, buffer);
+		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
+		safe_unpack32(&tmp_ptr->srun_pid, buffer);
+		safe_unpack32(&tmp_ptr->flags, buffer);
+
+		safe_unpackstr(&tmp_ptr->host, buffer);
+		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpackstr(&tmp_ptr->network, buffer);
+		safe_unpackstr(&tmp_ptr->node_list, buffer);
+		safe_unpackstr(&tmp_ptr->exc_nodes, buffer);
+		safe_unpackstr(&tmp_ptr->features, buffer);
+		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
+		safe_unpackstr(&tmp_ptr->step_het_grps, buffer);
+
+		safe_unpackstr(&tmp_ptr->cpus_per_tres, buffer);
+		xstrsubstituteall(tmp_ptr->cpus_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&tmp_ptr->mem_per_tres, buffer);
+		xstrsubstituteall(tmp_ptr->mem_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
+		safe_unpackstr(&tmp_ptr->submit_line, buffer);
+		safe_unpackstr(&tmp_ptr->tres_bind, buffer);
+		safe_unpackstr(&tmp_ptr->tres_freq, buffer);
+
+		safe_unpackstr(&tmp_ptr->tres_per_step, buffer);
+		xstrsubstituteall(tmp_ptr->tres_per_step,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
+		xstrsubstituteall(tmp_ptr->tres_per_node,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
+		xstrsubstituteall(tmp_ptr->tres_per_socket,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
+		xstrsubstituteall(tmp_ptr->tres_per_task,
+				  "gres:", "gres/");
+
 	}
 
 	return SLURM_SUCCESS;
@@ -2686,7 +2803,7 @@ static int
 _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 			      uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		if (unpack_step_id_members(&step->step_id, buffer,
@@ -2729,6 +2846,67 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->tres_per_node, buffer);
 		safe_unpackstr(&step->tres_per_socket, buffer);
 		safe_unpackstr(&step->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		if (unpack_step_id_members(&step->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr(&step->cluster, buffer);
+		safe_unpackstr(&step->container, buffer);
+		safe_unpackstr(&step->container_id, buffer);
+		safe_unpackstr(&step->partition, buffer);
+		safe_unpackstr(&step->srun_host, buffer);
+		safe_unpackstr(&step->resv_ports, buffer);
+		safe_unpackstr(&step->nodes, buffer);
+		safe_unpackstr(&step->name, buffer);
+		safe_unpackstr(&step->network, buffer);
+		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
+
+		safe_unpackstr(&step->tres_alloc_str, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+
+		safe_unpackstr(&step->cpus_per_tres, buffer);
+		xstrsubstituteall(step->cpus_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&step->mem_per_tres, buffer);
+		xstrsubstituteall(step->mem_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&step->submit_line, buffer);
+		safe_unpackstr(&step->tres_bind, buffer);
+		safe_unpackstr(&step->tres_freq, buffer);
+
+		safe_unpackstr(&step->tres_per_step, buffer);
+		xstrsubstituteall(step->tres_per_step,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&step->tres_per_node, buffer);
+		xstrsubstituteall(step->tres_per_node,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&step->tres_per_socket, buffer);
+		xstrsubstituteall(step->tres_per_socket,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&step->tres_per_task, buffer);
+		xstrsubstituteall(step->tres_per_task,
+				  "gres:", "gres/");
 	}
 
 	return SLURM_SUCCESS;
@@ -2852,7 +3030,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 {
 	multi_core_data_t *mc_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3022,6 +3200,199 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->tres_per_node, buffer);
 		safe_unpackstr(&job->tres_per_socket, buffer);
 		safe_unpackstr(&job->tres_per_task, buffer);
+
+		safe_unpack16(&job->mail_type, buffer);
+		safe_unpackstr(&job->mail_user, buffer);
+
+		safe_unpackstr(&job->selinux_context, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&job->array_job_id, buffer);
+		safe_unpack32(&job->array_task_id, buffer);
+		/* The array_task_str value is stored in slurmctld and passed
+		 * here in hex format for best scalability. Its format needs
+		 * to be converted to human readable form by the client. */
+		safe_unpackstr(&job->array_task_str, buffer);
+		safe_unpack32(&job->array_max_tasks, buffer);
+		xlate_array_task_str(&job->array_task_str, job->array_max_tasks,
+				     &job->array_bitmap);
+
+		safe_unpack32(&job->assoc_id, buffer);
+		safe_unpackstr(&job->container, buffer);
+		safe_unpackstr(&job->container_id, buffer);
+		safe_unpack32(&job->delay_boot, buffer);
+		safe_unpackstr(&job->failed_node, buffer);
+		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->user_id, buffer);
+		safe_unpack32(&job->group_id, buffer);
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr(&job->het_job_id_set, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
+		safe_unpack32(&job->profile, buffer);
+
+		safe_unpack32(&job->job_state, buffer);
+		safe_unpack16(&job->batch_flag, buffer);
+		safe_unpack32(&job->state_reason, buffer);
+		safe_unpack8(&job->power_flags, buffer);
+		safe_unpack8(&job->reboot, buffer);
+		safe_unpack16(&job->restart_cnt, buffer);
+		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack_time(&job->deadline, buffer);
+
+		safe_unpack32(&job->alloc_sid, buffer);
+		safe_unpack32(&job->time_limit, buffer);
+		safe_unpack32(&job->time_min, buffer);
+
+		safe_unpack32(&job->nice, buffer);
+
+		safe_unpack_time(&job->submit_time, buffer);
+		safe_unpack_time(&job->eligible_time, buffer);
+		safe_unpack_time(&job->accrue_time, buffer);
+		safe_unpack_time(&job->start_time, buffer);
+		safe_unpack_time(&job->end_time, buffer);
+		safe_unpack_time(&job->suspend_time, buffer);
+		safe_unpack_time(&job->pre_sus_time, buffer);
+		safe_unpack_time(&job->resize_time, buffer);
+		safe_unpack_time(&job->last_sched_eval, buffer);
+		safe_unpack_time(&job->preempt_time, buffer);
+		safe_unpack32(&job->priority, buffer);
+		safe_unpackdouble(&job->billable_tres, buffer);
+		safe_unpackstr(&job->cluster, buffer);
+		safe_unpackstr(&job->nodes, buffer);
+		safe_unpackstr(&job->sched_nodes, buffer);
+		safe_unpackstr(&job->partition, buffer);
+		safe_unpackstr(&job->account, buffer);
+		safe_unpackstr(&job->admin_comment,buffer);
+		safe_unpack32(&job->site_factor, buffer);
+		safe_unpackstr(&job->network, buffer);
+		safe_unpackstr(&job->comment, buffer);
+		safe_unpackstr(&job->extra, buffer);
+		safe_unpackstr(&job->container, buffer);
+		safe_unpackstr(&job->batch_features, buffer);
+		safe_unpackstr(&job->batch_host, buffer);
+		safe_unpackstr(&job->burst_buffer, buffer);
+		safe_unpackstr(&job->burst_buffer_state, buffer);
+		safe_unpackstr(&job->system_comment, buffer);
+		safe_unpackstr(&job->qos, buffer);
+		safe_unpack_time(&job->preemptable_time, buffer);
+		safe_unpackstr(&job->licenses, buffer);
+		safe_unpackstr(&job->state_desc, buffer);
+		safe_unpackstr(&job->resv_name, buffer);
+		safe_unpackstr(&job->mcs_label, buffer);
+
+		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->derived_ec, buffer);
+		safe_unpackstr(&job->gres_total, buffer);
+		if (unpack_job_resources(&job->job_resrcs, buffer,
+					 protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&job->gres_detail_str,
+				     &job->gres_detail_cnt, buffer);
+
+		safe_unpackstr(&job->name, buffer);
+		safe_unpackstr(&job->user_name, buffer);
+		safe_unpackstr(&job->wckey, buffer);
+		safe_unpack32(&job->req_switch, buffer);
+		safe_unpack32(&job->wait4switch, buffer);
+
+		safe_unpackstr(&job->alloc_node, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
+
+		/*** unpack default job details ***/
+		safe_unpackstr(&job->features, buffer);
+		safe_unpackstr(&job->prefer, buffer);
+		safe_unpackstr(&job->cluster_features, buffer);
+		safe_unpackstr(&job->work_dir, buffer);
+		safe_unpackstr(&job->dependency, buffer);
+		safe_unpackstr(&job->command, buffer);
+
+		safe_unpack32(&job->num_cpus, buffer);
+		safe_unpack32(&job->max_cpus, buffer);
+		safe_unpack32(&job->num_nodes, buffer);
+		safe_unpack32(&job->max_nodes, buffer);
+		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
+		safe_unpack16(&job->requeue, buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
+		safe_unpack16(&job->ntasks_per_tres, buffer);
+		safe_unpack32(&job->num_tasks, buffer);
+
+		safe_unpack16(&job->shared, buffer);
+		safe_unpack32(&job->cpu_freq_min, buffer);
+		safe_unpack32(&job->cpu_freq_max, buffer);
+		safe_unpack32(&job->cpu_freq_gov, buffer);
+
+		safe_unpackstr(&job->cronspec, buffer);
+
+		/*** unpack pending job details ***/
+		safe_unpack16(&job->contiguous, buffer);
+		safe_unpack16(&job->core_spec, buffer);
+		safe_unpack16(&job->cpus_per_task, buffer);
+		safe_unpack16(&job->pn_min_cpus, buffer);
+
+		safe_unpack64(&job->pn_min_memory, buffer);
+		safe_unpack32(&job->pn_min_tmp_disk, buffer);
+		safe_unpackstr(&job->req_nodes, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->req_node_inx, buffer);
+
+		safe_unpackstr(&job->exc_nodes, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->exc_node_inx, buffer);
+
+		safe_unpackstr(&job->std_err, buffer);
+		safe_unpackstr(&job->std_in, buffer);
+		safe_unpackstr(&job->std_out, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		if (mc_ptr) {
+			job->boards_per_node = mc_ptr->boards_per_node;
+			job->sockets_per_board = mc_ptr->sockets_per_board;
+			job->sockets_per_node = mc_ptr->sockets_per_node;
+			job->cores_per_socket = mc_ptr->cores_per_socket;
+			job->threads_per_core = mc_ptr->threads_per_core;
+			job->ntasks_per_board = mc_ptr->ntasks_per_board;
+			job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
+			job->ntasks_per_core = mc_ptr->ntasks_per_core;
+			xfree(mc_ptr);
+		}
+		safe_unpack64(&job->bitflags, buffer);
+		safe_unpackstr(&job->tres_alloc_str, buffer);
+		safe_unpackstr(&job->tres_req_str, buffer);
+		safe_unpack16(&job->start_protocol_ver, buffer);
+
+		safe_unpackstr(&job->fed_origin_str, buffer);
+		safe_unpack64(&job->fed_siblings_active, buffer);
+		safe_unpackstr(&job->fed_siblings_active_str, buffer);
+		safe_unpack64(&job->fed_siblings_viable, buffer);
+		safe_unpackstr(&job->fed_siblings_viable_str, buffer);
+
+		safe_unpackstr(&job->cpus_per_tres, buffer);
+		xstrsubstituteall(job->cpus_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&job->mem_per_tres, buffer);
+		xstrsubstituteall(job->mem_per_tres,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&job->tres_bind, buffer);
+		safe_unpackstr(&job->tres_freq, buffer);
+
+		safe_unpackstr(&job->tres_per_job, buffer);
+		xstrsubstituteall(job->tres_per_job,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&job->tres_per_node, buffer);
+		xstrsubstituteall(job->tres_per_node,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&job->tres_per_socket, buffer);
+		xstrsubstituteall(job->tres_per_socket,
+				  "gres:", "gres/");
+
+		safe_unpackstr(&job->tres_per_task, buffer);
+		xstrsubstituteall(job->tres_per_task,
+				  "gres:", "gres/");
 
 		safe_unpack16(&job->mail_type, buffer);
 		safe_unpackstr(&job->mail_user, buffer);
@@ -5942,7 +6313,11 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (msg->nnodes >= NO_VAL)
 			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
+
 		safe_unpackstr(&msg->tres_per_task, buffer);
+		xstrsubstituteall(msg->tres_per_task,
+				  "gres:", "gres/");
+
 		safe_unpack16(&msg->threads_per_core, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
