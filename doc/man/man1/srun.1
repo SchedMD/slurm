@@ -3171,8 +3171,10 @@ a terminal is not possible.
 .PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR
-(\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications
-for these options are
+(\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options.
+Note that \fB\-\-error\fR won't redirect the stderr of srun itself, only the
+stderr from the tasks.
+Valid format specifications for these options are
 
 .TP 10
 \fBall\fR
