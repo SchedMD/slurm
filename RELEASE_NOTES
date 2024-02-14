@@ -59,6 +59,7 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- Removed ListIterator type from <slurm/slurm.h>.
+ -- Removed slurm_xlate_job_id() from <slurm/slurm.h>
 
 SLURMRESTD CHANGES
 ==================

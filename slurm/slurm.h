@@ -4210,16 +4210,6 @@ extern int slurm_update_job(job_desc_msg_t *job_msg);
 extern int slurm_update_job2(job_desc_msg_t *job_msg,
 			     job_array_resp_msg_t **resp);
 
-/*
- * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
- *	number. If this job ID contains an array index, map this to the
- *	equivalent Slurm job ID number (e.g. "123_2" to 124)
- *
- * IN job_id_str - String containing a single job ID number
- * RET - equivalent job ID number or 0 on error
- */
-extern uint32_t slurm_xlate_job_id(char *job_id_str);
-
 
 /*****************************************************************************\
  *	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
