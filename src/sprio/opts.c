@@ -456,7 +456,6 @@ static list_t *_build_job_list(char *str)
 {
 	list_t *my_list;
 	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
-	int i;
 	uint32_t *job_id = NULL;
 
 	if ( str == NULL)
@@ -466,13 +465,14 @@ static list_t *_build_job_list(char *str)
 	my_job_list = xstrdup(str);
 	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
-		i = slurm_xlate_job_id(job);
-		if (i <= 0) {
+		slurm_selected_step_t sel_step;
+		if (unfmt_job_id_string(str, &sel_step)) {
 			error("Invalid job id: %s", job);
 			exit(1);
-		}
+		} else if (sel_step.het_job_offset != NO_VAL)
+			sel_step.step_id.job_id += sel_step.het_job_offset;
 		job_id = xmalloc(sizeof(uint32_t));
-		*job_id = (uint32_t) i;
+		*job_id = sel_step.step_id.job_id;
 		list_append(my_list, job_id);
 		job = strtok_r(NULL, ",", &tmp_char);
 	}
