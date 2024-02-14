@@ -25,6 +25,10 @@ For the non\-root user, the \fBsstat\fR output is limited to the user's jobs.
 \fBNOTE\fR: The \fBsstat\fR command requires that the \fBjobacct_gather\fP
 plugin be installed and operational.
 
+\fBNOTE\fR: Availability of metrics rely on the \fBjobacct_gather\fP plugin
+used. For example the jobacct_gather/cgroup in combination with cgroup/v2 does
+not provide Virtual Memory metrics due to limitations in the kernel cgroups
+interfaces and will show a 0 for the related fields.
 .SH "OPTIONS"
 
 .TP

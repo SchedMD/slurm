@@ -606,6 +606,22 @@ will be put into the largest job id. Thanks to this we removed the dependency of
 the plugin against the specific cgroup hierarchy.
 </p>
 
-<p style="text-align:center;">Last modified 10 November 2023</p>
+<h2 id="limitations">Limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
+<p>
+The <i>cgroup/v2</i> plugin can provide all the accounting statistics for
+CPU and Memory that the kernel cgroup interface offers. This does not
+include virtual memory, so expect a value of 0 for metrics such as <i>AveVMSize,
+MaxVMSize, MaxVMSizeNode, MaxVMSizeTask</i> and <i>vmem</i> in
+<i>TRESUsageInTot</i> when <i>jobacct_gather/cgroup</i> is used in combination
+with <i>cgroup/v2</i>.</p>
+<p>In what regards to real stack size (RSS), this plugin provides cgroup's
+<i>memory.current</i> value from the memory interface, which is not equal to the
+RSS value provided by procfs. Nevertheless it is the same than the kernel uses
+in its OOM killer logic.
+</p>
+
+<p style="text-align:center;">Last modified 14 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
