@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm REST API</h1>
+<h1>REST API Reference</h1>
 
 <p>Slurm provides a
 	<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
@@ -9,21 +9,14 @@
 	communicate with Slurm via a REST API (in addition to the command line
 	interface (CLI) or C API).
 </p>
-<p>Please see <a href="openapi_release_notes.html">
-	OpenAPI Plugin Release Notes</a> for changes between release versions.</p>
-<p>
-	To view the currently generated API reference:
-	<a href="rest_api.html">Slurm REST API Reference</a>
-</p>
 
-<h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
-<p>slurmrestd requires additional libraries for compilation:</p>
+<p>See also:
 <ul>
-	<li><a href="download.html#httpparser">HTTP Parser</a> (>= v2.6.0)</li>
-	<li><a href="download.html#yaml">LibYAML</a> (optional, >= v0.2.1)</li>
-	<li><a href="download.html#json">JSON-C</a> (>= v1.12.0)</li>
-	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
+<li><a href="rest_quickstart.html">REST API Quick Start Guide</a></li>
+<li><a href="rest_api.html">REST API Implementation Details</a></li>
+<li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
 </ul>
+</p>
 
 <h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
 <p>Slurmrestd is stateless as it does not cache or save any state between
@@ -58,7 +51,9 @@ authenticated.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 slurmrestd can be configured either by environment variables or command line
-arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page for details.
+arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page and
+<a href="rest_quickstart.html#customization">REST API Quick Start Guide</a>
+for details.
 
 <h2 id="openapi">OpenAPI Specification (OAS)
 <a class="slurm_link" href="#openapi"></a>
