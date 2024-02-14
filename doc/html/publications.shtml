@@ -29,8 +29,8 @@ Younts, Guardant</li>-->
 <li><a href="SLUG23/containers-slug23.pdf">Containers in Slurm</a>,
 Scott Hilton, SchedMD</li>
 
-<li><a href="SLUG23/CoreWeave-SLUG23.pdf">The Best of Both Worlds: Slurm on Kubernetes</a>,
-Navarre Pratt and Jacob Feldman, CoreWeave</li>
+<!--<li><a href="SLUG23/CoreWeave-SLUG23.pdf">The Best of Both Worlds: Slurm on Kubernetes</a>,
+Navarre Pratt and Jacob Feldman, CoreWeave</li>-->
 
 <li><a href="SLUG23/LLSC-SLUG23.pdf">Optimizing Diverse Workloads and Resource Usage with Slurm</a>,
 Chansup Byun et al, LLSC</li>
@@ -1256,6 +1256,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 11 December 2023</p>
+<p style="text-align:center;">Last modified 14 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
