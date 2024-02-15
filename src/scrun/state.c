@@ -385,7 +385,6 @@ extern void change_status_funcname(container_state_msg_status_t status,
 {
 #ifndef NDEBUG
 	static container_state_msg_status_t last_status = CONTAINER_ST_UNKNOWN;
-#endif
 
 	if (locked) {
 		xassert(state.locked);
@@ -395,11 +394,9 @@ extern void change_status_funcname(container_state_msg_status_t status,
 		xassert(!state.needs_lock);
 	}
 
-#ifndef NDEBUG
 	/* detect if anything else changed value */
 	xassert(force || (last_status == state.status));
 	last_status = status;
-#endif
 
 	debug("%s: changing status from %s to %s",
 	      src, slurm_container_status_to_str(state.status),
@@ -411,6 +408,7 @@ extern void change_status_funcname(container_state_msg_status_t status,
 
 	/* status can never go backwards */
 	xassert(force || (status >= state.status));
+#endif
 
 	state.status = status;
 }
