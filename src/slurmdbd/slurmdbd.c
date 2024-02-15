@@ -197,9 +197,8 @@ int main(int argc, char **argv)
 	 */
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER |
 		ASSOC_MGR_CACHE_ASSOC |
-		ASSOC_MGR_CACHE_QOS | ASSOC_MGR_CACHE_TRES;
-	if (slurmdbd_conf->track_wckey)
-		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
+		ASSOC_MGR_CACHE_QOS | ASSOC_MGR_CACHE_TRES |
+		ASSOC_MGR_CACHE_WCKEY;
 
 	db_conn = acct_storage_g_get_connection(0, NULL, true, NULL);
 	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
