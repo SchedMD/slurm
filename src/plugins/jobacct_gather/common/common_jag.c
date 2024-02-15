@@ -528,7 +528,12 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 	int fd, fd2;
 	jag_prec_t *prec = NULL;
 
-	if (no_share_data == -1) {
+	/* UsePSS and NoShare are only compatible with the linux plugin. */
+	if ((no_share_data == -1) &&
+	    (!xstrcasestr(slurm_conf.job_acct_gather_type, "linux"))) {
+		use_pss = 0;
+		no_share_data = 0;
+	} else if (no_share_data == -1) {
 		if (xstrcasestr(slurm_conf.job_acct_gather_params, "NoShare"))
 			no_share_data = 1;
 		else

@@ -86,6 +86,8 @@ documents those changes that are of interest to users and administrators.
  -- sackd/slurmrestd/scrun - Avoid using empty string while logging unix socket
     connections from a listening connection.
  -- Fix 20 character username limit from 'sacctmgr show events'
+ -- Log an error if UsePss or NoShare are configured with a plugin other than
+    jobacct_gather/linux. In such case these parameters are ignored.
 
 * Changes in Slurm 23.11.5
 ==========================

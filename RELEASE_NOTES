@@ -37,6 +37,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     If those topology plugins are desired please switch to select/cons_tres.
  -- Changed the default value for UnkillableStepTimeout to 60 seconds or five
     times the value of MessageTimeout, whichever is greater.
+ -- An error log has been added if JobAcctGatherParams 'UsePss' or 'NoShare' are
+    configured with a plugin other than jobacct_gather/linux. In such case these
+    parameters are ignored.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -4252,6 +4252,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		if (xstrcasestr(conf->job_acct_gather_params, "UsePSS") &&
 		    xstrcasestr(conf->job_acct_gather_params, "NoShared"))
 			fatal("JobAcctGatherParams options UsePSS and NoShared are mutually exclusive.");
+
+		if (!xstrcasestr(conf->job_acct_gather_type, "linux") &&
+		    (xstrcasestr(conf->job_acct_gather_params, "UsePSS") ||
+		     xstrcasestr(conf->job_acct_gather_params, "NoShared")))
+			error_in_daemon("JobAcctGatherParams UsePSS and NoShared are only compatible with jobacct_gather/linux.");
 	}
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
