@@ -105,6 +105,9 @@ documents those changes that are of interest to users and administrators.
     spank_task_post_fork(), and spank_task_exit() will execute within the
     job_container/tmpfs plugin namespace.
  -- Update job reason appropriately when bf_licenses is used.
+ -- slurmrestd - Tagged `script` field as deprecated in
+    'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
+    OpenAPI plugin versions.
 
 * Changes in Slurm 23.11.6
 ==========================

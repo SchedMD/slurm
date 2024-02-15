@@ -8271,12 +8271,15 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_submit_request_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(openapi_job_submit_request_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
-	add_parse(STRING, script, "script", "Batch job script. Batch script must be specified in first component of jobs or in job if this field is not populated."),
+	add_parse_deprec(STRING, script, 0, "script", "Deprecated. Populate script field in jobs[0] or job.", SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
 	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_flag(flag_value, flag_string, hidden, desc)               \
 	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value), \

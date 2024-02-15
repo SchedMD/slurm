@@ -68,3 +68,7 @@ SLURMRESTD CHANGES
  -- Changed slurmrestd.service to only listen on TCP socket by default.
     Environments with existing drop-in units for the service may need
     further adjustments to work after upgrading.
+ -- slurmrestd - Tagged `script` field as deprecated in
+    'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
+    OpenAPI plugin versions. Job submissions should set the `job.script` (or
+    `jobs[0].script` for HetJobs) fields instead.
