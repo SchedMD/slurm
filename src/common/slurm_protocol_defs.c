@@ -775,6 +775,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 	if (!src || !src[0])
 		return ESLURM_EMPTY_JOB_ID;
 
+	errno = 0;
 	job = strtol(src, &end_ptr, 10);
 	if (job == 0)
 		return ESLURM_INVALID_JOB_ID_ZERO;
@@ -784,6 +785,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		return ESLURM_INVALID_JOB_ID_TOO_LARGE;
 	else if (end_ptr == src)
 		return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
+	else if (errno)
+		return SLURM_ERROR;
 
 	id->step_id.job_id = job;
 
@@ -794,6 +797,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		if (*(end_ptr + 1) == '\0')
 			return ESLURM_EMPTY_JOB_ARRAY_ID;
 
+		errno = 0;
 		array = strtol(end_ptr + 1, &array_end_ptr, 10);
 
 		if (array < 0)
@@ -802,6 +806,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 			return ESLURM_INVALID_JOB_ARRAY_ID_TOO_LARGE;
 		else if (array_end_ptr == end_ptr + 1)
 			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
+		else if (errno)
+			return SLURM_ERROR;
 
 		id->array_task_id = array;
 		end_ptr = array_end_ptr;
@@ -816,6 +822,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		else if (*(end_ptr + 1) == '\0')
 			return ESLURM_EMPTY_HET_JOB_COMP;
 
+		errno = 0;
 		het = strtol(end_ptr + 1, &het_end_ptr, 10);
 
 		if (het < 0)
@@ -824,6 +831,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 			return ESLURM_INVALID_HET_JOB_COMP_TOO_LARGE;
 		else if (het_end_ptr == end_ptr + 1)
 			return ESLURM_INVALID_HET_JOB_COMP_NON_NUMERIC;
+		else if (errno)
+			return SLURM_ERROR;
 
 		id->het_job_offset = het;
 		end_ptr = het_end_ptr;
@@ -843,6 +852,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 	if (*end_ptr == '\0')
 		return ESLURM_EMPTY_STEP_ID;
 
+	errno = 0;
 	step = strtol(end_ptr, &step_end_ptr, 10);
 
 	if (step_end_ptr == end_ptr) {
@@ -863,6 +873,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		return ESLURM_INVALID_STEP_ID_NEGATIVE;
 	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
 		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+	} else if (errno) {
+		return SLURM_ERROR;
 	}
 
 	id->step_id.step_id = step;
@@ -882,6 +894,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 	if (*end_ptr == '\0')
 		return SLURM_SUCCESS;
 
+	errno = 0;
 	step_het = strtol(end_ptr, &step_het_end_ptr, 10);
 
 	if (step_het_end_ptr == end_ptr)
@@ -892,6 +905,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		return ESLURM_INVALID_HET_STEP_NEGATIVE;
 	else if (step_het >= MAX_HET_JOB_COMPONENTS)
 		return ESLURM_INVALID_HET_STEP_TOO_LARGE;
+	else if (errno)
+		return SLURM_ERROR;
 
 	if (*step_het_end_ptr != '\0')
 		return ESLURM_INVALID_HET_STEP_NON_NUMERIC;
