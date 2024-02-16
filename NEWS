@@ -131,6 +131,8 @@ documents those changes that are of interest to users and administrators.
     debug mode.
  -- gpu/rsmi - Disable gpu usage statistics when not using ROCM 6.0.0+
  -- Fix stuck processes and incorrect environment when using --get-user-env.
+ -- Avoid segfault in the slurmdbd when TrackWCKey=no but you are still using
+    use WCKeys.
 
 * Changes in Slurm 23.11.3
 ==========================

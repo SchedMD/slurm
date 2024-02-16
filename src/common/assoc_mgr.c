@@ -3078,12 +3078,18 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 	if (wckey_pptr)
 		*wckey_pptr = NULL;
+
 	if (!assoc_mgr_wckey_list) {
-		if (_get_assoc_mgr_wckey_list(db_conn, enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
-	}
-	if ((!assoc_mgr_wckey_list || !list_count(assoc_mgr_wckey_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_WCKEYS))
+		int rc = SLURM_SUCCESS;
+
+		if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+			error("No WCKey list available, this should never happen");
+			rc = SLURM_ERROR;
+		}
+
+		return rc;
+	} else if (!list_count(assoc_mgr_wckey_list) &&
+		   !(enforce & ACCOUNTING_ENFORCE_WCKEYS))
 		return SLURM_SUCCESS;
 
 	if (!wckey->id) {
