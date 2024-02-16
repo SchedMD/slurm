@@ -102,6 +102,8 @@ typedef struct {
 	char *cmdstr;
 	int *fildes;
 	int mode;
+	int rlimit;
+	char **tmp_env;
 	const char *username;
 } child_args_t;
 
@@ -1990,23 +1992,24 @@ static char **_load_env_cache(const char *username)
 static int _child_fn(void *arg)
 {
 	char **tmp_env = NULL;
-	int devnull;
+	int devnull, fd = 3;
 	child_args_t *child_args = arg;
 	char *cmdstr;
 	const char *username;
 
 	username = child_args->username;
 	cmdstr = child_args->cmdstr;
-	tmp_env = env_array_create();
-	env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
+	tmp_env = child_args->tmp_env;
 
-	if ((devnull = open("/dev/null", O_RDONLY)) == -1)
-		error("%s: open(/dev/null): %m", __func__);
-
-	dup2(devnull, STDIN_FILENO);
+	if ((devnull = open("/dev/null", O_RDONLY)) != -1) {
+		dup2(devnull, STDIN_FILENO);
+		dup2(devnull, STDERR_FILENO);
+	}
 	dup2(child_args->fildes[1], STDOUT_FILENO);
-	dup2(devnull, STDERR_FILENO);
-	closeall(3);
+
+	/* slow close all fds */
+	while (fd < child_args->rlimit)
+		close(fd++);
 
 	if (child_args->mode == 1)
 		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
@@ -2082,6 +2085,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	struct timeval begin, now;
 	struct pollfd ufds;
 	struct stat buf;
+	struct rlimit rlim;
 
 	if (geteuid() != (uid_t)0) {
 		error("SlurmdUser must be root to use --get-user-env");
@@ -2120,6 +2124,13 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	child_args.fildes = fildes;
 	child_args.username = username;
 	child_args.cmdstr = cmdstr;
+	child_args.tmp_env = env_array_create();
+	env_array_overwrite(&child_args.tmp_env, "ENVIRONMENT", "BATCH");
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+	child_args.rlimit = rlim.rlim_cur;
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	child = fork();
@@ -2198,6 +2209,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		}
 	}
 	close(fildes[0]);
+	env_array_free(child_args.tmp_env);
+
 	for (config_timeout=0; ; config_timeout++) {
 		kill(-child, SIGKILL);	/* Typically a no-op */
 		if (config_timeout)
