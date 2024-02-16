@@ -169,16 +169,17 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 			 qos_rec->max_tres_pu_ctld,
 			 used_limit->tres, 0);
 
+	/* NEW LINE */
+	printf("%s", new_line_char);
+
+	_print_tres_line("MaxTRESRunMinsPU",
+			 qos_rec->max_tres_run_mins_pu_ctld,
+			 used_limit->tres_run_secs, 60);
+
 	if (one_liner)
 		printf("}");
 
-	/* MaxTRESRunMinsPU doesn't do anything yet, if/when it does
-	 * change the last param in the print_tres_line to 0. */
-
 	/* printf("%s", one_liner ? "" : "    "); */
-	/* _print_tres_line("MaxTRESRunMinsPU", */
-	/* 		 qos_rec->max_tres_run_mins_pu_ctld, */
-	/* 		 used_limit->tres_run_mins, 60, 1); */
 
 	return SLURM_SUCCESS;
 }
