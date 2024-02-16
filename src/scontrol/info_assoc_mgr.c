@@ -116,17 +116,17 @@ static int _print_used_acct_limit(slurmdb_used_limits_t *used_limit,
 			 qos_rec->max_tres_pa_ctld,
 			 used_limit->tres, 0);
 
+	/* NEW LINE */
+	printf("%s", new_line_char);
+
+	_print_tres_line("MaxTRESRunMinsPA",
+			 qos_rec->max_tres_run_mins_pa_ctld,
+			 used_limit->tres_run_secs, 60);
+
 	if (one_liner)
 		printf("}");
 
-	/* MaxTRESRunMinsPA doesn't do anything yet, if/when it does
-	 * change the last param in the print_tres_line to 0. */
-
 	/* printf("%s", one_liner ? "" : "    "); */
-	/* _print_tres_line("MaxTRESRunMinsPA", */
-	/* 		 qos_rec->max_tres_run_mins_pa_ctld, */
-	/* 		 used_limit->tres_run_mins, 60, 1); */
-
 
 	return SLURM_SUCCESS;
 }
