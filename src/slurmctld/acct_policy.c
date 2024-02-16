@@ -1960,6 +1960,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	 * qos_ptr->max_jobs.
 	 */
 
+	/* we don't need to check min_tres_pj here */
+
 	if ((qos_out_ptr->max_submit_jobs_pa == INFINITE) &&
 	    (qos_ptr->max_submit_jobs_pa != INFINITE)) {
 		slurmdb_used_limits_t *used_limits =
@@ -2090,6 +2092,8 @@ static int _qos_job_runnable_pre_select(job_record_t *job_ptr,
 			goto end_it;
 		}
 	}
+
+	/* we don't need to check grp_submit_jobs here */
 
 	/* we don't need to check grp_tres_run_mins here */
 
@@ -2412,6 +2416,8 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 	}
 
 	/* we don't need to check grp_jobs here */
+
+	/* we don't need to check grp_submit_jobs here */
 
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
