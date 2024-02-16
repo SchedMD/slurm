@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix stuck processes and incorrect environment when using --get-user-env.
  -- Avoid segfault in the slurmdbd when TrackWCKey=no but you are still using
     use WCKeys.
+ -- Fix ctld segfault with TopologyParam=RoutePart and no partition defined.
 
 * Changes in Slurm 23.11.3
 ==========================
