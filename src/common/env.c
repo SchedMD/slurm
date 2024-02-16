@@ -103,6 +103,7 @@ typedef struct {
 	int *fildes;
 	int mode;
 	int rlimit;
+	char **tmp_env;
 	const char *username;
 } child_args_t;
 
@@ -1998,8 +1999,7 @@ static int _child_fn(void *arg)
 
 	username = child_args->username;
 	cmdstr = child_args->cmdstr;
-	tmp_env = env_array_create();
-	env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
+	tmp_env = child_args->tmp_env;
 
 	if ((devnull = open("/dev/null", O_RDONLY)) != -1) {
 		dup2(devnull, STDIN_FILENO);
@@ -2124,6 +2124,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	child_args.fildes = fildes;
 	child_args.username = username;
 	child_args.cmdstr = cmdstr;
+	child_args.tmp_env = env_array_create();
+	env_array_overwrite(&child_args.tmp_env, "ENVIRONMENT", "BATCH");
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
 		rlim.rlim_cur = 4096;
@@ -2207,6 +2209,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		}
 	}
 	close(fildes[0]);
+	env_array_free(child_args.tmp_env);
+
 	for (config_timeout=0; ; config_timeout++) {
 		kill(-child, SIGKILL);	/* Typically a no-op */
 		if (config_timeout)

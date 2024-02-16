@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- scrun - Avoid race condition that could cause a crash while compiled in
     debug mode.
  -- gpu/rsmi - Disable gpu usage statistics when not using ROCM 6.0.0+
+ -- Fix stuck processes and incorrect environment when using --get-user-env.
 
 * Changes in Slurm 23.11.3
 ==========================
