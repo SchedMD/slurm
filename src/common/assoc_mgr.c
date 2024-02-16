@@ -2661,11 +2661,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 			rc = SLURM_ERROR;
 		}
 		return rc;
-	}
-
-	if ((!assoc_mgr_assoc_list
-	     || !list_count(assoc_mgr_assoc_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
+	} else if ((!list_count(assoc_mgr_assoc_list)) &&
+		   !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
 	if (!assoc->id) {
