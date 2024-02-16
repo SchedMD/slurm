@@ -589,7 +589,9 @@ static int _set_rec(int *start, int argc, char **argv,
 				xfree(tmp_char);
 			} else
 				exit_code = 1;
-		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPU",
+		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPerUser",
+					 MAX(command_len, 20)) ||
+			   !xstrncasecmp(argv[i], "MaxTRESRunMinsPU",
 					 MAX(command_len, 16))) {
 			sacctmgr_initialize_g_tres_list();
 
