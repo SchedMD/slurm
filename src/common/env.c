@@ -2000,12 +2000,11 @@ static int _child_fn(void *arg)
 	tmp_env = env_array_create();
 	env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
 
-	if ((devnull = open("/dev/null", O_RDONLY)) == -1)
-		error("%s: open(/dev/null): %m", __func__);
-
-	dup2(devnull, STDIN_FILENO);
+	if ((devnull = open("/dev/null", O_RDONLY)) != -1) {
+		dup2(devnull, STDIN_FILENO);
+		dup2(devnull, STDERR_FILENO);
+	}
 	dup2(child_args->fildes[1], STDOUT_FILENO);
-	dup2(devnull, STDERR_FILENO);
 	closeall(3);
 
 	if (child_args->mode == 1)
