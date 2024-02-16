@@ -58,6 +58,9 @@ static bitstr_t	*saved_gpus;
  */
 #define RSMI_STRING_BUFFER_SIZE			80
 
+/* ROCM release version >= 6.0.0 required for gathering usage */
+#define RSMI_REQ_VERSION_USAGE 6
+
 /*
  * PCI information about a GPU device.
  */
@@ -114,12 +117,25 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static int gpumem_pos = -1;
 static int gpuutil_pos = -1;
 
+static bool get_usage = true;
+
+static void _rsmi_get_version(char *version, unsigned int len);
+
 extern int init(void)
 {
 	rsmi_init(0);
 
 	if (running_in_slurmstepd()) {
-		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+		char version[RSMI_STRING_BUFFER_SIZE];
+
+		_rsmi_get_version(version, RSMI_STRING_BUFFER_SIZE);
+		/*
+		 * If version < RSMI_REQ_VERSION_USAGE get_usage will be set to
+		 * false, so we won't set gpumem_pos and gpuutil_pos which
+		 * effectively disables gpu accounting.
+		 */
+		if (get_usage)
+			gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
 	}
 
 	debug("%s: %s loaded", __func__, plugin_name);
@@ -650,8 +666,14 @@ static void _rsmi_get_version(char *version, unsigned int len)
 		error("RSMI: Failed to get the version error: %s",
 		      status_string);
 		version[0] = '\0';
-	} else
+	} else {
 		sprintf(version, "%s", rsmi_version.build);
+		if (rsmi_version.major < RSMI_REQ_VERSION_USAGE) {
+			get_usage = false;
+			error("%s: GPU usage accounting disabled. RSMI version >= 6.0.0 required.",
+			      __func__);
+		}
+	}
 }
 
 /*
