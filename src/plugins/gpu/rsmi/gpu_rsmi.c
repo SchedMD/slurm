@@ -667,7 +667,7 @@ static void _rsmi_get_version(char *version, unsigned int len)
 		      status_string);
 		version[0] = '\0';
 	} else {
-		sprintf(version, "%s", rsmi_version.build);
+		snprintf(version, len, "%s", rsmi_version.build);
 		if (rsmi_version.major < RSMI_REQ_VERSION_USAGE) {
 			get_usage = false;
 			error("%s: GPU usage accounting disabled. RSMI version >= 6.0.0 required.",
