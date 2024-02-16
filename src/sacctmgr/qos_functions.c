@@ -572,7 +572,11 @@ static int _set_rec(int *start, int argc, char **argv,
 				xfree(tmp_char);
 			} else
 				exit_code = 1;
-		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPA",
+		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPerAccount",
+					 MAX(command_len, 24)) ||
+			   !xstrncasecmp(argv[i], "MaxTRESRunMinsPerAcct",
+					 MAX(command_len, 20)) ||
+			   !xstrncasecmp(argv[i], "MaxTRESRunMinsPA",
 					 MAX(command_len, 16))) {
 			sacctmgr_initialize_g_tres_list();
 
