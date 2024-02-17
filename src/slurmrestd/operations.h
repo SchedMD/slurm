@@ -80,7 +80,7 @@ extern int bind_operation_handler(const char *path, openapi_handler_t callback,
  * Same rules as bind_operation_handler() but handles populating response and
  * tracking warnings and errors.
  *
- * IN path - url path to match - must include {data_parser}
+ * IN path - url path to match
  * IN callback - handler function for callback
  * IN tag - arbitrary tag passed to handler when path matched
  * RET SLURM_SUCCESS or error
