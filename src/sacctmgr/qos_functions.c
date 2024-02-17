@@ -961,6 +961,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				      "MaxJobsPerUser,"
 				      "MaxSubmitJobsPerUser,"
 				      "MaxTRESPerAcct,"
+				      "MaxTRESRunMinsPerAcct%22,"
 				      "MaxJobsPerAcct,"
 				      "MaxSubmitJobsPerAcct,MinTRES");
 	}
