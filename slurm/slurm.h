@@ -607,6 +607,24 @@ enum job_state_reason {
 	WAIT_RESV_INVALID,
 	FAIL_CONSTRAINTS, /* Constraints cannot currently be satisfied */
 
+	WAIT_QOS_MAX_BB_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					   * exceeded (burst buffer) */
+	WAIT_QOS_MAX_BILLING_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+						* exceeded (billing) */
+	WAIT_QOS_MAX_CPU_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					    * exceeded (CPU) */
+	WAIT_QOS_MAX_ENERGY_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					       * exceeded (Energy) */
+	WAIT_QOS_MAX_GRES_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					     * exceeded (GRES) */
+	WAIT_QOS_MAX_NODE_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					     * exceeded (Node) */
+	WAIT_QOS_MAX_LIC_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					    * exceeded (license) */
+	WAIT_QOS_MAX_MEM_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					    * exceeded (Memory) */
+	WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
+					    * exceeded (Unknown) */
 	REASON_END, /* end of table */
 };
 
