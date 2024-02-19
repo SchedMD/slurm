@@ -198,6 +198,7 @@ static void _wait_work_complete(workq_t *workq)
 	_check_magic_workq(workq);
 
 	slurm_mutex_lock(&workq->mutex);
+	xassert(workq->shutdown);
 	log_flag(WORKQ, "%s: waiting for %u queued workers",
 		 __func__, list_count(workq->work));
 	slurm_mutex_unlock(&workq->mutex);
