@@ -1828,6 +1828,31 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			goto end_it;
 		}
 
+		if (!_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    qos_ptr->max_tres_run_mins_pu_ctld,
+			    qos_out_ptr->max_tres_run_mins_pu_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos,
+					WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER);
+			debug2("job submit for user %s(%u): tres(%s) time limit request %"PRIu64"exceeds user max running limit %"PRIu64"for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       qos_ptr->max_tres_run_mins_pu_ctld[tres_pos],
+			       qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
+
 		if ((qos_out_ptr->max_wall_pj == INFINITE) &&
 		    (qos_ptr->max_wall_pj != INFINITE) &&
 		    (!update_call || (job_desc->time_limit != NO_VAL))) {
@@ -2130,6 +2155,8 @@ static int _qos_job_runnable_pre_select(job_record_t *job_ptr,
 
 	/* we don't need to check max_tres_run_mins_pa here */
 
+	/* we don't need to check max_tres_run_mins_pu here */
+
 	if ((qos_out_ptr->max_jobs_pa == INFINITE)
 	    && (qos_ptr->max_jobs_pa != INFINITE)) {
 
@@ -2220,6 +2247,7 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins_pa[slurmctld_tres_cnt];
+	uint64_t tres_run_mins_pu[slurmctld_tres_cnt];
 	uint64_t orig_node_cnt;
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
@@ -2251,6 +2279,7 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
 	memset(tres_run_mins_pa, 0, sizeof(tres_run_mins_pa));
+	memset(tres_run_mins_pu, 0, sizeof(tres_run_mins_pu));
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	if (job_ptr->qos_ptr &&
 	    (job_ptr->qos_ptr->usage_factor >= 0))
@@ -2260,6 +2289,8 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 			qos_ptr->usage->grp_used_tres_run_secs[i] / 60;
 		tres_run_mins_pa[i] =
 			used_limits_a->tres_run_secs[i] / 60;
+		tres_run_mins_pu[i] =
+			used_limits->tres_run_secs[i] / 60;
 		tres_usage_mins[i] =
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 
@@ -2651,6 +2682,44 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 		       assoc_mgr_tres_name_array[tres_pos],
 		       qos_ptr->max_tres_run_mins_pa_ctld[tres_pos],
 		       tres_run_mins_pa[tres_pos],
+		       job_tres_time_limit[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case TRES_USAGE_OKAY:
+		/* all good */
+		break;
+	}
+
+	tres_usage = _validate_tres_usage_limits_for_qos(
+		&tres_pos, qos_ptr->max_tres_run_mins_pu_ctld,
+		qos_out_ptr->max_tres_run_mins_pu_ctld, job_tres_time_limit,
+		tres_run_mins_pu, NULL, NULL, true);
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
+		/* not possible because the curr_usage sent in is NULL */
+		break;
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = _get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER);
+		debug2("%pJ is being held, QOS %s user max running tres(%s) minutes request %"PRIu64" exceeds limit %"PRIu64,
+		       job_ptr, qos_ptr->name,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       job_tres_time_limit[tres_pos],
+		       qos_ptr->max_tres_run_mins_pu_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = _get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER);
+		debug2("%pJ being held, if allowed the job request will exceed QOS %s user max running tres(%s) minutes limit %"PRIu64" with already used %"PRIu64" + requested %"PRIu64,
+		       job_ptr, qos_ptr->name,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       qos_ptr->max_tres_run_mins_pu_ctld[tres_pos],
+		       tres_run_mins_pu[tres_pos],
 		       job_tres_time_limit[tres_pos]);
 		rc = false;
 		goto end_it;

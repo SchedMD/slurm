@@ -2025,6 +2025,21 @@ To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
+.IP \fBMaxTRESRunMinsPU\fR
+.PD 0
+.IP \fBMaxTRESRunMinsPerUser\fR
+.PD
+Maximum number of TRES minutes each user is able to use. This takes into
+consideration the time limit of running jobs. If the limit is reached, no new
+jobs are started until other jobs finish to allow time to free up.
+
+\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
+\fInode\fR, etc...), or any defined generic resource. You can see the list
+of available resources by running \fBsacctmgr show tres\fR.
+To clear a previously set value use the modify command with a new value of \-1
+for each TRES id.
+.IP
+
 .IP \fBMaxWall\fR
 .PD 0
 .IP \fBMaxWallDurationPerJob\fR
@@ -2388,6 +2403,13 @@ Maximum number of TRES each user is able to use.
 .IP \fBMaxTRESRunMinsPerAccount\fR
 .PD
 Maximum number of TRES minutes each account is able to use.
+.IP
+
+.IP \fBMaxTRESRunMinsPU\fR
+.PD 0
+.IP \fBMaxTRESRunMinsPerUser\fR
+.PD
+Maximum number of TRES minutes each user is able to use.
 .IP
 
 .IP \fBMaxSubmitJobsPA\fR

@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmd cgroup/v2 startup race with systemd and cgroupfs.
  -- Add SystemdTimeout= parameter in cgroup.conf.
  -- Add QOS limit MaxTRESRunMinsPerAccount.
+ -- Add QOS limit MaxTRESRunMinsPerUser.
 
 * Changes in Slurm 23.11.6
 ==========================

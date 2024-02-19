@@ -30,6 +30,7 @@ HIGHLIGHTS
     successful. Added PollInterval to burst_buffer.conf. Removed the arbitrary
     limit of 512 copies of the script running simultaneously.
  -- Add QOS limit MaxTRESRunMinsPerAccount.
+ -- Add QOS limit MaxTRESRunMinsPerUser.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
