@@ -2324,9 +2324,8 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 	if ((fd = accept4(con->input_fd, (struct sockaddr *) &addr,
 			  &addrlen, SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR) {
-			log_flag(NET, "%s: [%s] interrupt on accept()",
+			log_flag(NET, "%s: [%s] interrupt on accept(). Retrying.",
 				 __func__, con->name);
-			_close_con(false, con);
 			return;
 		}
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
