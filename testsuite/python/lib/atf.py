@@ -25,7 +25,7 @@ import traceback
 ##############################################################################
 
 default_command_timeout = 60
-default_polling_timeout = 15
+default_polling_timeout = 60 # TODO: Increased from 15 due bug 18996
 default_sql_cmd_timeout = 120
 
 PERIODIC_TIMEOUT = 30
