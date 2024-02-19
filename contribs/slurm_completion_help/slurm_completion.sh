@@ -2323,6 +2323,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 		"maxtresperaccount="
 		"maxtrespernode="
 		"maxtresperuser="
+		"maxtresrunminspa="
 		"maxwalldurationperjob="
 		"minpriothreshold="
 		"mintresperjob="

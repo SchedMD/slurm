@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
  -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
  -- Fix slurmd cgroup/v2 startup race with systemd and cgroupfs.
  -- Add SystemdTimeout= parameter in cgroup.conf.
+ -- Add QOS limit MaxTRESRunMinsPerAccount.
 
 * Changes in Slurm 23.11.6
 ==========================

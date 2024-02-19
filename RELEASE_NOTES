@@ -29,6 +29,7 @@ HIGHLIGHTS
     required hooks; slurmctld will exit with a fatal error if this is not
     successful. Added PollInterval to burst_buffer.conf. Removed the arbitrary
     limit of 512 copies of the script running simultaneously.
+ -- Add QOS limit MaxTRESRunMinsPerAccount.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
