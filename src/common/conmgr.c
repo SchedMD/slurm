@@ -1033,8 +1033,8 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 		return;
 	}
 
-	log_flag(NET, "%s: [%s] wrote %zu/%u bytes",
-		 __func__, con->name, wrote, bytes);
+	log_flag(NET, "%s: [%s] wrote %zu/%u bytes of %d pending writes",
+		 __func__, con->name, wrote, bytes, list_count(con->out));
 	log_flag_hex(NET_RAW, get_buf_data(out), wrote,
 		     "%s: [%s] wrote", __func__, con->name);
 
