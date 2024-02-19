@@ -91,6 +91,10 @@ documents those changes that are of interest to users and administrators.
  -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
     without rebooting compute nodes.
  -- scontrol - Add new subcommand 'power' for node power control.
+ -- data_parser/v0.0.41 - Implement parser of distribution for
+    /slurm/v0.0.41/job/submit.
+ -- data_parser/v0.0.41 - Change distribution_plane_size field type from UINT16
+    to UINT16_NO_VAL for /slurm/v0.0.41/job/submit.
 
 * Changes in Slurm 23.11.5
 ==========================
