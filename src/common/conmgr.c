@@ -1440,8 +1440,8 @@ static int _handle_connection(void *x, void *arg)
 	if (!con->is_listen && con->output_fd != -1 &&
 	    !list_is_empty(con->out)) {
 		if (con->can_write) {
-			log_flag(NET, "%s: [%s] need to write %u bytes",
-				 __func__, con->name, count);
+			log_flag(NET, "%s: [%s] %u pending writes",
+				 __func__, con->name, list_count(con->out));
 			_add_work(true, con, _handle_write,
 				  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 				  "_handle_write");
