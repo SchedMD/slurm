@@ -886,7 +886,7 @@ extern bool deadline_ok(job_record_t *job_ptr, char *func)
 					    time_str_deadline,
 					    sizeof(time_str_deadline));
 			info("%s: %pJ with time_min %u exceeded deadline %s and cancelled",
-			     __func__, job_ptr, job_ptr->time_min,
+			     func, job_ptr, job_ptr->time_min,
 			     time_str_deadline);
 			fail_job = true;
 		}
@@ -898,7 +898,7 @@ extern bool deadline_ok(job_record_t *job_ptr, char *func)
 					    time_str_deadline,
 					    sizeof(time_str_deadline));
 			info("%s: %pJ with time_limit %u exceeded deadline %s and cancelled",
-			     __func__, job_ptr, job_ptr->time_limit,
+			     func, job_ptr, job_ptr->time_limit,
 			     time_str_deadline);
 			fail_job = true;
 		}
