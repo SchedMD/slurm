@@ -1005,7 +1005,7 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	xassert(bytes > 0);
 
-	log_flag(NET, "%s: [%s] attempting %u writes bytes to fd %u",
+	log_flag(NET, "%s: [%s] attempting to write %u bytes to fd %u",
 		 __func__, con->name, bytes, con->output_fd);
 
 	/* write in non-blocking fashion as we can always continue later */
