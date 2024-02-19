@@ -208,10 +208,14 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 		slurmdb_used_limits_t *used_limits_a = NULL;
+		slurmdb_used_limits_t *used_limits_u = NULL;
 
 		used_limits_a = acct_policy_get_acct_used_limits(
 			&qos_ptr->usage->acct_limit_list,
 			job_ptr->assoc_ptr->acct);
+		used_limits_u = acct_policy_get_user_used_limits(
+			&qos_ptr->usage->user_limit_list,
+			job_ptr->user_id);
 
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (unused_tres_run_secs[i] >
@@ -234,6 +238,16 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 				       assoc_mgr_tres_name_array[i]);
 			} else
 				used_limits_a->tres_run_secs[i] -=
+					unused_tres_run_secs[i];
+
+			if (unused_tres_run_secs[i] >
+			    used_limits_u->tres_run_secs[i]) {
+				used_limits_u->tres_run_secs[i] = 0;
+				debug2("acct_policy_job_fini: user used limits tres_run_secs underflow for qos %s tres %s",
+				       qos_ptr->name,
+				       assoc_mgr_tres_name_array[i]);
+			} else
+				used_limits_u->tres_run_secs[i] -=
 					unused_tres_run_secs[i];
 		}
 	}

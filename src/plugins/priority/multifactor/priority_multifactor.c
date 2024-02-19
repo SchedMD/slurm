@@ -819,6 +819,7 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 				      slurmdb_qos_rec_t *qos)
 {
 	slurmdb_used_limits_t *used_limits_a = NULL;
+	slurmdb_used_limits_t *used_limits_u = NULL;
 
 	int i;
 
@@ -827,6 +828,8 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 
 	used_limits_a = acct_policy_get_acct_used_limits(
 		&qos->usage->acct_limit_list, job_ptr->assoc_ptr->acct);
+	used_limits_u = acct_policy_get_user_used_limits(
+		&qos->usage->user_limit_list, job_ptr->user_id);
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (i == TRES_ARRAY_ENERGY)
@@ -869,6 +872,24 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 			used_limits_a->tres_run_secs[i] = 0;
 		} else
 			used_limits_a->tres_run_secs[i] -=
+				tres_run_delta[i];
+
+		log_flag(PRIO, "%s: job %u: Removed %"PRIu64" unused seconds from QOS %s TRES %s user used limit tres_run_secs = %"PRIu64,
+			 __func__, job_ptr->job_id, tres_run_delta[i], qos->name,
+			 assoc_mgr_tres_name_array[i],
+			 used_limits_a->tres_run_secs[i]);
+
+		if (tres_run_delta[i] >
+		    used_limits_u->tres_run_secs[i]) {
+			error("_handle_qos_tres_run_secs: job %u: QOS %s TRES %s user used limit tres_run_secs underflow, tried to remove %"PRIu64" seconds when only %"PRIu64" remained.",
+			      job_ptr->job_id,
+			      qos->name,
+			      assoc_mgr_tres_name_array[i],
+			      tres_run_delta[i],
+			      used_limits_u->tres_run_secs[i]);
+			used_limits_u->tres_run_secs[i] = 0;
+		} else
+			used_limits_u->tres_run_secs[i] -=
 				tres_run_delta[i];
 
 		log_flag(PRIO, "%s: job %u: Removed %"PRIu64" unused seconds from QOS %s TRES %s account used limit tres_run_secs = %"PRIu64,
