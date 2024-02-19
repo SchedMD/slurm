@@ -255,13 +255,6 @@ static int _add_binded_path(const char *path_str,
 	return SLURM_SUCCESS;
 }
 
-extern int bind_operation_ctxt_handler(const char *str_path,
-				       openapi_ctxt_handler_t callback, int tag,
-				       const openapi_resp_meta_t *meta)
-{
-	return SLURM_ERROR;
-}
-
 extern int bind_operation_path(const openapi_path_binding_t *op_path,
 			       const openapi_resp_meta_t *meta)
 {

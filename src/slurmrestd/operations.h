@@ -80,21 +80,6 @@ extern int bind_operation_handler(const char *path, openapi_handler_t callback,
  * Same rules as bind_operation_handler() but handles populating response and
  * tracking warnings and errors.
  *
- * IN path - url path to match
- * IN callback - handler function for callback
- * IN tag - arbitrary tag passed to handler when path matched
- * IN meta - meta info about plugin that owns callback or NULL
- * RET SLURM_SUCCESS or error
- */
-extern int bind_operation_ctxt_handler(const char *path,
-				       openapi_ctxt_handler_t callback, int tag,
-				       const openapi_resp_meta_t *meta);
-
-/*
- * Bind callback handler for a given URL pattern.
- * Same rules as bind_operation_handler() but handles populating response and
- * tracking warnings and errors.
- *
  * IN op_path - operation path to bind
  * IN meta - meta info about plugin that owns callback or NULL
  * RET SLURM_SUCCESS or error
