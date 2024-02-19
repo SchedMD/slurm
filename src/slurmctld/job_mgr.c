@@ -11083,7 +11083,6 @@ void purge_old_job(void)
 			continue;
 
 		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
-		    (job_ptr->priority != 0) &&
 		    !deadline_ok(job_ptr, __func__))
 			continue;
 

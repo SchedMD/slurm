@@ -59,6 +59,9 @@ documents those changes that are of interest to users and administrators.
     (previously documented as unsupported).
  -- Changed the default value for UnkillableStepTimeout to 60 seconds or five
     times the value of MessageTimeout, whichever is greater.
+ -- slurmctld - Check if --deadline has been reached and not satisfied on held
+    jobs, otherwise they could remain without automatic cancellation until after
+    the job is released.
 
 * Changes in Slurm 23.11.4
 ==========================
