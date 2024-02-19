@@ -61,6 +61,20 @@ function slurm_cli_pre_submit(options, pack_offset)
 	--[[ Store a variable for potential use in slurm_cli_post_submit --]]
 	slurm.cli_store(0,options["type"])
 
+	--[[
+	-- Print an advice message to srun user, to avoid --pty for jobs
+	-- with time limit higher than 1h
+	-- The conditional like options["pty"] == "set" used to work
+	-- in versions of Slurm prior to 23.02
+	--]]
+	if options["type"] == "srun" and options["pty"] ~= nil
+	then
+	    if slurm.time_str2mins(options["time"]) > 60
+	    then
+	        slurm.log_info("Running an interactive job, with --pty emulation shouldn't be used with TimeLimit > 1h.")
+	    end
+	end
+
 	if options["type"] == "sbatch" and options["wrap"] ~= nil
 	then
 		slurm.log_error("--wrap option is forbidden");
