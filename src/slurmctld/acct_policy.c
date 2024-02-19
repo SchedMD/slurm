@@ -270,6 +270,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_MAX_CPU_MINS_PER_JOB;
 		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 			return WAIT_QOS_MAX_CPU_RUN_MINS_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+			return WAIT_QOS_MAX_CPU_RUN_MINS_PER_USER;
 		case WAIT_QOS_MIN_UNK:
 			return WAIT_QOS_MIN_CPU;
 		default:
@@ -309,6 +311,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_MAX_MEM_MINS_PER_JOB;
 		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 			return WAIT_QOS_MAX_MEM_RUN_MINS_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+			return WAIT_QOS_MAX_MEM_RUN_MINS_PER_USER;
 		case WAIT_QOS_MIN_UNK:
 			return WAIT_QOS_MIN_MEM;
 		default:
@@ -348,6 +352,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_MAX_ENERGY_MINS_PER_JOB;
 		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 			return WAIT_QOS_MAX_ENERGY_RUN_MINS_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+			return WAIT_QOS_MAX_ENERGY_RUN_MINS_PER_USER;
 		case WAIT_QOS_MIN_UNK:
 			return WAIT_QOS_MIN_ENERGY;
 		default:
@@ -383,6 +389,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_MAX_NODE_MINS_PER_JOB;
 		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 			return WAIT_QOS_MAX_NODE_RUN_MINS_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+			return WAIT_QOS_MAX_NODE_RUN_MINS_PER_USER;
 		case WAIT_QOS_MIN_UNK:
 			return WAIT_QOS_MIN_NODE;
 		default:
@@ -422,6 +430,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_MAX_BILLING_MINS_PER_JOB;
 		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 			return WAIT_QOS_MAX_BILLING_RUN_MINS_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+			return WAIT_QOS_MAX_BILLING_RUN_MINS_PER_USER;
 		case WAIT_QOS_MIN_UNK:
 			return WAIT_QOS_MIN_BILLING;
 		default:
@@ -462,6 +472,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 				return WAIT_QOS_MAX_GRES_MINS_PER_JOB;
 			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 				return WAIT_QOS_MAX_GRES_RUN_MINS_PER_ACCT;
+			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+				return WAIT_QOS_MAX_GRES_RUN_MINS_PER_USER;
 			case WAIT_QOS_MIN_UNK:
 				return WAIT_QOS_MIN_GRES;
 			default:
@@ -497,6 +509,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 				return WAIT_QOS_MAX_LIC_MINS_PER_JOB;
 			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 				return WAIT_QOS_MAX_LIC_RUN_MINS_PER_ACCT;
+			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+				return WAIT_QOS_MAX_LIC_RUN_MINS_PER_USER;
 			case WAIT_QOS_MIN_UNK:
 				return WAIT_QOS_MIN_LIC;
 			default:
@@ -535,6 +549,8 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 				return WAIT_QOS_MAX_BB_MINS_PER_JOB;
 			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT:
 				return WAIT_QOS_MAX_BB_RUN_MINS_PER_ACCT;
+			case WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER:
+				return WAIT_QOS_MAX_BB_RUN_MINS_PER_USER;
 			case WAIT_QOS_MIN_UNK:
 				return WAIT_QOS_MIN_BB;
 			default:

@@ -839,6 +839,42 @@ const static entry_t jsra[] = {
 		.flags = JSR_QOS_ASSOC,
 		.str = "MaxUnknownRunMinsPerAccount",
 	},
+	[WAIT_QOS_MAX_BB_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxBBRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_BILLING_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxBillingRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_CPU_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxCpuRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_ENERGY_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxEnergyRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_GRES_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxGRESRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_NODE_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxNodeRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_LIC_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxLicenseRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_MEM_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxMemoryRunMinsPerUser",
+	},
+	[WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
+		.str = "MaxUnknownRunMinsPerUser",
+	},
 };
 
 extern const char *job_state_reason_string(enum job_state_reason inx)

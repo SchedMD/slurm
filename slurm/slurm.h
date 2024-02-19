@@ -625,6 +625,24 @@ enum job_state_reason {
 					    * exceeded (Memory) */
 	WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT,/* QOS MaxTRESRunMinsPerAccount
 					    * exceeded (Unknown) */
+	WAIT_QOS_MAX_BB_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
+					   * (burst buffer) */
+	WAIT_QOS_MAX_BILLING_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser
+						* exceeded (billing) */
+	WAIT_QOS_MAX_CPU_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
+					    * (CPU) */
+	WAIT_QOS_MAX_ENERGY_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser
+					       * exceeded (Energy) */
+	WAIT_QOS_MAX_GRES_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser
+					     * exceeded (GRES) */
+	WAIT_QOS_MAX_NODE_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser
+					     * exceeded (Node) */
+	WAIT_QOS_MAX_LIC_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
+					    * (license) */
+	WAIT_QOS_MAX_MEM_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
+					    * (Memory) */
+	WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
+					    * (Unknown) */
 	REASON_END, /* end of table */
 };
 
