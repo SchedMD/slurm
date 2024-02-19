@@ -201,11 +201,11 @@ sleep 10"
 	set running 0
 	spawn $squeue -A $ta -h -o "\%t \%r"
 	expect {
-		-re "PD." {
+		-re "PD ." {
 			incr pending
 			exp_continue
 		}
-		-re "R." {
+		-re "R ." {
 			incr running
 			exp_continue
 		}
