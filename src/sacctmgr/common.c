@@ -507,7 +507,7 @@ static print_field_t *_get_print_field(char *object)
 				 MAX(command_len, 8))) {
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
-		field->len = 15;
+		field->len = 16;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!xstrncasecmp("MaxTRESPerAccount", object,
 				 MAX(command_len, 11)) ||
