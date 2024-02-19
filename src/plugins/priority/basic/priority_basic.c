@@ -45,6 +45,8 @@
 #include "src/interfaces/priority.h"
 #include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/acct_policy.h"
+
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -205,6 +207,12 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
+		slurmdb_used_limits_t *used_limits_a = NULL;
+
+		used_limits_a = acct_policy_get_acct_used_limits(
+			&qos_ptr->usage->acct_limit_list,
+			job_ptr->assoc_ptr->acct);
+
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (unused_tres_run_secs[i] >
 			    qos_ptr->usage->grp_used_tres_run_secs[i]) {
@@ -216,6 +224,16 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 				       assoc_mgr_tres_name_array[i]);
 			} else
 				qos_ptr->usage->grp_used_tres_run_secs[i] -=
+					unused_tres_run_secs[i];
+
+			if (unused_tres_run_secs[i] >
+			    used_limits_a->tres_run_secs[i]) {
+				used_limits_a->tres_run_secs[i] = 0;
+				debug2("acct_policy_job_fini: account used limits tres_run_secs underflow for qos %s tres %s",
+				       qos_ptr->name,
+				       assoc_mgr_tres_name_array[i]);
+			} else
+				used_limits_a->tres_run_secs[i] -=
 					unused_tres_run_secs[i];
 		}
 	}

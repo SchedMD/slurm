@@ -667,6 +667,7 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 
 			used_limits->tres[i] += job_ptr->tres_alloc_cnt[i];
 			used_limits_a->tres[i] += job_ptr->tres_alloc_cnt[i];
+			used_limits_a->tres_run_secs[i] += used_tres_run_secs[i];
 
 			qos_ptr->usage->grp_used_tres[i] +=
 				job_ptr->tres_alloc_cnt[i];
@@ -1095,9 +1096,14 @@ static void _qos_alter_job(job_record_t *job_ptr,
 			   uint64_t *new_used_tres_run_secs)
 {
 	int i;
+	slurmdb_used_limits_t *used_limits_a = NULL;
 
 	if (!qos_ptr || !job_ptr)
 		return;
+
+	used_limits_a =	acct_policy_get_acct_used_limits(
+		&qos_ptr->usage->acct_limit_list,
+		job_ptr->assoc_ptr->acct);
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
@@ -1116,6 +1122,14 @@ static void _qos_alter_job(job_record_t *job_ptr,
 				used_tres_run_sec_decr;
 		else
 			qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
+
+		if ((used_tres_run_sec_decr < 0) ||
+		    (used_tres_run_sec_decr <
+		     used_limits_a->tres_run_secs[i]))
+			used_limits_a->tres_run_secs[i] -=
+				used_tres_run_sec_decr;
+		else
+			used_limits_a->tres_run_secs[i] = 0;
 
 		debug2("altering %pJ QOS %s got %"PRIu64" just removed %"PRIu64" and added %"PRIu64,
 		       job_ptr, qos_ptr->name,
