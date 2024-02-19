@@ -214,6 +214,7 @@ static void _wait_work_complete(workq_t *workq)
 			break;
 		}
 		worker = list_peek(workq->workers);
+		xassert(worker->magic == MAGIC_WORKER);
 		tid = worker->tid;
 		slurm_mutex_unlock(&workq->mutex);
 
