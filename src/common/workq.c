@@ -78,6 +78,7 @@ typedef struct {
 
 typedef struct {
 	int magic;
+	bool is_working;
 	/* thread id of worker */
 	pthread_t tid;
 	/* workq that controls this worker */
@@ -133,6 +134,7 @@ static void _worker_delete(void *x)
 				   worker);
 
 	worker->workq->total--;
+	xassert(!worker->is_working);
 
 	/* workq may get freed at any time after unlocking */
 	slurm_mutex_unlock(&worker->workq->mutex);
@@ -336,6 +338,9 @@ static void *_worker(void *arg)
 			 worker->workq->active, worker->workq->total,
 			 list_count(workq->work));
 
+		xassert(!worker->is_working);
+		worker->is_working = true;
+
 		slurm_mutex_unlock(&workq->mutex);
 
 		/* run work now */
@@ -343,6 +348,10 @@ static void *_worker(void *arg)
 		work->func(work->arg);
 
 		slurm_mutex_lock(&workq->mutex);
+
+		xassert(worker->is_working);
+		worker->is_working = false;
+
 		workq->active--;
 
 		log_flag(WORKQ, "%s: [%u->%s] finished active_workers=%u/%u queue=%u",
