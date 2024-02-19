@@ -1029,7 +1029,7 @@ static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 		_close_con(false, con);
 		return;
 	} else if (wrote == 0) {
-		log_flag(NET, "%s: [%s] write 0 bytes", __func__, con->name);
+		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
 		return;
 	}
 
