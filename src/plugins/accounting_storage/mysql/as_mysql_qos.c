@@ -967,7 +967,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     qos->max_tres_mins_pj, row[MQOS_MTMPJ],
 			     NULL, "max_tres_mins_pj", &vals, qos_rec->id, 0);
 		mod_tres_str(&qos_rec->max_tres_run_mins_pa,
-			     qos->max_tres_run_mins_pa, row[MQOS_MTRM],
+			     qos->max_tres_run_mins_pa, row[MQOS_MTRMA],
 			     NULL, "max_tres_run_mins_pa", &vals,
 			     qos_rec->id, 0);
 		mod_tres_str(&qos_rec->max_tres_run_mins_pu,
