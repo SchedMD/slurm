@@ -73,9 +73,6 @@
 
 #include "src/scrun/scrun.h"
 
-#define CONMGR_THREADS 4
-#define MAX_OPEN_CONNECTIONS 124
-
 /*
  * Special file descriptor for SIGCHILD handler
  * Warning: must not change while SIGCHILD handler is active.
@@ -1264,25 +1261,6 @@ extern void on_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 		_try_start();
 }
 
-extern parsed_host_port_t *parse_host_port(const char *str)
-{
-	/*
-	 * This is a placeholder to avoid linker errors but should never get
-	 * called in scrun
-	 */
-	fatal_abort("stub");
-	return NULL;
-}
-
-extern void free_parse_host_port(parsed_host_port_t *parsed)
-{
-	/*
-	 * This is a placeholder to avoid linker errors but should never get
-	 * called in scrun
-	 */
-	fatal_abort("stub");
-}
-
 static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
 	/* may or may not need to be locked for this one */
@@ -1552,10 +1530,6 @@ extern int spawn_anchor(void)
 		.on_connection = _on_startup_con,
 		.on_finish = _on_startup_con_fin,
 	};
-	static const conmgr_callbacks_t callbacks = {
-		.parse = parse_host_port,
-		.free_parse = free_parse_host_port,
-	};
 	int pipe_fd[2] = { -1, -1 };
 	pid_t child;
 	int rc, spank_rc;
@@ -1587,6 +1561,9 @@ extern int spawn_anchor(void)
 	state.pid = getpid();
 	_populate_pidfile();
 
+	/* must init conmgr after calling fork() in _daemonize() */
+	init_conmgr(0, 0, (conmgr_callbacks_t) { NULL, NULL } );
+
 	change_status_force(CONTAINER_ST_CREATING);
 
 	if (mkdirpath(state.spool_dir, S_IRWXU, true)) {
@@ -1605,8 +1582,6 @@ extern int spawn_anchor(void)
 		_adopt_tty();
 	else if (state.requested_terminal)
 		_open_pty();
-
-	init_conmgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS, callbacks);
 
 	/* scrun anchor process */
 
