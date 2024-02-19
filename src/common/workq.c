@@ -412,6 +412,8 @@ static void *_worker(void *arg)
 			 __func__, worker->id, work->tag,
 			 worker->workq->active, worker->workq->total,
 			 list_count(workq->work));
+
+		slurm_cond_broadcast(&workq->cond);
 		slurm_mutex_unlock(&workq->mutex);
 
 		_work_delete(work);
