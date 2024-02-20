@@ -36,7 +36,7 @@ slurmdb_clusters_get(db_conn, conditions)
     INIT:
 	AV*   results;
 	HV*   rh;
-	List  list = NULL;
+	list_t *list = NULL;
 	list_itr_t *itr;
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
@@ -72,7 +72,7 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
 	HV*   assoc_condition
     INIT:
 	AV*   results;
-	List  list = NULL;
+	list_t *list = NULL;
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 
@@ -99,7 +99,7 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
 	HV*   assoc_condition
     INIT:
 	AV*   results;
-	List  list = NULL;
+	list_t *list = NULL;
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 
@@ -129,8 +129,8 @@ slurmdb_report_job_sizes_grouped_by_account(db_conn, job_condition, grouping_arr
 	bool  acct_as_parent
     INIT:
 	AV*   results;
-	List  list = NULL;
-	List grouping_list = slurm_list_create(NULL);
+	list_t *list = NULL;
+	list_t *grouping_list = slurm_list_create(NULL);
 	slurmdb_job_cond_t *job_cond =
 		xmalloc(sizeof(slurmdb_job_cond_t));
 	if (hv_to_job_cond(job_condition, job_cond) < 0) {
@@ -162,7 +162,7 @@ slurmdb_report_user_top_usage(db_conn, user_condition, group_accounts)
 	bool  group_accounts
     INIT:
 	AV*   results;
-	List  list = NULL;
+	list_t *list = NULL;
 	slurmdb_user_cond_t *user_cond =
 		xmalloc(sizeof(slurmdb_user_cond_t));
 	user_cond->assoc_cond =
@@ -192,7 +192,7 @@ slurmdb_jobs_get(db_conn, conditions)
     INIT:
 	AV*   results;
 	HV*   rh;
-	List  list = NULL;
+	list_t *list = NULL;
 	list_itr_t *itr;
 	slurmdb_job_cond_t *job_cond =
 		xmalloc(sizeof(slurmdb_job_cond_t));
@@ -229,7 +229,7 @@ slurmdb_qos_get(db_conn, conditions)
     INIT:
 	AV*   results;
 	HV*   rh;
-	List  list = NULL, all = NULL;
+	list_t *list = NULL, *all = NULL;
 	list_itr_t *itr;
 	slurmdb_qos_cond_t *qos_cond =
 		xmalloc(sizeof(slurmdb_qos_cond_t));

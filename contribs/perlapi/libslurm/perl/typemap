@@ -13,7 +13,7 @@ slurm_t			T_SLURM
 bitstr_t *		T_PTROBJ_SLURM
 hostlist_t *		T_PTROBJ_SLURM
 slurm_step_ctx_t * 	T_PTROBJ_SLURM
-List			T_PTROBJ_SLURM
+list_t *		T_PTROBJ_SLURM
 list_itr_t *		T_PTROBJ_SLURM
 
 dynamic_plugin_data_t *	T_PTROBJ_SLURM

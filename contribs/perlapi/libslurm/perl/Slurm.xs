@@ -614,7 +614,7 @@ slurm_print_ctl_conf(slurm_t self, FILE *out, HV *conf)
 # $key_pairs = $slurm->ctl_conf_2_key_pairs($conf);
 # XXX: config_key_pair_t not exported
 #
-List
+list_t *
 slurm_ctl_conf_2_key_pairs(slurm_t self, HV *conf)
 	PREINIT:
 		slurm_conf_t cc;
@@ -627,7 +627,7 @@ slurm_ctl_conf_2_key_pairs(slurm_t self, HV *conf)
 		if (hv_to_slurm_ctl_conf(conf, &cc) < 0) {
 			XSRETURN_UNDEF;
 		}
-		RETVAL = (List)slurm_ctl_conf_2_key_pairs(&cc);
+		RETVAL = slurm_ctl_conf_2_key_pairs(&cc);
 		if(RETVAL == NULL) {
 			XSRETURN_UNDEF;
 		}
@@ -684,7 +684,7 @@ slurm_print_slurmd_status(slurm_t self, FILE *out, HV *slurmd_status)
 		out, &st
 
 void
-slurm_print_key_pairs(slurm_t self, FILE *out, List key_pairs, char *title)
+slurm_print_key_pairs(slurm_t self, FILE *out, list_t *key_pairs, char *title)
 	INIT:
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
@@ -1930,22 +1930,22 @@ void slurm_hostlist_DESTROY(hostlist_t *hl)
 MODULE = Slurm		PACKAGE = Slurm::List		PREFIX=slurm_list_
 
 #void
-#slurm_list_append(List l, void *x)
+#slurm_list_append(list_t *l, void *x)
 
 int
-slurm_list_count(List l)
+slurm_list_count(list_t *l)
 
 int
-slurm_list_is_empty(List l)
+slurm_list_is_empty(list_t *l)
 
-#List
+#list_t *
 #slurm_list_create(ListDelF f)
 
 #void
-#slurm_list_sort(List l, ListCmpF f)
+#slurm_list_sort(list_t *l, ListCmpF f)
 
 void
-slurm_list_DESTROY(List l)
+slurm_list_DESTROY(list_t *l)
 	CODE:
 		slurm_list_destroy(l);
 
@@ -1960,7 +1960,7 @@ MODULE = Slurm		PACKAGE = Slurm::ListIterator	PREFIX=slurm_list_iterator_
 #		RETVAL
 
 list_itr_t *
-slurm_list_iterator_create(List l)
+slurm_list_iterator_create(list_t *l)
 
 void
 slurm_list_iterator_reset(list_itr_t *i)
