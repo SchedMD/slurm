@@ -5868,12 +5868,12 @@ Valid when TopologyPlugin=topology/tree.
 
 .TP
 \fBRoutePart\fR
-Instead of using the plugins default route calculation use partition node lists
-to route communications from the controller. Once on the compute node,
-communications will be routed using the reguested plugins normal algorithm. If
-a node is in multiple partitions, the first partition seen will be used. The
-controller will communicate directly with any nodes that aren't part of a
-partition.
+Instead of using the plugin's default route calculation, use partition node
+lists to route communications from the controller. Once on the compute node,
+communications will be routed using the requested plugin's normal algorithm,
+following TreeWidth if applicable. If a node is in multiple partitions,
+the first partition seen will be used. The controller will communicate directly
+with any nodes that aren't in a partition.
 .IP
 
 .TP
