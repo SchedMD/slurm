@@ -1365,7 +1365,6 @@ typedef struct xlist list_t;
  *  List opaque data type.
  */
 
-typedef struct listIterator * ListIterator;
 typedef struct listIterator list_itr_t;
 /*
  *  List Iterator opaque data type.

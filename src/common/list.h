@@ -59,7 +59,6 @@ typedef struct xlist list_t;
 /*
  *  List Iterator opaque data type.
  */
-typedef struct listIterator *ListIterator;
 typedef struct listIterator list_itr_t;
 
 /*
@@ -88,6 +87,11 @@ typedef int (*ListFindF) (void *x, void *key);
  */
 typedef int (*ListForF) (void *x, void *arg);
 
+#endif
+
+#ifndef __list_legacy_datatypes_defined
+#define __list_legacy_datatypes_defined
+typedef struct listIterator *ListIterator;
 #endif
 
 /*******************************
