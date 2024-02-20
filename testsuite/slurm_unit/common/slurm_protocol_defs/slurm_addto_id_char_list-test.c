@@ -47,7 +47,7 @@ char *name_root = NULL, *uid_root = NULL;
 // 		 char **expected_strings)
 // {
 // 	char *string = NULL;
-// 	ListIterator itr = list_iterator_create(char_list);
+// 	list_itr_t *itr = list_iterator_create(char_list);
 // 	info("names: %s", names);
 
 // 	while((string = (char*)list_next(itr))){
@@ -85,7 +85,7 @@ void test(char *names, bool gid, int expected_count,
 	  char **expected_strings)
 {
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 	List char_list = list_create(xfree_ptr);
 
 	count = slurm_addto_id_char_list(char_list, names, gid);

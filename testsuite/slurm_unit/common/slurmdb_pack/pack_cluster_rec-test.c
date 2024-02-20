@@ -127,7 +127,7 @@ START_TEST(pack_back2_rec)
 
 	char *feature;
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), list_count(unpack_rec->fed.feature_list));
-	ListIterator itr = list_iterator_create(pack_rec.fed.feature_list);
+	list_itr_t *itr = list_iterator_create(pack_rec.fed.feature_list);
 	while ((feature = list_next(itr))) {
 		if (!list_find_first(unpack_rec->fed.feature_list, slurm_find_char_in_list, feature))
 			ck_abort_msg("Didn't find feature %s in unpacked list",
@@ -299,7 +299,7 @@ START_TEST(pack_back1_rec)
 
 	char *feature;
 	ck_assert_int_eq(list_count(pack_rec.fed.feature_list), list_count(unpack_rec->fed.feature_list));
-	ListIterator itr = list_iterator_create(pack_rec.fed.feature_list);
+	list_itr_t *itr = list_iterator_create(pack_rec.fed.feature_list);
 	while ((feature = list_next(itr))) {
 		if (!list_find_first(unpack_rec->fed.feature_list, slurm_find_char_in_list, feature))
 			ck_abort_msg("Didn't find feature %s in unpacked list",

@@ -64,7 +64,7 @@ List setup_qos_list(){
 // 		 char **expected_strings)
 // {
 // 	char *string = NULL;
-// 	ListIterator itr = list_iterator_create(char_list);
+// 	list_itr_t *itr = list_iterator_create(char_list);
 // 	info("names: %s", names);
 
 // 	while((string = (char*)list_next(itr))){
@@ -83,7 +83,7 @@ void test(List qos_list, char *names, int option, int expected_count,
 	  char **expected_strings)
 {
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 	List char_list = list_create(xfree_ptr);
 
 	if (!qos_list)

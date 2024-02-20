@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	int i, rc = 0;
 	job_step_stat_response_msg_t *resp = NULL;
 	job_step_stat_t *step_stat = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	job_info_msg_t *job_info_msg;
 	slurm_job_info_t *job_ptr;
 	slurm_step_id_t step_id;

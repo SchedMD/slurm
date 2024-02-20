@@ -40,7 +40,7 @@
 
 // void debug_print(List char_list, int expected_count, char **expected_strings){
 // 	slurm_selected_step_t *selected_step = NULL;
-// 	ListIterator itr = list_iterator_create(char_list);
+// 	list_itr_t *itr = list_iterator_create(char_list);
 // 	char buf[64];
 // 	while((selected_step = list_next(itr))){
 // 		// info("job_id %d, step_id %d step_het_comp %d, array_task_id %d, het_job_offset %d",
@@ -65,7 +65,7 @@ void test(char *names, int expected_count,
 	  char **expected_strings)
 {
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 	List char_list = list_create(xfree_ptr);
 	char buf[64];
 	slurm_selected_step_t *selected_step = NULL;

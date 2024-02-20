@@ -40,7 +40,7 @@
 
 // void debug_print(List char_list, char* names, int expected_count, char **expected_strings){
 // 	char *string = NULL;
-// 	ListIterator itr = list_iterator_create(char_list);
+// 	list_itr_t *itr = list_iterator_create(char_list);
 
 // 	info("names: %s", names);
 
@@ -59,7 +59,7 @@ void test(char *names, int mode, int expected_count,
 	  char **expected_strings)
 {
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 	List char_list = list_create(xfree_ptr);
 
 	count = slurm_addto_mode_char_list(char_list, names, mode);
