@@ -38,7 +38,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
-// void debug_print(List char_list, char* names, int expected_count, char **expected_strings){
+// void debug_print(list_t *char_list, char* names, int expected_count, char **expected_strings){
 // 	char *string = NULL;
 // 	list_itr_t *itr = list_iterator_create(char_list);
 
@@ -60,7 +60,7 @@ void test(char *names, int mode, int expected_count,
 {
 	int count;
 	list_itr_t *itr;
-	List char_list = list_create(xfree_ptr);
+	list_t *char_list = list_create(xfree_ptr);
 
 	count = slurm_addto_mode_char_list(char_list, names, mode);
 
@@ -189,7 +189,7 @@ END_TEST
 
 START_TEST(null_names)
 {
-	List char_list = list_create(NULL);
+	list_t *char_list = list_create(NULL);
 	int count = slurm_addto_mode_char_list(char_list, NULL, 0);
 	ck_assert_int_eq(count, 0);
 	FREE_NULL_LIST(char_list);

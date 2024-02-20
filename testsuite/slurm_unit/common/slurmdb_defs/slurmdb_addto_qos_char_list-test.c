@@ -43,11 +43,11 @@
 #define QOS_LIST_SIZE 3
 char *qos_names[QOS_LIST_SIZE] = {"normal", "subpar", "great"};
 
-List setup_qos_list(){
+list_t *setup_qos_list(){
 	slurmdb_qos_rec_t *qos = NULL;
 
 	/* slurmdb_destroy_qos_rec not needed all pointers are local strings */
-	List qos_list = list_create(xfree_ptr);
+	list_t *qos_list = list_create(xfree_ptr);
 
 	for (int i = 0; i < QOS_LIST_SIZE; i++){
 		qos = xmalloc(sizeof(*qos));
@@ -60,7 +60,7 @@ List setup_qos_list(){
 	return qos_list;
 }
 
-// void debug_print(char *names, List char_list, int expected_count,
+// void debug_print(char *names, list_t *char_list, int expected_count,
 // 		 char **expected_strings)
 // {
 // 	char *string = NULL;
@@ -79,12 +79,12 @@ List setup_qos_list(){
 // }
 
 
-void test(List qos_list, char *names, int option, int expected_count,
+void test(list_t *qos_list, char *names, int option, int expected_count,
 	  char **expected_strings)
 {
 	int count;
 	list_itr_t *itr;
-	List char_list = list_create(xfree_ptr);
+	list_t *char_list = list_create(xfree_ptr);
 
 	if (!qos_list)
 		qos_list = setup_qos_list();
@@ -211,7 +211,7 @@ END_TEST
 START_TEST(apostrophe)
 {
 	char names[] = "adam\'s,normal"; /* must be local var; Will edit it */
-	List qos_list = setup_qos_list();
+	list_t *qos_list = setup_qos_list();
 	slurmdb_qos_rec_t *qos = xmalloc(sizeof(*qos));
 
 	qos->id = 42;
@@ -318,7 +318,7 @@ END_TEST
 
 START_TEST(null_char_list)
 {
-	List qos_list = setup_qos_list();
+	list_t *qos_list = setup_qos_list();
 	int count = slurmdb_addto_qos_char_list(NULL, qos_list, "normal", 0);
 	ck_assert_int_eq(count, 0);
 	FREE_NULL_LIST(qos_list);
@@ -327,7 +327,7 @@ END_TEST
 
 START_TEST(null_qos_list)
 {
-	List char_list = list_create(NULL);
+	list_t *char_list = list_create(NULL);
 	int count = slurmdb_addto_qos_char_list(char_list, NULL, "normal", 0);
 	ck_assert_int_eq(count, SLURM_ERROR);
 	ck_assert_int_eq(0, list_count(char_list));
@@ -337,8 +337,8 @@ END_TEST
 
 START_TEST(null_names)
 {
-	List char_list = list_create(NULL);
-	List qos_list = setup_qos_list();
+	list_t *char_list = list_create(NULL);
+	list_t *qos_list = setup_qos_list();
 	int count = slurmdb_addto_qos_char_list(char_list, qos_list, NULL, 0);
 	ck_assert_int_eq(count, 0);
 	ck_assert_int_eq(count, list_count(char_list));

@@ -63,7 +63,7 @@ static void _init_event_cond(slurmdb_event_cond_t *pack)
 	list_append(pack->state_list, "state2");
 }
 
-static void _test_list_str_eq(List a, List b)
+static void _test_list_str_eq(list_t *a, list_t *b)
 {
 	char *str;
 
