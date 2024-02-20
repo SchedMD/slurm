@@ -2636,6 +2636,11 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	 * logic if req_switch or wait4switch are set.
 	 */
 	job_ptr->best_switch     = true;
+
+	/* If start_protocol_ver is too old, reset to current version. */
+	if (start_protocol_ver < SLURM_MIN_PROTOCOL_VERSION)
+		start_protocol_ver = SLURM_PROTOCOL_VERSION;
+
 	job_ptr->start_protocol_ver = start_protocol_ver;
 
 	/* Handle this after user_id and other identity has been filled in */
