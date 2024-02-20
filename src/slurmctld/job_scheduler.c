@@ -871,7 +871,7 @@ static void *_sched_agent(void *args)
  * func IN - function name used for logging
  * RET - true of valid, false if invalid and job cancelled
  */
-extern bool deadline_ok(job_record_t *job_ptr, char *func)
+extern bool deadline_ok(job_record_t *job_ptr, const char *func)
 {
 	time_t now;
 	char time_str_deadline[256];
