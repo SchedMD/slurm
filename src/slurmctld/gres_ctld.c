@@ -2057,7 +2057,7 @@ static void _set_type_tres_cnt(List gres_list,
 	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
-	bool typeless_found = false;
+	bool typeless_found = false, typeless = false;
 	char *col_name = NULL;
 	uint64_t count;
 	int tres_pos;
@@ -2091,8 +2091,12 @@ static void _set_type_tres_cnt(List gres_list,
 			gres_job_state_t *gres_js = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
 			count = gres_js->total_gres;
-			if (!gres_js->type_name)
+			if (!gres_js->type_name) {
 				typeless_found = true;
+				typeless = true;
+			} else {
+				typeless = false;
+			}
 
 			break;
 		}
@@ -2122,8 +2126,12 @@ static void _set_type_tres_cnt(List gres_list,
 				tres_cnt[tres_pos] = NO_CONSUME_VAL64;
 			else if (!typeless_found)
 				tres_cnt[tres_pos] += count;
-			else
+			else if (typeless)
 				tres_cnt[tres_pos] = count;
+			/*
+			 * No need for else statement, as all cases above should
+			 * always cover setting main TRES's count.
+			 */
 
 			set_total = true;
 		}

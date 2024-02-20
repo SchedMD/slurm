@@ -29,6 +29,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression introduced in 23.02.4 where slurmctld was not properly
     tracking the total GRES selected for exclusive multi-node jobs, potentially
     and incorrectly bypassing limits.
+ -- Fix tracking of jobs typeless GRES count when multiple typed GRES with the
+    same name are also present in the job allocation. Otherwise, the job could
+    bypass limits configured for the typeless GRES.
 
 * Changes in Slurm 23.11.4
 ==========================
