@@ -294,8 +294,6 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
         re.search(r"gpu:\d+\(IDX:\d+\)", file_output) is not None
     ), "GPU device index not found in output file"
 
-    dev1, dev2 = -1, -1
-    dev1 = int(re.search(r"gpu:\d+\(IDX:(\d+)\)", file_output).group(1))
     job_id2 = int(re.search(r"Submitted batch job (\d+)", file_output).group(1))
 
     assert job_id2 != 0, "Failed to submit second job"
@@ -307,31 +305,16 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
         re.search(r"CUDA_VISIBLE_DEVICES:\d+", file_output2) is not None
     ), "CUDA_VISIBLE_DEVICES not found in output2 file"
 
-    dev2 = int(re.search(r"CUDA_VISIBLE_DEVICES:(\d+)", file_output2).group(1))
-
     assert (
-        re.search(r"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\d+", file_output2) is not None
+        re.search(rf"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:{job_mps2}", file_output2)
+        is not None
     ), "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not found in output2 file"
     assert (
-        re.search(r"mps:\d+\(IDX:\d+\)", file_output2) is not None
-    ), "GPU device index not found in output2 file"
+        re.search(rf"mps:{job_mps2}\(({job_mps2})/{mps_cnt}\)", file_output2)
+        is not None
+    ), "Shared mps distribution across GPU devices not found in output2 file"
 
-    dev1 = int(re.search(r"mps:\d+\(IDX:(\d+)\)", file_output2).group(1))
-    running = 0
-
-    if re.search(rf"jobid={job_id} state=RUNNING", file_output2) is not None:
-        running = 1
-
-    if dev1 == dev2:
-        if running == 0:
-            atf.log_debug(
-                f"The jobs are using the same GPU {dev1} and running at different times, which is fine"
-            )
-        else:
-            pytest.fail(
-                f"The jobs are using the same GPU {dev1} and running at the same time"
-            )
-    else:
-        atf.log_debug(
-            f"The jobs are using different GPUs ({dev1} != {dev2}), which is fine"
-        )
+    assert (
+        re.search(rf"jobid={job_id2} state=RUNNING", file_output2) is not None
+        and re.search(rf"jobid={job_id} state=RUNNING", file_output2) is None
+    ), "First job should not be running when second job is running because we have only 1 GPU"
