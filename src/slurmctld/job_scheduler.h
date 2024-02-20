@@ -108,7 +108,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(job_record_t *job_ptr,
 
 /* Determine if job's deadline specification is still valid, kill job if not
  * job_ptr IN - Job to test
- * func IN - function named used for logging, "sched" or "backfill"
+ * func IN - function name used for logging
  * RET - true of valid, false if invalid and job cancelled
  */
 extern bool deadline_ok(job_record_t *job_ptr, char *func);
