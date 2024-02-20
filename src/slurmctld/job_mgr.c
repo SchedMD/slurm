@@ -11081,6 +11081,12 @@ void purge_old_job(void)
 			continue;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
+
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
+		    (job_ptr->priority != 0) &&
+		    !deadline_ok(job_ptr, "purge_old_job"))
+			continue;
+
 		/*
 		 * If the dependency is already invalid there's no reason to
 		 * keep checking it.
