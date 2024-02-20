@@ -1699,7 +1699,7 @@ next_task:
 
 		deadline_time_limit = 0;
 		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
-			if (!deadline_ok(job_ptr, "sched"))
+			if (!deadline_ok(job_ptr, __func__))
 				continue;
 
 			deadline_time_limit = job_ptr->deadline - now;
