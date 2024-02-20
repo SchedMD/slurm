@@ -313,6 +313,14 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 				job_id = job_ptr->job_id;
 				break;
 			}
+			if (job_ptr->array_bitmap) {
+				int array_len = bit_size(job_ptr->array_bitmap);
+				if (array_id < array_len &&
+				    bit_test(job_ptr->array_bitmap, array_id)) {
+					job_id = job_ptr->job_id;
+					break;
+				}
+			}
 		}
 
 		slurm_free_job_info_msg(resp);
