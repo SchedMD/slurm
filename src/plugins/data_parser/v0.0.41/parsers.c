@@ -1597,6 +1597,22 @@ static int DUMP_FUNC(SLURMDB_RPC_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int set_plane_dist_envs(job_desc_msg_t *job,
+			       const parser_t *const parser, args_t *args,
+			       data_t *parent_path)
+{
+	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "plane"))
+		return parse_error(parser, args, parent_path, SLURM_ERROR,
+				   "Could not set SLURM_DISTRIBUTION in environment");
+	if (setenvf(&job->environment, "SLURM_DIST_PLANESIZE", "%u",
+		    job->plane_size))
+		return parse_error(parser, args, parent_path, SLURM_ERROR,
+				   "Could not set SLURM_DIST_PLANESIZE in environment");
+	job->env_size = envcount(job->environment);
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
 					       void *obj, data_t *src,
 					       args_t *args,
@@ -1637,14 +1653,15 @@ static int PARSE_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
 		}
 	}
 
-	job->plane_size = plane_tmp;
 	/*
 	 * No need to retain value of flags while setting to PLANE since they
 	 * are not compatible.
 	 */
 	job->task_dist = SLURM_DIST_PLANE;
+	job->plane_size = plane_tmp;
 
-	return SLURM_SUCCESS;
+	/* set env */
+	return set_plane_dist_envs(job, parser, args, parent_path);
 }
 
 static int DUMP_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
@@ -1712,6 +1729,28 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 
 	job->task_dist = dist_tmp;
 
+	/* set needed env */
+	if ((dist_tmp & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
+		return set_plane_dist_envs(job, parser, args, parent_path);
+	if ((dist_tmp & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
+		if (!job->req_nodes)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_BAD_DIST,
+					   "Arbitrary distribution needs required_nodes to be specified");
+		if (setenvf(&job->environment, "SLURM_ARBITRARY_NODELIST", "%s",
+			   job->req_nodes))
+			return parse_error(parser, args, parent_path,
+					   SLURM_ERROR,
+					   "Could not set SLURM_DISTRIBUTION in environment");
+	}
+
+	set_distribution(dist_tmp, &dist_str);
+	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "%s", dist_str))
+		return parse_error(parser, args, parent_path, SLURM_ERROR,
+				   "Could not set SLURM_DISTRIBUTION in environment");
+	job->env_size = envcount(job->environment);
+
+	xfree(dist_str);
 	return SLURM_SUCCESS;
 }
 
