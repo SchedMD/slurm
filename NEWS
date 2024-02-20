@@ -119,8 +119,6 @@ documents those changes that are of interest to users and administrators.
  -- scrun/sackd - Avoid race condition where shutdown could deadlock.
  -- Fix a regression in 23.02.5 that caused pam_slurm_adopt to fail when
     the user has multiple jobs on a node.
- -- Better handling of sending task exits to the slurmctld from a node if
-    there are network issues.
  -- Add GLOB_SILENCE flag that silences the error message which will display if
     an include directive attempts to use the "*" wildcard.
  -- Fix jobs getting rejected when submitting with --gpus option from older
