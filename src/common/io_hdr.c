@@ -38,6 +38,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/io_hdr.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
@@ -236,7 +237,7 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 
 	debug2("Entering %s", __func__);
 	if (wait_fd_readable(fd, 300)) {
-		error("io_init_msg_read timed out");
+		error_in_daemon("io_init_msg_read timed out");
 		return SLURM_ERROR;
 	}
 
@@ -246,7 +247,8 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 	safe_read(fd, buf->head, len);
 
 	if ((rc = io_init_msg_unpack(msg, buf)))
-		error("%s: io_init_msg_unpack failed: rc=%d", __func__, rc);
+		error_in_daemon("%s: io_init_msg_unpack failed: rc=%d",
+				__func__, rc);
 
 	FREE_NULL_BUFFER(buf);
 	debug2("Leaving %s", __func__);
@@ -254,6 +256,6 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 
 rwfail:
 	FREE_NULL_BUFFER(buf);
-	error("%s: reading slurm_io_init_msg failed: %m",__func__);
+	error_in_daemon("%s: reading slurm_io_init_msg failed: %m",__func__);
 	return SLURM_ERROR;
 }

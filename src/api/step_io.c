@@ -837,10 +837,9 @@ static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 {
 	io_init_msg_t msg = { 0 };
 
-	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS) {
-		error("failed reading io init message");
+	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS)
 		goto fail;
-	}
+
 	if (io_init_msg_validate(&msg, cio->io_key) < 0) {
 		goto fail;
 	}

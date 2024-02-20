@@ -53,6 +53,7 @@
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/net.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -182,7 +183,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 		    (errno == EWOULDBLOCK)) {
 			return SLURM_SUCCESS;
 		}
-		error("Error on msg accept socket: %m");
+		error_in_daemon("Error on msg accept socket: %m");
 		if ((errno == EMFILE)  ||
 		    (errno == ENFILE)  ||
 		    (errno == ENOBUFS) ||
@@ -205,7 +206,8 @@ again:
 	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
-		error("%s: slurm_receive_msg[%pA]: %m", __func__, &addr);
+		error_in_daemon("%s: slurm_receive_msg[%pA]: %m",
+				__func__, &addr);
 		goto cleanup;
 	}
 
@@ -213,7 +215,7 @@ again:
 
 cleanup:
 	if ((msg->conn_fd >= STDERR_FILENO) && (close(msg->conn_fd) < 0))
-		error("%s: close(%d): %m", __func__, msg->conn_fd);
+		error_in_daemon("%s: close(%d): %m", __func__, msg->conn_fd);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;
