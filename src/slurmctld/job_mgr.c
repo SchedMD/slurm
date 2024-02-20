@@ -8077,6 +8077,14 @@ static void _figure_out_num_tasks(
 		min_nodes = job_desc->min_nodes = 1;
 	}
 
+	if (((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) &&
+	    (num_tasks == NO_VAL)) {
+		hostlist_t *hl = hostlist_create(job_desc->req_nodes);
+		num_tasks = hostlist_count(hl);
+		hostlist_destroy(hl);
+	}
+
 	/* If we are creating the job we want the tasks to be set every time. */
 	if ((num_tasks == NO_VAL) &&
 	    (min_nodes != NO_VAL) &&
@@ -8196,6 +8204,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		}
+		hostlist_uniq(hl);
 		host_cnt = hostlist_count(hl);
 		hostlist_destroy(hl);
 		if (job_desc->min_nodes == NO_VAL)
