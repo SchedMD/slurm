@@ -242,7 +242,7 @@ int
 job_step_pids_response_msg_to_hv(job_step_pids_response_msg_t *pids_msg, HV *hv)
 {
 	int i = 0;
-	ListIterator itr;
+	list_itr_t *itr;
 	AV *av;
 	HV *hv_pids;
 	job_step_pids_t *pids;
@@ -299,7 +299,7 @@ int
 job_step_stat_response_msg_to_hv(job_step_stat_response_msg_t *stat_msg, HV *hv)
 {
 	int i = 0;
-	ListIterator itr;
+	list_itr_t *itr;
 	job_step_stat_t *stat;
 	AV *av;
 	HV *hv_stat;

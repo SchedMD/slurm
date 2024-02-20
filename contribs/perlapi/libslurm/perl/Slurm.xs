@@ -1953,27 +1953,27 @@ slurm_list_DESTROY(List l)
 MODULE = Slurm		PACKAGE = Slurm::ListIterator	PREFIX=slurm_list_iterator_
 
 #void *
-#slurm_list_iterator_find(ListIterator i, ListFindF f, void *key)
+#slurm_list_iterator_find(list_itr_t *i, ListFindF f, void *key)
 #	CODE:
 #		RETVAL = slurm_list_find(i, f, key)
 #	OUTPUT:
 #		RETVAL
 
-ListIterator
+list_itr_t *
 slurm_list_iterator_create(List l)
 
 void
-slurm_list_iterator_reset(ListIterator i)
+slurm_list_iterator_reset(list_itr_t *i)
 
 #void *
-#slurm_list_iterator_next(ListIterator i)
+#slurm_list_iterator_next(list_itr_t *i)
 #	CODE:
 #		RETVAL = slurm_list_next(i)
 #	OUTPUT:
 #		RETVAL
 
 void
-slurm_list_iterator_DESTROY(ListIterator i)
+slurm_list_iterator_DESTROY(list_itr_t *i)
 	CODE:
 		slurm_list_iterator_destroy(i);
 

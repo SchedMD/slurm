@@ -37,7 +37,7 @@ slurmdb_clusters_get(db_conn, conditions)
 	AV*   results;
 	HV*   rh;
 	List  list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	slurmdb_init_cluster_cond(cluster_cond, 0);
@@ -193,7 +193,7 @@ slurmdb_jobs_get(db_conn, conditions)
 	AV*   results;
 	HV*   rh;
 	List  list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_job_cond_t *job_cond =
 		xmalloc(sizeof(slurmdb_job_cond_t));
 	slurmdb_job_rec_t *rec = NULL;
@@ -230,7 +230,7 @@ slurmdb_qos_get(db_conn, conditions)
 	AV*   results;
 	HV*   rh;
 	List  list = NULL, all = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_qos_cond_t *qos_cond =
 		xmalloc(sizeof(slurmdb_qos_cond_t));
 	slurmdb_qos_rec_t *rec = NULL;
