@@ -60,11 +60,11 @@ static int _sort_group_asc(void *v1, void *v2)
 }
 
 static void _check_create_grouping(
-	List cluster_list,  ListIterator group_itr,
+	List cluster_list, list_itr_t *group_itr,
 	char *cluster, char *name, void *object,
 	bool individual, bool wckey_type)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)object;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
@@ -139,11 +139,11 @@ static List _process_grouped_report(
 	int exit_code = 0;
 	void *object = NULL, *object2 = NULL;
 
-	ListIterator itr = NULL, itr2 = NULL;
-	ListIterator cluster_itr = NULL;
-	ListIterator local_itr = NULL;
-	ListIterator acct_itr = NULL;
-	ListIterator group_itr = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
+	list_itr_t *local_itr = NULL;
+	list_itr_t *acct_itr = NULL;
+	list_itr_t *group_itr = NULL;
 
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
@@ -508,7 +508,7 @@ no_objects:
 	list_iterator_destroy(group_itr);
 	list_iterator_reset(cluster_itr);
 	while ((cluster_group = list_next(cluster_itr))) {
-		ListIterator acct_itr;
+		list_itr_t *acct_itr;
 		if (!cluster_group->count) {
 			list_delete_item(cluster_itr);
 			continue;

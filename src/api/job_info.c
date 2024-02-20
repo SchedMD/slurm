@@ -1239,7 +1239,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	uint32_t new_rec_cnt;
 	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_job_req_struct_t *load_args;
@@ -2076,7 +2076,7 @@ static void _add_cluster_name(priority_factors_response_msg_t *new_msg,
 			      char *cluster_name)
 {
 	priority_factors_object_t *prio_obj;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (!new_msg || !new_msg->priority_factors_list)
 		return;
@@ -2127,7 +2127,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	uint32_t hash_job_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
 	uint32_t hash_part_inx, **hash_part_id = NULL;
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_job_req_struct_t *load_args;

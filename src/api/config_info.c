@@ -445,7 +445,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 static void _print_config_plugin_params_list(FILE* out, List l, char *title)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	config_plugin_params_t *p;
 
 	if (!l || !list_count(l))
@@ -2067,7 +2067,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 	config_key_pair_t *key_pair;
 	char *temp = NULL;
 	List config_list = (List)key_pairs;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	/* define lists of specific configuration sections */
 	List other_list;
 	List control_list;
@@ -2391,7 +2391,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 {
 	List config_list = (List)key_pairs;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	config_key_pair_t *key_pair;
 
 	if (!config_list || !list_count(config_list))

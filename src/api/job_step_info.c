@@ -372,7 +372,7 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	job_step_info_response_msg_t *orig_msg = NULL, *new_msg = NULL;
 	uint32_t new_rec_cnt;
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_step_req_struct_t *load_args;
@@ -601,7 +601,7 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 			       job_step_stat_response_msg_t **resp)
 {
 	slurm_msg_t req_msg;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurm_step_id_t req;
 	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
@@ -714,7 +714,7 @@ extern int slurm_job_step_get_pids(slurm_step_id_t *step_id,
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t req_msg;
 	slurm_step_id_t req;
-	ListIterator itr;
+	list_itr_t *itr;
 	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_step_layout_t *step_layout = NULL;

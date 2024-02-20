@@ -304,7 +304,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	int pthread_count = 0, i;
 	pthread_t *load_thread = 0;
 	load_willrun_req_struct_t *load_args;
-	ListIterator iter;
+	list_itr_t *iter;
 	will_run_response_msg_t *earliest_resp = NULL;
 	load_willrun_resp_struct_t *tmp_resp;
 	slurmdb_cluster_rec_t *cluster;
@@ -385,7 +385,7 @@ static void _het_job_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
 	uint32_t inx = 0, het_job_node_cnt = 0, het_job_id = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	xassert(resp);
 	iter = list_iterator_create(resp);
@@ -432,7 +432,7 @@ List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool immediate_flag = false;
 	uint32_t node_cnt = 0, job_id = 0;
 	bool already_done = false;
@@ -569,7 +569,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
 		     will_run_resp->node_list,
 		     will_run_resp->part_name);
 		if (will_run_resp->preemptee_job_id) {
-			ListIterator itr;
+			list_itr_t *itr;
 			uint32_t *job_id_ptr;
 			char *job_list = NULL, *sep = "";
 			itr = list_iterator_create(will_run_resp->
@@ -606,7 +606,7 @@ extern int slurm_het_job_will_run(List job_req_list)
 	will_run_response_msg_t *will_run_resp;
 	char buf[256], *sep = "";
 	int rc = SLURM_SUCCESS, inx = 0;
-	ListIterator iter, itr;
+	list_itr_t *iter, *itr;
 	time_t first_start = (time_t) 0;
 	uint32_t first_job_id = 0, tot_proc_count = 0, *job_id_ptr;
 	hostset_t *hs = NULL;

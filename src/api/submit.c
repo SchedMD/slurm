@@ -116,7 +116,7 @@ extern int slurm_submit_batch_het_job(List job_req_list,
 	job_desc_msg_t *req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

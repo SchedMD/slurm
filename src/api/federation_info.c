@@ -98,7 +98,7 @@ int _sort_clusters_by_name(void *x, void *y)
  */
 extern void slurm_print_federation(void *ptr)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster;
 	int left_col_size;
 	char *cluster_name = NULL;

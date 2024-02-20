@@ -627,7 +627,7 @@ static int _load_fed_nodes(slurm_msg_t *req_msg,
 	node_info_msg_t *orig_msg = NULL, *new_msg = NULL;
 	uint32_t new_rec_cnt;
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_node_req_struct_t *load_args;

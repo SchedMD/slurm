@@ -49,10 +49,8 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 					  bool group_accounts)
 {
 	List cluster_list = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator itr3 = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL, *itr3 = NULL;
+	list_itr_t *cluster_itr = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	List user_list = NULL;
 	List usage_cluster_list = NULL;
@@ -169,7 +167,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 			       list_next(cluster_itr))) {
 				if (!xstrcmp(slurmdb_report_cluster->name,
 					     assoc->cluster)) {
-					ListIterator user_itr = NULL;
+					list_itr_t *user_itr = NULL;
 					if (!group_accounts) {
 						slurmdb_report_user = NULL;
 						goto new_user;
