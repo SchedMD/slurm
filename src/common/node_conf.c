@@ -1302,7 +1302,6 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);
-	xfree(node_ptr->power);
 	xfree(node_ptr->reason);
 	xfree(node_ptr->resv_name);
 	xfree(node_ptr->version);

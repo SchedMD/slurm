@@ -153,7 +153,6 @@ struct node_record {
 	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
 	uint16_t port;			/* TCP port number of the slurmd */
-	power_mgmt_data_t *power;	/* power management data */
 	time_t power_save_req_time;	/* Time of power_save request */
 	uint16_t protocol_version;	/* Slurm version number */
 	uint64_t real_memory;		/* MB real memory on the node */
