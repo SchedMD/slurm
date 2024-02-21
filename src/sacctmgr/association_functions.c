@@ -440,7 +440,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->max_submit_jobs,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
-	} else if (!xstrncasecmp(type, "MaxTRESPerJob", MAX(command_len, 7))) {
+	} else if (!xstrncasecmp(type, "MaxTRES",
+				 MAX(command_len, 7)) ||
+		   !xstrncasecmp(type, "MaxTRESPerJob",
+				 MAX(command_len, 11))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(

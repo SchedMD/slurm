@@ -510,8 +510,10 @@ static int _set_rec(int *start, int argc, char **argv,
 				xfree(tmp_char);
 			} else
 				exit_code = 1;
-		} else if (!xstrncasecmp(argv[i], "MaxTRESPerJob",
-					 MAX(command_len, 7))) {
+		} else if (!xstrncasecmp(argv[i], "MaxTRES",
+					 MAX(command_len, 7)) ||
+		           !xstrncasecmp(argv[i], "MaxTRESPerJob",
+					 MAX(command_len, 11))) {
 			sacctmgr_initialize_g_tres_list();
 
 			if ((tmp_char = slurmdb_format_tres_str(
