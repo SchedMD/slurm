@@ -163,7 +163,7 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
 	cgroup.lo cli_filter.lo cred.lo data_parser.lo ext_sensors.lo \
 	gpu.lo gres.lo hash.lo jobacct_gather.lo jobcomp.lo mcs.lo \
-	mpi.lo node_features.lo power.lo prep.lo priority.lo select.lo \
+	mpi.lo node_features.lo prep.lo priority.lo select.lo \
 	serializer.lo site_factor.lo switch.lo topology.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
@@ -218,13 +218,12 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
 	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
 	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
-	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/preempt.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/priority.Plo ./$(DEPDIR)/proctrack.Plo \
-	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
-	./$(DEPDIR)/serializer.Plo ./$(DEPDIR)/site_factor.Plo \
-	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/task.Plo \
-	./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/preempt.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/sched_plugin.Plo \
+	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
+	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
+	./$(DEPDIR)/task.Plo ./$(DEPDIR)/topology.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -573,8 +572,6 @@ libcommon_interfaces_la_SOURCES = \
 	mpi.h					\
 	node_features.c				\
 	node_features.h				\
-	power.c					\
-	power.h					\
 	prep.c					\
 	prep.h					\
 	priority.c				\
@@ -712,7 +709,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/priority.Plo@am__quote@ # am--include-marker
@@ -873,7 +869,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
@@ -953,7 +948,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
