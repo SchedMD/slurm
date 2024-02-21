@@ -473,7 +473,9 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		} else
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESMinsPerJob",
-				MAX(command_len, 8))) {
+				MAX(command_len, 8)) ||
+		   !xstrncasecmp(type, "MaxTRESMinsPJ",
+				 MAX(command_len, 13))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(

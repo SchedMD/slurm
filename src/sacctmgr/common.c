@@ -484,7 +484,9 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 14;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!xstrncasecmp("MaxTRESMinsPerJob", object,
-				 MAX(command_len, 8))) {
+				 MAX(command_len, 8)) ||
+		   !xstrncasecmp("MaxTRESMinsPJ", object,
+				 MAX(command_len, 13))) {
 		field->type = PRINT_MAXTM;
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
