@@ -210,15 +210,6 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int acct_gather_reconfig(void)
-{
-	acct_gather_conf_destroy();
-	slurm_mutex_init(&conf_mutex);
-	acct_gather_conf_init();
-
-	return SLURM_SUCCESS;
-}
-
 extern int acct_gather_conf_destroy(void)
 {
 	int rc = SLURM_SUCCESS;
