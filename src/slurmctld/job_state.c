@@ -33,3 +33,60 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/slurmctld/slurmctld.h"
+
+static void _log_job_state_change(const job_record_t *job_ptr,
+				  const uint32_t new_state)
+{
+	char *before_str, *after_str;
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_TRACE_JOBS))
+		return;
+
+	before_str = job_state_string_complete(job_ptr->job_state);
+	after_str = job_state_string_complete(new_state);
+
+	if (job_ptr->job_state == new_state)
+		log_flag(TRACE_JOBS, "%s: [%pJ] no-op change state: %s",
+			 __func__, job_ptr, before_str);
+	else
+		log_flag(TRACE_JOBS, "%s: [%pJ] change state: %s -> %s",
+			 __func__, job_ptr, before_str, after_str);
+
+	xfree(before_str);
+	xfree(after_str);
+}
+
+extern void job_state_set(job_record_t *job_ptr, uint32_t state)
+{
+	_log_job_state_change(job_ptr, state);
+
+	job_ptr->job_state = state;
+}
+
+extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
+{
+	uint32_t job_state;
+
+	xassert(!(flag & JOB_STATE_BASE));
+	xassert(flag & JOB_STATE_FLAGS);
+
+	job_state = job_ptr->job_state | flag;
+	_log_job_state_change(job_ptr, job_state);
+
+	job_ptr->job_state = job_state;
+}
+
+extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
+{
+	uint32_t job_state;
+
+	xassert(!(flag & JOB_STATE_BASE));
+	xassert(flag & JOB_STATE_FLAGS);
+
+	job_state = job_ptr->job_state & ~flag;
+	_log_job_state_change(job_ptr, job_state);
+
+	job_ptr->job_state = job_state;
+}

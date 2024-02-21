@@ -1286,6 +1286,27 @@ extern List depended_list_copy(List depend_list_src);
  */
 extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
+/*
+ * Set job state
+ * IN job_ptr - Job to update
+ * IN state - state from enum job_states
+ */
+extern void job_state_set(job_record_t *job_ptr, uint32_t state);
+
+/*
+ * Set job state flag
+ * IN job_ptr - Job to update
+ * IN flag - flag to set (from JOB_* macro)
+ */
+extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag);
+
+/*
+ * Unset job state flag
+ * IN job_ptr - Job to update
+ * IN flag - flag to unset (from JOB_* macro)
+ */
+extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag);
+
 /* dump_all_job_state - save the state of all jobs to file
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
