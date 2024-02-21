@@ -78,7 +78,6 @@ typedef struct {
 
 typedef struct {
 	int magic;
-	bool is_working;
 	/* thread id of worker */
 	pthread_t tid;
 	/* workq that controls this worker */
@@ -134,7 +133,6 @@ static void _worker_delete(void *x)
 				   worker);
 
 	worker->workq->total--;
-	xassert(!worker->is_working);
 
 	/* workq may get freed at any time after unlocking */
 	slurm_mutex_unlock(&worker->workq->mutex);
@@ -192,19 +190,6 @@ extern workq_t *new_workq(int count)
 	return workq;
 }
 
-static int _check_worker_idle(void *x, void *arg)
-{
-	workq_worker_t *worker = x;
-	int *found_working_ptr = arg;
-
-	xassert(worker->magic == MAGIC_WORKER);
-
-	if (worker->is_working)
-		(*found_working_ptr)++;
-
-	return SLURM_SUCCESS;
-}
-
 static void _wait_workers_idle(workq_t *workq)
 {
 	if (!workq)
@@ -216,34 +201,11 @@ static void _wait_workers_idle(workq_t *workq)
 	log_flag(WORKQ, "%s: checking %u workers",
 		 __func__, list_count(workq->work));
 
-	while (true) {
-		int found_working = 0;
+	while (workq->active)
+		slurm_cond_wait(&workq->cond, &workq->mutex);
 
-		if (!list_is_empty(workq->work)) {
-			log_flag(WORKQ, "%s: waiting for %d queued work",
-				 __func__, list_count(workq->work));
-			slurm_cond_wait(&workq->cond, &workq->mutex);
-			continue;
-		}
-
-		if (list_for_each_ro(workq->workers, _check_worker_idle,
-				     &found_working) < 0)
-			fatal_abort("should never fail");
-
-		xassert(found_working >= 0);
-
-		if (found_working > 0) {
-			log_flag(WORKQ, "%s: waiting on %d workers",
-				 __func__, found_working);
-			slurm_cond_wait(&workq->cond, &workq->mutex);
-		} else {
-			slurm_mutex_unlock(&workq->mutex);
-			log_flag(WORKQ, "%s: all workers are idle", __func__);
-			return;
-		}
-	}
-
-	fatal_abort("should never execute");
+	slurm_mutex_unlock(&workq->mutex);
+	log_flag(WORKQ, "%s: all workers are idle", __func__);
 }
 
 static void _wait_work_complete(workq_t *workq)
@@ -392,9 +354,6 @@ static void *_worker(void *arg)
 			 worker->workq->active, worker->workq->total,
 			 list_count(workq->work));
 
-		xassert(!worker->is_working);
-		worker->is_working = true;
-
 		slurm_mutex_unlock(&workq->mutex);
 
 		/* run work now */
@@ -402,9 +361,6 @@ static void *_worker(void *arg)
 		work->func(work->arg);
 
 		slurm_mutex_lock(&workq->mutex);
-
-		xassert(worker->is_working);
-		worker->is_working = false;
 
 		workq->active--;
 
