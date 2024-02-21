@@ -4216,15 +4216,10 @@ proc get_nodes_by_state {{states ""} {partition ""}} {
 		set states "idle"
 	}
 
-	set output [run_command_output -fail "$sinfo -h -N -p $partition -o '%N|%t' -e"]
+	set output [run_command_output -fail "$sinfo -h -N -p $partition -o '%N' -e -t $states"]
 	foreach line [split $output "\n"] {
 		if {$line eq ""} { continue }
-		lassign [split $line |] node_name node_state
-		foreach requested_state [split $states ,] {
-			if {$node_state eq $requested_state} {
-				lappend node_list $node_name
-			}
-		}
+		lappend node_list $line
 	}
 
 	return $node_list
