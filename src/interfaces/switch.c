@@ -85,7 +85,6 @@ typedef struct slurm_switch_ops {
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*state_clear)       ( void );
-	int          (*reconfig)          ( void );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
@@ -111,7 +110,6 @@ static const char *syms[] = {
 	"switch_p_job_step_complete",
 	"switch_p_job_step_allocated",
 	"switch_p_libstate_clear",
-	"switch_p_reconfig",
 	"switch_p_job_complete",
 };
 
@@ -239,16 +237,6 @@ extern int switch_fini(void)
 fini:
 	slurm_mutex_unlock( &context_lock );
 	return rc;
-}
-
-extern int  switch_g_reconfig(void)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].reconfig))( );
 }
 
 extern int  switch_g_save(char *dir_name)

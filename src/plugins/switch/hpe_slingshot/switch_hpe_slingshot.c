@@ -130,24 +130,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-
-/*
- * Called at slurmctld startup, or when re-reading slurm.conf
- * NOTE: assumed that this runs _after_ switch_p_libstate_restore(),
- * and slingshot_state may or may not already be filled in
- */
-extern int switch_p_reconfig(void)
-{
-	if (running_in_slurmctld()) {
-		slingshot_fini_instant_on();
-		slingshot_fini_collectives();
-		if (!slingshot_setup_config(slurm_conf.switch_param))
-			return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * switch functions for global state save/restore
  */
