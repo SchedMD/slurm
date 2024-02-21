@@ -584,21 +584,6 @@ extern int mpi_g_daemon_init(void)
 	return _mpi_init(NULL);
 }
 
-extern int mpi_g_daemon_reconfig(void)
-{
-	int rc;
-
-	slurm_mutex_lock(&context_lock);
-
-	if (g_context)
-		_mpi_fini_locked();
-
-	rc = _mpi_init_locked(NULL);
-
-	slurm_mutex_unlock(&context_lock);
-	return rc;
-}
-
 extern List mpi_g_conf_get_printable(void)
 {
 	List opts_list, opts;

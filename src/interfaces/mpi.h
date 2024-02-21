@@ -145,9 +145,6 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state);
 /* Initialize all available plugins, read and set their config from mpi.conf. */
 extern int mpi_g_daemon_init(void);
 
-/* Fini and init in sequence */
-extern int mpi_g_daemon_reconfig(void);
-
 /* Deliver a printable list to the client with config from all loaded plugins */
 extern List mpi_g_conf_get_printable(void);
 
