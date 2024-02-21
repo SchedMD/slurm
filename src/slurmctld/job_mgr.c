@@ -87,7 +87,6 @@
 #include "src/interfaces/jobcomp.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/node_features.h"
-#include "src/interfaces/power.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/sched_plugin.h"

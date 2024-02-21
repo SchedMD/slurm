@@ -73,7 +73,6 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/node_features.h"
-#include "src/interfaces/power.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/select.h"

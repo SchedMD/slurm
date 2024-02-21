@@ -68,7 +68,6 @@
 #include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
-#include "src/interfaces/power.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
@@ -1601,6 +1600,8 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
+
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);
@@ -1663,13 +1664,13 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 					    protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (power_mgmt_data_unpack(&node->power, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was power */
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
+
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);
@@ -1730,9 +1731,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 					    protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (power_mgmt_data_unpack(&node->power, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was power */
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
