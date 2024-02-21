@@ -1260,8 +1260,6 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
-		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-				      protocol_version);
 
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
 		packstr(dump_node_ptr->resv_name, buffer);
