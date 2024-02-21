@@ -6092,7 +6092,7 @@ extern int validate_hint_option(slurm_opt_t *opt)
 	      (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
 	       (cpu_bind_type & ~CPU_BIND_VERBOSE))))) {
 		if (opt->verbose)
-			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind (other then --cpu-bind=verbose). Ignoring --hint.");
+			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind (other than --cpu-bind=verbose). Ignoring --hint.");
 		slurm_option_reset(opt, "hint");
 		return SLURM_ERROR;
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_HINT)) {
