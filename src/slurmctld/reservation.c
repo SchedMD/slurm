@@ -835,7 +835,7 @@ static int _foreach_clear_job_resv(void *x, void *key)
 	    (job_ptr->state_reason != WAIT_HELD)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_RESV_DELETED;
-		job_ptr->job_state |= JOB_RESV_DEL_HOLD;
+		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
 		xstrfmtcat(job_ptr->state_desc,
 			   "Reservation %s was deleted",
 			   resv_ptr->name);
@@ -4556,7 +4556,7 @@ static int _validate_job_resv(void *job, void *y)
 		error("%pJ linked to invalid reservation: %s, holding the job.",
 		      job_ptr, job_ptr->resv_name);
 		job_ptr->state_reason = WAIT_RESV_INVALID;
-		job_ptr->job_state |= JOB_RESV_DEL_HOLD;
+		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
 		xstrfmtcat(job_ptr->state_desc,
 			   "Reservation %s is invalid",
 			   job_ptr->resv_name);

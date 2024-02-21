@@ -2217,7 +2217,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	gres_ctld_job_clear_alloc(job_ptr->gres_list_req);
 	gres_ctld_job_clear_alloc(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
-	job_ptr->job_state = JOB_RUNNING;
+	job_state_set(job_ptr, JOB_RUNNING);
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
@@ -2250,7 +2250,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	prolog_slurmctld(job_ptr);
 
 	job_ptr->end_time = now;
-	job_ptr->job_state = JOB_COMPLETE;
+	job_state_set(job_ptr, JOB_COMPLETE);
 	job_completion_logger(job_ptr, false);
 	acct_policy_job_fini(job_ptr, false);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
@@ -2684,7 +2684,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * step data.
 	 */
 	job_ptr->bit_flags &= ~JOB_KILL_HURRY;
-	job_ptr->job_state &= ~JOB_POWER_UP_NODE;
+	job_state_unset_flag(job_ptr, JOB_POWER_UP_NODE);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
@@ -2775,7 +2775,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	/* This could be set in the select plugin so we want to keep the flag */
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
-	job_ptr->job_state = JOB_RUNNING;
+	job_state_set(job_ptr, JOB_RUNNING);
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
@@ -2792,7 +2792,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			job_ptr->time_last_active = 0;
 			job_ptr->end_time = 0;
 			job_ptr->state_reason = WAIT_RESOURCES;
-			job_ptr->job_state = JOB_PENDING;
+			job_state_set(job_ptr, JOB_PENDING);
 			last_job_update = now;
 			goto cleanup;
 		}
@@ -2829,7 +2829,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	power_g_job_start(job_ptr);
 
 	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
-		job_ptr->job_state |= JOB_POWER_UP_NODE;
+		job_state_set_flag(job_ptr, JOB_POWER_UP_NODE);
 		if (resume_job_list) {
 			uint32_t *tmp = xmalloc(sizeof(uint32_t));
 			*tmp = job_ptr->job_id;
@@ -2839,7 +2839,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
 		/* This handles nodes explicitly requesting node reboot */
-		job_ptr->job_state |= JOB_CONFIGURING;
+		job_state_set_flag(job_ptr, JOB_CONFIGURING);
 	}
 
 	/*
