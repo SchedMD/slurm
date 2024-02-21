@@ -474,7 +474,9 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!xstrncasecmp("MaxTRESPerNode", object,
-				 MAX(command_len, 11))) {
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxTRESPN", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXTN;
 		field->name = xstrdup("MaxTRESPerNode");
 		field->len = 14;

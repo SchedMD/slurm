@@ -452,7 +452,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		} else
 			exit_code = 1;
-	} else if (!xstrncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
+	} else if (!xstrncasecmp(type, "MaxTRESPerNode",
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp(type, "MaxTRESPN",
+				 MAX(command_len, 9))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
