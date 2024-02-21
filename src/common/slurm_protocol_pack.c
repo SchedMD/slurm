@@ -1597,9 +1597,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 					    protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (power_mgmt_data_unpack(&node->power, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
