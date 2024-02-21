@@ -70,8 +70,6 @@ extern int prep_g_init(prep_callbacks_t *callbacks);
  */
 extern int prep_g_fini(void);
 
-extern int prep_g_reconfig(void);
-
 /*
  **************************************************************************
  *                          P L U G I N   C A L L S                       *

@@ -170,33 +170,6 @@ fini:
 }
 
 /*
- * Perform reconfig, re-read any configuration files
- */
-extern int prep_g_reconfig(void)
-{
-	int rc = SLURM_SUCCESS;
-	bool plugin_change = false;
-
-	if (!slurm_conf.prep_plugins && !prep_plugin_list)
-		return rc;
-
-	slurm_rwlock_rdlock(&g_context_lock);
-	if (xstrcmp(slurm_conf.prep_plugins, prep_plugin_list))
-		plugin_change = true;
-	slurm_rwlock_unlock(&g_context_lock);
-
-	if (plugin_change) {
-		info("%s: PrEpPlugins changed to %s",
-		     __func__, slurm_conf.prep_plugins);
-		rc = prep_g_fini();
-		if (rc == SLURM_SUCCESS)
-			rc = prep_g_init(NULL);
-	}
-
-	return rc;
-}
-
-/*
  **************************************************************************
  *                          P L U G I N   C A L L S                       *
  **************************************************************************

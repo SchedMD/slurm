@@ -1780,8 +1780,6 @@ extern int read_slurm_conf(int recover)
 	}
 
 	/* Update plugin parameters as possible */
-	rc = prep_g_reconfig();
-	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = _preserve_select_type_param(&slurm_conf, old_select_type_p);
