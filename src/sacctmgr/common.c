@@ -467,6 +467,8 @@ static print_field_t *_get_print_field(char *object)
 		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("MaxTRES", object,
 				 MAX(command_len, 7)) ||
+		   !xstrncasecmp("MaxTRESPJ", object,
+				 MAX(command_len, 9)) ||
 		   !xstrncasecmp("MaxTRESPerJob", object,
 				 MAX(command_len, 11))) {
 		field->type = PRINT_MAXT;

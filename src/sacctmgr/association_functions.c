@@ -442,6 +442,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			set = 1;
 	} else if (!xstrncasecmp(type, "MaxTRES",
 				 MAX(command_len, 7)) ||
+		   !xstrncasecmp(type, "MaxTRESPJ",
+				 MAX(command_len, 9)) ||
 		   !xstrncasecmp(type, "MaxTRESPerJob",
 				 MAX(command_len, 11))) {
 		sacctmgr_initialize_g_tres_list();
