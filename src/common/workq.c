@@ -97,6 +97,7 @@ static inline void _check_magic_workq(workq_t *workq)
 	xassert(workq);
 	xassert(workq->magic == MAGIC_WORKQ);
 	xassert(workq->workers);
+	xassert(workq->active >= 0);
 }
 
 static inline void _check_magic_worker(workq_worker_t *worker)
