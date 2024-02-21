@@ -43,11 +43,6 @@ extern int site_factor_g_init(void);
 extern int site_factor_g_fini(void);
 
 /*
- * Reconfigure the plugin.
- */
-extern void site_factor_g_reconfig(void);
-
-/*
  * Set an initial value for site_factor.
  */
 extern void site_factor_g_set(job_record_t *job_ptr);

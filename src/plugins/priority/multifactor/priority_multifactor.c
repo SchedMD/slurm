@@ -1761,8 +1761,6 @@ extern void priority_p_reconfig(bool assoc_clear)
 	if (assoc_clear)
 		_init_grp_used_tres_run_secs(g_last_ran);
 
-	site_factor_g_reconfig();
-
 	debug2("%s reconfigured", plugin_name);
 
 	return;

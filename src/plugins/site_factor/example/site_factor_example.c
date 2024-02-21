@@ -84,16 +84,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void site_factor_p_reconfig(void)
-{
-	/*
-	 * Handle any reconfiguration, such as potential changes to
-	 * PrioritySiteFactorParameters, here.
-	 */
-
-	return;
-}
-
 extern void site_factor_p_set(job_record_t *job_ptr)
 {
 	/*
