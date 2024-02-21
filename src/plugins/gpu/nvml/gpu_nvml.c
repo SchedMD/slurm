@@ -1706,12 +1706,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int gpu_p_reconfig(void)
-{
-	return SLURM_SUCCESS;
-}
-
-
 extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	List gres_list_system = NULL;

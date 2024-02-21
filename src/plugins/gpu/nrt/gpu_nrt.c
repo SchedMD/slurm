@@ -260,11 +260,6 @@ extern void gpu_p_get_device_count(unsigned int *device_count)
 	return;
 }
 
-extern void gpu_p_reconfig(void)
-{
-	return;
-}
-
 extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_conf)
 {
 	list_t *gres_list_system = _get_system_gpu_list_neuron(node_conf);

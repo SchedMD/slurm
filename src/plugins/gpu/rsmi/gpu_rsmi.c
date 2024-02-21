@@ -950,11 +950,6 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern int gpu_p_reconfig(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	List gres_list_system = _get_system_gpu_list_rsmi(node_config);

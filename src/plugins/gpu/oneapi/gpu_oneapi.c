@@ -985,11 +985,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int gpu_p_reconfig(void)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Creates and returns a gres conf list of detected Intel gpus on the node.
  * If an error occurs, return NULL

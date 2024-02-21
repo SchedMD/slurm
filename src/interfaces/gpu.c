@@ -42,7 +42,6 @@
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_ops {
-	void    (*reconfig)		(void);
 	List	(*get_system_gpu_list) 	(node_config_load_t *node_conf);
 	void	(*step_hardware_init)	(bitstr_t *usable_gpus,
 					 char *tres_freq);
@@ -59,7 +58,6 @@ typedef struct slurm_ops {
  * declared for slurm_ops_t.
  */
 static const char *syms[] = {
-	"gpu_p_reconfig",
 	"gpu_p_get_system_gpu_list",
 	"gpu_p_step_hardware_init",
 	"gpu_p_step_hardware_fini",
@@ -200,12 +198,6 @@ extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
 		*gpumem_pos = loc_gpumem_pos;
 	if (gpuutil_pos)
 		*gpuutil_pos = loc_gpuutil_pos;
-}
-
-extern void gpu_g_reconfig(void)
-{
-	xassert(g_context);
-	(*(ops.reconfig))();
 }
 
 extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
