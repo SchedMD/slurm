@@ -823,7 +823,7 @@ extern openapi_type_t data_parser_g_resolve_openapi_type(
 	const parse_funcs_t *funcs;
 
 	if (!parser)
-		return ESLURM_DATA_INVALID_PARSER;
+		return OPENAPI_TYPE_INVALID;
 
 	funcs = plugins->functions[parser->plugin_offset];
 
