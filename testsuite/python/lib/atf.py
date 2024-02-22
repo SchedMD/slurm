@@ -1989,6 +1989,58 @@ def get_jobs(job_id=None, **run_command_kwargs):
     return jobs_dict
 
 
+def get_steps(step_id=None, **run_command_kwargs):
+    """Returns the steps as a dictionary of dictionaries.
+
+    Args*:
+
+    * run_command arguments are also accepted (e.g. quiet) and will be
+        supplied to the underlying run_command call.
+
+    Returns: A dictionary of dictionaries where the first level keys are the
+        step ids and with the their values being a dictionary of configuration
+        parameters for the respective step.
+    """
+
+    steps_dict = {}
+
+    command = "scontrol -d -o show steps"
+    if step_id is not None:
+        command += f" {step_id}"
+    output = run_command_output(command, fatal=True, **run_command_kwargs)
+
+    step_dict = {}
+    for line in output.splitlines():
+        if line == "":
+            continue
+
+        while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
+            param_name, param_value = match.group(1), match.group(2)
+
+            # Remove the consumed parameter from the line
+            line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
+
+            # Reformat the value if necessary
+            if is_integer(param_value):
+                param_value = int(param_value)
+            elif is_float(param_value):
+                param_value = float(param_value)
+            elif param_value == "(null)":
+                param_value = None
+
+            # Add it to the temporary job dictionary
+            step_dict[param_name] = param_value
+
+        # Add the job dictionary to the jobs dictionary
+        if step_dict:
+            steps_dict[str(step_dict["StepId"])] = step_dict
+
+            # Clear the job dictionary for use by the next job
+            step_dict = {}
+
+    return steps_dict
+
+
 def get_job(job_id, quiet=False):
     """Returns job information for a specific job as a dictionary.
 
@@ -2027,6 +2079,33 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
 
     if parameter_name in job_dict:
         return job_dict[parameter_name]
+    else:
+        return default
+
+
+def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
+    """Obtains the value for a step parameter.
+
+    Args:
+        step_id (integer): The step id.
+        parameter_name (string): The parameter name.
+        default (string or None): This value is returned if the parameter
+            is not found.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns: The value of the specified step parameter, or the default if not
+        found.
+    """
+
+    steps_dict = get_steps(quiet=quiet)
+
+    if step_id not in steps_dict:
+        logging.debug(f"Step ({step_id}) was not found in the step list")
+        return default
+
+    step_dict = steps_dict[step_id]
+    if parameter_name in step_dict:
+        return step_dict[parameter_name]
     else:
         return default
 
