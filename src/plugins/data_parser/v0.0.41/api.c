@@ -227,7 +227,9 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 	switch (type) {
 	case DATA_PARSER_ATTR_TRES_LIST:
 		xassert(!args->tres_list || (args->tres_list == obj) || !obj);
-		FREE_NULL_LIST(args->tres_list);
+
+		if (args->tres_list != obj)
+			FREE_NULL_LIST(args->tres_list);
 		args->tres_list = obj;
 
 		log_flag(DATA, "assigned TRES list 0x%"PRIxPTR" to parser 0x%"PRIxPTR,
@@ -243,7 +245,9 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 		return SLURM_SUCCESS;
 	case DATA_PARSER_ATTR_QOS_LIST:
 		xassert(!args->qos_list || (args->qos_list == obj) || !obj);
-		FREE_NULL_LIST(args->qos_list);
+
+		if (args->qos_list != obj)
+			FREE_NULL_LIST(args->qos_list);
 		args->qos_list = obj;
 
 		log_flag(DATA, "assigned QOS List at 0x%" PRIxPTR" to parser 0x%"PRIxPTR,
