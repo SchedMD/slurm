@@ -262,18 +262,23 @@ struct {
 	/* use mutex to wait for watch to finish */
 	pthread_mutex_t watch_mutex;
 	pthread_cond_t watch_cond;
-} mgr = {
-	.mutex = PTHREAD_MUTEX_INITIALIZER,
-	.cond = PTHREAD_COND_INITIALIZER,
-	.watch_mutex = PTHREAD_MUTEX_INITIALIZER,
-	.watch_cond = PTHREAD_COND_INITIALIZER,
-	.max_connections = -1,
-	.event_fd = { -1, -1 },
-	.signal_fd = { -1, -1 },
-	.error = SLURM_SUCCESS,
-	.quiesced = true,
-	.shutdown = true,
 };
+
+#define CONMGR_MGR_DEFAULT \
+	(struct conmgr_s) {\
+		.mutex = PTHREAD_MUTEX_INITIALIZER,\
+		.cond = PTHREAD_COND_INITIALIZER,\
+		.watch_mutex = PTHREAD_MUTEX_INITIALIZER,\
+		.watch_cond = PTHREAD_COND_INITIALIZER,\
+		.max_connections = -1,\
+		.event_fd = { -1, -1 },\
+		.signal_fd = { -1, -1 },\
+		.error = SLURM_SUCCESS,\
+		.quiesced = true,\
+		.shutdown = true,\
+	}
+
+struct conmgr_s mgr = CONMGR_MGR_DEFAULT;
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
