@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "October 2023" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "February 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -24,16 +24,16 @@ contains a database password.
 The overall configuration parameters available include:
 
 .TP
+\fBAllowNoDefAcct\fR
+Remove requirement for users to have a default account.  Boolean, yes to turn
+on, no (default) to enforce default accounts.
+.IP
+
+.TP
 \fBAllResourcesAbsolute\fR
 When adding a resource (license) treat allocated/allowed counts as absolute
 numbers instead of percentage numbers. Boolean, yes to turn on, no (default)
 to use the numbers as percentages instead.
-.IP
-
-.TP
-\fBAllowNoDefAcct\fR
-Remove requirement for users to have a default account.  Boolean, yes to turn
-on, no (default) to enforce default accounts.
 .IP
 
 .TP
@@ -156,19 +156,6 @@ Boolean, yes to archive transaction data, no otherwise.  Default is no.
 .IP
 
 .TP
-\fBAuthInfo\fR
-Additional information to be used for authentication of communications
-with the Slurm control daemon (slurmctld) on each cluster.
-The interpretation of this option is specific to the configured \fBAuthType\fR.
-In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon
-specifically configured to provide authentication between clusters while the
-default Munge daemon provides authentication within a cluster.
-In that case, this will specify the pathname of the socket to use. Per default
-this value is left unspecified, which results in the default authentication
-mechanism being used.
-.IP
-
-.TP
 \fBAuthAltTypes\fR
 Command separated list of alternative authentication plugins that the slurmdbd
 will permit for communication.
@@ -197,6 +184,19 @@ Absolute path to JWT key file. Key must be HS256. Key should be owned by
 SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
 0400. It must not be accessible by 'other'.
 .RE
+.IP
+
+.TP
+\fBAuthInfo\fR
+Additional information to be used for authentication of communications
+with the Slurm control daemon (slurmctld) on each cluster.
+The interpretation of this option is specific to the configured \fBAuthType\fR.
+In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon
+specifically configured to provide authentication between clusters while the
+default Munge daemon provides authentication within a cluster.
+In that case, this will specify the pathname of the socket to use. Per default
+this value is left unspecified, which results in the default authentication
+mechanism being used.
 .IP
 
 .TP
@@ -266,20 +266,20 @@ The default value is 30 seconds.
 .IP
 
 .TP
-\fBDbdBackupHost\fR
-The short, or long, name of the machine where the backup Slurm Database Daemon
-is executed (i.e. the name returned by the command "hostname \-s").
-This host must have access to the same underlying database specified by
-the 'Storage' options mentioned below.
-.IP
-
-.TP
 \fBDbdAddr\fR
 Name that \fBDbdHost\fR should be referred to in establishing a communications
 path. This name will be used as an argument to the getaddrinfo() function for
 identification. For example, "elx0000" might be used to designate the Ethernet
 address for node "lx0000".  By default the \fBDbdAddr\fR will be identical in
 value to \fBDbdHost\fR.
+.IP
+
+.TP
+\fBDbdBackupHost\fR
+The short, or long, name of the machine where the backup Slurm Database Daemon
+is executed (i.e. the name returned by the command "hostname \-s").
+This host must have access to the same underlying database specified by
+the 'Storage' options mentioned below.
 .IP
 
 .TP
@@ -761,13 +761,6 @@ user in this way, you must restart slurmctld.
 .IP
 
 .TP
-\fBStorageHost\fR
-Define the name of the host the database is running where we are going
-to store the data.
-Ideally this should be the host on which slurmdbd executes.
-.IP
-
-.TP
 \fBStorageBackupHost\fR
 Define the name of the backup host the database is running where we are going
 to store the data.  This can be viewed as a backup solution when the
@@ -775,6 +768,13 @@ StorageHost is not responding.  It is up to the backup solution to enforce the
 coherency of the accounting information between the two hosts. With clustered
 database solutions (active/passive HA), you would not need to use this feature.
 Default is none.
+.IP
+
+.TP
+\fBStorageHost\fR
+Define the name of the host the database is running where we are going
+to store the data.
+Ideally this should be the host on which slurmdbd executes.
 .IP
 
 .TP
