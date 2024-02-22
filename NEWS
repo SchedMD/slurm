@@ -65,6 +65,9 @@ documents those changes that are of interest to users and administrators.
  -- scrun/slurmrestd/sackd - Avoid closing all listening sockets when
     interrupted from signal such as SIGALRM. Normal shutdown remains unaffected.
 
+* Changes in Slurm 23.11.5
+==========================
+
 * Changes in Slurm 23.11.4
 ==========================
  -- Fix a memory leak when updating partition nodes.
