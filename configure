@@ -1045,6 +1045,7 @@ with_slurmdbd_port
 with_slurmctld_port_count
 enable_slurmrestd
 with_slurmrestd_port
+with_lua
 with_readline
 with_systemdsystemunitdir
 with_munge
@@ -1802,6 +1803,7 @@ Optional Packages:
                           set slurmctld default port count [1]
   --with-slurmrestd-port=N
                           set slurmrestd default port [6820]
+  --with-lua              enable lua plugin support
   --without-readline      compile without readline support
   --with-systemdsystemunitdir=DIR
                           Directory for systemd service files
@@ -26588,9 +26590,43 @@ printf "%s\n" "#define SLURMRESTD_PORT $slurmrestdport" >>confdefs.h
 
 
 
-	x_ac_lua_pkg_name="lua"
-	#check for 5.4, 5.3, 5.2 and then 5.1
-	if test -n "$PKG_CONFIG" && \
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to enable lua plugin support" >&5
+printf %s "checking whether to enable lua plugin support... " >&6; }
+
+# Check whether --with-lua was given.
+if test ${with_lua+y}
+then :
+  withval=$with_lua;  case "$withval" in
+			yes|"") x_ac_lua=yes ;;
+			 no) x_ac_lua=no ;;
+			  *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+printf "%s\n" "doh!" >&6; }
+			     as_fn_error $? "bad value \"$withval\" for --with-lua" "$LINENO" 5 ;;
+			esac
+
+else $as_nop
+  x_ac_lua=yes
+
+fi
+
+	if test "x$with_lua" = "xno"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: lua support is disabled" >&5
+printf "%s\n" "$as_me: lua support is disabled" >&6;}
+	else
+		x_ac_lua_pkg_name="lua"
+		# First check for lua named package, then check for 5.4, 5.3, 5.2 and 5.1.
+		# Modern RHEL uses "lua' for the primary version.
+		if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name="lua >= 5.1"
+else
+  if test -n "$PKG_CONFIG" && \
     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.4\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.4") 2>&5
   ac_status=$?
@@ -26655,6 +26691,7 @@ else
   x_ac_lua_pkg_name=lua-5.1
 else
   x_ac_lua_pkg_name="lua >= 5.1"
+fi
 fi
 fi
 fi
@@ -26735,27 +26772,28 @@ printf "%s\n" "yes" >&6; }
         x_ac_have_lua="yes"
 fi
 
-	if test "x$x_ac_have_lua" = "xyes"; then
-	  saved_CFLAGS="$CFLAGS"
-	  saved_LIBS="$LIBS"
-	  lua_CFLAGS="$lua_CFLAGS"
-	  CFLAGS="$CFLAGS $lua_CFLAGS"
-	  LIBS="$LIBS $lua_LIBS"
-	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for whether we can link to liblua" >&5
+		if test "x$x_ac_have_lua" = "xyes"; then
+		  saved_CFLAGS="$CFLAGS"
+		  saved_LIBS="$LIBS"
+		  lua_CFLAGS="$lua_CFLAGS"
+		  CFLAGS="$CFLAGS $lua_CFLAGS"
+		  LIBS="$LIBS $lua_LIBS"
+
+		  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for whether we can link to liblua" >&5
 printf %s "checking for whether we can link to liblua... " >&6; }
-	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			     #include <lua.h>
-			     #include <lauxlib.h>
-			     #include <lualib.h>
+				     #include <lua.h>
+				     #include <lauxlib.h>
+				     #include <lualib.h>
 
 int
 main (void)
 {
 
-			     lua_State *L = luaL_newstate();
-			     luaL_openlibs(L);
+				     lua_State *L = luaL_newstate();
+				     luaL_openlibs(L);
 
   ;
   return 0;
@@ -26770,24 +26808,35 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
-	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua $x_ac_lua_pkg_name" >&5
+		  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua $x_ac_lua_pkg_name" >&5
 printf "%s\n" "$x_ac_have_lua $x_ac_lua_pkg_name" >&6; }
-	  if test "x$x_ac_have_lua" = "xno"; then
-	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against lua libraries" >&5
+		  if test "x$x_ac_have_lua" = "xno"; then
+		    if test -z "$with_lua"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against lua libraries" >&5
 printf "%s\n" "$as_me: WARNING: unable to link against lua libraries" >&2;}
-	  else
+else $as_nop
+  as_fn_error $? "unable to link against lua libraries" "$LINENO" 5
+fi
+		  else
 
 printf "%s\n" "#define HAVE_LUA 1" >>confdefs.h
 
-	    # We can not define something here to determine version for systems
-	    # that use just liblua we will not know what version we are using.
-	    # Use LUA_VERSION_NUM as in lua.h it will always be right.
-	  fi
-	  CFLAGS="$saved_CFLAGS"
-	  LIBS="$saved_LIBS"
-	else
-	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
+		    # We can not define something here to determine version for systems
+		    # that use just liblua we will not know what version we are using.
+		    # Use LUA_VERSION_NUM as in lua.h it will always be right.
+		  fi
+		  CFLAGS="$saved_CFLAGS"
+		  LIBS="$saved_LIBS"
+		else
+		  if test -z "$with_lua"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate lua package" >&2;}
+else $as_nop
+  as_fn_error $? "unable to locate lua package" "$LINENO" 5
+fi
+		fi
 	fi
 
 	 if test "x$x_ac_have_lua" = "xyes"; then
