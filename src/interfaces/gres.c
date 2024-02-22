@@ -4956,8 +4956,9 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 
 	xassert(gres_ns);
 
-	if ((gres_ns->topo_cnt != 0) &&
-	    (gres_ns->no_consume == false)) {
+	if (!gres_ns->gres_cnt_avail) {
+		return NULL;
+	} else if ((gres_ns->topo_cnt != 0) && (gres_ns->no_consume == false)) {
 		bitstr_t *topo_printed = bit_alloc(gres_ns->topo_cnt);
 		xfree(gres_ns->gres_used);    /* Free any cached value */
 		for (i = 0; i < gres_ns->topo_cnt; i++) {

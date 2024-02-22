@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
  -- scrun/slurmrestd/sackd - Avoid closing all listening sockets when
     interrupted from signal such as SIGALRM. Normal shutdown remains unaffected.
  -- Remove systemd AbandonScope() logic for scope units as it is not needed.
+ -- Fix GresUsed output from `scontrol show nodes --details` showing  GRES types
+    that are not configured on a node.
 
 * Changes in Slurm 23.11.5
 ==========================
