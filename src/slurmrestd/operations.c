@@ -265,24 +265,21 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	if (!(op_path->flags & OP_BIND_DATA_PARSER)) {
 		data_parser_t *default_parser = NULL;
 
+		if (!parsers[0])
+			fatal("No data_parsers plugins loaded. Refusing to load.");
+
 		for (int i = 0; parsers[i]; i++) {
-			if (!parsers[0])
-				fatal("No data_parsers plugins loaded. Refusing to load.");
-
-			for (int i = 0; parsers[i]; i++) {
-				if (!xstrcmp(data_parser_get_plugin(parsers[i]),
-					     SLURM_DATA_PARSER_VERSION)) {
-					default_parser = parsers[i];
-					break;
-				}
+			if (!xstrcmp(data_parser_get_plugin(parsers[i]),
+				     SLURM_DATA_PARSER_VERSION)) {
+				default_parser = parsers[i];
+				break;
 			}
-
-			if (!default_parser)
-				default_parser = parsers[0];
-
-			return _add_binded_path(NULL, op_path, meta,
-						default_parser);
 		}
+
+		if (!default_parser)
+			default_parser = parsers[0];
+
+		return _add_binded_path(NULL, op_path, meta, default_parser);
 	}
 
 	resp = data_new();
