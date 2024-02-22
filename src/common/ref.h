@@ -81,9 +81,9 @@
 	do {                                                      \
 		char *json_data_ptr;                              \
 		static_ref_to_cstring(json_data_ptr, name);       \
-		serialize_g_string_to_data(&data, json_data_ptr,  \
-					   static_ref_size(name), \
-					   MIME_TYPE_JSON);       \
+		(void) serialize_g_string_to_data(&data,          \
+			json_data_ptr,  static_ref_size(name),    \
+			MIME_TYPE_JSON);                          \
 		xfree(json_data_ptr);                             \
 	} while (0);
 
