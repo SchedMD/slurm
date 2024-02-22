@@ -1274,7 +1274,7 @@ static int _foreach_list_per_tres_type_nct(void *x, void *arg)
 		xassert(!tres_nct->count);
 		tres_nct->count = tres->count;
 		return 1;
-	default :
+	default:
 		fatal("%s: unexpected type", __func__);
 	}
 }

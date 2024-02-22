@@ -253,7 +253,7 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 		log_flag(DATA, "assigned QOS List at 0x%" PRIxPTR" to parser 0x%"PRIxPTR,
 			 (uintptr_t) obj, (uintptr_t) args);
 		return SLURM_SUCCESS;
-	default :
+	default:
 		return EINVAL;
 	}
 }

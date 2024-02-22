@@ -1045,7 +1045,7 @@ static int _foreach_list_per_tres_type_nct(void *x, void *arg)
 		xassert(!tres_nct->count);
 		tres_nct->count = tres->count;
 		return 1;
-	default :
+	default:
 		fatal("%s: unexpected type", __func__);
 	}
 }
@@ -1435,7 +1435,7 @@ static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
 	case SLURM_INTERACTIVE_STEP :
 		data_set_string(dst, "interactive");
 		break;
-	default :
+	default:
 		data_set_string_fmt(dst, "%u", *id);
 	}
 
