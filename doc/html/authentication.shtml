@@ -104,6 +104,11 @@ CredType = cred/slurm
 <li>Start the daemons back up with the appropriate method for your cluster.</li>
 </ol>
 
+<p>If the cluster does not have access to consistent user ids from LDAP or
+the operating system, you can use the
+<a href="slurm.conf.html#OPT_use_client_ids">use_client_ids</a> option to
+allow it to use the Slurm authentication mechanism.</p>
+
 <h4 id="sack">SACK<a class="slurm_link" href="#sack"></a></h4>
 
 <p>Slurm's internal authentication makes use of a subsystem &mdash; the
@@ -124,6 +129,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 11 January 2024</p>
+<p style="text-align:center;">Last modified 22 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
