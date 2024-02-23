@@ -96,6 +96,12 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	return ESLURM_NOT_SUPPORTED;
 }
 
+static data_t *_on_key(data_t *dst, const char *key)
+{
+	data_t *c = data_key_set(dst, key);
+	return c;
+}
+
 static int _handle_new_key_char(data_t *d, char **key, char **buffer,
 				bool convert_types)
 {
@@ -114,18 +120,18 @@ static int _handle_new_key_char(data_t *d, char **key, char **buffer,
 		 * RFC3986 provides an example of "key=value" but leaves
 		 * the flag values ambiguous.
 		 */
-		data_t *c = data_key_set(d, *buffer);
+		data_t *c = _on_key(d, *buffer);
 		data_set_bool(c, true);
 		xfree(*buffer);
 		*buffer = NULL;
 	} else if (*key != NULL && *buffer == NULL) {
 		/* example: &test1=&=value */
-		data_t *c = data_key_set(d, *key);
+		data_t *c = _on_key(d, *key);
 		data_set_null(c);
 		xfree(*key);
 		*key = NULL;
 	} else if (*key != NULL && *buffer != NULL) {
-		data_t *c = data_key_set(d, *key);
+		data_t *c = _on_key(d, *key);
 		data_set_string(c, *buffer);
 
 		if (convert_types)
