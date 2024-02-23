@@ -1736,6 +1736,9 @@ _process_cmdline(int ac, char **av)
 		}
 	}
 
+	if (under_systemd && !conf->daemonize)
+		fatal("--systemd and -D options are mutually exclusive");
+
 	/*
 	 *  If slurmstepd path wasn't overridden by command line, set
 	 *  it to the default here:
