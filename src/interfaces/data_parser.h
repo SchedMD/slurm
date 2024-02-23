@@ -831,6 +831,15 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst);
 
 /*
+ * Create data_parser instance for CLI
+ * IN data_parser - data_parser parameters
+ * RET parser ptr
+ *	Must be freed by call to data_parser_g_free()
+ */
+extern data_parser_t *data_parser_cli_parser(const char *data_parser,
+					     void *arg);
+
+/*
  * Get the OpenAPI type for a given parser's field
  * IN parser - parser to query
  * IN field - field name or NULL to get parser's type

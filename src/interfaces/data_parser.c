@@ -661,38 +661,45 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 	va_list ap;
 	char *str;
 	data_parser_dump_cli_ctxt_t *ctxt = arg;
-	openapi_resp_error_t *e;
+	openapi_resp_error_t *e = NULL;
 
-	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
-	xassert(ctxt->errors);
-	if (!ctxt->errors)
-		return false;
+	if (ctxt) {
+		xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+		xassert(ctxt->errors);
+
+		if (!ctxt->errors)
+			return false;
+
+		e = xmalloc(sizeof(*e));
+	}
 
 	va_start(ap, why);
 	str = vxstrfmt(why, ap);
 	va_end(ap);
 
-	e = xmalloc(sizeof(*e));
-
 	if (str) {
 		error("%s: parser=%s rc[%d]=%s -> %s",
-		      (source ? source : __func__), ctxt->data_parser,
+		      (source ? source : __func__),
+		      (!ctxt ? "DEFAULT" : ctxt->data_parser),
 		      error_code, slurm_strerror(error_code), str);
 
-		e->description = str;
+		if (e)
+			e->description = str;
 	}
 
 	if (error_code) {
-		e->num = error_code;
+		if (e)
+			e->num = error_code;
 
-		if (!ctxt->rc)
+		if (ctxt && !ctxt->rc)
 			ctxt->rc = error_code;
 	}
 
-	if (source)
+	if (source && ctxt)
 		e->source = xstrdup(source);
 
-	list_append(ctxt->errors, e);
+	if (ctxt)
+		list_append(ctxt->errors, e);
 
 	return false;
 }
@@ -703,15 +710,17 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 	va_list ap;
 	char *str;
 	data_parser_dump_cli_ctxt_t *ctxt = arg;
-	openapi_resp_warning_t *w;
+	openapi_resp_warning_t *w = NULL;
 
-	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
-	xassert(ctxt->warnings);
+	if (ctxt) {
+		xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+		xassert(ctxt->warnings);
 
-	if (!ctxt->warnings)
-		return;
+		if (!ctxt->warnings)
+			return;
 
-	w = xmalloc(sizeof(*w));
+		w = xmalloc(sizeof(*w));
+	}
 
 	va_start(ap, why);
 	str = vxstrfmt(why, ap);
@@ -719,15 +728,18 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 
 	if (str) {
 		debug("%s: parser=%s WARNING: %s",
-		      (source ? source : __func__), ctxt->data_parser, str);
+		      (source ? source : __func__),
+		      (!ctxt ? "DEFAULT" : ctxt->data_parser), str);
 
-		w->description = str;
+		if (ctxt)
+			w->description = str;
 	}
 
-	if (source)
+	if (source && ctxt)
 		w->source = xstrdup(source);
 
-	list_append(ctxt->warnings, w);
+	if (ctxt)
+		list_append(ctxt->warnings, w);
 }
 
 extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
@@ -751,12 +763,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (!(parser = data_parser_g_new(_on_error, _on_error, _on_error, ctxt,
-					 _on_warn, _on_warn, _on_warn, ctxt,
-					 (data_parser ?
-						  data_parser :
-						  SLURM_DATA_PARSER_VERSION),
-					 NULL, false))) {
+	if (!(parser = data_parser_cli_parser(data_parser, ctxt))) {
 		rc = ESLURM_DATA_INVALID_PARSER;
 		error("%s output not supported by %s",
 		      mime_type, SLURM_DATA_PARSER_VERSION);
@@ -813,6 +820,14 @@ extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
+{
+	return data_parser_g_new(_on_error, _on_error, _on_error, arg, _on_warn,
+				 _on_warn, _on_warn, arg,
+				 (data_parser ?  data_parser :
+				  SLURM_DATA_PARSER_VERSION), NULL, false);
 }
 
 extern openapi_type_t data_parser_g_resolve_openapi_type(

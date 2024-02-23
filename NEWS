@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
     package.
  -- data_parser/v0.0.40 - Emit a warning instead of an error if a disabled
     parser is invoked.
+ -- slurmrestd - Improve handling when content plugins rely on parsers
+    that haven't been loaded.
 
 * Changes in Slurm 23.11.4
 ==========================
@@ -151,6 +153,9 @@ documents those changes that are of interest to users and administrators.
     scanning a machine running srun.
  -- Make sprio correctly print array tasks that have not yet been split out.
  -- topology/block - Restrict the number of last-level blocks in any allocation.
+ -- slurmrestd - Treat multiple repeat URL query values as list.
+ -- slurmrestd - Treat all URL query values as string by default to avoid
+    parser warnings.
 
 * Changes in Slurm 23.11.3
 ==========================
