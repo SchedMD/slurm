@@ -7358,7 +7358,31 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	prolog_launch_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		gres_prep_pack(msg->job_gres_prep, buffer,
+			       smsg->protocol_version);
+		pack32(msg->job_id, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
+		packstr(msg->nodes, buffer);
+		packstr(msg->work_dir, buffer);
+
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_alloc_host, buffer);
+		pack16(msg->x11_alloc_port, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target, buffer);
+		pack16(msg->x11_target_port, buffer);
+
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
+	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		gres_prep_pack(msg->job_gres_prep, buffer,
 			       smsg->protocol_version);
 		pack32(msg->job_id, buffer);
@@ -7415,7 +7439,33 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
-	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
+				     smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+
+		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
+
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_alloc_host, buffer);
+		safe_unpack16(&msg->x11_alloc_port, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
+
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size,
+				     buffer);
+		if (!(msg->cred = slurm_cred_unpack(buffer,
+						    smsg->protocol_version)))
+			goto unpack_error;
+	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
 				     smsg->protocol_version))
 			goto unpack_error;
