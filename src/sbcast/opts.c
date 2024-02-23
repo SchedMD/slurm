@@ -76,7 +76,7 @@ static void     _usage( void );
  */
 extern void parse_command_line(int argc, char **argv)
 {
-	char *env_val = NULL, *sep, *tmp;
+	char *env_val = NULL, *tmp;
 	int opt_char, ret;
 	int option_index;
 	static struct option long_options[] = {
@@ -98,14 +98,10 @@ extern void parse_command_line(int argc, char **argv)
 		{NULL,        0,                 0, 0}
 	};
 
-	if ((tmp = xstrcasestr(slurm_conf.bcast_parameters, "Compression="))) {
-		tmp += 12;
-		sep = strchr(tmp, ',');
-		if (sep)
-			sep[0] = '\0';
+	if ((tmp = conf_get_opt_str(slurm_conf.bcast_parameters,
+				    "Compression="))) {
 		params.compress = parse_compress_type(tmp);
-		if (sep)
-			sep[0] = ',';
+		xfree(tmp);
 	}
 
 	if (slurm_conf.bcast_exclude)

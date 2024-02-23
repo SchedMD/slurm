@@ -778,7 +778,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	struct bcast_parameters *params;
-	char *sep = NULL, *tmp = NULL;
+	char *tmp = NULL;
 	xassert(srun_opt);
 
 	if ((opt_local->argc == 0) || (opt_local->argv[0] == NULL))
@@ -788,15 +788,10 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->block_size = 8 * 1024 * 1024;
 	if (srun_opt->compress) {
 		params->compress = srun_opt->compress;
-	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
-				      "Compression="))) {
-		tmp += 12;
-		sep = strchr(tmp, ',');
-		if (sep)
-			sep[0] = '\0';
+	} else if ((tmp = conf_get_opt_str(slurm_conf.bcast_parameters,
+					   "Compression="))) {
 		params->compress = parse_compress_type(tmp);
-		if (sep)
-			sep[0] = ',';
+		xfree(tmp);
 	}
 	params->exclude = xstrdup(srun_opt->bcast_exclude);
 	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
