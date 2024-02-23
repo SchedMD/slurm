@@ -729,22 +729,10 @@ static int _init_new_scope_dbus(char *scope_path)
 				_exit(1);
 			}
 		}
-		if (retries < CGROUP_MAX_RETRIES) {
-			/*
-			 * We need to "abandon" this scope or if we terminate,
-			 * the unit will also terminate.
-			 */
-			if (cgroup_dbus_abandon_scope(scope_path))
-				log_flag(CGROUP, "Cannot abandon cgroup scope %s",
-					 scope_path);
-			else
-				log_flag(CGROUP, "Abandoned scope %s",
-					 scope_path);
-		} else {
+		if (retries > CGROUP_MAX_RETRIES)
 			error("Long time waiting for %s to show up after dbus call.",
 			      scope_path);
-		}
-		if (retries > 1)
+		else if (retries > 1)
 			log_flag(CGROUP, "Possible systemd slowness, %d msec waiting scope to show up.",
 				 (retries * 10));
 
