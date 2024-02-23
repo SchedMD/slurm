@@ -186,10 +186,10 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) controller.$(OBJEXT) crontab.$(OBJEXT) \
 	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
 	gres_ctld.$(OBJEXT) groups.$(OBJEXT) heartbeat.$(OBJEXT) \
-	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) licenses.$(OBJEXT) \
-	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
-	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
+	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) job_state.$(OBJEXT) \
+	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
+	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
+	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
 	prep_slurmctld.$(OBJEXT) proc_req.$(OBJEXT) \
 	rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
 	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) sackd_mgr.$(OBJEXT) \
@@ -223,15 +223,15 @@ am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/front_end.Po ./$(DEPDIR)/gang.Po \
 	./$(DEPDIR)/gres_ctld.Po ./$(DEPDIR)/groups.Po \
 	./$(DEPDIR)/heartbeat.Po ./$(DEPDIR)/job_mgr.Po \
-	./$(DEPDIR)/job_scheduler.Po ./$(DEPDIR)/licenses.Po \
-	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
-	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
-	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/port_mgr.Po \
-	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/prep_slurmctld.Po \
-	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/rate_limit.Po \
-	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/reservation.Po \
-	./$(DEPDIR)/rpc_queue.Po ./$(DEPDIR)/sackd_mgr.Po \
-	./$(DEPDIR)/slurmscriptd.Po \
+	./$(DEPDIR)/job_scheduler.Po ./$(DEPDIR)/job_state.Po \
+	./$(DEPDIR)/licenses.Po ./$(DEPDIR)/locks.Po \
+	./$(DEPDIR)/node_mgr.Po ./$(DEPDIR)/node_scheduler.Po \
+	./$(DEPDIR)/partition_mgr.Po ./$(DEPDIR)/ping_nodes.Po \
+	./$(DEPDIR)/port_mgr.Po ./$(DEPDIR)/power_save.Po \
+	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
+	./$(DEPDIR)/rate_limit.Po ./$(DEPDIR)/read_config.Po \
+	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
+	./$(DEPDIR)/sackd_mgr.Po ./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
 	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
@@ -561,6 +561,7 @@ slurmctld_SOURCES = \
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\
+	job_state.c	\
 	licenses.c	\
 	licenses.h	\
 	locks.c   	\
@@ -737,6 +738,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heartbeat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_state.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/licenses.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locks.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_mgr.Po@am__quote@ # am--include-marker
@@ -902,6 +904,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
 	-rm -f ./$(DEPDIR)/job_scheduler.Po
+	-rm -f ./$(DEPDIR)/job_state.Po
 	-rm -f ./$(DEPDIR)/licenses.Po
 	-rm -f ./$(DEPDIR)/locks.Po
 	-rm -f ./$(DEPDIR)/node_mgr.Po
@@ -983,6 +986,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
 	-rm -f ./$(DEPDIR)/job_scheduler.Po
+	-rm -f ./$(DEPDIR)/job_state.Po
 	-rm -f ./$(DEPDIR)/licenses.Po
 	-rm -f ./$(DEPDIR)/locks.Po
 	-rm -f ./$(DEPDIR)/node_mgr.Po
