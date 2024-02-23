@@ -611,8 +611,8 @@ MaxVMSize, MaxVMSizeNode, MaxVMSizeTask</i> and <i>vmem</i> in
 with <i>cgroup/v2</i>.</p>
 <p>In what regards to real stack size (RSS), this plugin provides cgroup's
 <i>memory.current</i> value from the memory interface, which is not equal to the
-RSS value provided by procfs. Nevertheless it is the same than the kernel uses
-in its OOM killer logic.
+RSS value provided by procfs. Nevertheless it is the same value that the kernel
+uses in its OOM killer logic.
 </p>
 
 <p style="text-align:center;">Last modified 23 February 2024</p>
