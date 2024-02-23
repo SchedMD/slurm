@@ -130,6 +130,9 @@ documents those changes that are of interest to users and administrators.
     account multiple instances of the same node inside SLURM_HOSTFILE.
  -- Avoid wrong limit oriented (i.e. QosMaxGresPer*) job pending reason for jobs
     actually pending on Resources when GPUs are requested per job.
+ -- Fix --ntasks-per-node not being treated as a max count of tasks per node
+    when used in combination with --ntasks. --ntasks option will now take
+    precedence as it is documented.
 
 * Changes in Slurm 23.11.7
 ==========================
