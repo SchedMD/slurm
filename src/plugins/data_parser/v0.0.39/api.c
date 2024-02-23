@@ -253,7 +253,7 @@ extern const char *data_parser_p_resolve_type_string(args_t *args,
 	xassert(args->magic == MAGIC_ARGS);
 
 	if (!parser)
-		return OPENAPI_TYPE_INVALID;
+		return NULL;
 
 	while (parser->pointer_type)
 		parser = find_parser_by_type(parser->pointer_type);
