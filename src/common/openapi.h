@@ -79,6 +79,7 @@ extern data_type_t openapi_type_format_to_data_type(
 	openapi_type_format_t format);
 extern openapi_type_format_t openapi_string_to_type_format(const char *str);
 extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
+extern openapi_type_t openapi_type_format_to_type(openapi_type_format_t format);
 
 /*
  * Separator used to split up a relative path.
