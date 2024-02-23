@@ -271,7 +271,7 @@ extern openapi_type_t data_parser_p_resolve_openapi_type(
 		return OPENAPI_TYPE_INVALID;
 
 	if (!field)
-		return parser->obj_openapi;
+		return openapi_type_format_to_type(parser->obj_openapi);
 
 	for (int i = 0; i < parser->field_count; i++) {
 		if (!xstrcasecmp(parser->fields[i].field_name, field)) {
@@ -281,7 +281,7 @@ extern openapi_type_t data_parser_p_resolve_openapi_type(
 			while (p->pointer_type)
 				p = find_parser_by_type(p->pointer_type);
 
-			return p->obj_openapi;
+			return openapi_type_format_to_type(p->obj_openapi);
 		}
 	}
 
