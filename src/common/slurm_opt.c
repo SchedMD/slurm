@@ -3412,6 +3412,7 @@ static int arg_set_ntasks(slurm_opt_t *opt, const char *arg)
 {
 	opt->ntasks = parse_int("--ntasks", arg, true);
 	opt->ntasks_set = true;
+	opt->ntasks_opt_set = true;
 	return SLURM_SUCCESS;
 }
 static int arg_set_data_ntasks(slurm_opt_t *opt, const data_t *arg,
@@ -3430,6 +3431,7 @@ static int arg_set_data_ntasks(slurm_opt_t *opt, const data_t *arg,
 	} else {
 		opt->ntasks = (int) val;
 		opt->ntasks_set = true;
+		opt->ntasks_opt_set = true;
 	}
 	return rc;
 }

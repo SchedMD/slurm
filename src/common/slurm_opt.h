@@ -312,7 +312,8 @@ typedef struct {
 	gid_t gid;			/* local gid			*/
 	char *chdir;			/* --chdir			*/
 	int ntasks;			/* --ntasks			*/
-	bool ntasks_set;		/* ntasks explicitly set	*/
+	bool ntasks_set;		/* ntasks explicit or implicitly set */
+	bool ntasks_opt_set;		/* ntasks explicitly set by user opt */
 	int cpus_per_task;		/* --cpus-per-task=n		*/
 	bool cpus_set;			/* cpus_per_task explicitly set	*/
 	int min_nodes;			/* --nodes=n			*/
