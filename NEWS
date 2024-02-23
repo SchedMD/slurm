@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     the job is released.
  -- scrun/slurmrestd/sackd - Avoid closing all listening sockets when
     interrupted from signal such as SIGALRM. Normal shutdown remains unaffected.
+ -- Remove systemd AbandonScope() logic for scope units as it is not needed.
 
 * Changes in Slurm 23.11.5
 ==========================
