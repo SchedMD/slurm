@@ -104,8 +104,7 @@ static const char *tags[] = {
 	NULL
 };
 
-static const op_bind_flags_t op_flags =
-	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT);
+#define OP_FLAGS (OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT)
 
 const openapi_path_binding_t openapi_paths[] = {
 	{
@@ -125,7 +124,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/config",
@@ -155,7 +154,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/tres/",
@@ -185,7 +184,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/qos/{qos}",
@@ -214,7 +213,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/qos/",
@@ -246,7 +245,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/associations/",
@@ -287,7 +286,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/association/",
@@ -315,7 +314,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/instances/",
@@ -333,7 +332,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/instance/",
@@ -351,7 +350,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/user/{name}",
@@ -380,7 +379,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/users_association/",
@@ -402,7 +401,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/users/",
@@ -433,7 +432,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/cluster/{cluster_name}",
@@ -463,7 +462,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/clusters/",
@@ -495,7 +494,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/wckey/{id}",
@@ -523,7 +522,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/wckeys/",
@@ -555,7 +554,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/account/{account_name}",
@@ -584,7 +583,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/accounts_association/",
@@ -605,7 +604,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/accounts/",
@@ -636,7 +635,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/jobs/",
@@ -654,7 +653,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurmdb/{data_parser}/diag/",
@@ -671,7 +670,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{0}
 };
