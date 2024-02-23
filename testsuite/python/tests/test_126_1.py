@@ -282,7 +282,7 @@ def enforce_NO(limit_name, flag, val_fail, val_pass):
 
     # 1 Submit -> pend on p1,p2 with bad p1 limit set -> complete with p1 limit met
     job_id = atf.submit_job_sbatch(
-        f'-p p1,p2 {flag}{custom_val_fail} --wrap "hostname&" -o /dev/null', timeout=1
+        f'-p p1,p2 {flag}{custom_val_fail} --wrap "hostname&" -o /dev/null'
     )
     satisfy_pending_job_limit(job_id, limit_name, custom_val_fail)
     assert (
@@ -291,7 +291,7 @@ def enforce_NO(limit_name, flag, val_fail, val_pass):
 
     # 2 Submit -> pend on just p1 with bad limit, then complete with good limit
     job_id = atf.submit_job_sbatch(
-        f'-p p1 {flag}{custom_val_fail} --wrap "hostname&" -o /dev/null', timeout=1
+        f'-p p1 {flag}{custom_val_fail} --wrap "hostname&" -o /dev/null'
     )
     satisfy_pending_job_limit(job_id, limit_name, custom_val_fail)
     assert (
@@ -328,7 +328,7 @@ def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
 
     # 1 Submit -> pend on p1,p2 with bad p1 limit set -> complete with p1 limit met
     job_id = atf.submit_job_sbatch(
-        f'-p p1,p2 {flag}{val_fail} --wrap "hostname&" -o /dev/null', timeout=1
+        f'-p p1,p2 {flag}{val_fail} --wrap "hostname&" -o /dev/null'
     )
     satisfy_pending_job_limit(job_id, limit_name, f"{val_pass},{val_fail}")
     assert (
@@ -345,7 +345,7 @@ def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
 
     # 2 Submit -> pend on just p1 with bad limit, then complete with good limit
     job_id = atf.submit_job_sbatch(
-        f'-p p1 {flag}{val_fail} --wrap "hostname&" -o /dev/null', timeout=1
+        f'-p p1 {flag}{val_fail} --wrap "hostname&" -o /dev/null'
     )
     satisfy_pending_job_limit(job_id, limit_name, f"{val_pass},{val_fail}")
     assert (
