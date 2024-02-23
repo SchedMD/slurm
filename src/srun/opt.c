@@ -1230,19 +1230,38 @@ static bool _opt_verify(void)
 		    slurm_option_set_by_env(&opt, 'n') &&
 		    !slurm_option_set_by_env(&opt, 'N')) {
 			slurm_option_reset(&opt, "ntasks");
-		} else if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
-			   (opt.ntasks_per_node !=
-			    (opt.ntasks / opt.min_nodes))) {
-			if ((opt.ntasks > opt.ntasks_per_node) &&
-			    !mpack_reset_nodes)
-				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the number of requested nodes %u. Ignoring --ntasks-per-node.",
+		} else if (opt.ntasks_per_node != NO_VAL) {
+			bool ntasks_per_node_reset = false;
+			int min_ntasks, max_ntasks;
+
+			min_ntasks = opt.min_nodes * opt.ntasks_per_node;
+			max_ntasks = opt.max_nodes * opt.ntasks_per_node;
+
+			/*
+			* We only want to notify incoherent combinations of
+			* -n/-N/--ntasks-per-node for steps, since job
+			* allocations will be already rejected.
+			*/
+			if (opt.max_nodes &&
+			    (opt.ntasks > max_ntasks) &&
+			    !mpack_reset_nodes &&
+			    getenv("SLURM_JOB_ID")) {
+				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the maximum number of requested nodes %u. Ignoring --ntasks-per-node.",
 					opt.ntasks_per_node, opt.ntasks,
-					opt.min_nodes);
-			else if (opt.ntasks > opt.ntasks_per_node)
+					opt.max_nodes);
+				ntasks_per_node_reset = true;
+			}
+			else if (opt.min_nodes &&
+				 (opt.ntasks != min_ntasks) &&
+				 (opt.ntasks > opt.ntasks_per_node) &&
+				 mpack_reset_nodes) {
 				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u and -mpack, which forces min number of nodes to 1",
 					opt.ntasks_per_node, opt.ntasks);
+				ntasks_per_node_reset = true;
+			}
 
-			slurm_option_reset(&opt, "ntasks-per-node");
+			if (ntasks_per_node_reset)
+				slurm_option_reset(&opt, "ntasks-per-node");
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
