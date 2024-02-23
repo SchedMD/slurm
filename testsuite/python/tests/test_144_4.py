@@ -23,6 +23,12 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_test():
+    yield
+    atf.cancel_all_jobs(quiet=True)
+
+
 def test_gres_alloc_dealloc_file():
     """Test alloc/dealloc of gres when file is set, but not type"""
 
@@ -52,13 +58,13 @@ def test_gres_overlap():
     job_id = atf.submit_job_sbatch(
         f"-wnode2 -N1 --gres=r2:1 \
             --output={output_file} --wrap='\
-            srun --overlap --gres=r2:1 hostname &\
-            srun --overlap --gres=r2:1 hostname &\
+            srun --overlap --gres=r2:1 sleep 60 &\
+            srun --overlap --gres=r2:1 sleep 60 &\
             wait'",
         fatal=True,
     )
-    atf.wait_for_job_state(job_id, "DONE")
-    step_0 = atf.run_command_output(f"sacct -j {job_id}.0")
-    assert "COMPLETED" in step_0, "Expect first step to finish"
-    step_1 = atf.run_command_output(f"sacct -j {job_id}.1")
-    assert "COMPLETED" in step_1, "Expect second step to finish"
+    assert atf.repeat_until(
+        lambda: None,
+        lambda out: atf.get_step_parameter(f"{job_id}.0", "State") == "RUNNING"
+        and atf.get_step_parameter(f"{job_id}.1", "State") == "RUNNING",
+    ), "Expect all steps to run in parallel"
