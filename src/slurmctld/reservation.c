@@ -3430,7 +3430,7 @@ static int _validate_reservation_access_update(void *x, void *y)
 	if (!job_use_reservation)
 		return 0;
 
-	if (!_valid_job_access_resv(job_ptr, resv_ptr, false)) {
+	if (_valid_job_access_resv(job_ptr, resv_ptr, false) != SLURM_SUCCESS) {
 		info("Rejecting update of reservation %s, because it's in use by %pJ",
 		     resv_ptr->name, job_ptr);
 		return 1;
@@ -3976,10 +3976,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		goto update_failure;
 
 	/*
-	 * Verify if we have pending or running jobs using the reservation,
-	 * that lose access to the reservation by the update.
-	 * Reject reservation update if pending job requested it or running job
-	 * makes use of it.
+	 * Reject reservation update if we have pending or running jobs using
+	 * the reservation, that lose access to the reservation by the update.
 	 * This has to happen after _set_assoc_list
 	 */
 	if ((job_ptr = list_find_first(job_list,
