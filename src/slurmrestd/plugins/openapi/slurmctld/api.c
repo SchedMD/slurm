@@ -102,8 +102,7 @@ static const char *tags[] = {
 	NULL
 };
 
-static const op_bind_flags_t op_flags =
-	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT);
+#define OP_FLAGS (OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT)
 
 const openapi_path_binding_t openapi_paths[] = {
 	{
@@ -122,7 +121,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/reconfigure/",
@@ -139,7 +138,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/diag/",
@@ -156,7 +155,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/ping/",
@@ -173,7 +172,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/licenses/",
@@ -190,7 +189,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/job/submit",
@@ -211,7 +210,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/jobs/",
@@ -229,7 +228,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/jobs/state/",
@@ -247,7 +246,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/job/{job_id}",
@@ -291,7 +290,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/nodes/",
@@ -309,7 +308,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/node/{node_name}",
@@ -352,7 +351,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/partitions/",
@@ -370,7 +369,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/partition/{partition_name}",
@@ -389,7 +388,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/reservations/",
@@ -407,7 +406,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/slurm/{data_parser}/reservation/{reservation_name}",
@@ -426,7 +425,7 @@ const openapi_path_binding_t openapi_paths[] = {
 			},
 			{0}
 		},
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{0}
 };
