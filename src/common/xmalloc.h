@@ -96,6 +96,9 @@
 #define xrecalloc(__p, __cnt, __sz) \
         slurm_xrecalloc((void **)&(__p), __cnt, __sz, true, false, __FILE__, __LINE__, __func__)
 
+#define try_xrecalloc(__p, __cnt, __sz) \
+        slurm_xrecalloc((void **)&(__p), __cnt, __sz, true, true, __FILE__, __LINE__, __func__)
+
 #define xrealloc(__p, __sz) \
         slurm_xrecalloc((void **)&(__p), 1, __sz, true, false, __FILE__, __LINE__, __func__)
 
