@@ -118,11 +118,6 @@ One is a "Service" and the other is a "Scope". We are interested the "scope":
 directory and then adds the provided pid to the directory. The scope will remain
 until this pid is gone.</li>
 </ul>
-<p>Because we wanted to keep the systemd scope for any pid, we needed to call a
-specific function named "abandonScope" in systemd's dbus interface. Abandoning a
-scope makes it so that the scope will continue to be alive while there's a
-living pid in its cgroup tree, not just the initial pid.
-</p>
 <p>It is worth noting that a discussion with main systemd developers raised
 the <i>RemainAfterExit</i> systemd parameter. This parameter is intended to keep
 the unit alive even if all the processes on it are gone. This option is only
@@ -204,8 +199,6 @@ name) or not. The cgroup directory associated with this scope will be fixed as:
 "/sys/fs/cgroup/system.slice/slurmstepd.scope" or
 "/sys/fs/cgroup/system.slice/nodename_slurmstepd.scope".
 </p>
-<p>The scope is also "abandoned" calling the dbus method of "abandonScope" with
-the purpose explained <a href="#real_sysd_prob">previously</a> on this page.</p>
 <p>Since the call to dbus "startTransientUnit" requires a pid as a parameter,
 slurmd needs to fork a "slurmstepd infinity" and use this parameter as the
 argument.</p>
@@ -622,6 +615,6 @@ RSS value provided by procfs. Nevertheless it is the same than the kernel uses
 in its OOM killer logic.
 </p>
 
-<p style="text-align:center;">Last modified 14 February 2024</p>
+<p style="text-align:center;">Last modified 23 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
