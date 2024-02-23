@@ -98,8 +98,25 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 
 static data_t *_on_key(data_t *dst, const char *key)
 {
-	data_t *c = data_key_set(dst, key);
-	return c;
+	data_t *c = data_key_get(dst, key);
+
+	if (!c)
+		return data_key_set(dst, key);
+
+	if (data_get_type(c) != DATA_TYPE_LIST) {
+		/*
+		 * Multiple values for the same key requires conversion to a
+		 * list of each value. Extract out the prior value and convert
+		 * to a list with the prior value as the first entry.
+		 */
+		data_t *k = data_new();
+		data_move(k, c);
+		data_set_list(c);
+		data_move(data_list_append(c), k);
+		FREE_NULL_DATA(k);
+	}
+
+	return data_list_append(c);
 }
 
 static int _handle_new_key_char(data_t *d, char **key, char **buffer,

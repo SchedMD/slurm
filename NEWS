@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
     scanning a machine running srun.
  -- Make sprio correctly print array tasks that have not yet been split out.
  -- topology/block - Restrict the number of last-level blocks in any allocation.
+ -- slurmrestd - Treat multiple repeat URL query values as list.
 
 * Changes in Slurm 23.11.3
 ==========================
