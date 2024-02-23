@@ -2820,6 +2820,7 @@ _rpc_reboot(slurm_msg_t *msg)
 		cfg = slurm_conf_lock();
 		reboot_program = cfg->reboot_program;
 		if (reboot_program) {
+			bool need_reboot = true;
 			sp = strchr(reboot_program, ' ');
 			if (sp)
 				sp = xstrndup(reboot_program,
@@ -2835,7 +2836,7 @@ _rpc_reboot(slurm_msg_t *msg)
 				info("Node reboot request with features %s being processed",
 				     reboot_msg->features);
 				(void) node_features_g_node_set(
-					reboot_msg->features);
+					reboot_msg->features, &need_reboot);
 				if (reboot_msg->features[0]) {
 					xstrfmtcat(cmd, "%s '%s'",
 						   sp, reboot_msg->features);

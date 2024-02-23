@@ -718,7 +718,7 @@ extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 	return SLURM_SUCCESS;
 }
 
-extern int node_features_p_node_set(char *active_features)
+extern int node_features_p_node_set(char *active_features, bool *need_reboot)
 {
 	char *tmp, *saveptr;
 	char *input = NULL;

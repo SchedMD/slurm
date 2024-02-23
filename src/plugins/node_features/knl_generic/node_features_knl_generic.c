@@ -1376,13 +1376,16 @@ static char *_find_key_val(char *key, char *resp_msg)
 /* Set's the node's active features based upon job constraints.
  * NOTE: Executed by the slurmd daemon.
  * IN active_features - New active features
+ * OUT need_reboot - indicate if feature update requires subsequent reboot
  * RET error code */
-extern int node_features_p_node_set(char *active_features)
+extern int node_features_p_node_set(char *active_features, bool *need_reboot)
 {
 	char *resp_msg, *argv[10], tmp[100];
 	char *key;
 	int error_code = SLURM_SUCCESS, status = 0;
 	char *mcdram_mode = NULL, *numa_mode = NULL;
+
+	*need_reboot = true;
 
 	if ((active_features == NULL) || (active_features[0] == '\0'))
 		return SLURM_SUCCESS;
