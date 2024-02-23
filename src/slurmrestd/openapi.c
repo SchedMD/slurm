@@ -294,7 +294,7 @@ static const openapi_path_binding_method_t openapi_methods[] = {
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt);
 
-static const op_bind_flags_t op_flags = OP_BIND_HIDDEN_OAS;
+#define OP_FLAGS (OP_BIND_HIDDEN_OAS)
 
 /*
  * Paths to generate OpenAPI specification
@@ -304,25 +304,25 @@ static const openapi_path_binding_t openapi_paths[] = {
 		.path = "/openapi.json",
 		.callback = _op_handler_openapi,
 		.methods = openapi_methods,
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/openapi.yaml",
 		.callback = _op_handler_openapi,
 		.methods = openapi_methods,
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/openapi",
 		.callback = _op_handler_openapi,
 		.methods = openapi_methods,
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{
 		.path = "/openapi/v3",
 		.callback = _op_handler_openapi,
 		.methods = openapi_methods,
-		.flags = op_flags,
+		.flags = OP_FLAGS,
 	},
 	{0}
 };
