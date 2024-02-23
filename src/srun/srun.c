@@ -801,13 +801,9 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->exclude = xstrdup(srun_opt->bcast_exclude);
 	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
-	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
-				      "DestDir="))) {
-		/* skip past the key to the value */
-		params->dst_fname = xstrdup(tmp + 8);
-		/* handle a further comma-separated value */
-		if ((sep = xstrchr(params->dst_fname, ',')))
-			sep[0] = '\0';
+	} else if ((params->dst_fname =
+		    conf_get_opt_str(slurm_conf.bcast_parameters,
+				     "DestDir="))) {
 		xstrcatchar(params->dst_fname, '/');
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/", opt_local->chdir);
