@@ -505,7 +505,7 @@ int main(int argc, char **argv)
 				desc->bitflags |= JOB_NTASKS_SET;
 			if (alloc && desc &&
 			    (desc->bitflags & JOB_NTASKS_SET)) {
-				if (desc->ntasks_per_node != NO_VAL16)
+				if (desc->num_tasks == NO_VAL)
 					desc->num_tasks =
 						alloc->node_cnt *
 						desc->ntasks_per_node;
@@ -532,7 +532,7 @@ int main(int argc, char **argv)
 		if (desc->ntasks_per_node != NO_VAL16)
 			desc->bitflags |= JOB_NTASKS_SET;
 		if (alloc && desc && (desc->bitflags & JOB_NTASKS_SET)) {
-			if (desc->ntasks_per_node != NO_VAL16)
+			if (desc->num_tasks == NO_VAL)
 				desc->num_tasks =
 					alloc->node_cnt * desc->ntasks_per_node;
 			else if (alloc->node_cnt > desc->num_tasks)
