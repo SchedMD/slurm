@@ -119,8 +119,7 @@ static data_t *_on_key(data_t *dst, const char *key)
 	return data_list_append(c);
 }
 
-static int _handle_new_key_char(data_t *d, char **key, char **buffer,
-				bool convert_types)
+static int _handle_new_key_char(data_t *d, char **key, char **buffer)
 {
 	if (*key == NULL && *buffer == NULL) {
 		/* example: &test=value */
@@ -150,9 +149,6 @@ static int _handle_new_key_char(data_t *d, char **key, char **buffer,
 	} else if (*key != NULL && *buffer != NULL) {
 		data_t *c = _on_key(d, *key);
 		data_set_string(c, *buffer);
-
-		if (convert_types)
-			(void) data_convert_type(c, DATA_TYPE_NONE);
 
 		xfree(*key);
 		xfree(*buffer);
@@ -257,7 +253,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 			break;
 		case ';': /* rfc1866 requests ';' treated like '&' */
 		case '&': /* rfc1866 only */
-			rc = _handle_new_key_char(d, &key, &buffer, true);
+			rc = _handle_new_key_char(d, &key, &buffer);
 			break;
 		case '=': /* rfc1866 only */
 			if (key == NULL && buffer == NULL) {
@@ -288,10 +284,10 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 
 	/* account for last entry */
 	if (!rc)
-		rc = _handle_new_key_char(d, &key, &buffer, true);
+		rc = _handle_new_key_char(d, &key, &buffer);
 	if (!rc && buffer)
 		/* account for last entry not having a value */
-		rc = _handle_new_key_char(d, &key, &buffer, true);
+		rc = _handle_new_key_char(d, &key, &buffer);
 
 	xassert(rc || !buffer);
 	xassert(rc || !key);
