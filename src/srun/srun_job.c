@@ -1636,7 +1636,10 @@ static void _set_ntasks(allocation_info_t *ai, slurm_opt_t *opt_local)
 {
 	int cnt = 0;
 
-	if (opt_local->ntasks_set && (opt_local->ntasks_per_node == NO_VAL))
+	/* Distinction between explicit or implicit set of ntasks */
+	if (opt_local->ntasks_opt_set ||
+	    (opt_local->ntasks_set &&
+	     (opt_local->ntasks_per_node == NO_VAL)))
 		return;
 
 	if (opt_local->ntasks_per_node != NO_VAL) {
