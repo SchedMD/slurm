@@ -500,6 +500,12 @@ Used by \fIauth/munge\fR and \fIcred/munge\fR.
 Credential lifetime, in seconds (e.g. "ttl=300").
 The default value is dependent upon the MUNGE installation, but is typically
 300 seconds.
+.IP
+
+.TP
+\fBuse_client_ids\fR
+Allow the \fIauth/slurm\fR plugin to authenticate users without relying on
+the user information from LDAP or the operating system.
 .RE
 .IP
 

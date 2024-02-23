@@ -395,18 +395,18 @@ All commands following this will expect this environment variable to be set.</li
 </ul>
 Set the following fields to configure Docker:
 <pre>{
-  "default-runtime": "slurm",
-  "runtimes": {
-    "slurm": {
-      "path": "/usr/local/bin/scrun"
+    "experimental": true,
+    "iptables": false,
+    "bridge": "none",
+    "no-new-privileges": true,
+    "rootless": true,
+    "selinux-enabled": false,
+    "default-runtime": "slurm",
+    "runtimes": {
+	"slurm": {
+	    "path": "/usr/local/bin/scrun"
+	}
     }
-  },
-  "experimental": true,
-  "iptables": false,
-  "bridge": "none",
-  "no-new-privileges": true,
-  "rootless": true,
-  "selinux-enabled": false,
 }</pre>
 Correct path to scrun as if installation prefix was configured.</li>
 <li>It is strongly suggested that sites consider using inter-node shared
