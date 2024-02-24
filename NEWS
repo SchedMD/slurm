@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
     parser is invoked.
  -- slurmrestd - Improve handling when content plugins rely on parsers
     that haven't been loaded.
+ -- Fix old pending jobs dying (Slurm version 21.08.x and older) when upgrading
+    Slurm due to "Invalid message version" errors.
 
 * Changes in Slurm 23.11.4
 ==========================
