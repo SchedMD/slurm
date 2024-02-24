@@ -57,6 +57,7 @@
 typedef enum {
 	DATA_PARSER_TYPE_INVALID = 0,
 	DATA_PARSER_BITSTR, /* bitstr_t */
+	DATA_PARSER_BITSTR_PTR, /* bitstr_t* */
 	DATA_PARSER_STRING, /* char* */
 	DATA_PARSER_UINT16, /* uint16_t */
 	DATA_PARSER_UINT16_NO_VAL, /* uint16_t - may be NO_VAL16 or INFINTE16 */
