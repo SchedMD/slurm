@@ -1700,7 +1700,7 @@ static void *_start_stage_out(void *x)
 						stage_out_args->gid);
 			}
 		} else {
-			job_state_unset_flag(job_ptr, JOB_STAGE_OUT);
+			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);
 			log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
@@ -1742,7 +1742,7 @@ static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_POST_RUN);
-	job_state_set_flag(job_ptr, JOB_STAGE_OUT);
+	job_ptr->job_state |= JOB_STAGE_OUT;
 	xfree(job_ptr->state_desc);
 	xstrfmtcat(job_ptr->state_desc, "%s: Stage-out in progress",
 		   plugin_type);
@@ -3101,7 +3101,7 @@ static void *_start_teardown(void *x)
 		if ((bb_job = _get_bb_job(job_ptr)))
 			bb_set_job_bb_state(job_ptr, bb_job,
 					    BB_STATE_COMPLETE);
-		job_state_unset_flag(job_ptr, JOB_STAGE_OUT);
+		job_ptr->job_state &= (~JOB_STAGE_OUT);
 		if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 		    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
 			mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
@@ -3699,9 +3699,9 @@ static void _kill_job(job_record_t *job_ptr, bool hold_job)
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");
 
-	job_state_set(job_ptr, JOB_REQUEUE);
+	job_ptr->job_state  = JOB_REQUEUE;
 	job_completion_logger(job_ptr, true);
-	job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
+	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
 
 	deallocate_nodes(job_ptr, false, false, false);
 }
@@ -3810,7 +3810,7 @@ static void *_start_pre_run(void *x)
 	}
 	if (job_ptr) {
 		if (run_kill_job)
-			job_state_unset_flag(job_ptr, JOB_CONFIGURING);
+			job_ptr->job_state &= ~JOB_CONFIGURING;
 		prolog_running_decr(job_ptr);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
@@ -3938,7 +3938,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	pre_run_args->gid = job_ptr->group_id;
 	if (job_ptr->details) { /* Defer launch until completion */
 		job_ptr->details->prolog_running++;
-		job_state_set_flag(job_ptr, JOB_CONFIGURING);
+		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
 	slurm_thread_create_detached(_start_pre_run, pre_run_args);

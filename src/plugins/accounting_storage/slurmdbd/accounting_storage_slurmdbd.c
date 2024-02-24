@@ -309,7 +309,7 @@ static int _set_db_inx_for_each(void *x, void *arg)
 			 * again.
 			 */
 			job_ptr->db_index = id_ptr->db_index;
-			job_state_unset_flag(job_ptr, JOB_UPDATE_DB);
+			job_ptr->job_state &= (~JOB_UPDATE_DB);
 		}
 		_sending_script_env(id_ptr, job_ptr);
 	}

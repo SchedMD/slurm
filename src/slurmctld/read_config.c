@@ -1026,7 +1026,8 @@ static int _foreach_requeue_job_node_failed(void *x, void *arg)
 			error("Unable to requeue %pJ: %s",
 			      job_ptr, slurm_strerror(rc));
 	}
-	job_state_unset_flag(job_ptr, JOB_REQUEUE);
+
+	job_ptr->job_state &= (~JOB_REQUEUE);
 
 	return rc;
 }
@@ -1044,7 +1045,7 @@ static void _abort_job(job_record_t *job_ptr, uint32_t job_state,
 {
 	time_t now = time(NULL);
 
-	job_state_set_flag(job_ptr, JOB_COMPLETING);
+	job_ptr->job_state = job_state | JOB_COMPLETING;
 	build_cg_bitmap(job_ptr);
 	job_ptr->end_time = MIN(job_ptr->end_time, now);
 	job_ptr->state_reason = state_reason;
@@ -1422,17 +1423,17 @@ void _sync_jobs_to_conf(void)
 			if (IS_JOB_PENDING(job_ptr)) {
 				job_ptr->start_time =
 					job_ptr->end_time = time(NULL);
-				job_state_set(job_ptr, JOB_NODE_FAIL);
+				job_ptr->job_state = JOB_NODE_FAIL;
 			} else if (IS_JOB_RUNNING(job_ptr)) {
 				job_ptr->end_time = time(NULL);
-				job_state_set(job_ptr, (JOB_NODE_FAIL |
-							JOB_COMPLETING));
+				job_ptr->job_state =
+					JOB_NODE_FAIL | JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
 				was_running = true;
 			} else if (IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->end_time = job_ptr->suspend_time;
-				job_state_set(job_ptr, (JOB_NODE_FAIL |
-							JOB_COMPLETING));
+				job_ptr->job_state =
+					JOB_NODE_FAIL | JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
 				job_ptr->tot_sus_time +=
 					difftime(now, job_ptr->suspend_time);
@@ -1456,7 +1457,7 @@ void _sync_jobs_to_conf(void)
 				 */
 				info("Attempting to requeue failed job %pJ",
 				     job_ptr);
-				job_state_set_flag(job_ptr, JOB_REQUEUE);
+				job_ptr->job_state |= JOB_REQUEUE;
 
 				/* Reset node_cnt to exclude vanished nodes */
 				job_ptr->node_cnt = bit_set_count(

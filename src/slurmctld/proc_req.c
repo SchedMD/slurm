@@ -774,7 +774,7 @@ static int _het_job_cancel(void *x, void *arg)
 	time_t now = time(NULL);
 
 	info("Cancelling aborted hetjob submit: %pJ", job_ptr);
-	job_state_set(job_ptr, JOB_CANCELLED);
+	job_ptr->job_state	= JOB_CANCELLED;
 	job_ptr->start_time	= now;
 	job_ptr->end_time	= now;
 	job_ptr->exit_code	= 1;

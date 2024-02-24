@@ -3841,11 +3841,11 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 			/* Simulate normal job completion */
 			job_ptr->end_time_exp = now;
 			job_ptr->end_time = job_ptr->start_time;
-			job_state_set(job_ptr, (JOB_COMPLETE | JOB_COMPLETING));
+			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			acct_policy_job_fini(job_ptr, false);
 			job_ptr->end_time_exp = end_time_exp;
 			job_ptr->end_time = end_time;
-			job_state_set(job_ptr, job_state);
+			job_ptr->job_state = job_state;
 			xfree(job_ptr->tres_alloc_cnt);
 			job_ptr->tres_alloc_cnt = tres_alloc_save[fini_jobs++];
 		}
@@ -3986,7 +3986,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 		     job_ptr);
 		job_ptr->details->begin_time = now + cred_lifetime + 1;
 		job_ptr->end_time   = now;
-		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
+		job_ptr->job_state  = JOB_PENDING | JOB_COMPLETING;
 		last_job_update     = now;
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
