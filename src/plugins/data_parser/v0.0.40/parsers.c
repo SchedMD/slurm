@@ -4653,8 +4653,10 @@ static int DUMP_FUNC(BITSTR)(const parser_t *const parser, void *obj,
 	if (!b)
 		return SLURM_SUCCESS;
 
-	str = bit_fmt_full(b);
-	data_set_string_own(dst, str);
+	if ((str = bit_fmt_full(b)))
+		data_set_string_own(dst, str);
+	else if (!is_complex_mode(args))
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
