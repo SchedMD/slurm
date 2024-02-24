@@ -1171,17 +1171,16 @@ static void *_thread_per_group_rpc(void *args)
 					     __func__, job_id);
 				} else if (rc == SLURM_SUCCESS) {
 					if (msg_ptr->signal == SIGSTOP) {
-						job_state_set_flag(job_ptr,
-								   JOB_STOPPED);
+						job_ptr->job_state |=
+							JOB_STOPPED;
 					} else { // SIGCONT
-						job_state_unset_flag(
-							job_ptr, JOB_STOPPED);
+						job_ptr->job_state &=
+							~JOB_STOPPED;
 					}
 				}
 
 				if (job_ptr)
-					job_state_unset_flag(job_ptr,
-							     JOB_SIGNALING);
+					job_ptr->job_state &= ~JOB_SIGNALING;
 
 				unlock_slurmctld(job_write_lock);
 			}
@@ -1268,7 +1267,7 @@ cleanup:
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(job_id);
 			if (job_ptr)
-				job_state_unset_flag(job_ptr, JOB_SIGNALING);
+				job_ptr->job_state &= ~JOB_SIGNALING;
 			unlock_slurmctld(job_write_lock);
 		}
 	}
