@@ -176,11 +176,11 @@ static int _clear_requeue_cron(void *x, void *y)
 	if ((job_ptr->user_id == *uid) &&
 	    (job_ptr->bit_flags & CRON_JOB)) {
 		job_ptr->bit_flags &= ~CRON_JOB;
-		job_ptr->job_state &= ~JOB_REQUEUE;
+		job_state_unset_flag(job_ptr, JOB_REQUEUE);
 
 		if (!IS_JOB_RUNNING(job_ptr)) {
 			time_t now = time(NULL);
-			job_ptr->job_state = JOB_CANCELLED;
+			job_state_set(job_ptr, JOB_CANCELLED);
 			job_ptr->start_time = now;
 			job_ptr->end_time = now;
 			job_ptr->exit_code = 1;

@@ -65,7 +65,7 @@ extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 	job_ptr->job_state = state;
 }
 
-extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
+extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 {
 	uint32_t job_state;
 
@@ -78,7 +78,7 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	job_ptr->job_state = job_state;
 }
 
-extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
+extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 {
 	uint32_t job_state;
 
