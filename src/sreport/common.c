@@ -164,7 +164,7 @@ extern void addto_char_list(List char_list, char *names)
 {
 	int i = 0, start = 0;
 	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -435,7 +435,7 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 					   List slurmdb_report_cluster_list)
 {
 	uint64_t max_usage = 0, max_energy = 0;
-	ListIterator tres_itr, cluster_itr;
+	list_itr_t *tres_itr, *cluster_itr;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	xassert(slurmdb_report_cluster_list);
@@ -542,7 +542,7 @@ extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list)
 {
 	slurmdb_report_assoc_rec_t *orig_report_assoc = NULL;
 	slurmdb_report_assoc_rec_t *dup_report_assoc = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (!first_assoc_list || !new_assoc_list)
 		return;
@@ -591,7 +591,7 @@ static int _zero_alloc_secs(void *x, void *key)
 extern void combine_tres_list(List orig_tres_list, List dup_tres_list)
 {
 	slurmdb_tres_rec_t *orig_tres, *dup_tres;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (!orig_tres_list || !dup_tres_list)
 		return;
@@ -648,7 +648,7 @@ extern void combine_user_tres(List first_user_list, List new_user_list)
 {
 	slurmdb_report_user_rec_t *orig_report_user = NULL;
 	slurmdb_report_user_rec_t *dup_report_user = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (!first_user_list || !new_user_list)
 		return;

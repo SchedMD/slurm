@@ -276,7 +276,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 	slurmdb_assoc_rec_t start_assoc;
 
 	int rec_set = 0;
-	ListIterator itr = NULL, itr_c = NULL;
+	list_itr_t *itr = NULL, *itr_c = NULL;
 	char *name = NULL;
 
 	slurmdb_init_assoc_rec(&start_assoc, 0);
@@ -441,8 +441,8 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	List cluster_list;
 	int i=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	char *tmp_char = NULL;
 
@@ -659,7 +659,7 @@ static int _verify_fed_clusters(List cluster_list, const char *fed_name,
 	int   rc         = SLURM_SUCCESS;
 	char *tmp_name   = NULL;
 	List  tmp_list   = list_create(slurmdb_destroy_cluster_rec);
-	ListIterator itr = list_iterator_create(cluster_list);
+	list_itr_t *itr = list_iterator_create(cluster_list);
 
 	while ((tmp_name = list_next(itr))) {
 		slurmdb_cluster_rec_t *rec =
@@ -798,7 +798,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr = list_iterator_create(ret_list);
+			list_itr_t *itr = list_iterator_create(ret_list);
 			printf(" Modified cluster...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
@@ -827,7 +827,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr = list_iterator_create(ret_list);
+			list_itr_t *itr = list_iterator_create(ret_list);
 			printf(" Modified cluster defaults for "
 			       "associations...\n");
 			while((object = list_next(itr))) {
@@ -917,7 +917,7 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		/* If there were jobs running with an association to
 		   be deleted, don't.
 		*/

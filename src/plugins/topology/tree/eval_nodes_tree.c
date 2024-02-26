@@ -144,7 +144,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	switch_record_t *switch_ptr;
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	node_record_t *node_ptr;
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
@@ -759,7 +759,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	switch_record_t *switch_ptr;
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	node_record_t *node_ptr;
 	int64_t rem_max_cpus, start_rem_max_cpus;
 	int rem_cpus, start_rem_cpus, rem_nodes; /* remaining resources desired */

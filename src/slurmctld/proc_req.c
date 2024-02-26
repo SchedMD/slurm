@@ -902,7 +902,7 @@ static bool _sched_backfill(void)
 static void _exclude_het_job_nodes(List job_req_list)
 {
 	job_desc_msg_t *job_desc_msg;
-	ListIterator iter;
+	list_itr_t *iter;
 	int het_job_cnt, req_cnt = 0, i;
 	char **req_nodes, *sep;
 
@@ -975,7 +975,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	List submit_job_list = NULL;
 	uint32_t het_job_id = 0, het_job_offset = 0;
 	hostset_t *jobid_hostset = NULL;
@@ -1148,7 +1148,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	} else {
-		ListIterator iter;
+		list_itr_t *iter;
 		inx = 0;
 		iter = list_iterator_create(submit_job_list);
 		while ((job_ptr = list_next(iter))) {
@@ -2930,7 +2930,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	job_record_t *job_ptr, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	void *working_cluster_rec = NULL;
 	List resp;
 	DEF_TIMERS;
@@ -3031,7 +3031,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	if (job_info_msg->het_job_offset == NO_VAL) {
 		bitstr_t *node_bitmap = NULL;
-		ListIterator iter;
+		list_itr_t *iter;
 		error_code = job_alloc_info(msg->auth_uid,
 					    job_info_msg->step_id.job_id,
 					    &job_ptr);
@@ -3494,7 +3494,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr = NULL;
 	step_record_t *step_ptr = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
@@ -3761,7 +3761,7 @@ send_msg:
 static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
 	uint32_t het_job_id = 0, het_job_offset = 0;
@@ -6144,7 +6144,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	List full_resp_list = NULL;
 	buf_t *single_req_buf = NULL;
 	buf_t *ret_buf, *resp_buf = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	int rc;
 
 	if (!msg->conn) {

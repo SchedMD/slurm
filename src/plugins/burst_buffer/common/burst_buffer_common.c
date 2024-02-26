@@ -1692,7 +1692,7 @@ static void _rm_active_job_bb(char *resv_name, char **pool_name,
 			      int64_t *resv_space, int ds_len,
 			      bb_state_t *bb_state)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	bb_job_t *bb_job;
 	int i;
@@ -1740,7 +1740,7 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 	bool avail_ok, do_preempt, preempt_ok;
 	time_t now = time(NULL);
 	List preempt_list = NULL;
-	ListIterator preempt_iter;
+	list_itr_t *preempt_iter;
 	bb_state_t bb_state = *bb_state_ptr;
 
 	xassert(bb_job);

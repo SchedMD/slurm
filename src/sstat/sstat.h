@@ -135,7 +135,7 @@ typedef struct {
 } sstat_parameters_t;
 
 extern List print_fields_list;
-extern ListIterator print_fields_itr;
+extern list_itr_t *print_fields_itr;
 extern print_field_t fields[];
 extern sstat_parameters_t params;
 extern int field_count;

@@ -186,7 +186,7 @@ void parse_command_line(int argc, char **argv)
 	int c, i, option_index = 0;
 	char *end = NULL, *start = NULL;
 	slurm_selected_step_t *selected_step = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {

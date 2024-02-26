@@ -200,7 +200,7 @@ static void _delete_assoc(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond,
 /* Turn *dst into a TRES string that will turn submitted *dst to match mod */
 static void _diff_tres(char **dst, char *mod)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	List dst_list = NULL;
 	List mod_list = NULL;
 	slurmdb_tres_rec_t *tres;

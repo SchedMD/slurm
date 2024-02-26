@@ -623,7 +623,7 @@ static int _find_job_mate(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_scan_ptr;
 	int rc = EINVAL;
 
@@ -1675,9 +1675,9 @@ static void _init_node_cr(void)
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
 	node_record_t *node_ptr;
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	uint64_t job_memory_cpu, job_memory_node;
 	int exclusive, i, node_offset;
 
@@ -1885,7 +1885,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
 	job_record_t *tmp_job_ptr;
-	ListIterator job_iterator, preemptee_iterator;
+	list_itr_t *job_iterator, *preemptee_iterator;
 	struct cr_record *exp_cr;
 	uint16_t pass_count = 0;
 
@@ -2026,7 +2026,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	struct cr_record *exp_cr;
 	job_record_t *tmp_job_ptr;
 	List cr_job_list;
-	ListIterator job_iterator, preemptee_iterator;
+	list_itr_t *job_iterator, *preemptee_iterator;
 	bitstr_t *orig_map;
 	int i, max_run_jobs, rc = SLURM_ERROR;
 	time_t now = time(NULL);

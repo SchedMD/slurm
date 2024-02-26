@@ -89,7 +89,7 @@ static void _pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
 				 uint16_t rpc_version, buf_t *buffer)
 {
 	char *acct = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	uint32_t count = 0;
 
 	if (msg->acct_list)

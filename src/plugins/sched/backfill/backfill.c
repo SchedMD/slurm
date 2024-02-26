@@ -363,7 +363,7 @@ static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 {
 	job_details_t *detail_ptr = job_ptr->details;
 	int rc = 0;
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	job_feature_t *feat_ptr;
 
 	*has_xand = false;
@@ -411,7 +411,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 	job_details_t *detail_ptr = job_ptr->details;
 	List feature_cache = detail_ptr->feature_list_use;
 	List preemptee_candidates = NULL;
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	job_feature_t *feat_ptr;
 	job_feature_t *feature_base;
 
@@ -1192,7 +1192,7 @@ static int _yield_locks(int64_t usec)
 static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr)
 {
 	part_record_t *avail_part_ptr;
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	bool rc = false;
 
 	if (job_ptr->part_ptr_list) {
@@ -1287,7 +1287,7 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 {
 	job_record_t *het_comp = NULL;
 	uint32_t prio = 0, tmp = 0, cnt = 0, i = 0, nparts = 0;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
 		prio = INFINITE;
@@ -1335,7 +1335,7 @@ static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 	job_record_t *het_comp = NULL;
 	part_record_t *part_ptr = NULL;
 	uint32_t prio_tier = 0, tmp = 0, cnt = 0;
-	ListIterator iter = NULL, iter2 = NULL;
+	list_itr_t *iter = NULL, *iter2 = NULL;
 
 	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
 		prio_tier = NO_VAL16 - 1;
@@ -1376,7 +1376,7 @@ static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 static bool _hetjob_any_resv(job_record_t *het_leader)
 {
 	job_record_t *het_comp = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	bool any_resv = false;
 
 	iter = list_iterator_create(het_leader->het_job_list);
@@ -3570,7 +3570,7 @@ static int _het_job_find_rec(void *x, void *key)
 static void _het_job_start_clear(void)
 {
 	het_job_map_t *map;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	iter = list_iterator_create(het_job_list);
 	while ((map = list_next(iter))) {
@@ -3593,7 +3593,7 @@ static void _het_job_start_clear(void)
 static time_t _het_job_start_compute(het_job_map_t *map,
 				     uint32_t exclude_job_id)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	het_job_rec_t *rec;
 	time_t latest_start = map->prev_start;
 
@@ -3712,7 +3712,7 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 static bool _het_job_full(het_job_map_t *map)
 {
 	job_record_t *het_job_ptr, *job_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool rc = true;
 
 	het_job_ptr = find_job_record(map->het_job_id);
@@ -3757,7 +3757,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 {
 	job_record_t *job_ptr;
 	het_job_rec_t *rec;
-	ListIterator iter;
+	list_itr_t *iter;
 	int begun_jobs = 0, fini_jobs = 0, slurmctld_tres_size;
 	bool runnable = true;
 	uint32_t selected_node_cnt;
@@ -3863,7 +3863,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	bitstr_t *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
 	het_job_rec_t *rec;
-	ListIterator iter;
+	list_itr_t *iter;
 	int mcs_select, rc = SLURM_SUCCESS;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
@@ -3969,7 +3969,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 {
 	job_record_t *job_ptr;
 	het_job_rec_t *rec;
-	ListIterator iter;
+	list_itr_t *iter;
 	time_t now = time(NULL);
 	int cred_lifetime = 1200;
 	uint32_t save_bitflags;
@@ -4157,7 +4157,7 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	deadlock_job_struct_t  *dl_job_ptr  = NULL, *dl_job_ptr2 = NULL;
 	deadlock_job_struct_t  *dl_job_ptr3 = NULL;
 	deadlock_part_struct_t *dl_part_ptr = NULL, *dl_part_ptr2 = NULL;
-	ListIterator job_iter, part_iter;
+	list_itr_t *job_iter, *part_iter;
 	bool have_deadlock = false;
 
 	if (!job_ptr->het_job_id || !job_ptr->part_ptr)

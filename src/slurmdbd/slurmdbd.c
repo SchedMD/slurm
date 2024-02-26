@@ -336,7 +336,7 @@ extern void reconfig(void)
 extern void handle_rollup_stats(List rollup_stats_list,
 				long delta_time, int type)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_rollup_stats_t *rollup_stats, *rpc_rollup_stats;
 
 	xassert(type < DBD_ROLLUP_COUNT);
@@ -670,7 +670,7 @@ static void _request_registrations(void *db_conn)
 {
 	List cluster_list = acct_storage_g_get_clusters(
 		db_conn, getuid(), NULL);
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 
 	if (!cluster_list)
@@ -798,7 +798,7 @@ static void _commit_handler_cancel()
 /* _commit_handler - Process commit's of registered clusters */
 static void *_commit_handler(void *db_conn)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdbd_conn_t *slurmdbd_conn;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);

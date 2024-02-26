@@ -144,7 +144,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 				   char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 	char *prefix = "t1";
 	time_t now = time(NULL);
@@ -601,7 +601,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	List use_cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */
 	uint16_t with_usage = 0;

@@ -3308,7 +3308,7 @@ extern job_record_t *find_het_job_record(uint32_t job_id,
 					 uint32_t het_job_offset)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	het_job_leader = job_hash[JOB_HASH_INX(job_id)];
 	while (het_job_leader) {
@@ -3363,7 +3363,7 @@ static void _rebuild_part_name_list(job_record_t *job_ptr)
 {
 	bool job_active = false, job_pending = false;
 	part_record_t *part_ptr;
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 
 	xfree(job_ptr->partition);
 
@@ -3515,7 +3515,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	uint32_t *het_job_ids = NULL;
 	int cnt = 0, i, rc;
 	int error_code = SLURM_SUCCESS;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	lock_slurmctld(job_read_lock);
 	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
@@ -3561,7 +3561,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
  */
 extern int kill_job_by_part_name(char *part_name)
 {
-	ListIterator job_iterator, part_iterator;
+	list_itr_t *job_iterator, *part_iterator;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr, *part2_ptr;
 	int kill_job_cnt = 0;
@@ -3662,7 +3662,7 @@ extern int kill_job_by_part_name(char *part_name)
 extern int kill_job_by_front_end_name(char *node_name)
 {
 #ifdef HAVE_FRONT_END
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr, *het_job_leader;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
@@ -3808,7 +3808,7 @@ extern int kill_job_by_front_end_name(char *node_name)
  */
 extern bool partition_in_use(char *part_name)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;
 
@@ -3859,7 +3859,7 @@ static bool _job_node_test(job_record_t *job_ptr, int node_inx)
 static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	static bool result = false;
 
 	if (!job_ptr->het_job_id)
@@ -3905,7 +3905,7 @@ static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
  */
 extern int kill_running_job_by_node_name(char *node_name)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr;
 	bitstr_t *orig_job_node_bitmap;
@@ -4814,7 +4814,7 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 			       int *part_limits_rc)
 {
 	slurmctld_resv_t *resv_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	int loc_rc = SLURM_ERROR;
 
 	if (!job_ptr->resv_list)
@@ -4871,7 +4871,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			       bitstr_t **select_node_bitmap, char **err_msg)
 {
 	part_record_t *part_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
 	bitstr_t *save_avail_node_bitmap = NULL;
@@ -5613,7 +5613,7 @@ extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 			  uint16_t flags, uid_t uid, bool preempt)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	int rc = SLURM_SUCCESS, rc1;
 	job_record_t *het_job;
 
@@ -6327,7 +6327,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code)
 {
 	job_record_t *job_ptr, *het_job_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	int rc, rc1;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -6608,7 +6608,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 		int fail_rc = SLURM_SUCCESS;
 		part_record_t *part_ptr_tmp;
 		bool rebuild_name_list = false;
-		ListIterator iter = list_iterator_create(part_ptr_list);
+		list_itr_t *iter = list_iterator_create(part_ptr_list);
 
 		while ((part_ptr_tmp = list_next(iter))) {
 			rc = _alt_part_test(part_ptr_tmp, &part_ptr_new);
@@ -6691,7 +6691,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
 		int fail_rc = SLURM_SUCCESS;
-		ListIterator iter = list_iterator_create(part_ptr_list);
+		list_itr_t *iter = list_iterator_create(part_ptr_list);
 
 		while ((part_ptr_tmp = list_next(iter))) {
 			/*
@@ -9087,7 +9087,7 @@ static void _het_job_time_limit_incr(job_record_t *job_ptr,
 				     uint32_t boot_job_id)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (!job_ptr->het_job_id) {
 		_job_time_limit_incr(job_ptr, boot_job_id);
@@ -9195,7 +9195,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 static bool _het_job_configuring_test(job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool result = false;
 
 	if (IS_JOB_CONFIGURING(job_ptr))
@@ -9233,7 +9233,7 @@ static bool _het_job_configuring_test(job_record_t *job_ptr)
  */
 void job_time_limit(void)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	time_t old = now - ((slurm_conf.inactive_limit * 4 / 3) +
@@ -9792,7 +9792,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					part_record_t *part_ptr, List part_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	part_record_t *part;
 	uint64_t tmp_pn_min_memory;
 	uint16_t tmp_cpus_per_task;
@@ -10112,7 +10112,7 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 			      part_record_t **visible_parts)
 {
 	bool rc;
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	part_record_t *part_ptr;
 
 	if (job_ptr->part_ptr_list) {
@@ -10326,7 +10326,7 @@ static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
 {
 	job_record_t *het_job_ptr;
 	int job_cnt = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
@@ -10994,7 +10994,7 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 {
 	job_record_t purge_job_rec;
 	job_record_t *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool incomplete_job = false;
 	int i;
 
@@ -11068,7 +11068,7 @@ void handle_invalid_dependency(job_record_t *job_ptr)
  */
 void purge_old_job(void)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	int i, purge_job_count;
 
@@ -11295,7 +11295,7 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 	if (job_ptr->priority == 0)	/* user held */
 		top = false;
 	else {
-		ListIterator job_iterator;
+		list_itr_t *job_iterator;
 		job_record_t *job_ptr2;
 
 		top = true;	/* assume top priority until found otherwise */
@@ -11451,7 +11451,7 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 static void _hold_job(job_record_t *job_ptr, uid_t uid)
 {
 	job_record_t *het_job_leader = NULL, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (job_ptr->het_job_id && _get_whole_hetjob())
 		het_job_leader = find_job_record(job_ptr->het_job_id);
@@ -11484,7 +11484,7 @@ static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 static void _release_job(job_record_t *job_ptr, uid_t uid)
 {
 	job_record_t *het_job_leader = NULL, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (job_ptr->het_job_id && _get_whole_hetjob())
 		het_job_leader = find_job_record(job_ptr->het_job_id);
@@ -14367,7 +14367,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
 	char *hostname = auth_g_get_host(msg);
-	ListIterator iter;
+	list_itr_t *iter;
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
@@ -14957,7 +14957,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
  * but are not found. */
 static void _purge_missing_jobs(int node_inx, time_t now)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
@@ -15018,7 +15018,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time)
 {
-	ListIterator step_iterator;
+	list_itr_t *step_iterator;
 	step_record_t *step_ptr;
 	char *node_name = node_record_table_ptr[node_inx]->name;
 
@@ -15221,7 +15221,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 static bool _job_all_finished(job_record_t *job_ptr)
 {
 	job_record_t *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool finished = true;
 
 	if (!IS_JOB_FINISHED(job_ptr))
@@ -15407,7 +15407,7 @@ static int _test_state_dir_flag(void *x, void *arg)
 static void _validate_job_files(List batch_dirs)
 {
 	job_record_t *job_ptr;
-	ListIterator batch_dir_iter;
+	list_itr_t *batch_dir_iter;
 	uint32_t *job_id_ptr, array_job_id;
 
 	list_for_each(job_list, _clear_state_dir_flag, NULL);
@@ -15437,7 +15437,7 @@ static void _validate_job_files(List batch_dirs)
 /* Remove all batch_dir entries in the list */
 static void _remove_defunct_batch_dirs(List batch_dirs)
 {
-	ListIterator batch_dir_inx;
+	list_itr_t *batch_dir_inx;
 	uint32_t *job_id_ptr;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -16396,7 +16396,7 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 static int _job_resume_test(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *test_job_ptr;
 
 	if ((job_ptr->details == NULL) ||
@@ -16520,7 +16520,7 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 {
 	job_record_t *het_job;
 	int rc = SLURM_SUCCESS, rc1;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
 		return ESLURM_NOT_WHOLE_HET_JOB;
@@ -17046,7 +17046,7 @@ static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
 {
 	job_record_t *het_job;
 	int rc = SLURM_SUCCESS, rc1;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
 		return ESLURM_NOT_HET_JOB_LEADER;
@@ -17253,7 +17253,7 @@ static int _top_job_prio_sort(void *x, void *y)
 static int _set_top(List top_job_list, uid_t uid)
 {
 	List prio_list, other_job_list;
-	ListIterator iter;
+	list_itr_t *iter;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	int rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
 	uint32_t last_prio = NO_VAL, next_prio;
@@ -17558,7 +17558,7 @@ static int _update_job_nodes_str(void *x, void *arg)
 extern int job_hold_by_assoc_id(uint32_t assoc_id)
 {
 	int cnt = 0;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
@@ -17589,7 +17589,7 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 extern int job_hold_by_qos_id(uint32_t qos_id)
 {
 	int cnt = 0;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
@@ -17691,7 +17691,7 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
  */
 extern int send_jobs_to_accounting(void)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	job_record_t *job_ptr;
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
@@ -18738,7 +18738,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 			job_ptr->het_job_offset);
 		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
 			job_record_t *het_job = NULL;
-			ListIterator iter;
+			list_itr_t *iter;
 			hostset_t *hs = NULL;
 			iter = list_iterator_create(job_ptr->het_job_list);
 			while ((het_job = list_next(iter))) {

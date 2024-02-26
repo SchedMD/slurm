@@ -230,7 +230,7 @@ static uint64_t _build_shared_dev_info(List gres_conf_list)
 	uint64_t shared_count = 0;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	shared_dev_info_t *shared_conf;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	FREE_NULL_LIST(shared_info);
 	shared_info = list_create(xfree_ptr);
@@ -269,7 +269,7 @@ static int _remove_shared_recs(void *x, void *arg)
  */
 static List _build_sharing_list(List gres_list, char *sharing_name)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *sharing_record;
 	List sharing_list;
 	hostlist_t *hl;
@@ -348,7 +348,7 @@ static List _build_sharing_list(List gres_list, char *sharing_name)
  */
 static List _build_shared_list(List gres_list, char *shared_name)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *shared_record;
 	List shared_list;
 	hostlist_t *hl;
@@ -524,7 +524,7 @@ extern void gres_c_s_send_stepd(buf_t *buffer)
 {
 	uint32_t shared_cnt;
 	shared_dev_info_t *shared_ptr;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	if (!shared_info) {
 		shared_cnt = 0;

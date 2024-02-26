@@ -91,7 +91,7 @@ static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
 				      size_t nprocs)
 {
 	pmixp_coll_t *coll = NULL, *ret = NULL;
-	ListIterator it;
+	list_itr_t *it;
 
 	/* Walk through the list looking for the collective descriptor */
 	it = list_iterator_create(_pmixp_state.coll);
@@ -168,7 +168,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 void pmixp_state_coll_cleanup(void)
 {
 	pmixp_coll_t *coll = NULL;
-	ListIterator it;
+	list_itr_t *it;
 	time_t ts = time(NULL);
 
 	/* Walk through the list looking for the collective descriptor */

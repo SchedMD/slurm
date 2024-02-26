@@ -192,7 +192,7 @@ static int _make_sure_users_have_default(
 	mysql_conn_t *mysql_conn, List user_list, List cluster_list)
 {
 	char *cluster = NULL, *user = NULL;
-	ListIterator itr = NULL, clus_itr = NULL;
+	list_itr_t *itr = NULL, *clus_itr = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if (!user_list)
@@ -224,7 +224,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 				    char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 	char *prefix = "t1";
 	if (!wckey_cond)
@@ -667,7 +667,7 @@ static int _add_wckey_cond_cluster(void *x, void *arg)
 extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			       List wckey_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_rec_t *object = NULL;
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
@@ -913,7 +913,7 @@ extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	char *extra = NULL, *object = NULL, *vals = NULL;
 	char *user_name = NULL;
 	List use_cluster_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool locked = false;
 
 	if (!wckey_cond || !wckey) {
@@ -1003,7 +1003,7 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	char *extra = NULL, *object = NULL;
 	char *user_name = NULL;
 	List use_cluster_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool locked = false;
 
 	if (!wckey_cond) {
@@ -1073,7 +1073,7 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
 	List use_cluster_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool locked = false;
 
 	if (!wckey_cond) {

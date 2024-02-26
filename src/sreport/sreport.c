@@ -315,7 +315,7 @@ static char *_build_cluster_string(void)
 
 static void _build_tres_list(void)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmdb_tres_rec_t *tres;
 	char *save_ptr = NULL, *tok;
 

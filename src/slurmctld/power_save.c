@@ -350,7 +350,7 @@ static void _do_power_work(time_t now)
 	node_record_t *node_ptr;
 	data_t *resume_json_data = NULL;
 	data_t *jobs_data = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	bitstr_t *job_power_node_bitmap;
 	uint32_t *job_id_ptr;
 	bool nodes_updated = false;

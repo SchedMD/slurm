@@ -806,7 +806,7 @@ part_record_t *find_part_record(char *name)
 extern List part_list_copy(List part_list_src)
 {
 	part_record_t *part_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	List part_list_dest = NULL;
 
 	if (!part_list_src)
@@ -1504,7 +1504,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		 * partitions. If not then just set this partition.
 		 */
 		if (redo_prio) {
-			ListIterator itr = list_iterator_create(part_list);
+			list_itr_t *itr = list_iterator_create(part_list);
 			part_record_t *part2 = NULL;
 
 			if (redo_prio == 2) {

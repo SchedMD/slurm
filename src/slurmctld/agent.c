@@ -613,7 +613,7 @@ static void *_wdog(void *args)
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	unsigned long usec = 5000;
-	ListIterator itr;
+	list_itr_t *itr;
 	thd_complete_t thd_comp;
 	ret_data_info_t *ret_data_info = NULL;
 
@@ -743,7 +743,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				    int no_resp_cnt, int retry_cnt)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	state_t state;
 	int is_ret_list = 1;
@@ -937,7 +937,7 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent, sack_agent;
 	List ret_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
@@ -1304,7 +1304,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 	node_record_t *node_ptr;
 #endif
 	ret_data_info_t *ret_data_info = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	int rc = 0;
 
 	itr = list_iterator_create(thread_ptr->ret_list);
@@ -1585,7 +1585,7 @@ extern void agent_pack_pending_rpc_stats(buf_t *buffer)
 	int i;
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
-	ListIterator list_iter;
+	list_itr_t *list_iter;
 
 	now = time(NULL);
 	if (difftime(now, cache_build_time) <= RPC_PACK_MAX_AGE)
@@ -1741,7 +1741,7 @@ next:
 		    ((list_size > 0) &&
 		     (slurm_conf.debug_flags & DEBUG_FLAG_AGENT))) {
 			/* Note sizable backlog (retry_list_size()) of work */
-			ListIterator retry_iter;
+			list_itr_t *retry_iter;
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = list_next(retry_iter))) {
 				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;

@@ -86,7 +86,7 @@ static int _sort_update_object_dec(void *a, void *b)
 static void _dump_slurmdb_assoc_records(List assoc_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
@@ -104,7 +104,7 @@ static void _dump_slurmdb_clus_res_record(slurmdb_clus_res_rec_t *clus_res)
 static void _dump_slurmdb_clus_res_records(List clus_res_list)
 {
 	slurmdb_clus_res_rec_t *clus_res = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	itr = list_iterator_create(clus_res_list);
 	while ((clus_res = list_next(itr))) {
 		_dump_slurmdb_clus_res_record(clus_res);
@@ -115,7 +115,7 @@ static void _dump_slurmdb_clus_res_records(List clus_res_list)
 static void _dump_slurmdb_res_records(List res_list)
 {
 	slurmdb_res_rec_t *res = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	itr = list_iterator_create(res_list);
 	while ((res = list_next(itr))) {
 		debug("\t\tname=%s", res->name);
@@ -337,7 +337,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
  */
 extern void dump_update_list(List update_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_update_object_t *object = NULL;
 
 	debug3("========== DUMP UPDATE LIST ==========");
@@ -566,8 +566,8 @@ extern int set_usage_information(char **usage_table,
  */
 extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
 {
-	ListIterator curr_itr = list_iterator_create(qos_list);
-	ListIterator new_itr = list_iterator_create(delta_qos_list);
+	list_itr_t *curr_itr = list_iterator_create(qos_list);
+	list_itr_t *new_itr = list_iterator_create(delta_qos_list);
 	char *new_qos = NULL, *curr_qos = NULL;
 
 	while((new_qos = list_next(new_itr))) {

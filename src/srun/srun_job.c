@@ -529,7 +529,7 @@ extern srun_job_t *job_create_allocation(
 
 static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurm_opt_t *opt_local;
 	int i;
 
@@ -552,7 +552,7 @@ static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
  */
 static void _het_grp_test(List opt_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	int het_job_offset;
 	bitstr_t *master_map = NULL;
 	List missing_argv_list = NULL;
@@ -620,7 +620,7 @@ static void _het_grp_test(List opt_list)
 static void _match_job_name(List opt_list)
 {
 	int cnt;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurm_opt_t *opt_local;
 
 	if (!opt_list)
@@ -847,7 +847,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			    List srun_job_list, uint32_t het_job_id,
 			    char *het_job_nodelist)
 {
-	ListIterator opt_iter = NULL, job_iter;
+	list_itr_t *opt_iter = NULL, *job_iter;
 	slurm_opt_t *opt_local = &opt;
 	uint32_t node_offset = 0, het_job_nnodes = 0, step_id = NO_VAL;
 	uint32_t het_job_ntasks = 0, task_offset = 0;
@@ -996,7 +996,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 static void _cancel_steps(List srun_job_list)
 {
 	srun_job_t *job;
-	ListIterator job_iter;
+	list_itr_t *job_iter;
 	slurm_msg_t req;
 	step_complete_msg_t msg;
 	int rc = 0;
@@ -1044,7 +1044,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	resource_allocation_response_msg_t *resp;
 	het_job_resp_struct_t *het_job_resp;
 	List het_job_resp_list;
-	ListIterator resp_iter;
+	list_itr_t *resp_iter;
 	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
 	char *het_job_nodelist = NULL, *node_name;
 	hostset_t *hs;
@@ -1201,7 +1201,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 	resource_allocation_response_msg_t *resp;
 	List job_resp_list = NULL, srun_job_list = NULL;
 	List used_resp_list = NULL;
-	ListIterator opt_iter, resp_iter;
+	list_itr_t *opt_iter, *resp_iter;
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_het_job_offset, het_job_offset = -1,
 		het_step_offset = -1;
@@ -2244,7 +2244,7 @@ static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 	}
 
 	if (srun_job_list) {
-		ListIterator job_iter;
+		list_itr_t *job_iter;
 		job_iter  = list_iterator_create(srun_job_list);
 		while ((job = list_next(job_iter))) {
 			(void) slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id,

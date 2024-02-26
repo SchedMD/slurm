@@ -274,7 +274,7 @@ extern List slurm_copy_char_list(List char_list)
 {
 	List ret_list = NULL;
 	char *tmp_char = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!char_list || !list_count(char_list))
 		return NULL;
@@ -6594,7 +6594,7 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name)
 {
 	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool status = false;
 
 	if (!fed || !fed->cluster_list)		/* NULL if no federations */

@@ -134,8 +134,8 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	List format_list; /* list of char * */
 	List instance_list = NULL; /* list of slurmdb_instance_rec_t */
 	List print_fields_list; /* list of print_field_t */
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	print_field_t *field = NULL;
 
 	instance_cond->cluster_list = list_create(xfree_ptr);

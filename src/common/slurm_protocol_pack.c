@@ -481,7 +481,7 @@ unpack_error:
 static void _pack_shares_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	shares_response_msg_t *msg = smsg->data;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	assoc_shares_object_t *share = NULL;
 	uint32_t count = NO_VAL;
 
@@ -668,7 +668,7 @@ _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
 				    buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	priority_factors_object_t *factors = NULL;
 	uint32_t count = NO_VAL;
 
@@ -2088,7 +2088,7 @@ extern int slurm_pack_list(List send_list,
 	pack32(count, buffer);
 
 	if (count) {
-		ListIterator itr = list_iterator_create(send_list);
+		list_itr_t *itr = list_iterator_create(send_list);
 		void *object = NULL;
 		while ((object = list_next(itr))) {
 			(*(pack_function))(object, protocol_version, buffer);
@@ -2129,7 +2129,7 @@ extern int slurm_pack_list_until(List send_list, pack_function_t pack_function,
 	pack32(count, buffer);
 
 	if (count) {
-		ListIterator itr = list_iterator_create(send_list);
+		list_itr_t *itr = list_iterator_create(send_list);
 		void *object = NULL;
 		last_good_position = get_buf_offset(buffer);
 		count = 0;
@@ -3446,7 +3446,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
+			list_itr_t *itr = list_iterator_create(
 				(List)build_ptr->acct_gather_conf);
 			config_key_pair_t *key_pair = NULL;
 			while ((key_pair = list_next(itr))) {
@@ -3738,7 +3738,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
+			list_itr_t *itr = list_iterator_create(
 				(List)build_ptr->acct_gather_conf);
 			config_key_pair_t *key_pair = NULL;
 			while ((key_pair = list_next(itr))) {
@@ -4825,7 +4825,7 @@ extern void pack_dep_list(List dep_list, buf_t *buffer, uint16_t protocol_versio
 {
 	uint32_t cnt;
 	depend_spec_t *dep_ptr;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		cnt = list_count(dep_list);
@@ -5300,7 +5300,7 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 			uint16_t protocol_version)
 {
 	job_desc_msg_t *req;
-	ListIterator iter;
+	list_itr_t *iter;
 	uint16_t cnt = 0;
 
 	if (job_req_list)
@@ -5397,7 +5397,7 @@ _pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
 {
 	slurm_msg_t msg = { .protocol_version = protocol_version };
 	resource_allocation_response_msg_t *resp;
-	ListIterator iter;
+	list_itr_t *iter;
 	uint16_t cnt = 0;
 
 	if (job_resp_list)
@@ -6954,7 +6954,7 @@ _pack_job_info_request_msg(job_info_request_msg_t * msg, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	uint32_t count = NO_VAL;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	xassert(msg);
 	xassert(buffer);
@@ -7360,7 +7360,7 @@ _pack_ret_list(List ret_list,
 	       uint16_t size_val, buf_t *buffer,
 	       uint16_t protocol_version)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
 
@@ -8994,7 +8994,7 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, buf_t *buffer,
 			count = list_count(msg->preemptee_job_id);
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
-			ListIterator itr =
+			list_itr_t *itr =
 				list_iterator_create(msg->preemptee_job_id);
 			while ((job_id_ptr = list_next(itr)))
 				pack32(job_id_ptr[0], buffer);
@@ -9054,7 +9054,7 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 					uint16_t protocol_version)
 {
 	uint32_t count = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_update_object_t *rec = NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -9514,7 +9514,7 @@ _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 {
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	xassert(msg);
 
@@ -9614,7 +9614,7 @@ unpack_error:
 static void _pack_buf_list_msg(ctld_list_msg_t *msg, buf_t *buffer,
 			       uint16_t protocol_version)
 {
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	buf_t *req_buf;
 	uint32_t size;
 

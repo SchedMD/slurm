@@ -1592,7 +1592,7 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
-	ListIterator itr;
+	list_itr_t *itr;
 	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -1650,7 +1650,7 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 
 static void _resize_qos(void)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -3235,7 +3235,7 @@ extern void set_slurmctld_state_loc(void)
  * database so we can reset the job ptr's assoc ptr's */
 static void *_assoc_cache_mgr(void *no_data)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec;
@@ -3810,7 +3810,7 @@ static int _init_dep_job_ptr(void *object, void *arg)
 static void _restore_job_dependencies(void)
 {
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
 
 	lock_slurmctld(job_fed_lock);

@@ -103,7 +103,7 @@ List jobs = NULL;
 slurmdb_job_rec_t job;
 slurmdb_step_rec_t step;
 List print_fields_list = NULL;
-ListIterator print_fields_itr = NULL;
+list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
 
 int _do_stat(slurm_step_id_t *step_id, char *nodelist,
@@ -112,7 +112,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
-	ListIterator itr;
+	list_itr_t *itr;
 	jobacctinfo_t *total_jobacct = NULL;
 	job_step_stat_t *step_stat = NULL;
 	int ntasks = 0;
@@ -251,7 +251,7 @@ getout:
 
 int main(int argc, char **argv)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,

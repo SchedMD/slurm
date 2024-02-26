@@ -152,7 +152,7 @@ static int _find_id_usage(void *x, void *key)
 static void _remove_job_tres_time_from_cluster(List c_tres, List j_tres,
 					       int seconds)
 {
-	ListIterator c_itr;
+	list_itr_t *c_itr;
 	local_tres_usage_t *loc_c_tres, *loc_j_tres;
 	uint64_t time;
 
@@ -228,7 +228,7 @@ static local_tres_usage_t *_add_time_tres(List tres_list, int type, uint32_t id,
 static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
 				uint64_t time_in, bool times_count)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	local_tres_usage_t *loc_tres;
 
 	xassert(tres_list_in);
@@ -250,7 +250,7 @@ static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
 static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
 			       int job_seconds)
 {
-	ListIterator resv_itr;
+	list_itr_t *resv_itr;
 	local_tres_usage_t *loc_tres;
 	uint32_t resv_tres_id;
 	uint64_t resv_tres_count;
@@ -294,7 +294,7 @@ static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
 
 static void _add_job_alloc_time_to_cluster(List c_tres_list, List j_tres)
 {
-	ListIterator c_itr = list_iterator_create(c_tres_list);
+	list_itr_t *c_itr = list_iterator_create(c_tres_list);
 	local_tres_usage_t *loc_c_tres, *loc_j_tres;
 
 	while ((loc_c_tres = list_next(c_itr))) {
@@ -691,7 +691,7 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	local_tres_usage_t *loc_tres;
 
 	if (!c_usage)
@@ -740,7 +740,7 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 				    char **query)
 {
 	local_tres_usage_t *loc_tres;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool first;
 	char *table = NULL, *id_name = NULL;
 
@@ -852,8 +852,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i = 0;
-	ListIterator d_itr = NULL;
-	ListIterator r_itr = NULL;
+	list_itr_t *d_itr = NULL;
+	list_itr_t *r_itr = NULL;
 	local_cluster_usage_t *loc_c_usage;
 	local_resv_usage_t *loc_r_usage;
 
@@ -1262,10 +1262,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	ListIterator a_itr = NULL;
-	ListIterator c_itr = NULL;
-	ListIterator w_itr = NULL;
-	ListIterator r_itr = NULL;
+	list_itr_t *a_itr = NULL;
+	list_itr_t *c_itr = NULL;
+	list_itr_t *w_itr = NULL;
+	list_itr_t *r_itr = NULL;
 	List assoc_usage_list = list_create(_destroy_local_id_usage);
 	List cluster_down_list = list_create(_destroy_local_cluster_usage);
 	List wckey_usage_list = list_create(_destroy_local_id_usage);
@@ -1682,7 +1682,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		query = NULL;
 		list_iterator_reset(r_itr);
 		while ((r_usage = list_next(r_itr))) {
-			ListIterator t_itr;
+			list_itr_t *t_itr;
 			local_tres_usage_t *loc_tres;
 
 			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv=%u and time_start=%ld;",
@@ -1699,7 +1699,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				int64_t idle = loc_tres->total_time -
 					loc_tres->time_alloc;
 				char *assoc = NULL;
-				ListIterator tmp_itr = NULL;
+				list_itr_t *tmp_itr = NULL;
 				int assoc_cnt, resv_unused_secs;
 
 				if (idle <= 0)
@@ -1762,7 +1762,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			list_iterator_reset(c_itr);
 			while ((loc_c_usage = list_next(c_itr))) {
 				local_tres_usage_t *loc_tres;
-				ListIterator tmp_itr = list_iterator_create(
+				list_itr_t *tmp_itr = list_iterator_create(
 					loc_c_usage->loc_tres);
 				while ((loc_tres = list_next(tmp_itr)))
 					_add_time_tres(c_usage->loc_tres,

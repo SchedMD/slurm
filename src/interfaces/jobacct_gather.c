@@ -700,7 +700,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 	if (pid) {
 		struct jobacctinfo *jobacct = NULL;
 		struct jobacctinfo *ret_jobacct = NULL;
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 
 		slurm_mutex_lock(&task_list_lock);
 		if (!task_list) {
@@ -730,7 +730,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;

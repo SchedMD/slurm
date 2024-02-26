@@ -60,7 +60,7 @@ static void _load_dbd_config(void)
 
 static void _print_dbd_config(void)
 {
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	config_key_pair_t *key_pair;
 
 	if (!dbd_config_list)
@@ -283,7 +283,7 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 	}
 
 	if (stats_rec->rollup_stats && list_count(stats_rec->rollup_stats)) {
-		ListIterator itr =
+		list_itr_t *itr =
 			list_iterator_create(stats_rec->rollup_stats);
 		while ((rollup_stats = list_next(itr))) {
 			bool first = true;

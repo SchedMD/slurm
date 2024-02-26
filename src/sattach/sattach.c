@@ -357,7 +357,7 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
 
 void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	uint32_t msg_rc;
 

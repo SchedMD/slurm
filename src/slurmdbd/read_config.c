@@ -720,7 +720,7 @@ extern void log_config(void)
 {
 	List dbd_config_list;
 	config_key_pair_t *key_pair;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	if (slurmdbd_conf->debug_level < LOG_LEVEL_DEBUG2)
 		return;

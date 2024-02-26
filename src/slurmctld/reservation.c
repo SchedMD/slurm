@@ -427,7 +427,7 @@ static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 
 static List _list_dup(List license_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_src, *license_dest;
 	List lic_list = (List) NULL;
 
@@ -1146,7 +1146,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	xfree(resv_ptr->assoc_list);	/* clear for modify */
 	if (list_count(assoc_list_allow)) {
-		ListIterator itr = list_iterator_create(assoc_list_allow);
+		list_itr_t *itr = list_iterator_create(assoc_list_allow);
 		while ((assoc_ptr = list_next(itr))) {
 			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "%u,",
@@ -1159,7 +1159,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		list_iterator_destroy(itr);
 	}
 	if (list_count(assoc_list_deny)) {
-		ListIterator itr = list_iterator_create(assoc_list_deny);
+		list_itr_t *itr = list_iterator_create(assoc_list_deny);
 		while ((assoc_ptr = list_next(itr))) {
 			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "-%u,",
@@ -2238,7 +2238,7 @@ unpack_error:
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	bool overlap = false;
 
@@ -2273,7 +2273,7 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 			  bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	bool rc = false;
 
@@ -2671,7 +2671,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 {
 	List license_list, merged_list;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
 
@@ -3975,7 +3975,7 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 
 static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	bool found = 0;
 	slurmdb_assoc_rec_t *assoc;
 	char tmp_char[30];
@@ -4004,7 +4004,7 @@ end_it:
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	int rc = SLURM_SUCCESS;
 
@@ -4065,7 +4065,7 @@ extern slurmctld_resv_t *find_resv_name(char *resv_name)
 /* Dump the reservation records to a buffer */
 extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	uint32_t resv_packed;
 	int tmp_offset;
@@ -4137,7 +4137,7 @@ no_assocs:
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
@@ -4462,7 +4462,7 @@ static int _validate_job_resv(void *job, void *y)
  */
 static void _validate_all_reservations(void)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 
 	/* Make sure we have node write locks. */
@@ -5281,7 +5281,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
 	bool have_xand = false;
-	ListIterator itr;
+	list_itr_t *itr;
 	job_record_t *job_ptr;
 
 	if (*part_ptr == NULL) {
@@ -5486,7 +5486,7 @@ static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 	uint32_t save_node_cnt;
 	uint32_t save_min_cpus, save_min_nodes, save_max_nodes;
 	job_feature_t *feat_ptr;
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	int paren = 0;
 	bool test_active = true;
 	job_record_t *job_ptr = resv_desc_ptr->job_ptr;
@@ -6005,7 +6005,7 @@ static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
 				resv_select_t *resv_select,
 				uint32_t node_cnt)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	bitstr_t *orig_bitmap = NULL, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL;
@@ -6358,7 +6358,7 @@ extern void job_claim_resv(job_record_t *job_ptr)
  */
 extern void job_time_adj_resv(job_record_t *job_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t * resv_ptr;
 	time_t now = time(NULL);
 	int32_t resv_begin_time;
@@ -6394,7 +6394,7 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 static int _license_cnt(List license_list, char *lic_name)
 {
 	int lic_cnt = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_ptr;
 
 	if (license_list == NULL)
@@ -6560,7 +6560,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
 	time_t job_start_time, job_end_time, now = time(NULL);
 	time_t job_end_time_use;
 	burst_buffer_info_msg_t *bb_resv = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -6611,7 +6611,7 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
 	time_t job_end_time_use;
-	ListIterator iter;
+	list_itr_t *iter;
 	int resv_cnt = 0;
 
 	job_start_time = when;
@@ -6672,7 +6672,7 @@ static void _update_constraint_planning(constraint_planning_t* sched,
 					uint32_t value,
 					time_t start, time_t end)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	constraint_slot_t *cur_slot, *cstr_slot, *tmp_slot;
 	bool done = false;
 
@@ -6767,7 +6767,7 @@ static void _update_constraint_planning(constraint_planning_t* sched,
 static uint32_t _max_constraint_planning(constraint_planning_t* sched,
 					 time_t *start, time_t *end)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	constraint_slot_t *cur_slot;
 	uint32_t max = 0;
 
@@ -6786,7 +6786,7 @@ static uint32_t _max_constraint_planning(constraint_planning_t* sched,
 
 static void _print_constraint_planning(constraint_planning_t* sched)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	constraint_slot_t *cur_slot;
 	char start_str[256] = "-1", end_str[256] = "-1";
 	uint32_t i = 0;
@@ -6846,7 +6846,7 @@ extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
 	time_t job_end_time_use;
-	ListIterator iter;
+	list_itr_t *iter;
 	constraint_planning_t wsched;
 	time_t start, end;
 	char start_str[256] = "-1", end_str[256] = "-1";
@@ -6906,7 +6906,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	time_t job_start_time, job_end_time, job_end_time_use, lic_resv_time;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
-	ListIterator iter;
+	list_itr_t *iter;
 	int i, rc = SLURM_SUCCESS, rc2;
 
 	*resv_overlap = false;	/* initialize to false */
@@ -7257,7 +7257,7 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
  */
 extern time_t find_resv_end(time_t start_time, int resolution)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t end_time = 0;
 
@@ -7491,7 +7491,7 @@ static int _resv_list_reset_cnt(void *x, void *arg)
  */
 extern void job_resv_check(void)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
 
@@ -7597,7 +7597,7 @@ extern void job_resv_check(void)
  */
 extern int send_resvs_to_accounting(int db_rc)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmctld_resv_t *resv_ptr;
 	slurmctld_lock_t node_write_lock = {
 		.node = WRITE_LOCK,
@@ -7644,7 +7644,7 @@ extern int set_node_maint_mode(bool reset_all)
 	int i, res_start_cnt = 0;
 	node_record_t *node_ptr;
 	uint32_t flags;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
 
@@ -7718,7 +7718,7 @@ extern int set_node_maint_mode(bool reset_all)
 extern bool is_node_in_maint_reservation(int nodenum)
 {
 	bool res = false;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t t;
 
@@ -7747,7 +7747,7 @@ extern bool is_node_in_maint_reservation(int nodenum)
 extern void update_assocs_in_resvs(void)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
-	ListIterator  iter = NULL;
+	list_itr_t *iter = NULL;
 	slurmctld_lock_t node_write_lock = {
 		.node = WRITE_LOCK,
 		.part = READ_LOCK,
@@ -7770,7 +7770,7 @@ extern void update_assocs_in_resvs(void)
 
 extern void update_part_nodes_in_resv(part_record_t *part_ptr)
 {
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	slurmctld_resv_t *resv_ptr = NULL;
 	xassert(part_ptr);
 
@@ -7853,7 +7853,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	if (!(resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) && !reset_all &&
 	    (resv_ptr->flags & RESERVE_FLAG_MAINT)) {
 		maint_node_bitmap = bit_alloc(node_record_count);
-		ListIterator iter = list_iterator_create(resv_list);
+		list_itr_t *iter = list_iterator_create(resv_list);
 		while ((resv2_ptr = list_next(iter))) {
 			if (resv_ptr != resv2_ptr &&
 			    resv2_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET &&

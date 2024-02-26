@@ -123,7 +123,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 /* Given a global device ID, return its gres/mps count */
 static uint64_t _get_dev_count(int global_id)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	shared_dev_info_t *mps_ptr;
 	uint64_t count = NO_VAL64;
 
@@ -367,7 +367,7 @@ extern void gres_p_prep_set_env(char ***prep_env_ptr,
 	int dev_inx = -1, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
 	gres_device_t *gres_device;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (gres_common_prep_set_env(prep_env_ptr,
 				     gres_prep, node_inx,

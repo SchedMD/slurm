@@ -330,7 +330,7 @@ static int _reset_db_inx_for_each(void *x, void *arg)
 static void *_set_db_inx_thread(void *no_data)
 {
 	job_record_t *job_ptr = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	struct timeval tvnow;
 	struct timespec abs;
 	bool more_jobs;

@@ -126,7 +126,7 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	topo_eval->avail_cpus = 0;
 
@@ -850,7 +850,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
-	ListIterator iter;
+	list_itr_t *iter;
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
@@ -1057,7 +1057,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	topo_eval->avail_cpus = 0;
 
@@ -1227,7 +1227,7 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	topo_eval->avail_cpus = 0;
 

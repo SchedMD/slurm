@@ -128,7 +128,7 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	xassert(extra);
@@ -447,7 +447,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		char *preempt_val = NULL;
 		char *tmp_char = NULL, *last_preempt = NULL;
 		bool adding_straight = 0;
-		ListIterator preempt_itr =
+		list_itr_t *preempt_itr =
 			list_iterator_create(qos->preempt_list);
 
 		xstrcat(*cols, ", preempt");
@@ -716,7 +716,7 @@ end_modify:
 extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List qos_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_qos_rec_t *object = NULL;
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
@@ -992,7 +992,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->priority = qos->priority;
 
 		if (qos->preempt_list) {
-			ListIterator new_preempt_itr =
+			list_itr_t *new_preempt_itr =
 				list_iterator_create(qos->preempt_list);
 			char *new_preempt = NULL;
 			bool cleared = 0;
@@ -1078,7 +1078,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				slurmdb_qos_cond_t *qos_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;

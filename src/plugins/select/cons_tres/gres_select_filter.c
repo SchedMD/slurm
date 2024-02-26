@@ -118,7 +118,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 					      uint16_t *avail_gpus,
 					      uint16_t *near_gpus)
 {
-	ListIterator sock_gres_iter;
+	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
 	bool *avail_cores_by_sock = NULL;
 	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
@@ -1671,7 +1671,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					     job_record_t *job_ptr,
 					     gres_mc_data_t *tres_mc_ptr)
 {
-	ListIterator sock_gres_iter;
+	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;

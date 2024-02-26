@@ -950,7 +950,7 @@ static void _combine_dup_config_records(config_record_t *curr_rec)
 {
 	bool changed = false;
 	config_record_t *config_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	iter = list_iterator_create(config_list);
 	while ((config_ptr = list_next(iter))) {
@@ -2361,7 +2361,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 static int _update_node_weight(char *node_names, uint32_t weight)
 {
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
-	ListIterator config_iterator;
+	list_itr_t *config_iterator;
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
@@ -2490,7 +2490,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 	static char *last_avail_features = NULL;
 	static bitstr_t *last_node_bitmap = NULL;
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
-	ListIterator config_iterator;
+	list_itr_t *config_iterator;
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
@@ -2613,7 +2613,7 @@ extern void reset_node_instance(node_record_t *node_ptr)
 static int _update_node_gres(char *node_names, char *gres)
 {
 	bitstr_t *changed_node_bitmap = NULL, *node_bitmap = NULL, *tmp_bitmap;
-	ListIterator config_iterator;
+	list_itr_t *config_iterator;
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
@@ -3600,7 +3600,7 @@ extern int validate_nodes_via_front_end(
 	config_record_t *config_ptr;
 	node_record_t *node_ptr = NULL;
 	time_t now = time(NULL);
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	hostlist_t *reg_hostlist = NULL;
 	char *host_str = NULL, *reason_down = NULL;
 	uint32_t node_flags;
@@ -5031,7 +5031,7 @@ fini:
 extern void consolidate_config_list(bool is_locked, bool force)
 {
 	config_record_t *curr_rec;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmctld_lock_t node_write_lock = { .node = WRITE_LOCK };
 
 	if (is_locked)

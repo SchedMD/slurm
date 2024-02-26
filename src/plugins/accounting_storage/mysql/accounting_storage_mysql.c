@@ -870,7 +870,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	time_t now = time(NULL);
 	char *cluster_name = NULL;
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	/*
 	 * Before attempting to create tables, make sure conversion/create
@@ -2110,7 +2110,7 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
 		int set = 0;
-		ListIterator qos_itr;
+		list_itr_t *qos_itr;
 
 		if (qos_level == QOS_LEVEL_MODIFY) {
 			xstrcat(*extra, "");
@@ -3093,7 +3093,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	}
 
 	if (commit && list_count(update_list)) {
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		slurmdb_update_object_t *object = NULL;
 
 		/*
@@ -3117,7 +3117,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			switch (object->type) {
 			case SLURMDB_REMOVE_CLUSTER:
 			{
-				ListIterator rem_itr = NULL;
+				list_itr_t *rem_itr = NULL;
 				char *rem_cluster = NULL;
 				rem_itr = list_iterator_create(object->objects);
 				while ((rem_cluster = list_next(rem_itr))) {

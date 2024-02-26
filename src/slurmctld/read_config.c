@@ -392,7 +392,7 @@ static void _init_bitmaps(void)
 static void _build_part_bitmaps(void)
 {
 	part_record_t *part_ptr;
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
@@ -1085,7 +1085,7 @@ static int _test_het_job_used(void *x, void *arg)
  */
 static void _validate_het_jobs(void)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr, *het_job_ptr;
 	hostset_t *hs;
 	char *job_id_str;
@@ -1184,7 +1184,7 @@ static void _test_cgroup_plugin_use(void)
 
 static void _sync_steps_to_conf(job_record_t *job_ptr)
 {
-	ListIterator step_iterator;
+	list_itr_t *step_iterator;
 	step_record_t *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
@@ -1260,7 +1260,7 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
  */
 void _sync_jobs_to_conf(void)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;
 	List part_ptr_list = NULL;
@@ -1823,7 +1823,7 @@ static void _add_config_feature(List feature_list, char *feature,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 	bool match = false;
 
 	/* If feature already in avail_feature_list, just update the bitmap */
@@ -1855,7 +1855,7 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx)
 {
 	node_feature_t *feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 	bool match = false;
 
 	/* If feature already in avail_feature_list, just update the bitmap */
@@ -1898,10 +1898,10 @@ static void _list_delete_feature(void *feature_entry)
  */
 extern void build_feature_list_eq(void)
 {
-	ListIterator config_iterator;
+	list_itr_t *config_iterator;
 	config_record_t *config_ptr;
 	node_feature_t *active_feature_ptr, *avail_feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 	char *tmp_str, *token, *last = NULL;
 
 	FREE_NULL_LIST(active_feature_list);
@@ -1944,7 +1944,7 @@ extern void log_feature_lists(void)
 {
 	node_feature_t *feature_ptr;
 	char *node_str;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 
 	feature_iter = list_iterator_create(avail_feature_list);
 	while ((feature_ptr = list_next(feature_iter))) {
@@ -2012,7 +2012,7 @@ extern void update_feature_list(List feature_list, char *new_features,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 	char *tmp_str, *token, *last = NULL;
 
 	/*
@@ -2293,7 +2293,7 @@ static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
 static int _sync_nodes_to_jobs(void)
 {
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	int update_cnt = 0;
 
 	job_iterator = list_iterator_create(job_list);
@@ -2329,7 +2329,7 @@ static int _sync_nodes_to_jobs(void)
 static int _sync_nodes_to_comp_job(void)
 {
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	int update_cnt = 0;
 
 	job_iterator = list_iterator_create(job_list);
@@ -2500,7 +2500,7 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 static void _restore_job_accounting(void)
 {
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	bool valid = true;
 	List license_list;
 
@@ -2579,9 +2579,9 @@ static void _restore_job_accounting(void)
 static void _acct_restore_active_jobs(void)
 {
 	job_record_t *job_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	step_record_t *step_ptr;
-	ListIterator step_iterator;
+	list_itr_t *step_iterator;
 
 	info("Reinitializing job accounting state");
 	acct_storage_g_flush_jobs_on_cluster(acct_db_conn,

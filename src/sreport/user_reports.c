@@ -167,7 +167,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 static int _setup_print_fields_list(List format_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
 
@@ -265,7 +265,7 @@ static int _setup_print_fields_list(List format_list)
 static int _set_user_acct(void *x, void *arg)
 {
 	slurmdb_report_user_rec_t *orig_report_user;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	char *acct;
 
 	orig_report_user = (slurmdb_report_user_rec_t *) x;
@@ -289,7 +289,7 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 			slurmdb_report_user_rec_t *slurmdb_report_user)
 {
 	slurmdb_tres_rec_t *cluster_tres_rec, *tres_rec, *total_energy;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	print_field_t *field;
 	char *tres_tmp = NULL, *tmp_char = NULL;
 	struct passwd *pwd = NULL;
@@ -386,7 +386,7 @@ static void _set_usage_column_width(List print_fields_list,
 				    List slurmdb_report_cluster_list)
 {
 	print_field_t *field, *usage_field = NULL, *energy_field = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	xassert(print_fields_list);
 	xassert(slurmdb_report_cluster_list);
@@ -413,7 +413,7 @@ static void _merge_user_report(List slurmdb_report_cluster_list)
 {
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	slurmdb_report_cluster_rec_t *first_report_cluster = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (list_count(slurmdb_report_cluster_list) < 2)
 		return;
@@ -454,8 +454,8 @@ extern int user_top(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
-	ListIterator itr = NULL, itr2 = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
 	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;

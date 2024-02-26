@@ -275,7 +275,7 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 	ret_list = slurmdb_job_modify(db_conn, job_cond, job);
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		printf(" Modified jobs...\n");
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);

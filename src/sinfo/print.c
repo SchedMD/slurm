@@ -84,7 +84,7 @@ static char *_str_tolower(char *upper_str);
  *****************************************************************************/
 int print_sinfo_list(List sinfo_list)
 {
-	ListIterator i = list_iterator_create(sinfo_list);
+	list_itr_t *i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 
 	if (params.node_field_flag)
@@ -104,7 +104,7 @@ int print_sinfo_list(List sinfo_list)
 
 int print_sinfo_entry(sinfo_data_t *sinfo_data)
 {
-	ListIterator i = list_iterator_create(params.format_list);
+	list_itr_t *i = list_iterator_create(params.format_list);
 	sinfo_format_t *current;
 
 	while ((current = list_next(i))) {
@@ -377,7 +377,7 @@ format_prepend_function(List list, int width, bool right, char *suffix,
 static void _set_node_field_size(List sinfo_list)
 {
 	char *tmp = NULL;
-	ListIterator i = list_iterator_create(sinfo_list);
+	list_itr_t *i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 	int max_width = MIN_NODE_FIELD_SIZE, this_width = 0;
 
@@ -393,7 +393,7 @@ static void _set_node_field_size(List sinfo_list)
 
 static void _set_part_field_size(List sinfo_list)
 {
-	ListIterator i = list_iterator_create(sinfo_list);
+	list_itr_t *i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 	int max_width = MIN_PART_FIELD_SIZE, this_width = 0;
 

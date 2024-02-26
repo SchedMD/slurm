@@ -602,7 +602,7 @@ _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
 {
 	slurm_msg_t     resp;
 	task_exit_msg_t msg;
-	ListIterator    i       = NULL;
+	list_itr_t *i = NULL;
 	srun_info_t    *srun    = NULL;
 
 	debug3("%s: sending task exit msg for %d tasks (oom:%s exit_status:%s",
@@ -1761,7 +1761,7 @@ static int exec_wait_kill_children (List exec_wait_list)
 	int rc = 0;
 	int count;
 	struct exec_wait_info *e;
-	ListIterator i;
+	list_itr_t *i;
 
 	if ((count = list_count (exec_wait_list)) == 0)
 		return (0);

@@ -527,7 +527,7 @@ extern int bb_g_job_try_stage_in(void)
 {
 	DEF_TIMERS;
 	int i, rc = 1, rc2;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	List job_queue;

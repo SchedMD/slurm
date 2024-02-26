@@ -175,7 +175,7 @@ static void _destroy_priority_factors_obj_light(void *object)
 static int _apply_decay(double real_decay)
 {
 	int i;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
@@ -236,7 +236,7 @@ static int _apply_decay(double real_decay)
  */
 static int _reset_usage(void)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	int i;
@@ -409,7 +409,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 static int _set_children_usage_efctv(List children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!children_list || !list_count(children_list))
 		return SLURM_SUCCESS;
@@ -616,7 +616,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	if (job_ptr->part_ptr_list) {
 		part_record_t *part_ptr;
 		double priority_part;
-		ListIterator part_iterator;
+		list_itr_t *part_iterator;
 		int i = 0;
 
 		if (!job_ptr->priority_array) {
@@ -926,7 +926,7 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 static void _init_grp_used_tres_run_secs(time_t last_ran)
 {
 	job_record_t *job_ptr = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
@@ -1490,7 +1490,7 @@ static void _internal_setup(void)
  */
 static void _set_norm_shares(List children_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 
 	if (!children_list || list_is_empty(children_list))
@@ -1511,7 +1511,7 @@ static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
 	slurmdb_assoc_rec_t *parent_assoc = NULL;
-	ListIterator sib_itr = NULL;
+	list_itr_t *sib_itr = NULL;
 	slurmdb_assoc_rec_t *sibling = NULL;
 	char *child;
 	char *child_str;
@@ -1821,7 +1821,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 extern List priority_p_get_priority_factors_list(uid_t uid)
 {
 	List ret_list = NULL;
-	ListIterator itr, job_iter;
+	list_itr_t *itr, *job_iter;
 	job_record_t *job_ptr = NULL;
 	part_record_t *job_part_ptr = NULL;
 	time_t start_time = time(NULL);

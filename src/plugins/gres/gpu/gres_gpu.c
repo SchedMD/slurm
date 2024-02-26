@@ -207,7 +207,7 @@ static void _normalize_sys_gres_types(List gres_list_system,
 				      List gres_list_conf_single)
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool strip_type = true;
 
 	/* No need to sync anything if configured GRES list is empty */
@@ -399,7 +399,7 @@ static int _sort_gpu_by_links_order(void *x, void *y)
  */
 static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 {
-	ListIterator itr, itr2;
+	list_itr_t *itr, *itr2;
 	gres_slurmd_conf_t *gres_slurmd_conf, *gres_slurmd_conf_sys;
 	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
 

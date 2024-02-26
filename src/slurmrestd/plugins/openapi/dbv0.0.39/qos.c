@@ -95,7 +95,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 static void _dump_qos(ctxt_t *ctxt, list_t *qos_list, char *qos_name)
 {
 	slurmdb_qos_rec_t *qos;
-	ListIterator iter = list_iterator_create(qos_list);
+	list_itr_t *iter = list_iterator_create(qos_list);
 	data_t *dqos_list = data_key_set(ctxt->resp, "qos");
 
 	if (data_get_type(dqos_list) != DATA_TYPE_LIST)

@@ -197,7 +197,7 @@ extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn)
 extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr;
+	list_itr_t *itr;
 	char *cluster_name;
 
 	xassert(as_mysql_total_cluster_list);

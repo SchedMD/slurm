@@ -395,7 +395,7 @@ fini:	hostlist_destroy(in_hl);
 
 static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
-	ListIterator opt_iter, job_iter;
+	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local = NULL;
 	_launch_app_data_t *opts;
 	int total_ntasks = 0, total_nnodes = 0, step_cnt = 0, node_offset = 0;
@@ -739,7 +739,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 
 static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
-	ListIterator opt_iter, job_iter;
+	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local;
 
 	if (srun_job_list) {

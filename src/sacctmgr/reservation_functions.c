@@ -145,8 +145,8 @@ static int _set_cond(int *start, int argc, char **argv,
 int sacctmgr_list_reservation(int argc, char **argv)
 {
         List reservation_list;
-        ListIterator itr;
-	ListIterator itr2;
+	list_itr_t *itr;
+	list_itr_t *itr2;
 	List format_list;
 	List print_fields_list;
         slurmdb_reservation_cond_t *reservation_cond =

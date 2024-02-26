@@ -1718,7 +1718,7 @@ static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
 				 char *type_name)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	ListIterator iter = list_iterator_create(gres_conf_list_tmp);
+	list_itr_t *iter = list_iterator_create(gres_conf_list_tmp);
 	while ((gres_slurmd_conf = list_next(iter))) {
 		/* Note: plugin type filter already applied */
 		/* Check that type is the same */
@@ -1751,7 +1751,7 @@ static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
 static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 				 slurm_gres_context_t *gres_ctx)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	gres_state_t *gres_state_node;
 	List gres_conf_list_tmp;
@@ -1842,7 +1842,7 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 				       slurm_gres_context_t *gres_ctx,
 				       char *type_name)
 {
-	ListIterator gres_conf_itr;
+	list_itr_t *gres_conf_itr;
 	gres_slurmd_conf_t *gres_slurmd_conf = NULL;
 
 	gres_conf_itr = list_iterator_create(gres_conf_list);
@@ -2067,7 +2067,7 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 {
 	int i;
 	gres_state_t *gres_state_node;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool found;
 
 	List new_gres_list = list_create(destroy_gres_slurmd_conf);
@@ -2389,7 +2389,7 @@ extern int gres_node_config_load(List gres_conf_list,
 				 List *gres_devices)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	List names_list;
 	int max_dev_num = -1;
@@ -2666,7 +2666,7 @@ extern int gres_node_config_pack(buf_t *buffer)
 	int rc = SLURM_SUCCESS;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0, version = SLURM_PROTOCOL_VERSION;
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
 	xassert(gres_context_cnt >= 0);
@@ -3496,7 +3496,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	uint64_t dev_cnt;
 	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_ns;
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool has_file, has_type, first_time = false, rebuild_topo = false;
 	uint32_t type_id;
@@ -4592,7 +4592,7 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 	uint32_t top_offset, tail_offset;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t gres_bitmap_size, rec_cnt = 0;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
 
@@ -4862,7 +4862,7 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 extern List gres_node_state_list_dup(List gres_list)
 {
 	List new_list = NULL;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_node, *new_gres;
 	void *gres_ns;
 
@@ -5171,7 +5171,7 @@ static void _node_state_log(gres_node_state_t *gres_ns,
  */
 extern void gres_node_state_log(List gres_list, char *node_name)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_node;
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
@@ -5226,7 +5226,7 @@ extern char *gres_get_node_drain(List gres_list)
  */
 extern char *gres_get_node_used(List gres_list)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_node;
 	char *gres_used = NULL, *tmp;
 
@@ -5887,7 +5887,7 @@ static int _merge_generic_data(
 	gres_job_state_t *gres_js;
 	gres_step_state_t *gres_ss;
 	void *generic_gres_data;
-	ListIterator iter = list_iterator_create(gres_list);
+	list_itr_t *iter = list_iterator_create(gres_list);
 
 	for (int i = 0; i < over_count; i++) {
 		if (!over_list[i].with_type || !over_list[i].without_type_state)
@@ -5995,7 +5995,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	uint64_t cnt = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	xassert(gres_list);
 	xassert(*gres_list == NULL);
@@ -6273,7 +6273,7 @@ extern int gres_job_revalidate(List gres_list)
 {
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
-	ListIterator iter;
+	list_itr_t *iter;
 	int rc = SLURM_SUCCESS;
 
 	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
@@ -6301,7 +6301,7 @@ extern int gres_job_revalidate(List gres_list)
  */
 static bool _job_has_gres_bits(List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool rc = false;
@@ -6372,7 +6372,7 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 				    int node_inx, List node_gres_list,
 				    char *node_name)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool rc = true;
@@ -6412,7 +6412,7 @@ static bool _validate_node_gres_type(uint32_t job_id, List job_gres_list,
 				     int node_inx, List node_gres_list,
 				     char *node_name)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
@@ -6709,7 +6709,7 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
  */
 extern List gres_job_state_extract(List gres_list, int node_index)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job, *new_gres_state;
 	List new_gres_list = NULL;
 	void *new_gres_data;
@@ -6766,7 +6766,7 @@ extern int gres_job_state_pack(List gres_list, buf_t *buffer,
 	uint32_t top_offset, tail_offset;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 
@@ -7172,7 +7172,7 @@ extern int gres_prep_pack(List gres_list, buf_t *buffer,
 	uint32_t top_offset, tail_offset;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_prep_t *gres_prep;
 
 	top_offset = get_buf_offset(buffer);
@@ -7343,7 +7343,7 @@ unpack_error:
  */
 extern List gres_g_prep_build_env(List job_gres_list, char *node_list)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_ptr = NULL;
 	gres_prep_t *gres_prep;
 	List prep_gres_list = NULL;
@@ -7392,7 +7392,7 @@ extern List gres_g_prep_build_env(List job_gres_list, char *node_list)
 extern void gres_g_prep_set_env(char ***prep_env_ptr,
 				List prep_gres_list, int node_inx)
 {
-	ListIterator prep_iter;
+	list_itr_t *prep_iter;
 	gres_prep_t *gres_prep;
 
 	*prep_env_ptr = NULL;
@@ -7816,7 +7816,7 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 			      bool disable_binding)
 {
 	uint32_t core_cnt, tmp_cnt;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 	bool topo_set = false;
 
@@ -7884,7 +7884,7 @@ extern void gres_sock_delete(void *x)
  */
 extern char *gres_sock_str(List sock_gres_list, int sock_inx)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	sock_gres_t *sock_gres;
 	char *gres_str = NULL, *sep = "";
 
@@ -7963,7 +7963,7 @@ static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
 extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 {
 	int i;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
@@ -8173,7 +8173,7 @@ static uint64_t _get_gres_list_cnt(List gres_list, char *gres_name,
 {
 	uint64_t gres_val = NO_VAL64;
 	uint32_t plugin_id;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_ptr;
 	bool filter_type;
 
@@ -8244,7 +8244,7 @@ static uint64_t _get_step_gres_list_cnt(List gres_list, char *gres_name,
  */
 extern void gres_job_state_log(List gres_list, uint32_t job_id)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job;
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
@@ -8296,7 +8296,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			       int local_proc_id, stepd_step_rec_t *step)
 {
 	int j;
-	ListIterator dev_itr;
+	list_itr_t *dev_itr;
 	bitstr_t *gres_bit_alloc = NULL;
 	uint64_t *gres_per_bit = NULL;
 	gres_device_t *gres_device;
@@ -8746,7 +8746,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 			overlap_check_t *over_list =
 				xcalloc(list_count(new_step_list),
 					sizeof(overlap_check_t));
-			ListIterator iter = list_iterator_create(new_step_list);
+			list_itr_t *iter = list_iterator_create(new_step_list);
 			while ((gres_state = list_next(iter))) {
 				if (_set_over_list(gres_state, over_list,
 						   &over_count, 0))
@@ -8884,7 +8884,7 @@ List gres_step_state_list_dup(List gres_list)
  */
 List gres_step_state_extract(List gres_list, int node_index)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step, *new_gres_state_step;
 	List new_gres_list = NULL;
 	void *new_gres_data;
@@ -8931,7 +8931,7 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 	int i, rc = SLURM_SUCCESS;
 	uint32_t top_offset, tail_offset, magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 
@@ -9297,7 +9297,7 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
 	uint64_t gres_cnt = NO_VAL64;
 	gres_state_t *gres_state_step = NULL;
 	gres_step_state_t *gres_ss = NULL;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	int i;
 
 	if (!step_gres_list)
@@ -9384,7 +9384,7 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 					  cpu_set_t *task_cpu_set)
 {
 	bitstr_t *usable_gres = NULL, *task_cpus_bitmap = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
 	int bitmap_size;
@@ -9436,7 +9436,7 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 	bitstr_t *task_cpus_bitmap = cpu_set_to_bit_str(
 		task_cpu_set,
 		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
-	ListIterator iter = list_iterator_create(gres_conf_list);
+	list_itr_t *iter = list_iterator_create(gres_conf_list);
 
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != plugin_id)
@@ -10055,7 +10055,7 @@ static int _get_usable_gres(int context_inx, int proc_id,
 extern void gres_g_step_set_env(stepd_step_rec_t *step)
 {
 	int i;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
@@ -10112,7 +10112,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 {
 	int i;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step = NULL;
 	bitstr_t *usable_gres = NULL;
 	uint64_t gres_cnt = 0;
@@ -10247,7 +10247,7 @@ static void _step_state_log(gres_step_state_t *gres_ss,
 extern void gres_step_state_log(List gres_list, uint32_t job_id,
 				uint32_t step_id)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
 
@@ -10301,7 +10301,7 @@ extern uint64_t gres_get_value_by_type(List job_gres_list, char *gres_name)
 	int i;
 	uint32_t plugin_id;
 	uint64_t gres_cnt = 0;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 
@@ -10345,7 +10345,7 @@ extern int gres_node_count(List gres_list, int arr_len,
 			   uint64_t *gres_count_vals,
 			   int val_type)
 {
-	ListIterator  node_gres_iter;
+	list_itr_t *node_gres_iter;
 	gres_state_t *gres_state_node;
 	uint64_t      val;
 	int           rc = SLURM_SUCCESS, ix = 0;
@@ -10394,7 +10394,7 @@ extern void gres_send_stepd(buf_t *buffer, List gres_devices)
 {
 	uint32_t cnt = 0;
 	gres_device_t *gres_device;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	if (gres_devices)
 		cnt = list_count(gres_devices);
@@ -10636,7 +10636,7 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 {
 	int i, rc = ESLURM_INVALID_GRES;
 	uint32_t plugin_id;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 
@@ -10714,7 +10714,7 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 {
 	int i, rc = ESLURM_INVALID_GRES;
 	uint32_t plugin_id;
-	ListIterator step_gres_iter;
+	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 
@@ -10908,7 +10908,7 @@ extern void add_gres_to_list(List gres_list,
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool use_empty_first_record = false;
-	ListIterator itr = list_iterator_create(gres_list);
+	list_itr_t *itr = list_iterator_create(gres_list);
 
 	/*
 	 * If the first record already exists and has a count of 0 then

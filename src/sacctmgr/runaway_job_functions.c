@@ -84,8 +84,8 @@ static void _print_runaway_jobs(List format_list, List jobs)
 {
 	char outbuf[FORMAT_STRING_SIZE];
 	slurmdb_job_rec_t *job = NULL;
-	ListIterator itr = NULL;
-	ListIterator field_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *field_itr = NULL;
 	List print_fields_list; /* types are of print_field_t */
 	print_field_t *field = NULL;
 	int field_count;

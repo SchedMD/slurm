@@ -1048,7 +1048,7 @@ char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 		  bool test_exec)
 {
 	List         l        = NULL;
-	ListIterator i        = NULL;
+	list_itr_t *i = NULL;
 	char *path, *fullpath = NULL;
 
 	/* Relative path */

@@ -84,7 +84,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	/* Locks: Read partition */
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	part_record_t *part_ptr;
 
 	if (job_desc->partition)	/* job already specified partition */

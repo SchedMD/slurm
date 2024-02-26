@@ -1213,7 +1213,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 extern int select_p_reconfigure(void)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	int rc = SLURM_SUCCESS;
 

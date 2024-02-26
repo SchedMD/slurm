@@ -294,7 +294,7 @@ static void *_forward_thread(void *arg)
 			   them back down, but this is here so we
 			   never have to worry about a locked
 			   mutex */
-			ListIterator itr = NULL;
+			list_itr_t *itr = NULL;
 			char *tmp = NULL;
 			int first_node_found = 0;
 			hostlist_iterator_t *host_itr
@@ -468,7 +468,7 @@ static void *_fwd_tree_thread(void *arg)
 				      ret_cnt);
 				if (ret_cnt > 1) { /* not likely */
 					ret_data_info_t *ret_data_info = NULL;
-					ListIterator itr =
+					list_itr_t *itr =
 						list_iterator_create(ret_list);
 					while ((ret_data_info =
 						list_next(itr))) {

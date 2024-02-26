@@ -1011,7 +1011,7 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 	/* Update the data */
 	uint64_t total_job_mem = 0, total_job_vsize = 0;
 	uint32_t last_taskid = NO_VAL;
-	ListIterator itr;
+	list_itr_t *itr;
 	jag_prec_t *prec = NULL, tmp_prec;
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;

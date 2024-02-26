@@ -1196,7 +1196,7 @@ extern List job_defaults_copy(List in_list)
 {
 	List out_list = NULL;
 	job_defaults_t *in_default, *out_default;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (!in_list)
 		return out_list;
@@ -1298,7 +1298,7 @@ extern int job_defaults_list(char *in_str, List *out_list)
 extern char *job_defaults_str(List in_list)
 {
 	job_defaults_t *in_default;
-	ListIterator iter;
+	list_itr_t *iter;
 	char *out_str = NULL, *sep = "";
 
 	if (!in_list)
@@ -6208,7 +6208,7 @@ extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
 		count = list_count(in);
 	pack32(count, buff);
 	if (count && (count != NO_VAL))	{
-		ListIterator itr = list_iterator_create((List)in);
+		list_itr_t *itr = list_iterator_create((List)in);
 		config_plugin_params_t *obj = NULL;
 		while ((obj = list_next(itr))) {
 			pack_config_plugin_params(obj, protocol_version, buff);
@@ -6293,7 +6293,7 @@ extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
 		count = list_count(key_pairs);
 	pack32(count, buffer);
 	if (count && (count != NO_VAL)) {
-		ListIterator itr = list_iterator_create(
+		list_itr_t *itr = list_iterator_create(
 			(List)key_pairs);
 		config_key_pair_t *key_pair = NULL;
 		while ((key_pair = list_next(itr))) {

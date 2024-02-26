@@ -48,7 +48,7 @@
  */
 extern char *gres_sched_str(List sock_gres_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	sock_gres_t *sock_data;
 	gres_job_state_t *gres_js;
 	char *out_str = NULL, *sep;
@@ -90,7 +90,7 @@ extern char *gres_sched_str(List sock_gres_list)
  */
 extern bool gres_sched_init(List job_gres_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool rc = false;
@@ -116,7 +116,7 @@ extern bool gres_sched_init(List job_gres_list)
  */
 extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool rc = true;
@@ -147,7 +147,7 @@ extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 			   uint16_t *avail_cpus)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data;
@@ -191,7 +191,7 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 extern void gres_sched_consec(List *consec_gres, List job_gres_list,
 			      List sock_gres_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data, *consec_data;
@@ -233,7 +233,7 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
  */
 extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data;

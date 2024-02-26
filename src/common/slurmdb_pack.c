@@ -2145,7 +2145,7 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
 {
 	slurmdb_qos_usage_t *usage = (slurmdb_qos_usage_t *)in;
 	uint32_t count;
-	ListIterator itr;
+	list_itr_t *itr;
 	void *used_limits;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -4317,7 +4317,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 				 buf_t *buffer)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 
@@ -5780,7 +5780,7 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 				       uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	void *slurmdb_object = NULL;
 	void (*my_function) (void *object, uint16_t protocol_version,
 			     buf_t *buffer);

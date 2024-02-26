@@ -462,7 +462,7 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int i;
 
 	if (!used_limit_list || !list_count(used_limit_list))
@@ -536,7 +536,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 static int _change_user_name(slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	uid_t pw_uid;
@@ -594,7 +594,7 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 {
 	slurmdb_assoc_rec_t *parent_assoc = NULL;
 	char *qos_char = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!assoc)
 		return SLURM_ERROR;
@@ -621,7 +621,7 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 					List new_qos_list)
 {
-	ListIterator new_qos_itr = NULL, curr_qos_itr = NULL;
+	list_itr_t *new_qos_itr = NULL, *curr_qos_itr = NULL;
 	char *new_qos = NULL, *curr_qos = NULL;
 	int flushed = 0;
 
@@ -1005,7 +1005,7 @@ static void _set_assoc_norm_priority(slurmdb_assoc_rec_t *assoc)
 
 static void _calculate_assoc_norm_priorities(bool new_max)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc;
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
@@ -1045,7 +1045,7 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc)
 {
 	List children = assoc->usage->children_list;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *child;
 	uint32_t sum = 0;
 
@@ -1069,7 +1069,7 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 				       uint32_t level_shares)
 {
 	List children = assoc->usage->children_list;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *child;
 
 	if (!children || list_is_empty(children))
@@ -1088,7 +1088,7 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 static int _post_assoc_list(void)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	g_assoc_max_priority = 0;
 	//DEF_TIMERS;
 
@@ -1143,7 +1143,7 @@ static int _post_assoc_list(void)
 static int _post_user_list(List user_list)
 {
 	slurmdb_user_rec_t *user = NULL;
-	ListIterator itr = list_iterator_create(user_list);
+	list_itr_t *itr = list_iterator_create(user_list);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1178,7 +1178,7 @@ static int _post_user_list(List user_list)
 static int _post_wckey_list(List wckey_list)
 {
 	slurmdb_wckey_rec_t *wckey = NULL;
-	ListIterator itr = list_iterator_create(wckey_list);
+	list_itr_t *itr = list_iterator_create(wckey_list);
 	//START_TIMER;
 
 	xassert(assoc_mgr_user_list);
@@ -1203,7 +1203,7 @@ static int _post_wckey_list(List wckey_list)
 static int _post_qos_list(List qos_list)
 {
 	slurmdb_qos_rec_t *qos = NULL;
-	ListIterator itr = list_iterator_create(qos_list);
+	list_itr_t *itr = list_iterator_create(qos_list);
 
 	g_qos_count = 0;
 	g_qos_max_priority = 0;
@@ -1245,7 +1245,7 @@ static int _post_res_list(List res_list)
 {
 	if (res_list && !slurmdbd_conf) {
 		slurmdb_res_rec_t *object = NULL;
-		ListIterator itr = list_iterator_create(res_list);
+		list_itr_t *itr = list_iterator_create(res_list);
 		while ((object = list_next(itr))) {
 			if (object->clus_res_list
 			    && list_count(object->clus_res_list)) {
@@ -1313,7 +1313,7 @@ static int _get_old_tres_pos(slurmdb_tres_rec_t **new_array,
  * return 1 if callback is needed */
 extern int assoc_mgr_post_tres_list(List new_list)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
 	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
@@ -1413,7 +1413,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 		int array_size = sizeof(uint64_t) * new_cnt;
 		int d_array_size = sizeof(long double) * new_cnt;
 		slurmdb_used_limits_t *used_limits;
-		ListIterator itr_user;
+		list_itr_t *itr_user;
 
 		/* update the associations and such here */
 		itr = list_iterator_create(assoc_mgr_assoc_list);
@@ -1830,7 +1830,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	slurmdb_assoc_cond_t assoc_q = {0};
 	List current_assocs = NULL;
 	uid_t uid = getuid();
-	ListIterator curr_itr = NULL;
+	list_itr_t *curr_itr = NULL;
 	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
@@ -1967,7 +1967,7 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 	/* move usage from old list over to the new one */
 	if (assoc_mgr_qos_list) {
 		slurmdb_qos_rec_t *curr_qos = NULL, *qos_rec = NULL;
-		ListIterator itr = list_iterator_create(current_qos);
+		list_itr_t *itr = list_iterator_create(current_qos);
 
 		while ((curr_qos = list_next(itr))) {
 			if (!(qos_rec = list_find_first(assoc_mgr_qos_list,
@@ -2117,7 +2117,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 	if (assoc_mgr_assoc_list && !setup_children) {
 		slurmdb_assoc_rec_t *assoc = NULL;
-		ListIterator itr =
+		list_itr_t *itr =
 			list_iterator_create(assoc_mgr_assoc_list);
 		while ((assoc = list_next(itr))) {
 			log_assoc_rec(assoc, assoc_mgr_qos_list);
@@ -2479,7 +2479,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     int enforce,
 				     List assoc_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *found_assoc = NULL;
 	int set = 0;
 
@@ -2534,7 +2534,7 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 				  slurmdb_tres_rec_t **tres_pptr,
 				  bool locked)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_tres_rec_t *found_tres = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -2919,7 +2919,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 				 int enforce,
 				 slurmdb_qos_rec_t **qos_pptr, bool locked)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
@@ -3068,7 +3068,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				   slurmdb_wckey_rec_t **wckey_pptr,
 				   bool locked)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_wckey_rec_t * found_wckey = NULL;
 	slurmdb_wckey_rec_t * ret_wckey = NULL;
 	assoc_mgr_lock_t locks = { .wckey = READ_LOCK };
@@ -3352,9 +3352,9 @@ extern void assoc_mgr_get_shares(void *db_conn,
 				 uid_t uid, shares_request_msg_t *req_msg,
 				 shares_response_msg_t *resp_msg)
 {
-	ListIterator itr = NULL;
-	ListIterator user_itr = NULL;
-	ListIterator acct_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *user_itr = NULL;
+	list_itr_t *acct_itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	assoc_shares_object_t *share = NULL;
 	List ret_list = NULL;
@@ -3433,7 +3433,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 			if (!is_admin) {
-				ListIterator itr = NULL;
+				list_itr_t *itr = NULL;
 				slurmdb_coord_rec_t *coord = NULL;
 
 				if (assoc->user &&
@@ -3544,8 +3544,8 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 	assoc_mgr_info_request_msg_t *msg, uid_t uid,
 	void *db_conn, uint16_t protocol_version)
 {
-	ListIterator itr = NULL;
-	ListIterator user_itr = NULL, acct_itr = NULL, qos_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *user_itr = NULL, *acct_itr = NULL, *qos_itr = NULL;
 	slurmdb_qos_rec_t *qos_rec = NULL;
 	slurmdb_assoc_rec_t *assoc_rec = NULL;
 	List ret_list = NULL, tmp_list;
@@ -3630,7 +3630,7 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 
 		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 			if (!is_admin) {
-				ListIterator itr = NULL;
+				list_itr_t *itr = NULL;
 				slurmdb_coord_rec_t *coord = NULL;
 
 				if (assoc_rec->user &&
@@ -3912,7 +3912,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 {
 	slurmdb_assoc_rec_t * rec = NULL;
 	slurmdb_assoc_rec_t * object = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS, i;
 	int parents_changed = 0;
 	int run_update_resvs = 0;
@@ -4487,7 +4487,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 {
 	slurmdb_wckey_rec_t * rec = NULL;
 	slurmdb_wckey_rec_t * object = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
@@ -4609,7 +4609,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 	slurmdb_user_rec_t * rec = NULL;
 	slurmdb_user_rec_t * object = NULL;
 
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
@@ -4738,7 +4738,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	slurmdb_qos_rec_t *rec = NULL;
 	slurmdb_qos_rec_t *object = NULL;
 
-	ListIterator itr = NULL, assoc_itr = NULL;
+	list_itr_t *itr = NULL, *assoc_itr = NULL;
 
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
@@ -5211,7 +5211,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 	slurmdb_res_rec_t *rec = NULL;
 	slurmdb_res_rec_t *object = NULL;
 
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
@@ -5365,7 +5365,7 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	slurmdb_tres_rec_t *rec = NULL;
 	slurmdb_tres_rec_t *object = NULL;
 
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List tmp_list;
 	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
@@ -5471,7 +5471,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 
 extern void assoc_mgr_clear_used_info(void)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t * found_assoc = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
@@ -5499,7 +5499,7 @@ extern void assoc_mgr_clear_used_info(void)
 static void _reset_children_usages(List children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int i;
 
 	if (!children_list || !list_count(children_list))
@@ -5890,7 +5890,7 @@ extern int dump_assoc_mgr_state(void)
 	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_assoc_list) {
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
 		itr = list_iterator_create(assoc_mgr_assoc_list);
 		while ((assoc = list_next(itr))) {
@@ -5961,7 +5961,7 @@ extern int dump_assoc_mgr_state(void)
 	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_qos_list) {
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		slurmdb_qos_rec_t *qos = NULL;
 		itr = list_iterator_create(assoc_mgr_qos_list);
 		while ((qos = list_next(itr))) {
@@ -6149,7 +6149,7 @@ extern int load_qos_usage(void)
 	char *state_file, *tmp_str = NULL;
 	buf_t *buffer = NULL;
 	time_t buf_time;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	assoc_mgr_lock_t locks = { .file = READ_LOCK, .qos = WRITE_LOCK };
 
 	if (!assoc_mgr_qos_list)

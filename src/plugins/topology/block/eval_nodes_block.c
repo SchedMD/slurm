@@ -139,7 +139,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	block_record_t *block_ptr;
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	node_record_t *node_ptr;
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */

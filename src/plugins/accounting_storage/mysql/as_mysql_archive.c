@@ -5344,7 +5344,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	char *cluster_name = NULL;
 	List use_cluster_list;
 	bool new_cluster_list = false;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!arch_cond) {
 		error("No arch_cond was given to archive from.  returning");

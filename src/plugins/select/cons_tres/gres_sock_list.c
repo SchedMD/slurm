@@ -584,7 +584,7 @@ static sock_gres_t *_build_sock_gres_basic(
 static void _sock_gres_log(List sock_gres_list, char *node_name)
 {
 	sock_gres_t *sock_gres;
-	ListIterator iter;
+	list_itr_t *iter;
 	int i, len = -1;
 	char tmp[32] = "";
 
@@ -635,7 +635,7 @@ extern List gres_sock_list_create(
 	const uint32_t node_inx)
 {
 	List sock_gres_list = NULL;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 	gres_job_state_t  *gres_js;
 	gres_node_state_t *gres_ns;

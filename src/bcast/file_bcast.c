@@ -169,7 +169,7 @@ static int _file_bcast(struct bcast_parameters *params,
 		       job_sbcast_cred_msg_t *sbcast_cred)
 {
 	List ret_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS, msg_rc;
 	slurm_msg_t msg;

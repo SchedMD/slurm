@@ -319,7 +319,7 @@ static int _allocate_test(slurm_opt_t *opt_local)
 extern int allocate_test(void)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurm_opt_t *opt_local;
 
 	if (opt_list) {
@@ -482,7 +482,7 @@ list_t *allocate_het_job_nodes(void)
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j, *first_job = NULL;
 	slurm_allocation_callbacks_t callbacks;
-	ListIterator opt_iter, resp_iter;
+	list_itr_t *opt_iter, *resp_iter;
 	slurm_opt_t *opt_local, *first_opt = NULL;
 	List job_req_list = NULL, job_resp_list = NULL;
 	uint32_t my_job_id = 0;

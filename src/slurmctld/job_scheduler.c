@@ -431,7 +431,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
 	List job_queue;
-	ListIterator depend_iter, job_iterator, part_iterator;
+	list_itr_t *depend_iter, *job_iterator, *part_iterator;
 	job_record_t *job_ptr = NULL, *new_job_ptr;
 	part_record_t *part_ptr;
 	depend_spec_t *dep_ptr;
@@ -656,7 +656,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 {
 	bool completing = false;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr = NULL;
 	time_t recent;
 
@@ -692,7 +692,7 @@ extern void set_job_elig_time(void)
 {
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr = NULL;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	time_t now = time(NULL);
@@ -755,7 +755,7 @@ static void _do_diag_stats(long delta_t)
 static bool _all_partition_priorities_same(void)
 {
 	part_record_t *part_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool part_priority_set = false;
 	uint32_t part_priority = 0;
 	bool result = true;
@@ -1010,7 +1010,7 @@ static void _set_schedule_exit(schedule_exit_t code)
 
 static int _schedule(bool full_queue)
 {
-	ListIterator job_iterator = NULL, part_iterator = NULL;
+	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
 	int error_code, i, j, part_cnt, time_limit, pend_time;
@@ -1294,7 +1294,7 @@ static int _schedule(bool full_queue)
 	last_job_sched_start = now;
 	START_TIMER;
 	if (!avail_front_end(NULL)) {
-		ListIterator job_iterator = list_iterator_create(job_list);
+		list_itr_t *job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = list_next(job_iterator))) {
 			if (!IS_JOB_PENDING(job_ptr))
 				continue;
@@ -1329,7 +1329,7 @@ static int _schedule(bool full_queue)
 	if (reduce_completing_frag) {
 		bitstr_t *eff_cg_bitmap = bit_alloc(node_record_count);
 		if (job_is_completing(eff_cg_bitmap)) {
-			ListIterator part_iterator;
+			list_itr_t *part_iterator;
 			part_record_t *part_ptr = NULL;
 			char *cg_part_str = NULL;
 
@@ -1361,7 +1361,7 @@ static int _schedule(bool full_queue)
 	}
 
 	if (max_jobs_per_part) {
-		ListIterator part_iterator;
+		list_itr_t *part_iterator;
 		sched_part_ptr  = xcalloc(part_cnt, sizeof(part_record_t *));
 		sched_part_jobs = xmalloc(sizeof(int) * part_cnt);
 		part_iterator = list_iterator_create(part_list);
@@ -2369,7 +2369,7 @@ job_failed:
 static job_record_t *_het_job_ready(job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (job_ptr->het_job_id == 0)	/* Not a hetjob */
 		return job_ptr;
@@ -2426,7 +2426,7 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 {
 	job_record_t *het_job;
 	int i, het_job_offset = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (het_job_leader->het_job_id == 0)
 		return;
@@ -2741,7 +2741,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 extern List depended_list_copy(List depend_list_src)
 {
 	depend_spec_t *dep_src, *dep_dest;
-	ListIterator iter;
+	list_itr_t *iter;
 	List depend_list_dest = NULL;
 
 	if (!depend_list_src)
@@ -2812,7 +2812,7 @@ static char *_depend_state2str(depend_spec_t *dep_ptr)
 
 static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
-	ListIterator depend_iter;
+	list_itr_t *depend_iter;
 	depend_spec_t *dep_ptr;
 	char *dep_str, *sep = "";
 
@@ -3017,7 +3017,7 @@ static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
  */
 extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
-	ListIterator depend_iter;
+	list_itr_t *depend_iter;
 	depend_spec_t *dep_ptr;
 	bool has_local_depend = false;
 	int results = NO_DEPEND;
@@ -3627,7 +3627,7 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 				       List new_depend_list)
 {
 	depend_spec_t *dep_ptr, *job_depend;
-	ListIterator itr;
+	list_itr_t *itr;
 	List job_depend_list;
 	bool was_changed = false;
 
@@ -3696,7 +3696,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
 	depend_spec_t *dep_ptr = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	bool or_satisfied = false, and_failed = false, or_flag = false,
 	     has_unfulfilled = false;
 	time_t now = time(NULL);
@@ -3924,7 +3924,7 @@ static bool _scan_depend(List dependency_list, job_record_t *job_ptr)
 {
 	static int job_counter = 0;
 	bool rc = false;
-	ListIterator iter;
+	list_itr_t *iter;
 	depend_spec_t *dep_ptr;
 
 	if (dependency_list == NULL) {
@@ -3978,7 +3978,7 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 	uint32_t job_size_cpus, job_size_nodes, job_time;
 	uint64_t cume_space_time = 0;
 	job_record_t *job_q_ptr;
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 
 	if (job_ptr->part_ptr == NULL)
 		return;
@@ -4050,7 +4050,7 @@ extern int job_start_data(job_record_t *job_ptr,
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 	bool resv_overlap = false;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	resv_exc_t resv_exc = { 0 };
 
 	if (job_ptr == NULL)
@@ -4210,7 +4210,7 @@ next_part:
 		resp_data->part_name  = xstrdup(part_ptr->name);
 
 		if (preemptee_job_list) {
-			ListIterator preemptee_iterator;
+			list_itr_t *preemptee_iterator;
 			uint32_t *preemptee_jid;
 			job_record_t *tmp_job_ptr;
 			resp_data->preemptee_job_id = list_create(xfree_ptr);
@@ -4636,7 +4636,7 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 extern List feature_list_copy(List feature_list_src)
 {
 	job_feature_t *feat_src, *feat_dest;
-	ListIterator iter;
+	list_itr_t *iter;
 	List feature_list_dest = NULL;
 
 	if (!feature_list_src)
@@ -5071,7 +5071,7 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	job_feature_t *feat_ptr;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
@@ -5169,7 +5169,7 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 {
 	int rc = ESLURM_INVALID_FEATURE;
 	node_feature_t *feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 
 	if (can_reboot)
 		feature_iter = list_iterator_create(avail_feature_list);
@@ -5193,7 +5193,7 @@ static int _valid_node_feature(char *feature, bool can_reboot)
  * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	part_record_t *part_ptr;
 
 	if (!job_ptr->part_ptr_list)

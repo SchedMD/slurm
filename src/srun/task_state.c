@@ -213,7 +213,7 @@ extern void task_state_update(task_state_t *ts, int task_id,
 extern bool task_state_first_exit(List task_state_list)
 {
 	task_state_t *ts = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool is_first = true;
 	int n_exited = 0;
 
@@ -251,7 +251,7 @@ extern bool task_state_first_exit(List task_state_list)
 extern bool task_state_first_abnormal_exit(List task_state_list)
 {
 	task_state_t *ts = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool is_first = true;
 	int n_abnormal = 0;
 
@@ -329,7 +329,7 @@ static void _task_state_print(task_state_t *ts, log_f fn)
 extern void task_state_print(List task_state_list, log_f fn)
 {
 	task_state_t *ts = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (!task_state_list)
 		return;

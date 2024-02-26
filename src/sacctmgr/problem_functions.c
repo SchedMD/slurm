@@ -130,8 +130,8 @@ extern int sacctmgr_list_problem(int argc, char **argv)
 	List assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int i=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	List tree_list = NULL;
 
 	int field_count = 0;

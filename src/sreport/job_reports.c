@@ -333,7 +333,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 static int _setup_print_fields_list(List format_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
 
@@ -432,7 +432,7 @@ static int _setup_print_fields_list(List format_list)
 
 static int _setup_grouping_print_fields_list(List grouping_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
 	char *last_object = NULL;
@@ -550,7 +550,7 @@ static void _combine_job_groups(List first_job_list, List new_job_list)
 {
 	slurmdb_report_job_grouping_t *orig_job_group = NULL;
 	slurmdb_report_job_grouping_t *dup_job_group = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (!first_job_list || !new_job_list)
 		return;
@@ -603,7 +603,7 @@ static void _combine_acct_groups(List first_acct_list, List new_acct_list)
 {
 	slurmdb_report_acct_grouping_t *orig_report_acct = NULL;
 	slurmdb_report_acct_grouping_t *dup_report_acct = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (!first_acct_list || !new_acct_list)
 		return;
@@ -631,7 +631,7 @@ static void _combine_acct_groups(List first_acct_list, List new_acct_list)
 static void _merge_cluster_groups(List slurmdb_report_cluster_grouping_list)
 {
 	slurmdb_report_cluster_grouping_t *group = NULL, *first_group = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (list_count(slurmdb_report_cluster_grouping_list) < 2)
 		return;
@@ -669,11 +669,11 @@ static int _run_report(int type, int argc, char **argv)
 	int i = 0, tres_cnt = 0;
 	slurmdb_tres_rec_t *tres;
 	uint64_t count1, count2;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator cluster_itr = NULL;
-	ListIterator local_itr = NULL;
-	ListIterator acct_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
+	list_itr_t *local_itr = NULL;
+	list_itr_t *acct_itr = NULL;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;

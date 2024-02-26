@@ -125,7 +125,7 @@ pmixp_namespace_t *pmixp_nspaces_find(const char *name)
 {
 	xassert(_pmixp_nspaces.magic == PMIXP_NSPACE_DB_MAGIC);
 
-	ListIterator it = list_iterator_create(_pmixp_nspaces.nspaces);
+	list_itr_t *it = list_iterator_create(_pmixp_nspaces.nspaces);
 	pmixp_namespace_t *nsptr = NULL;
 	while ((nsptr = list_next(it))) {
 		xassert(nsptr->magic == PMIXP_NSPACE_MAGIC);
@@ -161,7 +161,7 @@ int pmixp_nspace_resolve(const char *name, int rank)
 
 	xassert(_pmixp_nspaces.magic == PMIXP_NSPACE_DB_MAGIC);
 
-	ListIterator it = list_iterator_create(_pmixp_nspaces.nspaces);
+	list_itr_t *it = list_iterator_create(_pmixp_nspaces.nspaces);
 	while ((nsptr = list_next(it))) {
 		xassert(nsptr->magic == PMIXP_NSPACE_MAGIC);
 		if (0 == xstrcmp(nsptr->name, name)) {

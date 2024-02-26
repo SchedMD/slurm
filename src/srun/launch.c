@@ -89,7 +89,7 @@ extern char **environ;
 static int _step_signal(int signal)
 {
 	srun_job_t *my_srun_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	int rc = SLURM_SUCCESS, rc2;
 
 	if (!local_job_list) {
@@ -1584,7 +1584,7 @@ extern void launch_g_print_status(void)
 extern void launch_g_fwd_signal(int signal)
 {
 	srun_job_t *my_srun_job;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	if (!local_job_list) {
 		debug("%s: local_job_list does not exist yet", __func__);

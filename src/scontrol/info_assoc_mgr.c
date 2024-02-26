@@ -185,7 +185,7 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 
 static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_user_rec_t *user_rec;
 	slurmdb_assoc_rec_t *assoc_rec;
 	slurmdb_qos_rec_t *qos_rec;

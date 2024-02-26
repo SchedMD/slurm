@@ -358,7 +358,7 @@ static int _set_cluster_cond(int *start, int argc, char **argv,
 
 static int _setup_print_fields_list(List format_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
 
@@ -554,7 +554,7 @@ static void _set_usage_column_width(List print_fields_list,
 				    List slurmdb_report_cluster_list)
 {
 	print_field_t *field, *usage_field = NULL, *energy_field = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	xassert(print_fields_list);
 	xassert(slurmdb_report_cluster_list);
@@ -579,7 +579,7 @@ static void _set_usage_column_width(List print_fields_list,
 static void _merge_cluster_recs(List cluster_list)
 {
 	slurmdb_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (list_count(cluster_list) < 2)
 		return;
@@ -680,7 +680,7 @@ static void _cluster_account_by_user_tres_report(
 	slurmdb_tres_rec_t *cluster_tres_rec, *tres_rec, *total_energy;
 	char *tmp_char = NULL;
 	int curr_inx = 1, field_count;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	print_field_t *field;
 	uint64_t cluster_energy_cnt = 0, assoc_energy_cnt = 0;
 	uint32_t tres_energy;
@@ -799,7 +799,7 @@ static void _cluster_account_by_user_tres_report(
 static void _merge_cluster_reps(List cluster_list)
 {
 	slurmdb_report_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 
 	if (list_count(cluster_list) < 2)
 		return;
@@ -841,9 +841,9 @@ extern int cluster_account_by_user(int argc, char **argv)
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
-	ListIterator itr = NULL;
-	ListIterator tres_itr = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *tres_itr = NULL;
+	list_itr_t *cluster_itr = NULL;
 	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
@@ -959,7 +959,7 @@ static void _cluster_user_by_account_tres_report(slurmdb_tres_rec_t *tres,
 	char *tmp_char = NULL;
 	struct passwd *pwd = NULL;
 	int curr_inx = 1, field_count;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	print_field_t *field;
 	uint64_t cluster_energy_cnt = 0, user_energy_cnt = 0;
 	uint32_t tres_energy;
@@ -1055,9 +1055,9 @@ extern int cluster_user_by_account(int argc, char **argv)
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
 	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
@@ -1157,7 +1157,7 @@ static void _cluster_user_by_wckey_tres_report(slurmdb_tres_rec_t *tres,
 	char *tmp_char = NULL;
 	struct passwd *pwd = NULL;
 	int curr_inx = 1, field_count;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	print_field_t *field;
 	uint64_t cluster_energy_cnt = 0, user_energy_cnt = 0;
 	uint32_t tres_energy;
@@ -1253,9 +1253,9 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 	slurmdb_wckey_cond_t *wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
 	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;
@@ -1358,7 +1358,7 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 	uint64_t total_reported = 0;
 	uint64_t local_total_time = 0;
 	int curr_inx = 1, field_count;
-	ListIterator iter;
+	list_itr_t *iter;
 	char *tmp_char, *tres_tmp = NULL;
 	print_field_t *field;
 	uint32_t tres_energy;
@@ -1494,9 +1494,9 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 extern int cluster_utilization(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator itr3 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
+	list_itr_t *itr3 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	uint32_t total_time = 0;
 	List cluster_list = NULL;
@@ -1663,7 +1663,7 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 {
 	slurmdb_tres_rec_t *cluster_tres_rec, *tres_rec;
 	int curr_inx = 1, field_count;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	print_field_t *field;
 	char *tres_tmp = NULL;
 
@@ -1739,9 +1739,9 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 	slurmdb_wckey_cond_t *wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator cluster_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
+	list_itr_t *cluster_itr = NULL;
 	List format_list = list_create(xfree_ptr);
 	List slurmdb_report_cluster_list = NULL;
 	int i = 0;

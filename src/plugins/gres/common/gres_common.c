@@ -58,7 +58,7 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 	bool use_local_dev_index = gres_use_local_device_index();
 	bool set_global_id = false;
 	gres_device_t *gres_device;
-	ListIterator itr;
+	list_itr_t *itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
 	int device_index = -1;
@@ -222,7 +222,7 @@ static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 				    bool parsable)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
 	if (gres_list == NULL)

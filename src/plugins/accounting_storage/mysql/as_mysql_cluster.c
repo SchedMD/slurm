@@ -155,7 +155,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 				      char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	if (!cluster_cond)
@@ -227,7 +227,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				 List cluster_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *object = NULL;
 	char *extra = NULL,
@@ -456,7 +456,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
-			ListIterator check_itr;
+			list_itr_t *check_itr;
 			char *tmp_name;
 
 			added++;
@@ -771,7 +771,7 @@ end_it:
 extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_cluster_cond_t *cluster_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	List tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -932,12 +932,12 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_assoc_cond_t assoc_cond;
-	ListIterator assoc_itr = NULL;
+	list_itr_t *assoc_itr = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	List assoc_list = NULL;
@@ -1126,7 +1126,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
 	int i=0;
@@ -1496,7 +1496,7 @@ static void _add_char_list_to_where_clause(List char_list,
 					   const char *col_name,
 					   char **where_clause)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int set = 0;
 	char *string = NULL;
 
@@ -1534,7 +1534,7 @@ extern List as_mysql_get_instances(mysql_conn_t *mysql_conn,
 	int set = 0;
 	List ret_list = NULL;
 	List use_cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row, prev_row = NULL;
 	slurmdb_user_rec_t user;

@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	char **het_job_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
-	ListIterator iter_req, iter_resp;
+	list_itr_t *iter_req, *iter_resp;
 
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -716,7 +716,7 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
  * and is "sh". */
 static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	job_desc_msg_t *desc = NULL;
 	char *name;
 

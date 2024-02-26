@@ -127,7 +127,7 @@ main (int argc, char **argv)
 static int
 _multi_cluster(List clusters)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	int rc = 0, rc2;
 
 	itr = list_iterator_create(clusters);

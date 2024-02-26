@@ -938,7 +938,7 @@ extern int gres_ctld_job_select_whole_node(
 	List *job_gres_list, List node_gres_list,
 	uint32_t job_id, char *node_name)
 {
-	ListIterator node_gres_iter;
+	list_itr_t *node_gres_iter;
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
 
@@ -1072,7 +1072,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 			       bitstr_t *core_bitmap, bool new_alloc)
 {
 	int rc = SLURM_ERROR, rc2;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 
 	if (job_gres_list == NULL)
@@ -1145,7 +1145,7 @@ extern int gres_ctld_job_alloc_whole_node(
 	bitstr_t *core_bitmap, bool new_alloc)
 {
 	int rc = SLURM_ERROR, rc2;
-	ListIterator node_gres_iter;
+	list_itr_t *node_gres_iter;
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
 
@@ -1546,7 +1546,7 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 char *node_name, bool old_job, bool resize)
 {
 	int rc = SLURM_SUCCESS, rc2;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 
 	if (job_gres_list == NULL)
@@ -1597,7 +1597,7 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 				bitstr_t *to_job_node_bitmap)
 {
 	static int select_hetero = -1;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job, *gres_state_job2;
 	gres_job_state_t *gres_js, *gres_js2;
 	int new_node_cnt;
@@ -1912,7 +1912,7 @@ extern void gres_ctld_job_build_details(List job_gres_list, char *nodes,
 					char **total_gres_str)
 {
 	int i, j;
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	char *sep1, *sep2, tmp_str[128], *type, **my_gres_details = NULL;
@@ -2015,7 +2015,7 @@ static void _set_type_tres_cnt(List gres_list,
 			       uint64_t *tres_cnt,
 			       bool locked)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
@@ -2564,7 +2564,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				int *total_gres_cpu_cnt)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator step_gres_iter;
+	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
 
@@ -2768,7 +2768,7 @@ extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 				  bool decr_job_alloc)
 {
 	int rc = SLURM_SUCCESS, rc2;
-	ListIterator step_gres_iter;
+	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
 
@@ -2810,7 +2810,7 @@ void gres_ctld_step_state_rebase(List gres_list,
 				 bitstr_t *orig_job_node_bitmap,
 				 bitstr_t *new_job_node_bitmap)
 {
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 	int new_node_cnt;
@@ -2965,7 +2965,7 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 					    int node_inx,
 					    bool locked)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	char *tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -3161,7 +3161,7 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 {
 	uint64_t cpu_cnt, tmp_cnt;
 	uint16_t cpus_per_task = args->cpus_per_task;
-	ListIterator step_gres_iter;
+	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss = NULL;
 	slurm_step_id_t tmp_step_id;
@@ -3239,7 +3239,7 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 
 extern char *gres_ctld_gres_2_tres_str(List gres_list, bool locked)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	gres_state_t *gres_state_ptr;
 	uint64_t count;
 	char *col_name = NULL;
@@ -3307,7 +3307,7 @@ extern void gres_ctld_step_test_per_step(List step_gres_list,
 					 bitstr_t *nodes_avail,
 					 int min_nodes)
 {
-	ListIterator step_gres_iter;
+	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;

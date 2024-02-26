@@ -516,7 +516,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 
 	/* send along any requested headers */
 	if (args->headers) {
-		ListIterator itr = list_iterator_create(args->headers);
+		list_itr_t *itr = list_iterator_create(args->headers);
 		http_header_entry_t *header = NULL;
 		while ((header = list_next(itr))) {
 			if ((rc = _write_fmt_header(args->con, header->name,

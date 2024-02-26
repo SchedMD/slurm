@@ -857,7 +857,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 	    job_ptr->part_ptr_list &&
 	    (IS_JOB_PENDING(job_ptr) || !job_ptr->tres_alloc_str)) {
 		bool job_first = false;
-		ListIterator part_itr;
+		list_itr_t *part_itr;
 		part_record_t *part_ptr;
 		List part_qos_list = NULL;
 
@@ -917,7 +917,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		 */
 		if ((type == ACCT_POLICY_JOB_BEGIN) &&
 		    job_ptr->part_ptr_list) {
-			ListIterator part_itr;
+			list_itr_t *part_itr;
 			part_record_t *part_ptr;
 			List part_qos_list = list_create(NULL);
 
@@ -3347,7 +3347,7 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 	assoc_mgr_lock_t locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	List het_job_limit_list;
-	ListIterator iter1, iter2;
+	list_itr_t *iter1, *iter2;
 	job_record_t *job_ptr1, *job_ptr2;
 	het_job_limits_t *job_limit1, *job_limit2;
 	bool rc = true;

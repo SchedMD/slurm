@@ -61,7 +61,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 
 	xassert(user->old_name);
@@ -100,7 +100,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	List tmp_list = NULL;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
@@ -178,7 +178,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	slurmdb_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 
 	if (!user) {
@@ -476,7 +476,7 @@ static int _foreach_add_user(void *x, void *arg)
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List user_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
@@ -802,7 +802,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	char *user = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	int rc = SLURM_SUCCESS;
 	add_user_cond_t add_user_cond;
 
@@ -821,7 +821,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		char *acct = NULL;
-		ListIterator itr2;
+		list_itr_t *itr2;
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
@@ -906,7 +906,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_user_cond_t *user_cond,
 				  slurmdb_user_rec_t *user)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
@@ -1065,7 +1065,7 @@ no_user_table:
 			goto end_it;
 		}
 		/* char *names = NULL; */
-		/* ListIterator itr = list_iterator_create(tmp_list); */
+		/* list_itr_t *itr = list_iterator_create(tmp_list); */
 		/* while ((names = list_next(itr))) { */
 		/* 	info("%s", names); */
 		/* } */
@@ -1110,7 +1110,7 @@ no_user_table:
 			goto end_it;
 		}
 		/* char *names = NULL; */
-		/* ListIterator itr = list_iterator_create(tmp_list); */
+		/* list_itr_t *itr = list_iterator_create(tmp_list); */
 		/* while ((names = list_next(itr))) { */
 		/* 	info("%s", names); */
 		/* } */
@@ -1133,7 +1133,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 	bool has_access;
 	char *query = NULL, *sep_str = "";
 	MYSQL_RES *result;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_coord_rec_t *coord_acct;
 
 	if (!coord->coord_accts || !list_count(coord->coord_accts)) {
@@ -1178,7 +1178,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_user_cond_t *user_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	List coord_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1415,7 +1415,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	time_t now = time(NULL);
 	int set = 0, is_admin=0, rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
 	List ret_list = NULL;
 	List user_list = NULL;
@@ -1586,7 +1586,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List user_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
@@ -1735,7 +1735,7 @@ empty:
 	if (user_cond && (user_cond->with_assocs
 			  || (user_cond->assoc_cond
 			      && user_cond->assoc_cond->only_defs))) {
-		ListIterator assoc_itr = NULL;
+		list_itr_t *assoc_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
 		List assoc_list = NULL;
@@ -1802,7 +1802,7 @@ get_wckeys:
 	if (user_cond && (user_cond->with_wckeys
 			  || (user_cond->assoc_cond
 			      && user_cond->assoc_cond->only_defs))) {
-		ListIterator wckey_itr = NULL;
+		list_itr_t *wckey_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
 		List wckey_list = NULL;

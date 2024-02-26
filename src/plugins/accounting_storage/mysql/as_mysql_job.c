@@ -867,7 +867,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	List job_list = NULL;
 	slurmdb_job_rec_t *job_rec;
-	ListIterator itr;
+	list_itr_t *itr;
 	List id_switch_list = NULL;
 	id_switch_t *id_switch;
 	bool is_admin;

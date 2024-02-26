@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 	}
 
 	if (job_env_list) {
-		ListIterator desc_iter, env_iter;
+		list_itr_t *desc_iter, *env_iter;
 		i = 0;
 		desc_iter = list_iterator_create(job_req_list);
 		env_iter  = list_iterator_create(job_env_list);

@@ -417,7 +417,7 @@ static int _check_and_set_cluster_list(List cluster_list)
 {
 	int rc = SLURM_SUCCESS;
 	List tmp_list = NULL;
-	ListIterator itr_c;
+	list_itr_t *itr_c;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 
 	xassert(cluster_list);
@@ -461,8 +461,8 @@ static int _check_default_assocs(char *def_acct,
 	char *user = NULL, *cluster = NULL;
 	List regret_list = NULL;
 	List local_assoc_list = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr_c = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr_c = NULL;
 	regret_t *regret = NULL;
 	slurmdb_assoc_cond_t assoc_cond;
 	int rc = SLURM_SUCCESS;
@@ -546,8 +546,8 @@ static int _check_default_wckeys(char *def_wckey,
 	char *user = NULL, *cluster = NULL;
 	List regret_list = NULL;
 	List local_wckey_list = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr_c = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr_c = NULL;
 	regret_t *regret = NULL;
 	slurmdb_wckey_cond_t wckey_cond;
 	int rc = SLURM_SUCCESS;
@@ -632,7 +632,7 @@ static int _check_default_wckeys(char *def_wckey,
  */
 static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 {
-	ListIterator itr = NULL, itr2 = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
 	char *name = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
 	slurmdb_account_rec_t *acct_rec = NULL;
@@ -857,7 +857,7 @@ extern int sacctmgr_add_coord(int argc, char **argv)
 	char *name = NULL;
 	char *user_str = NULL;
 	char *acct_str = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -930,8 +930,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
 	List user_list;
 	int i=0, cond_set=0, prev_set=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	slurmdb_user_rec_t *user = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 
@@ -1031,11 +1031,11 @@ extern int sacctmgr_list_user(int argc, char **argv)
 		uint32_t tmp_uint32;
 		if (user->assoc_list) {
 			char *curr_cluster = NULL;
-			ListIterator itr3 =
+			list_itr_t *itr3 =
 				list_iterator_create(user->assoc_list);
-			ListIterator itr4 =
+			list_itr_t *itr4 =
 				list_iterator_create(user->assoc_list);
-			ListIterator wckey_itr = NULL;
+			list_itr_t *wckey_itr = NULL;
 			if (user->wckey_list)
 				wckey_itr =
 					list_iterator_create(user->wckey_list);
@@ -1353,7 +1353,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 
 			if (set) {
 				char *object;
-				ListIterator itr =
+				list_itr_t *itr =
 					list_iterator_create(ret_list);
 				printf(" Modified users...\n");
 				while ((object = list_next(itr))) {
@@ -1395,7 +1395,7 @@ assoc_start:
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr = list_iterator_create(ret_list);
+			list_itr_t *itr = list_iterator_create(ret_list);
 			printf(" Modified user associations...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
@@ -1525,7 +1525,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		List del_user_list = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		/* If there were jobs running with an association to
 		   be deleted, don't.
 		*/
@@ -1717,7 +1717,7 @@ extern int sacctmgr_delete_coord(int argc, char **argv)
 	char *name = NULL;
 	char *user_str = NULL;
 	char *acct_str = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 
 	for (i=0; i<argc; i++) {
@@ -1792,7 +1792,7 @@ extern int sacctmgr_delete_coord(int argc, char **argv)
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		printf(" Removed Coordinators (sub accounts not listed)...\n");
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);

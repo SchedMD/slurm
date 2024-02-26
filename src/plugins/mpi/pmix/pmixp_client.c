@@ -187,7 +187,7 @@ static void _set_procdatas(List lresp)
 	/* store information about local processes */
 	for (i = 0; i < pmixp_info_tasks(); i++) {
 		List rankinfo;
-		ListIterator it;
+		list_itr_t *it;
 		int count, j, localid, nodeid;
 		char *nodename;
 		pmix_info_t *info;
@@ -621,7 +621,7 @@ extern int pmixp_libpmix_job_set(void)
 	List lresp;
 	pmix_info_t *info;
 	int ninfo;
-	ListIterator it;
+	list_itr_t *it;
 	pmix_info_t *kvp;
 	int i, rc, ret = SLURM_SUCCESS;
 	uid_t uid = pmixp_info_jobuid();

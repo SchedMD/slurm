@@ -271,7 +271,7 @@ enum {
 static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   char *cluster_name, char **extra)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 
 	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
@@ -487,7 +487,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	slurmdb_step_rec_t *step = NULL;
 	time_t now = time(NULL);
 	List job_list = list_create(slurmdb_destroy_job_rec);
-	ListIterator itr = NULL, itr2 = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
 	List local_cluster_list = NULL;
 	int set = 0;
 	char *prefix="t2";
@@ -1268,7 +1268,7 @@ extern int good_nodes_from_inx(List local_cluster_list,
 		    || (start >= (*curr_cluster)->end)) {
 			local_cluster_t *local_cluster = NULL;
 
-			ListIterator itr =
+			list_itr_t *itr =
 				list_iterator_create(local_cluster_list);
 			while ((local_cluster = list_next(itr))) {
 				if ((start >= local_cluster->start)
@@ -1297,7 +1297,7 @@ extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 					 char *cluster_name, char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	if (!job_cond)
@@ -1389,7 +1389,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 				 char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
@@ -1714,7 +1714,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int is_admin=1;
 	int i;
 	List job_list = NULL;

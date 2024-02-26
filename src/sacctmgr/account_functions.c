@@ -340,8 +340,8 @@ extern int sacctmgr_list_account(int argc, char **argv)
 		xmalloc(sizeof(slurmdb_account_cond_t));
  	List acct_list;
 	int i=0, cond_set=0, prev_set=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	slurmdb_account_rec_t *acct = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	char *tmp_char = NULL;
@@ -430,7 +430,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	while((acct = list_next(itr))) {
 		if (acct->assoc_list) {
-			ListIterator itr3 =
+			list_itr_t *itr3 =
 				list_iterator_create(acct->assoc_list);
 			while((assoc = list_next(itr3))) {
 				int curr_inx = 1;
@@ -625,7 +625,7 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 			db_conn, acct_cond, acct);
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr = list_iterator_create(ret_list);
+			list_itr_t *itr = list_iterator_create(ret_list);
 			printf(" Modified accounts...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
@@ -663,7 +663,7 @@ assoc_start:
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr = list_iterator_create(ret_list);
+			list_itr_t *itr = list_iterator_create(ret_list);
 			printf(" Modified account associations...\n");
 			while ((object = list_next(itr))) {
 				printf("  %s\n", object);
@@ -721,7 +721,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 		xmalloc(sizeof(slurmdb_account_cond_t));
 	int i = 0;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int cond_set = 0, prev_set = 0;
 
 	for (i = 0; i < argc; i++) {
@@ -791,7 +791,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		itr = list_iterator_create(ret_list);
 
 		/* Check to see if person is trying to remove a default

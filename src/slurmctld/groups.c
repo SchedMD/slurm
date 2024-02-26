@@ -355,7 +355,7 @@ extern time_t get_group_tlm(void)
  * Return NULL if not found. */
 static uid_t *_get_group_cache(char *group_name, int *uid_cnt)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	struct group_cache_rec *cache_rec;
 	uid_t *group_uids = NULL;
 	int sz;

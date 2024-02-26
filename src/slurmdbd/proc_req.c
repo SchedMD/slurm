@@ -140,7 +140,7 @@ static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 
 static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdbd_conn_t *slurmdbd_conn;
 
 	if (!db_conn->conn->rem_port) {
@@ -437,8 +437,8 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	debug2("DBD_ADD_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!_validate_operator(slurmdbd_conn)) {
-		ListIterator itr = NULL;
-		ListIterator itr2 = NULL;
+		list_itr_t *itr = NULL;
+		list_itr_t *itr2 = NULL;
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		slurmdb_assoc_rec_t *object = NULL;
@@ -3111,7 +3111,7 @@ static int _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_list_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	dbd_job_start_msg_t *job_start_msg;
 	dbd_id_rc_msg_t *id_rc_msg;
 	/* DEF_TIMERS; */
@@ -3155,7 +3155,7 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	buf_t *req_buf = NULL, *ret_buf = NULL;
 	int rc = SLURM_SUCCESS;
 	/* DEF_TIMERS; */

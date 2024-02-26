@@ -106,7 +106,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	char *query = NULL, *job_ids = NULL;
 	slurmdb_job_rec_t *job = NULL;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_rec_t *first_job;
 	char *temp_cluster_name = mysql_conn->cluster_name;

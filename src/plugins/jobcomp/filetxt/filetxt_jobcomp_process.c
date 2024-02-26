@@ -89,7 +89,7 @@ static FILE *_open_log_file(char *logfile)
 
 static jobcomp_job_rec_t *_parse_line(List job_info_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	jobcomp_job_rec_t *job = xmalloc(sizeof(jobcomp_job_rec_t));
 	char *temp = NULL;
@@ -189,7 +189,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	jobcomp_job_rec_t *job = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List job_info_list = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	List job_list = list_create(jobcomp_destroy_job);

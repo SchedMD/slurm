@@ -56,7 +56,7 @@
 extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list)
 {
 	uint64_t cpu_per_gpu = NO_VAL64;
-	ListIterator iter;
+	list_itr_t *iter;
 	job_defaults_t *job_defaults;
 
 	if (!job_defaults_list)
@@ -82,7 +82,7 @@ extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list)
 extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list)
 {
 	uint64_t mem_per_gpu = NO_VAL64;
-	ListIterator iter;
+	list_itr_t *iter;
 	job_defaults_t *job_defaults;
 
 	if (!job_defaults_list)

@@ -215,7 +215,7 @@ static slurmdb_assoc_rec_t** _append_list_to_array(
 	List list, slurmdb_assoc_rec_t** merged,
 	size_t *merged_size)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_assoc_rec_t *next;
 	size_t bytes;
 	size_t i = *merged_size;

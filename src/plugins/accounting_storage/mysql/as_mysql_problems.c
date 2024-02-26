@@ -45,7 +45,7 @@ static int _setup_assoc_cond_limits(
 	char **extra, bool user_query)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	xstrfmtcat(*extra, "where t1.deleted=0");
@@ -113,7 +113,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List use_cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 	bool locked = false;
 
@@ -124,7 +124,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	if (assoc_cond &&
 	    assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		int set = 0;
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		char *object = NULL;
 		xstrcat(query, " && (");
 		itr = list_iterator_create(assoc_cond->acct_list);
@@ -215,7 +215,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List use_cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name;
 	bool locked = false;
 
@@ -320,7 +320,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List use_cluster_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 	bool locked = false;
 

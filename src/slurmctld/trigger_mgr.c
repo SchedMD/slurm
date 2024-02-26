@@ -212,7 +212,7 @@ static bool _validate_trigger(trig_mgr_info_t *trig_in)
 extern int trigger_pull(trigger_info_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trigger_info_t *trig_in;
 	trig_mgr_info_t *trig_test;
 
@@ -278,7 +278,7 @@ extern int trigger_pull(trigger_info_msg_t *msg)
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 {
 	int rc = ESRCH;
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trigger_info_t *trig_in;
 	trig_mgr_info_t *trig_test;
 	uint32_t job_id = 0;
@@ -333,7 +333,7 @@ fini:	slurm_mutex_unlock(&trigger_mutex);
 extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 {
 	trigger_info_msg_t *resp_data;
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trigger_info_t *trig_out;
 	trig_mgr_info_t *trig_in;
 	int recs_written = 0;
@@ -376,7 +376,7 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 static bool _duplicate_trigger(trigger_info_t *trig_desc)
 {
 	bool found_dup = false;
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trig_mgr_info_t *trig_rec;
 
 	trig_iter = list_iterator_create(trigger_list);
@@ -833,7 +833,7 @@ extern int trigger_state_save(void)
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	buf_t *buffer = init_buf(high_buffer_size);
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trig_mgr_info_t *trig_in;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock =
@@ -1624,7 +1624,7 @@ static void _trigger_clone(trig_mgr_info_t *trig_in)
 
 extern void trigger_process(void)
 {
-	ListIterator trig_iter;
+	list_itr_t *trig_iter;
 	trig_mgr_info_t *trig_in;
 	time_t now = time(NULL);
 	bool state_change = false;

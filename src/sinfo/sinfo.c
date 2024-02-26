@@ -187,7 +187,7 @@ static void prepend_cluster_name(void)
 
 static int _multi_cluster(List clusters, int argc, char **argv)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	bool first = true;
 	int rc = 0, rc2;
 
@@ -450,7 +450,7 @@ static void *_load_job_prio_thread(void *args)
 	_build_sinfo_data(sinfo_list, new_part_ptr, new_node_ptr);
 	if (sinfo_list) {
 		sinfo_data_t *sinfo_ptr;
-		ListIterator iter;
+		list_itr_t *iter;
 		iter = list_iterator_create(sinfo_list);
 		while ((sinfo_ptr = (sinfo_data_t *) list_next(iter)))
 			sinfo_ptr->cluster_name = cluster->name;
@@ -476,7 +476,7 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 	List resp_msg_list;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
-	ListIterator iter;
+	list_itr_t *iter;
 	slurmdb_cluster_rec_t *cluster;
 	load_info_struct_t *load_args;
 	int i;
@@ -681,7 +681,7 @@ static bool _filter_out(node_info_t *node_ptr)
 		int *node_state;
 		bool match = false;
 		uint32_t base_state;
-		ListIterator iterator;
+		list_itr_t *iterator;
 		uint16_t cpus = 0;
 		node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 
@@ -743,7 +743,7 @@ static bool _filter_out(node_info_t *node_ptr)
 
 static void _sort_hostlist(List sinfo_list)
 {
-	ListIterator i;
+	list_itr_t *i;
 	sinfo_data_t *sinfo_ptr;
 
 	i = list_iterator_create(sinfo_list);
@@ -1123,7 +1123,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 {
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {

@@ -144,7 +144,7 @@ static int _foreach_add_acct(void *x, void *arg)
 extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List acct_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
@@ -414,7 +414,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_account_cond_t *acct_cond,
 				  slurmdb_account_rec_t *acct)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
@@ -552,7 +552,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_account_cond_t *acct_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	List coord_list = NULL;
 	List cluster_list_tmp = NULL;
@@ -720,7 +720,7 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List acct_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
@@ -902,7 +902,7 @@ empty:
 
 	if (acct_cond && acct_cond->with_assocs && acct_cond->assoc_cond
 	    && list_count(acct_cond->assoc_cond->acct_list)) {
-		ListIterator assoc_itr = NULL;
+		list_itr_t *assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
 		List assoc_list = as_mysql_get_assocs(

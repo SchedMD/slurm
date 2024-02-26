@@ -3352,7 +3352,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 {
 	bb_job_queue_rec_t *job_rec;
 	List job_candidates;
-	ListIterator job_iter;
+	list_itr_t *job_iter;
 	job_record_t *job_ptr;
 	bb_job_t *bb_job;
 	int rc;

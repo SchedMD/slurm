@@ -527,7 +527,7 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
  */
 extern void find_feature_nodes(List feature_list, bool can_reboot)
 {
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	job_feature_t  *job_feat_ptr;
 	node_feature_t *node_feat_ptr;
 
@@ -577,7 +577,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
  */
 static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 {
-	ListIterator job_feat_iter;
+	list_itr_t *job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
 	int i, last_paren_cnt = 0;
@@ -836,7 +836,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 extern void filter_by_node_owner(job_record_t *job_ptr,
 				 bitstr_t *usable_node_mask)
 {
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr2;
 	node_record_t *node_ptr;
 	int i;
@@ -1150,7 +1150,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	/* Accumulate nodes with required feature counts. */
 	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 	if (job_ptr->details->feature_list_use) {
-		ListIterator feat_iter;
+		list_itr_t *feat_iter;
 		job_feature_t *feat_ptr;
 		int last_paren_cnt = 0, last_paren_opt = FEATURE_OP_AND;
 		bitstr_t *paren_bitmap = NULL, *work_bitmap;
@@ -1878,7 +1878,7 @@ try_sched:
 				preemptee_cand = NULL;
 			else if (preempt_flag) {
 				job_record_t *tmp_job_ptr = NULL;
-				ListIterator job_iterator;
+				list_itr_t *job_iterator;
 				job_iterator = list_iterator_create(preemptee_candidates);
 				while ((tmp_job_ptr = list_next(job_iterator)))
 					_bit_or_cond(tmp_job_ptr, avail_bitmap);
@@ -2133,7 +2133,7 @@ try_sched:
 static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	job_record_t *job_ptr;
 	uint16_t mode;
 	int job_cnt = 0;
@@ -3204,7 +3204,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	ListIterator job_feat_iter;
+	list_itr_t *job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
 	int last_paren_cnt = 0;
@@ -3492,7 +3492,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	config_record_t *config_ptr;
 	part_record_t *part_ptr = job_ptr->part_ptr;
-	ListIterator config_iterator;
+	list_itr_t *config_iterator;
 	int total_cores;
 	job_details_t *detail_ptr = job_ptr->details;
 	bitstr_t *usable_node_mask = NULL;
@@ -4191,7 +4191,7 @@ extern int pick_batch_host(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	char *tmp, *tok, sep, last_sep = '&';
 	node_feature_t *feature_ptr;
-	ListIterator feature_iter;
+	list_itr_t *feature_iter;
 	bitstr_t *feature_bitmap;
 
 	if (job_ptr->batch_host)
@@ -4287,7 +4287,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	bitstr_t *result_node_bitmap = NULL, *paren_node_bitmap = NULL;
 	bitstr_t *working_node_bitmap, *active_node_bitmap = NULL;
 	bitstr_t *tmp_node_bitmap = NULL;
-	ListIterator feat_iter;
+	list_itr_t *feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
 	int last_paren = 0, position = 0;
@@ -4426,7 +4426,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	static uint32_t last_job_id = 0;
 	node_record_t *node_ptr;
 	step_record_t *step_ptr;
-	ListIterator step_iterator;
+	list_itr_t *step_iterator;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif

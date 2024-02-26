@@ -52,7 +52,7 @@
 struct job_options {
 	int magic;
 	List options;
-	ListIterator iterator;
+	list_itr_t *iterator;
 };
 
 
@@ -128,7 +128,7 @@ int job_options_append(List opts, int type, const char *opt, const char *optarg)
 int job_options_pack(List opts, buf_t *buf)
 {
 	uint32_t count = 0;
-	ListIterator i;
+	list_itr_t *i;
 	struct job_option_info *opt;
 
 	packstr (JOB_OPTIONS_PACK_TAG, buf);

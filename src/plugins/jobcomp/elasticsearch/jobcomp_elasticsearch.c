@@ -295,7 +295,7 @@ cleanup_global_init:
 static int _save_state(void)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator iter;
+	list_itr_t *iter;
 	static int high_buffer_size = (1024 * 1024);
 	buf_t *buffer = init_buf(high_buffer_size);
 	uint32_t job_cnt;
@@ -348,7 +348,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 extern void *_process_jobs(void *x)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	struct job_node *jnode = NULL;
 	struct timespec ts = {0, 0};
 	time_t now;

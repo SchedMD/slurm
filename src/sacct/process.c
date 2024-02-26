@@ -46,7 +46,7 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 						 char *from_tres_max_taskid)
 {
 	List dest_tres_list = NULL, from_tres_list = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_tres_rec_t *dest_tres_rec, *from_tres_rec;
 	uint32_t flags;
 

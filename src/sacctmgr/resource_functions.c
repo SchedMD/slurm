@@ -43,7 +43,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 			      slurmdb_res_cond_t *res_cond)
 {
 	List res_list = NULL, cluster_list = NULL;
-	ListIterator itr, clus_itr = NULL, found_clus_itr = NULL;
+	list_itr_t *itr, *clus_itr = NULL, *found_clus_itr = NULL;
 	slurmdb_res_rec_t *found_res;
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	char *cluster;
@@ -213,7 +213,7 @@ static int _set_res_cond(int *start, int argc, char **argv,
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "Ids", MAX(command_len, 1))) {
-			ListIterator itr = NULL;
+			list_itr_t *itr = NULL;
 			char *temp = NULL;
 			uint32_t id = 0;
 
@@ -411,7 +411,7 @@ static int _set_res_rec(int *start, int argc, char **argv,
 
 static void _print_res_format(slurmdb_res_rec_t *res,
 			      slurmdb_clus_res_rec_t *clus_res,
-			      ListIterator itr,
+			      list_itr_t *itr,
 			      int field_count)
 {
 	int curr_inx = 1;
@@ -519,8 +519,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0;
-	ListIterator itr = NULL;
-	ListIterator clus_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *clus_itr = NULL;
 	slurmdb_res_rec_t *res = NULL;
 	slurmdb_res_rec_t *found_res = NULL;
 	slurmdb_res_rec_t *start_res = xmalloc(sizeof(slurmdb_res_rec_t));
@@ -619,7 +619,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 		}
 
 		if (cluster_list && list_count(cluster_list)) {
-			ListIterator found_itr = NULL;
+			list_itr_t *found_itr = NULL;
 			slurmdb_clus_res_rec_t *clus_res;
 			char *cluster;
 
@@ -772,8 +772,8 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_res_cond_t *res_cond = xmalloc(sizeof(slurmdb_res_cond_t));
  	int i=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	slurmdb_res_rec_t *res = NULL;
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	List res_list = NULL;
@@ -828,7 +828,7 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	while ((res = list_next(itr))) {
 		if (res_cond->with_clusters && res->clus_res_list
 		    && list_count(res->clus_res_list)) {
-			ListIterator clus_itr = list_iterator_create(
+			list_itr_t *clus_itr = list_iterator_create(
 				res->clus_res_list);
 			while ((clus_res = list_next(clus_itr))) {
 				_print_res_format(res, clus_res,
@@ -921,7 +921,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 	notice_thread_fini();
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		printf(" Modified server resource ...\n");
 		while ((object = list_next(itr))) {
 			printf("  %s\n", object);
@@ -968,7 +968,7 @@ extern int sacctmgr_delete_res(int argc, char **argv)
 	slurmdb_res_cond_t *res_cond = xmalloc(sizeof(slurmdb_res_cond_t));
 	int i=0;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int set = 0;
 	char *name = NULL;
 

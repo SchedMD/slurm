@@ -539,7 +539,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 	if (args->accept) {
 		List accept = _parse_http_accept(args->accept);
 		http_header_accept_t *ptr = NULL;
-		ListIterator itr = list_iterator_create(accept);
+		list_itr_t *itr = list_iterator_create(accept);
 		while ((ptr = list_next(itr))) {
 			xassert(ptr->magic == MAGIC_HEADER_ACCEPT);
 

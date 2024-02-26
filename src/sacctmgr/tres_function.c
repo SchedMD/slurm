@@ -124,8 +124,8 @@ static int _set_cond(int *start, int argc, char **argv,
 int sacctmgr_list_tres(int argc, char **argv)
 {
 	List tres_list;
-	ListIterator itr;
-	ListIterator itr2;
+	list_itr_t *itr;
+	list_itr_t *itr2;
 	List format_list = list_create(xfree_ptr);
 	List print_fields_list;
 	slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));

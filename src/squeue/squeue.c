@@ -117,7 +117,7 @@ main (int argc, char **argv)
 
 static int _multi_cluster(List clusters, int argc, char **argv)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	bool log_cluster_name = false, first = true;
 	int rc = 0, rc2;
 

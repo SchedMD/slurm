@@ -2658,7 +2658,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	List ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	int i;
 
 	slurm_mutex_lock(&conn_lock);

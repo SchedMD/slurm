@@ -145,7 +145,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "Ids", MAX(command_len, 1))) {
-			ListIterator itr = NULL;
+			list_itr_t *itr = NULL;
 			char *temp = NULL;
 			uint32_t id = 0;
 
@@ -718,7 +718,7 @@ static bool _isdefault(List qos_list)
 	int rc = 0;
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	ListIterator itr;
+	list_itr_t *itr;
 	List ret_list = NULL;
 	char *name = NULL;
 
@@ -787,7 +787,7 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 	List name_list = list_create(xfree_ptr);
@@ -912,8 +912,8 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_qos_cond_t *qos_cond = xmalloc(sizeof(slurmdb_qos_cond_t));
  	int i=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	List qos_list = NULL;
 	int field_count = 0;
@@ -1361,7 +1361,7 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 	ret_list = slurmdb_qos_modify(db_conn, qos_cond, qos);
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		list_itr_t *itr = list_iterator_create(ret_list);
 		printf(" Modified qos...\n");
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
@@ -1436,7 +1436,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 
 		/* Check to see if person is trying to remove a default
 		 * qos of an association.  _isdefault only works with the

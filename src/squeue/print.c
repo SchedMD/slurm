@@ -189,7 +189,7 @@ static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)
 static void _combine_pending_array_tasks(List job_list)
 {
 	squeue_job_rec_t *job_rec_ptr, *task_rec_ptr;
-	ListIterator job_iterator, task_iterator;
+	list_itr_t *job_iterator, *task_iterator;
 	bitstr_t *task_bitmap;
 	int bitmap_size, update_cnt;
 
@@ -398,7 +398,7 @@ int _print_time(time_t t, int level, int width, bool right)
  *****************************************************************************/
 static int _print_one_job_from_format(job_info_t * job, List list)
 {
-	ListIterator iter = list_iterator_create(list);
+	list_itr_t *iter = list_iterator_create(list);
 	job_format_t *current;
 
 	while ((current = list_next(iter))) {
@@ -2366,7 +2366,7 @@ static int _print_step_from_format(void *x, void *arg)
 {
 	job_step_info_t *job_step = (job_step_info_t *) x;
 	List list = (List) arg;
-	ListIterator i = list_iterator_create(list);
+	list_itr_t *i = list_iterator_create(list);
 	step_format_t *current;
 
 	while ((current = list_next(i))) {
@@ -2839,7 +2839,7 @@ int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
 static bool _filter_job(job_info_t *job)
 {
 	int i;
-	ListIterator iterator;
+	list_itr_t *iterator;
 	uint32_t *user;
 	uint32_t *state_id;
 	char *account, *license, *qos, *name;
@@ -3057,7 +3057,7 @@ static bool _filter_job(job_info_t *job)
 static int _filter_job_part(char *part_name)
 {
 	char *token = NULL, *last = NULL, *tmp_name = NULL, *part;
-	ListIterator iterator;
+	list_itr_t *iterator;
 	int rc = 2;
 
 	if (!params.part_list)
@@ -3088,7 +3088,7 @@ static int _filter_job_part(char *part_name)
 static int _filter_step(job_step_info_t * step)
 {
 	int filter;
-	ListIterator iterator;
+	list_itr_t *iterator;
 	uint32_t *user;
 	char *part;
 	squeue_job_step_t *job_step_id;

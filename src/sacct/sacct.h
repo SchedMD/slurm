@@ -224,7 +224,7 @@ extern sacct_parameters_t params;
 
 extern List jobs;
 extern List print_fields_list;
-extern ListIterator print_fields_itr;
+extern list_itr_t *print_fields_itr;
 extern int field_count;
 extern List g_qos_list;
 extern List g_tres_list;

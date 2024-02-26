@@ -47,7 +47,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 			    char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	if (!res_cond) {
@@ -158,7 +158,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 
 static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	bool set = 0;
 	char *tmp = NULL;
 	int query_clusters = 0;
@@ -428,7 +428,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 }
 
 static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
-		    char *user_name, int *added, ListIterator itr_in)
+		    char *user_name, int *added, list_itr_t *itr_in)
 {
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
@@ -523,7 +523,7 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS, cluster_cnt;
 	slurmdb_clus_res_rec_t *object;
-	ListIterator itr;
+	list_itr_t *itr;
 	uint32_t total_pos = 100;
 	char *percent_str = "%";
 
@@ -696,7 +696,7 @@ static List _get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List res_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_res_rec_t *object = NULL;
 	char *user_name = NULL;

@@ -78,7 +78,7 @@ List selected_steps = NULL;
 void *acct_db_conn = NULL;
 
 List print_fields_list = NULL;
-ListIterator print_fields_itr = NULL;
+list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
 List g_qos_list = NULL;
 List g_tres_list = NULL;
@@ -86,7 +86,7 @@ List g_tres_list = NULL;
 static List _build_cluster_list(slurmdb_federation_rec_t *fed)
 {
 	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
+	list_itr_t *iter;
 	List cluster_list;
 
 	cluster_list = list_create(xfree_ptr);
@@ -478,7 +478,7 @@ static void _remove_duplicate_fed_jobs(List jobs)
 	uint32_t *hash_tbl_size = NULL;
 	slurmdb_job_rec_t ***hash_job = NULL;
 	slurmdb_job_rec_t *job = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	xassert(jobs);
 
@@ -541,8 +541,8 @@ extern int get_data(void)
 {
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr_step = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr_step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 	int cnt;
 
@@ -605,7 +605,7 @@ extern void parse_command_line(int argc, char **argv)
 	int c, i, option_index = 0;
 	char *end = NULL, *start = NULL;
 	slurm_selected_step_t *selected_step = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
 	char *env_val = NULL;
@@ -1045,7 +1045,7 @@ extern void parse_command_line(int argc, char **argv)
 
 		if (job_cond->state_list && list_count(job_cond->state_list)) {
 			char *state;
-			ListIterator itr = list_iterator_create(
+			list_itr_t *itr = list_iterator_create(
 				job_cond->state_list);
 
 			while ((state = list_next(itr))) {
@@ -1456,8 +1456,8 @@ static void _print_env(slurmdb_job_rec_t *job)
  */
 extern void do_list(int argc, char **argv)
 {
-	ListIterator itr = NULL;
-	ListIterator itr_step = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr_step = NULL;
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
@@ -1514,7 +1514,7 @@ extern void do_list(int argc, char **argv)
  */
 extern void do_list_completion(void)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	jobcomp_job_rec_t *job = NULL;
 
 	if (!jobs)

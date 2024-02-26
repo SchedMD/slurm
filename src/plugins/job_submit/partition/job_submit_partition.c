@@ -154,7 +154,7 @@ static bool _valid_memory(part_record_t *part_ptr, job_desc_msg_t *job_desc)
 extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
-	ListIterator part_iterator;
+	list_itr_t *part_iterator;
 	part_record_t *part_ptr;
 	part_record_t *top_prio_part = NULL;
 

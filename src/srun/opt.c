@@ -131,7 +131,7 @@ static bool  _valid_node_list(char **node_list_pptr);
  */
 static slurm_opt_t *_get_first_opt(int het_job_offset)
 {
-	ListIterator opt_iter;
+	list_itr_t *opt_iter;
 	slurm_opt_t *opt_local;
 
 	if (!opt_list) {
@@ -167,7 +167,7 @@ static slurm_opt_t *_get_first_opt(int het_job_offset)
  */
 static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last)
 {
-	ListIterator opt_iter;
+	list_itr_t *opt_iter;
 	slurm_opt_t *opt_local;
 	bool found_last = false;
 
@@ -224,7 +224,7 @@ extern slurm_opt_t *get_next_opt(int het_job_offset)
  */
 extern int get_max_het_group(void)
 {
-	ListIterator opt_iter;
+	list_itr_t *opt_iter;
 	slurm_opt_t *opt_local;
 	int max_het_job_offset = 0, het_job_offset = 0;
 

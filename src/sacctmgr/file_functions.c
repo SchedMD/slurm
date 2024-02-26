@@ -332,7 +332,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 {
 	List format_list = NULL;
 	List print_fields_list = NULL;
-	ListIterator itr, itr2;
+	list_itr_t *itr, *itr2;
 	print_field_t *field = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
@@ -657,9 +657,9 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
-		ListIterator now_qos_itr =
-			list_iterator_create(assoc->qos_list),
-			new_qos_itr =
+		list_itr_t *now_qos_itr =
+			list_iterator_create(assoc->qos_list);
+		list_itr_t *new_qos_itr =
 			list_iterator_create(file_opts->assoc_rec.qos_list);
 		char *now_qos = NULL, *new_qos = NULL;
 
@@ -744,7 +744,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
-/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			list_itr_t *itr = list_iterator_create(ret_list); */
 /* 			printf(" Modified account defaults for " */
 /* 			       "associations...\n"); */
 /* 			while ((object = list_next(itr)))  */
@@ -803,7 +803,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
-/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			list_itr_t *itr = list_iterator_create(ret_list); */
 /* 			printf(" Modified account defaults for " */
 /* 			       "associations...\n"); */
 /* 			while ((object = list_next(itr)))  */
@@ -891,7 +891,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
-/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			list_itr_t *itr = list_iterator_create(ret_list); */
 /* 			printf(" Modified account defaults for " */
 /* 			       "associations...\n"); */
 /* 			while ((object = list_next(itr)))  */
@@ -989,7 +989,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
-/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			list_itr_t *itr = list_iterator_create(ret_list); */
 /* 			printf(" Modified user defaults for " */
 /* 			       "associations...\n"); */
 /* 			while ((object = list_next(itr)))  */
@@ -1010,7 +1010,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	if ((!user->coord_accts || !list_count(user->coord_accts))
 	    && (file_opts->coord_list
 		&& list_count(file_opts->coord_list))) {
-		ListIterator coord_itr = NULL;
+		list_itr_t *coord_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_coord_rec_t *coord = NULL;
 		int first = 1;
@@ -1042,8 +1042,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	} else if ((user->coord_accts && list_count(user->coord_accts))
 		   && (file_opts->coord_list
 		       && list_count(file_opts->coord_list))) {
-		ListIterator coord_itr = NULL;
-		ListIterator char_itr = NULL;
+		list_itr_t *coord_itr = NULL;
+		list_itr_t *char_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_coord_rec_t *coord = NULL;
 		List add_list = list_create(NULL);
@@ -1086,7 +1086,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	if ((!user->wckey_list || !list_count(user->wckey_list))
 	    && (file_opts->wckey_list
 		&& list_count(file_opts->wckey_list))) {
-		ListIterator wckey_itr = NULL;
+		list_itr_t *wckey_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
 		int first = 1;
@@ -1118,8 +1118,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	} else if ((user->wckey_list && list_count(user->wckey_list))
 		   && (file_opts->wckey_list
 		       && list_count(file_opts->wckey_list))) {
-		ListIterator wckey_itr = NULL;
-		ListIterator char_itr = NULL;
+		list_itr_t *wckey_itr = NULL;
+		list_itr_t *char_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
 		List add_list = list_create(slurmdb_destroy_wckey_rec);
@@ -1188,7 +1188,7 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 	if (file_opts->coord_list) {
 		slurmdb_user_cond_t user_cond;
 		slurmdb_assoc_cond_t assoc_cond;
-		ListIterator coord_itr = NULL;
+		list_itr_t *coord_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_coord_rec_t *coord = NULL;
 
@@ -1216,7 +1216,7 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 	}
 
 	if (file_opts->wckey_list) {
-		ListIterator wckey_itr = NULL;
+		list_itr_t *wckey_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
 
@@ -1320,7 +1320,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 	FILE *fd, List slurmdb_hierarchical_rec_list,
 	List user_list, List acct_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
 	char *line = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
@@ -1354,7 +1354,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 							   admin_level));
 				if (user_rec->coord_accts
 				    && list_count(user_rec->coord_accts)) {
-					ListIterator itr2 = NULL;
+					list_itr_t *itr2 = NULL;
 					slurmdb_coord_rec_t *coord = NULL;
 					int first_coord = 1;
 					list_sort(user_rec->coord_accts,
@@ -1386,7 +1386,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 
 				if (user_rec->wckey_list
 				    && list_count(user_rec->wckey_list)) {
-					ListIterator itr2 = NULL;
+					list_itr_t *itr2 = NULL;
 					slurmdb_wckey_rec_t *wckey = NULL;
 					int first_wckey = 1;
 					itr2 = list_iterator_create(
@@ -1583,7 +1583,7 @@ extern int print_file_slurmdb_hierarchical_rec_list(
 	List user_list,
 	List acct_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
 
 	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
@@ -1650,8 +1650,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	List user_assoc_list = NULL;
 	List mod_assoc_list = NULL;
 
-	ListIterator itr;
-	ListIterator itr2;
+	list_itr_t *itr;
+	list_itr_t *itr2;
 
 	List print_fields_list;
 	List format_list = NULL;

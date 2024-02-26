@@ -263,7 +263,7 @@ _client_writable(eio_obj_t *obj)
 	 * to be added to the List of clients.
 	 */
 	if (client->msg_queue == NULL) {
-		ListIterator msgs;
+		list_itr_t *msgs;
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->step->outgoing_cache);
@@ -1220,7 +1220,7 @@ static int
 _send_connection_okay_response(stepd_step_rec_t *step)
 {
 	eio_obj_t *eio;
-	ListIterator clients;
+	list_itr_t *clients;
 	struct io_buf *msg;
 	struct client_io_info *client;
 
@@ -1292,7 +1292,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 	struct client_io_info *client;
 	struct io_buf *msg = NULL;
 	eio_obj_t *eio;
-	ListIterator clients;
+	list_itr_t *clients;
 
 	/* Pack task output into messages for transfer to a client */
 	while (cbuf_used(out->buf) > 0
@@ -1381,7 +1381,7 @@ _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step)
 static void
 _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *step)
 {
-	ListIterator msgs;
+	list_itr_t *msgs;
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
@@ -1440,7 +1440,7 @@ io_close_all(stepd_step_rec_t *step)
 void
 io_close_local_fds(stepd_step_rec_t *step)
 {
-	ListIterator clients;
+	list_itr_t *clients;
 	eio_obj_t *eio;
 	int rc;
 	struct client_io_info *client;
@@ -1727,7 +1727,7 @@ _send_eof_msg(struct task_read_info *out)
 	struct client_io_info *client;
 	struct io_buf *msg = NULL;
 	eio_obj_t *eio;
-	ListIterator clients;
+	list_itr_t *clients;
 	io_hdr_t header;
 	buf_t *packbuf;
 

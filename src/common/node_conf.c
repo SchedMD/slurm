@@ -424,7 +424,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	}
 
 	if (set_bitmap) {
-		ListIterator config_iterator;
+		list_itr_t *config_iterator;
 		config_iterator = list_iterator_create(config_list);
 		while ((config_ptr = list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,

@@ -2172,7 +2172,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	list_t *future_license_list;
 	job_record_t *tmp_job_ptr;
 	List cr_job_list;
-	ListIterator job_iterator, preemptee_iterator;
+	list_itr_t *job_iterator, *preemptee_iterator;
 	bitstr_t *orig_map;
 	int rc = SLURM_ERROR;
 	time_t now = time(NULL);
@@ -2398,7 +2398,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int rc;
 	bitstr_t *orig_node_map = NULL, *save_node_map;
 	job_record_t *tmp_job_ptr = NULL;
-	ListIterator job_iterator, preemptee_iterator;
+	list_itr_t *job_iterator, *preemptee_iterator;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *future_license_list;

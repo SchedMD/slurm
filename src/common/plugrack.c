@@ -129,7 +129,7 @@ plugrack_t *plugrack_create(const char *major_type)
 
 int plugrack_destroy(plugrack_t *rack)
 {
-	ListIterator it;
+	list_itr_t *it;
 	plugrack_entry_t *e;
 
 	if (!rack)
@@ -330,7 +330,7 @@ static bool _match_major(const char *path_name, const char *major_type)
 
 plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 {
-	ListIterator it;
+	list_itr_t *it;
 	plugrack_entry_t *e;
 
 	if ((!rack) || (!full_type))
@@ -405,7 +405,7 @@ typedef struct {
 
 extern int plugrack_print_mpi_plugins(plugrack_t *rack)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	plugrack_entry_t *e = NULL;
 	char *sep, tmp[64], *pmix_vers = NULL, *comma = "";
 	int i;

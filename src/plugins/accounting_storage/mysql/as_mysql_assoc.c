@@ -873,7 +873,7 @@ static int _set_assoc_limits_for_add(
 	if (assoc->qos_list) {
 		int set = 0;
 		char *tmp_char = NULL;
-		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
+		list_itr_t *qos_itr = list_iterator_create(assoc->qos_list);
 		while ((tmp_char = list_next(qos_itr))) {
 			/* we don't want to include blank names */
 			if (!tmp_char[0])
@@ -1145,8 +1145,8 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		if (!row[ASSOC_QOS][0] && assoc->qos_list) {
 			List delta_qos_list = NULL;
 			char *qos_char = NULL, *delta_char = NULL;
-			ListIterator delta_itr = NULL;
-			ListIterator qos_itr =
+			list_itr_t *delta_itr = NULL;
+			list_itr_t *qos_itr =
 				list_iterator_create(assoc->qos_list);
 			if (row[ASSOC_DELTA_QOS][0]) {
 				delta_qos_list = list_create(xfree_ptr);
@@ -1258,7 +1258,7 @@ static void _setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 				  char **selection_target, char **qos_filter)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	xstrfmtcat(*more_fields,
@@ -1330,7 +1330,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 				    const char *prefix, char **extra)
 {
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *object = NULL;
 
 	if (!assoc_cond) {
@@ -1464,7 +1464,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 List ret_list,
 					 slurmdb_assoc_cond_t *qos_assoc_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
 	int added = 0;
 	int rc = SLURM_SUCCESS;
@@ -1807,7 +1807,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->priority = assoc->priority;
 
 		if (assoc->qos_list && list_count(assoc->qos_list)) {
-			ListIterator new_qos_itr =
+			list_itr_t *new_qos_itr =
 				list_iterator_create(assoc->qos_list);
 			char *new_qos = NULL, *tmp_qos = NULL;
 			bool adding_straight = 0;
@@ -2022,7 +2022,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 					 bool *jobs_running,
 					 bool *default_account)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
 	char *assoc_char = NULL, *object = NULL;
@@ -2146,7 +2146,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 {
 	List assoc_list;
 	List delta_qos_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint32_t parent_def_qos_id = 0;
@@ -2545,9 +2545,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			list_transfer(assoc->qos_list, delta_qos_list);
 			list_flush(delta_qos_list);
 		} else if (list_count(delta_qos_list)) {
-			ListIterator curr_qos_itr =
+			list_itr_t *curr_qos_itr =
 				list_iterator_create(assoc->qos_list);
-			ListIterator new_qos_itr =
+			list_itr_t *new_qos_itr =
 				list_iterator_create(delta_qos_list);
 			char *new_qos = NULL, *curr_qos = NULL;
 
@@ -3618,7 +3618,7 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			       List assoc_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_rec_t *object = NULL;
 	char *parent = NULL;
@@ -3643,7 +3643,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!is_user_min_admin_level(mysql_conn, uid,
 				     SLURMDB_ADMIN_OPERATOR)) {
-		ListIterator itr2 = NULL;
+		list_itr_t *itr2 = NULL;
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		slurmdb_assoc_rec_t *object = NULL;
@@ -4026,7 +4026,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				   slurmdb_assoc_cond_t *assoc_cond,
 				   slurmdb_assoc_rec_t *assoc)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
@@ -4241,7 +4241,7 @@ is_same_user:
 extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				   slurmdb_assoc_cond_t *assoc_cond)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *cluster_name = NULL;
@@ -4386,7 +4386,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List assoc_list = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
@@ -4468,7 +4468,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 				  List cluster_list)
 {
 	List assoc_list = NULL;
-	ListIterator itr = NULL, assoc_itr;
+	list_itr_t *itr = NULL, *assoc_itr;
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
 	char *query = NULL, *tmp = NULL, *cluster_name = NULL;
@@ -4691,7 +4691,7 @@ extern int as_mysql_assoc_remove_default(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	List use_cluster_list = NULL;
-	ListIterator itr, itr2;
+	list_itr_t *itr, *itr2;
 	slurmdb_assoc_rec_t assoc;
 	bool locked = false;
 	int rc = SLURM_SUCCESS;

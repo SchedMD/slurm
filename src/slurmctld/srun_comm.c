@@ -78,7 +78,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 static bool _pending_het_jobs(job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader, *het_job;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool pending_job = false;
 
 	if (job_ptr->het_job_id == 0)
@@ -131,7 +131,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	job_record_t *het_job, *het_job_leader;
 	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
-	ListIterator iter;
+	list_itr_t *iter;
 	List job_resp_list = NULL;
 
 	xassert(job_ptr);

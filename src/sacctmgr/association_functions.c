@@ -95,7 +95,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						MAX(command_len, 1))
 			  || !xstrncasecmp(argv[i], "Associations",
 					   MAX(command_len, 2))) {
-			ListIterator itr = NULL;
+			list_itr_t *itr = NULL;
 			char *temp = NULL;
 			uint32_t id = 0;
 
@@ -151,7 +151,7 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 			set = 1;
 	} else if (!xstrncasecmp(type, "Ids", MAX(command_len, 1))
 		   || !xstrncasecmp(type, "Associations", MAX(command_len, 2))) {
-		ListIterator itr = NULL;
+		list_itr_t *itr = NULL;
 		char *temp = NULL;
 		uint32_t id = 0;
 
@@ -750,8 +750,8 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 	List assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int i=0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *itr2 = NULL;
 	char *last_cluster = NULL;
 	List tree_list = NULL;
 

@@ -491,7 +491,7 @@ extern void restore_front_end_state(int recover)
 {
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *slurm_conf_fe_ptr;
-	ListIterator iter;
+	list_itr_t *iter;
 	uint32_t state_base, state_flags;
 	int i;
 
@@ -920,7 +920,7 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 extern void sync_front_end_state(void)
 {
 #ifdef HAVE_FRONT_END
-	ListIterator job_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	front_end_record_t *front_end_ptr;
 	uint32_t state_flags;

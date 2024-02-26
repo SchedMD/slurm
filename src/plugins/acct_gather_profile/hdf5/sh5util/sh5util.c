@@ -592,7 +592,7 @@ static int _merge_step_files(void)
 	int last_step = -1, step_cnt = 0;
 	int job_id;
 	int rc = SLURM_SUCCESS;
-	ListIterator itr;
+	list_itr_t *itr;
 	List file_list = NULL;
 	sh5util_file_t *sh5util_file = NULL;
 
@@ -882,7 +882,7 @@ static herr_t _collect_tables_step(hid_t g_id, const char *name,
 static int _tables_list(hid_t fid_job, List tables)
 {
 	herr_t err;
-	ListIterator it;
+	list_itr_t *it;
 	table_t *t;
 
 	/* Find the list of tables to be extracted */
@@ -1138,7 +1138,7 @@ static int _extract_series(void)
 	const char *field;
 	List tables = NULL;
 	List fields = NULL;
-	ListIterator it;
+	list_itr_t *it;
 	FILE *output = NULL;
 	int rc = SLURM_ERROR;
 	table_t *t;
@@ -1449,7 +1449,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	herr_t err;
 
 	List tables = NULL;
-	ListIterator it = NULL;
+	list_itr_t *it = NULL;
 	table_t *t;
 
 	/* step filter */
@@ -1654,7 +1654,7 @@ static int _fields_intersection(hid_t fid_job, List tables, List fields)
 	hssize_t nb_fields;
 	size_t i;
 	char *field;
-	ListIterator it1, it2;
+	list_itr_t *it1, *it2;
 	bool found;
 	char path[PATH_MAX];
 	table_t *t;
@@ -1723,7 +1723,7 @@ static int _list_items(void)
 {
 	hid_t fid_job = -1;
 	List fields;
-	ListIterator it;
+	list_itr_t *it;
 	const char *field;
 	int rc = SLURM_ERROR;
 	List tables;

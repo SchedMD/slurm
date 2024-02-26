@@ -174,7 +174,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 
 static int _setup_print_fields_list(List format_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
 
@@ -379,7 +379,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 	slurmdb_tres_rec_t *tres_rec;
 	print_field_t *field;
 	int field_count = 0;
-	ListIterator iter = NULL;
+	list_itr_t *iter = NULL;
 	uint64_t total_time = 0;
 
 	if (resv_ptr->time_end <= resv_ptr->time_start)
@@ -506,7 +506,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 extern int resv_utilization(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator resv_itr = NULL;
+	list_itr_t *resv_itr = NULL;
 	slurmdb_reservation_rec_t *resv_ptr = NULL;
 	List resv_list = NULL;
 	List req_tres_list = tres_list;
@@ -547,7 +547,7 @@ extern int resv_utilization(int argc, char **argv)
 	resv_itr = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(resv_itr))) {
 		List resv_tres_list = NULL;
-		ListIterator tres_itr;
+		list_itr_t *tres_itr;
 		slurmdb_tres_rec_t *resv_tres, *req_tres;
 
 		slurmdb_tres_list_from_string(&resv_tres_list,

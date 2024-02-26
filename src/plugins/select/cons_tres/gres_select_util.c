@@ -61,7 +61,7 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 					  uint16_t *cpus_per_task)
 {
 	uint32_t plugin_id;
-	ListIterator gres_iter;
+	list_itr_t *gres_iter;
 	gres_state_t *gres_state_job = NULL;
 	gres_job_state_t *gres_js;
 
@@ -118,7 +118,7 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 					     uint32_t tasks_per_node,
 					     List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t  *gres_js;
 	int tmp, min_cpus = 0;
@@ -171,7 +171,7 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 					  char *gres_name,
 					  List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	int tmp, min_tasks = 0;
@@ -222,7 +222,7 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 extern bool gres_select_util_job_mem_set(List job_gres_list,
 					 job_resources_t *job_res)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool rc = false, first_set = true;
@@ -300,7 +300,7 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 					 uint32_t task_count,
 					 List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t  *gres_js;
 	int tmp, min_cpus = 0;
@@ -344,7 +344,7 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
  */
 extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	uint64_t mem_max = 0, mem_per_gres;
@@ -372,7 +372,7 @@ extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
  */
 extern bool gres_select_util_job_tres_per_task(List job_gres_list)
 {
-	ListIterator job_gres_iter;
+	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	bool have_gres_per_task = false;
@@ -399,7 +399,7 @@ extern bool gres_select_util_job_tres_per_task(List job_gres_list)
  */
 extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
 {
-	ListIterator sock_gres_iter;
+	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
 	uint32_t max_tasks = NO_VAL;
 	uint64_t task_limit;

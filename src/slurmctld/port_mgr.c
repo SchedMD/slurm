@@ -139,7 +139,7 @@ static void _make_all_resv(void)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
-	ListIterator job_iterator, step_iterator;
+	list_itr_t *job_iterator, *step_iterator;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {

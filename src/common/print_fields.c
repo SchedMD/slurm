@@ -56,7 +56,7 @@ extern void destroy_print_field(void *object)
 
 extern void print_fields_header(List print_fields_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
 	int curr_inx = 1;
 	int field_count = 0;

@@ -157,7 +157,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  char *node_name,
 				  uint16_t cr_type)
 {
-	ListIterator sock_gres_iter;
+	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
 	int tot_core_cnt = 0;
 	uint32_t task_cnt_incr;

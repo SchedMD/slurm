@@ -295,7 +295,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	MYSQL_ROW row;
 	int i = 0;
 	List columns = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *col = NULL;
 	int adding = 0;
 	int run_update = 0;
