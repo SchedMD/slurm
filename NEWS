@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.41 - Emit a warning instead of an error if a disabled
     parser is invoked.
  -- Federation - allow client command operation when slurmdbd is unavailable.
+ -- Enforce mutual exclusivity of --systemd and -D when launching daemons
 
 * Changes in Slurm 23.11.5
 ==========================
