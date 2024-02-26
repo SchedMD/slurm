@@ -51,6 +51,7 @@
 
 extern int devnull;
 extern bool get_reg_resp;
+extern bool refresh_cached_features;
 
 typedef struct {
 	uint32_t derived_ec;

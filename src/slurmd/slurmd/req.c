@@ -2820,6 +2820,7 @@ _rpc_reboot(slurm_msg_t *msg)
 		cfg = slurm_conf_lock();
 		reboot_program = cfg->reboot_program;
 		if (reboot_program) {
+			bool locked = true;
 			bool need_reboot = true;
 			sp = strchr(reboot_program, ' ');
 			if (sp)
@@ -2850,9 +2851,17 @@ _rpc_reboot(slurm_msg_t *msg)
 			}
 			if (access(sp, R_OK | X_OK) < 0)
 				error("Cannot run RebootProgram [%s]: %m", sp);
-			else if ((exit_code = system(cmd)))
+			else if (need_reboot && (exit_code = system(cmd)))
 				error("system(%s) returned %d", reboot_program,
 				      exit_code);
+			else if (!need_reboot) {
+				debug2("Reboot not required - sending registration mesage");
+				conf->boot_time = time(NULL);
+				refresh_cached_features = true;
+				slurm_conf_unlock();
+				locked = false;
+				send_registration_msg(SLURM_SUCCESS);
+			}
 			xfree(sp);
 			xfree(cmd);
 
@@ -2862,11 +2871,15 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * case that fails to shut things down this will at
 			 * least offline this node until someone intervenes.
 			 */
-			if (cfg->conf_flags & CTL_CONF_SHR)
+			if (need_reboot && cfg->conf_flags & CTL_CONF_SHR) {
 				slurmd_shutdown(SIGTERM);
-		} else
+			}
+			if (locked)
+				slurm_conf_unlock();
+		} else {
 			error("RebootProgram isn't defined in config");
-		slurm_conf_unlock();
+			slurm_conf_unlock();
+		}
 	}
 
 	/* Never return a message, slurmctld does not expect one */
