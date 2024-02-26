@@ -505,6 +505,8 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .IP \fBMaxTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 .PD 0
+.IP \fBMaxTRESMinsPJ\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.PD 0
 .IP \fBMaxTRESMinsPerJob\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 .PD
 Maximum number of TRES minutes each job is able to use in this association.
@@ -519,6 +521,8 @@ of available resources by running \fBsacctmgr show tres\fR.
 .IP
 
 .IP \fBMaxTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.PD 0
+.IP \fBMaxTRESPJ\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 .PD 0
 .IP \fBMaxTRESPerJob\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 .PD
@@ -896,6 +900,8 @@ Maximum number of jobs in the pending or running state at any time.
 
 .IP \fBMaxTRES\fR
 .PD 0
+.IP \fBMaxTRESPJ\fR
+.PD 0
 .IP \fBMaxTRESPerJob\fR
 .PD
 Maximum number of TRES each job is able to use.
@@ -903,13 +909,17 @@ Maximum number of TRES each job is able to use.
 
 .IP \fBMaxTRESMins\fR
 .PD 0
+.IP \fBMaxTRESMinsPJ\fR
+.PD 0
 .IP \fBMaxTRESMinsPerJob\fR
 .PD
 Maximum number of TRES minutes each job is able to use.
 .IP
 
-.TP
-\fBMaxTRESPerNode\fR
+.IP \fBMaxTRESPN\fR
+.PD 0
+.IP \fBMaxTRESPerNode\fR
+.PD
 Maximum number of TRES each node in a job allocation can use.
 .IP
 
@@ -1933,6 +1943,8 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .IP \fBMaxTRES\fR
 .PD 0
+.IP \fBMaxTRESPJ\fR
+.PD 0
 .IP \fBMaxTRESPerJob\fR
 .PD
 Maximum number of TRES each job is able to use.
@@ -1945,6 +1957,8 @@ for each TRES id.
 .IP
 
 .IP \fBMaxTRESMins\fR
+.PD 0
+.IP \fBMaxTRESMinsPJ\fR
 .PD 0
 .IP \fBMaxTRESMinsPerJob\fR
 .PD
@@ -1970,8 +1984,10 @@ To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
-.TP
-\fBMaxTRESPerNode\fR
+.IP \fBMaxTRESPN\fR
+.PD 0
+.IP \fBMaxTRESPerNode\fR
+.PD
 Maximum number of TRES each node in a job allocation can use.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
@@ -2315,6 +2331,8 @@ Maximum number of jobs each user is allowed to run at one time.
 
 .IP \fBMaxTRESMins\fR
 .PD 0
+.IP \fBMaxTRESMinsPJ\fR
+.PD 0
 .IP \fBMaxTRESMinsPerJob\fR
 .PD
 Maximum number of TRES minutes each job is able to use.
@@ -2329,13 +2347,17 @@ Maximum number of TRES each account is able to use.
 
 .IP \fBMaxTRES\fR
 .PD 0
+.IP \fBMaxTRESPJ\fR
+.PD 0
 .IP \fBMaxTRESPerJob\fR
 .PD
 Maximum number of TRES each job is able to use.
 .IP
 
-.TP
-\fBMaxTRESPerNode\fR
+.IP \fBMaxTRESPN\fR
+.PD 0
+.IP \fBMaxTRESPerNode\fR
+.PD
 Maximum number of TRES each node in a job allocation can use.
 .IP
 

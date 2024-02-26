@@ -440,7 +440,12 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->max_submit_jobs,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
-	} else if (!xstrncasecmp(type, "MaxTRESPerJob", MAX(command_len, 7))) {
+	} else if (!xstrncasecmp(type, "MaxTRES",
+				 MAX(command_len, 7)) ||
+		   !xstrncasecmp(type, "MaxTRESPJ",
+				 MAX(command_len, 9)) ||
+		   !xstrncasecmp(type, "MaxTRESPerJob",
+				 MAX(command_len, 11))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
@@ -452,7 +457,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		} else
 			exit_code = 1;
-	} else if (!xstrncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
+	} else if (!xstrncasecmp(type, "MaxTRESPerNode",
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp(type, "MaxTRESPN",
+				 MAX(command_len, 9))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
@@ -465,7 +473,9 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		} else
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESMinsPerJob",
-				MAX(command_len, 8))) {
+				MAX(command_len, 8)) ||
+		   !xstrncasecmp(type, "MaxTRESMinsPJ",
+				 MAX(command_len, 13))) {
 		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(

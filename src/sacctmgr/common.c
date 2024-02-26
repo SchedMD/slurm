@@ -467,6 +467,8 @@ static print_field_t *_get_print_field(char *object)
 		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("MaxTRES", object,
 				 MAX(command_len, 7)) ||
+		   !xstrncasecmp("MaxTRESPJ", object,
+				 MAX(command_len, 9)) ||
 		   !xstrncasecmp("MaxTRESPerJob", object,
 				 MAX(command_len, 11))) {
 		field->type = PRINT_MAXT;
@@ -474,13 +476,17 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!xstrncasecmp("MaxTRESPerNode", object,
-				 MAX(command_len, 11))) {
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxTRESPN", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXTN;
 		field->name = xstrdup("MaxTRESPerNode");
 		field->len = 14;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!xstrncasecmp("MaxTRESMinsPerJob", object,
-				 MAX(command_len, 8))) {
+				 MAX(command_len, 8)) ||
+		   !xstrncasecmp("MaxTRESMinsPJ", object,
+				 MAX(command_len, 13))) {
 		field->type = PRINT_MAXTM;
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
