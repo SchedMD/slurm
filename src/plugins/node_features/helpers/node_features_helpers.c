@@ -751,6 +751,7 @@ extern int node_features_p_node_set(char *active_features, bool *need_reboot)
 	char *tmp, *saveptr;
 	char *input = NULL;
 	const plugin_feature_t *feature = NULL;
+	bool reboot = false;
 	int rc = SLURM_ERROR;
 
 	input = xstrdup(active_features);
@@ -762,11 +763,16 @@ extern int node_features_p_node_set(char *active_features, bool *need_reboot)
 			continue;
 		}
 
+		if (!(feature->flags & FEATURE_FLAG_NO_REBOOT))
+			reboot = true;
+
 		if (_feature_set_state(feature) != SLURM_SUCCESS) {
 			active_features[0] = '\0';
 			goto fini;
 		}
 	}
+
+	*need_reboot = reboot;
 
 	rc = SLURM_SUCCESS;
 
