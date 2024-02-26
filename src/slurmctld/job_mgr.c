@@ -19034,6 +19034,12 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 {
 	int exit_code;
 
+	/* --no-requeue option supercedes config for RequeueExit &
+	 * RequeueExitHold
+	 */
+	if (job_ptr->details && !job_ptr->details->requeue)
+		return;
+
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
 
 	if (requeue_exit && bit_test(requeue_exit, exit_code)) {
