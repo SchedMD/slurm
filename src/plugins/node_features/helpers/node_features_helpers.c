@@ -53,6 +53,8 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
+#define FEATURE_FLAG_NO_REBOOT SLURM_BIT(0)
+
 /*
  * These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -88,11 +90,13 @@ typedef struct {
 typedef struct {
 	const char *name;
 	const char *helper;
+	uint64_t flags;
 } plugin_feature_t;
 
 static s_p_options_t feature_options[] = {
 	 {"Feature", S_P_STRING},
 	 {"Helper", S_P_STRING},
+	 {"Flags", S_P_STRING},
 	 {NULL},
 };
 
@@ -160,12 +164,14 @@ static int _list_make_str(void *x, void *y)
 	return 0;
 }
 
-static plugin_feature_t *_feature_create(const char *name, const char *helper)
+static plugin_feature_t *_feature_create(const char *name, const char *helper,
+					 uint64_t flags)
 {
 	plugin_feature_t *feature = xmalloc(sizeof(*feature));
 
 	feature->name = xstrdup(name);
 	feature->helper = xstrdup(helper);
+	feature->flags = flags;
 
 	return feature;
 }
@@ -236,7 +242,8 @@ cleanup:
 	return result;
 }
 
-static int _feature_register(const char *name, const char *helper)
+static int _feature_register(const char *name, const char *helper,
+			     uint64_t flags)
 {
 	const plugin_feature_t *existing;
 	plugin_feature_t *feature = NULL;
@@ -258,9 +265,10 @@ static int _feature_register(const char *name, const char *helper)
 		}
 	}
 
-	feature = _feature_create(name, helper);
+	feature = _feature_create(name, helper, flags);
 
-	info("Adding new feature \"%s\"", feature->name);
+	info("Adding new feature \"%s\" Flags=%"PRIu64,
+	     feature->name, feature->flags);
 	list_append(helper_features, feature);
 
 	return SLURM_SUCCESS;
@@ -295,9 +303,14 @@ static int _parse_feature(void **data, slurm_parser_enum_t type,
 			  const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl = NULL;
+	char *tmp_flags = NULL;
 	char *path = NULL;
 	int rc = -1;
 	char *tmp_name;
+	char *tmp_str = NULL;
+	char *last = NULL;
+	char *tok = NULL;
+	uint64_t flags = 0;
 
 	tbl = s_p_hashtbl_create(feature_options);
 	if (!s_p_parse_line(tbl, *leftover, leftover))
@@ -311,10 +324,24 @@ static int _parse_feature(void **data, slurm_parser_enum_t type,
 	}
 
 	s_p_get_string(&path, "Helper", tbl);
+	if (s_p_get_string(&tmp_flags, "Flags", tbl)) {
+		tmp_str = xstrdup(tmp_flags);
+		tok = strtok_r(tmp_str, ",", &last);
+		while (tok) {
+			if (!xstrcasecmp(tok, "rebootless"))
+				flags |= FEATURE_FLAG_NO_REBOOT;
+			else
+				error("helpers.conf: Ignoring invalid Flags=%s",
+				      tok);
+			tok = strtok_r(NULL, ",", &last);
+		}
+	}
 
 	/* In slurmctld context, we can have path == NULL */
-	*data = _feature_create(tmp_name, path);
+	*data = _feature_create(tmp_name, path, flags);
 	xfree(path);
+	xfree(tmp_str);
+	xfree(tmp_flags);
 
 	rc = 1;
 
@@ -385,7 +412,8 @@ static int _handle_config_features(plugin_feature_t **features, int count)
 			}
 
 			/* In slurmctld context, we can have path == NULL */
-			if (_feature_register(tok, feature->helper)) {
+			if (_feature_register(tok, feature->helper,
+					      feature->flags)) {
 				xfree(tmp_name);
 				return SLURM_ERROR;
 			}
