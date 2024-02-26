@@ -178,6 +178,7 @@ struct sinfo_parameters {
 	bool all_flag;
 	List clusters;
 	uint32_t cluster_flags;
+	char *cluster_names;
 	uint32_t convert_flags;
 	bool dead_nodes;
 	bool def_format;
