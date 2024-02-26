@@ -89,11 +89,6 @@ typedef int (*ListForF) (void *x, void *arg);
 
 #endif
 
-#ifndef __list_legacy_datatypes_defined
-#define __list_legacy_datatypes_defined
-typedef struct listIterator *ListIterator;
-#endif
-
 /*******************************
  *  General-Purpose Functions  *
  *******************************/
