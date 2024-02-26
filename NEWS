@@ -88,6 +88,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix 20 character username limit from 'sacctmgr show events'
  -- Log an error if UsePss or NoShare are configured with a plugin other than
     jobacct_gather/linux. In such case these parameters are ignored.
+ -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
+    without rebooting compute nodes.
 
 * Changes in Slurm 23.11.5
 ==========================
