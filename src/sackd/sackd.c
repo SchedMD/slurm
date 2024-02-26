@@ -129,6 +129,9 @@ static void _parse_args(int argc, char **argv)
 		}
 	}
 
+	if (under_systemd && !daemonize)
+		fatal("--systemd and -D options are mutually exclusive");
+
 	if (under_systemd) {
 		if (!getenv("NOTIFY_SOCKET"))
 			fatal("Missing NOTIFY_SOCKET");
