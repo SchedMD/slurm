@@ -2781,6 +2781,9 @@ static void _parse_commandline(int argc, char **argv)
 		}
 	}
 
+	if (under_systemd && !daemonize)
+		fatal("--systemd and -D options are mutually exclusive");
+
 	/*
 	 * Reconfiguration has historically been equivalent to recover = 1.
 	 * Force defaults in case the original process used '-c', '-i' or '-R'.
