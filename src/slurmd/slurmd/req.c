@@ -5673,14 +5673,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	timer_struct.timer_mutex = &timer_mutex;
 	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
 
-	/*
-	 * We have to do this assignment here instead of in the plugin as
-	 * the plugin is also loaded by the slurmctld that doesn't know how to
-	 * resolve a reference to container_g_join.
-	 */
-	if (xstrstr(slurm_conf.job_container_plugin, "cncu"))
-		job_env->container_join = container_g_join;
-
 	rc = prep_g_prolog(job_env, cred);
 
 	slurm_mutex_lock(&timer_mutex);
@@ -5716,14 +5708,6 @@ static int _run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
-
-	/*
-	 * We have to do this assignment here instead of in the plugin as
-	 * the plugin is also loaded by the slurmctld that doesn't know how to
-	 * resolve a reference to container_g_join.
-	 */
-	if (xstrstr(slurm_conf.job_container_plugin, "cncu"))
-		job_env->container_join = container_g_join;
 
 	error_code = prep_g_epilog(job_env, cred);
 

@@ -65,8 +65,7 @@ slurmd_conf_t *conf = NULL;
 
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
-static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
-				 int (*container_join)(uint32_t , uid_t));
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id);
 
 static int _ef(const char *p, int errnum)
 {
@@ -166,8 +165,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	    (!is_epilog && spank_has_prolog())) {
 		if (!env)
 			env = _build_env(job_env, cred, is_epilog);
-		rc = _run_spank_job_script(name, env, job_env->jobid,
-					   job_env->container_join);
+		rc = _run_spank_job_script(name, env, job_env->jobid);
 	}
 
 	if (path) {
@@ -176,7 +174,6 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		char *cmd_argv[2] = {0};
 		List path_list;
 		run_command_args_t run_command_args = {
-			.container_join = job_env->container_join,
 			.job_id = job_env->jobid,
 			.script_argv = cmd_argv,
 			.script_type = name,
@@ -360,8 +357,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	return env;
 }
 
-static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
-				 int (*container_join)(uint32_t , uid_t))
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 {
 	pid_t cpid;
 	int status = 0, timeout;
@@ -388,15 +384,6 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
 			"spank",
 			(char *) mode,
 			NULL };
-
-		/*
-		 * container_g_join() needs to be called in the child process
-		 * to avoid a race condition if this process makes a file
-		 * before we add the pid to the container in the parent.
-		 */
-		if (container_join &&
-		    (container_join(job_id, getuid()) != SLURM_SUCCESS))
-			error("container_g_join(%u): %m", job_id);
 
 		if (dup2(pfds[0], STDIN_FILENO) < 0)
 			fatal("dup2: %m");
