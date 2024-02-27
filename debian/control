@@ -12,7 +12,6 @@ Build-Depends:
  libgtk2.0-dev,
  libpam0g-dev,
  libperl-dev,
- libpam0g-dev,
  liblua5.3-dev,
  libhwloc-dev,
  dh-exec,
