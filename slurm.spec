@@ -77,6 +77,10 @@ Source:		%{slurm_source_dir}.tar.bz2
 # Disable Link Time Optimization (LTO)
 %define _lto_cflags %{nil}
 
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  gcc
+BuildRequires:  make
 %if %{defined suse_version}
 BuildRequires: pkg-config
 %else
