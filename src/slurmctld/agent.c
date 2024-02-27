@@ -1578,6 +1578,15 @@ static void _queue_update_srun(slurm_step_id_t *step_id)
 	memcpy(queue_step_id, step_id, sizeof(*step_id));
 
 	list_append(update_srun_list, queue_step_id);
+
+	/*
+	 * This may or may not wake the _agent_srun_update thread.
+	 * But - we intentionally do not want to claim the &update_srun_mutex
+	 * here which would be the only way to ensure it was asleep, as that
+	 * would block us from queuing additional work while it was blocked
+	 * waiting for the job write lock.
+	 */
+	slurm_cond_signal(&update_srun_cond);
 }
 
 extern void agent_init(void)
