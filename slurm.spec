@@ -77,6 +77,16 @@ Source:		%{slurm_source_dir}.tar.bz2
 # Disable Link Time Optimization (LTO)
 %define _lto_cflags %{nil}
 
+%if %{defined suse_version}
+BuildRequires: pkg-config
+%else
+%if (0%{?rhel} != 7)
+BuildRequires:  pkgconf
+%else
+BuildRequires:  pkgconfig
+%endif
+%endif
+
 Requires: munge
 
 %{?systemd_requires}
@@ -132,7 +142,6 @@ BuildRequires: libhwloc-devel
 BuildRequires: cray-libjob-devel
 BuildRequires: gtk2-devel
 BuildRequires: glib2-devel
-BuildRequires: pkg-config
 %endif
 
 %if %{with cray_network}
@@ -141,7 +150,6 @@ BuildRequires: cray-libalpscomm_sn-devel
 BuildRequires: hwloc-devel
 BuildRequires: gtk2-devel
 BuildRequires: glib2-devel
-BuildRequires: pkgconfig
 %endif
 
 BuildRequires: perl(ExtUtils::MakeMaker)
