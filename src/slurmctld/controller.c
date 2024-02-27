@@ -258,7 +258,6 @@ static int          _controller_index(void);
 static void         _become_slurm_user(void);
 static void _close_ports(void);
 static void         _create_clustername_file(void);
-static void _flush_agent_queue(int tenths);
 static void _flush_rpcs(void);
 static void         _get_fed_updates();
 static void         _init_config(void);
@@ -833,7 +832,7 @@ int main(int argc, char **argv)
 	 *  Anything left over represents a leak.
 	 */
 
-	_flush_agent_queue(60);
+	agent_purge();
 
 	/* Purge our local data structures */
 	configless_clear();
@@ -877,12 +876,6 @@ int main(int argc, char **argv)
 	usleep(500000);
 	serializer_g_fini();
 }
-#else
-	/*
-	 * do this outside of MEMORY_LEAK_DEBUG so that remote connections get
-	 * closed.
-	 */
-	_flush_agent_queue(30);
 #endif
 
 	_close_ports();
@@ -894,26 +887,6 @@ int main(int argc, char **argv)
 		abort();
 	else
 		exit(0);
-}
-
-/*
- * Give REQUEST_SHUTDOWN a chance to get propagated.
- *
- * FIXME: This should move into the agent code itself, and make use of
- * agent_cnt_cond instead of sleeping for tenths of a second and retrying.
- */
-static void _flush_agent_queue(int tenths)
-{
-	int count = 0;
-
-	for (int i = 0; i < tenths; i++) {
-		agent_purge();
-		if (!(count = get_agent_count()))
-			return;
-		usleep(100000);
-	}
-
-	error("%s: left %d agent threads active", __func__, count);
 }
 
 static int _find_node_event(void *x, void *key)
