@@ -242,6 +242,15 @@ cleanup:
 	return result;
 }
 
+static char * _feature_flag2str(uint64_t flags) {
+	if (flags & FEATURE_FLAG_NO_REBOOT)
+		return "rebootless";
+	else if (!flags)
+		return "(none)";
+	else
+		return "unknown";
+}
+
 static int _feature_register(const char *name, const char *helper,
 			     uint64_t flags)
 {
@@ -267,8 +276,8 @@ static int _feature_register(const char *name, const char *helper,
 
 	feature = _feature_create(name, helper, flags);
 
-	info("Adding new feature \"%s\" Flags=%"PRIu64,
-	     feature->name, feature->flags);
+	info("Adding new feature \"%s\" Flags=%s",
+	     feature->name, _feature_flag2str(feature->flags));
 	list_append(helper_features, feature);
 
 	return SLURM_SUCCESS;
