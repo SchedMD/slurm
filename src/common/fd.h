@@ -49,6 +49,9 @@
 /* close all FDs >= a specified value */
 extern void closeall(int fd);
 
+/* Close a specific file descriptor and replace it with -1 */
+extern void fd_close(int *fd);
+
 void fd_set_close_on_exec(int fd);
 /*
  *  Sets the file descriptor (fd) to be closed on exec().

@@ -64,6 +64,7 @@
  * for details.
  */
 strong_alias(closeall, slurm_closeall);
+strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
@@ -115,6 +116,14 @@ extern void closeall(int fd)
 		}
 	}
 	closedir(d);
+}
+
+extern void fd_close(int *fd)
+{
+	if (*fd && *fd >= 0) {
+		close(*fd);
+		*fd = -1;
+	}
 }
 
 void fd_set_close_on_exec(int fd)

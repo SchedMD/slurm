@@ -84,15 +84,6 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
-/* close an fd and replace it with a -1 */
-static void _close_fd(int *fd)
-{
-	if (*fd && *fd >= 0) {
-		close(*fd);
-		*fd = -1;
-	}
-}
-
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
 static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
@@ -110,7 +101,7 @@ static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
 /* static void _reopen_persist_conn(slurm_persist_conn_t *persist_conn) */
 /* { */
 /*	xassert(persist_conn); */
-/*	_close_fd(&persist_conn->fd); */
+/*	fd_close(&persist_conn->fd); */
 /*	slurm_persist_conn_open(persist_conn); */
 /* } */
 
@@ -541,7 +532,7 @@ extern int slurm_persist_conn_open_without_init(
 	xassert(persist_conn->cluster_name);
 
 	if (persist_conn->fd > 0)
-		_close_fd(&persist_conn->fd);
+		fd_close(&persist_conn->fd);
 	else
 		persist_conn->fd = -1;
 
@@ -620,7 +611,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	if (slurm_send_node_msg(persist_conn->fd, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		_close_fd(&persist_conn->fd);
+		fd_close(&persist_conn->fd);
 	} else {
 		buf_t *buffer = _slurm_persist_recv_msg(persist_conn, false);
 		persist_msg_t msg;
@@ -631,7 +622,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 				error("%s: No response to persist_init",
 				      __func__);
 			}
-			_close_fd(&persist_conn->fd);
+			fd_close(&persist_conn->fd);
 			goto end_it;
 		}
 		memset(&msg, 0, sizeof(persist_msg_t));
@@ -661,7 +652,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			}
-			_close_fd(&persist_conn->fd);
+			fd_close(&persist_conn->fd);
 		}
 	}
 
@@ -677,7 +668,7 @@ extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	_close_fd(&persist_conn->fd);
+	fd_close(&persist_conn->fd);
 }
 
 extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
