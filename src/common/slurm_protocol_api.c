@@ -2409,7 +2409,7 @@ tryagain:
 		 */
 		verbose("RPC rate limited %d time(s). Sleeping then trying again.",
 			ratelimited);
-		sleep(1);
+		sleep(ratelimited);
 		goto tryagain;
 	}
 

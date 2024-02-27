@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     that haven't been loaded.
  -- Fix old pending jobs dying (Slurm version 21.08.x and older) when upgrading
     Slurm due to "Invalid message version" errors.
+ -- Have client commands sleep for progressively longer periods when backed off
+    by the RPC rate limiting system.
 
 * Changes in Slurm 23.11.4
 ==========================
