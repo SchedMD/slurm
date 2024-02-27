@@ -162,21 +162,18 @@ static void _kill_pg(pid_t pid)
 
 static void _run_command_child(run_command_args_t *args, int write_fd)
 {
-	if (!args->turnoff_output) {
-		int devnull;
-		if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-			error("%s: Unable to open /dev/null: %m",
-			      __func__);
-			_exit(127);
-		}
-		dup2(devnull, STDIN_FILENO);
-		dup2(write_fd, STDERR_FILENO);
-		dup2(write_fd, STDOUT_FILENO);
-		closeall(3);
-		/* coverity[leaked_handle] */
-	} else {
-		closeall(0);
+	int devnull;
+
+	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+		error("%s: Unable to open /dev/null: %m",
+		      __func__);
+		_exit(127);
 	}
+	dup2(devnull, STDIN_FILENO);
+	dup2(write_fd, STDERR_FILENO);
+	dup2(write_fd, STDOUT_FILENO);
+	closeall(3);
+	/* coverity[leaked_handle] */
 	setpgid(0, 0);
 	/*
 	 * sync euid -> ruid, egid -> rgid to avoid issues with fork'd
@@ -224,13 +221,11 @@ extern char *run_command(run_command_args_t *args)
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (!args->turnoff_output) {
-		if (pipe(pfd) != 0) {
-			error("%s: pipe(): %m", __func__);
-			*(args->status) = 127;
-			resp = xstrdup("System error");
-			return resp;
-		}
+	if (pipe(pfd) != 0) {
+		error("%s: pipe(): %m", __func__);
+		*(args->status) = 127;
+		resp = xstrdup("System error");
+		return resp;
 	}
 	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
@@ -239,15 +234,13 @@ extern char *run_command(run_command_args_t *args)
 		_run_command_child(args, pfd[1]);
 		/* We should never get here. */
 	} else if (cpid < 0) {
-		if (!args->turnoff_output) {
-			close(pfd[0]);
-			close(pfd[1]);
-		}
+		close(pfd[0]);
+		close(pfd[1]);
 		error("%s: fork(): %m", __func__);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
-	} else if (!args->turnoff_output) {
+	} else {
 		close(pfd[1]);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
@@ -264,10 +257,6 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
-	} else {
-		if (args->tid)
-			track_script_reset_cpid(args->tid, cpid);
-		waitpid(cpid, args->status, 0);
 	}
 
 	return resp;

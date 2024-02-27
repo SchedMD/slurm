@@ -49,7 +49,6 @@ typedef struct {
 	int *status;
 	pthread_t tid;
 	bool *timed_out;
-	bool turnoff_output;
 } run_command_args_t;
 
 /*
