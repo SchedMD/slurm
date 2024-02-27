@@ -160,6 +160,44 @@ static void _kill_pg(pid_t pid)
 	killpg(pid, SIGKILL);
 }
 
+static void _run_command_child(run_command_args_t *args, int write_fd)
+{
+	if (!args->turnoff_output) {
+		int devnull;
+		if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+			error("%s: Unable to open /dev/null: %m",
+			      __func__);
+			_exit(127);
+		}
+		dup2(devnull, STDIN_FILENO);
+		dup2(write_fd, STDERR_FILENO);
+		dup2(write_fd, STDOUT_FILENO);
+		closeall(3);
+		/* coverity[leaked_handle] */
+	} else {
+		closeall(0);
+	}
+	setpgid(0, 0);
+	/*
+	 * sync euid -> ruid, egid -> rgid to avoid issues with fork'd
+	 * processes using access() or similar calls.
+	 */
+	if (setresgid(getegid(), getegid(), -1)) {
+		error("%s: Unable to setresgid()", __func__);
+		_exit(127);
+	}
+	if (setresuid(geteuid(), geteuid(), -1)) {
+		error("%s: Unable to setresuid()", __func__);
+		_exit(127);
+	}
+	if (!args->env)
+		execv(args->script_path, args->script_argv);
+	else
+		execve(args->script_path, args->script_argv, args->env);
+	error("%s: execv(%s): %m", __func__, args->script_path);
+	_exit(127);
+}
+
 extern char *run_command(run_command_args_t *args)
 {
 	pid_t cpid;
@@ -198,40 +236,8 @@ extern char *run_command(run_command_args_t *args)
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
-		if (!args->turnoff_output) {
-			int devnull;
-			if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-				error("%s: Unable to open /dev/null: %m",
-				      __func__);
-				_exit(127);
-			}
-			dup2(devnull, STDIN_FILENO);
-			dup2(pfd[1], STDERR_FILENO);
-			dup2(pfd[1], STDOUT_FILENO);
-			closeall(3);
-			/* coverity[leaked_handle] */
-		} else {
-			closeall(0);
-		}
-		setpgid(0, 0);
-		/*
-		 * sync euid -> ruid, egid -> rgid to avoid issues with fork'd
-		 * processes using access() or similar calls.
-		 */
-		if (setresgid(getegid(), getegid(), -1)) {
-			error("%s: Unable to setresgid()", __func__);
-			_exit(127);
-		}
-		if (setresuid(geteuid(), geteuid(), -1)) {
-			error("%s: Unable to setresuid()", __func__);
-			_exit(127);
-		}
-		if (!args->env)
-			execv(args->script_path, args->script_argv);
-		else
-			execve(args->script_path, args->script_argv, args->env);
-		error("%s: execv(%s): %m", __func__, args->script_path);
-		_exit(127);
+		_run_command_child(args, pfd[1]);
+		/* We should never get here. */
 	} else if (cpid < 0) {
 		if (!args->turnoff_output) {
 			close(pfd[0]);
