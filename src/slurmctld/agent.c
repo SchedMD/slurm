@@ -1617,6 +1617,8 @@ extern void agent_fini(void)
 	slurm_thread_join(pending_thread_tid);
 	slurm_thread_join(nodes_update_tid);
 	slurm_thread_join(srun_update_tid);
+
+	FREE_NULL_LIST(update_srun_list);
 }
 
 /*
