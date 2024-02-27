@@ -244,7 +244,9 @@ static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
 static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
-static bool pending_thread_running = false;
+static pthread_t pending_thread_tid = 0;
+static pthread_t nodes_update_tid = 0;
+static pthread_t srun_update_tid = 0;
 static bool pending_check_defer = false;
 
 static bool run_scheduler    = false;
@@ -1490,9 +1492,6 @@ static void *_agent_init(void *arg)
 		_agent_retry(min_wait, mail_too);
 	}
 
-	slurm_mutex_lock(&pending_mutex);
-	pending_thread_running = false;
-	slurm_mutex_unlock(&pending_mutex);
 	return NULL;
 }
 
@@ -1591,20 +1590,33 @@ static void _queue_update_srun(slurm_step_id_t *step_id)
 
 extern void agent_init(void)
 {
-	slurm_mutex_lock(&pending_mutex);
-	if (pending_thread_running) {
+	if (pending_thread_tid) {
 		error("%s: thread already running", __func__);
-		slurm_mutex_unlock(&pending_mutex);
 		return;
 	}
 
 	update_srun_list = list_create(xfree_ptr);
 
-	slurm_thread_create_detached(_agent_init, NULL);
-	slurm_thread_create_detached(_agent_nodes_update, NULL);
-	slurm_thread_create_detached(_agent_srun_update, NULL);
-	pending_thread_running = true;
-	slurm_mutex_unlock(&pending_mutex);
+	slurm_thread_create(&pending_thread_tid, _agent_init, NULL);
+	slurm_thread_create(&nodes_update_tid, _agent_nodes_update, NULL);
+	slurm_thread_create(&srun_update_tid, _agent_srun_update, NULL);
+}
+
+extern void agent_fini(void)
+{
+	agent_trigger(999, true, true);
+
+	slurm_mutex_lock(&update_nodes_mutex);
+	slurm_cond_broadcast(&update_nodes_cond);
+	slurm_mutex_unlock(&update_nodes_mutex);
+
+	slurm_mutex_lock(&update_srun_mutex);
+	slurm_cond_broadcast(&update_srun_cond);
+	slurm_mutex_unlock(&update_srun_mutex);
+
+	slurm_thread_join(pending_thread_tid);
+	slurm_thread_join(nodes_update_tid);
+	slurm_thread_join(srun_update_tid);
 }
 
 /*

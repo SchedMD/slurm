@@ -68,6 +68,8 @@ typedef struct agent_arg {
 /* Start a thread to manage queued agent requests */
 extern void agent_init(void);
 
+extern void agent_fini(void);
+
 /*
  * agent - party responsible for transmitting an common RPC in parallel
  *	across a set of nodes. agent_queue_request() if immediate

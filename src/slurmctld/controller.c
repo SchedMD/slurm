@@ -717,6 +717,7 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
+		agent_fini();
 
 		/* termination of controller */
 		switch_g_save(slurm_conf.state_save_location);
