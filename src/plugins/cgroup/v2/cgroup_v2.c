@@ -735,8 +735,8 @@ static int _init_new_scope_dbus(char *scope_path)
 			 * the unit will also terminate.
 			 */
 			if (cgroup_dbus_abandon_scope(scope_path))
-				error("Cannot abandon cgroup scope %s",
-				      scope_path);
+				log_flag(CGROUP, "Cannot abandon cgroup scope %s",
+					 scope_path);
 			else
 				log_flag(CGROUP, "Abandoned scope %s",
 					 scope_path);
