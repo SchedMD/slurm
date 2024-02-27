@@ -113,6 +113,7 @@
 #define DUMP_RPC_COUNT 		25
 #define HOSTLIST_MAX_SIZE 	80
 #define MAIL_PROG_TIMEOUT 120 /* Timeout in seconds */
+#define AGENT_SHUTDOWN_WAIT 3
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -1604,6 +1605,9 @@ extern void agent_init(void)
 
 extern void agent_fini(void)
 {
+	struct timespec ts = {0, 0};
+	int rc = 0;
+
 	agent_trigger(999, true, true);
 
 	slurm_mutex_lock(&update_nodes_mutex);
@@ -1617,6 +1621,21 @@ extern void agent_fini(void)
 	slurm_thread_join(pending_thread_tid);
 	slurm_thread_join(nodes_update_tid);
 	slurm_thread_join(srun_update_tid);
+
+	ts.tv_sec = time(NULL) + AGENT_SHUTDOWN_WAIT;
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	slurm_cond_broadcast(&agent_cnt_cond);
+	while (agent_thread_cnt) {
+                rc = pthread_cond_timedwait(&agent_cnt_cond, &agent_cnt_mutex,
+					    &ts);
+		if (rc == ETIMEDOUT) {
+			error("%s: left %d agent threads active", __func__,
+			      agent_thread_cnt);
+			break;
+		}
+	}
+	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	FREE_NULL_LIST(update_srun_list);
 }
