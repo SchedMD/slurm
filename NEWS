@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Have client commands sleep for progressively longer periods when backed off
     by the RPC rate limiting system.
  -- slurmctld - Ensure agent queue is flushed correctly at shutdown time.
+ -- slurmdbd - correct lineage construction during assoc table conversion for
+    partition based associations.
 
 * Changes in Slurm 23.11.4
 ==========================
