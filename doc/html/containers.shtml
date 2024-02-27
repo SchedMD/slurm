@@ -438,12 +438,17 @@ Set the following fields to configure Docker:
     "selinux-enabled": false,
     "default-runtime": "slurm",
     "runtimes": {
-	"slurm": {
-	    "path": "/usr/local/bin/scrun"
-	}
-    }
+        "slurm": {
+            "path": "/usr/local/bin/scrun"
+        }
+    },
+    "data-root": "/run/user/${USER_ID}/docker/",
+    "exec-root": "/run/user/${USER_ID}/docker-exec/"
 }</pre>
-Correct path to scrun as if installation prefix was configured.</li>
+Correct path to scrun as if installation prefix was configured. Replace
+${USER_ID} with numeric user id or target a different directory with global
+write permissions and sticky bit. Rootless docker requires a different root
+directory than the system's default to avoid permission errors.</li>
 <li>It is strongly suggested that sites consider using inter-node shared
 filesystems to store Docker's containers. While it is possible to have a
 scrun.lua script to push and pull images for each deployment, there can be a
