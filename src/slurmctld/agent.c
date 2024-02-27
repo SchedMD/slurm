@@ -113,6 +113,7 @@
 #define DUMP_RPC_COUNT 		25
 #define HOSTLIST_MAX_SIZE 	80
 #define MAIL_PROG_TIMEOUT 120 /* Timeout in seconds */
+#define AGENT_SHUTDOWN_WAIT 3
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -203,6 +204,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _queue_update_node(char *node_name);
+static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
 static void _sig_handler(int dummy);
@@ -228,6 +230,10 @@ static list_t *update_node_list = NULL;	/* node list for update */
 static pthread_mutex_t update_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t update_nodes_cond = PTHREAD_COND_INITIALIZER;
 
+static list_t *update_srun_list = NULL;
+static pthread_mutex_t update_srun_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t update_srun_cond = PTHREAD_COND_INITIALIZER;
+
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
@@ -239,7 +245,9 @@ static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
 static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
-static bool pending_thread_running = false;
+static pthread_t pending_thread_tid = 0;
+static pthread_t nodes_update_tid = 0;
+static pthread_t srun_update_tid = 0;
 static bool pending_check_defer = false;
 
 static bool run_scheduler    = false;
@@ -693,9 +701,6 @@ static void *_wdog(void *args)
 
 static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 {
-	/* Locks: Write job */
-	slurmctld_lock_t job_write_lock =
-	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,
@@ -732,12 +737,9 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		error("%s: invalid msg_type %u", __func__, agent_ptr->msg_type);
 		return;
 	}
-	lock_slurmctld(job_write_lock);
-	if  (thread_ptr[0].state == DSH_DONE) {
-		srun_response(&step_id);
-	}
 
-	unlock_slurmctld(job_write_lock);
+	if (thread_ptr[0].state == DSH_DONE)
+		_queue_update_srun(&step_id);
 }
 
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
@@ -1487,9 +1489,6 @@ static void *_agent_init(void *arg)
 		_agent_retry(min_wait, mail_too);
 	}
 
-	slurm_mutex_lock(&pending_mutex);
-	pending_thread_running = false;
-	slurm_mutex_unlock(&pending_mutex);
 	return NULL;
 }
 
@@ -1536,19 +1535,105 @@ static void _queue_update_node(char *node_name)
 	slurm_mutex_unlock(&update_nodes_mutex);
 }
 
+static int _foreach_srun_response(void *x, void *arg)
+{
+	srun_response(x);
+	return 1;
+}
+
+/* Start a thread to manage queued agent requests */
+static void *_agent_srun_update(void *arg)
+{
+	struct timespec ts = {0, 0};
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+
+	slurm_mutex_lock(&update_srun_mutex);
+	while (true) {
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&update_srun_cond, &update_srun_mutex,
+				     &ts);
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		if (!list_count(update_srun_list))
+			continue;
+
+		lock_slurmctld(job_write_lock);
+		list_delete_all(update_srun_list, _foreach_srun_response, NULL);
+		unlock_slurmctld(job_write_lock);
+	}
+	slurm_mutex_unlock(&update_srun_mutex);
+
+	return NULL;
+}
+
+static void _queue_update_srun(slurm_step_id_t *step_id)
+{
+	slurm_step_id_t *queue_step_id = xmalloc(sizeof(*queue_step_id));
+
+	memcpy(queue_step_id, step_id, sizeof(*step_id));
+
+	list_append(update_srun_list, queue_step_id);
+
+	/*
+	 * This may or may not wake the _agent_srun_update thread.
+	 * But - we intentionally do not want to claim the &update_srun_mutex
+	 * here which would be the only way to ensure it was asleep, as that
+	 * would block us from queuing additional work while it was blocked
+	 * waiting for the job write lock.
+	 */
+	slurm_cond_signal(&update_srun_cond);
+}
+
 extern void agent_init(void)
 {
-	slurm_mutex_lock(&pending_mutex);
-	if (pending_thread_running) {
+	if (pending_thread_tid) {
 		error("%s: thread already running", __func__);
-		slurm_mutex_unlock(&pending_mutex);
 		return;
 	}
 
-	slurm_thread_create_detached(_agent_init, NULL);
-	slurm_thread_create_detached(_agent_nodes_update, NULL);
-	pending_thread_running = true;
-	slurm_mutex_unlock(&pending_mutex);
+	update_srun_list = list_create(xfree_ptr);
+
+	slurm_thread_create(&pending_thread_tid, _agent_init, NULL);
+	slurm_thread_create(&nodes_update_tid, _agent_nodes_update, NULL);
+	slurm_thread_create(&srun_update_tid, _agent_srun_update, NULL);
+}
+
+extern void agent_fini(void)
+{
+	struct timespec ts = {0, 0};
+	int rc = 0;
+
+	agent_trigger(999, true, true);
+
+	slurm_mutex_lock(&update_nodes_mutex);
+	slurm_cond_broadcast(&update_nodes_cond);
+	slurm_mutex_unlock(&update_nodes_mutex);
+
+	slurm_mutex_lock(&update_srun_mutex);
+	slurm_cond_broadcast(&update_srun_cond);
+	slurm_mutex_unlock(&update_srun_mutex);
+
+	slurm_thread_join(pending_thread_tid);
+	slurm_thread_join(nodes_update_tid);
+	slurm_thread_join(srun_update_tid);
+
+	ts.tv_sec = time(NULL) + AGENT_SHUTDOWN_WAIT;
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	slurm_cond_broadcast(&agent_cnt_cond);
+	while (agent_thread_cnt) {
+                rc = pthread_cond_timedwait(&agent_cnt_cond, &agent_cnt_mutex,
+					    &ts);
+		if (rc == ETIMEDOUT) {
+			error("%s: left %d agent threads active", __func__,
+			      agent_thread_cnt);
+			break;
+		}
+	}
+	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	FREE_NULL_LIST(update_srun_list);
 }
 
 /*
