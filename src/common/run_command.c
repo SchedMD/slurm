@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/run_command.h"
 
+static char *script_launcher = NULL;
 static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -118,8 +119,16 @@ extern void run_command_add_to_script(char **script_body, char *new_str)
 }
 
 /* used to initialize run_command module */
-extern void run_command_init(void)
+extern void run_command_init(char *binary)
 {
+	if (binary) {
+		if (access(binary, R_OK | X_OK) < 0)
+			error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
+			      __func__, binary);
+		else
+			script_launcher = binary;
+	}
+
 	command_shutdown = 0;
 }
 

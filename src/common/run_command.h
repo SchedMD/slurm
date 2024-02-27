@@ -71,8 +71,11 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
  * Used to initialize this run_command module.
  * Needed in cases of high-availability when the backup controllers are
  * returning to function and must recover from a previously issued shutdown.
+ *
+ * IN binary - (optional) path to this executable's binary to use as the script
+ *             launcher.
  */
-extern void run_command_init(void);
+extern void run_command_init(char *binary);
 
 /* used to terminate any outstanding commands */
 extern void run_command_shutdown(void);

@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 	 * signals.
 	 */
 	slurmscriptd_init(argc, argv);
-	run_command_init();
+	run_command_init(NULL);
 
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {

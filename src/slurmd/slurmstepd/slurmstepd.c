@@ -304,7 +304,7 @@ main (int argc, char **argv)
 
 	_process_cmdline(argc, argv);
 
-	run_command_init();
+	run_command_init(NULL);
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));

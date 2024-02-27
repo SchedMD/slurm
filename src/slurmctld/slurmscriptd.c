@@ -1090,7 +1090,7 @@ static void _setup_eio(int fd)
 
 static void _slurmscriptd_mainloop(void)
 {
-	run_command_init();
+	run_command_init(NULL);
 	_setup_eio(slurmscriptd_readfd);
 
 	debug("%s: started", __func__);
