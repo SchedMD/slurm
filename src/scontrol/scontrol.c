@@ -251,9 +251,13 @@ int main(int argc, char **argv)
 
 	FREE_NULL_LIST(clusters);
 	if (cluster_names) {
-		if (!(clusters = slurmdb_get_info_cluster(optarg))) {
-			print_db_notok(optarg, 0);
-			exit(1);
+		if (slurm_get_cluster_info(&(clusters),
+					   cluster_names,
+					   (federation_flag ?
+					    SHOW_FEDERATION : SHOW_LOCAL))) {
+
+			print_db_notok(cluster_names, 0);
+			fatal("Could not get cluster information");
 		}
 		working_cluster_rec = list_peek(clusters);
 		local_flag = true;
@@ -1006,9 +1010,13 @@ static int _process_command (int argc, char **argv)
 			working_cluster_rec = NULL;
 		}
 		if (argc >= 2) {
-			if (!(clusters = slurmdb_get_info_cluster(argv[1]))) {
+			if (slurm_get_cluster_info(&(clusters), argv[1],
+						   (federation_flag ?
+							    SHOW_FEDERATION :
+							    SHOW_LOCAL))) {
+
 				print_db_notok(argv[1], 0);
-				exit(1);
+				fatal("Could not get cluster information");
 			}
 			working_cluster_rec = list_peek(clusters);
 			if (list_count(clusters) > 1) {
