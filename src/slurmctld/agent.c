@@ -203,6 +203,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _queue_update_node(char *node_name);
+static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
 static void _sig_handler(int dummy);
@@ -227,6 +228,10 @@ static List retry_list = NULL;		/* agent_arg_t list for retry */
 static list_t *update_node_list = NULL;	/* node list for update */
 static pthread_mutex_t update_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t update_nodes_cond = PTHREAD_COND_INITIALIZER;
+
+static list_t *update_srun_list = NULL;
+static pthread_mutex_t update_srun_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t update_srun_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -697,9 +702,6 @@ static void *_wdog(void *args)
 
 static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 {
-	/* Locks: Write job */
-	slurmctld_lock_t job_write_lock =
-	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,
@@ -736,12 +738,9 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		error("%s: invalid msg_type %u", __func__, agent_ptr->msg_type);
 		return;
 	}
-	lock_slurmctld(job_write_lock);
-	if  (thread_ptr[0].state == DSH_DONE) {
-		srun_response(&step_id);
-	}
 
-	unlock_slurmctld(job_write_lock);
+	if (thread_ptr[0].state == DSH_DONE)
+		_queue_update_srun(&step_id);
 }
 
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
@@ -1540,6 +1539,47 @@ static void _queue_update_node(char *node_name)
 	slurm_mutex_unlock(&update_nodes_mutex);
 }
 
+static int _foreach_srun_response(void *x, void *arg)
+{
+	srun_response(x);
+	return 1;
+}
+
+/* Start a thread to manage queued agent requests */
+static void *_agent_srun_update(void *arg)
+{
+	struct timespec ts = {0, 0};
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+
+	slurm_mutex_lock(&update_srun_mutex);
+	while (true) {
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&update_srun_cond, &update_srun_mutex,
+				     &ts);
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		if (!list_count(update_srun_list))
+			continue;
+
+		lock_slurmctld(job_write_lock);
+		list_delete_all(update_srun_list, _foreach_srun_response, NULL);
+		unlock_slurmctld(job_write_lock);
+	}
+	slurm_mutex_unlock(&update_srun_mutex);
+
+	return NULL;
+}
+
+static void _queue_update_srun(slurm_step_id_t *step_id)
+{
+	slurm_step_id_t *queue_step_id = xmalloc(sizeof(*queue_step_id));
+
+	memcpy(queue_step_id, step_id, sizeof(*step_id));
+
+	list_append(update_srun_list, queue_step_id);
+}
+
 extern void agent_init(void)
 {
 	slurm_mutex_lock(&pending_mutex);
@@ -1549,8 +1589,11 @@ extern void agent_init(void)
 		return;
 	}
 
+	update_srun_list = list_create(xfree_ptr);
+
 	slurm_thread_create_detached(_agent_init, NULL);
 	slurm_thread_create_detached(_agent_nodes_update, NULL);
+	slurm_thread_create_detached(_agent_srun_update, NULL);
 	pending_thread_running = true;
 	slurm_mutex_unlock(&pending_mutex);
 }
