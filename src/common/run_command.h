@@ -49,6 +49,7 @@ typedef struct {
 	int *status;
 	pthread_t tid;
 	bool *timed_out;
+	bool write_to_child;
 } run_command_args_t;
 
 /*
@@ -99,6 +100,8 @@ extern int run_command_count(void);
  * status OUT - Job exit code
  * tid IN - Thread we are calling from; zero if not using track_script.
  * timed_out OUT - If not NULL, then set to true if the command timed out.
+ * write_to_child IN - If true, then open another pipe so the parent can
+ *                     write data to the child.
  *
  * Return stdout+stderr of spawned program, value must be xfreed.
  */
