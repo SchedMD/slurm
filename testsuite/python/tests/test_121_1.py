@@ -1,10 +1,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scheduling of gres/gpu and gres/mps
-#
-# Requires: SelectType=select/cons_tres
-#           GresTypes=gpu,mps
-#           tty0
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
@@ -12,7 +8,7 @@ import atf
 import pytest
 import re
 
-mps_cnt = 100
+mps_cnt = 100 * 2
 job_mps = int(mps_cnt * 0.5)
 step_mps = int(job_mps * 0.5)
 
@@ -24,11 +20,13 @@ def setup():
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes("GresTypes", "gpu")
     atf.require_config_parameter_includes("GresTypes", "mps")
-    atf.require_tty(0)
+    atf.require_tty(1)
     atf.require_config_parameter(
-        "Name", {"gpu": {"File": "/dev/tty0"}, "mps": {"Count": 100}}, source="gres"
+        "Name",
+        {"gpu": {"File": "/dev/tty[0-1]"}, "mps": {"Count": f"{mps_cnt}"}},
+        source="gres",
     )
-    atf.require_nodes(2, [("Gres", f"gpu:1,mps:{mps_cnt}"), ("CPUs", 6)])
+    atf.require_nodes(2, [("Gres", f"gpu:2,mps:{mps_cnt}"), ("CPUs", 6)])
     atf.require_slurm_running()
 
 
@@ -121,8 +119,8 @@ def test_two_parallel_consumption_sbatch(mps_nodes, file_in_2a):
     match = re.findall(r"(?s)CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:(\d+)", file_output)
     assert len(match) == 3, "Bad CUDA information about job (match != 3)"
     assert (
-        sum(map(int, match)) == mps_cnt
-    ), f"Bad CUDA percentage information about job (total percent != {mps_cnt})"
+        sum(map(int, match)) == job_mps + step_mps * 2
+    ), f"Bad CUDA percentage information about job (sum(map(int, match)) != {job_mps + step_mps * 2})"
 
 
 def test_two_parallel_consumption_salloc(mps_nodes, file_in_2a):
@@ -140,8 +138,8 @@ def test_two_parallel_consumption_salloc(mps_nodes, file_in_2a):
     match = re.findall(r"(?s)CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:(\d+)", output)
     assert len(match) == 3, "Bad CUDA information about job (match != 3)"
     assert (
-        sum(map(int, match)) == mps_cnt
-    ), f"Bad CUDA percentage information about job (total percent != {mps_cnt})"
+        sum(map(int, match)) == job_mps + step_mps * 2
+    ), f"Bad CUDA percentage information about job ({sum(map(int, match))} != {job_mps + step_mps * 2})"
 
 
 def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
@@ -183,8 +181,8 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     match = re.findall(r"(?s)CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:(\d+)", file_output)
     assert len(match) == 3, "Bad CUDA information about job (match != 3)"
     assert (
-        sum(map(int, match)) == 75
-    ), f"Bad CUDA percentage information about job (total percent != 75)"
+        sum(map(int, match)) == step_mps * 3
+    ), f"Bad CUDA percentage information about job ({sum(map(int, match))} != {step_mps * 3})"
     assert atf.check_steps_delayed(
         job_id, file_output, 1
     ), "Failed to delay step for sufficient MPS resources (match != 1)"
@@ -257,7 +255,7 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
     file_in2 = atf.module_tmp_path / "input2"
     file_out1 = atf.module_tmp_path / "output1"
     file_out2 = atf.module_tmp_path / "output2"
-    job_mps2 = int(mps_cnt / 2)
+    job_mps2 = int(job_mps / 2)
 
     atf.make_bash_script(
         file_in1,
@@ -308,13 +306,12 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
     assert (
         re.search(rf"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:{job_mps2}", file_output2)
         is not None
-    ), "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not found in output2 file"
+    ), f"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:{job_mps2} not found in output2 file"
     assert (
-        re.search(rf"mps:{job_mps2}\(({job_mps2})/{mps_cnt}\)", file_output2)
-        is not None
+        re.search(rf"mps:{job_mps2}\(0/100,{job_mps2}/100\)", file_output2) is not None
     ), "Shared mps distribution across GPU devices not found in output2 file"
 
     assert (
         re.search(rf"jobid={job_id2} state=RUNNING", file_output2) is not None
-        and re.search(rf"jobid={job_id} state=RUNNING", file_output2) is None
-    ), "First job should not be running when second job is running because we have only 1 GPU"
+        and re.search(rf"jobid={job_id} state=RUNNING", file_output2) is not None
+    ), "Both jobs should be running at the same time"
