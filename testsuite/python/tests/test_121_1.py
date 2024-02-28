@@ -147,7 +147,7 @@ def test_two_parallel_consumption_salloc(mps_nodes, file_in_2a):
 
 
 def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
-    """Run three steps in parallel to make sure steps get delay as needed to avoid oversubscribing consumed MPS resources"""
+    """Run three steps in parallel to make sure steps get delayed as needed to avoid oversubscribing consumed MPS resources"""
 
     file_in2 = atf.module_tmp_path / "input2"
     file_out1 = atf.module_tmp_path / "output1"
@@ -229,7 +229,7 @@ def test_run_multi_node_job(mps_nodes, file_in_1a):
 
     job_mps2 = int(mps_cnt / 2)
     node_cnt = len(mps_nodes)
-    nodes_str = ",".join(map(str, mps_nodes))
+    nodes_str = ",".join(mps_nodes)
 
     results = atf.run_job(
         f"--gres=mps:{job_mps2} -N{node_cnt} -w {nodes_str} -t1 {file_in_1a}"
