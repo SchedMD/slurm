@@ -211,11 +211,12 @@ static void _opt_clusters(char *clusters)
 {
 	opt.ctld = true;
 	FREE_NULL_LIST(opt.clusters);
-	opt.clusters = slurmdb_get_info_cluster(clusters);
-	if (!opt.clusters) {
+
+	if (slurm_get_cluster_info(&(opt.clusters), clusters, 0)) {
 		print_db_notok(clusters, 0);
-		exit(1);
+		fatal("Could not get cluster information");
 	}
+
 	working_cluster_rec = list_peek(opt.clusters);
 }
 
