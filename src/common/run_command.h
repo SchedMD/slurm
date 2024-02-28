@@ -38,6 +38,9 @@
 
 #include "src/common/track_script.h"
 
+#define RUN_COMMAND_LAUNCHER_MODE "slurm_script_launcher"
+#define RUN_COMMAND_LAUNCHER_ARGC 3
+
 typedef struct {
 	char **env;
 	uint32_t job_id;

@@ -53,6 +53,7 @@
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/timers.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
@@ -64,6 +65,7 @@ static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
+#define _DEBUG 0
 
 extern void run_command_add_to_script(char **script_body, char *new_str)
 {
@@ -170,7 +172,7 @@ static void _kill_pg(pid_t pid)
 }
 
 static void _run_command_child(run_command_args_t *args, int write_fd,
-			       int read_fd)
+			       int read_fd, char **launcher_argv)
 {
 	int stdin_fd;
 
@@ -187,8 +189,61 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 	dup2(stdin_fd, STDIN_FILENO);
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
+
+	if (launcher_argv)
+		run_command_child_exec(script_launcher, launcher_argv,
+				       args->env);
+
 	run_command_child_pre_exec();
 	run_command_child_exec(args->script_path, args->script_argv, args->env);
+}
+
+static void _log_str_array(char *prefix, char **array)
+{
+#if _DEBUG
+	if (!array)
+		return;
+
+	info("%s: START", prefix);
+	for (int i = 0; array[i]; i++)
+		info("%s[%d]=%s", prefix, i, array[i]);
+	info("%s: END", prefix);
+#endif
+}
+
+static char **_setup_launcher_argv(run_command_args_t *args)
+{
+	char **launcher_argv = NULL;
+	int extra = RUN_COMMAND_LAUNCHER_ARGC;
+	int count = 0;
+
+	xassert(script_launcher);
+
+	_log_str_array("script_argv", args->script_argv);
+	while (args->script_argv && args->script_argv[count])
+		count++;
+
+	count = count + extra + 1; /* Add one to NULL terminate the array. */
+	launcher_argv = xcalloc(count, sizeof(launcher_argv[0]));
+
+	/*
+	 * args->script_argv[0] (launcher_argv[3]) is usually set to
+	 * script_path, but that is not guaranteed (e.g. if args->script_argv
+	 * == NULL). We want to guarantee that script_path is set, so we set
+	 * it to launcher_argv[2].
+	 */
+	launcher_argv[0] = script_launcher;
+	launcher_argv[1] = RUN_COMMAND_LAUNCHER_MODE;
+	launcher_argv[2] = (char *) args->script_path;
+	if (args->script_argv) {
+		for (int i = 0; args->script_argv[i]; i++)
+			launcher_argv[i + extra] = args->script_argv[i];
+	}
+	launcher_argv[count - 1] = NULL;
+
+	_log_str_array("launcher_argv", launcher_argv);
+
+	return launcher_argv;
 }
 
 extern void run_command_child_exec(const char *path, char **argv, char **env)
@@ -224,6 +279,7 @@ extern char *run_command(run_command_args_t *args)
 {
 	pid_t cpid;
 	char *resp = NULL;
+	char **launcher_argv = NULL;
 	int pfd_to_child[2] = { -1, -1 };
 	int pfd[2] = { -1, -1 };
 	bool free_argv = false;
@@ -267,11 +323,16 @@ extern char *run_command(run_command_args_t *args)
 	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
+
+	if (script_launcher)
+		launcher_argv = _setup_launcher_argv(args);
+
 	if ((cpid = fork()) == 0) {
 		/* Child writes to pfd[1] and reads from pfd_to_child[0] */
 		fd_close(&pfd_to_child[1]);
 		fd_close(&pfd[0]);
-		_run_command_child(args, pfd[1], pfd_to_child[0]);
+		_run_command_child(args, pfd[1], pfd_to_child[0],
+				   launcher_argv);
 		/* We should never get here. */
 	} else if (cpid < 0) {
 		close(pfd[0]);
@@ -315,6 +376,14 @@ extern char *run_command(run_command_args_t *args)
 		xfree(args->script_argv[0]);
 		xfree(args->script_argv);
 	}
+
+#if _DEBUG
+	info("%s:script=%s, resp:\n%s",
+	     __func__, args->script_path, resp);
+#endif
+
+	/* Array contents were not malloc'd, do not free */
+	xfree(launcher_argv);
 
 	return resp;
 }
