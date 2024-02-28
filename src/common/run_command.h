@@ -130,6 +130,11 @@ extern void run_command_child_exec(const char *script_path, char **argv,
 extern void run_command_child_pre_exec(void);
 
 /*
+ * Call this if a binary is running in script launcher mode.
+ */
+extern void run_command_launcher(int argc, char **argv);
+
+/*
  * Read stdout of a child process and wait for the child process to terminate.
  * Kills the child's process group once the timeout is reached.
  *

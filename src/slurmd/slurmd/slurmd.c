@@ -373,7 +373,7 @@ main (int argc, char **argv)
 	if (select_g_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize select plugins.");
 	file_bcast_init();
-	run_command_init(NULL);
+	run_command_init(conf->binary);
 	plugins_registered = true;
 
 	_create_msg_socket();
@@ -1659,6 +1659,11 @@ _process_cmdline(int ac, char **av)
 		{NULL,			0,                 0, 0}
 	};
 
+	if (ac >= RUN_COMMAND_LAUNCHER_ARGC &&
+	    !xstrcmp(av[1], RUN_COMMAND_LAUNCHER_MODE)) {
+		run_command_launcher(ac, av);
+		_exit(127); /* Should not get here */
+	}
 	conf->prog = xbasename(av[0]);
 
 	while ((c = getopt_long(ac, av, opt_string, long_options, NULL)) > 0) {

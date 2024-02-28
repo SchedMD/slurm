@@ -275,6 +275,17 @@ extern void run_command_child_pre_exec(void)
 	}
 }
 
+extern void run_command_launcher(int argc, char **argv)
+{
+	char *script_path = argv[RUN_COMMAND_LAUNCHER_ARGC - 1];
+	char **script_argv = &argv[RUN_COMMAND_LAUNCHER_ARGC];
+
+	xassert(script_path);
+	run_command_child_pre_exec();
+	run_command_child_exec(script_path, script_argv, NULL);
+	_exit(127);
+}
+
 extern char *run_command(run_command_args_t *args)
 {
 	pid_t cpid;
