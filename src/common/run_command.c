@@ -172,6 +172,17 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 	dup2(devnull, STDIN_FILENO);
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
+	run_command_child_pre_exec();
+	if (!args->env)
+		execv(args->script_path, args->script_argv);
+	else
+		execve(args->script_path, args->script_argv, args->env);
+	error("%s: execv(%s): %m", __func__, args->script_path);
+	_exit(127);
+}
+
+extern void run_command_child_pre_exec(void)
+{
 	closeall(3);
 	/* coverity[leaked_handle] */
 	setpgid(0, 0);
@@ -187,12 +198,6 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 		error("%s: Unable to setresuid()", __func__);
 		_exit(127);
 	}
-	if (!args->env)
-		execv(args->script_path, args->script_argv);
-	else
-		execve(args->script_path, args->script_argv, args->env);
-	error("%s: execv(%s): %m", __func__, args->script_path);
-	_exit(127);
 }
 
 extern char *run_command(run_command_args_t *args)

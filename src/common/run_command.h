@@ -102,6 +102,12 @@ extern int run_command_count(void);
 extern char *run_command(run_command_args_t *run_command_args);
 
 /*
+ * Called in the child before exec. Do setup like closing unneeded files and
+ * setting uid/gid.
+ */
+extern void run_command_child_pre_exec(void);
+
+/*
  * Read stdout of a child process and wait for the child process to terminate.
  * Kills the child's process group once the timeout is reached.
  *
