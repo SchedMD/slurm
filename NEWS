@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Make a job requesting --no-requeue, or JobRequeue=0 in the slurm.conf,
     supersede RequeueExit[Hold].
  -- Add sackd man page to the Debian package.
+ -- Fix issues with tasks when a job was shrinked more than once.
 
 * Changes in Slurm 23.11.4
 ==========================
