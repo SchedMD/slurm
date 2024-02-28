@@ -176,11 +176,16 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
 	run_command_child_pre_exec();
-	if (!args->env)
-		execv(args->script_path, args->script_argv);
+	run_command_child_exec(args->script_path, args->script_argv, args->env);
+}
+
+extern void run_command_child_exec(const char *path, char **argv, char **env)
+{
+	if (!env)
+		execv(path, argv);
 	else
-		execve(args->script_path, args->script_argv, args->env);
-	error("%s: execv(%s): %m", __func__, args->script_path);
+		execve(path, argv, env);
+	error("%s: execv(%s): %m", __func__, path);
 	_exit(127);
 }
 

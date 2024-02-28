@@ -102,6 +102,12 @@ extern int run_command_count(void);
 extern char *run_command(run_command_args_t *run_command_args);
 
 /*
+ * Wrapper for execv/execve. This should never return.
+ */
+extern void run_command_child_exec(const char *script_path, char **argv,
+				   char **env);
+
+/*
  * Called in the child before exec. Do setup like closing unneeded files and
  * setting uid/gid.
  */
