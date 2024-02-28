@@ -246,10 +246,13 @@ parse_command_line( int argc, char* *argv )
 
 	FREE_NULL_LIST(params.clusters);
 	if (params.cluster_names) {
-		if (!(params.clusters =
-		      slurmdb_get_info_cluster(params.cluster_names))) {
-			print_db_notok(optarg, 0);
-			exit(1);
+		if (slurm_get_cluster_info(&(params.clusters),
+					   params.cluster_names,
+					   (params.federation ?
+					    SHOW_FEDERATION : SHOW_LOCAL))) {
+
+			print_db_notok(params.cluster_names, 0);
+			fatal("Could not get cluster information");
 		}
 		working_cluster_rec = list_peek(params.clusters);
 		params.local = true;
