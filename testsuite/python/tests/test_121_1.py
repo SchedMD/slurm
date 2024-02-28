@@ -86,14 +86,16 @@ def test_environment_vars(mps_nodes):
 
     results = atf.run_job(f"--gres=mps:{job_mps} -w {mps_nodes[0]} -n1 -t1 {file_in1}")
     assert results["exit_code"] == 0, "Job failed"
-    assert re.search(r"HOST:\w+", results["stdout"]) is not None, "HOST not found"
+    assert (
+        re.search(rf"HOST:{mps_nodes[0]}", results["stdout"]) is not None
+    ), "HOST environmental variable not correct value"
     assert (
         match := re.search(r"CUDA_VISIBLE_DEVICES:(\d+)", results["stdout"])
     ) is not None and int(match.group(1)) == 0, "CUDA_VISIBLE_DEVICES != 0"
     assert (
-        re.search(r"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:(\d)+", results["stdout"])
+        re.search(rf"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:{job_mps}", results["stdout"])
         is not None
-    ), "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not found"
+    ), "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE environmental variable not correct value"
 
 
 def test_two_parallel_consumption_sbatch(mps_nodes, file_in_2a):
@@ -111,8 +113,8 @@ def test_two_parallel_consumption_sbatch(mps_nodes, file_in_2a):
 
     assert file_output is not None, "No output file"
     assert (
-        re.search(r"HOST:\w+", file_output) is not None
-    ), "HOST not found in output file"
+        len(re.findall(r"HOST:\w+", file_output)) == 3
+    ), "HOST not found 3 times, once per job step, in output file"
     assert (
         re.search(r"CUDA_VISIBLE_DEVICES:\d+", file_output) is not None
     ), "CUDA_VISIBLE_DEVICES not found in output file"
@@ -131,7 +133,9 @@ def test_two_parallel_consumption_salloc(mps_nodes, file_in_2a):
         fatal=True,
     )
 
-    assert re.search(r"HOST:\w+", output) is not None, "HOST not found in output"
+    assert (
+        len(re.findall(r"HOST:\w+", output)) == 3
+    ), "HOST not found 3 times, once per job step, in output file"
     assert (
         re.search(r"CUDA_VISIBLE_DEVICES:\d+", output) is not None
     ), "CUDA_VISIBLE_DEVICES not found in output"
@@ -173,8 +177,8 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     file_output = atf.run_command_output(f"cat {file_out1}")
     assert file_output is not None, "No output file"
     assert (
-        re.search(r"HOST:\w+", file_output) is not None
-    ), "HOST not found in output file"
+        len(re.findall(r"HOST:\w+", file_output)) == 3
+    ), "HOST not found 3 times, once per job, in output file"
     assert (
         re.search(r"CUDA_VISIBLE_DEVICES:\d+", file_output) is not None
     ), "CUDA_VISIBLE_DEVICES not found in output file"
@@ -234,7 +238,9 @@ def test_run_multi_node_job(mps_nodes, file_in_1a):
     assert results["exit_code"] == 0, "Job failed"
     host_match = re.findall(r"(?s)HOST:(\w+)", results["stdout"])
     assert len(host_match) is not None, "HOST not found"
-    assert len(host_match) > 1, "Failed to get data from multiple nodes (match < 2)"
+    assert len(host_match) == len(
+        mps_nodes
+    ), f"Failed to get data from all nodes ({len(host_match)} != {len(mps_nodes)})"
     assert (
         host_match[0] != host_match[1]
     ), f"Two tasks ran on same node {host_match.group(0)}"
