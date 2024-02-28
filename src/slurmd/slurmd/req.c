@@ -2817,27 +2817,40 @@ _rpc_reboot(slurm_msg_t *msg)
 		error("Security violation, reboot RPC from uid %u",
 		      msg->auth_uid);
 	else {
+		bool need_reboot = true;
 		cfg = slurm_conf_lock();
 		reboot_program = cfg->reboot_program;
-		if (reboot_program) {
-			bool locked = true;
-			bool need_reboot = true;
+		reboot_msg = msg->data;
+
+		if (reboot_msg && reboot_msg->features) {
+			/*
+			 * Run node_features_g_node_set first to check
+			 * if reboot will be required.
+			 */
+			info("Node reboot request with features %s being processed",
+			     reboot_msg->features);
+			node_features_g_node_set(reboot_msg->features,
+						 &need_reboot);
+		}
+		if (!need_reboot) {
+			log_flag(NODE_FEATURES, "Reboot not required - sending registration mesage");
+			conf->boot_time = time(NULL);
+			refresh_cached_features = true;
+			slurm_conf_unlock();
+			send_registration_msg(SLURM_SUCCESS);
+			return;
+		} else if (need_reboot && reboot_program) {
 			sp = strchr(reboot_program, ' ');
 			if (sp)
 				sp = xstrndup(reboot_program,
 					      (sp - reboot_program));
 			else
 				sp = xstrdup(reboot_program);
-			reboot_msg = msg->data;
 			if (reboot_msg && reboot_msg->features) {
 				/*
 				 * Run reboot_program with only arguments given
 				 * in reboot_msg->features.
 				 */
-				info("Node reboot request with features %s being processed",
-				     reboot_msg->features);
-				(void) node_features_g_node_set(
-					reboot_msg->features, &need_reboot);
 				if (reboot_msg->features[0]) {
 					xstrfmtcat(cmd, "%s '%s'",
 						   sp, reboot_msg->features);
@@ -2851,17 +2864,9 @@ _rpc_reboot(slurm_msg_t *msg)
 			}
 			if (access(sp, R_OK | X_OK) < 0)
 				error("Cannot run RebootProgram [%s]: %m", sp);
-			else if (need_reboot && (exit_code = system(cmd)))
+			else if ((exit_code = system(cmd)))
 				error("system(%s) returned %d", reboot_program,
 				      exit_code);
-			else if (!need_reboot) {
-				debug2("Reboot not required - sending registration mesage");
-				conf->boot_time = time(NULL);
-				refresh_cached_features = true;
-				slurm_conf_unlock();
-				locked = false;
-				send_registration_msg(SLURM_SUCCESS);
-			}
 			xfree(sp);
 			xfree(cmd);
 
@@ -2871,11 +2876,10 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * case that fails to shut things down this will at
 			 * least offline this node until someone intervenes.
 			 */
-			if (need_reboot && cfg->conf_flags & CTL_CONF_SHR) {
+			if (cfg->conf_flags & CTL_CONF_SHR) {
 				slurmd_shutdown(SIGTERM);
 			}
-			if (locked)
-				slurm_conf_unlock();
+			slurm_conf_unlock();
 		} else {
 			error("RebootProgram isn't defined in config");
 			slurm_conf_unlock();
