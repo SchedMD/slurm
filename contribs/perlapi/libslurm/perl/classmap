@@ -8,8 +8,8 @@ $slurm_perl_api::class_map = {
 	"slurm_t" 			=> "Slurm",
 	"bitstr_tPtr"		 	=> "Slurm::Bitstr",
 	"hostlist_tPtr" 		=> "Slurm::Hostlist",
-	"List" 				=> "Slurm::List",
-	"ListIterator"			=> "Slurm::ListIterator",
+	"list_tPtr"			=> "Slurm::List",
+	"list_itr_tPtr"			=> "Slurm::ListIterator",
 
 	"dynamic_plugin_data_tPtr"	=> "Slurm::dynamic_plugin_data_t",
 	"job_resources_tPtr"		=> "Slurm::job_resources_t",
