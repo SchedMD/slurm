@@ -349,6 +349,8 @@ extern char *run_command(run_command_args_t *args)
 		fd_close(&pfd_to_child[0]);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
+		if (args->cb)
+			args->cb(pfd_to_child[1], args->cb_arg);
 		/*
 		 * Close the write pipe to the child immediately after it is
 		 * used, before calling run_command_poll_child(). This means

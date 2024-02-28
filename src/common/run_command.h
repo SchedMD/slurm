@@ -42,6 +42,8 @@
 #define RUN_COMMAND_LAUNCHER_ARGC 3
 
 typedef struct {
+	void (*cb)(int write_fd, void *cb_arg);
+	void *cb_arg;
 	char **env;
 	uint32_t job_id;
 	int max_wait;
@@ -92,6 +94,10 @@ extern int run_command_count(void);
  *
  * The following describes the variables in run_command_args_t:
  *
+ * cb - If set, this callback function is called in the parent immediately after
+ *      the child is launched. write_fd is set to a valid file descriptor if
+ *      write_to_child is true; otherwise, write_fd is -1.
+ * cb_arg - Optional argument to be passed to the callback function.
  * env IN - environment for the command, if NULL execv is used
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
