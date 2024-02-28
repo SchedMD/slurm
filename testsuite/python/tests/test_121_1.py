@@ -27,6 +27,7 @@ def setup():
         source="gres",
     )
     atf.require_nodes(2, [("Gres", f"gpu:2,mps:{mps_cnt}"), ("CPUs", 6)])
+    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 
@@ -245,17 +246,9 @@ def test_run_multi_node_job(mps_nodes, file_in_1a):
         host_match[0] != host_match[1]
     ), f"Two tasks ran on same node {host_match.group(0)}"
 
-    if atf.get_config_parameter("frontendname") != "MISSING":
-        atf.log_debug("Duplicate SLURMD_HOSTNAME in front-end mode as expected")
-
 
 def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
     """Make sure that gres/gpu and gres/mps jobs either do not share the same GPU or run at different times"""
-
-    if atf.get_config_parameter("frontendname") != None:
-        atf.log_debug(f"par: {atf.get_config_parameter('frontendname')}")
-        fname = atf.get_config_parameter("frontendname")
-        pytest.skip(f"SKIP: Subtest 7 doesn't work with front_end ({fname})")
 
     file_in1 = atf.module_tmp_path / "input1"
     file_in2 = atf.module_tmp_path / "input2"
