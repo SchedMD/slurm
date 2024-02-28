@@ -932,18 +932,12 @@ extern int register_path_tag(const char *str_path)
 	};
 	entry_t *entries = _parse_openapi_path(str_path, NULL);
 
-	if (!entries) {
-		debug4("%s: _parse_openapi_path(%s) failed",
-		       __func__, str_path);
-		goto cleanup;
-	}
+	if (!entries)
+		fatal("%s: _parse_openapi_path(%s) failed", __func__, str_path);
 
 	spec_entry = _find_spec_path(str_path, &args.spec);
-	if (!spec_entry) {
-		debug4("%s: _find_spec_path(%s) failed",
-		       __func__, str_path);
-		goto cleanup;
-	}
+	if (!spec_entry)
+		fatal("%s: _find_spec_path(%s) failed", __func__, str_path);
 
 	if (data_get_type(spec_entry) != DATA_TYPE_DICT) {
 		debug4("%s: ignoring %s at %s",
