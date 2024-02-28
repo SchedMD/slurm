@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix GresUsed output from `scontrol show nodes --details` showing  GRES types
     that are not configured on a node.
  -- slurmrestd - Fatal during start up when loading content plugin fails.
+ -- slurmrestd - Reduce complexity in URL path matching.
 
 * Changes in Slurm 23.11.5
 ==========================

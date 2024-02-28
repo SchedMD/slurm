@@ -1133,6 +1133,8 @@ static int _match_path_from_data(void *x, void *key)
 
 	args->path = path;
 	for (method = path->methods; method->entries; method++) {
+		int entries = 0;
+
 		if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 			xfree(src_path);
 			src_path = _entry_to_string(method->entries);
@@ -1144,6 +1146,17 @@ static int _match_path_from_data(void *x, void *key)
 			       get_http_method_string(args->method),
 			       get_http_method_string(method->method),
 			       dst_path, (uintptr_t) args->dpath);
+			continue;
+		}
+
+		for (args->entry = method->entries; args->entry->type;
+		     entries++, args->entry++)
+			/* do nothing */;
+
+		if (data_get_list_length(args->dpath) != entries) {
+			debug5("%s: skip non-matching subdirectories: registered=%u requested=%zu ",
+			       __func__, entries,
+			       data_get_list_length(args->dpath));
 			continue;
 		}
 
