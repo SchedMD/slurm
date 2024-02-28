@@ -2531,8 +2531,9 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 		error("%s: hostlist is NULL", __func__);
 		return;
 	}
-	if (!slurm_conf.reboot_program) {
-		error("%s: RebootProgram is NULL", __func__);
+	if ((!slurm_conf.reboot_program) ||
+	    (!slurm_conf.reboot_program[0])) {
+		error("%s: Requested reboot from slurmctld but RebootProgram is not defined", __func__);
 		return;
 	}
 
