@@ -3100,7 +3100,10 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	List tried_feds = NULL;
 
 	*cluster_rec = NULL;
-	cluster_list = slurmdb_get_info_cluster(cluster_names);
+
+	if (slurm_get_cluster_info(&(cluster_list), cluster_names, 0)) {
+		return SLURM_ERROR;
+	}
 
 	/* return if we only have 1 or less clusters here */
 	if (!cluster_list || !list_count(cluster_list)) {
