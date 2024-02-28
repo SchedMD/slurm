@@ -7652,7 +7652,14 @@ static void
 _pack_step_complete_msg(step_complete_msg_t * msg, buf_t *buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack32((uint32_t)msg->range_first, buffer);
+		pack32((uint32_t)msg->range_last, buffer);
+		pack32((uint32_t)msg->step_rc, buffer);
+		jobacctinfo_pack(msg->jobacct, protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32((uint32_t)msg->range_first, buffer);
 		pack32((uint32_t)msg->range_last, buffer);
@@ -7671,7 +7678,18 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, buf_t *buffer,
 	msg = xmalloc(sizeof(step_complete_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&msg->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&msg->range_first, buffer);
+		safe_unpack32(&msg->range_last, buffer);
+		safe_unpack32(&msg->step_rc, buffer);
+		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
