@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix salloc/sbatch/srun crashing with certain invalid nodelist requests.
  -- Optimize jobacctgather by not iterating every time over pids that have
     already finished.
+ -- Remote SPANK callbacks invoked by srun get called once instead of twice.
 
 * Changes in Slurm 23.11.6
 ==========================
