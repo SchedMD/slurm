@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include "src/common/data.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 #include "src/interfaces/serializer.h"
@@ -60,10 +61,8 @@ static void _opt_env(void)
 	char *env_val;
 
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
-		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
-			print_db_notok(env_val, 1);
-			exit(1);
-		}
+		xfree(params.cluster_names);
+		params.cluster_names = xstrdup(env_val);
 	}
 }
 
@@ -117,12 +116,8 @@ extern void parse_command_line(int argc, char **argv)
 				params.sort = SORT_ID;
 				break;
 			case (int)'M':
-				if (params.clusters)
-					FREE_NULL_LIST(params.clusters);
-				if (!(params.clusters = slurmdb_get_info_cluster(optarg))) {
-					print_db_notok(optarg, 0);
-					exit(1);
-				}
+				xfree(params.cluster_names);
+				params.cluster_names = xstrdup(optarg);
 				break;
 			case (int)'r':
 				params.mode = STAT_COMMAND_RESET;
@@ -160,6 +155,16 @@ extern void parse_command_line(int argc, char **argv)
 				exit(0);
 				break;
 		}
+	}
+
+	FREE_NULL_LIST(params.clusters);
+	if (params.cluster_names) {
+		if (!(params.clusters =
+		      slurmdb_get_info_cluster(params.cluster_names))) {
+			print_db_notok(optarg, 0);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(params.clusters);
 	}
 
 	if (params.clusters) {
