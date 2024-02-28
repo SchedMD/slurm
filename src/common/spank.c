@@ -187,8 +187,9 @@ static int _spank_option_register(struct spank_plugin *p,
 static int _spank_stack_load (struct spank_stack *stack, const char *file);
 static void _spank_plugin_destroy (struct spank_plugin *);
 static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
-static void _spank_stack_get_remote_options(struct spank_stack *, List);
-static void _spank_stack_get_remote_options_env(struct spank_stack *, char **);
+static void _spank_stack_get_remote_options(struct spank_stack *, List, List);
+static void _spank_stack_get_remote_options_env(struct spank_stack *, char **,
+						List);
 static void _spank_stack_set_remote_options_env(struct spank_stack *stack);
 static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
 static char *_opt_env_name(struct spank_plugin_opt *p, char *buf, size_t siz);
@@ -786,15 +787,18 @@ int _spank_init(enum spank_context_type context, stepd_step_rec_t *step)
 static int spank_stack_post_opt (struct spank_stack * stack,
 				 stepd_step_rec_t *step)
 {
+	List found_opts = job_options_create();
+
 	/*
 	 *  Get any remote options from job launch message:
 	 */
-	_spank_stack_get_remote_options(stack, step->options);
+	_spank_stack_get_remote_options(stack, step->options, found_opts);
 
 	/*
 	 *  Get any remote option passed thru environment
 	 */
-	_spank_stack_get_remote_options_env(stack, step->env);
+	_spank_stack_get_remote_options_env(stack, step->env, found_opts);
+	list_destroy(found_opts);
 
 	/*
 	 * Now clear any remaining options passed through environment
@@ -1637,8 +1641,27 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 	return (ESPANK_SUCCESS);
 }
 
+static int _opt_info_find(struct job_option_info *info,
+			  struct spank_plugin_opt *opt)
+{
+	char *buf;
+	char *name = NULL;
+	bool match = true;
+
+	buf = xstrdup(info->option);
+	if ((name = xstrchr(buf, ':')))
+		*(name++) = '\0';
+
+	if (xstrcmp(opt->plugin->name, name) ||
+	    xstrcmp(opt->opt->name, buf))
+		match = false;
+
+	xfree(buf);
+	return match;
+}
+
 static void _spank_stack_get_remote_options_env(struct spank_stack *stack,
-						char **env)
+						char **env, List found_opts)
 {
 	char var [1024];
 	const char *arg;
@@ -1651,6 +1674,10 @@ static void _spank_stack_get_remote_options_env(struct spank_stack *stack,
 
 	i = list_iterator_create (option_cache);
 	while ((option = list_next (i))) {
+		if (list_find_first(found_opts, (ListFindF) _opt_info_find,
+				    option))
+			continue;
+
 		if (!(arg = getenvp (env, _opt_env_name (option, var, sizeof(var)))))
 			continue;
 
@@ -1670,7 +1697,7 @@ static void _spank_stack_get_remote_options_env(struct spank_stack *stack,
 }
 
 static void _spank_stack_get_remote_options(struct spank_stack *stack,
-					    List opts)
+					    List opts, List found_opts)
 {
 	const struct job_option_info *j;
 	list_itr_t *li;
@@ -1692,6 +1719,8 @@ static void _spank_stack_get_remote_options(struct spank_stack *stack,
 			error("spank: failed to process option %s=%s",
 			      opt->opt->name, j->optarg);
 		}
+
+		job_options_append(found_opts, j->type, j->option, j->optarg);
 	}
 	list_iterator_destroy(li);
 }
