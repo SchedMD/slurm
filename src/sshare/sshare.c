@@ -142,10 +142,9 @@ int main (int argc, char **argv)
 			break;
 		case 'M':
 			FREE_NULL_LIST(clusters);
-			if (!(clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			if (slurm_get_cluster_info(&(clusters), optarg, 0)) {
 				print_db_notok(optarg, 0);
-				exit(1);
+				fatal("Could not get cluster information");
 			}
 			working_cluster_rec = list_peek(clusters);
 			break;
