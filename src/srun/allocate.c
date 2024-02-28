@@ -666,9 +666,9 @@ extern List existing_allocation(void)
 
 	if (opt.clusters) {
 		List clusters = NULL;
-		if (!(clusters = slurmdb_get_info_cluster(opt.clusters))) {
+		if (slurm_get_cluster_info(&(clusters), opt.clusters, 0)) {
 			print_db_notok(opt.clusters, 0);
-			exit(1);
+			fatal("Could not get cluster information");
 		}
 		working_cluster_rec = list_peek(clusters);
 		debug2("Looking for job %d on cluster %s (addr: %s)",
