@@ -304,8 +304,6 @@ main (int argc, char **argv)
 
 	_process_cmdline(argc, argv);
 
-	run_command_init(NULL);
-
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = argv;
@@ -316,6 +314,8 @@ main (int argc, char **argv)
 
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
+
+	run_command_init(conf->stepd_loc);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
@@ -679,6 +679,11 @@ static void _process_cmdline(int argc, char **argv)
 		if (_handle_spank_mode(argc, argv) < 0)
 			exit(1);
 		exit(0);
+	}
+	if (argc >= RUN_COMMAND_LAUNCHER_ARGC &&
+	    !xstrcmp(argv[1], RUN_COMMAND_LAUNCHER_MODE)) {
+		run_command_launcher(argc, argv);
+		_exit(127); /* Should not get here */
 	}
 }
 
