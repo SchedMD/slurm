@@ -2058,7 +2058,7 @@ static void _set_type_tres_cnt(List gres_list,
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
 	bool typeless_found = false, typeless = false;
-	char *col_name = NULL;
+	char *col_name = NULL, *prev_gres_name = NULL;
 	uint64_t count;
 	int tres_pos;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -2091,6 +2091,25 @@ static void _set_type_tres_cnt(List gres_list,
 			gres_job_state_t *gres_js = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
 			count = gres_js->total_gres;
+
+			/*
+			 * Resetting typeless_found to false when GRES name
+			 * changes with respect to previous iteration until it
+			 * is found again.
+			 *
+			 * This is needed in situations like i.e.:
+			 * "--gres=gpu:1,tmpfs:foo:2,tmpfs:bar:7" where typeless
+			 * is found for GRES name "gpu" but then for "tmpfs"
+			 * it isn't, and thus the logic later around
+			 * typeless_found would not set the count for "tmpfs"
+			 * off of the sum of tmpfs:foo and tmpfs:bar counts.
+			 */
+			if (xstrcmp(prev_gres_name, tres_rec.name)) {
+				typeless_found = false;
+				xfree(prev_gres_name);
+				prev_gres_name = xstrdup(tres_rec.name);
+			}
+
 			if (!gres_js->type_name) {
 				typeless_found = true;
 				typeless = true;
@@ -2205,6 +2224,7 @@ static void _set_type_tres_cnt(List gres_list,
 		}
 	}
 	list_iterator_destroy(itr);
+	xfree(prev_gres_name);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
