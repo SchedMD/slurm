@@ -71,6 +71,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -449,6 +450,7 @@ int main(int argc, char **argv)
 	 * signals.
 	 */
 	slurmscriptd_init(argc, argv);
+	run_command_init();
 
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {
@@ -734,6 +736,7 @@ int main(int argc, char **argv)
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
 		slurmscriptd_flush();
+		run_command_shutdown();
 
 		bb_g_fini();
 		mcs_g_fini();

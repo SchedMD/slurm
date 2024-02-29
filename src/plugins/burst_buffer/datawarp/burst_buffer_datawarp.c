@@ -2535,7 +2535,6 @@ extern int init(void)
 	_test_config();
 	log_flag(BURST_BUF, "");
 	bb_alloc_cache(&bb_state);
-	run_command_init();
 	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2550,7 +2549,6 @@ extern int fini(void)
 {
 	int pc, last_pc = 0;
 
-	run_command_shutdown();
 	while ((pc = run_command_count()) > 0) {
 		if ((last_pc != 0) && (last_pc != pc)) {
 			info("waiting for %d running processes",
