@@ -243,6 +243,10 @@ attempting to connect to.</p>
 <p>One common authentication problem is an expired token. Request a new one:
 <pre>unset SLURM_JWT; export $(scontrol token)</pre></p>
 
+<p>This solution also applies to an HTTP 401 error caused by no authentication
+token being sent at all. This may appear in the slurmrestd logs as
+"Authentication does not apply to request."</p>
+
 <p>Otherwise, consult the logs on the <b>slurmctld</b> and <b>slurmdbd</b>.</p>
 
 <h3 id="invalid_url">Unable to find requested URL (HTTP 404)
