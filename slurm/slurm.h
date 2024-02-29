@@ -1957,6 +1957,21 @@ typedef struct job_info_msg {
 	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint32_t array_job_id;
+	uint32_t array_task_id;
+	bitstr_t *array_task_id_bitmap;
+	/* state of the job; see enum job_states and JOB_* macros */
+	uint32_t het_job_id; /* JobId of hetjob leader */
+	uint32_t state;
+} job_state_response_job_t;
+
+typedef struct {
+	uint16_t jobs_count;
+	job_state_response_job_t *jobs;
+} job_state_response_msg_t;
+
 typedef struct step_update_request_msg {
 	uint32_t job_id;
 	uint32_t step_id;
@@ -3965,6 +3980,9 @@ extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
  */
 extern void slurm_free_job_info_msg(job_info_msg_t *job_buffer_ptr);
 
+/* Free jobs states response message */
+extern void slurm_free_job_state_response_msg(job_state_response_msg_t *msg);
+
 /*
  * slurm_free_priority_factors_response_msg - free the job priority factor
  *	information response message
@@ -4052,6 +4070,18 @@ extern int slurm_load_job_user(job_info_msg_t **job_info_msg_pptr,
 extern int slurm_load_jobs(time_t update_time,
 			   job_info_msg_t **job_info_msg_pptr,
 			   uint16_t show_flags);
+
+/*
+ * slurm_load_job_state - issue RPC to get state of requested jobs
+ * IN job_id_count - number of jobs in job_ids pointer.
+ * 	job_id_count may be 0 to indicate all jobs are requested.
+ * IN job_ids - ptr to array of jobs with job_ids to query
+ * IN/OUT jsr_pptr - place to store a query response pointer
+ * RET SLURM_SUCCESS or error
+ * NOTE: free the response using slurm_free_job_state_response_msg
+ */
+extern int slurm_load_job_state(int job_id_count, uint32_t *job_ids,
+				job_state_response_msg_t **jsr_pptr);
 
 /*
  * slurm_notify_job - send message to the job's stdout,

@@ -7017,6 +7017,112 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_job_state_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_state_request_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(msg->job_id_count, buffer);
+		for (int i = 0; i < msg->job_id_count; i++)
+			pack32(msg->job_ids[i], buffer);
+	}
+}
+
+static int _unpack_job_state_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_state_request_msg_t *js = xmalloc(sizeof(*js));
+	smsg->data = js;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&js->job_id_count, buffer);
+
+		if (js->job_id_count >= MAX_JOB_ID)
+			goto unpack_error;
+
+		if (js->job_id_count &&
+		    !(js->job_ids = try_xcalloc(js->job_id_count,
+						sizeof(*js->job_ids))))
+			goto unpack_error;
+
+		for (int i = 0; i < js->job_id_count; i++)
+			safe_unpack32(&js->job_ids[i], buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	smsg->data = NULL;
+	slurm_free_job_state_request_msg(js);
+	return SLURM_ERROR;
+}
+
+static void _pack_job_state_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_state_response_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(msg->jobs_count, buffer);
+		for (int i = 0; i < msg->jobs_count; i++) {
+			job_state_response_job_t *job = &msg->jobs[i];
+			pack32(job->job_id, buffer);
+			pack32(job->array_job_id, buffer);
+			if (job->array_job_id) {
+				pack32(job->array_task_id, buffer);
+				pack_bit_str_hex(job->array_task_id_bitmap,
+						 buffer);
+
+				xassert(!job->het_job_id);
+			} else {
+				pack32(job->het_job_id, buffer);
+
+				xassert(job->array_task_id == NO_VAL);
+				xassert(!job->array_task_id_bitmap);
+			}
+			pack32(job->state, buffer);
+		}
+	}
+}
+
+static int _unpack_job_state_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_state_response_msg_t *jsr = xmalloc(sizeof(*jsr));
+	smsg->data = jsr;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&jsr->jobs_count, buffer);
+
+		if (jsr->jobs_count >= MAX_JOB_ID)
+			goto unpack_error;
+
+		if (jsr->jobs_count &&
+		    !(jsr->jobs =
+			      try_xcalloc(jsr->jobs_count, sizeof(*jsr->jobs))))
+			goto unpack_error;
+
+		for (int i = 0; i < jsr->jobs_count; i++) {
+			job_state_response_job_t *job = &jsr->jobs[i];
+			safe_unpack32(&job->job_id, buffer);
+			safe_unpack32(&job->array_job_id, buffer);
+			if (job->array_job_id) {
+				safe_unpack32(&job->array_task_id, buffer);
+				unpack_bit_str_hex(&job->array_task_id_bitmap,
+						   buffer);
+			} else {
+				safe_unpack32(&job->het_job_id, buffer);
+				job->array_task_id = NO_VAL;
+			}
+			safe_unpack32(&job->state, buffer);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	smsg->data = NULL;
+	slurm_free_job_state_response_msg(jsr);
+	return SLURM_ERROR;
+}
+
 static int _unpack_burst_buffer_info_msg(
 	burst_buffer_info_msg_t **burst_buffer_info, buf_t *buffer,
 	uint16_t protocol_version)
@@ -10479,6 +10585,12 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					   msg->data, buffer,
 					   msg->protocol_version);
 		break;
+	case REQUEST_JOB_STATE:
+		_pack_job_state_request_msg(msg, buffer);
+		break;
+	case RESPONSE_JOB_STATE:
+		_pack_job_state_response_msg(msg, buffer);
+		break;
 	case REQUEST_CANCEL_JOB_STEP:
 	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
@@ -11121,6 +11233,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
 						  & (msg->data), buffer,
 						  msg->protocol_version);
+		break;
+	case REQUEST_JOB_STATE:
+		rc = _unpack_job_state_request_msg(msg, buffer);
+		break;
+	case RESPONSE_JOB_STATE:
+		rc = _unpack_job_state_response_msg(msg, buffer);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
 	case REQUEST_KILL_JOB:
