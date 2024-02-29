@@ -70,7 +70,12 @@
 #define OPT_LONG_JSON         0x110
 #define OPT_LONG_YAML         0x111
 #define OPT_LONG_AUTOCOMP     0x112
-#define OPT_LONG_STATE_ONLY   0x114
+/*
+ * OPT_LONG_STATE_ONLY was added in 23.11.5. At the time, the master branch
+ * already used up to 0x116. So, OPT_LONG_STATE_ONLY was set to 0x117. We
+ * are setting it to 0x117 here as well to be consistent.
+ */
+#define OPT_LONG_STATE_ONLY   0x117
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
