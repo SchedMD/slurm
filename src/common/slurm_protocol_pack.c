@@ -7061,7 +7061,7 @@ static void _pack_job_state_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	job_state_response_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(msg->jobs_count, buffer);
+		pack32(msg->jobs_count, buffer);
 		for (int i = 0; i < msg->jobs_count; i++) {
 			job_state_response_job_t *job = &msg->jobs[i];
 			pack32(job->job_id, buffer);
@@ -7089,7 +7089,7 @@ static int _unpack_job_state_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	smsg->data = jsr;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&jsr->jobs_count, buffer);
+		safe_unpack32(&jsr->jobs_count, buffer);
 
 		if (jsr->jobs_count >= MAX_JOB_ID)
 			goto unpack_error;

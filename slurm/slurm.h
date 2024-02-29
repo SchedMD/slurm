@@ -1968,7 +1968,7 @@ typedef struct {
 } job_state_response_job_t;
 
 typedef struct {
-	uint16_t jobs_count;
+	uint32_t jobs_count;
 	job_state_response_job_t *jobs;
 } job_state_response_msg_t;
 

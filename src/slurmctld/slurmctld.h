@@ -2063,9 +2063,9 @@ extern int num_pending_job_array_tasks(uint32_t array_job_id);
  * IN/OUT jobs_pptr - pointer to dumped jobs array
  * RET SLURM_SUCCESS or error
  */
-extern int dump_job_state(const uint16_t filter_jobs_count,
+extern int dump_job_state(const uint32_t filter_jobs_count,
 			  const uint32_t *filter_jobs_ptr,
-			  uint16_t *jobs_count_ptr,
+			  uint32_t *jobs_count_ptr,
 			  job_state_response_job_t **jobs_pptr);
 
 /*

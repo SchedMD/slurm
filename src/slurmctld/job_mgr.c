@@ -166,7 +166,7 @@ typedef struct {
 
 typedef struct {
 	int rc;
-	uint16_t *jobs_count_ptr;
+	uint32_t *jobs_count_ptr;
 	job_state_response_job_t **jobs_pptr;
 } job_state_args_t;
 
@@ -10314,9 +10314,9 @@ static int _foreach_job_state_filter(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern int dump_job_state(const uint16_t filter_jobs_count,
+extern int dump_job_state(const uint32_t filter_jobs_count,
 			  const uint32_t *filter_jobs_ptr,
-			  uint16_t *jobs_count_ptr,
+			  uint32_t *jobs_count_ptr,
 			  job_state_response_job_t **jobs_pptr)
 {
 	job_state_args_t args = {
