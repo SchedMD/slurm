@@ -329,7 +329,8 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 		 *
 		 * So this is the best I could figure out at the moment.
 		 */
-		query = xstrdup_printf("select id_assoc, acct, user from %s", table_name);
+		query = xstrdup_printf("select id_assoc, acct, user, `partition` from %s",
+				       table_name);
 		if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 			xfree(query);
 			rc = SLURM_ERROR;
@@ -338,8 +339,9 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 		xfree(query);
 		while ((row = mysql_fetch_row(result))) {
 			xstrfmtcatat(query, &insert_pos,
-				     "call set_lineage(%s, '%s', '%s', '%s');",
-				     row[0], row[1], row[2], table_name);
+				     "call set_lineage(%s, '%s', '%s', '%s', '%s');",
+				     row[0], row[1], row[2], row[3],
+				     table_name);
 			if ((insert_pos - query) > max_query_size) {
 				list_append(query_list, query);
 				query = NULL;
