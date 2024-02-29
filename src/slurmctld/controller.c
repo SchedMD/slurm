@@ -466,8 +466,8 @@ int main(int argc, char **argv)
 	 * happen after we block signals so that thread doesn't catch any
 	 * signals.
 	 */
-	slurmscriptd_init(argc, argv);
-	run_command_init(NULL);
+	slurmscriptd_init(argc, argv, binary);
+	run_command_init(binary);
 
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {
@@ -2751,6 +2751,12 @@ static void _parse_commandline(int argc, char **argv)
 		{"version", no_argument, 0, 'V'},
 		{NULL, 0, 0, 0}
 	};
+
+	if (argc >= RUN_COMMAND_LAUNCHER_ARGC &&
+	    !xstrcmp(argv[1], RUN_COMMAND_LAUNCHER_MODE)) {
+		run_command_launcher(argc, argv);
+		_exit(127); /* Should not get here */
+	}
 
 	opterr = 0;
 	while ((c = getopt_long(argc, argv, "cdDf:hiL:n:rRsvV",

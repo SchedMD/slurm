@@ -36,7 +36,7 @@
 #ifndef _HAVE_SLURMSCRIPTD_H
 #define _HAVE_SLURMSCRIPTD_H
 
-extern int slurmscriptd_init(int argc, char **argv);
+extern int slurmscriptd_init(int argc, char **argv, char *binary_path);
 
 extern int slurmscriptd_fini(void);
 

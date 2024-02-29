@@ -1088,9 +1088,9 @@ static void _setup_eio(int fd)
 	eio_new_initial_obj(msg_handle, eio_obj);
 }
 
-static void _slurmscriptd_mainloop(void)
+static void _slurmscriptd_mainloop(char *binary_path)
 {
-	run_command_init(NULL);
+	run_command_init(binary_path);
 	_setup_eio(slurmscriptd_readfd);
 
 	debug("%s: started", __func__);
@@ -1420,7 +1420,7 @@ extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
 			      false, NULL, NULL);
 }
 
-extern int slurmscriptd_init(int argc, char **argv)
+extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
 {
 	int to_slurmscriptd[2] = {-1, -1};
 	int to_slurmctld[2] = {-1, -1};
@@ -1560,7 +1560,7 @@ extern int slurmscriptd_init(int argc, char **argv)
 
 		slurm_mutex_init(&powersave_script_count_mutex);
 		slurm_mutex_init(&write_mutex);
-		_slurmscriptd_mainloop();
+		_slurmscriptd_mainloop(binary_path);
 
 #ifdef MEMORY_LEAK_DEBUG
 		track_script_fini();
