@@ -15,6 +15,36 @@ See also:
 </ul>
 </p>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#prereq">Prerequisites</a></li>
+<li><a href="#quick_start">Quick Start</a>
+  <ul>
+  <li><a href="#systemd">Running with systemd</a></li>
+  <li><a href="#customization">Customizing slurmrestd.service</a></li>
+  </ul>
+</li>
+<li><a href="#basic_usage">Basic Usage</a>
+  <ul>
+  <li><a href="#tokens">Token management</a></li>
+  </ul>
+</li>
+<li><a href="#common_issues">Common Issues</a>
+  <ul>
+  <li><a href="#bind_socket">Unable to bind socket</a></li>
+  <li><a href="#connection_refused">Connection refused</a></li>
+  <li><a href="#authentication_error">Protocol authentication error (HTTP 500)
+      </a></li>
+  <li><a href="#invalid_url">Unable to find requested URL (HTTP 404)</a></li>
+  <li><a href="#rejected_token">Rejecting thread config token (HTTP 401)
+      </a></li>
+  <li><a href="#unexpected_character">Unexpected URL character (HTTP 400)
+      </a></li>
+  <li><a href="#slurm_commands">Other Slurm commands not working</a></li>
+  </ul>
+</li>
+</ul>
+
 <h2 id="prereq">Prerequisites
 <a class="slurm_link" href="#prereq"></a></h2>
 <p>The following development libraries are required at compile time
@@ -287,6 +317,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 28 February 2024</p>
+<p style="text-align:center;">Last modified 29 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
