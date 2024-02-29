@@ -110,8 +110,9 @@ directory in this example will be cleaned up by systemd once the user logs
 out of the node.
 </p>
 
-<ul>
-<li>oci.conf example for runc using create/start:
+<h3 id="runc_create_start">oci.conf example for runc using create/start:
+<a class="slurm_link" href="#runc_create_start"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -120,9 +121,12 @@ RunTimeCreate="runc --rootless=true --root=/run/user/%U/ create %n.%u.%j.%s.%t -
 RunTimeStart="runc --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for runc using run (suggested):
+<h3 id="runc_run">oci.conf example for runc using run (suggested):
+<a class="slurm_link" href="#runc_run"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -130,9 +134,12 @@ RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 RunTimeRun="runc --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for crun using create/start:
+<h3 id="crun_create_start">oci.conf example for crun using create/start:
+<a class="slurm_link" href="#crun_create_start"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -141,9 +148,12 @@ RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 RunTimeCreate="crun --rootless=true --root=/run/user/%U/ create --bundle %b %n.%u.%j.%s.%t"
 RunTimeStart="crun --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for crun using run (suggested):
+<h3 id="crun_run">oci.conf example for crun using run (suggested):
+<a class="slurm_link" href="#crun_run"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -151,9 +161,13 @@ RunTimeQuery="crun --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 RunTimeRun="crun --rootless=true --root=/run/user/%U/ run --bundle %b %n.%u.%j.%s.%t"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for nvidia-container-runtime using create/start:
+<h3 id="nvidia_create_start">
+oci.conf example for nvidia-container-runtime using create/start:
+<a class="slurm_link" href="#nvidia_create_start"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -162,9 +176,13 @@ RunTimeCreate="nvidia-container-runtime --rootless=true --root=/run/user/%U/ cre
 RunTimeStart="nvidia-container-runtime --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for nvidia-container-runtime using run (suggested):
+<h3 id="nvidia_run">
+oci.conf example for nvidia-container-runtime using run (suggested):
+<a class="slurm_link" href="#nvidia_run"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -172,9 +190,14 @@ RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ stat
 RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
-</pre></li>
+</pre>
+</p>
 
-<li>oci.conf example for <a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">Singularity v4.0.2</a> using native runime:
+<h3 id="singularity_native">oci.conf example for
+<a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
+Singularity v4.0.2</a> using native runtime:
+<a class="slurm_link" href="#singularity_native"></a></h3>
+<p>
 <pre>
 IgnoreFileConfigJson=true
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -183,10 +206,13 @@ RunTimeRun="singularity exec --userns --sif-fuse %r %@"
 RunTimeKill="kill -s SIGTERM %p"
 RunTimeDelete="kill -s SIGKILL %p"
 </pre>
-</li>
+</p>
 
-<li>oci.conf example for <a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">Singularity v4.0.2</a> in OCI mode:
-<br>
+<h3 id="singularity_oci">oci.conf example for
+<a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
+Singularity v4.0.2</a> in OCI mode:
+<a class="slurm_link" href="#singularity_oci"></a></h3>
+<p>
 Singularity v4.x requires setuid mode for OCI support.
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -196,12 +222,15 @@ RunTimeRun="sudo singularity oci run --bundle %b %n.%u.%j.%s.%t"
 RunTimeKill="sudo singularity oci kill %n.%u.%j.%s.%t"
 RunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t"
 </pre>
-<b>WARNING</b>: Singularity (v4.0.2) requires <i>sudo</i> for OCI support,
-which is a security risk since the user is able to modify these calls.
-This example is only provided for testing purposes.
-</li>
+</p>
 
-<li>oci.conf example for hpcng Singularity v3.8.0:
+<p><b>WARNING</b>: Singularity (v4.0.2) requires <i>sudo</i> for OCI support,
+which is a security risk since the user is able to modify these calls.
+This example is only provided for testing purposes.</p>
+
+<h3 id="singularity_hpcng">oci.conf example for hpcng Singularity v3.8.0:
+<a class="slurm_link" href="#singularity_hpcng"></a></h3>
+<p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -211,13 +240,16 @@ OCIRunTimeStart="sudo singularity oci start %n.%u.%j.%s.%t"
 OCIRunTimeKill="sudo singularity oci kill %n.%u.%j.%s.%t"
 OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 </pre>
-<b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> for OCI support,
-which is a security risk since the user is able to modify these calls.
-This example is only provided for testing purposes.
-</li>
+</p>
 
-<li>oci.conf example for
+<p><b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> for OCI support,
+which is a security risk since the user is able to modify these calls.
+This example is only provided for testing purposes.</p>
+
+<h3 id="charliecloud">oci.conf example for
 <a href="https://github.com/hpc/charliecloud">Charliecloud</a> (v0.30)
+<a class="slurm_link" href="#charliecloud"></a></h3>
+<p>
 <pre>
 IgnoreFileConfigJson=true
 CreateEnvFile=newline
@@ -227,10 +259,12 @@ RunTimeRun="env -i PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin/:
 RunTimeKill="kill -s SIGTERM %p"
 RunTimeDelete="kill -s SIGKILL %p"
 </pre>
-</li>
+</p>
 
-<li>oci.conf example for
+<h3 id="enroot">oci.conf example for
 <a href="https://github.com/NVIDIA/enroot">Enroot</a> (3.3.0)
+<a class="slurm_link" href="#enroot"></a></h3>
+<p>
 <pre>
 IgnoreFileConfigJson=true
 CreateEnvFile=newline
@@ -240,7 +274,9 @@ RunTimeRun="/usr/local/bin/enroot-start-wrapper %b %m %e -- %@"
 RunTimeKill="kill -s SIGINT %p"
 RunTimeDelete="kill -s SIGTERM %p"
 </pre>
-/usr/local/bin/enroot-start-wrapper:
+</p>
+
+<p>/usr/local/bin/enroot-start-wrapper:
 <pre>
 #!/bin/bash
 BUNDLE="$1"
@@ -281,8 +317,7 @@ rc=$?
 
 exit $rc
 </pre>
-</li>
-</ul>
+</p>
 
 <h2 id="testing">Testing OCI runtime outside of Slurm
 <a class="slurm_link" href="#testing"></a>
@@ -855,6 +890,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 22 February 2024</p>
+<p style="text-align:center;">Last modified 29 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
