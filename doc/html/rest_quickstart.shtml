@@ -262,6 +262,20 @@ If it didn't load jwt, run this in the terminal you're using for slurmrestd:
 <pre>export SLURM_JWT=daemon</pre>
 </p>
 
+<h3 id="unexpected_character">Unexpected URL character (HTTP 400)
+<a class="slurm_link" href="#unexpected_character"></a></h3>
+
+<p>Check the request URL and slurmrestd logs for characters that may be causing
+the URL to be parsed incorrectly. Use the appropriate URL encoding sequence in
+place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
+<pre>
+... -X GET "localhost:8080/slurmdb/v0.0.40/jobs?submit_time=02/28/24"
+### 400 BAD REQUEST
+... -X GET "localhost:8080/slurmdb/v0.0.40/jobs?submit_time=02%2F28%2F24"
+### 200 OK
+</pre>
+</p>
+
 <h3 id="slurm_commands">Other slurm commands not working
 <a class="slurm_link" href="#slurm_commands"></a></h3>
 
@@ -269,6 +283,6 @@ If it didn't load jwt, run this in the terminal you're using for slurmrestd:
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 14 February 2024</p>
+<p style="text-align:center;">Last modified 28 February 2024</p>
 
 <!--#include virtual="footer.txt"-->
