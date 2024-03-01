@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
     RunTimeQuery never being configured. Results in cleanup where job steps not
     fully started.
  -- Fix nodes not being rebooted when using salloc/sbatch/srun "--reboot" flag.
+ -- Send scrun.lua in configless mode.
 
 * Changes in Slurm 23.11.4
 ==========================
