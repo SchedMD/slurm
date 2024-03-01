@@ -107,6 +107,7 @@ static const http_status_code_txt_t http_status_codes[] = {
 	{ HTTP_STATUS_CODE_SRVERR_GATEWAY_TIMEOUT, "GATEWAY TIMEOUT" },
 	{ HTTP_STATUS_CODE_SRVERR_HTTP_VERSION_NOT_SUPPORTED,
 	  "HTTP VERSION NOT SUPPORTED" },
+	{ HTTP_STATUS_CODE_DEFAULT, "default" },
 };
 
 static const struct {
