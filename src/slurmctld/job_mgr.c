@@ -10242,7 +10242,6 @@ static job_state_response_job_t *_append_job_state(job_state_args_t *args,
 
 	xassert(job_id > 0);
 
-	xassert(*args->jobs_count_ptr >= 0);
 	(*args->jobs_count_ptr)++;
 	if (!try_xrecalloc((*args->jobs_pptr), *args->jobs_count_ptr,
 			   sizeof(**args->jobs_pptr))) {
