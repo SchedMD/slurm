@@ -40,6 +40,6 @@
 #include <stdbool.h>
 
 /* Connect to the slurmd and determine if the requested job has running steps */
-extern bool is_job_running(uint32_t job_id);
+extern bool is_job_running(uint32_t job_id, bool ignore_extern);
 
 #endif /* _JOB_STATUS_H */

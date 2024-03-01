@@ -5567,7 +5567,7 @@ _pause_for_job_completion(uint32_t job_id, int max_time)
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(job_id);
+		rc = is_job_running(job_id, false);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
