@@ -102,6 +102,12 @@ typedef enum {
  * RET string of status code or NULL on error
  */
 extern const char *get_http_status_code_string(http_status_code_t code);
+/*
+ * Convert string to status code
+ * IN str - string to parse
+ * RET status code or HTTP_STATUS_NONE on error
+ */
+extern http_status_code_t get_http_status_code(const char *str);
 
 /*
  * Supported HTTP request Methods.
