@@ -622,9 +622,9 @@ int main(int argc, char **argv)
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		fprintf(stderr, "Possible OpenAPI plugins:\n");
-		init_openapi(oas_specs, _plugrack_foreach_list, NULL);
+		init_openapi(oas_specs, _plugrack_foreach_list, NULL, NULL);
 		exit(0);
-	} else if (init_openapi(oas_specs, NULL, parsers))
+	} else if (init_openapi(oas_specs, NULL, parsers, NULL))
 		fatal("Unable to initialize OpenAPI structures");
 
 	xfree(oas_specs);

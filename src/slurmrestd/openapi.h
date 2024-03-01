@@ -188,10 +188,13 @@ extern void print_path_tag_methods(int tag);
  * 	pass NULL to load all found or "" to load none of them
  * IN listf - function to call if plugins="list" (may be NULL)
  * IN parsers_ptr - array of loaded data_parsers
+ * IN response_status_codes - HTTP_STATUS_NONE terminated array of HTTP status
+ *	codes to generate or NULL for default
  * RET SLURM_SUCCESS or error
  */
 extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
-			data_parser_t **parsers_ptr);
+			data_parser_t **parsers_ptr,
+			const http_status_code_t *resp_status_codes);
 
 /*
  * Free openapi

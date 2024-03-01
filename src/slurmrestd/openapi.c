@@ -326,6 +326,17 @@ static const openapi_path_binding_t openapi_paths[] = {
 	{0}
 };
 
+static const http_status_code_t *response_status_codes = NULL;
+/*
+ * Default to "default" and 200 as openapi generator breaks with only "default"
+ * response code.
+ */
+static const http_status_code_t default_response_status_codes[] = {
+	HTTP_STATUS_CODE_SUCCESS_OK,
+	HTTP_STATUS_CODE_DEFAULT,
+	HTTP_STATUS_NONE 
+};
+
 static char *_entry_to_string(entry_t *entry);
 
 static const char *_get_entry_type_string(entry_type_t type)
@@ -1263,12 +1274,18 @@ static int _bind_paths(const openapi_path_binding_t *paths,
 }
 
 extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
-			data_parser_t **parsers_ptr)
+			data_parser_t **parsers_ptr,
+			const http_status_code_t *resp_status_codes)
 {
 	int rc;
 
 	if (specs)
 		fatal("%s called twice", __func__);
+
+	if (resp_status_codes)
+		response_status_codes = resp_status_codes;
+	else
+		response_status_codes = default_response_status_codes;
 
 	paths = list_create(_list_delete_path_t);
 
@@ -1761,11 +1778,11 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 
 	if (method->response.type) {
 		data_t *dresp = data_set_dict(data_key_set(dmethod, "responses"));
-		data_t *def = data_set_dict(data_key_set(dresp, "default"));
-		data_t *cnt = data_set_dict(data_key_set(def, "content"));
+		data_t *resp_code = data_set_dict(data_new());
+		data_t *cnt = data_set_dict(data_key_set(resp_code, "content"));
 
 		if (method->response.description)
-			data_set_string(data_set_dict(data_key_set(def,
+			data_set_string(data_set_dict(data_key_set(resp_code,
 				"description")), method->response.description);
 
 		for (int i = 0; mime_types[i]; i++) {
@@ -1787,7 +1804,21 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 				fatal_abort("data_parser_g_populate_schema() failed");
 		}
 
-		data_copy(data_key_set(dresp, "200"), def);
+		for (int i = 0; response_status_codes[i]; i++) {
+			const http_status_code_t code =
+				response_status_codes[i];
+			char str[64];
+
+			if (code == HTTP_STATUS_CODE_DEFAULT)
+				snprintf(str, sizeof(str), "%s",
+					 get_http_status_code_string(code));
+			else
+				snprintf(str, sizeof(str), "%u", code);
+
+			data_copy(data_key_set(dresp, str), resp_code);
+		}
+
+		FREE_NULL_DATA(resp_code);
 	}
 
 	if (method->body.type) {
