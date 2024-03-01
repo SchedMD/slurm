@@ -90,6 +90,7 @@ documents those changes that are of interest to users and administrators.
  -- squeue - Add `--state-only` argument to use faster query of job states.
  -- Make a job requesting --no-requeue, or JobRequeue=0 in the slurm.conf,
     supersede RequeueExit[Hold].
+ -- Add sackd man page to the Debian package.
 
 * Changes in Slurm 23.11.4
 ==========================
