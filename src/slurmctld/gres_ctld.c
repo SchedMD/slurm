@@ -1342,13 +1342,15 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			      gres_js->gres_cnt_node_alloc[node_offset]);
 			gres_ns->gres_cnt_alloc = 0;
 		}
-		for (i = 0; i < len; i++) {
-			if (!bit_test(gres_js->gres_bit_alloc[node_offset],
-				      i)) {
-				continue;
+		if (!shared_gres) { /* Clear shared later based on topo info */
+			for (i = 0; i < len; i++) {
+				if (!bit_test(
+					    gres_js->gres_bit_alloc[node_offset],
+					    i)) {
+					continue;
+				}
+				bit_clear(gres_ns->gres_bit_alloc, i);
 			}
-			bit_clear(gres_ns->gres_bit_alloc, i);
-
 		}
 	} else if (gres_js->gres_cnt_node_alloc) {
 		gres_cnt = gres_js->gres_cnt_node_alloc[node_offset];
@@ -1391,6 +1393,8 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 				      gres_cnt);
 				gres_ns->topo_gres_cnt_alloc[i] = 0;
 			}
+			if (shared_gres && !gres_ns->topo_gres_cnt_alloc[i])
+				bit_clear(gres_ns->gres_bit_alloc, i);
 			if ((gres_ns->type_cnt == 0) ||
 			    (gres_ns->topo_type_name == NULL) ||
 			    (gres_ns->topo_type_name[i] == NULL))
@@ -1445,6 +1449,8 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 				      gres_per_bit);
 				gres_ns->topo_gres_cnt_alloc[i] = 0;
 			}
+			if (shared_gres && !gres_ns->topo_gres_cnt_alloc[i])
+				bit_clear(gres_ns->gres_bit_alloc, i);
 			if ((gres_ns->type_cnt == 0) ||
 			    (gres_ns->topo_type_name == NULL) ||
 			    (gres_ns->topo_type_name[i] == NULL))
