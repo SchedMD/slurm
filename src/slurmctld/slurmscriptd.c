@@ -502,8 +502,8 @@ static void _change_proc_name(int argc, char **argv, char *proc_name)
  * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
  */
-static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
-		       int timeout, char *tmp_file_env_name, char *tmp_file_str,
+static int _run_script(run_command_args_t *run_command_args,
+		       run_script_msg_t *script_msg,
 		       char **resp_msg, bool *signalled)
 {
 	int status = SLURM_ERROR;
@@ -511,6 +511,10 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	char *resp = NULL;
 	bool killed = false;
 	int tmp_fd = 0;
+	uint32_t job_id = script_msg->job_id;
+	int timeout = script_msg->timeout;
+	char *tmp_file_env_name = script_msg->tmp_file_env_name;
+	char *tmp_file_str = script_msg->tmp_file_str;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -790,10 +794,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		 * script_msg->timeout may also not be set (NO_VAL16).
 		 * Let _run_script handle the conversion.
 		 */
-		status = _run_script(&run_command_args, script_msg->job_id,
-				     script_msg->timeout,
-				     script_msg->tmp_file_env_name,
-				     script_msg->tmp_file_str,
+		status = _run_script(&run_command_args, script_msg,
 				     &resp_msg, &signalled);
 		break;
 	case SLURMSCRIPTD_POWER:
@@ -808,10 +809,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		 */
 		run_command_args.tid = 0;
 		run_command_args.orphan_on_shutdown = true;
-		status = _run_script(&run_command_args, script_msg->job_id,
-				     script_msg->timeout,
-				     script_msg->tmp_file_env_name,
-				     script_msg->tmp_file_str,
+		status = _run_script(&run_command_args, script_msg,
 				     &resp_msg, &signalled);
 
 		break;
