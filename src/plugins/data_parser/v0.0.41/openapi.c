@@ -951,7 +951,9 @@ extern int data_parser_p_populate_schema(args_t *args, data_parser_type_t type,
 					 refs_ptr_t **references_ptr,
 					 data_t *dst, data_t *schemas)
 {
+#ifndef NDEBUG
 	refs_ptr_t *refs = *references_ptr;
+#endif
 	spec_args_t sargs = {
 		.magic = MAGIC_SPEC_ARGS,
 		.args = args,
@@ -981,7 +983,9 @@ extern int data_parser_p_populate_parameters(args_t *args,
 					     refs_ptr_t **references_ptr,
 					     data_t *dst, data_t *schemas)
 {
+#ifndef NDEBUG
 	refs_ptr_t *refs = *references_ptr;
+#endif
 	spec_args_t sargs = {
 		.magic = MAGIC_SPEC_ARGS,
 		.args = args,
