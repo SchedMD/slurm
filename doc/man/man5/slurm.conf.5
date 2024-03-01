@@ -1297,6 +1297,9 @@ display information in a federated view by default. This option is functionally
 equivalent to using the \-\-federation options on each command. Use the client's
 \-\-local option to override the federated view and get a local view of the
 given cluster.
+
+Allow client commands to use the \-\-cluster option even when the \fBslurmdbd\fR
+is down by retrieving cluster records from \fBslurmctld\fR instead.
 .RE
 .IP
 
