@@ -170,6 +170,11 @@ typedef struct {
 	job_state_response_job_t **jobs_pptr;
 } job_state_args_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	job_state_args_t *job_state_args;
+} foreach_het_job_state_args_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -10279,25 +10284,74 @@ static int _add_job_state_job(job_state_args_t *args,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_add_job_state_het_job(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	foreach_het_job_state_args_t *het_args = arg;
+
+	if (het_job_ptr->het_job_id == het_args->job_ptr->het_job_id) {
+		_add_job_state_job(het_args->job_state_args, het_job_ptr);
+		return 0;
+	} else {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, het_args->job_ptr);
+		return -1;
+	}
+}
+
 static int _add_job_state_by_job_id(const uint32_t job_id,
 				    job_state_args_t *args)
 {
-	const job_record_t *job_ptr;
+	job_record_t *job_ptr;
+	int rc = SLURM_SUCCESS;
 
-	if (!(job_ptr = find_job_record(job_id)))
+	/*
+	 * This uses the same logic as pack_one_job().
+	 * TODO: Combine the duplicate logic.
+	 */
+	job_ptr = find_job_record(job_id);
+
+	if (job_ptr && job_ptr->het_job_list) {
+		foreach_het_job_state_args_t het_args = {
+			.job_ptr = job_ptr,
+			.job_state_args = args,
+		};
+
+		if (list_for_each(job_ptr->het_job_list,
+				  _foreach_add_job_state_het_job,
+				  &het_args) < 0) {
+			return SLURM_ERROR;
+		}
 		return SLURM_SUCCESS;
-
-	if (!job_ptr->array_recs)
+	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		   !job_ptr->array_recs) {
+		/* Pack regular (not array) job */
 		return _add_job_state_job(args, job_ptr);
+	} else {
+		/* Either the job is not found or it is a job array */
+		bool packed_head = false;
 
-	/* array meta job */
-	for (int i = -1; i != -1;
-	     i = bit_ffs_from_bit(job_ptr->array_recs->task_id_bitmap, i)) {
-		int rc;
-		job_record_t *ajob = find_job_array_rec(job_ptr->job_id, i);
-
-		if (ajob && (rc = _add_job_state_job(args, ajob)))
-			return rc;
+		if (job_ptr) {
+			packed_head = true;
+			if ((rc = _add_job_state_job(args, job_ptr)))
+				return rc;
+		}
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		while (job_ptr) {
+			if ((job_ptr->job_id == job_id) && packed_head) {
+				; /* Already packed */
+			} else if (IS_JOB_REVOKED(job_ptr)) {
+				/*
+				 * Array jobs can't be federated but to be
+				 * consistent and future proof, don't pack
+				 * revoked array jobs.
+				 */
+			} else if (job_ptr->array_job_id == job_id) {
+				if ((rc = _add_job_state_job(args, job_ptr)))
+					return rc;
+			}
+			job_ptr = job_ptr->job_array_next_j;
+		}
 	}
 
 	return args->rc;
