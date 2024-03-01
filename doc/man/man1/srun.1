@@ -230,7 +230,8 @@ job initiation time. The default value is the current cluster. A value of
 \fB\-\-export\fR option to control environment variables exported
 between clusters.
 This option applies only to job allocations.
-Note that the SlurmDBD must be up for this option to work properly.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with \fBFederationParameters=fed_display\fR configured.
 .IP
 
 .TP

@@ -312,7 +312,8 @@ Get and report information. This is the default mode of operation.
 .TP
 \fB\-M\fR, \fB\-\-cluster\fR=<\fIstring\fR>
 The cluster to issue commands to. Only one cluster name may be specified.
-Note that the SlurmDBD must be up for this option to work properly.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with \fBFederationParameters=fed_display\fR configured.
 .IP
 
 .TP

@@ -38,7 +38,9 @@ array index values printed using a regular expression).
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIcluster_name\fR>
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of '\fIall\fR' will query to run on all clusters.
-Note that the SlurmDBD must be up for this option to work properly.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with either \fBFederationParameters=fed_display\fR
+configured or the \fB\-\-federation\fR option set.
 This option implicitly sets the \fB\-\-local\fR option.
 .IP
 
