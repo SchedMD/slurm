@@ -88,6 +88,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new RPCs and API call for faster querying of job states from slurmctld.
  -- slurmrestd - Add endpoint '/slurm/{data_parser}/jobs/state'.
  -- squeue - Add `--state-only` argument to use faster query of job states.
+ -- Make a job requesting --no-requeue, or JobRequeue=0 in the slurm.conf,
+    supersede RequeueExit[Hold].
 
 * Changes in Slurm 23.11.4
 ==========================
