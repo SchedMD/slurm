@@ -408,8 +408,13 @@ containers being run by Slurm.  Docker is only acting as a container image
 lifecycle manager. The containers will be executed remotely via Slurm following
 the existing security configuration in Slurm outside of unprivileged user
 control.</li>
-<li>All containers must use <a href="https://docs.docker.com/network/host/">
-host networking</a></li>
+<li>All containers must use the
+<a href="https://docs.docker.com/network/drivers/none/">"none" networking driver
+</a>. Attempting to use bridge, overlay, host, ipvlan, or macvlan can result in
+scrun being isolated from the network and not being able to communicate with
+the Slurm controller. The container is run by Slurm on the compute nodes which
+makes having Docker setup a network isolation layer ineffective for the
+container.</li>
 </ol>
 
 <h3>Setup procedure</h3>
