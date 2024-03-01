@@ -126,6 +126,7 @@ static bool unshare_sysv = true;
 static bool unshare_files = true;
 static bool check_user = true;
 static bool become_user = false;
+static http_status_code_t *response_status_codes = NULL;
 
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
@@ -248,6 +249,33 @@ static void _parse_env(void)
 			token = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(toklist);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_RESPONSE_STATUS_CODES"))) {
+		char *token = NULL, *save_ptr = NULL;
+		char *toklist = xstrdup(buffer);
+		int count = 0;
+
+		token = strtok_r(toklist, ",", &save_ptr);
+		while (token) {
+			http_status_code_t code = get_http_status_code(token);
+
+			if (code == HTTP_STATUS_NONE)
+				fatal("Unable to parse %s as HTTP status code",
+				      token);
+
+			xrecalloc(response_status_codes, (count + 2),
+				  sizeof(*response_status_codes));
+
+			response_status_codes[count] = code;
+			count++;
+
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(toklist);
+
+		if (response_status_codes)
+			response_status_codes[count] = HTTP_STATUS_NONE;
 	}
 }
 
@@ -624,7 +652,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Possible OpenAPI plugins:\n");
 		init_openapi(oas_specs, _plugrack_foreach_list, NULL, NULL);
 		exit(0);
-	} else if (init_openapi(oas_specs, NULL, parsers, NULL))
+	} else if (init_openapi(oas_specs, NULL, parsers,
+				response_status_codes))
 		fatal("Unable to initialize OpenAPI structures");
 
 	xfree(oas_specs);
