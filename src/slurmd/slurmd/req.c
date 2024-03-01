@@ -211,8 +211,7 @@ static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
 static void _rpc_forward_data(slurm_msg_t *msg);
 static void _rpc_network_callerid(slurm_msg_t *msg);
 
-static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
-				      int maxtime);
+static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
 static bool _slurm_authorized_user(uid_t uid);
 static void _sync_messages_kill(kill_job_msg_t *req);
 static int  _waiter_init (uint32_t jobid);
@@ -5176,7 +5175,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion (req->step_id.job_id, req->nodes, 0);
+		_pause_for_job_completion(req->step_id.job_id, 0);
 	}
 
 	/*
@@ -5399,12 +5398,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *  Check for corpses
 	 */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!_pause_for_job_completion (req->step_id.job_id, req->nodes, delay) &&
+	if (!_pause_for_job_completion(req->step_id.job_id, delay) &&
 	    _terminate_all_steps(req->step_id.job_id, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion (req->step_id.job_id, req->nodes, 0);
+		_pause_for_job_completion(req->step_id.job_id, 0);
 	}
 
 	/*
@@ -5593,7 +5592,7 @@ static void _waiter_complete(uint32_t jobid)
  *  Returns true if all job processes are gone
  */
 static bool
-_pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
+_pause_for_job_completion(uint32_t job_id, int max_time)
 {
 	int sec = 0;
 	int pause = 1;
