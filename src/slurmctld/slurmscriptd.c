@@ -464,6 +464,40 @@ static void _incr_script_cnt(void)
 	slurm_mutex_unlock(&script_count_mutex);
 }
 
+static void _change_proc_name(int argc, char **argv, char *proc_name)
+{
+	char *log_prefix;
+	/*
+	 * Since running_in_slurmctld() is called before we fork()'d,
+	 * the result is cached in static variables, so calling it now
+	 * would return true even though we're now slurmscriptd.
+	 * Reset those cached variables so running_in_slurmctld()
+	 * returns false if called from slurmscriptd.
+	 * But first change slurm_prog_name since that is
+	 * read by run_in_daemon().
+	 */
+	xfree(slurm_prog_name);
+	slurm_prog_name = xstrdup(proc_name);
+	running_in_slurmctld_reset();
+
+	/*
+	 * Change the process name to slurmscriptd.
+	 * Since slurmscriptd logs to the slurmctld log file, add a
+	 * prefix to make it clear which daemon a log comes from.
+	 */
+	init_setproctitle(argc, argv);
+	setproctitle("%s", proc_name);
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, proc_name, NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, proc_name);
+	}
+#endif
+	/* log_set_prefix takes control of an xmalloc()'d string */
+	log_prefix = xstrdup_printf("%s: ", proc_name);
+	log_set_prefix(&log_prefix);
+}
+
 /*
  * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
@@ -1461,39 +1495,9 @@ extern int slurmscriptd_init(int argc, char **argv)
 	} else { /* child (slurmscriptd_pid == 0) */
 		ssize_t i;
 		int rc = SLURM_ERROR, ack;
-		char *proc_name = "slurmscriptd";
-		char *log_prefix;
 		char *failed_plugin = NULL;
 
-		/*
-		 * Since running_in_slurmctld() is called before we fork()'d,
-		 * the result is cached in static variables, so calling it now
-		 * would return true even though we're now slurmscriptd.
-		 * Reset those cached variables so running_in_slurmctld()
-		 * returns false if called from slurmscriptd.
-		 * But first change slurm_prog_name since that is
-		 * read by run_in_daemon().
-		 */
-		xfree(slurm_prog_name);
-		slurm_prog_name = xstrdup(proc_name);
-		running_in_slurmctld_reset();
-
-		/*
-		 * Change the process name to slurmscriptd.
-		 * Since slurmscriptd logs to the slurmctld log file, add a
-		 * prefix to make it clear which daemon a log comes from.
-		 */
-		init_setproctitle(argc, argv);
-		setproctitle("%s", proc_name);
-#if HAVE_SYS_PRCTL_H
-		if (prctl(PR_SET_NAME, proc_name, NULL, NULL, NULL) < 0) {
-			error("%s: cannot set my name to %s %m",
-			      __func__, proc_name);
-		}
-#endif
-		/* log_set_prefix takes control of an xmalloc()'d string */
-		log_prefix = xstrdup_printf("%s: ", proc_name);
-		log_set_prefix(&log_prefix);
+		_change_proc_name(argc, argv, "slurmscriptd");
 
 		/* Close extra fd's. */
 		if (close(to_slurmscriptd[1]) < 0) {
