@@ -65,8 +65,6 @@
 --not required to run this file and may be removed.
 --]]
 
-lua_script_name="burst_buffer.lua"
-
 --Print job_info to the log file
 function print_job_info(job_info)
 	account = job_info["account"]
@@ -123,8 +121,7 @@ function print_job_info(job_info)
 		--Or do lookup with UID here
 	end
 
-	slurm.log_info("%s:\
-JobId=%u\
+	slurm.log_info("JobId=%u\
 	account=%s\
 	array_job_id=%u\
 	array_task_id=%u\
@@ -139,7 +136,7 @@ JobId=%u\
 	partition=%s\
 	user_name=%s\
 ",
-		lua_script_name, job_id, account, array_job_id, array_task_id,
+		job_id, account, array_job_id, array_task_id,
 		array_max_tasks, array_task_str, gres_total, group_id,
 		het_job_id, het_job_offset, job_state, nodes, partition,
 		user_name)
@@ -195,8 +192,8 @@ end
 --]]
 function slurm_bb_job_process(job_script, uid, gid, job_info)
 	local contents
-	slurm.log_info("%s: slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
-		lua_script_name, job_script, uid, gid)
+	slurm.log_info("slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
+		job_script, uid, gid)
 	io.input(job_script)
 	contents = io.read("*all")
 
@@ -259,8 +256,8 @@ end
 --This function is normally called after the job completes (or is cancelled).
 --]]
 function slurm_bb_job_teardown(job_id, job_script, hurry, uid, gid)
-	slurm.log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, hurry, uid, gid)
+	slurm.log_info("slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
+		job_id, job_script, hurry, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
@@ -272,8 +269,8 @@ end
 --This function is called while the job is pending.
 --]]
 function slurm_bb_setup(job_id, uid, gid, pool, bb_size, job_script, job_info)
-	slurm.log_info("%s: slurm_bb_setup(). job id:%s, uid: %s, gid:%s, pool:%s, size:%s, job script:%s",
-		lua_script_name, job_id, uid, gid, pool, bb_size, job_script)
+	slurm.log_info("slurm_bb_setup(). job id:%s, uid: %s, gid:%s, pool:%s, size:%s, job script:%s",
+		job_id, uid, gid, pool, bb_size, job_script)
 
 	return slurm.SUCCESS
 end
@@ -286,8 +283,8 @@ end
 --pending.
 --]]
 function slurm_bb_data_in(job_id, job_script, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_data_in(). job id:%s, job script:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, uid, gid)
+	slurm.log_info("slurm_bb_data_in(). job id:%s, job script:%s, uid:%s, gid:%s",
+		job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
@@ -332,8 +329,8 @@ end
 --will be changed to this number. A commented out example is given.
 --]]
 function slurm_bb_real_size(job_id, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_real_size(). job id:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, uid, gid)
+	slurm.log_info("slurm_bb_real_size(). job id:%s, uid:%s, gid:%s",
+		job_id, uid, gid)
 	--return slurm.SUCCESS, "10000"
 	return slurm.SUCCESS
 end
@@ -351,8 +348,8 @@ end
 --environment. A commented out example is given.
 --]]
 function slurm_bb_paths(job_id, job_script, path_file, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, path_file, uid, gid)
+	slurm.log_info("slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",
+		job_id, job_script, path_file, uid, gid)
 	--io.output(path_file)
 	--io.write("FOO=BAR")
 	return slurm.SUCCESS
@@ -366,8 +363,8 @@ end
 --job starts running when the job is in a "running + configuring" state.
 --]]
 function slurm_bb_pre_run(job_id, job_script, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_pre_run(). job id:%s, job script:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, uid, gid)
+	slurm.log_info("slurm_bb_pre_run(). job id:%s, job script:%s, uid:%s, gid:%s",
+		job_id, job_script, uid, gid)
 	local rc, ret_str
 	rc, ret_str = sleep_wrapper(1)
 
@@ -407,8 +404,8 @@ end
 --state.
 --]]
 function slurm_bb_post_run(job_id, job_script, uid, gid, job_info)
-	slurm.log_info("%s: slurm_post_run(). job id:%s, job script:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, uid, gid)
+	slurm.log_info("slurm_post_run(). job id:%s, job script:%s, uid:%s, gid:%s",
+		job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
@@ -421,8 +418,8 @@ end
 --slurm_bb_post_run. The job is in a "stage out" state.
 --]]
 function slurm_bb_data_out(job_id, job_script, uid, gid, job_info)
-	slurm.log_info("%s: slurm_bb_data_out(). job id:%s, job script:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script, uid, gid)
+	slurm.log_info("slurm_bb_data_out(). job id:%s, job script:%s, uid:%s, gid:%s",
+		job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
@@ -483,8 +480,8 @@ end
 function slurm_bb_get_status(uid, gid, ...)
 
 	local i, v, args, outstr, arr
-	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
-		lua_script_name, uid, gid)
+	slurm.log_info("slurm_bb_get_status(), uid: %s, gid:%s",
+		uid, gid)
 
 	arr = { }
 	-- Create a table from variable arg list
