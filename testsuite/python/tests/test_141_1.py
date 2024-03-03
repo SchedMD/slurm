@@ -50,7 +50,7 @@ def setup():
         {
             "primary": {"Nodes": "ALL"},
             "cloud1": {"Nodes": "ns1"},
-            "powerDownOnIdle": {"Nodes": "ns1", "PowerDownOnIdle": "Yes"},
+            "powerdownonidle": {"Nodes": "ns1", "PowerDownOnIdle": "Yes"},
         },
     )
 
@@ -572,7 +572,7 @@ def test_power_down_on_idle():
     # Schedule a job to cloud node's partition, transitioning node to ALLOCATED
     # and POWERING_UP state
     job_id = atf.submit_job_sbatch(
-        f"-p powerDownOnIdle --wrap 'srun hostname'", fatal=True
+        f"-p powerdownonidle --wrap 'srun hostname'", fatal=True
     )
     atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=5, fatal=True)
