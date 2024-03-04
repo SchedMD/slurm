@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
     supersede RequeueExit[Hold].
  -- Add sackd man page to the Debian package.
  -- Fix issues with tasks when a job was shrinked more than once.
+ -- Fix reservation update validation that resulted in reject of correct
+    updates of reservation when the reservation was running jobs.
 
 * Changes in Slurm 23.11.4
 ==========================
