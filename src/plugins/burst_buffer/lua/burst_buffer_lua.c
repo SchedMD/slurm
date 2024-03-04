@@ -3319,7 +3319,7 @@ static int _run_real_size(stage_args_t *stage_args, init_argv_f_t init_argv,
 				  resp_msg) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (*resp_msg) {
+	if (*resp_msg && (**resp_msg != '\0')) {
 		char *end_ptr;
 
 		real_size = strtol(*resp_msg, &end_ptr, 10);
