@@ -164,15 +164,16 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	fetch_config.lo forward.lo global_defaults.lo group_cache.lo \
 	half_duplex.lo hostlist.lo http.lo identity.lo id_util.lo \
 	io_hdr.lo job_features.lo job_options.lo job_resources.lo \
-	list.lo log.lo net.lo node_conf.lo oci_config.lo openapi.lo \
-	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
-	plugin.lo plugrack.lo print_fields.lo proc_args.lo \
-	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
-	sack_api.lo setproctitle.lo slurm_errno.lo slurm_opt.lo \
-	slurm_persist_conn.lo slurm_protocol_api.lo \
-	slurm_protocol_defs.lo slurm_protocol_pack.lo \
-	slurm_protocol_util.lo slurm_protocol_socket.lo \
-	slurm_resolv.lo slurm_resource_info.lo slurm_rlimits_info.lo \
+	job_state_reason.lo list.lo log.lo net.lo node_conf.lo \
+	oci_config.lo openapi.lo optz.lo pack.lo parse_config.lo \
+	parse_time.lo parse_value.lo plugin.lo plugrack.lo \
+	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
+	run_command.lo run_in_daemon.lo sack_api.lo setproctitle.lo \
+	slurm_errno.lo slurm_opt.lo slurm_persist_conn.lo \
+	slurm_protocol_api.lo slurm_protocol_defs.lo \
+	slurm_protocol_pack.lo slurm_protocol_util.lo \
+	slurm_protocol_socket.lo slurm_resolv.lo \
+	slurm_resource_info.lo slurm_rlimits_info.lo \
 	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
 	stepd_api.lo strlcpy.lo strnatcmp.lo timers.lo track_script.lo \
@@ -219,8 +220,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/http.Plo ./$(DEPDIR)/id_util.Plo \
 	./$(DEPDIR)/identity.Plo ./$(DEPDIR)/io_hdr.Plo \
 	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
-	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/job_state_reason.Plo \
+	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/oci_config.Plo \
 	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
 	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
@@ -606,6 +607,8 @@ libcommon_la_SOURCES = \
 	job_options.h				\
 	job_resources.c				\
 	job_resources.h				\
+	job_state_reason.c			\
+	job_state_reason.h			\
 	list.c					\
 	list.h					\
 	log.c					\
@@ -825,6 +828,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_state_reason.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@ # am--include-marker
@@ -1036,6 +1040,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
+	-rm -f ./$(DEPDIR)/job_state_reason.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
 	-rm -f ./$(DEPDIR)/net.Plo
@@ -1167,6 +1172,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
+	-rm -f ./$(DEPDIR)/job_state_reason.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
 	-rm -f ./$(DEPDIR)/net.Plo

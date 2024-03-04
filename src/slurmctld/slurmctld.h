@@ -57,6 +57,7 @@
 #include "src/common/extra_constraints.h"
 #include "src/common/identity.h"
 #include "src/common/job_resources.h"
+#include "src/common/job_state_reason.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

@@ -9,6 +9,7 @@
 
 #undef VERSION /* avoid conflicting defintion in config.h */
 #include "src/common/slurm_xlator.h"
+#include "src/common/job_state_reason.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_protocol_defs.h"

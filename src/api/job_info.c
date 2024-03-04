@@ -56,6 +56,7 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/forward.h"
+#include "src/common/job_state_reason.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
