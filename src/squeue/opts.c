@@ -71,11 +71,11 @@
 #define OPT_LONG_YAML         0x111
 #define OPT_LONG_AUTOCOMP     0x112
 /*
- * OPT_LONG_STATE_ONLY was added in 23.11.5. At the time, the master branch
- * already used up to 0x116. So, OPT_LONG_STATE_ONLY was set to 0x117. We
+ * OPT_LONG_JOB_STATE_ONLY was added in 23.11.5. At the time, the master branch
+ * already used up to 0x116. So, OPT_LONG_JOB_STATE_ONLY was set to 0x117. We
  * are setting it to 0x117 here as well to be consistent.
  */
-#define OPT_LONG_STATE_ONLY   0x117
+#define OPT_LONG_JOB_STATE_ONLY   0x117
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -121,6 +121,7 @@ parse_command_line( int argc, char* *argv )
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
+		{"job-state-only", no_argument, 0, OPT_LONG_JOB_STATE_ONLY},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"long",       no_argument,       0, 'l'},
@@ -144,7 +145,6 @@ parse_command_line( int argc, char* *argv )
 		{"start",      no_argument,       0, OPT_LONG_START},
 		{"steps",      optional_argument, 0, 's'},
 		{"states",     required_argument, 0, 't'},
-		{"state-only", no_argument,       0, OPT_LONG_STATE_ONLY},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
@@ -341,6 +341,9 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
 			break;
+		case OPT_LONG_JOB_STATE_ONLY:
+			params.state_only = true;
+			break;
 		case OPT_LONG_LOCAL:
 			params.local_flag = true;
 			break;
@@ -355,9 +358,6 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_START:
 			params.start_flag = true;
 			override_format_env = true;
-			break;
-		case OPT_LONG_STATE_ONLY:
-			params.state_only = true;
 			break;
 		case OPT_LONG_NOCONVERT:
 			params.convert_flags |= CONVERT_NUM_UNIT_NO;
@@ -1868,6 +1868,7 @@ _print_options(void)
 	printf( "format      = %s\n", params.format );
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
+	printf( "job_state_only = %s\n", params.state_only ? "true" : "false");
 	printf( "jobs        = %s\n", params.jobs );
 	printf( "licenses    = %s\n", params.licenses );
 	printf( "local       = %s\n", params.local_flag ? "true" : "false");
