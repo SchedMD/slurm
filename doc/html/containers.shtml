@@ -541,6 +541,9 @@ configuration.</li>
 <li>All containers must use
 <a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
+<li><pre>podman exec</pre> command is not supported.</li>
+<li><pre>podman kube</pre> command is not supported.</li>
+<li><pre>podman pod</pre> command is not supported.</li>
 </ol>
 
 <h3>Setup procedure</h3>
