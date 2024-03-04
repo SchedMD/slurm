@@ -35,6 +35,7 @@
 
 #include "src/common/job_state_reason.h"
 #include "src/common/xstring.h"
+#include "src/common/xassert.h"
 
 /*
  * Any strong_alias() needs to be defined in slurm_xlator.h as well.
@@ -43,6 +44,7 @@ strong_alias(job_state_reason_string, slurm_job_state_reason_string);
 strong_alias(job_state_reason_num, slurm_job_state_reason_num);
 
 typedef struct {
+	uint32_t flags;
 	const char *str;
 } entry_t;
 
@@ -165,27 +167,35 @@ const static entry_t jsra[] = {
 		.str = "DependencyNeverSatisfied",
 	},
 	[WAIT_QOS_GRP_CPU] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpCpuLimit",
 	},
 	[WAIT_QOS_GRP_CPU_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpCPUMinutesLimit",
 	},
 	[WAIT_QOS_GRP_CPU_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpCPURunMinutesLimit",
 	},
 	[WAIT_QOS_GRP_JOB] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpJobsLimit"
 	},
 	[WAIT_QOS_GRP_MEM] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpMemLimit",
 	},
 	[WAIT_QOS_GRP_NODE] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpNodeLimit",
 	},
 	[WAIT_QOS_GRP_SUB_JOB] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpSubmitJobsLimit",
 	},
 	[WAIT_QOS_GRP_WALL] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpWallLimit",
 	},
 	[WAIT_QOS_MAX_CPU_PER_JOB] = {
@@ -420,9 +430,11 @@ const static entry_t jsra[] = {
 		.str = "QOSMaxCpuPerNode",
 	},
 	[WAIT_QOS_GRP_MEM_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpMemoryMinutes",
 	},
 	[WAIT_QOS_GRP_MEM_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpMemoryRunMinutes",
 	},
 	[WAIT_QOS_MAX_MEM_PER_JOB] = {
@@ -441,9 +453,11 @@ const static entry_t jsra[] = {
 		.str = "QOSMinMemory",
 	},
 	[WAIT_QOS_GRP_NODE_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpNodeMinutes",
 	},
 	[WAIT_QOS_GRP_NODE_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpNodeRunMinutes",
 	},
 	[WAIT_QOS_MAX_NODE_MINS_PER_JOB] = {
@@ -453,12 +467,15 @@ const static entry_t jsra[] = {
 		.str = "QOSMinNode",
 	},
 	[WAIT_QOS_GRP_ENERGY] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpEnergy",
 	},
 	[WAIT_QOS_GRP_ENERGY_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpEnergyMinutes",
 	},
 	[WAIT_QOS_GRP_ENERGY_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpEnergyRunMinutes",
 	},
 	[WAIT_QOS_MAX_ENERGY_PER_JOB] = {
@@ -477,12 +494,15 @@ const static entry_t jsra[] = {
 		.str = "QOSMinEnergy",
 	},
 	[WAIT_QOS_GRP_GRES] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpGRES",
 	},
 	[WAIT_QOS_GRP_GRES_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpGRESMinutes",
 	},
 	[WAIT_QOS_GRP_GRES_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpGRESRunMinutes",
 	},
 	[WAIT_QOS_MAX_GRES_PER_JOB] = {
@@ -501,12 +521,15 @@ const static entry_t jsra[] = {
 		.str = "QOSMinGRES",
 	},
 	[WAIT_QOS_GRP_LIC] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpLicense",
 	},
 	[WAIT_QOS_GRP_LIC_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpLicenseMinutes",
 	},
 	[WAIT_QOS_GRP_LIC_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpLicenseRunMinutes",
 	},
 	[WAIT_QOS_MAX_LIC_PER_JOB] = {
@@ -522,12 +545,15 @@ const static entry_t jsra[] = {
 		.str = "QOSMinLicense",
 	},
 	[WAIT_QOS_GRP_BB] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBB",
 	},
 	[WAIT_QOS_GRP_BB_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBBMinutes",
 	},
 	[WAIT_QOS_GRP_BB_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBBRunMinutes",
 	},
 	[WAIT_QOS_MAX_BB_PER_JOB] = {
@@ -612,12 +638,15 @@ const static entry_t jsra[] = {
 		.str = "AssocMaxBillingMinutesPerJob",
 	},
 	[WAIT_QOS_GRP_BILLING] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBilling",
 	},
 	[WAIT_QOS_GRP_BILLING_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBillingMinutes",
 	},
 	[WAIT_QOS_GRP_BILLING_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpBillingRunMinutes",
 	},
 	[WAIT_QOS_MAX_BILLING_PER_JOB] = {
@@ -671,22 +700,10 @@ extern enum job_state_reason job_state_reason_num(char *reason)
 
 extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason)
 {
-	if ((state_reason >= WAIT_QOS_GRP_CPU &&
-	     state_reason <= WAIT_QOS_GRP_WALL) ||
-	    (state_reason == WAIT_QOS_GRP_MEM_MIN) ||
-	    (state_reason == WAIT_QOS_GRP_MEM_RUN_MIN) ||
-	    (state_reason >= WAIT_QOS_GRP_ENERGY &&
-	     state_reason <= WAIT_QOS_GRP_ENERGY_RUN_MIN) ||
-	    (state_reason == WAIT_QOS_GRP_NODE_MIN) ||
-	    (state_reason == WAIT_QOS_GRP_NODE_RUN_MIN) ||
-	    (state_reason >= WAIT_QOS_GRP_GRES &&
-	     state_reason <= WAIT_QOS_GRP_GRES_RUN_MIN) ||
-	    (state_reason >= WAIT_QOS_GRP_LIC &&
-	     state_reason <= WAIT_QOS_GRP_LIC_RUN_MIN) ||
-	    (state_reason >= WAIT_QOS_GRP_BB &&
-	     state_reason <= WAIT_QOS_GRP_BB_RUN_MIN) ||
-	    (state_reason >= WAIT_QOS_GRP_BILLING &&
-	     state_reason <= WAIT_QOS_GRP_BILLING_RUN_MIN))
+	xassert(state_reason < REASON_END);
+
+	if (jsra[state_reason].flags & JSR_QOS_GRP)
 		return true;
+
 	return false;
 }

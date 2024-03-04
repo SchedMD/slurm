@@ -38,6 +38,8 @@
 
 #include "slurm/slurm.h"
 
+#define JSR_QOS_GRP SLURM_BIT(0) /* job is held because of a QOS GRP limit */
+
 /* Given a job's reason for waiting, return a descriptive string */
 extern const char *job_state_reason_string(enum job_state_reason inx);
 
