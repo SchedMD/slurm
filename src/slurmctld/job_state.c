@@ -38,7 +38,10 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+#define MAGIC_JOB_STATE_ARGS 0x0a0beeee
+
 typedef struct {
+	int magic; /* MAGIC_JOB_STATE_ARGS */
 	int rc;
 	uint32_t *jobs_count_ptr;
 	job_state_response_job_t **jobs_pptr;
@@ -163,6 +166,7 @@ static job_state_response_job_t *_append_job_state(job_state_args_t *args,
 {
 	job_state_response_job_t *rjob;
 
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 	xassert(job_id > 0);
 
 	(*args->jobs_count_ptr)++;
@@ -193,6 +197,8 @@ static int _add_job_state_job(job_state_args_t *args,
 			      const job_record_t *job_ptr)
 {
 	job_state_response_job_t *rjob;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 
 	if (!(rjob = _append_job_state(args, job_ptr->job_id)))
 		return SLURM_ERROR;
@@ -226,6 +232,8 @@ static int _add_job_state_by_job_id(const uint32_t job_id,
 {
 	job_record_t *job_ptr;
 	int rc = SLURM_SUCCESS;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 
 	/*
 	 * This uses the similar logic as pack_one_job() but simpler as whole
@@ -272,6 +280,8 @@ static int _foreach_job_state_filter(void *object, void *arg)
 	const job_record_t *job_ptr = object;
 	job_state_args_t *args = arg;
 
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
+
 	if ((args->rc = _add_job_state_job(args, job_ptr)))
 		return SLURM_ERROR;
 
@@ -284,6 +294,7 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 			  job_state_response_job_t **jobs_pptr)
 {
 	job_state_args_t args = {
+		.magic = MAGIC_JOB_STATE_ARGS,
 		.rc = SLURM_SUCCESS,
 		.jobs_count_ptr = jobs_count_ptr,
 		.jobs_pptr = jobs_pptr,
