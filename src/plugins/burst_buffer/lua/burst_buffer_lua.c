@@ -1550,12 +1550,27 @@ static int _load_pools(uint32_t timeout)
 	return SLURM_SUCCESS;
 }
 
-static void _fail_stage_in(job_record_t *job_ptr, char *op, char *resp_msg)
+static void _fail_stage_in(stage_in_args_t *stage_in_args, char *op,
+			   int rc, char *resp_msg)
 {
+	uint32_t job_id = stage_in_args->job_id;
 	bb_job_t *bb_job = NULL;
+	job_record_t *job_ptr = NULL;
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	error("%s for JobId=%u failed, status=%d, response=%s.",
+	      op, stage_in_args->job_id, rc, resp_msg);
+	trigger_burst_buffer();
 
+	lock_slurmctld(job_write_lock);
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	job_ptr = find_job_record(stage_in_args->job_id);
+	if (!job_ptr) {
+		error("%s: Could not find JobId=%u", __func__, job_id);
+		goto fini;
+	}
+
+	bb_update_system_comment(job_ptr, op, resp_msg, 0);
 	xfree(job_ptr->state_desc);
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 	xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
@@ -1570,6 +1585,10 @@ static void _fail_stage_in(job_record_t *job_ptr, char *op, char *resp_msg)
 				job_ptr->user_id, true,
 				job_ptr->group_id);
 	}
+
+fini:
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	unlock_slurmctld(job_write_lock);
 }
 
 static void *_start_stage_out(void *x)
@@ -3315,46 +3334,32 @@ static void *_start_stage_in(void *x)
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		trigger_burst_buffer();
-		error("setup for JobId=%u failed.", stage_in_args->job_id);
+		_fail_stage_in(stage_in_args, op, rc, resp_msg);
 		rc = SLURM_ERROR;
-		lock_slurmctld(job_write_lock);
-		job_ptr = find_job_record(stage_in_args->job_id);
-		if (job_ptr)
-			bb_update_system_comment(job_ptr, "setup", resp_msg, 0);
-		unlock_slurmctld(job_write_lock);
+		goto fini;
 	}
 
-	if (rc == SLURM_SUCCESS) {
-		xfree(resp_msg);
-		op = "slurm_bb_data_in";
-		rc = _run_data_in(stage_in_args, op, &track_script_signal,
-				  &resp_msg);
+	xfree(resp_msg);
+	op = "slurm_bb_data_in";
+	rc = _run_data_in(stage_in_args, op, &track_script_signal,
+			  &resp_msg);
 
-		if (track_script_signal) {
-			/* Killed by slurmctld, exit now. */
-			info("data_in for JobId=%u terminated by slurmctld",
-			     stage_in_args->job_id);
-			goto fini;
-		}
+	if (track_script_signal) {
+		/* Killed by slurmctld, exit now. */
+		info("data_in for JobId=%u terminated by slurmctld",
+		     stage_in_args->job_id);
+		goto fini;
+	}
 
-		if (rc != SLURM_SUCCESS) {
-			trigger_burst_buffer();
-			error("slurm_bb_data_in for JobId=%u failed.",
-			      stage_in_args->job_id);
-			rc = SLURM_ERROR;
-			lock_slurmctld(job_write_lock);
-			job_ptr = find_job_record(stage_in_args->job_id);
-			if (job_ptr)
-				bb_update_system_comment(job_ptr, "data_in",
-							 resp_msg, 0);
-			unlock_slurmctld(job_write_lock);
-		}
+	if (rc != SLURM_SUCCESS) {
+		_fail_stage_in(stage_in_args, op, rc, resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
 	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
-	if ((rc == SLURM_SUCCESS) && bb_job && bb_job->req_size)
+	if (bb_job && bb_job->req_size)
 		get_real_size = true;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
@@ -3372,9 +3377,9 @@ static void *_start_stage_in(void *x)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			trigger_burst_buffer();
-			error("%s for JobId=%u failed, status:%u, response:%s",
-			      op, stage_in_args->job_id, rc, resp_msg);
+			_fail_stage_in(stage_in_args, op, rc, resp_msg);
+			rc = SLURM_ERROR;
+			goto fini;
 		} else if (resp_msg) {
 			char *end_ptr;
 
@@ -3394,7 +3399,7 @@ static void *_start_stage_in(void *x)
 	if (!job_ptr) {
 		error("unable to find job record for JobId=%u",
 		      stage_in_args->job_id);
-	} else if (rc == SLURM_SUCCESS) {
+	} else {
 		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
 		if (bb_job)
 			bb_set_job_bb_state(job_ptr, bb_job,
@@ -3436,8 +3441,6 @@ static void *_start_stage_in(void *x)
 		}
 		log_flag(BURST_BUF, "Setup/stage-in complete for %pJ", job_ptr);
 		queue_job_scheduler();
-	} else {
-		_fail_stage_in(job_ptr, op, resp_msg);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
