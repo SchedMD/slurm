@@ -161,7 +161,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	packstr(slurm_conf.core_spec_plugin, buffer);
-	/* cluster_name */
+	packstr(slurm_conf.cluster_name, buffer);
 	packstr(slurm_conf.comm_params, buffer);
 	/* complete_wait */
 	pack32(slurm_conf.conf_flags, buffer);
@@ -387,7 +387,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	safe_unpackstr(&slurm_conf.core_spec_plugin, buffer);
-	/* cluster_name */
+	safe_unpackstr(&slurm_conf.cluster_name, buffer);
 	safe_unpackstr(&slurm_conf.comm_params, buffer);
 	/* complete_wait */
 	safe_unpack32(&slurm_conf.conf_flags, buffer);
