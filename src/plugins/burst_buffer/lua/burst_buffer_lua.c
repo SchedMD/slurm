@@ -3232,21 +3232,13 @@ static int _run_data_in(stage_in_args_t *stage_in_args, char *op,
 	return rc;
 }
 
-static void *_start_stage_in(void *x)
+static int _run_setup(stage_in_args_t *stage_in_args, char *op,
+		      bool *track_script_signal, char **resp_msg)
 {
+	char **argv = NULL;
+	int argc;
 	int rc;
-	uint32_t timeout, argc;
-	bool get_real_size = false, track_script_signal = false;
-	char *resp_msg = NULL, *op = NULL;
-	char **argv;
-	long real_size = 0;
-	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
-	job_record_t *job_ptr;
-	bb_alloc_t *bb_alloc = NULL;
-	bb_job_t *bb_job;
-	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
-	run_lua_args_t run_lua_args;
-
+	run_lua_args_t run_lua_args = { 0 };
 	DEF_TIMERS;
 
 	argc = 6;
@@ -3258,18 +3250,14 @@ static void *_start_stage_in(void *x)
 	argv[4] = xstrdup_printf("%"PRIu64, stage_in_args->bb_size);
 	argv[5] = xstrdup_printf("%s", stage_in_args->job_script);
 
-	timeout = bb_state.bb_config.other_timeout;
-	op = "slurm_bb_setup";
-
-	memset(&run_lua_args, 0, sizeof run_lua_args);
 	run_lua_args.argc = argc;
 	run_lua_args.argv = argv;
 	run_lua_args.get_job_ptr = true;
 	run_lua_args.job_id = stage_in_args->job_id;
 	run_lua_args.lua_func = op;
-	run_lua_args.resp_msg = &resp_msg;
-	run_lua_args.timeout = timeout;
-	run_lua_args.track_script_signal = &track_script_signal;
+	run_lua_args.resp_msg = resp_msg;
+	run_lua_args.timeout = bb_state.bb_config.other_timeout;
+	run_lua_args.track_script_signal = track_script_signal;
 	run_lua_args.with_scriptd = true;
 
 	START_TIMER;
@@ -3277,6 +3265,25 @@ static void *_start_stage_in(void *x)
 	END_TIMER;
 	log_flag(BURST_BUF, "%s for job JobId=%u ran for %s",
 		 op, stage_in_args->job_id, TIME_STR);
+
+	xfree_array(argv);
+	return rc;
+}
+
+static void *_start_stage_in(void *x)
+{
+	int rc;
+	bool get_real_size = false, track_script_signal = false;
+	char *resp_msg = NULL, *op = NULL;
+	long real_size = 0;
+	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
+	job_record_t *job_ptr;
+	bb_alloc_t *bb_alloc = NULL;
+	bb_job_t *bb_job;
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+
+	op = "slurm_bb_setup";
+	rc = _run_setup(stage_in_args, op, &track_script_signal, &resp_msg);
 
 	if (track_script_signal) {
 		/* Killed by slurmctld, exit now. */
@@ -3432,7 +3439,6 @@ fini:
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->pool);
 	xfree(stage_in_args);
-	xfree_array(argv);
 
 	return NULL;
 }
