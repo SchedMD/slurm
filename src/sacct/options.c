@@ -145,7 +145,7 @@ static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
 	uint32_t c;
 	char *tmp_name = NULL;
 
-	c = job_reason_num(name);
+	c = job_state_reason_num(name);
 	if (c == NO_VAL)
 		fatal("unrecognized job reason value '%s'", name);
 	tmp_name = xstrdup_printf("%u", c);

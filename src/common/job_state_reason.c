@@ -40,7 +40,7 @@
  * Any strong_alias() needs to be defined in slurm_xlator.h as well.
  */
 strong_alias(job_state_reason_string, slurm_job_state_reason_string);
-strong_alias(job_reason_num, slurm_job_reason_num);
+strong_alias(job_state_reason_num, slurm_job_state_reason_num);
 
 extern char *job_state_reason_string(enum job_state_reason inx)
 {
@@ -454,7 +454,7 @@ extern char *job_state_reason_string(enum job_state_reason inx)
 	}
 }
 
-extern enum job_state_reason job_reason_num(char *reason)
+extern enum job_state_reason job_state_reason_num(char *reason)
 {
 	if (!xstrcasecmp(reason, "None"))
 		return WAIT_NO_REASON;
