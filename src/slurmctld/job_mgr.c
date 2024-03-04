@@ -10611,12 +10611,17 @@ static int _add_job_state_by_job_id(const uint32_t job_id,
 	int rc = SLURM_SUCCESS;
 
 	/*
-	 * This uses the same logic as pack_one_job().
+	 * This uses the similar logic as pack_one_job() but simpler as whole
+	 * array is always being dumped.
 	 * TODO: Combine the duplicate logic.
 	 */
 	job_ptr = find_job_record(job_id);
 
-	if (job_ptr && job_ptr->het_job_list) {
+	if (!job_ptr) {
+		/* No job found is okay */
+		//return ESLURM_INVALID_JOB_ID;
+		return SLURM_SUCCESS;
+	} else if (job_ptr && job_ptr->het_job_list) {
 		foreach_het_job_state_args_t het_args = {
 			.job_ptr = job_ptr,
 			.job_state_args = args,
@@ -10633,30 +10638,13 @@ static int _add_job_state_by_job_id(const uint32_t job_id,
 		/* Pack regular (not array) job */
 		return _add_job_state_job(args, job_ptr);
 	} else {
-		/* Either the job is not found or it is a job array */
-		bool packed_head = false;
+		if ((rc = _add_job_state_job(args, job_ptr)))
+			return rc;
 
-		if (job_ptr) {
-			packed_head = true;
-			if ((rc = _add_job_state_job(args, job_ptr)))
+		while ((job_ptr = job_ptr->job_array_next_j))
+			if ((job_ptr->array_job_id == job_id) &&
+			    (rc = _add_job_state_job(args, job_ptr)))
 				return rc;
-		}
-		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
-		while (job_ptr) {
-			if ((job_ptr->job_id == job_id) && packed_head) {
-				; /* Already packed */
-			} else if (IS_JOB_REVOKED(job_ptr)) {
-				/*
-				 * Array jobs can't be federated but to be
-				 * consistent and future proof, don't pack
-				 * revoked array jobs.
-				 */
-			} else if (job_ptr->array_job_id == job_id) {
-				if ((rc = _add_job_state_job(args, job_ptr)))
-					return rc;
-			}
-			job_ptr = job_ptr->job_array_next_j;
-		}
 	}
 
 	return args->rc;
