@@ -53,7 +53,7 @@ int slurm_hostset_count(hostset_t *);
 START_TEST(hostlist_nth_lo_assert_check)
 {
 	hostlist_t *hl = slurm_hostlist_create("host1,host2");
-	ck_assert_ptr_ne(hl, NULL);
+	ck_assert(hl != NULL);
 
 	/* expect SIGABRT */
 	/* index must be >= 0 */
@@ -65,7 +65,7 @@ END_TEST
 START_TEST(hostlist_delete_nth_hi_assert_check)
 {
 	hostlist_t *hl = slurm_hostlist_create("host1,host2");
-	ck_assert_ptr_ne(hl, NULL);
+	ck_assert(hl != NULL);
 
 	/* expect SIGABRT */
 	/* index must be < 2 */
@@ -80,10 +80,10 @@ START_TEST(hostlist_nth_check)
 	char *p;
 	int n;
 
-	ck_assert_ptr_eq(slurm_hostlist_nth(hl, 0), NULL);
+	ck_assert(slurm_hostlist_nth(hl, 0) == NULL);
 
 	hl = slurm_hostlist_create("host[1-3],host5");
-	ck_assert_ptr_ne(hl, NULL);
+	ck_assert(hl != NULL);
 
 	n = slurm_hostlist_count(hl);
 	ck_assert_int_eq(n, 4);

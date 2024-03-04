@@ -51,13 +51,13 @@ START_TEST(pack_back2_null_rec)
 	/* root_assoc gets unpacked into a empty structure */
 	ck_assert(unpack_rec->root_assoc != NULL);
 
-	ck_assert_uint_eq(pack_rec.classification,   unpack_rec->classification);
-	ck_assert_uint_eq(pack_rec.dimensions,       unpack_rec->dimensions);
-	ck_assert_uint_eq(pack_rec.fed.id,           unpack_rec->fed.id);
-	ck_assert_uint_eq(pack_rec.fed.state,        unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.flags,            unpack_rec->flags);
-	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
-	ck_assert_uint_eq(pack_rec.rpc_version,      unpack_rec->rpc_version);
+	ck_assert(pack_rec.classification   == unpack_rec->classification);
+	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
+	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
+	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
+	ck_assert(pack_rec.flags            == unpack_rec->flags);
+	ck_assert(pack_rec.plugin_id_select == unpack_rec->plugin_id_select);
+	ck_assert(pack_rec.rpc_version      == unpack_rec->rpc_version);
 
 	free_buf(buf);
 	slurmdb_destroy_cluster_rec(unpack_rec);
@@ -108,14 +108,14 @@ START_TEST(pack_back2_rec)
 
 	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert_uint_eq(list_count(pack_rec.accounting_list), list_count(unpack_rec->accounting_list));
-	ck_assert_uint_eq(pack_rec.classification, unpack_rec->classification);
-	ck_assert_uint_eq(pack_rec.dimensions, unpack_rec->dimensions);
-	ck_assert_uint_eq(pack_rec.fed.id, unpack_rec->fed.id);
-	ck_assert_uint_eq(pack_rec.fed.state, unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.flags, unpack_rec->flags);
-	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
-	ck_assert_uint_eq(pack_rec.rpc_version, unpack_rec->rpc_version);
+	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
+	ck_assert(pack_rec.classification == unpack_rec->classification);
+	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
+	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
+	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
+	ck_assert(pack_rec.flags == unpack_rec->flags);
+	ck_assert(pack_rec.plugin_id_select == unpack_rec->plugin_id_select);
+	ck_assert(pack_rec.rpc_version == unpack_rec->rpc_version);
 
 	ck_assert(unpack_rec->root_assoc != NULL);
 
@@ -229,13 +229,13 @@ START_TEST(pack_back1_null_rec)
 	/* root_assoc gets unpacked into a empty structure */
 	ck_assert(unpack_rec->root_assoc != NULL);
 
-	ck_assert_uint_eq(pack_rec.classification,   unpack_rec->classification);
-	ck_assert_uint_eq(pack_rec.dimensions,       unpack_rec->dimensions);
-	ck_assert_uint_eq(pack_rec.fed.id,           unpack_rec->fed.id);
-	ck_assert_uint_eq(pack_rec.fed.state,        unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.flags,            unpack_rec->flags);
-	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
-	ck_assert_uint_eq(pack_rec.rpc_version,      unpack_rec->rpc_version);
+	ck_assert(pack_rec.classification   == unpack_rec->classification);
+	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
+	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
+	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
+	ck_assert(pack_rec.flags            == unpack_rec->flags);
+	ck_assert(pack_rec.plugin_id_select == unpack_rec->plugin_id_select);
+	ck_assert(pack_rec.rpc_version      == unpack_rec->rpc_version);
 
 	free_buf(buf);
 	slurmdb_destroy_cluster_rec(unpack_rec);
@@ -286,14 +286,14 @@ START_TEST(pack_back1_rec)
 
 	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert_uint_eq(list_count(pack_rec.accounting_list), list_count(unpack_rec->accounting_list));
-	ck_assert_uint_eq(pack_rec.classification, unpack_rec->classification);
-	ck_assert_uint_eq(pack_rec.dimensions, unpack_rec->dimensions);
-	ck_assert_uint_eq(pack_rec.fed.id, unpack_rec->fed.id);
-	ck_assert_uint_eq(pack_rec.fed.state, unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.flags, unpack_rec->flags);
-	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
-	ck_assert_uint_eq(pack_rec.rpc_version, unpack_rec->rpc_version);
+	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
+	ck_assert(pack_rec.classification == unpack_rec->classification);
+	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
+	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
+	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
+	ck_assert(pack_rec.flags == unpack_rec->flags);
+	ck_assert(pack_rec.plugin_id_select == unpack_rec->plugin_id_select);
+	ck_assert(pack_rec.rpc_version == unpack_rec->rpc_version);
 
 	ck_assert(unpack_rec->root_assoc != NULL);
 
