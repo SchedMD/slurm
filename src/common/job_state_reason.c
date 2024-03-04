@@ -403,12 +403,15 @@ const static entry_t jsra[] = {
 		.str = "AssocMaxBBMinutesPerJob",
 	},
 	[WAIT_QOS_GRP_UNK] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpUnknown",
 	},
 	[WAIT_QOS_GRP_UNK_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpUnknownMinutes",
 	},
 	[WAIT_QOS_GRP_UNK_RUN_MIN] = {
+		.flags = JSR_QOS_GRP,
 		.str = "QOSGrpUnknownRunMinutes",
 	},
 	[WAIT_QOS_MAX_UNK_PER_JOB] = {
