@@ -265,7 +265,7 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 		error("Unable to move pid %d to root cgroup", getpid());
 		goto end;
 	}
-	xcgroup_wait_pid_moved(step_cg, log_str);
+	common_cgroup_wait_pid_moved(step_cg, log_str);
 
 	/* Delete step cgroup. */
 	if ((rc = common_cgroup_delete(step_cg)) != SLURM_SUCCESS)
@@ -599,7 +599,8 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 		error("Unable to move pid %d to root cgroup", getpid());
 		goto end;
 	}
-	xcgroup_wait_pid_moved(&int_cg[sub][CG_LEVEL_SYSTEM], g_cg_name[sub]);
+	common_cgroup_wait_pid_moved(&int_cg[sub][CG_LEVEL_SYSTEM],
+				     g_cg_name[sub]);
 
 	if ((rc = common_cgroup_delete(&int_cg[sub][CG_LEVEL_SYSTEM]))
 	    != SLURM_SUCCESS) {

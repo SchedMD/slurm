@@ -222,4 +222,12 @@ extern int common_cgroup_lock(xcgroup_t *cg);
  */
 extern int common_cgroup_unlock(xcgroup_t *cg);
 
+/*
+ * Given a cgroup, wait for our pid to disappear from this cgroup.
+ *
+ * IN cg - cgroup where we will look into until our pid disappears.
+ * IN cg_name - cgroup name for custom logging purposes.
+ */
+extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
+
 #endif /* !_CGROUP_COMMON_H */

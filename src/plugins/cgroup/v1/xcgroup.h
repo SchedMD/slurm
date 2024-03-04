@@ -96,16 +96,6 @@ extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid);
 extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri);
 
 /*
- * Given a cgroup, wait for our pid to disappear from this cgroup. This is
- * typically called from slurmstepd, so it will efectively wait for the pid of
- * slurmstepd to be removed from the cgroup.
- *
- * IN cg - cgroup where we will look into until our pid disappears.
- * IN cg_name - cgroup name for custom logging purposes.
- */
-extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
-
-/*
  * Get a uint32 from a cgroup  for the specified parameter.
  *
  * IN cg - cgroup to get the value from.

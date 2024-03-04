@@ -56,6 +56,4 @@
 
 #include "xcgroup.h"
 
-#define MAX_MOVE_WAIT 1000 /* Miliseconds */
-
 #endif /* !_CGROUP_V1_H */
