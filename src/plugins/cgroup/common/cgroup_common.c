@@ -658,13 +658,13 @@ extern int common_cgroup_unlock(xcgroup_t *cg)
 	return fstatus;
 }
 
-extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
+extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,
+					 const char *cg_name)
 {
 	pid_t *pids = NULL;
 	int npids = 0;
 	int cnt = 0;
 	int i = 0;
-	pid_t pid = getpid();
 	bool found;
 
 	/*
@@ -699,9 +699,9 @@ extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
 	}  while (found && (cnt < 10));
 
 	if (!found)
-		log_flag(CGROUP, "Took %d checks before stepd pid %d was removed from the %s cgroup.",
+		log_flag(CGROUP, "Took %d checks before pid %d was removed from the %s cgroup.",
 			 cnt, pid, cg_name);
 	else
-		error("Pid %d is still in the %s cgroup after %d tries and %d ms. It might be left uncleaned after the job.",
+		error("Pid %d is still in the %s cgroup after %d tries and %d ms.",
 		      pid, cg_name, cnt, MAX_MOVE_WAIT);
 }
