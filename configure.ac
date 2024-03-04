@@ -48,7 +48,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 LT_INIT
-PKG_PROG_PKG_CONFIG([0.9.0])
+X_AC_PKGCONFIG
 
 dnl Find objcopy and setup path
 AC_CHECK_TARGET_TOOL([OBJCOPY], objcopy, [], [])
