@@ -70,7 +70,7 @@ static data_for_each_cmd_t
 	if (data_get_bool(data))
 		(*found)++;
 
-	ck_assert_ptr_ne(key, NULL);
+	ck_assert(key != NULL);
 	return DATA_FOR_EACH_CONT;
 }
 
@@ -78,7 +78,7 @@ static data_for_each_cmd_t
 	_invert_dict_bool(const char *key, data_t *data, void *arg)
 {
 	ck_assert_msg(data_get_type(data) == DATA_TYPE_BOOL, "entry bool type");
-	ck_assert_ptr_ne(key, NULL);
+	ck_assert(key != NULL);
 	data_set_bool(data, !data_get_bool(data));
 	return DATA_FOR_EACH_CONT;
 }
@@ -88,7 +88,7 @@ static data_for_each_cmd_t
 {
 	int *max = arg;
 
-	ck_assert_ptr_ne(key, NULL);
+	ck_assert(key != NULL);
 	ck_assert_msg(data_get_type(data) == DATA_TYPE_BOOL, "entry bool type");
 
 	if (*max <= 0)
