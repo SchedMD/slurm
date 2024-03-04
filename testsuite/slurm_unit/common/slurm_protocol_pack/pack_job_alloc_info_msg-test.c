@@ -10,7 +10,7 @@
 START_TEST(invalid_protocol)
 {
 	int rc;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 
 	rc = unpack_msg(&msg, NULL);
@@ -38,7 +38,7 @@ START_TEST(pack_back2_req_null_ptrs)
 	int rc;
 	buf_t *buf = init_buf(1024);
 
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	job_alloc_info_msg_t pack_req = {0};
 	pack_req.job_id = 12345;
 
@@ -58,9 +58,9 @@ START_TEST(pack_back2_req_null_ptrs)
 	rc = unpack_msg(&msg, buf);
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert(unpack_req);
+	ck_assert(unpack_req != NULL);
 	ck_assert(!unpack_req->req_cluster);
-	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
+	ck_assert(unpack_req->job_id == pack_req.job_id);
 
 	free_buf(buf);
 	slurm_free_msg_data(msg.msg_type, msg.data);
@@ -72,7 +72,7 @@ START_TEST(pack_back2_req)
 	int rc;
 	buf_t *buf = init_buf(1024);
 
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	job_alloc_info_msg_t pack_req = {0};
 	pack_req.job_id = 12345;
 	pack_req.req_cluster = xstrdup("blah");
@@ -93,9 +93,9 @@ START_TEST(pack_back2_req)
 	rc = unpack_msg(&msg, buf);
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert(unpack_req);
+	ck_assert(unpack_req != NULL);
 	//ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
-	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
+	ck_assert(unpack_req->job_id == pack_req.job_id);
 
 	free_buf(buf);
 	xfree(pack_req.req_cluster);
@@ -108,7 +108,7 @@ START_TEST(pack_back1_req_null_ptrs)
 	int rc;
 	buf_t *buf = init_buf(1024);
 
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	job_alloc_info_msg_t pack_req = {0};
 	pack_req.job_id = 12345;
 
@@ -127,9 +127,9 @@ START_TEST(pack_back1_req_null_ptrs)
 	rc = unpack_msg(&msg, buf);
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert(unpack_req);
+	ck_assert(unpack_req != NULL);
 	ck_assert(!unpack_req->req_cluster);
-	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
+	ck_assert(unpack_req->job_id == pack_req.job_id);
 
 	free_buf(buf);
 	slurm_free_msg_data(msg.msg_type, msg.data);
@@ -141,7 +141,7 @@ START_TEST(pack_back1_req)
 	int rc;
 	buf_t *buf = init_buf(1024);
 
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	job_alloc_info_msg_t pack_req = {0};
 	pack_req.job_id = 12345;
 	pack_req.req_cluster = xstrdup("blah");
@@ -162,10 +162,10 @@ START_TEST(pack_back1_req)
 	rc = unpack_msg(&msg, buf);
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert(unpack_req);
-	ck_assert_ptr_ne(unpack_req->req_cluster, pack_req.req_cluster);
+	ck_assert(unpack_req != NULL);
+	ck_assert(unpack_req->req_cluster != pack_req.req_cluster);
 	ck_assert_str_eq(unpack_req->req_cluster, pack_req.req_cluster);
-	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
+	ck_assert(unpack_req->job_id == pack_req.job_id);
 
 	free_buf(buf);
 	xfree(pack_req.req_cluster);

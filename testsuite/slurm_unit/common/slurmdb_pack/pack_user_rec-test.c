@@ -80,11 +80,11 @@ START_TEST(pack_1702_rec)
 	slurmdb_user_rec_t *unpack_rec;
 	rc = slurmdb_unpack_user_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert_uint_eq(pack_rec.admin_level,            unpack_rec->admin_level);
+	ck_assert(pack_rec.admin_level == unpack_rec->admin_level);
 	ck_assert_int_eq(list_count(pack_rec.assoc_list),  list_count(unpack_rec->assoc_list));
 	ck_assert_int_eq(list_count(pack_rec.coord_accts), list_count(unpack_rec->coord_accts));
 	ck_assert_int_eq(list_count(pack_rec.wckey_list),  list_count(unpack_rec->wckey_list));
-	ck_assert_uint_eq(pack_rec.uid,                    unpack_rec->uid);
+	ck_assert(pack_rec.uid == unpack_rec->uid);
 	ck_assert_str_eq(pack_rec.default_acct,            unpack_rec->default_acct);
 	ck_assert_str_eq(pack_rec.default_wckey,           unpack_rec->default_wckey);
 	ck_assert_str_eq(pack_rec.name,                    unpack_rec->name);
@@ -114,7 +114,7 @@ START_TEST(pack_1702_rec_null_ptrs)
 	int rc = slurmdb_unpack_user_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
-	ck_assert_uint_eq(pack_rec.admin_level, unpack_rec->admin_level);
+	ck_assert(pack_rec.admin_level   == unpack_rec->admin_level);
 	ck_assert(pack_rec.assoc_list    == unpack_rec->assoc_list);
 	ck_assert(pack_rec.coord_accts   == unpack_rec->coord_accts);
 	ck_assert(pack_rec.wckey_list    == unpack_rec->wckey_list);
@@ -122,7 +122,7 @@ START_TEST(pack_1702_rec_null_ptrs)
 	ck_assert(pack_rec.default_wckey == unpack_rec->default_wckey);
 	ck_assert(pack_rec.name          == unpack_rec->name);
 	ck_assert(pack_rec.old_name      == unpack_rec->old_name);
-	ck_assert_uint_eq(pack_rec.uid,  unpack_rec->uid);
+	ck_assert(pack_rec.uid           == unpack_rec->uid);
 
 	free_buf(buf);
 	slurmdb_destroy_user_rec(unpack_rec);

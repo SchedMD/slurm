@@ -75,13 +75,13 @@ void compare_test(priority_factors_response_msg_t *unpack_resp,
 	priority_factors_object_t *unpack_req;
 	priority_factors_t *prio_factors;
 
-	ck_assert(unpack_resp->priority_factors_list);
+	ck_assert(unpack_resp->priority_factors_list != NULL);
 
 	unpack_req = list_peek(unpack_resp->priority_factors_list);
-	ck_assert(unpack_req);
+	ck_assert(unpack_req != NULL);
 	prio_factors = unpack_req->prio_factors;
 	ck_assert(!unpack_req->cluster_name);
-	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
+	ck_assert(unpack_req->job_id == pack_req.job_id);
 
 	ck_assert(!xstrcmp(pack_req.partition, unpack_req->partition));
 	ck_assert(pack_req.user_id == unpack_req->user_id);
@@ -123,7 +123,7 @@ void run_test_version(uint16_t protocol_version)
 	resp_req.priority_factors_list = list_create(NULL);
 	list_append(resp_req.priority_factors_list, &pack_req);
 
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	msg.msg_type         = RESPONSE_PRIORITY_FACTORS;
 	msg.protocol_version = protocol_version;
 	msg.data             = &resp_req;
