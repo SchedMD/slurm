@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- Federation - allow client command operation when slurmdbd is unavailable.
  -- Enforce mutual exclusivity of --systemd and -D when launching daemons
  -- slurmctld - remove -d option
+ -- burst_buffer/lua - Trigger a burst_buffer event for strigger when the
+    real_size function fails.
 
 * Changes in Slurm 23.11.5
 ==========================

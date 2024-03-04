@@ -3332,6 +3332,7 @@ static void *_start_stage_in(void *x)
 		}
 
 		if (rc != SLURM_SUCCESS) {
+			trigger_burst_buffer();
 			error("%s for JobId=%u failed, status:%u, response:%s",
 			      op, stage_in_args->job_id, rc, resp_msg);
 		} else if (resp_msg) {
