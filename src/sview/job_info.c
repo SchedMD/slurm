@@ -1667,7 +1667,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (job_ptr->state_desc)
 		reason = job_ptr->state_desc;
 	else
-		reason = job_reason_string(job_ptr->state_reason);
+		reason = job_state_reason_string(job_ptr->state_reason);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_REASON), reason);
@@ -2104,7 +2104,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	if (job_ptr->state_desc)
 		tmp_reason = job_ptr->state_desc;
 	else
-		tmp_reason = job_reason_string(job_ptr->state_reason);
+		tmp_reason = job_state_reason_string(job_ptr->state_reason);
 
 	if (job_ptr->reboot)
 		tmp_reboot = "yes";

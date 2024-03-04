@@ -176,9 +176,9 @@ static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)
 
 	if (!job_ptr->state_desc) {
 		job_ptr->state_desc =
-			xstrdup(job_reason_string(job_ptr->state_reason));
+			xstrdup(job_state_reason_string(job_ptr->state_reason));
 	}
-	task_desc = job_reason_string(task_ptr->state_reason);
+	task_desc = job_state_reason_string(task_ptr->state_reason);
 	if (strstr(job_ptr->state_desc, task_desc))
 		return;
 	xstrfmtcat(job_ptr->state_desc, ",%s", task_desc);
@@ -700,7 +700,7 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
-			reason = job_reason_string(job->state_reason);
+			reason = job_state_reason_string(job->state_reason);
 		_print_str(reason, width, right, true);
 	}
 	if (suffix)
@@ -1086,7 +1086,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
-			reason = job_reason_string(job->state_reason);
+			reason = job_state_reason_string(job->state_reason);
 		xstrfmtcat(reason_fmt, "(%s)", reason);
 		_print_str(reason_fmt, width, right, true);
 		xfree(reason_fmt);

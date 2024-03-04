@@ -3574,7 +3574,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			job_ptr->state_reason = FAIL_CONSTRAINTS;
 			debug2("%s: setting %pJ to \"%s\" (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(rc));
 			FREE_NULL_BITMAP(usable_node_mask);
 			return rc;
@@ -3877,7 +3877,7 @@ end_node_set:
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		debug2("%s: setting %pJ to \"%s\" (%s)",
 		       __func__, job_ptr,
-		       job_reason_string(job_ptr->state_reason),
+		       job_state_reason_string(job_ptr->state_reason),
 		       slurm_strerror(rc));
 		FREE_NULL_BITMAP(reboot_bitmap);
 		return rc;

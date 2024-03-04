@@ -493,7 +493,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 		xstrfmtcat(out, "Reason=%s ", job_ptr->state_desc);
 	} else
-		xstrfmtcat(out, "Reason=%s ", job_reason_string(job_ptr->state_reason));
+		xstrfmtcat(out, "Reason=%s ",
+			   job_state_reason_string(job_ptr->state_reason));
 
 	if (job_ptr->failed_node)
 		xstrfmtcat(out, "FailedNode=%s ", job_ptr->failed_node);

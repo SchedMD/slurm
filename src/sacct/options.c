@@ -133,7 +133,7 @@ static void _help_job_reason_msg(void)
 			printf(" ");
 		else if (idx)
 			printf("\n");
-		printf("%-39s", job_reason_string(idx));
+		printf("%-39s", job_state_reason_string(idx));
 	}
 	printf("\n");
 	return;

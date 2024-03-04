@@ -439,7 +439,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "USERNAME", job->user_name);
 	_env_append (&env, "GROUPNAME", job->group_name);
 	_env_append (&env, "STATEREASONPREV",
-		     job_reason_string(job->state_reason_prev));
+		     job_state_reason_string(job->state_reason_prev));
 	if (job->std_in)
 		_env_append (&env, "STDIN",     job->std_in);
 	if (job->std_out)

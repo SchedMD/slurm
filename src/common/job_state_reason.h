@@ -39,7 +39,7 @@
 #include "slurm/slurm.h"
 
 /* Given a job's reason for waiting, return a descriptive string */
-extern char *job_reason_string(enum job_state_reason inx);
+extern char *job_state_reason_string(enum job_state_reason inx);
 
 /* Given a job's reason string for waiting, return enum job_state_reason */
 extern enum job_state_reason job_reason_num(char *reason);

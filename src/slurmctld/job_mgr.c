@@ -5077,7 +5077,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			job_completion_logger(job_ptr, false);
 			error("%s: setting %pJ to \"%s\"",
 			      __func__, job_ptr,
-			      job_reason_string(job_ptr->state_reason));
+			      job_state_reason_string(job_ptr->state_reason));
 		}
 		return error_code;
 	}
@@ -5131,28 +5131,28 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		if (!independent) {
 			debug2("%s: setting %pJ to \"%s\" due to dependency (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(ESLURM_DEPENDENCY));
 			return ESLURM_DEPENDENCY;
 		}
 		else if (too_fragmented) {
 			debug2("%s: setting %pJ to \"%s\" due to fragmentation (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(ESLURM_FRAGMENTATION));
 			return ESLURM_FRAGMENTATION;
 		}
 		else if (!top_prio) {
 			debug2("%s: setting %pJ to \"%s\" because it's not top priority (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(ESLURM_NOT_TOP_PRIORITY));
 			return ESLURM_NOT_TOP_PRIORITY;
 		} else {
 			job_ptr->state_reason = FAIL_DEFER;
 			debug2("%s: setting %pJ to \"%s\" due to SchedulerParameters=defer (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(ESLURM_DEFER));
 			return ESLURM_DEFER;
 		}
@@ -5258,7 +5258,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			job_completion_logger(job_ptr, false);
 			debug2("%s: setting %pJ to \"%s\" because it cannot be immediately allocated (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(error_code));
 		} else {	/* job remains queued */
 			if ((error_code == ESLURM_NODES_BUSY) ||
@@ -5284,7 +5284,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_completion_logger(job_ptr, false);
 		debug2("%s: setting %pJ to \"%s\" due to a flaw in the job request (%s)",
 		       __func__, job_ptr,
-		       job_reason_string(job_ptr->state_reason),
+		       job_state_reason_string(job_ptr->state_reason),
 		       slurm_strerror(error_code));
 		return error_code;
 	}
@@ -7356,11 +7356,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 				   &acct_policy_limit_set, 0))) {
 		if (err_msg) {
 			xfree(*err_msg);
-			*err_msg = xstrdup(job_reason_string(acct_reason));
+			*err_msg =
+				xstrdup(job_state_reason_string(acct_reason));
 		}
 		info("%s: exceeded association/QOS limit for user %u: %s",
 		     __func__, job_desc->user_id,
-		     err_msg ? *err_msg : job_reason_string(acct_reason));
+		     err_msg ? *err_msg : job_state_reason_string(acct_reason));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
 	}
@@ -12536,7 +12537,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			    && !acct_limit_already_exceeded) {
 				info("%s: exceeded association/QOS limit for user %u: %s",
 				     __func__, job_desc->user_id,
-				     job_reason_string(acct_reason));
+				     job_state_reason_string(acct_reason));
 				error_code = ESLURM_ACCOUNTING_POLICY;
 				goto fini;
 			}

@@ -2704,7 +2704,8 @@ next_task:
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority);
 			last_job_update = now;
 			_set_job_time_limit(job_ptr, orig_time_limit);

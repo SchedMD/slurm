@@ -417,7 +417,6 @@
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string
 #define preempt_mode_num	slurm_preempt_mode_num
-#define job_reason_string	slurm_job_reason_string
 #define job_reason_num		slurm_job_reason_num
 #define job_share_string	slurm_job_share_string
 #define job_state_string	slurm_job_state_string
@@ -533,6 +532,9 @@
 
 /* topology.[ch] functions */
 #define topology_g_build_config slurm_topology_g_build_config
+
+/* job_state_reason.[ch] functions */
+#define job_state_reason_string	slurm_job_state_reason_string
 
 #endif /* USE_ALIAS */
 

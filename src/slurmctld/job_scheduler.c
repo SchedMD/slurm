@@ -321,7 +321,7 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 			     job_ptr,
 			     job_state_string(job_ptr->job_state),
-			     job_reason_string(job_ptr->state_reason),
+			     job_state_reason_string(job_ptr->state_reason),
 			     job_ptr->priority);
 		return false;
 	}
@@ -942,7 +942,7 @@ extern void fill_array_reasons(job_record_t *job_ptr,
 		last_job_update = time(NULL);
 		debug3("%s: Setting reason of array task %pJ to %s",
 		       __func__, job_ptr,
-		       job_reason_string(job_ptr->state_reason));
+		       job_state_reason_string(job_ptr->state_reason));
 	}
 }
 
@@ -1630,7 +1630,7 @@ next_task:
 				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
 					    job_ptr,
 					    job_ptr->part_ptr->name,
-					    job_reason_string(
+					    job_state_reason_string(
 						    job_ptr->state_reason),
 					    job_ptr->state_desc,
 					    job_ptr->priority);
@@ -1644,7 +1644,7 @@ next_task:
 				sched_debug2("%pJ. unable to schedule in Partition=%s (per _failed_partition()). Retaining previous scheduling Reason=%s. Desc=%s. Priority=%u.",
 					     job_ptr,
 					     job_ptr->part_ptr->name,
-					     job_reason_string(
+					     job_state_reason_string(
 						     job_ptr->state_reason),
 					     job_ptr->state_desc,
 					     job_ptr->priority);
@@ -1743,7 +1743,8 @@ next_task:
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
 			goto fail_this_part;
@@ -1800,14 +1801,16 @@ skip_start:
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
 		} else if (error_code == ESLURM_LICENSES_UNAVAILABLE) {
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority);
 			if (bf_licenses) {
 				sched_debug("%pJ is blocked on licenses. Stopping scheduling so license backfill can handle this",
@@ -1835,7 +1838,8 @@ skip_start:
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority);
 			continue;
 		} else if ((error_code == ESLURM_RESERVATION_BUSY) ||
@@ -1845,7 +1849,8 @@ skip_start:
 				sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 					     job_ptr,
 					     job_state_string(job_ptr->job_state),
-					     job_reason_string(job_ptr->state_reason),
+					     job_state_reason_string(
+						     job_ptr->state_reason),
 					     job_ptr->priority);
 				bit_and_not(avail_node_bitmap,
 					    job_ptr->resv_ptr->node_bitmap);
@@ -1868,7 +1873,8 @@ skip_start:
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s. Couldn't get federation job lock.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
 		} else if (error_code == SLURM_SUCCESS) {
@@ -1940,7 +1946,7 @@ skip_start:
 			job_ptr->priority = 0;
 			debug2("%s: setting %pJ to \"%s\" (%s)",
 			       __func__, job_ptr,
-			       job_reason_string(job_ptr->state_reason),
+			       job_state_reason_string(job_ptr->state_reason),
 			       slurm_strerror(error_code));
 		}
 

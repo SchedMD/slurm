@@ -1559,7 +1559,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REASON:
 			switch(type) {
 			case JOB:
-				tmp_char = job_reason_string(
+				tmp_char = job_state_reason_string(
 					job->state_reason_prev);
 				break;
 			default:

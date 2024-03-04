@@ -142,7 +142,7 @@ slurm_job_reason_string(slurm_t self, uint32_t inx)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		RETVAL = slurm_job_reason_string(inx);
+		RETVAL = (char *)slurm_job_state_reason_string(inx);
 	OUTPUT:
 		RETVAL
 
