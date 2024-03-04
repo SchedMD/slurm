@@ -6656,7 +6656,7 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 	return new_gres_js;
 }
 
-/* Copy gres_job_state_t record for one specific node */
+/* Copy gres_job_state_t record for one specific node (stepd) */
 static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 {
 	gres_job_state_t *new_gres_js;
@@ -6688,16 +6688,15 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 		       bit_size(gres_js->gres_bit_alloc[node_index]) * sizeof(uint64_t));
 	}
 
-	if (gres_js->gres_cnt_node_select) {
-		new_gres_js->gres_cnt_node_select = xmalloc(sizeof(uint64_t));
-		new_gres_js->gres_cnt_node_select[0] =
-			gres_js->gres_cnt_node_select[node_index];
-	}
-	if (gres_js->gres_bit_select) {
-		new_gres_js->gres_bit_select = xmalloc(sizeof(bitstr_t *));
-		new_gres_js->gres_bit_select[0] =
-			bit_copy(gres_js->gres_bit_select[node_index]);
-	}
+	/*
+	 * No reason to do
+	 *
+	 * gres_js->gres_cnt_node_select
+	 * gres_js->gres_bit_select
+	 *
+	 * they are based off the entire cluster this is not needed for the
+	 * stepd.
+	 */
 
 	return new_gres_js;
 }
