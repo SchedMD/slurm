@@ -411,6 +411,7 @@ notifies slurm about failed nodes.
 %build
 %configure \
 	--with-systemdsystemunitdir=%{_unitdir} \
+	--enable-pkgconfig \
 	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_mysql_config} \
@@ -541,19 +542,6 @@ touch $LIST
    test -f %{buildroot}/%{_sbindir}/slurmconfgen.py	&&
 	echo %{_sbindir}/slurmconfgen.py		>>$LIST
 %endif
-
-# Make pkg-config file
-mkdir -p %{buildroot}/%{_libdir}/pkgconfig
-cat >%{buildroot}/%{_libdir}/pkgconfig/slurm.pc <<EOF
-includedir=%{_prefix}/include
-libdir=%{_libdir}
-
-Cflags: -I\${includedir}
-Libs: -L\${libdir} -lslurm
-Description: Slurm API
-Name: %{name}
-Version: %{version}
-EOF
 
 LIST=./pam.files
 touch $LIST
