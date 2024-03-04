@@ -1550,6 +1550,28 @@ static int _load_pools(uint32_t timeout)
 	return SLURM_SUCCESS;
 }
 
+static void _fail_stage_in(job_record_t *job_ptr, char *op, char *resp_msg)
+{
+	bb_job_t *bb_job = NULL;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	xfree(job_ptr->state_desc);
+	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+	xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
+		   plugin_type, op, resp_msg);
+	job_ptr->priority = 0; /* Hold job */
+	if (bb_state.bb_config.flags & BB_FLAG_TEARDOWN_FAILURE) {
+		bb_job = bb_job_find(&bb_state, job_ptr->job_id);
+		if (bb_job)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_TEARDOWN);
+		_queue_teardown(job_ptr->job_id,
+				job_ptr->user_id, true,
+				job_ptr->group_id);
+	}
+}
+
 static void *_start_stage_out(void *x)
 {
 	int rc;
@@ -3415,20 +3437,7 @@ static void *_start_stage_in(void *x)
 		log_flag(BURST_BUF, "Setup/stage-in complete for %pJ", job_ptr);
 		queue_job_scheduler();
 	} else {
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
-			   plugin_type, op, resp_msg);
-		job_ptr->priority = 0; /* Hold job */
-		if (bb_state.bb_config.flags & BB_FLAG_TEARDOWN_FAILURE) {
-			bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
-			if (bb_job)
-				bb_set_job_bb_state(job_ptr, bb_job,
-						    BB_STATE_TEARDOWN);
-			_queue_teardown(job_ptr->job_id,
-					job_ptr->user_id, true,
-					job_ptr->group_id);
-		}
+		_fail_stage_in(job_ptr, op, resp_msg);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
