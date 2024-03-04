@@ -710,3 +710,18 @@ extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason)
 
 	return false;
 }
+
+extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
+{
+	/* If any more limits are added this will need to be added to */
+	if ((inx >= WAIT_QOS_GRP_CPU && inx <= WAIT_ASSOC_MAX_SUB_JOB) ||
+	    (inx == WAIT_ASSOC_JOB_LIMIT) ||
+	    (inx == WAIT_ASSOC_RESOURCE_LIMIT) ||
+	    (inx == WAIT_ASSOC_TIME_LIMIT) ||
+	    (inx == WAIT_QOS_JOB_LIMIT) ||
+	    (inx == WAIT_QOS_TIME_LIMIT)) {
+		return false;
+	}
+
+	return true;
+}

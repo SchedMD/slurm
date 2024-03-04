@@ -1713,7 +1713,7 @@ next_task:
 			}
 		}
 
-		if (!acct_policy_job_runnable_state(job_ptr) &&
+		if (!job_state_reason_assoc_or_qos(job_ptr->state_reason) &&
 		    !acct_policy_job_runnable_pre_select(job_ptr, false))
 			continue;
 

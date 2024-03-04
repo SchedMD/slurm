@@ -3434,26 +3434,6 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 }
 
 /*
- * Determine if the specified job can execute right now or is currently
- * blocked by an association or QOS limit. Does not re-validate job state.
- */
-extern bool acct_policy_job_runnable_state(job_record_t *job_ptr)
-{
-	/* If any more limits are added this will need to be added to */
-	if ((job_ptr->state_reason >= WAIT_QOS_GRP_CPU
-	     && job_ptr->state_reason <= WAIT_ASSOC_MAX_SUB_JOB) ||
-	    (job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
-		return false;
-	}
-
-	return true;
-}
-
-/*
  * acct_policy_job_runnable_pre_select - Determine if the specified
  *	job can execute right now or not depending upon accounting
  *	policy (e.g. running job limit for this association). If the
@@ -3491,7 +3471,7 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 		return true;
 
 	/* clear old state reason */
-	if (!acct_policy_job_runnable_state(job_ptr)) {
+	if (!job_state_reason_assoc_or_qos(job_ptr->state_reason)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
@@ -3741,7 +3721,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 		safe_limits = true;
 
 	/* clear old state reason */
-	if (!acct_policy_job_runnable_state(job_ptr)) {
+	if (!job_state_reason_assoc_or_qos(job_ptr->state_reason)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}

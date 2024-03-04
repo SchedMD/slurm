@@ -130,12 +130,6 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 						 bool assoc_mgr_locked);
 
 /*
- * Determine of the specified job can execute right now or is currently
- * blocked by an association or QOS limit. Does not re-validate job state.
- */
-extern bool acct_policy_job_runnable_state(job_record_t *job_ptr);
-
-/*
  * Using the limits on the job get the max nodes possible.
  */
 extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
