@@ -45,6 +45,6 @@ extern char *job_state_reason_string(enum job_state_reason inx);
 extern enum job_state_reason job_state_reason_num(char *reason);
 
 /* If the job is held up by a QOS GRP limit return true else return false. */
-extern bool job_state_qos_grp_limit(enum job_state_reason state_reason);
+extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason);
 
 #endif

@@ -858,7 +858,7 @@ extern enum job_state_reason job_state_reason_num(char *reason)
 	return NO_VAL;
 }
 
-extern bool job_state_qos_grp_limit(enum job_state_reason state_reason)
+extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason)
 {
 	if ((state_reason >= WAIT_QOS_GRP_CPU &&
 	     state_reason <= WAIT_QOS_GRP_WALL) ||
