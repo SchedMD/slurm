@@ -1,0 +1,8 @@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: slurm
+Description: Slurm Workload Manager
+Version: @SLURM_VERSION_STRING@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lslurm

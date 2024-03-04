@@ -1,15 +1,17 @@
 ETC_FILES = init.d.slurmdbd init.d.slurm \
 	    sackd.service slurmctld.service slurmdbd.service slurmd.service \
-	    slurmrestd.service
+	    slurmrestd.service slurm.pc
 
 CLEANFILES = $(ETC_FILES)
 
 edit = sed \
         -e 's|@bindir[@]|$(bindir)|g' \
+        -e 's|@includedir[@]|$(includedir)|g' \
         -e 's|@libdir[@]|$(libdir)|g' \
         -e 's|@sbindir[@]|$(sbindir)|g' \
         -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@sharedstatedir[@]|$(sharedstatedir)|g' \
+	-e 's|@SLURM_VERSION_STRING[@]|@SLURM_VERSION_STRING@|g' \
 	-e 's|@SLURMRESTD_PORT[@]|@SLURMRESTD_PORT@|g' \
 	-e 's|@SYSTEMD_TASKSMAX_OPTION[@]|$(SYSTEMD_TASKSMAX_OPTION)|g'
 
@@ -35,6 +37,13 @@ slurmd.service: Makefile $(srcdir)/slurmd.service.in
 
 slurmrestd.service: Makefile $(srcdir)/slurmrestd.service.in
 	$(edit) $(srcdir)/slurmrestd.service.in > slurmrestd.service
+
+slurm.pc: Makefile $(srcdir)/slurm.pc.in
+	$(edit) $(srcdir)/slurm.pc.in > slurm.pc
+
+if WITH_PKG_CONFIG
+pkgconfig_DATA = slurm.pc
+endif
 
 if WITH_SYSTEMD_UNITS
 systemdsystemunit_DATA = sackd.service slurmctld.service slurmdbd.service \
