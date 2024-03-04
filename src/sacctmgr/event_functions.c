@@ -507,14 +507,16 @@ extern int sacctmgr_list_event(int argc, char **argv)
 				break;
 			case PRINT_USER:
 				if (event->reason_uid != NO_VAL) {
-					tmp_char = uid_to_string_cached(
+					tmp_char = xstrdup_printf(
+						"%s(%u)",
+						uid_to_string_cached(
+							event->reason_uid),
 						event->reason_uid);
-					snprintf(tmp, sizeof(tmp), "%s(%u)",
-						 tmp_char, event->reason_uid);
 				} else
-					memset(tmp, 0, sizeof(tmp));
-				field->print_routine(field, tmp,
+					tmp_char = NULL;
+				field->print_routine(field, tmp_char,
 						     (curr_inx == field_count));
+				xfree(tmp_char);
 				break;
 			default:
 				field->print_routine(field, NULL,

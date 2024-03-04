@@ -136,6 +136,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld crashes when using extra constraints with job arrays.
  -- sackd/slurmrestd/scrun - Avoid memory leak on new unix socket connection.
  -- The failed node field is filled when a node fails but does not time out.
+ -- Fix 20 character username limit from 'sacctmgr show events'
 
 * Changes in Slurm 23.11.4
 ==========================
