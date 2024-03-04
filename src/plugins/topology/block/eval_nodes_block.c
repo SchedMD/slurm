@@ -328,11 +328,14 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
-		uint32_t bnc = 0;
+		uint32_t avail_bnc = 0;
+		uint32_t bnc;
 
 		bit_and(block_node_bitmap[i], topo_eval->node_map);
+
+		bnc = bit_set_count(block_node_bitmap[i]);
 		if (!nodes_on_llblock) {
-			bnc = bit_set_count(block_node_bitmap[i]);
+			avail_bnc = bnc;
 		} else {
 			int llblock_per_block = (bblock_per_block /
 						 bblock_per_llblock);
@@ -340,7 +343,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			qsort(&nodes_on_llblock[offset], llblock_per_block,
 			      sizeof(int), _cmp_bblock);
 			for (j = 0; j < max_llblock; j++)
-				bnc += nodes_on_llblock[offset + j];
+				avail_bnc += nodes_on_llblock[offset + j];
 		}
 		/*
 		 * Count total CPUs of the intersection of topo_eval->node_map
@@ -357,10 +360,16 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				break;
 			}
 		}
-		if (!eval_nodes_enough_nodes(bnc, rem_nodes, min_nodes,
+		if (!eval_nodes_enough_nodes(avail_bnc, rem_nodes, min_nodes,
 					     req_nodes) ||
 		    (rem_cpus > block_cpus))
 			continue;
+		/*
+		 * Select the block:
+		 * 	1) with lowest weight nodes
+		 * 	2) with lowest sufficient count of nodes -
+		 * 	   to minimize fragmentation
+		 */
 		if (!req_nodes_bitmap &&
 		    (nw = list_find_first(node_weight_list,
 					  eval_nodes_topo_node_find,
