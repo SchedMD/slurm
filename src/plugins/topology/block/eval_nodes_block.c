@@ -120,7 +120,6 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 
 extern int eval_nodes_block(topology_eval_t *topo_eval)
 {
-	uint32_t *block_cpu_cnt = NULL;	/* total CPUs on block */
 	List *block_gres = NULL;		/* available GRES on block */
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
@@ -304,7 +303,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
 		 max_llblock, llblock_level);
 
-	block_cpu_cnt = xcalloc(block_cnt, sizeof(uint32_t));
 	block_gres = xcalloc(block_cnt, sizeof(List));
 	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
 	bblock_required = bit_alloc(block_record_cnt);
@@ -352,7 +350,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 							 &j));
 		     j++)
 			block_cpus += avail_res_array[j]->avail_cpus;
-		block_cpu_cnt[i] = block_cpus;
 		if (req_nodes_bitmap &&
 		    bit_overlap_any(req_nodes_bitmap, block_node_bitmap[i])) {
 			if (block_inx == -1) {
@@ -362,7 +359,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		}
 		if (!eval_nodes_enough_nodes(bnc, rem_nodes, min_nodes,
 					     req_nodes) ||
-		    (rem_cpus > block_cpu_cnt[i]))
+		    (rem_cpus > block_cpus))
 			continue;
 		if (!req_nodes_bitmap &&
 		    (nw = list_find_first(node_weight_list,
@@ -751,7 +748,6 @@ fini:
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	FREE_NULL_BITMAP(bblock_bitmap);
 	xfree(avail_cpu_per_node);
-	xfree(block_cpu_cnt);
 	xfree(block_gres);
 	xfree(bblock_block_inx);
 	if (block_node_bitmap) {
