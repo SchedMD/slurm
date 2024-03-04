@@ -36,6 +36,7 @@
 #include "block_record.h"
 
 #include "src/common/xstring.h"
+#include <math.h>
 
 typedef struct slurm_conf_block {
 	char *block_name; /* name of this block */
@@ -97,7 +98,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 {
 	static s_p_options_t block_options[] = {
 		{"BlockName", S_P_ARRAY, _parse_block, _destroy_block},
-		{"BlockLevels", S_P_STRING},
+		{"BlockSizes", S_P_STRING},
 		{NULL}
 	};
 	int count;
@@ -118,11 +119,43 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 	FREE_NULL_BITMAP(block_levels);
 	block_levels = bit_alloc(16);
 
-	if (!s_p_get_string(&tmp_str, "BlockLevels", conf_hashtbl)) {
+	if (!s_p_get_string(&tmp_str, "BlockSizes", conf_hashtbl)) {
 		bit_nset(block_levels, 0, 4);
-	} else if (bit_unfmt(block_levels, tmp_str)) {
-		s_p_hashtbl_destroy(conf_hashtbl);
-		fatal("Invalid BlockLevels");
+	} else {
+		char *str_bsize = strtok(tmp_str,",");
+		int bsize = -1;
+		while (str_bsize) {
+			int block_level;
+			double tmp;
+			bsize = atoi(str_bsize);
+			if (bsize <= 0)
+				break;
+			if (!bblock_node_cnt)
+				bblock_node_cnt = bsize;
+			if (bsize % bblock_node_cnt) {
+				bsize = -1;
+				break;
+			}
+			block_level = bsize / bblock_node_cnt;
+			tmp = log2(block_level);
+			if (tmp != floor(tmp)) {
+				bsize = -1;
+				break;
+			}
+			block_level = tmp;
+
+			if (block_level > 15) {
+				bsize = -1;
+				break;
+			}
+			bit_set(block_levels, block_level);
+
+			str_bsize = strtok(NULL,",");
+		}
+		if (bsize < 0) {
+			s_p_hashtbl_destroy(conf_hashtbl);
+			fatal("Invalid BlockLevels");
+		}
 	}
 	xfree(tmp_str);
 
@@ -268,9 +301,9 @@ extern void block_record_validate(void)
 			if (bblock_node_cnt == 0) {
 				bblock_node_cnt =
 					bit_set_count(block_ptr->node_bitmap);
-			} else if (bit_set_count(block_ptr->node_bitmap) !=
+			} else if (bit_set_count(block_ptr->node_bitmap) <
 				   bblock_node_cnt) {
-				fatal("Block configuration (%s) children count no equal bblock_node_cnt",
+				fatal("Block configuration (%s) children count lower than bblock_node_cnt",
 				      ptr->block_name);
 			}
 		} else {

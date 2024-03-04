@@ -110,8 +110,11 @@ This must be specified along with the \fBBlockName\fR.
 .IP
 
 .TP
-\fBBlockLevels\fR
-List of enforced levels of block aggregation.
+\fBlockSizes\fR
+List of the planning base block size, alongside any
+higher-level block sizes that would be enforced.
+Each block must have at least the planning base block size count of nodes.
+Successive BlockSizes must be a power of two larger than the prior values.
 .IP
 
 .SH "EXAMPLE"
@@ -131,12 +134,11 @@ SwitchName=s3 Switches=s[0\-2]
 # Slurm's network topology configuration file for use with the
 # topology/block plugin
 ##################################################################
-BlockName=block1 Nodes=node[01,05,09,13]
-BlockName=block2 Nodes=node[02,06,10,14]
-BlockName=block3 Nodes=node[03,07,11,15]
-BlockName=block4 Nodes=node[04,08,12,16]
-
-BlockLevels=0-1,2
+BlockName=block1 Nodes=node[1-32]
+BlockName=block2 Nodes=node[33-64]
+BlockName=block3 Nodes=node[65-96]
+BlockName=block4 Nodes=node[97-128]
+BlockSizes=30,120
 .fi
 
 .SH "COPYING"

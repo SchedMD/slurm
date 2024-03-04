@@ -42,6 +42,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     parameters are ignored.
  -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
     without rebooting compute nodes.
+ -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
