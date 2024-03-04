@@ -42,7 +42,7 @@
 strong_alias(job_state_reason_string, slurm_job_state_reason_string);
 strong_alias(job_state_reason_num, slurm_job_state_reason_num);
 
-extern char *job_state_reason_string(enum job_state_reason inx)
+extern const char *job_state_reason_string(enum job_state_reason inx)
 {
 	static char val[32];
 

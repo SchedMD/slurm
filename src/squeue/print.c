@@ -169,7 +169,7 @@ extern void print_steps_array(job_step_info_t *steps, int size, list_t *format)
  * reason as needed */
 static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)
 {
-	char *task_desc;
+	const char *task_desc;
 
 	if (job_ptr->state_reason == task_ptr->state_reason)
 		return;
@@ -696,12 +696,12 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)        /* Print the Header instead */
 		_print_str("REASON", width, right, true);
 	else {
-		char *reason;
+		const char *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
 			reason = job_state_reason_string(job->state_reason);
-		_print_str(reason, width, right, true);
+		_print_str((char *)reason, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -1082,7 +1082,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		       || IS_JOB_OOM(job)
 		       || IS_JOB_DEADLINE(job)
 		       || IS_JOB_FAILED(job))) {
-		char *reason_fmt = NULL, *reason = NULL;
+		char *reason_fmt = NULL;
+		const char *reason = NULL;
 		if (job->state_desc)
 			reason = job->state_desc;
 		else

@@ -1207,7 +1207,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr,
 			       int update)
 {
-	char *nodes = NULL, *reason = NULL, *uname = NULL;
+	char *nodes = NULL, *uname = NULL;
+	const char *reason = NULL;
 	char *group;
 	char tmp_char[256];
 	char time_buf[32];
@@ -1886,7 +1887,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_het_job_id_set[40], tmp_het_job_offset[40];
 	char tmp_time_accrue[256];
 	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname, *tmp_gname;
-	char *tmp_reboot, *tmp_reason, *tmp_nodes;
+	char *tmp_reboot,*tmp_nodes;
+	const char *tmp_reason;
 	char time_buf[32];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
