@@ -192,6 +192,19 @@ typedef struct {
 	bool with_scriptd;
 } run_lua_args_t;
 
+typedef void (*init_argv_f_t)(stage_args_t *stage_args, int *argc_p,
+			      char ***argv_p);
+typedef struct {
+	init_argv_f_t init_argv;
+	bb_op_e op_type;
+	int (*run_func)(stage_args_t *stage_args,
+			init_argv_f_t init_argv,
+			const char *op, uint32_t job_id, uint32_t timeout,
+			char **resp_msg);
+	uint32_t timeout;
+} bb_func_t;
+
+
 static int lua_thread_cnt = 0;
 pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -219,6 +232,8 @@ static int stage_in_cnt = 0;
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 			    uint32_t group_id);
+static void _fail_stage_in(stage_args_t *stage_args, const char *op, int rc,
+			   char *resp_msg);
 
 static int _get_stage_in_cnt(void)
 {
@@ -1346,6 +1361,91 @@ next:
 
 	return rc;
 }
+
+static int _run_lua_script_wrapper(run_lua_args_t *run_lua_args)
+{
+	int rc;
+	DEF_TIMERS;
+
+	START_TIMER;
+	rc = _run_lua_script(run_lua_args);
+	END_TIMER;
+	if (run_lua_args->job_id)
+		log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
+			 run_lua_args->lua_func, run_lua_args->job_id,
+			 TIME_STR);
+	else
+		log_flag(BURST_BUF, "%s ran for %s",
+			 run_lua_args->lua_func, TIME_STR);
+
+	return rc;
+}
+
+static int _run_lua_stage_script(stage_args_t *stage_args,
+				 init_argv_f_t init_argv,
+				 const char *op,
+				 uint32_t job_id, uint32_t timeout,
+				 char **resp_msg)
+{
+	bool track_script_signal = false;
+	int rc;
+	int argc = 0;
+	char **argv = NULL;
+	run_lua_args_t run_lua_args = { 0 };
+
+	init_argv(stage_args, &argc, &argv);
+
+	run_lua_args.argc = argc;
+	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
+	run_lua_args.job_id = job_id;
+	run_lua_args.lua_func = op;
+	run_lua_args.resp_msg = resp_msg;
+	run_lua_args.timeout = timeout;
+	run_lua_args.track_script_signal = &track_script_signal;
+	run_lua_args.with_scriptd = true;
+
+	rc = _run_lua_script_wrapper(&run_lua_args);
+	xfree_array(argv);
+
+	if (track_script_signal) {
+		/* Killed by slurmctld, exit now. */
+		info("%s for JobId=%u terminated by slurmctld",
+		     op, stage_args->job_id);
+		return SLURM_ERROR;
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		_fail_stage_in(stage_args, op, rc, *resp_msg);
+		return SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+static int _run_stage_ops(bb_func_t *stage_ops, int op_count,
+			  stage_args_t *stage_args)
+{
+	for (int i = 0; i < op_count; i++) {
+		int rc;
+		char *resp_msg = NULL;
+		const char *op;
+		bb_op_e op_type = stage_ops[i].op_type;
+
+		op = req_fxns[op_type];
+		rc = stage_ops[i].run_func(stage_args,
+					   stage_ops[i].init_argv,
+					   op,
+					   stage_args->job_id,
+					   stage_ops[i].timeout,
+					   &resp_msg);
+		xfree(resp_msg);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+	return SLURM_SUCCESS;
+}
+
 
 static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 {
@@ -3198,197 +3298,126 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	xfree(hash_dir);
 }
 
-static int _run_real_size(stage_args_t *stage_in_args, const char *op,
-			  bool *track_script_signal, char **resp_msg)
+static int _run_real_size(stage_args_t *stage_args, init_argv_f_t init_argv,
+			  const char *op, uint32_t job_id, uint32_t timeout,
+			  char **resp_msg)
 {
-	char **argv = NULL;
-	int argc;
-	int rc;
-	run_lua_args_t run_lua_args = { 0 };
-	DEF_TIMERS;
-
-	argc = 3;
-	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
-	argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
-	argv[1] = xstrdup_printf("%u", stage_in_args->uid);
-	argv[2] = xstrdup_printf("%u", stage_in_args->gid);
-
-	run_lua_args.argc = argc;
-	run_lua_args.argv = argv;
-	run_lua_args.get_job_ptr = true;
-	run_lua_args.job_id = stage_in_args->job_id;
-	run_lua_args.lua_func = op;
-	run_lua_args.resp_msg = resp_msg;
-	run_lua_args.timeout = bb_state.bb_config.stage_in_timeout;
-	run_lua_args.track_script_signal = track_script_signal;
-	run_lua_args.with_scriptd = true;
-
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
-		 op, stage_in_args->job_id, TIME_STR);
-
-	xfree_array(argv);
-	return rc;
-}
-
-static int _run_data_in(stage_args_t *stage_in_args, const char *op,
-			bool *track_script_signal, char **resp_msg)
-{
-	char **argv = NULL;
-	int argc;
-	int rc;
-	run_lua_args_t run_lua_args = { 0 };
-	DEF_TIMERS;
-
-	argc = 4;
-	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
-	argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
-	argv[1] = xstrdup_printf("%s", stage_in_args->job_script);
-	argv[2] = xstrdup_printf("%u", stage_in_args->uid);
-	argv[3] = xstrdup_printf("%u", stage_in_args->gid);
-
-	run_lua_args.argc = argc;
-	run_lua_args.argv = argv;
-	run_lua_args.get_job_ptr = true;
-	run_lua_args.job_id = stage_in_args->job_id;
-	run_lua_args.lua_func = op;
-	run_lua_args.resp_msg = resp_msg;
-	run_lua_args.timeout = bb_state.bb_config.stage_in_timeout;
-	run_lua_args.track_script_signal = track_script_signal;
-	run_lua_args.with_scriptd = true;
-
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
-		 op, stage_in_args->job_id, TIME_STR);
-
-	xfree_array(argv);
-	return rc;
-}
-
-static int _run_setup(stage_args_t *stage_in_args, const char *op,
-		      bool *track_script_signal, char **resp_msg)
-{
-	char **argv = NULL;
-	int argc;
-	int rc;
-	run_lua_args_t run_lua_args = { 0 };
-	DEF_TIMERS;
-
-	argc = 6;
-	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
-	argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
-	argv[1] = xstrdup_printf("%u", stage_in_args->uid);
-	argv[2] = xstrdup_printf("%u", stage_in_args->gid);
-	argv[3] = xstrdup_printf("%s", stage_in_args->pool);
-	argv[4] = xstrdup_printf("%"PRIu64, stage_in_args->bb_size);
-	argv[5] = xstrdup_printf("%s", stage_in_args->job_script);
-
-	run_lua_args.argc = argc;
-	run_lua_args.argv = argv;
-	run_lua_args.get_job_ptr = true;
-	run_lua_args.job_id = stage_in_args->job_id;
-	run_lua_args.lua_func = op;
-	run_lua_args.resp_msg = resp_msg;
-	run_lua_args.timeout = bb_state.bb_config.other_timeout;
-	run_lua_args.track_script_signal = track_script_signal;
-	run_lua_args.with_scriptd = true;
-
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "%s for job JobId=%u ran for %s",
-		 op, stage_in_args->job_id, TIME_STR);
-
-	xfree_array(argv);
-	return rc;
-}
-
-static void *_start_stage_in(void *x)
-{
-	int rc;
-	bool get_real_size = false, track_script_signal = false;
-	char *resp_msg = NULL;
-	const char *op = NULL;
-	long real_size = 0;
-	stage_args_t *stage_in_args = x;
-	job_record_t *job_ptr;
-	bb_alloc_t *bb_alloc = NULL;
-	bb_job_t *bb_job;
-	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
-
-	op = req_fxns[SLURM_BB_SETUP];
-	rc = _run_setup(stage_in_args, op, &track_script_signal, &resp_msg);
-
-	if (track_script_signal) {
-		/* Killed by slurmctld, exit now. */
-		info("setup for JobId=%u terminated by slurmctld",
-		     stage_in_args->job_id);
-		goto fini;
-	}
-
-	if (rc != SLURM_SUCCESS) {
-		_fail_stage_in(stage_in_args, op, rc, resp_msg);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-
-	xfree(resp_msg);
-	op = req_fxns[SLURM_BB_DATA_IN];
-	rc = _run_data_in(stage_in_args, op, &track_script_signal,
-			  &resp_msg);
-
-	if (track_script_signal) {
-		/* Killed by slurmctld, exit now. */
-		info("data_in for JobId=%u terminated by slurmctld",
-		     stage_in_args->job_id);
-		goto fini;
-	}
-
-	if (rc != SLURM_SUCCESS) {
-		_fail_stage_in(stage_in_args, op, rc, resp_msg);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	bool get_real_size = false;
+	uint64_t real_size = 0;
+	bb_job_t *bb_job = NULL;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
+	bb_job = bb_job_find(&bb_state, stage_args->job_id);
 	if (bb_job && bb_job->req_size)
 		get_real_size = true;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	if (get_real_size) {
-		xfree(resp_msg);
-		op = req_fxns[SLURM_BB_REAL_SIZE];
-		rc = _run_real_size(stage_in_args, op, &track_script_signal,
-				    &resp_msg);
+	if (!get_real_size)
+		return SLURM_SUCCESS;
 
-		if (track_script_signal) {
-			/* Killed by slurmctld, exit now. */
-			info("%s for JobId=%u terminated by slurmctld",
-			     op, stage_in_args->job_id);
-			goto fini;
+	if (_run_lua_stage_script(stage_args, init_argv, op, job_id, timeout,
+				  resp_msg) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (*resp_msg) {
+		char *end_ptr;
+
+		real_size = strtol(*resp_msg, &end_ptr, 10);
+		if ((real_size < 0) || (real_size == LONG_MAX) ||
+		    (end_ptr == *resp_msg)) {
+			error("%s return value=\"%s\" is invalid, discarding result",
+			      op, *resp_msg);
+			real_size = 0;
 		}
-
-		if (rc != SLURM_SUCCESS) {
-			_fail_stage_in(stage_in_args, op, rc, resp_msg);
-			rc = SLURM_ERROR;
-			goto fini;
-		} else if (resp_msg) {
-			char *end_ptr;
-
-			real_size = strtol(resp_msg, &end_ptr, 10);
-			if ((real_size < 0) || (real_size == LONG_MAX) ||
-			    (end_ptr == resp_msg)) {
-				error("%s return value=\"%s\" is invalid, discarding result",
-				      op, resp_msg);
-				real_size = 0;
-			}
-		}
+		stage_args->bb_size = real_size;
 	}
+	return SLURM_SUCCESS;
+}
+
+static void _init_real_size_argv(stage_args_t *stage_args, int *argc_p,
+				 char ***argv_p)
+{
+	char **argv = NULL;
+	int argc;
+
+	argc = 3;
+	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
+	argv[0] = xstrdup_printf("%u", stage_args->job_id);
+	argv[1] = xstrdup_printf("%u", stage_args->uid);
+	argv[2] = xstrdup_printf("%u", stage_args->gid);
+
+	*argc_p = argc;
+	*argv_p = argv;
+}
+
+static void _init_data_in_argv(stage_args_t *stage_args, int *argc_p,
+			       char ***argv_p)
+{
+	char **argv = NULL;
+	int argc;
+
+	argc = 4;
+	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
+	argv[0] = xstrdup_printf("%u", stage_args->job_id);
+	argv[1] = xstrdup_printf("%s", stage_args->job_script);
+	argv[2] = xstrdup_printf("%u", stage_args->uid);
+	argv[3] = xstrdup_printf("%u", stage_args->gid);
+
+	*argc_p = argc;
+	*argv_p = argv;
+}
+
+static void _init_setup_argv(stage_args_t *stage_args, int *argc_p,
+			     char ***argv_p)
+{
+	char **argv = NULL;
+	int argc;
+
+	argc = 6;
+	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
+	argv[0] = xstrdup_printf("%u", stage_args->job_id);
+	argv[1] = xstrdup_printf("%u", stage_args->uid);
+	argv[2] = xstrdup_printf("%u", stage_args->gid);
+	argv[3] = xstrdup_printf("%s", stage_args->pool);
+	argv[4] = xstrdup_printf("%"PRIu64, stage_args->bb_size);
+	argv[5] = xstrdup_printf("%s", stage_args->job_script);
+
+	*argc_p = argc;
+	*argv_p = argv;
+}
+
+static void *_start_stage_in(void *x)
+{
+	stage_args_t *stage_in_args = x;
+	uint64_t real_size = 0;
+	uint64_t orig_real_size = stage_in_args->bb_size;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+	bb_func_t stage_in_ops[] = {
+		{
+			.init_argv = _init_setup_argv,
+			.op_type = SLURM_BB_SETUP,
+			.run_func = _run_lua_stage_script,
+			.timeout = bb_state.bb_config.other_timeout,
+		},
+		{
+			.init_argv = _init_data_in_argv,
+			.op_type = SLURM_BB_DATA_IN,
+			.run_func = _run_lua_stage_script,
+			.timeout = bb_state.bb_config.stage_in_timeout,
+		},
+		{
+			.init_argv = _init_real_size_argv,
+			.op_type = SLURM_BB_REAL_SIZE,
+			.run_func = _run_real_size,
+			.timeout = bb_state.bb_config.stage_in_timeout,
+		},
+	};
+
+	if (_run_stage_ops(stage_in_ops, ARRAY_SIZE(stage_in_ops),
+			   stage_in_args) != SLURM_SUCCESS)
+		goto fini;
+	real_size = stage_in_args->bb_size; /* Updated by _run_real_size */
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -3397,6 +3426,9 @@ static void *_start_stage_in(void *x)
 		error("unable to find job record for JobId=%u",
 		      stage_in_args->job_id);
 	} else {
+		bb_job_t *bb_job;
+		bb_alloc_t *bb_alloc = NULL;
+
 		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
 		if (bb_job)
 			bb_set_job_bb_state(job_ptr, bb_job,
@@ -3406,13 +3438,13 @@ static void *_start_stage_in(void *x)
 			 * Adjust total size to real size if real size
 			 * returns something bigger.
 			 */
-			if (((uint64_t)real_size) > bb_job->req_size) {
-				info("%pJ total_size increased from %"PRIu64" to %ld",
+			if (real_size > bb_job->req_size) {
+				info("%pJ total_size increased from %"PRIu64" to %"PRIu64,
 				     job_ptr,
 				     bb_job->req_size, real_size);
 				bb_job->total_size = real_size;
 				bb_limit_rem(stage_in_args->uid,
-					     stage_in_args->bb_size,
+					     orig_real_size,
 					     stage_in_args->pool, &bb_state);
 				/* Restore limit based upon actual size. */
 				bb_limit_add(stage_in_args->uid,
@@ -3444,7 +3476,6 @@ static void *_start_stage_in(void *x)
 
 fini:
 	_decr_stage_in_cnt();
-	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->pool);
 	xfree(stage_in_args);
