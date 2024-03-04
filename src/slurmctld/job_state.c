@@ -38,6 +38,17 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+typedef struct {
+	int rc;
+	uint32_t *jobs_count_ptr;
+	job_state_response_job_t **jobs_pptr;
+} job_state_args_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	job_state_args_t *job_state_args;
+} foreach_het_job_state_args_t;
+
 #ifndef NDEBUG
 
 #define T(x) { x, XSTRINGIFY(x) }
@@ -145,4 +156,147 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	_log_job_state_change(job_ptr, job_state);
 
 	job_ptr->job_state = job_state;
+}
+
+static job_state_response_job_t *_append_job_state(job_state_args_t *args,
+						   uint32_t job_id)
+{
+	job_state_response_job_t *rjob;
+
+	xassert(job_id > 0);
+
+	(*args->jobs_count_ptr)++;
+	if (!try_xrecalloc((*args->jobs_pptr), *args->jobs_count_ptr,
+			   sizeof(**args->jobs_pptr))) {
+		args->rc = ENOMEM;
+		return NULL;
+	}
+
+	rjob = &((*args->jobs_pptr)[*args->jobs_count_ptr - 1]);
+
+	return rjob;
+}
+
+static bitstr_t *_job_state_array_bitmap(const job_record_t *job_ptr)
+{
+	if (!job_ptr->array_recs)
+		return NULL;
+
+	if (job_ptr->array_recs->task_id_bitmap &&
+	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) != -1))
+		return bit_copy(job_ptr->array_recs->task_id_bitmap);
+
+	return NULL;
+}
+
+static int _add_job_state_job(job_state_args_t *args,
+			      const job_record_t *job_ptr)
+{
+	job_state_response_job_t *rjob;
+
+	if (!(rjob = _append_job_state(args, job_ptr->job_id)))
+		return SLURM_ERROR;
+
+	rjob->job_id = job_ptr->job_id;
+	rjob->array_job_id = job_ptr->array_job_id;
+	rjob->array_task_id = job_ptr->array_task_id;
+	rjob->array_task_id_bitmap = _job_state_array_bitmap(job_ptr);
+	rjob->het_job_id = job_ptr->het_job_id;
+	rjob->state = job_ptr->job_state;
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_add_job_state_het_job(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	foreach_het_job_state_args_t *het_args = arg;
+
+	if (het_job_ptr->het_job_id == het_args->job_ptr->het_job_id) {
+		_add_job_state_job(het_args->job_state_args, het_job_ptr);
+		return 0;
+	} else {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, het_args->job_ptr);
+		return -1;
+	}
+}
+
+static int _add_job_state_by_job_id(const uint32_t job_id,
+				    job_state_args_t *args)
+{
+	job_record_t *job_ptr;
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * This uses the similar logic as pack_one_job() but simpler as whole
+	 * array is always being dumped.
+	 * TODO: Combine the duplicate logic.
+	 */
+	job_ptr = find_job_record(job_id);
+
+	if (!job_ptr) {
+		/* No job found is okay */
+		//return ESLURM_INVALID_JOB_ID;
+		return SLURM_SUCCESS;
+	} else if (job_ptr && job_ptr->het_job_list) {
+		foreach_het_job_state_args_t het_args = {
+			.job_ptr = job_ptr,
+			.job_state_args = args,
+		};
+
+		if (list_for_each(job_ptr->het_job_list,
+				  _foreach_add_job_state_het_job,
+				  &het_args) < 0) {
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		   !job_ptr->array_recs) {
+		/* Pack regular (not array) job */
+		return _add_job_state_job(args, job_ptr);
+	} else {
+		if ((rc = _add_job_state_job(args, job_ptr)))
+			return rc;
+
+		while ((job_ptr = job_ptr->job_array_next_j))
+			if ((job_ptr->array_job_id == job_id) &&
+			    (rc = _add_job_state_job(args, job_ptr)))
+				return rc;
+	}
+
+	return args->rc;
+}
+
+static int _foreach_job_state_filter(void *object, void *arg)
+{
+	const job_record_t *job_ptr = object;
+	job_state_args_t *args = arg;
+
+	if ((args->rc = _add_job_state_job(args, job_ptr)))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int dump_job_state(const uint32_t filter_jobs_count,
+			  const uint32_t *filter_jobs_ptr,
+			  uint32_t *jobs_count_ptr,
+			  job_state_response_job_t **jobs_pptr)
+{
+	job_state_args_t args = {
+		.rc = SLURM_SUCCESS,
+		.jobs_count_ptr = jobs_count_ptr,
+		.jobs_pptr = jobs_pptr,
+	};
+
+	if (!filter_jobs_count) {
+		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
+					&args);
+		return args.rc;
+	}
+
+	for (int i = 0; !args.rc && (i < filter_jobs_count); i++)
+		args.rc = _add_job_state_by_job_id(filter_jobs_ptr[i], &args);
+
+	return args.rc;
 }
