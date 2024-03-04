@@ -392,6 +392,15 @@ must be configured for site storage configuration.</li>
 <li><a href="https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports">
 	Configure rootless dockerd to allow listening on privileged ports
 	</a></li>
+<li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
+	scrun.lua</a> must be present on any node where scrun may be run. The
+	example should be sufficent for most environments but paths should be
+	modified to match available local storage.</li>
+<li><a href="oci.conf.html">oci.conf</a> must be present on any node where any
+	container job may be run. Example configurations for
+	<a href="https://slurm.schedmd.com/containers.html#example">
+	known OCI runtimes</a> are provided above. Examples may require
+	paths to be correct to installation locations.</li>
 </ol>
 <h3>Limitations</h3>
 <ol>
