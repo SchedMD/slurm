@@ -124,7 +124,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	List *block_gres = NULL;		/* available GRES on block */
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
-	uint32_t *block_node_cnt = NULL;	/* total nodes on block */
+	uint32_t block_node_cnt;	/* total nodes on block */
 	uint32_t *nodes_on_bblock = NULL;	/* total nodes on bblock */
 	bitstr_t *avail_nodes_bitmap = NULL;	/* nodes on any block */
 	bitstr_t *req_nodes_bitmap = NULL;	/* required node bitmap */
@@ -307,7 +307,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	block_cpu_cnt = xcalloc(block_cnt, sizeof(uint32_t));
 	block_gres = xcalloc(block_cnt, sizeof(List));
 	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
-	block_node_cnt = xcalloc(block_cnt, sizeof(*block_node_cnt));
 	bblock_required = bit_alloc(block_record_cnt);
 	bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
 
@@ -331,9 +330,11 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
+		uint32_t bnc = 0;
+
 		bit_and(block_node_bitmap[i], topo_eval->node_map);
 		if (!nodes_on_llblock) {
-			block_node_cnt[i] = bit_set_count(block_node_bitmap[i]);
+			bnc = bit_set_count(block_node_bitmap[i]);
 		} else {
 			int llblock_per_block = (bblock_per_block /
 						 bblock_per_llblock);
@@ -341,8 +342,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			qsort(&nodes_on_llblock[offset], llblock_per_block,
 			      sizeof(int), _cmp_bblock);
 			for (j = 0; j < max_llblock; j++)
-				block_node_cnt[i] +=
-					nodes_on_llblock[offset + j];
+				bnc += nodes_on_llblock[offset + j];
 		}
 		/*
 		 * Count total CPUs of the intersection of topo_eval->node_map
@@ -360,8 +360,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				break;
 			}
 		}
-		if (!eval_nodes_enough_nodes(block_node_cnt[i], rem_nodes,
-					     min_nodes, req_nodes) ||
+		if (!eval_nodes_enough_nodes(bnc, rem_nodes, min_nodes,
+					     req_nodes) ||
 		    (rem_cpus > block_cpu_cnt[i]))
 			continue;
 		if (!req_nodes_bitmap &&
@@ -371,10 +371,10 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			if ((block_inx == -1) ||
 			    (nw->weight < block_lowest_weight) ||
 			    ((nw->weight == block_lowest_weight) &&
-			     (block_node_cnt[i] <=
-			      block_node_cnt[block_inx]))) {
+			     (bnc <= block_node_cnt))) {
 				block_inx = i;
 				block_lowest_weight = nw->weight;
+				block_node_cnt = bnc;
 			}
 		}
 	}
@@ -764,7 +764,6 @@ fini:
 			FREE_NULL_BITMAP(bblock_node_bitmap[i]);
 		xfree(bblock_node_bitmap);
 	}
-	xfree(block_node_cnt);
 	xfree(nodes_on_bblock);
 	xfree(nodes_on_llblock);
 	FREE_NULL_BITMAP(bblock_required);
