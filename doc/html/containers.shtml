@@ -424,6 +424,11 @@ scrun being isolated from the network and not being able to communicate with
 the Slurm controller. The container is run by Slurm on the compute nodes which
 makes having Docker setup a network isolation layer ineffective for the
 container.</li>
+<li><pre>docker exec</pre> command is not supported.</li>
+<li><pre>docker compose</pre> command is not supported.</li>
+<li><pre>docker pause</pre> command is not supported.</li>
+<li><pre>docker unpause</pre> command is not supported.</li>
+<li><pre>docker swarm</pre> command is not supported.</li>
 </ol>
 
 <h3>Setup procedure</h3>
@@ -941,6 +946,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 29 February 2024</p>
+<p style="text-align:center;">Last modified 19 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
