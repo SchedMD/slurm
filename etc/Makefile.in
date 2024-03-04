@@ -127,6 +127,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_oneapi.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
+	$(top_srcdir)/auxdir/x_ac_pkgconfig.m4 \
 	$(top_srcdir)/auxdir/x_ac_pmix.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -195,8 +196,9 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(systemdsystemunitdir)"
-DATA = $(noinst_DATA) $(systemdsystemunit_DATA)
+am__installdirs = "$(DESTDIR)$(pkgconfigdir)" \
+	"$(DESTDIR)$(systemdsystemunitdir)"
+DATA = $(noinst_DATA) $(pkgconfig_DATA) $(systemdsystemunit_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -433,6 +435,7 @@ mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+pkgconfigdir = @pkgconfigdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -452,19 +455,22 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ETC_FILES = init.d.slurmdbd init.d.slurm \
 	    sackd.service slurmctld.service slurmdbd.service slurmd.service \
-	    slurmrestd.service
+	    slurmrestd.service slurm.pc
 
 CLEANFILES = $(ETC_FILES)
 edit = sed \
         -e 's|@bindir[@]|$(bindir)|g' \
+        -e 's|@includedir[@]|$(includedir)|g' \
         -e 's|@libdir[@]|$(libdir)|g' \
         -e 's|@sbindir[@]|$(sbindir)|g' \
         -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@sharedstatedir[@]|$(sharedstatedir)|g' \
+	-e 's|@SLURM_VERSION_STRING[@]|@SLURM_VERSION_STRING@|g' \
 	-e 's|@SLURMRESTD_PORT[@]|@SLURMRESTD_PORT@|g' \
 	-e 's|@SYSTEMD_TASKSMAX_OPTION[@]|$(SYSTEMD_TASKSMAX_OPTION)|g'
 
 noinst_DATA = $(ETC_FILES)
+@WITH_PKG_CONFIG_TRUE@pkgconfig_DATA = slurm.pc
 @WITH_SYSTEMD_UNITS_TRUE@systemdsystemunit_DATA = sackd.service \
 @WITH_SYSTEMD_UNITS_TRUE@	slurmctld.service slurmdbd.service \
 @WITH_SYSTEMD_UNITS_TRUE@	slurmd.service $(am__append_1)
@@ -506,6 +512,27 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-pkgconfigDATA: $(pkgconfig_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkgconfigdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkgconfigdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgconfigdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgconfigdir)" || exit $$?; \
+	done
+
+uninstall-pkgconfigDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
 install-systemdsystemunitDATA: $(systemdsystemunit_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(systemdsystemunit_DATA)'; test -n "$(systemdsystemunitdir)" || list=; \
@@ -537,7 +564,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(systemdsystemunitdir)"; do \
+	for dir in "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(systemdsystemunitdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -591,7 +618,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-systemdsystemunitDATA
+install-data-am: install-pkgconfigDATA install-systemdsystemunitDATA
 
 install-dvi: install-dvi-am
 
@@ -635,7 +662,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-systemdsystemunitDATA
+uninstall-am: uninstall-pkgconfigDATA uninstall-systemdsystemunitDATA
 
 .MAKE: install-am install-strip
 
@@ -645,12 +672,13 @@ uninstall-am: uninstall-systemdsystemunitDATA
 	install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip install-systemdsystemunitDATA installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
+	install-ps-am install-strip install-systemdsystemunitDATA \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
-	uninstall-am uninstall-systemdsystemunitDATA
+	uninstall-am uninstall-pkgconfigDATA \
+	uninstall-systemdsystemunitDATA
 
 .PRECIOUS: Makefile
 
@@ -675,6 +703,9 @@ slurmd.service: Makefile $(srcdir)/slurmd.service.in
 
 slurmrestd.service: Makefile $(srcdir)/slurmrestd.service.in
 	$(edit) $(srcdir)/slurmrestd.service.in > slurmrestd.service
+
+slurm.pc: Makefile $(srcdir)/slurm.pc.in
+	$(edit) $(srcdir)/slurm.pc.in > slurm.pc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

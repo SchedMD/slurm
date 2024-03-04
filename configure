@@ -836,6 +836,9 @@ WITH_CXX_FALSE
 WITH_CXX_TRUE
 AR_FLAGS
 OBJCOPY
+WITH_PKG_CONFIG_FALSE
+WITH_PKG_CONFIG_TRUE
+pkgconfigdir
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
@@ -1004,6 +1007,8 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+with_pkgconfigdir
+enable_pkgconfig
 enable_pam
 with_pam_dir
 with_shared_libslurm
@@ -1726,6 +1731,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-pkgconfig      Install the slurm.pc file
   --enable-pam            enable PAM (Pluggable Authentication Modules)
                           support
   --enable-load-env-no-login
@@ -1769,6 +1775,8 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
+  --with-pkgconfigdir     pkg-config installation directory
+                          ['${libdir}/pkgconfig']
   --with-pam_dir=PATH     Specify path to PAM module installation
   --without-shared-libslurm
                           statically link to libslurm.o instead of the shared
@@ -18771,6 +18779,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
 	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
@@ -18894,6 +18903,53 @@ printf "%s\n" "no" >&6; }
 		PKG_CONFIG=""
 	fi
 fi
+
+
+
+# Check whether --with-pkgconfigdir was given.
+if test ${with_pkgconfigdir+y}
+then :
+  withval=$with_pkgconfigdir;
+else $as_nop
+  with_pkgconfigdir='${libdir}/pkgconfig'
+fi
+
+pkgconfigdir=$with_pkgconfigdir
+
+
+
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to install pkg-config slurm.pc file" >&5
+printf %s "checking whether to install pkg-config slurm.pc file... " >&6; }
+  # Check whether --enable-pkgconfig was given.
+if test ${enable_pkgconfig+y}
+then :
+  enableval=$enable_pkgconfig;  case "$enableval" in
+        yes) x_ac_pkgconfig_file=yes ;;
+         no) x_ac_pkg_config_file=no ;;
+          *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+printf "%s\n" "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-pkgconfig" "$LINENO" 5 ;;
+      esac
+
+else $as_nop
+  x_ac_pkgconfig_file=no
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${x_ac_pkgconfig_file}" >&5
+printf "%s\n" "${x_ac_pkgconfig_file}" >&6; }
+
+   if test "x${x_ac_pkgconfig_file}" = "xyes"; then
+  WITH_PKG_CONFIG_TRUE=
+  WITH_PKG_CONFIG_FALSE='#'
+else
+  WITH_PKG_CONFIG_TRUE='#'
+  WITH_PKG_CONFIG_FALSE=
+fi
+
+
 
 # Extract the first word of "$target_alias-objcopy", so it can be a program name with args.
 set dummy $target_alias-objcopy; ac_word=$2
@@ -27909,6 +27965,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_PKG_CONFIG_TRUE}" && test -z "${WITH_PKG_CONFIG_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_PKG_CONFIG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_CXX_TRUE}" && test -z "${WITH_CXX_FALSE}"; then
