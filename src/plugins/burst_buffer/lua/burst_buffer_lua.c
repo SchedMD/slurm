@@ -3196,6 +3196,42 @@ static int _run_real_size(stage_in_args_t *stage_in_args, char *op,
 	return rc;
 }
 
+static int _run_data_in(stage_in_args_t *stage_in_args, char *op,
+			bool *track_script_signal, char **resp_msg)
+{
+	char **argv = NULL;
+	int argc;
+	int rc;
+	run_lua_args_t run_lua_args = { 0 };
+	DEF_TIMERS;
+
+	argc = 4;
+	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
+	argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
+	argv[1] = xstrdup_printf("%s", stage_in_args->job_script);
+	argv[2] = xstrdup_printf("%u", stage_in_args->uid);
+	argv[3] = xstrdup_printf("%u", stage_in_args->gid);
+
+	run_lua_args.argc = argc;
+	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
+	run_lua_args.job_id = stage_in_args->job_id;
+	run_lua_args.lua_func = op;
+	run_lua_args.resp_msg = resp_msg;
+	run_lua_args.timeout = bb_state.bb_config.stage_in_timeout;
+	run_lua_args.track_script_signal = track_script_signal;
+	run_lua_args.with_scriptd = true;
+
+	START_TIMER;
+	rc = _run_lua_script(&run_lua_args);
+	END_TIMER;
+	log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
+		 op, stage_in_args->job_id, TIME_STR);
+
+	xfree_array(argv);
+	return rc;
+}
+
 static void *_start_stage_in(void *x)
 {
 	int rc;
@@ -3262,34 +3298,9 @@ static void *_start_stage_in(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
-		xfree_array(argv);
-		argc = 4;
-		argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
-		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
-		argv[1] = xstrdup_printf("%s", stage_in_args->job_script);
-		argv[2] = xstrdup_printf("%u", stage_in_args->uid);
-		argv[3] = xstrdup_printf("%u", stage_in_args->gid);
-
-
-		timeout = bb_state.bb_config.stage_in_timeout;
 		op = "slurm_bb_data_in";
-
-		memset(&run_lua_args, 0, sizeof run_lua_args);
-		run_lua_args.argc = argc;
-		run_lua_args.argv = argv;
-		run_lua_args.get_job_ptr = true;
-		run_lua_args.job_id = stage_in_args->job_id;
-		run_lua_args.lua_func = op;
-		run_lua_args.resp_msg = &resp_msg;
-		run_lua_args.timeout = timeout;
-		run_lua_args.track_script_signal = &track_script_signal;
-		run_lua_args.with_scriptd = true;
-
-		START_TIMER;
-		rc = _run_lua_script(&run_lua_args);
-		END_TIMER;
-		log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
-			 op, stage_in_args->job_id, TIME_STR);
+		rc = _run_data_in(stage_in_args, op, &track_script_signal,
+				  &resp_msg);
 
 		if (track_script_signal) {
 			/* Killed by slurmctld, exit now. */
