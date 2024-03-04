@@ -70,8 +70,15 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 {
 	bool fit = (nodes_on_bblock[i] >= rem_nodes);
 	bool same_block = false;
+
+	/*
+	 * Minimialize number of llblock
+	 */
 	if (nodes_on_llblock &&
 	    !_bblocks_in_same_block(*best_bblock_inx, i, llblock_level)) {
+		bool llblock_fit, best_llblock_fit;
+		uint32_t best_llblock_node_cnt, llblock_node_cnt;
+
 		for (int j = (i & (~0 << llblock_level));
 		     ((j < block_record_cnt) &&
 		      (j <= (i | ~(~0 << llblock_level))));
@@ -94,19 +101,65 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 		if (!same_block && (*best_same_block))
 			return;
 
-		if (nodes_on_llblock[(i >> llblock_level)] >
-		    nodes_on_llblock[(*best_bblock_inx >> llblock_level)]) {
+		/*
+		 * New llblock needed or both bblocks in alredy used llbock
+		 */
+		best_llblock_node_cnt =  nodes_on_llblock[(*best_bblock_inx >>
+							   llblock_level)];
+		llblock_node_cnt = nodes_on_llblock[(i >> llblock_level)];
+
+		llblock_fit = (llblock_node_cnt >= rem_nodes);
+		best_llblock_fit = (best_llblock_node_cnt >= rem_nodes);
+
+		/*
+		 * Try to use llblock big enough to meet job requaierment
+		 */
+		if (llblock_fit && !best_llblock_fit) {
 			*best_bblock_inx = i;
 			*best_fit = fit;
 			*best_same_block = same_block;
 			return;
 		}
 
-		if (nodes_on_llblock[(i >> llblock_level)] <
-		    nodes_on_llblock[(*best_bblock_inx >> llblock_level)])
+		if (!llblock_fit && best_llblock_fit)
 			return;
+
+		if (llblock_fit && best_llblock_fit) {
+			/*
+			 * If both bblock are on llblock which meet requirement
+			 * choose llblock with less nodes to avoid fragmentation
+			 */
+			if (llblock_node_cnt < best_llblock_node_cnt) {
+				*best_bblock_inx = i;
+				*best_fit = fit;
+				*best_same_block = same_block;
+				return;
+			}
+
+			if (llblock_node_cnt > best_llblock_node_cnt)
+				return;
+
+		} else {
+			/*
+			 * If neither of bblocks are on llblock which meet
+			 * requirement choose llblock with more nodes to
+			 * minimalize nuber of llblock
+			 */
+			if (llblock_node_cnt > best_llblock_node_cnt) {
+				*best_bblock_inx = i;
+				*best_fit = fit;
+				*best_same_block = same_block;
+				return;
+			}
+
+			if (llblock_node_cnt < best_llblock_node_cnt)
+				return;
+		}
 	}
 
+	/*
+	 * Minimialize number of bblock
+	 */
 	if (*best_bblock_inx == -1 || (fit && !(*best_fit)) ||
 	    (!fit && !(*best_fit) && (nodes_on_bblock[i] >=
 				      nodes_on_bblock[*best_bblock_inx])) ||
