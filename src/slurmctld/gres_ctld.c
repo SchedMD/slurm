@@ -2058,7 +2058,22 @@ static void _set_type_tres_cnt(List gres_list,
 		{
 			gres_job_state_t *gres_js = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
-			count = gres_js->total_gres;
+
+			/*
+			 * If total_gres is set for selected (i.e.
+			 * non-allocated) GRES and we had per job request we
+			 * shouldn't use total_gres since it may be higher than
+			 * actually requested. The way gres_sched_add works is
+			 * that it adds as many GRES devices as we can use on
+			 * the node. It may be more than requested to allow
+			 * further optimization for instance based on nvlink,
+			 * e.g. _set_task_bits.
+			 */
+			if (gres_js->gres_cnt_node_alloc ||
+			    !gres_js->gres_per_job)
+				count = gres_js->total_gres;
+			else
+				count = gres_js->gres_per_job;
 
 			/*
 			 * Resetting typeless_found to false when GRES name

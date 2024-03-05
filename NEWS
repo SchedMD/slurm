@@ -128,6 +128,8 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmi2 - PMI_process_mapping values have been adapted for executions
     where arbitrary distribution/SLURM_HOSTFILE is used. Now it can take into
     account multiple instances of the same node inside SLURM_HOSTFILE.
+ -- Avoid wrong limit oriented (i.e. QosMaxGresPer*) job pending reason for jobs
+    actually pending on Resources when GPUs are requested per job.
 
 * Changes in Slurm 23.11.7
 ==========================
