@@ -44,8 +44,9 @@
 typedef struct {
 	int magic; /* MAGIC_JOB_STATE_ARGS */
 	int rc;
-	uint32_t *jobs_count_ptr;
-	job_state_response_job_t **jobs_pptr;
+	uint32_t count;
+	job_state_response_job_t *jobs;
+	bool count_only;
 } job_state_args_t;
 
 typedef struct {
@@ -162,25 +163,20 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	job_ptr->job_state = job_state;
 }
 
-static job_state_response_job_t *_append_job_state(job_state_args_t *args,
-						   uint32_t job_id)
+static job_state_response_job_t *_append_job_state(job_state_args_t *args)
 {
 	int index;
 	job_state_response_job_t *rjob;
-	job_state_response_job_t *jobs = *args->jobs_pptr;
 
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
-	xassert(job_id > 0);
 
-	(*args->jobs_count_ptr)++;
-	if (!try_xrecalloc((*args->jobs_pptr), *args->jobs_count_ptr,
-			   sizeof(**args->jobs_pptr))) {
-		args->rc = ENOMEM;
+	args->count++;
+
+	if (args->count_only)
 		return NULL;
-	}
 
-	index = *args->jobs_count_ptr - 1;
-	rjob = &jobs[index];
+	index = args->count - 1;
+	rjob = &args->jobs[index];
 	xassert(!rjob->job_id);
 	return rjob;
 }
@@ -204,7 +200,12 @@ static int _add_job_state_job(job_state_args_t *args,
 
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 
-	if (!(rjob = _append_job_state(args, job_ptr->job_id)))
+	rjob = _append_job_state(args);
+
+	if (args->count_only)
+		return SLURM_SUCCESS;
+
+	if (!rjob)
 		return SLURM_ERROR;
 
 	rjob->job_id = job_ptr->job_id;
@@ -315,12 +316,26 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 {
 	job_state_args_t args = {
 		.magic = MAGIC_JOB_STATE_ARGS,
-		.rc = SLURM_SUCCESS,
-		.jobs_count_ptr = jobs_count_ptr,
-		.jobs_pptr = jobs_pptr,
+		.count_only = true,
 	};
+
+	/*
+	 * Loop once to grab the job count and then allocate the job array and
+	 * then populate the array.
+	 */
 
 	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
 
+	if (!try_xrecalloc(args.jobs, args.count, sizeof(*args.jobs)))
+		return ENOMEM;
+
+	/* reset count */
+	args.count_only = false;
+	args.count = 0;
+
+	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
+
+	*jobs_pptr = args.jobs;
+	*jobs_count_ptr = args.count;
 	return args.rc;
 }
