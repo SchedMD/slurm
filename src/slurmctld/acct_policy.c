@@ -3471,7 +3471,7 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 		return true;
 
 	/* clear old state reason */
-	if (job_state_reason_assoc_or_qos(job_ptr->state_reason)) {
+	if (job_state_reason_check(job_ptr->state_reason, JSR_QOS_ASSOC)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
@@ -3721,7 +3721,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 		safe_limits = true;
 
 	/* clear old state reason */
-	if (job_state_reason_assoc_or_qos(job_ptr->state_reason)) {
+	if (job_state_reason_check(job_ptr->state_reason, JSR_QOS_ASSOC)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}

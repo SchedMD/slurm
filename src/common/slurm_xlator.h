@@ -535,6 +535,7 @@
 /* job_state_reason.[ch] functions */
 #define job_state_reason_string	slurm_job_state_reason_string
 #define job_state_reason_num slurm_job_state_reason_num
+#define job_state_reason_check slurm_job_state_reason_check
 
 #endif /* USE_ALIAS */
 

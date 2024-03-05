@@ -42,6 +42,7 @@
  */
 strong_alias(job_state_reason_string, slurm_job_state_reason_string);
 strong_alias(job_state_reason_num, slurm_job_state_reason_num);
+strong_alias(job_state_reason_check, slurm_job_state_reason_check);
 
 typedef struct {
 	uint32_t flags;
@@ -830,51 +831,11 @@ extern enum job_state_reason job_state_reason_num(char *reason)
 	return NO_VAL;
 }
 
-extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason)
-{
-	xassert(state_reason < REASON_END);
-
-	if (jsra[state_reason].flags & JSR_QOS_GRP)
-		return true;
-
-	return false;
-}
-
-extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
+extern bool job_state_reason_check(enum job_state_reason inx, uint32_t flags)
 {
 	xassert(inx < REASON_END);
 
-	if (jsra[inx].flags & JSR_QOS_ASSOC)
-		return true;
-
-	return false;
-}
-
-/*
- * Determine of the specified job can execute right now or is currently
- * blocked by a miscellaneous limit. This does not re-validate job state,
- * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
- */
-extern bool job_state_reason_misc(enum job_state_reason inx)
-{
-	xassert(inx < REASON_END);
-
-	if (jsra[inx].flags & JSR_MISC)
-		return true;
-
-	return false;
-}
-
-/*
- * Determine of the specified job can execute right now or is currently
- * blocked by a partition state or limit. These job states should match the
- * reason values returned by job_limits_check().
- */
-extern bool job_state_reason_part(enum job_state_reason inx)
-{
-	xassert(inx < REASON_END);
-
-	if (jsra[inx].flags & JSR_PART)
+	if (jsra[inx].flags & flags)
 		return true;
 
 	return false;

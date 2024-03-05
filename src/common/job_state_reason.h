@@ -50,24 +50,9 @@ extern const char *job_state_reason_string(enum job_state_reason inx);
 /* Given a job's reason string for waiting, return enum job_state_reason */
 extern enum job_state_reason job_state_reason_num(char *reason);
 
-/* If the job is held up by a QOS GRP limit return true else return false. */
-extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason);
-
 /*
- * Determine if the job_state_reason is an association or QOS limit.
+ * Determine if the job_state_reason is using any flags given or not.
  */
-extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx);
-
-/*
- * Determine if the job_state_reason is using what is deemed a miscellaneous
- * limit or not.
- */
-extern bool job_state_reason_misc(enum job_state_reason inx);
-
-/*
- * Determine if the job_state_reason is using what is deemed a partition
- * limit or not.
- */
-extern bool job_state_reason_part(enum job_state_reason inx);
+extern bool job_state_reason_check(enum job_state_reason inx, uint32_t flags);
 
 #endif
