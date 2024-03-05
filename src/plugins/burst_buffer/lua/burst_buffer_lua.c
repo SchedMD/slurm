@@ -184,7 +184,6 @@ typedef struct {
 	uint32_t gid;
 	uint32_t job_id;
 	char *job_script;
-	uint32_t timeout;
 	uint32_t uid;
 } pre_run_args_t;
 
@@ -3799,7 +3798,7 @@ static void *_start_pre_run(void *x)
 			sleep(60);
 	}
 
-	timeout = pre_run_args->timeout;
+	timeout = bb_state.bb_config.other_timeout;
 	op = req_fxns[SLURM_BB_PRE_RUN];
 
 	memset(&run_lua_args, 0, sizeof run_lua_args);
@@ -3982,7 +3981,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	pre_run_args->job_id = job_ptr->job_id;
 	pre_run_args->job_script = job_script; /* Point at malloc'd string */
 	job_script = NULL; /* Avoid two variables pointing at the same string */
-	pre_run_args->timeout = bb_state.bb_config.other_timeout;
 	pre_run_args->uid = job_ptr->user_id;
 	pre_run_args->gid = job_ptr->group_id;
 	if (job_ptr->details) { /* Defer launch until completion */
