@@ -54,4 +54,16 @@ extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason);
  */
 extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx);
 
+/*
+ * Determine if the job_state_reason is using what is deemed a miscellaneous
+ * limit or not.
+ */
+extern bool job_state_reason_misc(enum job_state_reason inx);
+
+/*
+ * Determine if the job_state_reason is using what is deemed a partition
+ * limit or not.
+ */
+extern bool job_state_reason_part(enum job_state_reason inx);
+
 #endif

@@ -11325,8 +11325,8 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			}
 			if (!job_state_reason_assoc_or_qos(
 				    job_ptr2->state_reason) ||
-			    !misc_policy_job_runnable_state(job_ptr2) ||
-			    !part_policy_job_runnable_state(job_ptr2) ||
+			    !job_state_reason_misc(job_ptr2->state_reason) ||
+			    !job_state_reason_part(job_ptr2->state_reason) ||
 			    !job_independent(job_ptr2))
 				continue;
 

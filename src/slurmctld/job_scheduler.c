@@ -356,7 +356,7 @@ static bool _job_runnable_test2(job_record_t *job_ptr, time_t now,
 	reason = job_limits_check(&job_ptr, check_min_time);
 	if ((reason != job_ptr->state_reason) &&
 	    ((reason != WAIT_NO_REASON) ||
-	     (!part_policy_job_runnable_state(job_ptr)))) {
+	     (!job_state_reason_part(job_ptr->state_reason)))) {
 		job_ptr->state_reason = reason;
 		xfree(job_ptr->state_desc);
 		last_job_update = now;

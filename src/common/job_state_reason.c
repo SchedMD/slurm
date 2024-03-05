@@ -725,3 +725,37 @@ extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
 
 	return true;
 }
+
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a miscellaneous limit. This does not re-validate job state,
+ * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
+ */
+extern bool job_state_reason_misc(enum job_state_reason inx)
+{
+	if ((inx == FAIL_ACCOUNT) ||
+	    (inx == FAIL_QOS) ||
+	    (inx == WAIT_NODE_NOT_AVAIL)) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a partition state or limit. These job states should match the
+ * reason values returned by job_limits_check().
+ */
+extern bool job_state_reason_part(enum job_state_reason inx)
+{
+	if ((inx == WAIT_PART_DOWN) ||
+	    (inx == WAIT_PART_INACTIVE) ||
+	    (inx == WAIT_PART_NODE_LIMIT) ||
+	    (inx == WAIT_PART_TIME_LIMIT) ||
+	    (inx == WAIT_QOS_THRES)) {
+		return false;
+	}
+
+	return true;
+}

@@ -2129,40 +2129,6 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 }
 
 /*
- * Determine of the specified job can execute right now or is currently
- * blocked by a miscellaneous limit. This does not re-validate job state,
- * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
- */
-extern bool misc_policy_job_runnable_state(job_record_t *job_ptr)
-{
-	if ((job_ptr->state_reason == FAIL_ACCOUNT) ||
-	    (job_ptr->state_reason == FAIL_QOS) ||
-	    (job_ptr->state_reason == WAIT_NODE_NOT_AVAIL)) {
-		return false;
-	}
-
-	return true;
-}
-
-/*
- * Determine of the specified job can execute right now or is currently
- * blocked by a partition state or limit. These job states should match the
- * reason values returned by job_limits_check().
- */
-extern bool part_policy_job_runnable_state(job_record_t *job_ptr)
-{
-	if ((job_ptr->state_reason == WAIT_PART_DOWN) ||
-	    (job_ptr->state_reason == WAIT_PART_INACTIVE) ||
-	    (job_ptr->state_reason == WAIT_PART_NODE_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_PART_TIME_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_QOS_THRES)) {
-		return false;
-	}
-
-	return true;
-}
-
-/*
  * Validate a job's account against the partition's AllowAccounts or
  *	DenyAccounts parameters.
  * IN part_ptr - Partition pointer
