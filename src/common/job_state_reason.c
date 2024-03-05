@@ -845,9 +845,9 @@ extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
 	xassert(inx < REASON_END);
 
 	if (jsra[inx].flags & JSR_QOS_ASSOC)
-		return false;
+		return true;
 
-	return true;
+	return false;
 }
 
 /*
@@ -860,9 +860,9 @@ extern bool job_state_reason_misc(enum job_state_reason inx)
 	xassert(inx < REASON_END);
 
 	if (jsra[inx].flags & JSR_MISC)
-		return false;
+		return true;
 
-	return true;
+	return false;
 }
 
 /*
@@ -875,7 +875,7 @@ extern bool job_state_reason_part(enum job_state_reason inx)
 	xassert(inx < REASON_END);
 
 	if (jsra[inx].flags & JSR_PART)
-		return false;
+		return true;
 
-	return true;
+	return false;
 }

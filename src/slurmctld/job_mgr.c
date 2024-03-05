@@ -11323,10 +11323,10 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 				if (pend_time < bf_min_age_reserve)
 					continue;
 			}
-			if (!job_state_reason_assoc_or_qos(
+			if (job_state_reason_assoc_or_qos(
 				    job_ptr2->state_reason) ||
-			    !job_state_reason_misc(job_ptr2->state_reason) ||
-			    !job_state_reason_part(job_ptr2->state_reason) ||
+			    job_state_reason_misc(job_ptr2->state_reason) ||
+			    job_state_reason_part(job_ptr2->state_reason) ||
 			    !job_independent(job_ptr2))
 				continue;
 
