@@ -4535,12 +4535,20 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
 		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
 			   reboot_features, protocol_version);
+		bit_and_not(boot_node_bitmap, feature_node_bitmap);
 	}
 
 	if (non_feature_node_bitmap) {
 		/* Reboot nodes with no feature changes */
 		_do_reboot(power_save_on, non_feature_node_bitmap, job_ptr,
 			   NULL, protocol_version);
+		bit_and_not(boot_node_bitmap, non_feature_node_bitmap);
+	}
+
+	if (job_ptr->reboot) {
+		/* Reboot the remaining nodes blindly as per direct request */
+		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
+			   protocol_version);
 	}
 
 cleanup:
