@@ -288,6 +288,20 @@ static int _foreach_job_state_filter(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static void _dump_job_state_locked(job_state_args_t *args,
+				   const uint16_t filter_jobs_count,
+				   const uint32_t *filter_jobs_ptr)
+{
+	if (!filter_jobs_count) {
+		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
+					args);
+	} else {
+		for (int i = 0; !args->rc && (i < filter_jobs_count); i++)
+			args->rc = _add_job_state_by_job_id(filter_jobs_ptr[i],
+							    args);
+	}
+}
+
 extern int dump_job_state(const uint32_t filter_jobs_count,
 			  const uint32_t *filter_jobs_ptr,
 			  uint32_t *jobs_count_ptr,
@@ -300,14 +314,7 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 		.jobs_pptr = jobs_pptr,
 	};
 
-	if (!filter_jobs_count) {
-		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
-					&args);
-		return args.rc;
-	}
-
-	for (int i = 0; !args.rc && (i < filter_jobs_count); i++)
-		args.rc = _add_job_state_by_job_id(filter_jobs_ptr[i], &args);
+	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
 
 	return args.rc;
 }
