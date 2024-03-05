@@ -92,13 +92,13 @@ struct squeue_parameters {
 	char *data_parser; /* data_parser args */
 	char* names;
 	hostset_t *nodes;
+	bool only_state; /* limit query to only job states */
 	char* licenses;
 	char* partitions;
 	char* qoss;
 	char* reservation;
 	char* sort;
 	char* states;
-	bool state_only; /* limit query to only job states */
 	char* steps;
 	char* users;
 

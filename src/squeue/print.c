@@ -88,7 +88,7 @@ extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 	l = list_create(_job_list_del);
 	if (!params.no_header)
 		_print_job_from_format(NULL, format);
-	if (!params.state_only)
+	if (!params.only_state)
 		_part_state_load();
 
 	/* Filter out the jobs of interest */
