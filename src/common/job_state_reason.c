@@ -89,9 +89,11 @@ const static entry_t jsra[] = {
 		.str = "Licenses",
 	},
 	[WAIT_ASSOC_JOB_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssociationJobLimit",
 	},
 	[WAIT_ASSOC_RESOURCE_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssociationResourceLimit",
 	},
 	[WAIT_ASSOC_TIME_LIMIT] = {
@@ -146,9 +148,11 @@ const static entry_t jsra[] = {
 		.str = "QOSUsageThreshold",
 	},
 	[WAIT_QOS_JOB_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSJobLimit",
 	},
 	[WAIT_QOS_RESOURCE_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSResourceLimit",
 	},
 	[WAIT_QOS_TIME_LIMIT] = {
@@ -167,104 +171,127 @@ const static entry_t jsra[] = {
 		.str = "DependencyNeverSatisfied",
 	},
 	[WAIT_QOS_GRP_CPU] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpCpuLimit",
 	},
 	[WAIT_QOS_GRP_CPU_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpCPUMinutesLimit",
 	},
 	[WAIT_QOS_GRP_CPU_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpCPURunMinutesLimit",
 	},
 	[WAIT_QOS_GRP_JOB] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpJobsLimit"
 	},
 	[WAIT_QOS_GRP_MEM] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpMemLimit",
 	},
 	[WAIT_QOS_GRP_NODE] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpNodeLimit",
 	},
 	[WAIT_QOS_GRP_SUB_JOB] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpSubmitJobsLimit",
 	},
 	[WAIT_QOS_GRP_WALL] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpWallLimit",
 	},
 	[WAIT_QOS_MAX_CPU_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxCpuPerJobLimit",
 	},
 	[WAIT_QOS_MAX_CPU_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxCpuMinutesPerJobLimit",
 	},
 	[WAIT_QOS_MAX_NODE_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxNodePerJobLimit",
 	},
 	[WAIT_QOS_MAX_WALL_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxWallDurationPerJobLimit",
 	},
 	[WAIT_QOS_MAX_CPU_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxCpuPerUserLimit",
 	},
 	[WAIT_QOS_MAX_JOB_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxJobsPerUserLimit",
 	},
 	[WAIT_QOS_MAX_NODE_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxNodePerUserLimit",
 	},
 	[WAIT_QOS_MAX_SUB_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxSubmitJobPerUserLimit",
 	},
 	[WAIT_QOS_MIN_CPU] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinCpuNotSatisfied",
 	},
 	[WAIT_ASSOC_GRP_CPU] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpCpuLimit",
 	},
 	[WAIT_ASSOC_GRP_CPU_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpCPUMinutesLimit",
 	},
 	[WAIT_ASSOC_GRP_CPU_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpCPURunMinutesLimit",
 	},
 	[WAIT_ASSOC_GRP_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpJobsLimit"
 	},
 	[WAIT_ASSOC_GRP_MEM] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpMemLimit",
 	},
 	[WAIT_ASSOC_GRP_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpNodeLimit",
 	},
 	[WAIT_ASSOC_GRP_SUB_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpSubmitJobsLimit",
 	},
 	[WAIT_ASSOC_GRP_WALL] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpWallLimit",
 	},
 	[WAIT_ASSOC_MAX_JOBS] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxJobsLimit",
 	},
 	[WAIT_ASSOC_MAX_CPU_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxCpuPerJobLimit",
 	},
 	[WAIT_ASSOC_MAX_CPU_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxCpuMinutesPerJobLimit",
 	},
 	[WAIT_ASSOC_MAX_NODE_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxNodePerJobLimit",
 	},
 	[WAIT_ASSOC_MAX_WALL_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxWallDurationPerJobLimit",
 	},
 	[WAIT_ASSOC_MAX_SUB_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxSubmitJobLimit",
 	},
 	[WAIT_MAX_REQUEUE] = {
@@ -713,15 +740,10 @@ extern bool job_state_reason_qos_grp_limit(enum job_state_reason state_reason)
 
 extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
 {
-	/* If any more limits are added this will need to be added to */
-	if ((inx >= WAIT_QOS_GRP_CPU && inx <= WAIT_ASSOC_MAX_SUB_JOB) ||
-	    (inx == WAIT_ASSOC_JOB_LIMIT) ||
-	    (inx == WAIT_ASSOC_RESOURCE_LIMIT) ||
-	    (inx == WAIT_ASSOC_TIME_LIMIT) ||
-	    (inx == WAIT_QOS_JOB_LIMIT) ||
-	    (inx == WAIT_QOS_TIME_LIMIT)) {
+	xassert(inx < REASON_END);
+
+	if (jsra[inx].flags & JSR_QOS_ASSOC)
 		return false;
-	}
 
 	return true;
 }
