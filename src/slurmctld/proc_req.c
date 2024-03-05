@@ -1567,7 +1567,7 @@ static void _slurm_rpc_job_state(slurm_msg_t *msg)
 	if (rc) {
 		slurm_send_rc_msg(msg, rc);
 	} else {
-		slurm_msg_t response_msg = {0};
+		slurm_msg_t response_msg = {{0}};
 		response_init(&response_msg, msg, RESPONSE_JOB_STATE, jsr);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
