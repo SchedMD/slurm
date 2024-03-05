@@ -1676,7 +1676,8 @@ static void _fail_stage(stage_args_t *stage_args, const char *op,
 			bb_set_job_bb_state(job_ptr, bb_job,
 					    BB_STATE_TEARDOWN);
 		_queue_teardown(job_ptr->job_id,
-				job_ptr->user_id, true,
+				job_ptr->user_id,
+				stage_args->hurry,
 				job_ptr->group_id);
 	}
 
@@ -3414,6 +3415,7 @@ static void *_start_stage_in(void *x)
 		},
 	};
 
+	stage_in_args->hurry = true;
 	if (_run_stage_ops(stage_in_ops, ARRAY_SIZE(stage_in_ops),
 			   stage_in_args) != SLURM_SUCCESS)
 		goto fini;
