@@ -2259,7 +2259,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		.resp = resp,
 		.tag = tag,
 	};
-	openapi_resp_meta_t query_meta = {0};
+	openapi_resp_meta_t query_meta = {{0}};
 	openapi_ctxt_handler_t callback = op_path->callback;
 
 	if (plugin_meta)
