@@ -232,8 +232,8 @@ static int stage_in_cnt = 0;
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 			    uint32_t group_id);
-static void _fail_stage_in(stage_args_t *stage_args, const char *op, int rc,
-			   char *resp_msg);
+static void _fail_stage(stage_args_t *stage_args, const char *op, int rc,
+			char *resp_msg);
 
 static int _get_stage_in_cnt(void)
 {
@@ -1416,7 +1416,7 @@ static int _run_lua_stage_script(stage_args_t *stage_args,
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		_fail_stage_in(stage_args, op, rc, *resp_msg);
+		_fail_stage(stage_args, op, rc, *resp_msg);
 		return SLURM_ERROR;
 	}
 
@@ -1644,21 +1644,21 @@ static int _load_pools(uint32_t timeout)
 	return SLURM_SUCCESS;
 }
 
-static void _fail_stage_in(stage_args_t *stage_in_args, const char *op,
-			   int rc, char *resp_msg)
+static void _fail_stage(stage_args_t *stage_args, const char *op,
+			int rc, char *resp_msg)
 {
-	uint32_t job_id = stage_in_args->job_id;
+	uint32_t job_id = stage_args->job_id;
 	bb_job_t *bb_job = NULL;
 	job_record_t *job_ptr = NULL;
 	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 
 	error("%s for JobId=%u failed, status=%d, response=%s.",
-	      op, stage_in_args->job_id, rc, resp_msg);
+	      op, job_id, rc, resp_msg);
 	trigger_burst_buffer();
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	job_ptr = find_job_record(stage_in_args->job_id);
+	job_ptr = find_job_record(job_id);
 	if (!job_ptr) {
 		error("%s: Could not find JobId=%u", __func__, job_id);
 		goto fini;
