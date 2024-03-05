@@ -104,6 +104,7 @@ const static entry_t jsra[] = {
 		.str = "Reservation",
 	},
 	[WAIT_NODE_NOT_AVAIL] = {
+		.flags = JSR_MISC,
 		.str = "ReqNodeNotAvail",
 	},
 	[WAIT_FRONT_END] = {
@@ -140,9 +141,11 @@ const static entry_t jsra[] = {
 		.str = "InactiveLimit",
 	},
 	[FAIL_ACCOUNT] = {
+		.flags = JSR_MISC,
 		.str = "InvalidAccount",
 	},
 	[FAIL_QOS] = {
+		.flags = JSR_MISC,
 		.str = "InvalidQOS",
 	},
 	[WAIT_QOS_THRES] = {
@@ -850,11 +853,10 @@ extern bool job_state_reason_assoc_or_qos(enum job_state_reason inx)
  */
 extern bool job_state_reason_misc(enum job_state_reason inx)
 {
-	if ((inx == FAIL_ACCOUNT) ||
-	    (inx == FAIL_QOS) ||
-	    (inx == WAIT_NODE_NOT_AVAIL)) {
+	xassert(inx < REASON_END);
+
+	if (jsra[inx].flags & JSR_MISC)
 		return false;
-	}
 
 	return true;
 }
