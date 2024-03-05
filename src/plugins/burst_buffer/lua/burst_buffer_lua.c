@@ -3420,9 +3420,8 @@ static void *_start_stage_in(void *x)
 			 * returns something bigger.
 			 */
 			if (real_size > bb_job->req_size) {
-				info("%pJ total_size increased from %"PRIu64" to %"PRIu64,
-				     job_ptr,
-				     bb_job->req_size, real_size);
+				log_flag(BURST_BUF, "%pJ total_size increased from %"PRIu64" to %"PRIu64,
+					 job_ptr, bb_job->req_size, real_size);
 				bb_job->total_size = real_size;
 				bb_limit_rem(stage_in_args->uid,
 					     orig_real_size,
