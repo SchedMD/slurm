@@ -1739,14 +1739,15 @@ static void *_start_stage_out(void *x)
 		goto fini;
 	}
 
+	stage_out_args->hurry = false;
+	if (rc != SLURM_SUCCESS) {
+		_fail_stage(stage_out_args, op, rc, resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_out_args->job_id);
-	if (rc != SLURM_SUCCESS) {
-		trigger_burst_buffer();
-		error("post_run failed for JobId=%u, status: %d, response: %s",
-		      stage_out_args->job_id, rc, resp_msg);
-		rc = SLURM_ERROR;
-	}
 	if (!job_ptr) {
 		error("unable to find job record for JobId=%u",
 		      stage_out_args->job_id);
@@ -1760,43 +1761,40 @@ static void *_start_stage_out(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
-	if (rc == SLURM_SUCCESS) {
-		xfree(resp_msg);
+	xfree(resp_msg);
 
-		timeout = bb_state.bb_config.stage_out_timeout;
-		op = req_fxns[SLURM_BB_DATA_OUT];
+	timeout = bb_state.bb_config.stage_out_timeout;
+	op = req_fxns[SLURM_BB_DATA_OUT];
 
-		memset(&run_lua_args, 0, sizeof run_lua_args);
-		run_lua_args.argc = argc;
-		run_lua_args.argv = argv;
-		run_lua_args.get_job_ptr = true;
-		run_lua_args.job_id = stage_out_args->job_id;
-		run_lua_args.lua_func = op;
-		run_lua_args.resp_msg = &resp_msg;
-		run_lua_args.timeout = timeout;
-		run_lua_args.track_script_signal = &track_script_signal;
-		run_lua_args.with_scriptd = true;
+	memset(&run_lua_args, 0, sizeof run_lua_args);
+	run_lua_args.argc = argc;
+	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
+	run_lua_args.job_id = stage_out_args->job_id;
+	run_lua_args.lua_func = op;
+	run_lua_args.resp_msg = &resp_msg;
+	run_lua_args.timeout = timeout;
+	run_lua_args.track_script_signal = &track_script_signal;
+	run_lua_args.with_scriptd = true;
 
-		START_TIMER;
-		/* argv is the same as post_run. */
-		rc = _run_lua_script(&run_lua_args);
-		END_TIMER;
-		log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
-			 op, stage_out_args->job_id, TIME_STR);
+	START_TIMER;
+	/* argv is the same as post_run. */
+	rc = _run_lua_script(&run_lua_args);
+	END_TIMER;
+	log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
+		 op, stage_out_args->job_id, TIME_STR);
 
-		if (track_script_signal) {
-			/* Killed by slurmctld, exit now. */
-			info("data_out for JobId=%u terminated by slurmctld",
-			     stage_out_args->job_id);
-			goto fini;
-		}
+	if (track_script_signal) {
+		/* Killed by slurmctld, exit now. */
+		info("data_out for JobId=%u terminated by slurmctld",
+		     stage_out_args->job_id);
+		goto fini;
+	}
 
-		if (rc != SLURM_SUCCESS) {
-			trigger_burst_buffer();
-			error("data_out failed for JobId=%u, status: %d, response: %s",
-			      stage_out_args->job_id, rc, resp_msg);
-			rc = SLURM_ERROR;
-		}
+	if (rc != SLURM_SUCCESS) {
+		_fail_stage(stage_out_args, op, rc, resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -1807,36 +1805,17 @@ static void *_start_stage_out(void *x)
 	} else {
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
-		if (rc != SLURM_SUCCESS) {
-			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
-				   plugin_type, op, resp_msg);
-			bb_update_system_comment(job_ptr, (char *) op,
-						 resp_msg, 1);
-			if (bb_state.bb_config.flags &
-			    BB_FLAG_TEARDOWN_FAILURE) {
-				if (bb_job)
-					bb_set_job_bb_state(job_ptr, bb_job,
-							    BB_STATE_TEARDOWN);
-				_queue_teardown(stage_out_args->job_id,
-						stage_out_args->uid,
-						false,
-						stage_out_args->gid);
-			}
-		} else {
-			job_state_unset_flag(job_ptr, JOB_STAGE_OUT);
-			xfree(job_ptr->state_desc);
-			last_job_update = time(NULL);
-			log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
-				 job_ptr);
-			if (bb_job)
-				bb_set_job_bb_state(job_ptr, bb_job,
-						    BB_STATE_TEARDOWN);
-			_queue_teardown(stage_out_args->job_id,
-					stage_out_args->uid, false,
-					stage_out_args->gid);
-		}
+		job_state_unset_flag(job_ptr, JOB_STAGE_OUT);
+		xfree(job_ptr->state_desc);
+		last_job_update = time(NULL);
+		log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
+			 job_ptr);
+		if (bb_job)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_TEARDOWN);
+		_queue_teardown(stage_out_args->job_id,
+				stage_out_args->uid, false,
+				stage_out_args->gid);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
