@@ -329,7 +329,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
-	} else if (params.state_only) {
+	} else if (params.only_state) {
 		return (error_code = _query_job_states(argc, argv));
 	} else if (params.job_id) {
 		error_code = slurm_load_job(&new_job_ptr, params.job_id,

@@ -71,11 +71,11 @@
 #define OPT_LONG_YAML         0x111
 #define OPT_LONG_AUTOCOMP     0x112
 /*
- * OPT_LONG_JOB_STATE_ONLY was added in 23.11.5. At the time, the master branch
- * already used up to 0x116. So, OPT_LONG_JOB_STATE_ONLY was set to 0x117. We
+ * OPT_LONG_ONLY_JOB_STATE was added in 23.11.5. At the time, the master branch
+ * already used up to 0x116. So, OPT_LONG_ONLY_JOB_STATE was set to 0x117. We
  * are setting it to 0x117 here as well to be consistent.
  */
-#define OPT_LONG_JOB_STATE_ONLY   0x117
+#define OPT_LONG_ONLY_JOB_STATE   0x117
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -121,7 +121,6 @@ parse_command_line( int argc, char* *argv )
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
-		{"job-state-only", no_argument, 0, OPT_LONG_JOB_STATE_ONLY},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"long",       no_argument,       0, 'l'},
@@ -135,6 +134,7 @@ parse_command_line( int argc, char* *argv )
 		{"nodes",      required_argument, 0, 'w'},
 		{"nodelist",   required_argument, 0, 'w'},
 		{"noheader",   no_argument,       0, 'h'},
+		{"only-job-state", no_argument, 0, OPT_LONG_ONLY_JOB_STATE},
 		{"partitions", required_argument, 0, 'p'},
 		{"priority",   no_argument,       0, 'P'},
 		{"qos",        required_argument, 0, 'q'},
@@ -341,9 +341,6 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
 			break;
-		case OPT_LONG_JOB_STATE_ONLY:
-			params.state_only = true;
-			break;
 		case OPT_LONG_LOCAL:
 			params.local_flag = true;
 			break;
@@ -351,6 +348,9 @@ parse_command_line( int argc, char* *argv )
 			xfree(params.users);
 			xstrfmtcat(params.users, "%u", geteuid());
 			params.user_list = _build_user_list(params.users);
+			break;
+		case OPT_LONG_ONLY_JOB_STATE:
+			params.only_state = true;
 			break;
 		case OPT_LONG_SIBLING:
 			params.sibling_flag = true;
@@ -1868,12 +1868,12 @@ _print_options(void)
 	printf( "format      = %s\n", params.format );
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
-	printf( "job_state_only = %s\n", params.state_only ? "true" : "false");
 	printf( "jobs        = %s\n", params.jobs );
 	printf( "licenses    = %s\n", params.licenses );
 	printf( "local       = %s\n", params.local_flag ? "true" : "false");
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
+	printf( "only_job_state = %s\n", params.only_state ? "true" : "false");
 	printf( "partitions  = %s\n", params.partitions ) ;
 	printf( "priority    = %s\n", params.priority_flag ? "true" : "false");
 	printf( "reservation = %s\n", params.reservation ) ;
