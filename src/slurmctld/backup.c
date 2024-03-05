@@ -59,6 +59,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 
@@ -291,7 +292,16 @@ void run_backup(void)
 	init_job_conf();
 	unlock_slurmctld(config_write_lock);
 
+	/* Calls assoc_mgr_init() */
 	ctld_assoc_mgr_init();
+
+	/*
+	 * priority_g_init() needs to be called after assoc_mgr_init()
+	 * and before read_slurm_conf() because jobs could be killed
+	 * during read_slurm_conf() and call priority_g_job_end().
+	 */
+	if (priority_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize priority plugin");
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);

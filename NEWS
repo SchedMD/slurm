@@ -94,6 +94,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues with tasks when a job was shrinked more than once.
  -- Fix reservation update validation that resulted in reject of correct
     updates of reservation when the reservation was running jobs.
+ -- Fix possible segfault when the backup slurmctld is asserting control.
 
 * Changes in Slurm 23.11.4
 ==========================
