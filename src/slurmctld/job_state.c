@@ -36,6 +36,7 @@
 
 #include "src/common/macros.h"
 
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define MAGIC_JOB_STATE_ARGS 0x0a0beeee
@@ -292,6 +293,8 @@ static void _dump_job_state_locked(job_state_args_t *args,
 				   const uint16_t filter_jobs_count,
 				   const uint32_t *filter_jobs_ptr)
 {
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+
 	if (!filter_jobs_count) {
 		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
 					args);
