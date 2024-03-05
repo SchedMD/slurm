@@ -1440,7 +1440,7 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
 
     if live:
         output = run_command_output(
-            "scontrol show nodes -o", fatal=True, quiet=quiet, **run_command_kwargs
+            "scontrol show nodes -oF", fatal=True, quiet=quiet, **run_command_kwargs
         )
 
         node_dict = {}
@@ -2164,6 +2164,8 @@ def wait_for_node_state(
             polls.
         fatal (boolean): If True, a timeout will result in the test failing.
         reverse (boolean): If True, wait for the node to lose the desired_node_state.
+
+    Returns: If the node ever reached the desired state or not as a boolean.
     """
 
     # Figure out if we're waiting for the desired_node_state to be present or to be gone
