@@ -65,15 +65,19 @@ const static entry_t jsra[] = {
 		.str = "Resources",
 	},
 	[WAIT_PART_NODE_LIMIT] = {
+		.flags = JSR_PART,
 		.str = "PartitionNodeLimit",
 	},
 	[WAIT_PART_TIME_LIMIT] = {
+		.flags = JSR_PART,
 		.str = "PartitionTimeLimit",
 	},
 	[WAIT_PART_DOWN] = {
+		.flags = JSR_PART,
 		.str = "PartitionDown",
 	},
 	[WAIT_PART_INACTIVE] = {
+		.flags = JSR_PART,
 		.str = "PartitionInactive",
 	},
 	[WAIT_HELD] = {
@@ -149,7 +153,7 @@ const static entry_t jsra[] = {
 		.str = "InvalidQOS",
 	},
 	[WAIT_QOS_THRES] = {
-		.flags = JSR_QOS_ASSOC,
+		.flags = JSR_QOS_ASSOC | JSR_PART,
 		.str = "QOSUsageThreshold",
 	},
 	[WAIT_QOS_JOB_LIMIT] = {
@@ -868,13 +872,10 @@ extern bool job_state_reason_misc(enum job_state_reason inx)
  */
 extern bool job_state_reason_part(enum job_state_reason inx)
 {
-	if ((inx == WAIT_PART_DOWN) ||
-	    (inx == WAIT_PART_INACTIVE) ||
-	    (inx == WAIT_PART_NODE_LIMIT) ||
-	    (inx == WAIT_PART_TIME_LIMIT) ||
-	    (inx == WAIT_QOS_THRES)) {
+	xassert(inx < REASON_END);
+
+	if (jsra[inx].flags & JSR_PART)
 		return false;
-	}
 
 	return true;
 }

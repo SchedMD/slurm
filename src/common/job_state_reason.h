@@ -42,6 +42,7 @@
 #define JSR_QOS_ASSOC SLURM_BIT(1) /* job is held because of a QOS or ASSOC
 				    * limit */
 #define JSR_MISC SLURM_BIT(2) /* job is held because of a miscellaneous limit */
+#define JSR_PART SLURM_BIT(3) /* job is held because of a partition limit */
 
 /* Given a job's reason for waiting, return a descriptive string */
 extern const char *job_state_reason_string(enum job_state_reason inx);
