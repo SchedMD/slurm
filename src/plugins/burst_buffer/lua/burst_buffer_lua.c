@@ -124,11 +124,13 @@ static const char *req_fxns[] = {
 	"slurm_bb_job_teardown",
 	"slurm_bb_setup",
 	"slurm_bb_data_in",
+	"slurm_bb_test_data_in",
 	"slurm_bb_real_size",
 	"slurm_bb_paths",
 	"slurm_bb_pre_run",
 	"slurm_bb_post_run",
 	"slurm_bb_data_out",
+	"slurm_bb_test_data_out",
 	"slurm_bb_get_status",
 	NULL
 };
@@ -140,11 +142,13 @@ typedef enum {
 	SLURM_BB_JOB_TEARDOWN,
 	SLURM_BB_SETUP,
 	SLURM_BB_DATA_IN,
+	SLURM_BB_TEST_DATA_IN,
 	SLURM_BB_REAL_SIZE,
 	SLURM_BB_PATHS,
 	SLURM_BB_PRE_RUN,
 	SLURM_BB_POST_RUN,
 	SLURM_BB_DATA_OUT,
+	SLURM_BB_TEST_DATA_OUT,
 	SLURM_BB_GET_STATUS,
 	SLURM_BB_OP_MAX
 } bb_op_e;
@@ -1718,6 +1722,18 @@ static int _run_post_run(stage_args_t *stage_args, init_argv_f_t init_argv,
 	return SLURM_SUCCESS;
 }
 
+static int _run_test_data_inout(stage_args_t *stage_args,
+				init_argv_f_t init_argv, const char *op,
+				uint32_t job_id, uint32_t timeout,
+				char **resp_msg)
+{
+	if (_run_lua_stage_script(stage_args, init_argv, op, job_id, timeout,
+				  resp_msg) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 static void *_start_stage_out(void *x)
 {
 	stage_args_t *stage_out_args = x;
@@ -1736,6 +1752,12 @@ static void *_start_stage_out(void *x)
 			.init_argv = _init_data_in_argv, /* Same as data_in */
 			.op_type = SLURM_BB_DATA_OUT,
 			.run_func = _run_lua_stage_script,
+			.timeout = bb_state.bb_config.stage_out_timeout,
+		},
+		{
+			.init_argv = _init_data_in_argv, /* Same as data in */
+			.op_type = SLURM_BB_TEST_DATA_OUT,
+			.run_func = _run_test_data_inout,
 			.timeout = bb_state.bb_config.stage_out_timeout,
 		},
 	};
@@ -3333,6 +3355,12 @@ static void *_start_stage_in(void *x)
 			.init_argv = _init_data_in_argv,
 			.op_type = SLURM_BB_DATA_IN,
 			.run_func = _run_lua_stage_script,
+			.timeout = bb_state.bb_config.stage_in_timeout,
+		},
+		{
+			.init_argv = _init_data_in_argv, /* Same as data in */
+			.op_type = SLURM_BB_TEST_DATA_IN,
+			.run_func = _run_test_data_inout,
 			.timeout = bb_state.bb_config.stage_in_timeout,
 		},
 		{
