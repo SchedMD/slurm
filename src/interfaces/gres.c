@@ -3510,7 +3510,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
 
-	if (slurmd_conf_tot.cpu_set_cnt)
+	/* If the gres is sharing we need to have topo configured. */
+	if (slurmd_conf_tot.cpu_set_cnt ||
+	    (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres))
 		slurmd_conf_tot.topo_cnt = slurmd_conf_tot.rec_cnt;
 
 	/* Make sure these are insync after we get it from the slurmd */
