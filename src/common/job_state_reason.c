@@ -97,6 +97,7 @@ const static entry_t jsra[] = {
 		.str = "AssociationResourceLimit",
 	},
 	[WAIT_ASSOC_TIME_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssociationTimeLimit",
 	},
 	[WAIT_RESERVATION] = {
@@ -145,6 +146,7 @@ const static entry_t jsra[] = {
 		.str = "InvalidQOS",
 	},
 	[WAIT_QOS_THRES] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSUsageThreshold",
 	},
 	[WAIT_QOS_JOB_LIMIT] = {
@@ -156,6 +158,7 @@ const static entry_t jsra[] = {
 		.str = "QOSResourceLimit",
 	},
 	[WAIT_QOS_TIME_LIMIT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSTimeLimit",
 	},
 	[WAIT_CLEANING] = {
@@ -316,322 +319,402 @@ const static entry_t jsra[] = {
 		.str = "PowerReserved",
 	},
 	[WAIT_ASSOC_GRP_UNK] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpUnknown",
 	},
 	[WAIT_ASSOC_GRP_UNK_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpUnknownMinutes",
 	},
 	[WAIT_ASSOC_GRP_UNK_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpUnknownRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_UNK_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxUnknownPerJob",
 	},
 	[WAIT_ASSOC_MAX_UNK_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxUnknownPerNode",
 	},
 	[WAIT_ASSOC_MAX_UNK_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxUnknownMinutesPerJob",
 	},
 	[WAIT_ASSOC_MAX_CPU_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxCpuPerNode",
 	},
 	[WAIT_ASSOC_GRP_MEM_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpMemMinutes",
 	},
 	[WAIT_ASSOC_GRP_MEM_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpMemRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_MEM_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxMemPerJob",
 	},
 	[WAIT_ASSOC_MAX_MEM_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxMemPerNode",
 	},
 	[WAIT_ASSOC_MAX_MEM_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxMemMinutesPerJob",
 	},
 	[WAIT_ASSOC_GRP_NODE_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpNodeMinutes",
 	},
 	[WAIT_ASSOC_GRP_NODE_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpNodeRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_NODE_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxNodeMinutesPerJob",
 	},
 	[WAIT_ASSOC_GRP_ENERGY] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpEnergy",
 	},
 	[WAIT_ASSOC_GRP_ENERGY_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpEnergyMinutes",
 	},
 	[WAIT_ASSOC_GRP_ENERGY_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpEnergyRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_ENERGY_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxEnergyPerJob",
 	},
 	[WAIT_ASSOC_MAX_ENERGY_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxEnergyPerNode",
 	},
 	[WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxEnergyMinutesPerJob",
 	},
 	[WAIT_ASSOC_GRP_GRES] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpGRES",
 	},
 	[WAIT_ASSOC_GRP_GRES_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpGRESMinutes",
 	},
 	[WAIT_ASSOC_GRP_GRES_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpGRESRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_GRES_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxGRESPerJob",
 	},
 	[WAIT_ASSOC_MAX_GRES_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxGRESPerNode",
 	},
 	[WAIT_ASSOC_MAX_GRES_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxGRESMinutesPerJob",
 	},
 	[WAIT_ASSOC_GRP_LIC] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpLicense",
 	},
 	[WAIT_ASSOC_GRP_LIC_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpLicenseMinutes",
 	},
 	[WAIT_ASSOC_GRP_LIC_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpLicenseRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_LIC_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxLicensePerJob",
 	},
 	[WAIT_ASSOC_MAX_LIC_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxLicenseMinutesPerJob",
 	},
 	[WAIT_ASSOC_GRP_BB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBB",
 	},
 	[WAIT_ASSOC_GRP_BB_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBBMinutes",
 	},
 	[WAIT_ASSOC_GRP_BB_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBBRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_BB_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBBPerJob",
 	},
 	[WAIT_ASSOC_MAX_BB_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBBPerNode",
 	},
 	[WAIT_ASSOC_MAX_BB_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBBMinutesPerJob",
 	},
 	[WAIT_QOS_GRP_UNK] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpUnknown",
 	},
 	[WAIT_QOS_GRP_UNK_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpUnknownMinutes",
 	},
 	[WAIT_QOS_GRP_UNK_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpUnknownRunMinutes",
 	},
 	[WAIT_QOS_MAX_UNK_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxUnknownPerJob",
 	},
 	[WAIT_QOS_MAX_UNK_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxUnknownPerNode",
 	},
 	[WAIT_QOS_MAX_UNK_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxUnknownPerUser",
 	},
 	[WAIT_QOS_MAX_UNK_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxUnknownMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_UNK] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinUnknown",
 	},
 	[WAIT_QOS_MAX_CPU_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxCpuPerNode",
 	},
 	[WAIT_QOS_GRP_MEM_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpMemoryMinutes",
 	},
 	[WAIT_QOS_GRP_MEM_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpMemoryRunMinutes",
 	},
 	[WAIT_QOS_MAX_MEM_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxMemoryPerJob",
 	},
 	[WAIT_QOS_MAX_MEM_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxMemoryPerNode",
 	},
 	[WAIT_QOS_MAX_MEM_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxMemoryPerUser",
 	},
 	[WAIT_QOS_MAX_MEM_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxMemoryMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_MEM] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinMemory",
 	},
 	[WAIT_QOS_GRP_NODE_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpNodeMinutes",
 	},
 	[WAIT_QOS_GRP_NODE_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpNodeRunMinutes",
 	},
 	[WAIT_QOS_MAX_NODE_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxNodeMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinNode",
 	},
 	[WAIT_QOS_GRP_ENERGY] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpEnergy",
 	},
 	[WAIT_QOS_GRP_ENERGY_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpEnergyMinutes",
 	},
 	[WAIT_QOS_GRP_ENERGY_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpEnergyRunMinutes",
 	},
 	[WAIT_QOS_MAX_ENERGY_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxEnergyPerJob",
 	},
 	[WAIT_QOS_MAX_ENERGY_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxEnergyPerNode",
 	},
 	[WAIT_QOS_MAX_ENERGY_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxEnergyPerUser",
 	},
 	[WAIT_QOS_MAX_ENERGY_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxEnergyMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_ENERGY] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinEnergy",
 	},
 	[WAIT_QOS_GRP_GRES] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpGRES",
 	},
 	[WAIT_QOS_GRP_GRES_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpGRESMinutes",
 	},
 	[WAIT_QOS_GRP_GRES_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpGRESRunMinutes",
 	},
 	[WAIT_QOS_MAX_GRES_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxGRESPerJob",
 	},
 	[WAIT_QOS_MAX_GRES_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxGRESPerNode",
 	},
 	[WAIT_QOS_MAX_GRES_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxGRESPerUser",
 	},
 	[WAIT_QOS_MAX_GRES_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxGRESMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_GRES] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinGRES",
 	},
 	[WAIT_QOS_GRP_LIC] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpLicense",
 	},
 	[WAIT_QOS_GRP_LIC_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpLicenseMinutes",
 	},
 	[WAIT_QOS_GRP_LIC_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpLicenseRunMinutes",
 	},
 	[WAIT_QOS_MAX_LIC_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxLicensePerJob",
 	},
 	[WAIT_QOS_MAX_LIC_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxLicensePerUser",
 	},
 	[WAIT_QOS_MAX_LIC_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxLicenseMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_LIC] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinLicense",
 	},
 	[WAIT_QOS_GRP_BB] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpBB",
 	},
 	[WAIT_QOS_GRP_BB_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpBBMinutes",
 	},
 	[WAIT_QOS_GRP_BB_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpBBRunMinutes",
 	},
 	[WAIT_QOS_MAX_BB_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBBPerJob",
 	},
 	[WAIT_QOS_MAX_BB_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBBPerNode",
 	},
 	[WAIT_QOS_MAX_BB_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBBPerUser",
 	},
 	[WAIT_QOS_MAX_BB_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBBMinutesPerJob",
 	},
 	[WAIT_QOS_MIN_BB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinBB",
 	},
 	[FAIL_DEADLINE] = {
 		.str = "DeadLine",
 	},
 	[WAIT_QOS_MAX_BB_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxBBPerAccount",
 	},
 	[WAIT_QOS_MAX_CPU_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxCpuPerAccount",
 	},
 	[WAIT_QOS_MAX_ENERGY_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxEnergyPerAccount",
 	},
 	[WAIT_QOS_MAX_GRES_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxGRESPerAccount",
 	},
 	[WAIT_QOS_MAX_NODE_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxNodePerAccount",
 	},
 	[WAIT_QOS_MAX_LIC_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxLicensePerAccount",
 	},
 	[WAIT_QOS_MAX_MEM_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxMemoryPerAccount",
 	},
 	[WAIT_QOS_MAX_UNK_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxUnknownPerAccount",
 	},
 	[WAIT_QOS_MAX_JOB_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxJobsPerAccount",
 	},
 	[WAIT_QOS_MAX_SUB_JOB_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxSubmitJobsPerAccount",
 	},
 	[WAIT_PART_CONFIG] = {
@@ -650,51 +733,63 @@ const static entry_t jsra[] = {
 		.str = "MaxMemPerLimit",
 	},
 	[WAIT_ASSOC_GRP_BILLING] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBilling",
 	},
 	[WAIT_ASSOC_GRP_BILLING_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBillingMinutes",
 	},
 	[WAIT_ASSOC_GRP_BILLING_RUN_MIN] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpBillingRunMinutes",
 	},
 	[WAIT_ASSOC_MAX_BILLING_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBillingPerJob",
 	},
 	[WAIT_ASSOC_MAX_BILLING_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBillingPerNode",
 	},
 	[WAIT_ASSOC_MAX_BILLING_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "AssocMaxBillingMinutesPerJob",
 	},
 	[WAIT_QOS_GRP_BILLING] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP | JSR_QOS_ASSOC,
 		.str = "QOSGrpBilling",
 	},
 	[WAIT_QOS_GRP_BILLING_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP| JSR_QOS_ASSOC,
 		.str = "QOSGrpBillingMinutes",
 	},
 	[WAIT_QOS_GRP_BILLING_RUN_MIN] = {
-		.flags = JSR_QOS_GRP,
+		.flags = JSR_QOS_GRP| JSR_QOS_ASSOC,
 		.str = "QOSGrpBillingRunMinutes",
 	},
 	[WAIT_QOS_MAX_BILLING_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBillingPerJob",
 	},
 	[WAIT_QOS_MAX_BILLING_PER_NODE] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBillingPerNode",
 	},
 	[WAIT_QOS_MAX_BILLING_PER_USER] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBillingPerUser",
 	},
 	[WAIT_QOS_MAX_BILLING_MINS_PER_JOB] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMaxBillingMinutesPerJob",
 	},
 	[WAIT_QOS_MAX_BILLING_PER_ACCT] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "MaxBillingPerAccount",
 	},
 	[WAIT_QOS_MIN_BILLING] = {
+		.flags = JSR_QOS_ASSOC,
 		.str = "QOSMinBilling",
 	},
 	[WAIT_RESV_DELETED] = {
