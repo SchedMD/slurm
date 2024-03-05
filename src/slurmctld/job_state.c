@@ -165,7 +165,9 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 static job_state_response_job_t *_append_job_state(job_state_args_t *args,
 						   uint32_t job_id)
 {
+	int index;
 	job_state_response_job_t *rjob;
+	job_state_response_job_t *jobs = *args->jobs_pptr;
 
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 	xassert(job_id > 0);
@@ -177,8 +179,9 @@ static job_state_response_job_t *_append_job_state(job_state_args_t *args,
 		return NULL;
 	}
 
-	rjob = &((*args->jobs_pptr)[*args->jobs_count_ptr - 1]);
-
+	index = *args->jobs_count_ptr - 1;
+	rjob = &jobs[index];
+	xassert(!rjob->job_id);
 	return rjob;
 }
 
