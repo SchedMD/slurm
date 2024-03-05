@@ -164,35 +164,14 @@ typedef struct {
 } data_pools_arg_t;
 
 typedef struct {
-	uint32_t group_id;
-	bool hurry;
-	uint32_t job_id;
-	uint32_t user_id;
-	char *job_script;
-} teardown_args_t;
-
-typedef struct {
 	uint64_t bb_size;
 	uint32_t gid;
+	bool hurry;
 	uint32_t job_id;
 	char *job_script;
 	char *pool;
 	uint32_t uid;
-} stage_in_args_t;
-
-typedef struct {
-	uint32_t gid;
-	uint32_t job_id;
-	char *job_script;
-	uint32_t uid;
-} pre_run_args_t;
-
-typedef struct {
-	uint32_t gid;
-	uint32_t job_id;
-	char *job_script;
-	uint32_t uid;
-} stage_out_args_t;
+} stage_args_t;
 
 typedef struct {
 	uint32_t argc;
@@ -1565,7 +1544,7 @@ static int _load_pools(uint32_t timeout)
 	return SLURM_SUCCESS;
 }
 
-static void _fail_stage_in(stage_in_args_t *stage_in_args, const char *op,
+static void _fail_stage_in(stage_args_t *stage_in_args, const char *op,
 			   int rc, char *resp_msg)
 {
 	uint32_t job_id = stage_in_args->job_id;
@@ -1614,7 +1593,7 @@ static void *_start_stage_out(void *x)
 	const char *op;
 	char **argv;
 	bool track_script_signal = false;
-	stage_out_args_t *stage_out_args = (stage_out_args_t *) x;
+	stage_args_t *stage_out_args = x;
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr;
@@ -1773,7 +1752,7 @@ fini:
 
 static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 {
-	stage_out_args_t *stage_out_args;
+	stage_args_t *stage_out_args;
 
 	stage_out_args = xmalloc(sizeof *stage_out_args);
 	stage_out_args->job_id = bb_job->job_id;
@@ -3043,7 +3022,7 @@ static void *_start_teardown(void *x)
 	char *resp_msg = NULL;
 	char **argv;
 	bool track_script_signal = false;
-	teardown_args_t *teardown_args = (teardown_args_t *)x;
+	stage_args_t *teardown_args = x;
 	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
@@ -3060,8 +3039,8 @@ static void *_start_teardown(void *x)
 	argv[0] = xstrdup_printf("%u", teardown_args->job_id);
 	argv[1] = xstrdup_printf("%s", teardown_args->job_script);
 	argv[2] = xstrdup_printf("%s", teardown_args->hurry ? "true" : "false");
-	argv[3] = xstrdup_printf("%u", teardown_args->user_id);
-	argv[4] = xstrdup_printf("%u", teardown_args->group_id);
+	argv[3] = xstrdup_printf("%u", teardown_args->uid);
+	argv[4] = xstrdup_printf("%u", teardown_args->gid);
 
 	timeout = bb_state.bb_config.other_timeout;
 
@@ -3160,7 +3139,7 @@ static void *_start_teardown(void *x)
 		snprintf(buf_name, sizeof(buf_name), "%u",
 			 teardown_args->job_id);
 		bb_alloc = bb_find_name_rec(buf_name,
-					    teardown_args->user_id,
+					    teardown_args->uid,
 					    &bb_state);
 		if (bb_alloc) {
 			bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
@@ -3188,7 +3167,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	char *hash_dir = NULL, *job_script = NULL;
 	int hash_inx = job_id % 10;
 	struct stat buf;
-	teardown_args_t *teardown_args;
+	stage_args_t *teardown_args;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -3209,8 +3188,8 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 
 	teardown_args = xmalloc(sizeof *teardown_args);
 	teardown_args->job_id = job_id;
-	teardown_args->user_id = user_id;
-	teardown_args->group_id = group_id;
+	teardown_args->uid = user_id;
+	teardown_args->gid = group_id;
 	teardown_args->job_script = job_script;
 	teardown_args->hurry = hurry;
 
@@ -3219,7 +3198,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	xfree(hash_dir);
 }
 
-static int _run_real_size(stage_in_args_t *stage_in_args, const char *op,
+static int _run_real_size(stage_args_t *stage_in_args, const char *op,
 			  bool *track_script_signal, char **resp_msg)
 {
 	char **argv = NULL;
@@ -3254,7 +3233,7 @@ static int _run_real_size(stage_in_args_t *stage_in_args, const char *op,
 	return rc;
 }
 
-static int _run_data_in(stage_in_args_t *stage_in_args, const char *op,
+static int _run_data_in(stage_args_t *stage_in_args, const char *op,
 			bool *track_script_signal, char **resp_msg)
 {
 	char **argv = NULL;
@@ -3290,7 +3269,7 @@ static int _run_data_in(stage_in_args_t *stage_in_args, const char *op,
 	return rc;
 }
 
-static int _run_setup(stage_in_args_t *stage_in_args, const char *op,
+static int _run_setup(stage_args_t *stage_in_args, const char *op,
 		      bool *track_script_signal, char **resp_msg)
 {
 	char **argv = NULL;
@@ -3335,7 +3314,7 @@ static void *_start_stage_in(void *x)
 	char *resp_msg = NULL;
 	const char *op = NULL;
 	long real_size = 0;
-	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
+	stage_args_t *stage_in_args = x;
 	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job;
@@ -3477,7 +3456,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
 	int hash_inx = job_ptr->job_id % 10;
-	stage_in_args_t *stage_in_args;
+	stage_args_t *stage_in_args;
 	bb_alloc_t *bb_alloc = NULL;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
@@ -3770,7 +3749,7 @@ static void *_start_pre_run(void *x)
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	pre_run_args_t *pre_run_args = (pre_run_args_t *) x;
+	stage_args_t *pre_run_args = x;
 	run_lua_args_t run_lua_args;
 	DEF_TIMERS;
 	DEF_STAGE_THROTTLE;
@@ -3893,7 +3872,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	uint32_t argc;
 	char **argv;
 	bb_job_t *bb_job;
-	pre_run_args_t *pre_run_args;
+	stage_args_t *pre_run_args;
 	run_lua_args_t run_lua_args;
 	DEF_TIMERS;
 
