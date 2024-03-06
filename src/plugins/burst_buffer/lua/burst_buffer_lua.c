@@ -349,7 +349,7 @@ static const struct luaL_Reg slurm_functions [] = {
 
 static void _loadscript_extra(lua_State *st)
 {
-        /* local setup */
+	/* local setup */
 	slurm_lua_table_register(st, NULL, slurm_functions);
 
 	/* Must be always done after we register the slurm_functions */
