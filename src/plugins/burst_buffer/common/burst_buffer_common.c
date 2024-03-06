@@ -843,6 +843,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 			pack64(config_ptr->pool_ptr[i].unfree_space, buffer);
 			pack64(config_ptr->pool_ptr[i].used_space, buffer);
 		}
+		pack32(config_ptr->poll_interval, buffer);
 		pack32(config_ptr->other_timeout,    buffer);
 		packstr(config_ptr->start_stage_in,  buffer);
 		packstr(config_ptr->start_stage_out, buffer);

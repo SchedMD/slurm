@@ -7175,6 +7175,7 @@ static int _unpack_burst_buffer_info_msg(
 					&bb_info_ptr->pool_ptr[j].used_space,
 					buffer);
 			}
+			safe_unpack32(&bb_info_ptr->poll_interval, buffer);
 			safe_unpack32(&bb_info_ptr->other_timeout, buffer);
 			safe_unpackstr(&bb_info_ptr->start_stage_in, buffer);
 			safe_unpackstr(&bb_info_ptr->start_stage_out, buffer);
