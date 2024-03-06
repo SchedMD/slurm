@@ -1484,16 +1484,11 @@ static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 		.resp_msg = &resp_msg,
 		.timeout = timeout,
 	};
-	DEF_TIMERS;
 
 	*num_pools = 0;
 
 	/* Call lua function. */
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "%s ran for %s", lua_func_name, TIME_STR);
-
+	rc = _run_lua_script_wrapper(&run_lua_args);
 	*out_rc = rc;
 	if (rc != SLURM_SUCCESS) {
 		trigger_burst_buffer();
@@ -2609,10 +2604,8 @@ extern char *bb_p_get_status(uint32_t argc, char **argv, uint32_t uid,
 {
 	char **pass_argv;
 	char *status_resp = NULL;
-	int rc;
 	uint32_t pass_argc;
 	run_lua_args_t run_lua_args;
-	DEF_TIMERS;
 
 	pass_argc = argc + 2;
 	pass_argv = xcalloc(pass_argc + 1, sizeof(char *));
@@ -2629,12 +2622,7 @@ extern char *bb_p_get_status(uint32_t argc, char **argv, uint32_t uid,
 	run_lua_args.timeout = bb_state.bb_config.other_timeout;
 	run_lua_args.with_scriptd = true;
 
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "slurm_bb_get_status ran for %s", TIME_STR);
-
-	if (rc != SLURM_SUCCESS) {
+	if (_run_lua_script_wrapper(&run_lua_args) != SLURM_SUCCESS) {
 		xfree(status_resp);
 		status_resp = xstrdup("Error running slurm_bb_get_status\n");
 	}
@@ -2797,7 +2785,6 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	bool using_master_script = false;
 	bb_job_t *bb_job;
 	run_lua_args_t run_lua_args;
-	DEF_TIMERS;
 
 	/* Initialization */
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -2884,13 +2871,8 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	run_lua_args.lua_func = lua_func_name;
 	run_lua_args.resp_msg = &resp_msg;
 
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
+	rc = _run_lua_script_wrapper(&run_lua_args);
 	xfree_array(argv);
-	log_flag(BURST_BUF, "%s for job %pJ ran for %s",
-		 lua_func_name, job_ptr, TIME_STR);
-
 	if (rc) {
 		if (err_msg && resp_msg) {
 			xfree(*err_msg);
@@ -3114,7 +3096,6 @@ static void *_start_teardown(void *x)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	run_lua_args_t run_lua_args;
-	DEF_TIMERS;
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
@@ -3140,11 +3121,7 @@ static void *_start_teardown(void *x)
 
 	/* Run lua "teardown" function */
 	while (1) {
-		START_TIMER;
-		rc = _run_lua_script(&run_lua_args);
-		END_TIMER;
-		log_flag(BURST_BUF, "Teardown for JobId=%u ran for %s",
-			 teardown_args->job_id, TIME_STR);
+		rc = _run_lua_script_wrapper(&run_lua_args);
 
 		if (track_script_signal) {
 			/* Killed by slurmctld, exit now. */
@@ -3772,7 +3749,6 @@ static void *_start_pre_run(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	stage_args_t *pre_run_args = x;
 	run_lua_args_t run_lua_args;
-	DEF_TIMERS;
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
@@ -3812,9 +3788,7 @@ static void *_start_pre_run(void *x)
 	run_lua_args.track_script_signal = &track_script_signal;
 	run_lua_args.with_scriptd = true;
 
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
+	rc = _run_lua_script_wrapper(&run_lua_args);
 
 	if (track_script_signal) {
 		/* Killed by slurmctld, exit now. */
@@ -3826,8 +3800,6 @@ static void *_start_pre_run(void *x)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
-	log_flag(BURST_BUF, "%s for %pJ ran for %s", op, job_ptr, TIME_STR);
-
 	if (job_ptr)
 		bb_job = _get_bb_job(job_ptr);
 	if (rc != SLURM_SUCCESS) {
@@ -3895,7 +3867,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	bb_job_t *bb_job;
 	stage_args_t *pre_run_args;
 	run_lua_args_t run_lua_args;
-	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -3959,10 +3930,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	run_lua_args.resp_msg = &resp_msg;
 	run_lua_args.timeout = 0;
 
-	START_TIMER;
-	rc = _run_lua_script(&run_lua_args);
-	END_TIMER;
-	log_flag(BURST_BUF, "slurm_bb_paths ran for %s", TIME_STR);
+	rc = _run_lua_script_wrapper(&run_lua_args);
 
 	/* resp_msg already logged by _run_lua_script. */
 	xfree(resp_msg);
