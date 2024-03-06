@@ -1744,9 +1744,25 @@ static int _run_test_data_inout(stage_args_t *stage_args,
 				uint32_t job_id, uint32_t timeout,
 				char **resp_msg)
 {
-	if (_run_lua_stage_script(stage_args, init_argv, op, job_id, timeout,
-				  resp_msg) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	while (true) {
+		bool term_flag;
+
+		slurm_mutex_lock(&bb_state.term_mutex);
+		term_flag = bb_state.term_flag;
+		slurm_mutex_unlock(&bb_state.term_mutex);
+		if (term_flag)
+			return SLURM_ERROR;
+
+		if (_run_lua_stage_script(stage_args, init_argv, op, job_id,
+					  timeout, resp_msg) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+		if (!xstrcasecmp(*resp_msg, SLURM_BB_BUSY)) {
+			bb_sleep(&bb_state, bb_state.bb_config.poll_interval);
+			xfree(*resp_msg);
+			continue;
+		}
+		break;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2326,12 +2342,12 @@ extern int fini(void)
 	int thread_cnt, last_thread_cnt = 0;
 
 	/*
-	 * Tell bb_agent to stop. It will do one more state save after all
-	 * threads have completed.
+	 * Signal threads to stop. _bb_agent will do one more state save after
+	 * all threads have completed.
 	 */
 	slurm_mutex_lock(&bb_state.term_mutex);
 	bb_state.term_flag = true;
-	slurm_cond_signal(&bb_state.term_cond);
+	slurm_cond_broadcast(&bb_state.term_cond);
 	slurm_mutex_unlock(&bb_state.term_mutex);
 
 	/* Wait for all running scripts to finish. */
