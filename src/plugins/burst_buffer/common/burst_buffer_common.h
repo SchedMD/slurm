@@ -52,6 +52,8 @@
 /* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE	100
 
+#define DEFAULT_BB_POLL_INTERVAL 15 /* 15 seconds */
+
 /* Default operation timeouts */
 #define DEFAULT_OTHER_TIMEOUT		300	/* 5 minutes */
 #define DEFAULT_STATE_IN_TIMEOUT	86400	/* 1 day */
@@ -75,6 +77,7 @@ typedef struct bb_config {
 					 * units are GB */
 	uint32_t pool_cnt;		/* Count of records in pool_ptr */
 	burst_buffer_pool_t *pool_ptr;	/* Type is defined in slurm.h */
+	uint32_t poll_interval;
 	uint32_t other_timeout;
 	uint32_t stage_in_timeout;
 	uint32_t stage_out_timeout;

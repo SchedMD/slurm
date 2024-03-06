@@ -351,6 +351,10 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line ******/
 	xstrcat(out_buf, line_end);
+	xstrfmtcat(out_buf, "PollInterval=%u", burst_buffer_ptr->poll_interval);
+
+	/****** Line ******/
+	xstrcat(out_buf, line_end);
 	xstrfmtcat(out_buf, "StageInTimeout=%u StageOutTimeout=%u ValidateTimeout=%u OtherTimeout=%u",
 		   burst_buffer_ptr->stage_in_timeout,
 		   burst_buffer_ptr->stage_out_timeout,

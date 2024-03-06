@@ -5073,6 +5073,7 @@ typedef struct {
 	uint32_t pool_cnt;		/* Count of records in pool_ptr */
 	burst_buffer_pool_t *pool_ptr;
 	char *name;			/* Plugin name */
+	uint32_t poll_interval;
 	uint32_t other_timeout;		/* Seconds or zero */
 	uint32_t stage_in_timeout;	/* Seconds or zero */
 	uint32_t stage_out_timeout;	/* Seconds or zero */

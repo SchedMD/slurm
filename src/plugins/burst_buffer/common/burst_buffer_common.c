@@ -215,6 +215,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->get_sys_state);
 	xfree(config_ptr->get_sys_status);
 	config_ptr->granularity = 1;
+	config_ptr->poll_interval = 0;
 	if (fini) {
 		for (i = 0; i < config_ptr->pool_cnt; i++)
 			xfree(config_ptr->pool_ptr[i].name);
@@ -523,6 +524,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"GetSysStatus", S_P_STRING},
 		{"Granularity", S_P_STRING},
 		{"OtherTimeout", S_P_UINT32},
+		{"PollInterval", S_P_UINT32},
 		{"Pools", S_P_STRING},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
@@ -547,6 +549,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	/* Set default configuration */
 	bb_clear_config(&state_ptr->bb_config, false);
 	state_ptr->bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
+	state_ptr->bb_config.poll_interval = DEFAULT_BB_POLL_INTERVAL;
 	state_ptr->bb_config.other_timeout = DEFAULT_OTHER_TIMEOUT;
 	state_ptr->bb_config.stage_in_timeout = DEFAULT_STATE_IN_TIMEOUT;
 	state_ptr->bb_config.stage_out_timeout = DEFAULT_STATE_OUT_TIMEOUT;
@@ -651,6 +654,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(tmp);
 	}
 
+	(void) s_p_get_uint32(&state_ptr->bb_config.poll_interval,
+			     "PollInterval", bb_hashtbl);
 	(void) s_p_get_uint32(&state_ptr->bb_config.other_timeout,
 			     "OtherTimeout", bb_hashtbl);
 	(void) s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout,
@@ -699,6 +704,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 			     state_ptr->bb_config.pool_ptr[i].name,
 			     state_ptr->bb_config.pool_ptr[i].total_space);
 		}
+		info("%s: PollInterval:%u", __func__,
+		     state_ptr->bb_config.poll_interval);
 		info("%s: OtherTimeout:%u", __func__,
 		     state_ptr->bb_config.other_timeout);
 		info("%s: StageInTimeout:%u", __func__,
