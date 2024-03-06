@@ -15,7 +15,7 @@ priority_factors_t pack_f_req = {0};
 START_TEST(pack_null_resp)
 {
 	buf_t *buf = init_buf(1024);
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg = {{0}};
 	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 

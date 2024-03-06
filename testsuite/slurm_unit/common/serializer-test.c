@@ -472,8 +472,8 @@ END_TEST
 START_TEST(test_mimetype)
 {
 	const char *ptr = NULL;
-	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr));
-	ck_assert(ptr);
+	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr) != NULL);
+	ck_assert(ptr != NULL);
 }
 END_TEST
 
