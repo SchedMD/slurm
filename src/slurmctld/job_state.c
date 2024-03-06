@@ -36,7 +36,23 @@
 
 #include "src/common/macros.h"
 
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+
+#define MAGIC_JOB_STATE_ARGS 0x0a0beeee
+
+typedef struct {
+	int magic; /* MAGIC_JOB_STATE_ARGS */
+	int rc;
+	uint32_t count;
+	job_state_response_job_t *jobs;
+	bool count_only;
+} job_state_args_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	job_state_args_t *job_state_args;
+} foreach_het_job_state_args_t;
 
 #ifndef NDEBUG
 
@@ -145,4 +161,181 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	_log_job_state_change(job_ptr, job_state);
 
 	job_ptr->job_state = job_state;
+}
+
+static job_state_response_job_t *_append_job_state(job_state_args_t *args)
+{
+	int index;
+	job_state_response_job_t *rjob;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
+
+	args->count++;
+
+	if (args->count_only)
+		return NULL;
+
+	index = args->count - 1;
+	rjob = &args->jobs[index];
+	xassert(!rjob->job_id);
+	return rjob;
+}
+
+static bitstr_t *_job_state_array_bitmap(const job_record_t *job_ptr)
+{
+	if (!job_ptr->array_recs)
+		return NULL;
+
+	if (job_ptr->array_recs->task_id_bitmap &&
+	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) != -1))
+		return bit_copy(job_ptr->array_recs->task_id_bitmap);
+
+	return NULL;
+}
+
+static int _add_job_state_job(job_state_args_t *args,
+			      const job_record_t *job_ptr)
+{
+	job_state_response_job_t *rjob;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
+
+	rjob = _append_job_state(args);
+
+	if (args->count_only)
+		return SLURM_SUCCESS;
+
+	if (!rjob)
+		return SLURM_ERROR;
+
+	rjob->job_id = job_ptr->job_id;
+	rjob->array_job_id = job_ptr->array_job_id;
+	rjob->array_task_id = job_ptr->array_task_id;
+	rjob->array_task_id_bitmap = _job_state_array_bitmap(job_ptr);
+	rjob->het_job_id = job_ptr->het_job_id;
+	rjob->state = job_ptr->job_state;
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_add_job_state_het_job(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	foreach_het_job_state_args_t *het_args = arg;
+
+	if (het_job_ptr->het_job_id == het_args->job_ptr->het_job_id) {
+		_add_job_state_job(het_args->job_state_args, het_job_ptr);
+		return 0;
+	} else {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, het_args->job_ptr);
+		return -1;
+	}
+}
+
+static int _add_job_state_by_job_id(const uint32_t job_id,
+				    job_state_args_t *args)
+{
+	job_record_t *job_ptr;
+	int rc = SLURM_SUCCESS;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
+
+	/*
+	 * This uses the similar logic as pack_one_job() but simpler as whole
+	 * array is always being dumped.
+	 * TODO: Combine the duplicate logic.
+	 */
+	job_ptr = find_job_record(job_id);
+
+	if (!job_ptr) {
+		/* No job found is okay */
+		//return ESLURM_INVALID_JOB_ID;
+		return SLURM_SUCCESS;
+	} else if (job_ptr && job_ptr->het_job_list) {
+		foreach_het_job_state_args_t het_args = {
+			.job_ptr = job_ptr,
+			.job_state_args = args,
+		};
+
+		if (list_for_each(job_ptr->het_job_list,
+				  _foreach_add_job_state_het_job,
+				  &het_args) < 0) {
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		   !job_ptr->array_recs) {
+		/* Pack regular (not array) job */
+		return _add_job_state_job(args, job_ptr);
+	} else {
+		if ((rc = _add_job_state_job(args, job_ptr)))
+			return rc;
+
+		while ((job_ptr = job_ptr->job_array_next_j))
+			if ((job_ptr->array_job_id == job_id) &&
+			    (rc = _add_job_state_job(args, job_ptr)))
+				return rc;
+	}
+
+	return args->rc;
+}
+
+static int _foreach_job_state_filter(void *object, void *arg)
+{
+	const job_record_t *job_ptr = object;
+	job_state_args_t *args = arg;
+
+	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
+
+	if ((args->rc = _add_job_state_job(args, job_ptr)))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+static void _dump_job_state_locked(job_state_args_t *args,
+				   const uint16_t filter_jobs_count,
+				   const uint32_t *filter_jobs_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+
+	if (!filter_jobs_count) {
+		(void) list_for_each_ro(job_list, _foreach_job_state_filter,
+					args);
+	} else {
+		for (int i = 0; !args->rc && (i < filter_jobs_count); i++)
+			args->rc = _add_job_state_by_job_id(filter_jobs_ptr[i],
+							    args);
+	}
+}
+
+extern int dump_job_state(const uint32_t filter_jobs_count,
+			  const uint32_t *filter_jobs_ptr,
+			  uint32_t *jobs_count_ptr,
+			  job_state_response_job_t **jobs_pptr)
+{
+	job_state_args_t args = {
+		.magic = MAGIC_JOB_STATE_ARGS,
+		.count_only = true,
+	};
+
+	/*
+	 * Loop once to grab the job count and then allocate the job array and
+	 * then populate the array.
+	 */
+
+	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
+
+	if (!try_xrecalloc(args.jobs, args.count, sizeof(*args.jobs)))
+		return ENOMEM;
+
+	/* reset count */
+	args.count_only = false;
+	args.count = 0;
+
+	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
+
+	*jobs_pptr = args.jobs;
+	*jobs_count_ptr = args.count;
+	return args.rc;
 }

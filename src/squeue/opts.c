@@ -409,6 +409,9 @@ extern void parse_command_line(int argc, char **argv)
 	if (params.long_list && params.format)
 		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
 
+	if (params.only_state && params.step_flag)
+		fatal("Options --only-job-state and -s(--steps) are mutually exclusive. Please remove one and retry.");
+
 	if (!override_format_env) {
 		if ((env_val = getenv("SQUEUE_FORMAT")))
 			params.format = xstrdup(env_val);
