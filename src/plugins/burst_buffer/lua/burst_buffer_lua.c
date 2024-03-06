@@ -68,6 +68,9 @@
 #define DEFAULT_DIRECTIVE_STR "BB_LUA"
 /* Hold job if pre_run fails more times than MAX_RETRY_CNT */
 #define MAX_RETRY_CNT 2
+/* Used for the polling hooks "test_data_{in|out}" */
+#define SLURM_BB_BUSY "BUSY"
+
 /*
  * Limit the number of burst buffers APIs allowed to run in parallel so that we
  * don't exceed process or system resource limits (such as number of processes
@@ -352,7 +355,21 @@ static void _loadscript_extra(lua_State *st)
 	/* local setup */
 	slurm_lua_table_register(st, NULL, slurm_functions);
 
+	/* Push this string to the top of the stack" */
+	lua_pushstring(st, SLURM_BB_BUSY);
+	/*
+	 * Add an entry to the table at index -2 (second from the top of the
+	 * stack) with key == "SLURM_BB_BUSY" and value == SLURM_BB_BUSY.
+	 * Also pop the value SLURM_BB_BUSY from the stack.
+	 */
+	lua_setfield(st, -2, "SLURM_BB_BUSY");
+
 	/* Must be always done after we register the slurm_functions */
+	/*
+	 * This sets the table at the top of the stack to the value "slurm",
+	 * which is what enables using slurm.<key> or slurm['key'] to access
+	 * values from the table.
+	 */
 	lua_setglobal(st, "slurm");
 }
 
