@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  node_features_knl_cray.c - Plugin for managing Cray KNL state information
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

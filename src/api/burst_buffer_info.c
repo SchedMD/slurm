@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_info.c - get/print the burst buffer state information
  *****************************************************************************
- *  Copyright (C) 2014-2015 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

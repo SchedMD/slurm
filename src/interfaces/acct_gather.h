@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  acct_gather.h - generic interface needed for some acct_gather plugins
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

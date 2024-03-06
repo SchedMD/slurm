@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gpu_rsmi.c - Support rsmi interface to an AMD GPU.
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (c) 2019, Advanced Micro Devices, Inc. All rights reserved.
  *  Written by Advanced Micro Devices,
  *  who borrowed heavily from SLURM gpu and nvml plugin.

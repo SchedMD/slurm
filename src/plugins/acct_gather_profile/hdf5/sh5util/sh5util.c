@@ -6,7 +6,7 @@
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
- *  Copyright (C) 2013-2016 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  Initially written by Rod Schultz <rod.schultz@bull.com> @ Bull
  *  and Danny Auble <da@schedmd.com> @ SchedMD.

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_info.c - Functions related to job display mode of sview.
  *****************************************************************************
- *  Portions Copyright (C) 2011-2014 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm_lua.h - Lua integration common functions
  *****************************************************************************
- *  Copyright (C) 2015-2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

@@ -10,7 +10,7 @@
  *  Portions Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
- *  Portions Copyright (C) 2013 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.

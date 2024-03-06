@@ -2,7 +2,7 @@
  *  select_cons_tres.h - Resource selection plugin supporting Trackable
  *  RESources (TRES) policies.
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from select/cons_res plugin
  *
  *  This file is part of Slurm, a resource management program.

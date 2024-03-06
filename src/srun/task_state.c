@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  src/srun/task_state.c - task state container
  *****************************************************************************
- *  Portions copyright (C) 2017 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.

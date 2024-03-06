@@ -2,7 +2,7 @@
  *  assoc_mgr_info.c - get the current slurmctld assoc_mgr information
  *****************************************************************************
  *  Copyright (C) 2014 CSCS
- *  Copyright (C) 2015 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Produced at CSCS
  *  Written by Stephen Trofinoff
  *  CODE-OCEC-09-009. All rights reserved.

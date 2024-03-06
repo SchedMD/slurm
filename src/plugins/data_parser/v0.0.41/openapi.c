@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  openapi.c - Slurm data parser openapi specifier
  *****************************************************************************
- *  Copyright (C) 2023 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  jobcomp_kafka_message.c - Kafka message helper for jobcomp/kafka.
  *****************************************************************************
- *  Copyright (C) 2022 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Alejandro Sanchez <alex@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

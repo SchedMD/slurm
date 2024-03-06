@@ -5,7 +5,7 @@
  *  NOTE: Enforce by configuring
  *  SchedulerParameters=jobs_per_user_per_hour=#
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

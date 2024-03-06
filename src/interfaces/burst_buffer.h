@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer.h - driver for burst buffer infrastructure and plugin
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

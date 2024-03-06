@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gres_select_filter.h - filters used in the select plugin
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.

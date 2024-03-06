@@ -2,7 +2,7 @@
  *  job_reports.c - functions for generating job reports
  *                  from accounting infrastructure.
  *****************************************************************************
- *  Copyright (C) 2010-2017 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>

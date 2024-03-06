@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  federation_info.c - functions dealing with Federations in the controller.
  *****************************************************************************
- *  Copyright (C) 2016-2017 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

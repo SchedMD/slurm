@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  core_array.c - Handle functions dealing with core_arrays.
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

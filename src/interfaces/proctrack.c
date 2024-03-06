@@ -2,7 +2,7 @@
  *  proctrack.c - Process tracking plugin stub.
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
- *  Copyright (C) 2013 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *

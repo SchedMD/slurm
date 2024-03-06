@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  hash.h - hash plugin driver
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Dominik Bartkiewicz <bart@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

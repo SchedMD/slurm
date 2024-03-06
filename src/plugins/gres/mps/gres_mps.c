@@ -2,7 +2,7 @@
  *  gres_mps.c - Support MPS as a generic resources.
  *  MPS or CUDA Multi-Process Services is a mechanism to share GPUs.
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette
  *
  *  This file is part of Slurm, a resource management program.

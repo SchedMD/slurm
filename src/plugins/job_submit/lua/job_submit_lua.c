@@ -2,7 +2,7 @@
  *  job_submit_lua.c - Set defaults in job submit request specifications.
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
+ *  Copyright (C) SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.

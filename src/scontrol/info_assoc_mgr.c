@@ -3,7 +3,7 @@
  *                     slurmctld functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2004 CSCS
- *  Copyright (C) 2015 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Stephen Trofinoff and Danny Auble
  *
  *  This file is part of Slurm, a resource management program.

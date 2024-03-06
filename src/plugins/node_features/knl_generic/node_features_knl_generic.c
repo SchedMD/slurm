@@ -2,7 +2,7 @@
  *  node_features_knl_generic.c - Plugin for managing Intel KNL state
  *  information on a generic Linux cluster
  *****************************************************************************
- *  Copyright (C) 2016-2017 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *             Danny Auble <da@schedmd.com>
  *

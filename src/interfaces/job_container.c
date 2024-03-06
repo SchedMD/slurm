@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_container_plugin.c - job container plugin stub.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette
  *
  *  This file is part of Slurm, a resource management program.

@@ -2,7 +2,7 @@
  *  part_data.h - Functions for structures dealing with partitions unique
  *                to the select plugin.
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from select/cons_[res|tres] plugins
  *
  *  This file is part of Slurm, a resource management program.

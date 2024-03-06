@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bb_info.c - Functions related to Burst Buffer display mode of sview.
  *****************************************************************************
- *  Copyright (C) 2014-2015 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Yee <nyee32@shedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

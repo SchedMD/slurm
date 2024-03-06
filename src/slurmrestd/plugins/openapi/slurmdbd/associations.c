@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  associations.c - Slurm REST API acct associations http operations handlers
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

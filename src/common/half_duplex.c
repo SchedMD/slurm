@@ -2,7 +2,7 @@
  *  half_duplex.c - a half duplex connection handling io_operations struct
  *                  suitable for use with eio
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  openapi.c - OpenAPI plugin handler
  *****************************************************************************
- *  Copyright (C) 2019-2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

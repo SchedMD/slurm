@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  prep.h - driver for PrEpPlugins ('Pr'olog and 'Ep'ilog)
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

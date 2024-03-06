@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gres_filter.h - Filters used on gres to determine order of nodes for job.
  *****************************************************************************
- *  Copyright (C) SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

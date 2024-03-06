@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  cgroup.c - driver for cgroup plugin
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Felip Moll <felip.moll@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

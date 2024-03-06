@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_features.h
  *****************************************************************************
- *  Copyright (C) 2023 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Marshall Garey <marshall@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

@@ -2,7 +2,7 @@
  *  slurm_acct_gather_energy.c - implementation-independent job energy
  *  accounting plugin definitions
  *****************************************************************************
- *  Copyright (C) 2012-2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2012 Bull-HN-PHX.
  *  Written by Bull-HN-PHX/d.rusak, Danny Auble <da@schedmd.com>
  *

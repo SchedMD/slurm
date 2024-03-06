@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gpu_oneapi.c - Support oneAPI interface to an Intel GPU.
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2022 Intel Corporation
  *  Written by Kemp Ke <kemp.ke@intel.com>
  *  Based on gpu_nvml.c, written by Danny Auble <da@schedmd.com>

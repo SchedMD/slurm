@@ -2,7 +2,7 @@
  *  instance_functions.c - functions dealing with instances in the
  *			   accounting system.
  *****************************************************************************
- *  Copyright (C) 2023 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Ben Glines <ben.glines@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

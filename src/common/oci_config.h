@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  oci_config.h - parse oci.conf configuration file.
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *  All rights reserved.
  *

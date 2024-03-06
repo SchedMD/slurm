@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  proc_req.c - process incoming messages to slurmctld
  *****************************************************************************
- *  Copyright (C) 2010-2017 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gres_sched.h - Scheduling functions used by topology with cons_tres
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.

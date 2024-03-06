@@ -6,7 +6,7 @@
  *  When the node is restored to normal operation, another script will be
  *  executed. Many parameters are available to control this mode of operation.
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

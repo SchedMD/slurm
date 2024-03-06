@@ -2,7 +2,7 @@
  *  job_submit_pbs.c - Translate PBS job options specifications to the Slurm
  *			equivalents, particularly job dependencies.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

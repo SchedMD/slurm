@@ -2,7 +2,7 @@
  *  gang.c - Gang scheduler functions.
  *****************************************************************************
  *  Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
- *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Chris Holmes
  *  CODE-OCEC-09-009. All rights reserved.
  *

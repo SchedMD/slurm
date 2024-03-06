@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  common_jag.c - slurm job accounting gather common plugin functions.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>, who borrowed heavily
  *  from the original code in jobacct_gather/linux
  *

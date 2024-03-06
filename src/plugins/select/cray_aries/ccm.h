@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  ccm.h
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright 2016 Hewlett Packard Enterprise Development LP
  *  Written by Marlys Kohnke
  *

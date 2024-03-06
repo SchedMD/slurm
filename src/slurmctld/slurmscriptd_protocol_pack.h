@@ -2,7 +2,7 @@
  *  slurmscriptd_protocol_pack.h - definitions for pack and unpack functions
  *	for slurmscriptd.
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Marshall Garey <marshall@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

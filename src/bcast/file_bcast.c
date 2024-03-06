@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  file_bcast.c - File transfer agent (handles message traffic)
  *****************************************************************************
- *  Copyright (C) 2015-2016 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  proctrack_cray_aries.c - process tracking via Cray's API with Aries.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com> who borrowed heavily from
  *  the proctrack/sgi_job plugin
  *  CODE-OCEC-09-009. All rights reserved.

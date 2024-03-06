@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  serializer_yaml.c - Serializer for YAML.
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

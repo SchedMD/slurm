@@ -3,7 +3,7 @@
  *            - Utility to merge node-step files into a job file
  *            - or extract data from an job file
  *****************************************************************************
- *  Copyright (C) 2015 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  Written by Danny Auble <da@schedmd.com> @ SchedMD.
  *

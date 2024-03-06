@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gpu.c - Library for managing a switch on a Cray system.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright 2014 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <c16817@cray.com>
  *

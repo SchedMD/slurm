@@ -2,7 +2,7 @@
  *  proc_args.c - helper functions for command argument processing
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
  *  from existing Slurm source code, particularly src/srun/opt.c
  *

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  gres_sched.c - Scheduling functions used by cons_tres
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from code previously in common/gres.c
  *
  *  This file is part of Slurm, a resource management program.

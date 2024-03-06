@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  tres_frequency.c - Perform TRES frequency control functions
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette
  *
  *  This file is part of Slurm, a resource management program.

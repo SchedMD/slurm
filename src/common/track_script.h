@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  track_script.h - Track scripts running asynchronously
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Felip Moll <felip@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

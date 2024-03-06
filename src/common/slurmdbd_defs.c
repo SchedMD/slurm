@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurmdbd_defs.c - functions for use with Slurm DBD RPCs
  *****************************************************************************
- *  Copyright (C) 2011-2018 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>

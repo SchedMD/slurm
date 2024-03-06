@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  cons_helpers.c - Helper functions for the select/cons_tres plugin
  *****************************************************************************
- *  Copyright (C) SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from select/cons_tres plugin
  *
  *  This file is part of Slurm, a resource management program.

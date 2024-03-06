@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  prep_script_slurmctld.c - PrologSlurmctld / EpilogSlurmctld handling
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

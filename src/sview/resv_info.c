@@ -3,7 +3,7 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2012-2015 SchedMD LLC <https://www.schedmd.com>
+ *  Copyright (C) SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.

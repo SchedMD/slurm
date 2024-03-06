@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  filter.c - filter for sprio.
  *****************************************************************************
- *  Copyright (C) 2022 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Ben Glines <ben.glines@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

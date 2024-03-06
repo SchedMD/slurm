@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  acct_gather_energy_gpu.c - slurm energy accounting plugin for GPUs.
  *****************************************************************************
- *  Copyright (C) 2019-2021 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (c) 2019, Advanced Micro Devices, Inc. All rights reserved.
  *  Written by Advanced Micro Devices,
  *  who borrowed from the ipmi plugin of the same type

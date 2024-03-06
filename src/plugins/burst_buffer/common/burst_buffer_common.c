@@ -5,7 +5,7 @@
  *  buffer plugins at the same time, so the state information is largely in the
  *  individual plugin and passed as a pointer argument to these functions.
  *****************************************************************************
- *  Copyright (C) 2014-2015 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

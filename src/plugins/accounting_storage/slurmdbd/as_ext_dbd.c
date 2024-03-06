@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  as_ext_dbd.c - External Database connections
  *****************************************************************************
- *  Copyright (C) 2011-2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

@@ -2,7 +2,7 @@
  *  gres_shard.c - Support SHARD as a generic resources.
  *  Sharding is a mechanism to share GPUs generically.
  *****************************************************************************
- *  Copyright (C) 2021-2022 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Danny Auble
  *
  *  This file is part of Slurm, a resource management program.

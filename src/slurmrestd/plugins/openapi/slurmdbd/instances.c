@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  instances.c - Slurm REST API acct instances http operations handlers
  *****************************************************************************
- *  Copyright (C) 2023 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Ben Glines <ben.glines@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

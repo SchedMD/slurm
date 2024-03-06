@@ -2,7 +2,7 @@
  *  federation_functions.c - Interface to functions dealing with federations in
  *                           the database.
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

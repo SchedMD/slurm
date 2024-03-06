@@ -2,7 +2,7 @@
  *  slurmscriptd_protocol_pack.c - functions to pack and unpack structures
  *	for RPCs for slurmscriptd.
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Marshall Garey <marshall@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

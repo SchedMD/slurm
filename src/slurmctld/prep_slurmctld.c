@@ -2,7 +2,7 @@
  *  prep_slurmctld.c - slurmctld-specific aspects of the PrEpPlugin interface
  *		       (for PrologSlurmctld / EpilogSlurmctld scripts)
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

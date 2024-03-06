@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  dist_tasks.c - Assign task count for each resource.
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Derived in large part from select/cons_res plugin
  *
  *  This file is part of Slurm, a resource management program.

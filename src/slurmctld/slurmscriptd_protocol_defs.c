@@ -3,7 +3,7 @@
  *	releasing storage for slurmscriptd RPC data structures.
  *	This is only used for communication between slurmctld and slurmscriptd.
  *****************************************************************************
- *  Copyright (C) 2021 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *  Written by Marshall Garey <marshall@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

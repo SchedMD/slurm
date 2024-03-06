@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_test.h - Determine if job can be allocated resources.
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

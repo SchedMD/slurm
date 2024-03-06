@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  launch.h - Define job launch plugin functions.
  *****************************************************************************
- *  Copyright (C) 2012 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
