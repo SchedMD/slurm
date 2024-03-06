@@ -136,13 +136,13 @@ is as follows:</p>
 <li>helpers.conf</li>
 <li>job_container.conf</li>
 <li>knl_cray.conf</li>
-<li>knl_generic.conf</li>
 <li>mpi.conf</li>
 <li>oci.conf</li>
 <li>plugstack.conf</li>
+<li>scrun.lua</li>
 <li>topology.conf</li>
 </ul>
 
-<p style="text-align:center;">Last modified 17 May 2023</p>
+<p style="text-align:center;">Last modified 6 Mar 2024</p>
 
 <!--#include virtual="footer.txt"-->
