@@ -2727,9 +2727,6 @@ static void _parse_commandline(int argc, char **argv)
 		case 'c':
 			recover = 0;
 			break;
-		case 'd':
-			daemonize = true;
-			break;
 		case 'D':
 			daemonize = false;
 			break;
