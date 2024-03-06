@@ -5876,7 +5876,11 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 		}
 
 		FREE_NULL_DATA(dtasks);
-	} else if (src->array_task_id != NO_VAL) {
+	} else if ((src->array_task_id == NO_VAL) ||
+		   (src->array_task_id == INFINITE)) {
+		/* Treat both NO_VAL and INFINITE as request for whole job */
+		data_set_string_fmt(dst, "%u_*", src->job_id);
+	} else if (src->array_task_id < NO_VAL) {
 		data_set_string_fmt(dst, "%u_%u", src->job_id,
 				    src->array_task_id);
 	} else {
