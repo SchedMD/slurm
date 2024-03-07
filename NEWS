@@ -54,6 +54,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Remove requiring job script field and job component script
     fields to both be populated in the `POST /slurm/v0.0.40/job/submit`
     endpoint as there can only be one batch step script for a job.
+ -- slurmrestd - When job script is provided in '.jobs[].script' and '.script'
+    fields, the '.script' field's value will be used in the
+    `POST /slurm/v0.0.40/job/submit` endpoint.
 
 * Changes in Slurm 23.11.4
 ==========================

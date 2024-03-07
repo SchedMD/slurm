@@ -328,8 +328,8 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 	if (script) {
 		job_desc_msg_t *j = list_peek(jobs);
 
-		if (!j->script)
-			j->script = xstrdup(script);
+		xfree(j->script);
+		j->script = xstrdup(script);
 	}
 
 	if (slurm_submit_batch_het_job(jobs, &resp) || !resp) {
