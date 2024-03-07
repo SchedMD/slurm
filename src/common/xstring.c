@@ -62,9 +62,6 @@
 
 #define XFGETS_CHUNKSIZE 64
 
-/* Static functions. */
-static size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
-
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -81,6 +78,7 @@ strong_alias(_xstrfmtcatat,	slurm_xstrfmtcatat);
 strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
+strong_alias(_xstrdup_vprintf,	slurm_xstrdup_vprintf);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(xdirname,		slurm_xdirname);
@@ -786,7 +784,7 @@ char *xstrcasestr(const char *haystack, const char *needle)
  *   fmt (IN)		format of string and args if any
  *   RETURN		copy of formated string
  */
-static size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
+size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
 {
 	/* Start out with a size of 100 bytes. */
 	int n, size = 100;

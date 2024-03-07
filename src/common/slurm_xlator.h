@@ -391,6 +391,7 @@
 #define	_xmemcat		slurm_xmemcat
 #define	xstrdup			slurm_xstrdup
 #define	xstrdup_printf		slurm_xstrdup_printf
+#define _xstrdup_vprintf	slurm_xstrdup_vprintf
 #define	xstrndup		slurm_xstrndup
 #define	xbasename		slurm_xbasename
 #define	xdirname		slurm_xdirname
