@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Verify node configuration specification (--constraint option).
 ############################################################################
-# Portions Copyright (C) 2018 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette

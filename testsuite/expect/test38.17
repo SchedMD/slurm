@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test for multiple, out of order srun --het-group options
 ############################################################################
-# Copyright (C) 2017 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Isaac Hartung <ihartung@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

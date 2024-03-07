@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test --ntasks-per-gpu
 ############################################################################
-# Copyright (C) 2020 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Michael Hinton <hinton@schedmd.com>
 # Written by Albert Gil <albert.gil@schedmd.com>
 #

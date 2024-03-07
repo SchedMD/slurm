@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test7.12.prog.c - Test of slurm_job_step_stat() API call.
  *****************************************************************************
- *  Portions Copyright (C) 2014 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@schedmd.com>

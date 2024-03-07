@@ -4,7 +4,7 @@
 #          Sets the job name environment variable, and changes it using srun,
 #          sbatch and salloc.
 ############################################################################
-# Copyright (C) 2015 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Martin Thomas <mt@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

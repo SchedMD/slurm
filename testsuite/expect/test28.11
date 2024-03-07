@@ -5,7 +5,7 @@
 #          the --constraint option is correctly purged from the controller
 #          (see bug 5702).
 ############################################################################
-# Copyright (C) 2018 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Marshall Garey
 #
 # This file is part of Slurm, a resource management program.

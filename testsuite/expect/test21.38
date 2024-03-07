@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          sacctmgr modify limits for nested accounts with multiple users
 ############################################################################
-# Copyright (C) 2017 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Marshall Garey <marshall@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

@@ -7,7 +7,7 @@
 #          the value of <number> indicates the nodes relative location.
 #          Change tha node name parsing logic as needed for other formats.
 ############################################################################
-# Copyright (C) 2013 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by David Bigagli, SchedMD
 #
 # This file is part of Slurm, a resource management program.

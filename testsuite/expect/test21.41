@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test sacctmgr update job [condition] set newwckey="newkey"
 ############################################################################
-# Copyright (C) 2019 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Albert Gil <albert.gil@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

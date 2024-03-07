@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test basic functionality of backfill scheduler
 ############################################################################
-# Copyright (C) 2020 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Albert Gil <albert.gil@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

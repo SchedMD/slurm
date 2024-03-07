@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test for seff
 ############################################################################
-# Copyright (C) 2020 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Marcin Stolarek <cinek@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

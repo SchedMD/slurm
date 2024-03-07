@@ -9,7 +9,7 @@
 #          We use gres/gpu for this test since those need to be associated
 #          with specific device files.
 ############################################################################
-# Copyright (C) 2019 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette
 #
 # This file is part of Slurm, a resource management program.

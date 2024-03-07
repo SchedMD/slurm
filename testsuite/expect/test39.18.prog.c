@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  Test gres.conf and system GPU normalization and merging logic.
  *****************************************************************************
- *  Copyright (C) 2018 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Michael Hinton
  *
  *  This file is part of Slurm, a resource management program.

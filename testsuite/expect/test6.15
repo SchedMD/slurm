@@ -5,7 +5,7 @@
 # Note:    This script generates and then deletes files in the working directory
 #          named test6.15.input, test6.15.output, and test6.15.error
 ############################################################################
-# Copyright (C) 2015-2019 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
 # Rewritten by Albert Gil <albert.gil@schedmd.com>
 #

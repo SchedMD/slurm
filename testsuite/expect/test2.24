@@ -4,7 +4,7 @@
 #          Checks that scontrol write config creates a slurm.conf
 #          with the correct values
 ############################################################################
-# Copyright (C) 2014 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

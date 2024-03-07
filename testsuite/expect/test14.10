@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Validate sbcast for a job step allocation (subset of job allocation).
 ############################################################################
-# Copyright (C) 2015 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

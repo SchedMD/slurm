@@ -5,7 +5,7 @@
 #          Tests if the QOS/Parent QOS MaxWall limit is used as
 #          job's TimeLimit if the job did't request --time
 ############################################################################
-# Copyright (C) 2013 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Alejandro Sanchez <alex@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

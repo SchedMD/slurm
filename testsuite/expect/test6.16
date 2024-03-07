@@ -6,7 +6,7 @@
 # Note:    This script generates and then deletes files in the working directory
 #          named test6.16.input
 ############################################################################
-# Copyright (C) 2016 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Alejandro Sanchez <alex@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

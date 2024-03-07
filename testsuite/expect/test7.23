@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose:  Confirm min_mem_per_{cpu,node} in lua JobSubmitPlugin
 ############################################################################
-# Copyright (C) 2021 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Chad Vizino
 #
 # This file is part of Slurm, a resource management program.

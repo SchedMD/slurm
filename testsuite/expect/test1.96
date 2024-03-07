@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Basic SHMEM test via srun.
 ############################################################################
-# Copyright (C) 2012 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

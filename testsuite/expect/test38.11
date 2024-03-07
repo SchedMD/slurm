@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Validate sbcast for a hetjob allocation.
 ############################################################################
-# Copyright (C) 2015-2107 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 # and Isaac Hartung <ihartung@schedmd.com>
 #

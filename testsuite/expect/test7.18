@@ -5,7 +5,7 @@
 # Note:    This script generates and then deletes a file in the working
 #          directory named test7.18.prog
 ############################################################################
-# Copyright (C) 2018 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Marshall Garey
 #
 # This file is part of Slurm, a resource management program.

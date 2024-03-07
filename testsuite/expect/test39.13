@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Validate proper GRES operation under heavy load (many jobs)
 ############################################################################
-# Copyright (C) 2018 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette
 #
 # This file is part of Slurm, a resource management program.

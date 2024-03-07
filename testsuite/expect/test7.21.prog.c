@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  prog7.21.prog.c - SPANK plugin for testing purposes
  *****************************************************************************
- *  Copyright (C) 2018-2019 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>

@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test PBS/qsub -l gpu options
 ############################################################################
-# Copyright (C) 2020 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Brian Christiansen <brian@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

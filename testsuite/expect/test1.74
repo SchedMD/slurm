@@ -5,7 +5,7 @@
 #          QoS and that the first limit on the GrpNode and MaxNode
 #          limit is used in an association.
 ############################################################################
-# Copyright (C) 2011-2014 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

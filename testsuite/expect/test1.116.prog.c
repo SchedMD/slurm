@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test1.116.prog.c - Extended ping test of operation with Slurm.
  *****************************************************************************
- *  Copyright (C) 2019  SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test user_resv_delete parameter.
 ############################################################################
-# Copyright (C) 2021 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Chad Vizino <chad@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

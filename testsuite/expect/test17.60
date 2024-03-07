@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test of --deadline and --begin option and --time_min too long
 ############################################################################
-# Copyright (C) 2020 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Albert Gil <albert.gil@schedmd.com>
 #
 # Copyright (C) 2015 CEA/DAM/DIF

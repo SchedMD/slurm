@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test some valid combinations of srun --gpu and non-GPU GRES options
 ############################################################################
-# Copyright (C) 2018 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette
 #
 # This file is part of Slurm, a resource management program.

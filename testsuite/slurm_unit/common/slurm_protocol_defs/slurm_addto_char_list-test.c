@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  Copyright (C) 2020 SchedMD LLC
+ *  Copyright (C) SchedMD LLC.
  *  Written by Jeff DeGraw <jeff@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

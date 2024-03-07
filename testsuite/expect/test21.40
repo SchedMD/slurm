@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test association plus partition/job QoS unique node limits enforced
 ############################################################################
-# Copyright (C) 2019 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette
 #
 # This file is part of Slurm, a resource management program.

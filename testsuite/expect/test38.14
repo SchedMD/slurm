@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test hetjob step output file labling and different commands/args
 ############################################################################
-# Copyright (C) 2017 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
 # CODE-OCEC-09-009. All rights reserved.
 #

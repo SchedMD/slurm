@@ -4,7 +4,7 @@
 #          srun to make sure that the jobs are running on the correct
 #          nodes within the allocation.
 ############################################################################
-# Copyright (C) 2011-2013 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

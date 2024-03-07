@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Validate scontrol update of MailType and MailUser
 ############################################################################
-# Copyright (C) 2019, SchedMD, LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Gavin Howard <gavin@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

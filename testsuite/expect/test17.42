@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test of sbatch --wait option.
 ############################################################################
-# Copyright (C) 2015 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jete <jette@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

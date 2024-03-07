@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test that job arrays of hetjobs are rejected
 ############################################################################
-# Copyright (C) 2017 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
 # CODE-OCEC-09-009. All rights reserved.
 #

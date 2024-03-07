@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test for proper handling of different rank end times
 ############################################################################
-# Copyright (C) 2017 SchedMD LLC.
+# Copyright (C) SchedMD LLC.
 # Written by Morris <jette@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

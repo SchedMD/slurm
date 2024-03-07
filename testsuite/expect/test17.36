@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test that the OverSubscribe option in partitions is being enforced.
 ############################################################################
-# Copyright (C) 2014 SchedMD LLC
+# Copyright (C) SchedMD LLC.
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
