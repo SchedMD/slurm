@@ -149,6 +149,7 @@ typedef struct {
 	char *req_context;		/* requested SELinux context */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
+	uint16_t segment_size;
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */
 	char *script;			/* DBD USE ONLY DON'T PACK:
