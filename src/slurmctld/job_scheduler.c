@@ -4368,6 +4368,11 @@ static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
 		       job_record_t *job_ptr, char *reboot_features,
 		       uint16_t protocol_version)
 {
+	xassert(node_bitmap);
+
+	if (bit_ffs(node_bitmap) == -1)
+		return;
+
 	if (power_save_on)
 		power_job_reboot(node_bitmap, job_ptr, reboot_features);
 	else
