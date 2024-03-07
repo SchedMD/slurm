@@ -84,7 +84,6 @@ strong_alias(node_state_string_compact, slurm_node_state_string_compact);
 strong_alias(node_state_string_complete, slurm_node_state_string_complete);
 strong_alias(private_data_string, slurm_private_data_string);
 strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
-strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 
@@ -3717,67 +3716,6 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 
 	if (str[0] == '\0')
 		strcat(str, "none");
-}
-
-extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist)
-{
-	hostlist_t *hl = hl_in;
-	char *nids = NULL, *node_name, *sep = "";
-	int i, nid;
-	int nid_begin = -1, nid_end = -1;
-
-	if (!nodelist && !hl_in)
-		return NULL;
-
-	/* Make hl off nodelist */
-	if (!hl_in) {
-		hl = hostlist_create(nodelist);
-		if (!hl) {
-			error("Invalid hostlist: %s", nodelist);
-			return NULL;
-		}
-		//info("input hostlist: %s", nodelist);
-		hostlist_uniq(hl);
-	}
-
-	while ((node_name = hostlist_shift(hl))) {
-		for (i = 0; node_name[i]; i++) {
-			if (!isdigit(node_name[i]))
-				continue;
-			nid = atoi(&node_name[i]);
-			if (nid_begin == -1) {
-				nid_begin = nid;
-				nid_end   = nid;
-			} else if (nid == (nid_end + 1)) {
-				nid_end   = nid;
-			} else {
-				if (nid_begin == nid_end) {
-					xstrfmtcat(nids, "%s%d", sep,
-						   nid_begin);
-				} else {
-					xstrfmtcat(nids, "%s%d-%d", sep,
-						   nid_begin, nid_end);
-				}
-				nid_begin = nid;
-				nid_end   = nid;
-				sep = ",";
-			}
-			break;
-		}
-		free(node_name);
-	}
-	if (nid_begin == -1)
-		;	/* No data to record */
-	else if (nid_begin == nid_end)
-		xstrfmtcat(nids, "%s%d", sep, nid_begin);
-	else
-		xstrfmtcat(nids, "%s%d-%d", sep, nid_begin, nid_end);
-
-	if (!hl_in)
-		hostlist_destroy(hl);
-	//info("output node IDs: %s", nids);
-
-	return nids;
 }
 
 extern void slurm_free_resource_allocation_response_msg_members (

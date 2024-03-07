@@ -432,7 +432,6 @@
 				slurm_node_state_string_complete
 #define private_data_string	slurm_private_data_string
 #define accounting_enforce_string slurm_accounting_enforce_string
-#define cray_nodelist2nids	slurm_cray_nodelist2nids
 #define reservation_flags_string slurm_reservation_flags_string
 #define print_multi_line_string slurm_print_multi_line_string
 

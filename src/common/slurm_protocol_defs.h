@@ -1860,14 +1860,6 @@ extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);
 
-/* Translate a Slurm nodelist to a char * of numbers
- * nid000[36-37] -> 36-37
- * IN - hl_in - if NULL will be made from nodelist
- * IN - nodelist - generate hl from list if hl is NULL
- * RET - nid list, needs to be xfreed.
- */
-extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist);
-
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */
 extern bool valid_spank_job_env(char **spank_job_env,
