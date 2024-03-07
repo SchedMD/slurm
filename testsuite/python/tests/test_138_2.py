@@ -24,6 +24,7 @@ def make_and_run_bash(lines: list[str]) -> None:
     [
 	("sinfo --Format=NODELIST", "^NODELIST"),
 	("scontrol show node | head -1", "^NodeName="),
+	("squeue --only-job-state --Format=NODELIST", "^NODELIST"),
     ],
 )
 def test_parallel(command, phrase):
