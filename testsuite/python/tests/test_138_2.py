@@ -22,8 +22,8 @@ def make_and_run_bash(lines: list[str]) -> None:
 @pytest.mark.parametrize(
     "command, phrase",
     [
-        ("sinfo", "NODELIST"),
-        ("scontrol show node", "NodeName="),
+	("sinfo --Format=NODELIST", "^NODELIST"),
+	("scontrol show node | head -1", "^NodeName="),
     ],
 )
 def test_parallel(command, phrase):
