@@ -287,7 +287,7 @@ test5.8    Confirm that squeue reports a proper version number (--version
 test5.9    Validate that squeue -O displays correct job/step format.
 test5.10   Validate that squeue --priority is listing jobs by priority.
 test5.11   Validate that job node estimation is accurate.
-
+test5.12   Validate that squeue --only-job-state is listing jobs accurately.
 
 test6.#    Testing of scancel options.
 ======================================
