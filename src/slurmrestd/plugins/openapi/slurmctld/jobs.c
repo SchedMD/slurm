@@ -332,6 +332,17 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 		j->script = xstrdup(script);
 	}
 
+	{
+		/* Always verify first Het Component has a batch script */
+		job_desc_msg_t *jdesc = list_peek(jobs);
+
+		if (!jdesc->script || !jdesc->script[0]) {
+			resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, __func__,
+				   "Refusing HetJob submission without batch script or empty batch script for first component");
+			goto cleanup;
+		}
+	}
+
 	if (slurm_submit_batch_het_job(jobs, &resp) || !resp) {
 		resp_error(ctxt, errno, "slurm_submit_batch_het_job()",
 			   "HetJob submission failed");
