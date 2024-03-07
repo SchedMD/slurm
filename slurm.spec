@@ -20,12 +20,9 @@ Source:		%{slurm_source_dir}.tar.bz2
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
 # --prefix		%_prefix path		install path for commands, libraries, etc.
-# --with cray		%_with_cray 1		build for a Cray Aries system
-# --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --with cray_shasta	%_with_cray_shasta 1	build for a Cray Shasta system
 # --with slurmrestd	%_with_slurmrestd 1	build slurmrestd
 # --with yaml		%_with_yaml 1		build with yaml serializer
-# --with slurmsmwd      %_with_slurmsmwd 1      build slurmsmwd
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
 # --with hwloc		%_with_hwloc 1		require hwloc support
@@ -42,11 +39,8 @@ Source:		%{slurm_source_dir}.tar.bz2
 #
 
 #  Options that are off by default (enable with --with <opt>)
-%bcond_with cray
-%bcond_with cray_network
 %bcond_with cray_shasta
 %bcond_with slurmrestd
-%bcond_with slurmsmwd
 %bcond_with multiple_slurmd
 %bcond_with ucx
 
@@ -136,24 +130,6 @@ BuildRequires: mariadb-devel >= 5.0.0
 %endif
 %endif
 %endif
-%endif
-
-%if %{with cray}
-BuildRequires: cray-libalpscomm_cn-devel
-BuildRequires: cray-libalpscomm_sn-devel
-BuildRequires: libnuma-devel
-BuildRequires: libhwloc-devel
-BuildRequires: cray-libjob-devel
-BuildRequires: gtk2-devel
-BuildRequires: glib2-devel
-%endif
-
-%if %{with cray_network}
-BuildRequires: cray-libalpscomm_cn-devel
-BuildRequires: cray-libalpscomm_sn-devel
-BuildRequires: hwloc-devel
-BuildRequires: gtk2-devel
-BuildRequires: glib2-devel
 %endif
 
 BuildRequires: perl(ExtUtils::MakeMaker)
@@ -392,16 +368,6 @@ BuildRequires: json-c-devel
 Provides a REST interface to Slurm.
 %endif
 
-%if %{with slurmsmwd}
-%package slurmsmwd
-Summary: support daemons and software for the Cray SMW
-Group: System Environment/Base
-Requires: %{name}%{?_isa} = %{version}-%{release}
-%description slurmsmwd
-support daemons and software for the Cray SMW.  Includes slurmsmwd which
-notifies slurm about failed nodes.
-%endif
-
 #############################################################################
 
 %prep
@@ -415,8 +381,6 @@ notifies slurm about failed nodes.
 	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_mysql_config} \
-	%{?_without_cray:--enable-really-no-cray}\
-	%{?_with_cray_network:--enable-cray-network}\
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?_with_selinux:--enable-selinux} \
 	%{?_with_pmix} \
@@ -456,32 +420,9 @@ make install-contrib DESTDIR=%{buildroot}
 # Do not package Slurm's version of libpmi on Cray systems in the usual location.
 # Cray's version of libpmi should be used. Move it elsewhere if the site still
 # wants to use it with other MPI stacks.
-%if %{with cray} || %{with cray_shasta}
+%if %{with cray_shasta}
    mkdir %{buildroot}/%{_libdir}/slurmpmi
    mv %{buildroot}/%{_libdir}/libpmi* %{buildroot}/%{_libdir}/slurmpmi
-%endif
-
-%if %{with cray}
-   install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
-   install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
-   mkdir -p %{buildroot}/opt/modulefiles/slurm
-   test -f contribs/cray/opt_modulefiles_slurm &&
-      install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
-   echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > %{buildroot}/opt/modulefiles/slurm/.version
-%else
-   rm -f contribs/cray/opt_modulefiles_slurm
-   rm -f %{buildroot}/%{_sysconfdir}/plugstack.conf.template
-   rm -f %{buildroot}/%{_sysconfdir}/slurm.conf.template
-   rm -f %{buildroot}/%{_sbindir}/capmc_suspend
-   rm -f %{buildroot}/%{_sbindir}/capmc_resume
-   rm -f %{buildroot}/%{_sbindir}/slurmconfgen.py
-%endif
-
-%if %{with slurmsmwd}
-   install -D -m644 contribs/cray/slurmsmwd/slurmsmwd.service %{buildroot}/%{_unitdir}/slurmsmwd.service
-%else
-   rm -f %{buildroot}/%{_sbindir}/slurmsmwd
-   rm -f contribs/cray/slurmsmwd/slurmsmwd.service
 %endif
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
@@ -535,14 +476,6 @@ test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
 test -f %{buildroot}/opt/modulefiles/slurm/.version &&
   echo /opt/modulefiles/slurm/.version >> $LIST
 
-
-LIST=./example.configs
-touch $LIST
-%if %{with cray}
-   test -f %{buildroot}/%{_sbindir}/slurmconfgen.py	&&
-	echo %{_sbindir}/slurmconfgen.py		>>$LIST
-%endif
-
 LIST=./pam.files
 touch $LIST
 %if %{?with_pam_dir}0
@@ -589,18 +522,11 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
-%if %{with cray}
-%dir /opt/modulefiles/slurm
-%endif
 #############################################################################
 
-%files -f example.configs example-configs
+%files example-configs
 %defattr(-,root,root,0755)
 %dir %{_sysconfdir}
-%if %{with cray}
-%config %{_sysconfdir}/plugstack.conf.template
-%config %{_sysconfdir}/slurm.conf.template
-%endif
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/job_submit.lua.example
 %config %{_sysconfdir}/prolog.example
@@ -659,7 +585,7 @@ rm -rf %{buildroot}
 
 %files libpmi
 %defattr(-,root,root)
-%if %{with cray} || %{with cray_shasta}
+%if %{with cray_shasta}
 %{_libdir}/slurmpmi/*
 %else
 %{_libdir}/libpmi*
@@ -710,13 +636,6 @@ rm -rf %{buildroot}
 %files slurmrestd
 %{_sbindir}/slurmrestd
 %{_unitdir}/slurmrestd.service
-%endif
-#############################################################################
-
-%if %{with slurmsmwd}
-%files slurmsmwd
-%{_sbindir}/slurmsmwd
-%{_unitdir}/slurmsmwd.service
 %endif
 #############################################################################
 
