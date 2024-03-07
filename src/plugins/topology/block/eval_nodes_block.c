@@ -214,6 +214,11 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	int bblock_per_llblock;
 	uint64_t maxtasks;
 
+	int segment_cnt = 1, rem_segment_cnt = 0;
+	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
+	bitstr_t *alloc_node_map = NULL;
+	uint32_t orig_max_nodes = topo_eval->max_nodes;
+
 	topo_eval->avail_cpus = 0;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -223,9 +228,22 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
 
-	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
-	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
-					    topo_eval->max_nodes);
+	if (details_ptr->segment_size > bblock_node_cnt) {
+		info("%pJ segment (%u) > bblock_node_cnt (%u) is not supported",
+		     job_ptr, details_ptr->segment_size, bblock_node_cnt);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if (details_ptr->segment_size &&
+	    !(rem_nodes % details_ptr->segment_size)) {
+		segment_cnt = rem_nodes / details_ptr->segment_size;
+		rem_segment_cnt = segment_cnt;
+		rem_nodes = details_ptr->segment_size;
+	} else if (details_ptr->segment_size) {
+		error("%s: ignoring segment_size:%u rem_nodes:%d", __func__,
+		      details_ptr->segment_size, rem_nodes);
+	}
 
 	bblock_per_block = ((rem_nodes + bblock_node_cnt - 1) /
 			    bblock_node_cnt);
@@ -244,6 +262,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
+		if (segment_cnt > 1) {
+			info("%pJ requires nodes with segment are not supported",
+			     job_ptr);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
@@ -277,17 +301,38 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		req_nodes_bitmap = job_ptr->details->req_node_bitmap;
 	}
 
+next_segment:
 	/*
 	 * Add required nodes to job allocation and
 	 * build list of node bitmaps, sorted by weight
 	 */
+	if (rem_segment_cnt) {
+		rem_nodes = details_ptr->segment_size;
+		min_rem_nodes = min_nodes / segment_cnt;
+		topo_eval->max_nodes = orig_max_nodes / segment_cnt;
+		rem_cpus = details_ptr->min_cpus / segment_cnt;
+		if (details_ptr->max_cpus != NO_VAL)
+			rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr,
+								   rem_nodes);
+		else
+			rem_max_cpus = details_ptr->max_cpus / segment_cnt;
+
+		max_llblock = (rem_nodes + llblock_size - 1) / llblock_size;
+	} else
+		rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr,
+							   rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
+
 	if (!bit_set_count(topo_eval->node_map)) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
-	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
+	if (!avail_cpu_per_node)
+		avail_cpu_per_node = xcalloc(node_record_count,
+					     sizeof(uint16_t));
 	node_weight_list = list_create(eval_nodes_topo_weight_free);
 	for (i = 0;
 	     (node_ptr = next_node_bitmap(topo_eval->node_map, &i));
@@ -343,7 +388,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			bblock_per_block;
 	}
 
-	if (bblock_per_block != (bblock_per_llblock * max_llblock)) {
+	if ((bblock_per_block != (bblock_per_llblock * max_llblock)) &&
+	    !nodes_on_llblock) {
 		llblock_cnt = (block_record_cnt + bblock_per_llblock - 1) /
 			      bblock_per_llblock;
 		nodes_on_llblock = xcalloc(llblock_cnt, sizeof(uint32_t));
@@ -353,14 +399,22 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
 		 max_llblock, llblock_level);
 
-	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
-	bblock_required = bit_alloc(block_record_cnt);
-	bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
+	if (!bblock_required)
+		bblock_required = bit_alloc(block_record_cnt);
+	else
+		bit_clear_all(bblock_required);
+
+	if (!alloc_node_map) {
+		block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
+		bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
+	}
 
 	for (i = 0, block_ptr = block_record_table; i < block_record_cnt;
 	     i++, block_ptr++) {
 		int block_inx_tmp = i / bblock_per_block;
-		if (block_node_bitmap[block_inx_tmp])
+		if (alloc_node_map)
+			;
+		else if (block_node_bitmap[block_inx_tmp])
 			bit_or(block_node_bitmap[block_inx_tmp],
 			       block_ptr->node_bitmap);
 		else
@@ -375,6 +429,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		}
 	}
 
+	block_inx = -1;
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
 		uint32_t avail_bnc = 0;
@@ -493,9 +548,18 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	}
 
 	requested = false;
+	sufficient = false;
 	best_node_cnt = 0;
 	best_cpu_cnt = 0;
-	best_nodes_bitmap = bit_alloc(node_record_count);
+
+	if (!best_nodes_bitmap)
+		best_nodes_bitmap = bit_alloc(node_record_count);
+	else
+		bit_clear_all(best_nodes_bitmap);
+
+	if (req2_nodes_bitmap)
+		bit_clear_all(req2_nodes_bitmap);
+
 	iter = list_iterator_create(node_weight_list);
 	while (!requested && (nw = list_next(iter))) {
 		if (best_node_cnt > 0) {
@@ -696,9 +760,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		}
 	}
 
-	nodes_on_bblock = xcalloc(block_record_cnt, sizeof(*nodes_on_bblock));
-	bblock_node_bitmap = xcalloc(block_record_cnt, sizeof(bitstr_t *));
-
+	if (!nodes_on_bblock)
+		nodes_on_bblock = xcalloc(block_record_cnt,
+					  sizeof(*nodes_on_bblock));
+	if (!bblock_node_bitmap)
+		bblock_node_bitmap = xcalloc(block_record_cnt,
+					     sizeof(bitstr_t *));
 	if (nodes_on_llblock)
 		memset(nodes_on_llblock, 0, llblock_cnt * sizeof(uint32_t));
 
@@ -707,8 +774,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			continue;
 		if (bit_test(bblock_required, i))
 			continue;
-		bblock_node_bitmap[i] =
-			bit_copy(block_record_table[i].node_bitmap);
+		if (!bblock_node_bitmap[i])
+			bblock_node_bitmap[i] =
+				bit_copy(block_record_table[i].node_bitmap);
+		else
+			bit_copybits(bblock_node_bitmap[i],
+				     block_record_table[i].node_bitmap);
 		bit_and(bblock_node_bitmap[i], block_node_bitmap[block_inx]);
 		bit_and(bblock_node_bitmap[i], best_nodes_bitmap);
 		nodes_on_bblock[i] = bit_set_count(bblock_node_bitmap[i]);
@@ -793,6 +864,34 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	rc = SLURM_ERROR;
 
 fini:
+	if (rem_segment_cnt && !rc ) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			char *node_names;
+			node_names = bitmap2node_name(topo_eval->node_map);
+			info("Segment:%d nodes:%s",
+			     segment_cnt - rem_segment_cnt, node_names);
+			xfree(node_names);
+		}
+
+		if (--rem_segment_cnt > 0) {
+			if (alloc_node_map)
+				bit_or(alloc_node_map, topo_eval->node_map);
+			else
+				alloc_node_map = bit_copy(topo_eval->node_map);
+
+			FREE_NULL_LIST(best_gres);
+			FREE_NULL_LIST(node_weight_list);
+			bit_copybits(topo_eval->node_map, orig_node_map);
+			bit_and_not(topo_eval->node_map, alloc_node_map);
+			log_flag(SELECT_TYPE, "%s: rem_segment_cnt:%d",
+				 __func__, rem_segment_cnt);
+			goto next_segment;
+		} else if (alloc_node_map) {
+			bit_or(topo_eval->node_map, alloc_node_map);
+		}
+	}
+
+
 	if (rc == SLURM_SUCCESS)
 		eval_nodes_clip_socket_cores(topo_eval);
 	FREE_NULL_LIST(best_gres);
@@ -800,6 +899,8 @@ fini:
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	FREE_NULL_BITMAP(bblock_bitmap);
+	FREE_NULL_BITMAP(orig_node_map);
+	FREE_NULL_BITMAP(alloc_node_map);
 	xfree(avail_cpu_per_node);
 	xfree(bblock_block_inx);
 	if (block_node_bitmap) {
