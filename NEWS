@@ -109,6 +109,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmstepd - Avoid error during `--container` job cleanup about
     RunTimeQuery never being configured. Results in cleanup where job steps not
     fully started.
+ -- Fix nodes not being rebooted when using salloc/sbatch/srun "--reboot" flag.
 
 * Changes in Slurm 23.11.4
 ==========================
