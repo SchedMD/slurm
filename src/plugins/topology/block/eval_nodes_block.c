@@ -173,7 +173,6 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 
 extern int eval_nodes_block(topology_eval_t *topo_eval)
 {
-	List *block_gres = NULL;		/* available GRES on block */
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
 	uint32_t block_node_cnt = 0;	/* total nodes on block */
@@ -355,7 +354,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
 		 max_llblock, llblock_level);
 
-	block_gres = xcalloc(block_cnt, sizeof(List));
 	block_node_bitmap = xcalloc(block_cnt, sizeof(bitstr_t *));
 	bblock_required = bit_alloc(block_record_cnt);
 	bblock_block_inx = xcalloc(block_record_cnt, sizeof(int));
@@ -805,7 +803,6 @@ fini:
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	FREE_NULL_BITMAP(bblock_bitmap);
 	xfree(avail_cpu_per_node);
-	xfree(block_gres);
 	xfree(bblock_block_inx);
 	if (block_node_bitmap) {
 		for (i = 0; i < block_cnt; i++)
