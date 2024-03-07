@@ -3390,6 +3390,23 @@ typedef struct network_callerid_msg {
 } network_callerid_msg_t;
 
 /*****************************************************************************\
+ *      SLURM CLUSTER FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_get_cluster_info - get list of cluster records
+ * OUT cluster_records - list of slurmdb_cluster_rec_t
+ * IN cluster_names - char list of cluster names. Set to NULL for all clusters
+ * IN show_flags - set SHOW_FEDERATION to get cluster info from slurmctld when
+ *     running in a federated setup. Otherwise, cluster info is retrieved from
+ *     the slurmdbd.
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
+extern int slurm_get_cluster_info(list_t **cluster_records, char *cluster_names,
+				  uint16_t show_flags);
+
+/*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
 

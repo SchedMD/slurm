@@ -255,7 +255,8 @@ job initiation time. The default value is the current cluster. A value of
 \(aq\fIall\fR' will query to run on all clusters.  Note the
 \fB\-\-export\fR option to control environment variables exported
 between clusters.
-Note that the SlurmDBD must be up for this option to work properly.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with \fBFederationParameters=fed_display\fR configured.
 .IP
 
 .TP

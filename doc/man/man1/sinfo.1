@@ -21,8 +21,10 @@ are unavailable to the user's group.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
-A value of '\fBall\fR' will query all clusters. Note that the
-\fBSlurmDBD\fR must be up for this option to work properly.
+A value of '\fBall\fR' will query all clusters.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with either \fBFederationParameters=fed_display\fR
+configured or the \fB\-\-federation\fR option set.
 This option implicitly sets the \fB\-\-local\fR option.
 .IP
 

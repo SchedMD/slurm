@@ -85,10 +85,8 @@ static void _opt_env(void)
 		params.federation = true;
 
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
-		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
-			print_db_notok(env_val, 1);
-			exit(1);
-		}
+		xfree(params.cluster_names);
+		params.cluster_names = xstrdup(env_val);
 		params.local = true;
 	}
 	if (getenv("SPRIO_FEDERATION"))
@@ -160,12 +158,8 @@ parse_command_line( int argc, char* *argv )
 			override_format_env = true;
 			break;
 		case (int) 'M':
-			FREE_NULL_LIST(params.clusters);
-			if (!(params.clusters =
-			      slurmdb_get_info_cluster(optarg))) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
+			xfree(params.cluster_names);
+			params.cluster_names = xstrdup(optarg);
 			params.local = true;
 			break;
 		case (int) 'n':
@@ -249,6 +243,21 @@ parse_command_line( int argc, char* *argv )
 
 	if (params.verbose)
 		_print_options();
+
+	FREE_NULL_LIST(params.clusters);
+	if (params.cluster_names) {
+		if (slurm_get_cluster_info(&(params.clusters),
+					   params.cluster_names,
+					   (params.federation ?
+					    SHOW_FEDERATION : SHOW_LOCAL))) {
+
+			print_db_notok(params.cluster_names, 0);
+			fatal("Could not get cluster information");
+		}
+		working_cluster_rec = list_peek(params.clusters);
+		params.local = true;
+	}
+
 	if (params.clusters) {
 		if (list_count(params.clusters) > 1) {
 			fatal("Only one cluster can be used at a time with "

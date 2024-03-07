@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Reduce complexity in URL path matching.
  -- data_parser/v0.0.41 - Emit a warning instead of an error if a disabled
     parser is invoked.
+ -- Federation - allow client command operation when slurmdbd is unavailable.
 
 * Changes in Slurm 23.11.5
 ==========================

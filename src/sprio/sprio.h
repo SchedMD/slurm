@@ -70,6 +70,7 @@ struct sprio_parameters {
 	int  verbose;
 
 	list_t *clusters;
+	char *cluster_names;
 
 	char* format;
 	char* jobs;

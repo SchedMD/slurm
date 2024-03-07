@@ -210,10 +210,10 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int) 'M':
 			FREE_NULL_LIST(params.clusters);
-			if (!(params.clusters =
-			      slurmdb_get_info_cluster(optarg))) {
+			if (slurm_get_cluster_info(&(params.clusters),
+						   optarg, 0)) {
 				print_db_notok(optarg, 0);
-				exit(1);
+				fatal("Could not get cluster information");
 			}
 			working_cluster_rec = list_peek(params.clusters);
 			break;

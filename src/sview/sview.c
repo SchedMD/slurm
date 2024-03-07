@@ -1270,7 +1270,7 @@ static GtkWidget *_create_cluster_combo(void)
 	if (!got_db)
 		return NULL;
 
-	cluster_list = slurmdb_get_info_cluster(NULL);
+	slurm_get_cluster_info(&(cluster_list), NULL, 0);
 	if (!cluster_list || !list_count(cluster_list)) {
 		FREE_NULL_LIST(cluster_list);
 		return NULL;

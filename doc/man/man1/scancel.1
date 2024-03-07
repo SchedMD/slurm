@@ -54,7 +54,8 @@ for details.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Cluster to issue commands to. Implies \fB\-\-ctld\fR.
-Note that the SlurmDBD must be up for this option to work properly.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with \fBFederationParameters=fed_display\fR configured.
 .IP
 
 .TP

@@ -21,6 +21,7 @@ prior to 24.08.
 HIGHLIGHTS
 ==========
  -- Remove support for Cray XC ("cray_aries") systems.
+ -- Federation - allow client command operation when slurmdbd is unavailable.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

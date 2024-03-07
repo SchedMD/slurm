@@ -64,6 +64,7 @@
 /* Global externs from scontrol.h */
 char *command_name;
 List clusters = NULL;
+char *cluster_names = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
 int future_flag = 0;	/* display future nodes */
@@ -146,11 +147,8 @@ int main(int argc, char **argv)
 	if (getenv ("SCONTROL_ALL"))
 		all_flag = 1;
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
-		if (!(clusters = slurmdb_get_info_cluster(env_val))) {
-			print_db_notok(env_val, 1);
-			exit(1);
-		}
-		working_cluster_rec = list_peek(clusters);
+		xfree(cluster_names);
+		cluster_names = xstrdup(env_val);
 		local_flag = 1;
 	}
 	if (getenv("SCONTROL_FEDERATION"))
@@ -199,15 +197,8 @@ int main(int argc, char **argv)
 			local_flag = 1;
 			break;
 		case (int)'M':
-			if (clusters) {
-				FREE_NULL_LIST(clusters);
-				working_cluster_rec = NULL;
-			}
-			if (!(clusters = slurmdb_get_info_cluster(optarg))) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
-			working_cluster_rec = list_peek(clusters);
+			xfree(cluster_names);
+			cluster_names = xstrdup(optarg);
 			local_flag = 1;
 			break;
 		case (int)'o':
@@ -256,6 +247,20 @@ int main(int argc, char **argv)
 				opt_char);
 			exit(exit_code);
 		}
+	}
+
+	FREE_NULL_LIST(clusters);
+	if (cluster_names) {
+		if (slurm_get_cluster_info(&(clusters),
+					   cluster_names,
+					   (federation_flag ?
+					    SHOW_FEDERATION : SHOW_LOCAL))) {
+
+			print_db_notok(cluster_names, 0);
+			fatal("Could not get cluster information");
+		}
+		working_cluster_rec = list_peek(clusters);
+		local_flag = true;
 	}
 
 	if (clusters && (list_count(clusters) > 1))
@@ -1005,9 +1010,13 @@ static int _process_command (int argc, char **argv)
 			working_cluster_rec = NULL;
 		}
 		if (argc >= 2) {
-			if (!(clusters = slurmdb_get_info_cluster(argv[1]))) {
+			if (slurm_get_cluster_info(&(clusters), argv[1],
+						   (federation_flag ?
+							    SHOW_FEDERATION :
+							    SHOW_LOCAL))) {
+
 				print_db_notok(argv[1], 0);
-				exit(1);
+				fatal("Could not get cluster information");
 			}
 			working_cluster_rec = list_peek(clusters);
 			if (list_count(clusters) > 1) {

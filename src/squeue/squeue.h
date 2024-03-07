@@ -85,6 +85,7 @@ struct squeue_parameters {
 	char* accounts;
 	List clusters;
 	uint32_t cluster_flags;
+	char *cluster_names;
 	char* format;
 	char* format_long;
 	char* jobs;
