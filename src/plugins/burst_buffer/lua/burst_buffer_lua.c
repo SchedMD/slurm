@@ -1671,6 +1671,7 @@ static int _run_test_data_inout(stage_args_t *stage_args,
 				uint32_t job_id, uint32_t timeout,
 				char **resp_msg)
 {
+	time_t start_time = time(NULL);
 	while (true) {
 		bool term_flag;
 
@@ -1684,6 +1685,20 @@ static int _run_test_data_inout(stage_args_t *stage_args,
 					  timeout, resp_msg) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 		if (!xstrcasecmp(*resp_msg, SLURM_BB_BUSY)) {
+			uint64_t elapsed_time = time(NULL) - start_time;
+
+			/* Use the timeout for the entire polling period */
+			if (elapsed_time >= timeout) {
+				log_flag(BURST_BUF, "%s: Polling exceeded time limit of %u seconds",
+					 op, timeout);
+				_fail_stage(stage_args, op, SLURM_ERROR,
+					    "Poll exceeded time limit");
+				return SLURM_ERROR;
+			}
+			/* time_t is a long int */
+			log_flag(BURST_BUF, "%s: Poll elapsed time=%"PRIu64", timeout=%u seconds",
+				 op, elapsed_time, timeout);
+
 			bb_sleep(&bb_state, bb_state.bb_config.poll_interval);
 			xfree(*resp_msg);
 			continue;
