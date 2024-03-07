@@ -6,8 +6,6 @@
 #          named test6.15.input, test6.15.output, and test6.15.error
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Morris Jette <jette@schedmd.com>
-# Rewritten by Albert Gil <albert.gil@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

@@ -2,7 +2,6 @@
  *  parse_time-test.c - unit test for parse_time.c
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Chad Vizino <chad@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

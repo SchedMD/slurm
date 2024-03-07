@@ -5,7 +5,6 @@
 #          does not have a preexisting allocation.
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Chad Vizino <chad@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

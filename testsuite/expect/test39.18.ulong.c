@@ -3,7 +3,6 @@
  *  Needed to test converting an array of unsigned longs into a bitmask.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Michael Hinton
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

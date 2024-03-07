@@ -3,7 +3,6 @@
  *  Usage: test12.2.prog <megabytes> <sleep_secs>
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Alejandro Sanchez <alex@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

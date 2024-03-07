@@ -5,7 +5,6 @@
 #          can now include a comma separated list
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Colby Ashley <cashley@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

@@ -4,7 +4,6 @@
 #          Validate scontrol update of MailType and MailUser
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Gavin Howard <gavin@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

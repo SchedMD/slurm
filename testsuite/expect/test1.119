@@ -3,8 +3,6 @@
 # Purpose: Test --ntasks-per-gpu
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Michael Hinton <hinton@schedmd.com>
-# Written by Albert Gil <albert.gil@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

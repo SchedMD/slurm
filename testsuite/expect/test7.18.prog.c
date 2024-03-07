@@ -3,7 +3,6 @@
  *  See bugs 5711 and 5746.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Marshall Garey
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

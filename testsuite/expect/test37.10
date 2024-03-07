@@ -15,7 +15,6 @@
 #          3. controllers are up and running.
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Isaac Hartung <ihartung@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

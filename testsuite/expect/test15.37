@@ -4,7 +4,6 @@
 #          Test of --deadline and --begin option and --time_min too long
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Albert Gil <albert.gil@schedmd.com>
 #
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>

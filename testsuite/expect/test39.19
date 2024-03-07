@@ -4,7 +4,6 @@
 #          Test accounting for GPU resources with various allocation options
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Morris Jette
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.

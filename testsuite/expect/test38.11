@@ -4,7 +4,6 @@
 #          Validate sbcast for a hetjob allocation.
 ############################################################################
 # Copyright (C) SchedMD LLC.
-# Written by Nathan Yee <nyee32@schedmd.com>
 # and Isaac Hartung <ihartung@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.

@@ -2,7 +2,6 @@
  *  test7.17.prog.c - standalone program to test GRES APIs
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Morris Jette
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
