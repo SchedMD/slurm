@@ -177,7 +177,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
 	uint32_t block_node_cnt = 0;	/* total nodes on block */
 	uint32_t *nodes_on_bblock = NULL;	/* total nodes on bblock */
-	bitstr_t *avail_nodes_bitmap = NULL;	/* nodes on any block */
 	bitstr_t *req_nodes_bitmap = NULL;	/* required node bitmap */
 	bitstr_t *req2_nodes_bitmap = NULL;	/* required+lowest prio nodes */
 	bitstr_t *best_nodes_bitmap = NULL;	/* required+low prio nodes */
@@ -798,7 +797,6 @@ fini:
 		eval_nodes_clip_socket_cores(topo_eval);
 	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
-	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	FREE_NULL_BITMAP(bblock_bitmap);
