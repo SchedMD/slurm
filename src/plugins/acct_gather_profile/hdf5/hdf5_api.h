@@ -7,7 +7,6 @@
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
  *  Copyright (C) SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
  *
  *  Provide support for acct_gather_profile plugins based on HDF5 files.
  *

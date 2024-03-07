@@ -2,7 +2,6 @@
  *  reboot_node.c - scontrol reboot functionality
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Brian Christiansen <brian@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

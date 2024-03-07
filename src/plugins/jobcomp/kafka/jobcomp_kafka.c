@@ -2,7 +2,6 @@
  *  jobcomp_kafka.c - Kafka Slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Alejandro Sanchez <alex@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

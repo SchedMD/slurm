@@ -2,7 +2,6 @@
  *  burst_buffer_datawarp.c - Plugin for managing a Cray DataWarp burst_buffer
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

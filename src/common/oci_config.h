@@ -2,7 +2,6 @@
  *  oci_config.h - parse oci.conf configuration file.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Nathan Rini <nate@schedmd.com>
  *  All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.

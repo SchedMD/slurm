@@ -2,7 +2,6 @@
  *  auth.c - Request authentication tokens from slurmctld
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

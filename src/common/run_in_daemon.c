@@ -2,7 +2,6 @@
  *  run_in_daemon.c - functions to determine if you are a given daemon or not
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

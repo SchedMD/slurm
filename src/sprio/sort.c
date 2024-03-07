@@ -2,7 +2,6 @@
  *  sort.c - sprio sorting functions
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Broderick Gardner <broderick@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

@@ -3,8 +3,6 @@
  *  information on a generic Linux cluster
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Morris Jette <jette@schedmd.com>
- *             Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

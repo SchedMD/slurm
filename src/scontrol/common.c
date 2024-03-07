@@ -3,7 +3,6 @@
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Chad Vizino <chad@schedmd.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.

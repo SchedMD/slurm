@@ -5,7 +5,6 @@
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Copyright (C) SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@schedmd.com, da@llnl.gov>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

@@ -5,8 +5,6 @@
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
- *  Written by Danny Auble <da@schedmd.com> @ SchedMD.
- *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.

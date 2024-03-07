@@ -3,7 +3,6 @@
  *                         connection within Slurm.
  ******************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Danny Auble da@schedmd.com, et. al.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

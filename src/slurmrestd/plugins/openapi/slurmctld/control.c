@@ -2,7 +2,6 @@
  *  control.c - slurmctld control operations handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

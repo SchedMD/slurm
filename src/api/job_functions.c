@@ -2,7 +2,6 @@
  *  job_functions.c - Interface to functions dealing with jobs in the database.
  ******************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Danny Auble da@schedmd.com, et. al.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

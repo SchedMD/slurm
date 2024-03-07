@@ -3,8 +3,6 @@
  *  slurm energy accounting plugin for HPE Cray pm_counters interface
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com> who borrowed from the rapl
- *  plugin of the same type
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
