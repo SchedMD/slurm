@@ -2452,7 +2452,11 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 
 		xassert(usock->sun_family == AF_UNIX);
 
-		unix_path = usock->sun_path;
+		/* address may not be populated by kernel */
+		if (usock->sun_path[0])
+			unix_path = usock->sun_path;
+		else
+			unix_path = con->unix_socket;
 	}
 
 	/* hand over FD for normal processing */

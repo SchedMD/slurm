@@ -83,6 +83,8 @@ documents those changes that are of interest to users and administrators.
     required hooks; slurmctld will exit with a fatal error if this is not
     successful. Added PollInterval to burst_buffer.conf. Removed the arbitrary
     limit of 512 copies of the script running simultaneously.
+ -- sackd/slurmrestd/scrun - Avoid using empty string while logging unix socket
+    connections from a listening connection.
 
 * Changes in Slurm 23.11.5
 ==========================
