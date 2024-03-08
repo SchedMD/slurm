@@ -67,6 +67,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun and other Slurm commands running within a "configless" salloc when
     salloc itself fetched the config.
  -- Enforce binding with shared gres selection if requested.
+ -- Fix job allocation failures when the requested tres type or name ends in
+    "gres" or "license".
 
 * Changes in Slurm 23.11.4
 ==========================
