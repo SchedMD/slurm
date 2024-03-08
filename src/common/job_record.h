@@ -128,8 +128,7 @@ typedef struct {
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or truncate */
 	uint8_t overcommit;		/* processors being over subscribed */
-	uint16_t plane_size;		/* plane size when task_dist =
-					 * SLURM_DIST_PLANE */
+
 	/* job constraints: */
 	uint32_t pn_min_cpus;		/* minimum processors per node */
 	uint32_t orig_pn_min_cpus;	/* requested value of pn_min_cpus */

@@ -531,7 +531,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 	pack16(detail_ptr->cpu_bind_type, buffer);
 	packstr(detail_ptr->mem_bind, buffer);
 	pack16(detail_ptr->mem_bind_type, buffer);
-	pack16(detail_ptr->plane_size, buffer);
 
 	pack8(detail_ptr->open_mode, buffer);
 	pack8(detail_ptr->overcommit, buffer);
@@ -1411,7 +1410,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t num_tasks, argc = 0, env_cnt = 0, task_dist;
 	uint16_t contiguous, core_spec = NO_VAL16;
 	uint16_t ntasks_per_node, cpus_per_task, requeue;
-	uint16_t cpu_bind_type, mem_bind_type, plane_size;
+	uint16_t cpu_bind_type, mem_bind_type;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node, features_use = 0;
 	time_t begin_time, accrue_time = 0, submit_time;
@@ -1445,7 +1444,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&cpu_bind_type, buffer);
 		safe_unpackstr(&mem_bind, buffer);
 		safe_unpack16(&mem_bind_type, buffer);
-		safe_unpack16(&plane_size, buffer);
 
 		safe_unpack8(&open_mode, buffer);
 		safe_unpack8(&overcommit, buffer);
@@ -1490,6 +1488,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&env_hash, buffer);
 		safe_unpackstr(&script_hash, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t plane_size;
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1676,7 +1675,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->std_out = out;
 	job_ptr->details->submit_line = submit_line;
 	job_ptr->details->overcommit = overcommit;
-	job_ptr->details->plane_size = plane_size;
 	job_ptr->details->prolog_running = prolog_running;
 	job_ptr->details->req_nodes = req_nodes;
 	job_ptr->details->requeue = requeue;

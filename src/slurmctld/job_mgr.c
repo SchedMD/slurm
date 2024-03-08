@@ -17631,7 +17631,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->other_port        = job_ptr->other_port;
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
-	job_desc->plane_size        = details->plane_size;
+	job_desc->plane_size = mc_ptr->plane_size;
 	job_desc->prefer            = xstrdup(details->prefer);
 	job_desc->priority          = job_ptr->priority;
 	if (job_ptr->qos_ptr)
