@@ -5896,6 +5896,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->tres_per_task, buffer);
 		pack_cron_entry(job_desc_ptr->crontab_entry, protocol_version,
 				buffer);
+		pack16(job_desc_ptr->segment_size, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
@@ -6228,6 +6229,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
+		safe_unpack16(&job_desc_ptr->segment_size, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
