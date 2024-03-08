@@ -2455,6 +2455,8 @@ license, etc).
 The \fItresname\fR is the name of the trackable resource, as can be seen with
 \fIsacctmgr show tres\fR. This is required when it exists for tres types such
 as gres, license, etc. (e.g. gpu, gpu:a100).
+In order to request a license with this option, the license(s) must be defined
+in the \fBAccountingStorageTRES\fR parameter of slurm.conf.
 The \fIcount\fR is the number of those resources.
 .br
 The count can have a suffix of
