@@ -784,6 +784,82 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 	}
 }
 
+void _process_power_command(const char *tag, int argc, char **argv)
+{
+	int error_code = SLURM_SUCCESS;
+	bool power_up;
+	bool asap = false;
+	bool force = false;
+	int min_argv = 3;
+	int max_argv = 4;
+
+	/* at least 'power' should have been supplied */
+	xassert(argc);
+
+	if ((argc <= max_argv) && (argc >= min_argv)) {
+		int idx = 1;
+
+		/* up or down subcommand */
+		if (!xstrcasecmp(argv[idx], "UP")) {
+			power_up = true;
+		} else if (!xstrcasecmp(argv[idx], "DOWN")) {
+			power_up = false;
+		} else {
+			exit_code = 1;
+			fprintf(stderr, "unexpected argument: %s\n",
+				argv[idx]);
+			goto done;
+		}
+		idx++;
+
+		/*
+		 * Optional asap|force if powerering down. Silently ignore
+		 * asap|force if powering up as there's no such option.
+		 */
+		if (argc == max_argv) {
+			if (!xstrcasecmp(argv[idx], "ASAP")) {
+				asap = true;
+			} else if (!xstrcasecmp(argv[idx], "FORCE")) {
+				force = true;
+			} else {
+				exit_code = 1;
+				fprintf(stderr, "unrecognized optional command:%s\n",
+					argv[idx]);
+				goto done;
+			}
+
+			if ((force || asap) && power_up) {
+				exit_code = 1;
+				fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
+					argv[idx]);
+				goto done;
+			}
+
+			idx++;
+		}
+
+		/* call with nodelist */
+		error_code = scontrol_power_nodes(argv[idx], power_up, asap,
+						  force);
+
+	} else if (argc < min_argv) {
+		exit_code = 1;
+		fprintf(stderr, "too few arguments for keyword:%s\n",
+			argv[0]);
+	} else if (argc > max_argv) {
+		exit_code = 1;
+		fprintf(stderr, "too many arguments for keyword:%s\n",
+			argv[0]);
+	}
+
+done:
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("scontrol_power_nodes error");
+	}
+}
+
 static void _setdebug(int argc, char **argv)
 {
 	int level = -1, index = 0;
@@ -1201,6 +1277,8 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		} else
 			_print_ping(argc, argv);
+	} else if (!xstrncasecmp(tag, "power", MAX(tag_len, 2))) {
+		_process_power_command(tag, argc, argv);
 	} else if (!xstrncasecmp(tag, "\\q", 2) ||
 		   !xstrncasecmp(tag, "quiet", MAX(tag_len, 4))) {
 		if (argc > 1) {
