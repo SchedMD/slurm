@@ -48,5 +48,24 @@
 extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
 				bool force)
 {
-	return 0;
+	update_node_msg_t node_msg;
+
+	xassert(!asap || !force);
+
+	slurm_init_update_node_msg(&node_msg);
+
+	node_msg.node_names = node_list;
+
+	if (power_up)
+		node_msg.node_state = NODE_STATE_POWER_UP;
+	else
+		node_msg.node_state = NODE_STATE_POWER_DOWN;
+
+	if (!power_up && force)
+		node_msg.node_state |= NODE_STATE_POWERED_DOWN;
+
+	if (!power_up && asap)
+		node_msg.node_state |= NODE_STATE_POWER_DRAIN;
+
+	return slurm_update_node(&node_msg);
 }
