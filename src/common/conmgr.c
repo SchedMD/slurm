@@ -886,6 +886,11 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		}
 	}
 
+#ifndef NDEBUG
+	if (source && source->unix_socket && con->unix_socket)
+		xassert(!xstrcmp(source->unix_socket, con->unix_socket));
+#endif
+
 	if (source && source->unix_socket && !con->unix_socket)
 		con->unix_socket = xstrdup(source->unix_socket);
 
