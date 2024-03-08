@@ -2238,6 +2238,8 @@ static void _test_config(void)
 extern int init(void)
 {
 	int rc;
+	lua_State *L = NULL;
+	time_t lua_script_last_loaded = (time_t) 0;
 
         if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
                 return rc;
@@ -2258,6 +2260,15 @@ extern int init(void)
 	if (!running_in_slurmctld()) {
 		return SLURM_SUCCESS;
 	}
+
+	/* Check that the script can load successfully */
+	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+	else
+		lua_close(L);
 
 	slurm_mutex_init(&lua_thread_mutex);
 	slurm_mutex_init(&bb_state.bb_mutex);
