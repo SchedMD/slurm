@@ -178,6 +178,7 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.signal_children_processes = false;
+	slurm_cgroup_conf.systemd_timeout = 1000;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -217,6 +218,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	packbool(slurm_cgroup_conf.enable_controllers, buffer);
 	packbool(slurm_cgroup_conf.signal_children_processes, buffer);
+	pack64(slurm_cgroup_conf.systemd_timeout, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -263,6 +265,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 
 	safe_unpackbool(&slurm_cgroup_conf.enable_controllers, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.signal_children_processes, buffer);
+	safe_unpack64(&slurm_cgroup_conf.systemd_timeout, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -300,6 +303,7 @@ static void _read_slurm_cgroup_conf(void)
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
 		{"EnableControllers", S_P_BOOLEAN},
 		{"SignalChildrenProcesses", S_P_BOOLEAN},
+		{"SystemdTimeout", S_P_UINT64},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -403,6 +407,9 @@ static void _read_slurm_cgroup_conf(void)
 		(void) s_p_get_boolean(
 			&slurm_cgroup_conf.signal_children_processes,
 			"SignalChildrenProcesses", tbl);
+
+		(void) s_p_get_uint64(&slurm_cgroup_conf.systemd_timeout,
+				      "SystemdTimeout", tbl);
 
 		s_p_hashtbl_destroy(tbl);
 	}
@@ -586,6 +593,9 @@ extern List cgroup_get_conf_list(void)
 			     cg_conf->memory_swappiness);
 	else
 		add_key_pair(cgroup_conf_l, "MemorySwappiness", "(null)");
+
+	add_key_pair(cgroup_conf_l, "SystemdTimeout", "%"PRIu64" ms",
+		     cg_conf->systemd_timeout);
 
 	slurm_rwlock_unlock(&cg_conf_lock);
 

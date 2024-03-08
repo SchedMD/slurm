@@ -41,6 +41,15 @@ The default value is "autodetect".
 .IP
 
 .TP
+\fBSystemdTimeout\fR=\fI<number>\fR
+On slow systems like virtual machines or when systemd is busy, it can take
+a lot of time to initialize and prepare the scope for slurmd during startup.
+Slurm will wait a maximum of this amount of time (in miliseconds) for the
+scope to be ready before failing. Only applies to cgroup/v2.
+The default is 1000 ms.
+.IP
+
+.TP
 \fBIgnoreSystemd\fR=\fI<yes|no>\fR
 Only for cgroup/v2 and for development and testing. It will avoid any call to
 dbus and contact with systemd, and instead will prepare all the cgroup hierarchy

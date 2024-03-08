@@ -184,6 +184,7 @@ typedef struct {
 
 	bool enable_controllers;
 	bool signal_children_processes;
+	uint64_t systemd_timeout; /* How much time to wait on systemd operations (msec)*/
 } cgroup_conf_t;
 
 
