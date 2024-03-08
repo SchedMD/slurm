@@ -3232,11 +3232,10 @@ static int _run_real_size(stage_args_t *stage_args, init_argv_f_t init_argv,
 		return SLURM_ERROR;
 
 	if (*resp_msg && (**resp_msg != '\0')) {
-		char *end_ptr;
+		char *end_ptr = NULL;
 
-		real_size = strtol(*resp_msg, &end_ptr, 10);
-		if ((real_size < 0) || (real_size == LONG_MAX) ||
-		    (end_ptr == *resp_msg)) {
+		real_size = strtoull(*resp_msg, &end_ptr, 10);
+		if ((real_size == ULLONG_MAX) || (end_ptr[0] != '\0')) {
 			error("%s return value=\"%s\" is invalid, discarding result",
 			      op, *resp_msg);
 			real_size = 0;
