@@ -15,7 +15,7 @@
 administrators)</a>
 <ul>
 	<li><a href="#burst_buffer_lua">How does burst_buffer.lua run?</a></li>
-	<li><a href="#lua_limitations">Limitations</a></li>
+	<li><a href="#lua_warnings">Warnings</a></li>
 </ul>
 </li>
 <li><a href="#resources">Burst Buffer Resources</a>
@@ -176,11 +176,13 @@ success:</p>
 <li><code>slurm_bb_job_teardown</code></li>
 <li><code>slurm_bb_setup</code></li>
 <li><code>slurm_bb_data_in</code></li>
+<li><code>slurm_bb_test_data_in</code></li>
 <li><code>slurm_bb_real_size</code></li>
 <li><code>slurm_bb_paths</code></li>
 <li><code>slurm_bb_pre_run</code></li>
 <li><code>slurm_bb_post_run</code></li>
 <li><code>slurm_bb_data_out</code></li>
+<li><code>slurm_bb_test_data_out</code></li>
 <li><code>slurm_bb_get_status</code></li>
 </ul>
 
@@ -255,22 +257,11 @@ in burst_buffer.conf</i>.</li>
 <p>The way in which each function is called is also documented in the
 burst_buffer.lua.example file.</p>
 
-<h3 id="lua_limitations">Limitations
-<a class="slurm_link" href="#lua_limitations"></a>
+<h3 id="lua_warnings">Warnings
+<a class="slurm_link" href="#lua_warnings"></a>
 </h3>
 
-<p>Each copy of the script that runs via slurmscriptd runs in a new process and
-a pipe (which is a file) is opened to read responses from the script. To avoid
-exceeding the open process or open file limits, running out of memory, or
-exceeding other system limitations, a maximum of 128 copies of the script are
-allowed to run concurrently per "stage", where the stages are stage-in,
-pre-run, stage-out, and teardown (see the <a href="#states">Burst Buffer
-States</a> section for more information on the burst buffer stages). This means
-that a maximum of 512 copies of burst_buffer.lua may run at one time.
-Without this limit, job throughput was lower and testing confirmed that the
-process open file limit could be exceeded.</p>
-
-<p><b>WARNING</b>: Do not install a signal handler in burst_buffer.lua because
+<p>Do not install a signal handler in burst_buffer.lua because
 it is called directly from slurmctld. If slurmctld receives a signal, it
 could attempt to run the signal handler from burst_buffer.lua, even after a call
 to burst_buffer.lua is completed, which results in a crash.</p>

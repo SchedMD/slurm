@@ -146,6 +146,14 @@ For the lua plugin, the maximum timeout value is 2073600 seconds (24 days).
 .IP
 
 .TP
+\fBPollInterval\fR
+This option only applies to the lua plugin.
+If the test_data_{in|out} hooks return success and "BUSY", then they will be
+called again after waiting for the specified number of seconds. The default
+value is 15 seconds.
+.IP
+
+.TP
 \fBPrivateData\fR
 If set to "true" then users will only be able to view burst buffers they can
 use.

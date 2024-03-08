@@ -76,6 +76,13 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - remove -d option
  -- burst_buffer/lua - Trigger a burst_buffer event for strigger when the
     real_size function fails.
+ -- burst_buffer/lua - Added two new hooks: slurm_bb_test_data_in and
+    slurm_bb_test_data_out. The syntax and use of the new hooks are documented
+    in etc/burst_buffer.lua.example. These are required to exist. slurmctld now
+    checks on startup if the burst_buffer.lua script loads and contains all
+    required hooks; slurmctld will exit with a fatal error if this is not
+    successful. Added PollInterval to burst_buffer.conf. Removed the arbitrary
+    limit of 512 copies of the script running simultaneously.
 
 * Changes in Slurm 23.11.5
 ==========================

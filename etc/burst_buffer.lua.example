@@ -296,6 +296,33 @@ function slurm_bb_data_in(job_id, job_script, uid, gid, job_info)
 end
 
 --[[
+--slurm_bb_test_data_in
+--
+--This function is called asynchronously and is not required to return quickly.
+--This function is called immediately after slurm_bb_data_in while the job is
+--pending.
+--
+--This function is meant to be used to poll if data_in has completed.
+--If the first return value is slurm.SUCCESS and the second return value is
+--"BUSY" (or slurm.SLURM_BB_BUSY), then the job will continue to pend and
+--this function will continue to be called periodically.
+--If the first return value is slurm.SUCCESS and the second return value is
+--empty or any other string besides "BUSY", then job and burst buffer state
+--will proceed. If the first return value is not slurm.SUCCESS, then the job
+--will be placed in a held state.
+--
+--If this function returns slurm.SUCCESS, slurm.SLURM_BB_BUSY for longer than
+--StageInTimeout, then the job will be placed in a held state.
+--]]
+function slurm_bb_test_data_in(job_id, job_script, uid, gid, job_info)
+	slurm.log_info("%s: slurm_bb_test_data_in(). job id:%s, job script:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, uid, gid)
+	local rc, ret_str = sleep_wrapper(1)
+	--return rc, slurm.SLURM_BB_BUSY
+	return rc, ret_str
+end
+
+--[[
 --slurm_bb_real_size
 --
 --This function is called asynchronously and is not required to return quickly.
@@ -400,6 +427,30 @@ function slurm_bb_data_out(job_id, job_script, uid, gid, job_info)
 	slurm.log_info("%s: slurm_bb_data_out(). job id:%s, job script:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
+	return rc, ret_str
+end
+
+--[[
+--slurm_bb_test_data_out
+--
+--This function is called asynchronously and is not required to return quickly.
+--This function is called immediately after slurm_bb_data_out while the job is
+--pending.
+--
+--This function is meant to be used to poll if data_out has completed.
+--If the first return value is slurm.SUCCESS and the second return value is
+--"BUSY" (or slurm.SLURM_BB_BUSY), then the job will continue to pend and
+--this function will continue to be called periodically.
+--If the first return value is slurm.SUCCESS and the second return value is
+--empty or any other string besides "BUSY", then job and burst buffer state
+--will proceed. If the first return value is not slurm.SUCCESS, then the job
+--will be placed in a held state.
+--]]
+function slurm_bb_test_data_out(job_id, job_script, uid, gid, job_info)
+	slurm.log_info("%s: slurm_bb_test_data_out(). job id:%s, job script:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, uid, gid)
+	local rc, ret_str = sleep_wrapper(1)
+	--return rc, slurm.SLURM_BB_BUSY
 	return rc, ret_str
 end
 
