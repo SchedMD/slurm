@@ -326,8 +326,8 @@ end
 --slurm_bb_real_size
 --
 --This function is called asynchronously and is not required to return quickly.
---This function is called immediately after slurm_bb_data_in while the job is
---pending.
+--This function is called immediately after slurm_bb_test_data_in while the job
+--is pending.
 --
 --This function is only called if pools are specified and the job requested a
 --pool. This function may return a number (surrounded by quotes to make it a
