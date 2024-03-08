@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.41 - Change distribution_plane_size field type from UINT16
     to UINT16_NO_VAL for /slurm/v0.0.41/job/submit.
  -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
+ -- Fix slurmd cgroup/v2 startup race with systemd and cgroupfs.
+ -- Add SystemdTimeout= parameter in cgroup.conf.
 
 * Changes in Slurm 23.11.6
 ==========================
