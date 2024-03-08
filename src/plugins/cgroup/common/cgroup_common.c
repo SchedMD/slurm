@@ -658,7 +658,7 @@ extern int common_cgroup_unlock(xcgroup_t *cg)
 	return fstatus;
 }
 
-extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,
+extern bool common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,
 					 const char *cg_name)
 {
 	pid_t *pids = NULL;
@@ -701,7 +701,10 @@ extern void common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,
 	if (!found)
 		log_flag(CGROUP, "Took %d checks before pid %d was removed from the %s cgroup.",
 			 cnt, pid, cg_name);
-	else
+	else {
 		error("Pid %d is still in the %s cgroup after %d tries and %d ms.",
 		      pid, cg_name, cnt, MAX_MOVE_WAIT);
+		return false;
+	}
+	return true;
 }
