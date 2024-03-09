@@ -50,6 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -622,6 +623,81 @@ end_inotify:
 	xfree(cgroup_events);
 }
 
+/*
+ * dbus is a batch system and asynchronous, so we cannot know when the scope
+ * will be ready unless we wait for the cgroup directories to be created and
+ * for the pid to show up in cgroup.procs.
+ *
+ * The waiting time will depend completely on the time systemd takes to complete
+ * such operations.
+ */
+static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
+{
+	DEF_TIMERS;
+	bool found = false;
+	int rc, npids, retries = 0;
+	pid_t *pids;
+	uint32_t timeout = t * 1000; //msec to usec
+	struct stat sb;
+	struct timeval start_tv;
+
+	START_TIMER;
+	gettimeofday(&start_tv, NULL);
+
+	/* Wait for the scope directory to show up. */
+	do {
+		rc = stat(scope_root.path, &sb);
+		if (!rc)
+			break;
+		if ((rc < 0) && (errno != ENOENT)) {
+			error("stat() error checking for %s after dbus call: %m",
+			      scope_root.path);
+			return SLURM_ERROR;
+		}
+		retries++;
+		if (slurm_delta_tv(&start_tv) > timeout)
+			goto dbus_timeout;
+		poll(NULL, 0, 10);
+	} while (true);
+
+	END_TIMER;
+	log_flag(CGROUP, "Took %s and %d retries for scope dir %s to show up.",
+		 TIME_STR, retries, scope_root.path);
+
+	/* Wait for the pid to show up in cgroup.procs */
+	START_TIMER;
+	retries = 0;
+	do {
+		common_cgroup_get_pids(&scope_root, &pids, &npids);
+		for (int i = 0; i < npids; i++) {
+			if (pids[i] == pid) {
+				found = true;
+				break;
+			}
+		}
+		xfree(pids);
+		retries++;
+		if (!found) {
+			if (slurm_delta_tv(&start_tv) > timeout)
+				goto dbus_timeout;
+			poll(NULL, 0, 10);
+		}
+	}  while (!found);
+
+	END_TIMER;
+	log_flag(CGROUP, "Took %s and %d retries for pid %d to show up in %s/cgroup.procs.",
+		 TIME_STR, retries, pid, scope_root.path);
+
+	log_flag(CGROUP, "Scope initialization complete after %d msec",
+		 (slurm_delta_tv(&start_tv)/1000));
+
+	return SLURM_SUCCESS;
+dbus_timeout:
+	END_TIMER;
+	error("Scope initialization timeout after %s", TIME_STR);
+	return SLURM_ERROR;
+}
+
 static int _init_stepd_system_scope(pid_t pid)
 {
 	char *system_dir = "/" SYSTEM_CGDIR;
@@ -688,8 +764,7 @@ static int _init_new_scope(char *scope_path)
  */
 static int _init_new_scope_dbus(char *scope_path)
 {
-	struct stat sb;
-	int status, retries = 0, pipe_fd[2];
+	int status, pipe_fd[2];
 	pid_t pid;
 	xcgroup_t sys_root, scope_root;
 	char *const argv[3] = {
@@ -748,27 +823,22 @@ static int _init_new_scope_dbus(char *scope_path)
 	}
 
 	/*
-	 * Wait for the scope to be alive. There's not any way that dbus can
-	 * tell us if the mkdir operation on the cgroup filesystem went well,
-	 * and we know that there's a noticeable delay because of systemd and
-	 * because of cgroup fs. We need to wait for the path to show up.
+	 * We need to wait for the scope to be created, and the child pid
+	 * moved to the root, so we do not race with systemd.
+	 *
+	 * Experiments shown that depending on systemd load, it can be slow
+	 * (>500ms) launching and executing the 'systemd job'. The 'job' will
+	 * consist in internally creating the scope, mkdir the cgroup
+	 * directories and finally move the pid.
+	 *
+	 * After *all* this work is done, then we can continue.
 	 */
-	while ((retries < CGROUP_MAX_RETRIES) && (stat(scope_path, &sb) < 0)) {
-		if (errno == ENOENT) {
-			retries++;
-			usleep(10000);
-		} else
-			fatal("%s: stat() error waiting for %s to show up after dbus call: %m",
-			      __func__, scope_path);
+	scope_root.path = scope_path;
+	if (_wait_scope_ready(scope_root, pid, 1000) != SLURM_SUCCESS) {
+		kill(pid, SIGKILL);
+		waitpid(pid, &status, WNOHANG);
+		fatal("slurmstepd scope could not be set.");
 	}
-
-	/* Don't fatal, we'll continue and hope for the best. */
-	if (retries > CGROUP_MAX_RETRIES)
-		error("Long time waiting for %s to show up after dbus call. Setup might fail.",
-		      scope_path);
-	else if (retries > 1)
-		log_flag(CGROUP, "Possible systemd slowness, %d msec waiting for scope to show up.",
-			 (retries * 10));
 
 	/*
 	 * Assuming the scope is created, let's mkdir the /system dir which will
@@ -808,7 +878,6 @@ static int _init_new_scope_dbus(char *scope_path)
 	  * As cgroupfs is sometimes slow, we cannot continue setting up this
 	  * cgroup unless we guarantee the child are moved.
 	  */
-	scope_root.path = scope_path;
 	if (!common_cgroup_wait_pid_moved(&scope_root, pid, scope_path)) {
 		kill(pid, SIGKILL);
 		waitpid(pid, &status, WNOHANG);
