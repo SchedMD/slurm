@@ -691,7 +691,7 @@ static int _init_new_scope_dbus(char *scope_path)
 	struct stat sb;
 	int status, retries = 0, pipe_fd[2];
 	pid_t pid;
-	xcgroup_t sys_root;
+	xcgroup_t sys_root, scope_root;
 	char *const argv[3] = {
 		(char *)conf->stepd_loc,
 		"infinity",
@@ -794,6 +794,27 @@ static int _init_new_scope_dbus(char *scope_path)
 		      sys_root.path);
 	}
 	common_cgroup_destroy(&sys_root);
+
+	/*
+	  * Wait for the infinity pid to be in the correct cgroup or further
+	  * cgroup configuration will fail as we're at this point violating the
+	  * no internal process constrain.
+	  *
+	  * To control resource distribution of a cgroup, the cgroup must create
+	  * children directories and transfer all its processes to these
+	  * children before enabling controllers in its cgroup.subtree_control
+	  * file.
+	  *
+	  * As cgroupfs is sometimes slow, we cannot continue setting up this
+	  * cgroup unless we guarantee the child are moved.
+	  */
+	scope_root.path = scope_path;
+	if (!common_cgroup_wait_pid_moved(&scope_root, pid, scope_path)) {
+		kill(pid, SIGKILL);
+		waitpid(pid, &status, WNOHANG);
+		fatal("Timeout waiting for pid %d to leave %s", pid,
+		      scope_path);
+	}
 
 	/* Tell the child it can continue daemonizing itself. */
 	safe_write(pipe_fd[1], &pid, sizeof(pid));
