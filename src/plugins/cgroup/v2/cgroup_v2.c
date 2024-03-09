@@ -689,95 +689,129 @@ static int _init_new_scope(char *scope_path)
 static int _init_new_scope_dbus(char *scope_path)
 {
 	struct stat sb;
-	int status, retries = 0;
-	pid_t pid, sleep_parent_pid;
+	int status, retries = 0, pipe_fd[2];
+	pid_t pid;
 	xcgroup_t sys_root;
 	char *const argv[3] = {
 		(char *)conf->stepd_loc,
 		"infinity",
 		NULL };
 
+	if (pipe(pipe_fd))
+		fatal("pipe() failed: %m");
+	xassert(pipe_fd[0] > STDERR_FILENO);
+	xassert(pipe_fd[1] > STDERR_FILENO);
+
 	pid = fork();
+	if (pid < 0)
+		fatal("%s: cannot start slurmstepd infinity process", __func__);
+	else if (pid == 0) {
+		/* wait for signal from parent */
+		if (close(pipe_fd[1]))
+			fatal("close(%u) failed: %m", pipe_fd[1]);
 
-	if (pid < 0) {
-		return SLURM_ERROR;
-	} else if (pid == 0) { /* child */
-		sleep_parent_pid = getpid();
-		if (cgroup_dbus_attach_to_scope(sleep_parent_pid, scope_path) !=
-		    SLURM_SUCCESS) {
-			/*
-			 * Systemd scope unit may already exist or is stuck, and
-			 * the directory is not there!.
-			 */
-			_exit(1);
-		}
-		/*
-		 * Wait for the scope to be alive. There's no way that dbus
-		 * tells us if the mkdir operation on the cgroup filesystem went
-		 * well, and we know that there's a noticeable delay. Because of
-		 * systemd and because of cgroup. We need to wait.
-		 */
-		while ((retries < CGROUP_MAX_RETRIES) &&
-		       (stat(scope_path, &sb) < 0)) {
-			if (errno == ENOENT) {
-				retries++;
-				usleep(10000);
-			} else {
-				error("stat() error waiting for %s to show up after dbus call: %m",
-				      scope_path);
-				_exit(1);
-			}
-		}
-		if (retries > CGROUP_MAX_RETRIES)
-			error("Long time waiting for %s to show up after dbus call.",
-			      scope_path);
-		else if (retries > 1)
-			log_flag(CGROUP, "Possible systemd slowness, %d msec waiting scope to show up.",
-				 (retries * 10));
+		safe_read(pipe_fd[0], &pid, sizeof(pid));
+
+		if (close(pipe_fd[0]))
+			fatal("close(%u) failed: %m", pipe_fd[0]);
 
 		/*
-		 * Assuming the scope is created, let's mkdir the /system dir
-		 * which will allocate the sleep inifnity pid. This way the
-		 * slurmstepd scope won't be a leaf anymore and we'll be able
-		 * to create more directories. _init_new_scope here is simply
-		 * used as a mkdir.
+		 * Uncouple ourselves from slurmd, so a signal sent to the
+		 * slurmd process group won't kill slurmstepd infinity. This way
+		 * the scope will remain forever and no further calls to
+		 * dbus/systemd will be needed until the scope is manually
+		 * stopped.
+		 *
+		 * This minimizes the interaction with systemd becoming less
+		 * dependant on possible malfunctions it might have.
 		 */
-		memset(&sys_root, 0, sizeof(sys_root));
-		xstrfmtcat(sys_root.path, "%s/%s", scope_path, SYSTEM_CGDIR);
-		if (_init_new_scope(sys_root.path) != SLURM_SUCCESS) {
-			xfree(sys_root.path);
-			_exit(1);
-		}
-		/* Success!, we got the cg directory, move ourselves there. */
-		if (common_cgroup_move_process(&sys_root, sleep_parent_pid)) {
-			error("Unable to move pid %d to system cgroup %s",
-			      sleep_parent_pid, sys_root.path);
-			_exit(1);
-		}
-		common_cgroup_destroy(&sys_root);
-
-		/*
-		 * We don't need to wait to be in the new cgroup, if the fs is
-		 * slow we anyway know that at some point the kernel will move
-		 * us there. So continue as normal.
-		 */
-		if (xdaemon() != 0) {
-			error("Cannot spawn dummy process for the systemd scope.");
+		if (xdaemon())
 			_exit(127);
-		}
+
+		/* Become slurmstepd infinity */
 		execvp(argv[0], argv);
 		error("execvp of slurmstepd wait failed: %m");
 		_exit(127);
-	} else if (pid > 0) {
-		if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
-			/* If we receive an error it means scope is not ok. */
-			error("%s: scope and/or cgroup directory for slurmstepd could not be set.",
-			      __func__);
-			return SLURM_ERROR;
-		}
 	}
 
+	if (close(pipe_fd[0]))
+		fatal("close(%u) failed: %m", pipe_fd[0]);
+
+	if (cgroup_dbus_attach_to_scope(pid, scope_path) != SLURM_SUCCESS) {
+		/*
+		 * Systemd scope unit may already exist or is stuck, and
+		 * the directory is not there!.
+		 */
+		kill(pid, SIGKILL);
+		waitpid(pid, &status, WNOHANG);
+		fatal("systemd scope for slurmstepd could not be set.");
+	}
+
+	/*
+	 * Wait for the scope to be alive. There's not any way that dbus can
+	 * tell us if the mkdir operation on the cgroup filesystem went well,
+	 * and we know that there's a noticeable delay because of systemd and
+	 * because of cgroup fs. We need to wait for the path to show up.
+	 */
+	while ((retries < CGROUP_MAX_RETRIES) && (stat(scope_path, &sb) < 0)) {
+		if (errno == ENOENT) {
+			retries++;
+			usleep(10000);
+		} else
+			fatal("%s: stat() error waiting for %s to show up after dbus call: %m",
+			      __func__, scope_path);
+	}
+
+	/* Don't fatal, we'll continue and hope for the best. */
+	if (retries > CGROUP_MAX_RETRIES)
+		error("Long time waiting for %s to show up after dbus call. Setup might fail.",
+		      scope_path);
+	else if (retries > 1)
+		log_flag(CGROUP, "Possible systemd slowness, %d msec waiting for scope to show up.",
+			 (retries * 10));
+
+	/*
+	 * Assuming the scope is created, let's mkdir the /system dir which will
+	 * allocate the sleep inifnity pid. This way the slurmstepd scope won't
+	 * be a leaf anymore and we'll be able to create more directories.
+	 * _init_new_scope here is simply used as a mkdir.
+	 */
+	memset(&sys_root, 0, sizeof(sys_root));
+	xstrfmtcat(sys_root.path, "%s/%s", scope_path, SYSTEM_CGDIR);
+	if (_init_new_scope(sys_root.path) != SLURM_SUCCESS) {
+		xfree(sys_root.path);
+		kill(pid, SIGKILL);
+		waitpid(pid, &status, WNOHANG);
+		fatal("slurmstepd scope could not be set.");
+	}
+
+	/* Success!, we got the system/ cg directory, move the child there. */
+	if (common_cgroup_move_process(&sys_root, pid)) {
+		xfree(sys_root.path);
+		kill(pid, SIGKILL);
+		waitpid(pid, &status, WNOHANG);
+		fatal("Unable to move pid %d to system cgroup %s", pid,
+		      sys_root.path);
+	}
+	common_cgroup_destroy(&sys_root);
+
+	/* Tell the child it can continue daemonizing itself. */
+	safe_write(pipe_fd[1], &pid, sizeof(pid));
+	if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
+		/*
+		 * If we receive an error it means xdaemon() or execv() has
+		 * failed.
+		 */
+		fatal("%s: slurmstepd infinity could not be executed.",
+		      __func__);
+	}
+
+	if (close(pipe_fd[1]))
+		fatal("close(%u) failed: %m", pipe_fd[1]);
+
 	return SLURM_SUCCESS;
+rwfail:
+	fatal("Unable to contact with child: %m");
 }
 
 /*
