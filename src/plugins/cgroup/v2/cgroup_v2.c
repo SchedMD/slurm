@@ -834,10 +834,13 @@ static int _init_new_scope_dbus(char *scope_path)
 	 * After *all* this work is done, then we can continue.
 	 */
 	scope_root.path = scope_path;
-	if (_wait_scope_ready(scope_root, pid, 1000) != SLURM_SUCCESS) {
+	if (_wait_scope_ready(scope_root, pid,
+			      slurm_cgroup_conf.systemd_timeout)
+	    != SLURM_SUCCESS) {
 		kill(pid, SIGKILL);
 		waitpid(pid, &status, WNOHANG);
-		fatal("slurmstepd scope could not be set.");
+		fatal("Scope init timed out, systemd might need cleanup with 'systemctl reset-failed', please consider increasing SystemdTimeout in cgroup.conf (SystemdTimeout=%ld).",
+		      slurm_cgroup_conf.systemd_timeout);
 	}
 
 	/*
