@@ -4409,7 +4409,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		 * If adding to this please update src/api/config_log.c to do
 		 * the reverse translation.
 		 */
-		if (xstrcasestr(temp_str, "iso8601"))
+		if (xstrcasestr(temp_str, "iso8601_ms"))
+			conf->log_fmt = LOG_FMT_ISO8601_MS;
+		else if (xstrcasestr(temp_str, "iso8601"))
 			conf->log_fmt = LOG_FMT_ISO8601;
 		else if (xstrcasestr(temp_str, "rfc5424_ms"))
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
