@@ -3423,7 +3423,7 @@ rwfail:
 	FREE_NULL_BUFFER(conf_buf);
 }
 
-extern void add_config_key_pair(list_t *key_pair_list, char *key, char *value)
+extern void add_key_pair(list_t *key_pair_list, char *key, char *value)
 {
 	xassert(key_pair_list);
 

@@ -359,8 +359,7 @@ extern void read_conf_recv_stepd(int fd);
  * IN: char *key
  * IN: char *value
  */
-extern void add_config_key_pair(list_t *key_pair_list, char *key, char *value);
-
+extern void add_key_pair(list_t *key_pair_list, char *key, char *value);
 
 /*
  * slurm_conf_init_stepd - Since the stepd does not read in the file and
