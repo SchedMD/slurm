@@ -90,6 +90,7 @@ documents those changes that are of interest to users and administrators.
     jobacct_gather/linux. In such case these parameters are ignored.
  -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
     without rebooting compute nodes.
+ -- scontrol - Add new subcommand 'power' for node power control.
 
 * Changes in Slurm 23.11.5
 ==========================
