@@ -18,6 +18,7 @@ scontrol_SOURCES =	\
 	info_node.c	\
 	info_part.c	\
 	info_res.c	\
+	power_node.c	\
 	reboot_node.c	\
 	scontrol.c	\
 	scontrol.h	\
