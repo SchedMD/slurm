@@ -1860,7 +1860,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->x11_params);
 	list_append(ret_list, key_pair);
 
-	return (void *)ret_list;
+	return ret_list;
 }
 
 /*
