@@ -304,17 +304,17 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 	xassert(*data);
 
 	key_pair = xmalloc(sizeof(*key_pair));
-        key_pair->name = xstrdup("SysfsInterfaces");
-        key_pair->value = xstrdup(sysfs_interfaces);
-        list_append(*data, key_pair);
+	key_pair->name = xstrdup("SysfsInterfaces");
+	key_pair->value = xstrdup(sysfs_interfaces);
+	list_append(*data, key_pair);
 }
 
 static void _blank(acct_gather_data_t *data)
 {
-        data->num_reads = 0;
-        data->num_writes = 0;
-        data->size_read = 0;
-        data->size_write = 0;
+	data->num_reads = 0;
+	data->num_writes = 0;
+	data->size_read = 0;
+	data->size_write = 0;
 }
 
 extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
