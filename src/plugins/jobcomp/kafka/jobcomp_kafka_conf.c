@@ -167,7 +167,7 @@ extern int jobcomp_kafka_conf_parse_location(char *location)
 		if (!_parse_key_value_line(line, &key, &value))
 			continue;
 
-		add_key_pair(rd_kafka_conf_list, key, value);
+		add_key_pair(rd_kafka_conf_list, key, "%s", value);
 	}
 
 	free(line);

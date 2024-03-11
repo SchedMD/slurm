@@ -3423,13 +3423,20 @@ rwfail:
 	FREE_NULL_BUFFER(conf_buf);
 }
 
-extern void add_key_pair(list_t *key_pair_list, char *key, char *value)
+extern void add_key_pair(list_t *key_pair_list, const char *key,
+			 const char *fmt, ...)
 {
-	xassert(key_pair_list);
+	va_list ap;
+	char *value = NULL;
+	config_key_pair_t *key_pair = NULL;
 
-	config_key_pair_t *key_pair = xmalloc(sizeof(*key_pair));
+	va_start(ap, fmt);
+	_xstrdup_vprintf(&value, fmt, ap);
+	va_end(ap);
+
+	key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup(key);
-	key_pair->value = xstrdup(value);
+	key_pair->value = value;
 	list_append(key_pair_list, key_pair);
 }
 
