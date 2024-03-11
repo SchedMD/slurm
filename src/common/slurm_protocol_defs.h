@@ -420,6 +420,7 @@ typedef enum {
 	REQUEST_TOP_JOB,		/* 5038 */
 	REQUEST_AUTH_TOKEN,
 	RESPONSE_AUTH_TOKEN,
+	REQUEST_KILL_JOBS, /* 5041 */
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -1739,6 +1740,7 @@ extern void slurm_free_reattach_tasks_response_msg(
 		reattach_tasks_response_msg_t * msg);
 extern void slurm_free_kill_job_msg(kill_job_msg_t * msg);
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
+extern void slurm_free_kill_jobs_msg(kill_jobs_msg_t *msg);
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
 extern void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
 extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg);

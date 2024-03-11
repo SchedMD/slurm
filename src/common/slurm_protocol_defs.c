@@ -1261,6 +1261,23 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 	}
 }
 
+extern void slurm_free_kill_jobs_msg(kill_jobs_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->account);
+	xfree(msg->job_name);
+	xfree(msg->partition);
+	xfree(msg->qos);
+	xfree(msg->reservation);
+	xfree(msg->user_name);
+	xfree(msg->wckey);
+	xfree(msg->nodelist);
+	xfree_array(msg->jobs_array);
+	xfree(msg);
+}
+
 extern void slurm_free_container_id_request_msg(
 	container_id_request_msg_t *msg)
 {
@@ -5657,6 +5674,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_AUTH_TOKEN:
 		slurm_free_token_response_msg(data);
 		break;
+	case REQUEST_KILL_JOBS:
+		slurm_free_kill_jobs_msg(data);
+		break;
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
 		break;
@@ -6391,6 +6411,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_AUTH_TOKEN";
 	case RESPONSE_AUTH_TOKEN:
 		return "RESPONSE_AUTH_TOKEN";
+	case REQUEST_KILL_JOBS:
+		return "REQUEST_KILL_JOBS";
 
 	case REQUEST_LAUNCH_TASKS:				/* 6001 */
 		return "REQUEST_LAUNCH_TASKS";

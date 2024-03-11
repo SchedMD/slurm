@@ -3648,6 +3648,23 @@ typedef struct job_step_kill_msg {
 	slurm_step_id_t step_id;
 } job_step_kill_msg_t;
 
+typedef struct {
+	char *account;
+	uint16_t flags;
+	char *job_name;
+	char **jobs_array;
+	uint32_t jobs_cnt;
+	char *partition;
+	char *qos;
+	char *reservation;
+	uint16_t signal;
+	uint32_t state;
+	uint32_t user_id;
+	char *user_name;
+	char *wckey;
+	char *nodelist;
+} kill_jobs_msg_t;
+
 /*
  * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
  */

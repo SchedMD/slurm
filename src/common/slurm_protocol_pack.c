@@ -10752,6 +10752,59 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_kill_jobs_msg(kill_jobs_msg_t *msg, buf_t *buffer,
+				uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+		pack16(msg->flags, buffer);
+		packstr(msg->job_name, buffer);
+		packstr_array(msg->jobs_array, msg->jobs_cnt, buffer);
+		packstr(msg->partition, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->reservation, buffer);
+		pack16(msg->signal, buffer);
+		pack32(msg->state, buffer);
+		pack32(msg->user_id, buffer);
+		packstr(msg->user_name, buffer);
+		packstr(msg->wckey, buffer);
+		packstr(msg->nodelist, buffer);
+	}
+}
+
+static int _unpack_kill_jobs_msg(kill_jobs_msg_t **msg_ptr, buf_t *buffer,
+				 uint16_t protocol_version)
+{
+	kill_jobs_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpack16(&msg->flags, buffer);
+		safe_unpackstr(&msg->job_name, buffer);
+		safe_unpackstr_array(&msg->jobs_array, &msg->jobs_cnt, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack32(&msg->state, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpackstr(&msg->nodelist, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_kill_jobs_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_forward_data_msg(forward_data_msg_t *msg,
 				   buf_t *buffer, uint16_t protocol_version)
 {
@@ -13077,6 +13130,10 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_token_response_msg((token_response_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
+	case REQUEST_KILL_JOBS:
+		_pack_kill_jobs_msg((kill_jobs_msg_t *) msg->data, buffer,
+				    msg->protocol_version);
+		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
@@ -13741,6 +13798,10 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_token_response_msg((token_response_msg_t **)
 						&msg->data,
 					        buffer, msg->protocol_version);
+		break;
+	case REQUEST_KILL_JOBS:
+		rc = _unpack_kill_jobs_msg((kill_jobs_msg_t **) &msg->data,
+					   buffer, msg->protocol_version);
 		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
