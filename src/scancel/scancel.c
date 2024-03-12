@@ -123,6 +123,38 @@ main (int argc, char **argv)
 	exit(rc);
 }
 
+static uint16_t _init_flags(char **job_type)
+{
+	uint16_t flags = 0;
+
+	if (opt.batch) {
+		flags |= KILL_JOB_BATCH;
+		if (job_type)
+			*job_type = "batch ";
+	}
+
+	/*
+	 * With the introduction of the ScronParameters=explicit_scancel option,
+	 * scancel requests for a cron job should be rejected unless the --cron
+	 * flag is specified.
+	 * To prevent introducing this option from influencing anything other
+	 * than user requests, it has been set up so that when KILL_NO_CRON is
+	 * set when explicit_scancel is also set, the request will be rejected.
+	 */
+	if (!opt.cron)
+		flags |= KILL_NO_CRON;
+
+	if (opt.full) {
+		flags |= KILL_FULL_JOB;
+		if (job_type)
+			*job_type = "full ";
+	}
+	if (opt.hurry)
+		flags |= KILL_HURRY;
+
+	return flags;
+}
+
 /* _multi_cluster - process job cancellation across a list of clusters */
 static int
 _multi_cluster(List clusters)
@@ -712,32 +744,11 @@ _cancel_job_id (void *ci)
 	char *job_type = "";
 	DEF_TIMERS;
 
+	_init_flags(&job_type);
 	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
-	if (opt.batch) {
-		flags |= KILL_JOB_BATCH;
-		job_type = "batch ";
-	}
-
-	/*
-	 * With the introduction of the ScronParameters=explicit_scancel option,
-	 * scancel requests for a cron job should be rejected unless the --cron
-	 * flag is specified.
-	 * To prevent introducing this option from influencing anything other
-	 * than user requests, it has been set up so that when KILL_NO_CRON is
-	 * set when explicit_scancel is also set, the request will be rejected.
-	 */
-	if (!opt.cron)
-		flags |= KILL_NO_CRON;
-
-	if (opt.full) {
-		flags |= KILL_FULL_JOB;
-		job_type = "full ";
-	}
-	if (opt.hurry)
-		flags |= KILL_HURRY;
 
 	if (!cancel_info->job_id_str) {
 		if (cancel_info->array_job_id &&
