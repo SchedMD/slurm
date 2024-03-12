@@ -363,17 +363,6 @@ static void _filter_job_records(void)
 		}
 
 		if (opt.nodelist) {
-			/* If nodelist contains a '/', treat it as a file name */
-			if (strchr(opt.nodelist, '/') != NULL) {
-				char *reallist;
-				reallist = slurm_read_hostfile(opt.nodelist,
-							       NO_VAL);
-				if (reallist) {
-					xfree(opt.nodelist);
-					opt.nodelist = reallist;
-				}
-			}
-
 			hostset_t *hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;

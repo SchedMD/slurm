@@ -332,6 +332,18 @@ static void _opt_env(void)
 	}
 }
 
+static void _handle_nodelist(void)
+{
+	/* If nodelist contains a '/', treat it as a file name */
+	if (strchr(opt.nodelist, '/') != NULL) {
+		char *reallist = slurm_read_hostfile(opt.nodelist, NO_VAL);
+		if (reallist) {
+			xfree(opt.nodelist);
+			opt.nodelist = reallist;
+		}
+	}
+}
+
 /*
  * opt_args() : set options via commandline args and getopt_long
  */
@@ -471,6 +483,8 @@ static void _opt_args(int argc, char **argv)
 
 	if (rest)
 		opt.job_list = _xlate_job_step_ids(rest);
+	if (opt.nodelist)
+		_handle_nodelist();
 
 	if (!_opt_verify())
 		exit(1);
