@@ -263,8 +263,7 @@ static int _add_job_state_by_job_id(const uint32_t job_id,
 			return SLURM_ERROR;
 		}
 		return SLURM_SUCCESS;
-	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		   !job_ptr->array_recs) {
+	} else if (job_ptr->array_job_id != job_ptr->job_id) {
 		/* Pack regular (not array) job */
 		return _add_job_state_job(args, job_ptr);
 	} else {
