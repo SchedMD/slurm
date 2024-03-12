@@ -64,16 +64,11 @@
 					<ul>
 						<li><a href="overview.shtml">Overview</a></li>
 						<li><a href="news.shtml">Release Notes</a></li>
-						<li><a href="team.shtml">Slurm Team</a></li>
-						<li><a href="meetings.shtml">Meetings</a></li>
-						<li><a href="testimonials.shtml">Testimonials</a></li>
-						<li><a href="disclaimer.shtml">Legal Notices</a></li>
 					</ul>
 				</li>
 				<li class="site-menu__item">
 					<div>Using</div>
 					<ul>
-						<li><a href="tutorials.shtml">Tutorials</a></li>
 						<li><a href="documentation.shtml">Documentation</a></li>
 						<li><a href="faq.shtml">FAQ</a></li>
 						<li><a href="publications.shtml">Publications</a></li>
@@ -82,16 +77,16 @@
 				<li class="site-menu__item">
 					<div>Installing</div>
 					<ul>
-						<li><a href="download.shtml">Download</a></li>
+						<li><a href="https://www.schedmd.com/download-slurm/">Download</a></li>
+						<li><a href="related_software.shtml">Related Software</a></li>
 						<li><a href="quickstart_admin.shtml">Installation Guide</a></li>
 					</ul>
 				</li>
 				<li class="site-menu__item">
 					<div>Getting Help</div>
 					<ul>
-						<li><a href="https://www.schedmd.com/services.php">Support</a></li>
 						<li><a href="mail.shtml">Mailing Lists</a></li>
-						<li><a href="https://www.schedmd.com/services.php">Training</a></li>
+						<li><a href="https://www.schedmd.com/slurm-support/our-services/">Support and Training</a></li>
 						<li><a href="troubleshoot.shtml">Troubleshooting</a></li>
 					</ul>
 				</li>
