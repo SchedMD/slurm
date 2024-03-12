@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     fully started.
  -- Fix nodes not being rebooted when using salloc/sbatch/srun "--reboot" flag.
  -- Send scrun.lua in configless mode.
+ -- Fix rejecting an interactive job whose extra constraint request cannot
+    immediately be satisfied.
 
 * Changes in Slurm 23.11.4
 ==========================
