@@ -2910,7 +2910,8 @@ typedef struct {
 	uint16_t eio_timeout;     /* timeout for the eio thread */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding
 					 * partition size and/or time limits */
-	char *epilog;		/* pathname of job epilog */
+	char **epilog;		/* pathname of job epilog run by slurmd */
+	uint32_t epilog_cnt;	/* number of epilog values */
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				    * epilog complete message */
 	char **epilog_slurmctld; /* pathname of job epilog run by slurmctld */
@@ -3021,7 +3022,8 @@ typedef struct {
 	uint16_t private_data;	/* block viewing of information,
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
-	char *prolog;		/* pathname of job prolog run by slurmd */
+	char **prolog;		/* pathname of job prolog run by slurmd */
+	uint32_t prolog_cnt;	/* number of prolog values */
 	uint16_t prolog_epilog_timeout; /* prolog/epilog timeout */
 	char **prolog_slurmctld; /* pathname of job prolog run by slurmctld */
 	uint32_t prolog_slurmctld_cnt;	/* number of prolog_slurmctld values */

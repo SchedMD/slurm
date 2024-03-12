@@ -275,7 +275,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
 	{"EnforcePartLimits", S_P_STRING},
-	{"Epilog", S_P_STRING},
+	{"Epilog", S_P_ARRAY},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"EpilogSlurmctld", S_P_ARRAY},
 	{"ExtSensorsType", S_P_STRING, _defunct_option},
@@ -367,7 +367,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityWeightTRES", S_P_STRING},
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
-	{"Prolog", S_P_STRING},
+	{"Prolog", S_P_ARRAY},
 	{"PrologSlurmctld", S_P_ARRAY},
 	{"PrologEpilogTimeout", S_P_UINT16},
 	{"PrologFlags", S_P_STRING},
@@ -4210,7 +4210,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;
 	}
 
-	(void) s_p_get_string(&conf->epilog, "Epilog", hashtbl);
+	_load_script(&conf->epilog, &conf->epilog_cnt, "Epilog");
 
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
@@ -4954,7 +4954,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(temp_str);
 	}
 
-	(void) s_p_get_string(&conf->prolog, "Prolog", hashtbl);
+	_load_script(&conf->prolog, &conf->prolog_cnt, "Prolog");
 
 	_load_script(&conf->prolog_slurmctld, &conf->prolog_slurmctld_cnt,
 		     "PrologSlurmctld");

@@ -765,10 +765,12 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 		parse_part_enforce_type_2str(
 			slurm_ctl_conf_ptr->enforce_part_limits));
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("Epilog");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->epilog);
-	list_append(ret_list, key_pair);
+	for (int i = 0; i < slurm_ctl_conf_ptr->epilog_cnt; i++) {
+		char *key = xstrdup_printf("Epilog[%d]", i);
+		add_key_pair(ret_list, key, "%s",
+			     slurm_ctl_conf_ptr->epilog[i]);
+		xfree(key);
+	}
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u usec",
 		 slurm_ctl_conf_ptr->epilog_msg_time);
@@ -1341,10 +1343,12 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->proctrack_type);
 	list_append(ret_list, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("Prolog");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->prolog);
-	list_append(ret_list, key_pair);
+	for (int i = 0; i < slurm_ctl_conf_ptr->prolog_cnt; i++) {
+		char *key = xstrdup_printf("Prolog[%d]", i);
+		add_key_pair(ret_list, key, "%s",
+			     slurm_ctl_conf_ptr->prolog[i]);
+		xfree(key);
+	}
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->prolog_epilog_timeout);

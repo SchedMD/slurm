@@ -3449,7 +3449,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
-		packstr(build_ptr->epilog, buffer);
+		packstr_array(build_ptr->epilog,
+			      build_ptr->epilog_cnt, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr_array(build_ptr->epilog_slurmctld,
 			      build_ptr->epilog_slurmctld_cnt, buffer);
@@ -3559,7 +3560,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->private_data, buffer);
 		packstr(build_ptr->proctrack_type, buffer);
-		packstr(build_ptr->prolog, buffer);
+		packstr_array(build_ptr->prolog,
+			      build_ptr->prolog_cnt, buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
 		packstr_array(build_ptr->prolog_slurmctld,
 			      build_ptr->prolog_slurmctld_cnt, buffer);
@@ -3708,7 +3710,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
-		packstr(build_ptr->epilog, buffer);
+		if (build_ptr->epilog_cnt > 0)
+			packstr(build_ptr->epilog[0], buffer);
+		else
+			packnull(buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		if (build_ptr->epilog_slurmctld_cnt)
 			packstr(build_ptr->epilog_slurmctld[0], buffer);
@@ -3825,7 +3830,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->private_data, buffer);
 		packstr(build_ptr->proctrack_type, buffer);
-		packstr(build_ptr->prolog, buffer);
+		if (build_ptr->prolog_cnt > 0)
+			packstr(build_ptr->prolog[0], buffer);
+		else
+			packnull(buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
 		if (build_ptr->prolog_slurmctld_cnt > 0)
 			packstr(build_ptr->prolog_slurmctld[0], buffer);
@@ -3976,7 +3984,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
-		packstr(build_ptr->epilog, buffer);
+		if (build_ptr->epilog_cnt > 0)
+			packstr(build_ptr->epilog[0], buffer);
+		else
+			packnull(buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		if (build_ptr->epilog_slurmctld_cnt)
 			packstr(build_ptr->epilog_slurmctld[0], buffer);
@@ -4094,7 +4105,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->private_data, buffer);
 		packstr(build_ptr->proctrack_type, buffer);
-		packstr(build_ptr->prolog, buffer);
+		if (build_ptr->prolog_cnt > 0)
+			packstr(build_ptr->prolog[0], buffer);
+		else
+			packnull(buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
 		if (build_ptr->prolog_slurmctld_cnt > 0)
 			packstr(build_ptr->prolog_slurmctld[0], buffer);
@@ -4269,7 +4283,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr(&build_ptr->epilog, buffer);
+		safe_unpackstr_array(&build_ptr->epilog,
+				     &build_ptr->epilog_cnt, buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
 				     &build_ptr->epilog_slurmctld_cnt, buffer);
@@ -4383,7 +4398,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->private_data, buffer);
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr(&build_ptr->prolog, buffer);
+		safe_unpackstr_array(&build_ptr->prolog,
+				     &build_ptr->prolog_cnt, buffer);
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
 		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
 				     &build_ptr->prolog_slurmctld_cnt, buffer);
@@ -4551,7 +4567,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr(&build_ptr->epilog, buffer);
+
+		build_ptr->epilog = xmalloc(sizeof(char **));
+		build_ptr->epilog_cnt = 1;
+		safe_unpackstr(&build_ptr->epilog[0], buffer);
+		if (!build_ptr->epilog[0]) {
+			xfree(build_ptr->epilog);
+			build_ptr->epilog_cnt = 0;
+		}
+
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 
 		build_ptr->epilog_slurmctld = xmalloc(sizeof(char **));
@@ -4681,7 +4705,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->private_data, buffer);
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr(&build_ptr->prolog, buffer);
+
+		build_ptr->prolog = xmalloc(sizeof(char **));
+		build_ptr->prolog_cnt = 1;
+		safe_unpackstr(&build_ptr->prolog[0], buffer);
+		if (!build_ptr->prolog[0]) {
+			xfree(build_ptr->prolog);
+			build_ptr->prolog_cnt = 0;
+		}
+
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
 
 		build_ptr->prolog_slurmctld = xmalloc(sizeof(char **));
@@ -4856,7 +4888,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr(&build_ptr->epilog, buffer);
+
+		build_ptr->epilog = xmalloc(sizeof(char **));
+		build_ptr->epilog_cnt = 1;
+		safe_unpackstr(&build_ptr->epilog[0], buffer);
+		if (!build_ptr->epilog[0]) {
+			xfree(build_ptr->epilog);
+			build_ptr->epilog_cnt = 0;
+		}
+
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 
 		build_ptr->epilog_slurmctld = xmalloc(sizeof(char **));
@@ -4988,7 +5028,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->private_data, buffer);
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr(&build_ptr->prolog, buffer);
+
+		build_ptr->prolog = xmalloc(sizeof(char **));
+		build_ptr->prolog_cnt = 1;
+		safe_unpackstr(&build_ptr->prolog[0], buffer);
+		if (!build_ptr->prolog[0]) {
+			xfree(build_ptr->prolog);
+			build_ptr->prolog_cnt = 0;
+		}
+
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
 
 		build_ptr->prolog_slurmctld = xmalloc(sizeof(char **));

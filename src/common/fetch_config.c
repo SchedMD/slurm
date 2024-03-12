@@ -540,10 +540,16 @@ extern config_response_msg_t *new_config_response(bool to_slurmd)
 	 * configuration semantics for the Include lines.
 	 */
 	if (to_slurmd) {
-		if (slurm_conf.prolog && (slurm_conf.prolog[0] != '/'))
-			_load_conf2list(msg, slurm_conf.prolog, true);
-		if (slurm_conf.epilog && (slurm_conf.epilog[0] != '/'))
-			_load_conf2list(msg, slurm_conf.epilog, true);
+		for (int i = 0; i < slurm_conf.prolog_cnt; i++) {
+			if (slurm_conf.prolog[i][0] != '/')
+				_load_conf2list(msg, slurm_conf.prolog[i],
+						true);
+		}
+		for (int i = 0; i < slurm_conf.epilog_cnt; i++) {
+			if (slurm_conf.epilog[i][0] != '/')
+				_load_conf2list(msg, slurm_conf.epilog[i],
+						true);
+		}
 	}
 
 	return msg;

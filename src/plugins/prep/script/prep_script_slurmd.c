@@ -150,9 +150,14 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
 {
 	char *name = is_epilog ? "epilog" : "prolog";
-	char *path = is_epilog ? slurm_conf.epilog : slurm_conf.prolog;
+	char *path = NULL;
 	char **env = NULL;
 	int rc = SLURM_SUCCESS;
+
+	if (is_epilog && slurm_conf.epilog_cnt)
+		path = slurm_conf.epilog[0];
+	else if (!is_epilog && slurm_conf.prolog_cnt)
+		path = slurm_conf.prolog[0];
 
 	/*
 	 *  Always run both spank prolog/epilog and real prolog/epilog script,

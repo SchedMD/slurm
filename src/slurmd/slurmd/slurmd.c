@@ -968,16 +968,17 @@ _read_config(void)
 	 * Allow for Prolog and Epilog scripts to have non-absolute paths.
 	 * This is needed for configless to work with Prolog and Epilog.
 	 */
-	if (cf->prolog) {
-		char *tmp_prolog = cf->prolog;
-		cf->prolog = get_extra_conf_path(tmp_prolog);
+	for (int i = 0; i < cf->prolog_cnt; i++) {
+		char *tmp_prolog = cf->prolog[i];
+		cf->prolog[i] = get_extra_conf_path(tmp_prolog);
 		xfree(tmp_prolog);
 	}
-	if (cf->epilog) {
-		char *tmp_epilog = cf->epilog;
-		cf->epilog = get_extra_conf_path(tmp_epilog);
+	for (int i = 0; i < cf->epilog_cnt; i++) {
+		char *tmp_epilog = cf->epilog[i];
+		cf->epilog[i] = get_extra_conf_path(tmp_epilog);
 		xfree(tmp_epilog);
 	}
+
 
 #ifndef HAVE_FRONT_END
 	/*
@@ -1455,12 +1456,18 @@ _print_conf(void)
 	debug3("ConfMemory  = %"PRIu64"", conf->conf_memory_size);
 	debug3("PhysicalMem = %"PRIu64"", conf->physical_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
-	debug3("Epilog      = `%s'",     cf->epilog);
+
+	for (int i = 0; i < cf->epilog_cnt; i++)
+		debug3("Epilog[%d] = `%s'", i, cf->epilog[i]);
+
 	debug3("Logfile     = `%s'",     conf->logfile);
 	debug3("HealthCheck = `%s'",     cf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
-	debug3("Prolog      = `%s'",     cf->prolog);
+
+	for (int i = 0; i < cf->prolog_cnt; i++)
+		debug3("Prolog[%d] = `%s'", i, cf->prolog[i]);
+
 	debug3("TmpFS       = `%s'",     conf->tmp_fs);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
