@@ -431,8 +431,8 @@ It is not necessary to permit user logins to the control hosts
 (<b>SlurmctldHost</b>), but the
 users and groups must be resolvable on those hosts.</p>
 
-<h3 id="communication">Authentication of Slurm communications
-<a class="slurm_link" href="#communication"></a>
+<h3 id="authentication">Authentication of Slurm communications
+<a class="slurm_link" href="#auth"></a>
 </h3>
 <p>All communications between Slurm components are authenticated. The
 authentication infrastructure is provided by a dynamically loaded
@@ -449,6 +449,12 @@ synchronized throughout the cluster, usually done by NTP.</p>
 plugin. This plugin has similar requirements to MUNGE, requiring a key file
 shared to all Slurm daemons. The auth/slurm plugin requires installation of the
 jwt pacakge.</p>
+<p>MUNGE is currently the default and recommended option.
+The configure script in the top-level directory of this distribution will
+determine which authentication plugins may be built.
+The configuration file specifies which of the available plugins will be
+utilized.</p>
+
 
 <h3 id="mpi">MPI support<a class="slurm_link" href="#mpi"></a></h3>
 <p>Slurm supports many different MPI implementations.
@@ -644,21 +650,6 @@ This design offers improved performance by removing much of the
 job step initiation overhead from the <i> slurmctld </i> daemon.
 The digital signature mechanism is specified by the <b>CredType</b>
 configuration parameter and the default mechanism is MUNGE. </p>
-
-<h3 id="auth">Authentication<a class="slurm_link" href="#auth"></a></h3>
-<p>Authentication of communications (identifying who generated a particular
-message) between Slurm components can use a different security mechanism
-that is configurable.
-You must specify one &quot;auth&quot; plugin for this purpose using the
-<b>AuthType</b> configuration parameter.
-Currently, only one authentication plugin is supported: <b>auth/munge</b>.
-<a href="https://dun.github.io/munge/">MUNGE</a>
-should be installed in order to get properly authenticated communications.
-We recommend the use of MUNGE.
-The configure script in the top-level directory of this distribution will
-determine which authentication plugins may be built.
-The configuration file specifies which of the available plugins will be
-utilized.</p>
 
 <h3 id="PAM">Pluggable Authentication Module (PAM) support
 <a class="slurm_link" href="#PAM"></a>
