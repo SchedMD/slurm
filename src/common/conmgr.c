@@ -105,6 +105,8 @@ struct conmgr_fd_s {
 	void *arg;
 	/* name of connection for logging */
 	char *name;
+	/* address for connection */
+	slurm_addr_t address;
 	/* call backs on events */
 	conmgr_events_t events;
 	/* buffer holding incoming already read data */
@@ -801,6 +803,9 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		/* do nothing - connection already named */
 	} else if (addr) {
 		xassert(con->is_socket);
+
+		memcpy(&con->address, addr, addrlen);
+
 		con->name = sockaddr_to_string(addr, addrlen);
 
 		if (!con->name && source && source->unix_socket) {
