@@ -3343,6 +3343,8 @@ void _add_job_array_hash(job_record_t *job_ptr)
 	if (job_ptr->array_task_id == NO_VAL)
 		return;	/* Not a job array */
 
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
 	inx = JOB_HASH_INX(job_ptr->array_job_id);
 	job_ptr->job_array_next_j = job_array_hash_j[inx];
 	job_array_hash_j[inx] = job_ptr;
