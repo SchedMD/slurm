@@ -318,8 +318,12 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
-	conf_ptr->epilog_slurmctld    = xstrdup(conf->epilog_slurmctld);
-
+	conf_ptr->epilog_slurmctld_cnt = conf->epilog_slurmctld_cnt;
+	conf_ptr->epilog_slurmctld = xcalloc(conf->epilog_slurmctld_cnt,
+					     sizeof(char **));
+	for (int i = 0; i < conf_ptr->epilog_slurmctld_cnt; i++)
+		conf_ptr->epilog_slurmctld[i] =
+			xstrdup(conf->epilog_slurmctld[i]);
 	conf_ptr->fed_params          = xstrdup(conf->fed_params);
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->fs_dampening_factor = conf->fs_dampening_factor;
@@ -422,7 +426,12 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
 	conf_ptr->prolog_epilog_timeout = conf->prolog_epilog_timeout;
-	conf_ptr->prolog_slurmctld    = xstrdup(conf->prolog_slurmctld);
+	conf_ptr->prolog_slurmctld_cnt = conf->prolog_slurmctld_cnt;
+	conf_ptr->prolog_slurmctld = xcalloc(conf->prolog_slurmctld_cnt,
+					     sizeof(char **));
+	for (int i = 0; i < conf_ptr->prolog_slurmctld_cnt; i++)
+		conf_ptr->prolog_slurmctld[i] =
+			xstrdup(conf->prolog_slurmctld[i]);
 	conf_ptr->prolog_flags        = conf->prolog_flags;
 	conf_ptr->propagate_prio_process = slurm_conf.propagate_prio_process;
 	conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);

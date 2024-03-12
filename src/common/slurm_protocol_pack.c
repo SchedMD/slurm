@@ -3451,7 +3451,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
-		packstr(build_ptr->epilog_slurmctld, buffer);
+		packstr_array(build_ptr->epilog_slurmctld,
+			      build_ptr->epilog_slurmctld_cnt, buffer);
 
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
@@ -3560,7 +3561,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->proctrack_type, buffer);
 		packstr(build_ptr->prolog, buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
-		packstr(build_ptr->prolog_slurmctld, buffer);
+		packstr_array(build_ptr->prolog_slurmctld,
+			      build_ptr->prolog_slurmctld_cnt, buffer);
 		pack16(build_ptr->prolog_flags, buffer);
 		pack16(build_ptr->propagate_prio_process, buffer);
 		packstr(build_ptr->propagate_rlimits, buffer);
@@ -3708,7 +3710,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
-		packstr(build_ptr->epilog_slurmctld, buffer);
+		if (build_ptr->epilog_slurmctld_cnt)
+			packstr(build_ptr->epilog_slurmctld[0], buffer);
+		else
+			packnull(buffer);
 
 		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
 		packnull(buffer); /* was ext_sensors_type */
@@ -3822,7 +3827,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->proctrack_type, buffer);
 		packstr(build_ptr->prolog, buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
-		packstr(build_ptr->prolog_slurmctld, buffer);
+		if (build_ptr->prolog_slurmctld_cnt > 0)
+			packstr(build_ptr->prolog_slurmctld[0], buffer);
+		else
+			packnull(buffer);
 		pack16(build_ptr->prolog_flags, buffer);
 		pack16(build_ptr->propagate_prio_process, buffer);
 		packstr(build_ptr->propagate_rlimits, buffer);
@@ -3970,12 +3978,14 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
-		packstr(build_ptr->epilog_slurmctld, buffer);
+		if (build_ptr->epilog_slurmctld_cnt)
+			packstr(build_ptr->epilog_slurmctld[0], buffer);
+		else
+			packnull(buffer);
 
 		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
 		packnull(buffer); /* was ext_sensors_type */
 		pack16(0, buffer); /* was ext_sensors_freq */
-
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
@@ -4086,7 +4096,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->proctrack_type, buffer);
 		packstr(build_ptr->prolog, buffer);
 		pack16(build_ptr->prolog_epilog_timeout, buffer);
-		packstr(build_ptr->prolog_slurmctld, buffer);
+		if (build_ptr->prolog_slurmctld_cnt > 0)
+			packstr(build_ptr->prolog_slurmctld[0], buffer);
+		else
+			packnull(buffer);
 		pack16(build_ptr->prolog_flags, buffer);
 		pack16(build_ptr->propagate_prio_process, buffer);
 		packstr(build_ptr->propagate_rlimits, buffer);
@@ -4258,7 +4271,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr(&build_ptr->epilog, buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
+		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
+				     &build_ptr->epilog_slurmctld_cnt, buffer);
 
 		safe_unpackstr(&build_ptr->fed_params, buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -4371,7 +4385,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
 		safe_unpackstr(&build_ptr->prolog, buffer);
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
-		safe_unpackstr(&build_ptr->prolog_slurmctld, buffer);
+		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
+				     &build_ptr->prolog_slurmctld_cnt, buffer);
 		safe_unpack16(&build_ptr->prolog_flags, buffer);
 		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
 		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
@@ -4538,7 +4553,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr(&build_ptr->epilog, buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
+
+		build_ptr->epilog_slurmctld = xmalloc(sizeof(char **));
+		build_ptr->epilog_slurmctld_cnt = 1;
+		safe_unpackstr(&build_ptr->epilog_slurmctld[0], buffer);
+		if (!build_ptr->epilog_slurmctld[0]) {
+			xfree(build_ptr->epilog_slurmctld);
+			build_ptr->epilog_slurmctld_cnt = 0;
+		}
 
 		/* was ext_sensors_conf */
 		if (unpack_key_pair_list(&list_tmp, protocol_version, buffer)
@@ -4661,7 +4683,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
 		safe_unpackstr(&build_ptr->prolog, buffer);
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
-		safe_unpackstr(&build_ptr->prolog_slurmctld, buffer);
+
+		build_ptr->prolog_slurmctld = xmalloc(sizeof(char **));
+		build_ptr->prolog_slurmctld_cnt = 1;
+		safe_unpackstr(&build_ptr->prolog_slurmctld[0], buffer);
+		if (!build_ptr->prolog_slurmctld[0]) {
+			xfree(build_ptr->prolog_slurmctld);
+			build_ptr->prolog_slurmctld_cnt = 0;
+		}
+
 		safe_unpack16(&build_ptr->prolog_flags, buffer);
 		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
 		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
@@ -4828,7 +4858,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr(&build_ptr->epilog, buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
+
+		build_ptr->epilog_slurmctld = xmalloc(sizeof(char **));
+		build_ptr->epilog_slurmctld_cnt = 1;
+		safe_unpackstr(&build_ptr->epilog_slurmctld[0], buffer);
+		if (!build_ptr->epilog_slurmctld[0]) {
+			xfree(build_ptr->epilog_slurmctld);
+			build_ptr->epilog_slurmctld_cnt = 0;
+		}
 
 		/* was ext_sensors_conf */
 		if (unpack_key_pair_list(&list_tmp, protocol_version, buffer)
@@ -4953,7 +4990,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->proctrack_type, buffer);
 		safe_unpackstr(&build_ptr->prolog, buffer);
 		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
-		safe_unpackstr(&build_ptr->prolog_slurmctld, buffer);
+
+		build_ptr->prolog_slurmctld = xmalloc(sizeof(char **));
+		build_ptr->prolog_slurmctld_cnt = 1;
+		safe_unpackstr(&build_ptr->prolog_slurmctld[0], buffer);
+		if (!build_ptr->prolog_slurmctld[0]) {
+			xfree(build_ptr->prolog_slurmctld);
+			build_ptr->prolog_slurmctld_cnt = 0;
+		}
+
 		safe_unpack16(&build_ptr->prolog_flags, buffer);
 		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
 		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);

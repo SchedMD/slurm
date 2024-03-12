@@ -277,7 +277,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"EnforcePartLimits", S_P_STRING},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
-	{"EpilogSlurmctld", S_P_STRING},
+	{"EpilogSlurmctld", S_P_ARRAY},
 	{"ExtSensorsType", S_P_STRING, _defunct_option},
 	{"ExtSensorsFreq", S_P_UINT16, _defunct_option},
 	{"FairShareDampeningFactor", S_P_UINT16},
@@ -368,7 +368,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
-	{"PrologSlurmctld", S_P_STRING},
+	{"PrologSlurmctld", S_P_ARRAY},
 	{"PrologEpilogTimeout", S_P_UINT16},
 	{"PrologFlags", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
@@ -1973,6 +1973,20 @@ error:
 	}
 	conf->control_cnt = 0;
 	return SLURM_ERROR;
+}
+
+static void _load_script(char ***script, uint32_t *cnt, char *name)
+{
+	int count = 0;
+	char **ptr = NULL;
+
+	if (s_p_get_array((void ***) &ptr, &count, name, conf_hashtbl)) {
+		*script = xcalloc(count, sizeof(char *));
+		*cnt = count;
+
+		for (int i = 0; i < count; i++)
+			(*script)[i] = xstrdup(ptr[i]);
+	}
 }
 
 static int _parse_slurmctld_host(void **dest, slurm_parser_enum_t type,
@@ -4201,8 +4215,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
 
-	(void) s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld",
-			      hashtbl);
+	_load_script(&conf->epilog_slurmctld, &conf->epilog_slurmctld_cnt,
+		     "EpilogSlurmctld");
 
 	if (!s_p_get_uint16(&conf->fs_dampening_factor,
 			    "FairShareDampeningFactor", hashtbl))
@@ -4941,8 +4955,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	(void) s_p_get_string(&conf->prolog, "Prolog", hashtbl);
-	(void) s_p_get_string(&conf->prolog_slurmctld, "PrologSlurmctld",
-			      hashtbl);
+
+	_load_script(&conf->prolog_slurmctld, &conf->prolog_slurmctld_cnt,
+		     "PrologSlurmctld");
 
 	if (s_p_get_string(&temp_str, "PrologFlags", hashtbl)) {
 		conf->prolog_flags = prolog_str2flags(temp_str);

@@ -2913,7 +2913,8 @@ typedef struct {
 	char *epilog;		/* pathname of job epilog */
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				    * epilog complete message */
-	char *epilog_slurmctld;	/* pathname of job epilog run by slurmctld */
+	char **epilog_slurmctld; /* pathname of job epilog run by slurmctld */
+	uint32_t epilog_slurmctld_cnt; /* number of epilog_slurmctld values */
 	char *fed_params;       /* Federation parameters */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */
@@ -3022,7 +3023,8 @@ typedef struct {
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog run by slurmd */
 	uint16_t prolog_epilog_timeout; /* prolog/epilog timeout */
-	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
+	char **prolog_slurmctld; /* pathname of job prolog run by slurmctld */
+	uint32_t prolog_slurmctld_cnt;	/* number of prolog_slurmctld values */
 	uint16_t propagate_prio_process; /* process priority propagation,
 					  * see PROP_PRIO_* */
 	uint16_t prolog_flags; /* set some flags for prolog configuration
