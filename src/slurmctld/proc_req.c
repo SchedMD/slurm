@@ -6012,6 +6012,71 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 }
 
+static char *_str_array2str(char **array, uint32_t cnt)
+{
+	char *ret_str = NULL;
+	char *pos = NULL;
+
+	for (int i = 0; i < cnt; i++) {
+		if (!pos) /* First string */
+			xstrfmtcatat(ret_str, &pos, "%s", array[i]);
+		else
+			xstrfmtcatat(ret_str, &pos, ",%s", array[i]);
+	}
+	return ret_str;
+}
+
+static void _log_kill_jobs_rpc(kill_jobs_msg_t *kill_msg)
+{
+	char *job_ids_str = _str_array2str(kill_msg->jobs_array,
+					   kill_msg->jobs_cnt);
+
+	verbose("%s filters: account=%s; flags=0x%x; job_name=%s; partition=%s; qos=%s; reservation=%s; signal=%u; state=%d(%s); user_id=%u, user_name=%s; wckey=%s; nodelist=%s; jobs=%s",
+		rpc_num2string(REQUEST_KILL_JOBS), kill_msg->account,
+		kill_msg->flags, kill_msg->job_name, kill_msg->partition,
+		kill_msg->qos, kill_msg->reservation, kill_msg->signal,
+		kill_msg->state,
+		kill_msg->state ? job_state_string(kill_msg->state) : "none",
+		kill_msg->user_id, kill_msg->user_name, kill_msg->wckey,
+		kill_msg->nodelist, job_ids_str);
+	xfree(job_ids_str);
+}
+
+static void _slurm_rpc_kill_jobs(slurm_msg_t *msg)
+{
+	int rc;
+	DEF_TIMERS;
+	kill_jobs_msg_t *kill_msg = msg->data;
+	kill_jobs_resp_msg_t *kill_msg_resp = NULL;
+	slurm_msg_t response_msg = {{0}};
+	slurmctld_lock_t lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) ||
+	    (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG2))
+		_log_kill_jobs_rpc(kill_msg);
+
+	START_TIMER;
+	lock_slurmctld(lock);
+	rc = job_mgr_signal_jobs(kill_msg, msg->auth_uid, &kill_msg_resp);
+	unlock_slurmctld(lock);
+	END_TIMER2(__func__);
+
+	if (rc != SLURM_SUCCESS) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		response_init(&response_msg, msg, RESPONSE_KILL_JOBS,
+			      kill_msg_resp);
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	}
+
+	slurm_free_kill_jobs_response_msg(kill_msg_resp);
+}
+
 /* _slurm_rpc_assoc_mgr_info()
  *
  * Pack the assoc_mgr lists and return it back to the caller.
@@ -6926,6 +6991,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_KILL_JOB,
 		.func = _slurm_rpc_kill_job,
+	},{
+		.msg_type = REQUEST_KILL_JOBS,
+		.func = _slurm_rpc_kill_jobs,
 	},{
 		.msg_type = REQUEST_ASSOC_MGR_INFO,
 		.func = _slurm_rpc_assoc_mgr_info,

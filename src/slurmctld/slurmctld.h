@@ -1808,6 +1808,18 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt);
 
 /*
+ * Signal the jobs matching the specified filters and build a response message
+ * detailing the results of the request.
+ *
+ * IN kill_msg - the specification for which jobs to signal
+ * IN auth_uid - the authenticated UID of the requesting user
+ * OUT resp_msg_p - a response message to send back to the requesting user
+ * RET - SLURM_SUCCESS if successful, an error code otherwise
+ */
+extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
+			       kill_jobs_resp_msg_t **resp_msg_p);
+
+/*
  * job_suspend/job_suspend2 - perform some suspend/resume operation
  * NB job_suspend  - Uses the job_id field and ignores job_id_str
  * NB job_suspend2 - Ignores the job_id field and uses job_id_str
