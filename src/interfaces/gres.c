@@ -3362,8 +3362,6 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 			     slurmd_conf_tot);
 
 	slurmd_conf_tot->config_type_cnt = slurmd_conf_tot->rec_cnt;
-	if (slurmd_conf_tot->cpu_set_cnt)
-		slurmd_conf_tot->topo_cnt = slurmd_conf_tot->rec_cnt;
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
@@ -3512,6 +3510,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 
 	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
+
+	/* If the gres is sharing we need to have topo configured. */
+	if (slurmd_conf_tot.cpu_set_cnt ||
+	    (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres))
+		slurmd_conf_tot.topo_cnt = slurmd_conf_tot.rec_cnt;
 
 	/* Make sure these are insync after we get it from the slurmd */
 	gres_state_node->config_flags = slurmd_conf_tot.config_flags;

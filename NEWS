@@ -129,6 +129,8 @@ documents those changes that are of interest to users and administrators.
     immediately be satisfied.
  -- Fix regression in 23.11.0 when parsing LogTimeFormat=iso8601_ms that
     prevented milliseconds from being printed.
+ -- Fix issue where you could have a gpu allocated as well as a shard on that
+    gpu allocated at the same time.
 
 * Changes in Slurm 23.11.4
 ==========================
