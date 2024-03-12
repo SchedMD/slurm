@@ -2,15 +2,8 @@
 
 <h1>Download Slurm</h1>
 <p>Slurm source can be downloaded from
-<a href="https://www.schedmd.com/downloads.php">
-https://www.schedmd.com/downloads.php</a>.<br>
-Slurm has also been packaged for
-<a href="https://packages.debian.org/search?keywords=slurm-wlm">Debian</a> and
-<a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
-(named <i>slurm-wlm</i>),
-<a href="https://src.fedoraproject.org/rpms/slurm">Fedora</a>, and
-<a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
-<a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
+<a href="https://www.schedmd.com/download-slurm/">
+https://www.schedmd.com/download-slurm/</a>.</p>
 
 <h2>Related Software</h2>
 <p>Note that the following software is not written or maintained by
@@ -241,6 +234,6 @@ sudo make install</pre>
 
 </ul>
 
-<p style="text-align:center;">Last modified 05 July 2023</p>
+<p style="text-align:center;">Last modified 12 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

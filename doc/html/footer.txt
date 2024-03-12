@@ -3,13 +3,5 @@
 	</div> <!-- END .content -->
 </div> <!-- END .main -->
 
-<footer class="site-footer" role="contentinfo">
-	<nav class="footer-nav section">
-		<div class="container">
-			<p><a href="disclaimer.shtml" target="_blank" class="privacy">Legal Notices</a></p>
-		</div>
-	</nav>
-</footer>
-
 </body>
 </html>
