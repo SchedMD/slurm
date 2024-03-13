@@ -283,7 +283,10 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		job->script = xstrdup(script);
 	}
 
-	if (slurm_submit_batch_job(job, &resp) || !resp) {
+	if (!job->script || !job->script[0]) {
+		resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, "script",
+			   "Batch job script empty or missing");
+	} else if (slurm_submit_batch_job(job, &resp) || !resp) {
 		resp_error(ctxt, errno, "slurm_submit_batch_job()",
 			   "Batch job submission failed");
 	} else {
