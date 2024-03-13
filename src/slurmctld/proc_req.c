@@ -321,7 +321,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
 	conf_ptr->epilog_slurmctld    = xstrdup(conf->epilog_slurmctld);
-	ext_sensors_g_get_config(&conf_ptr->ext_sensors_conf);
 	conf_ptr->ext_sensors_type    = xstrdup(conf->ext_sensors_type);
 	conf_ptr->ext_sensors_freq    = conf->ext_sensors_freq;
 
