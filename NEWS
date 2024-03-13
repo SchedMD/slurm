@@ -131,6 +131,7 @@ documents those changes that are of interest to users and administrators.
     prevented milliseconds from being printed.
  -- Fix issue where you could have a gpu allocated as well as a shard on that
     gpu allocated at the same time.
+ -- Fix slurmctld crashes when using extra constraints with job arrays.
 
 * Changes in Slurm 23.11.4
 ==========================
