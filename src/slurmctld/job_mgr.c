@@ -4769,6 +4769,12 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
 	job_ptr_pend->extra = xstrdup(job_ptr->extra);
+	if ((extra_constraints_parse(job_ptr_pend->extra,
+				     &job_ptr_pend->extra_constraints)) !=
+	    SLURM_SUCCESS)
+		error("%s: %pJ Invalid extra_constraints %s",
+		      __func__, job_ptr, job_ptr_pend->extra);
+
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
