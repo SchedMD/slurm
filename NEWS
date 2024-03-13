@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - Fix lineage string construction when adding a
     user association with a partition.
  -- Fix sattach command.
+ -- Fix ReconfigFlags. Due how reconfig was changed in 23.11, they will also
+    be used to influence the slurmctld startup as well.
 
 * Changes in Slurm 23.11.4
 ==========================
