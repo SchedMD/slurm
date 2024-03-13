@@ -2903,7 +2903,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->dependency_params);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
-	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->fed_params);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->gpu_freq_def);
@@ -3047,8 +3046,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
 	xfree (ctl_conf_ptr->acct_gather_interconnect_type);
 	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
-	ctl_conf_ptr->ext_sensors_freq		= 0;
-	xfree (ctl_conf_ptr->ext_sensors_type);
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= NO_VAL;
@@ -4185,16 +4182,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld",
 			      hashtbl);
-
-	if (!s_p_get_string(&conf->ext_sensors_type,
-			    "ExtSensorsType", hashtbl)) {
-		/* empty */
-	} else if (xstrcasestr(conf->ext_sensors_type, "none"))
-		xfree(conf->ext_sensors_type);
-
-	if (!s_p_get_uint16(&conf->ext_sensors_freq,
-			    "ExtSensorsFreq", hashtbl))
-		conf->ext_sensors_freq = 0;
 
 	if (!s_p_get_uint16(&conf->fs_dampening_factor,
 			    "FairShareDampeningFactor", hashtbl))

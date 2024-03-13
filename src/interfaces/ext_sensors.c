@@ -88,18 +88,18 @@ extern int ext_sensors_init(void)
 	if (plugin_inited)
 		goto done;
 
-	if (!slurm_conf.ext_sensors_type) {
+	if (true) {
 		plugin_inited = PLUGIN_NOOP;
 		goto done;
 	}
 
 	g_context = plugin_context_create(
-		plugin_type, slurm_conf.ext_sensors_type,
+		plugin_type, NULL,
 		(void **)&ops, syms, sizeof(syms));
 
 	if (!g_context) {
 		error("cannot create %s context for %s",
-		      plugin_type, slurm_conf.ext_sensors_type);
+		      plugin_type, (char *) NULL);
 		retval = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;

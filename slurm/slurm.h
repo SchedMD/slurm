@@ -2913,8 +2913,6 @@ typedef struct {
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				    * epilog complete message */
 	char *epilog_slurmctld;	/* pathname of job epilog run by slurmctld */
-	char *ext_sensors_type; /* external sensors plugin type */
-	uint16_t ext_sensors_freq; /* secs between ext sensors sampling */
 	char *fed_params;       /* Federation parameters */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */

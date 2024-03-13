@@ -178,8 +178,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* epilog */
 	/* epilog_msg_time */
 	/* epilog_slurmctld */
-	/* ext_sensors_type */
-	/* ext_sensors_freq */
 	/* fed_params */
 	/* first_job_id */
 	/* fs_dampening_factor */
@@ -404,8 +402,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* epilog */
 	/* epilog_msg_time */
 	/* epilog_slurmctld */
-	/* ext_sensors_type */
-	/* ext_sensors_freq */
 	/* fed_params */
 	/* first_job_id */
 	/* fs_dampening_factor */

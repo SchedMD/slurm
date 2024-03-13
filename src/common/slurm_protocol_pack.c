@@ -3514,8 +3514,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
 		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
-		packstr(build_ptr->ext_sensors_type, buffer);
-		pack16(build_ptr->ext_sensors_freq, buffer);
+		packnull(buffer); /* was ext_sensors_type */
+		pack16(0, buffer); /* was ext_sensors_freq */
 
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
@@ -3804,8 +3804,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
 		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
-		packstr(build_ptr->ext_sensors_type, buffer);
-		pack16(build_ptr->ext_sensors_freq, buffer);
+		packnull(buffer); /* was ext_sensors_type */
+		pack16(0, buffer); /* was ext_sensors_freq */
 
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
@@ -4026,6 +4026,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 	/* load the data values */
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		void *list_tmp;
+		uint16_t uint16_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4099,8 +4100,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			goto unpack_error;
 		FREE_NULL_LIST(list_tmp);
 
-		safe_unpackstr(&build_ptr->ext_sensors_type, buffer);
-		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
+		safe_skipstr(buffer); /* was ext_sensors_type */
+		safe_unpack16(&uint16_tmp, buffer); /* was ext_sensors_freq */
 
 		safe_unpackstr(&build_ptr->fed_params, buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -4315,6 +4316,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		void *list_tmp;
+		uint16_t uint16_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4388,8 +4390,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			goto unpack_error;
 		FREE_NULL_LIST(list_tmp);
 
-		safe_unpackstr(&build_ptr->ext_sensors_type, buffer);
-		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
+		safe_skipstr(buffer); /* was ext_sensors_type */
+		safe_unpack16(&uint16_tmp, buffer); /* was ext_sensors_freq */
 
 		safe_unpackstr(&build_ptr->fed_params, buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);

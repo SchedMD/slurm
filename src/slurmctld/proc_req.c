@@ -321,8 +321,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
 	conf_ptr->epilog_slurmctld    = xstrdup(conf->epilog_slurmctld);
-	conf_ptr->ext_sensors_type    = xstrdup(conf->ext_sensors_type);
-	conf_ptr->ext_sensors_freq    = conf->ext_sensors_freq;
 
 	conf_ptr->fed_params          = xstrdup(conf->fed_params);
 	conf_ptr->first_job_id        = conf->first_job_id;
