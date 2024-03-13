@@ -3192,7 +3192,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t max_tasks;
 	uint32_t over_time_limit;
 	slurm_step_layout_t *step_layout = NULL;
-	bool tmp_step_layout_used = false;
 
 	*new_step_record = NULL;
 	if (step_specs->array_task_id != NO_VAL)
@@ -3605,16 +3604,11 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
 					   step_layout, step_ptr) < 0) {
 			delete_step_record(job_ptr, step_ptr);
-			if (tmp_step_layout_used)
-				xfree(step_layout->node_list);
 			if (errno == ESLURM_INTERCONNECT_BUSY)
 				return errno;
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
 	}
-
-	if (tmp_step_layout_used)
-		xfree(step_layout->node_list);
 
 	if ((ret_code = _step_alloc_lps(step_ptr, err_msg))) {
 		delete_step_record(job_ptr, step_ptr);
