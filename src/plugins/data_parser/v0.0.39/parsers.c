@@ -4525,6 +4525,21 @@ static int DUMP_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
+				       data_t *src, args_t *args,
+				       data_t *parent_path)
+{
+	/* power_mgmt_data_t removed - no-op place holder */
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	data_set_dict(dst);
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -5318,7 +5333,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", NULL),
 	add_removed(EXT_SENSORS_DATA_PTR, "external_sensors", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, extra, "extra", NULL),
-	add_parse(POWER_MGMT_DATA_PTR, power, "power", NULL),
+	add_removed(POWER_MGMT_DATA_PTR, "power", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(CSV_STRING, features, "features", NULL),
 	add_parse(CSV_STRING, features_act, "active_features", NULL),
 	add_parse(STRING, gres, "gres", NULL),
@@ -5805,21 +5820,6 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32_NO_VAL, current_watts, "current_watts", NULL),
 	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
 	add_parse(UINT64, poll_time, "last_collected", NULL),
-};
-#undef add_parse
-
-#define add_parse(mtype, field, path, desc) \
-	add_parser(power_mgmt_data_t, mtype, false, field, 0, path, desc)
-static const parser_t PARSER_ARRAY(POWER_MGMT_DATA)[] = {
-	add_parse(UINT32_NO_VAL, cap_watts, "maximum_watts", NULL),
-	add_parse(UINT32, current_watts, "current_watts", NULL),
-	add_parse(UINT64, joule_counter, "total_energy", NULL),
-	add_parse(UINT32, new_cap_watts, "new_maximum_watts", NULL),
-	add_parse(UINT32, max_watts, "peak_watts", NULL),
-	add_parse(UINT32, min_watts, "lowest_watts", NULL),
-	add_parse(UINT64, new_job_time, "new_job_time", NULL),
-	add_parse(UINT16, state, "state", NULL),
-	add_parse(UINT64, time_usec, "time_start_day", NULL),
 };
 #undef add_parse
 
@@ -6455,6 +6455,7 @@ static const parser_t parsers[] = {
 	addps(HOLD, uint32_t, NEED_NONE, BOOL, "Job held"),
 	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL),
 	addps(POWER_FLAGS, uint8_t, NEED_NONE, ARRAY, NULL),
+	addps(POWER_MGMT_DATA, void *, NEED_NONE, OBJECT, NULL),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -6512,7 +6513,7 @@ static const parser_t parsers[] = {
 	addpp(JOB_RES_PTR, job_resources_t *, JOB_RES),
 	addpp(PARTITION_INFO_PTR, partition_info_t *, PARTITION_INFO),
 	addpp(ACCT_GATHER_ENERGY_PTR, acct_gather_energy_t *, ACCT_GATHER_ENERGY),
-	addpp(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, POWER_MGMT_DATA),
+	addpp(POWER_MGMT_DATA_PTR, void *, POWER_MGMT_DATA),
 	addpp(JOB_DESC_MSG_PTR, job_desc_msg_t *, JOB_DESC_MSG),
 	addpp(CRON_ENTRY_PTR, cron_entry_t *, CRON_ENTRY),
 	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG),
@@ -6549,7 +6550,6 @@ static const parser_t parsers[] = {
 	addpa(PARTITION_INFO, partition_info_t),
 	addpa(SINFO_DATA, sinfo_data_t),
 	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t),
-	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
 	addpa(RESERVATION_INFO, reserve_info_t),
 	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
 	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t),
