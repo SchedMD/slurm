@@ -1332,8 +1332,13 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
-		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-				      protocol_version);
+
+		/* was ext_sensors_data_pack() */
+		pack64(0, buffer);
+		pack32(0, buffer);
+		pack_time(0, buffer);
+		pack32(0, buffer);
+
 		pack32(NO_VAL, buffer); /* was power */
 
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
@@ -1405,8 +1410,13 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
-		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-				      protocol_version);
+
+		/* was ext_sensors_data_pack() */
+		pack64(0, buffer);
+		pack32(0, buffer);
+		pack_time(0, buffer);
+		pack32(0, buffer);
+
 		pack32(NO_VAL, buffer); /* was power */
 
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
