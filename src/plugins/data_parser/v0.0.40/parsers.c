@@ -5940,6 +5940,21 @@ static int DUMP_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
+				   data_t *src, args_t *args,
+				   data_t *parent_path)
+{
+	/* SLURM_POWER_FLAGS_* removed - no-op place holder */
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
+				  data_t *dst, args_t *args)
+{
+	data_set_list(dst);
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -7065,10 +7080,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHOW_FLAGS)[] = {
 	add_flag_bit(SHOW_FUTURE, "FUTURE"),
 };
 
-static const flag_bit_t PARSER_FLAG_ARRAY(POWER_FLAGS)[] = {
-	add_flag_bit(SLURM_POWER_FLAGS_LEVEL, "EQUAL_POWER"),
-};
-
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_MAIL_FLAGS)[] = {
 	add_flag_bit(MAIL_JOB_BEGIN, "BEGIN"),
 	add_flag_bit(MAIL_JOB_END, "END"),
@@ -7120,6 +7131,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(OVERSUBSCRIBE_FLAGS)[] = {
 	add_parser_deprec(slurm_job_info_t, mtype, false, field, overloads, path, desc, deprec)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(slurm_job_info_t, mtype, false, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(slurm_job_info_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, account, "account", NULL),
 	add_parse(TIMESTAMP_NO_VAL, accrue_time, "accrue_time", NULL),
@@ -7211,7 +7224,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse_overload(MEM_PER_NODE, pn_min_memory, 1, "memory_per_node", NULL),
 	add_parse(UINT16_NO_VAL, pn_min_cpus, "minimum_cpus_per_node", NULL),
 	add_parse(UINT32_NO_VAL, pn_min_tmp_disk, "minimum_tmp_disk_per_node", NULL),
-	add_parse_bit_flag_array(slurm_job_info_t, POWER_FLAGS, false, power_flags, "power/flags", NULL),
+	add_removed(POWER_FLAGS, "power/flags", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(TIMESTAMP_NO_VAL, preempt_time, "preempt_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, preemptable_time, "preemptable_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, pre_sus_time, "pre_sus_time", NULL),
@@ -7270,6 +7283,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 #undef add_parse_deprec
 #undef add_cparse
 #undef add_skip
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_resources_t, mtype, false, field, 0, path, desc)
@@ -7666,6 +7680,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(X11_FLAGS)[] = {
 	add_parser_skip(job_desc_msg_t, field)
 #define add_flags(mtype, field, path, desc) \
 	add_parse_bit_flag_array(job_desc_msg_t, mtype, false, field, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(job_desc_msg_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, account, "account", NULL),
 	add_parse(STRING, acctg_freq, "account_gather_frequency", NULL),
@@ -7745,7 +7761,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(BOOL, overcommit, "overcommit", NULL),
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(UINT16, plane_size, "distribution_plane_size", NULL),
-	add_flags(POWER_FLAGS, power_flags, "power_flags", NULL),
+	add_removed(POWER_FLAGS, "power_flags", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, prefer, "prefer", NULL),
 	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
 	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
@@ -7821,6 +7837,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 #undef add_cparse
 #undef add_skip
 #undef add_flags
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(update_node_msg_t, mtype, false, field, 0, path, desc)
@@ -9006,6 +9023,7 @@ static const parser_t parsers[] = {
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
 	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(POWER_FLAGS, uint8_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
@@ -9227,7 +9245,6 @@ static const parser_t parsers[] = {
 	addfa(PARTITION_STATES, uint16_t),
 	addfa(JOB_FLAGS, uint64_t),
 	addfa(JOB_SHOW_FLAGS, uint16_t),
-	addfa(POWER_FLAGS, uint8_t),
 	addfa(JOB_MAIL_FLAGS, uint16_t),
 	addfa(RESERVATION_FLAGS, uint64_t),
 	addfa(CPU_BINDING_FLAGS, uint16_t), /* cpu_bind_type_t */
