@@ -155,9 +155,6 @@ plugins and what is required to build them.</p>
 		are installed. Additional functionality will be included
 		if the optional <i>yaml</i> and <i>jwt</i> development
 		libraries are installed.</li>
-<li> <b>RRD External Sensor Data Collection </b> The <i>ext_sensors/rrd</i>
-		plugin will be built if the <i>rrdtool</i> development library
-		is present.</li>
 <li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
 		is installed.</li>
 </ul>

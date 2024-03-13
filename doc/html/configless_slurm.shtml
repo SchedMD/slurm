@@ -131,7 +131,6 @@ is as follows:</p>
 <li>acct_gather.conf</li>
 <li>cgroup.conf</li>
 <li>cli_filter.lua</li>
-<li>ext_sensors.conf</li>
 <li>gres.conf</li>
 <li>helpers.conf</li>
 <li>job_container.conf</li>
