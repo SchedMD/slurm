@@ -63,7 +63,6 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -3514,9 +3513,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
-		pack_key_pair_list(build_ptr->ext_sensors_conf,
-		                   protocol_version, buffer);
-
+		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
@@ -3806,9 +3803,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
-		pack_key_pair_list(build_ptr->ext_sensors_conf,
-		                   protocol_version, buffer);
-
+		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
@@ -4030,6 +4025,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		void *list_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4097,10 +4093,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->ext_sensors_conf,
-		                         protocol_version, buffer)
+		/* was ext_sensors_conf */
+		if (unpack_key_pair_list(&list_tmp, protocol_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
+		FREE_NULL_LIST(list_tmp);
 
 		safe_unpackstr(&build_ptr->ext_sensors_type, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
@@ -4317,6 +4314,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->wait_time, buffer);
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		void *list_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4384,10 +4382,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->ext_sensors_conf,
-		                         protocol_version, buffer)
+		/* was ext_sensors_conf */
+		if (unpack_key_pair_list(&list_tmp, protocol_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
+		FREE_NULL_LIST(list_tmp);
 
 		safe_unpackstr(&build_ptr->ext_sensors_type, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);

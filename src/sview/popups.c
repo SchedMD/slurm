@@ -264,8 +264,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->cgroup_conf,
 			     "Cgroup Support", 0, treestore, &iter);
 
-	_gtk_print_key_pairs(slurm_ctl_conf_ptr->ext_sensors_conf,
-			     "External Sensors", 0, treestore, &iter);
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->mpi_conf,
 			     "MPI Plugins Configuration:", 0, treestore, &iter);
 

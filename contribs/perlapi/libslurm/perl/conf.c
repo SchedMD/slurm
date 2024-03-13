@@ -96,8 +96,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->epilog_slurmctld)
 		STORE_FIELD(hv, conf, epilog_slurmctld, charp);
 
-	if (conf->ext_sensors_conf)
-		STORE_FIELD(hv, conf, ext_sensors_conf, charp);
 	STORE_FIELD(hv, conf, ext_sensors_freq, uint16_t);
 	if (conf->ext_sensors_type)
 		STORE_FIELD(hv, conf, ext_sensors_type, charp);
@@ -447,7 +445,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, epilog_msg_time, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, epilog_slurmctld, charp, FALSE);
-	FETCH_FIELD(hv, conf, ext_sensors_conf, charp, FALSE);
 	FETCH_FIELD(hv, conf, ext_sensors_freq, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, ext_sensors_type, charp, FALSE);
 
