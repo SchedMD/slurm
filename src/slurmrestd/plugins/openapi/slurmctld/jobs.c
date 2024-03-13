@@ -482,7 +482,7 @@ static int _op_handler_job_states(openapi_ctxt_t *ctxt)
 	openapi_job_state_query_t query = { 0 };
 	openapi_resp_job_state_t resp = { 0 };
 	int job_id_count = 0;
-	uint32_t *job_ids = NULL;
+	slurm_selected_step_t *job_ids = NULL;
 	int rc;
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
@@ -505,7 +505,7 @@ static int _op_handler_job_states(openapi_ctxt_t *ctxt)
 				  sizeof(*job_ids));
 
 		while ((id = list_pop(query.job_id_list))) {
-			job_ids[job_id_count] = id->step_id.job_id;
+			job_ids[job_id_count] = *id;
 			xfree(id);
 			job_id_count++;
 		}

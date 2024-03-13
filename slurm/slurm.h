@@ -4086,7 +4086,8 @@ extern int slurm_load_jobs(time_t update_time,
  * RET SLURM_SUCCESS or error
  * NOTE: free the response using slurm_free_job_state_response_msg
  */
-extern int slurm_load_job_state(int job_id_count, uint32_t *job_ids,
+extern int slurm_load_job_state(int job_id_count,
+				slurm_selected_step_t *job_ids,
 				job_state_response_msg_t **jsr_pptr);
 
 /*

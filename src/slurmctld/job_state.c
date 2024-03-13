@@ -219,27 +219,26 @@ static foreach_job_by_id_control_t _foreach_job(const job_record_t *job_ptr,
 }
 
 static void _dump_job_state_locked(job_state_args_t *args,
-				   const uint16_t filter_jobs_count,
-				   const uint32_t *filter_jobs_ptr)
+				   const uint32_t filter_jobs_count,
+				   const slurm_selected_step_t *filter_jobs_ptr)
 {
-	slurm_selected_step_t filter = SLURM_SELECTED_STEP_INITIALIZER;
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 
 	if (!filter_jobs_count) {
+		slurm_selected_step_t filter = SLURM_SELECTED_STEP_INITIALIZER;
 		(void) foreach_job_by_id_ro(&filter, _foreach_job, args);
 	} else {
 		for (int i = 0; !args->rc && (i < filter_jobs_count); i++) {
-			filter.step_id.job_id = filter_jobs_ptr[i];
-			(void) foreach_job_by_id_ro(&filter, _foreach_job,
-						    args);
+			(void) foreach_job_by_id_ro(&filter_jobs_ptr[i],
+						    _foreach_job, args);
 		}
 	}
 }
 
 extern int dump_job_state(const uint32_t filter_jobs_count,
-			  const uint32_t *filter_jobs_ptr,
+			  const slurm_selected_step_t *filter_jobs_ptr,
 			  uint32_t *jobs_count_ptr,
 			  job_state_response_job_t **jobs_pptr)
 {

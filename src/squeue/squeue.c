@@ -47,6 +47,8 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
@@ -58,7 +60,7 @@
 
 typedef struct {
 	int job_ids_count;
-	uint32_t *job_ids;
+	slurm_selected_step_t *job_ids;
 	int index;
 } job_state_args_t;
 
@@ -183,8 +185,12 @@ static int _foreach_add_job(void *x, void *arg)
 {
 	job_state_args_t *args = arg;
 	squeue_job_step_t *job_step_id = x;
+	slurm_selected_step_t *id = &args->job_ids[args->index];
 
-	args->job_ids[args->index] = job_step_id->step_id.job_id;
+	*id = (slurm_selected_step_t) SLURM_SELECTED_STEP_INITIALIZER;
+	/* FIXME: squeue_job_step_t doesn't include HetComponent */
+	id->array_task_id = job_step_id->array_id;
+	id->step_id = job_step_id->step_id;
 	args->index++;
 
 	return SLURM_SUCCESS;

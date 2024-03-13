@@ -1558,7 +1558,7 @@ static void _slurm_rpc_job_state(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
 
-	rc = dump_job_state(js->job_id_count, js->job_ids, &jsr->jobs_count,
+	rc = dump_job_state(js->count, js->job_ids, &jsr->jobs_count,
 			    &jsr->jobs);
 
 	unlock_slurmctld(job_read_lock);
