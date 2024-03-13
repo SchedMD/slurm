@@ -66,7 +66,6 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/topology.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -780,7 +779,6 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->magic = NODE_MAGIC;
 	node_ptr->cpu_load = 0;
 	node_ptr->energy = acct_gather_energy_alloc(1);
-	node_ptr->ext_sensors = ext_sensors_alloc();
 	node_ptr->free_mem = NO_VAL64;
 	node_ptr->next_state = NO_VAL;
 	node_ptr->owner = NO_VAL;
@@ -1306,7 +1304,6 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->resv_name);
 	xfree(node_ptr->version);
 	acct_gather_energy_destroy(node_ptr->energy);
-	ext_sensors_destroy(node_ptr->ext_sensors);
 	if (running_in_slurmctld())
 		select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
 	xfree(node_ptr->tres_str);

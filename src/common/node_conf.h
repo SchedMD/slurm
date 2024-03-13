@@ -106,7 +106,6 @@ struct node_record {
 	uint16_t cpus_efctv;		/* count of effective cpus on the node.
 					   i.e. cpus minus specialized cpus*/
 	acct_gather_energy_t *energy;	/* power consumption data */
-	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *extra;			/* arbitrary string */
 	data_t *extra_data;		/* Data serialized from extra */
 	char *features;			/* node's available features, used only
