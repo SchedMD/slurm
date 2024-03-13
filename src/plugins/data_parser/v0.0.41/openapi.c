@@ -346,7 +346,8 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
 		    (parser->model ==
 		     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
+		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
+		    !parser->field_name) {
 			/* resolve to linked parser */
 			parent = parser;
 			parser = find_parser_by_type(parser->type);

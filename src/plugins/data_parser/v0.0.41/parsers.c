@@ -740,6 +740,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 				xassert(!parser->pointer_type);
 			} else if (parser->pointer_type) {
 				xassert(!parser->array_type);
+			} else if (!parser->field_name) {
+				/* field-less parser can can be any type */
 			} else {
 				fatal_abort("invalid openapi override");
 			}
