@@ -87,7 +87,6 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/cgroup.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/job_submit.h"

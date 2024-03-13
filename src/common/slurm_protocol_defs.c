@@ -55,7 +55,6 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/topology.h"
 #include "src/common/slurm_protocol_defs.h"

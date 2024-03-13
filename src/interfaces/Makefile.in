@@ -161,10 +161,10 @@ libcommon_interfaces_la_LIBADD =
 am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather.lo acct_gather_energy.lo acct_gather_filesystem.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
-	cgroup.lo cli_filter.lo cred.lo data_parser.lo ext_sensors.lo \
-	gpu.lo gres.lo hash.lo jobacct_gather.lo jobcomp.lo mcs.lo \
-	mpi.lo node_features.lo prep.lo priority.lo select.lo \
-	serializer.lo site_factor.lo switch.lo topology.lo
+	cgroup.lo cli_filter.lo cred.lo data_parser.lo gpu.lo gres.lo \
+	hash.lo jobacct_gather.lo jobcomp.lo mcs.lo mpi.lo \
+	node_features.lo prep.lo priority.lo select.lo serializer.lo \
+	site_factor.lo switch.lo topology.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -213,8 +213,8 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
 	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/cgroup.Plo \
 	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cred.Plo \
-	./$(DEPDIR)/data_parser.Plo ./$(DEPDIR)/ext_sensors.Plo \
-	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/data_parser.Plo ./$(DEPDIR)/gpu.Plo \
+	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
 	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
 	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
 	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
@@ -552,8 +552,6 @@ libcommon_interfaces_la_SOURCES = \
 	cred.c					\
 	data_parser.c				\
 	data_parser.h				\
-	ext_sensors.c				\
-	ext_sensors.h				\
 	gpu.c					\
 	gpu.h					\
 	gres.c					\
@@ -696,7 +694,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ext_sensors.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpu.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@ # am--include-marker
@@ -856,7 +853,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
-	-rm -f ./$(DEPDIR)/ext_sensors.Plo
 	-rm -f ./$(DEPDIR)/gpu.Plo
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo
@@ -935,7 +931,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
-	-rm -f ./$(DEPDIR)/ext_sensors.Plo
 	-rm -f ./$(DEPDIR)/gpu.Plo
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo

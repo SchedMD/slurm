@@ -75,7 +75,6 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/cred.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"

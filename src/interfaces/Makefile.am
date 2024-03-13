@@ -40,8 +40,6 @@ libcommon_interfaces_la_SOURCES =    \
 	cred.c					\
 	data_parser.c				\
 	data_parser.h				\
-	ext_sensors.c				\
-	ext_sensors.h				\
 	gpu.c					\
 	gpu.h					\
 	gres.c					\

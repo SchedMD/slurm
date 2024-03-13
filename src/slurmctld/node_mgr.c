@@ -68,7 +68,6 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/node_features.h"
