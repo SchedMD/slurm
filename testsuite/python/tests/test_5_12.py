@@ -199,6 +199,16 @@ def test_array_job():
     assert f"{job_id}_5=RUNNING" in output
     assert len(output) == 1
 
+    output = (
+        atf.run_command_output(
+            f"squeue --noheader --only-job-state --format='%i=%T' -j {job_id}_5"
+        )
+        .strip()
+        .splitlines()
+    )
+    assert f"{job_id}_5=RUNNING" in output
+    assert len(output) == 1
+
     atf.cancel_jobs([j5_id])
     atf.wait_for_job_state(j5_id, "DONE", fatal=True, timeout=60)
 
