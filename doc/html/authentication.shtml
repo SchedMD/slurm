@@ -116,7 +116,8 @@ allow it to use the Slurm authentication mechanism.</p>
 <b>S</b>lurm <b>A</b>uth and <b>C</b>red <b>K</b>iosk (SACK) &mdash;
 that is responsible for handling requests from the <b>auth/slurm</b> and
 <b>cred/slurm</b> plugins. This subsystem is automatically started and managed
-by the slurmctld, slurmdbd, and slurmd daemons on each system.</p>
+internally by the slurmctld, slurmdbd, and slurmd daemons on each system with no
+need to run a separate daemon.</p>
 
 <p>For login nodes not running one of these Slurm daemons, the <b>sackd</b>
 daemon should be run to allow the Slurm client commands to authenticate to
