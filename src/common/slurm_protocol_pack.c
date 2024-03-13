@@ -1596,7 +1596,9 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		uint64_t uint64_tmp;
 		uint32_t uint32_tmp;
+		time_t time_tmp;
 
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
@@ -1656,16 +1658,21 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
-					    protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
+
+		/* was ext_sensors_data_unpack() */
+		safe_unpack64(&uint64_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpack_time(&time_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+
 		safe_unpack32(&uint32_tmp, buffer); /* was power */
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint64_t uint64_tmp;
 		uint32_t uint32_tmp;
+		time_t time_tmp;
 
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
@@ -1723,10 +1730,13 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
-					    protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
+
+		/* was ext_sensors_data_unpack() */
+		safe_unpack64(&uint64_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpack_time(&time_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+
 		safe_unpack32(&uint32_tmp, buffer); /* was power */
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
