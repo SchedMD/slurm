@@ -4388,7 +4388,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	conf->log_fmt = LOG_FMT_ISO8601_MS;
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
 		/*
-		 * If adding to this please update src/api/config_log.c to do
+		 * If adding to this please update src/api/config_info.c to do
 		 * the reverse translation.
 		 */
 		if (xstrcasestr(temp_str, "iso8601_ms"))
