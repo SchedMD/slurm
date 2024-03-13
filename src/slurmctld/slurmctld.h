@@ -870,8 +870,6 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
-	uint8_t power_flags;		/* power management flags,
-					 * see SLURM_POWER_FLAGS_ */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
 	bool preempt_in_progress;	/* Preemption of other jobs in progress

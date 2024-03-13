@@ -1539,9 +1539,6 @@ function __slurm_comp_common_flags() {
 		"append"
 		"truncate"
 	)
-	local power_flags=(
-		"level"
-	)
 	local profile_types=(
 		"all"
 		"energy"
@@ -1635,7 +1632,6 @@ function __slurm_comp_common_flags() {
 	--open-mode?(s)) __slurm_compreply "${open_modes[*]}" ;;
 	-o | --output) _filedir ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
-	--power) __slurm_compreply_list "${power_flags[*]}" ;;
 	--prefer?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	--profile?(s)) __slurm_compreply_list "${profile_types[*]}" ;;
 	--prolog) _filedir ;;

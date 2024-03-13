@@ -3803,47 +3803,6 @@ static slurm_cli_opt_t slurm_opt_partition = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_power(slurm_opt_t *opt, const char *arg)
-{
-	opt->power = power_flags_id(arg);
-
-	return SLURM_SUCCESS;
-}
-static int arg_set_data_power(slurm_opt_t *opt, const data_t *arg,
-			      data_t *errors)
-{
-	int rc;
-	char *str = NULL;
-
-	if (!opt->sbatch_opt && !opt->srun_opt)
-		return SLURM_ERROR;
-
-	if ((rc = data_get_string_converted(arg, &str)))
-		ADD_DATA_ERROR("Unable to read string", rc);
-	else
-		opt->power = power_flags_id(str);
-
-	xfree(str);
-	return rc;
-}
-static char *arg_get_power(slurm_opt_t *opt)
-{
-	if (opt->power)
-		return xstrdup(power_flags_str(opt->power));
-	return xstrdup("unset");
-}
-COMMON_OPTION_RESET(power, 0);
-static slurm_cli_opt_t slurm_opt_power = {
-	.name = "power",
-	.has_arg = required_argument,
-	.val = LONG_OPT_POWER,
-	.set_func = arg_set_power,
-	.set_func_data = arg_set_data_power,
-	.get_func = arg_get_power,
-	.reset_func = arg_reset_power,
-	.reset_each_pass = true,
-};
-
 COMMON_STRING_OPTION(prefer);
 static slurm_cli_opt_t slurm_opt_prefer = {
 	.name = "prefer",
@@ -5430,7 +5389,6 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_pack_group,
 	&slurm_opt_parsable,
 	&slurm_opt_partition,
-	&slurm_opt_power,
 	&slurm_opt_prefer,
 	&slurm_opt_preserve_env,
 	&slurm_opt_priority,
@@ -6830,8 +6788,6 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->plane_size != NO_VAL)
 		job_desc->plane_size = opt_local->plane_size;
-
-	job_desc->power_flags = opt_local->power;
 
 	if (slurm_option_isset(opt_local, "hold")) {
 		if (opt_local->hold)

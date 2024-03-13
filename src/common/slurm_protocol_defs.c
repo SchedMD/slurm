@@ -3582,35 +3582,6 @@ extern char *node_state_string_compact(uint32_t inx)
 	return "?";
 }
 
-extern uint16_t power_flags_id(const char *power_flags)
-{
-	char *tmp, *tok, *save_ptr = NULL;
-	uint16_t rc = 0;
-
-	if (!power_flags)
-		return rc;
-
-	tmp = xstrdup(power_flags);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		if (!xstrcasecmp(tok, "level"))
-			rc |= SLURM_POWER_FLAGS_LEVEL;
-		else
-			error("Ignoring unrecognized power option (%s)", tok);
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
-extern char *power_flags_str(uint16_t power_flags)
-{
-	if (power_flags & SLURM_POWER_FLAGS_LEVEL)
-		return "LEVEL";
-	return "";
-}
-
 extern void private_data_string(uint16_t private_data, char *str, int str_len)
 {
 	if (str_len > 0)

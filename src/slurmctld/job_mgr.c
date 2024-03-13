@@ -1507,7 +1507,7 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 
 	pack16(dump_job_ptr->alloc_resp_port, buffer);
 	pack16(dump_job_ptr->other_port, buffer);
-	pack8(dump_job_ptr->power_flags, buffer);
+	pack8(0, buffer); /* was power_flags */
 	pack16(dump_job_ptr->start_protocol_ver, buffer);
 	packdouble(dump_job_ptr->billable_tres, buffer);
 
@@ -1619,7 +1619,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	time_t preempt_time = 0, prolog_launch_time = 0, deadline = 0;
 	time_t last_sched_eval = 0;
 	time_t resize_time = 0, now = time(NULL);
-	uint8_t reboot = 0, power_flags = 0;
+	uint8_t reboot = 0;
+	uint8_t uint8_tmp;
 	uint32_t array_task_id = NO_VAL, state_reason_prev_db = 0;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
@@ -1775,7 +1776,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 
 		safe_unpack16(&alloc_resp_port, buffer);
 		safe_unpack16(&other_port, buffer);
-		safe_unpack8(&power_flags, buffer);
+		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack16(&start_protocol_ver, buffer);
 		safe_unpackdouble(&billable_tres, buffer);
 
@@ -2007,7 +2008,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 
 		safe_unpack16(&alloc_resp_port, buffer);
 		safe_unpack16(&other_port, buffer);
-		safe_unpack8(&power_flags, buffer);
+		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack16(&start_protocol_ver, buffer);
 		safe_unpackdouble(&billable_tres, buffer);
 
@@ -2296,7 +2297,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		nodes_pr = NULL;  /* reused, nothing left to free */
 	}
 	job_ptr->other_port   = other_port;
-	job_ptr->power_flags  = power_flags;
 	job_ptr->het_job_id     = het_job_id;
 	xfree(job_ptr->het_job_id_set);
 	job_ptr->het_job_id_set = het_job_id_set;
@@ -4224,9 +4224,6 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 	debug3("   work_dir=%s alloc_node:sid=%s:%u",
 	       job_desc->work_dir,
 	       job_desc->alloc_node, job_desc->alloc_sid);
-
-	debug3("   power_flags=%s",
-	       power_flags_str(job_desc->power_flags));
 
 	debug3("   resp_host=%s alloc_resp_port=%u other_port=%u",
 	       job_desc->resp_host,
@@ -8604,7 +8601,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->resp_host = xstrdup(job_desc->resp_host);
 	job_ptr->alloc_resp_port = job_desc->alloc_resp_port;
 	job_ptr->other_port = job_desc->other_port;
-	job_ptr->power_flags = job_desc->power_flags;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->derived_ec = 0;
 
@@ -10530,7 +10526,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack32(dump_job_ptr->job_state, buffer);
 		pack16(dump_job_ptr->batch_flag, buffer);
 		pack32(dump_job_ptr->state_reason, buffer);
-		pack8(dump_job_ptr->power_flags, buffer);
+		pack8(0, buffer); /* was power_flags */
 		pack8(dump_job_ptr->reboot, buffer);
 		pack16(dump_job_ptr->restart_cnt, buffer);
 		pack16(show_flags, buffer);
@@ -17841,7 +17837,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->open_mode         = details->open_mode;
 	job_desc->origin_cluster    = xstrdup(job_ptr->origin_cluster);
 	job_desc->other_port        = job_ptr->other_port;
-	job_desc->power_flags       = job_ptr->power_flags;
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;

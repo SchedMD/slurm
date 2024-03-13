@@ -1853,9 +1853,6 @@ extern char *node_state_string_complete(uint32_t inx);
  */
 extern uint32_t parse_node_state_flag(char *flag_str);
 
-extern uint16_t power_flags_id(const char *power_flags);
-extern char    *power_flags_str(uint16_t power_flags);
-
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);

@@ -1511,8 +1511,6 @@ typedef bitstr_t bitoff_t;
 #define JOB_SHARED_USER         0x0002
 #define JOB_SHARED_MCS          0x0003
 
-#define SLURM_POWER_FLAGS_LEVEL 0x0001		/* Equal power cap on all nodes */
-
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1654,8 +1652,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default in Slurm config */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
-	uint8_t power_flags;	/* power management flags,
-				 * see SLURM_POWER_FLAGS_ */
 	char *prefer;		/* soft feature specification,
 				 * default NONE */
 	uint32_t priority;	/* relative priority of the job,
@@ -1849,8 +1845,6 @@ typedef struct job_info {
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
 	uint32_t pn_min_tmp_disk; /* minimum tmp disk per node, default=0 */
-	uint8_t power_flags;	/* power management flags,
-				 * see SLURM_POWER_FLAGS_ */
 	time_t preempt_time;	/* preemption signal time */
 	time_t preemptable_time;/* job becomes preemptable from
 				 *  PreemptExemptTime */

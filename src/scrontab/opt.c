@@ -168,7 +168,6 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.wait4switch >= 0)
 		desc->wait4switch = opt.wait4switch;
 
-	desc->power_flags = opt.power;
 	if (opt.job_flags)
 		desc->bitflags = opt.job_flags;
 	desc->mcs_label = xstrdup(opt.mcs_label);

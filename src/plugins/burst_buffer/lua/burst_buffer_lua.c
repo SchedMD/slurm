@@ -511,8 +511,6 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushinteger(L, job_info->pn_min_cpus);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		lua_pushinteger(L, job_info->pn_min_tmp_disk);
-	} else if (!xstrcmp(name, "power_flags")) {
-		lua_pushinteger(L, job_info->power_flags);
 	} else if (!xstrcmp(name, "preempt_time")) {
 		lua_pushinteger(L, job_info->preempt_time);
 	} else if (!xstrcmp(name, "preemptable_time")) {

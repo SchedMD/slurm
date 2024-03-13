@@ -1041,10 +1041,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp1);
 	}
 
-	/****** Line 37 ******/
-	xstrcat(out, line_end);
-	xstrfmtcat(out, "Power=%s", power_flags_str(job_ptr->power_flags));
-
 	/****** Line 38 (optional) ******/
 	if (job_ptr->bitflags &
 	    (GRES_DISABLE_BIND | GRES_ENFORCE_BIND |
