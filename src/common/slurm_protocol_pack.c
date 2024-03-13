@@ -3596,7 +3596,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		packstr(build_ptr->plugindir, buffer);
 		packstr(build_ptr->plugstack, buffer);
-		packstr(build_ptr->power_parameters, buffer);
+		packnull(buffer); /* was power_parameters */
 		packnull(buffer); /* was power_plugin */
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_params, buffer);
@@ -3888,7 +3888,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		packstr(build_ptr->plugindir, buffer);
 		packstr(build_ptr->plugstack, buffer);
-		packstr(build_ptr->power_parameters, buffer);
+		packnull(buffer); /* was power_parameters */
 		packnull(buffer); /* was power_plugin */
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_params, buffer);
@@ -4185,7 +4185,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr(&build_ptr->plugindir, buffer);
 		safe_unpackstr(&build_ptr->plugstack, buffer);
-		safe_unpackstr(&build_ptr->power_parameters, buffer);
+		safe_skipstr(buffer); /* was power_parameters */
 		safe_skipstr(buffer); /* was power_plugin */
 
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
@@ -4477,7 +4477,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr(&build_ptr->plugindir, buffer);
 		safe_unpackstr(&build_ptr->plugstack, buffer);
-		safe_unpackstr(&build_ptr->power_parameters, buffer);
+		safe_skipstr(buffer); /* was power_parameters */
 		safe_skipstr(buffer); /* was power_plugin */
 
 		safe_unpack16(&build_ptr->preempt_mode, buffer);

@@ -199,9 +199,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->plugstack)
 		STORE_FIELD(hv, conf, plugstack, charp);
 
-	if (conf->power_parameters)
-		STORE_FIELD(hv, conf, power_parameters, charp);
-
 	STORE_FIELD(hv, conf, preempt_mode, uint16_t);
 
 	if (conf->preempt_params)
@@ -493,7 +490,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, over_time_limit, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, plugindir, charp, FALSE);
 	FETCH_FIELD(hv, conf, plugstack, charp, FALSE);
-	FETCH_FIELD(hv, conf, power_parameters, charp, FALSE);
 	FETCH_FIELD(hv, conf, preempt_mode, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, preempt_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, priority_calc_period, uint32_t, TRUE);

@@ -2934,7 +2934,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
-	xfree (ctl_conf_ptr->power_parameters);
 	xfree(ctl_conf_ptr->preempt_params);
 	xfree (ctl_conf_ptr->preempt_type);
 	xfree(ctl_conf_ptr->prep_params);
@@ -3103,7 +3102,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
-	xfree (ctl_conf_ptr->power_parameters);
 	ctl_conf_ptr->preempt_mode              = 0;
 	xfree(ctl_conf_ptr->preempt_params);
 	xfree (ctl_conf_ptr->preempt_type);
@@ -4658,9 +4656,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl);
-
-	(void) s_p_get_string(&conf->power_parameters, "PowerParameters",
-			      hashtbl);
 
 	if (s_p_get_string(&temp_str, "PreemptExemptTime", hashtbl)) {
 		uint32_t exempt_time = time_str2secs(temp_str);

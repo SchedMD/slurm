@@ -241,7 +241,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* over_time_limit */
 	packstr(slurm_conf.plugindir, buffer);
 	packstr(slurm_conf.plugstack, buffer);
-	/* power_parameters */
 	/* preempt_exempt_time */
 	/* preempt_mode */
 	packstr(slurm_conf.preempt_params, buffer);
@@ -464,7 +463,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* over_time_limit */
 	safe_unpackstr(&slurm_conf.plugindir, buffer);
 	safe_unpackstr(&slurm_conf.plugstack, buffer);
-	/* power_parameters */
 	/* preempt_exempt_time */
 	/* preempt_mode */
 	safe_unpackstr(&slurm_conf.preempt_params, buffer);
