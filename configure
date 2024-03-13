@@ -733,11 +733,6 @@ HAVE_UCX_TRUE
 UCX_LIBS
 UCX_LDFLAGS
 UCX_CPPFLAGS
-BUILD_RRD_FALSE
-BUILD_RRD_TRUE
-RRDTOOL_LDFLAGS
-RRDTOOL_CPPFLAGS
-RRDTOOL_LIBS
 BUILD_IPMI_FALSE
 BUILD_IPMI_TRUE
 FREEIPMI_LDFLAGS
@@ -1027,7 +1022,6 @@ with_rsmi
 with_oneapi
 with_pmix
 with_freeipmi
-with_rrdtool
 with_ucx
 enable_x11
 enable_selinux
@@ -1798,7 +1792,6 @@ Optional Packages:
   --with-pmix=PATH        Specify path to pmix installation(s). Multiple
                           version directories can be ':' delimited.
   --with-freeipmi=PATH    Specify path to freeipmi installation
-  --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
   --with-rdkafka=PATH     Specify path to librdkafka installation
   --with-bpf=PATH         Specify path to bpf header
@@ -24379,108 +24372,6 @@ fi
 
 
 
-  _x_ac_rrdtool_dirs="/usr /usr/local"
-  _x_ac_rrdtool_libs="lib64 lib"
-
-
-# Check whether --with-rrdtool was given.
-if test ${with_rrdtool+y}
-then :
-  withval=$with_rrdtool; if test "x$with_rrdtool" != xno && test "x$with_rrdtool" != xyes
-then :
-  _x_ac_rrdtool_dirs="$with_rrdtool"
-fi
-fi
-
-
-  if test "x$with_rrdtool" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rrdtool disabled" >&5
-printf "%s\n" "$as_me: support for rrdtool disabled" >&6;}
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rrdtool installation" >&5
-printf %s "checking for rrdtool installation... " >&6; }
-if test ${x_ac_cv_rrdtool_dir+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-
-        for d in $_x_ac_rrdtool_dirs; do
-          test -d "$d" || continue
-          test -d "$d/include" || continue
-          test -f "$d/include/rrd.h" || continue
-          for bit in $_x_ac_rrdtool_libs; do
-            test -d "$d/$bit" || continue
-            _x_ac_rrdtool_cppflags_save="$CPPFLAGS"
-            CPPFLAGS="-I$d/include $CPPFLAGS"
-            _x_ac_rrdtool_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lrrd $LIBS"
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                   #include <rrd.h>
-
-int
-main (void)
-{
-
-                   rrd_value_t *rrd_data;
-                   rrd_info_t *rrd_info;
-                   rrd_test_error();
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  x_ac_cv_rrdtool_dir=$d
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-            CPPFLAGS="$_x_ac_rrdtool_cppflags_save"
-            LIBS="$_x_ac_rrdtool_libs_save"
-            test -n "$x_ac_cv_rrdtool_dir" && break
-          done
-          test -n "$x_ac_cv_rrdtool_dir" && break
-        done
-
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_rrdtool_dir" >&5
-printf "%s\n" "$x_ac_cv_rrdtool_dir" >&6; }
-
-    # echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
-    if test -z "$x_ac_cv_rrdtool_dir"; then
-      if test -z "$with_rrdtool"; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
-      else
-        as_fn_error $? "unable to locate rrdtool installation" "$LINENO" 5
-      fi
-    else
-      RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
-      if test "$ac_with_rpath" = "yes"; then
-        RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
-      else
-        RRDTOOL_LDFLAGS="-L$x_ac_cv_rrdtool_dir/$bit"
-      fi
-      RRDTOOL_LIBS="-lrrd"
-    fi
-
-
-
-
-  fi
-
-   if test -n "$x_ac_cv_rrdtool_dir"; then
-  BUILD_RRD_TRUE=
-  BUILD_RRD_FALSE='#'
-else
-  BUILD_RRD_TRUE='#'
-  BUILD_RRD_FALSE=
-fi
-
-
-
   _x_ac_ucx_dirs="/usr /usr/local /opt/ucx"
   _x_ac_ucx_libs="lib64 lib"
 
@@ -28046,10 +27937,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_IPMI_TRUE}" && test -z "${BUILD_IPMI_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_IPMI\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_RRD_TRUE}" && test -z "${BUILD_RRD_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_RRD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_UCX_TRUE}" && test -z "${HAVE_UCX_FALSE}"; then
