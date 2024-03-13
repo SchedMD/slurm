@@ -9,7 +9,6 @@ SUBDIRS = \
 	cli_filter		\
 	cred			\
 	data_parser		\
-	ext_sensors		\
 	gpu			\
 	gres			\
 	hash			\
