@@ -4495,6 +4495,21 @@ static int DUMP_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 	return DUMP(JOB_EXCLUSIVE_FLAGS, *flag, dst, args);
 }
 
+static int PARSE_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	/* ext_sensors_data_t removed - no-op place holder */
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	data_set_dict(dst);
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -5269,6 +5284,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_parser(node_info_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(node_info_t, mtype, false, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(node_info_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, arch, "architecture", NULL),
 	add_parse(STRING, bcast_address, "burstbuffer_network_address", NULL),
@@ -5284,7 +5301,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, cpus_efctv, "effective_cpus", NULL),
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", NULL),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", NULL),
-	add_parse(EXT_SENSORS_DATA_PTR, ext_sensors, "external_sensors", NULL),
+	add_removed(EXT_SENSORS_DATA_PTR, "external_sensors", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(POWER_MGMT_DATA_PTR, power, "power", NULL),
 	add_parse(CSV_STRING, features, "features", NULL),
@@ -5326,6 +5343,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 };
 #undef add_parse
 #undef add_cparse
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurm_license_info_t, mtype, false, field, 0, path, desc)
@@ -5773,16 +5791,6 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32_NO_VAL, current_watts, "current_watts", NULL),
 	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
 	add_parse(UINT64, poll_time, "last_collected", NULL),
-};
-#undef add_parse
-
-#define add_parse(mtype, field, path, desc) \
-	add_parser(ext_sensors_data_t, mtype, false, field, 0, path, desc)
-static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
-	add_parse(UINT64_NO_VAL, consumed_energy, "consumed_energy", NULL),
-	add_parse(UINT32_NO_VAL, temperature, "temperature", NULL),
-	add_parse(UINT64, energy_update_time, "energy_update_time", NULL),
-	add_parse(UINT32, current_watts, "current_watts", NULL),
 };
 #undef add_parse
 
@@ -6428,6 +6436,7 @@ static const parser_t parsers[] = {
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addps(HOLD, uint32_t, NEED_NONE, BOOL, "Job held"),
+	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -6485,13 +6494,13 @@ static const parser_t parsers[] = {
 	addpp(JOB_RES_PTR, job_resources_t *, JOB_RES),
 	addpp(PARTITION_INFO_PTR, partition_info_t *, PARTITION_INFO),
 	addpp(ACCT_GATHER_ENERGY_PTR, acct_gather_energy_t *, ACCT_GATHER_ENERGY),
-	addpp(EXT_SENSORS_DATA_PTR, ext_sensors_data_t *, EXT_SENSORS_DATA),
 	addpp(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, POWER_MGMT_DATA),
 	addpp(JOB_DESC_MSG_PTR, job_desc_msg_t *, JOB_DESC_MSG),
 	addpp(CRON_ENTRY_PTR, cron_entry_t *, CRON_ENTRY),
 	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG),
 	addpp(NODES_PTR, node_info_msg_t *, NODES),
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG),
+	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
@@ -6522,7 +6531,6 @@ static const parser_t parsers[] = {
 	addpa(PARTITION_INFO, partition_info_t),
 	addpa(SINFO_DATA, sinfo_data_t),
 	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t),
-	addpa(EXT_SENSORS_DATA, ext_sensors_data_t),
 	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
 	addpa(RESERVATION_INFO, reserve_info_t),
 	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
