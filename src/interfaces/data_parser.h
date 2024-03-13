@@ -422,8 +422,8 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PARTITION_PARAM_PTR, /* openapi_partition_param_t* */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY, /* openapi_partitions_query_t */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY_PTR, /* openapi_partitions_query_t* */
-	DATA_PARSER_EXT_SENSORS_DATA, /* ext_sensors_data_t */
-	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* ext_sensors_data_t* */
+	DATA_PARSER_EXT_SENSORS_DATA, /* REMOVED 24.05: ext_sensors_data_t */
+	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* REMOVED 24.05: ext_sensors_data_t* */
 	DATA_PARSER_POWER_MGMT_DATA, /* power_mgmt_data_t */
 	DATA_PARSER_POWER_MGMT_DATA_PTR, /* power_mgmt_data_t* */
 	DATA_PARSER_RESERVATION_INFO, /* reserve_info_t */
