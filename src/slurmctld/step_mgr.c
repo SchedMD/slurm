@@ -64,7 +64,6 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mcs.h"
@@ -484,7 +483,6 @@ extern void free_step_record(void *x)
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
-	xfree(step_ptr->ext_sensors);
 	xfree(step_ptr->cpus_per_tres);
 	xfree(step_ptr->mem_per_tres);
 	xfree(step_ptr->submit_line);
@@ -3504,7 +3502,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->cpu_count = step_specs->cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->flags = step_specs->flags;
-	step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);
 	step_ptr->mem_per_tres = xstrdup(step_specs->mem_per_tres);
@@ -5003,9 +5000,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 	step_ptr->start_protocol_ver = start_protocol_ver;
 
-	if (!step_ptr->ext_sensors)
-		step_ptr->ext_sensors = ext_sensors_alloc();
-
 	step_ptr->exit_code    = exit_code;
 
 	if (exit_node_bitmap) {
@@ -5353,7 +5347,6 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 		node_list, NULL, NULL, node_cnt, node_cnt,
 		SLURM_PROTOCOL_VERSION);
 
-	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("extern");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 	step_ptr->state = JOB_RUNNING;
@@ -5411,7 +5404,6 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 #endif
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, SLURM_PROTOCOL_VERSION);
-	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("batch");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 	step_ptr->state = JOB_RUNNING;
@@ -5497,7 +5489,6 @@ static step_record_t *_build_interactive_step(
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, protocol_version);
-	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("interactive");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 	step_ptr->state = JOB_RUNNING;
@@ -5654,7 +5645,6 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 
 	/* The step needs to run on all the cores. */
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
-	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup(step_specs->name);
 	step_ptr->select_jobinfo = select_jobinfo;
 	step_ptr->state = JOB_RUNNING;
