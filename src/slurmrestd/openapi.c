@@ -408,6 +408,7 @@ static void _list_delete_path_t(void *x)
 	}
 
 	xfree(path->methods);
+	xfree(path->path);
 	path->magic = ~MAGIC_PATH;
 	xfree(path);
 }
