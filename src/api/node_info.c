@@ -53,7 +53,6 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/ext_sensors.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
@@ -404,28 +403,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 				node_ptr->energy->ave_watts);
 
 	xstrcat(out, line_end);
-
-	/****** external sensors Line ******/
-	if (!node_ptr->ext_sensors
-	    || node_ptr->ext_sensors->consumed_energy == NO_VAL64)
-		xstrcat(out, "ExtSensorsJoules=n/a ");
-	else
-		xstrfmtcat(out, "ExtSensorsJoules=%"PRIu64" ",
-			   node_ptr->ext_sensors->consumed_energy);
-
-	if (!node_ptr->ext_sensors
-	    || node_ptr->ext_sensors->current_watts == NO_VAL)
-		xstrcat(out, "ExtSensorsWatts=n/a ");
-	else
-		xstrfmtcat(out, "ExtSensorsWatts=%u ",
-			   node_ptr->ext_sensors->current_watts);
-
-	if (!node_ptr->ext_sensors
-	    || node_ptr->ext_sensors->temperature == NO_VAL)
-		xstrcat(out, "ExtSensorsTemp=n/a");
-	else
-		xstrfmtcat(out, "ExtSensorsTemp=%u",
-			   node_ptr->ext_sensors->temperature);
 
 	/****** Line ******/
 	if (node_ptr->reason && node_ptr->reason[0])
