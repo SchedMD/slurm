@@ -454,7 +454,6 @@ man5_MANS = \
 	acct_gather.conf.5 \
 	burst_buffer.conf.5 \
 	cgroup.conf.5 \
-	ext_sensors.conf.5 \
 	gres.conf.5 \
 	helpers.conf.5 \
 	job_container.conf.5 \
@@ -469,7 +468,6 @@ man5_MANS = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
 @HAVE_MAN2HTML_TRUE@	burst_buffer.conf.html \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
-@HAVE_MAN2HTML_TRUE@	ext_sensors.conf.html \
 @HAVE_MAN2HTML_TRUE@	gres.conf.html \
 @HAVE_MAN2HTML_TRUE@	helpers.conf.html \
 @HAVE_MAN2HTML_TRUE@	job_container.conf.html \
