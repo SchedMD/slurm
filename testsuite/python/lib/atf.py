@@ -341,6 +341,7 @@ def repeat_until(
     condition,
     timeout=default_polling_timeout,
     poll_interval=None,
+    xfail=False,
     fatal=False,
 ):
     """Repeats a callable until a condition is met or it times out.
@@ -357,7 +358,9 @@ def repeat_until(
         poll_interval (float): Number of seconds to wait between condition
             polls. This may be a decimal fraction. The default poll interval
             depends on the timeout used, but varies between .1 and 1 seconds.
-        fatal (boolean): If True, a timeout will result in the test failing.
+        xfail (boolean): If True, a timeout is expected.
+        fatal (boolean): If True, the test will fail if condition is not met
+            (or if condition is met with xfail).
 
     Returns:
         True if the condition is met by the timeout, False otherwise.
@@ -377,16 +380,31 @@ def repeat_until(
         else:
             poll_interval = 1
 
+    condition_met = False
     while time.time() < begin_time + timeout:
         if condition(callable()):
-            return True
+            condition_met = True
+            break
         time.sleep(poll_interval)
 
-    if fatal:
-        pytest.fail(f"Condition was not met within the {timeout} second timeout")
-    else:
-        logging.warning(f"Condition was not met within the {timeout} second timeout")
-        return False
+    if not xfail and not condition_met:
+        if fatal:
+            pytest.fail(f"Condition was not met within the {timeout} second timeout")
+        else:
+            logging.warning(
+                f"Condition was not met within the {timeout} second timeout"
+            )
+    elif xfail and condition_met:
+        if fatal:
+            pytest.fail(
+                f"Condition was met within the {timeout} second timeout and wasn't expected"
+            )
+        else:
+            logging.warning(
+                f"Condition was met within the {timeout} second timeout and wasn't expected"
+            )
+
+    return condition_met
 
 
 def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
