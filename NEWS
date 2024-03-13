@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where you could have a gpu allocated as well as a shard on that
     gpu allocated at the same time.
  -- Fix slurmctld crashes when using extra constraints with job arrays.
+ -- sackd/slurmrestd/scrun - Avoid memory leak on new unix socket connection.
 
 * Changes in Slurm 23.11.4
 ==========================
