@@ -9,7 +9,6 @@ distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
 features are limited to recent releases and newer Linux kernel versions.
 Currently supported distributions include:
 <ul>
-<li>Cray Linux Environment 7</li>
 <li>Debian 10 (Buster)</li>
 <li>Debian 11 (Bullseye)</li>
 <li>Debian 12 (Bookworm)</li>
@@ -59,6 +58,6 @@ share GPUs between multiple compute processes</li>
 GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 10 January 2023</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

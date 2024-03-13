@@ -19,7 +19,6 @@ generated_html = \
 	contributor.html \
 	core_spec.html \
 	cpu_management.html \
-	cray.html \
 	dist_plane.html \
 	documentation.html \
 	dynamic_nodes.html \
@@ -58,7 +57,6 @@ generated_html = \
 	pam_slurm_adopt.html \
 	platforms.html \
 	plugins.html \
-	power_mgmt.html \
 	power_save.html \
 	preempt.html \
 	prep_plugins.html \

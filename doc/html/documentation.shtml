@@ -27,7 +27,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="resource_binding.html">Resource Binding</a></li>
 <li>Specific Systems
 <ul>
-<li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 <li><a href="intel_knl.html">Intel Knights Landing (KNL) User and Administrator Guide</a></li>
 </ul>
 </li>
@@ -60,7 +59,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="nss_slurm.html">Name Service Caching Through NSS Slurm</a></li>
 <li><a href="network.html">Network Configuration Guide</a></li>
 <li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
-<li><a href="power_mgmt.html">Power Management Guide (power capping)</a></li>
 <li><a href="power_save.html">Power Saving Guide (power down idle nodes)</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
 <li>Slurm REST API
@@ -99,11 +97,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="tres.html">Trackable Resources (TRES)</a></li>
 </ul>
 </li>
-<li>Specific Systems
-<ul>
-<li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
-</ul>
-</li>
 <li>Cloud
 <ul>
 <li><a href="power_save.html">Cloud Scheduling Guide</a></li>
@@ -138,6 +131,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 January 2024</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

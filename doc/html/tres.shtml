@@ -48,13 +48,12 @@ Current TRES Types are:
   FS/Disk, Pages and VMem are tracked. These default TRES cannot be disabled,
   but only appended to. The following example:
 </p>
-  <pre>AccountingStorageTRES=gres/craynetwork,license/iop1,bb/cray</pre>
+  <pre>AccountingStorageTRES=gres/gpu,license/iop1</pre>
 <p>
   will track billing, cpu, energy, memory, nodes, fs/disk, pages and vmem along
-  with a GRES called craynetwork as well as a license called iop1. It will
-  also track usage on a Cray burst buffer. Whenever these resources are used on
-  the cluster they are recorded. TRES are automatically set up in the database
-  on the start of the slurmctld.
+  with a GRES called gpu, as well as a license called iop1. Whenever these
+  resources are used on the cluster they are recorded. TRES are automatically
+  set up in the database on the start of the slurmctld.
 </p>
 
 <p> The TRES that require associated names are BB, GRES, and
@@ -180,6 +179,6 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 1 May 2018</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

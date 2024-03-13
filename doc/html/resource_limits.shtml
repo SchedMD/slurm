@@ -963,13 +963,6 @@ required nodes are DOWN or DRAINED.</p>
 <p><b>PartitionTimeLimit</b> &mdash; The job's time limit exceeds its
 partition's current time limit.</p>
 
-<p><b>PowerNotAvail</b> &mdash; The job requests more power than is available
-when using the cray_aries power management plugin.</p>
-
-<p><b>PowerReserved</b> &mdash; The job's power request is for more than
-what is currently available when using the cray_aries power management plugin.
-</p>
-
 <p><b>Priority</b> &mdash; One of more higher priority jobs exist for the
 partition associated with the job or for the advanced reservation.</p>
 
@@ -1282,6 +1275,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 01 January 2024</p>
+<p style="text-align: center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

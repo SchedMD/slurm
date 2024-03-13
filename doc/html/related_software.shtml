@@ -170,9 +170,8 @@ time as performed with this tool:
 	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
 	<a href="burst_buffer.html">burst_buffer/datawarp</a>,
 	<a href="burst_buffer.html">burst_buffer/lua</a>,
-	<a href="elasticsearch.html">jobcomp/elasticsearch</a>,
-	<a href="jobcomp_kafka.html">jobcomp/kafka</a>
-	and <a href="power_mgmt.html">power/cray_aries</a>) parse and/or
+	<a href="elasticsearch.html">jobcomp/elasticsearch</a>, and
+	<a href="jobcomp_kafka.html">jobcomp/kafka</a>) parse and/or
 	serialize JSON format data. These plugins and slurmrestd are designed to
 	make use of the JSON-C library for this purpose. Instructions for the
 	build are as follows:</p>
@@ -234,6 +233,6 @@ sudo make install</pre>
 
 </ul>
 
-<p style="text-align:center;">Last modified 12 March 2024</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
