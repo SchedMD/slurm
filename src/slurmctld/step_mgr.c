@@ -4386,8 +4386,6 @@ static int _step_partial_comp(step_record_t *step_ptr,
 
 #endif
 
-	ext_sensors_g_get_stependdata(step_ptr);
-
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 #ifndef HAVE_FRONT_END
