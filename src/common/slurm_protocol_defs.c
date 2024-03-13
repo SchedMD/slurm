@@ -4006,7 +4006,6 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->comment);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
-		ext_sensors_destroy(node->ext_sensors);
 		xfree(node->features);
 		xfree(node->features_act);
 		xfree(node->gres);
