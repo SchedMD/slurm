@@ -2004,7 +2004,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_group_time;
 	static time_t last_health_check_time;
 	static time_t last_acct_gather_node_time;
-	static time_t last_ext_sensors_time;
 	static time_t last_no_resp_msg_time;
 	static time_t last_ping_node_time = (time_t) 0;
 	static time_t last_ping_srun_time;
@@ -2062,7 +2061,7 @@ static void *_slurmctld_background(void *no_data)
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
 	last_uid_update = now;
-	last_acct_gather_node_time = last_ext_sensors_time = now;
+	last_acct_gather_node_time = now;
 	last_config_list_update_time = now;
 
 
@@ -2186,17 +2185,6 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_acct_gather_node_time = now;
 			update_nodes_acct_gather_data();
-			unlock_slurmctld(node_write_lock);
-		}
-
-		if (slurm_conf.ext_sensors_freq &&
-		    (difftime(now, last_ext_sensors_time) >=
-		     slurm_conf.ext_sensors_freq) &&
-		    is_ping_done()) {
-			lock_slurmctld(node_write_lock);
-			now = time(NULL);
-			last_ext_sensors_time = now;
-			ext_sensors_g_update_component_data();
 			unlock_slurmctld(node_write_lock);
 		}
 
