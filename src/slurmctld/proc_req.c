@@ -2370,7 +2370,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     step_rec->start_protocol_ver);
-		ext_sensors_g_get_stepstartdata(step_rec);
 	}
 	END_TIMER2(__func__);
 
