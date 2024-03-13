@@ -886,7 +886,7 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		}
 	}
 
-	if (source && source->unix_socket)
+	if (source && source->unix_socket && !con->unix_socket)
 		con->unix_socket = xstrdup(source->unix_socket);
 
 	if (con->name) {
