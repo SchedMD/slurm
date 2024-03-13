@@ -520,8 +520,6 @@ int main(int argc, char **argv)
 		fatal("failed to initialize job_submit plugin");
 	if (prep_g_init(&prep_callbacks) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
-	if (ext_sensors_init() != SLURM_SUCCESS)
-		fatal("failed to initialize ext_sensors plugin");
 	if (node_features_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node_features plugin");
 	if (mpi_g_daemon_init() != SLURM_SUCCESS)
@@ -828,7 +826,6 @@ int main(int argc, char **argv)
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
-	ext_sensors_fini();
 	gres_fini();
 	job_submit_g_fini(false);
 	prep_g_fini();
