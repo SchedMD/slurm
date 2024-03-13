@@ -15040,6 +15040,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 			}
 			info("Batch %pJ missing from batch node %s (not found BatchStartTime after startup)%s",
 			     job_ptr, job_ptr->batch_host, requeue_msg);
+			xfree(job_ptr->failed_node);
+			job_ptr->failed_node = xstrdup(job_ptr->batch_host);
 			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
 			             requeue, true, NO_VAL);
