@@ -563,39 +563,6 @@ char *slurm_get_acct_gather_interconnect_type(void)
 	return acct_gather_interconnect_type;
 }
 
-/* slurm_get_ext_sensors_type
- * get ExtSensorsType from slurm_conf object
- * RET char *   - ext_sensors type, MUST be xfreed by caller
- */
-char *slurm_get_ext_sensors_type(void)
-{
-	char *ext_sensors_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		ext_sensors_type =
-			xstrdup(conf->ext_sensors_type);
-		slurm_conf_unlock();
-	}
-	return ext_sensors_type;
-}
-
-extern uint16_t slurm_get_ext_sensors_freq(void)
-{
-	uint16_t freq = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		freq = conf->ext_sensors_freq;
-		slurm_conf_unlock();
-	}
-	return freq;
-}
-
 /*
  * returns the configured GpuFreqDef value
  * RET char *    - GpuFreqDef value,  MUST be xfreed by caller
