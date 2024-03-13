@@ -8956,7 +8956,7 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
 		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
 
-		if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_state_step->plugin_id, buffer);
 			pack16(gres_ss->cpus_per_gres, buffer);
@@ -9127,7 +9127,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;

@@ -1533,7 +1533,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 	xassert(node);
 	slurm_init_node_info_t(node, false);
 
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);
@@ -7139,7 +7139,7 @@ static int _unpack_burst_buffer_info_msg(
 		goto unpack_error;
 	safe_xcalloc(bb_msg_ptr->burst_buffer_array, bb_msg_ptr->record_count,
 		     sizeof(burst_buffer_info_t));
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
 		     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 			safe_unpackstr(&bb_info_ptr->name, buffer);
@@ -8607,7 +8607,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 
 	grow_buf(buffer,  msg->block_len);
 
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack32(msg->block_no, buffer);
 		pack16(msg->compress, buffer);
 		pack16(msg->flags, buffer);
@@ -8662,7 +8662,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 	msg = xmalloc ( sizeof (file_bcast_msg_t) ) ;
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->block_no, buffer);
 		safe_unpack16(&msg->compress, buffer);
 		safe_unpack16(&msg->flags, buffer);

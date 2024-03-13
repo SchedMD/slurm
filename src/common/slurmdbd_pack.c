@@ -824,7 +824,7 @@ unpack_error:
 static void _pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 				    uint16_t rpc_version, buf_t *buffer)
 {
-	if (rpc_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
@@ -843,7 +843,7 @@ static int _unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);

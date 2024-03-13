@@ -825,7 +825,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 	int i;
 
 
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		packstr(config_ptr->allow_users_str, buffer);
 		packstr(config_ptr->create_buffer,   buffer);
 		packstr(config_ptr->default_pool,    buffer);

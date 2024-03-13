@@ -6700,7 +6700,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", NULL),
 	add_parse(STRING, nodes, "nodes", NULL),
-	add_removed(SELECT_PLUGIN_ID, "select_plugin", NULL, SLURM_24_08_PROTOCOL_VERSION),
+	add_removed(SELECT_PLUGIN_ID, "select_plugin", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(ASSOC_SHORT_PTR, root_assoc, "associations/root", NULL),
 	add_parse(UINT16, rpc_version, "rpc_version", NULL),
 	add_skip(send_rpc), /* not packed */

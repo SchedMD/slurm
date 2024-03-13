@@ -658,7 +658,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 	slurm_persist_conn_t *persist_conn;
 
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);		/* count */
 			pack16(0, buffer);
@@ -867,7 +867,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	slurmdb_init_cluster_rec(object_ptr, 0);
-	if (protocol_version >= SLURM_24_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
