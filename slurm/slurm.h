@@ -1530,13 +1530,6 @@ typedef struct acct_gather_energy {
 	time_t poll_time;         /* When information was last retrieved */
 } acct_gather_energy_t;
 
-typedef struct ext_sensors_data {
-	uint64_t consumed_energy;    /* total energy consumed, in joules */
-	uint32_t temperature;	     /* temperature, in celsius */
-	time_t   energy_update_time; /* last update time for consumed_energy */
-	uint32_t current_watts;      /* current power consumption, in watts */
-} ext_sensors_data_t;
-
 typedef struct power_mgmt_data {
 	uint32_t cap_watts;	/* power consumption limit of node, in watts */
 	uint32_t current_watts;	/* current power consumption, in watts */
