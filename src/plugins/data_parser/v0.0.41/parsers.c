@@ -5902,6 +5902,21 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 	return rc;
 }
 
+static int PARSE_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	/* ext_sensors_data_t removed - no-op place holder */
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	data_set_dict(dst);
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6907,6 +6922,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_STATES)[] = {
 	add_parser(node_info_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(node_info_t, mtype, false, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(node_info_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, arch, "architecture", NULL),
 	add_parse(STRING, bcast_address, "burstbuffer_network_address", NULL),
@@ -6922,7 +6939,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, cpus_efctv, "effective_cpus", NULL),
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", NULL),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", NULL),
-	add_parse(EXT_SENSORS_DATA_PTR, ext_sensors, "external_sensors", NULL),
+	add_removed(EXT_SENSORS_DATA_PTR, "external_sensors", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(POWER_MGMT_DATA_PTR, power, "power", NULL),
 	add_parse(CSV_STRING, features, "features", NULL),
@@ -6966,6 +6983,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 };
 #undef add_parse
 #undef add_cparse
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurm_license_info_t, mtype, false, field, 0, path, desc)
@@ -7482,16 +7500,6 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32_NO_VAL, current_watts, "current_watts", NULL),
 	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
 	add_parse(TIMESTAMP, poll_time, "last_collected", NULL),
-};
-#undef add_parse
-
-#define add_parse(mtype, field, path, desc) \
-	add_parser(ext_sensors_data_t, mtype, false, field, 0, path, desc)
-static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
-	add_parse(UINT64_NO_VAL, consumed_energy, "consumed_energy", NULL),
-	add_parse(UINT32_NO_VAL, temperature, "temperature", NULL),
-	add_parse(TIMESTAMP, energy_update_time, "energy_update_time", NULL),
-	add_parse(UINT32, current_watts, "current_watts", NULL),
 };
 #undef add_parse
 
@@ -9169,6 +9177,7 @@ static const parser_t parsers[] = {
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
+	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
@@ -9255,6 +9264,7 @@ static const parser_t parsers[] = {
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG, false, NULL, NULL),
 	addpp(BITSTR_PTR, bitstr_t *, BITSTR, false, NULL, NULL),
 	addpp(JOB_STATE_RESP_MSG_PTR, job_state_response_msg_t *, JOB_STATE_RESP_MSG, false, NULL, NULL),
+	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA, true, NULL, NULL),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
@@ -9292,7 +9302,6 @@ static const parser_t parsers[] = {
 	addpap(PARTITION_INFO, partition_info_t, NULL, NULL),
 	addpap(SINFO_DATA, sinfo_data_t, NULL, NULL),
 	addpap(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
-	addpap(EXT_SENSORS_DATA, ext_sensors_data_t, NULL, NULL),
 	addpap(POWER_MGMT_DATA, power_mgmt_data_t, NULL, NULL),
 	addpap(RESERVATION_INFO, reserve_info_t, NULL, NULL),
 	addpap(RESERVATION_CORE_SPEC, resv_core_spec_t, NULL, NULL),
