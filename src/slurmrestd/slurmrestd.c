@@ -463,6 +463,11 @@ static void _lock_down(void)
 	else if (check_user &&
 		 (gid_from_uid(slurm_conf.slurm_user_id) == getgid()))
 		fatal("slurmrestd should not be run with SlurmUser's group.");
+
+#ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		error("%s: Unable to set process as dumpable: %m", __func__);
+#endif
 }
 
 /* simple wrapper to hand over operations router in http context */
