@@ -2290,7 +2290,6 @@ typedef struct node_info {
 	char *cpu_spec_list;	/* node's specialized cpus */
 	acct_gather_energy_t *energy;	 /* energy data */
 	char *extra;		/* arbitrary sting */
-	power_mgmt_data_t *power;        /* power management data */
 	char *features;		/* list of a node's available features */
 	char *features_act;	/* list of a node's current active features,
 				 * Same as "features" if NULL */
