@@ -60,7 +60,6 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 {
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
-	char *err_msg = NULL;
 
 	*res_free_flags = 0;
 
@@ -302,15 +301,6 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			else
 				resv_msg_ptr->flags |= RESERVE_TRES_PER_NODE;
 			*res_free_flags |= RESV_FREE_STR_TRES;
-		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			resv_msg_ptr->resv_watts =
-				slurm_watts_str_to_int(val, &err_msg);
-			if (err_msg) {
-				error("%s", err_msg);
-				xfree(err_msg);
-				exit_code = 1;
-				return SLURM_ERROR;
-			}
 		} else if (xstrncasecmp(tag, "res", 3) == 0) {
 			continue;
 		} else {
@@ -456,8 +446,7 @@ scontrol_create_res(int argc, char **argv)
 	    (!resv_msg.node_cnt || (resv_msg.node_cnt == NO_VAL)) &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
-	    (resv_msg.tres_str  == NULL || resv_msg.tres_str[0]  == '\0') &&
-	    (resv_msg.resv_watts == NO_VAL)) {
+	    (resv_msg.tres_str  == NULL || resv_msg.tres_str[0]  == '\0')) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
 			error("CoreCnt, Nodes, NodeCnt, TRES or Watts must be specified.  No reservation created.");
@@ -482,16 +471,6 @@ scontrol_create_res(int argc, char **argv)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 
-	if (resv_msg.resv_watts != NO_VAL &&
-	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
-	     (resv_msg.core_cnt && (resv_msg.core_cnt != NO_VAL)) ||
-	     (resv_msg.node_cnt && resv_msg.node_cnt != NO_VAL) ||
-	     (resv_msg.node_list != NULL && resv_msg.node_list[0] != '\0') ||
-	     (resv_msg.licenses  != NULL && resv_msg.licenses[0]  != '\0'))) {
-		exit_code = 1;
-		error("A power reservation must be empty and set the LICENSE_ONLY flag.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
 	new_res_name = slurm_create_reservation(&resv_msg);
 	if (!new_res_name) {
 		exit_code = 1;
