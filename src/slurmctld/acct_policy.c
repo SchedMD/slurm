@@ -5005,7 +5005,7 @@ extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
 		used_limits->acct = xstrdup(acct);
 
 		used_limits->tres = xmalloc(i);
-		used_limits->tres_run_mins = xmalloc(i);
+		used_limits->tres_run_secs = xmalloc(i);
 
 		list_append(*acct_limit_list, used_limits);
 	}
@@ -5038,7 +5038,7 @@ extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
 		used_limits->uid = user_id;
 
 		used_limits->tres = xmalloc(i);
-		used_limits->tres_run_mins = xmalloc(i);
+		used_limits->tres_run_secs = xmalloc(i);
 
 		list_append(*user_limit_list, used_limits);
 	}

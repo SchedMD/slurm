@@ -1220,9 +1220,8 @@ typedef struct {
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t submit_jobs; /* count of jobs pending or running */
 	uint64_t *tres; /* array of TRES allocated */
-	uint64_t *tres_run_mins; /* array of how many TRES mins are
-				  * allocated currently, currently this doesn't
-				  * do anything and isn't set up. */
+	uint64_t *tres_run_secs; /* array of how many TRES secs are
+				  * allocated currently */
 	bitstr_t *node_bitmap;	/* Bitmap of allocated nodes */
 	uint16_t *node_job_cnt;	/* Count of jobs allocated on each node */
 	uint32_t uid; /* If limits for a user this is the users uid */

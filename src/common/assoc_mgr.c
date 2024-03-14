@@ -481,7 +481,7 @@ static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 		used_limits->submit_jobs = 0;
 		for (i=0; i<tres_cnt; i++) {
 			used_limits->tres[i] = 0;
-			used_limits->tres_run_mins[i] = 0;
+			used_limits->tres_run_secs[i] = 0;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -1497,7 +1497,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 							 tres,
 							 array_size);
 						xrealloc(used_limits->
-							 tres_run_mins,
+							 tres_run_secs,
 							 array_size);
 					}
 					list_iterator_destroy(itr_user);
@@ -1554,7 +1554,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 							grp_used_tres_run_secs
 								[i] =
 								used_limits->
-								tres_run_mins
+								tres_run_secs
 								[old_pos];
 						}
 
@@ -1562,7 +1562,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 						       grp_used_tres,
 						       array_size);
 						memcpy(used_limits->
-						       tres_run_mins,
+						       tres_run_secs,
 						       grp_used_tres_run_secs,
 						       array_size);
 					}
