@@ -1351,6 +1351,38 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 	return rc;
 }
 
+static void _dump_removed(const parser_t *const parser, data_t *dst,
+			  args_t *args)
+{
+	switch (parser->obj_openapi) {
+	case OPENAPI_FORMAT_INT:
+	case OPENAPI_FORMAT_INT32:
+	case OPENAPI_FORMAT_INT64:
+		data_set_int(dst, 0);
+		break;
+	case OPENAPI_FORMAT_NUMBER:
+	case OPENAPI_FORMAT_FLOAT:
+	case OPENAPI_FORMAT_DOUBLE:
+		data_set_float(dst, 0);
+		break;
+	case OPENAPI_FORMAT_STRING:
+	case OPENAPI_FORMAT_PASSWORD:
+		data_set_string(dst, "");
+		break;
+	case OPENAPI_FORMAT_BOOL:
+		data_set_bool(dst, false);
+	case OPENAPI_FORMAT_OBJECT:
+		data_set_dict(dst);
+		break;
+	case OPENAPI_FORMAT_ARRAY:
+		data_set_list(dst);
+		break;
+	case OPENAPI_FORMAT_MAX:
+	case OPENAPI_FORMAT_INVALID:
+		fatal_abort("invalid type");
+	};
+}
+
 static int _dump_linked(args_t *args, const parser_t *const array,
 			const parser_t *const parser, void *src, data_t *dst)
 {
@@ -1399,33 +1431,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 			 (uintptr_t) src, (uintptr_t) dst,
 			 array->key, (uintptr_t) dst);
 
-		switch (rparser->obj_openapi) {
-			case OPENAPI_FORMAT_INT:
-			case OPENAPI_FORMAT_INT32:
-			case OPENAPI_FORMAT_INT64:
-				data_set_int(dst, 0);
-				break;
-			case OPENAPI_FORMAT_NUMBER:
-			case OPENAPI_FORMAT_FLOAT:
-			case OPENAPI_FORMAT_DOUBLE:
-				data_set_float(dst, 0);
-				break;
-			case OPENAPI_FORMAT_STRING:
-			case OPENAPI_FORMAT_PASSWORD:
-				data_set_string(dst, "");
-				break;
-			case OPENAPI_FORMAT_BOOL:
-				data_set_bool(dst, false);
-			case OPENAPI_FORMAT_OBJECT:
-				data_set_dict(dst);
-				break;
-			case OPENAPI_FORMAT_ARRAY:
-				data_set_list(dst);
-				break;
-			case OPENAPI_FORMAT_MAX:
-			case OPENAPI_FORMAT_INVALID:
-				fatal_abort("invalid type");
-		};
+		_dump_removed(rparser, dst, args);
 
 		return SLURM_SUCCESS;
 	}
