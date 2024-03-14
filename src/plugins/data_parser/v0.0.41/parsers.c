@@ -9135,7 +9135,6 @@ static const parser_t parsers[] = {
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL, NULL, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, list_t *, NEED_QOS, "List of QOS names"),
 	addps(SLURMDB_RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(WCKEY_TAG, WCKEY_TAG_STRUCT, char *, NEED_NONE, "WCKey ID with tagging"),
@@ -9180,7 +9179,6 @@ static const parser_t parsers[] = {
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
-	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addps(POWER_FLAGS, uint8_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addps(POWER_MGMT_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 
@@ -9246,6 +9244,10 @@ static const parser_t parsers[] = {
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, SHARES_FLOAT128_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
+
+	/* Removed parsers */
+	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
