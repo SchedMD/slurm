@@ -309,6 +309,8 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			for (int i = 0; i < parser->field_count; i++)
 				_add_field(obj, required, parser,
 					   &parser->fields[i], sargs);
+		} else if (parser->model == PARSER_MODEL_REMOVED) {
+			/* do nothing */
 		} else if (!is_complex_mode(sargs->args)) {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
@@ -343,11 +345,16 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		if (parser->deprecated)
 			deprecated = true;
 
+		if (parser->model == PARSER_MODEL_REMOVED) {
+			if (is_complex_mode(sargs->args))
+				return;
+			break;
+		}
+
 		if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
 		    (parser->model ==
 		     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
-		    !parser->field_name) {
+		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
 			/* resolve to linked parser */
 			parent = parser;
 			parser = find_parser_by_type(parser->type);
