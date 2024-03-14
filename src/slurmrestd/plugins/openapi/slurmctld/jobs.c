@@ -282,7 +282,10 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		job->script = xstrdup(script);
 	}
 
-	if (slurm_submit_batch_job(job, &resp) || !resp) {
+	if (!job->script || !job->script[0]) {
+		resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, "script",
+			   "Batch job script empty or missing");
+	} else if (slurm_submit_batch_job(job, &resp) || !resp) {
 		resp_error(ctxt, errno, "slurm_submit_batch_job()",
 			   "Batch job submission failed");
 	} else {
@@ -327,8 +330,19 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 	if (script) {
 		job_desc_msg_t *j = list_peek(jobs);
 
-		if (!j->script)
-			j->script = xstrdup(script);
+		xfree(j->script);
+		j->script = xstrdup(script);
+	}
+
+	{
+		/* Always verify first Het Component has a batch script */
+		job_desc_msg_t *jdesc = list_peek(jobs);
+
+		if (!jdesc->script || !jdesc->script[0]) {
+			resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, __func__,
+				   "Refusing HetJob submission without batch script or empty batch script for first component");
+			goto cleanup;
+		}
 	}
 
 	if (slurm_submit_batch_het_job(jobs, &resp) || !resp) {
@@ -384,7 +398,8 @@ static void _job_post(ctxt_t *ctxt)
 		       ctxt->parent_path))
 		return;
 
-	if (!req.script || !req.script[0]) {
+	if (!req.jobs && (!req.script || !req.script[0]) &&
+	    (!req.job || !req.job->script)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
 		return;

@@ -7757,7 +7757,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(CSV_STRING, req_nodes, "required_nodes", NULL),
 	add_parse(BOOL16, requeue, "requeue", NULL),
 	add_parse(STRING, reservation, "reservation", NULL),
-	add_parse(STRING, script, "script", NULL),
+	add_parse(STRING, script, "script", "Job batch script. Only first component in a HetJob is populated or honored."),
 	add_skip(script_buf),
 	add_skip(script_hash),
 	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
@@ -7899,7 +7899,7 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_submit_request_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
-	add_parse(STRING, script, "script", "batch job script"),
+	add_parse(STRING, script, "script", "Batch job script. Batch script must be specified in first component of jobs or in job if this field is not populated."),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
 	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
 };
