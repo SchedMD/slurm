@@ -814,7 +814,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 
 static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 				      uint64_t *tres_run_delta,
-				      uint32_t job_id,
+				      job_record_t *job_ptr,
 				      slurmdb_qos_rec_t *qos)
 {
 	int i;
@@ -834,7 +834,7 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 			      "QOS %s TRES %s grp_used_tres_run_secs "
 			      "underflow, tried to remove %"PRIu64" seconds "
 			      "when only %"PRIu64" remained.",
-			      job_id,
+			      job_ptr->job_id,
 			      qos->name,
 			      assoc_mgr_tres_name_array[i],
 			      tres_run_delta[i],
@@ -845,7 +845,7 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 				tres_run_delta[i];
 
 		log_flag(PRIO, "%s: job %u: Removed %"PRIu64" unused seconds from QOS %s TRES %s grp_used_tres_run_secs = %"PRIu64,
-			 __func__, job_id, tres_run_delta[i], qos->name,
+			 __func__, job_ptr->job_id, tres_run_delta[i], qos->name,
 			 assoc_mgr_tres_name_array[i],
 			 qos->usage->grp_used_tres_run_secs[i]);
 	}
@@ -897,12 +897,12 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 	slurmdb_assoc_rec_t *assoc = job_ptr->assoc_ptr;
 
 	_handle_qos_tres_run_secs(NULL, tres_run_delta,
-				  job_ptr->job_id, job_ptr->qos_ptr);
+				  job_ptr, job_ptr->qos_ptr);
 
 	/* Only update partition qos if not being used by job */
 	if (job_ptr->part_ptr &&
 	    (job_ptr->part_ptr->qos_ptr != job_ptr->qos_ptr))
-		_handle_qos_tres_run_secs(NULL, tres_run_delta, job_ptr->job_id,
+		_handle_qos_tres_run_secs(NULL, tres_run_delta, job_ptr,
 					  job_ptr->part_ptr->qos_ptr);
 
 	while (assoc) {
@@ -1132,14 +1132,14 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 
 			_handle_qos_tres_run_secs(tres_run_nodecay,
 						  tres_run_delta,
-						  job_ptr->job_id, qos);
+						  job_ptr, qos);
 		} else {
 			qos->usage->grp_used_wall += run_decay;
 			qos->usage->usage_raw += (long double)real_decay;
 
 			_handle_qos_tres_run_secs(tres_run_decay,
 						  tres_run_delta,
-						  job_ptr->job_id, qos);
+						  job_ptr, qos);
 		}
 	}
 
@@ -1163,14 +1163,14 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 
 			_handle_qos_tres_run_secs(tres_run_nodecay,
 						  tres_run_delta,
-						  job_ptr->job_id, qos);
+						  job_ptr, qos);
 		} else {
 			qos->usage->grp_used_wall += run_decay;
 			qos->usage->usage_raw += (long double)real_decay;
 
 			_handle_qos_tres_run_secs(tres_run_decay,
 						  tres_run_delta,
-						  job_ptr->job_id, qos);
+						  job_ptr, qos);
 		}
 	}
 
