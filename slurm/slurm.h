@@ -428,9 +428,8 @@ enum job_state_reason {
 	WAIT_BURST_BUFFER_RESOURCE,  /* Burst buffer resources */
 	WAIT_BURST_BUFFER_STAGING,   /* Burst buffer file stage-in */
 	FAIL_BURST_BUFFER_OP,	     /* Burst buffer operation failure */
-	WAIT_POWER_NOT_AVAIL,        /* not enough power available */
-	WAIT_POWER_RESERVED,         /* job is waiting for available power
-				      * because of power reservations */
+	DEFUNCT_WAIT_76, /* free for reuse */
+	DEFUNCT_WAIT_77, /* free for reuse */
 	WAIT_ASSOC_GRP_UNK,          /* ASSOC GrpTRES exceeded
 				      * (Unknown) */
 	WAIT_ASSOC_GRP_UNK_MIN,      /* ASSOC GrpTRESMins exceeded

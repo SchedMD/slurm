@@ -320,12 +320,6 @@ const static entry_t jsra[] = {
 	[FAIL_BURST_BUFFER_OP] = {
 		.str = "BurstBufferOperation",
 	},
-	[WAIT_POWER_NOT_AVAIL] = {
-		.str = "PowerNotAvail",
-	},
-	[WAIT_POWER_RESERVED] = {
-		.str = "PowerReserved",
-	},
 	[WAIT_ASSOC_GRP_UNK] = {
 		.flags = JSR_QOS_ASSOC,
 		.str = "AssocGrpUnknown",
