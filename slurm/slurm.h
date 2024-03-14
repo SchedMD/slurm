@@ -983,11 +983,6 @@ enum node_states {
 #define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
 #define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 
-/* used to define the size of the credential.signature size
- * used to define the key size of the io_stream_header_t
- */
-#define SLURM_SSL_SIGNATURE_LENGTH 128
-
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */

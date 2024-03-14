@@ -212,14 +212,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
-=head3 Size of the credential signature
-
-=over 2
-
-=item * SLURM_SSL_SIGNATURE_LENGTH 128
-
-=back
-
 =head3 show_flags of slurm_get_/slurm_load_ function calls
 
 =over 2
