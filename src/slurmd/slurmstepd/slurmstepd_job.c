@@ -165,8 +165,6 @@ _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
 	}
 
 	if (step->flags & LAUNCH_MULTI_PROG) {
-		if (!xstrcmp(slurm_conf.switch_type, "switch/cray_aries"))
-			multi_prog_parse(step, gtid);
 		for (i = 0; i < step->node_tasks; i++){
 			multi_prog_get_argv(step->argv[1], step->env,
 					    gtid[node_id][i],
@@ -682,7 +680,6 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 		step->msg_handle = NULL;
 	}
 	xfree(step->node_name);
-	mpmd_free(step);
 	xfree(step->het_job_task_cnts);
 	if (step->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < step->het_job_nnodes; i++)

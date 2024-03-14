@@ -112,19 +112,6 @@ typedef struct {
 	char	      **argv;
 } stepd_step_task_info_t;
 
-typedef struct {		/* MPMD specifications, needed for Cray */
-	uint64_t apid;		/* Application ID */
-	int num_cmds;		/* Number of executables in MPMD set */
-	char **args;		/* Array of argument string for each executable */
-	char **command;		/* Array of command name for each executable */
-	int *first_pe;		/* First rank on this node of each executable,
-				 * -1 if executable not on this node */
-	int *start_pe;		/* Starting rank of each executable in set */
-	int *total_pe;		/* Total ranks of each executable in set */
-
-	int *placement;		/* NID of each rank (ntasks in length) */
-} mpmd_set_t;
-
 typedef struct {
 	int magic;
 	char *bundle; /* OCI Container Bundle path	*/
@@ -256,7 +243,6 @@ typedef struct {
 					  * is the message sent.  DO
 					  * NOT FREE, IT IS JUST A
 					  * POINTER. */
-	mpmd_set_t     *mpmd_set;	/* MPMD specifications for Cray */
 	uint16_t	job_core_spec;	/* count of specialized cores */
 	bool		oom_error;	/* step out of memory error */
 

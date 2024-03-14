@@ -39,21 +39,6 @@
 #ifndef _SLURMD_MULTI_PROG_H
 #define _SLURMD_MULTI_PROG_H
 
-#include "slurmstepd_job.h"
-
-/*
- * Parse an MPMD file and determine count and layout of each task for use
- * with Cray systems. Builds the mpmd_set structure in the job record.
- *
- * IN/OUT job - job step details, builds mpmd_set structure
- * IN gtid - Array of global task IDs, indexed by node_id and task
- */
-extern void multi_prog_parse(stepd_step_rec_t *step, uint32_t **gtid);
-
-/* Free memory associated with a job's MPMD data structure built by
- * multi_prog_parse() and used for Cray system. */
-extern void mpmd_free(stepd_step_rec_t *step);
-
 /* Execute a single task based upon the config_data (contents of config_file)
  * and the environment variables supplied.
  *
