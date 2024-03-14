@@ -91,6 +91,7 @@ typedef enum {
 	PARSER_MODEL_NT_PTR_ARRAY, /* parser for NULL terminated array of pointers */
 	/* NT_ARRAY objects must not require an special initializer */
 	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of objects */
+	PARSER_MODEL_REMOVED, /* parser for removed types */
 
 	PARSER_MODEL_MAX /* place holder */
 } parser_model_t;

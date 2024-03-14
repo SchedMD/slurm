@@ -961,6 +961,12 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 parser->type_string, (uintptr_t) parser);
 
 	switch (parser->model) {
+	case PARSER_MODEL_REMOVED:
+		if (data_get_type(src) != DATA_TYPE_NULL)
+			on_warn(PARSING, parser->type, args, path, __func__,
+				"Ignoring value for removed parser");
+		rc = SLURM_SUCCESS;
+		break;
 	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
 		rc = _parse_flag(dst, parser, src, args, parent_path);
@@ -1532,6 +1538,10 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		goto done;
 
 	switch (parser->model) {
+	case PARSER_MODEL_REMOVED:
+		_dump_removed(parser, dst, args);
+		rc = SLURM_SUCCESS;
+		break;
 	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
 		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||

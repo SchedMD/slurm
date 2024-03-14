@@ -98,12 +98,6 @@
 		return PARSE_FUNC(disabled)(parser, src, dst, args,          \
 					    parent_path);                    \
 	}
-#define DUMP_DISABLED(type)                                                  \
-	static int DUMP_FUNC(type)(const parser_t *const parser, void *src,  \
-				    data_t *dst, args_t *args)               \
-	{                                                                    \
-		return DUMP_FUNC(disabled)(parser, src, dst, args);	     \
-	}
 
 #define parse_error(parser, args, parent_path, error, fmt, ...)    \
 	_parse_error_funcname(parser, args, parent_path, __func__, \
@@ -120,16 +114,6 @@ static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
 		parser->type);
 
 	xfree(path);
-	return SLURM_SUCCESS;
-}
-
-static int DUMP_FUNC(disabled)(const parser_t *const parser, void *src,
-			       data_t *dst, args_t *args)
-{
-	on_warn(DUMPING, parser->type, args, NULL, __func__,
-		"data_parser/v0.0.41 does not support parser %u for dumping. Output may be incomplete.",
-		parser->type);
-
 	return SLURM_SUCCESS;
 }
 
@@ -520,6 +504,27 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 	xassert(parser->model > PARSER_MODEL_INVALID);
 	xassert(parser->model < PARSER_MODEL_MAX);
+
+	if (parser->model == PARSER_MODEL_REMOVED) {
+		xassert(parser->deprecated > 0);
+		xassert(parser->obj_openapi > OPENAPI_FORMAT_INVALID);
+		xassert(parser->obj_openapi < OPENAPI_FORMAT_MAX);
+		xassert(!parser->size);
+		xassert(!parser->field_name);
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->key);
+		xassert(!parser->flag_bit_array_count);
+		xassert(!parser->type_string);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
+		return;
+	}
+
 	xassert(parser->obj_type_string && parser->obj_type_string[0]);
 
 	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
@@ -682,6 +687,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->obj_openapi);
 
 		switch (linked->model) {
+		case PARSER_MODEL_REMOVED:
+			fatal_abort("should never execute");
 		case PARSER_MODEL_SIMPLE:
 			xassert(parser->field_name && parser->field_name[0]);
 			/* fall through */
@@ -1589,10 +1596,6 @@ static int DUMP_FUNC(SLURMDB_RPC_ID)(const parser_t *const parser, void *obj,
 
 	return SLURM_SUCCESS;
 }
-
-
-PARSE_DISABLED(SELECT_PLUGIN_ID)
-DUMP_DISABLED(SELECT_PLUGIN_ID)
 
 PARSE_DISABLED(TASK_DISTRIBUTION)
 
@@ -5902,39 +5905,6 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 	return rc;
 }
 
-PARSE_DISABLED(EXT_SENSORS_DATA)
-DUMP_DISABLED(EXT_SENSORS_DATA)
-
-static int PARSE_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
-				   data_t *src, args_t *args,
-				   data_t *parent_path)
-{
-	/* SLURM_POWER_FLAGS_* removed - no-op place holder */
-	return SLURM_SUCCESS;
-}
-
-static int DUMP_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
-				  data_t *dst, args_t *args)
-{
-	data_set_list(dst);
-	return SLURM_SUCCESS;
-}
-
-static int PARSE_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
-				       data_t *src, args_t *args,
-				       data_t *parent_path)
-{
-	/* power_mgmt_data_t removed - no-op place holder */
-	return SLURM_SUCCESS;
-}
-
-static int DUMP_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
-{
-	data_set_dict(dst);
-	return SLURM_SUCCESS;
-}
-
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -9111,6 +9081,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
 	}
+/* add removed parser */
+#define addr(typev, typeo, deprec)                                             \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
+		.model = PARSER_MODEL_REMOVED,                                 \
+		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
+		.needs = NEED_NONE,                                            \
+		.ptr_offset = NO_VAL,                                          \
+		.deprecated = deprec,                                          \
+	}
+
 /* add OpenAPI singular response */
 #define addoar(mtype) addpap(mtype, openapi_resp_single_t, NULL, NULL)
 static const parser_t parsers[] = {
@@ -9179,8 +9161,6 @@ static const parser_t parsers[] = {
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
-	addps(POWER_FLAGS, uint8_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
-	addps(POWER_MGMT_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
@@ -9246,8 +9226,10 @@ static const parser_t parsers[] = {
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
-	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addr(SELECT_PLUGIN_ID, STRING, SLURM_24_05_PROTOCOL_VERSION),
+	addr(EXT_SENSORS_DATA, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
+	addr(POWER_FLAGS, ARRAY, SLURM_24_05_PROTOCOL_VERSION),
+	addr(POWER_MGMT_DATA, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -9488,6 +9470,7 @@ static const parser_t parsers[] = {
 #undef addpc
 #undef addpa
 #undef addoar
+#undef addr
 
 // clang-format on
 
