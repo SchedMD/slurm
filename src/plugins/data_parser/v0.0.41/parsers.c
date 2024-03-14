@@ -5902,20 +5902,8 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 	return rc;
 }
 
-static int PARSE_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
-					data_t *src, args_t *args,
-					data_t *parent_path)
-{
-	/* ext_sensors_data_t removed - no-op place holder */
-	return SLURM_SUCCESS;
-}
-
-static int DUMP_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
-				       data_t *dst, args_t *args)
-{
-	data_set_dict(dst);
-	return SLURM_SUCCESS;
-}
+PARSE_DISABLED(EXT_SENSORS_DATA)
+DUMP_DISABLED(EXT_SENSORS_DATA)
 
 static int PARSE_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
 				   data_t *src, args_t *args,
