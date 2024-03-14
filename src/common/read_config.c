@@ -6316,8 +6316,9 @@ extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
 				goto unpack_error;
 			list_append(tmp_list, object);
 		}
-		*key_pairs = (void *)tmp_list;
 	}
+
+	*key_pairs = (void *) tmp_list;
 	return SLURM_SUCCESS;
 
 unpack_error:
