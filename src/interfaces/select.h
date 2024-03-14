@@ -137,13 +137,6 @@ typedef struct {
 	int		(*reconfigure)		(void);
 } slurm_select_ops_t;
 
-/*
- * Defined in node_select.c Must be synchronized with slurm_select_ops_t above.
- * Also must be synchronized with the other_select.c in
- * the select/other lib.
- */
-extern const char *node_select_syms[];
-
 /* Convert a node coordinate character into its equivalent number:
  * '0' = 0; '9' = 9; 'A' = 10; etc. */
 extern int select_char2coord(char coord);
