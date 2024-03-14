@@ -151,18 +151,6 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 			     time_t when, bool reboot);
 
 /*
- * Determine how many watts the specified job is prevented from using
- * due to reservations
- *
- * IN job_ptr   - job to test
- * IN when      - when the job is expected to start
- * IN reboot    - true if node reboot required to start job
- * RET amount of watts the job is prevented from using
- */
-extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
-				    bool reboot);
-
-/*
  * Determine which nodes a job can use based upon reservations
  *
  * IN job_ptr      - job to test
