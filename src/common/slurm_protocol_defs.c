@@ -112,7 +112,6 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
 	{ NODE_STATE_POWER_DOWN, "POWER_DOWN" },
 	{ NODE_STATE_POWER_UP, "POWER_UP" },
-	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
 	{ NODE_STATE_POWERED_DOWN, "POWERED_DOWN" },
 	{ NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED" },
 	{ NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED" },
@@ -3093,7 +3092,6 @@ extern char *node_state_string(uint32_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
-	bool net_flag        = (inx & NODE_STATE_NET);
 	bool reboot_flag     = (inx & NODE_STATE_REBOOT_REQUESTED);
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
@@ -3276,8 +3274,6 @@ extern char *node_state_string(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
-		if (net_flag)
-			return "PERFCTRS";
 		if (res_flag)
 			return "RESERVED";
 		if (planned_flag)
@@ -3340,7 +3336,6 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
-	bool net_flag        = (inx & NODE_STATE_NET);
 	bool reboot_flag     = (inx & NODE_STATE_REBOOT_REQUESTED);
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
@@ -3524,8 +3519,6 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
-		if (net_flag)
-			return "NPC";
 		if (res_flag)
 			return "RESV";
 		if (planned_flag)

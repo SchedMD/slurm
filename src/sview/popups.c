@@ -625,8 +625,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			{G_TYPE_NONE, NODE_STATE_MIXED, "Mixed", true, -1},
 			{G_TYPE_NONE, NODE_STATE_NO_RESPOND,
 			 "No Respond", true, -1},
-			{G_TYPE_NONE, NODE_STATE_NET | NODE_STATE_IDLE,
-			 "PerfCTRs", true, -1},
 			{G_TYPE_NONE, NODE_STATE_IDLE | NODE_STATE_PLANNED,
 			 "Planned", true, -1},
 			{G_TYPE_NONE, NODE_STATE_POWERED_DOWN,

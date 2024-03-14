@@ -188,8 +188,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * NODE_STATE_FLAGS      0xfff0
 
-=item * NODE_STATE_NET        0x0010
-
 =item * NODE_STATE_RES        0x0020
 
 =item * NODE_STATE_UNDRAIN    0x0040

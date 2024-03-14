@@ -948,10 +948,7 @@ enum node_states {
 #define NODE_STATE_FLAGS      0xfffffff0
 
 /* SLURM_BIT(0-3) taken for base states */
-#define NODE_STATE_NET        SLURM_BIT(4) /* If a node is using Cray's
-					    * Network Performance
-					    * Counters but isn't in a
-					    * allocation. */
+/*  was NODE_STATE_NET        SLURM_BIT(4), removed v24.05 */
 #define NODE_STATE_RES        SLURM_BIT(5) /* If a node is in a
 					    * reservation (used primarily
 					    * to note a node isn't idle

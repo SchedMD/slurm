@@ -222,7 +222,6 @@ static void _parse_exc_states(void)
 					  NODE_STATE_FAIL |
 					  NODE_STATE_INVALID_REG |
 					  NODE_STATE_MAINT |
-					  NODE_STATE_NET |
 					  NODE_STATE_NO_RESPOND |
 					  NODE_STATE_PLANNED |
 					  NODE_STATE_RES;

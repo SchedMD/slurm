@@ -565,7 +565,7 @@ _node_state_list (void)
 	}
 
 	xstrcat(all_states,
-		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PERFCTRS");
+		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
 	xstrcat(all_states, ",");
@@ -648,9 +648,6 @@ _node_state_id (char *str)
 	if ((xstrncasecmp("RESV", str, len) == 0) ||
 	    (xstrncasecmp("RESERVED", str, len) == 0))
 		return NODE_STATE_RES;
-	if ((xstrncasecmp("PERFCTRS", str, len) == 0) ||
-	    (xstrncasecmp("NPC", str, len) == 0))
-		return NODE_STATE_NET;
 	if ((xstrncasecmp("DRAINING", str, len) == 0) ||
 	    (xstrncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
