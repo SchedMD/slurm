@@ -1354,6 +1354,11 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 static void _dump_removed(const parser_t *const parser, data_t *dst,
 			  args_t *args)
 {
+	if (is_complex_mode(args)) {
+		data_set_null(dst);
+		return;
+	}
+
 	switch (parser->obj_openapi) {
 	case OPENAPI_FORMAT_INT:
 	case OPENAPI_FORMAT_INT32:
