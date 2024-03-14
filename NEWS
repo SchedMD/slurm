@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
     limit of 512 copies of the script running simultaneously.
  -- sackd/slurmrestd/scrun - Avoid using empty string while logging unix socket
     connections from a listening connection.
+ -- Fix 20 character username limit from 'sacctmgr show events'
 
 * Changes in Slurm 23.11.5
 ==========================
@@ -136,7 +137,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld crashes when using extra constraints with job arrays.
  -- sackd/slurmrestd/scrun - Avoid memory leak on new unix socket connection.
  -- The failed node field is filled when a node fails but does not time out.
- -- Fix 20 character username limit from 'sacctmgr show events'
  -- topology/block - Implement topology_p_generate_node_ranking().
  -- slurmrestd - Remove requiring job script field and job component script
     fields to both be populated in the `POST /slurm/v0.0.40/job/submit`
