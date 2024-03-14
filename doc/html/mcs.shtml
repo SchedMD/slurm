@@ -250,11 +250,9 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    Gres=(null)
    NodeAddr=noder0001 NodeHostName=node0001 Version=15.08
    OS=Linux RealMemory=23780 AllocMem=0 Sockets=2 Boards=1
-   State=IDLE ThreadsPerCore=1 TmpDisk=0 Weight=40 Owner=N/A
-   MCS_label=groupA BootTime=2015-08-05T10:14:41
-   SlurmdStartTime=2015-09-07T13:42:28 CapWatts=n/a
-   CurrentWatts=0 LowestJoules=0 ConsumedJoules=0
-   ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
+   State=IDLE ThreadsPerCore=1 TmpDisk=0 Weight=40 Owner=N/A MCS_label=groupA
+   BootTime=2015-08-05T10:14:41 SlurmdStartTime=2015-09-07T13:42:28
+   CurrentWatts=0 AveWatts=0
 </pre>
 
 <p style="text-align:center;">Last modified 6 June 2022</p>

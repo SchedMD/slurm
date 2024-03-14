@@ -218,7 +218,7 @@ ReservationName=test StartTime=2020-08-28T11:07:09
      NodeName=node04 CoreIDs=0-5
    TRES=cpu=24
    Users=user1 Accounts=(null) Licenses=(null)
-   State=ACTIVE BurstBuffer=(null) Watts=n/a
+   State=ACTIVE BurstBuffer=(null)
    MaxStartDelay=(null)
 </pre>
 
@@ -480,7 +480,7 @@ $ scontrol show res
 ReservationName=user1_850 StartTime=2020-07-29T13:44:13 EndTime=2020-07-29T13:54:13 Duration=00:10:00
    Nodes=node05 NodeCnt=1 CoreCnt=12 Features=(null) PartitionName=(null) Flags=SPEC_NODES,MAGNETIC
    TRES=cpu=12
-   Users=user1 Accounts=(null) Licenses=(null) State=ACTIVE BurstBuffer=(null) Watts=n/a
+   Users=user1 Accounts=(null) Licenses=(null) State=ACTIVE BurstBuffer=(null)
    MaxStartDelay=(null)
 
 $ sbatch -N1 -t5:00 test.job
