@@ -1528,20 +1528,6 @@ typedef struct acct_gather_energy {
 	time_t poll_time;         /* When information was last retrieved */
 } acct_gather_energy_t;
 
-typedef struct power_mgmt_data {
-	uint32_t cap_watts;	/* power consumption limit of node, in watts */
-	uint32_t current_watts;	/* current power consumption, in watts */
-	uint64_t joule_counter;	/* total energy consumption by node, in joules */
-	uint32_t new_cap_watts;	/* new power consumption limit of node, in watts */
-	uint32_t max_watts;	/* maximum power consumption by node, in watts */
-	uint32_t min_watts;	/* minimum power consumption by node, in watts */
-	time_t new_job_time;	/* set when a new job has been scheduled on the
-				 * node, used to trigger higher cap */
-	uint16_t state;		/* Power state information */
-	uint64_t time_usec;	/* Data timestamp in microseconds since start
-				 * of the day */
-} power_mgmt_data_t;
-
 typedef struct {
 	time_t expiration;
 	char *net_cred;
