@@ -2004,19 +2004,6 @@ extern char *schedule_exit2string(uint16_t opcode);
 
 extern char *bf_exit2string(uint16_t opcode);
 
-/*
- * IN watts - resv_watts to convert to string format
- */
-extern char *slurm_watts_to_str(uint32_t watts);
-
-/*
- * Parse reservation request option Watts
- * IN watts_str - value to parse
- * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
- * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
- */
-extern uint32_t slurm_watts_str_to_int(char *watts_str, char **err_msg);
-
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
