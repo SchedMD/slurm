@@ -5893,7 +5893,6 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(UINT32_NO_VAL, purge_comp_time, "purge_completed/time", NULL),
 	add_parse(UINT64, start_time, "start_time", NULL),
-	add_parse(UINT32_NO_VAL, resv_watts, "watts", NULL),
 	add_parse(STRING, tres_str, "tres", NULL),
 	add_parse(STRING, users, "users", NULL),
 };
