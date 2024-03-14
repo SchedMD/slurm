@@ -652,8 +652,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 					OPENAPI_FORMAT_INVALID);
 				xassert(parser->obj_openapi <
 					OPENAPI_FORMAT_MAX);
-			} else if (!parser->field_name) {
-				/* field-less parser can can be any type */
 			} else {
 				fatal_abort("invalid openapi override");
 			}

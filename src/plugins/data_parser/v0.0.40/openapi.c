@@ -223,8 +223,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 
 	if ((parser->model ==
 	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
-	    !parser->field_name) {
+	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
 		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
