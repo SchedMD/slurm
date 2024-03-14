@@ -4510,6 +4510,13 @@ static int DUMP_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static void SPEC_FUNC(EXT_SENSORS_DATA)(const parser_t *const parser,
+					args_t *args, data_t *spec, data_t *dst)
+{
+	(void) set_openapi_props(dst, OPENAPI_FORMAT_OBJECT, "removed field");
+	data_set_bool(data_key_set(dst, "deprecated"), true);
+}
+
 static int PARSE_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
 				   data_t *src, args_t *args,
 				   data_t *parent_path)
@@ -4525,6 +4532,13 @@ static int DUMP_FUNC(POWER_FLAGS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static void SPEC_FUNC(POWER_FLAGS)(const parser_t *const parser, args_t *args,
+				   data_t *spec, data_t *dst)
+{
+	(void) set_openapi_props(dst, OPENAPI_FORMAT_ARRAY, "removed field");
+	data_set_bool(data_key_set(dst, "deprecated"), true);
+}
+
 static int PARSE_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
 				       data_t *src, args_t *args,
 				       data_t *parent_path)
@@ -4538,6 +4552,13 @@ static int DUMP_FUNC(POWER_MGMT_DATA)(const parser_t *const parser, void *obj,
 {
 	data_set_dict(dst);
 	return SLURM_SUCCESS;
+}
+
+static void SPEC_FUNC(POWER_MGMT_DATA)(const parser_t *const parser,
+				       args_t *args, data_t *spec, data_t *dst)
+{
+	(void) set_openapi_props(dst, OPENAPI_FORMAT_OBJECT, "removed field");
+	data_set_bool(data_key_set(dst, "deprecated"), true);
 }
 
 /*
@@ -6396,6 +6417,22 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
 	}
+/* add removed parser - Use callbacks to add stub values */
+#define addr(typev, stype, typeo)                                              \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
+		.model = PARSER_MODEL_SIMPLE,                                  \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(stype),                          \
+		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
+		.size = sizeof(stype),                                         \
+		.needs = NEED_NONE,                                            \
+		.parse = PARSE_FUNC(typev),                                    \
+		.dump = DUMP_FUNC(typev),                                      \
+		.openapi_spec = SPEC_FUNC(typev),                              \
+		.ptr_offset = NO_VAL,                                          \
+	}
 static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE, STRING, NULL),
@@ -6451,9 +6488,6 @@ static const parser_t parsers[] = {
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addps(HOLD, uint32_t, NEED_NONE, BOOL, "Job held"),
-	addps(EXT_SENSORS_DATA, void *, NEED_NONE, OBJECT, NULL),
-	addps(POWER_FLAGS, uint8_t, NEED_NONE, ARRAY, NULL),
-	addps(POWER_MGMT_DATA, void *, NEED_NONE, OBJECT, NULL),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -6495,6 +6529,11 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
+
+	/* Removed parsers */
+	addr(EXT_SENSORS_DATA, void *, OBJECT),
+	addr(POWER_FLAGS, uint8_t, ARRAY),
+	addr(POWER_MGMT_DATA, void *, OBJECT),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -6606,6 +6645,7 @@ static const parser_t parsers[] = {
 #undef addps
 #undef addpc
 #undef addpa
+#undef addr
 
 // clang-format on
 
