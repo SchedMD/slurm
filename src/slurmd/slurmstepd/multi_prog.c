@@ -139,8 +139,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 	bool last_line_break = false, line_break = false;
 	int line_len;
 
-
-	prog_argv = (char **)xmalloc(sizeof(char *) * MAX_ARGC);
+	prog_argv = xcalloc(MAX_ARGC, sizeof(char *));
 
 	if (task_rank < 0) {
 		error("Invalid task rank %d", task_rank);
