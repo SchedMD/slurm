@@ -4025,7 +4025,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		void *list_tmp;
+		void *list_tmp = NULL;
 		uint16_t uint16_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
@@ -4315,7 +4315,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->wait_time, buffer);
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		void *list_tmp;
+		void *list_tmp = NULL;
 		uint16_t uint16_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
