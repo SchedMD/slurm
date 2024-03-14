@@ -451,10 +451,15 @@ slurmctld will ignore registering to the external slurmdbd.
 <li><b>AccountingStorageHost</b>: The name or address of the host where
 SlurmDBD executes</li>
 
-<li><b>AccountingStoragePass</b>: If using SlurmDBD with a second MUNGE
-daemon, store the pathname of the named socket used by MUNGE to provide
-enterprise-wide authentication (i.e. /var/run/munge/moab.socket.2). Otherwise
-the default MUNGE daemon will be used. </li>
+<li><b>AccountingStoragePass</b>: The password used to gain access to the
+database to store the accounting data. Only used for database type storage
+plugins, ignored otherwise. In the case of Slurm DBD (Database Daemon) with
+MUNGE authentication this can be configured to use a MUNGE daemon specifically
+configured to provide authentication between clusters while the default MUNGE
+daemon provides authentication within a cluster. In that case,
+<b>AccountingStoragePass</b> should specify the named port to be used for
+communications with the alternate MUNGE daemon
+(e.g. "/var/run/munge/global.socket.2"). The default value is NULL.</li>
 
 <li><b>AccountingStoragePort</b>:
 The network port that SlurmDBD accepts communication on.</li>
@@ -944,7 +949,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 12 January 2024</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
 

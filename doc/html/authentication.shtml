@@ -54,7 +54,7 @@ The daemons need to be stopped before updating the slurm.conf so that client
 commands do not use a mechanism other than what the running daemons are
 expecting.</li>
 
-<li>Update your slurm.conf to use MUNGE authentication:
+<li>Update your slurm.conf and slurmdbd.conf to use MUNGE authentication:
 <pre>
 AuthType = auth/munge
 CredType = cred/munge
@@ -94,7 +94,8 @@ chmod 600 /etc/slurm/slurm.key
 <li>Distribute the key file to the machines on the cluster. It needs to be
 on the machines running slurmctld, slurmdbd, slurmd and sackd.</li>
 
-<li>Update your slurm.conf to use the Slurm authentication type:
+<li>Update your slurm.conf and slurmdbd.conf to use the Slurm authentication
+type:
 <pre>
 AuthType = auth/slurm
 CredType = cred/slurm
@@ -115,7 +116,8 @@ allow it to use the Slurm authentication mechanism.</p>
 <b>S</b>lurm <b>A</b>uth and <b>C</b>red <b>K</b>iosk (SACK) &mdash;
 that is responsible for handling requests from the <b>auth/slurm</b> and
 <b>cred/slurm</b> plugins. This subsystem is automatically started and managed
-by the slurmctld, slurmdbd, and slurmd daemons on each system.</p>
+internally by the slurmctld, slurmdbd, and slurmd daemons on each system with no
+need to run a separate daemon.</p>
 
 <p>For login nodes not running one of these Slurm daemons, the <b>sackd</b>
 daemon should be run to allow the Slurm client commands to authenticate to
@@ -129,6 +131,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 22 February 2024</p>
+<p style="text-align:center;">Last modified 12 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

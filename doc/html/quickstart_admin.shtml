@@ -104,6 +104,9 @@ are available when running configure.  Refer to the below list of possible
 plugins and what is required to build them.</p>
 
 <ul>
+<li> <b>auth/Slurm</b> The auth/slurm plugin will be built if the jwt
+		developmenty library is installed. This is an alternative to the
+		traditional MUNGE authentication mechanism.</li>
 <li> <b>AMD GPU Support</b> Autodetection of AMD GPUs will be available
 		if the <i>ROCm</i> development library is installed.
 		</li>
@@ -425,19 +428,30 @@ It is not necessary to permit user logins to the control hosts
 (<b>SlurmctldHost</b>), but the
 users and groups must be resolvable on those hosts.</p>
 
-<h3 id="communication">Authentication of Slurm communications
-<a class="slurm_link" href="#communication"></a>
+<h3 id="authentication">Authentication of Slurm communications
+<a class="slurm_link" href="#auth"></a>
 </h3>
 <p>All communications between Slurm components are authenticated. The
 authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
-configuration file. The only currently supported authentication types is
+configuration file. Until 23.11.0, the only supported authentication type was
 <a href="https://dun.github.io/munge/">munge</a>, which requires the
 installation of the MUNGE package.
 When using MUNGE, all nodes in the cluster must be configured with the
 same <i>munge.key</i> file. The MUNGE daemon, <i>munged</i>, must also be
 started before Slurm daemons. Note that MUNGE does require clocks to be
 synchronized throughout the cluster, usually done by NTP.</p>
+<p>As of 23.11.0, <b>AuthType</b> can also be set to
+<a href="authentication.html#slurm">slurm</a>, an internal authentication
+plugin. This plugin has similar requirements to MUNGE, requiring a key file
+shared to all Slurm daemons. The auth/slurm plugin requires installation of the
+jwt pacakge.</p>
+<p>MUNGE is currently the default and recommended option.
+The configure script in the top-level directory of this distribution will
+determine which authentication plugins may be built.
+The configuration file specifies which of the available plugins will be
+utilized.</p>
+
 
 <h3 id="mpi">MPI support<a class="slurm_link" href="#mpi"></a></h3>
 <p>Slurm supports many different MPI implementations.
@@ -633,21 +647,6 @@ This design offers improved performance by removing much of the
 job step initiation overhead from the <i> slurmctld </i> daemon.
 The digital signature mechanism is specified by the <b>CredType</b>
 configuration parameter and the default mechanism is MUNGE. </p>
-
-<h3 id="auth">Authentication<a class="slurm_link" href="#auth"></a></h3>
-<p>Authentication of communications (identifying who generated a particular
-message) between Slurm components can use a different security mechanism
-that is configurable.
-You must specify one &quot;auth&quot; plugin for this purpose using the
-<b>AuthType</b> configuration parameter.
-Currently, only one authentication plugin is supported: <b>auth/munge</b>.
-<a href="https://dun.github.io/munge/">MUNGE</a>
-should be installed in order to get properly authenticated communications.
-We recommend the use of MUNGE.
-The configure script in the top-level directory of this distribution will
-determine which authentication plugins may be built.
-The configuration file specifies which of the available plugins will be
-utilized.</p>
 
 <h3 id="PAM">Pluggable Authentication Module (PAM) support
 <a class="slurm_link" href="#PAM"></a>
@@ -974,6 +973,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 12 January 2024</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
