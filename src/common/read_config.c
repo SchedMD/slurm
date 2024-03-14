@@ -5770,11 +5770,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Energy");
 	}
-	if (debug_flags & DEBUG_FLAG_EXT_SENSORS) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "ExtSensors");
-	}
 	if (debug_flags & DEBUG_FLAG_FEDR) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5990,8 +5985,6 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DEPENDENCY;
 		else if (xstrcasecmp(tok, "Energy") == 0)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
-		else if (xstrcasecmp(tok, "ExtSensors") == 0)
-			(*flags_out) |= DEBUG_FLAG_EXT_SENSORS;
 		else if (xstrcasecmp(tok, "Federation") == 0)
 			(*flags_out) |= DEBUG_FLAG_FEDR;
 		else if (xstrcasecmp(tok, "FrontEnd") == 0)

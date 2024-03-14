@@ -3653,7 +3653,6 @@ function __scontrol_setdebugflags() {
 		"dependency"
 		"elasticsearch"
 		"energy"
-		"extsensors"
 		"federation"
 		"frontend"
 		"gang"

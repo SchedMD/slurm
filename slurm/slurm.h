@@ -2710,7 +2710,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_SACK		SLURM_BIT(16) /* SACK handling */
 #define DEBUG_FLAG_SWITCH	SLURM_BIT(17) /* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	SLURM_BIT(18) /* AcctGatherEnergy plugin */
-#define DEBUG_FLAG_EXT_SENSORS	SLURM_BIT(19) /* ExtSensorsType plugin */
+/* #define			SLURM_BIT(19) /\* UNUSED *\/ */
 #define DEBUG_FLAG_LICENSE	SLURM_BIT(20) /* AcctGatherProfile
 						    * plugin */
 #define DEBUG_FLAG_PROFILE	SLURM_BIT(21) /* AcctGatherProfile
