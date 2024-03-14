@@ -97,12 +97,6 @@ TreeWidth=50
 
 DebugFlags=Route\n"
 
-# Set the params if needed for certain systems
-if {[get_config_param "SwitchType"] eq "switch/cray"} {
-	set params "$params
-MPIParams=ports=12000-13000\nProctrackType=proctrack/cray_aries\n"
-}
-
 ###############################################
 # test 33.1.1
 ###############################################
