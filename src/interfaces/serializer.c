@@ -44,6 +44,12 @@
 
 #include "src/interfaces/serializer.h"
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(serializer_g_init, slurm_serializer_g_init);
+strong_alias(serialize_g_data_to_string, slurm_serialize_g_data_to_string);
+strong_alias(serialize_g_string_to_data, slurm_serialize_g_string_to_data);
+strong_alias(serializer_g_fini, slurm_serializer_g_fini);
+
 #define SERIALIZER_MAJOR_TYPE "serializer"
 #define SERIALIZER_MIME_TYPES_SYM "mime_types"
 #define PMT_MAGIC 0xaaba8031

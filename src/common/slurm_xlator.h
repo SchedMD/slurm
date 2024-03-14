@@ -534,6 +534,12 @@
 /* topology.[ch] functions */
 #define topology_g_build_config slurm_topology_g_build_config
 
+/* serializer.[ch] functions */
+#define serializer_g_init slurm_serializer_g_init
+#define serialize_g_data_to_string slurm_serialize_g_data_to_string
+#define serialize_g_string_to_data slurm_serialize_g_string_to_data
+#define serializer_g_fini slurm_serializer_g_fini
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/
