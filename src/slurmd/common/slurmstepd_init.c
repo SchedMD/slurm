@@ -85,29 +85,28 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 	 * must always be on the same release.
 	 */
 	if (protocol_version >= SLURM_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
+		safe_unpackstr(&conf->hostname, buffer);
 		safe_unpack16(&conf->cpus, buffer);
 		safe_unpack16(&conf->boards, buffer);
 		safe_unpack16(&conf->sockets, buffer);
 		safe_unpack16(&conf->cores, buffer);
 		safe_unpack16(&conf->threads, buffer);
 		safe_unpack16(&conf->actual_threads, buffer);
-		safe_unpackstr_xmalloc(&conf->cpu_spec_list, &uint32_tmp,
-				       buffer);
+		safe_unpackstr(&conf->cpu_spec_list, buffer);
 		safe_unpack16(&conf->core_spec_cnt, buffer);
 		safe_unpack64(&conf->mem_spec_limit, buffer);
 		safe_unpack64(&conf->conf_memory_size, buffer);
 		safe_unpack16(&conf->block_map_size, buffer);
 		safe_unpack16_array(&conf->block_map, &uint32_tmp, buffer);
 		safe_unpack16_array(&conf->block_map_inv,  &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
+		safe_unpackstr(&conf->spooldir, buffer);
+		safe_unpackstr(&conf->node_name, buffer);
+		safe_unpackstr(&conf->logfile, buffer);
 		safe_unpack32(&conf->debug_level, buffer);
 		safe_unpack32(&conf->syslog_debug, buffer);
 		safe_unpackbool(&conf->daemonize, buffer);
-		safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
+		safe_unpackstr(&conf->node_topo_addr, buffer);
+		safe_unpackstr(&conf->node_topo_pattern, buffer);
 		safe_unpack16(&conf->port, buffer);
 	}
 
