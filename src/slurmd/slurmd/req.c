@@ -2242,13 +2242,44 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	return rc;
 }
 
+static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
+{
+	int alt_rc = SLURM_ERROR;
+	uint32_t jobid = req->job_id;
+
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
+
+	/*
+	 * We need the slurmctld to know we are done or we can get into a
+	 * situation where nothing from the job will ever launch because the
+	 * prolog will never appear to stop running.
+	 */
+	while (alt_rc != SLURM_SUCCESS) {
+		if (!(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+			alt_rc = _notify_slurmctld_prolog_fini(req->job_id, rc);
+		else
+			alt_rc = SLURM_SUCCESS;
+
+		if (rc != SLURM_SUCCESS) {
+			alt_rc = _launch_job_fail(jobid, rc);
+			send_registration_msg(rc);
+		}
+
+		if (alt_rc != SLURM_SUCCESS) {
+			info("%s: Retrying prolog complete RPC for JobId=%u [sleeping %us]",
+			     __func__, req->job_id, RETRY_DELAY);
+			sleep(RETRY_DELAY);
+		}
+	}
+}
+
 static void _rpc_prolog(slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS, alt_rc = SLURM_ERROR, node_id = 0;
+	int rc = SLURM_SUCCESS, node_id = 0;
 	prolog_launch_msg_t *req = msg->data;
 	job_env_t job_env;
 	bool     first_job_run;
-	uint32_t jobid;
 
 	if (req == NULL)
 		return;
@@ -2282,7 +2313,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			error("%s: aborting prolog due to _make_prolog_mem_container failure: %s. Consider increasing cred_expire window if job prologs take large amount of time.",
 			      __func__, slurm_strerror(rc));
 			slurm_mutex_unlock(&prolog_mutex);
-			goto notify_result;
+			_notify_result_rpc_prolog(req, rc);
+			return;
 		}
 
 		cred_insert_jobid(req->job_id);
@@ -2334,35 +2366,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
-notify_result:
-	if (req->het_job_id && (req->het_job_id != NO_VAL))
-		jobid = req->het_job_id;
-	else
-		jobid = req->job_id;
-
-	/*
-	 * We need the slurmctld to know we are done or we can get into a
-	 * situation where nothing from the job will ever launch because the
-	 * prolog will never appear to stop running.
-	 */
-	while (alt_rc != SLURM_SUCCESS) {
-		if (!(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
-			alt_rc = _notify_slurmctld_prolog_fini(
-				req->job_id, rc);
-		else
-			alt_rc = SLURM_SUCCESS;
-
-		if (rc != SLURM_SUCCESS) {
-			alt_rc = _launch_job_fail(jobid, rc);
-			send_registration_msg(rc);
-		}
-
-		if (alt_rc != SLURM_SUCCESS) {
-			info("%s: Retrying prolog complete RPC for JobId=%u [sleeping %us]",
-			     __func__, req->job_id, RETRY_DELAY);
-			sleep(RETRY_DELAY);
-		}
-	}
+	_notify_result_rpc_prolog(req, rc);
 }
 
 static void _rpc_batch_job(slurm_msg_t *msg)
