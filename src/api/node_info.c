@@ -386,14 +386,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xfree(node_alloc_tres);
 	xstrcat(out, line_end);
 
-	/****** Power Management Line ******/
-	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL))
-		xstrcat(out, "CapWatts=n/a");
-	else
-		xstrfmtcat(out, "CapWatts=%u", node_ptr->power->cap_watts);
-
-	xstrcat(out, line_end);
-
 	/****** Power Consumption Line ******/
 	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
 		xstrcat(out, "CurrentWatts=n/a AveWatts=n/a");

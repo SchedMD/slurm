@@ -213,7 +213,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_cnt[50];
 	char tmp_current_watts[50];
 	char tmp_ave_watts[50];
-	char tmp_cap_watts[50], tmp_owner[32];
+	char tmp_owner[32];
 	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
@@ -462,17 +462,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_AVE_WATTS),
 				   tmp_ave_watts);
 
-	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
-		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
-	} else {
-		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "%u",
-			 node_ptr->power->cap_watts);
-	}
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_node,
-						 SORTID_CAP_WATTS),
-				   tmp_cap_watts);
-
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_COMMENT),
@@ -506,7 +495,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_free_mem[20], tmp_owner[32];
 	char tmp_current_watts[50], tmp_ave_watts[50];
-	char tmp_cap_watts[50], tmp_version[50];
+	char tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper, *tmp_state_complete;
 	char *node_alloc_tres = NULL;
 
@@ -520,13 +509,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 "%u ", node_ptr->energy->current_watts);
 		snprintf(tmp_ave_watts, sizeof(tmp_ave_watts),
 			 "%u", node_ptr->energy->ave_watts);
-	}
-
-	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
-		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
-	} else {
-		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "%u",
-			 node_ptr->power->cap_watts);
 	}
 
 	snprintf(tmp_cpu_load, sizeof(tmp_cpu_load), "%.2f",
@@ -608,7 +590,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_CLUSTER_NAME, node_ptr->cluster_name,
-			   SORTID_CAP_WATTS, tmp_cap_watts,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
