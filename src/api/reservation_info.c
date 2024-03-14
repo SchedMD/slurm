@@ -101,7 +101,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 {
 	char tmp1[256], tmp2[256], tmp3[32], *flag_str = NULL;
 	char *state="INACTIVE";
-	char *out = NULL, *watts_str = NULL;
+	char *out = NULL;
 	uint32_t duration;
 	time_t now = time(NULL);
 	char *line_end = (one_liner) ? " " : "\n   ";
@@ -148,14 +148,12 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	watts_str = slurm_watts_to_str(resv_ptr->resv_watts);
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,
-		   "Users=%s Groups=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s Watts=%s",
+		   "Users=%s Groups=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s",
 		   resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
-		   resv_ptr->licenses, state, resv_ptr->burst_buffer, watts_str);
-	xfree(watts_str);
+		   resv_ptr->licenses, state, resv_ptr->burst_buffer);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
