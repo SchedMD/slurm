@@ -3077,11 +3077,6 @@ for systems with cgroup support.
 .IP
 
 .TP
-\fBproctrack/cray_aries\fR
-Uses Cray proprietary process tracking.
-.IP
-
-.TP
 \fBproctrack/linuxproc\fR
 Uses linux process tree using parent process IDs.
 .IP
@@ -3155,7 +3150,7 @@ on all allocated compute nodes.
 This container may be used for user processes not launched under Slurm control,
 for example pam_slurm_adopt may place processes launched through a direct user
 login into this container. If using pam_slurm_adopt, then ProcTrackType must be
-set to either \fBproctrack/cgroup\fR or \fBproctrack/cray_aries\fR.
+set to \fBproctrack/cgroup\fR.
 Setting the Contain implicitly sets the Alloc flag.
 .IP
 
@@ -5525,9 +5520,7 @@ Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 \fBSwitchType\fR
 Identifies the type of switch or interconnect used for application
 communications.
-Acceptable values include
-"switch/cray_aries" for Cray systems, and
-"switch/hpe_slingshot" for HPE Slingshot systems.
+Acceptable values include "switch/hpe_slingshot" for HPE Slingshot systems.
 The default value is no special plugin requiring special processing for job
 launch or termination (Ethernet, and InfiniBand).
 All Slurm daemons, commands and running jobs must be restarted or reconfigured
