@@ -154,7 +154,6 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 	resv_msg->node_cnt = NO_VAL;
 	resv_msg->purge_comp_time = NO_VAL;
 	resv_msg->start_time	= (time_t) NO_VAL;
-	resv_msg->resv_watts	= NO_VAL;
 }
 
 /*

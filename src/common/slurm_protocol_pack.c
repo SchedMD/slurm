@@ -1868,7 +1868,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		pack32(msg->max_start_delay, buffer);
 		packstr(msg->partition,    buffer);
 		pack32(msg->purge_comp_time, buffer);
-		pack32(msg->resv_watts,    buffer);
+		pack32(NO_VAL, buffer); /* was resv_watts */
 		packstr(msg->users,        buffer);
 		packstr(msg->accounts,     buffer);
 		packstr(msg->burst_buffer, buffer);
@@ -1906,7 +1906,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		pack32(msg->max_start_delay, buffer);
 		packstr(msg->partition,    buffer);
 		pack32(msg->purge_comp_time, buffer);
-		pack32(msg->resv_watts,    buffer);
+		pack32(NO_VAL, buffer); /* was resv_watts */
 		packstr(msg->users,        buffer);
 		packstr(msg->accounts,     buffer);
 		packstr(msg->burst_buffer, buffer);
@@ -1944,7 +1944,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 
 		safe_unpackstr(&tmp_ptr->partition, buffer);
 		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
-		safe_unpack32(&tmp_ptr->resv_watts, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpackstr(&tmp_ptr->users, buffer);
 		safe_unpackstr(&tmp_ptr->accounts, buffer);
 		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
@@ -1986,7 +1986,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 
 		safe_unpackstr(&tmp_ptr->partition, buffer);
 		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
-		safe_unpack32(&tmp_ptr->resv_watts, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpackstr(&tmp_ptr->users, buffer);
 		safe_unpackstr(&tmp_ptr->accounts, buffer);
 		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
@@ -2752,6 +2752,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
@@ -2766,7 +2767,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->node_list, buffer);
 		safe_unpackstr(&resv->partition, buffer);
 		safe_unpack32(&resv->purge_comp_time, buffer);
-		safe_unpack32(&resv->resv_watts, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpack_time(&resv->start_time, buffer);
 
 		safe_unpackstr(&resv->tres_str, buffer);

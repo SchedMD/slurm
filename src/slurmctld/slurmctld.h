@@ -521,7 +521,6 @@ typedef struct {
 				   * until it is revoked.
 				   */
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
-	uint32_t resv_watts;	/* amount of power to reserve */
 	time_t start_time;	/* start time of reservation		*/
 	time_t start_time_first;/* when the reservation first started	*/
 	time_t start_time_prev;	/* If start time was changed this is

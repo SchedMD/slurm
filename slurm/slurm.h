@@ -2638,7 +2638,6 @@ typedef struct reserve_info {
 				   * until it is revoked.
 				   */
 	time_t start_time;	/* start time of reservation */
-	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */
 	char *users;		/* names of users permitted to use */
 } reserve_info_t;
@@ -2674,7 +2673,6 @@ typedef struct resv_desc_msg {
 				   * until it is revoked.
 				   */
 	time_t start_time;	/* start time of reservation */
-	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */
 	char *users;		/* names of users permitted to use */
 } resv_desc_msg_t;

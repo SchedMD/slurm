@@ -475,7 +475,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
-	resv_copy_ptr->resv_watts = resv_orig_ptr->resv_watts;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
 	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
 	resv_copy_ptr->start_time_prev = resv_orig_ptr->start_time_prev;
@@ -577,7 +576,6 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 
 	dest_resv->part_ptr = src_resv->part_ptr;
 	dest_resv->resv_id = src_resv->resv_id;
-	dest_resv->resv_watts = src_resv->resv_watts;
 	dest_resv->start_time = src_resv->start_time;
 	dest_resv->start_time_first = src_resv->start_time_first;
 	dest_resv->start_time_prev = src_resv->start_time_prev;
@@ -847,7 +845,6 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
 	char start_str[256] = "-1", end_str[256] = "-1", *flag_str = NULL;
-	char watts_str[32] = "n/a";
 	int duration;
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION))
@@ -861,10 +858,6 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		slurm_make_time_str(&resv_ptr->end_time,
 				    end_str,  sizeof(end_str));
 	}
-	if (resv_ptr->resv_watts != NO_VAL) {
-		snprintf(watts_str, sizeof(watts_str), "%u",
-			 resv_ptr->resv_watts);
-	}
 	if (resv_ptr->flags != NO_VAL64) {
 		reserve_info_t resv_info = {
 			.flags = resv_ptr->flags,
@@ -877,14 +870,14 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	else
 		duration = resv_ptr->duration;
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Watts=%s Comment=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Comment=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->core_cnt,
 	     resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
 	     resv_ptr->licenses,
-	     resv_ptr->burst_buffer, resv_ptr->tres_str, watts_str,
+	     resv_ptr->burst_buffer, resv_ptr->tres_str,
 	     resv_ptr->comment);
 
 	xfree(flag_str);
@@ -1982,7 +1975,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
 		pack32(resv_ptr->purge_comp_time, buffer);
-		pack32(resv_ptr->resv_watts,    buffer);
+		pack32(NO_VAL, buffer); /* was resv_watts */
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
@@ -2054,7 +2047,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
 		pack32(resv_ptr->purge_comp_time, buffer);
-		pack32(resv_ptr->resv_watts,    buffer);
+		pack32(NO_VAL, buffer); /* was resv_watts */
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
@@ -2118,6 +2111,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->magic = RESV_MAGIC;
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpackstr(&resv_ptr->accounts, buffer);
 		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpackstr(&resv_ptr->comment, buffer);
@@ -2133,7 +2127,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr(&resv_ptr->node_list, buffer);
 		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
-		safe_unpack32(&resv_ptr->resv_watts,    buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
 		safe_unpackstr(&resv_ptr->users, buffer);
@@ -2160,6 +2154,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpackstr(&resv_ptr->accounts, buffer);
 		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpackstr(&resv_ptr->comment, buffer);
@@ -2175,7 +2170,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr(&resv_ptr->node_list, buffer);
 		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
-		safe_unpack32(&resv_ptr->resv_watts,    buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
 		safe_unpackstr(&resv_ptr->users, buffer);
@@ -2627,12 +2622,12 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			      tmp_msd, sizeof(tmp_msd));
 
 	sched_info("%s reservation=%s%s%s%s%s%s%s nodes=%s cores=%u "
-		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%s "
+		   "licenses=%s tres=%s start=%s end=%s MaxStartDelay=%s "
 		   "Comment=%s",
 		   old_resv_ptr ? "Updated" : "Created",
 		   resv_ptr->name, name1, val1, name2, val2, name3, val3,
 		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
-		   resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
+		   resv_ptr->tres_fmt_str,
 		   start_time, end_time,
 		   resv_ptr->max_start_delay ? tmp_msd : "",
 		   resv_ptr->comment ? resv_ptr->comment : "");
@@ -3122,17 +3117,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 	/*
 	 * A reservation without nodes/cores should only be possible if the flag
-	 * ANY_NODES is set and it has at least one of licenses, burst buffer
-	 * and/or watts. So test this here after the checks for the involved
-	 * options.
+	 * ANY_NODES is set and it has at least one of licenses or burst buffer.
+	 * So test this here after the checks for the involved options.
 	 */
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES) &&
 	    !total_node_cnt && !resv_select.core_bitmap && !resv_desc_ptr->burst_buffer &&
 	    (!license_list || list_is_empty(license_list)) &&
-	    (!resv_desc_ptr->resv_watts ||
-	     resv_desc_ptr->resv_watts == NO_VAL) &&
 	    !resv_desc_ptr->tres_str) {
-		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer, TRES and/or Watts", __func__);
+		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer, and/or TRES", __func__);
 		rc = ESLURM_RESERVATION_INVALID;
 		goto bad_parse;
 	}
@@ -3222,7 +3214,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
-	resv_ptr->resv_watts	= resv_desc_ptr->resv_watts;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
 	resv_ptr->start_time_first = resv_ptr->start_time;
 	resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -3571,8 +3562,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
 	}
-	if (resv_desc_ptr->resv_watts != NO_VAL)
-		resv_ptr->resv_watts = resv_desc_ptr->resv_watts;
 	if (resv_desc_ptr->accounts) {
 		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
 		if (rc) {
@@ -3868,21 +3857,18 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 	/*
 	 * A reservation without nodes/cores should only be possible if the flag
-	 * ANY_NODES is set and it has at least one of licenses, burst buffer
-	 * and/or watts. So test this here after the checks for the involved
-	 * options.
+	 * ANY_NODES is set and it has at least one of licenses or burst buffer.
+	 * So test this here after the checks for the involved options.
 	 */
 	if (!resv_ptr->node_bitmap || (bit_ffs(resv_ptr->node_bitmap)) == -1) {
 		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
 			info("%s: reservations without nodes are only expected with ANY_NODES flag", __func__);
 			error_code = ESLURM_RESERVATION_INVALID;
 			goto update_failure;
-		} else if ((resv_ptr->resv_watts == NO_VAL ||
-			   !resv_ptr->resv_watts) &&
-			   (!resv_ptr->license_list ||
+		} else if ((!resv_ptr->license_list ||
 			    list_is_empty(resv_ptr->license_list)) &&
 			   !resv_ptr->burst_buffer) {
-			info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer and/or Watts", __func__);
+			info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, and/or BurstBuffer", __func__);
 			error_code = ESLURM_RESERVATION_INVALID;
 			goto update_failure;
 		}
