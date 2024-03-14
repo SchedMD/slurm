@@ -2183,9 +2183,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "AcctGatherNodeFreq") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherProfileType") ||
 		    !xstrcasecmp(key_pair->name, "JobAcctGatherFrequency") ||
-		    !xstrcasecmp(key_pair->name, "JobAcctGatherType") ||
-		    !xstrcasecmp(key_pair->name, "ExtSensorsType") ||
-		    !xstrcasecmp(key_pair->name, "ExtSensorsFreq")) {
+		    !xstrcasecmp(key_pair->name, "JobAcctGatherType")) {
 			list_append(accounting_list, temp);
 			continue;
 		}
