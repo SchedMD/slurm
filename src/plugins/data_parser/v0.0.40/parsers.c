@@ -8969,7 +8969,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add removed parser - Use callbacks to add stub values */
-#define addr(typev, stype, typeo)                                              \
+#define addr(typev, stype, typeo, deprec)                                      \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.type = DATA_PARSER_##typev,                                   \
@@ -8983,6 +8983,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 		.dump = DUMP_FUNC(typev),                                      \
 		.openapi_spec = SPEC_FUNC(typev),                              \
 		.ptr_offset = NO_VAL,                                          \
+		.deprecated = deprec,                                          \
 	}
 /* add OpenAPI singular response */
 #define addoar(mtype) addpap(mtype, openapi_resp_single_t, NULL, NULL)
@@ -9117,9 +9118,9 @@ static const parser_t parsers[] = {
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
-	addr(EXT_SENSORS_DATA, void *, OBJECT),
-	addr(POWER_FLAGS, uint8_t, ARRAY),
-	addr(POWER_MGMT_DATA, void *, OBJECT),
+	addr(EXT_SENSORS_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
+	addr(POWER_FLAGS, uint8_t, ARRAY, SLURM_24_05_PROTOCOL_VERSION),
+	addr(POWER_MGMT_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
