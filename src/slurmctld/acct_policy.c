@@ -2182,6 +2182,15 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
+	used_limits_a =	acct_policy_get_acct_used_limits(
+		&qos_ptr->usage->acct_limit_list,
+		assoc_ptr->acct);
+
+	used_limits = acct_policy_get_user_used_limits(
+		&qos_ptr->usage->user_limit_list,
+		job_ptr->user_id);
+
+
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
@@ -2204,14 +2213,6 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 			tres_usage_mins[i] *= usage_factor;
 		}
 	}
-
-	used_limits_a =	acct_policy_get_acct_used_limits(
-		&qos_ptr->usage->acct_limit_list,
-		assoc_ptr->acct);
-
-	used_limits = acct_policy_get_user_used_limits(
-		&qos_ptr->usage->user_limit_list,
-		job_ptr->user_id);
 
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
