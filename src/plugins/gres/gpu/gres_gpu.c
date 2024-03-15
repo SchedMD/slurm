@@ -143,7 +143,12 @@ static int _sort_gpu_by_type_name(void *x, void *y)
 	 * By default, qsort orders in ascending order (smallest first). We want
 	 * descending order (longest first), so invert order by negating.
 	 */
-	ret = -(val1 - val2);
+	if (val1 < val2)
+		ret = 1;
+	else if (val1 > val2)
+		ret = -1;
+	else
+		ret = 0;
 
 	/* Sort by type name value if type name length is equal */
 	if (ret == 0)
