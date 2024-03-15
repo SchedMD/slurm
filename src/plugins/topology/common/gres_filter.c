@@ -137,7 +137,12 @@ static int _sock_gres_sort(void *x, void *y)
 	if (gres_js2 && !gres_js2->gres_per_socket)
 		weight2 += 0x01;
 
-	return weight1 - weight2;
+	if (weight1 < weight2)
+		return -1;
+	else if (weight1 > weight2)
+		return 1;
+
+	return 0;
 }
 
 extern void gres_filter_sock_core(job_record_t *job_ptr,
