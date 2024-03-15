@@ -4143,6 +4143,35 @@ static slurm_cli_opt_t slurm_opt_resv_ports = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_segment_size(slurm_opt_t *opt, const char *arg)
+{
+	if (parse_uint16((char *) arg, &opt->segment_size)) {
+		error("Invalid --segment specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_segment_size(slurm_opt_t *opt)
+{
+	if (opt->segment_size != 0)
+		return xstrdup_printf("%u", opt->segment_size);
+	return xstrdup("unset");
+}
+static void arg_reset_segment_size(slurm_opt_t *opt)
+{
+	opt->segment_size = 0;
+}
+static slurm_cli_opt_t slurm_opt_segment_size = {
+	.name = "segment",
+	.has_arg = required_argument,
+	.val = LONG_OPT_SEND_LIBS,
+	.set_func = arg_set_segment_size,
+	.get_func = arg_get_segment_size,
+	.reset_func = arg_reset_segment_size,
+	.reset_each_pass = true,
+};
+
 static int arg_set_send_libs(slurm_opt_t *opt, const char *arg)
 {
 	int rc;
@@ -5419,6 +5448,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_requeue,
 	&slurm_opt_reservation,
 	&slurm_opt_resv_ports,
+	&slurm_opt_segment_size,
 	&slurm_opt_send_libs,
 	&slurm_opt_signal,
 	&slurm_opt_slurmd_debug,
@@ -6929,6 +6959,9 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	/* script not filled in here */
 	/* script_buf not filled in here */
+
+	if (opt_local->segment_size != NO_VAL16)
+		job_desc->segment_size = opt_local->segment_size;
 
 	if (opt_local->shared != NO_VAL16)
 		job_desc->shared = opt_local->shared;

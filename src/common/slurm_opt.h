@@ -166,6 +166,7 @@ enum {
 	LONG_OPT_REQUEUE,
 	LONG_OPT_RESERVATION,
 	LONG_OPT_RESV_PORTS,
+	LONG_OPT_SEGMENT_SIZE,
 	LONG_OPT_SEND_LIBS,
 	LONG_OPT_SIGNAL,
 	LONG_OPT_SLURMD_DEBUG,
@@ -416,6 +417,7 @@ typedef struct {
 	char *mcs_label;		/* mcs label			*/
 	time_t deadline;		/* ---deadline			*/
 	uint32_t delay_boot;		/* --delay-boot			*/
+	uint16_t segment_size;		/* --segment			*/
 	uint32_t step_het_comp_cnt;     /* How many components are in this het
 					 * step that is part of a non-hetjob. */
 	char *step_het_grps;		/* what het groups are used by step */
