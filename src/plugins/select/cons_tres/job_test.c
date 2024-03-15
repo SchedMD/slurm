@@ -215,7 +215,12 @@ static int _cr_job_list_sort(void *x, void *y)
 	job_record_t *job1_ptr = *(job_record_t **) x;
 	job_record_t *job2_ptr = *(job_record_t **) y;
 
-	return (int) (job1_ptr->end_time - job2_ptr->end_time);
+	if (job1_ptr->end_time < job2_ptr->end_time)
+		return -1;
+	else if (job1_ptr->end_time > job2_ptr->end_time)
+		return 1;
+
+	return 0;
 }
 
 static int _find_job (void *x, void *key)
