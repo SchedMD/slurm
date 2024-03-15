@@ -1389,8 +1389,16 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
 		const parser_t *rparser = find_parser_by_type(parser->type);
 
-		while (rparser->pointer_type)
-			rparser = find_parser_by_type(rparser->pointer_type);
+		while ((rparser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
+		       rparser->pointer_type) {
+			while (rparser->pointer_type)
+				rparser = find_parser_by_type(
+					rparser->pointer_type);
+
+			while (rparser->model ==
+			       PARSER_MODEL_ARRAY_REMOVED_FIELD)
+				rparser = find_parser_by_type(rparser->type);
+		}
 
 		log_flag(DATA, "removed: %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ") for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
 			 parser->obj_type_string,
