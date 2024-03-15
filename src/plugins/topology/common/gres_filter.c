@@ -146,14 +146,35 @@ static int _sock_gres_sort(void *x, void *y)
 }
 
 static uint64_t _set_max_gres(gres_job_state_t *gres_js,
-			      sock_gres_t *sock_gres)
+			      sock_gres_t *sock_gres,
+			      int rem_nodes,
+			      int rem_sockets)
 {
 	uint64_t max_gres = 0, rem_gres = 0;
 
-	if (gres_js->gres_per_job &&
-	    (gres_js->total_gres < gres_js->gres_per_job)) {
-		rem_gres = gres_js->gres_per_job -
-			gres_js->total_gres;
+	if (gres_js->gres_per_job) {
+		if (gres_js->total_gres < gres_js->gres_per_job) {
+			rem_gres = gres_js->gres_per_job -
+				gres_js->total_gres;
+			/* At least one gres per node */
+			rem_gres -= (rem_nodes - 1);
+		} else {
+			uint64_t min_socket_gres =
+				gres_js->gres_per_socket * rem_sockets;
+			/*
+			* If gres_per_job has been met, satisfy other
+			* per node conditions or at least one gres per
+			* node.
+			*/
+			if (gres_js->gres_per_node)
+				rem_gres = gres_js->gres_per_node;
+			else {
+				rem_gres = min_socket_gres;
+				rem_gres = MAX(gres_js->gres_per_task,
+					       rem_gres);
+				rem_gres = MAX(1, rem_gres);
+			}
+		}
 	}
 
 	/*
@@ -254,9 +275,10 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		if (!sock_gres->gres_state_job)
 			continue;
 		gres_js = sock_gres->gres_state_job->gres_data;
-		max_gres = _set_max_gres(gres_js, sock_gres);
 		rem_nodes = MAX(rem_nodes, 1);
 		rem_sockets = MAX(1, mc_ptr->sockets_per_node);
+		max_gres = _set_max_gres(gres_js, sock_gres, rem_nodes,
+					 rem_sockets);
 		if (max_gres &&
 		    ((gres_js->gres_per_node > max_gres) ||
 		     ((gres_js->gres_per_socket * rem_sockets) > max_gres))) {
