@@ -1145,7 +1145,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 
 	/* socket_inx == -1 for sharing gres avail from any socket */
 	/* socket_inx == -2 don't test for socket affinity */
-	const int ANY_SOCK_TEST = -1, NO_SOCK_TEST = -2;
+	const int ANY_SOCK_TEST = -1;
 
 	for (int s = 0; (s < sock_gres->sock_cnt) && *gres_needed; s++) {
 		if (!used_sock[s])
@@ -1160,10 +1160,13 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 				       no_repeat, node_inx, ANY_SOCK_TEST,
 				       gres_needed, topo_index);
 
-	if (*gres_needed)
+	for (int s = 0; (s < sock_gres->sock_cnt) && *gres_needed; s++) {
+		if (used_sock[s]) /* Only test the sockets we ignored before */
+			continue;
 		_pick_shared_gres_topo(sock_gres, use_busy_dev, use_single_dev,
-				       no_repeat, node_inx, NO_SOCK_TEST,
-				       gres_needed, topo_index);
+				       no_repeat, node_inx, s, gres_needed,
+				       topo_index);
+	}
 
 	xfree(topo_index);
 }
