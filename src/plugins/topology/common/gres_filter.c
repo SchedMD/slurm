@@ -145,6 +145,32 @@ static int _sock_gres_sort(void *x, void *y)
 	return 0;
 }
 
+static uint64_t _set_max_gres(gres_job_state_t *gres_js,
+			      sock_gres_t *sock_gres)
+{
+	uint64_t max_gres = 0, rem_gres = 0;
+
+	if (gres_js->gres_per_job &&
+	    (gres_js->total_gres < gres_js->gres_per_job)) {
+		rem_gres = gres_js->gres_per_job -
+			gres_js->total_gres;
+	}
+
+	/*
+	 * gres_select_filter_remove_unusable() sets
+	 * sock_gres->max_node_gres
+	 * for mem_per_gres enforcement; use it to set GRES limit for
+	 * this node (max_gres).
+	 */
+	if (sock_gres->max_node_gres) {
+		if (rem_gres && (rem_gres < sock_gres->max_node_gres))
+			max_gres = rem_gres;
+		else
+			max_gres = sock_gres->max_node_gres;
+	}
+	return max_gres;
+}
+
 extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  gres_mc_data_t *mc_ptr,
 				  List sock_gres_list,
@@ -199,7 +225,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		gres_job_state_t *gres_js;
 		bool sufficient_gres;
 		uint64_t cnt_avail_total, max_tasks;
-		uint64_t max_gres = 0, rem_gres = 0;
+		uint64_t max_gres = 0;
 		uint16_t avail_cores_tot = 0;
 		uint16_t cpus_per_gres = 0;
 		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
@@ -228,24 +254,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		if (!sock_gres->gres_state_job)
 			continue;
 		gres_js = sock_gres->gres_state_job->gres_data;
-		if (gres_js->gres_per_job &&
-		    (gres_js->total_gres < gres_js->gres_per_job)) {
-			rem_gres = gres_js->gres_per_job -
-				gres_js->total_gres;
-		}
-
-		/*
-		 * gres_select_filter_remove_unusable() sets
-		 * sock_gres->max_node_gres
-		 * for mem_per_gres enforcement; use it to set GRES limit for
-		 * this node (max_gres).
-		 */
-		if (sock_gres->max_node_gres) {
-			if (rem_gres && (rem_gres < sock_gres->max_node_gres))
-				max_gres = rem_gres;
-			else
-				max_gres = sock_gres->max_node_gres;
-		}
+		max_gres = _set_max_gres(gres_js, sock_gres);
 		rem_nodes = MAX(rem_nodes, 1);
 		rem_sockets = MAX(1, mc_ptr->sockets_per_node);
 		if (max_gres &&
