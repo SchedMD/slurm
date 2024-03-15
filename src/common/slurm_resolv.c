@@ -53,7 +53,12 @@ static int _sort_controllers(void *x, void *y)
 	ctl_entry_t *ctl1 = *(ctl_entry_t **) x;
 	ctl_entry_t *ctl2 = *(ctl_entry_t **) y;
 
-	return ctl1->priority > ctl2->priority;
+	if (ctl1->priority < ctl2->priority)
+		return -1;
+	else if (ctl1->priority > ctl2->priority)
+		return 1;
+
+	return 0;
 }
 
 extern List resolve_ctls_from_dns_srv(void)
