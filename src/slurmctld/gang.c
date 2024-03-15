@@ -617,7 +617,12 @@ static int _sort_partitions(void *part1, void *part2)
 	prio1 = g1->priority;
 	prio2 = g2->priority;
 
-	return prio2 - prio1;
+	if (prio1 < prio2)
+		return 1;
+	else if (prio1 > prio2)
+		return -1;
+
+	return 0;
 }
 
 /* Scan the partition list. Add the given job as a "shadow" to every
