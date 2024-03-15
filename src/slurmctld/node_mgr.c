@@ -915,7 +915,12 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	weight1 = c1->weight;
 	weight2 = c2->weight;
 
-	return (weight1 - weight2);
+	if (weight1 < weight2)
+		return -1;
+	else if (weight1 > weight2)
+		return 1;
+
+	return 0;
 }
 
 static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
