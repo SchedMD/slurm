@@ -635,7 +635,12 @@ static int _sort_by_partition(void *void1, void *void2)
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
 	if (part_order) {
-		diff = (int)sinfo1->part_inx - (int)sinfo2->part_inx;
+		if (sinfo1->part_inx < sinfo2->part_inx)
+			diff = -1;
+		else if (sinfo1->part_inx > sinfo2->part_inx)
+			diff = 1;
+		else
+			diff = 0;
 	} else {
 		if (sinfo1->part_info && sinfo1->part_info->name)
 			val1 = sinfo1->part_info->name;
@@ -644,7 +649,7 @@ static int _sort_by_partition(void *void1, void *void2)
 		diff = xstrcmp(val1, val2);
 	}
 
-	if (reverse_order)
+	if (reverse_order && diff)
 		diff = -diff;
 	return diff;
 }
