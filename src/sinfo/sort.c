@@ -727,9 +727,15 @@ static int _sort_by_root(void *void1, void *void2)
 		val1 = sinfo1->part_info->flags & PART_FLAG_ROOT_ONLY;
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->flags & PART_FLAG_ROOT_ONLY;
-	diff = val1 - val2;
 
-	if (reverse_order)
+	if (val1 < val2)
+		diff = -1;
+	else if (val1 > val2)
+		diff = 1;
+	else
+		diff = 0;
+
+	if (reverse_order && diff)
 		diff = -diff;
 	return diff;
 }
