@@ -5892,6 +5892,8 @@ static const parser_t PARSER_ARRAY(RESERVATION_CORE_SPEC)[] = {
 	add_parser(reserve_info_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) \
 	add_parser_skip(reserve_info_t, field)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(reserve_info_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 	add_parse(STRING, accounts, "accounts", NULL),
 	add_parse(STRING, burst_buffer, "burst_buffer", NULL),
@@ -5912,12 +5914,14 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(UINT32_NO_VAL, purge_comp_time, "purge_completed/time", NULL),
 	add_parse(UINT64, start_time, "start_time", NULL),
+	add_removed(UINT32_NO_VAL, "watts", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, tres_str, "tres", NULL),
 	add_parse(STRING, users, "users", NULL),
 };
 #undef add_parse
 #undef add_cparse
 #undef add_skip
+#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(submit_response_msg_t, mtype, false, field, 0, path, desc)
