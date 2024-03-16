@@ -7236,6 +7236,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 #undef add_parse_deprec
 #undef add_cparse
 #undef add_skip
+#undef add_removed
 
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_RES_CORE_STATUS)[] = {
 	add_flag_equal(JOB_RES_CORE_INVALID, INFINITE64, "INVALID"),
@@ -7565,7 +7566,6 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 #undef add_parse
 #undef add_cparse
 #undef add_skip
-#undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(submit_response_msg_t, mtype, false, field, 0, path, desc)
