@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2024" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -280,22 +280,23 @@ should also be set in your \fBslurm.conf\fR file.
 
 .TP
 \fBkeepaliveinterval=#\fR
-Specifies the interval between keepalive probes on the socket communications
-between the backup and primary slurmdbd.
+Once socket communications between the primary and backup slurmdbd have been
+idle for some time, keepalive probes are sent at this specified interval.
 The default value is 30 seconds.
 .IP
 
 .TP
 \fBkeepaliveprobes=#\fR
 Specifies the number of keepalive probes sent on the socket communications
-between the backup and primary slurmdbd.
+between the backup and primary slurmdbd once the socket has been idle for
+some time. If probes are not answered, the connection is dropped.
 The default value is 3.
 .IP
 
 .TP
 \fBkeepalivetime=#\fR
-Specifies how long to wait before sending keepalive probes between the primary
-and backup slurmdbd processes.
+Specifies how long a socket must be idle before starting to send keepalive
+probes between the primary and backup slurmdbd processes.
 The default value is 30 seconds.
 .RE
 .IP
