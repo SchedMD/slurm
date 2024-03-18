@@ -1362,12 +1362,20 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 	return rc;
 }
 
-static void _dump_removed(const parser_t *const parser, data_t *dst,
-			  args_t *args)
+static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 {
 	if (is_complex_mode(args)) {
 		data_set_null(dst);
 		return;
+	}
+
+	while ((parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
+	       parser->pointer_type) {
+		while (parser->pointer_type)
+			parser = find_parser_by_type(parser->pointer_type);
+
+		while (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)
+			parser = find_parser_by_type(parser->type);
 	}
 
 	switch (parser->obj_openapi) {
