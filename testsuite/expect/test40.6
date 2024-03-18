@@ -78,7 +78,7 @@ echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUD
 #
 # Submit job to shrink: uses 10 gres/mps on two nodes
 #
-set job_id [submit_job -fail "-N1 --exclusive -J $test_name -t2 --gres=mps:10 -N2 --output=$file_out $file_in1"]
+set job_id [submit_job -fail "-J $test_name -t2 --gres=mps:10 -N2 --output=$file_out $file_in1"]
 wait_for_job -fail $job_id "DONE"
 
 #
