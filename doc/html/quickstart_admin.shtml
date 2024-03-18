@@ -10,11 +10,11 @@
 <a href="#build_install">Building and Installing Slurm</a>
 <ul>
 <li><a href="#prereqs">Installing Prerequisites</a></li>
-<li><a href="#manual_build">Building Manually</a></li>
 <li><a href="#rpmbuild">Building RPMs</a></li>
 <li><a href="#rpms">Installing RPMs</a></li>
 <li><a href="#debuild">Building Debian Packages</a></li>
 <li><a href="#debinstall">Installing Debian Packages</a></li>
+<li><a href="#manual_build">Building Manually</a></li>
 </ul>
 </li>
 <li><a href="#daemons">Daemons</a></li>
@@ -47,14 +47,18 @@ across the cluster.</li>
 authentication. Make sure that all nodes in your cluster have the
 same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>,
 is started before you start the Slurm daemons.</li>
-<li>bunzip2 the distributed tar-ball and untar the files:<br>
-<i>tar --bzip -x -f slurm*tar.bz2</i></li>
-<li><i>cd</i> to the directory containing the Slurm source and type
-<i>./configure</i> with appropriate options, typically <i>--prefix=</i>
-and <i>--sysconfdir=</i></li>
-<li>Type <i>make</i> to compile Slurm.</li>
-<li>Type <i>make install</i> to install the programs, documentation, libraries,
-header files, etc.</li>
+<li><a href="download.html">Download</a> the latest version of Slurm</li>
+<li>Install Slurm using one of the following methods:
+<ul>
+<li>Build <a href="#rpmbuild">RPM</a> or <a href="#debuild">DEB</a> packages
+(recommended for production)</li>
+<li><a href="#manual_build">Build Manually</a> from source
+(for developers or advanced users)</li>
+<li><b>NOTE</b>: Some Linux distributions may have <b>unofficial</b>
+Slurm packages available in software repositories. SchedMD does not maintain
+or recommend these packages.</li>
+</ul>
+</li>
 <li>Build a configuration file using your favorite web browser and the
 <a href="configurator.html">Slurm Configuration Tool</a>.<br>
 <b>NOTE</b>: The <i>SlurmUser</i> must exist prior to starting Slurm
@@ -69,8 +73,6 @@ those directories will have access rights equal to read/write/execute for
 everyone minus the umask value (e.g. umask=0022 generates directories with
 permissions of "drwxr-r-x" and mask=0000 generates directories with
 permissions of "drwxrwrwx" which is a security problem).</li>
-<li>Type <i>ldconfig -n &lt;library_location&gt;</i> so that the Slurm libraries
-can be found by applications that intend to use Slurm APIs directly.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
 <b>NOTE</b>: You will need to install this configuration file on all nodes of
 the cluster.</li>
@@ -81,11 +83,6 @@ the cluster.</li>
 <li>Compute Nodes: <code>systemctl enable slurmd</code>
 </ul></li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
-</ol>
-<p><b>NOTE</b>: Items 3 through 8 can be replaced with</p>
-<ol>
-<li><code>rpmbuild -ta slurm*.tar.bz2</code></li>
-<li><code>rpm --install &lt;the rpm files&gt;</code></li>
 </ol>
 
 <p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
@@ -167,38 +164,6 @@ required software to build these plugins.</p>
 <p>If required libraries or header files are in non-standard locations, set
 <code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
 </p>
-
-<h3 id="manual_build">Building Manually
-<a class="slurm_link" href="#manual_build"></a>
-</h3>
-
-<p>Instructions to build and install Slurm manually are shown below.
-See the README and INSTALL files in the source distribution for more details.
-</p>
-<ol>
-<li>Unpack the distributed tarball:<br>
-<code>tar -xaf slurm*tar.bz2</code>
-<li><code>cd</code> to the directory containing the Slurm source and type
-<code>./configure</code> with appropriate options (see below).</li>
-<li>Type <code>make install</code> to compile and install the programs,
-documentation, libraries, header files, etc.</li>
-<li>Type <code>ldconfig -n &lt;library_location&gt;</code> so that the Slurm
-libraries can be found by applications that intend to use Slurm APIs directly.
-The library location will be a subdirectory of PREFIX (described below) and
-depend upon the system type and configuration, typically lib or lib64.
-For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
-find that a file named "/usr/lib64/libslurm.so" was installed and the command
-<code>ldconfig -n /usr/lib64</code> should be executed.</li>
-</ol>
-<p>A full list of <code>configure</code> options will be returned by the
-command <code>configure --help</code>. The most commonly used arguments
-to the <code>configure</code> command include:</p>
-<p style="margin-left:.2in"><code>--enable-debug</code><br>
-Enable additional debugging logic within Slurm.</p>
-<p style="margin-left:.2in"><code>--prefix=<i>PREFIX</i></code><br>
-Install architecture-independent files in PREFIX; default value is /usr/local.</p>
-<p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
-Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
 
 <h3 id="rpmbuild">Building RPMs<a class="slurm_link" href="#rpmbuild"></a></h3>
 <p>To build RPMs directly, copy the distributed tarball into a directory
@@ -321,6 +286,41 @@ vary site to site, but this is a good starting point:</p>
 	</ul>
 </li>
 </ul>
+
+<h3 id="manual_build">Building Manually
+<a class="slurm_link" href="#manual_build"></a>
+</h3>
+
+<p>Instructions to build and install Slurm manually are shown below.
+This is significantly more complicated to manage than the RPM and DEB build
+procedures, so this approach is only recommended for developers or
+advanced users who are looking for a more customized install.
+See the README and INSTALL files in the source distribution for more details.
+</p>
+<ol>
+<li>Unpack the distributed tarball:<br>
+<code>tar -xaf slurm*tar.bz2</code>
+<li><code>cd</code> to the directory containing the Slurm source and type
+<code>./configure</code> with appropriate options (see below).</li>
+<li>Type <code>make install</code> to compile and install the programs,
+documentation, libraries, header files, etc.</li>
+<li>Type <code>ldconfig -n &lt;library_location&gt;</code> so that the Slurm
+libraries can be found by applications that intend to use Slurm APIs directly.
+The library location will be a subdirectory of PREFIX (described below) and
+depend upon the system type and configuration, typically lib or lib64.
+For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
+find that a file named "/usr/lib64/libslurm.so" was installed and the command
+<code>ldconfig -n /usr/lib64</code> should be executed.</li>
+</ol>
+<p>A full list of <code>configure</code> options will be returned by the
+command <code>configure --help</code>. The most commonly used arguments
+to the <code>configure</code> command include:</p>
+<p style="margin-left:.2in"><code>--enable-debug</code><br>
+Enable additional debugging logic within Slurm.</p>
+<p style="margin-left:.2in"><code>--prefix=<i>PREFIX</i></code><br>
+Install architecture-independent files in PREFIX; default value is /usr/local.</p>
+<p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
+Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
 
 <h2 id="daemons">Daemons<a class="slurm_link" href="#daemons"></a></h2>
 
@@ -973,6 +973,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 13 March 2024</p>
+<p style="text-align:center;">Last modified 18 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
