@@ -1597,6 +1597,75 @@ static int DUMP_FUNC(SLURMDB_RPC_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
+					       void *obj, data_t *src,
+					       args_t *args,
+					       data_t *parent_path)
+{
+	job_desc_msg_t *job = obj;
+	uint16_t plane_tmp = NO_VAL16;
+	int rc;
+	task_dist_states_t dist = (job->task_dist & SLURM_DIST_STATE_BASE);
+
+	if ((rc = PARSE(UINT16_NO_VAL, plane_tmp, src, parent_path, args)))
+		return rc;
+
+	if (plane_tmp == NO_VAL16) {
+		if (dist == SLURM_DIST_PLANE) {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_BAD_DIST,
+					   "Plane size left unset but distribution specifications specified %s",
+					   format_task_dist_states(dist));
+		}
+
+		/* ignore any other values as we can't reason about them here */
+		job->plane_size = NO_VAL16;
+		return SLURM_SUCCESS;
+	}
+
+	if (job->task_dist != NO_VAL) {
+		if (dist != SLURM_DIST_PLANE) {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_BAD_DIST,
+					   "Plane size distribution specifications cannot be combined with %s",
+					   format_task_dist_states(dist));
+		} else if ((job->plane_size != NO_VAL16) && (plane_tmp != job->plane_size)) {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_BAD_DIST,
+					   "Plane size set by distribution_plane_size and distribution do not match. (%u != %u)",
+					   job->plane_size, plane_tmp);
+		}
+	}
+
+	job->plane_size = plane_tmp;
+	/*
+	 * No need to retain value of flags while setting to PLANE since they
+	 * are not compatible.
+	 */
+	job->task_dist = SLURM_DIST_PLANE;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
+					      void *obj, data_t *dst,
+					      args_t *args)
+{
+	job_desc_msg_t *job = obj;
+	uint16_t plane_tmp = NO_VAL16;
+
+	if ((job->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
+		if (job->plane_size == NO_VAL16)
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Task distribution %s specified but plane_size unset",
+				format_task_dist_states(job->task_dist));
+
+		plane_tmp = job->plane_size;
+	}
+
+	return DUMP(UINT16_NO_VAL, plane_tmp, dst, args);
+}
+
 static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 	const parser_t *const parser,
 	void *obj,
@@ -7813,7 +7882,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, other_port, "reserve_ports", NULL),
 	add_parse(BOOL, overcommit, "overcommit", NULL),
 	add_parse(STRING, partition, "partition", NULL),
-	add_parse(UINT16, plane_size, "distribution_plane_size", NULL),
+	add_cparse(JOB_DESC_MSG_PLANE_SIZE, "distribution_plane_size", NULL),
+	add_skip(plane_size),
 	add_removed(POWER_FLAGS, "power_flags", NULL, SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(STRING, prefer, "prefer", NULL),
 	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
@@ -9268,6 +9338,7 @@ static const parser_t parsers[] = {
 	addpcp(JOB_DESC_MSG_ENV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_SPANK_ENV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE, STRING, NULL),
+	addpcp(JOB_DESC_MSG_PLANE_SIZE, UINT16_NO_VAL, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_TASK_DISTRIBUTION, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDIN, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE, STRING, NULL),
