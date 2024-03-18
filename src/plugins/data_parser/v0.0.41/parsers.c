@@ -1597,7 +1597,66 @@ static int DUMP_FUNC(SLURMDB_RPC_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(TASK_DISTRIBUTION)
+static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *src,
+	args_t *args,
+	data_t *parent_path)
+{
+	job_desc_msg_t *job = obj;
+	uint32_t dist_tmp, plane_tmp;
+	char *dist_str;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		if (job->plane_size == NO_VAL16)
+			job->task_dist = SLURM_DIST_UNKNOWN;
+		return SLURM_SUCCESS;
+	}
+
+	if ((data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)) {
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Invalid distribution");
+	}
+
+	dist_str = data_get_string(src);
+
+	dist_tmp = verify_dist_type(dist_str, &plane_tmp);
+	if (dist_tmp == SLURM_ERROR) {
+		return parse_error(parser, args, parent_path, ESLURM_BAD_DIST,
+				   "Invalid distribution specification");
+	}
+
+	if ((dist_tmp & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
+		if (job->plane_size != NO_VAL16 && job->plane_size != plane_tmp)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_BAD_DIST,
+					   "Plane distribution set by distribution_plane_size and distribution do not match. (%u != %u)",
+					   job->plane_size, plane_tmp);
+		job->plane_size = plane_tmp;
+	} else if (job->plane_size != NO_VAL16) {
+		/* plane distribution can't be with any other type */
+		return parse_error(parser, args, parent_path, ESLURM_BAD_DIST,
+				   "Plane size distribution specifications cannot be combined with other options");
+	}
+
+	job->task_dist = dist_tmp;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	job_desc_msg_t *job = obj;
+	return DUMP(TASK_DISTRIBUTION, job->task_dist, dst, args);
+}
+
+PARSE_DISABLED(TASK_DISTRIBUTION);
 
 static int DUMP_FUNC(TASK_DISTRIBUTION)(const parser_t *const parser, void *obj,
 					data_t *dst, args_t *args)
@@ -7778,7 +7837,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(spank_job_env),
 	add_skip(spank_job_env_size),
 	add_skip(submit_line),
-	add_parse(TASK_DISTRIBUTION, task_dist, "distribution", NULL),
+	add_cparse(JOB_DESC_MSG_TASK_DISTRIBUTION, "distribution", NULL),
+	add_skip(task_dist),
 	add_parse(UINT32_NO_VAL, time_limit, "time_limit", NULL),
 	add_parse(UINT32_NO_VAL, time_min, "time_minimum", NULL),
 	add_parse(STRING, tres_bind, "tres_bind", NULL),
@@ -9208,6 +9268,7 @@ static const parser_t parsers[] = {
 	addpcp(JOB_DESC_MSG_ENV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_SPANK_ENV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE, STRING, NULL),
+	addpc(JOB_DESC_MSG_TASK_DISTRIBUTION, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDIN, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE, STRING, NULL),

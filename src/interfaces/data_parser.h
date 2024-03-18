@@ -473,6 +473,7 @@ typedef enum {
 	DATA_PARSER_JOB_DESC_MSG_RLIMIT_AS, /* job_desc_msg_t->environment */
 	DATA_PARSER_JOB_DESC_MSG_PTR, /* job_desc_msg_t* */
 	DATA_PARSER_JOB_DESC_MSG_LIST, /* list_t of job_desc_msg_t* */
+	DATA_PARSER_JOB_DESC_MSG_TASK_DISTRIBUTION, /* job_desc_msg_t->plane_size and job_desc_msg_t->task_dist */
 	DATA_PARSER_STRING_ARRAY, /* char** (NULL terminated) */
 	DATA_PARSER_STRING_LIST, /* list_t of char* */
 	DATA_PARSER_SIGNAL, /* uint16_t - UNIX process signal */
