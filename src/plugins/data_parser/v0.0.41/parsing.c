@@ -1378,6 +1378,12 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 			parser = find_parser_by_type(parser->type);
 	}
 
+	xassert(parser->model != PARSER_MODEL_ARRAY_REMOVED_FIELD);
+	xassert(parser->model !=
+		PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD);
+	xassert(parser->model > PARSER_MODEL_INVALID);
+	xassert(parser->model < PARSER_MODEL_MAX);
+
 	switch (parser->obj_openapi) {
 	case OPENAPI_FORMAT_INT:
 	case OPENAPI_FORMAT_INT32:
