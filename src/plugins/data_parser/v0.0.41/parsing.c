@@ -1409,7 +1409,9 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 		break;
 	case OPENAPI_FORMAT_MAX:
 	case OPENAPI_FORMAT_INVALID:
-		fatal_abort("invalid type");
+		/* Should never happen but avoid crashing clients */
+		xassert(false);
+		data_set_null(dst);
 	};
 }
 
