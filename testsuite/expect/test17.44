@@ -52,6 +52,7 @@ log_debug "Waiting for output files.."
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"
 
+	wait_for_job -fail ${job_id2}_${task_id} "DONE"
 	wait_for_file -fail $file_out_glob
 
 	set output [run_command_output -fail "$bin_cat $file_out_glob"]
