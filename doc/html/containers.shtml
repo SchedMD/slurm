@@ -392,6 +392,15 @@ must be configured for site storage configuration.</li>
 <li><a href="https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports">
 	Configure rootless dockerd to allow listening on privileged ports
 	</a></li>
+<li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
+	scrun.lua</a> must be present on any node where scrun may be run. The
+	example should be sufficent for most environments but paths should be
+	modified to match available local storage.</li>
+<li><a href="oci.conf.html">oci.conf</a> must be present on any node where any
+	container job may be run. Example configurations for
+	<a href="https://slurm.schedmd.com/containers.html#example">
+	known OCI runtimes</a> are provided above. Examples may require
+	paths to be correct to installation locations.</li>
 </ol>
 <h3>Limitations</h3>
 <ol>
@@ -408,8 +417,18 @@ containers being run by Slurm.  Docker is only acting as a container image
 lifecycle manager. The containers will be executed remotely via Slurm following
 the existing security configuration in Slurm outside of unprivileged user
 control.</li>
-<li>All containers must use <a href="https://docs.docker.com/network/host/">
-host networking</a></li>
+<li>All containers must use the
+<a href="https://docs.docker.com/network/drivers/none/">"none" networking driver
+</a>. Attempting to use bridge, overlay, host, ipvlan, or macvlan can result in
+scrun being isolated from the network and not being able to communicate with
+the Slurm controller. The container is run by Slurm on the compute nodes which
+makes having Docker setup a network isolation layer ineffective for the
+container.</li>
+<li><pre>docker exec</pre> command is not supported.</li>
+<li><pre>docker compose</pre> command is not supported.</li>
+<li><pre>docker pause</pre> command is not supported.</li>
+<li><pre>docker unpause</pre> command is not supported.</li>
+<li><pre>docker swarm</pre> command is not supported.</li>
 </ol>
 
 <h3>Setup procedure</h3>
@@ -438,12 +457,17 @@ Set the following fields to configure Docker:
     "selinux-enabled": false,
     "default-runtime": "slurm",
     "runtimes": {
-	"slurm": {
-	    "path": "/usr/local/bin/scrun"
-	}
-    }
+        "slurm": {
+            "path": "/usr/local/bin/scrun"
+        }
+    },
+    "data-root": "/run/user/${USER_ID}/docker/",
+    "exec-root": "/run/user/${USER_ID}/docker-exec/"
 }</pre>
-Correct path to scrun as if installation prefix was configured.</li>
+Correct path to scrun as if installation prefix was configured. Replace
+${USER_ID} with numeric user id or target a different directory with global
+write permissions and sticky bit. Rootless docker requires a different root
+directory than the system's default to avoid permission errors.</li>
 <li>It is strongly suggested that sites consider using inter-node shared
 filesystems to store Docker's containers. While it is possible to have a
 scrun.lua script to push and pull images for each deployment, there can be a
@@ -460,6 +484,24 @@ driver</a>:
 Any node expected to be able to run containers from Docker must have ability to
 atleast read the filesystem used. Full write privileges are suggested and will
 be required if changes to the container filesystem are desired.</li>
+
+<li>Configure dockerd to not setup network namespace, which will break scrun's
+	ability to talk to the Slurm controller.
+<!-- Docker does not document: --runtime= argument -->
+<ul>
+<li>To configure for all users:
+<pre>/etc/systemd/user/docker.service.d/override.conf</pre></li>
+<li>To configure per user:
+<pre>~/.config/systemd/user/docker.service.d/override.conf</pre></li>
+</ul>
+<pre>
+[Service]
+Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=none"
+Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=host"
+</pre>
+</li>
+<li>Reload docker's service unit in systemd:
+<pre>systemctl --user daemon-reload</pre></li>
 <li>Start rootless docker: <pre>systemctl --user start docker</pre></li>
 <li>Verify Docker is using scrun:
 <pre>export DOCKER_SECURITY="--security-opt label:disable --security-opt seccomp=unconfined  --security-opt apparmor=unconfined --net=none"
@@ -486,6 +528,17 @@ to run containers as jobs. No special user permissions are required and
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html">scrun.lua</a> must be configured for site storage
 configuration.</li>
+<li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
+	scrun.lua</a> must be present on any node where scrun may be run. The
+	example should be sufficent for most environments but paths should be
+	modified to match available local storage.</li>
+<li><a href="oci.conf.html">oci.conf</a>
+	must be present on any node where any container job may be run.
+	Example configurations for
+	<a href="https://slurm.schedmd.com/containers.html#example">
+	known OCI runtimes</a> are provided above. Examples may require
+	paths to be correct to installation locations.</li>
+</ol>
 </ol>
 <h3>Limitations</h3>
 <ol>
@@ -493,6 +546,9 @@ configuration.</li>
 <li>All containers must use
 <a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
+<li><pre>podman exec</pre> command is not supported.</li>
+<li><pre>podman kube</pre> command is not supported.</li>
+<li><pre>podman pod</pre> command is not supported.</li>
 </ol>
 
 <h3>Setup procedure</h3>
@@ -890,6 +946,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 29 February 2024</p>
+<p style="text-align:center;">Last modified 19 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

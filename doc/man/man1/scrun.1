@@ -1085,24 +1085,7 @@ Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
 .SS Example \fBscrun.lua\fR scripts
 
 .TP
-Minimal required for \fBscrun\fR operation:
-This script should be used when \fBdocker\fR(1) or
-\fBpodman\fR(1) have been configured to use a shared filesystem for container
-storage removing the need to copy around the container files.
-.nf
-function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
-	return slurm.SUCCESS
-end
-
-function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
-	return slurm.SUCCESS
-end
-
-return slurm.SUCCESS
-.fi
-
-.TP
-Full Container staging using rsync:
+Full Container staging example using rsync:
 This full example will stage a container as given by \fBdocker\fR(1) or
 \fBpodman\fR(1). The container's config.json is modified to remove unwanted
 functions that may cause the container run to under \fBcrun\fR(1) or
