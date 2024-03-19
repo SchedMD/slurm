@@ -69,6 +69,7 @@
 
 static bool has_prolog = false;
 static bool has_epilog = false;
+static bool has_task_exit = false;
 
 struct spank_plugin_operations {
 	spank_f *init;
@@ -455,6 +456,8 @@ spank_stack_plugin_valid_for_context (struct spank_stack *stack,
 		 *   always loaded in these contexts, so continue
 		 *   to do so
 		 */
+		if (p->ops.task_exit)
+			has_task_exit = true;
 		return (1);
 	default:
 		return (0);
@@ -2613,4 +2616,9 @@ extern bool spank_has_prolog(void)
 extern bool spank_has_epilog(void)
 {
 	return has_epilog;
+}
+
+extern bool spank_has_task_exit(void)
+{
+	return has_task_exit;
 }

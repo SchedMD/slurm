@@ -115,6 +115,11 @@ extern bool spank_has_prolog(void);
 extern bool spank_has_epilog(void);
 
 /*
+ * Return true if a loaded spank plugin has a task_exit function defined.
+ */
+extern bool spank_has_task_exit(void);
+
+/*
  *  Option processing
  */
 
