@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
     "gres" or "license".
  -- accounting_storage/mysql - Fix lineage string construction when adding a
     user association with a partition.
+ -- Fix sattach command.
 
 * Changes in Slurm 23.11.4
 ==========================
