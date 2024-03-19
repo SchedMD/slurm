@@ -112,6 +112,17 @@ extern int cred_g_init(void)
 	int retval = SLURM_SUCCESS;
 	char *type = NULL;
 
+	/*
+	 * Avoid issues with configless if Slurm was built without MUNGE,
+	 * as the process that fetches the configs will still trigger
+	 * slurm_init(), which will default to cred/munge, which will
+	 * then fail to initialize as the plugin will be missing.
+	 */
+	if (getenv("SLURM_CONFIG_FETCH")) {
+		xfree(slurm_conf.cred_type);
+		goto done;
+	}
+
 	/*					 123456789012 */
 	if ((tok = xstrstr(slurm_conf.authinfo, "cred_expire="))) {
 		cred_expire = atoi(tok + 12);
