@@ -4869,20 +4869,16 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&tres_freq, buffer);
 
 		safe_unpackstr(&tres_per_step, buffer);
-		xstrsubstituteall(tres_per_step,
-				  "gres:", "gres/");
+		slurm_format_tres_string(&tres_per_step, "gres");
 
 		safe_unpackstr(&tres_per_node, buffer);
-		xstrsubstituteall(tres_per_node,
-				  "gres:", "gres/");
+		slurm_format_tres_string(&tres_per_node, "gres");
 
 		safe_unpackstr(&tres_per_socket, buffer);
-		xstrsubstituteall(tres_per_socket,
-				  "gres:", "gres/");
+		slurm_format_tres_string(&tres_per_socket, "gres");
 
 		safe_unpackstr(&tres_per_task, buffer);
-		xstrsubstituteall(tres_per_task,
-				  "gres:", "gres/");
+		slurm_format_tres_string(&tres_per_task, "gres");
 
 		if (jobacctinfo_unpack(&jobacct, protocol_version,
 				       PROTOCOL_TYPE_SLURM, buffer, true))

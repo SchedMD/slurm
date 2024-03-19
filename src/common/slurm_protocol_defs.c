@@ -6015,6 +6015,43 @@ extern int slurm_get_rep_count_inx(
 	return -1;
 }
 
+extern void slurm_format_tres_string(char **s, char *tres_type)
+{
+	char *tmp, *save_ptr = NULL, *pos = NULL;
+	char *ret_str = NULL;
+	char *prefix = NULL;
+	size_t tres_prefix_len;
+	int colon_inx;
+
+	if (!*s)
+		return;
+	/* Prime the tres_type */
+	prefix = xstrdup_printf("%s:", tres_type);
+
+	if (!xstrstr(*s, prefix)) {
+		/* The tres string is already correctly formatted */
+		xfree(prefix);
+		return;
+	}
+
+	tres_prefix_len = strlen(prefix);
+	colon_inx = tres_prefix_len - 1;
+
+	for (tmp = strtok_r(*s, ",", &save_ptr); tmp;
+	     tmp = strtok_r(NULL, ",", &save_ptr)) {
+		if (!xstrncmp(tmp, prefix, tres_prefix_len))
+			tmp[colon_inx] = '/';
+		if (ret_str)
+			xstrfmtcatat(ret_str, &pos, ",%s", tmp);
+		else
+			xstrcatat(ret_str, &pos, tmp);
+	}
+	xassert(ret_str);
+	xfree(*s);
+	*s = ret_str;
+	xfree(prefix);
+}
+
 extern int slurm_get_next_tres(
 	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr)

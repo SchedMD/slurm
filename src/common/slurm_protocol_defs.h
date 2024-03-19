@@ -1965,6 +1965,42 @@ extern int slurm_get_rep_count_inx(
 	uint32_t *rep_count, uint32_t rep_count_size, int inx);
 
 /*
+ * slurm_format_tres_string - given a TRES type and a tres-per-* string,
+ *			      will modifiy the string from the original
+ *			      colon-separated tres request format to the new
+ *			      '/' separating the TRES type from the tres
+ *			      request. This will work even if the request name
+ *			      or grestype with the TRES type.
+ * IN s - tres-per-* tres request string. This will be modified to fit the new
+ *	  format.
+ * IN tres_type - the type of tres to replace in the tres request string
+ *
+ * If *s is non-NULL, it must be an xmalloc'd string.
+ *
+ * Input:
+ * license:testing_license:3
+ * Output:
+ * license/testing_license:3
+ *
+ * This function will not modify correctly formatted tres request strings
+ * Input:
+ * license/testing_license:3
+ * Output:
+ * license/testing_license:3
+ *
+ * Input:
+ * gres:gres1:type1:3,gres:gres2:type2:6
+ * Output:
+ * gres:gres1/type1:3,gres/gres2:type2:6
+ *
+ * Input
+ * gres:gres1_gres:type1_gres:3,gres:gres2_gres:type2_gres:6
+ * Output:
+ * gres/gres1_gres:type1_gres:3,gres/gres2_gres:type2_gres:6
+ */
+extern void slurm_format_tres_string(char **s, char *tres_type);
+
+/*
  * Reentrant TRES specification parse logic
  * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we
  *                    will fill it in

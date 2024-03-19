@@ -51,6 +51,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/interfaces/acct_gather_profile.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/spank.h"
 #include "src/common/tres_bind.h"
@@ -6426,8 +6427,8 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		fatal("Invalid TRES for --tres-per-task: bb");
 	}
 
-	xstrsubstituteall(opt->tres_per_task, "license:", "license/");
-	xstrsubstituteall(opt->tres_per_task, "gres:", "gres/");
+	slurm_format_tres_string(&opt->tres_per_task, "license");
+	slurm_format_tres_string(&opt->tres_per_task, "gres");
 
 	if (slurm_option_isset(opt, "gpus-per-task") &&
 	    slurm_option_isset(opt, "tres-per-task"))
