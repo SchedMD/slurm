@@ -7725,6 +7725,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(BOOL16, contiguous, "contiguous", NULL),
 	add_parse(STRING, container, "container", NULL),
 	add_parse(STRING, container_id, "container_id", NULL),
+	add_parse(UINT16, cores_per_socket, "cores_per_socket", NULL),
 	add_parse_overload(CORE_SPEC, core_spec, 1, "core_specification", NULL),
 	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_specification", NULL),
 	add_parse(STRING, cpu_bind, "cpu_binding", NULL),
