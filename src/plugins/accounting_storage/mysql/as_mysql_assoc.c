@@ -3176,6 +3176,45 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	return rc;
 }
 
+static void _add_assoc_cond_user_internal(add_assoc_cond_t *add_assoc_cond)
+{
+	slurmdb_assoc_rec_t user_assoc;
+	int rc;
+
+	memset(&user_assoc, 0, sizeof(slurmdb_assoc_rec_t));
+	user_assoc.cluster = add_assoc_cond->add_assoc->assoc.cluster;
+	user_assoc.acct = add_assoc_cond->add_assoc->assoc.acct;
+	user_assoc.user = add_assoc_cond->add_assoc->assoc.user;
+	user_assoc.uid = add_assoc_cond->add_assoc->assoc.uid;
+
+	rc = assoc_mgr_fill_in_assoc(
+		add_assoc_cond->mysql_conn,
+		&user_assoc,
+		ACCOUNTING_ENFORCE_ASSOCS, NULL, true);
+
+	if (rc == SLURM_SUCCESS)
+		debug2("Association %s/%s/%s is already here, not adding again.",
+		       user_assoc.cluster, user_assoc.acct,
+		       user_assoc.user);
+	else {
+		add_assoc_cond->add_assoc->assoc.lineage =
+			xstrdup_printf(
+				"%s0-%s/", add_assoc_cond->base_lineage,
+				add_assoc_cond->add_assoc->assoc.user);
+
+		add_assoc_cond->rc =
+			_add_assoc_internal(add_assoc_cond);
+		/*
+		 * This check is for handling lft/rgt logic
+		 * 2 versions after 23.11 we no longer will have the do
+		 * this check for 1.
+		 */
+		if (add_assoc_cond->rc == 1)
+			add_assoc_cond->rc = SLURM_SUCCESS;
+		xfree(add_assoc_cond->add_assoc->assoc.lineage);
+	}
+}
+
 static int _add_assoc_cond_partition(void *x, void *arg)
 {
 	add_assoc_cond_t *add_assoc_cond = arg;
@@ -3274,42 +3313,8 @@ static int _add_assoc_cond_user(void *x, void *arg)
 			add_assoc_cond->add_assoc->partition_list,
 			_add_assoc_cond_partition,
 			add_assoc_cond);
-	else {
-		slurmdb_assoc_rec_t user_assoc;
-
-		memset(&user_assoc, 0, sizeof(slurmdb_assoc_rec_t));
-		user_assoc.cluster = add_assoc_cond->add_assoc->assoc.cluster;
-		user_assoc.acct = add_assoc_cond->add_assoc->assoc.acct;
-		user_assoc.user = add_assoc_cond->add_assoc->assoc.user;
-		user_assoc.uid = add_assoc_cond->add_assoc->assoc.uid;
-
-		rc = assoc_mgr_fill_in_assoc(
-			add_assoc_cond->mysql_conn,
-			&user_assoc,
-			ACCOUNTING_ENFORCE_ASSOCS, NULL, true);
-
-		if (rc == SLURM_SUCCESS)
-			debug2("Association %s/%s/%s is already here, not adding again.",
-			       user_assoc.cluster, user_assoc.acct,
-			       user_assoc.user);
-		else {
-			add_assoc_cond->add_assoc->assoc.lineage =
-				xstrdup_printf(
-					"%s0-%s/", add_assoc_cond->base_lineage,
-					add_assoc_cond->add_assoc->assoc.user);
-
-			add_assoc_cond->rc =
-				_add_assoc_internal(add_assoc_cond);
-			/*
-			 * This check is for handling lft/rgt logic
-			 * 2 versions after 23.11 we no longer will have the do
-			 * this check for 1.
-			 */
-			if (add_assoc_cond->rc == 1)
-				add_assoc_cond->rc = SLURM_SUCCESS;
-			xfree(add_assoc_cond->add_assoc->assoc.lineage);
-		}
-	}
+	else
+		_add_assoc_cond_user_internal(add_assoc_cond);
 
 	if (set_def)
 		add_assoc_cond->add_assoc->assoc.is_def = 0;
