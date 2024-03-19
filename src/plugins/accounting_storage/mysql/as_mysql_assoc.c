@@ -3205,7 +3205,7 @@ static int _add_assoc_cond_partition(void *x, void *arg)
 		       user_assoc.user, user_assoc.partition);
 	else {
 		add_assoc_cond->add_assoc->assoc.lineage = xstrdup_printf(
-			"%s/0-%s/%s/", add_assoc_cond->base_lineage,
+			"%s0-%s/%s/", add_assoc_cond->base_lineage,
 			add_assoc_cond->add_assoc->assoc.user,
 			add_assoc_cond->add_assoc->assoc.partition);
 		add_assoc_cond->rc = _add_assoc_internal(add_assoc_cond);
