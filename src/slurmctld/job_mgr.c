@@ -164,6 +164,18 @@ typedef struct {
 	int node_count;
 } node_inx_cnt_t;
 
+#define MAGIC_FOREACH_BY_JOBID_ARGS 0x1a0beebe
+typedef struct {
+	int magic; /* MAGIC_FOREACH_BY_JOBID_ARGS */
+	foreach_job_by_id_control_t control;
+	uint32_t count;
+	JobForEachFunc callback;
+	JobROForEachFunc ro_callback;
+	void *callback_arg;
+	job_record_t *job_ptr;
+	const slurm_selected_step_t *filter;
+} for_each_by_job_id_args_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -3038,6 +3050,8 @@ void _add_job_array_hash(job_record_t *job_ptr)
 	if (job_ptr->array_task_id == NO_VAL)
 		return;	/* Not a job array */
 
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
 	inx = JOB_HASH_INX(job_ptr->array_job_id);
 	job_ptr->job_array_next_j = job_array_hash_j[inx];
 	job_array_hash_j[inx] = job_ptr;
@@ -3234,6 +3248,264 @@ extern int num_pending_job_array_tasks(uint32_t array_job_id)
 	}
 
 	return count;
+}
+
+static void _foreach_by_job_callback(job_record_t *job_ptr,
+				     for_each_by_job_id_args_t *args)
+{
+	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
+
+	if (!job_ptr || !job_ptr->job_id)
+		return;
+
+	xassert(!!args->ro_callback != !!args->callback); /* xor */
+	xassert(args->control == FOR_EACH_JOB_BY_ID_EACH_CONT);
+
+	if (args->ro_callback)
+		args->control = args->ro_callback(job_ptr, args->callback_arg);
+	else
+		args->control = args->callback(job_ptr, args->callback_arg);
+
+	xassert(args->control > FOR_EACH_JOB_BY_ID_EACH_INVALID);
+	xassert(args->control < FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX);
+}
+
+static int _foreach_job_by_id_single(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	for_each_by_job_id_args_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
+
+	_foreach_by_job_callback(job_ptr, args);
+
+	switch (args->control)
+	{
+	case FOR_EACH_JOB_BY_ID_EACH_CONT:
+		return SLURM_SUCCESS;
+	case FOR_EACH_JOB_BY_ID_EACH_STOP:
+	case FOR_EACH_JOB_BY_ID_EACH_FAIL:
+		/* must return error as only way to stop list foreach */
+		return SLURM_ERROR;
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX:
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID:
+		fatal_abort("should never happen");
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_by_het_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	for_each_by_job_id_args_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
+
+	/* Filter to only this HetJob */
+
+	if (job_ptr->het_job_id != args->job_ptr->het_job_id)
+		return SLURM_SUCCESS;
+
+	if ((args->filter->het_job_offset != NO_VAL) &&
+	    (job_ptr->het_job_offset != args->filter->het_job_offset))
+		return SLURM_SUCCESS;
+
+	return _foreach_job_by_id_single(job_ptr, args);
+}
+
+static job_record_t *_find_first_job_array_rec(uint32_t array_job_id)
+{
+	job_record_t *job_ptr;
+	int inx;
+
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if (job_ptr->array_job_id == array_job_id)
+			return job_ptr;
+		job_ptr = job_ptr->job_array_next_j;
+	}
+
+	return NULL;
+}
+
+static void _foreach_job_by_id_array(for_each_by_job_id_args_t *args)
+{
+	job_record_t *meta, *start;
+	bool dumped_meta = false, dumped_linked = false;
+	const uint32_t array_job_id = args->job_ptr->array_job_id;
+
+	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
+
+	start = _find_first_job_array_rec(array_job_id);
+
+	for (job_record_t *j = start; j; j = j->job_array_next_j) {
+		if (j->array_job_id != array_job_id)
+			continue;
+
+		if (j->array_recs)
+			dumped_meta = true;
+
+		if ((args->filter->array_task_id != NO_VAL) &&
+		    (j->array_task_id != args->filter->array_task_id))
+			continue;
+
+		debug3("%pJ->array_recs=%"PRIxPTR" linked to %pJ->array_recs=%"PRIxPTR,
+		       start, (uintptr_t) (start ? start->array_recs : NULL), j,
+		       (uintptr_t) j->array_recs);
+
+		_foreach_by_job_callback(j, args);
+
+		if (args->control != FOR_EACH_JOB_BY_ID_EACH_CONT)
+			return;
+
+		dumped_linked = true;
+	}
+
+	if (dumped_meta)
+		return;
+
+	meta = find_job_record(args->job_ptr->array_job_id);
+
+	if (!meta)
+		return;
+
+	if (!meta->array_recs) {
+		debug3("%pJ->array_recs = NULL", meta);
+		return;
+	} else if (!meta->array_recs->task_id_bitmap) {
+		debug3("%pJ->array_recs->task_id_bitmap = NULL", meta);
+		return;
+	}
+
+	xassert(meta->array_task_id == NO_VAL);
+	xassert(meta->array_job_id == meta->job_id);
+
+	_foreach_by_job_callback(meta, args);
+
+	if (args->control != FOR_EACH_JOB_BY_ID_EACH_CONT)
+		return;
+
+	if (dumped_linked)
+		return;
+
+	for (int i = 0; i < bit_size(meta->array_recs->task_id_bitmap); i++) {
+		if (!bit_test(meta->array_recs->task_id_bitmap, i)) {
+			job_record_t *job_ptr =
+				find_job_array_rec(meta->array_job_id, i);
+
+			if (!job_ptr)
+				continue;
+
+			if ((args->filter->array_task_id != NO_VAL) &&
+			    (job_ptr->array_task_id !=
+			     args->filter->array_task_id))
+				continue;
+
+			debug3("%pJ resolving bit:%d=%c to %pJ",
+			       meta, i,
+			       (bit_test(meta->array_recs->task_id_bitmap, i) ?
+				'1' : '0'), job_ptr);
+
+			_foreach_by_job_callback(job_ptr, args);
+
+			if (args->control != FOR_EACH_JOB_BY_ID_EACH_CONT)
+				return;
+		}
+	}
+}
+
+static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
+				       for_each_by_job_id_args_t *args)
+{
+	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
+
+	if (!filter->step_id.job_id) {
+		/* 0 is never a valid job so just return now */
+		goto done;
+	} else if (filter->step_id.job_id == NO_VAL) {
+		/* walk all jobs */
+		(void) list_for_each_ro(job_list, _foreach_job_by_id_single,
+					args);
+		goto done;
+	}
+
+	xassert(!((filter->array_task_id != NO_VAL) &&
+		  (filter->het_job_offset != NO_VAL)));
+
+	if (filter->array_task_id != NO_VAL)
+		args->job_ptr = find_job_array_rec(filter->step_id.job_id,
+						   filter->array_task_id);
+	else if (filter->het_job_offset != NO_VAL)
+		args->job_ptr = find_job_record(filter->step_id.job_id +
+						filter->het_job_offset);
+	else /* not array task or het component */
+		args->job_ptr = find_job_record(filter->step_id.job_id);
+
+	if (!args->job_ptr)
+		goto done;
+
+	if (args->job_ptr->het_job_list) {
+		xassert(args->job_ptr->het_job_id > 0);
+		(void) list_for_each(args->job_ptr->het_job_list,
+				     _foreach_by_het_job, args);
+	} else if (args->job_ptr->array_job_id != args->job_ptr->job_id) {
+		/* Pack regular (not array/het) job */
+		_foreach_by_job_callback(args->job_ptr, args);
+	} else {
+		/* array job */
+		_foreach_job_by_id_array(args);
+	}
+
+done:
+	switch (args->control)
+	{
+	case FOR_EACH_JOB_BY_ID_EACH_STOP:
+	case FOR_EACH_JOB_BY_ID_EACH_CONT:
+		return args->count;
+	case FOR_EACH_JOB_BY_ID_EACH_FAIL:
+		return args->count * -1;
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX:
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID:
+		fatal_abort("should never happen");
+	}
+
+	fatal_abort("should never happen");
+}
+
+extern int foreach_job_by_id(const slurm_selected_step_t *filter,
+			     JobForEachFunc callback, void *arg)
+{
+	for_each_by_job_id_args_t args = {
+		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
+		.control = FOR_EACH_JOB_BY_ID_EACH_CONT,
+		.count = 0,
+		.callback = callback,
+		.callback_arg = arg,
+		.filter = filter,
+	};
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	return _walk_jobs_by_selected_step(filter, &args);
+}
+
+extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
+				JobROForEachFunc callback, void *arg)
+{
+	for_each_by_job_id_args_t args = {
+		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
+		.control = FOR_EACH_JOB_BY_ID_EACH_CONT,
+		.count = 0,
+		.ro_callback = callback,
+		.callback_arg = arg,
+		.filter = filter,
+	};
+
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+
+	return _walk_jobs_by_selected_step(filter, &args);
 }
 
 /*

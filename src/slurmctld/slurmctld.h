@@ -1358,6 +1358,60 @@ extern void node_mgr_reset_node_stats(node_record_t *node_ptr);
  */
 extern List feature_list_copy(List feature_list_src);
 
+typedef enum {
+	FOR_EACH_JOB_BY_ID_EACH_INVALID = 0,
+	FOR_EACH_JOB_BY_ID_EACH_CONT, /* continue for each processing */
+	FOR_EACH_JOB_BY_ID_EACH_STOP, /* stop for each processing */
+	FOR_EACH_JOB_BY_ID_EACH_FAIL, /* stop for each processing due to failure */
+	FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX /* assertion only value on max value */
+} foreach_job_by_id_control_t;
+
+/*
+ *  Function prototype for operating on each job that matches
+ *  Returns control requested for processing
+ */
+typedef foreach_job_by_id_control_t (*JobForEachFunc)(job_record_t *job_ptr,
+						      void *arg);
+/*
+ *  Function prototype for operating on each read only job that matches
+ *  Returns control requested for processing
+ */
+typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
+								*job_ptr,
+							void *arg);
+
+/*
+ * Walk all matching job_record_t's that match filter
+ * If a job id is a het job leader or array job leader, then all components of
+ * the het job or all jobs in the array will be walked.
+ * Warning: Caller must hold job write lock
+ *
+ * IN filter - Filter to select jobs
+ * IN callback - Function to call on each matching job record pointer
+ * IN arg - Arbitrary pointer to pass to callback
+ * RET number of jobs matched.
+ * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
+ * 	may be zero if no jobs matched.
+ */
+extern int foreach_job_by_id(const slurm_selected_step_t *filter,
+			     JobForEachFunc callback, void *arg);
+
+/*
+ * Walk all matching read only job_record_t's that match filter
+ * If a job id is a het job leader or array job leader, then all components of
+ * the het job or all jobs in the array will be walked.
+ * Warning: Caller must hold job read lock
+ *
+ * IN filter - Filter to select jobs
+ * IN callback - Function to call on each matching job record pointer
+ * IN arg - Arbitrary pointer to pass to callback
+ * RET number of jobs matched.
+ * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
+ * 	may be zero if no jobs matched.
+ */
+extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
+				JobROForEachFunc callback, void *arg);
+
 /*
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
@@ -2054,7 +2108,7 @@ extern int num_pending_job_array_tasks(uint32_t array_job_id);
  * RET SLURM_SUCCESS or error
  */
 extern int dump_job_state(const uint32_t filter_jobs_count,
-			  const uint32_t *filter_jobs_ptr,
+			  const slurm_selected_step_t *filter_jobs_ptr,
 			  uint32_t *jobs_count_ptr,
 			  job_state_response_job_t **jobs_pptr);
 

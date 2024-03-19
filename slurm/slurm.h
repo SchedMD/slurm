@@ -2363,6 +2363,9 @@ typedef struct job_alloc_info_msg {
 	char    *req_cluster;   /* requesting cluster */
 } job_alloc_info_msg_t;
 
+#define SLURM_SELECTED_STEP_INITIALIZER \
+	{ NO_VAL, NO_VAL, { NO_VAL, NO_VAL, NO_VAL } }
+
 typedef struct {
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
@@ -4052,7 +4055,8 @@ extern int slurm_load_jobs(time_t update_time,
  * RET SLURM_SUCCESS or error
  * NOTE: free the response using slurm_free_job_state_response_msg
  */
-extern int slurm_load_job_state(int job_id_count, uint32_t *job_ids,
+extern int slurm_load_job_state(int job_id_count,
+				slurm_selected_step_t *job_ids,
 				job_state_response_msg_t **jsr_pptr);
 
 /*

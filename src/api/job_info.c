@@ -1576,14 +1576,15 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	return rc;
 }
 
-extern int slurm_load_job_state(int job_id_count, uint32_t *job_ids,
+extern int slurm_load_job_state(int job_id_count,
+				slurm_selected_step_t *job_ids,
 				job_state_response_msg_t **jsr_pptr)
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	int rc = SLURM_SUCCESS;
 	job_state_request_msg_t req = {
-		.job_id_count = job_id_count,
+		.count = job_id_count,
 		.job_ids = job_ids,
 	};
 

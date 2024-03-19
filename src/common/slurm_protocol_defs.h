@@ -695,8 +695,8 @@ typedef struct job_info_request_msg {
 } job_info_request_msg_t;
 
 typedef struct {
-	uint32_t job_id_count;
-	uint32_t *job_ids;
+	uint32_t count;
+	slurm_selected_step_t *job_ids;
 } job_state_request_msg_t;
 
 typedef struct {
