@@ -155,12 +155,17 @@ static int _parse_exc_nodes(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *save_ptr = NULL, *sep, *tmp, *tok, *node_cnt_str;
+	hostlist_t *hostlist = NULL;
 
 	/* Shortcut if ":<node_cnt>" is not used */
 	sep = strchr(slurm_conf.suspend_exc_nodes, ':');
-	if (!sep)
-		return node_name2bitmap(slurm_conf.suspend_exc_nodes, false,
-					&exc_node_bitmap);
+	if (!sep) {
+		hostlist = nodespec_to_hostlist(slurm_conf.suspend_exc_nodes,
+						false, NULL);
+		rc = hostlist2bitmap(hostlist, false, &exc_node_bitmap);
+		FREE_NULL_HOSTLIST(hostlist);
+		return rc;
+	}
 
 	FREE_NULL_LIST(partial_node_list);
 	partial_node_list = list_create(_exc_node_part_free);
@@ -175,7 +180,9 @@ static int _parse_exc_nodes(void)
 			*node_cnt_str = '\0';
 			ext_node_cnt = strtol(node_cnt_str + 1, NULL, 10);
 		}
-		rc = node_name2bitmap(tok, false, &exc_node_cnt_bitmap);
+		hostlist = nodespec_to_hostlist(tok, false, NULL);
+		rc = hostlist2bitmap(hostlist, false, &exc_node_cnt_bitmap);
+		FREE_NULL_HOSTLIST(hostlist);
 
 		if (!ext_node_cnt) {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);

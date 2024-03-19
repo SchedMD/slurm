@@ -36,6 +36,7 @@ HIGHLIGHTS
     Previously the batch environment would use the description field,
     which was usually equivalent to the name.
  -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
+ -- Allow NodeSet names to be used in SuspendExcNodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
