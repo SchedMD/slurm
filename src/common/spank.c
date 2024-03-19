@@ -69,6 +69,7 @@
 
 static bool has_prolog = false;
 static bool has_epilog = false;
+static bool has_user_init = false;
 static bool has_task_post_fork = false;
 static bool has_task_exit = false;
 
@@ -457,6 +458,8 @@ spank_stack_plugin_valid_for_context (struct spank_stack *stack,
 		 *   always loaded in these contexts, so continue
 		 *   to do so
 		 */
+		if (p->ops.user_init)
+			has_user_init = true;
 		if (p->ops.task_post_fork)
 			has_task_post_fork = true;
 		if (p->ops.task_exit)
@@ -2619,6 +2622,11 @@ extern bool spank_has_prolog(void)
 extern bool spank_has_epilog(void)
 {
 	return has_epilog;
+}
+
+extern bool spank_has_user_init(void)
+{
+	return has_user_init;
 }
 
 extern bool spank_has_task_post_fork(void)

@@ -115,6 +115,11 @@ extern bool spank_has_prolog(void);
 extern bool spank_has_epilog(void);
 
 /*
+ * Return true if a loaded spank plugin has a user_init function defined.
+ */
+extern bool spank_has_user_init(void);
+
+/*
  * Return true if a loaded spank plugin has a task_post_fork function defined.
  */
 extern bool spank_has_task_post_fork(void);
