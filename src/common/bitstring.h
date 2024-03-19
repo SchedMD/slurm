@@ -158,6 +158,8 @@ int     bit_overlap_any(bitstr_t *b1, bitstr_t *b2);
 int     bit_equal(bitstr_t *b1, bitstr_t *b2);
 void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);
+bitoff_t bit_nth_set(bitstr_t *b, bitoff_t n);
+void bit_pick_firstn(bitstr_t *b, bitoff_t n);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_get_bit_num(bitstr_t *b, int32_t pos);
 

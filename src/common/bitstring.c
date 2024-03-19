@@ -1165,6 +1165,93 @@ bit_rotate(bitstr_t *b1, int32_t n)
 }
 
 /*
+ * find first set n
+ * return position of nth set bit in bitstr word
+ * minimal validity checking: if n > set_count, return 63
+ * if n == 0, return 0
+ */
+static bitoff_t _ffsn(bitstr_t b, bitoff_t n)
+{
+	uint64_t mask = 0xFFFFFFFFu;
+	uint32_t size = 32u;
+	bitstr_t base = 0u;
+
+	while (size > 0) {
+		if (n > hweight(b & mask)) {
+			base += size;
+			size >>= 1;
+			mask |= mask << size;
+		} else {
+			size >>= 1;
+			mask >>= size;
+		}
+	}
+	return base;
+}
+
+/*
+ * return the bit position of the nth set bit
+ * if n > bit_set_count(b), return the position of the last set bit
+ * return -1 if b is empty or n == 0
+ */
+bitoff_t bit_nth_set(bitstr_t *b, bitoff_t n)
+{
+	bitoff_t bit, bit_cnt, last_bit;
+	bitstr_t mask = -1;
+	bitstr_t last_mask = -1;
+	uint32_t count, last_count, last_word;
+
+	_assert_bitstr_valid(b);
+	if (n <= 0)
+		return -1;
+	bit_cnt = _bitstr_bits(b);
+	last_word = _bit_word(bit_cnt);
+
+	last_bit = -1;
+	for (bit = 0; bit < bit_cnt; bit += BITSTR_WORD_SIZE){
+		if (_bit_word(bit) == last_word)
+			mask = _bit_nmask(bit_cnt);
+		count = hweight(b[_bit_word(bit)] & mask);
+		if (count > 0){
+			last_bit = bit;
+			last_count = count;
+		}
+		if (n <= count)
+			break;
+		n -= count;
+	}
+
+	/* b has no set bits */
+	if (last_bit < 0)
+		return -1;
+	if (_bit_word(last_bit) == last_word)
+		last_mask = _bit_nmask(bit_cnt);
+
+	/*
+	 * if last_bit != bit, n > set_count.
+	 * find position of last bit in last non-empty word
+	 */
+	return last_bit + _ffsn(b[_bit_word(last_bit)] & last_mask,
+	                        (last_bit == bit) ? n : last_count);
+}
+
+/*
+ * Clear all bits after the first n set bits
+ */
+void bit_pick_firstn(bitstr_t *b, bitoff_t n)
+{
+	_assert_bitstr_valid(b);
+	bitoff_t nth_bit = bit_nth_set(b, n);
+	/*
+	 * b is empty or nth bit is at the last position.
+	 * Nothing to do in either case
+	 */
+	if (((nth_bit + 1) == _bitstr_bits(b)) || (nth_bit < 0))
+		return;
+	bit_nclear(b, nth_bit + 1, _bitstr_bits(b) - 1);
+}
+
+/*
  * build a bitmap containing the first nbits of b which are set
  */
 bitstr_t *

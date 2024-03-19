@@ -37,6 +37,8 @@ HIGHLIGHTS
     which was usually equivalent to the name.
  -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
  -- Allow NodeSet names to be used in SuspendExcNodes.
+ -- SuspendExcNodes=<nodes>:N now counts allocated nodes in N. The first N
+    powered up nodes in <nodes> are protected from being suspended.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

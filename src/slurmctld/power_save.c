@@ -299,41 +299,105 @@ static bool _node_state_should_suspend(node_record_t *node_ptr)
 }
 
 /*
+ * Is the node in an "active" state, meaning that it is powered up and
+ * idle or allocated
+ */
+static bool _node_state_active(node_record_t *node_ptr)
+{
+	/* inactive if not one of these */
+	if (!IS_NODE_ALLOCATED(node_ptr) &&
+	    !IS_NODE_IDLE(node_ptr)) {
+		return false;
+	}
+
+	/* inactive if any of these */
+	if (IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr) ||
+	    IS_NODE_POWERED_DOWN(node_ptr) ||
+	    IS_NODE_DRAIN(node_ptr) ||
+	    (node_ptr->sus_job_cnt > 0)) {
+		return false;
+	}
+	/* powering up or completing included here */
+	/* active */
+	return true;
+}
+
+/*
  * Select the nodes specific nodes to be excluded from consideration for
- * suspension based upon the node states and specified count. Nodes which
- * can not be used (e.g. ALLOCATED, DOWN, DRAINED, etc.).
+ * suspension based upon the node states and specified count. Active
+ * (powered up and idle or allocated) and suspendable nodes are
+ * counted when fulfilling the exclude count.
  */
 static int _pick_exc_nodes(void *x, void *arg)
 {
 	bitstr_t **orig_exc_nodes = (bitstr_t **) arg;
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
 	bitstr_t *exc_node_cnt_bitmap;
-	int avail_node_cnt, exc_node_cnt;
-	node_record_t *node_ptr;
+	bitstr_t *suspendable_bitmap = NULL;
+	bitstr_t *active_bitmap = NULL;
+	int avail_node_cnt, exc_node_cnt, active_count;
+	node_record_t *node_ptr = NULL;
+	hostlist_t *active_hostlist, *suspend_hostlist;
+	char *suspend_str = NULL, *active_str = NULL;
 
-	avail_node_cnt = bit_set_count(ext_part_struct->exc_node_cnt_bitmap);
-	if (ext_part_struct->exc_node_cnt >= avail_node_cnt) {
+	exc_node_cnt_bitmap = ext_part_struct->exc_node_cnt_bitmap;
+	exc_node_cnt = ext_part_struct->exc_node_cnt;
+
+	avail_node_cnt = bit_set_count(exc_node_cnt_bitmap);
+	if (exc_node_cnt >= avail_node_cnt) {
 		/* Exclude all nodes in this set */
-		exc_node_cnt_bitmap =
-			bit_copy(ext_part_struct->exc_node_cnt_bitmap);
+		exc_node_cnt_bitmap = bit_copy(exc_node_cnt_bitmap);
 	} else {
-		exc_node_cnt_bitmap = bit_alloc(
-			bit_size(ext_part_struct->exc_node_cnt_bitmap));
-		exc_node_cnt = ext_part_struct->exc_node_cnt;
+		/* gather suspendable nodes */
+		/* count active but not suspendable */
+		active_count = 0;
+		suspendable_bitmap = bit_alloc(bit_size(exc_node_cnt_bitmap));
+		active_bitmap = bit_alloc(bit_size(exc_node_cnt_bitmap));
+
 		for (int i = 0;
-		     (node_ptr =
-		      next_node_bitmap(ext_part_struct->exc_node_cnt_bitmap,
-				       &i));
+		     (node_ptr = next_node_bitmap(exc_node_cnt_bitmap, &i));
 		     i++) {
-			if (!_node_state_suspendable(node_ptr)		||
-			    IS_NODE_DOWN(node_ptr)			||
-			    IS_NODE_DRAIN(node_ptr)			||
-			    (node_ptr->sus_job_cnt > 0))
-				continue;
-			bit_set(exc_node_cnt_bitmap, i);
-			if (--exc_node_cnt <= 0)
-				break;
+			/*
+			 * a powered down node is technically suspendable, but
+			 * it should not count toward suspendable nodes here
+			 */
+			if (_node_state_suspendable(node_ptr) &&
+			    !IS_NODE_POWERED_DOWN(node_ptr)) {
+				bit_set(suspendable_bitmap, i);
+			} else if (_node_state_active(node_ptr)) {
+				bit_set(active_bitmap, i);
+				active_count++;
+			}
 		}
+
+		if (power_save_debug && (get_log_level() >= LOG_LEVEL_DEBUG)) {
+			active_hostlist = bitmap2hostlist(active_bitmap);
+			active_str = slurm_hostlist_ranged_string_xmalloc(
+				active_hostlist);
+			suspend_hostlist = bitmap2hostlist(suspendable_bitmap);
+			suspend_str = slurm_hostlist_ranged_string_xmalloc(
+				suspend_hostlist);
+
+			log_flag(POWER, "avoid %d nodes: active: %d (%s), suspendable: (%s)",
+			         exc_node_cnt, active_count, active_str,
+				 suspend_str);
+			FREE_NULL_HOSTLIST(active_hostlist);
+			FREE_NULL_HOSTLIST(suspend_hostlist);
+			xfree(active_str);
+			xfree(suspend_str);
+		}
+
+		/* Exclude any remaining suspendable nodes */
+		exc_node_cnt -= active_count;
+		if (exc_node_cnt > 0) {
+			bit_pick_firstn(suspendable_bitmap, exc_node_cnt);
+		} else {
+			bit_clear_all(suspendable_bitmap);
+		}
+
+		exc_node_cnt_bitmap = suspendable_bitmap;
+		FREE_NULL_BITMAP(active_bitmap);
 	}
 
 	if (*orig_exc_nodes == NULL) {

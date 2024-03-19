@@ -5342,11 +5342,10 @@ into this directory.
 \fBSuspendExcNodes\fR
 Specifies the nodes which are to not be placed in power save mode, even
 if the node remains idle for an extended period of time.
-Use Slurm's hostlist expression to identify nodes with an optional ":" separator
-and count of nodes to exclude from the preceding range.
-For example "nid[10\-20]:4" will prevent 4 usable nodes (i.e IDLE and not
-DOWN, DRAINING or already powered down) in the set "nid[10\-20]" from being
-powered down.
+Use Slurm's hostlist expression or NodeSets to identify nodes with an optional
+":" separator and count of nodes to exclude from the preceding range.
+For example "nid[10\-20]:4" will prevent 4 powered up nodes in the set
+"nid[10\-20]" from being powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default no nodes are excluded.
