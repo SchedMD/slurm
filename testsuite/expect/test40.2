@@ -199,9 +199,9 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --exact -n1 --gres=mps:$target_step $file_in1 &
-$srun --exact -n1 --gres=mps:$target_step $file_in1 &
-$srun --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun -vv --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun -vv --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun -vv --exact -n1 --gres=mps:$target_step $file_in1 &
 wait
 $bin_date
 exit 0"
@@ -245,20 +245,11 @@ expect {
 }
 subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
-log_user 0
-set match 0
-spawn $bin_cat $file_out1
-expect {
-	-re "step creation temporarily disabled" {
-		incr match
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-subtest {$match == 1} "Verify delay step for sufficient MPS resources" "$match != 1"
+set output [run_command_output -fail "$bin_cat $file_out1"]
+subtest {[regexp -indices "srun: Received task exit notification" $output idx] &&
+         [regexp -indices -start [lindex $idx end] "srun: Step completed" $output idx] &&
+         [regexp -indices -start [lindex $idx end] "srun: Step created" $output idx] &&
+         [regexp -indices -start [lindex $idx end] "srun: Received task exit notification" $output idx]} "Verify step is delayed for sufficient MPS resources"
 
 #
 # Run step to try to consume gres/mps than allocated to the job
