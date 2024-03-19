@@ -3314,7 +3314,7 @@ _destroy_slurm_conf(void)
  * 2. SLURM_CONF_SERVER env var
  * 3. DNS SRV record
  */
-static int _establish_config_source(char **config_file, int *memfd)
+static int _establish_config_source(char **config_file, bool *memfd)
 {
 	struct stat stat_buf;
 	config_file_t *config_tmp;
@@ -3386,6 +3386,7 @@ static int _establish_config_source(char **config_file, int *memfd)
 		return SLURM_ERROR;
 	}
 	*config_file = xstrdup(config_tmp->memfd_path);
+	*memfd = true;
 
 	slurm_free_config_response_msg(config);
 	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
@@ -3460,7 +3461,7 @@ extern void slurm_conf_init_stepd(void)
 extern int slurm_conf_init(const char *file_name)
 {
 	char *config_file;
-	int memfd = -1;
+	bool memfd = false;
 	slurm_mutex_lock(&conf_lock);
 
 	if (conf_initialized) {
@@ -3506,10 +3507,9 @@ extern int slurm_conf_init(const char *file_name)
 		local_test_config_rc = 1;
 	}
 
-	if (memfd != -1) {
+	if (memfd)
 		unsetenv("SLURM_CONF");
-		close(memfd);
-	}
+
 	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
 
