@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Enforce binding with shared gres selection if requested.
  -- Fix job allocation failures when the requested tres type or name ends in
     "gres" or "license".
+ -- accounting_storage/mysql - Fix lineage string construction when adding a
+    user association with a partition.
 
 * Changes in Slurm 23.11.4
 ==========================
