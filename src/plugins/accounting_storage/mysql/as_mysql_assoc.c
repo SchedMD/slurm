@@ -3218,10 +3218,20 @@ static void _add_assoc_cond_user_internal(add_assoc_cond_t *add_assoc_cond)
 static int _add_assoc_cond_partition(void *x, void *arg)
 {
 	add_assoc_cond_t *add_assoc_cond = arg;
+	char *partition = x;
 	slurmdb_assoc_rec_t user_assoc;
 	int rc;
 
-	add_assoc_cond->add_assoc->assoc.partition = x;
+	/*
+	 * For some reason we have a empty partition name, handle as if it were
+	 * a non-partition association.
+	 */
+	if (!partition || !partition[0]) {
+		_add_assoc_cond_user_internal(add_assoc_cond);
+		goto endit;
+	}
+
+	add_assoc_cond->add_assoc->assoc.partition = partition;
 
 	memset(&user_assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	user_assoc.cluster = add_assoc_cond->add_assoc->assoc.cluster;
@@ -3261,7 +3271,7 @@ static int _add_assoc_cond_partition(void *x, void *arg)
 	}
 
 	add_assoc_cond->add_assoc->assoc.partition = NULL;
-
+endit:
 	if (add_assoc_cond->rc != SLURM_SUCCESS)
 		return -1;
 	else
