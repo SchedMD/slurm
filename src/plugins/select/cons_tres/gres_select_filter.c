@@ -391,7 +391,7 @@ static int *_get_sorted_topo_by_least_loaded(gres_node_state_t *gres_ns)
 static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 			      sock_gres_t *sock_gres, int node_inx,
 			      bool use_busy_dev, bool use_single_dev,
-			      bool no_repeat)
+			      bool no_repeat, bool enforce_binding)
 {
 	int *topo_index = NULL;
 
@@ -411,7 +411,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 
 	/* socket_inx == -1 for sharing gres avail from any socket */
 	/* socket_inx == -2 don't test for socket affinity */
-	const int ANY_SOCK_TEST = -1, NO_SOCK_TEST = -2;
+	const int ANY_SOCK_TEST = -1;
 
 	for (int s = 0; (s < sock_gres->sock_cnt) && *gres_needed; s++) {
 		if (!used_sock[s])
@@ -426,10 +426,15 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 				       no_repeat, node_inx, ANY_SOCK_TEST,
 				       gres_needed, topo_index);
 
-	if (*gres_needed)
+	for (int s = 0;
+	     !enforce_binding && (s < sock_gres->sock_cnt) && *gres_needed;
+	     s++) {
+		if (used_sock[s]) /* Only test the sockets we ignored before */
+			continue;
 		_pick_shared_gres_topo(sock_gres, use_busy_dev, use_single_dev,
-				       no_repeat, node_inx, NO_SOCK_TEST,
-				       gres_needed, topo_index);
+				       no_repeat, node_inx, s, gres_needed,
+				       topo_index);
+	}
 
 	xfree(topo_index);
 }
@@ -446,7 +451,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
  */
 static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 				 int job_node_inx, sock_gres_t *sock_gres,
-				 uint32_t job_id)
+				 uint32_t job_id, bool enforce_binding)
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
@@ -493,13 +498,13 @@ static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 
 	/* Try to select a single sharing gres with sufficient available gres */
 	_pick_shared_gres(&gres_needed, used_sock, sock_gres,
-			  node_inx, use_busy_dev, true, false);
+			  node_inx, use_busy_dev, true, false, enforce_binding);
 
 	if (gres_needed &&
 	    (slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
 		/* Select sharing gres with any available shared gres */
-		_pick_shared_gres(&gres_needed, used_sock, sock_gres,
-				  node_inx, use_busy_dev, false, false);
+		_pick_shared_gres(&gres_needed, used_sock, sock_gres, node_inx,
+				  use_busy_dev, false, false, enforce_binding);
 
 	if (gres_needed) {
 		error("Not enough shared gres available to satisfy gres per node request");
@@ -522,6 +527,7 @@ static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 static int _set_shared_task_bits(int node_inx,
 				 sock_gres_t *sock_gres,
 				 uint32_t job_id,
+				 bool enforce_binding,
 				 bool no_task_sharing,
 				 uint32_t *tasks_per_socket)
 {
@@ -546,7 +552,8 @@ static int _set_shared_task_bits(int node_inx,
 			error("one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring.");
 
 		_pick_shared_gres(&gres_needed, tasks_per_socket, sock_gres,
-				  node_inx, use_busy_dev, true, false);
+				  node_inx, use_busy_dev, true, false,
+				  enforce_binding);
 		if (gres_needed) {
 			error("Not enough shared gres available on one sharing gres to satisfy gres per task request");
 			rc = ESLURM_INVALID_GRES;
@@ -561,7 +568,8 @@ static int _set_shared_task_bits(int node_inx,
 				_pick_shared_gres(&gres_needed, used_sock,
 						  sock_gres, node_inx,
 						  use_busy_dev, true,
-						  no_task_sharing);
+						  no_task_sharing,
+						  enforce_binding);
 				if (gres_needed) {
 					error("Not enough shared gres available to satisfy gres per task request");
 					rc = ESLURM_INVALID_GRES;
@@ -1764,10 +1772,14 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				if (gres_js->gres_per_node) {
 					rc = _set_shared_node_bits(
 						job_res, i, job_node_inx,
-						sock_gres, job_id);
+						sock_gres, job_id,
+						(job_ptr->bit_flags &
+						 GRES_ENFORCE_BIND));
 				} else if (gres_js->gres_per_task) {
 					rc = _set_shared_task_bits(
 						i, sock_gres, job_id,
+						(job_ptr->bit_flags &
+						 GRES_ENFORCE_BIND),
 						(job_ptr->bit_flags &
 						 GRES_ONE_TASK_PER_SHARING),
 						tasks_per_node_socket[i]);
