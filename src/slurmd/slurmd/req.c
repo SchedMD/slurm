@@ -4386,8 +4386,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	slurm_addr_t   ioaddr;
-	void *job_cred_sig = NULL;
-	uint32_t     len;
 	int               fd;
 	slurm_addr_t *cli = &msg->orig_addr;
 	uint32_t nodeid = NO_VAL;
@@ -4462,17 +4460,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		slurm_set_port(&ioaddr, port);
 	}
 
-	/*
-	 * Get the signature of the job credential.  slurmstepd will need
-	 * this to prove its identity when it connects back to srun.
-	 */
-	job_cred_sig = xstrdup(req->io_key);
-	len = strlen(job_cred_sig) + 1;
-	if (len < SLURM_IO_KEY_SIZE) {
-		error("Incorrect slurm cred signature length");
-		goto done2;
-	}
-
 	resp->gtids = NULL;
 	resp->local_pids = NULL;
 
@@ -4483,14 +4470,13 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	/* Following call fills in gtids and local_pids when successful. */
 	rc = stepd_attach(fd, protocol_version, &ioaddr, &resp_msg.address,
-			  job_cred_sig, len, msg->auth_uid, resp);
+			  req->io_key, msg->auth_uid, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;
 	}
 
 done2:
-	xfree(job_cred_sig);
 	close(fd);
 done:
 	debug2("update step addrs rc = %d", rc);
