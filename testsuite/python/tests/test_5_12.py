@@ -16,22 +16,6 @@ def resolve_array_job(job_id, task_id):
     )
 
 
-def cancel_all_jobs():
-    # Cancel *all* jobs (not just -u me) and wait for them to finish
-    while True:
-        jobs = (
-            atf.run_command_output(f"squeue --noheader --format=%A")
-            .strip()
-            .splitlines()
-        )
-
-        for jobid in jobs:
-            atf.cancel_jobs([int(jobid)])
-
-        if len(jobs) <= 0:
-            break
-
-
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     # Test needs to run a het job with 3 components and 9 parallel tasks of an arrary
@@ -39,10 +23,13 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_single_job():
-    script_out = str(atf.module_tmp_path / "squeue.out")
-    cancel_all_jobs()
+@pytest.fixture(scope="function", autouse=True)
+def cancel_jobs():
+    yield
+    atf.cancel_all_jobs()
 
+
+def test_single_job():
     output = atf.run_command_output(
         f"squeue --noheader --only-job-state --format='%i=%T'"
     ).strip()
@@ -86,8 +73,6 @@ def test_single_job():
 
 
 def test_het_job():
-    script_out = str(atf.module_tmp_path / "squeue.out")
-    cancel_all_jobs()
     job_id = atf.submit_job_sbatch("-n1 : -n1 : -n1 --wrap='srun sleep infinity'")
     atf.wait_for_step(job_id, 0, fatal=True, timeout=60)
 
@@ -155,8 +140,6 @@ def test_het_job():
 
 
 def test_array_job():
-    script_out = str(atf.module_tmp_path / "squeue.out")
-    cancel_all_jobs()
     job_id = atf.submit_job_sbatch("--array=1-10 --hold --wrap='srun sleep infinity'")
     atf.wait_for_job_state(job_id, "PENDING", fatal=True, timeout=60)
 
@@ -315,10 +298,6 @@ def test_array_job():
 
 
 def test_all_jobs():
-    script_out = str(atf.module_tmp_path / "squeue.out")
-
-    cancel_all_jobs()
-
     job_id1 = atf.submit_job_sbatch(
         "--overcommit --oversubscribe --mem=0 --array=1-100 --hold --wrap='srun sleep infinity'"
     )
@@ -437,5 +416,3 @@ def test_all_jobs():
     assert f"{job_id3}+3=RUNNING" in output
     assert f"{job_id4}=RUNNING" in output
     assert len(output) == 7
-
-    cancel_all_jobs()
