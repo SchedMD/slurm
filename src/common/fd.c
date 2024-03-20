@@ -248,6 +248,7 @@ static pid_t fd_test_lock(int fd, int type)
 	return(lock.l_pid);
 }
 
+
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
 extern int wait_fd_readable(int fd, int time_limit)
@@ -278,6 +279,44 @@ extern int wait_fd_readable(int fd, int time_limit)
 			time_left = time_limit - (time(NULL) - start);
 		}
 	}
+}
+
+/*
+ * Check if a file descriptor is writable now.
+ *
+ * This function assumes that O_NONBLOCK is set already, if it is not this
+ * function will block!
+ *
+ * Return 1 when writeable or 0 on error
+ */
+extern bool fd_is_writable(int fd)
+{
+	bool rc = true;
+	char temp[2];
+	struct pollfd ufd;
+
+	/* setup call to poll */
+	ufd.fd = fd;
+	ufd.events = POLLOUT;
+
+	while (true) {
+		if (poll(&ufd, 1, 0) == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			debug2("%s: poll error: %m", __func__);
+			rc = false;
+			break;
+		}
+		if ((ufd.revents & POLLHUP) ||
+		    (recv(fd, &temp, 1, MSG_PEEK) == 0)) {
+			debug2("%s: socket is not writable", __func__);
+			rc = false;
+			break;
+		}
+		break;
+	}
+
+	return rc;
 }
 
 /*
