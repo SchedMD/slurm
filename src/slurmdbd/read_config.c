@@ -149,6 +149,7 @@ extern int read_slurmdbd_conf(void)
 		{"DebugLevel", S_P_STRING},
 		{"DebugLevelSyslog", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
+		{"HashPlugin", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
 		{"LogTimeFormat", S_P_STRING},
@@ -339,6 +340,9 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->purge_job |=
 					SLURMDB_PURGE_MONTHS;
 		}
+
+		if (!s_p_get_string(&slurm_conf.hash_plugin, "HashPlugin", tbl))
+			slurm_conf.hash_plugin = xstrdup(DEFAULT_HASH_PLUGIN);
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 
@@ -888,6 +892,8 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("DefaultQOS");
 	key_pair->value = xstrdup(slurmdbd_conf->default_qos);
 	list_append(my_list, key_pair);
+
+	add_key_pair(my_list, "HashPlugin", "%s", slurm_conf.hash_plugin);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LogFile");

@@ -99,6 +99,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
+#define DEFAULT_HASH_PLUGIN "hash/k12"
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0

@@ -289,6 +289,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"GroupUpdateForce", S_P_UINT16},
 	{"GroupUpdateTime", S_P_UINT16},
 	{"GpuFreqDef", S_P_STRING},
+	{"HashPlugin", S_P_STRING},
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckNodeState", S_P_STRING},
 	{"HealthCheckProgram", S_P_STRING},
@@ -4236,6 +4237,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->group_time = DEFAULT_GROUP_TIME;
 
 	(void) s_p_get_string(&conf->gpu_freq_def, "GpuFreqDef", hashtbl);
+
+	if (!s_p_get_string(&conf->hash_plugin, "HashPlugin", hashtbl))
+		conf->hash_plugin = xstrdup(DEFAULT_HASH_PLUGIN);
 
 	if (!s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl))
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
