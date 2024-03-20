@@ -3433,6 +3433,26 @@ extern void add_key_pair(list_t *key_pair_list, const char *key,
 	list_append(key_pair_list, key_pair);
 }
 
+extern void add_key_pair_bool(list_t *key_pair_list, const char *key,
+			      bool value)
+{
+	config_key_pair_t *key_pair = xmalloc(sizeof(*key_pair));
+
+	key_pair->name = xstrdup(key);
+	key_pair->value = xstrdup(value ? "yes" : "no");
+	list_append(key_pair_list, key_pair);
+}
+
+extern void add_key_pair_own(list_t *key_pair_list, const char *key,
+			     char *value)
+{
+	config_key_pair_t *key_pair = xmalloc(sizeof(*key_pair));
+
+	key_pair->name = xstrdup(key);
+	key_pair->value = value;
+	list_append(key_pair_list, key_pair);
+}
+
 extern void slurm_conf_init_stepd(void)
 {
 	if (slurm_conf.propagate_rlimits_except) {

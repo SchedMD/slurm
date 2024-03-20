@@ -364,6 +364,20 @@ extern void add_key_pair(list_t *key_pair_list, const char *key,
 	__attribute__((format(printf, 3, 4)));
 
 /*
+ * Allocate a config_key_pair_t, duplicate the key, and set the value
+ * to "yes" or "no".
+ */
+extern void add_key_pair_bool(list_t *key_pair_list, const char *key,
+			      bool value);
+
+/*
+ * Allocate a config_key_pair_t, duplicate the key, and take ownership of the
+ * value string.
+ */
+extern void add_key_pair_own(list_t *key_pair_list, const char *key,
+			     char *value);
+
+/*
  * slurm_conf_init_stepd - Since the stepd does not read in the file and
  * receives it from the slurm we need to call a different function to do this.
  */
