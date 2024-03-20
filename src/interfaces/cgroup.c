@@ -543,7 +543,6 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
  */
 extern List cgroup_get_conf_list(void)
 {
-	config_key_pair_t *key_pair;
 	list_t *cgroup_conf_l;
 	cgroup_conf_t *cg_conf = &slurm_cgroup_conf;
 
@@ -553,94 +552,40 @@ extern List cgroup_get_conf_list(void)
 
 	slurm_rwlock_rdlock(&cg_conf_lock);
 
+	add_key_pair(cgroup_conf_l, "CgroupMountpoint", "%s",
+		     cg_conf->cgroup_mountpoint);
+	add_key_pair_bool(cgroup_conf_l, "ConstrainCores",
+			  cg_conf->constrain_cores);
+	add_key_pair_bool(cgroup_conf_l, "ConstrainRAMSpace",
+			  cg_conf->constrain_ram_space);
+	add_key_pair(cgroup_conf_l, "AllowedRAMSpace", "%.1f%%",
+		     cg_conf->allowed_ram_space);
+	add_key_pair(cgroup_conf_l, "MaxRAMPercent", "%.1f%%",
+		     cg_conf->max_ram_percent);
+	add_key_pair(cgroup_conf_l, "MinRAMSpace", "%"PRIu64"MB",
+		     cg_conf->min_ram_space);
+	add_key_pair_bool(cgroup_conf_l, "ConstrainSwapSpace",
+			  cg_conf->constrain_swap_space);
+	add_key_pair(cgroup_conf_l, "AllowedSwapSpace", "%.1f%%",
+		     cg_conf->allowed_swap_space);
+	add_key_pair(cgroup_conf_l, "MaxSwapPercent", "%.1f%%",
+		     cg_conf->max_swap_percent);
+	add_key_pair_bool(cgroup_conf_l, "ConstrainDevices",
+			  cg_conf->constrain_devices);
+	add_key_pair(cgroup_conf_l, "CgroupPlugin", "%s",
+		     cg_conf->cgroup_plugin);
+	add_key_pair_bool(cgroup_conf_l, "IgnoreSystemd",
+			  cg_conf->ignore_systemd);
+	add_key_pair_bool(cgroup_conf_l, "IgnoreSystemdOnFailure",
+			  cg_conf->ignore_systemd_on_failure);
+	add_key_pair_bool(cgroup_conf_l, "EnableControllers",
+			  cg_conf->enable_controllers);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("CgroupMountpoint");
-	key_pair->value = xstrdup(cg_conf->cgroup_mountpoint);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ConstrainCores");
-	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_cores ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ConstrainRAMSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_ram_space ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AllowedRAMSpace");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->allowed_ram_space);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MaxRAMPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_ram_percent);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MinRAMSpace");
-	key_pair->value = xstrdup_printf("%"PRIu64" MB",
-					 cg_conf->min_ram_space);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ConstrainSwapSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_swap_space ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AllowedSwapSpace");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->allowed_swap_space);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MaxSwapPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_swap_percent);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ConstrainDevices");
-	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_devices ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MemorySwappiness");
 	if (cg_conf->memory_swappiness != NO_VAL64)
-		key_pair->value = xstrdup_printf("%"PRIu64,
-						 cg_conf->memory_swappiness);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("CgroupPlugin");
-	key_pair->value = xstrdup(cg_conf->cgroup_plugin);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("IgnoreSystemd");
-	key_pair->value = xstrdup_printf("%s",
-					 cg_conf->ignore_systemd ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("IgnoreSystemdOnFailure");
-	key_pair->value = xstrdup_printf("%s",
-					 cg_conf->ignore_systemd_on_failure ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnableControllers");
-	key_pair->value = xstrdup_printf("%s",
-					 cg_conf->enable_controllers ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
+		add_key_pair(cgroup_conf_l, "MemorySwappiness", "%"PRIu64,
+			     cg_conf->memory_swappiness);
+	else
+		add_key_pair(cgroup_conf_l, "MemorySwappiness", "(null)");
 
 	slurm_rwlock_unlock(&cg_conf_lock);
 
