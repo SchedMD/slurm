@@ -13,6 +13,12 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def cancel_jobs():
+    yield
+    atf.cancel_all_jobs()
+
+
 def make_and_run_bash(command) -> None:
     """Make and run the bash script to run a command 1000 times.
     Input is a list of lines to be run as bash script."""
@@ -41,9 +47,6 @@ def test_parallel(command, phrase):
     1000 user commands to slurm to make sure that it doesn't crash. We then
     check the output that the correct number of commands were run."""
 
-    # Cancel all jobs so that the the queue is empty
-    atf.cancel_all_jobs()
-
     make_and_run_bash(command)
 
     output = atf.run_command_output(f"cat {script_out} | grep -c '{phrase}'")
@@ -57,8 +60,6 @@ def test_squeue_parallel():
     correctly. To test this we submit 100 jobs, then we run 1000 squeue
     commands and make sure that all 1000 worked and produced output."""
 
-    # Cancel all jobs so that the the queue is empty
-    atf.cancel_all_jobs()
     # Submit 100 jobs to fill up the queue
     for i in range(100):
         atf.submit_job_sbatch("--wrap='sleep 100'")
@@ -76,8 +77,6 @@ def test_show_jobs_parallel():
     then run 1000 'scontrol show job {job_id} &' commands to make sure that all
     of them provide the correct output"""
 
-    # Cancel all jobs so that the the queue is empty
-    atf.cancel_all_jobs()
     job_id = atf.submit_job_srun("true")
 
     make_and_run_bash(f"scontrol show job {job_id}")
