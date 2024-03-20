@@ -1,4 +1,4 @@
-.TH "helpers.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
+.TH "helpers.conf" "5" "Slurm Configuration File" "February 2024" "Slurm Configuration File"
 
 .SH "NAME"
 helpers.conf \- Slurm configuration file for the helpers plugin.
@@ -37,7 +37,7 @@ and a failure is assumed. Default value is 10 seconds.
 .IP
 
 .TP
-\fBFeature\fR=<\fIstring\fR> \fBHelper\fR=<\fIfile\fR>
+\fBFeature\fR=<\fIstring\fR> \fBHelper\fR=<\fIfile\fR> <\fBFlags\fR=<\fIflags\fR>
 Defines \fBFeature(s)\fR and a corresponding \fBHelper\fR program that reports
 and modifies the status of the feature(s). Multiple \fBFeature\fR entries are
 allowed, one for each feature and corresponding program/script. A comma
@@ -46,6 +46,19 @@ separated list of features can also be defined for one \fBHelper\fR.
 Features can be defined per node by creating a unique file for each node. The
 controller must have a \fBhelpers.conf\fR that lists all possible helper
 features.
+
+.RS
+.TP
+Currently supported flags are:
+.IP
+
+.TP
+\fBrebootless\fR
+Indicate that the feature doesn't require a node reboot. If
+set, feature activation won't execute the \fIRebootProgram\fR, the node will
+just register that the node rebooted to slurmctld without an actual reboot.
+.RE
+.IP
 
 A single \fBhelpers.conf\fR can be created that defines features for specific
 nodes by prepending \fINodeName=<nodelist>\fR to the front of the \fBFeature\fR

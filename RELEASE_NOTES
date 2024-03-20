@@ -40,6 +40,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- An error log has been added if JobAcctGatherParams 'UsePss' or 'NoShare' are
     configured with a plugin other than jobacct_gather/linux. In such case these
     parameters are ignored.
+ -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
+    without rebooting compute nodes.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

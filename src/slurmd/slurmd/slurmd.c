@@ -189,7 +189,7 @@ static time_t sent_reg_time = (time_t) 0;
 static char *cached_features_avail = NULL;
 static char *cached_features_active = NULL;
 static bool plugins_registered = false;
-static bool refresh_cached_features = true;
+bool refresh_cached_features = true;
 static pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int       _convert_spec_cores(void);

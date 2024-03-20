@@ -59,7 +59,7 @@ typedef struct node_features_ops {
 	bitstr_t * (*get_node_bitmap) (void);
 	int     (*overlap)      (bitstr_t *active_bitmap);
 	bool	(*node_power)	(void);
-	int	(*node_set)	(char *active_features);
+	int	(*node_set)	(char *active_features, bool *need_reboot);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
 	bool	(*node_update_valid) (void *node_ptr,
@@ -362,7 +362,7 @@ extern bool node_features_g_node_power(void)
  * NOTE: Executed by the slurmd daemon.
  * IN active_features - New active features
  * RET error code */
-extern int node_features_g_node_set(char *active_features)
+extern int node_features_g_node_set(char *active_features, bool *need_reboot)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS;
@@ -371,7 +371,7 @@ extern int node_features_g_node_set(char *active_features)
 	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(ops[i].node_set))(active_features);
+		rc = (*(ops[i].node_set))(active_features, need_reboot);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
