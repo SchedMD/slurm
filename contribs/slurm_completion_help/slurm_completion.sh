@@ -3494,6 +3494,66 @@ function __scontrol_pidinfo() {
 	_pids # TODO: return only slurm pids
 }
 
+# completion handler for: scontrol power up *
+function __scontrol_power_up() {
+	local parameters=(
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	up) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol power down *
+function __scontrol_power_down() {
+	local parameters=(
+		"asap"
+		"force"
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	down|asap|force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol power *
+function __scontrol_power() {
+	local subcmds=(
+		"up"
+		"down"
+	)
+	local subcmd
+	subcmd="$(__slurm_find_subcmd "${subcmds[*]}")"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_debug "$(__func__): subcmd='$subcmd'"
+	__slurm_log_trace "$(__func__): #subcmds[@]='${#subcmds[@]}'"
+	__slurm_log_trace "$(__func__): subcmds[*]='${subcmds[*]}'"
+
+	if [[ -z ${subcmd-} ]]; then
+		__slurm_compreply "${subcmds[*]}"
+	else
+		comp_cmd="${comp_cmd}_${subcmd//[^[:alnum:]]/}"
+		__slurm_comp_command "${comp_cmd}"
+	fi
+}
+
 # completion handler for: scontrol listpids *
 function __scontrol_listpids() {
 	__slurm_compreply_list "$(__slurm_jobs)"
@@ -4478,6 +4538,7 @@ function _scontrol() {
 		"pidinfo"
 		"listpids"
 		"ping"
+		"power"
 		"reboot"
 		"reconfigure"
 		"release"

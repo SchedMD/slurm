@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "February 2024" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "March 2024" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -226,6 +226,55 @@ one host are, in general, only used by Slurm developers.
 \fBping\fR
 Ping the primary and secondary slurmctld daemon and report if
 they are responding.
+.IP
+
+.TP
+\fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>}
+Control power state of the provided node list/set. For 'power down', the
+optional ASAP/FORCE flag will be added to the power down request, but will
+otherwise be rejected for power up requests. All arguments will be processed
+insensitive of case except for the node list/set. This subcommand obsoletes the
+prior usage of scontrol's update command:
+
+scontrol update NodeName=<\fInodes\fR>
+                State={POWER_UP|POWER_DOWN|POWER_DOWN_ASAP|POWER_DOWN_FORCE}
+
+.RS
+Commands:
+.TP
+\fBdown\fR
+Will use the configured \fISuspendProgram\fR program to explicitly place
+node(s) into power saving mode. If a node is already in the process of being
+powered down, the command will only change the state of the node but won't have
+any effect until the configured \fISuspendTimeout\fR is reached. Use of this
+command can be useful in situations where a \fIResumeProgram\fR, like
+\fIcapmc\fR in Cray machines, is stalled and one wants to restore the node to
+"IDLE" manually. In this case rebooting the node and setting the state to
+"power down" will cancel the previous "power up" state and the node will become
+"IDLE".
+.IP
+
+.TP
+\fBdown asap\fR
+Will drain the node(s) and mark them for power down. Currently running jobs
+will complete first and no additional jobs will be allocated to the node(s).
+.IP
+
+.TP
+\fBdown force\fR
+Will cancel all jobs on the node(s), power them down, and reset their state to
+"IDLE".
+.IP
+
+.TP
+\fBup\fR
+Will use the configured \fIResumeProgram\fR program to explicitly move node(s)
+out of power saving mode. If a node is already in the process of being powered
+up, the command will only change the state of the node but won't have any
+effect until the configured \fIResumeTimeout\fR is reached.
+.IP
+.RE
+
 .IP
 
 .TP
@@ -1702,39 +1751,6 @@ will resume normal operations.
 \fBNoResp\fR
 This will set the "Not Responding" flag for a node without changing its
 underlying state.
-.IP
-
-.TP
-\fBPOWER_DOWN\fR
-Will use the configured \fISuspendProgram\fR program to explicitly place a node
-in power saving mode. If a node is already in the process of being powered
-down, the command will only change the state of the node but won't have any
-effect until the configured \fISuspendTimeout\fR is reached.
-Use of this command can be useful in situations where a \fIResumeProgram\fR,
-like \fIcapmc\fR in Cray machines, is stalled and one
-wants to restore the node to "IDLE" manually. In this case rebooting the node
-and setting the state to "POWER_DOWN" will cancel the previous "POWER_UP"
-state and the node will become "IDLE".
-.IP
-
-.TP
-\fBPOWER_DOWN_ASAP\fR
-Will drain the node and mark it for power down. Currently running jobs will
-complete first and no additional jobs will be allocated to the node.
-.IP
-
-.TP
-\fBPOWER_DOWN_FORCE\fR
-Will cancel all jobs on the node, power it down, and reset its state to
-"IDLE".
-.IP
-
-.TP
-\fBPOWER_UP\fR
-Will use the configured \fIResumeProgram\fR program to explicitly move a node
-out of power saving mode. If a node is already in the process of being powered
-up, the command will only change the state of the node but won't have any
-effect until the configured \fIResumeTimeout\fR is reached.
 .IP
 
 .TP
