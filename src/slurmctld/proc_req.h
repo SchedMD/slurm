@@ -54,6 +54,7 @@ typedef struct {
 	/* Queue structual elements */
 	const char *msg_name; /* automatically derived from msg_type */
 
+	bool skip_stale; /* skip processing if connection is stale */
 	bool queue_enabled;
 	bool shutdown;
 
