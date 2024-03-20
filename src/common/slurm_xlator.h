@@ -338,6 +338,9 @@
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
 #define conf_get_opt_str	slurm_conf_get_opt_str
+#define add_key_pair		slurm_add_key_pair
+#define add_key_pair_bool	slurm_add_key_pair_bool
+#define add_key_pair_own	slurm_add_key_pair_own
 
 /* run_in_daemon.[ch] functions */
 #define run_in_daemon           slurm_run_in_daemon

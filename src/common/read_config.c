@@ -101,6 +101,9 @@ strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
 strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
 strong_alias(conf_get_opt_str, slurm_conf_get_opt_str);
+strong_alias(add_key_pair, slurm_add_key_pair);
+strong_alias(add_key_pair_bool, slurm_add_key_pair_bool);
+strong_alias(add_key_pair_own, slurm_add_key_pair_own);
 
 /*
  * Instantiation of the "extern slurm_conf_t slurm_conf" and
