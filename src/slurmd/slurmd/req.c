@@ -4405,7 +4405,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	slurm_addr_t   ioaddr;
-	void        *job_cred_sig;
+	void *job_cred_sig = NULL;
 	uint32_t     len;
 	int               fd;
 	slurm_addr_t *cli = &msg->orig_addr;
