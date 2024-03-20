@@ -786,7 +786,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		return ESLURM_INVALID_JOB_ID_ZERO;
 	else if (job < 0)
 		return ESLURM_INVALID_JOB_ID_NEGATIVE;
-	else if (job >= MAX_JOB_ID)
+	else if (job >= MAX_FED_JOB_ID)
 		return ESLURM_INVALID_JOB_ID_TOO_LARGE;
 	else if (end_ptr == src)
 		return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
