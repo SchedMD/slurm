@@ -544,15 +544,15 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
 extern List cgroup_get_conf_list(void)
 {
 	config_key_pair_t *key_pair;
-	List cgroup_conf_l;
+	list_t *cgroup_conf_l;
 	cgroup_conf_t *cg_conf = &slurm_cgroup_conf;
 
 	xassert(cg_conf_inited);
 
+	cgroup_conf_l = list_create(destroy_config_key_pair);
+
 	slurm_rwlock_rdlock(&cg_conf_lock);
 
-	/* Fill list with cgroup config key pairs */
-	cgroup_conf_l = list_create(destroy_config_key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupMountpoint");
@@ -642,9 +642,9 @@ extern List cgroup_get_conf_list(void)
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
-	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
-
 	slurm_rwlock_unlock(&cg_conf_lock);
+
+	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
 
 	return cgroup_conf_l;
 }
