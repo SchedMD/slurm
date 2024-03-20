@@ -6974,6 +6974,12 @@ void slurmctld_req(slurm_msg_t *msg)
 	}
 
 	if (this_rpc) {
+		if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
+			error("Connection is stale, discarding RPC %s",
+			      rpc_num2string(msg->msg_type));
+			/* do not record RPC stats, we didn't process this */
+			return;
+		}
 		(*(this_rpc->func))(msg);
 		END_TIMER;
 		record_rpc_stats(msg, DELTA_TIMER);
