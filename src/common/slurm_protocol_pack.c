@@ -3463,6 +3463,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->group_force, buffer);
 		packstr(build_ptr->gpu_freq_def, buffer);
 
+		packstr(build_ptr->hash_plugin, buffer);
 		pack32(build_ptr->hash_val, buffer);
 
 		pack16(build_ptr->health_check_interval, buffer);
@@ -4269,6 +4270,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->group_force, buffer);
 		safe_unpackstr(&build_ptr->gpu_freq_def, buffer);
 
+		safe_unpackstr(&build_ptr->hash_plugin, buffer);
 		safe_unpack32(&build_ptr->hash_val, buffer);
 
 		safe_unpack16(&build_ptr->health_check_interval, buffer);

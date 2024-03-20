@@ -185,6 +185,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* group_time */
 	/* group_force */
 	packstr(slurm_conf.gpu_freq_def, buffer);
+	packstr(slurm_conf.hash_plugin, buffer);
 	/* hash_val */
 	/* health_check_interval */
 	/* health_check_node_state */
@@ -407,6 +408,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* group_time */
 	/* group_force */
 	safe_unpackstr(&slurm_conf.gpu_freq_def, buffer);
+	safe_unpackstr(&slurm_conf.hash_plugin, buffer);
 	/* hash_val */
 	/* health_check_interval */
 	/* health_check_node_state */

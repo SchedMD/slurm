@@ -2886,6 +2886,7 @@ typedef struct {
 	uint16_t group_force;   /* update group/partition info even if no change
 				 * detected */
 	char *gpu_freq_def;	/* default GPU frequency / voltage */
+	char *hash_plugin;	/* hash plugin type */
 	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */
 	uint16_t health_check_node_state; /* Node states on which to execute

@@ -2909,6 +2909,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->fed_params);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->gpu_freq_def);
+	xfree(ctl_conf_ptr->hash_plugin);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->interactive_step_opts);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
@@ -3056,6 +3057,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->gres_plugins);
 	ctl_conf_ptr->group_time		= 0;
 	ctl_conf_ptr->group_force		= 0;
+	xfree(ctl_conf_ptr->hash_plugin);
 	ctl_conf_ptr->hash_val			= NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);

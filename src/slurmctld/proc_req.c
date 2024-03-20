@@ -333,6 +333,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 	conf_ptr->interactive_step_opts = xstrdup(conf->interactive_step_opts);
 
+	conf_ptr->hash_plugin = xstrdup(conf->hash_plugin);
 	conf_ptr->hash_val            = conf->hash_val;
 	conf_ptr->health_check_interval = conf->health_check_interval;
 	conf_ptr->health_check_node_state = conf->health_check_node_state;
