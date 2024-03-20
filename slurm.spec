@@ -33,6 +33,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with ucx		%_with_ucx path		require ucx support
 # --with pmix		%_with_pmix path	require pmix support
 # --with nvml		%_with_nvml path	require nvml support
+# --with hlml		%_with_hlml path	require hlml support
 # --with jwt		%_with_jwt 1		require jwt support
 # --with freeipmi	%_with_freeipmi 1	require freeipmi support
 # --with selinux	%_with_selinux 1	build with selinux support
@@ -52,6 +53,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with numa
 %bcond_with pmix
 %bcond_with nvml
+%bcond_with hlml
 %bcond_with jwt
 %bcond_with yaml
 %bcond_with freeipmi
@@ -395,6 +397,7 @@ Provides a REST interface to Slurm.
 	%{?_with_jwt} \
 	%{?_with_yaml} \
 	%{?_with_nvml} \
+	%{?_with_hlml} \
 	%{?_with_freeipmi} \
 	%{?_with_cflags}
 

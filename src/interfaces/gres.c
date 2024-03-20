@@ -1205,6 +1205,8 @@ static char *_get_autodetect_flags_str(void)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI)
 			xstrfmtcat(flags, "%soneapi", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_HLML)
+			xstrfmtcat(flags, "%shlml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT)
 			xstrfmtcat(flags, "%snrt", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_NVIDIA)
@@ -1227,6 +1229,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_RSMI;
 	else if (xstrcasestr(str, "oneapi"))
 		flags |= GRES_AUTODETECT_GPU_ONEAPI;
+	else if (xstrcasestr(str, "hlml"))
+		flags |= GRES_AUTODETECT_GPU_HLML;
 	else if (xstrcasestr(str, "nrt"))
 		flags |= GRES_AUTODETECT_GPU_NRT;
 	else if (xstrcasestr(str, "nvidia"))
@@ -1376,6 +1380,8 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 		flags |= GRES_CONF_ENV_OPENCL;
 	if (xstrcasestr(input, "one_sharing"))
 		flags |= GRES_CONF_ONE_SHARING;
+	if (xstrcasestr(input, "habanalabs_gaudi_env"))
+		flags |= GRES_CONF_ENV_HLML;
 	if (xstrcasestr(input, "explicit"))
 		flags |= GRES_CONF_EXPLICIT;
 	/* String 'no_gpu_env' will clear all GPU env vars */
@@ -11064,6 +11070,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_ENV_OPENCL) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ENV_OPENCL");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_ENV_HLML) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_HLML");
 		sep = ",";
 	}
 

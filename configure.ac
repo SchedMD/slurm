@@ -235,6 +235,7 @@ X_AC_HWLOC
 X_AC_NVML
 X_AC_RSMI
 X_AC_ONEAPI
+X_AC_HLML
 X_AC_PMIX
 X_AC_FREEIPMI
 X_AC_UCX
@@ -445,6 +446,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
+		 src/plugins/gpu/hlml/Makefile
 		 src/plugins/gpu/nrt/Makefile
 		 src/plugins/gpu/nvidia/Makefile
 		 src/plugins/gpu/nvml/Makefile

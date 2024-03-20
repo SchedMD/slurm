@@ -147,7 +147,7 @@ typedef struct {
 #define GRES_CONF_FROM_STATE SLURM_BIT(13) /* Flags from state, blow away once
 					      node checks in. */
 #define GRES_CONF_GLOBAL_INDEX SLURM_BIT(14) /* devices use global index */
-
+#define GRES_CONF_ENV_HLML   SLURM_BIT(15) /* HabanaLabs ltd. hlml environment variables */
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
@@ -159,6 +159,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
 #define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
+#define GRES_AUTODETECT_GPU_HLML 0x00000040
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */

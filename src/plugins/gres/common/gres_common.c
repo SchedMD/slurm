@@ -310,6 +310,10 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 			env_array_overwrite(gres_env->env_ptr,
 					    "ZE_AFFINITY_MASK",
 					    gres_env->local_list);
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_HLML)
+			env_array_overwrite(gres_env->env_ptr,
+					    "HABANA_VISIBLE_DEVICES",
+					    gres_env->local_list);
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			env_array_overwrite(gres_env->env_ptr,
 					    "GPU_DEVICE_ORDINAL",
@@ -322,6 +326,8 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 			unsetenvp(*gres_env->env_ptr, "ROCR_VISIBLE_DEVICES");
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_ONEAPI)
 			unsetenvp(*gres_env->env_ptr, "ZE_AFFINITY_MASK");
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_HLML)
+			unsetenvp(*gres_env->env_ptr, "HABANA_VISIBLE_DEVICES");
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			unsetenvp(*gres_env->env_ptr, "GPU_DEVICE_ORDINAL");
 	}
@@ -399,6 +405,10 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 			env_array_overwrite(prep_env_ptr,
 					    "ZE_AFFINITY_MASK",
 					    vendor_gpu_str);
+		if (gres_conf_flags & GRES_CONF_ENV_HLML)
+				env_array_overwrite(prep_env_ptr,
+					    "HABANA_VISIBLE_DEVICES",
+					    vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			env_array_overwrite(prep_env_ptr,
 					    "GPU_DEVICE_ORDINAL",
@@ -427,6 +437,8 @@ extern int gres_common_set_env_types_on_node_flags(void *x, void *arg)
 		*node_flags |= GRES_CONF_ENV_OPENCL;
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_ONEAPI)
 		*node_flags |= GRES_CONF_ENV_ONEAPI;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_HLML)
+		*node_flags |= GRES_CONF_ENV_HLML;
 
 	/* No need to continue if all are set */
 	if ((*node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)

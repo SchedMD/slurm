@@ -119,6 +119,15 @@ static char *_get_gpu_type(void)
 #else
 		info("Configured with oneAPI, but oneAPI isn't enabled during the build.");
 #endif
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_HLML) {
+#ifdef HAVE_HLML
+		if (!dlopen("libhlml.so", RTLD_NOW | RTLD_GLOBAL))
+			info("Configured with hlml, but that lib wasn't found.");
+		else
+			return "gpu/hlml";
+#else
+		info("Configured with hlml, but hlml isn't enabled during the build.");
+#endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT) {
 		return "gpu/nrt";
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NVIDIA) {
