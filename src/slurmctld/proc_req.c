@@ -6674,6 +6674,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
 		.func = _slurm_rpc_job_step_create,
+		.skip_stale = true,
 		.queue_enabled = true,
 		.locks = {
 			.job = WRITE_LOCK,
@@ -6712,6 +6713,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _slurm_rpc_het_job_alloc_info,
+		.skip_stale = true,
 		.queue_enabled = true,
 		.locks = {
 			.conf = READ_LOCK,
