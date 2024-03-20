@@ -1913,8 +1913,8 @@ extern void slurm_free_reattach_tasks_request_msg(
 {
 	if (msg) {
 		xfree(msg->resp_port);
+		xfree(msg->io_key);
 		xfree(msg->io_port);
-		slurm_cred_destroy(msg->cred);
 		xfree(msg);
 	}
 }

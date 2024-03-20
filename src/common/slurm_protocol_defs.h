@@ -1066,13 +1066,11 @@ typedef struct kill_job_msg {
 } kill_job_msg_t;
 
 typedef struct reattach_tasks_request_msg {
+	char *io_key;
 	uint16_t     num_resp_port;
 	uint16_t    *resp_port; /* array of available response ports */
 	uint16_t     num_io_port;
 	uint16_t    *io_port;   /* array of available client IO ports */
-	slurm_cred_t *cred;      /* used only a weak authentication mechanism
-				   for the slurmstepd to use when connecting
-				   back to the client */
 	slurm_step_id_t step_id;
 } reattach_tasks_request_msg_t;
 

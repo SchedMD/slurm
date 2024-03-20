@@ -402,8 +402,8 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;
+	reattach_msg.io_key = slurm_cred_get_signature(fake_cred);
 	reattach_msg.io_port = io_ports;
-	reattach_msg.cred = fake_cred;
 
 	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_REATTACH_TASKS;
@@ -423,6 +423,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 
 	_handle_response_msg_list(nodes_resp, tasks_started);
 	FREE_NULL_LIST(nodes_resp);
+	xfree(reattach_msg.io_key);
 
 	return SLURM_SUCCESS;
 }
