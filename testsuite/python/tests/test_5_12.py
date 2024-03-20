@@ -5,7 +5,8 @@ import pytest
 import atf
 import os
 
-os.environ["SLURM_BITSTR_LEN"] = "99999999"
+# Ensure that job ids are not truncated
+os.environ["SLURM_BITSTR_LEN"] = "0"
 
 
 def resolve_array_job(job_id, task_id):
