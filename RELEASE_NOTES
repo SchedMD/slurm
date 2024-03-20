@@ -31,6 +31,7 @@ HIGHLIGHTS
     limit of 512 copies of the script running simultaneously.
  -- Add QOS limit MaxTRESRunMinsPerAccount.
  -- Add QOS limit MaxTRESRunMinsPerUser.
+ -- Add ELIGIBLE environment variable to jobcomp/script plugin.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
