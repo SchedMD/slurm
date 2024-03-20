@@ -2031,7 +2031,7 @@ extern void load_part_uid_allow_list(bool force);
  *	slurmctld restart. execute this after loading the configuration
  *	file data.
  */
-extern int load_all_part_state ( void );
+extern int load_all_part_state(uint16_t reconfig_flags);
 
 /*
  * Create a new job step from data in a buffer (as created by

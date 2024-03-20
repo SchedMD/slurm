@@ -556,7 +556,7 @@ static buf_t *_open_part_state_file(char **state_file)
  *
  * Note: reads dump from _dump_part_state().
  */
-int load_all_part_state(void)
+extern int load_all_part_state(uint16_t reconfig_flags)
 {
 	char *part_name = NULL, *nodes = NULL;
 	char *allow_accounts = NULL, *allow_groups = NULL, *allow_qos = NULL;
@@ -578,6 +578,12 @@ int load_all_part_state(void)
 	char* alternate = NULL;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+
+	if (!(reconfig_flags & RECONFIG_KEEP_PART_INFO) &&
+	    !(reconfig_flags & RECONFIG_KEEP_PART_STAT)) {
+		debug("Restoring partition state from state file disabled");
+		return SLURM_SUCCESS;
+	}
 
 	/* read the file */
 	lock_state_files();
@@ -687,11 +693,33 @@ int load_all_part_state(void)
 		/* find record and perform update */
 		part_ptr = list_find_first(part_list, &list_find_part,
 					   part_name);
-		part_cnt++;
-		if (part_ptr == NULL) {
-			info("%s: partition %s missing from configuration file",
+		if (!part_ptr && (reconfig_flags & RECONFIG_KEEP_PART_INFO)) {
+			info("%s: partition %s missing from configuration file, creating",
 			     __func__, part_name);
 			part_ptr = create_part_record(part_name);
+		} else if (!part_ptr) {
+			info("%s: partition %s removed from configuration file, skipping",
+			     __func__, part_name);
+		}
+
+		/* Handle RECONFIG_KEEP_PART_STAT */
+		if (part_ptr) {
+			part_cnt++;
+			part_ptr->state_up = state_up;
+		}
+
+		if (!(reconfig_flags & RECONFIG_KEEP_PART_INFO)) {
+			xfree(allow_accounts);
+			xfree(allow_groups);
+			xfree(allow_qos);
+			xfree(qos_char);
+			xfree(allow_alloc_nodes);
+			xfree(alternate);
+			xfree(deny_accounts);
+			xfree(deny_qos);
+			xfree(part_name);
+			xfree(nodes);
+			continue;
 		}
 
 		part_ptr->cpu_bind       = cpu_bind;
@@ -716,7 +744,6 @@ int load_all_part_state(void)
 			part_ptr->preempt_mode   = preempt_mode;
 		part_ptr->priority_job_factor = priority_job_factor;
 		part_ptr->priority_tier  = priority_tier;
-		part_ptr->state_up       = state_up;
 		part_ptr->cr_type	 = cr_type;
 		xfree(part_ptr->allow_accounts);
 		part_ptr->allow_accounts = allow_accounts;

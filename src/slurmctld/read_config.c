@@ -1498,6 +1498,7 @@ extern int read_slurm_conf(int recover)
 	char *state_save_dir = xstrdup(slurm_conf.state_save_location);
 	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
+	uint16_t reconfig_flags = slurm_conf.reconfig_flags;
 
 	/* initialization */
 	START_TIMER;
@@ -1625,9 +1626,10 @@ extern int read_slurm_conf(int recover)
 	} else if (recover == 1) {	/* Load job & node state files */
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
-		(void) load_all_part_state();
+		reconfig_flags |= RECONFIG_KEEP_PART_INFO;
 		load_job_ret = load_all_job_state();
 	}
+	(void) load_all_part_state(reconfig_flags);
 
 	/*
 	 * _build_node_config_bitmaps() must be called before
