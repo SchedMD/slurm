@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sattach command.
  -- Fix ReconfigFlags. Due how reconfig was changed in 23.11, they will also
     be used to influence the slurmctld startup as well.
+ -- Fix starting slurmd in configless mode if MUNGE support was disabled.
 
 * Changes in Slurm 23.11.4
 ==========================
