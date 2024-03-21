@@ -20,7 +20,8 @@ def resolve_array_job(job_id, task_id):
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     # Test needs to run a het job with 3 components and 9 parallel tasks of an arrary
-    atf.require_nodes(3, [("CPUs", 3)])
+    # We need 9 nodes to be able to run with select_linear
+    atf.require_nodes(9)
     atf.require_slurm_running()
 
 
