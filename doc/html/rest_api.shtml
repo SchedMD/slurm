@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-23.11.4&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-23.11.5&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -33,6 +33,7 @@
   <li><a href="#slurmV0040GetDiag"><code><span class="http-method">get</span> /slurm/v0.0.40/diag</code></a></li>
   <li><a href="#slurmV0040GetJob"><code><span class="http-method">get</span> /slurm/v0.0.40/job/{job_id}</code></a></li>
   <li><a href="#slurmV0040GetJobs"><code><span class="http-method">get</span> /slurm/v0.0.40/jobs</code></a></li>
+  <li><a href="#slurmV0040GetJobsState"><code><span class="http-method">get</span> /slurm/v0.0.40/jobs/state</code></a></li>
   <li><a href="#slurmV0040GetLicenses"><code><span class="http-method">get</span> /slurm/v0.0.40/licenses</code></a></li>
   <li><a href="#slurmV0040GetNode"><code><span class="http-method">get</span> /slurm/v0.0.40/node/{node_name}</code></a></li>
   <li><a href="#slurmV0040GetNodes"><code><span class="http-method">get</span> /slurm/v0.0.40/nodes</code></a></li>
@@ -2150,6 +2151,46 @@
     <h4 class="field-label">default</h4>
     job not found
         <a href="#v0.0.40_openapi_job_info_resp">v0.0.40_openapi_job_info_resp</a>
+  </div> <!-- method -->
+  <hr>
+  <div class="method"><a name="slurmV0040GetJobsState">
+    </a><div class="method-path"><a name="slurmV0040GetJobsState">
+    </a><a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /slurm/v0.0.40/jobs/state</code></pre></div>
+    <div class="method-summary">get list of job states (<span class="nickname">slurmV0040GetJobsState</span>)</div>
+    <div class="method-notes"></div>
+
+
+
+
+
+    <h3 class="field-label">Query parameters</h3>
+    <div class="field-items">
+      <div class="param">job_id (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Search for CSV list of JobIds default: null </div>
+    </div>  <!-- field-items -->
+
+
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>application/x-yaml</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    job(s) state information
+        <a href="#"></a>
+    <h4 class="field-label">default</h4>
+    no jobs found
+        <a href="#"></a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0040GetLicenses">
@@ -15109,6 +15150,7 @@
 <div class="param">contiguous (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span>  </div>
 <div class="param">container (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">container_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">cores_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
 <div class="param">core_specification (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
 <div class="param">thread_specification (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
 <div class="param">cpu_binding (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
@@ -15168,7 +15210,7 @@
 <div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">requeue (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span>  </div>
 <div class="param">reservation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job batch script. Only first component in a HetJob is populated or honored. </div>
 <div class="param">shared (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
         
@@ -15394,7 +15436,7 @@
     <h3><a name="v0.0.40_job_submit_req"><code>v0.0.40_job_submit_req</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> batch job script </div>
+      <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Batch job script. Batch script must be specified in first component of jobs or in job if this field is not populated. </div>
 <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_job_desc_msg">array[v0.0.40_job_desc_msg]</a></span>  </div>
 <div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_job_desc_msg">v0.0.40_job_desc_msg</a></span>  </div>
     </div>  <!-- field-items -->
