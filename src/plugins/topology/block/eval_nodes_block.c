@@ -363,14 +363,14 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	for (i = 0, block_ptr = block_record_table; i < block_record_cnt;
 	     i++, block_ptr++) {
-		int block_inx = i / bblock_per_block;
-		if (block_node_bitmap[block_inx])
-			bit_or(block_node_bitmap[block_inx],
+		int block_inx_tmp = i / bblock_per_block;
+		if (block_node_bitmap[block_inx_tmp])
+			bit_or(block_node_bitmap[block_inx_tmp],
 			       block_ptr->node_bitmap);
 		else
-			block_node_bitmap[block_inx] =
+			block_node_bitmap[block_inx_tmp] =
 				bit_copy(block_ptr->node_bitmap);
-		bblock_block_inx[i] = block_inx;
+		bblock_block_inx[i] = block_inx_tmp;
 		if (nodes_on_llblock) {
 			int llblock_inx = i / bblock_per_llblock;
 			nodes_on_llblock[llblock_inx] +=
