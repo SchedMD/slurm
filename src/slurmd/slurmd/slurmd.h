@@ -52,6 +52,7 @@
 extern int devnull;
 extern bool get_reg_resp;
 extern bool refresh_cached_features;
+extern pthread_mutex_t cached_features_mutex;
 
 typedef struct {
 	uint32_t derived_ec;

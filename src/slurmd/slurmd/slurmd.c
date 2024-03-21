@@ -190,7 +190,7 @@ static char *cached_features_avail = NULL;
 static char *cached_features_active = NULL;
 static bool plugins_registered = false;
 bool refresh_cached_features = true;
-static pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);

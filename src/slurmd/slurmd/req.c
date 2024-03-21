@@ -2863,7 +2863,9 @@ _rpc_reboot(slurm_msg_t *msg)
 		if (!need_reboot) {
 			log_flag(NODE_FEATURES, "Reboot not required - sending registration mesage");
 			conf->boot_time = time(NULL);
+			slurm_mutex_lock(&cached_features_mutex);
 			refresh_cached_features = true;
+			slurm_mutex_unlock(&cached_features_mutex);
 			slurm_conf_unlock();
 			send_registration_msg(SLURM_SUCCESS);
 			return;
