@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "February 2024" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "April 2024" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1523,7 +1523,8 @@ The default value is \-\-het\-group=0.
 \fB\-\-hint\fR=<\fItype\fR>
 Bind tasks according to application hints.
 .br
-\fBNOTE\fR: This option cannot be used in conjunction with any of
+\fBNOTE\fR: This option implies specific values for certain related options,
+which prevents its use with any user\-specified values for
 \fB\-\-ntasks\-per\-core\fR, \fB\-\-threads\-per\-core\fR, \fB\-\-cpu\-bind\fR
 (other than \fB\-\-cpu\-bind=verbose\fR) or \fB\-B\fR.
 These conflicting options will override \fB\-\-hint\fR when specified as
@@ -1544,9 +1545,16 @@ use only one core in each socket, one thread per core.
 .IP
 
 .TP
-.B [no]multithread
-[don't] use extra threads with in\-core multi\-threading
+.B multithread
+Use extra threads with in\-core multi\-threading
 which can benefit communication intensive applications.
+Only supported with the task/affinity plugin.
+.IP
+
+.TP
+.B nomultithread
+Don't use extra threads with in\-core multi\-threading;
+restricts tasks to one thread per core.
 Only supported with the task/affinity plugin.
 .IP
 
