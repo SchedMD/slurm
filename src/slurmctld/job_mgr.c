@@ -171,6 +171,8 @@ typedef struct {
 	foreach_job_by_id_control_t control;
 	uint32_t count;
 	JobForEachFunc callback;
+	JobNullForEachFunc null_callback; /* If not set, then do nothing when
+					   * the job id is not found. */
 	JobROForEachFunc ro_callback;
 	void *callback_arg;
 	job_record_t *job_ptr;
@@ -3743,8 +3745,15 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 	else /* not array task or het component */
 		args->job_ptr = find_job_record(filter->step_id.job_id);
 
-	if (!args->job_ptr)
+	if (!args->job_ptr) {
+		if (!args->null_callback) {
+			args->control = FOR_EACH_JOB_BY_ID_EACH_CONT;
+		} else {
+			args->control = args->null_callback(filter,
+							    args->callback_arg);
+		}
 		goto done;
+	}
 
 	if (args->job_ptr->het_job_list) {
 		xassert(args->job_ptr->het_job_id > 0);
@@ -3775,7 +3784,8 @@ done:
 }
 
 extern int foreach_job_by_id(const slurm_selected_step_t *filter,
-			     JobForEachFunc callback, void *arg)
+			     JobForEachFunc callback,
+			     JobNullForEachFunc null_callback, void *arg)
 {
 	for_each_by_job_id_args_t args = {
 		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
@@ -3783,6 +3793,7 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
 		.count = 0,
 		.callback = callback,
 		.callback_arg = arg,
+		.null_callback = null_callback,
 		.filter = filter,
 	};
 
@@ -3792,7 +3803,8 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
 }
 
 extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
-				JobROForEachFunc callback, void *arg)
+				JobROForEachFunc callback,
+				JobNullForEachFunc null_callback, void *arg)
 {
 	for_each_by_job_id_args_t args = {
 		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
@@ -3800,6 +3812,7 @@ extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
 		.count = 0,
 		.ro_callback = callback,
 		.callback_arg = arg,
+		.null_callback = null_callback,
 		.filter = filter,
 	};
 

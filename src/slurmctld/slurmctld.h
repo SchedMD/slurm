@@ -1390,6 +1390,12 @@ typedef foreach_job_by_id_control_t (*JobForEachFunc)(job_record_t *job_ptr,
 typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
 								*job_ptr,
 							void *arg);
+/*
+ * Function prototype for operating on a job id that is not found
+ * Returns control requested for processing
+ */
+typedef foreach_job_by_id_control_t
+	(*JobNullForEachFunc)(const slurm_selected_step_t *id, void *arg);
 
 /*
  * Walk all matching job_record_t's that match filter
@@ -1399,13 +1405,15 @@ typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
  * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
  * 	may be zero if no jobs matched.
  */
 extern int foreach_job_by_id(const slurm_selected_step_t *filter,
-			     JobForEachFunc callback, void *arg);
+			     JobForEachFunc callback,
+			     JobNullForEachFunc null_callback, void *arg);
 
 /*
  * Walk all matching read only job_record_t's that match filter
@@ -1415,13 +1423,15 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
  * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
  * 	may be zero if no jobs matched.
  */
 extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
-				JobROForEachFunc callback, void *arg);
+				JobROForEachFunc callback,
+				JobNullForEachFunc null_callback, void *arg);
 
 /*
  * find_job_array_rec - return a pointer to the job record with the given
