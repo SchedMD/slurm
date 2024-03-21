@@ -97,6 +97,9 @@ documents those changes that are of interest to users and administrators.
     to UINT16_NO_VAL for /slurm/v0.0.41/job/submit.
  -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
 
+* Changes in Slurm 23.11.6
+==========================
+
 * Changes in Slurm 23.11.5
 ==========================
  -- Fix Debian package build on systems that are not able to query the systemd
