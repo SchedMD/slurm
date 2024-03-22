@@ -389,7 +389,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"RoutePlugin", S_P_STRING},
 	{"SallocDefaultCommand", S_P_STRING},
 	{"SbcastParameters", S_P_STRING},
-	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
 	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
