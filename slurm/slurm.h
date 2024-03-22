@@ -3734,6 +3734,15 @@ extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags,
 			   const char *sibling);
 
 /*
+ * slurm_kill_jobs - Kill all jobs matching the filters specified in msg.
+ * IN kill_msg - Message that specifies the jobs to be killed.
+ * IN/OUT kill_msg_resp - Pointer to a response message, filled in by the api.
+ * RET SLURM_SUCCESS on success, otherwise return an error.
+ */
+extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
+			   kill_jobs_resp_msg_t **kill_msg_resp);
+
+/*
  * slurm_signal_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number

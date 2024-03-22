@@ -100,6 +100,41 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
 	return _slurm_kill_job_internal(job_id, NULL, NULL, signal, flags);
 }
 
+extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
+			   kill_jobs_resp_msg_t **kill_msg_resp)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t msg;
+	slurm_msg_t resp_msg;
+
+	slurm_msg_t_init(&msg);
+	slurm_msg_t_init(&resp_msg);
+	msg.data = kill_msg;
+	msg.msg_type = REQUEST_KILL_JOBS;
+
+	if ((rc = slurm_send_recv_controller_msg(&msg, &resp_msg,
+						 working_cluster_rec) < 0)) {
+		error("%s: Unable to signal jobs: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
+	switch(resp_msg.msg_type) {
+	case RESPONSE_KILL_JOBS:
+		*kill_msg_resp = resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return rc;
+}
+
 /*
  * Kill a job step with job id "job_id" and step id "step_id", optionally
  *	sending the processes in the job step a signal "signal"
