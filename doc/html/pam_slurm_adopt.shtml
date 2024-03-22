@@ -52,6 +52,9 @@ The module bases its checks on local steps that have already been launched. Jobs
 launched without this option do not have an extern step, so pam_slurm_adopt will
 not have access to those jobs.</p>
 
+<p><b>LaunchParameters=ulimit_pam_adopt</b> will set RLIMIT_RSS in processes
+adopted by the external step, similar to tasks running in regular steps.</p>
+
 <p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
 
 <h2 id="PAM_CONFIG">PAM Configuration
@@ -458,10 +461,6 @@ PAM_IGNORE immediately.
 
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
-
-<p>By setting <b>LaunchParameters=ulimit_pam_adopt</b>, processes adopted by
-the external step can have RLIMIT_RSS set, similar to tasks running in regular
-steps.</p>
 
 <h3 id="firewall">Firewalls, IP Addresses, etc.
 <a class="slurm_link" href="#firewall"></a>
