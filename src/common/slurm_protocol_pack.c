@@ -3391,24 +3391,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _list_find_conf_entry(void *entry, void *key)
-{
-	config_key_pair_t *entry_ptr = entry;
-
-	if (key == NULL)
-		return 1;
-
-	if (xstrcasecmp(entry_ptr->name, (char *) key) == 0)
-		return 1;
-	return 0;
-}
-
 static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 			 uint16_t protocol_version)
 {
-	uint32_t count = NO_VAL;
-
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
@@ -3422,36 +3408,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 
-		if (build_ptr->acct_gather_conf)
-			count = list_count(build_ptr->acct_gather_conf);
-		else
-			count = NO_VAL;
-
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBPass"))
-			count--;
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBUser"))
-			count--;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			list_itr_t *itr = list_iterator_create(
-				(List)build_ptr->acct_gather_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				if (xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBPass") &&
-				    xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBUser"))
-					pack_config_key_pair(key_pair,
-					                     protocol_version,
-					                     buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		pack_key_pair_list(build_ptr->acct_gather_conf,
+				   protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -3705,36 +3663,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 
-		if (build_ptr->acct_gather_conf)
-			count = list_count(build_ptr->acct_gather_conf);
-		else
-			count = NO_VAL;
-
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBPass"))
-			count--;
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBUser"))
-			count--;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			list_itr_t *itr = list_iterator_create(
-				(List)build_ptr->acct_gather_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				if (xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBPass") &&
-				    xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBUser"))
-					pack_config_key_pair(key_pair,
-					                     protocol_version,
-					                     buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		pack_key_pair_list(build_ptr->acct_gather_conf,
+				   protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -3995,36 +3925,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 
-		if (build_ptr->acct_gather_conf)
-			count = list_count(build_ptr->acct_gather_conf);
-		else
-			count = NO_VAL;
-
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBPass"))
-			count--;
-		if (list_find_first(build_ptr->acct_gather_conf,
-		                    _list_find_conf_entry,
-		                    "ProfileInfluxDBUser"))
-			count--;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			list_itr_t *itr = list_iterator_create(
-				(List)build_ptr->acct_gather_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				if (xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBPass") &&
-				    xstrcasecmp(key_pair->name,
-				                "ProfileInfluxDBUser"))
-					pack_config_key_pair(key_pair,
-					                     protocol_version,
-					                     buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		pack_key_pair_list(build_ptr->acct_gather_conf,
+				   protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
