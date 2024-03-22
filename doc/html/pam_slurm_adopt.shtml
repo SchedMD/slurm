@@ -171,15 +171,18 @@ account    sufficient    pam_access.so
 account    required      pam_slurm_adopt.so
 </pre>
 
-<p>An alternative to pam_access is to place pam_listfile.so before
-pam_slurm_adopt.so. For example:</p>
+<p>
+The pam_listfile module is another module that can be stacked with
+pam_slurm_adopt and achieve similar results.  In the following example, it will
+allow all users in the specified file to log in, skipping the pam_slurm_adopt
+module.  This can also be flipped similar to pam_access, with the same
+implications.
+</p>
 
 <pre>
 account    sufficient    pam_listfile.so item=user sense=allow onerr=fail file=/path/to/allowed_users_file
 account    required      pam_slurm_adopt.so
 </pre>
-
-<p>List the usernames of the allowed users in allowed_users_file.</p>
 
 <p>When access is denied, the user will receive a relevant error message.</p>
 
