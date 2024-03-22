@@ -57,6 +57,8 @@
 #include "pmixp_utils.h"
 #include "pmixp_dconn.h"
 
+#define AGENT_GROWTH_SIZE 16
+
 typedef struct eio_data_t {
 	pthread_t tid;
 	eio_handle_t *handle;
@@ -79,8 +81,16 @@ static pthread_cond_t agent_mutex_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t abort_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t abort_mutex_cond = PTHREAD_COND_INITIALIZER;
 
-static agent_data agent = {{0, NULL}, {0, 0, 0, 0, 0}};
-static abort_data abort_agent = {0, NULL};
+static int num_agents = 0;
+static int agents_size = 0;
+static agent_data **agents = NULL;
+static data_t *agents_idxs = NULL;
+
+static int num_abort_agents = 0;
+static int abort_agents_size = 0;
+static abort_data **abort_agents = NULL;
+static data_t *abort_agents_idxs = NULL;
+
 
 static bool _conn_readable(eio_obj_t *obj);
 static int _server_conn_read(eio_obj_t *obj, List objs);
@@ -232,103 +242,104 @@ static int _timer_conn_read(eio_obj_t *obj, List objs)
 	return 0;
 }
 
-static void _shutdown_timeout_fds(void);
+static void _shutdown_timeout_fds(timer_data *timer);
 
 #define SETUP_FDS(fds) { \
 	fd_set_nonblocking(fds[0]);	\
 	fd_set_nonblocking(fds[1]);	\
 	}
 
-static int _setup_timeout_fds(void)
+static int _setup_timeout_fds(timer_data *timer)
 {
 	int fds[2];
 
-	agent.timer_thr.work_in = agent.timer_thr.work_out = -1;
-	agent.timer_thr.stop_in = agent.timer_thr.stop_out = -1;
+	timer->work_in = timer->work_out = -1;
+	timer->stop_in = timer->stop_out = -1;
 
 	if (pipe2(fds, O_CLOEXEC)) {
 		return SLURM_ERROR;
 	}
 	SETUP_FDS(fds);
-	agent.timer_thr.work_in = fds[0];
-	agent.timer_thr.work_out = fds[1];
+	timer->work_in = fds[0];
+	timer->work_out = fds[1];
 
 	if (pipe2(fds, O_CLOEXEC)) {
-		_shutdown_timeout_fds();
+		_shutdown_timeout_fds(timer);
 		return SLURM_ERROR;
 	}
 	SETUP_FDS(fds);
-	agent.timer_thr.stop_in = fds[0];
-	agent.timer_thr.stop_out = fds[1];
+	timer->stop_in = fds[0];
+	timer->stop_out = fds[1];
 
 	return SLURM_SUCCESS;
 }
 
-static void _shutdown_timeout_fds(void)
+static void _shutdown_timeout_fds(timer_data *timer)
 {
-	if (0 <= agent.timer_thr.work_in) {
-		close(agent.timer_thr.work_in);
-		agent.timer_thr.work_in = -1;
+	if (0 <= timer->work_in) {
+		close(timer->work_in);
+		timer->work_in = -1;
 	}
-	if (0 <= agent.timer_thr.work_out) {
-		close(agent.timer_thr.work_out);
-		agent.timer_thr.work_out = -1;
+	if (0 <= timer->work_out) {
+		close(timer->work_out);
+		timer->work_out = -1;
 	}
-	if (0 <= agent.timer_thr.stop_in) {
-		close(agent.timer_thr.stop_in);
-		agent.timer_thr.stop_in = -1;
+	if (0 <= timer->stop_in) {
+		close(timer->stop_in);
+		timer->stop_in = -1;
 	}
-	if (0 <= agent.timer_thr.stop_out) {
-		close(agent.timer_thr.stop_out);
-		agent.timer_thr.stop_out = -1;
+	if (0 <= timer->stop_out) {
+		close(timer->stop_out);
+		timer->stop_out = -1;
 	}
 }
 
 /*
  * main loop of agent EIO thread
  */
-static void *_agent_eio_thread(void *unused)
+static void *_agent_eio_thread(void *arg)
 {
 	PMIXP_DEBUG("Start agent EIO thread");
+	agent_data *agent = arg;
 	eio_obj_t *obj;
 
-	agent.eio_thr.handle = eio_handle_create(0);
+	agent->eio_thr.handle = eio_handle_create(0);
 
 	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops,
 			     (void *)(-1));
-	eio_new_initial_obj(agent.eio_thr.handle, obj);
+	eio_new_initial_obj(agent->eio_thr.handle, obj);
 
-	obj = eio_obj_create(agent.timer_thr.work_in, &to_ops, (void *)(-1));
-	eio_new_initial_obj(agent.eio_thr.handle, obj);
+	obj = eio_obj_create(agent->timer_thr.work_in, &to_ops, (void *)(-1));
+	eio_new_initial_obj(agent->eio_thr.handle, obj);
 
-	pmixp_info_io_set(agent.eio_thr.handle);
+	pmixp_info_io_set(agent->eio_thr.handle);
 
 	if (PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type()) {
 		obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops,
 				     (void *)(-1));
-		eio_new_initial_obj(agent.eio_thr.handle, obj);
+		eio_new_initial_obj(agent->eio_thr.handle, obj);
 	} else {
-		pmixp_dconn_regio(agent.eio_thr.handle);
+		pmixp_dconn_regio(agent->eio_thr.handle);
 	}
 
 	slurm_mutex_lock(&agent_mutex);
 	slurm_cond_signal(&agent_mutex_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
-	eio_handle_mainloop(agent.eio_thr.handle);
+	eio_handle_mainloop(agent->eio_thr.handle);
 	PMIXP_DEBUG("agent EIO thread exit");
-	eio_handle_destroy(agent.eio_thr.handle);
+	eio_handle_destroy(agent->eio_thr.handle);
 
 	return NULL;
 }
 
-static void *_agent_timer_thread(void *unused)
+static void *_agent_timer_thread(void *arg)
 {
+	PMIXP_DEBUG("Start agent timer thread");
+	timer_data *timer = arg;
 	struct pollfd pfds[1];
 
-	PMIXP_DEBUG("Start agent timer thread");
-
-	pfds[0].fd = agent.timer_thr.stop_in;
+	pfds[0].fd = timer->stop_in;
 	pfds[0].events = POLLIN;
 
 	/* our job is to sleep 1 sec and then trigger
@@ -346,7 +357,7 @@ static void *_agent_timer_thread(void *unused)
 			break;
 		}
 		/* activate main (agent EIO) thread's timer event */
-		safe_write(agent.timer_thr.work_out, &c, 1);
+		safe_write(timer->work_out, &c, 1);
 	}
 
 rwfail:
@@ -357,24 +368,27 @@ rwfail:
 /*
  * thread for codes from abort
  */
-static void *_abort_eio_thread(void *unused)
+static void *_abort_eio_thread(void *arg)
 {
 	PMIXP_DEBUG("Start abort EIO thread");
+	abort_data *agent = arg;
+
 	slurm_mutex_lock(&abort_mutex);
 	slurm_cond_signal(&abort_mutex_cond);
 	slurm_mutex_unlock(&abort_mutex);
 
-	eio_handle_mainloop(abort_agent.handle);
+	eio_handle_mainloop(agent->handle);
 	PMIXP_DEBUG("Abort thread EIO exit");
 	return NULL;
 }
 
 int pmixp_abort_agent_start(char ***env)
 {
-	int abort_server_socket = -1;
+	int abort_server_socket = -1, rc = SLURM_SUCCESS;
 	slurm_addr_t abort_server;
 	eio_obj_t *obj;
 	uint16_t *ports;
+	abort_data *abort_agent;
 
 	slurm_mutex_lock(&abort_mutex);
 	if ((ports = slurm_get_srun_port_range()))
@@ -383,7 +397,8 @@ int pmixp_abort_agent_start(char ***env)
 		abort_server_socket = slurm_init_msg_engine_port(0);
 	if (abort_server_socket < 0) {
 		PMIXP_ERROR("slurm_init_msg_engine_port() failed: %m");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto error;
 	}
 
 	memset(&abort_server, 0, sizeof(slurm_addr_t));
@@ -391,44 +406,88 @@ int pmixp_abort_agent_start(char ***env)
 	if (slurm_get_stream_addr(abort_server_socket, &abort_server)) {
 		PMIXP_ERROR("slurm_get_stream_addr() failed: %m");
 		close(abort_server_socket);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto error;
 	}
 	PMIXP_DEBUG("Abort agent port: %d", slurm_get_port(&abort_server));
 	setenvf(env, PMIXP_SLURM_ABORT_AGENT_PORT, "%d",
 		slurm_get_port(&abort_server));
 
-	abort_agent.handle = eio_handle_create(0);
+	abort_agent = xmalloc(sizeof(*abort_agent));
+	abort_agent->handle = eio_handle_create(0);
 	obj = eio_obj_create(abort_server_socket, &abort_ops, (void *)(-1));
-	eio_new_initial_obj(abort_agent.handle, obj);
-	slurm_thread_create(&abort_agent.tid, _abort_eio_thread, NULL);
+	eio_new_initial_obj(abort_agent->handle, obj);
+	slurm_thread_create(&abort_agent->tid, _abort_eio_thread, abort_agent);
 
 	/* wait for the abort EIO thread to initialize */
 	slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
 
+	/*
+	 * Relate client's "_launch_one_app" TID to its abort agent in array.
+	 * We need to start IDx from 1, as data_get_int return 0 on error.
+	 */
+	data_set_int(data_key_set(abort_agents_idxs,
+				  xstrdup_printf("%d", gettid())),
+		     (num_abort_agents + 1));
+
+	/* 1st time call, or need to expand abort agents data array */
+	if (num_abort_agents == abort_agents_size) {
+		abort_agents_size += AGENT_GROWTH_SIZE;
+		abort_agents = xrecalloc(abort_agents, abort_agents_size,
+					 sizeof(*abort_agents));
+		if(!num_abort_agents)
+			abort_agents_idxs = data_set_dict(data_new());
+	}
+	abort_agents[num_abort_agents] = abort_agent;
+	num_abort_agents++;
+
+error:
 	slurm_mutex_unlock(&abort_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 int pmixp_abort_agent_stop(void)
 {
-	slurm_mutex_lock(&abort_mutex);
-	if (abort_agent.tid) {
-		eio_signal_shutdown(abort_agent.handle);
-		slurm_thread_join(abort_agent.tid);
-	}
-	slurm_mutex_unlock(&abort_mutex);
+	pid_t client_tid = gettid();
+	char *client_tid_str = xstrdup_printf("%d", client_tid);
+	int agent_idx = -1;
+	abort_data *abort_agent;
 
+	slurm_mutex_lock(&abort_mutex);
+	if(!abort_agents_idxs)
+		goto done;
+	agent_idx = data_get_int(data_key_get(abort_agents_idxs,
+					      client_tid_str));
+
+	if (agent_idx > 0) {
+		/* Restore array index */
+		agent_idx--;
+		abort_agent = abort_agents[agent_idx];
+
+		/* Cancel thread */
+		eio_signal_shutdown(abort_agent->handle);
+		slurm_thread_join(abort_agent->tid);
+
+		/* Remove from global array */
+		data_key_unset(abort_agents_idxs, client_tid_str);
+		xfree(abort_agent);
+		abort_agents[agent_idx] = NULL;
+	}
+
+done:
+	slurm_mutex_unlock(&abort_mutex);
+	xfree(client_tid_str);
 	return pmixp_abort_code_get();
 }
 
 int pmixp_agent_start(void)
 {
+	agent_data *agent = xmalloc(sizeof(*agent));
+
 	slurm_mutex_lock(&agent_mutex);
-
-	_setup_timeout_fds();
-
+	_setup_timeout_fds(&agent->timer_thr);
 	/* start agent EIO thread */
-	slurm_thread_create(&agent.eio_thr.tid, _agent_eio_thread, NULL);
+	slurm_thread_create(&agent->eio_thr.tid, _agent_eio_thread, agent);
 
 	/* wait for the agent EIO thread to initialize */
 	slurm_cond_wait(&agent_mutex_cond, &agent_mutex);
@@ -437,7 +496,7 @@ int pmixp_agent_start(void)
 	if (pmixp_info_srv_direct_conn_early()) {
 		if (pmixp_server_direct_conn_early()) {
 			slurm_mutex_unlock(&agent_mutex);
-			return SLURM_ERROR;
+			goto error;
 		}
 	}
 	/* Check if a ping-pong run was requested by user
@@ -457,40 +516,79 @@ int pmixp_agent_start(void)
 	}
 
 	PMIXP_DEBUG("agent EIO thread started: tid = %lu",
-		    (unsigned long)agent.eio_thr.tid);
-
-	slurm_thread_create(&agent.timer_thr.tid, _agent_timer_thread, NULL);
-
+		    (unsigned long)agent->eio_thr.tid);
+	slurm_thread_create(&agent->timer_thr.tid, _agent_timer_thread,
+			    &agent->timer_thr);
 	PMIXP_DEBUG("agent timer thread started: tid = %lu",
-		    (unsigned long)agent.timer_thr.tid);
+		    (unsigned long)agent->timer_thr.tid);
+
+	/*
+	 * Relate client's "_launch_one_app" TID to its agent in array.
+	 * We need to start IDx from 1, as data_get_int return 0 on error.
+	 */
+	data_set_int(data_key_set(agents_idxs, xstrdup_printf("%d", gettid())),
+		     (num_agents + 1));
+
+	/* 1st time call, or need to expand agents data array */
+	if (num_agents == agents_size) {
+		agents_size += AGENT_GROWTH_SIZE;
+		agents = xrecalloc(agents, agents_size, sizeof(*agents));
+		if(!num_agents)
+			agents_idxs = data_set_dict(data_new());
+	}
+	agents[num_agents] = agent;
+	num_agents++;
 
 	slurm_mutex_unlock(&agent_mutex);
 	return SLURM_SUCCESS;
+
+error:
+	if(agent)
+		xfree(agent);
+	return SLURM_ERROR;
 }
 
 int pmixp_agent_stop(void)
 {
-	int rc = SLURM_SUCCESS;
+	pid_t client_tid = gettid();
+	char *client_tid_str = xstrdup_printf("%d", client_tid);
+	int rc = SLURM_SUCCESS, agent_idx = -1;
+	agent_data *agent;
 	char c = 1;
 
 	slurm_mutex_lock(&agent_mutex);
+	if(!agents_idxs)
+		goto done;
+	agent_idx = data_get_int(data_key_get(agents_idxs, client_tid_str));
 
-	if (agent.eio_thr.tid) {
-		eio_signal_shutdown(agent.eio_thr.handle);
-		/* wait for the agent EIO thread to stop */
-		slurm_thread_join(agent.eio_thr.tid);
+	if (agent_idx > 0) {
+		/* Restore array index */
+		agent_idx--;
+		agent = agents[agent_idx];
+
+		/* Cancel threads */
+		if (agent->eio_thr.tid) {
+			eio_signal_shutdown(agent->eio_thr.handle);
+			/* wait for the agent EIO thread to stop */
+			slurm_thread_join(agent->eio_thr.tid);
+		}
+		if (agent->timer_thr.tid) {
+			/* cancel timer thread */
+			if (write(agent->timer_thr.stop_out, &c, 1) == -1)
+				rc = SLURM_ERROR;
+			slurm_thread_join(agent->timer_thr.tid);
+			/* close timer FDs */
+			_shutdown_timeout_fds(&agent->timer_thr);
+		}
+
+		/* Remove from global array */
+		data_key_unset(agents_idxs, client_tid_str);
+		xfree(agent);
+		agents[agent_idx] = NULL;
 	}
 
-	if (agent.timer_thr.tid) {
-		/* cancel timer thread */
-		if (write(agent.timer_thr.stop_out, &c, 1) == -1)
-			rc = SLURM_ERROR;
-		slurm_thread_join(agent.timer_thr.tid);
-
-		/* close timer FDs */
-		_shutdown_timeout_fds();
-	}
-
+done:
 	slurm_mutex_unlock(&agent_mutex);
+	xfree(client_tid_str);
 	return rc;
 }
