@@ -7,7 +7,8 @@ they do not have a running job on, and to track the ssh connection and any
 other spawned processes for accounting and to ensure complete job cleanup when
 the job is completed. This module does this by determining the job which
 originated the ssh connection. The user's connection is "adopted" into the
-"external" step of the job.</p>
+"external" step of the job. When access is denied, the user will receive a
+relevant error message.</p>
 
 <h2 id="INSTALLATION">Installation
 <a class="slurm_link" href="#INSTALLATION"></a>
@@ -188,8 +189,6 @@ account    required      pam_slurm_adopt.so
 More information about the capabilities and configuration options for pam_access
 and pam_listfile can be found in their respecive man pages.
 </p>
-
-<p>When access is denied, the user will receive a relevant error message.</p>
 
 <h2 id="OPTIONS">pam_slurm_adopt Module Options
 <a class="slurm_link" href="#OPTIONS"></a>
