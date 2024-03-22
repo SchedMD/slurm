@@ -10,6 +10,19 @@ originated the ssh connection. The user's connection is "adopted" into the
 "external" step of the job. When access is denied, the user will receive a
 relevant error message.</p>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#INSTALLATION">Installation</a></li>
+<li><a href="#SLURM_CONFIG">Slurm Configuration</a></li>
+<li><a href="#ssh_config">SSH Configuration</a></li>
+<li><a href="#PAM_CONFIG">PAM Configuration</a></li>
+<li><a href="#admin_access">Administrative Access Configuration</a></li>
+<li><a href="#OPTIONS">pam_slurm_adopt Module Options</a></li>
+<li><a href="#firewall">Firewalls, IP Addresses, etc.</a></li>
+<li><a href="#selinux">SELinux</a></li>
+<li><a href="#LIMITATIONS">Limitations</a></li>
+</ul>
+
 <h2 id="INSTALLATION">Installation
 <a class="slurm_link" href="#INSTALLATION"></a>
 </h2>
