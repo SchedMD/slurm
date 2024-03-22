@@ -121,6 +121,17 @@ commented out in the included password-auth file:</p>
 Do not run the config script that generates the file or your
 changes will be erased.</p>
 
+<h2 id="admin_access">Administrative Access Configuration
+<a class="slurm_link" href="#admin_access"></a>
+</h2>
+
+<p>
+pam_slurm_adopt will always allow the root user access, and will do so even
+before checking for slurm configuration. If you wish to also allow other admins
+to the system with their own user accounts, this can be accomplished by stacking
+other modules along with pam_slurm_adopt.
+<p>
+
 <p>If you always want to allow access for an administrative group (e.g., wheel),
 stack the pam_access module after pam_slurm_adopt. A success with
 pam_slurm_adopt is sufficient to allow access, but the pam_access module can
