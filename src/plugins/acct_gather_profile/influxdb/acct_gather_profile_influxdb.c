@@ -600,39 +600,22 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 extern void acct_gather_profile_p_conf_values(List *data)
 {
-	config_key_pair_t *key_pair;
+	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
+		     influxdb_conf.host);
 
-	debug3("%s %s called", plugin_type, __func__);
+	add_key_pair(*data, "ProfileInfluxDBDatabase", "%s",
+		     influxdb_conf.database);
 
-	xassert(*data);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBHost");
-	key_pair->value = xstrdup(influxdb_conf.host);
-	list_append(*data, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBDatabase");
-	key_pair->value = xstrdup(influxdb_conf.database);
-	list_append(*data, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBDefault");
-	key_pair->value =
-		xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
-	list_append(*data, key_pair);
+	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
+		     acct_gather_profile_to_string(influxdb_conf.def));
 
 	/* skip over ProfileInfluxDBPass for security reasons */
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBRTPolicy");
-	key_pair->value = xstrdup(influxdb_conf.rt_policy);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "ProfileInfluxDBRTPolicy", "%s",
+		     influxdb_conf.rt_policy);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBTimeout");
-	key_pair->value = xstrdup_printf("%u", influxdb_conf.timeout);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "ProfileInfluxDBTimeout", "%u",
+		     influxdb_conf.timeout);
 
 	/* skip over ProfileInfluxDBUser for security reasons */
 }
