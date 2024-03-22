@@ -132,22 +132,43 @@ to the system with their own user accounts, this can be accomplished by stacking
 other modules along with pam_slurm_adopt.
 <p>
 
-<p>If you always want to allow access for an administrative group (e.g., wheel),
-stack the pam_access module after pam_slurm_adopt. A success with
-pam_slurm_adopt is sufficient to allow access, but the pam_access module can
-allow others, such as administrative staff, access even without jobs on that
-node:</p>
+<p>
+Stacking pam_access with pam_slurm_adopt is one way to permit administrative
+access, with two possible implementations with subtle differences in behavor.
+Both will require editing the pam_access configuration file
+(/etc/security/access.conf). In the following example, the access.conf file will
+allow members of the group "wheel" to log in.
+</p>
+
+<pre>
++:wheel:ALL
+-:ALL:ALL
+</pre>
+
+<p>
+Then you will need to stack the modules in the /etc/pam.d/sshd file.  The order
+here matters, and each ordering has different implications. In the example
+below, pam_slurm adopt is listed fist as "sufficient", followed by pam_access.
+In this configuration when the admin has a job running, their ssh session
+will be adopted into the job. If they do not, access will be permitted by
+pam_access, but note that pam_slurm_adopt will still emit the "access denied"
+message.
+</p>
 
 <pre>
 account    sufficient    pam_slurm_adopt.so
 account    required      pam_access.so
 </pre>
 
-<p>Then edit the pam_access configuration file (/etc/security/access.conf):</p>
+<p>
+Flipping this order, with pam_access(sufficient) before
+pam_slurm_adopt(reqired), members of the administrative group will bypass
+pam_slurm_adopt entierly.
+</p>
 
 <pre>
-+:wheel:ALL
--:ALL:ALL
+account    sufficient    pam_access.so
+account    required      pam_slurm_adopt.so
 </pre>
 
 <p>An alternative to pam_access is to place pam_listfile.so before
