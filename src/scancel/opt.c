@@ -126,6 +126,11 @@ extern bool has_default_opt(void)
 {
 	if (opt.account == NULL
 	    && opt.batch == false
+#ifdef HAVE_FRONT_END
+	    && opt.ctld
+#else
+	    && !opt.ctld
+#endif
 	    && opt.interactive == false
 	    && opt.job_name == NULL
 	    && opt.partition == NULL
