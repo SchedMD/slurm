@@ -31,6 +31,13 @@ pam_slurm_adopt. Refer to the
 <a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 
+<h3 id="deb">DEB:<a class="slurm_link" href="#deb"></a></h3>
+
+<p>The included debian packaging scripts will build the
+slurm-smd-libpam-slurm-adopt package which will install pam_slurm_adopt.
+<a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
+Administrator Guide</a> for instructions on managing an DEB-based install.</p>
+
 <h2 id="PAM_CONFIG">PAM Configuration
 <a class="slurm_link" href="#PAM_CONFIG"></a>
 </h2>
