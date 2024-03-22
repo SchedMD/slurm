@@ -26,10 +26,13 @@ TESTS += xhash-test \
 	 parse_time-test \
 	 job-resources-test \
 	 pack-test \
-	 reverse_tree-test
+	 reverse_tree-test \
+	 xahash-test
 
 xhash_test_CFLAGS = $(MYCFLAGS)
 xhash_test_LDADD  = $(LDADD) @CHECK_LIBS@
+xahash_test_CFLAGS = $(MYCFLAGS)
+xahash_test_LDADD  = $(LDADD) @CHECK_LIBS@
 data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
 slurm_opt_test_CFLAGS = $(MYCFLAGS)
