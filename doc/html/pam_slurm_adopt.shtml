@@ -57,6 +57,13 @@ adopted by the external step, similar to tasks running in regular steps.</p>
 
 <p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
 
+<h2 id="ssh_config">SSH Configuration
+<a class="slurm_link" href="#ssh_config"></a>
+</h2>
+
+<p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
+should be on by default).</p>
+
 <h2 id="PAM_CONFIG">PAM Configuration
 <a class="slurm_link" href="#PAM_CONFIG"></a>
 </h2>
@@ -454,13 +461,6 @@ PAM_IGNORE immediately.
 </dd>
 
 </dl>
-
-<h2 id="OTHER_CONFIG">Other Configuration
-<a class="slurm_link" href="#OTHER_CONFIG"></a>
-</h2>
-
-<p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
-should be on by default).</p>
 
 <h3 id="firewall">Firewalls, IP Addresses, etc.
 <a class="slurm_link" href="#firewall"></a>
