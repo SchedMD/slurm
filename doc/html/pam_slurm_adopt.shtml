@@ -180,7 +180,7 @@ allow members of the group "wheel" to log in.
 </p>
 
 <pre>
-+:wheel:ALL
++:(wheel):ALL
 -:ALL:ALL
 </pre>
 
@@ -556,6 +556,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 22 September 2023</p>
+<p style="text-align:center;">Last modified 22 March 2024</p>
 
 <!--#include virtual="footer.txt"-->
