@@ -3481,7 +3481,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		              build_ptr->control_cnt, buffer);
 		packstr_array(build_ptr->control_machine,
 		              build_ptr->control_cnt, buffer);
-		packnull(buffer); /* was core_spec_plugin */
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
 		packstr(build_ptr->cred_type, buffer);
@@ -3495,10 +3494,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
-
-		pack32(NO_VAL, buffer); /* was ext_sensors_conf */
-		packnull(buffer); /* was ext_sensors_type */
-		pack16(0, buffer); /* was ext_sensors_freq */
 
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
@@ -3579,8 +3574,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		packstr(build_ptr->plugindir, buffer);
 		packstr(build_ptr->plugstack, buffer);
-		packnull(buffer); /* was power_parameters */
-		packnull(buffer); /* was power_plugin */
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_params, buffer);
 		packstr(build_ptr->preempt_type, buffer);
@@ -4298,8 +4291,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
-		void *list_tmp = NULL;
-		uint16_t uint16_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4352,7 +4343,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                     &uint32_tmp, buffer);
 		if (build_ptr->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_skipstr(buffer); /* was core_spec_plugin */
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
 		safe_unpackstr(&build_ptr->cred_type, buffer);
@@ -4366,15 +4356,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->epilog, buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr(&build_ptr->epilog_slurmctld, buffer);
-
-		/* was ext_sensors_conf */
-		if (unpack_key_pair_list(&list_tmp, protocol_version, buffer)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-		FREE_NULL_LIST(list_tmp);
-
-		safe_skipstr(buffer); /* was ext_sensors_type */
-		safe_unpack16(&uint16_tmp, buffer); /* was ext_sensors_freq */
 
 		safe_unpackstr(&build_ptr->fed_params, buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -4458,8 +4439,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr(&build_ptr->plugindir, buffer);
 		safe_unpackstr(&build_ptr->plugstack, buffer);
-		safe_skipstr(buffer); /* was power_parameters */
-		safe_skipstr(buffer); /* was power_plugin */
 
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
 		safe_unpackstr(&build_ptr->preempt_params, buffer);
