@@ -184,6 +184,11 @@ account    sufficient    pam_listfile.so item=user sense=allow onerr=fail file=/
 account    required      pam_slurm_adopt.so
 </pre>
 
+<p>
+More information about the capabilities and configuration options for pam_access
+and pam_listfile can be found in their respecive man pages.
+</p>
+
 <p>When access is denied, the user will receive a relevant error message.</p>
 
 <h2 id="OPTIONS">pam_slurm_adopt Module Options
