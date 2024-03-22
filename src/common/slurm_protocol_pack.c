@@ -10805,6 +10805,59 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_kill_jobs_resp_msg(kill_jobs_resp_msg_t *msg, buf_t *buffer,
+				     uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		pack32(msg->jobs_cnt, buffer);
+		for (int i = 0; i < msg->jobs_cnt; i++) {
+			kill_jobs_resp_job_t job_resp = msg->job_responses[i];
+
+			pack32(job_resp.error_code, buffer);
+			packstr(job_resp.error_msg, buffer);
+			slurm_pack_selected_step(job_resp.id, protocol_version,
+						 buffer);
+			pack32(job_resp.real_job_id, buffer);
+			packstr(job_resp.sibling_name, buffer);
+		}
+	}
+}
+
+static int _unpack_kill_jobs_resp_msg(kill_jobs_resp_msg_t **msg_ptr,
+				      buf_t *buffer, uint16_t protocol_version)
+{
+	kill_jobs_resp_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->jobs_cnt, buffer);
+		msg->job_responses = xcalloc(msg->jobs_cnt,
+					     sizeof(*msg->job_responses));
+		for (int i = 0; i < msg->jobs_cnt; i++) {
+			kill_jobs_resp_job_t *job_resp = &msg->job_responses[i];
+
+			safe_unpack32(&job_resp->error_code, buffer);
+			safe_unpackstr(&job_resp->error_msg, buffer);
+			if (slurm_unpack_selected_step(&job_resp->id,
+						       protocol_version,
+						       buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			safe_unpack32(&job_resp->real_job_id, buffer);
+			safe_unpackstr(&job_resp->sibling_name, buffer);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_kill_jobs_response_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_forward_data_msg(forward_data_msg_t *msg,
 				   buf_t *buffer, uint16_t protocol_version)
 {
@@ -13134,6 +13187,10 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_kill_jobs_msg((kill_jobs_msg_t *) msg->data, buffer,
 				    msg->protocol_version);
 		break;
+	case RESPONSE_KILL_JOBS:
+		_pack_kill_jobs_resp_msg((kill_jobs_resp_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
@@ -13802,6 +13859,11 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_KILL_JOBS:
 		rc = _unpack_kill_jobs_msg((kill_jobs_msg_t **) &msg->data,
 					   buffer, msg->protocol_version);
+		break;
+	case RESPONSE_KILL_JOBS:
+		rc = _unpack_kill_jobs_resp_msg(
+			(kill_jobs_resp_msg_t **) &msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:

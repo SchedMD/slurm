@@ -1278,6 +1278,29 @@ extern void slurm_free_kill_jobs_msg(kill_jobs_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_kill_jobs_resp_job_t(kill_jobs_resp_job_t *job_resp)
+{
+	if (!job_resp)
+		return;
+
+	xfree(job_resp->error_msg);
+	xfree(job_resp->id);
+	xfree(job_resp->sibling_name);
+	/* job_resp was not malloc'd so do not free */
+}
+
+extern void slurm_free_kill_jobs_response_msg(kill_jobs_resp_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	for (int i = 0; i < msg->jobs_cnt; i++) {
+		slurm_free_kill_jobs_resp_job_t(&msg->job_responses[i]);
+	}
+	xfree(msg->job_responses);
+	xfree(msg);
+}
+
 extern void slurm_free_container_id_request_msg(
 	container_id_request_msg_t *msg)
 {
@@ -5677,6 +5700,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_KILL_JOBS:
 		slurm_free_kill_jobs_msg(data);
 		break;
+	case RESPONSE_KILL_JOBS:
+		slurm_free_kill_jobs_response_msg(data);
+		break;
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
 		break;
@@ -6413,6 +6439,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_AUTH_TOKEN";
 	case REQUEST_KILL_JOBS:
 		return "REQUEST_KILL_JOBS";
+	case RESPONSE_KILL_JOBS:
+		return "RESPONSE_KILL_JOBS";
 
 	case REQUEST_LAUNCH_TASKS:				/* 6001 */
 		return "REQUEST_LAUNCH_TASKS";

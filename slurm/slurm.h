@@ -3665,6 +3665,22 @@ typedef struct {
 	char *nodelist;
 } kill_jobs_msg_t;
 
+typedef struct {
+	uint32_t error_code;
+	char *error_msg;
+	slurm_selected_step_t *id; /* Note: if the job is an array job, then
+				    * id.step_id.job_id is the array_job_id or
+				    * het_job_id, respectively. */
+	uint32_t real_job_id; /* The actual job id if the job was found, or
+			       * NO_VAL if the job was not found */
+	char *sibling_name;
+} kill_jobs_resp_job_t;
+
+typedef struct {
+	kill_jobs_resp_job_t *job_responses;
+	uint32_t jobs_cnt;
+} kill_jobs_resp_msg_t;
+
 /*
  * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
  */
