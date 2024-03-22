@@ -39,6 +39,21 @@ slurm-smd-libpam-slurm-adopt package which will install pam_slurm_adopt.
 <a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
 Administrator Guide</a> for instructions on managing an DEB-based install.</p>
 
+<h2 id="SLURM_CONFIG">Slurm Configuration
+<a class="slurm_link" href="#SLURM_CONFIG"></a>
+</h2>
+
+<p><b>PrologFlags=contain</b> must be set in the slurm.conf. This sets up the
+"extern" step into which ssh-launched processes will be adopted. You must also
+enable the task/cgroup plugin in slurm.conf. See the
+<a href="https://slurm.schedmd.com/cgroups.html">Slurm cgroups guide.</a>
+<b>CAUTION</b> This option must be in place <i>before</i> using this module.
+The module bases its checks on local steps that have already been launched. Jobs
+launched without this option do not have an extern step, so pam_slurm_adopt will
+not have access to those jobs.</p>
+
+<p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
+
 <h2 id="PAM_CONFIG">PAM Configuration
 <a class="slurm_link" href="#PAM_CONFIG"></a>
 </h2>
@@ -436,29 +451,6 @@ PAM_IGNORE immediately.
 </dd>
 
 </dl>
-
-<h2 id="SLURM_CONFIG">Slurm Configuration
-<a class="slurm_link" href="#SLURM_CONFIG"></a>
-</h2>
-
-<p><b>PrologFlags=contain</b> must be set in the slurm.conf. This sets up the
-"extern" step into which ssh-launched processes will be adopted. You must also
-enable the task/cgroup plugin in slurm.conf. See the <a
-href="https://slurm.schedmd.com/cgroups.html">Slurm cgroups guide.</a></p>
-
-<h3 id="important"><b>Important</b>
-<a class="slurm_link" href="#important"></a>
-</h3>
-
-<p><b>PrologFlags=contain</b> must be in place <i>before</i> using this module.
-The module bases its checks on local steps that have already been launched. If
-the user has no steps on the node, such as the extern step, the module will
-assume that the user has no jobs allocated to the node. Depending on your
-configuration of the PAM module, you might accidentally deny all user ssh
-attempts without <b>PrologFlags=contain.</b></p>
-
-<p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
-
 
 <h2 id="OTHER_CONFIG">Other Configuration
 <a class="slurm_link" href="#OTHER_CONFIG"></a>
