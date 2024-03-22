@@ -622,10 +622,7 @@ extern void acct_gather_profile_p_conf_values(List *data)
 		xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
 	list_append(*data, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBPass");
-	key_pair->value = xstrdup(influxdb_conf.password);
-	list_append(*data, key_pair);
+	/* skip over ProfileInfluxDBPass for security reasons */
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileInfluxDBRTPolicy");
@@ -637,13 +634,7 @@ extern void acct_gather_profile_p_conf_values(List *data)
 	key_pair->value = xstrdup_printf("%u", influxdb_conf.timeout);
 	list_append(*data, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ProfileInfluxDBUser");
-	key_pair->value = xstrdup(influxdb_conf.username);
-	list_append(*data, key_pair);
-
-	return;
-
+	/* skip over ProfileInfluxDBUser for security reasons */
 }
 
 extern bool acct_gather_profile_p_is_active(uint32_t type)
