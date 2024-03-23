@@ -133,6 +133,8 @@ extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 	_check_job_state(state);
 	_log_job_state_change(job_ptr, state);
 
+	on_job_state_change(job_ptr, state);
+
 	job_ptr->job_state = state;
 }
 
@@ -151,6 +153,8 @@ extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 	_check_job_state(job_state);
 	_log_job_state_change(job_ptr, job_state);
 
+	on_job_state_change(job_ptr, job_state);
+
 	job_ptr->job_state = job_state;
 }
 
@@ -165,6 +169,8 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	job_state = job_ptr->job_state & ~flag;
 	_check_job_state(job_state);
 	_log_job_state_change(job_ptr, job_state);
+
+	on_job_state_change(job_ptr, job_state);
 
 	job_ptr->job_state = job_state;
 }

@@ -2752,6 +2752,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 				    &job_ptr->gres_used);
 	job_ptr->clusters     = clusters;
 	job_ptr->fed_details  = job_fed_details;
+
+	on_job_state_change(job_ptr, job_ptr->job_state);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3257,6 +3259,8 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 	job_record_t *job_ptr, **job_pptr;
 
 	xassert(job_entry);
+
+	on_job_state_change(job_entry, NO_VAL);
 
 	switch (type) {
 	case JOB_HASH_JOB:
@@ -5241,6 +5245,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 							   false);
 	}
 
+	on_job_state_change(job_ptr, job_ptr->job_state);
+	on_job_state_change(job_ptr_pend, job_ptr_pend->job_state);
+
 	return job_ptr_pend;
 }
 
@@ -5298,6 +5305,8 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_STEP=%d", step_task_id);
 	}
+
+	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
 static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
@@ -8535,6 +8544,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		job_desc->shared = 0;
 
 fini:
+	on_job_state_change(job_ptr, NO_VAL);
 	FREE_NULL_LIST(job_ptr->details->feature_list);
 	FREE_NULL_LIST(job_ptr->details->prefer_list);
 	xfree(job_ptr->details);
