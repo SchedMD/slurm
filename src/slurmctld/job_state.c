@@ -287,3 +287,8 @@ extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state)
 {
 	/* place holder */
 }
+
+extern void setup_job_state_hash(int new_hash_table_size)
+{
+	/* place holder */
+}

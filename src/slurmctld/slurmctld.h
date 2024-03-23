@@ -1314,7 +1314,8 @@ extern int dump_all_job_state ( void );
 /*
  * Notify/update job state hash table that job state has changed
  * IN job_ptr - Job about to be updated
- * IN new_state - New value that will be assigned to job_ptr->job_state
+ * IN new_state - New value that will be assigned to job_ptr->job_state.
+ *                If NO_VAL, then delete the cache entry.
  */
 extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state);
 
@@ -2402,6 +2403,12 @@ extern void queue_job_scheduler(void);
  * NOTE: run lock_slurmctld before entry: Read config, write job
  */
 extern void rehash_jobs(void);
+
+/*
+ * Setup and prepare job state cache (if configured)
+ * IN new_hash_table_size - number of entries in hash table
+ */
+extern void setup_job_state_hash(int new_hash_table_size);
 
 /*
  * Rebuild a job step's core_bitmap_job after a job has just changed size
