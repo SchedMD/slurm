@@ -472,6 +472,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	if (job_ptr->gres_list_req) {
 		/* Identify available GRES and adjacent cores */
+
 		if (job_ptr->bit_flags & GRES_ENFORCE_BIND)
 			enforce_binding = true;
 		if (!core_map[node_i]) {
@@ -485,7 +486,10 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 					node_ptr->tot_sockets, node_ptr->cores,
 					job_ptr->job_id, node_ptr->name,
 					enforce_binding, s_p_n, &req_sock_map,
-					job_ptr->user_id, node_i);
+					job_ptr->user_id, node_i,
+					node_ptr->gpu_spec_bitmap,
+					node_ptr->config_ptr->res_cores_per_gpu,
+					cr_type);
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %d: gres_sock_list_create",
 			     node_i);
