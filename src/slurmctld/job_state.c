@@ -276,3 +276,8 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 	*jobs_count_ptr = args.count;
 	return args.rc;
 }
+
+extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state)
+{
+	/* place holder */
+}

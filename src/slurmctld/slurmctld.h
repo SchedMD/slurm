@@ -1311,6 +1311,13 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag);
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
 
+/*
+ * Notify/update job state hash table that job state has changed
+ * IN job_ptr - Job about to be updated
+ * IN new_state - New value that will be assigned to job_ptr->job_state
+ */
+extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state);
+
 /* dump_all_node_state - save the state of all nodes to file */
 extern int dump_all_node_state ( void );
 
