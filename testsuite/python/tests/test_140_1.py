@@ -10,6 +10,7 @@ import re
 cpu_total_cnt = 6
 license_total_cnt = 50
 shard_total_cnt = 7
+custom_gres_total_cnt = 7
 license_task_cnt = 7
 
 # Dictionary with tres to be tested. Meant to make it easier to add more tres
@@ -24,11 +25,19 @@ tres_dict = {
         "param": "gres/shard:",
         "num": 3,
     },
+    # Note that we do want to use "license" and "gres" words to ensure that the
+    # logic handling license/ and gres/ are correct.
     "license": {
-        "acct": "license/testing=",
+        "acct": "license/testing_license=",
         "count_needed": False,
-        "param": "license/testing:",
+        "param": "license/testing_license:",
         "num": license_task_cnt,
+    },
+    "custom_gres": {
+        "acct": "gres/custom_gres=",
+        "count_needed": False,
+        "param": "gres/custom_gres:",
+        "num": 2,
     },
 }
 
@@ -41,7 +50,11 @@ def setup():
     atf.require_tty(1)
     atf.require_config_parameter(
         "Name",
-        {"gpu": {"File": "/dev/tty[0-1]"}, "shard": {"Count": shard_total_cnt}},
+        {
+            "gpu": {"File": "/dev/tty[0-1]"},
+            "shard": {"Count": shard_total_cnt},
+            "custom_gres": {"Count": custom_gres_total_cnt},
+        },
         source="gres",
     )
     # Accounting is needed in order to keep track of tres
@@ -49,17 +62,28 @@ def setup():
 
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
-    atf.require_config_parameter_includes("Licenses", f"testing:{license_total_cnt}")
     atf.require_config_parameter_includes(
-        "AccountingStorageTRES", "gres/gpu,gres/shard,license/testing"
+        "Licenses", f"testing_license:{license_total_cnt}"
+    )
+    atf.require_config_parameter_includes(
+        "AccountingStorageTRES",
+        "gres/gpu,gres/shard,gres/custom_gres,license/testing_license",
     )
     atf.require_config_parameter_includes("GresTypes", "cpu")
     atf.require_config_parameter_includes("GresTypes", "gpu")
     atf.require_config_parameter_includes("GresTypes", "shard")
+    atf.require_config_parameter_includes("GresTypes", "custom_gres")
 
     # Setup fake GPUs in gres.conf and add nodes to use the GPUs in slurm.conf
     atf.require_nodes(
-        1, [("Gres", f"gpu:2,shard:{shard_total_cnt}"), ("CPUs", cpu_total_cnt)]
+        1,
+        [
+            (
+                "Gres",
+                f"gpu:2,shard:{shard_total_cnt},custom_gres:{custom_gres_total_cnt}",
+            ),
+            ("CPUs", cpu_total_cnt),
+        ],
     )
 
     atf.require_slurm_running()
@@ -121,17 +145,18 @@ def test_license_allocation(command):
     assert (
         match := re.search(
             r"Free=(\d+)",
-            atf.run_command_output("scontrol show lic testing", fatal=True),
+            atf.run_command_output("scontrol show lic testing_license", fatal=True),
         )
     ) is not None and (
         available_lics := int(match.group(1))
-    ) == license_total_cnt, f"Got {available_lics} testing licenses free instead of all free ({license_total_cnt})"
+    ) == license_total_cnt, f"Got {available_lics} testing_license licenses free instead of all free ({license_total_cnt})"
 
     tres_param = f"{tres_dict['license']['param']}{tres_dict['license']['num']}"
 
     job_file, info_file = make_info_file(f"license_{command}")
     job_param = (
-        f"--tres-per-task={tres_param} " + f"--licenses=testing:{license_task_cnt} -n2"
+        f"--tres-per-task={tres_param} "
+        + f"--licenses=testing_license:{license_task_cnt} -n2"
     )
 
     # Create a job
