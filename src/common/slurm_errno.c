@@ -463,6 +463,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid QOS specification, relative QOS can only be used in a single partition per cluster." },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_EXTRA),
 	  "Invalid extra constraints specification" },
+	{ ERRTAB_ENTRY(ESLURM_JOB_SIGNAL_FAILED),
+	  "Cannot signal job" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
