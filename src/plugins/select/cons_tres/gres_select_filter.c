@@ -86,7 +86,7 @@ static bool _set_max_node_gres(sock_gres_t *sock_gres, uint64_t val)
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
- *                     gres_sched_create_sock_gres_list()
+ *                     gres_sock_list_create()
  * IN avail_mem - memory available for the job
  * IN max_cpus - maximum CPUs available on this node (limited by specialized
  *               cores and partition CPUs-per-node)
@@ -200,7 +200,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		/*
 		 * NOTE: gres_per_socket enforcement is performed by
 		 * _build_sock_gres_by_topo(), called by
-		 * gres_sched_create_sock_gres_list()
+		 * gres_sock_list_create()
 		 */
 		if (sock_gres->cnt_by_sock && enforce_binding) {
 			for (s = 0; s < sockets; s++) {

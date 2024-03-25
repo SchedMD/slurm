@@ -44,7 +44,7 @@
  * IN job_ptr - job's pointer
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by
- *	gres_sched_create_sock_gres_list()
+ *	gres_sock_list_create()
  * IN sockets - Count of sockets on the node
  * IN cores_per_socket - Count of cores per socket on the node
  * IN cpus_per_core - Count of CPUs per core on the node

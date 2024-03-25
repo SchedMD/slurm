@@ -429,7 +429,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i);
 		if (!sock_gres_list) {	/* GRES requirement fail */
-			log_flag(SELECT_TYPE, "Test fail on node %d: gres_sched_create_sock_gres_list",
+			log_flag(SELECT_TYPE, "Test fail on node %d: gres_sock_list_create",
 			     node_i);
 			return NULL;
 		}
