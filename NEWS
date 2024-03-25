@@ -101,6 +101,8 @@ documents those changes that are of interest to users and administrators.
  -- Add QOS limit MaxTRESRunMinsPerAccount.
  -- Add QOS limit MaxTRESRunMinsPerUser.
  -- jobcomp/{elasticsearch,kafka} - Send priority alongside the rest of fields.
+ -- mpi/pmix - Fix multiple races with heterogeneous jobs, causing job's client
+    command to hang or segfault at random.
 
 * Changes in Slurm 23.11.6
 ==========================
