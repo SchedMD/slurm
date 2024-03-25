@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.6
 ==========================
+-- Avoid limiting sockets per node to one when using gres enforce-binding.
 
 * Changes in Slurm 23.11.5
 ==========================
