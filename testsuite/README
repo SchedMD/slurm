@@ -1012,6 +1012,10 @@ test_138_#   Testing stressing cases.
 test_138_1   /stress/test_stdin_broadcast.py
 test_138_2   Test parallel performance of squeue
 
+test_139_#   Testing dynamic nodes.
+===================================
+test_139_1   Test creation, registration, usage, and deletion of dynamic nodes.
+
 test_140_#   Testing --tres options.
 ====================================
 test_140_1   Test --tres-per-task option
