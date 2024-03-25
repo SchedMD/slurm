@@ -176,7 +176,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* dependency_params */
 	/* eio_timeout */
 	/* enforce_part_limits */
-	/* epilog */
+	packstr_array(slurm_conf.epilog, slurm_conf.epilog_cnt, buffer);
 	/* epilog_msg_time */
 	/* epilog_slurmctld */
 	/* fed_params */
@@ -266,11 +266,11 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* priority_weight_tres */
 	/* private_data */
 	packstr(slurm_conf.proctrack_type, buffer);
-	/* prolog */
+	packstr_array(slurm_conf.prolog, slurm_conf.prolog_cnt, buffer);
 	/* prolog_epilog_timeout */
+	pack16(slurm_conf.prolog_flags, buffer);
 	/* prolog_slurmctld */
 	pack16(slurm_conf.propagate_prio_process, buffer);
-	/* prolog_flags */
 	packstr(slurm_conf.propagate_rlimits, buffer);
 	packstr(slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
@@ -399,7 +399,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* dependency_params */
 	/* eio_timeout */
 	/* enforce_part_limits */
-	/* epilog */
+	safe_unpackstr_array(&slurm_conf.epilog, &slurm_conf.epilog_cnt,
+			     buffer);
 	/* epilog_msg_time */
 	/* epilog_slurmctld */
 	/* fed_params */
@@ -489,11 +490,12 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* priority_weight_tres */
 	/* private_data */
 	safe_unpackstr(&slurm_conf.proctrack_type, buffer);
-	/* prolog */
+	safe_unpackstr_array(&slurm_conf.prolog, &slurm_conf.prolog_cnt,
+			     buffer);
 	/* prolog_epilog_timeout */
+	safe_unpack16(&slurm_conf.prolog_flags, buffer);
 	/* prolog_slurmctld */
 	safe_unpack16(&slurm_conf.propagate_prio_process, buffer);
-	/* prolog_flags */
 	safe_unpackstr(&slurm_conf.propagate_rlimits, buffer);
 	safe_unpackstr(&slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
