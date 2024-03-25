@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.6
 ==========================
 -- Avoid limiting sockets per node to one when using gres enforce-binding.
+ -- slurmrestd - Avoid permission denied errors when attempting to listen on
+    the same port multiple times.
 
 * Changes in Slurm 23.11.5
 ==========================
