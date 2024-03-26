@@ -63,7 +63,7 @@
 				        <div>About</div>
 					<ul>
 						<li><a href="overview.shtml">Overview</a></li>
-						<li><a href="news.shtml">Release Notes</a></li>
+						<li><a href="release_notes.shtml">Release Notes</a></li>
 					</ul>
 				</li>
 				<li class="site-menu__item">
