@@ -270,6 +270,7 @@ static int _switch_select_alloc_gres(void *x, void *arg)
 	}
 	gres_js->gres_bit_alloc = gres_js->gres_bit_select;
 	gres_js->gres_bit_select = NULL;
+	xfree(gres_js->gres_cnt_node_alloc);
 	gres_js->gres_cnt_node_alloc = gres_js->gres_cnt_node_select;
 	gres_js->gres_cnt_node_select = NULL;
 	return 0;
@@ -5264,18 +5265,40 @@ static int _combine_gres_list_exc(void *object, void *arg)
 		gres_job_state_t *gres_js = gres_state_job->gres_data;
 		gres_js->total_gres += gres_js_in->total_gres;
 
-		for (int i = 0; i < gres_js_in->node_cnt; i++) {
-			if (!gres_js_in->gres_bit_alloc[i])
-				continue;
-			if (!gres_js->gres_bit_alloc[i])
-				gres_js->gres_bit_alloc[i] =
-					bit_copy(gres_js_in->gres_bit_alloc[i]);
-			else
-				bit_or(gres_js->gres_bit_alloc[i],
-				       gres_js_in->gres_bit_alloc[i]);
+		/*
+		 * At the moment we only care about gres_js->gres_bit_alloc and
+		 * gres_js->gres_cnt_node_alloc.
+		 */
+		if (gres_js_in->gres_bit_alloc) {
+			if (!gres_js->gres_bit_alloc)
+				gres_js->gres_bit_alloc =
+					xcalloc(gres_js->node_cnt,
+						sizeof(bitstr_t *));
+			for (int i = 0; i < gres_js_in->node_cnt; i++) {
+				if (!gres_js_in->gres_bit_alloc[i])
+					continue;
+				if (!gres_js->gres_bit_alloc[i])
+					gres_js->gres_bit_alloc[i] =
+						bit_copy(gres_js_in->
+							 gres_bit_alloc[i]);
+				else
+					bit_or(gres_js->gres_bit_alloc[i],
+					       gres_js_in->gres_bit_alloc[i]);
+			}
+		}
+
+		if (gres_js_in->gres_cnt_node_alloc) {
+			if (!gres_js->gres_cnt_node_alloc)
+				gres_js->gres_cnt_node_alloc =
+					xcalloc(gres_js->node_cnt,
+						sizeof(uint64_t));
+			for (int i = 0; i < gres_js_in->node_cnt; i++) {
+				gres_js->gres_cnt_node_alloc[i] +=
+					gres_js_in->gres_cnt_node_alloc[i];
+			}
 		}
 	}
-	/* We only care about gres_js->gres_bit_alloc */
+
 	return 1;
 }
 
