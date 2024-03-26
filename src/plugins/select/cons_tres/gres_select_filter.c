@@ -787,6 +787,8 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 		for (l = best_link_cnt;
 		     ((l >= 0) && (i < gres_js->gres_per_socket)); l--) {
 			for (g = 0; g < gres_cnt; g++) {
+				if (links_cnt && (links_cnt[g] < l))
+					continue;
 				if (!sock_gres->bits_by_sock ||
 				    !sock_gres->bits_by_sock[s] ||
 				    !bit_test(sock_gres->bits_by_sock[s], g))
