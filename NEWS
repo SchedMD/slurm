@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     innocuous.
  -- accounting_storage/mysql - Fix problem when loading reservations from an
     archive dump.
+ -- slurmdbd - Fix minor race condition when sending updates to a shutdown
+    slurmctld.
 
 * Changes in Slurm 23.11.5
 ==========================
