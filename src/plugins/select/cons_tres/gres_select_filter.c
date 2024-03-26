@@ -42,6 +42,9 @@
 
 #include "gres_select_filter.h"
 
+/* Used to indicate when sock_gres->bits_any_sock should be tested */
+#define ANY_SOCK_TEST -1
+
 static int64_t *nonalloc_gres = NULL;
 
 static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt);
@@ -321,10 +324,11 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 			gres_js->gres_per_bit_select[node_inx][t];
 		if  (cnt_avail < (use_single_dev ? *gres_needed : 1))
 			continue; /* Insufficient resources */
-		if ((s == -1) && (!sock_gres->bits_any_sock ||
-				  !bit_test(sock_gres->bits_any_sock, t)))
+		if ((s == ANY_SOCK_TEST) &&
+		    (!sock_gres->bits_any_sock ||
+		     !bit_test(sock_gres->bits_any_sock, t)))
 			continue; /* GRES not avail any socket */
-		if ((s >= 0) &&
+		if ((s != ANY_SOCK_TEST) &&
 		    (!sock_gres->bits_by_sock || !sock_gres->bits_by_sock[s] ||
 		     !bit_test(sock_gres->bits_by_sock[s], t)))
 			continue; /* GRES not on this socket */
@@ -408,10 +412,6 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 	 * Third: Try to select single sharing gres with sufficient available
 	 *	gres.
 	 */
-
-	/* socket_inx == -1 for sharing gres avail from any socket */
-	/* socket_inx == -2 don't test for socket affinity */
-	const int ANY_SOCK_TEST = -1;
 
 	for (int s = 0; (s < sock_gres->sock_cnt) && *gres_needed; s++) {
 		if (!used_sock[s])
