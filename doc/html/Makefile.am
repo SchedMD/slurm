@@ -50,7 +50,6 @@ generated_html = \
 	mpi_guide.html \
 	multi_cluster.html \
 	network.html \
-	news.html \
 	nss_slurm.html \
 	openapi_release_notes.html \
 	overview.html \
@@ -69,6 +68,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	related_software.html \
+	release_notes\.html \
 	reservations.html \
 	resource_binding.html \
 	resource_limits.html \
