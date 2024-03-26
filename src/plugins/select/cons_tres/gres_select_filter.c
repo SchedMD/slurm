@@ -1011,7 +1011,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	int g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int alloc_gres_cnt = 0;
+	uint32_t gres_needed;
 	int *links_cnt = NULL, best_link_cnt = 0;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
@@ -1019,6 +1019,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	sock_cnt =  sock_gres->sock_cnt;
 
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
+	gres_needed = gres_js->gres_per_node;
 
 	/*
 	 * Now pick specific GRES for these sockets.
@@ -1029,11 +1030,11 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	if (gres_ns->link_len == gres_cnt)
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
-	     ((s < sock_cnt) && (alloc_gres_cnt < gres_js->gres_per_node));
+	     ((s < sock_cnt) && gres_needed);
 	     s++) {
 		if ((s >= 0) && !used_sock[s])
 			continue;
-		alloc_gres_cnt += _pick_gres_topo(sock_gres, 1, node_inx, s,
+		gres_needed -= _pick_gres_topo(sock_gres, 1, node_inx, s,
 					       SETUP_LINKS, links_cnt);
 	}
 
@@ -1056,16 +1057,15 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * GRES which are best linked to GRES which have already been selected.
 	 */
 	for (l = best_link_cnt;
-	     ((l >= 0) && (alloc_gres_cnt < gres_js->gres_per_node)); l--) {
+	     ((l >= 0) && gres_needed); l--) {
 		for (s = -1;   /* Socket == - 1 if GRES avail from any socket */
 		     ((s < sock_cnt) &&
-		      (alloc_gres_cnt < gres_js->gres_per_node)); s++) {
+		      gres_needed); s++) {
 			if ((s >= 0) && !used_sock[s])
 				continue;
-			alloc_gres_cnt += _pick_gres_topo(
-				sock_gres,
-				gres_js->gres_per_node - alloc_gres_cnt,
-				node_inx, s, SETUP_LINKS, links_cnt);
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, SETUP_LINKS,
+						       links_cnt);
 		}
 	}
 
@@ -1074,16 +1074,13 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * which are best linked to GRES which have already been selected.
 	 */
 	for (l = best_link_cnt;
-	     ((l >= 0) && (alloc_gres_cnt < gres_js->gres_per_node)); l--) {
-		for (s = 0;
-		     ((s < sock_cnt) &&
-		      (alloc_gres_cnt < gres_js->gres_per_node)); s++) {
+	     ((l >= 0) && gres_needed); l--) {
+		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
 			if (used_sock[s]) /* Sockets we ignored before */
 				continue;
-			alloc_gres_cnt += _pick_gres_topo(
-				sock_gres,
-				gres_js->gres_per_node - alloc_gres_cnt,
-				node_inx, s, SETUP_LINKS, links_cnt);
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, SETUP_LINKS,
+						       links_cnt);
 		}
 	}
 
