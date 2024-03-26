@@ -1374,8 +1374,9 @@ Do not print a header on the output.
 .IP
 
 .TP
-\fB\-\-only-job-state\fR
-Only query for the job state.
+\fB\-\-only\-job\-state\fR
+Only query for the job state. Query utilizes RPC that only retains JobID
+and State information reducing work required by slurmctld to respond.
 .IP
 
 .TP
@@ -1451,12 +1452,6 @@ jobs are reported. See the \fBJOB STATE CODES\fR section below for a list of
 valid states. Both extended and compact forms are valid.
 Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
-.IP
-
-.TP
-\fB\-\-state\-only\fR
-Limit query to only grab job state. Query utilizes RPC that only retains JobID
-and State information reducing work required by slurmctld to respond.
 .IP
 
 .TP
