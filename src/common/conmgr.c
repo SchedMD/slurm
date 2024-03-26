@@ -104,6 +104,8 @@ struct conmgr_fd_s {
 	void *arg;
 	/* name of connection for logging */
 	char *name;
+	/* address for connection */
+	slurm_addr_t address;
 	/* call backs on events */
 	conmgr_events_t events;
 	/* buffer holding incoming already read data */
@@ -898,6 +900,9 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		/* do nothing - connection already named */
 	} else if (addr) {
 		xassert(con->is_socket);
+
+		memcpy(&con->address, addr, addrlen);
+
 		con->name = sockaddr_to_string(addr, addrlen);
 
 		if (!con->name && source && source->unix_socket) {
@@ -2604,6 +2609,79 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static int _match_socket_address(void *x, void *key)
+{
+	conmgr_fd_t *con = x;
+	const slurm_addr_t *addr1 = key;
+	const slurm_addr_t *addr2 = &con->address;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (addr1->ss_family != addr2->ss_family)
+		return 0;
+
+	switch (addr1->ss_family) {
+		case AF_INET:
+		{
+			const struct sockaddr_in *a1 =
+				(const struct sockaddr_in *) addr1;
+			const struct sockaddr_in *a2 =
+				(const struct sockaddr_in *) addr2;
+
+			if (a1->sin_port != a2->sin_port)
+				return 0;
+
+			return !memcmp(&a1->sin_addr.s_addr,
+				       &a2->sin_addr.s_addr,
+				       sizeof(a2->sin_addr.s_addr));
+		}
+		case AF_INET6:
+		{
+			const struct sockaddr_in6 *a1 =
+				(const struct sockaddr_in6 *) addr1;
+			const struct sockaddr_in6 *a2 =
+				(const struct sockaddr_in6 *) addr2;
+
+			if (a1->sin6_port != a2->sin6_port)
+				return 0;
+			if (a1->sin6_scope_id != a2->sin6_scope_id)
+				return 0;
+			return !memcmp(&a1->sin6_addr.s6_addr,
+				       &a2->sin6_addr.s6_addr,
+				       sizeof(a2->sin6_addr.s6_addr));
+		}
+		case AF_UNIX:
+		{
+			const struct sockaddr_un *a1 =
+				(const struct sockaddr_un *) addr1;
+			const struct sockaddr_un *a2 =
+				(const struct sockaddr_un *) addr2;
+
+			return !xstrcmp(a1->sun_path, a2->sun_path);
+		}
+		default:
+		{
+			fatal_abort("Unexpected ss family type %u",
+				    (uint32_t) addr1->ss_family);
+		}
+	}
+	/* Unreachable */
+	fatal_abort("This should never happen");
+}
+
+static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
+{
+	/* use address to ensure memory size is correct */
+	slurm_addr_t address = {0};
+
+	memcpy(&address, addr, addrlen);
+
+	if (list_find_first_ro(mgr.listen, _match_socket_address, &address))
+		return true;
+
+	return false;
+}
+
 static int _create_socket(void *x, void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
@@ -2673,6 +2751,14 @@ static int _create_socket(void *x, void *arg)
 		 */
 		int fd;
 		int one = 1;
+
+		if (_is_listening((const slurm_addr_t *) addr->ai_addr,
+				  addr->ai_addrlen)) {
+			verbose("%s: ignoring duplicate listen request for %pA",
+				__func__, (const slurm_addr_t *) addr->ai_addr);
+			continue;
+		}
+
 		fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC,
 			    addr->ai_protocol);
 		if (fd < 0)
