@@ -1542,185 +1542,108 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 
 extern void acct_gather_energy_p_conf_values(List *data)
 {
-	config_key_pair_t *key_pair;
-
 	xassert(*data);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIDriverType");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.driver_type);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIDriverType", "%u",
+		     slurm_ipmi_conf.driver_type);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIDisableAutoProbe");
-	key_pair->value = xstrdup_printf("%u",
-					 slurm_ipmi_conf.disable_auto_probe);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIDisableAutoProbe", "%u",
+		     slurm_ipmi_conf.disable_auto_probe);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIDriverAddress");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.driver_address);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIDriverAddress", "%u",
+		     slurm_ipmi_conf.driver_address);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIRegisterSpacing");
-	key_pair->value = xstrdup_printf("%u",
-					 slurm_ipmi_conf.register_spacing);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIRegisterSpacing", "%u",
+		     slurm_ipmi_conf.register_spacing);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIDriverDevice");
-	key_pair->value = xstrdup(slurm_ipmi_conf.driver_device);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIDriverDevice", "%s",
+		     slurm_ipmi_conf.driver_device);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIProtocolVersion");
-	key_pair->value = xstrdup_printf("%u",
-					 slurm_ipmi_conf.protocol_version);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIProtocolVersion", "%u",
+		     slurm_ipmi_conf.protocol_version);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIUsername");
-	key_pair->value = xstrdup(slurm_ipmi_conf.username);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIUsername", "%s",
+		     slurm_ipmi_conf.username);
 
-	/* Don't give out the password */
-	/* key_pair = xmalloc(sizeof(config_key_pair_t)); */
-	/* key_pair->name = xstrdup("EnergyIPMIPassword"); */
-	/* key_pair->value = xstrdup(slurm_ipmi_conf.password); */
-	/* list_append(*data, key_pair); */
+	/*
+	 * Don't give out the password
+	 * add_key_pair(*data, "EnergyIPMIPassword", "%s",
+	 * 		slurm_ipmi_conf.password);
+	 */
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIPrivilegeLevel");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.privilege_level);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIPrivilegeLevel", "%u",
+		     slurm_ipmi_conf.privilege_level);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIAuthenticationType");
-	key_pair->value = xstrdup_printf("%u",
-					 slurm_ipmi_conf.authentication_type);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIAuthenticationType", "%u",
+		     slurm_ipmi_conf.authentication_type);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMICipherSuiteId");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.cipher_suite_id);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMICipherSuiteId", "%u",
+		     slurm_ipmi_conf.cipher_suite_id);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMISessionTimeout");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.session_timeout);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMISessionTimeout", "%u",
+		     slurm_ipmi_conf.session_timeout);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIRetransmissionTimeout");
-	key_pair->value = xstrdup_printf(
-		"%u", slurm_ipmi_conf.retransmission_timeout);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIRetransmissionTimeout", "%u",
+		     slurm_ipmi_conf.retransmission_timeout);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIWorkaroundFlags");
-	key_pair->value = xstrdup_printf(
-		"%u", slurm_ipmi_conf.workaround_flags);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIWorkaroundFlags", "%u",
+		     slurm_ipmi_conf.workaround_flags);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIRereadSdrCache");
-	key_pair->value = xstrdup(slurm_ipmi_conf.reread_sdr_cache
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIRereadSdrCache",
+			  slurm_ipmi_conf.reread_sdr_cache);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIIgnoreNonInterpretableSensors");
-	key_pair->value = xstrdup(
-		slurm_ipmi_conf.ignore_non_interpretable_sensors
-		? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIIgnoreNonInterpretableSensors",
+			  slurm_ipmi_conf.ignore_non_interpretable_sensors);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIBridgeSensors");
-	key_pair->value = xstrdup(slurm_ipmi_conf.bridge_sensors
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIBridgeSensors",
+			  slurm_ipmi_conf.bridge_sensors);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIInterpretOemData");
-	key_pair->value = xstrdup(slurm_ipmi_conf.interpret_oem_data
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIInterpretOemData",
+			  slurm_ipmi_conf.interpret_oem_data);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMISharedSensors");
-	key_pair->value = xstrdup(slurm_ipmi_conf.shared_sensors
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMISharedSensors",
+			  slurm_ipmi_conf.shared_sensors);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIDiscreteReading");
-	key_pair->value = xstrdup(slurm_ipmi_conf.discrete_reading
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIDiscreteReading",
+			  slurm_ipmi_conf.discrete_reading);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIIgnoreScanningDisabled");
-	key_pair->value = xstrdup(slurm_ipmi_conf.ignore_scanning_disabled
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIIgnoreScanningDisabled",
+			  slurm_ipmi_conf.ignore_scanning_disabled);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIAssumeBmcOwner");
-	key_pair->value = xstrdup(slurm_ipmi_conf.assume_bmc_owner
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIAssumeBmcOwner",
+			  slurm_ipmi_conf.assume_bmc_owner);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIEntitySensorNames");
-	key_pair->value = xstrdup(slurm_ipmi_conf.entity_sensor_names
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMIEntitySensorNames",
+			  slurm_ipmi_conf.entity_sensor_names);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIFrequency");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.freq);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIFrequency", "%u",
+		     slurm_ipmi_conf.freq);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMICalcAdjustment");
-	key_pair->value = xstrdup(slurm_ipmi_conf.adjustment
-				  ? "Yes" : "No");
-	list_append(*data, key_pair);
+	add_key_pair_bool(*data, "EnergyIPMICalcAdjustment",
+			  slurm_ipmi_conf.adjustment);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIPowerSensors");
-	key_pair->value =
-	    xstrdup_printf("%s", slurm_ipmi_conf.power_sensors);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMIPowerSensors", "%s",
+		     slurm_ipmi_conf.power_sensors);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMITimeout");
-	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.timeout);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "EnergyIPMITimeout", "%u",
+		     slurm_ipmi_conf.timeout);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyIPMIVariable");
 	switch (slurm_ipmi_conf.variable) {
 	case IPMI_MONITORING_SENSOR_UNITS_CELSIUS:
-		key_pair->value = xstrdup("Temp");
+		add_key_pair(*data, "EnergyIPMIVariable", "%s", "Temp");
 		break;
 	case IPMI_MONITORING_SENSOR_UNITS_RPM:
-		key_pair->value = xstrdup("Fan");
+		add_key_pair(*data, "EnergyIPMIVariable", "%s", "Fan");
 		break;
 	case IPMI_MONITORING_SENSOR_UNITS_VOLTS:
-		key_pair->value = xstrdup("Voltage");
+		add_key_pair(*data, "EnergyIPMIVariable", "%s", "Voltage");
 		break;
 	case IPMI_MONITORING_SENSOR_UNITS_WATTS:
-		key_pair->value = xstrdup("Watts");
+		add_key_pair(*data, "EnergyIPMIVariable", "%s", "Watts");
 		break;
 	default:
-		key_pair->value = xstrdup("Unknown");
+		add_key_pair(*data, "EnergyIPMIVariable", "%s", "Unknown");
 		break;
 	}
-	list_append(*data, key_pair);
-
-	return;
 
 }
