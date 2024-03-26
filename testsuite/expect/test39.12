@@ -223,11 +223,7 @@ set node_list [get_nodes_by_request "--gres=craynetwork:1,gpu:1 --nodes=$nb_node
 if { [llength $node_list] != $nb_nodes } {
 	subskip "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
 } else {
-	set gpus_per_node [get_gres_count "gpu" [join $node_list ',']]
-	set expected_gpus 0
-	dict for {node gpus} $gpus_per_node {
-		incr expected_gpus $gpus
-	}
+	set expected_gpus [expr $nb_nodes * $sockets_with_gpus]
 
 	if {$sockets_with_gpus > 1} {
 		set cpus_per_task $cpus_per_socket
@@ -292,5 +288,5 @@ expect {
 	}
 }
 subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
-set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
+set expected_gpus $use_gpus_per_node
 subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-task" "$match_gpu != $expected_gpus"
