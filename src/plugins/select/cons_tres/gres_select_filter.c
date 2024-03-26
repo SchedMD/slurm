@@ -300,7 +300,7 @@ static void _init_gres_per_bit_select(gres_job_state_t *gres_js, int node_inx)
 
 static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 				   bool use_single_dev, bool no_repeat,
-				   int node_inx, int s,
+				   int node_inx, int socket_index,
 				   uint64_t *gres_needed, int *topo_index)
 {
 	uint64_t cnt_to_alloc, cnt_avail;
@@ -324,13 +324,14 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 			gres_js->gres_per_bit_select[node_inx][t];
 		if  (cnt_avail < (use_single_dev ? *gres_needed : 1))
 			continue; /* Insufficient resources */
-		if ((s == ANY_SOCK_TEST) &&
+		if ((socket_index == ANY_SOCK_TEST) &&
 		    (!sock_gres->bits_any_sock ||
 		     !bit_test(sock_gres->bits_any_sock, t)))
 			continue; /* GRES not avail any socket */
-		if ((s != ANY_SOCK_TEST) &&
-		    (!sock_gres->bits_by_sock || !sock_gres->bits_by_sock[s] ||
-		     !bit_test(sock_gres->bits_by_sock[s], t)))
+		if ((socket_index != ANY_SOCK_TEST) &&
+		    (!sock_gres->bits_by_sock ||
+		     !sock_gres->bits_by_sock[socket_index] ||
+		     !bit_test(sock_gres->bits_by_sock[socket_index], t)))
 			continue; /* GRES not on this socket */
 		if (no_repeat &&
 		    bit_test(gres_js->gres_bit_select[node_inx], t))
