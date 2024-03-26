@@ -644,10 +644,11 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
-	int i, g, l, s;
+	int g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *links_cnt = NULL, best_link_cnt = 0;
+	uint64_t gres_needed;
 	uint32_t *used_sock = used_cores_on_sock;
 	bool allocated_array_copy = false;
 
@@ -758,19 +759,17 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 	for (s = 0; s < sock_cnt; s++) {
 		if (!used_sock[s])
 			continue;
-		i = 0;
-		for (l = best_link_cnt;
-		     ((l >= 0) && (i < gres_js->gres_per_socket)); l--) {
-			i += _pick_gres_topo(sock_gres,
-					     gres_js->gres_per_socket - i,
-					     node_inx, s, l, links_cnt);
+		gres_needed = gres_js->gres_per_socket;
+		for (l = best_link_cnt; ((l >= 0) && gres_needed); l--) {
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, l,
+						       links_cnt);
 		}
-		if (i < gres_js->gres_per_socket) {
+		if (gres_needed) {
 			/* Add GRES unconstrained by socket as needed */
-			i += _pick_gres_topo(sock_gres,
-					     gres_js->gres_per_socket - i,
-					     node_inx, ANY_SOCK_TEST, l,
-					     links_cnt);
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, ANY_SOCK_TEST,
+						       l, links_cnt);
 		}
 	}
 	xfree(links_cnt);
