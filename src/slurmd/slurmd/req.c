@@ -2828,7 +2828,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * if reboot will be required.
 			 */
 			char *new_features = xstrdup(reboot_msg->features);
-			info("Node reboot request with features %s being processed",
+			info("Node features change request %s being processed",
 			     reboot_msg->features);
 			if (node_features_g_node_set(reboot_msg->features,
 						     &need_reboot)) {
@@ -2881,6 +2881,8 @@ _rpc_reboot(slurm_msg_t *msg)
 				 * Run reboot_program with only arguments given
 				 * in reboot_msg->features.
 				 */
+				info("Node reboot request with features %s being processed",
+				     reboot_msg->features);
 				if (reboot_msg->features[0]) {
 					xstrfmtcat(cmd, "%s '%s'",
 						   sp, reboot_msg->features);
