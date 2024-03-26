@@ -1103,8 +1103,7 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	int gres_cnt, g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	uint32_t total_tasks = 0;
-	uint64_t total_gres_cnt = 0, total_gres_goal;
+	uint64_t gres_needed, sock_gres_needed;
 	int *links_cnt = NULL, best_link_cnt = 0;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
@@ -1114,17 +1113,20 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	if (gres_ns->link_len == gres_cnt)
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
 
+	gres_needed = _get_task_cnt_node(tasks_per_socket, sock_cnt) *
+		gres_js->gres_per_task;
+
 	/* First pick GRES for acitve sockets */
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     s < sock_cnt; s++) {
 		if ((s > 0) &&
 		    (!tasks_per_socket || (tasks_per_socket[s] == 0)))
 			continue;
-		total_tasks += tasks_per_socket[s];
-		total_gres_goal = total_tasks * gres_js->gres_per_task;
-		total_gres_cnt += _pick_gres_topo(
-			sock_gres, total_gres_goal - total_gres_cnt, node_inx,
-			s, SETUP_LINKS, links_cnt);
+		sock_gres_needed = MIN(gres_needed,
+				       (tasks_per_socket[s] *
+					gres_js->gres_per_task));
+		gres_needed -= _pick_gres_topo(sock_gres, sock_gres_needed, node_inx,
+					       s, SETUP_LINKS, links_cnt);
 	}
 
 	if (links_cnt) {
@@ -1145,25 +1147,23 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	 * Next pick additional GRES as needed. Favor use of GRES which
 	 * are best linked to GRES which have already been selected.
 	 */
-	total_gres_goal = total_tasks * gres_js->gres_per_task;
-	for (l = best_link_cnt;
-	     ((l >= 0) && (total_gres_cnt < total_gres_goal)); l--) {
-		for (s = -1;   /* Socket == - 1 if GRES avail from any socket */
-		     ((s < sock_cnt) && (total_gres_cnt < total_gres_goal));
-		     s++) {
-			total_gres_cnt += _pick_gres_topo(
-				sock_gres, total_gres_goal - total_gres_cnt,
-				node_inx, s, l, links_cnt);
+	for (l = best_link_cnt; ((l >= 0) && gres_needed); l--) {
+		for (s = -1; /* Socket == - 1 if GRES avail from any socket */
+		     ((s < sock_cnt) && gres_needed); s++) {
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, l,
+						       links_cnt);
 		}
 	}
 	xfree(links_cnt);
 
-	if (total_gres_cnt < total_gres_goal) {
+	if (gres_needed) {
 		/* Something bad happened on task layout for this GRES type */
-		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (%"PRIu64" < %"PRIu64")",
-		      __func__,
-		      sock_gres->gres_state_job->gres_name, job_id, node_inx,
-		      total_gres_cnt, total_gres_goal);
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64")",
+		      __func__, sock_gres->gres_state_job->gres_name, job_id,
+		      node_inx, gres_needed,
+		      _get_task_cnt_node(tasks_per_socket, sock_cnt) *
+		      gres_js->gres_per_task);
 	}
 }
 
