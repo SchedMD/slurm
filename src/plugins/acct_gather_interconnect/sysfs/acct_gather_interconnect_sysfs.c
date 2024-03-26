@@ -299,14 +299,9 @@ extern void acct_gather_interconnect_p_conf_options(
 
 extern void acct_gather_interconnect_p_conf_values(List *data)
 {
-	config_key_pair_t *key_pair;
-
 	xassert(*data);
 
-	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("SysfsInterfaces");
-	key_pair->value = xstrdup(sysfs_interfaces);
-	list_append(*data, key_pair);
+	add_key_pair(*data, "SysfsInterfaces", "%s", sysfs_interfaces);
 }
 
 static void _blank(acct_gather_data_t *data)
