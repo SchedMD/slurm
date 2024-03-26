@@ -14,11 +14,9 @@ max_nodes = 5
 def setup():
     atf.require_auto_config("Wants to set required dynamic node parameters")
     atf.require_config_parameter("MaxNodeCount", max_nodes)
-    atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("TreeWidth", 65533)
     atf.require_config_parameter("ResumeProgram", "/bin/true")
     atf.require_config_parameter("SuspendProgram", "/bin/true")
-
     # Time for node to sit idle with no jobs before being told to power down
     atf.require_config_parameter("SuspendTime", suspend_time)
 
@@ -41,6 +39,11 @@ def setup():
             "dynamic3": {"Nodes": "ns1,ns2"},
         },
     )
+
+    # Needed fo MaxNodeCount
+    atf.require_config_parameter("SelectType", "select/cons_tres")
+    # Needed fo cons_tres
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
 
     atf.require_slurm_running()
 
