@@ -53,17 +53,11 @@
 static data_for_each_cmd_t _foreach_load_annotation(const char *key,
 						    data_t *data, void *arg)
 {
-	config_key_pair_t *pair = xmalloc(sizeof(*pair));
-
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		xfree(pair);
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	pair->name = xstrdup(key);
-	pair->value = xstrdup(data_get_string(data));
-
-	list_append(state.annotations, pair);
+	add_key_pair(state.annotations, key, "%s", data_get_string(data));
 
 	return DATA_FOR_EACH_CONT;
 }
