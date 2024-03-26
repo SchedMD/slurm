@@ -993,12 +993,8 @@ static int _make_features_config(void *x, void *y)
 {
 	plugin_feature_t *feature = (plugin_feature_t *)x;
 	List data = (List)y;
-	config_key_pair_t *key_pair;
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("Feature");
-	key_pair->value = _make_helper_str(feature);
-	list_append(data, key_pair);
+	add_key_pair_own(data, "Feature", _make_helper_str(feature));
 
 	return 0;
 }
@@ -1007,12 +1003,9 @@ static int _make_exclusive_config(void *x, void *y)
 {
 	List exclusive = (List) x;
 	List data = (List) y;
-	config_key_pair_t *key_pair;
 
-	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("MutuallyExclusive");
-	key_pair->value = _make_exclusive_str(exclusive);
-	list_append(data, key_pair);
+	add_key_pair_own(data, "MutuallyExclusive",
+			 _make_exclusive_str(exclusive));
 
 	return 0;
 }
@@ -1020,7 +1013,6 @@ static int _make_exclusive_config(void *x, void *y)
 /* Get node features plugin configuration */
 extern void node_features_p_get_config(config_plugin_params_t *p)
 {
-	config_key_pair_t *key_pair;
 	List data;
 
 	xassert(p);
@@ -1031,20 +1023,12 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 
 	list_for_each(helper_exclusives, _make_exclusive_config, data);
 
-	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("AllowUserBoot");
-	key_pair->value = _make_uid_str(allowed_uid, allowed_uid_cnt);
-	list_append(data, key_pair);
+	add_key_pair_own(data, "AllowUserBoot",
+			 _make_uid_str(allowed_uid, allowed_uid_cnt));
 
-	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("BootTime");
-	key_pair->value = xstrdup_printf("%u", boot_time);
-	list_append(data, key_pair);
+	add_key_pair(data, "BootTime", "%u", boot_time);
 
-	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("ExecTime");
-	key_pair->value = xstrdup_printf("%u", exec_time);
-	list_append(data, key_pair);
+	add_key_pair(data, "ExecTime", "%u", exec_time);
 }
 
 extern bitstr_t *node_features_p_get_node_bitmap(void)
