@@ -403,16 +403,8 @@ extern void acct_gather_interconnect_p_conf_options(
 
 extern void acct_gather_interconnect_p_conf_values(List *data)
 {
-	config_key_pair_t *key_pair;
-
 	xassert(*data);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("InterconnectOFEDPort");
-	key_pair->value = xstrdup_printf("%u", ofed_conf.port);
-	list_append(*data, key_pair);
-
-	return;
+	add_key_pair(*data, "InterconnectOFEDPort", "%u", ofed_conf.port);
 }
 
 extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
