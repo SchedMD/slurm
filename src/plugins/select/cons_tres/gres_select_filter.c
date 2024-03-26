@@ -1305,7 +1305,7 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 		for (s = 0;
 		     ((s < sock_cnt) &&
 		      (alloc_gres_cnt < gres_js->gres_per_node)); s++) {
-			if (used_sock[s])
+			if (used_sock[s]) /* Sockets we ignored before */
 				continue;
 			for (g = 0; g < gres_cnt; g++) {
 				if (links_cnt && (links_cnt[g] < l))
