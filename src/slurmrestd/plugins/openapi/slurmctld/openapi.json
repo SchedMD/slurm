@@ -283,6 +283,60 @@
             }
           }
         }
+      },
+      "delete": {
+	"tags": [
+	  "slurm"
+	],
+	"summary": "send signal to list of jobs",
+	"requestBody": {
+	  "description": "description of jobs to signal",
+	  "content": {
+	    "application/json": {
+	      "schema": {
+		"$ref": "DATA_PARSER_KILL_JOBS_MSG"
+	      }
+	    },
+	    "application/x-yaml": {
+	      "schema": {
+		"$ref": "DATA_PARSER_KILL_JOBS_MSG"
+	      }
+	    }
+	  },
+	  "required": true
+	},
+	"responses": {
+	  "200": {
+	    "description": "result of signals request",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "DATA_PARSER_OPENAPI_KILL_JOBS_RESP"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "DATA_PARSER_OPENAPI_KILL_JOBS_RESP"
+		}
+	      }
+	    }
+	  },
+	  "default": {
+	    "description": "result of signals request",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "DATA_PARSER_OPENAPI_KILL_JOBS_RESP"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "DATA_PARSER_OPENAPI_KILL_JOBS_RESP"
+		}
+	      }
+	    }
+	  }
+	}
       }
     },
     "/slurm/{data_parser}/job/{job_id}": {

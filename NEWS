@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Give EINVAL error when failing to parse signal name to numeric
     signal.
  -- slurmrestd - Allow ContentBody for all methods per RFC7230 even if ignored.
+ -- slurmrestd - Add 'DELETE /slurm/v0.0.40/jobs' endpoint to allow bulk job
+    signaling via slurmctld.
 
 * Changes in Slurm 23.11.5
 ==========================

@@ -66,12 +66,42 @@ static const slurm_err_t nonfatal_errors[] = {
 	ESLURM_LICENSES_UNAVAILABLE,
 };
 
+static int _signal_jobs(openapi_ctxt_t *ctxt)
+{
+	int rc;
+	kill_jobs_msg_t *req = NULL;
+	kill_jobs_resp_msg_t *resp = NULL;
+
+	if (!(rc = DATA_PARSE(ctxt->parser, KILL_JOBS_MSG_PTR, req, ctxt->query,
+			      ctxt->parent_path))) {
+		if (req->user_name && (req->user_id == SLURM_AUTH_NOBODY) &&
+		    (rc = uid_from_string(req->user_name, &req->user_id)))
+			resp_error(ctxt, rc, "uid_from_string()",
+				   "Unable to resolve %s to numeric user id",
+				   req->user_name);
+
+		if (!rc && (rc = slurm_kill_jobs(req, &resp)))
+			resp_error(ctxt, rc, "slurm_kill_jobs()",
+				   "Signal request failed");
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_KILL_JOBS_RESP, resp, ctxt);
+
+	slurm_free_kill_jobs_msg(req);
+	slurm_free_kill_jobs_response_msg(resp);
+
+	return rc;
+}
+
 static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_query_t query = {0};
 	job_info_msg_t *job_info_ptr = NULL;
 	openapi_resp_job_info_msg_t resp = {0};
 	int rc;
+
+	if (ctxt->method == HTTP_REQUEST_DELETE)
+		return _signal_jobs(ctxt);
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		return resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY),
