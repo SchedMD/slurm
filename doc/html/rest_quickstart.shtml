@@ -260,6 +260,13 @@ obtain tokens. This is a basic introductory approach that in many cases
 should be disabled in favor of more sophisticated token management.
 Refer to the <a href="jwt.html">JWT page</a> for more details.</p>
 
+<h2 id="advanced_usage">Advanced Usage
+<a class="slurm_link" href="#advanced_usage"></a></h2>
+
+<p>Information about ways to further customize and configure slurmrestd,
+including authentication methods, run modes, plugins, high availability, and
+proxies, is found on the <a href="rest.html">REST API Reference</a> page.</p>
+
 <h2 id="common_issues">Common Issues
 <a class="slurm_link" href="#common_issues"></a></h2>
 
@@ -341,6 +348,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 19 March 2025</p>
+<p style="text-align:center;">Last modified 21 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
