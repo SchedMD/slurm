@@ -3643,14 +3643,14 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 typedef struct job_step_kill_msg {
 	char *sjob_id;
 	uint16_t signal;
-	uint16_t flags;
+	uint16_t flags; /* KILL_* flags below */
 	char *sibling;
 	slurm_step_id_t step_id;
 } job_step_kill_msg_t;
 
 typedef struct {
 	char *account;
-	uint16_t flags;
+	uint16_t flags; /* KILL_* flags below */
 	char *job_name;
 	char **jobs_array;
 	uint32_t jobs_cnt;
