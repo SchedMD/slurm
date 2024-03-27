@@ -719,6 +719,8 @@ int main(int argc, char **argv)
 		agent_fini();
 
 		/* termination of controller */
+		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
+		slurmctld_config.thread_id_rpc = (pthread_t) 0;
 		switch_g_save(slurm_conf.state_save_location);
 		priority_g_fini();
 		shutdown_state_save();
@@ -727,7 +729,6 @@ int main(int argc, char **argv)
 		slurm_mutex_unlock(&purge_thread_lock);
 		pthread_join(slurmctld_config.thread_id_purge_files, NULL);
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
-		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 		slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
@@ -735,7 +736,6 @@ int main(int argc, char **argv)
 		pthread_join(slurmctld_config.thread_id_acct_update, NULL);
 		slurmctld_config.thread_id_purge_files = (pthread_t) 0;
 		slurmctld_config.thread_id_sig  = (pthread_t) 0;
-		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
 		slurmctld_config.thread_id_save = (pthread_t) 0;
 		slurmctld_config.thread_id_acct_update = (pthread_t) 0;
 
