@@ -22,6 +22,24 @@
 </ul>
 </p>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#stateless">Stateless</a></li>
+<li><a href="#run_modes">Run modes</a>
+<ul>
+<li><a href="#inet">Inet Service Mode</a>
+<li><a href="#listen">Listening Mode</a>
+</ul>
+</li>
+<li><a href="#config">Configuration</a></li>
+<li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
+<li><a href="#plugins">Plugins</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#jwt">JSON Web Token (JWT) Authentication</a></li>
+<li><a href="#local_auth">Local Authentication</a></li>
+<li><a href="#auth_proxy">Authenticating Proxy</a></li>
+</ul>
+
 <h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
 <p>Slurmrestd is stateless as it does not cache or save any state between
 requests. Each request is handled in a thread and then all of that state is
@@ -54,10 +72,10 @@ for new TCP connections. Each connection and request are independently
 authenticated.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
-slurmrestd can be configured either by environment variables or command line
+<p>slurmrestd can be configured either by environment variables or command line
 arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page and
 <a href="rest_quickstart.html#customization">REST API Quick Start Guide</a>
-for details.
+for details.</p>
 
 <h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
@@ -140,8 +158,8 @@ slurmrestd.</p>
 <p>Slurm tries not to give potential attackers any hints when there are
 authentication failures. This results in the client getting this rather terse
 message: <code>Authentication failure</code>. When this happens, take a look at
-the logs for the relevant Slurm daemon (i.e. <i>slurmdbd</i>, <i>slurmctld</i>
-or <i>slurmd</i>) for information about the actual issue.</p>
+the logs for the relevant Slurm daemon (i.e. <b>slurmdbd</b>, <b>slurmctld</b>,
+or <b>slurmd</b>) for information about the actual issue.</p>
 
 <h2 id="jwt">JSON Web Token (JWT) Authentication
 <a class="slurm_link" href="#jwt"></a>
