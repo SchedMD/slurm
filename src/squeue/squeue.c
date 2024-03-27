@@ -255,26 +255,29 @@ static int _query_job_states(int argc, char **argv)
 	}
 
 	job_msg = xmalloc(sizeof(*job_msg));
-	job_msg->record_count = jsr->jobs_count;
-	job_msg->job_array = xcalloc(job_msg->record_count,
-				     sizeof(*job_msg->job_array));
+	if (jsr && (jsr->jobs_count > 0)) {
+		job_msg->record_count = jsr->jobs_count;
+		job_msg->job_array = xcalloc(job_msg->record_count,
+					     sizeof(*job_msg->job_array));
 
-	for (int i = 0; i < jsr->jobs_count; i++) {
-		job_state_response_job_t *src = &jsr->jobs[i];
-		slurm_job_info_t *job = &job_msg->job_array[i];
+		for (int i = 0; i < jsr->jobs_count; i++) {
+			job_state_response_job_t *src = &jsr->jobs[i];
+			slurm_job_info_t *job = &job_msg->job_array[i];
 
-		job->job_id = src->job_id;
+			job->job_id = src->job_id;
 
-		if (src->array_job_id) {
-			_populate_array_job_states(src, job);
-		} else if ((job->het_job_id = src->het_job_id)) {
-			job->het_job_offset = (src->job_id - job->het_job_id);
-			job->array_task_id = NO_VAL;
-		} else {
-			job->array_task_id = NO_VAL;
+			if (src->array_job_id) {
+				_populate_array_job_states(src, job);
+			} else if ((job->het_job_id = src->het_job_id)) {
+				job->het_job_offset =
+					(src->job_id - job->het_job_id);
+				job->array_task_id = NO_VAL;
+			} else {
+				job->array_task_id = NO_VAL;
+			}
+
+			job->job_state = src->state;
 		}
-
-		job->job_state = src->state;
 	}
 
 	rc = print_jobs_array(job_msg->job_array, job_msg->record_count,
