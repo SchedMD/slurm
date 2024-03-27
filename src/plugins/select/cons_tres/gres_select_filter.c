@@ -45,9 +45,9 @@
 /* Used to indicate when sock_gres->bits_any_sock should be tested */
 #define ANY_SOCK_TEST -1
 
-#define SETUP_LINKS -1
-
 static int64_t *nonalloc_gres = NULL;
+
+static int *sorting_links_cnt = NULL;
 
 typedef struct {
 	job_record_t *job_ptr;
@@ -577,9 +577,32 @@ static int _set_shared_task_bits(int node_inx,
 	return rc;
 }
 
+static int _compare_gres_by_links(const void *x, const void *y)
+{
+	return sorting_links_cnt[*(int *) x] - sorting_links_cnt[*(int *) y];
+}
+
+static void _update_and_sort_by_links(int *sorted_gres, int *links_cnt,
+				      int gres_inx, int gres_cnt,
+				      gres_node_state_t *gres_ns)
+{
+	/* Add links for the gres just selected */
+	for (int l = 0; (l < gres_cnt); l++) {
+		if ((l == gres_inx) ||
+		    bit_test(gres_ns->gres_bit_alloc, l))
+			continue;
+		links_cnt[l] += gres_ns->links_cnt[gres_inx][l];
+	}
+
+	/* Sort gres by most linked to all previously selected gres */
+	sorting_links_cnt = links_cnt;
+	qsort(sorted_gres, gres_cnt, sizeof(int), _compare_gres_by_links);
+	sorting_links_cnt = NULL;
+}
+
 static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 				int node_inx, int socket_index,
-				int link_limit, int *links_cnt)
+				int *sorted_gres, int *links_cnt)
 {
 	uint64_t gres_still_needed, gres_cnt;
 	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
@@ -602,11 +625,8 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 	gres_still_needed = gres_needed;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 
-	for (int g = 0; g < gres_cnt && gres_still_needed; g++) {
-		if ((link_limit != SETUP_LINKS) &&
-		    links_cnt &&
-		    (links_cnt[g] < link_limit))
-			continue;
+	for (int i = 0; i < gres_cnt && gres_still_needed; i++) {
+		int g = sorted_gres ? sorted_gres[i] : i;
 		if (!bit_test(sock_bits, g))
 			continue; /* GRES not on this socket */
 		if (bit_test(gres_js->gres_bit_select[node_inx], g) ||
@@ -615,13 +635,10 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 		bit_set(gres_js->gres_bit_select[node_inx], g);
 		gres_js->gres_cnt_node_select[node_inx]++;
 		gres_still_needed--;
-		if (link_limit == SETUP_LINKS) {
-			for (int l = 0; links_cnt && (l < gres_cnt); l++) {
-				if ((l == g) ||
-				    bit_test(gres_ns->gres_bit_alloc, l))
-					continue;
-				links_cnt[l] += gres_ns->links_cnt[g][l];
-			}
+		if (links_cnt && sorted_gres) {
+			i = 0; /* Start over on for updated sorted_gres */
+			_update_and_sort_by_links(sorted_gres, links_cnt, g,
+						  gres_cnt, gres_ns);
 		}
 	}
 	return gres_needed - gres_still_needed;
@@ -644,10 +661,10 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
-	int g, l, s;
+	int g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int *links_cnt = NULL, best_link_cnt = 0;
+	int *links_cnt = NULL, *sorted_gres = NULL;
 	uint64_t gres_needed;
 	uint32_t *used_sock = used_cores_on_sock;
 	bool allocated_array_copy = false;
@@ -723,56 +740,33 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 		}
 	}
 
-	/*
-	 * Identify the available GRES with best connectivity
-	 * (i.e. higher link_cnt)
-	 */
 	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
+		sorted_gres = xcalloc(gres_cnt, sizeof(int));
+		/* Add index for each gres. They will be sorted later */
 		for (g = 0; g < gres_cnt; g++) {
-			if (bit_test(gres_ns->gres_bit_alloc, g))
-				continue;
-			for (l = 0; l < gres_cnt; l++) {
-				if ((l == g) ||
-				    bit_test(gres_ns->gres_bit_alloc, l))
-					continue;
-				links_cnt[l] += gres_ns->links_cnt[g][l];
-			}
-		}
-		for (l = 0; l < gres_cnt; l++)
-			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
-		if (best_link_cnt > 4) {
-			/* Scale down to reasonable iteration count (<= 4) */
-			g = (best_link_cnt + 3) / 4;
-			best_link_cnt = 0;
-			for (l = 0; l < gres_cnt; l++) {
-				links_cnt[l] /= g;
-				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
-			}
+			sorted_gres[g] = g;
 		}
 	}
 
 	/*
 	 * Now pick specific GRES for these sockets.
-	 * Try to use GRES with best connectivity (higher link_cnt values)
 	 */
 	for (s = 0; s < sock_cnt; s++) {
 		if (!used_sock[s])
 			continue;
 		gres_needed = gres_js->gres_per_socket;
-		for (l = best_link_cnt; ((l >= 0) && gres_needed); l--) {
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, s, l,
-						       links_cnt);
-		}
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
+					       s, sorted_gres, links_cnt);
 		if (gres_needed) {
 			/* Add GRES unconstrained by socket as needed */
 			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
 						       node_inx, ANY_SOCK_TEST,
-						       l, links_cnt);
+						       sorted_gres, links_cnt);
 		}
 	}
 	xfree(links_cnt);
+	xfree(sorted_gres);
 	if (allocated_array_copy)
 		xfree(used_sock);
 }
@@ -852,19 +846,19 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 			continue;
 		alloc_gres_cnt += _pick_gres_topo(sock_gres,
 						  (pick_gres - alloc_gres_cnt),
-						  node_inx, s, 0, NULL);
+						  node_inx, s, NULL, NULL);
 	}
 	if (alloc_gres_cnt < pick_gres)
 		alloc_gres_cnt += _pick_gres_topo(sock_gres,
 						  (pick_gres - alloc_gres_cnt),
-						  node_inx, ANY_SOCK_TEST, 0,
+						  node_inx, ANY_SOCK_TEST, NULL,
 						  NULL);
 	if (alloc_gres_cnt == 0) {
 		for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt == 0)); s++) {
 			if (cores_on_sock[s])
 				continue;
 			alloc_gres_cnt += _pick_gres_topo(
-				sock_gres, 1, node_inx, s, 0, NULL);
+				sock_gres, 1, node_inx, s, NULL, NULL);
 		}
 	}
 	if (alloc_gres_cnt == 0) {
@@ -936,11 +930,11 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 			  uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
 {
 	int gres_cnt;
-	int g, l, s;
+	int g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int fini = 0;
-	int best_link_cnt = 0, best_inx = -1;
+	int *links_cnt = NULL, *sorted_gres = NULL;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -962,40 +956,47 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	if ((gres_js->gres_per_job > gres_js->total_gres) &&
 	    (gres_ns->link_len == gres_cnt)) {
+		links_cnt = xcalloc(gres_cnt, sizeof(int));
+		sorted_gres = xcalloc(gres_cnt, sizeof(int));
+		/* Add index for each gres. They will be sorted later */
+		for (g = 0; g < gres_cnt; g++) {
+			sorted_gres[g] = g;
+		}
+
+		/* Add links for all gres already selected */
 		for (g = 0; g < gres_cnt; g++) {
 			if (!bit_test(gres_js->gres_bit_select[node_inx], g))
 				continue;
-			best_inx = g;
-			for (s = 0; s < gres_cnt; s++) {
-				best_link_cnt = MAX(gres_ns->links_cnt[s][g],
-						    best_link_cnt);
+			for (int l = 0; (l < gres_cnt); l++) {
+				if ((l == g) ||
+				    bit_test(gres_ns->gres_bit_alloc, l))
+					continue;
+				links_cnt[l] += gres_ns->links_cnt[g][l];
 			}
-			break;
 		}
+		/* Sort gres by most linked to all previously selected gres */
+		sorting_links_cnt = links_cnt;
+		qsort(sorted_gres, gres_cnt, sizeof(int),
+		      _compare_gres_by_links);
+		sorting_links_cnt = NULL;
 	}
 
 	/*
 	 * Now pick specific GRES for these sockets.
 	 * Start with GRES available from any socket, then specific sockets
 	 */
-	for (l = best_link_cnt;
-	     ((l >= 0) && (gres_js->gres_per_job > gres_js->total_gres));
-	     l--) {
-		for (s = 0; ((s < sock_gres->sock_cnt) &&
-			     (gres_js->gres_per_job > gres_js->total_gres));
-		     s++) {
-			gres_js->total_gres += _pick_gres_topo(
-				sock_gres,
-				gres_js->gres_per_job - gres_js->total_gres,
-				node_inx, s, l, gres_ns->links_cnt[best_inx]);
-		}
-		if (gres_js->gres_per_job > gres_js->total_gres)
-			gres_js->total_gres += _pick_gres_topo(
-				sock_gres,
-				gres_js->gres_per_job - gres_js->total_gres,
-				node_inx, ANY_SOCK_TEST, l,
-				gres_ns->links_cnt[best_inx]);
+	for (s = 0; ((s < sock_gres->sock_cnt) &&
+		     (gres_js->gres_per_job > gres_js->total_gres));
+	     s++) {
+		gres_js->total_gres += _pick_gres_topo(
+			sock_gres, gres_js->gres_per_job - gres_js->total_gres,
+			node_inx, s, sorted_gres, links_cnt);
 	}
+	if (gres_js->gres_per_job > gres_js->total_gres)
+		gres_js->total_gres += _pick_gres_topo(
+			sock_gres, gres_js->gres_per_job - gres_js->total_gres,
+			node_inx, ANY_SOCK_TEST, sorted_gres, links_cnt);
+
 	if (gres_js->gres_per_job <= gres_js->total_gres)
 		fini = 1;
 	return fini;
@@ -1017,11 +1018,11 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
-	int g, l, s;
+	int g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	uint32_t gres_needed;
-	int *links_cnt = NULL, best_link_cnt = 0;
+	int *links_cnt = NULL, *sorted_gres = NULL;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -1030,76 +1031,63 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	gres_needed = gres_js->gres_per_node;
 
+	if (gres_ns->link_len == gres_cnt) {
+		links_cnt = xcalloc(gres_cnt, sizeof(int));
+		sorted_gres = xcalloc(gres_cnt, sizeof(int));
+		/* Add index for each gres. They will be sorted later */
+		for (g = 0; g < gres_cnt; g++) {
+			sorted_gres[g] = g;
+		}
+	}
+
 	/*
 	 * Now pick specific GRES for these sockets.
 	 * First: Try to place one GRES per socket in this job's allocation.
 	 * Second: Try to place additional GRES on allocated sockets.
 	 * Third: Use any additional available GRES.
 	 */
-	if (gres_ns->link_len == gres_cnt)
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
 	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
 		if (!used_sock[s])
 			continue;
 		gres_needed -= _pick_gres_topo(sock_gres, 1, node_inx, s,
-					       SETUP_LINKS, links_cnt);
+					       sorted_gres, links_cnt);
 	}
 
 	if (gres_needed) {
 		gres_needed -= _pick_gres_topo(sock_gres, 1, node_inx,
-					       ANY_SOCK_TEST, SETUP_LINKS,
+					       ANY_SOCK_TEST, sorted_gres,
 					       links_cnt);
-	}
-
-	if (links_cnt) {
-		for (l = 0; l < gres_cnt; l++)
-			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
-		if (best_link_cnt > 4) {
-			/* Scale down to reasonable iteration count (<= 4) */
-			g = (best_link_cnt + 3) / 4;
-			best_link_cnt = 0;
-			for (l = 0; l < gres_cnt; l++) {
-				links_cnt[l] /= g;
-				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
-			}
-		}
 	}
 
 	/*
 	 * Try to place additional GRES on allocated sockets. Favor use of
 	 * GRES which are best linked to GRES which have already been selected.
 	 */
-	for (l = best_link_cnt;
-	     ((l >= 0) && gres_needed); l--) {
-		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-			if (!used_sock[s])
-				continue;
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, s, SETUP_LINKS,
-						       links_cnt);
-		}
-		if (gres_needed)
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, ANY_SOCK_TEST,
-						       l, links_cnt);
+	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+		if (!used_sock[s])
+			continue;
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
+					       s, sorted_gres, links_cnt);
+	}
+	if (gres_needed) {
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+					       node_inx, ANY_SOCK_TEST,
+					       sorted_gres, links_cnt);
 	}
 
 	/*
 	 * Use any additional available GRES. Again, favor use of GRES
 	 * which are best linked to GRES which have already been selected.
 	 */
-	for (l = best_link_cnt;
-	     ((l >= 0) && gres_needed); l--) {
-		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-			if (used_sock[s]) /* Sockets we ignored before */
-				continue;
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, s, SETUP_LINKS,
-						       links_cnt);
-		}
+	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+		if (used_sock[s]) /* Sockets we ignored before */
+			continue;
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
+					       s, sorted_gres, links_cnt);
 	}
 
 	xfree(links_cnt);
+	xfree(sorted_gres);
 }
 
 /*
@@ -1116,11 +1104,11 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 			   uint32_t job_id, uint32_t *tasks_per_socket)
 {
 	uint16_t sock_cnt = 0;
-	int gres_cnt, g, l, s;
+	int gres_cnt, g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	uint64_t gres_needed, sock_gres_needed;
-	int *links_cnt = NULL, best_link_cnt = 0;
+	int *links_cnt = NULL, *sorted_gres = NULL;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -1133,8 +1121,14 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 		return;
 	}
 
-	if (gres_ns->link_len == gres_cnt)
+	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
+		sorted_gres = xcalloc(gres_cnt, sizeof(int));
+		/* Add index for each gres. They will be sorted later */
+		for (g = 0; g < gres_cnt; g++) {
+			sorted_gres[g] = g;
+		}
+	}
 
 	gres_needed = _get_task_cnt_node(tasks_per_socket, sock_cnt) *
 		gres_js->gres_per_task;
@@ -1146,40 +1140,24 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 		sock_gres_needed = MIN(gres_needed,
 				       (tasks_per_socket[s] *
 					gres_js->gres_per_task));
-		gres_needed -= _pick_gres_topo(sock_gres, sock_gres_needed, node_inx,
-					       s, SETUP_LINKS, links_cnt);
+		gres_needed -= _pick_gres_topo(sock_gres, sock_gres_needed,
+					       node_inx, s, sorted_gres,
+					       links_cnt);
 	}
 	if (gres_needed)
 		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
-					       ANY_SOCK_TEST, SETUP_LINKS,
+					       ANY_SOCK_TEST, sorted_gres,
 					       links_cnt);
 
-	if (links_cnt) {
-		for (l = 0; l < gres_cnt; l++)
-			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
-		if (best_link_cnt > 4) {
-			/* Scale down to reasonable iteration count (<= 4) */
-			g = (best_link_cnt + 3) / 4;
-			best_link_cnt = 0;
-			for (l = 0; l < gres_cnt; l++) {
-				links_cnt[l] /= g;
-				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
-			}
-		}
-	}
-
 	/*
-	 * Next pick additional GRES as needed. Favor use of GRES which
-	 * are best linked to GRES which have already been selected.
+	 * Next pick additional GRES as needed.
 	 */
-	for (l = best_link_cnt; ((l >= 0) && gres_needed); l--) {
-		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, s, l,
-						       links_cnt);
-		}
+	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
+					       s, sorted_gres, links_cnt);
 	}
 	xfree(links_cnt);
+	xfree(sorted_gres);
 
 	if (gres_needed) {
 		/* Something bad happened on task layout for this GRES type */
