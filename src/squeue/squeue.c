@@ -241,11 +241,6 @@ static int _query_job_states(int argc, char **argv)
 		goto cleanup;
 	}
 
-	job_msg = xmalloc(sizeof(*job_msg));
-	job_msg->record_count = jsr->jobs_count;
-	job_msg->job_array = xcalloc(job_msg->record_count,
-				     sizeof(*job_msg->job_array));
-
 	if (!params.format && !params.format_long)
 		params.format = "%.18i %.2t";
 
@@ -258,6 +253,11 @@ static int _query_job_states(int argc, char **argv)
 		if (rc)
 			goto cleanup;
 	}
+
+	job_msg = xmalloc(sizeof(*job_msg));
+	job_msg->record_count = jsr->jobs_count;
+	job_msg->job_array = xcalloc(job_msg->record_count,
+				     sizeof(*job_msg->job_array));
 
 	for (int i = 0; i < jsr->jobs_count; i++) {
 		job_state_response_job_t *src = &jsr->jobs[i];
