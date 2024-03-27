@@ -122,7 +122,8 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 	if (!s_p_get_string(&tmp_str, "BlockSizes", conf_hashtbl)) {
 		bit_nset(block_levels, 0, 4);
 	} else {
-		char *str_bsize = strtok(tmp_str,",");
+		char *save_ptr = NULL;
+		char *str_bsize = strtok_r(tmp_str, ",", &save_ptr);
 		int bsize = -1;
 		while (str_bsize) {
 			int block_level;
@@ -150,7 +151,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 			}
 			bit_set(block_levels, block_level);
 
-			str_bsize = strtok(NULL,",");
+			str_bsize = strtok_r(NULL, ",", &save_ptr);
 		}
 		if (bsize < 0) {
 			s_p_hashtbl_destroy(conf_hashtbl);
