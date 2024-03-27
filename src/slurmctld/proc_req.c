@@ -3434,7 +3434,8 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 				return SLURM_SUCCESS;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
 							 args->request_uid,
-							 job_ptr->account)) {
+							 job_ptr->account,
+							 false)) {
 			return SLURM_SUCCESS;
 		}
 	}

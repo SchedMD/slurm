@@ -6199,7 +6199,7 @@ extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
 		      job_ptr, uid);
 		return ESLURM_ACCESS_DENIED;
@@ -6304,7 +6304,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_INVALID_JOB_ID;
 		if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account)) {
+						  job_ptr->account, false)) {
 			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
@@ -6358,7 +6358,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && (job_ptr->user_id != uid) &&
 		    !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account)) {
+						  job_ptr->account, false)) {
 			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
@@ -6484,7 +6484,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		error("%s: Security violation JOB_CANCEL RPC for %pJ from uid %u",
 		      __func__, job_ptr, uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -12702,9 +12702,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	/* Check authorization for modifying this job */
 	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_ptr->account);
+						       job_ptr->account,
+						       false);
 	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_desc->account);
+						       job_desc->account,
+						       false);
 	if ((job_ptr->user_id != uid) && !operator) {
 		/*
 		 * Fail if we are not coordinators of the current account or
@@ -16318,7 +16320,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					    job_ptr->account)) ||
+					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
@@ -17854,7 +17856,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		return ESLURM_ACCESS_DENIED;
 	}
 

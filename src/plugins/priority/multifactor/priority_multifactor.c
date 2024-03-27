@@ -1988,7 +1988,8 @@ extern List priority_p_get_priority_factors_list(
 			    !validate_operator(uid) &&
 			    (((slurm_mcs_get_privatedata() == 0) &&
 			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-			                                    job_ptr->account))||
+			                                    job_ptr->account,
+							    false)) ||
 			     ((slurm_mcs_get_privatedata() == 1) &&
 			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label,
 						     false) != 0))))
