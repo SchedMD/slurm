@@ -365,8 +365,12 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 {
 	int rc = SLURM_SUCCESS;
 
-	/* post will have query in the body otherwise it is in the URL */
-	if (args->method == HTTP_REQUEST_POST)
+	/*
+	 * RFC 7230 3.3:
+	 * 	The presence of a message body in a request is signaled by a
+	 * 	Content-Length or Transfer-Encoding header field.
+	 */
+	if (args->body_length > 0)
 		rc = serialize_g_string_to_data(query, args->body,
 						args->body_length, read_mime);
 	else
@@ -514,10 +518,24 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			args, "Accept content type is unknown",
 			HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE, NULL);
 
-	if (args->method != HTTP_REQUEST_POST && args->body_length > 0)
+	/*
+	 * RFC7230 3.3: Allows for any request to have a BODY but doesn't require
+	 * the server do anything with it.
+	 *	Request message framing is independent of method semantics, even
+	 *	if the method does not define any use for a message body.
+	 * RFC7231 Appendix B:
+	 *	To be consistent with the method-neutral parsing algorithm of
+	 *	[RFC7230], the definition of GET has been relaxed so that
+	 *	requests can have a body, even though a body has no meaning for
+	 *	GET.  (Section 4.3.1)
+	 *
+	 * In order to avoid confusing the client when their query or body gets
+	 * ignored, reject request when both query and body are provided.
+	 */
+	if ((args->body_length > 0) && args->query && args->query[0])
 		return _operations_router_reject(
 			args,
-			"Unexpected http body provided for non-POST method",
+			"Unexpected HTTP body provided when URL Query provided",
 			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	if (xstrcasecmp(*read_mime, MIME_TYPE_URL_ENCODED) &&

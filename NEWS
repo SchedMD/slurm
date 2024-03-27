@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     that requested multiple partitions or reservations.
  -- slurmrestd - Give EINVAL error when failing to parse signal name to numeric
     signal.
+ -- slurmrestd - Allow ContentBody for all methods per RFC7230 even if ignored.
 
 * Changes in Slurm 23.11.5
 ==========================
