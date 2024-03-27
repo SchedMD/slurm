@@ -34,10 +34,13 @@
 <li><a href="#config">Configuration</a></li>
 <li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
 <li><a href="#plugins">Plugins</a></li>
-<li><a href="#security">Security</a></li>
+<li><a href="#security">Security</a>
+<ul>
 <li><a href="#jwt">JSON Web Token (JWT) Authentication</a></li>
 <li><a href="#local_auth">Local Authentication</a></li>
 <li><a href="#auth_proxy">Authenticating Proxy</a></li>
+</ul>
+</li>
 </ul>
 
 <h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
@@ -161,9 +164,9 @@ message: <code>Authentication failure</code>. When this happens, take a look at
 the logs for the relevant Slurm daemon (i.e. <b>slurmdbd</b>, <b>slurmctld</b>,
 or <b>slurmd</b>) for information about the actual issue.</p>
 
-<h2 id="jwt">JSON Web Token (JWT) Authentication
+<h3 id="jwt">JSON Web Token (JWT) Authentication
 <a class="slurm_link" href="#jwt"></a>
-</h2>
+</h3>
 <p>slurmrestd supports using <a href=jwt.html>JWT to authenticate users</a>.
 JWT can be used to authenticate user over REST protocol.
 <ul>
@@ -179,9 +182,9 @@ the proxy and ensuring against any possible accidental authorizations.</p>
 <p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
 configured in both your slurm.conf and slurmdbd.conf for slurmrestd.</p>
 
-<h2 id="local_auth">Local Authentication
+<h3 id="local_auth">Local Authentication
 <a class="slurm_link" href="#local_auth"></a>
-</h2>
+</h3>
 <p>slurmrestd supports using UNIX domain sockets to have the kernel
 authenticate local users. By default, slurmrestd will not start as root or
 SlurmUser or if the user's primary group belongs to root or SlurmUser.
@@ -189,9 +192,9 @@ Slurmrestd must be located in the Munge security domain in order to function
 and communicate with Slurm in local authentication mode.
 </p>
 
-<h2 id="auth_proxy">Authenticating Proxy
+<h3 id="auth_proxy">Authenticating Proxy
 <a class="slurm_link" href="#auth_proxy"></a>
-</h2>
+</h3>
 <p>There is a wide array of authentication systems that a site could choose
 from, if using <a href="#jwt">JWT authentication</a> doesn't meet your
 requirements. An authenticating proxy is setup with a JWT token assigned to
