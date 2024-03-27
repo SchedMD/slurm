@@ -717,7 +717,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-A account] [--batch] [--full] [--interactive] [-n job_name]\n");
+	printf("Usage: scancel [-A account] [--batch] [--ctld] [--full] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation] [-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [--hurry] [-V] [-v] [-w hosts...] [--wckey=wckey]\n");
@@ -729,7 +729,7 @@ static void _help(void)
 	printf("Usage: scancel [OPTIONS] [job_id[_array_id][.step_id]]\n");
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
-/*	printf("      --ctld                      send request directly to slurmctld\n"); */
+	printf("      --ctld                      send request directly to slurmctld\n");
 	printf("  -c, --cron                      cancel an scrontab job\n");
 	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -H, --hurry                     avoid burst buffer stage out\n");
