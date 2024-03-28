@@ -34,6 +34,7 @@
 <li><a href="#config">Configuration</a></li>
 <li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
 <li><a href="#plugins">Plugins</a></li>
+<li><a href="#high_availability">High Availability</a></li>
 <li><a href="#security">Security</a>
 <ul>
 <li><a href="#jwt">JSON Web Token (JWT) Authentication</a></li>
@@ -130,6 +131,24 @@ their own plugins and are suggested to submit them as code contributions via
 The plugin API provided may change between releases which could cause site
 specific plugins to break.</p>
 
+<h2 id="high_availability">High Availability
+<a class="slurm_link" href="#high_availability"></a></h2>
+
+<p>Slurmrestd is agnostic to its deployment in a highly available cluster.
+The daemon may be run on multiple nodes but does not provide any coordination
+with other instances for load balancing or failover.
+If such functionality is desired, a separate load balancer may be deployed.
+The load balancer should be able to forward any required authentication
+information on to the slurmrestd machines (see <a href="#security">Security</a>
+section).</p>
+
+<p>The number of connections allowed by the slurmrestd system(s) should also be
+limited so that the slurmctld is not overwhelmed with requests. Pay attention to
+the <code>-t &lt;THREAD COUNT&gt;</code> and
+<code>--max-connections &lt;count&gt;</code> options to <b>slurmrestd</b>, the
+number of nodes deployed, and the specs of the machine running <b>slurmctld</b>.
+</p>
+
 <h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
 <p>The Slurm REST API is written to provide the necessary functionality for
 clients to control Slurm using REST commands. It is <b>not</b> designed to be
@@ -220,7 +239,8 @@ href="https://gitlab.com/SchedMD/training/docker-scale-out/-/tree/master/proxy">
 internal tool</a> used for testing and training. It uses
 <a href="https://www.php.net/">PHP</a> and
 <a href="https://www.nginx.com/">NGINX</a> to provide the authentication logic.
-</p>
+This example should only be used as a basic starting place as it is not suitable
+for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
