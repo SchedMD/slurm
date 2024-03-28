@@ -96,16 +96,25 @@ will take precedence over the association's limits.</p>
 <h2 id="partition">Partition QOS
 <a class="slurm_link" href="#partition"></a>
 </h2>
-<p>A QOS can be attached to a partition.  This means a partition will have all
-the same limits as a QOS.  This also gives the ability of a true 'floating'
-partition, meaning if you assign all the nodes to a partition and then in the
-Partition's QOS limit the number of GrpTRES the partition will have
-access to all the nodes, but only be able to run on the number of
-resources in it.</p>
+<p>A QOS can be attached to a partition. This means the partition will have all
+the same limits as the QOS. This does not associate jobs with the QOS, nor does
+it give the job any priority or preemption characteristics of the assigned QOS.
+Jobs may separately request the same QOS or a different QOS to gain those
+characteristics. However, the Partition QOS limits will override the job's QOS.
+If the opposite is desired you may configure the job's QOS with
+<code>Flags=OverPartQOS</code> which will reverse the order of precedence.</p>
 
-<p>The Partition QOS will override the job's QOS.  If the opposite is
-desired you need to have the job's QOS have the 'OverPartQOS' flag
-which will reverse the order of precedence.</p>
+<p>This functionality may be used to implement a true "floating"
+partition, in which a partition may access a limited amount of resources with no
+restrictions on which nodes it uses to get the resources. This is accomplished
+by assigning all nodes to the partition, then configuring a Partition QOS with
+<code>GrpTRES</code> set to the desired resource limits.</p>
+
+<p><b>NOTE</b>: Most QOS attributes are set using the <b>sacctmgr</b> command.
+However, setting a QOS as a partition QOS is accomplished in <b>slurm.conf</b>
+through the <a href="slurm.conf.html#OPT_QOS">QOS=</a> option in the
+configuration of the associated partition. The QOS should be created using
+<b>sacctmgr</b> before it is assigned as a partition QOS.</p>
 
 <!-------------------------------------------------------------------------->
 <h2 id="relative">Relative QOS
