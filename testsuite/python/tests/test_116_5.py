@@ -4,7 +4,6 @@
 import atf
 import pytest
 import re
-import os
 
 node_num = 3
 
@@ -38,12 +37,12 @@ def test_hostfile():
     match_ordered = []
     for iter in range(len(match1)):
         match_ordered.append((str(iter), match1[iter][1]))
-    os.environ[HOSTFILE_ENV] = str(host_file)
     write_host_file(match1)
 
     # Test pass 1
     output = atf.run_job_output(
-        f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME"
+        f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME",
+        env_vars=f"{HOSTFILE_ENV}={host_file}",
     )
     match2 = re.findall(r"(\d+): (\S+)", output)
     for match in match2:
@@ -59,7 +58,8 @@ def test_hostfile():
 
     # Test pass 2
     output = atf.run_job_output(
-        f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME"
+        f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME",
+        env_vars=f"{HOSTFILE_ENV}={host_file}",
     )
     match3 = re.findall(r"(\d+): (\S+)", output)
     for match in match3:
