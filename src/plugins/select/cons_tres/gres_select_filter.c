@@ -954,7 +954,6 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 			bit_set(gres_js->gres_bit_select[node_inx], g);
 			gres_js->gres_cnt_node_select[node_inx]++;
 			alloc_gres_cnt++;
-			gres_js->total_gres++;
 		}
 	}
 	if (alloc_gres_cnt == 0) {
@@ -973,7 +972,6 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 				bit_set(gres_js->gres_bit_select[node_inx],g);
 				gres_js->gres_cnt_node_select[node_inx]++;
 				alloc_gres_cnt++;
-				gres_js->total_gres++;
 				break;
 			}
 		}
@@ -1022,9 +1020,9 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 				  worst_inx);
 			gres_js->gres_cnt_node_select[node_inx]--;
 			alloc_gres_cnt--;
-			gres_js->total_gres--;
 		}
 	}
+	gres_js->total_gres += alloc_gres_cnt;
 
 	xfree(cores_on_sock);
 	if (gres_js->total_gres >= gres_js->gres_per_job)
