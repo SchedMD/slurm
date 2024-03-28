@@ -167,11 +167,18 @@ static void _log_tres_state(node_use_record_t *node_usage,
 	int i;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,
+		list_t *gres_list;
+		info("Node:%s AllocMem:%"PRIu64" of %"PRIu64,
 		     node_ptr->name,
-		     common_node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
 		     node_ptr->real_memory);
+		if (node_usage[node_ptr->index].gres_list)
+			gres_list = select_node_usage[node_ptr->index].
+					gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		if (gres_list)
+			gres_node_state_log(gres_list, node_ptr->name);
 	}
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
 		part_data_dump_res(p_ptr);
