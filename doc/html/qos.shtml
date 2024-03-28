@@ -113,7 +113,9 @@ which will reverse the order of precedence.</p>
 </h2>
 <ul>
 <li><b>Flags</b> Used by the slurmctld to override or enforce certain
-characteristics. Valid options are:
+characteristics. To clear a previously set value use the modify command with a
+new value of -1.
+<br>Valid options are:
 
 <ul>
 <li><b>DenyOnLimit</b> If set, jobs using this QOS will be rejected at
@@ -122,39 +124,14 @@ stand-alone jobs.
 Jobs that go over these limits when other jobs are considered, but conform
 to the limits when considered individually will not be rejected. Instead they
 will pend until resources are available (as by default without DenyOnLimit).
-Group limits (e.g. GrpTRES) will also be treated like 'Max' limits
-(e.g. MaxTRESPerNode) and jobs will be denied if they would violate the
+Group limits (e.g. <b>GrpTRES</b>) will also be treated like 'Max' limits
+(e.g. <b>MaxTRESPerNode</b>) and jobs will be denied if they would violate the
 limit as stand-alone jobs.
 This currently only applies to QOS and Association limits.
 
 <li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.
-
-<li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
-jobs using this QOS will not reserve resources in the backfill
-schedule's  map of resources allocated through time. This flag is
-intended for use with a QOS that may be preempted by jobs associated
-with all other QOS (e.g use with a "standby" QOS). If this flag is
-used with a QOS which can not be preempted by all other QOS, it could
-result in starvation of larger jobs.
-
-<li><b>PartitionMaxNodes</b> If set, jobs using this QOS will be able to
-override the requested partition's MaxNodes limit.
-
-<li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
-override the requested partition's MinNodes limit.
-
-<li><b>OverPartQOS</b> If set, jobs using this QOS will be able to
-override any limits used by the requested partition's QOS limits.
-
-<li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
-override the requested partition's TimeLimit.
-
-<li><b>RequiresReservation</b> If set, jobs using this QOS must designate a
-reservation when submitting a job.  This option can be useful in
-restricting usage of a QOS that may have greater preemptive capability
-or additional resources to be allowed only within a reservation.
 
 <li><b>NoDecay</b> If set, this QOS will not have its GrpTRESMins,
 GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife
@@ -167,6 +144,42 @@ GrpTRESMins and GrpWall limits can be increased or
 the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
 with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
 QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+
+<li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
+jobs using this QOS will not reserve resources in the backfill
+schedule's  map of resources allocated through time. This flag is
+intended for use with a QOS that may be preempted by jobs associated
+with all other QOS (e.g use with a "standby" QOS). If this flag is
+used with a QOS which can not be preempted by all other QOS, it could
+result in starvation of larger jobs.
+
+<li><b>OverPartQOS</b> If set, jobs using this QOS will be able to
+override any limits used by the requested partition's QOS limits.
+
+<li><b>PartitionMaxNodes</b> If set, jobs using this QOS will be able to
+override the requested partition's MaxNodes limit.
+
+<li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
+override the requested partition's MinNodes limit.
+
+<li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
+override the requested partition's TimeLimit.
+
+<li><b>Relative</b> If set, the QOS limits will be treated as percentages of
+the cluster or partition instead of absolute limits (numbers should be less than
+100). The controller should be restarted or reconfigured after adding the
+<i>Relative</i> flag to the QOS.
+<br>If this is used as a partition QOS:
+<ol>
+<li>Limits will be calculated relative to the partition's resources.</li>
+<li>Only one partition may have this QOS as its partition QOS.</li>
+<li>Jobs will not be allowed to use it as a normal QOS.</li>
+</ol></li>
+
+<li><b>RequiresReservation</b> If set, jobs using this QOS must designate a
+reservation when submitting a job.  This option can be useful in
+restricting usage of a QOS that may have greater preemptive capability
+or additional resources to be allowed only within a reservation.
 
 <li><b>UsageFactorSafe</b> If set, and <b>AccountingStorageEnforce</b> includes
 <b>Safe</b>, jobs will only be able to run if the job can run to completion
