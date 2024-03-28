@@ -1046,7 +1046,6 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-job resource specification. Use any GRES on the node
- * job_res IN - job resource allocation
  * node_inx IN - global node index
  * job_node_inx IN - node index for this job's allocation
  * sock_gres IN - job/node request specifications, UPDATED: set bits in
@@ -1055,13 +1054,12 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
  * tres_mc_ptr IN - job's multi-core options
  * RET 0:more work, 1:fini
  */
-static int _set_job_bits2(struct job_resources *job_res, int node_inx,
-			  int job_node_inx, sock_gres_t *sock_gres,
+static int _set_job_bits2(int node_inx, int job_node_inx,
+			  sock_gres_t *sock_gres,
 			  uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
 {
-	int core_offset, gres_cnt;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, g, l, rc, s;
+	int gres_cnt;
+	int g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int fini = 0;
@@ -1079,31 +1077,11 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 		      __func__, job_id, node_inx);
 		return SLURM_ERROR;
 	}
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return rc;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return rc;
-	}
-	i = sock_gres->sock_cnt;
-	if ((i != 0) && (i != sock_cnt)) {
-		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
-		      __func__, i, sock_cnt, job_id, node_inx);
-		sock_cnt = MIN(sock_cnt, i);
-	}
 
 	/*
 	 * Identify the GRES (if any) that we want to use as a basis for
 	 * maximizing link count (connectivity of the GRES).
 	 */
-	xassert(job_res->core_bitmap);
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	if ((gres_js->gres_per_job > gres_js->total_gres) &&
 	    (gres_ns->link_len == gres_cnt)) {
@@ -1127,7 +1105,7 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 	     ((l >= 0) && (gres_js->gres_per_job > gres_js->total_gres));
 	     l--) {
 		for (s = -1;   /* Socket == - 1 if GRES avail from any socket */
-		     ((s < sock_cnt) &&
+		     ((s < sock_gres->sock_cnt) &&
 		      (gres_js->gres_per_job > gres_js->total_gres)); s++) {
 			gres_js->total_gres += _pick_gres_topo(
 				sock_gres,
@@ -1768,8 +1746,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				if (!sock_gres->gres_state_job->gres_data ||
 				    !sock_gres->gres_state_node->gres_data)
 					continue;
-				tmp = _set_job_bits2(job_res, i,
-						     job_node_inx,
+				tmp = _set_job_bits2(i, job_node_inx,
 						     sock_gres, job_id,
 						     tres_mc_ptr);
 				if (job_fini != 0)
