@@ -621,7 +621,7 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 {
 	int core_offset, used_sock_cnt = 0;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, rc, s;
+	int rc, s, begin, core_cnt;
 
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
@@ -635,11 +635,12 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 		return 1;
 	}
 	for (s = 0; s < sock_cnt; s++) {
-		for (c = 0; c < cores_per_socket_cnt; c++) {
-			i = (s * cores_per_socket_cnt) + c;
-			if (bit_test(job_res->core_bitmap, (core_offset + i)))
-				used_sock_cnt++;
-		}
+		begin = core_offset + (s * cores_per_socket_cnt);
+		core_cnt = bit_set_count_range(job_res->core_bitmap, begin,
+					       begin + cores_per_socket_cnt);
+
+		if (core_cnt)
+			used_sock_cnt++;
 	}
 	if (used_sock_cnt == 0) {
 		error("%s: No allocated cores found", __func__);
