@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5425,11 +5425,18 @@ ideally 1000 or more ports, for example "SrunPortRange=60001\-63000".
 
 \fBNote\fR: \fBSrunPortRange\fR must be large enough to cover the expected
 number of srun ports created. A single srun opens 4 listening ports plus 2
-more for every 48 hosts beyond the first 48. Example:
+more for every 48 hosts beyond the first 48. Use of the \fB\-\-pty\fR option
+will result in an additional port being used.
+
+Example:
 .IP
 .RS
 .TP
 \fBsrun \-N 1\fR will use 4 listening ports.
+.IP
+
+.TP
+\fBsrun \-\-pty \-N 1\fR will use 5 listening ports.
 .IP
 
 .TP
