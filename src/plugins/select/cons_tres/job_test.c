@@ -822,7 +822,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 	if (bit_set_count(topo_eval.node_map) < topo_eval.min_nodes) {
 #if _DEBUG
 		info("AvailNodes < MinNodes (%u < %u)",
-		     bit_set_count(topo_eval.node_bitmap), topo_eval.min_nodes);
+		     bit_set_count(topo_eval.node_map), topo_eval.min_nodes);
 #endif
 		return NULL;
 	}
