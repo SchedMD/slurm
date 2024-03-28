@@ -556,7 +556,7 @@ required if more time is required to execute the \fBProlog\fR, load
 user environment variables, or if the slurmd daemon gets paged from memory.
 .br
 .br
-\fBNote\fR: The test for a job being successfully launched is only performed when
+\fBNOTE\fR: The test for a job being successfully launched is only performed when
 the Slurm daemon on the compute node registers state with the slurmctld daemon
 on the head node, which happens fairly rarely.
 Therefore a job will not necessarily be terminated if its start time exceeds
@@ -5023,7 +5023,7 @@ two numbers separated by a dash (e.g. \fBSlurmctldPort=6817\-6818\fR).
 execute on the same nodes or the values of \fBSlurmctldPort\fR and
 \fBSlurmdPort\fR must be different.
 
-\fBNote\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
+\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
 automatically try to interact with anything opened on ports 8192\-60000.
 Configure SlurmctldPort to use a port outside of the configured SrunPortRange
 and RSIP's port range.
@@ -5257,7 +5257,7 @@ build time. If none is explicitly specified, its value will be 6818.
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
 
-\fBNote\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
+\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
 automatically try to interact with anything opened on ports 8192\-60000.
 Configure SlurmdPort to use a port outside of the configured SrunPortRange
 and RSIP's port range.
@@ -5418,12 +5418,12 @@ by the kernel. Using this parameter allow sites to configure a range of ports
 from which srun ports will be selected. This is useful if sites want to
 allow only certain port range on their network.
 
-\fBNote\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
+\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
 automatically try to interact with anything opened on ports 8192\-60000.
 Configure SrunPortRange to use a range of ports above those used by RSIP,
 ideally 1000 or more ports, for example "SrunPortRange=60001\-63000".
 
-\fBNote\fR: \fBSrunPortRange\fR must be large enough to cover the expected
+\fBNOTE\fR: \fBSrunPortRange\fR must be large enough to cover the expected
 number of srun ports created. A single srun opens 4 listening ports plus 2
 more for every 48 hosts beyond the first 48. Use of the \fB\-\-pty\fR option
 will result in an additional port being used.
@@ -6396,7 +6396,7 @@ for all \fBslurmd\fR daemons on all compute nodes as defined by the
 recommended except for development or testing purposes. If multiple
 \fBslurmd\fR daemons execute on a node this can specify a range of ports.
 
-\fBNote\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
+\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
 automatically try to interact with anything opened on ports 8192\-60000.
 Configure Port to use a port outside of the configured SrunPortRange and
 RSIP's port range.
@@ -6691,7 +6691,7 @@ number for all \fBslurmd\fR daemons on all frontend nodes as defined by the
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
 recommended except for development or testing purposes.
 
-\fBNote\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
+\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
 automatically try to interact with anything opened on ports 8192\-60000.
 Configure Port to use a port outside of the configured SrunPortRange and
 RSIP's port range.
