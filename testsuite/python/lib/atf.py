@@ -114,6 +114,7 @@ def run_command(
     user=None,
     input=None,
     xfail=False,
+    env_vars=None,
 ):
     """Executes a command and returns a dictionary result.
 
@@ -131,6 +132,8 @@ def run_command(
            the invoking user to have unprompted sudo rights.
        input (string): The specified input is supplied to the command as stdin.
        xfail (boolean): If True, the command is expected to fail.
+       env_vars (string): A string to set environmental variables that is
+            prepended to the command when run.
 
     Returns:
         A dictionary containing the following keys:
@@ -165,6 +168,9 @@ def run_command(
     else:
         log_command_level = logging.NOTE
         log_details_level = logging.DEBUG
+
+    if env_vars is not None:
+        command = env_vars.strip() + " " + command
 
     start_time = time.time()
     invocation_message = "Running command"
