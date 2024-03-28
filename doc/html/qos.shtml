@@ -16,6 +16,7 @@ command. Jobs request a QOS using the "--qos=" option to the
 <li> <a href=#limits>Resource Limits</a>
 </ul>
 <li> <a href=#partition>Partition QOS</a>
+<li> <a href=#relative>Relative QOS</a>
 <li> <a href=#qos_other>Other QOS Options</a>
 <li> <a href=#config>Configuration</a>
 <li> <a href=#examples>Examples</a>
@@ -106,6 +107,33 @@ resources in it.</p>
 desired you need to have the job's QOS have the 'OverPartQOS' flag
 which will reverse the order of precedence.</p>
 
+<!-------------------------------------------------------------------------->
+<h2 id="relative">Relative QOS
+<a class="slurm_link" href="#relative"></a>
+</h2>
+<p>Starting in Slurm 23.11, a QOS may be configured to contain relative resource
+limits instead of absolute limits by setting <code>Flags=Relative</code>.
+When this flag is set, all resource limits are treated as percentages of the
+total resources available. Values higher than 100 are interpreted as 100%.
+Memory limits should be set with no units. Although the default units (MB) will
+be displayed, the limits will be enforced as a percentage (1MB = 1%).</p>
+
+<p><b>NOTE</b>: When <i>Flags=Relative</i> is added to a QOS, <b>slurmctld</b>
+must be restarted or reconfigured for the flag to take effect.</p>
+
+<p>Generally, the limits on a relative QOS will be calculated relative to the
+resources in the whole cluster. For example, <code>cpu=50</code> would be
+interpreted as 50% of all CPUs in the cluster.</p>
+
+<p>However, when a relative QOS is also assigned as a partition QOS, some unique
+conditions will apply:</p>
+<ol>
+<li>Limits will be calculated relative to the partition's resources;
+for example, <code>cpu=50</code> would be interpreted as 50% of all CPUs in the
+associated partition.</li>
+<li>Only one partition may have this QOS as its partition QOS.</li>
+<li>Jobs will not be allowed to use it as a normal QOS.</li>
+</ol>
 
 <!-------------------------------------------------------------------------->
 <h2 id="qos_other">Other QOS Options
