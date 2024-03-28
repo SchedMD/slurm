@@ -929,6 +929,37 @@ extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
  * any plugins that registered their own fini() hooks will wreck the parent.
  */
 #if defined(__linux__)
+static int _spank_user_child(void *arg)
+{
+	stepd_step_rec_t *step = arg;
+	struct priv_state sprivs;
+	int rc = 0;
+
+	if (container_g_join(step->step_id.job_id, step->uid)) {
+		error("container_g_join(%u): %m", step->step_id.job_id);
+		_exit(-1);
+	}
+
+	if (drop_privileges(step, true, &sprivs, true) < 0) {
+		error("drop_privileges: %m");
+		_exit(-1);
+	}
+
+	if (spank_user(step) < 0)
+		rc = 1;
+
+	/*
+	 * This is taken from the end of reclaim_privileges(). The child does
+	 * not need to reclaim here since we simply exit, so instead clean up
+	 * the structure and the lock so that the parent can continue to
+	 * operate.
+	 */
+	xfree(sprivs.gid_list);
+	auth_setuid_unlock();
+
+	_exit(rc);
+}
+
 static int _spank_task_post_fork_child(void *arg)
 {
 	spank_task_args_t *args = arg;
@@ -962,7 +993,8 @@ static int _spank_task_exit_child(void *arg)
 }
 #endif
 
-static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
+static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id,
+			   struct priv_state *sprivs)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1001,6 +1033,22 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
 			stack = xmalloc(STACK_SIZE);
 			pid = clone(_spank_task_post_fork_child,
 				    stack + STACK_SIZE, flags, args);
+		} else if ((spank_func == SPANK_STEP_USER_INIT) &&
+			   spank_has_user_init()) {
+			/*
+			 * spank_user_init() runs as the user, but setns()
+			 * requires CAP_SYS_ADMIN. Reclaim privileges here so
+			 * setns() will function.
+			 */
+			if (reclaim_privileges(sprivs) < 0) {
+				error("Unable to reclaim privileges");
+				rc = 1;
+				goto fail;
+			}
+
+			stack = xmalloc(STACK_SIZE);
+			pid = clone(_spank_user_child,
+				    stack + STACK_SIZE, flags, step);
 		} else {
 			/* no action required */
 			return rc;
@@ -1014,6 +1062,15 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
 			if (WEXITSTATUS(status))
 				rc = SLURM_ERROR;
 		}
+
+		if (spank_func == SPANK_STEP_USER_INIT) {
+			if (drop_privileges(step, true, sprivs, true) < 0) {
+				error("drop_privileges: %m");
+				rc = 2;
+			}
+		}
+
+fail:
 		xfree(args);
 		xfree(stack);
 		return rc;
@@ -1029,6 +1086,9 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
 		rc = SLURM_ERROR;
 	} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
 		   (spank_task_post_fork(step, id) < 0)) {
+		rc = SLURM_ERROR;
+	} else if ((spank_func == SPANK_STEP_USER_INIT) &&
+		   (spank_user(step) < 0)) {
 		rc = SLURM_ERROR;
 	}
 
@@ -1287,7 +1347,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
-	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, -1) < 0) {
+	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, -1, NULL) < 0) {
 		error("spank extern task post-fork failed");
 		rc = SLURM_ERROR;
 
@@ -2054,18 +2114,26 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		}
 	}
 
-	if (spank_user (step) < 0) {
-		error("spank_user failed.");
-		rc = SLURM_ERROR;
+	if ((rc = _run_spank_func(SPANK_STEP_USER_INIT, step, -1, &sprivs))) {
+		if (rc < 0) {
+			error("spank_user failed.");
+			rc = SLURM_ERROR;
 
-		step->task[0]->estatus = W_EXITCODE(1, 0);
-		step->task[0]->exited = true;
-		slurm_mutex_lock(&step_complete.lock);
-		if (!step_complete.step_rc)
-			step_complete.step_rc = rc;
-		slurm_mutex_unlock(&step_complete.lock);
-
-		goto fail4;
+			step->task[0]->estatus = W_EXITCODE(1, 0);
+			step->task[0]->exited = true;
+			slurm_mutex_lock(&step_complete.lock);
+			if (!step_complete.step_rc)
+				step_complete.step_rc = rc;
+			slurm_mutex_unlock(&step_complete.lock);
+			goto fail4;
+		} else {
+			/*
+			 * A drop_privileges() or reclaim_privileges() failed,
+			 * In this case, bail out skipping the redundant
+			 * reclaim.
+			 */
+			goto fail2;
+		}
 	}
 
 	exec_wait_list = list_create ((ListDelF) _exec_wait_info_destroy);
@@ -2224,7 +2292,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			goto fail2;
 		}
 
-		if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, i) < 0) {
+		if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, i, NULL) < 0) {
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
 
@@ -2478,7 +2546,8 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 					error("--task-epilog failed status=%d",
 					      rc);
 			}
-			if (_run_spank_func(SPANK_STEP_TASK_EXIT, step, t->id) < 0)
+			if (_run_spank_func(SPANK_STEP_TASK_EXIT, step, t->id,
+					    NULL) < 0)
 				error ("Unable to spank task %d at exit",
 				       t->id);
 			rc = task_g_post_term(step, t);
