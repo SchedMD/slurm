@@ -5429,27 +5429,13 @@ more for every 48 hosts beyond the first 48. Use of the \fB\-\-pty\fR option
 will result in an additional port being used.
 
 Example:
-.IP
-.RS
-.TP
-\fBsrun \-N 1\fR will use 4 listening ports.
-.IP
-
-.TP
-\fBsrun \-\-pty \-N 1\fR will use 5 listening ports.
-.IP
-
-.TP
-\fBsrun \-N 48\fR will use 4 listening ports.
-.IP
-
-.TP
-\fBsrun \-N 50\fR will use 6 listening ports.
-.IP
-
-.TP
-\fBsrun \-N 200\fR will use 12 listening ports.
-.RE
+.nf
+srun \-N 1        will use 4 listening ports.
+srun \-\-pty \-N 1  will use 5 listening ports.
+srun \-N 48       will use 4 listening ports.
+srun \-N 50       will use 6 listening ports.
+srun \-N 200      will use 12 listening ports.
+.fi
 .IP
 
 .TP
