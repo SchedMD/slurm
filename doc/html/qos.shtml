@@ -3,29 +3,37 @@
 <h1>Quality of Service (QOS)</h1>
 
 <p>One can specify a Quality of Service (QOS) for each job submitted
-to Slurm.  The quality of service associated with a job will affect
-the job in three ways:</p>
+to Slurm. The QOSs are defined in the Slurm database using the <i>sacctmgr</i>
+command. Jobs request a QOS using the "--qos=" option to the
+<i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</p>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
-<li> <a href=#priority>Job Scheduling Priority</a>
-<li> <a href=#preemption>Job Preemption</a>
-<li> <a href=#limits>Job Limits</a>
+<li><a href="#effects">Effects on Jobs</a>
+<ul>
+<li> <a href=#priority>Scheduling Priority</a>
+<li> <a href=#preemption>Preemption</a>
+<li> <a href=#limits>Resource Limits</a>
+</ul>
 <li> <a href=#partition>Partition QOS</a>
 <li> <a href=#qos_other>Other QOS Options</a>
 <li> <a href=#config>Configuration</a>
 <li> <a href=#examples>Examples</a>
+</li>
 </ul>
 
-<p>The QOSs are defined in the Slurm database using the <i>sacctmgr</i>
-utility.</p>
-
-<P> Jobs request a QOS using the "--qos=" option to the
-<i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</P>
-
 <!-------------------------------------------------------------------------->
-<h2 id="priority">Job Scheduling Priority
+
+<h2 id="effects">Effects on Jobs
 <a class="slurm_link" href="#priority"></a>
 </h2>
+
+<p>The QOS associated with a job will affect the job in three key ways:
+scheduling priority, preemption, and resource limits.</p>
+
+<h3 id="priority">Job Scheduling Priority
+<a class="slurm_link" href="#priority"></a>
+</h3>
 
 <p>Job scheduling priority is made up of a number of factors as
 described in the <a
@@ -46,9 +54,9 @@ than zero.</p>
 multi-factor plugin is loaded.</P>
 
 <!-------------------------------------------------------------------------->
-<h2 id="preemption">Job Preemption
+<h3 id="preemption">Job Preemption
 <a class="slurm_link" href="#preemption"></a>
-</h2>
+</h3>
 
 <p>Slurm offers two ways for a queued job to preempt a running job,
 free-up the running job's resources and allocate them to the queued
@@ -74,13 +82,13 @@ takes precedence over a job QOS with PreemptExemptTime, unless the job QOS
 has the OverPartQOS flag enabled.</p>
 
 <!-------------------------------------------------------------------------->
-<h2 id="limits">Job Limits<a class="slurm_link" href="#limits"></a></h2>
+<h3 id="limits">Resource Limits<a class="slurm_link" href="#limits"></a></h3>
 
 <p>Each QOS is assigned a set of limits which will be applied to the
 job.  The limits mirror the limits imposed by the
 user/account/cluster/partition association defined in the Slurm
 database and described in the <a href="resource_limits.html"> Resource
-Limits section</a>.  When limits for a QOS have been defined, they
+Limits page</a>.  When limits for a QOS have been defined, they
 will take precedence over the association's limits.</p>
 
 <!-------------------------------------------------------------------------->
