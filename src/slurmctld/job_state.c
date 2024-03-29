@@ -121,8 +121,9 @@ extern void verify_job_state_cache_synced(void)
 
 #else /* NDEBUG */
 
-#define _check_job_state(state) {}
-#define _log_job_state_change(job_ptr, new_state) {}
+#define _check_job_state(state) {(void) state;}
+#define _log_job_state_change(job_ptr, new_state) \
+	{(void) job_ptr; (void) new_state;}
 
 #endif /* NDEBUG */
 
