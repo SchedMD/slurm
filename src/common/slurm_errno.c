@@ -465,6 +465,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid extra constraints specification" },
 	{ ERRTAB_ENTRY(ESLURM_JOB_SIGNAL_FAILED),
 	  "Cannot signal job" },
+	{ ERRTAB_ENTRY(ESLURM_SIGNAL_JOBS_INVALID),
+	  "Invalid signal jobs request, at least one job id or filter is required." },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
