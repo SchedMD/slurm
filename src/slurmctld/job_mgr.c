@@ -10465,7 +10465,6 @@ extern void job_mgr_list_delete_job(void *job_entry)
 		return;
 
 	xassert (job_ptr->magic == JOB_MAGIC);
-	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
 	_delete_job_common(job_ptr);
 
@@ -10568,6 +10567,8 @@ extern void job_mgr_list_delete_job(void *job_entry)
 		job_count -= job_array_size;
 	}
 	job_ptr->job_id = 0;
+	/* make sure we don't delete record twice */
+	job_ptr->magic = ~JOB_MAGIC;
 	xfree(job_ptr);
 }
 
