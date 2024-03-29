@@ -4591,6 +4591,8 @@ static int PARSE_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 
 	if (!(*sig = sig_name2num(str))) {
 		xfree(str);
+		if (!rc)
+			rc = EINVAL;
 		return parse_error(parser, args, parent_path, rc,
 				   "Unknown signal %s", str);
 	}

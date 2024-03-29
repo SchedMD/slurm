@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     the performance of slurmctld and scancel. The updated --ctld option also
     fixes issues with the --partition or --reservation scancel options for jobs
     that requested multiple partitions or reservations.
+ -- slurmrestd - Give EINVAL error when failing to parse signal name to numeric
+    signal.
 
 * Changes in Slurm 23.11.5
 ==========================
