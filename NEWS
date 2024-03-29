@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix GRES reservations where the GRES has no topology
     (no cores= in gres.conf).
  -- Ensure that thread_id_rpc is gone before priority_g_fini().
+ -- Fix scontrol reboot timeout removing drain state from nodes.
 
 * Changes in Slurm 23.11.5
 ==========================
