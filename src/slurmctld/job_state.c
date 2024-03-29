@@ -129,6 +129,7 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 
 extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 {
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	_check_job_state(state);
 	_log_job_state_change(job_ptr, state);
 
@@ -138,6 +139,10 @@ extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 {
 	uint32_t job_state;
+
+	/* FIXME: avoid triggering on bug#19472 */
+	if (flag != JOB_UPDATE_DB)
+		xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xassert(!(flag & JOB_STATE_BASE));
 	xassert(flag & JOB_STATE_FLAGS);
@@ -153,6 +158,7 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 {
 	uint32_t job_state;
 
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(!(flag & JOB_STATE_BASE));
 	xassert(flag & JOB_STATE_FLAGS);
 
