@@ -144,6 +144,13 @@ typedef struct kill_thread {
 	int       secs;
 } kill_thread_t;
 
+#if defined(__linux__)
+typedef struct {
+	stepd_step_rec_t *step;
+	int id;
+} spank_task_args_t;
+#endif
+
 static pthread_t x11_signal_handler_thread = 0;
 static int sig_array[] = {SIGTERM, 0};
 
@@ -912,6 +919,93 @@ extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
 	step->state = new_state;
 	slurm_cond_signal(&step->state_cond);
 	slurm_mutex_unlock(&step->state_mutex);
+}
+
+/*
+ * Run SPANK functions within the job container.
+ * WARNING: This is running as a separate process, but sharing the parent's
+ * memory space. Be careful not to leak memory, or free resources that the
+ * parent needs to continue processing. Only use _exit() here, otherwise
+ * any plugins that registered their own fini() hooks will wreck the parent.
+ */
+#if defined(__linux__)
+static int _spank_task_exit_child(void *arg)
+{
+	spank_task_args_t *args = arg;
+	stepd_step_rec_t *step = args->step;
+
+	if (container_g_join(step->step_id.job_id, step->uid)) {
+		error("container_g_join(%u): %m", step->step_id.job_id);
+		_exit(-1);
+	}
+
+	if (spank_task_exit(step, args->id) < 0)
+		_exit(1);
+
+	_exit(0);
+}
+#endif
+
+static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
+{
+	int rc = SLURM_SUCCESS;
+
+#if defined(__linux__)
+	if (slurm_conf.conf_flags & CONF_FLAG_CONTAIN_SPANK) {
+		pid_t pid = -1;
+		int flags = CLONE_VM | SIGCHLD;
+		char *stack = NULL;
+		int status = 0;
+		spank_task_args_t *args = NULL;
+
+		/*
+		 * To enter the container, the process cannot share CLONE_FS
+		 * with another process. However, the spank plugins require
+		 * access to global memory that cannot be easily be shipped to
+		 * another process.
+		 *
+		 * clone() + CLONE_VM allows the new process to have distinct
+		 * filesystem attribites, but share memory space. By allowing
+		 * the current process to continue executing, shared locks can
+		 * be released allowing the new process to operate normally.
+		 */
+		if ((spank_func == SPANK_STEP_TASK_EXIT) &&
+		    spank_has_task_exit()) {
+			args = xmalloc(sizeof(*args));
+			args->step = step;
+			args->id = id;
+			stack = xmalloc(STACK_SIZE);
+			pid = clone(_spank_task_exit_child,
+				    stack + STACK_SIZE, flags, args);
+		} else {
+			/* no action required */
+			return rc;
+		}
+
+		if (pid == -1) {
+			error("clone failed before spank call: %m");
+			rc = SLURM_ERROR;
+		} else {
+			waitpid(pid, &status, 0);
+			if (WEXITSTATUS(status))
+				rc = SLURM_ERROR;
+		}
+		xfree(args);
+		xfree(stack);
+		return rc;
+	}
+#endif
+	/*
+	 * Default case is to run these spank functions normally. To allow a
+	 * different exit path, set rc = SLURM_ERROR if the plugstack call
+	 * fails.
+	 */
+	if ((spank_func == SPANK_STEP_TASK_EXIT) &&
+	    (spank_task_exit(step, id) < 0)) {
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
 }
 
 static bool _need_join_container()
@@ -2258,7 +2352,7 @@ static int
 _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 {
 	stepd_step_task_info_t *t = NULL;
-	int rc, status = 0;
+	int rc = 0, status = 0;
 	pid_t pid;
 	int completed = 0;
 	jobacctinfo_t *jobacct = NULL;
@@ -2357,11 +2451,9 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 					error("--task-epilog failed status=%d",
 					      rc);
 			}
-
-			if (spank_task_exit(step, t->id) < 0) {
+			if (_run_spank_func(SPANK_STEP_TASK_EXIT, step, t->id) < 0)
 				error ("Unable to spank task %d at exit",
 				       t->id);
-			}
 			rc = task_g_post_term(step, t);
 			if (rc == ENOMEM)
 				step->oom_error = true;
