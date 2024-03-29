@@ -49,11 +49,6 @@ typedef struct {
 	bool count_only;
 } job_state_args_t;
 
-typedef struct {
-	job_record_t *job_ptr;
-	job_state_args_t *job_state_args;
-} foreach_het_job_state_args_t;
-
 #ifndef NDEBUG
 
 #define T(x) { x, XSTRINGIFY(x) }
