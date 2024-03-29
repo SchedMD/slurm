@@ -50,7 +50,7 @@ utilities \fBsalloc\fR, \fBsbatch\fR or \fBscrontab\fR.
 .TP
 \fBslurmd\fR
 In \fBslurmd\fR context, the plugin is loaded in the
-\fBslurmd\fR daemon itself. \fBNote\fR: Plugins loaded in slurmd context
+\fBslurmd\fR daemon itself. \fBNOTE\fR: Plugins loaded in slurmd context
 persist for the entire time slurmd is running, so if configuration is
 changed or plugins are updated, slurmd must be restarted for the changes
 to take effect.
@@ -59,7 +59,7 @@ to take effect.
 .TP
 \fBjob_script\fR
 In the \fBjob_script\fR context, plugins are loaded in the context of the
-job prolog or epilog. \fBNote\fR: Plugins are loaded in \fBjob_script\fR
+job prolog or epilog. \fBNOTE\fR: Plugins are loaded in \fBjob_script\fR
 context on each run on the job prolog or epilog, in a separate address
 space from plugins in \fBslurmd\fR context. This means there is no
 state shared between this context and other contexts, or even between
