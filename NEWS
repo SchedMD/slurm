@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
     the same port multiple times.
  -- Fix GRES reservations where the GRES has no topology
     (no cores= in gres.conf).
+ -- Ensure that thread_id_rpc is gone before priority_g_fini().
 
 * Changes in Slurm 23.11.5
 ==========================
