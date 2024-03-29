@@ -59,10 +59,15 @@ Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-\-ctld\fR
-Send the job signal request to the slurmctld daemon rather than directly to the
-slurmd daemons. This increases overhead, but offers better fault tolerance.
-This is the default behavior on architectures using front end nodes,
-or when the \fB\-\-clusters\fR option is used.
+If this option is not used with \fB\-\-interactive\fR,
+\fB\-\-sibling\fR, or specific step ids, then this issues a single request
+to the slurmctld to signal all jobs matching the specified filters. This
+greatly improves the performance of slurmctld and scancel. Otherwise, this
+option causes scancel to send each job signal request to the slurmctld daemon
+rather than directly to the slurmd daemons, which increases overhead, but
+offers better fault tolerance. \fB\-\-ctld\fR is the default behavior on
+architectures using front end nodes, or when the \fB\-\-clusters\fR option is
+used.
 .IP
 
 .TP
@@ -214,11 +219,25 @@ will not be signaled.
 
 .SH "PERFORMANCE"
 .PP
-Executing \fBscancel\fR sends a remote procedure call to \fBslurmctld\fR. If
-enough calls from \fBscancel\fR or other Slurm client commands that send remote
-procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
-a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
-in a denial of service.
+When executing \fBscancel\fR without the \fB\-\-ctld\fR option; or with the
+\fB\-\-ctld\fR option and \fB\-\-interactive\fR, \fB\-\-sibling\fR, or specific
+step ids; a remote procedure call is sent to \fBslurmctld\fR to get all the
+jobs. \fBscancel\fR then sends a signal job remote procedure call for each job
+that matches the requested filters.
+
+When executing \fBscancel\fR with the \fB\-\-ctld\fR option and without
+\fB\-\-interactive\fR, \fB\-\-sibling\fR, or specific step ids, a single
+remote procedure call is sent to \fBslurmctld\fR to signal all jobs matching
+the requested filters. It is therefore recommended to use the \fB\-\-ctld\fR
+option in order to reduce the number of remote procedure calls sent to the
+\fBslurmctld\fR.
+
+.PP
+If enough calls from \fBscancel\fR or other Slurm client commands that send
+remote procedure calls to the \fBslurmctld\fR daemon come in at once, it can
+result in a degradation of performance of the \fBslurmctld\fR daemon, possibly
+resulting in a denial of service.
+
 .PP
 Do not run \fBscancel\fR or other Slurm client commands that send remote
 procedure calls to \fBslurmctld\fR from loops in shell scripts or other
