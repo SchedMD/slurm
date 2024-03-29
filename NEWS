@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid limiting sockets per node to one when using gres enforce-binding.
  -- slurmrestd - Avoid permission denied errors when attempting to listen on
     the same port multiple times.
+ -- Fix GRES reservations where the GRES has no topology
+    (no cores= in gres.conf).
 
 * Changes in Slurm 23.11.5
 ==========================
