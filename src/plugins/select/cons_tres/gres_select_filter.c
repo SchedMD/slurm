@@ -57,8 +57,12 @@ typedef struct {
 	node_record_t *node_ptr;
 	int *rc;
 	int rem_node_cnt;
+	uint16_t sock_cnt;
 	gres_mc_data_t *tres_mc_ptr;
 	uint32_t ***tasks_per_node_socket;
+	uint32_t *used_cores_on_sock;
+	uint32_t used_core_cnt;
+	uint32_t used_sock_cnt;
 } select_and_set_args_t;
 
 static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt);
@@ -475,52 +479,17 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
  *		  gres_bit_select
  * job_id IN - job ID for logging
  */
-static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
-				 int job_node_inx, sock_gres_t *sock_gres,
-				 uint32_t job_id, bool enforce_binding)
+static int _set_shared_node_bits(int node_inx, int job_node_inx,
+				 sock_gres_t *sock_gres, uint32_t job_id,
+				 bool enforce_binding, uint32_t *used_sock)
 {
-	int core_offset;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	gres_job_state_t *gres_js;
-	uint32_t *used_sock = NULL;
 	uint64_t gres_needed = 0;
 	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_needed = gres_js->gres_per_node;
-
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return rc;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return SLURM_ERROR;
-	}
-	i = sock_gres->sock_cnt;
-	if ((i != 0) && (i != sock_cnt)) {
-		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
-		      __func__, i, sock_cnt, job_id, node_inx);
-		sock_cnt = MIN(sock_cnt, i);
-	}
-
-	xassert(job_res->core_bitmap);
-	used_sock = xcalloc(sock_cnt, sizeof(int));
-	for (int s = 0; s < sock_cnt; s++) {
-		for (int c = 0; c < cores_per_socket_cnt; c++) {
-			i = (s * cores_per_socket_cnt) + c;
-			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
-				used_sock[s]++;
-				break;
-			}
-		}
-	}
 
 	/* Try to select a single sharing gres with sufficient available gres */
 	_pick_shared_gres(&gres_needed, used_sock, sock_gres,
@@ -537,7 +506,6 @@ static int _set_shared_node_bits(struct job_resources *job_res, int node_inx,
 		rc = ESLURM_INVALID_GRES;
 	}
 
-	xfree(used_sock);
 	return rc;
 }
 
@@ -609,46 +577,6 @@ static int _set_shared_task_bits(int node_inx,
 	return rc;
 }
 
-/*
- * Return count of sockets allocated to this job on this node
- * job_res IN - job resource allocation
- * node_inx IN - global node index
- * job_node_inx IN - node index for this job's allocation
- * RET socket count
- */
-static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
-			 int job_node_inx)
-{
-	int core_offset, used_sock_cnt = 0;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int rc, s, begin, core_cnt;
-
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count", __func__);
-		return 1;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset", __func__);
-		return 1;
-	}
-	for (s = 0; s < sock_cnt; s++) {
-		begin = core_offset + (s * cores_per_socket_cnt);
-		core_cnt = bit_set_count_range(job_res->core_bitmap, begin,
-					       begin + cores_per_socket_cnt);
-
-		if (core_cnt)
-			used_sock_cnt++;
-	}
-	if (used_sock_cnt == 0) {
-		error("%s: No allocated cores found", __func__);
-		return 1;
-	}
-	return used_sock_cnt;
-}
-
 static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 				int node_inx, int socket_index,
 				int link_limit, int *links_cnt)
@@ -702,7 +630,6 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-socket resource specification
- * job_res IN - job resource allocation
  * node_inx IN - global node index
  * job_node_inx IN - node index for this job's allocation
  * sock_gres IN - job/node request specifications, UPDATED: set bits in
@@ -710,56 +637,32 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
  */
-static void _set_sock_bits(struct job_resources *job_res, int node_inx,
-			   int job_node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+static void _set_sock_bits(int node_inx, int job_node_inx,
+			   sock_gres_t *sock_gres, uint32_t job_id,
+			   gres_mc_data_t *tres_mc_ptr,
+			   uint32_t *used_cores_on_sock, uint32_t used_sock_cnt)
 {
-	int core_offset, gres_cnt;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, g, l, rc, s;
+	int gres_cnt;
+	uint16_t sock_cnt = 0;
+	int i, g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int *used_sock = NULL, used_sock_cnt = 0;
 	int *links_cnt = NULL, best_link_cnt = 0;
+	uint32_t *used_sock = used_cores_on_sock;
+	bool allocated_array_copy = false;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return;
-	}
-	i = sock_gres->sock_cnt;
-	if ((i != 0) && (i != sock_cnt)) {
-		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
-		      __func__, i, sock_cnt, job_id, node_inx);
-		sock_cnt = MIN(sock_cnt, i);
-	}
-
-	xassert(job_res->core_bitmap);
-	used_sock = xcalloc(sock_cnt, sizeof(int));
+	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-	for (s = 0; s < sock_cnt; s++) {
-		for (c = 0; c < cores_per_socket_cnt; c++) {
-			i = (s * cores_per_socket_cnt) + c;
-			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
-				used_sock[s]++;
-				used_sock_cnt++;
-				break;
-			}
-		}
-	}
+
 	if (tres_mc_ptr && tres_mc_ptr->sockets_per_node     &&
 	    (tres_mc_ptr->sockets_per_node != used_sock_cnt) &&
 	    gres_ns->gres_bit_alloc && sock_gres->bits_by_sock) {
+		used_sock = xcalloc(sock_gres->sock_cnt, sizeof(int));
+		memcpy(used_sock, used_cores_on_sock,
+		       sock_gres->sock_cnt * sizeof(int));
+		allocated_array_copy = true;
 		if (tres_mc_ptr->sockets_per_node > used_sock_cnt) {
 			/* Somehow we have too few sockets in job allocation */
 			error("%s: Inconsistent requested/allocated socket count (%d > %d) for job %u on node %d",
@@ -871,13 +774,13 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 		}
 	}
 	xfree(links_cnt);
-	xfree(used_sock);
+	if (allocated_array_copy)
+		xfree(used_sock);
 }
 
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-job resource specification. Use only socket-local GRES
- * job_res IN - job resource allocation
  * node_inx IN - global node index
  * job_node_inx IN - node index for this job's allocation
  * rem_nodes IN - count of nodes remaining to place resources on
@@ -888,18 +791,18 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
  * cpus_per_core IN - CPUs per core on this node
  * RET 0:more work, 1:fini
  */
-static int _set_job_bits1(struct job_resources *job_res, int node_inx,
-			  int job_node_inx, int rem_nodes,
+static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 			  sock_gres_t *sock_gres, uint32_t job_id,
-			  gres_mc_data_t *tres_mc_ptr, uint16_t cpus_per_core)
+			  gres_mc_data_t *tres_mc_ptr, uint16_t cpus_per_core,
+			  uint32_t *cores_on_sock, uint32_t total_cores)
 {
-	int core_offset, gres_cnt;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, g, rc, s;
+	int gres_cnt;
+	uint16_t sock_cnt = 0;
+	int g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int *cores_on_sock = NULL, alloc_gres_cnt = 0;
-	int max_gres, pick_gres, total_cores = 0;
+	int alloc_gres_cnt = 0;
+	int max_gres, pick_gres;
 	int fini = 0;
 	uint16_t cpus_per_gres = 0;
 
@@ -907,41 +810,12 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	if (gres_js->gres_per_job == gres_js->total_gres)
 		fini = 1;
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return rc;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return rc;
-	}
-	i = sock_gres->sock_cnt;
-	if ((i != 0) && (i != sock_cnt)) {
-		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
-		      __func__, i, sock_cnt, job_id, node_inx);
-		sock_cnt = MIN(sock_cnt, i);
-	}
-	xassert(job_res->core_bitmap);
+	sock_cnt = sock_gres->sock_cnt;
 	if (job_node_inx == 0)
 		gres_js->total_gres = 0;
 	max_gres = gres_js->gres_per_job - gres_js->total_gres -
 		(rem_nodes - 1);
-	cores_on_sock = xcalloc(sock_cnt, sizeof(int));
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-	for (s = 0; s < sock_cnt; s++) {
-		for (c = 0; c < cores_per_socket_cnt; c++) {
-			i = (s * cores_per_socket_cnt) + c;
-			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
-				cores_on_sock[s]++;
-				total_cores++;
-			}
-		}
-	}
 	if (gres_js->cpus_per_gres) {
 		cpus_per_gres = gres_js->cpus_per_gres;
 	} else if (gres_js->ntasks_per_gres &&
@@ -1038,7 +912,6 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	}
 	gres_js->total_gres += alloc_gres_cnt;
 
-	xfree(cores_on_sock);
 	if (gres_js->total_gres >= gres_js->gres_per_job)
 		fini = 1;
 	return fini;
@@ -1122,7 +995,6 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-node resource specification
- * job_res IN - job resource allocation
  * node_inx IN - global node index
  * job_node_inx IN - node index for this job's allocation
  * sock_gres IN - job/node request specifications, UPDATED: set bits in
@@ -1130,52 +1002,23 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
  */
-static void _set_node_bits(struct job_resources *job_res, int node_inx,
-			   int job_node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+static void _set_node_bits(int node_inx, int job_node_inx,
+			   sock_gres_t *sock_gres, uint32_t job_id,
+			   gres_mc_data_t *tres_mc_ptr, uint32_t *used_sock)
 {
-	int core_offset, gres_cnt;
-	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, g, l, rc, s;
+	int gres_cnt;
+	uint16_t sock_cnt = 0;
+	int g, l, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int *used_sock = NULL, alloc_gres_cnt = 0;
+	int alloc_gres_cnt = 0;
 	int *links_cnt = NULL, best_link_cnt = 0;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
-	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
-				   &cores_per_socket_cnt);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return;
-	}
-	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset for job %u on node %d",
-		      __func__, job_id, node_inx);
-		return;
-	}
-	i = sock_gres->sock_cnt;
-	if ((i != 0) && (i != sock_cnt)) {
-		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
-		      __func__, i, sock_cnt, job_id, node_inx);
-		sock_cnt = MIN(sock_cnt, i);
-	}
+	sock_cnt =  sock_gres->sock_cnt;
 
-	xassert(job_res->core_bitmap);
-	used_sock = xcalloc(sock_cnt, sizeof(int));
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-	for (s = 0; s < sock_cnt; s++) {
-		for (c = 0; c < cores_per_socket_cnt; c++) {
-			i = (s * cores_per_socket_cnt) + c;
-			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
-				used_sock[s]++;
-				break;
-			}
-		}
-	}
 
 	/*
 	 * Now pick specific GRES for these sockets.
@@ -1245,7 +1088,6 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	}
 
 	xfree(links_cnt);
-	xfree(used_sock);
 }
 
 /*
@@ -1543,6 +1385,54 @@ static int _get_gres_node_cnt(gres_node_state_t *gres_ns, int node_inx)
 	return gres_cnt;
 }
 
+/* Set array of allocated cores for each socket on this node */
+static int _set_used_cnts(select_and_set_args_t *args)
+{
+	struct job_resources *job_res = args->job_ptr->job_resrcs;
+	int core_offset;
+	uint16_t cores_per_socket_cnt = 0;
+	int socket_inx, begin, core_cnt;
+
+	xassert(job_res->core_bitmap);
+
+	/* Confirm output values are not set yet */
+	xassert(args->used_cores_on_sock == NULL);
+	xassert(args->used_core_cnt == 0);
+	xassert(args->used_sock_cnt == 0);
+	xassert(args->sock_cnt == 0);
+
+	if (get_job_resources_cnt(job_res, args->job_node_inx,
+				  &(args->sock_cnt),
+				  &cores_per_socket_cnt) != SLURM_SUCCESS) {
+		error("%s: Invalid socket/core count", __func__);
+		return SLURM_ERROR;
+	}
+	core_offset = get_job_resources_offset(args->job_ptr->job_resrcs,
+					       args->job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("%s: Invalid core offset", __func__);
+		return SLURM_ERROR;
+	}
+
+	args->used_cores_on_sock = xcalloc(args->sock_cnt, sizeof(int));
+	for (socket_inx = 0; socket_inx < args->sock_cnt; socket_inx++) {
+		begin = core_offset + (socket_inx * cores_per_socket_cnt);
+		core_cnt = bit_set_count_range(job_res->core_bitmap, begin,
+					       begin + cores_per_socket_cnt);
+		args->used_cores_on_sock[socket_inx] += core_cnt;
+		args->used_core_cnt += core_cnt;
+		if (core_cnt)
+			args->used_sock_cnt++;
+	}
+
+	if (args->used_sock_cnt == 0) {
+		error("%s: No allocated cores found", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _select_and_set_node(void *x, void *arg)
 {
 	gres_job_state_t *gres_js;
@@ -1577,6 +1467,14 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	if (!gres_js || !gres_ns)
 		return 0;
+	if ((gres_js->gres_per_node ||
+	     gres_js->gres_per_socket ||
+	     gres_js->gres_per_job) && /* Data needed */
+	    !args->used_cores_on_sock) { /* Not built yet */
+		*rc = _set_used_cnts(args);
+		if (*rc != SLURM_SUCCESS)
+			return -1;
+	}
 	if (gres_js->gres_per_task && /* Data needed */
 	    !*args->tasks_per_node_socket) { /* Not built yet */
 		*args->tasks_per_node_socket = _build_tasks_per_node_sock(
@@ -1607,7 +1505,7 @@ static int _select_and_set_node(void *x, void *arg)
 			gres_js->gres_cnt_node_select[node_inx] =
 				gres_js->gres_per_socket;
 			gres_js->gres_cnt_node_select[node_inx] *=
-				_get_sock_cnt(job_res, node_inx, job_node_inx);
+				args->used_sock_cnt;
 		} else if (gres_js->gres_per_task) {
 			gres_js->gres_cnt_node_select[node_inx] =
 				gres_js->gres_per_task;
@@ -1637,8 +1535,9 @@ static int _select_and_set_node(void *x, void *arg)
 		_init_gres_per_bit_select(gres_js, node_inx);
 		if (gres_js->gres_per_node) {
 			*rc = _set_shared_node_bits(
-				job_res, node_inx, job_node_inx, sock_gres, job_id,
-				(job_ptr->bit_flags & GRES_ENFORCE_BIND));
+				node_inx, job_node_inx, sock_gres, job_id,
+				(job_ptr->bit_flags & GRES_ENFORCE_BIND),
+				args->used_cores_on_sock);
 		} else if (gres_js->gres_per_task) {
 			*rc = _set_shared_task_bits(
 				node_inx, sock_gres, job_id,
@@ -1652,20 +1551,23 @@ static int _select_and_set_node(void *x, void *arg)
 			*rc = ESLURM_INVALID_GRES;
 		}
 	} else if (gres_js->gres_per_node) {
-		_set_node_bits(job_res, node_inx, job_node_inx, sock_gres,
-			       job_id, tres_mc_ptr);
+		_set_node_bits(node_inx, job_node_inx, sock_gres, job_id,
+			       tres_mc_ptr, args->used_cores_on_sock);
 	} else if (gres_js->gres_per_socket) {
-		_set_sock_bits(job_res, node_inx, job_node_inx, sock_gres,
-			       job_id, tres_mc_ptr);
+		_set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
+			       tres_mc_ptr, args->used_cores_on_sock,
+			       args->used_sock_cnt);
 	} else if (gres_js->gres_per_task) {
 		_set_task_bits(node_inx, sock_gres, job_id,
 			       tasks_per_node_socket[node_inx]);
 	} else if (gres_js->gres_per_job) {
-		int tmp = _set_job_bits1(job_res, node_inx, job_node_inx, rem_node_cnt,
+		int tmp = _set_job_bits1(node_inx, job_node_inx, rem_node_cnt,
 					 sock_gres, job_id, tres_mc_ptr,
-					 node_ptr->tpc);
-		if ((*job_fini) != 0)
-			(*job_fini) = tmp;
+					 node_ptr->tpc,
+					 args->used_cores_on_sock,
+					 args->used_core_cnt);
+		if (*job_fini != 0)
+			*job_fini = tmp;
 	} else {
 		error("%s job %u job_spec lacks GRES counter", __func__,
 		      job_id);
@@ -1723,11 +1625,21 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 		select_and_set_args.node_ptr = node_ptr;
 		select_and_set_args.rem_node_cnt = rem_node_cnt;
 
+		/*
+		 * These variables are set and used in _select_and_set_node().
+		 * We xfree used_cores_on_sock after the list_for_each().
+		 */
+		select_and_set_args.used_cores_on_sock = NULL;
+		select_and_set_args.used_core_cnt = 0;
+		select_and_set_args.used_sock_cnt = 0;
+		select_and_set_args.sock_cnt = 0;
+
 		(void) list_for_each(sock_gres_list[job_node_inx],
 				     _select_and_set_node,
 				     &select_and_set_args);
 		job_node_inx++;
 		rem_node_cnt--;
+		xfree(select_and_set_args.used_cores_on_sock);
 	}
 
 	if (job_fini == 0) {
