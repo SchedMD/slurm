@@ -50,6 +50,8 @@
 #include "src/common/log.h"	/* for error() */
 #include "src/common/strlcpy.h"
 
+#define STACK_SIZE (1024 * 1024)
+
 #ifndef MAX
 #  define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
@@ -268,7 +270,7 @@
 			errno = err;					\
 			error("pthread_attr_setscope: %m");		\
 		}							\
-		err = pthread_attr_setstacksize(attr, 1024*1024);	\
+		err = pthread_attr_setstacksize(attr, STACK_SIZE);	\
 		if (err) {						\
 			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\
@@ -282,7 +284,7 @@
 			errno = err;					\
 			fatal("pthread_attr_init: %m");			\
 		}							\
-		err = pthread_attr_setstacksize(attr, 1024*1024);	\
+		err = pthread_attr_setstacksize(attr, STACK_SIZE);	\
 		if (err) {						\
 			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\

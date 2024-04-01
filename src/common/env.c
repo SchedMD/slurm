@@ -95,9 +95,6 @@ strong_alias(env_unset_environment,	slurm_env_unset_environment);
 #define ENV_BUFSIZE (256 * 1024)
 #define MAX_ENV_STRLEN (32 * 4096)	/* Needed for CPU_BIND and MEM_BIND on
 					 * SGI systems with huge CPU counts */
-
-#define STACK_SIZE (1024 * 1024) /* For clone() syscall. */
-
 typedef struct {
 	char *cmdstr;
 	int *fildes;
