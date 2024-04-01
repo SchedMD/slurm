@@ -194,6 +194,8 @@ documents those changes that are of interest to users and administrators.
  -- Account coordinators may not increase association job limits above
     parent ones
  -- Account coordinators can now suspend/resume jobs owned by member users.
+ -- Add DisableCoordDBD slurmdbd configuration parameter to disable the
+    coordinator status in all slurmdbd interactions.
 
 * Changes in Slurm 23.11.7
 ==========================
