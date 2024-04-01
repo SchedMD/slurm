@@ -149,6 +149,7 @@ extern int read_slurmdbd_conf(void)
 		{"DebugLevel", S_P_STRING},
 		{"DebugLevelSyslog", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
+		{"DisableCoordDBD", S_P_BOOLEAN},
 		{"HashPlugin", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
@@ -342,6 +343,11 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->purge_job |=
 					SLURMDB_PURGE_MONTHS;
 		}
+
+		s_p_get_boolean(&tmp_bool, "DisableCoordDBD", tbl);
+		if (tmp_bool)
+			slurmdbd_conf->flags |=
+				DBD_CONF_FLAG_DISABLE_COORD_DBD;
 
 		if (!s_p_get_string(&slurm_conf.hash_plugin, "HashPlugin", tbl))
 			slurm_conf.hash_plugin = xstrdup(DEFAULT_HASH_PLUGIN);
@@ -823,6 +829,10 @@ extern List dump_config(void)
 		     log_num2string(slurmdbd_conf->syslog_debug));
 
 	add_key_pair(my_list, "DefaultQOS", "%s", slurmdbd_conf->default_qos);
+
+	add_key_pair_bool(my_list, "DisableCoordDBD",
+			  (slurmdbd_conf->flags &
+			   DBD_CONF_FLAG_DISABLE_COORD_DBD));
 
 	add_key_pair(my_list, "HashPlugin", "%s", slurm_conf.hash_plugin);
 
