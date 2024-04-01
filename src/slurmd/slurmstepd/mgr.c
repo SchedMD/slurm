@@ -929,6 +929,22 @@ extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
  * any plugins that registered their own fini() hooks will wreck the parent.
  */
 #if defined(__linux__)
+static int _spank_task_post_fork_child(void *arg)
+{
+	spank_task_args_t *args = arg;
+	stepd_step_rec_t *step = args->step;
+
+	if (container_g_join(step->step_id.job_id, step->uid)) {
+		error("container_g_join(%u): %m", step->step_id.job_id);
+		_exit(-1);
+	}
+
+	if (spank_task_post_fork(step, args->id) < 0)
+		_exit(1);
+
+	_exit(0);
+}
+
 static int _spank_task_exit_child(void *arg)
 {
 	spank_task_args_t *args = arg;
@@ -977,6 +993,14 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
 			stack = xmalloc(STACK_SIZE);
 			pid = clone(_spank_task_exit_child,
 				    stack + STACK_SIZE, flags, args);
+		} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
+			   spank_has_task_post_fork()) {
+			args = xmalloc(sizeof(*args));
+			args->step = step;
+			args->id = id;
+			stack = xmalloc(STACK_SIZE);
+			pid = clone(_spank_task_post_fork_child,
+				    stack + STACK_SIZE, flags, args);
 		} else {
 			/* no action required */
 			return rc;
@@ -1002,6 +1026,9 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id)
 	 */
 	if ((spank_func == SPANK_STEP_TASK_EXIT) &&
 	    (spank_task_exit(step, id) < 0)) {
+		rc = SLURM_ERROR;
+	} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
+		   (spank_task_post_fork(step, id) < 0)) {
 		rc = SLURM_ERROR;
 	}
 
@@ -1260,7 +1287,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
-	if (spank_task_post_fork(step, -1) < 0) {
+	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, -1) < 0) {
 		error("spank extern task post-fork failed");
 		rc = SLURM_ERROR;
 
@@ -2197,7 +2224,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			goto fail2;
 		}
 
-		if (spank_task_post_fork (step, i) < 0) {
+		if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, i) < 0) {
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
 
