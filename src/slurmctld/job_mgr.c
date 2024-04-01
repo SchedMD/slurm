@@ -9913,14 +9913,14 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
-		*exc_bitmap = NULL; /* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
 		detail_ptr->exc_nodes =
 			_copy_nodelist_no_dup(job_desc->exc_nodes);
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
-		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	}
+	if (job_desc->exc_nodes || job_desc->req_nodes)
+		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	detail_ptr->features = xstrdup(job_desc->features);
 	detail_ptr->cluster_features = xstrdup(job_desc->cluster_features);
 	detail_ptr->prefer = xstrdup(job_desc->prefer);
