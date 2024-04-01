@@ -1012,6 +1012,21 @@ static void _step_test_gres(job_step_create_request_msg_t *step_spec,
 	}
 }
 
+/* Returns threads_per_core required by the step or NO_VAL16 if not specified */
+static uint16_t _get_threads_per_core(uint16_t step_threads_per_core,
+				      job_record_t *job_ptr)
+{
+	uint16_t tpc = NO_VAL16;
+
+	if (step_threads_per_core &&
+	    (step_threads_per_core != NO_VAL16)) {
+		tpc = step_threads_per_core;
+	} else if (job_ptr->details->mc_ptr->threads_per_core &&
+		   (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
+		tpc = job_ptr->details->mc_ptr->threads_per_core;
+	return tpc;
+}
+
 /*
  * _pick_step_nodes - select nodes for a job step that satisfy its requirements
  *	we satisfy the super-set of constraints.
@@ -1521,20 +1536,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	    (job_ptr->job_resrcs->cpu_array_cnt == 1) &&
 	    (job_ptr->job_resrcs->cpu_array_value)) {
 		uint32_t cpu_count = step_spec->cpu_count;
-		uint16_t req_tpc = NO_VAL16;
-
+		uint16_t req_tpc;
 		/*
 		 * Expand cpu account to account for blocked/used threads when
 		 * using threads-per-core. See _step_[de]alloc_lps() for similar
 		 * code.
 		 */
-		if (step_spec->threads_per_core &&
-		    (step_spec->threads_per_core != NO_VAL16))
-			req_tpc = step_spec->threads_per_core;
-		else if (job_ptr->details->mc_ptr->threads_per_core &&
-			 (job_ptr->details->mc_ptr->threads_per_core !=
-			  NO_VAL16))
-			req_tpc = job_ptr->details->mc_ptr->threads_per_core;
+		req_tpc = _get_threads_per_core(step_spec->threads_per_core,
+						job_ptr);
 
 		/*
 		 * Only process this differently if the allocation requested
@@ -2271,12 +2280,13 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS, final_rc = SLURM_SUCCESS;
-	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
 	uint16_t *cpus_per_task_array = NULL;
 	uint16_t *cpus_alloc_pn = NULL;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
+	uint16_t req_tpc = _get_threads_per_core(step_ptr->threads_per_core,
+						 job_ptr);
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2289,13 +2299,6 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		return rc;
 
 	xfree(*err_msg);
-
-	if (step_ptr->threads_per_core &&
-	    (step_ptr->threads_per_core != NO_VAL16))
-		req_tpc = step_ptr->threads_per_core;
-	else if (mc_ptr->threads_per_core &&
-		 (mc_ptr->threads_per_core != NO_VAL16))
-		req_tpc = mc_ptr->threads_per_core;
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
@@ -2738,9 +2741,10 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
 	int job_node_inx = -1, step_node_inx = -1;
-	uint16_t req_tpc = NO_VAL16;
 	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
+	uint16_t req_tpc = _get_threads_per_core(step_ptr->threads_per_core,
+						 job_ptr);
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2770,13 +2774,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		error("%s: lack memory allocation details to enforce memory limits for %pJ",
 		      __func__, job_ptr);
 	}
-
-	if (step_ptr->threads_per_core &&
-	    (step_ptr->threads_per_core != NO_VAL16))
-		req_tpc = step_ptr->threads_per_core;
-	else if (job_ptr->details->mc_ptr->threads_per_core &&
-		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
-		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
 
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
