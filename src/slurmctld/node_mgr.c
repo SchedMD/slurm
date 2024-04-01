@@ -4880,10 +4880,11 @@ extern void check_node_timers(void)
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
 			/*
 			 * Remove states now so that event state shows as DOWN.
+			 * Does not remove drain state in case it was set by
+			 * scontrol update nodename.
 			 */
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
-			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;
 			set_node_down_ptr(node_ptr, "reboot timed out");
 
