@@ -565,6 +565,25 @@ unless something is explicitly set by the admin with the create.
 .IP
 
 .TP
+\fBDisableCoordDBD\fR
+Disable the coordinator status in all slurmdbd interactions.
+
+When this is set, a coordinator may not do the following
+in slurmdbd as they relate to the account(s) they coordinate:
+
+Add accounts
+.br
+Add/Modify/Remove associations
+.br
+Add/Remove coordinators
+.br
+Add/Modify/Remove users
+
+Boolean, yes to turn on, no (default) to recognize coordinator status in all
+slurmdbd interactions.
+.IP
+
+.TP
 \fBHashPlugin\fR
 Identifies the type of hash plugin to use for network communication.
 Acceptable values include:
