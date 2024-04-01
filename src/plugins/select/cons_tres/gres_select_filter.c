@@ -1576,7 +1576,7 @@ static int _select_and_set_node(void *x, void *arg)
 	job_record_t *job_ptr;
 	gres_mc_data_t *tres_mc_ptr;
 	uint32_t **tasks_per_node_socket;
-	int i, job_node_inx, rem_node_cnt;
+	int node_inx, job_node_inx, rem_node_cnt;
 	int *job_fini, *rc;
 
 	sock_gres_t *sock_gres = x;
@@ -1585,7 +1585,7 @@ static int _select_and_set_node(void *x, void *arg)
 	node_ptr = args->node_ptr;
 	job_ptr = args->job_ptr;
 	tres_mc_ptr = args->tres_mc_ptr;
-	i = args->node_inx;
+	node_inx = args->node_inx;
 	job_node_inx = args->job_node_inx;
 	rem_node_cnt = args->rem_node_cnt;
 	job_fini = args->job_fini;
@@ -1616,30 +1616,31 @@ static int _select_and_set_node(void *x, void *arg)
 	}
 
 	/* Reinitialize counter */
-	if (i == bit_ffs(job_res->node_bitmap))
+	if (node_inx == bit_ffs(job_res->node_bitmap))
 		gres_js->total_gres = 0;
 
 	if (gres_ns->topo_cnt == 0) {
 		/* No topology, just set a count */
 		if (gres_js->gres_per_node) {
-			gres_js->gres_cnt_node_select[i] =
+			gres_js->gres_cnt_node_select[node_inx] =
 				gres_js->gres_per_node;
 		} else if (gres_js->gres_per_socket) {
-			gres_js->gres_cnt_node_select[i] =
+			gres_js->gres_cnt_node_select[node_inx] =
 				gres_js->gres_per_socket;
-			gres_js->gres_cnt_node_select[i] *= _get_sock_cnt(
-				job_res, i, job_node_inx);
+			gres_js->gres_cnt_node_select[node_inx] *=
+				_get_sock_cnt(job_res, node_inx, job_node_inx);
 		} else if (gres_js->gres_per_task) {
-			gres_js->gres_cnt_node_select[i] =
+			gres_js->gres_cnt_node_select[node_inx] =
 				gres_js->gres_per_task;
-			gres_js->gres_cnt_node_select[i] *= _get_task_cnt_node(
-				tasks_per_node_socket[i],
-				node_ptr->tot_sockets);
+			gres_js->gres_cnt_node_select[node_inx] *=
+				_get_task_cnt_node(
+					tasks_per_node_socket[node_inx],
+					node_ptr->tot_sockets);
 		} else if (gres_js->gres_per_job) {
-			gres_js->gres_cnt_node_select[i] = _get_job_cnt(
+			gres_js->gres_cnt_node_select[node_inx] = _get_job_cnt(
 				sock_gres, gres_ns, rem_node_cnt);
 		}
-		gres_js->total_gres += gres_js->gres_cnt_node_select[i];
+		gres_js->total_gres += gres_js->gres_cnt_node_select[node_inx];
 		return 0;
 	}
 
@@ -1649,38 +1650,39 @@ static int _select_and_set_node(void *x, void *arg)
 						   sizeof(bitstr_t *));
 	}
 	gres_cnt = _get_gres_node_cnt(gres_ns, job_node_inx);
-	FREE_NULL_BITMAP(gres_js->gres_bit_select[i]);
-	gres_js->gres_bit_select[i] = bit_alloc(gres_cnt);
-	gres_js->gres_cnt_node_select[i] = 0;
+	FREE_NULL_BITMAP(gres_js->gres_bit_select[node_inx]);
+	gres_js->gres_bit_select[node_inx] = bit_alloc(gres_cnt);
+	gres_js->gres_cnt_node_select[node_inx] = 0;
 
 	if (gres_id_shared(sock_gres->gres_state_job->config_flags)) {
-		_init_gres_per_bit_select(gres_js, i);
+		_init_gres_per_bit_select(gres_js, node_inx);
 		if (gres_js->gres_per_node) {
 			*rc = _set_shared_node_bits(
-				job_res, i, job_node_inx, sock_gres, job_id,
+				job_res, node_inx, job_node_inx, sock_gres, job_id,
 				(job_ptr->bit_flags & GRES_ENFORCE_BIND));
 		} else if (gres_js->gres_per_task) {
-			*rc = _set_shared_task_bits(i, sock_gres, job_id,
-						   (job_ptr->bit_flags &
-						    GRES_ENFORCE_BIND),
-						   (job_ptr->bit_flags &
-						    GRES_ONE_TASK_PER_SHARING),
-						   tasks_per_node_socket[i]);
+			*rc = _set_shared_task_bits(
+				node_inx, sock_gres, job_id,
+				(job_ptr->bit_flags & GRES_ENFORCE_BIND),
+				(job_ptr->bit_flags &
+				 GRES_ONE_TASK_PER_SHARING),
+				tasks_per_node_socket[node_inx]);
 		} else {
 			error("%s job %u job_spec lacks valid shared GRES counter",
 			      __func__, job_id);
 			*rc = ESLURM_INVALID_GRES;
 		}
 	} else if (gres_js->gres_per_node) {
-		_set_node_bits(job_res, i, job_node_inx, sock_gres, job_id,
-			       tres_mc_ptr);
+		_set_node_bits(job_res, node_inx, job_node_inx, sock_gres,
+			       job_id, tres_mc_ptr);
 	} else if (gres_js->gres_per_socket) {
-		_set_sock_bits(job_res, i, job_node_inx, sock_gres, job_id,
-			       tres_mc_ptr);
+		_set_sock_bits(job_res, node_inx, job_node_inx, sock_gres,
+			       job_id, tres_mc_ptr);
 	} else if (gres_js->gres_per_task) {
-		_set_task_bits(i, sock_gres, job_id, tasks_per_node_socket[i]);
+		_set_task_bits(node_inx, sock_gres, job_id,
+			       tasks_per_node_socket[node_inx]);
 	} else if (gres_js->gres_per_job) {
-		int tmp = _set_job_bits1(job_res, i, job_node_inx, rem_node_cnt,
+		int tmp = _set_job_bits1(job_res, node_inx, job_node_inx, rem_node_cnt,
 					 sock_gres, job_id, tres_mc_ptr,
 					 node_ptr->tpc);
 		if ((*job_fini) != 0)
@@ -1694,7 +1696,7 @@ static int _select_and_set_node(void *x, void *arg)
 		 * _set_job_bits1() updates total_gres counter,
 		 * this handle other cases.
 		 */
-		gres_js->total_gres += gres_js->gres_cnt_node_select[i];
+		gres_js->total_gres += gres_js->gres_cnt_node_select[node_inx];
 	}
 	return 0;
 }
