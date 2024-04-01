@@ -253,14 +253,17 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 
 	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
 
-	if (!try_xrecalloc(args.jobs, args.count, sizeof(*args.jobs)))
-		return ENOMEM;
+	if (args.count > 0) {
+		if (!try_xrecalloc(args.jobs, args.count, sizeof(*args.jobs)))
+			return ENOMEM;
 
-	/* reset count */
-	args.count_only = false;
-	args.count = 0;
+		/* reset count */
+		args.count_only = false;
+		args.count = 0;
 
-	_dump_job_state_locked(&args, filter_jobs_count, filter_jobs_ptr);
+		_dump_job_state_locked(&args, filter_jobs_count,
+				       filter_jobs_ptr);
+	}
 
 	*jobs_pptr = args.jobs;
 	*jobs_count_ptr = args.count;
