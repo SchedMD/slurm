@@ -1734,7 +1734,8 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	node_cnt = bit_size(job_res->node_bitmap);
 	rem_node_cnt = bit_set_count(job_res->node_bitmap);
 	for (i = 0;
-	     ((node_ptr = next_node_bitmap(job_res->node_bitmap, &i)));
+	     ((node_ptr = next_node_bitmap(job_res->node_bitmap, &i)) &&
+	      (rc == SLURM_SUCCESS));
 	     i++) {
 		select_and_set_args.job_node_inx = job_node_inx;
 		select_and_set_args.node_inx = i;
