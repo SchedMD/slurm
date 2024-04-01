@@ -1490,16 +1490,16 @@ void spank_set_remote_options(List opts)
 
 	i = list_iterator_create(option_cache);
 	while ((p = list_next(i))) {
-		char optstr[1024];
+		char *optstr;
 
 		if (!p->found)
 			continue;
 
-		snprintf(optstr, sizeof(optstr), "%s:%s",
-			 p->opt->name, p->plugin->name);
+		optstr = xstrdup_printf("%s:%s", p->opt->name, p->plugin->name);
 
 		job_options_append(opts, OPT_TYPE_SPANK, optstr,
 				   p->optarg);
+		xfree(optstr);
 	}
 	list_iterator_destroy(i);
 	return;
@@ -1525,18 +1525,15 @@ spank_stack_find_option_by_name(struct spank_stack *stack, const char *str)
 {
 	struct spank_plugin_opt *opt = NULL;
 	struct opt_find_args args;
-	char buf[256];
+	char *buf;
 	char *name;
 	List option_cache = stack->option_cache;
 
-	if (strlcpy(buf, str, sizeof(buf)) >= sizeof(buf)) {
-		error("plugin option \"%s\" too big. Ignoring.", str);
-		return (NULL);
-	}
-
-	if (!(name = strchr(buf, ':'))) {
+	buf = xstrdup(str);
+	if (!(name = xstrchr(buf, ':'))) {
 		error("Malformed plugin option \"%s\" received. Ignoring",
 		      str);
+		xfree(buf);
 		return (NULL);
 	}
 
@@ -1548,17 +1545,16 @@ spank_stack_find_option_by_name(struct spank_stack *stack, const char *str)
 	if (option_cache) {
 		opt = list_find_first(option_cache, (ListFindF) _opt_find,
 				      &args);
-		if (opt == NULL) {
+		if (opt == NULL)
 			warning("SPANK plugin \"%s\" option \"%s\" not found",
 				name, buf);
-			return (NULL);
-		}
 	} else {
 		warning("no SPANK plugin found to process option \"%s\"",
 			name);
-		return (NULL);
 	}
 
+	/* opt is NULL on warning */
+	xfree(buf);
 	return (opt);
 }
 
