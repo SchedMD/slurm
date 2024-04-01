@@ -2931,6 +2931,14 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 {
 	int cpus_per_task = 0, i;
 	int num_tasks;
+	char *cpt = NULL;
+
+	if ((cpt = xstrstr(step_specs->tres_per_task, "cpu:"))) {
+		cpus_per_task = slurm_atoul(cpt + 4);
+		if (cpus_per_task < 0)
+			cpus_per_task = 0;
+		return cpus_per_task;
+	}
 
 	if (step_specs->cpus_per_tres)
 		return 0;
