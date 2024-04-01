@@ -161,6 +161,11 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
+		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add accounts.");
+			return ESLURM_ACCESS_DENIED;
+		}
+
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
 
@@ -304,6 +309,13 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
+
+		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+			char *ret_str = xstrdup("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add accounts.");
+			error("%s", ret_str);
+			errno = ESLURM_ACCESS_DENIED;
+			return ret_str;
+		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
@@ -752,6 +764,12 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	if (slurm_conf.private_data & PRIVATE_DATA_ACCOUNTS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			if (slurmdbd_conf->flags &
+			    DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+				error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add accounts.");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
 			if (!is_user_any_coord(mysql_conn, &user)) {
 				error("Only admins/coordinators "
 				      "can look at account usage");

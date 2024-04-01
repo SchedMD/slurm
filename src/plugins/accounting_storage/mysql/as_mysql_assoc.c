@@ -1476,6 +1476,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	uint32_t rpc_version = 0;
 	bool is_coord = false;
+	bool disable_coord_dbd = false;
 
 	xassert(result);
 
@@ -1484,6 +1485,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 	vals = xstrdup(sent_vals);
 
+	disable_coord_dbd = slurmdbd_conf->flags &
+		DBD_CONF_FLAG_DISABLE_COORD_DBD;
 	rpc_version = get_cluster_version(mysql_conn, cluster_name);
 	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
@@ -1522,6 +1525,11 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if (!is_admin && !same_user) {
 			slurmdb_coord_rec_t *coord = NULL;
 
+			if (disable_coord_dbd) {
+				error("Coordinator privilege revoked with DisableCoordDBD, only admins can modify accounts.");
+				rc = ESLURM_ACCESS_DENIED;
+				goto end_it;
+			}
 			if (!user->coord_accts) { // This should never
 				// happen
 				error("We are here with no coord accts.");
@@ -2044,6 +2052,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	char *user_name = NULL;
 	uint32_t smallest_lft = 0xFFFFFFFF;
 	bool process_skipped = false;
+	bool disable_coord_dbd = false;
 
 	xassert(result);
 	if (*jobs_running || *default_account) {
@@ -2051,12 +2060,20 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 		goto skip_process;
 	}
 
+	disable_coord_dbd = slurmdbd_conf->flags &
+		DBD_CONF_FLAG_DISABLE_COORD_DBD;
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_assoc_rec_t *rem_assoc = NULL;
 		uint32_t lft;
 
 		if (!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
+
+			if (disable_coord_dbd) {
+				error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can modify accounts.");
+				rc = ESLURM_ACCESS_DENIED;
+				goto end_it;
+			}
 			if (!user->coord_accts) { // This should never
 				// happen
 				error("We are here with no coord accts");
@@ -3677,6 +3694,11 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurmdb_coord_rec_t *coord = NULL;
 		slurmdb_assoc_rec_t *object = NULL;
 
+		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add associations.");
+			return ESLURM_ACCESS_DENIED;
+		}
+
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
 
@@ -3954,6 +3976,13 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 					    SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
+		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add associations.");
+			assoc_mgr_unlock(&locks);
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
+
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
 
@@ -4085,6 +4114,12 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!(is_admin = is_user_min_admin_level(
 		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 		if (is_user_any_coord(mysql_conn, &user)) {
+			if (slurmdbd_conf->flags &
+			    DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+				error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can modify associations.");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
 			if (assoc->parent_acct) {
 				rc = _foreach_is_coord(assoc->parent_acct,
 						       &user);
@@ -4296,6 +4331,11 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!(is_admin = is_user_min_admin_level(
 		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove associations.");
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/coordinators can "
 			      "remove associations");

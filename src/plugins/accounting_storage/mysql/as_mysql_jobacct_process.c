@@ -519,7 +519,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			xstrcat(extra, " && ");
 		xstrfmtcat(extra, "((%s.lineage like '%%/0-%s/%%')",
 			   prefix, user->name);
-		if (user->coord_accts && list_count(user->coord_accts)) {
+		if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) &&
+		    user->coord_accts && list_count(user->coord_accts)) {
 			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {

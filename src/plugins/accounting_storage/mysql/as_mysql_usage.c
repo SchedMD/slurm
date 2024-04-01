@@ -850,6 +850,12 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				goto bad_user;
 			}
 
+			if (slurmdbd_conf->flags &
+			    DBD_CONF_FLAG_DISABLE_COORD_DBD) {
+				debug4("Coordinator privilege revoked with DisableCoordDBD.");
+				goto bad_user;
+			}
+
 			/* Existence of user.coord_accts is checked in
 			   is_user_any_coord.
 			*/
