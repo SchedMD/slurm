@@ -1027,6 +1027,68 @@ static uint16_t _get_threads_per_core(uint16_t step_threads_per_core,
 	return tpc;
 }
 
+static int _cmp_cpu_counts(const void *num1, const void *num2) {
+	uint16_t cpu1 = *(uint16_t *) num1;
+	uint16_t cpu2 = *(uint16_t *) num2;
+
+	if (cpu1 > cpu2)
+		return -1;
+	else if (cpu1 < cpu2)
+		return 1;
+	return 0;
+}
+
+static void _set_max_num_tasks(job_step_create_request_msg_t *step_spec,
+			       job_record_t *job_ptr,
+			       bitstr_t *node_bitmap,
+			       int cpus_per_task)
+{
+	int j = 0;
+	int k = 0;
+	uint32_t avail_cnt, num_nodes;
+	uint16_t *cpus;
+	uint32_t num_tasks = 0;
+	uint16_t tpc = _get_threads_per_core(step_spec->threads_per_core,
+					     job_ptr);
+
+	xassert(node_bitmap);
+	xassert(cpus_per_task);
+
+	avail_cnt = bit_set_count(node_bitmap);
+	num_nodes = MIN(avail_cnt, step_spec->max_nodes);
+	cpus = xcalloc(avail_cnt, sizeof(*cpus));
+	for (int i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
+		j = bit_ffs_from_bit(job_ptr->job_resrcs->node_bitmap, j);
+		if (j < 0)
+			break;
+		if (!bit_test(node_bitmap, j)) {
+			j++;
+			continue;
+		}
+
+		if (tpc != NO_VAL16) {
+			cpus[k] = ROUNDUP(job_ptr->job_resrcs->cpus[i],
+					  node_record_table_ptr[j]->tpc);
+			cpus[k] *= tpc;
+		} else
+			cpus[k] = job_ptr->job_resrcs->cpus[i];
+
+		j++;
+		k++;
+	}
+
+	if (num_nodes < avail_cnt)
+		qsort(cpus, avail_cnt, sizeof(*cpus), _cmp_cpu_counts);
+
+	for (int i = 0; i < num_nodes; i++) {
+		num_tasks += cpus[i] / cpus_per_task;
+	}
+	step_spec->num_tasks = num_tasks;
+	step_spec->cpu_count = num_tasks * cpus_per_task;
+
+	xfree(cpus);
+}
+
 /*
  * _pick_step_nodes - select nodes for a job step that satisfy its requirements
  *	we satisfy the super-set of constraints.
@@ -1378,6 +1440,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	}
 
 	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
+		if ((step_spec->num_tasks == NO_VAL) && nodes_avail) {
+			_set_max_num_tasks(step_spec, job_ptr, nodes_avail,
+					   cpus_per_task);
+		}
+
 		xfree(usable_cpu_cnt);
 		FREE_NULL_BITMAP(select_nodes_avail);
 		return nodes_avail;
@@ -1525,6 +1592,28 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 temp1, temp2, temp3);
 		xfree(temp1);
 		xfree(temp2);
+	}
+
+	if (step_spec->num_tasks == NO_VAL) {
+		uint32_t cnt = 0;
+		bitstr_t *node_bitmap = NULL;
+
+		if ((step_spec->flags & SSF_OVERLAP_FORCE) && nodes_avail) {
+			cnt = bit_set_count(nodes_avail);
+			node_bitmap = nodes_avail;
+		} else if (nodes_idle) {
+			cnt = bit_set_count(nodes_idle);
+			node_bitmap = nodes_idle;
+		}
+		if (cnt < step_spec->min_nodes) {
+			log_flag(STEPS, "%s: Step requested more nodes (%u) than are available (%d), deferring step until enough nodes are available.",
+				 __func__, step_spec->min_nodes, cnt);
+			*return_code = ESLURM_NODES_BUSY;
+			goto cleanup;
+		}
+
+		_set_max_num_tasks(step_spec, job_ptr, node_bitmap,
+				   cpus_per_task);
 	}
 
 	/*
@@ -2938,6 +3027,8 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 	}
 
 	if (step_specs->cpus_per_tres)
+		return 0;
+	if (step_specs->num_tasks == NO_VAL)
 		return 0;
 
 	if ((step_specs->cpu_count == 0) ||

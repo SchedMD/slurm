@@ -143,7 +143,8 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	int cpu_cnt = 0, cpu_inx = 0, i, j;
 	slurm_step_layout_t *step_layout = NULL;
 
-	if ((node_cnt <= 0) || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
+	if (!node_cnt || !tlist ||
+	    (!cpus_per_node && (!task_cnt || (task_cnt == NO_VAL)))) {
 		error("there is a problem with your fake_step_layout request\n"
 		      "node_cnt = %u, task_cnt = %u, tlist = %s",
 		      node_cnt, task_cnt, tlist);

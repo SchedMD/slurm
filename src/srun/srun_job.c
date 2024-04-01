@@ -200,6 +200,10 @@ job_create_noalloc(void)
 
 	if (job != NULL)
 		job_update_io_fnames(job, opt_local);
+	if (job && (job->ntasks == NO_VAL)) {
+		job->ntasks = ai->nnodes;
+		job->cpu_count = opt_local->cpus_per_task * job->ntasks;
+	}
 
 error:
 	xfree(ai);
@@ -853,6 +857,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	uint32_t het_job_ntasks = 0, task_offset = 0;
 	bool update_het_nnodes = false;
 	uint32_t updated_het_nnodes;
+	uint32_t updated_het_ntasks = 0;
 
 	job_step_create_response_msg_t *step_resp;
 	char *resv_ports = NULL;
@@ -883,7 +888,10 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				job->step_id.step_het_comp = NO_VAL;
 
 			het_job_nnodes += job->nhosts;
-			het_job_ntasks += job->ntasks;
+			if (job->ntasks == NO_VAL)
+				het_job_ntasks = NO_VAL;
+			else if (het_job_ntasks != NO_VAL)
+				het_job_ntasks += job->ntasks;
 		}
 
 		updated_het_nnodes = het_job_nnodes;
@@ -937,12 +945,21 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				update_het_nnodes = true;
 				updated_het_nnodes -= old_nhosts - job->nhosts;
 			}
+
+			if (het_job_ntasks == NO_VAL)
+				updated_het_ntasks += job->ntasks;
 		}
 
 		if (update_het_nnodes) {
 			list_iterator_reset(job_iter);
 			while ((job = list_next(job_iter))) {
 				job->het_job_nnodes = updated_het_nnodes;
+			}
+		}
+		if (updated_het_ntasks) {
+			list_iterator_reset(job_iter);
+			while ((job = list_next(job_iter))) {
+				job->het_job_ntasks = updated_het_ntasks;
 			}
 		}
 
@@ -1646,13 +1663,9 @@ static void _set_ntasks(allocation_info_t *ai, slurm_opt_t *opt_local)
 		cnt = ai->nnodes * opt_local->ntasks_per_node;
 		opt_local->ntasks_set = true;	/* implicit */
 	} else if (opt_local->cpus_set) {
-		int i;
-
-		for (i = 0; i < ai->num_cpu_groups; i++)
-			cnt += (ai->cpu_count_reps[i] *
-				(ai->cpus_per_node[i] /
-				 opt_local->cpus_per_task));
+		opt_local->ntasks = NO_VAL;
 		opt_local->ntasks_set = true;	/* implicit */
+		return;
 	}
 
 	opt_local->ntasks = (cnt < ai->nnodes) ? ai->nnodes : cnt;
@@ -1718,9 +1731,13 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	 * requested step (we might very well use less, especially if
 	 * --exclusive is used).  Else get the total for the allocation given.
 	 */
-	if (opt_local->cpus_set)
-		job->cpu_count = opt_local->ntasks * opt_local->cpus_per_task;
-	else {
+	if (opt_local->cpus_set) {
+		if (opt_local->ntasks == NO_VAL)
+			job->cpu_count = NO_VAL;
+		else
+			job->cpu_count = opt_local->ntasks *
+				opt_local->cpus_per_task;
+	} else {
 		for (i = 0; i < ainfo->num_cpu_groups; i++) {
 			job->cpu_count += ainfo->cpus_per_node[i] *
 				ainfo->cpu_count_reps[i];
