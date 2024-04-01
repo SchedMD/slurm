@@ -83,6 +83,7 @@ generated_html = \
 	select_design.html \
 	selinux.html \
 	site_factor.html \
+	slinky.html \
 	slurm.html \
 	slurm_ug_agenda.html \
 	topology.html \

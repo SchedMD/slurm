@@ -1,0 +1,26 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Slinky &mdash; Slurm and Kubernetes</h1>
+
+<h2>Overview</h2>
+
+<p><a href="https://www.schedmd.com/slinky/why-slinky/">Slinky&trade;</a> is
+SchedMD's set of projects to enable interoperability between Slurm and <a
+href="https://kubernetes.io/">Kubernetes</a>.</p>
+
+<h3>Links</h3>
+
+<p>
+The <a href="https://github.com/SlinkyProject">SlinkyProject</a> on GitHub
+hosts the associated Slinky components:
+<ul>
+<li>The Slurm Operator provides for management and auto-scaling of Slurm clusters running as Kubernetes pods: <a href="https://github.com/SlinkyProject/slurm-operator">slurm-operator</a>
+<li>Slurm REST client Go library, shared by the Slinky projects: <a href="https://github.com/SlinkyProject/slurm-exporter">slurm-exporter</a>
+<li>Slurm Prometheus exporter, used to gather metrics for the Slurm Operator: <a href="https://github.com/SlinkyProject/slurm-client">slurm-client</a>
+<li>Docker files for the associated container images: <a href="https://github.com/SlinkyProject/containers">containers</a>
+</ul>
+</p>
+
+<p style="text-align:center;">Last modified 13 November 2024</p>
+
+<!--#include virtual="footer.txt"-->
