@@ -49,6 +49,18 @@
 
 static int64_t *nonalloc_gres = NULL;
 
+typedef struct {
+	job_record_t *job_ptr;
+	int job_node_inx;
+	int *job_fini;
+	int node_inx;
+	node_record_t *node_ptr;
+	int *rc;
+	int rem_node_cnt;
+	gres_mc_data_t *tres_mc_ptr;
+	uint32_t ***tasks_per_node_socket;
+} select_and_set_args_t;
+
 static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt);
 
 static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
@@ -1552,6 +1564,141 @@ static int _get_gres_node_cnt(gres_node_state_t *gres_ns, int node_inx)
 	return gres_cnt;
 }
 
+static int _select_and_set_node(void *x, void *arg)
+{
+	gres_job_state_t *gres_js;
+	gres_node_state_t *gres_ns;
+	struct job_resources *job_res;
+	int node_cnt, gres_cnt;
+	uint32_t job_id;
+
+	node_record_t *node_ptr;
+	job_record_t *job_ptr;
+	gres_mc_data_t *tres_mc_ptr;
+	uint32_t **tasks_per_node_socket;
+	int i, job_node_inx, rem_node_cnt;
+	int *job_fini, *rc;
+
+	sock_gres_t *sock_gres = x;
+	select_and_set_args_t *args = arg;
+
+	node_ptr = args->node_ptr;
+	job_ptr = args->job_ptr;
+	tres_mc_ptr = args->tres_mc_ptr;
+	i = args->node_inx;
+	job_node_inx = args->job_node_inx;
+	rem_node_cnt = args->rem_node_cnt;
+	job_fini = args->job_fini;
+	rc = args->rc;
+
+	job_res = job_ptr->job_resrcs;
+	job_id = job_ptr->job_id;
+	node_cnt = bit_size(job_res->node_bitmap);
+	gres_js = sock_gres->gres_state_job->gres_data;
+	gres_ns = sock_gres->gres_state_node->gres_data;
+	if (!gres_js || !gres_ns)
+		return 0;
+	if (gres_js->gres_per_task && /* Data needed */
+	    !*args->tasks_per_node_socket) { /* Not built yet */
+		*args->tasks_per_node_socket = _build_tasks_per_node_sock(
+			job_res, job_ptr->details->overcommit, tres_mc_ptr);
+	}
+
+	tasks_per_node_socket = *args->tasks_per_node_socket;
+
+	if (gres_js->total_node_cnt == 0) {
+		gres_js->total_node_cnt = node_cnt;
+		gres_js->total_gres = 0;
+	}
+	if (!gres_js->gres_cnt_node_select) {
+		gres_js->gres_cnt_node_select = xcalloc(node_cnt,
+							sizeof(uint64_t));
+	}
+
+	/* Reinitialize counter */
+	if (i == bit_ffs(job_res->node_bitmap))
+		gres_js->total_gres = 0;
+
+	if (gres_ns->topo_cnt == 0) {
+		/* No topology, just set a count */
+		if (gres_js->gres_per_node) {
+			gres_js->gres_cnt_node_select[i] =
+				gres_js->gres_per_node;
+		} else if (gres_js->gres_per_socket) {
+			gres_js->gres_cnt_node_select[i] =
+				gres_js->gres_per_socket;
+			gres_js->gres_cnt_node_select[i] *= _get_sock_cnt(
+				job_res, i, job_node_inx);
+		} else if (gres_js->gres_per_task) {
+			gres_js->gres_cnt_node_select[i] =
+				gres_js->gres_per_task;
+			gres_js->gres_cnt_node_select[i] *= _get_task_cnt_node(
+				tasks_per_node_socket[i],
+				node_ptr->tot_sockets);
+		} else if (gres_js->gres_per_job) {
+			gres_js->gres_cnt_node_select[i] = _get_job_cnt(
+				sock_gres, gres_ns, rem_node_cnt);
+		}
+		gres_js->total_gres += gres_js->gres_cnt_node_select[i];
+		return 0;
+	}
+
+	/* Working with topology, need to pick specific GRES */
+	if (!gres_js->gres_bit_select) {
+		gres_js->gres_bit_select = xcalloc(node_cnt,
+						   sizeof(bitstr_t *));
+	}
+	gres_cnt = _get_gres_node_cnt(gres_ns, job_node_inx);
+	FREE_NULL_BITMAP(gres_js->gres_bit_select[i]);
+	gres_js->gres_bit_select[i] = bit_alloc(gres_cnt);
+	gres_js->gres_cnt_node_select[i] = 0;
+
+	if (gres_id_shared(sock_gres->gres_state_job->config_flags)) {
+		_init_gres_per_bit_select(gres_js, i);
+		if (gres_js->gres_per_node) {
+			*rc = _set_shared_node_bits(
+				job_res, i, job_node_inx, sock_gres, job_id,
+				(job_ptr->bit_flags & GRES_ENFORCE_BIND));
+		} else if (gres_js->gres_per_task) {
+			*rc = _set_shared_task_bits(i, sock_gres, job_id,
+						   (job_ptr->bit_flags &
+						    GRES_ENFORCE_BIND),
+						   (job_ptr->bit_flags &
+						    GRES_ONE_TASK_PER_SHARING),
+						   tasks_per_node_socket[i]);
+		} else {
+			error("%s job %u job_spec lacks valid shared GRES counter",
+			      __func__, job_id);
+			*rc = ESLURM_INVALID_GRES;
+		}
+	} else if (gres_js->gres_per_node) {
+		_set_node_bits(job_res, i, job_node_inx, sock_gres, job_id,
+			       tres_mc_ptr);
+	} else if (gres_js->gres_per_socket) {
+		_set_sock_bits(job_res, i, job_node_inx, sock_gres, job_id,
+			       tres_mc_ptr);
+	} else if (gres_js->gres_per_task) {
+		_set_task_bits(i, sock_gres, job_id, tasks_per_node_socket[i]);
+	} else if (gres_js->gres_per_job) {
+		int tmp = _set_job_bits1(job_res, i, job_node_inx, rem_node_cnt,
+					 sock_gres, job_id, tres_mc_ptr,
+					 node_ptr->tpc);
+		if ((*job_fini) != 0)
+			(*job_fini) = tmp;
+	} else {
+		error("%s job %u job_spec lacks GRES counter", __func__,
+		      job_id);
+	}
+	if ((*job_fini) == -1) {
+		/*
+		 * _set_job_bits1() updates total_gres counter,
+		 * this handle other cases.
+		 */
+		gres_js->total_gres += gres_js->gres_cnt_node_select[i];
+	}
+	return 0;
+}
+
 /*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
@@ -1565,15 +1712,20 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 {
 	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
-	gres_job_state_t *gres_js;
-	gres_node_state_t *gres_ns;
-	int i, job_node_inx = -1, gres_cnt;
+	int i, job_node_inx = 0;
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL, job_id;
 	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 	struct job_resources *job_res = job_ptr->job_resrcs;
+	select_and_set_args_t select_and_set_args = {
+		.job_ptr = job_ptr,
+		.tres_mc_ptr = tres_mc_ptr,
+		.tasks_per_node_socket = &tasks_per_node_socket,
+		.job_fini = &job_fini,
+		.rc = &rc,
+	};
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
@@ -1581,129 +1733,19 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	job_id = job_ptr->job_id;
 	node_cnt = bit_size(job_res->node_bitmap);
 	rem_node_cnt = bit_set_count(job_res->node_bitmap);
-	for (i = 0; (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+	for (i = 0;
+	     ((node_ptr = next_node_bitmap(job_res->node_bitmap, &i)));
 	     i++) {
-		sock_gres_iter =
-			list_iterator_create(sock_gres_list[++job_node_inx]);
-		while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))){
-			gres_js = sock_gres->gres_state_job->gres_data;
-			gres_ns = sock_gres->gres_state_node->gres_data;
-			if (!gres_js || !gres_ns)
-				continue;
-			if (gres_js->gres_per_task &&	/* Data needed */
-			    !tasks_per_node_socket) {	/* Not built yet */
-				tasks_per_node_socket =
-					_build_tasks_per_node_sock(
-						job_res,
-						job_ptr->details->overcommit,
-						tres_mc_ptr);
-			}
-			if (gres_js->total_node_cnt == 0) {
-				gres_js->total_node_cnt = node_cnt;
-				gres_js->total_gres = 0;
-			}
-			if (!gres_js->gres_cnt_node_select) {
-				gres_js->gres_cnt_node_select =
-					xcalloc(node_cnt, sizeof(uint64_t));
-			}
+		select_and_set_args.job_node_inx = job_node_inx;
+		select_and_set_args.node_inx = i;
+		select_and_set_args.node_ptr = node_ptr;
+		select_and_set_args.rem_node_cnt = rem_node_cnt;
 
-			/* Reinitialize counter */
-			if (i == bit_ffs(job_res->node_bitmap))
-				gres_js->total_gres = 0;
-
-			if (gres_ns->topo_cnt == 0) {
-				/* No topology, just set a count */
-				if (gres_js->gres_per_node) {
-					gres_js->gres_cnt_node_select[i] =
-						gres_js->gres_per_node;
-				} else if (gres_js->gres_per_socket) {
-					gres_js->gres_cnt_node_select[i] =
-						gres_js->gres_per_socket;
-					gres_js->gres_cnt_node_select[i] *=
-						_get_sock_cnt(job_res, i,
-							      job_node_inx);
-				} else if (gres_js->gres_per_task) {
-					gres_js->gres_cnt_node_select[i] =
-						gres_js->gres_per_task;
-					gres_js->gres_cnt_node_select[i] *=
-						_get_task_cnt_node(
-							tasks_per_node_socket[i],
-							node_ptr->tot_sockets);
-				} else if (gres_js->gres_per_job) {
-					gres_js->gres_cnt_node_select[i] =
-						_get_job_cnt(sock_gres,
-							     gres_ns,
-							     rem_node_cnt);
-				}
-				gres_js->total_gres +=
-					gres_js->gres_cnt_node_select[i];
-				continue;
-			}
-
-			/* Working with topology, need to pick specific GRES */
-			if (!gres_js->gres_bit_select) {
-				gres_js->gres_bit_select =
-					xcalloc(node_cnt, sizeof(bitstr_t *));
-			}
-			gres_cnt = _get_gres_node_cnt(gres_ns, job_node_inx);
-			FREE_NULL_BITMAP(gres_js->gres_bit_select[i]);
-			gres_js->gres_bit_select[i] = bit_alloc(gres_cnt);
-			gres_js->gres_cnt_node_select[i] = 0;
-
-			if (gres_id_shared(
-				    sock_gres->gres_state_job->config_flags)) {
-				_init_gres_per_bit_select(gres_js, i);
-				if (gres_js->gres_per_node) {
-					rc = _set_shared_node_bits(
-						job_res, i, job_node_inx,
-						sock_gres, job_id,
-						(job_ptr->bit_flags &
-						 GRES_ENFORCE_BIND));
-				} else if (gres_js->gres_per_task) {
-					rc = _set_shared_task_bits(
-						i, sock_gres, job_id,
-						(job_ptr->bit_flags &
-						 GRES_ENFORCE_BIND),
-						(job_ptr->bit_flags &
-						 GRES_ONE_TASK_PER_SHARING),
-						tasks_per_node_socket[i]);
-				} else {
-					error("%s job %u job_spec lacks valid shared GRES counter",
-					      __func__, job_id);
-					rc = ESLURM_INVALID_GRES;
-				}
-			} else if (gres_js->gres_per_node) {
-				_set_node_bits(job_res, i, job_node_inx,
-					       sock_gres, job_id, tres_mc_ptr);
-			} else if (gres_js->gres_per_socket) {
-				_set_sock_bits(job_res, i, job_node_inx,
-					       sock_gres, job_id, tres_mc_ptr);
-			} else if (gres_js->gres_per_task) {
-				_set_task_bits(i, sock_gres, job_id,
-					       tasks_per_node_socket[i]);
-			} else if (gres_js->gres_per_job) {
-				bool tmp = _set_job_bits1(
-					job_res, i, job_node_inx,
-					rem_node_cnt, sock_gres,
-					job_id, tres_mc_ptr,
-					node_ptr->tpc);
-				if (job_fini != 0)
-					job_fini = tmp;
-			} else {
-				error("%s job %u job_spec lacks GRES counter",
-				      __func__, job_id);
-			}
-			if (job_fini == -1) {
-				/*
-				 * _set_job_bits1() updates total_gres counter,
-				 * this handle other cases.
-				 */
-				gres_js->total_gres +=
-					gres_js->gres_cnt_node_select[i];
-			}
-		}
+		(void) list_for_each(sock_gres_list[job_node_inx],
+				     _select_and_set_node,
+				     &select_and_set_args);
+		job_node_inx++;
 		rem_node_cnt--;
-		list_iterator_destroy(sock_gres_iter);
 	}
 
 	if (job_fini == 0) {
