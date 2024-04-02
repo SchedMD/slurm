@@ -2525,6 +2525,8 @@ extern char *job_share_string(uint16_t shared)
 		return "USER";
 	else if (shared == JOB_SHARED_MCS)
 		return "MCS";
+	else if (shared == JOB_SHARED_TOPO)
+		return "TOPO";
 	else
 		return "OK";
 }
@@ -6232,6 +6234,8 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 		shared = JOB_SHARED_USER;	/* User --exclusive=user */
 	else if (detail_ptr->whole_node & WHOLE_NODE_MCS)
 		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
+	else if (detail_ptr->whole_node & WHOLE_TOPO)
+		shared = JOB_SHARED_TOPO;	/* User --exclusive=topo */
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */
 		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)

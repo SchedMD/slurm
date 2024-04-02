@@ -1550,6 +1550,7 @@ typedef bitstr_t bitoff_t;
 #define JOB_SHARED_OK           0x0001
 #define JOB_SHARED_USER         0x0002
 #define JOB_SHARED_MCS          0x0003
+#define JOB_SHARED_TOPO 0x0004
 
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS

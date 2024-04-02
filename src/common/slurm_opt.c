@@ -1632,6 +1632,8 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 		opt->shared = JOB_SHARED_USER;
 	} else if (!xstrcasecmp(arg, "mcs")) {
 		opt->shared = JOB_SHARED_MCS;
+	} else if (!xstrcasecmp(arg, "topo")) {
+		opt->shared = JOB_SHARED_TOPO;
 	} else {
 		error("Invalid --exclusive specification");
 		return SLURM_ERROR;
@@ -1676,6 +1678,8 @@ static int arg_set_data_exclusive(slurm_opt_t *opt, const data_t *arg,
 			opt->shared = JOB_SHARED_USER;
 		} else if (!xstrcasecmp(str, "mcs")) {
 			opt->shared = JOB_SHARED_MCS;
+		} else if (!xstrcasecmp(str, "topo")) {
+			opt->shared = JOB_SHARED_TOPO;
 		} else {
 			rc = SLURM_ERROR;
 			ADD_DATA_ERROR("Invalid exclusive specification", rc);
@@ -1695,6 +1699,8 @@ static char *arg_get_exclusive(slurm_opt_t *opt)
 		return xstrdup("user");
 	if (opt->shared == JOB_SHARED_MCS)
 		return xstrdup("mcs");
+	if (opt->shared == JOB_SHARED_TOPO)
+		return xstrdup("topo");
 	if (opt->shared == NO_VAL16)
 		return xstrdup("unset");
 	return NULL;

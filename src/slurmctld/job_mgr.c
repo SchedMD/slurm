@@ -8433,6 +8433,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	} else if (job_desc->shared == JOB_SHARED_MCS) {
 		detail_ptr->share_res  = NO_VAL8;
 		detail_ptr->whole_node = WHOLE_NODE_MCS;
+	} else if (job_desc->shared == JOB_SHARED_TOPO) {
+		detail_ptr->share_res  = NO_VAL8;
+		detail_ptr->whole_node = WHOLE_TOPO;
 	} else {
 		detail_ptr->share_res  = NO_VAL8;
 		detail_ptr->whole_node = 0;
