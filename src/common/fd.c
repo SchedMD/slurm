@@ -260,7 +260,7 @@ extern int wait_fd_readable(int fd, int time_limit)
 			else	/* Exception */
 				return -1;
 		} else if (rc == 0) {
-			error("Timeout waiting for slurmstepd");
+			error("Timeout waiting for socket");
 			return -1;
 		} else if (errno != EINTR) {
 			error("poll(): %m");
