@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- squeue - Print header on empty reponse to `--only-job-state`.
  -- Fix slurmrestd not ending job properly when xauth is not present and a x11
     job is sent.
+ -- Add experimental job state caching with
+    SchedulerParameters=enable_job_state_cache to speed up querying job states
+    with squeue --only-job-state.
 
 * Changes in Slurm 23.11.5
 ==========================
