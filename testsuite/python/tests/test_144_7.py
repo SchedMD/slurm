@@ -486,7 +486,7 @@ def test_gpus_per_node_with_gpus_per_task_3():
 
 
 def test_gpus_per_node_with_gpus_per_task_5():
-    " Test --gpus-per-task option by job step " ""
+    """Test --gpus-per-task option by job step"""
     job_gpus = 4
     step_gpus = 2
 
@@ -522,7 +522,7 @@ def test_gpus_per_node_with_gpus_per_task_5():
         fatal=True,
     )
 
-    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", timeout=30, fatal=True)
     atf.wait_for_file(job_output_file, fatal=True)
 
     output = atf.run_command_output(f"cat {job_output_file}", fatal=True)
