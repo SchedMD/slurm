@@ -394,4 +394,11 @@ do {				\
 #define XSTRINGIFY(s) XSTRINGIFY2(s)
 #define XSTRINGIFY2(s) #s
 
+/* Macro to only include the code inside of ONLY_DEBUG if !NDEBUG */
+#ifndef NDEBUG
+#define ONLY_DEBUG(...) __VA_ARGS__
+#else
+#define ONLY_DEBUG(...)
+#endif
+
 #endif /* !_MACROS_H */

@@ -1105,6 +1105,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 			jobid_hostset = hostset_create(tmp_str);
 		job_ptr->het_job_id     = het_job_id;
 		job_ptr->het_job_offset = het_job_offset++;
+		on_job_state_change(job_ptr, job_ptr->job_state);
 		list_append(submit_job_list, job_ptr);
 		inx++;
 	}
@@ -3987,6 +3988,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_ptr->het_job_id     = het_job_id;
 			job_ptr->het_job_offset = het_job_offset++;
 			job_ptr->batch_flag      = 1;
+			on_job_state_change(job_ptr, job_ptr->job_state);
 			list_append(submit_job_list, job_ptr);
 		}
 

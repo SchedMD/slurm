@@ -173,6 +173,8 @@ libcommon_la_SOURCES =				\
 	x11_util.h				\
 	xassert.c				\
 	xassert.h				\
+	xahash.c				\
+	xahash.h				\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\

@@ -4699,6 +4699,15 @@ Glob patterns (See \fBglob\fR (7)) are not supported.
 .IP
 
 .TP
+\fBenable_job_state_cache\fR
+Enable slurmctld to cache all job states to allow
+`\fBsqueue\fR --only-state-only` to be able to query job states with out
+grabbing the global job read lock which can slow down scheduling.
+\fBWARNING\fR: This is considered experimental functionality and should not be
+used in production.
+.IP
+
+.TP
 \fBidle_on_node_suspend\fR
 Mark nodes as idle, regardless of current state, when suspending nodes with
 \fBSuspendProgram\fR so that nodes will be eligible to be resumed at a later

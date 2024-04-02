@@ -923,6 +923,9 @@ int dump_all_job_state(void)
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
+
+	verify_job_state_cache_synced();
+
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);
@@ -2519,6 +2522,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 				    &job_ptr->gres_used);
 	job_ptr->clusters     = clusters;
 	job_ptr->fed_details  = job_fed_details;
+
+	on_job_state_change(job_ptr, job_ptr->job_state);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2958,6 +2963,8 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 	job_record_t *job_ptr, **job_pptr;
 
 	xassert(job_entry);
+
+	on_job_state_change(job_entry, NO_VAL);
 
 	switch (type) {
 	case JOB_HASH_JOB:
@@ -4617,6 +4624,7 @@ extern void rehash_jobs(void)
 					   sizeof(job_record_t *));
 		job_array_hash_t = xcalloc(hash_table_size,
 					   sizeof(job_record_t *));
+		setup_job_state_hash(hash_table_size);
 	} else if (hash_table_size < (slurm_conf.max_job_cnt / 2)) {
 		/* If the MaxJobCount grows by too much, the hash table will
 		 * be ineffective without rebuilding. We don't presently bother
@@ -4939,6 +4947,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 							   false);
 	}
 
+	on_job_state_change(job_ptr, job_ptr->job_state);
+	on_job_state_change(job_ptr_pend, job_ptr_pend->job_state);
+
 	return job_ptr_pend;
 }
 
@@ -4996,6 +5007,8 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_STEP=%d", step_task_id);
 	}
+
+	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
 static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
@@ -8240,6 +8253,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		job_desc->shared = 0;
 
 fini:
+	on_job_state_change(job_ptr, NO_VAL);
 	FREE_NULL_LIST(job_ptr->details->feature_list);
 	FREE_NULL_LIST(job_ptr->details->prefer_list);
 	xfree(job_ptr->details);
@@ -10171,7 +10185,6 @@ extern void job_mgr_list_delete_job(void *job_entry)
 		return;
 
 	xassert (job_ptr->magic == JOB_MAGIC);
-	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
 	_delete_job_common(job_ptr);
 
@@ -10274,6 +10287,8 @@ extern void job_mgr_list_delete_job(void *job_entry)
 		job_count -= job_array_size;
 	}
 	job_ptr->job_id = 0;
+	/* make sure we don't delete record twice */
+	job_ptr->magic = ~JOB_MAGIC;
 	xfree(job_ptr);
 }
 
