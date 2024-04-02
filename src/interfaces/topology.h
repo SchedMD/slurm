@@ -116,6 +116,7 @@ extern int topology_g_build_config(void);
  */
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
 
+extern int topology_g_whole_topo(bitstr_t *node_mask);
 /*
  * topology_g_generate_node_ranking  -  populate node_rank fields
  * NOTE: This operation is only supported by those topology plugins for

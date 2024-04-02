@@ -100,6 +100,11 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 	return common_topo_choose_nodes(topo_eval);
 }
 
+extern int topology_p_whole_topo(bitstr_t *node_mask)
+{
+	return SLURM_SUCCESS;
+}
+
 extern bool topology_p_generate_node_ranking(void)
 {
 	return false;
