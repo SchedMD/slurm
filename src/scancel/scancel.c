@@ -123,6 +123,106 @@ main (int argc, char **argv)
 	exit(rc);
 }
 
+static uint16_t _init_flags(char **job_type)
+{
+	uint16_t flags = 0;
+
+	if (opt.batch) {
+		flags |= KILL_JOB_BATCH;
+		if (job_type)
+			*job_type = "batch ";
+	}
+
+	/*
+	 * With the introduction of the ScronParameters=explicit_scancel option,
+	 * scancel requests for a cron job should be rejected unless the --cron
+	 * flag is specified.
+	 * To prevent introducing this option from influencing anything other
+	 * than user requests, it has been set up so that when KILL_NO_CRON is
+	 * set when explicit_scancel is also set, the request will be rejected.
+	 */
+	if (!opt.cron)
+		flags |= KILL_NO_CRON;
+
+	if (opt.full) {
+		flags |= KILL_FULL_JOB;
+		if (job_type)
+			*job_type = "full ";
+	}
+	if (opt.hurry)
+		flags |= KILL_HURRY;
+
+	return flags;
+}
+
+static int _ctld_signal_jobs(void)
+{
+	int rc;
+	kill_jobs_msg_t kill_msg = {
+		.account = opt.account,
+		.job_name = opt.job_name,
+		.jobs_array = opt.job_list,
+		.jobs_cnt = opt.job_cnt,
+		.partition = opt.partition,
+		.qos = opt.qos,
+		.reservation = opt.reservation,
+		.signal = opt.signal,
+		.state = opt.state,
+		.user_id = opt.user_id,
+		.user_name = opt.user_name,
+		.wckey = opt.wckey,
+		.nodelist = opt.nodelist,
+	};
+	kill_jobs_resp_msg_t *kill_msg_resp = NULL;
+
+	kill_msg.flags = _init_flags(NULL);
+	if (kill_msg.signal == NO_VAL16)
+		kill_msg.signal = SIGKILL;
+
+	if ((rc = slurm_kill_jobs(&kill_msg, &kill_msg_resp))) {
+		error("%s", slurm_strerror(rc));
+		return rc;
+	}
+
+	for (int i = 0; i < kill_msg_resp->jobs_cnt; i++) {
+		kill_jobs_resp_job_t *job_resp =
+			&kill_msg_resp->job_responses[i];
+		uint32_t error_code = job_resp->error_code;
+
+		if (opt.verbose ||
+		    ((error_code != ESLURM_ALREADY_DONE) &&
+		     (error_code != ESLURM_INVALID_JOB_ID))) {
+			char *job_id_str = NULL;
+
+			/*
+			 * FIXME:
+			 * If in a federation and we use scancel -Mall then
+			 * we can get some errors returned for some jobs
+			 * from one cluster but then the other cluster would
+			 * return success for all jobs. It would be nice to
+			 * handle this situation better.
+			 * In addition if we only signalled some clusters and
+			 * got responses for jobs that were revoked and thus
+			 * unable to be signalled, we could forward the request
+			 * to job_resp->sibling rather than just log an error
+			 * here.
+			 */
+
+			rc = fmt_job_id_string(job_resp->id, &job_id_str);
+			if (rc != SLURM_SUCCESS)
+				error("Bad job id format returned: %s; %s",
+				      slurm_strerror(rc), job_resp->error_msg);
+			else
+				error("Job %s: %s",
+				      job_id_str, job_resp->error_msg);
+			xfree(job_id_str);
+		}
+	}
+	slurm_free_kill_jobs_response_msg(kill_msg_resp);
+
+	return SLURM_SUCCESS;
+}
+
 /* _multi_cluster - process job cancellation across a list of clusters */
 static int
 _multi_cluster(List clusters)
@@ -150,6 +250,8 @@ _proc_cluster(void)
 		rc = _signal_job_by_str();
 		return rc;
 	}
+	if (opt.ctld && !has_job_steps())
+		return _ctld_signal_jobs();
 
 	_load_job_records();
 	rc = _verify_job_ids();
@@ -363,17 +465,6 @@ static void _filter_job_records(void)
 		}
 
 		if (opt.nodelist) {
-			/* If nodelist contains a '/', treat it as a file name */
-			if (strchr(opt.nodelist, '/') != NULL) {
-				char *reallist;
-				reallist = slurm_read_hostfile(opt.nodelist,
-							       NO_VAL);
-				if (reallist) {
-					xfree(opt.nodelist);
-					opt.nodelist = reallist;
-				}
-			}
-
 			hostset_t *hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;
@@ -723,32 +814,11 @@ _cancel_job_id (void *ci)
 	char *job_type = "";
 	DEF_TIMERS;
 
+	_init_flags(&job_type);
 	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
-	if (opt.batch) {
-		flags |= KILL_JOB_BATCH;
-		job_type = "batch ";
-	}
-
-	/*
-	 * With the introduction of the ScronParameters=explicit_scancel option,
-	 * scancel requests for a cron job should be rejected unless the --cron
-	 * flag is specified.
-	 * To prevent introducing this option from influencing anything other
-	 * than user requests, it has been set up so that when KILL_NO_CRON is
-	 * set when explicit_scancel is also set, the request will be rejected.
-	 */
-	if (!opt.cron)
-		flags |= KILL_NO_CRON;
-
-	if (opt.full) {
-		flags |= KILL_FULL_JOB;
-		job_type = "full ";
-	}
-	if (opt.hurry)
-		flags |= KILL_HURRY;
 
 	if (!cancel_info->job_id_str) {
 		if (cancel_info->array_job_id &&

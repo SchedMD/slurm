@@ -780,7 +780,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 		return ESLURM_INVALID_JOB_ID_ZERO;
 	else if (job < 0)
 		return ESLURM_INVALID_JOB_ID_NEGATIVE;
-	else if (job >= MAX_JOB_ID)
+	else if (job >= MAX_FED_JOB_ID)
 		return ESLURM_INVALID_JOB_ID_TOO_LARGE;
 	else if (end_ptr == src)
 		return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
@@ -1253,6 +1253,46 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 		xfree(msg->sjob_id);
 		xfree(msg);
 	}
+}
+
+extern void slurm_free_kill_jobs_msg(kill_jobs_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->account);
+	xfree(msg->job_name);
+	xfree(msg->partition);
+	xfree(msg->qos);
+	xfree(msg->reservation);
+	xfree(msg->user_name);
+	xfree(msg->wckey);
+	xfree(msg->nodelist);
+	xfree_array(msg->jobs_array);
+	xfree(msg);
+}
+
+extern void slurm_free_kill_jobs_resp_job_t(kill_jobs_resp_job_t *job_resp)
+{
+	if (!job_resp)
+		return;
+
+	xfree(job_resp->error_msg);
+	xfree(job_resp->id);
+	xfree(job_resp->sibling_name);
+	/* job_resp was not malloc'd so do not free */
+}
+
+extern void slurm_free_kill_jobs_response_msg(kill_jobs_resp_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	for (int i = 0; i < msg->jobs_cnt; i++) {
+		slurm_free_kill_jobs_resp_job_t(&msg->job_responses[i]);
+	}
+	xfree(msg->job_responses);
+	xfree(msg);
 }
 
 extern void slurm_free_container_id_request_msg(
@@ -4675,6 +4715,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_AUTH_TOKEN:
 		slurm_free_token_response_msg(data);
 		break;
+	case REQUEST_KILL_JOBS:
+		slurm_free_kill_jobs_msg(data);
+		break;
+	case RESPONSE_KILL_JOBS:
+		slurm_free_kill_jobs_response_msg(data);
+		break;
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
 		break;
@@ -5408,6 +5454,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_AUTH_TOKEN";
 	case RESPONSE_AUTH_TOKEN:
 		return "RESPONSE_AUTH_TOKEN";
+	case REQUEST_KILL_JOBS:
+		return "REQUEST_KILL_JOBS";
+	case RESPONSE_KILL_JOBS:
+		return "RESPONSE_KILL_JOBS";
 
 	case REQUEST_LAUNCH_TASKS:				/* 6001 */
 		return "REQUEST_LAUNCH_TASKS";

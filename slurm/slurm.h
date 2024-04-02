@@ -133,6 +133,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define NO_CONSUME_VAL64 (0xfffffffffffffffd)
 #define MAX_TASKS_PER_NODE 512
 #define MAX_JOB_ID (0x03FFFFFF) /* bits 0-25 */
+#define MAX_FED_JOB_ID (0xfffffffd) /* NO_VAL - 1 */
 #define MAX_HET_JOB_COMPONENTS 128
 #define MAX_FED_CLUSTERS 63
 
@@ -3648,10 +3649,43 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 typedef struct job_step_kill_msg {
 	char *sjob_id;
 	uint16_t signal;
-	uint16_t flags;
+	uint16_t flags; /* KILL_* flags below */
 	char *sibling;
 	slurm_step_id_t step_id;
 } job_step_kill_msg_t;
+
+typedef struct {
+	char *account;
+	uint16_t flags; /* KILL_* flags below */
+	char *job_name;
+	char **jobs_array;
+	uint32_t jobs_cnt;
+	char *partition;
+	char *qos;
+	char *reservation;
+	uint16_t signal;
+	uint32_t state;
+	uint32_t user_id;
+	char *user_name;
+	char *wckey;
+	char *nodelist;
+} kill_jobs_msg_t;
+
+typedef struct {
+	uint32_t error_code;
+	char *error_msg;
+	slurm_selected_step_t *id; /* Note: if the job is an array job, then
+				    * id.step_id.job_id is the array_job_id or
+				    * het_job_id, respectively. */
+	uint32_t real_job_id; /* The actual job id if the job was found, or
+			       * NO_VAL if the job was not found */
+	char *sibling_name;
+} kill_jobs_resp_job_t;
+
+typedef struct {
+	kill_jobs_resp_job_t *job_responses;
+	uint32_t jobs_cnt;
+} kill_jobs_resp_msg_t;
 
 /*
  * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
@@ -3704,6 +3738,15 @@ extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
  */
 extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags,
 			   const char *sibling);
+
+/*
+ * slurm_kill_jobs - Kill all jobs matching the filters specified in msg.
+ * IN kill_msg - Message that specifies the jobs to be killed.
+ * IN/OUT kill_msg_resp - Pointer to a response message, filled in by the api.
+ * RET SLURM_SUCCESS on success, otherwise return an error.
+ */
+extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
+			   kill_jobs_resp_msg_t **kill_msg_resp);
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job

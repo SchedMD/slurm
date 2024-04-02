@@ -337,6 +337,26 @@ static const struct {
 					  max_sched_time) }
 };
 
+#define KILL_JOBS_ARGS_MAGIC 0x08900abb
+typedef struct {
+	int magic; /* KILL_JOBS_ARGS_MAGIC */
+	int rc;
+	int index;
+	kill_jobs_msg_t *msg;
+	args_t *args;
+	data_t *parent_path;
+} foreach_kill_jobs_args_t;
+
+#define PARSE_KILL_JOBS_RESP_ARGS_MAGIC 0x18980fbb
+typedef struct {
+	int magic; /* PARSE_KILL_JOBS_RESP_ARGS_MAGIC */
+	kill_jobs_resp_msg_t *msg;
+	int rc;
+	int index;
+	args_t *args;
+	data_t *parent_path;
+} foreach_parse_kill_jobs_resp_args_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -4601,6 +4621,8 @@ static int PARSE_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 
 	if (!(*sig = sig_name2num(str))) {
 		xfree(str);
+		if (!rc)
+			rc = EINVAL;
 		return parse_error(parser, args, parent_path, rc,
 				   "Unknown signal %s", str);
 	}
@@ -5987,6 +6009,178 @@ static void SPEC_FUNC(POWER_MGMT_DATA)(const parser_t *const parser,
 {
 	(void) set_openapi_props(dst, OPENAPI_FORMAT_OBJECT, "removed field");
 	data_set_bool(data_key_set(dst, "deprecated"), true);
+}
+
+static void *NEW_FUNC(KILL_JOBS_MSG)(void)
+{
+	kill_jobs_msg_t *msg = xmalloc_nz(sizeof(*msg));
+	*msg = (kill_jobs_msg_t) {
+		.flags = KILL_FULL_JOB,
+		.signal = SIGKILL,
+		.state = JOB_END,
+		.user_id = SLURM_AUTH_NOBODY,
+	};
+	return msg;
+}
+
+static data_for_each_cmd_t _foreach_kill_jobs_job(data_t *src, void *arg)
+{
+	foreach_kill_jobs_args_t *args = arg;
+
+	xassert(args->magic == KILL_JOBS_ARGS_MAGIC);
+	xassert(args->index < args->msg->jobs_cnt);
+
+	if ((args->rc = PARSE(STRING, args->msg->jobs_array[args->index], src,
+			      args->parent_path, args->args)))
+		return DATA_FOR_EACH_FAIL;
+
+	args->index++;
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(KILL_JOBS_MSG_JOBS_ARRAY)(const parser_t *const parser,
+						void *obj, data_t *src,
+						args_t *args,
+						data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	kill_jobs_msg_t *msg = obj;
+
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		slurm_selected_step_t id = SLURM_SELECTED_STEP_INITIALIZER;
+		char *job_str = NULL;
+
+		/* Allow single selected step if passed as dict */
+
+		if ((rc = PARSE(SELECTED_STEP, id, src, parent_path, args)))
+			return rc;
+
+		if ((rc = fmt_job_id_string(&id, &job_str)))
+			return rc;
+
+		msg->jobs_cnt = 1;
+		xrecalloc(msg->jobs_array, msg->jobs_cnt,
+			  sizeof(*msg->jobs_array));
+
+		msg->jobs_array[0] = job_str;
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		msg->jobs_cnt = data_get_list_length(src);
+
+		if (msg->jobs_cnt > 0) {
+			foreach_kill_jobs_args_t fargs = {
+				.magic = KILL_JOBS_ARGS_MAGIC,
+				.msg = msg,
+				.args = args,
+				.parent_path = parent_path,
+			};
+
+			xrecalloc(msg->jobs_array, msg->jobs_cnt,
+				  sizeof(*msg->jobs_array));
+			(void) data_list_for_each(src, _foreach_kill_jobs_job,
+						  &fargs);
+			rc = fargs.rc;
+		}
+	} else {
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
+			      "Unexpected type %s when expecting a list",
+			      data_type_to_string(data_get_type(src)));
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(KILL_JOBS_MSG_JOBS_ARRAY)(const parser_t *const parser,
+					       void *obj, data_t *dst,
+					       args_t *args)
+{
+	kill_jobs_msg_t *msg = obj;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	for (int i = 0; i < msg->jobs_cnt; i++)
+		if ((rc = DUMP(STRING, msg->jobs_array[i],
+			       data_list_append(dst), args)))
+			return rc;
+
+	return rc;
+}
+
+static void FREE_FUNC(KILL_JOBS_RESP_MSG)(void *ptr)
+{
+	kill_jobs_resp_msg_t *msg = ptr;
+
+	if (!msg)
+		return;
+
+	slurm_free_kill_jobs_response_msg(msg);
+}
+
+static data_for_each_cmd_t _foreach_parse_kill_jobs_resp_job(data_t *src,
+							     void *arg)
+{
+	foreach_parse_kill_jobs_resp_args_t *args = arg;
+
+	xassert(args->magic == PARSE_KILL_JOBS_RESP_ARGS_MAGIC);
+	xassert(args->index < args->msg->jobs_cnt);
+
+	if ((args->rc = PARSE(KILL_JOBS_RESP_JOB,
+			      args->msg->job_responses[args->index], src,
+			      args->parent_path, args->args)))
+		return DATA_FOR_EACH_FAIL;
+
+	args->index++;
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
+					  void *obj, data_t *src, args_t *args,
+					  data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	kill_jobs_resp_msg_t *msg = obj;
+
+	if (data_get_type(src) != DATA_TYPE_LIST)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, __func__, __func__,
+				"Unexpected type %s when expecting a list",
+				data_type_to_string(data_get_type(src)));
+
+	msg->jobs_cnt = data_get_list_length(src);
+
+	if (msg->jobs_cnt > 0) {
+		foreach_parse_kill_jobs_resp_args_t fargs = {
+			.magic = PARSE_KILL_JOBS_RESP_ARGS_MAGIC,
+			.msg = msg,
+			.args = args,
+			.parent_path = parent_path,
+		};
+
+		xrecalloc(msg->job_responses, msg->jobs_cnt,
+			  sizeof(*msg->job_responses));
+
+		(void) data_list_for_each(src,
+					  _foreach_parse_kill_jobs_resp_job,
+					  &fargs);
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	kill_jobs_resp_msg_t *msg = obj;
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && (i < msg->jobs_cnt); i++)
+		rc = DUMP(KILL_JOBS_RESP_JOB, msg->job_responses[i],
+			  data_list_append(dst), args);
+
+	return rc;
 }
 
 /*
@@ -8542,6 +8736,48 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(kill_jobs_msg_t, mtype, false, field, 0, path, desc)
+#define add_skip(field) \
+	add_parser_skip(kill_jobs_msg_t, field)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(kill_jobs_msg_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(KILL_JOBS_MSG)[] = {
+	add_parse(STRING, account, "account", "Filter jobs to a specific account"),
+	add_parse(WARN_FLAGS, flags, "flags", "Filter jobs according to flags"),
+	add_parse(STRING, job_name, "job_name", "Filter jobs to a specific name"),
+	add_skip(jobs_array),
+	add_skip(jobs_cnt),
+	add_cparse(KILL_JOBS_MSG_JOBS_ARRAY, "jobs", "List of jobs to signal"),
+	add_parse(STRING, partition, "partition", "Filter jobs to a specific partition"),
+	add_parse(STRING, qos, "qos", "Filter jobs to a specific QOS"),
+	add_parse(STRING, reservation, "reservation", "Filter jobs to a specific reservation"),
+	add_parse(SIGNAL, signal, "signal", "Signal to send to jobs"),
+	add_parse(JOB_STATE, state, "job_state", "Filter jobs to a specific state"),
+	add_parse(USER_ID, user_id, "user_id", "Filter jobs to a specific numeric user id"),
+	add_parse(STRING, user_name, "user_name", "Filter jobs to a specific user name"),
+	add_parse(STRING, wckey, "wckey", "Filter jobs to a specific wckey"),
+	add_parse(HOSTLIST_STRING, nodelist, "nodes", "Filter jobs to a set of nodes"),
+};
+#undef add_parse
+#undef add_skip
+#undef add_cparse
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(kill_jobs_resp_job_t, mtype, true, field, 0, path, desc)
+#define add_parse_overload_req(mtype, field, overloads, path, desc) \
+	add_parser(kill_jobs_resp_job_t, mtype, true, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(KILL_JOBS_RESP_JOB)[] = {
+	add_parse_overload_req(ERROR, error_code, 1, "error/string", "String error encountered signaling job"),
+	add_parse_overload_req(UINT32, error_code, 1, "error/code", "Numeric error encountered signaling job"),
+	add_parse_req(STRING, error_msg, "error/message", "Error message why signaling job failed"),
+	add_parse_req(SELECTED_STEP_PTR, id, "step_id", "Job or Step ID that signaling failed"),
+	add_parse_req(UINT32_NO_VAL, real_job_id, "job_id", "Job ID that signaling failed"),
+	add_parse_req(STRING, sibling_name, "federation/sibling", "Name of federation sibling (may be empty for non-federation)"),
+};
+#undef add_parse_overload_req
+#undef add_parse_req
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8590,6 +8826,7 @@ add_openapi_response_single(OPENAPI_WCKEY_RESP, WCKEY_LIST, "wckeys", "wckeys");
 add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wckeys", "deleted wckeys");
 add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
 add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node and partition info");
+add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -9061,6 +9298,7 @@ static const parser_t parsers[] = {
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
+	addpsa(KILL_JOBS_RESP_MSG, KILL_JOBS_RESP_JOB, kill_jobs_resp_msg_t, NEED_NONE, "List of jobs signal responses"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
@@ -9121,6 +9359,7 @@ static const parser_t parsers[] = {
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, SHARES_FLOAT128_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
+	addpca(KILL_JOBS_MSG_JOBS_ARRAY, STRING, kill_jobs_msg_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(EXT_SENSORS_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
@@ -9150,6 +9389,7 @@ static const parser_t parsers[] = {
 	addpp(JOB_STATE_RESP_MSG_PTR, job_state_response_msg_t *, JOB_STATE_RESP_MSG, false, NULL, NULL),
 	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA, true, NULL, NULL),
 	addpp(POWER_MGMT_DATA_PTR, void *, POWER_MGMT_DATA, true, NULL, NULL),
+	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
@@ -9238,6 +9478,8 @@ static const parser_t parsers[] = {
 	addpap(BF_EXIT_FIELDS, bf_exit_fields_t, NULL, NULL),
 	addpap(JOB_STATE_RESP_JOB, job_state_response_job_t, NULL, NULL),
 	addpap(OPENAPI_JOB_STATE_QUERY, openapi_job_state_query_t, NULL, NULL),
+	addpap(KILL_JOBS_MSG, kill_jobs_msg_t, NEW_FUNC(KILL_JOBS_MSG), NULL),
+	addpap(KILL_JOBS_RESP_JOB, kill_jobs_resp_job_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -9273,6 +9515,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_SINFO_RESP),
 	addpap(OPENAPI_STEP_INFO_MSG, openapi_resp_job_step_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_JOB_STATE_RESP, openapi_resp_job_state_t, NULL, NULL),
+	addoar(OPENAPI_KILL_JOBS_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),

@@ -300,10 +300,11 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
  * see if user is coordinator of given acct
  * IN: uid - uid of user to check.
  * IN: acct - name of account
+ * IN: is_locked - true if the assoc_mgr user READ_LOCK is already locked.
  * RET: true or false
  */
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
-					char *acct);
+					char *acct, bool is_locked);
 
 /*
  * see if user is coordinator of given acct

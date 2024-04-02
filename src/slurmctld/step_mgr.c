@@ -4071,7 +4071,8 @@ static int _pack_job_steps(void *x, void *arg)
 				return 0;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
 							 args->uid,
-							 job_ptr->account)) {
+							 job_ptr->account,
+							 false)) {
 			return 0;
 		}
 	}
@@ -5207,7 +5208,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		error("Security violation, STEP_UPDATE RPC from uid %u", uid);
 		return ESLURM_USER_ID_MISSING;
 	}

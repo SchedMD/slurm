@@ -547,6 +547,15 @@ typedef enum {
 	DATA_PARSER_JOB_STATE_RESP_JOB, /* job_state_response_job_t */
 	DATA_PARSER_JOB_STATE_RESP_JOB_PTR, /* job_state_response_job_t* */
 	DATA_PARSER_JOB_STATE_RESP_JOB_JOB_ID, /* job_state_response_job_t->job_id,array_job_id,array_task_id_bitmap */
+	DATA_PARSER_KILL_JOBS_MSG, /* kill_jobs_msg_t */
+	DATA_PARSER_KILL_JOBS_MSG_PTR, /* kill_jobs_msg_t* */
+	DATA_PARSER_KILL_JOBS_MSG_JOBS_ARRAY, /* kill_jobs_msg_t->jobs_array,jobs_cnt */
+	DATA_PARSER_KILL_JOBS_RESP_MSG, /* kill_jobs_resp_msg_t */
+	DATA_PARSER_KILL_JOBS_RESP_MSG_PTR, /* kill_jobs_resp_msg_t* */
+	DATA_PARSER_KILL_JOBS_RESP_JOB, /* kill_jobs_resp_job_t */
+	DATA_PARSER_KILL_JOBS_RESP_JOB_PTR, /* kill_jobs_resp_job_t* */
+	DATA_PARSER_OPENAPI_KILL_JOBS_RESP, /* openapi_kill_jobs_resp_t */
+	DATA_PARSER_OPENAPI_KILL_JOBS_RESP_PTR, /* openapi_kill_jobs_resp_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

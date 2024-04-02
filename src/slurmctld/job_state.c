@@ -398,11 +398,11 @@ static void _dump_job_state_locked(job_state_args_t *args,
 
 	if (!filter_jobs_count) {
 		slurm_selected_step_t filter = SLURM_SELECTED_STEP_INITIALIZER;
-		(void) foreach_job_by_id_ro(&filter, _foreach_job, args);
+		(void) foreach_job_by_id_ro(&filter, _foreach_job, NULL, args);
 	} else {
 		for (int i = 0; !args->rc && (i < filter_jobs_count); i++) {
 			(void) foreach_job_by_id_ro(&filter_jobs_ptr[i],
-						    _foreach_job, args);
+						    _foreach_job, NULL, args);
 		}
 	}
 }

@@ -1387,6 +1387,12 @@ typedef foreach_job_by_id_control_t (*JobForEachFunc)(job_record_t *job_ptr,
 typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
 								*job_ptr,
 							void *arg);
+/*
+ * Function prototype for operating on a job id that is not found
+ * Returns control requested for processing
+ */
+typedef foreach_job_by_id_control_t
+	(*JobNullForEachFunc)(const slurm_selected_step_t *id, void *arg);
 
 /*
  * Walk all matching job_record_t's that match filter
@@ -1396,13 +1402,15 @@ typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
  * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
  * 	may be zero if no jobs matched.
  */
 extern int foreach_job_by_id(const slurm_selected_step_t *filter,
-			     JobForEachFunc callback, void *arg);
+			     JobForEachFunc callback,
+			     JobNullForEachFunc null_callback, void *arg);
 
 /*
  * Walk all matching read only job_record_t's that match filter
@@ -1412,13 +1420,15 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
  * 	negative if callback returns FOR_EACH_JOB_BY_ID_EACH_FAIL.
  * 	may be zero if no jobs matched.
  */
 extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
-				JobROForEachFunc callback, void *arg);
+				JobROForEachFunc callback,
+				JobNullForEachFunc null_callback, void *arg);
 
 /*
  * find_job_array_rec - return a pointer to the job record with the given
@@ -1793,6 +1803,18 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
  */
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt);
+
+/*
+ * Signal the jobs matching the specified filters and build a response message
+ * detailing the results of the request.
+ *
+ * IN kill_msg - the specification for which jobs to signal
+ * IN auth_uid - the authenticated UID of the requesting user
+ * OUT resp_msg_p - a response message to send back to the requesting user
+ * RET - SLURM_SUCCESS if successful, an error code otherwise
+ */
+extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
+			       kill_jobs_resp_msg_t **resp_msg_p);
 
 /*
  * job_suspend/job_suspend2 - perform some suspend/resume operation

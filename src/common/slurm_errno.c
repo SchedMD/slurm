@@ -412,7 +412,7 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ERRTAB_ENTRY(ESLURM_INVALID_JOB_ARRAY_ID_TOO_LARGE),
 	  "Job Array ID larger than acceptable range" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC),
-	  "HetJob component includes unexpected non-numeric characters" },
+	  "Job Array ID includes unexpected non-numeric characters" },
 	{ ERRTAB_ENTRY(ESLURM_EMPTY_HET_JOB_COMP),
 	  "HetJob component must not be an empty string" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_HET_JOB_COMP_NEGATIVE),
@@ -463,6 +463,10 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid QOS specification, relative QOS can only be used in a single partition per cluster." },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_EXTRA),
 	  "Invalid extra constraints specification" },
+	{ ERRTAB_ENTRY(ESLURM_JOB_SIGNAL_FAILED),
+	  "Cannot signal job" },
+	{ ERRTAB_ENTRY(ESLURM_SIGNAL_JOBS_INVALID),
+	  "Invalid signal jobs request, at least one job id or filter is required." },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),

@@ -126,6 +126,11 @@ extern bool has_default_opt(void)
 {
 	if (opt.account == NULL
 	    && opt.batch == false
+#ifdef HAVE_FRONT_END
+	    && opt.ctld
+#else
+	    && !opt.ctld
+#endif
 	    && opt.interactive == false
 	    && opt.job_name == NULL
 	    && opt.partition == NULL
@@ -333,6 +338,18 @@ static void _opt_env(void)
 	}
 }
 
+static void _handle_nodelist(void)
+{
+	/* If nodelist contains a '/', treat it as a file name */
+	if (strchr(opt.nodelist, '/') != NULL) {
+		char *reallist = slurm_read_hostfile(opt.nodelist, NO_VAL);
+		if (reallist) {
+			xfree(opt.nodelist);
+			opt.nodelist = reallist;
+		}
+	}
+}
+
 /*
  * opt_args() : set options via commandline args and getopt_long
  */
@@ -472,6 +489,8 @@ static void _opt_args(int argc, char **argv)
 
 	if (rest)
 		opt.job_list = _xlate_job_step_ids(rest);
+	if (opt.nodelist)
+		_handle_nodelist();
 
 	if (!_opt_verify())
 		exit(1);
@@ -699,7 +718,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-A account] [--batch] [--full] [--interactive] [-n job_name]\n");
+	printf("Usage: scancel [-A account] [--batch] [--ctld] [--full] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation] [-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [--hurry] [-V] [-v] [-w hosts...] [--wckey=wckey]\n");
@@ -711,7 +730,7 @@ static void _help(void)
 	printf("Usage: scancel [OPTIONS] [job_id[_array_id][.step_id]]\n");
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
-/*	printf("      --ctld                      send request directly to slurmctld\n"); */
+	printf("      --ctld                      send request directly to slurmctld\n");
 	printf("  -c, --cron                      cancel an scrontab job\n");
 	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -H, --hurry                     avoid burst buffer stage out\n");

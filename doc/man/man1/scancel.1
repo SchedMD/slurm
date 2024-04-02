@@ -11,15 +11,19 @@ scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 An arbitrary number of jobs or job steps may be signaled using job
 specification filters or a space separated list of specific job and/or
 job step IDs.
-If the job ID of a job array is specified with an array ID value then only that
+If the job ID of a job array is specified with an array ID value and the job
+associated with the array ID value has been split from the array, then only that
 job array element will be cancelled.
-If the job ID of a job array is specified without an array ID value then all
-job array elements will be cancelled.
+If the job ID of a job array is specified without an array ID value or the
+array ID value corresponds to a job that has not been split from the array,
+then all job array elements will be cancelled.
 While a heterogeneous job is in a PENDING state, only the entire job can be
 cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job while in
 a PENDING state will return an error.
-After the job has begun execution, an individual component can be cancelled.
+After the job has begun execution, an individual component can be cancelled
+except for component zero. If component zero is cancelled, the whole het job is
+cancelled.
 A job or job step can only be signaled by the owner of that job or user root.
 If an attempt is made by an unauthorized user to signal a job or job step, an
 error message will be printed and the job will not be signaled.
@@ -60,10 +64,15 @@ running in a federation with \fBFederationParameters=fed_display\fR configured.
 
 .TP
 \fB\-\-ctld\fR
-Send the job signal request to the slurmctld daemon rather than directly to the
-slurmd daemons. This increases overhead, but offers better fault tolerance.
-This is the default behavior on architectures using front end nodes,
-or when the \fB\-\-clusters\fR option is used.
+If this option is not used with \fB\-\-interactive\fR,
+\fB\-\-sibling\fR, or specific step ids, then this issues a single request
+to the slurmctld to signal all jobs matching the specified filters. This
+greatly improves the performance of slurmctld and scancel. Otherwise, this
+option causes scancel to send each job signal request to the slurmctld daemon
+rather than directly to the slurmd daemons, which increases overhead, but
+offers better fault tolerance. \fB\-\-ctld\fR is the default behavior on
+architectures using front end nodes, or when the \fB\-\-clusters\fR option is
+used.
 .IP
 
 .TP
@@ -215,11 +224,25 @@ will not be signaled.
 
 .SH "PERFORMANCE"
 .PP
-Executing \fBscancel\fR sends a remote procedure call to \fBslurmctld\fR. If
-enough calls from \fBscancel\fR or other Slurm client commands that send remote
-procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
-a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
-in a denial of service.
+When executing \fBscancel\fR without the \fB\-\-ctld\fR option; or with the
+\fB\-\-ctld\fR option and \fB\-\-interactive\fR, \fB\-\-sibling\fR, or specific
+step ids; a remote procedure call is sent to \fBslurmctld\fR to get all the
+jobs. \fBscancel\fR then sends a signal job remote procedure call for each job
+that matches the requested filters.
+
+When executing \fBscancel\fR with the \fB\-\-ctld\fR option and without
+\fB\-\-interactive\fR, \fB\-\-sibling\fR, or specific step ids, a single
+remote procedure call is sent to \fBslurmctld\fR to signal all jobs matching
+the requested filters. It is therefore recommended to use the \fB\-\-ctld\fR
+option in order to reduce the number of remote procedure calls sent to the
+\fBslurmctld\fR.
+
+.PP
+If enough calls from \fBscancel\fR or other Slurm client commands that send
+remote procedure calls to the \fBslurmctld\fR daemon come in at once, it can
+result in a degradation of performance of the \fBslurmctld\fR daemon, possibly
+resulting in a denial of service.
+
 .PP
 Do not run \fBscancel\fR or other Slurm client commands that send remote
 procedure calls to \fBslurmctld\fR from loops in shell scripts or other

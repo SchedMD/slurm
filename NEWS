@@ -120,6 +120,17 @@ documents those changes that are of interest to users and administrators.
     'GET /slurm/v0.0.40/jobs/state'.
  -- squeue - Correct dumping of invalid ArrayJobIds returned from
     `squeue --only-job-state --{json|yaml}`.
+ -- If scancel --ctld is not used with --interactive, --sibling, or specific
+    step ids, then this option issues a single request to the slurmctld to
+    signal all jobs matching the specified filters. This greatly improves
+    the performance of slurmctld and scancel. The updated --ctld option also
+    fixes issues with the --partition or --reservation scancel options for jobs
+    that requested multiple partitions or reservations.
+ -- slurmrestd - Give EINVAL error when failing to parse signal name to numeric
+    signal.
+ -- slurmrestd - Allow ContentBody for all methods per RFC7230 even if ignored.
+ -- slurmrestd - Add 'DELETE /slurm/v0.0.40/jobs' endpoint to allow bulk job
+    signaling via slurmctld.
 
 * Changes in Slurm 23.11.5
 ==========================

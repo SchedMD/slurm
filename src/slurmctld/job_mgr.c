@@ -164,12 +164,29 @@ typedef struct {
 	int node_count;
 } node_inx_cnt_t;
 
+typedef struct {
+	list_t *array_leader_list;
+	uid_t auth_uid;
+	bool filter_specific_job_ids;
+	kill_jobs_msg_t *kill_msg;
+	list_t *other_job_list;
+	list_t *responses; /* List of kill_jobs_resp_job_t */
+	int response_error_code;
+} signal_jobs_args_t;
+
+typedef struct {
+	int curr_count;
+	kill_jobs_resp_msg_t *resp_msg;
+} xfer_signal_jobs_responses_args_t;
+
 #define MAGIC_FOREACH_BY_JOBID_ARGS 0x1a0beebe
 typedef struct {
 	int magic; /* MAGIC_FOREACH_BY_JOBID_ARGS */
 	foreach_job_by_id_control_t control;
 	uint32_t count;
 	JobForEachFunc callback;
+	JobNullForEachFunc null_callback; /* If not set, then do nothing when
+					   * the job id is not found. */
 	JobROForEachFunc ro_callback;
 	void *callback_arg;
 	job_record_t *job_ptr;
@@ -3444,8 +3461,15 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 	else /* not array task or het component */
 		args->job_ptr = find_job_record(filter->step_id.job_id);
 
-	if (!args->job_ptr)
+	if (!args->job_ptr) {
+		if (!args->null_callback) {
+			args->control = FOR_EACH_JOB_BY_ID_EACH_CONT;
+		} else {
+			args->control = args->null_callback(filter,
+							    args->callback_arg);
+		}
 		goto done;
+	}
 
 	if (args->job_ptr->het_job_list) {
 		xassert(args->job_ptr->het_job_id > 0);
@@ -3476,7 +3500,8 @@ done:
 }
 
 extern int foreach_job_by_id(const slurm_selected_step_t *filter,
-			     JobForEachFunc callback, void *arg)
+			     JobForEachFunc callback,
+			     JobNullForEachFunc null_callback, void *arg)
 {
 	for_each_by_job_id_args_t args = {
 		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
@@ -3484,6 +3509,7 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
 		.count = 0,
 		.callback = callback,
 		.callback_arg = arg,
+		.null_callback = null_callback,
 		.filter = filter,
 	};
 
@@ -3493,7 +3519,8 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
 }
 
 extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
-				JobROForEachFunc callback, void *arg)
+				JobROForEachFunc callback,
+				JobNullForEachFunc null_callback, void *arg)
 {
 	for_each_by_job_id_args_t args = {
 		.magic = MAGIC_FOREACH_BY_JOBID_ARGS,
@@ -3501,6 +3528,7 @@ extern int foreach_job_by_id_ro(const slurm_selected_step_t *filter,
 		.count = 0,
 		.ro_callback = callback,
 		.callback_arg = arg,
+		.null_callback = null_callback,
 		.filter = filter,
 	};
 
@@ -5645,6 +5673,508 @@ static int _job_fail(job_record_t *job_ptr, uint32_t job_state)
 }
 
 /*
+ * IN signal_args - Append the response to signal_args->responses.
+ * IN cluster_id - If set, then this identifies the sibling cluster that the
+ *                 job is running on or originated from.
+ * IN eror_code - Error code to use in the response.
+ * IN err_msg - If set, use this as the response error message.
+ * IN id - Identifier for the job. Job id is different than the actual job id
+ *         if the job is an array task or a het job component that is not the
+ *         het job leader.
+ * IN real_job_id - The real job id or NO_VAL
+ */
+static void _add_signal_job_resp(signal_jobs_args_t *signal_args,
+				 char *sibling_name, int error_code,
+				 char *err_msg, slurm_selected_step_t *id,
+				 uint32_t real_job_id)
+{
+	kill_jobs_resp_job_t *job_resp = xmalloc(sizeof(*job_resp));
+
+	job_resp->error_code = error_code;
+	if (err_msg)
+		job_resp->error_msg = err_msg;
+	else
+		job_resp->error_msg = xstrdup(slurm_strerror(error_code));
+	job_resp->id = xmalloc(sizeof(*job_resp->id));
+	memcpy(job_resp->id, id, sizeof(*id));
+	job_resp->real_job_id = real_job_id;
+	job_resp->sibling_name = sibling_name;
+
+	list_append(signal_args->responses, job_resp);
+}
+
+static int _match_part_name(void *x, void *key)
+{
+	part_record_t *part_ptr = x;
+	char *part_name = key;
+
+	if (!xstrcmp(part_ptr->name, part_name))
+		return 1;
+	return 0;
+}
+
+static int _match_resv_name(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	char *resv_name = key;
+
+	if (!xstrcmp(resv_ptr->name, resv_name))
+		return 1;
+	return 0;
+}
+
+static void _slurm_selected_step_init(job_record_t *job_ptr,
+				      slurm_selected_step_t *id)
+{
+	xassert(job_ptr);
+
+	id->array_task_id = job_ptr->array_task_id;
+	if (job_ptr->array_task_id != NO_VAL)
+		id->step_id.job_id = job_ptr->array_job_id;
+	else if (job_ptr->het_job_offset)
+		id->step_id.job_id = job_ptr->het_job_id;
+	else
+		id->step_id.job_id = job_ptr->job_id;
+
+	if (job_ptr->het_job_offset)
+		id->het_job_offset = job_ptr->het_job_offset;
+	else
+		id->het_job_offset = NO_VAL;
+
+	id->step_id.step_het_comp = NO_VAL;
+	id->step_id.step_id = NO_VAL;
+}
+
+static void _handle_signal_filter_mismatch(job_record_t *job_ptr,
+					   signal_jobs_args_t *signal_args,
+					   uint32_t error_code,
+					   char *filter_err_msg)
+{
+	slurm_selected_step_t id;
+	char *err_msg = NULL;
+
+	/*
+	 * If the job is revoked on this cluster and started on a sibling, the
+	 * revoked job's state, reservation, and partition will not necessarily
+	 * match the other cluster, and the other cluster has the cluster lock
+	 * for this job. For example, this job's state is 0+REVOKED and the job
+	 * state on the other cluster could be suspended, running, etc.
+	 * In that case, always send a response back to the client that we
+	 * could not signal the job.
+	 */
+	if (fed_mgr_fed_rec && fed_mgr_job_started_on_sib(job_ptr)) {
+		char *sib_name;
+
+		sib_name = fed_mgr_get_cluster_name(
+			job_ptr->fed_details->cluster_lock);
+		err_msg = xstrdup_printf("Job started on sibling cluster %s: %s",
+					 sib_name, slurm_strerror(error_code));
+		_slurm_selected_step_init(job_ptr, &id);
+		_add_signal_job_resp(signal_args, NULL, error_code,
+				     err_msg, &id, job_ptr->job_id);
+		/* sib_name is added to the job_resp, do not free */
+		return;
+	}
+
+	if (!signal_args->filter_specific_job_ids)
+		return;
+
+	if (filter_err_msg)
+		err_msg = xstrdup_printf("%s: %s",
+					 filter_err_msg,
+					 slurm_strerror(error_code));
+	else
+		err_msg = xstrdup_printf("%s", slurm_strerror(error_code));
+
+	_slurm_selected_step_init(job_ptr, &id);
+	_add_signal_job_resp(signal_args, NULL, error_code,
+			     err_msg, &id, job_ptr->job_id);
+}
+
+static bool _signal_job_matches_filter(job_record_t *job_ptr,
+				       signal_jobs_args_t *signal_args)
+{
+	bool matches_filter = true;
+	int error_code = ESLURM_JOB_SIGNAL_FAILED;
+	uint32_t job_base_state = job_ptr->job_state & JOB_STATE_BASE;
+	char *filter_err_msg = NULL;
+	kill_jobs_msg_t *kill_msg = signal_args->kill_msg;
+
+	if (IS_JOB_FINISHED(job_ptr)) {
+		error_code = ESLURM_ALREADY_DONE;
+		matches_filter = false;
+		goto fini;
+	}
+
+	if (kill_msg->account && xstrcmp(job_ptr->account, kill_msg->account)) {
+		if (signal_args->filter_specific_job_ids) {
+			filter_err_msg = xstrdup_printf("Job account %s != filter account %s",
+							job_ptr->account,
+							kill_msg->account);
+		}
+		matches_filter = false;
+		goto fini;
+	}
+
+	if (kill_msg->job_name && xstrcmp(job_ptr->name, kill_msg->job_name)) {
+		if (signal_args->filter_specific_job_ids) {
+			filter_err_msg = xstrdup_printf("Job name %s != filter name %s",
+							job_ptr->name,
+							kill_msg->job_name);
+		}
+		matches_filter = false;
+		goto fini;
+	}
+
+	/*
+	 * If the job is submitted to multiple partitions, then its partition
+	 * string is all the partitions. We need to find if the requested
+	 * partition matches any of the partitions that the job was submitted
+	 * to if the job is still pending. If the job is running, only check
+	 * the partition the job is running in.
+	 */
+	if (kill_msg->partition) {
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr_list) {
+			if (!list_find_first(job_ptr->part_ptr_list,
+					     _match_part_name,
+					     kill_msg->partition))
+				matches_filter = false;
+		} else if (job_ptr->part_ptr) {
+			if (xstrcmp(job_ptr->part_ptr->name,
+				    kill_msg->partition))
+				matches_filter = false;
+		} else {
+			if (xstrcmp(job_ptr->partition, kill_msg->partition))
+				matches_filter = false;
+		}
+
+		if (!matches_filter) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg =
+					xstrdup_printf("Job partition %s does not include filter partition %s",
+						       job_ptr->partition,
+						       kill_msg->partition);
+			}
+			goto fini;
+		}
+	}
+
+	if (kill_msg->qos) {
+		char *qos_name = "NULL";
+
+		if (!job_ptr->qos_ptr)
+			matches_filter = false;
+		else if (xstrcmp(job_ptr->qos_ptr->name, kill_msg->qos)) {
+			matches_filter = false;
+			qos_name = job_ptr->qos_ptr->name;
+		}
+
+		if (!matches_filter) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg = xstrdup_printf("Job qos %s != filter qos %s",
+								qos_name,
+								kill_msg->qos);
+			}
+			goto fini;
+		}
+	}
+
+	if (kill_msg->reservation) {
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+			slurmctld_resv_t *resv_ptr =
+				find_resv_name(kill_msg->reservation);
+
+			if (!(resv_ptr &&
+			      (resv_ptr->resv_id == job_ptr->resv_id)))
+				matches_filter = false;
+		} else if (job_ptr->resv_list) {
+			if (!list_find_first(job_ptr->resv_list,
+					     _match_resv_name,
+					     kill_msg->reservation))
+				matches_filter = false;
+		} else if (job_ptr->resv_ptr) {
+			if (xstrcmp(job_ptr->resv_ptr->name,
+				    kill_msg->reservation))
+				matches_filter = false;
+		} else {
+			if (xstrcmp(job_ptr->resv_name, kill_msg->reservation))
+				matches_filter = false;
+		}
+
+		if (!matches_filter) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg =
+					xstrdup_printf("Job reservation %s does not include filter reservation %s",
+						       job_ptr->resv_name,
+						       kill_msg->reservation);
+			}
+			goto fini;
+		}
+	}
+
+	if ((kill_msg->state != JOB_END) &&
+	    (job_base_state != kill_msg->state)) {
+		if (signal_args->filter_specific_job_ids) {
+			char *msg_state_str = job_state_string(kill_msg->state);
+			char *job_state_str = job_state_string(job_base_state);
+
+			filter_err_msg = xstrdup_printf("Job state %s != filter state %s",
+							job_state_str,
+							msg_state_str);
+		}
+		matches_filter = false;
+		goto fini;
+	}
+
+	if (kill_msg->user_name && (job_ptr->user_id != kill_msg->user_id)) {
+		if (signal_args->filter_specific_job_ids) {
+			filter_err_msg = xstrdup_printf("Job user id %u != filter user id %u",
+							job_ptr->user_id,
+							kill_msg->user_id);
+		}
+		matches_filter = false;
+		goto fini;
+	}
+
+	if (kill_msg->nodelist) {
+		hostset_t *hs;
+		bool intersects;
+
+		if (!job_ptr->nodes) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg =
+					xstrdup_printf("Job does not have nodes but filter has nodes %s",
+						       kill_msg->nodelist);
+			}
+			matches_filter = false;
+			goto fini;
+		}
+
+		hs = hostset_create(job_ptr->nodes);
+		intersects = hostset_intersects(hs, kill_msg->nodelist);
+		hostset_destroy(hs);
+		if (!intersects) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg =
+					xstrdup_printf("Job nodes %s does not intersect with filter nodes %s",
+						       job_ptr->nodes,
+						       kill_msg->nodelist);
+			}
+			matches_filter = false;
+			goto fini;
+		}
+	}
+
+	if (kill_msg->wckey) {
+		char *job_key = job_ptr->wckey;
+
+		/*
+		 * A wckey that begins with '*' indicates that the wckey
+		 * was applied by default.  When the --wckey option does
+		 * not begin with a '*', act on all wckeys with the same
+		 * name, default or not.
+		 */
+		if ((kill_msg->wckey[0] != '*') && job_key &&
+		    (job_key[0] == '*'))
+			job_key++;
+
+		if (xstrcmp(job_key, kill_msg->wckey)) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg =
+					xstrdup_printf("Job wckey %s != filter wckey %s",
+						       job_ptr->wckey,
+						       kill_msg->wckey);
+			}
+			matches_filter = false;
+			goto fini;
+		}
+	}
+
+	if (job_ptr->het_job_offset) {
+		if (!signal_args->filter_specific_job_ids) {
+			/*
+			 * Specific job ids were not requested, so we will
+			 * always signal the whole het job by signalling
+			 * component 0.
+			 */
+			return false;
+		}
+
+		/*
+		 * Het job components may not be signalled individually if they
+		 * are pending or if whole_hetjob is set.
+		 */
+		if (IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_NOT_WHOLE_HET_JOB;
+			if (signal_args->filter_specific_job_ids)
+				filter_err_msg = xstrdup("Het job component cannot be signalled while pending");
+			goto fini;
+		}
+		if (_get_whole_hetjob()) {
+			error_code = ESLURM_NOT_WHOLE_HET_JOB;
+			if (signal_args->filter_specific_job_ids)
+				filter_err_msg = xstrdup("slurm.conf whole_hetjob is set");
+			goto fini;
+		}
+	}
+
+fini:
+	if (!matches_filter)
+		_handle_signal_filter_mismatch(job_ptr, signal_args,
+					       error_code, filter_err_msg);
+	xfree(filter_err_msg);
+
+	return matches_filter;
+}
+
+static int _foreach_filter_job_list(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	signal_jobs_args_t *signal_args = arg;
+	uid_t auth_uid = signal_args->auth_uid;
+
+	if (!_signal_job_matches_filter(job_ptr, signal_args))
+		return SLURM_SUCCESS;
+
+	/* Verify that the user can kill the requested job */
+	if ((job_ptr->user_id != auth_uid) &&
+	    !validate_operator(auth_uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
+					  job_ptr->account, true)) {
+		slurm_selected_step_t id;
+
+		_slurm_selected_step_init(job_ptr, &id);
+		_add_signal_job_resp(signal_args, NULL, ESLURM_ACCESS_DENIED,
+				     NULL, &id, job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
+
+	if (job_ptr->array_recs)
+		list_append(signal_args->array_leader_list, job_ptr);
+	else
+		list_append(signal_args->other_job_list, job_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_signal_job(void *x, void *arg)
+{
+	int error_code;
+	job_record_t *job_ptr = x;
+	signal_jobs_args_t *signal_args = arg;
+	kill_jobs_msg_t *kill_msg = signal_args->kill_msg;
+
+	if (job_ptr->het_job_list)
+		error_code = het_job_signal(job_ptr, kill_msg->signal,
+					    kill_msg->flags,
+					    signal_args->auth_uid, 0);
+	else
+		error_code = job_signal(job_ptr, kill_msg->signal,
+					kill_msg->flags,
+					signal_args->auth_uid, 0);
+
+	if (error_code) {
+		slurm_selected_step_t id;
+
+		_slurm_selected_step_init(job_ptr, &id);
+		_add_signal_job_resp(signal_args, NULL, error_code, NULL, &id,
+				     job_ptr->job_id);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static foreach_job_by_id_control_t _job_not_found(const slurm_selected_step_t
+						  	*id,
+						  void *arg)
+{
+	signal_jobs_args_t *signal_args = arg;
+	uint32_t job_id = id->step_id.job_id;
+
+	if (fed_mgr_fed_rec && !fed_mgr_is_origin_job_id(job_id)) {
+		int error_code = ESLURM_JOB_SIGNAL_FAILED;
+		char *err_msg = NULL;
+
+		err_msg = xstrdup_printf("Job id not in federation: %s",
+					 slurm_strerror(error_code));
+		_add_signal_job_resp(signal_args, NULL, error_code,
+				     err_msg, (slurm_selected_step_t *) id,
+				     NO_VAL);
+	} else {
+		_add_signal_job_resp(signal_args, NULL, ESLURM_INVALID_JOB_ID,
+				     NULL, (slurm_selected_step_t *) id,
+				     NO_VAL);
+	}
+	return FOR_EACH_JOB_BY_ID_EACH_CONT;
+}
+
+static foreach_job_by_id_control_t _filter_job(job_record_t *job_ptr, void *arg)
+{
+	_foreach_filter_job_list(job_ptr, arg);
+
+	return FOR_EACH_JOB_BY_ID_EACH_CONT;
+}
+
+static void _filter_jobs_ids(slurm_selected_step_t **job_ids, uint32_t cnt,
+			     signal_jobs_args_t *signal_args)
+{
+	signal_args->filter_specific_job_ids = true;
+	for (int i = 0; i < cnt; i++) {
+		slurm_selected_step_t *filter = job_ids[i];
+		uint32_t job_id = filter->step_id.job_id;
+		int rc;
+
+		if (fed_mgr_cluster_rec && !fed_mgr_is_job_id_in_fed(job_id)) {
+			rc = ESLURM_JOB_NOT_FEDERATED;
+			_add_signal_job_resp(signal_args, NULL, rc, NULL,
+					     filter, NO_VAL);
+			continue;
+		}
+
+		(void) foreach_job_by_id(filter, _filter_job, _job_not_found,
+					 signal_args);
+	}
+}
+
+static int _foreach_xfer_responses(void *x, void *arg)
+{
+	kill_jobs_resp_job_t *job_resp = x;
+	xfer_signal_jobs_responses_args_t *args = arg;
+
+	memcpy(&args->resp_msg->job_responses[args->curr_count], job_resp,
+	       sizeof(*job_resp));
+
+	/*
+	 * Pointers in job_resp were transferred and will be free'd with
+	 * job_responses
+	 */
+	xfree(job_resp);
+	args->curr_count++;
+
+	return SLURM_SUCCESS;
+}
+
+static void _build_kill_jobs_resp_msg(signal_jobs_args_t *signal_args,
+				      kill_jobs_resp_msg_t **resp_msg_p)
+{
+	kill_jobs_resp_msg_t *resp_msg = xmalloc(sizeof(*resp_msg));
+	xfer_signal_jobs_responses_args_t foreach_args = {
+		.resp_msg = resp_msg,
+	};
+
+	*resp_msg_p = resp_msg;
+	resp_msg->jobs_cnt = list_count(signal_args->responses);
+
+	if (!resp_msg->jobs_cnt)
+		return;
+
+	resp_msg->job_responses = xcalloc(resp_msg->jobs_cnt,
+					  sizeof(*resp_msg->job_responses));
+	list_for_each(signal_args->responses, _foreach_xfer_responses,
+		      &foreach_args);
+}
+
+/*
  * Signal a job based upon job pointer.
  * Authentication and authorization checks must be performed before calling.
  */
@@ -5884,7 +6414,7 @@ extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
 		      job_ptr, uid);
 		return ESLURM_ACCESS_DENIED;
@@ -5989,7 +6519,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_INVALID_JOB_ID;
 		if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account)) {
+						  job_ptr->account, false)) {
 			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
@@ -6043,7 +6573,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && (job_ptr->user_id != uid) &&
 		    !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account)) {
+						  job_ptr->account, false)) {
 			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
@@ -6169,7 +6699,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		error("%s: Security violation JOB_CANCEL RPC for %pJ from uid %u",
 		      __func__, job_ptr, uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -6275,6 +6805,124 @@ endit:
 	FREE_NULL_BITMAP(array_bitmap);
 
 	return rc;
+}
+
+static void _free_selected_step_array(slurm_selected_step_t ***jobs_p,
+				      uint32_t cnt)
+{
+	slurm_selected_step_t **jobs = *jobs_p;
+
+	for (int i = 0; i < cnt; i++)
+		slurm_destroy_selected_step(jobs[i]);
+	xfree(jobs);
+	*jobs_p = NULL;
+}
+
+static int _parse_jobs_array(char **jobs_array, uint32_t jobs_cnt,
+			     slurm_selected_step_t ***jobs_p)
+{
+	slurm_selected_step_t **jobs = NULL;
+
+	if (!jobs_array)
+		return SLURM_SUCCESS;
+
+	jobs = xcalloc(jobs_cnt, sizeof(*jobs));
+	for (int i = 0; i < jobs_cnt; i++) {
+		int rc;
+
+		jobs[i] = xmalloc(sizeof(*jobs[i]));
+		rc = unfmt_job_id_string(jobs_array[i], jobs[i]);
+		if (rc != SLURM_SUCCESS) {
+			_free_selected_step_array(&jobs, i + 1);
+			return rc;
+		}
+	}
+
+	*jobs_p = jobs;
+	return SLURM_SUCCESS;
+}
+
+static bool _verify_kill_jobs_msg(kill_jobs_msg_t *kill_msg)
+{
+	/* At least one job id or filter must be specified */
+	if (!kill_msg->account && !kill_msg->job_name &&
+	    !kill_msg->jobs_cnt && !kill_msg->partition && !kill_msg->qos &&
+	    !kill_msg->reservation &&
+	    ((kill_msg->state & JOB_STATE_BASE) == JOB_END) &&
+	    !kill_msg->user_name && !kill_msg->wckey && !kill_msg->nodelist)
+		return false;
+
+	return true;
+}
+
+extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
+                               kill_jobs_resp_msg_t **resp_msg_p)
+{
+	int rc = 0;
+	signal_jobs_args_t signal_args = {
+		.auth_uid = auth_uid,
+		.kill_msg = kill_msg,
+	};
+	slurm_selected_step_t **jobs = NULL;
+	assoc_mgr_lock_t assoc_lock = {
+		.user = READ_LOCK,
+	};
+
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (!_verify_kill_jobs_msg(kill_msg))
+		return ESLURM_SIGNAL_JOBS_INVALID;
+
+	/*
+	 * Items in the signal_args.responses list are free'd in
+	 * _foreach_xfer_responses
+	 */
+	signal_args.responses = list_create(NULL);
+	signal_args.array_leader_list = list_create(NULL);
+	signal_args.other_job_list = list_create(NULL);
+
+	if (kill_msg->jobs_cnt) {
+		rc = _parse_jobs_array(kill_msg->jobs_array,
+				       kill_msg->jobs_cnt, &jobs);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+
+	/*
+	 * Get a list of jobs to signal first, then signal the jobs outside of
+	 * the job_list lock. Array job leaders need to be signalled before
+	 * the tasks in their array. Try to signal each job; add each failure
+	 * to signal_args.responses.
+	 *
+	 * We check if the auth_uid is able to signal the job on every possible
+	 * job that matches the filter. Lock the assoc lock once here rather
+	 * than every time we check.
+	 */
+	assoc_mgr_lock(&assoc_lock);
+	if (jobs)
+		_filter_jobs_ids(jobs, kill_msg->jobs_cnt, &signal_args);
+	else
+		list_for_each_ro(job_list, _foreach_filter_job_list,
+				 &signal_args);
+	assoc_mgr_unlock(&assoc_lock);
+
+	list_for_each(signal_args.array_leader_list, _foreach_signal_job,
+		      &signal_args);
+	list_for_each(signal_args.other_job_list, _foreach_signal_job,
+		      &signal_args);
+
+	_build_kill_jobs_resp_msg(&signal_args, resp_msg_p);
+
+	/* Cleanup */
+	_free_selected_step_array(&jobs, kill_msg->jobs_cnt);
+	FREE_NULL_LIST(signal_args.array_leader_list);
+	FREE_NULL_LIST(signal_args.other_job_list);
+	FREE_NULL_LIST(signal_args.responses);
+
+	return SLURM_SUCCESS;
 }
 
 static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
@@ -11967,9 +12615,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	/* Check authorization for modifying this job */
 	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_ptr->account);
+						       job_ptr->account,
+						       false);
 	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_desc->account);
+						       job_desc->account,
+						       false);
 	if ((job_ptr->user_id != uid) && !operator) {
 		/*
 		 * Fail if we are not coordinators of the current account or
@@ -15580,7 +16230,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					    job_ptr->account)) ||
+					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
@@ -17113,7 +17763,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+					  job_ptr->account, false)) {
 		return ESLURM_ACCESS_DENIED;
 	}
 
