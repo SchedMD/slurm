@@ -5243,6 +5243,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (xstrcasestr(conf->slurmd_params, "shutdown_on_reboot"))
 		conf->conf_flags |= CONF_FLAG_SHR;
 
+	if (xstrcasestr(conf->slurmd_params, "contain_spank"))
+		conf->conf_flags |= CONF_FLAG_CONTAIN_SPANK;
+
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 

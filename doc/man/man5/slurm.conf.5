@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5061,6 +5061,14 @@ Requires hwloc v2.
 .TP
 \fBshutdown_on_reboot\fR
 If set, the Slurmd will shut itself down when a reboot request is received.
+.RE
+.IP
+
+.TP
+\fBcontain_spank\fR
+If set and a job_container plugin is specified, the spank_user(),
+spank_task_post_fork() and spank_task_exit() calls will be run inside the job
+container.
 .RE
 .IP
 
