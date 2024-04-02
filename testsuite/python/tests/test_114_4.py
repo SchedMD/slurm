@@ -276,6 +276,11 @@ def test_array_job():
 
     atf.cancel_jobs([job_id])
 
+    for i in tasks:
+        atf.wait_for_job_state(
+            resolve_array_job(job_id, i), "CANCELLED", fatal=True, timeout=60
+        )
+
     output = (
         atf.run_command_output(
             f"squeue --noheader --only-job-state --format='%i=%T' --state=all -j {job_id}"
