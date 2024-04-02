@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Setting GLOB_SILENCE flag no longer exposes old bugged behavior.
  -- Fix associations AssocGrpCPURunMinutes being incorrectly computed for
     running jobs after a controller reconfiguration/restart.
+ -- Fix scheduling jobs that request --gpus and nodes have different node
+    weights and different numbers of gpus.
 
 * Changes in Slurm 23.11.5
 ==========================
