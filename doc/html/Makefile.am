@@ -70,7 +70,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	related_software.html \
-	release_notes\.html \
+	release_notes.html \
 	reservations.html \
 	resource_binding.html \
 	resource_limits.html \
