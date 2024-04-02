@@ -6072,7 +6072,7 @@ static void _handle_signal_filter_mismatch(job_record_t *job_ptr,
 		err_msg = xstrdup_printf("Job started on sibling cluster %s: %s",
 					 sib_name, slurm_strerror(error_code));
 		_slurm_selected_step_init(job_ptr, &id);
-		_add_signal_job_resp(signal_args, NULL, error_code,
+		_add_signal_job_resp(signal_args, sib_name, error_code,
 				     err_msg, &id, job_ptr->job_id);
 		/* sib_name is added to the job_resp, do not free */
 		return;
