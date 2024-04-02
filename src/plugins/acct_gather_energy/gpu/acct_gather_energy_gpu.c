@@ -316,17 +316,15 @@ static void *_thread_gpu_run(void *no_data)
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
 	//loop until slurm stop
+	slurm_mutex_lock(&gpu_mutex);
 	while (!flag_energy_accounting_shutdown) {
-		slurm_mutex_lock(&gpu_mutex);
-
 		_thread_update_node_energy();
 
 		/* Sleep until the next time. */
 		abs.tv_sec += DEFAULT_GPU_FREQ;
 		slurm_cond_timedwait(&gpu_cond, &gpu_mutex, &abs);
-
-		slurm_mutex_unlock(&gpu_mutex);
 	}
+	slurm_mutex_unlock(&gpu_mutex);
 
 	log_flag(ENERGY, "gpu-thread: ended");
 

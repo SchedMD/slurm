@@ -779,17 +779,15 @@ static void *_thread_ipmi_run(void *no_data)
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
 	//loop until slurm stop
+	slurm_mutex_lock(&ipmi_mutex);
 	while (!flag_energy_accounting_shutdown) {
-		slurm_mutex_lock(&ipmi_mutex);
-
 		_thread_update_node_energy(&ipmi_ctx);
 
 		/* Sleep until the next time. */
 		abs.tv_sec += slurm_ipmi_conf.freq;
 		slurm_cond_timedwait(&ipmi_cond, &ipmi_mutex, &abs);
-
-		slurm_mutex_unlock(&ipmi_mutex);
 	}
+	slurm_mutex_unlock(&ipmi_mutex);
 
 	_close_ipmi_context(&ipmi_ctx);
 	log_flag(ENERGY, "ipmi-thread: ended");
