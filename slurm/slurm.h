@@ -2841,6 +2841,7 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_NNSOCK	SLURM_BIT(12) /* SlurmdParameters=numa_node_as_socket */
 #define CONF_FLAG_ECORE		SLURM_BIT(13) /* SlurmdParameters=allow_ecores */
 #define CONF_FLAG_SHR		SLURM_BIT(14) /* SlurmdParameters=shutdown_on_reboot */
+#define CONF_FLAG_CONTAIN_SPANK SLURM_BIT(15) /* SlurmdParameters=contain_spank */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
