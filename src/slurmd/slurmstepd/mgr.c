@@ -1001,6 +1001,7 @@ static void *_x11_signal_handler(void *arg)
 static int _set_xauthority(stepd_step_rec_t *step)
 {
 	struct priv_state sprivs = { 0 };
+	int rc = SLURM_SUCCESS;
 
 	if (drop_privileges(step, true, &sprivs, false) < 0) {
 		error("%s: Unable to drop privileges before xauth", __func__);
@@ -1010,7 +1011,7 @@ static int _set_xauthority(stepd_step_rec_t *step)
 	if (x11_set_xauth(step->x11_xauthority, step->x11_magic_cookie,
 			  step->x11_display)) {
 		error("%s: failed to run xauth", __func__);
-		return SLURM_ERROR;
+		rc =  SLURM_ERROR;
 	}
 
 	if (reclaim_privileges(&sprivs) < 0) {
@@ -1018,7 +1019,7 @@ static int _set_xauthority(stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _spawn_job_container(stepd_step_rec_t *step)

@@ -111,6 +111,8 @@ documents those changes that are of interest to users and administrators.
  -- Ensure that thread_id_rpc is gone before priority_g_fini().
  -- Fix scontrol reboot timeout removing drain state from nodes.
  -- squeue - Print header on empty reponse to `--only-job-state`.
+ -- Fix slurmrestd not ending job properly when xauth is not present and a x11
+    job is sent.
 
 * Changes in Slurm 23.11.5
 ==========================
