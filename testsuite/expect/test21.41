@@ -28,7 +28,6 @@ source ./globals_accounting
 
 # globals
 set access_err    0
-set timeout 120
 
 set sql_in_clus1  "$test_name-clus1-in.sql"
 set sql_rem_clus1 "$test_name-clus1-rem.sql"
@@ -232,8 +231,10 @@ proc cleanup {} {
 	global sql_rem_clus1 sql_rem_clus2
 	global clusters accounts users
 
-	archive_load $sql_rem_clus1
-	archive_load $sql_rem_clus2
+	if {[file exists $sql_rem_clus1] && [file exists $sql_rem_clus2]} {
+		archive_load $sql_rem_clus1
+		archive_load $sql_rem_clus2
+	}
 
 	remove_cluster $clusters
 	remove_user    $clusters $accounts $users
@@ -291,74 +292,12 @@ set user1acct1 0
 set user1acct2 0
 set user2acct1 0
 set user2acct2 0
-eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$user1.$account1.($number)." {
-		set user1acct1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$user1.$account2.($number)." {
-		set user1acct2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$user2.$account1.($number)." {
-		set user2acct1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$user2.$account2.($number)." {
-		set user2acct2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {!$user1acct1 || !$user1acct2 || !$user2acct1 || !$user2acct2} {
-	fail "Didn't get one of the user associations ($user1acct1,$user1acct2,$user2acct1,$user2acct2)"
-}
+set output [run_command_output -fail "$sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format='User,account,id'"]
+subtest -fatal {![regexp "There was a problem" $output]} "Verify that there's no error message from sacctmgr getting assocs"
+subtest -fatal {[regexp "$user1.$account1.($number)." $output - user1acct1]} "Verify that user1acct1 is obtained"
+subtest -fatal {[regexp "$user1.$account2.($number)." $output - user1acct2]} "Verify that user1acct2 is obtained"
+subtest -fatal {[regexp "$user2.$account1.($number)." $output - user2acct1]} "Verify that user2acct1 is obtained"
+subtest -fatal {[regexp "$user2.$account2.($number)." $output - user2acct2]} "Verify that user2acct2 is obtained"
 
 #
 # Get the wckeys ids
@@ -368,39 +307,12 @@ set user1wckey1 0
 set user2wckey1 0
 set user1wckey2 0
 set user2wckey2 0
-eval spawn $sacctmgr -n -p list wckeys users=$users cluster=$clusters format="user,wckey,id"
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$user1.$wckey1.($number)." {
-		set user1wckey1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "$user2.$wckey1.($number)." {
-		set user2wckey1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "$user1.$wckey2.($number)." {
-		set user1wckey2 $expect_out(1,string)
-		exp_continue
-	}
-	-re "$user2.$wckey2.($number)." {
-		set user2wckey2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr wckeys not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {!$user1wckey1 || !$user2wckey1 || !$user1wckey2 || !$user2wckey2} {
-	fail "Didn't get one of the user wckeys ($user1wckey1,$user2wckey1,$user1wckey2,$user2wckey2)"
-}
-
+set output [run_command_output -fail "$sacctmgr -n -p list wckeys users=$users cluster=$clusters format='user,wckey,id'"]
+subtest -fatal {![regexp "There was a problem" $output]} "Verify that there's no error message from sacctmgr getting wckeys"
+subtest -fatal {[regexp "$user1.$wckey1.($number)." $output - user1wckey1]} "Verify that user1wckey1 is obtained"
+subtest -fatal {[regexp "$user1.$wckey2.($number)." $output - user1wckey2]} "Verify that user1wckey2 is obtained"
+subtest -fatal {[regexp "$user2.$wckey1.($number)." $output - user2wckey1]} "Verify that user2wckey1 is obtained"
+subtest -fatal {[regexp "$user2.$wckey2.($number)." $output - user2wckey2]} "Verify that user2wckey2 is obtained"
 #
 # Create the SQL files
 #
