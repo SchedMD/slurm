@@ -232,8 +232,10 @@ proc cleanup {} {
 	global sql_rem_clus1 sql_rem_clus2
 	global clusters accounts users
 
-	archive_load $sql_rem_clus1
-	archive_load $sql_rem_clus2
+	if {[file exists $sql_rem_clus1] && [file exists $sql_rem_clus2]} {
+		archive_load $sql_rem_clus1
+		archive_load $sql_rem_clus2
+	}
 
 	remove_cluster $clusters
 	remove_user    $clusters $accounts $users
