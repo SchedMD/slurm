@@ -1583,7 +1583,6 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
  * Add job to full-length core_bitmap
  * IN job_resrcs_ptr - resources allocated to a job
  * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
- * IN bits_per_node - bits per node in the full_bitmap
  * RET 1 on success, 0 otherwise
  */
 extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
