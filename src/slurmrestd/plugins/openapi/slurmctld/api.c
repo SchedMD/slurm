@@ -225,6 +225,16 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.query = DATA_PARSER_OPENAPI_JOB_INFO_QUERY,
 			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "send signal to list of jobs",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_KILL_JOBS_RESP,
+					.description = "description of jobs to signal",
+				},
+				.query = DATA_PARSER_KILL_JOBS_MSG,
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
