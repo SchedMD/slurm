@@ -79,6 +79,13 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
+/* Macro to only include the code inside of ONLY_DEBUG if !NDEBUG */
+#ifndef NDEBUG
+#define ONLY_DEBUG(...) __VA_ARGS__
+#else
+#define ONLY_DEBUG(...)
+#endif
+
 #define HASH_TABLE_MAGIC 0x131e1aff
 #define HASH_FENTRY_MAGIC(index) (((uint32_t) 0xffff0000) ^ ((uint32_t) index))
 

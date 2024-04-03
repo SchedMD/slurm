@@ -41,6 +41,13 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Macro to only include the code inside of ONLY_DEBUG if !NDEBUG */
+#ifndef NDEBUG
+#define ONLY_DEBUG(...) __VA_ARGS__
+#else
+#define ONLY_DEBUG(...)
+#endif
+
 #define JOB_STATE_MIMIC_RECORD(js)                                             \
 	&(const job_record_t)                                                  \
 	{                                                                      \
