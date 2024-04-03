@@ -89,7 +89,7 @@ static void _on_insert(void *ptr, const void *key, const size_t key_bytes, void 
 	state_t *s = ptr;
 
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert_ptr_nonnull(s);
+	ck_assert(s);
 	ck_assert(key_bytes == KEY_SIZE);
 
 	*s = (state_t) {
@@ -104,7 +104,7 @@ static void _on_free(void *ptr, void *state)
 	state_t *s = ptr;
 
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert_ptr_nonnull(s);
+	ck_assert(s);
 	ck_assert(s->magic == STATE_MAGIC);
 
 	*s = (state_t) {
@@ -118,9 +118,9 @@ static xahash_foreach_control_t _foreach(void *entry, void *state, void *arg)
 	global_state_t *gs = state;
 	state_t *s = entry;
 
-	ck_assert_ptr_nonnull(gs);
+	ck_assert(gs);
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert_ptr_nonnull(s);
+	ck_assert(s);
 	ck_assert(s->magic == STATE_MAGIC);
 
 	return XAHASH_FOREACH_CONT;
@@ -153,30 +153,30 @@ START_TEST(test_fixed_basic)
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
 
 	/* verify we don't find anything in an empty table */
-	ck_assert_ptr_null(xahash_find_entry(ht, NULL, KEY_SIZE));
-	ck_assert_ptr_null(xahash_find_entry(ht, _match, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, NULL, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, _match, KEY_SIZE));
 	ck_assert(!xahash_free_entry(ht, _match, KEY_SIZE));
-	ck_assert_ptr_null(xahash_find_entry(ht, &ht, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, &ht, KEY_SIZE));
 	ck_assert(!xahash_free_entry(ht, &ht, KEY_SIZE));
 
 	/* try inserts */
 	s = xahash_insert_entry(ht, &s, KEY_SIZE);
 	ck_assert(s->magic == STATE_MAGIC);
-	ck_assert_ptr_eq(s->key, &s);
+	ck_assert(s->key == &s);
 	ck_assert(s->caller_magic == 0);
 	s->caller_magic = STATE_CALLER_MAGIC;
 
 	/* verify we don't find invalid keys with entries */
-	ck_assert_ptr_null(xahash_find_entry(ht, NULL, KEY_SIZE));
-	ck_assert_ptr_null(xahash_find_entry(ht, _match, KEY_SIZE));
-	ck_assert_ptr_null(xahash_find_entry(ht, &ht, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, NULL, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, _match, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, &ht, KEY_SIZE));
 
 	/* verify we can find new entry */
 	f = xahash_find_entry(ht, &s, KEY_SIZE);
-	ck_assert_ptr_nonnull(f);
+	ck_assert(f);
 	ck_assert(f == s);
 	ck_assert(f->magic == STATE_MAGIC);
-	ck_assert_ptr_eq(f->key, &s);
+	ck_assert(f->key == &s);
 	ck_assert(f->caller_magic == STATE_CALLER_MAGIC);
 	ck_assert(s->magic == STATE_MAGIC);
 	ck_assert(s->key == &s);
@@ -184,7 +184,7 @@ START_TEST(test_fixed_basic)
 
 	ck_assert(xahash_free_entry(ht, &s, KEY_SIZE));
 	ck_assert(!xahash_free_entry(ht, &s, KEY_SIZE));
-	ck_assert_ptr_null(xahash_find_entry(ht, &s, KEY_SIZE));
+	ck_assert(!xahash_find_entry(ht, &s, KEY_SIZE));
 
 	/* verify we get the same pointer and value back */
 	gs = xahash_get_state_ptr(ht);
@@ -218,7 +218,7 @@ START_TEST(test_fixed_mass)
 
 		/* verify on_insert changes */
 		ck_assert(f->magic == STATE_MAGIC);
-		ck_assert_ptr_eq(f->key, &s[i]);
+		ck_assert(f->key == &s[i]);
 		ck_assert(f->caller_magic == 0);
 		f->caller_magic = caller_magic;
 
@@ -235,10 +235,10 @@ START_TEST(test_fixed_mass)
 
 		/* verify we can find every entry */
 		state_t *f = xahash_find_entry(ht, &s[i], KEY_SIZE);
-		ck_assert_ptr_nonnull(f);
+		ck_assert(f);
 		ck_assert(f == s[i]);
 		ck_assert(f->magic == STATE_MAGIC);
-		ck_assert_ptr_eq(f->key, &s[i]);
+		ck_assert(f->key == &s[i]);
 		ck_assert(f->caller_magic == s[i]->caller_magic);
 		ck_assert(f->caller_magic == caller_magic);
 	}
@@ -252,10 +252,10 @@ START_TEST(test_fixed_mass)
 
 		/* verify we can find every entry */
 		state_t *f = xahash_find_entry(ht, &s[i], KEY_SIZE);
-		ck_assert_ptr_nonnull(f);
+		ck_assert(f);
 		ck_assert(f == s[i]);
 		ck_assert(f->magic == STATE_MAGIC);
-		ck_assert_ptr_eq(f->key, &s[i]);
+		ck_assert(f->key == &s[i]);
 		ck_assert(f->caller_magic == s[i]->caller_magic);
 		ck_assert(f->caller_magic == caller_magic);
 	}
@@ -265,12 +265,12 @@ START_TEST(test_fixed_mass)
 		ck_assert(xahash_find_entry(ht, &s[i], KEY_SIZE) == s[i]);
 		s[i] = NULL;
 		ck_assert(xahash_free_entry(ht, &s[i], KEY_SIZE));
-		ck_assert_ptr_null(xahash_find_entry(ht, &s[i], KEY_SIZE));
+		ck_assert(!xahash_find_entry(ht, &s[i], KEY_SIZE));
 	}
 
 	/* verify all removed (again) */
 	for (int i = 0; i < ARRAY_SIZE(s); i++)
-		ck_assert_ptr_null(xahash_find_entry(ht, &s[i], KEY_SIZE));
+		ck_assert(!xahash_find_entry(ht, &s[i], KEY_SIZE));
 
 	/* verify we get the same pointer and value back */
 	ck_assert(gs == xahash_get_state_ptr(ht));
