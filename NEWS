@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     job doesn't specify --exclusive and is evaluated first on a partition
     configured with OverSubscribe=EXCLUSIVE but ends up starting in a partition
     configured with OverSubscribe!=EXCLUSIVE evaluated afterwards.
+ -- Setting GLOB_SILENCE flag no longer exposes old bugged behavior.
 
 * Changes in Slurm 23.11.5
 ==========================
