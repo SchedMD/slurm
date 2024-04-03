@@ -36,7 +36,7 @@ START_TEST(pack_1702_null_used_limits)
 	ck_assert(pack_ul.jobs          == unpack_ul->jobs);
 	ck_assert(pack_ul.submit_jobs   == unpack_ul->submit_jobs);
 	ck_assert(pack_ul.tres          == unpack_ul->tres);
-	ck_assert(pack_ul.tres_run_mins == unpack_ul->tres_run_mins);
+	ck_assert(pack_ul.tres_run_secs == unpack_ul->tres_run_secs);
 	ck_assert(pack_ul.uid           == unpack_ul->uid);
 
 	free_buf(buf);
@@ -55,12 +55,12 @@ START_TEST(pack_1702_used_limits)
 	pack_ul->jobs          = 12345;
 	pack_ul->submit_jobs   = 11234;
 	pack_ul->tres          = xmalloc(tres_cnt * sizeof(uint64_t));
-	pack_ul->tres_run_mins = xmalloc(tres_cnt * sizeof(uint64_t));
+	pack_ul->tres_run_secs = xmalloc(tres_cnt * sizeof(uint64_t));
 	pack_ul->uid           = 11123;
 
 	for(int i = 0; i < tres_cnt; i++){
 		pack_ul->tres[i] = 5*1;
-		pack_ul->tres_run_mins[i] = 10*i;
+		pack_ul->tres_run_secs[i] = 10*i;
 	}
 
 	buf_t *buf = init_buf(1024);
@@ -76,7 +76,7 @@ START_TEST(pack_1702_used_limits)
 	ck_assert(pack_ul->submit_jobs == unpack_ul->submit_jobs);
 	for(i=0; i<tres_cnt; i++){
 		ck_assert(pack_ul->tres[i]          == unpack_ul->tres[i]);
-		ck_assert(pack_ul->tres_run_mins[i] == unpack_ul->tres_run_mins[i]);
+		ck_assert(pack_ul->tres_run_secs[i] == unpack_ul->tres_run_secs[i]);
 	}
 	ck_assert(pack_ul->uid == unpack_ul->uid);
 
@@ -109,7 +109,7 @@ START_TEST(pack_1702_used_limits_null_ptrs)
 	ck_assert(pack_ul->jobs          == unpack_ul->jobs);
 	ck_assert(pack_ul->submit_jobs   == unpack_ul->submit_jobs);
 	ck_assert(pack_ul->tres          == unpack_ul->tres);
-	ck_assert(pack_ul->tres_run_mins == unpack_ul->tres_run_mins);
+	ck_assert(pack_ul->tres_run_secs == unpack_ul->tres_run_secs);
 	ck_assert(pack_ul->uid           == unpack_ul->uid);
 
 	free_buf(buf);
