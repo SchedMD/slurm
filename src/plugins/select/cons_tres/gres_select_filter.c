@@ -1014,7 +1014,7 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
  */
 static void _set_node_bits(int node_inx, int job_node_inx,
 			   sock_gres_t *sock_gres, uint32_t job_id,
-			   gres_mc_data_t *tres_mc_ptr, uint32_t *used_sock)
+			   uint32_t *used_cores_on_sock, uint32_t used_core_cnt)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -1023,6 +1023,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	gres_node_state_t *gres_ns;
 	uint32_t gres_needed;
 	int *links_cnt = NULL, *sorted_gres = NULL;
+	float gres_needed_per_core;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -1030,6 +1031,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	gres_needed = gres_js->gres_per_node;
+	gres_needed_per_core = (float)gres_needed / (float)used_core_cnt;
 
 	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
@@ -1047,10 +1049,14 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * Third: Use any additional available GRES.
 	 */
 	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-		if (!used_sock[s])
+		if (!used_cores_on_sock[s])
 			continue;
-		gres_needed -= _pick_gres_topo(sock_gres, 1, node_inx, s,
-					       sorted_gres, links_cnt);
+		int sock_gres_needed = MIN(gres_needed,
+					   (int)(used_cores_on_sock[s] *
+						 gres_needed_per_core));
+		gres_needed -= _pick_gres_topo(sock_gres, sock_gres_needed,
+					       node_inx, s, sorted_gres,
+					       links_cnt);
 	}
 
 	if (gres_needed) {
@@ -1064,7 +1070,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * GRES which are best linked to GRES which have already been selected.
 	 */
 	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-		if (!used_sock[s])
+		if (!used_cores_on_sock[s])
 			continue;
 		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
 					       s, sorted_gres, links_cnt);
@@ -1080,7 +1086,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * which are best linked to GRES which have already been selected.
 	 */
 	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-		if (used_sock[s]) /* Sockets we ignored before */
+		if (used_cores_on_sock[s]) /* Sockets we ignored before */
 			continue;
 		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
 					       s, sorted_gres, links_cnt);
@@ -1550,7 +1556,7 @@ static int _select_and_set_node(void *x, void *arg)
 		}
 	} else if (gres_js->gres_per_node) {
 		_set_node_bits(node_inx, job_node_inx, sock_gres, job_id,
-			       tres_mc_ptr, args->used_cores_on_sock);
+			       args->used_cores_on_sock, args->used_core_cnt);
 	} else if (gres_js->gres_per_socket) {
 		_set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
 			       tres_mc_ptr, args->used_cores_on_sock,
