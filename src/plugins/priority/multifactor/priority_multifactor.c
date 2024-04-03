@@ -1765,8 +1765,6 @@ int init ( void )
 	} else if (assoc_mgr_root_assoc) {
 		_init_decay_vars();
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
-		slurm_thread_create(&decay_handler_thread,
-				    _decay_thread, NULL);
 	} else {
 		if (weight_fs) {
 			fatal("It appears you don't have any association "
@@ -1811,6 +1809,8 @@ int fini ( void )
 
 void priority_p_thread_start(void)
 {
+	slurm_thread_create(&decay_handler_thread, _decay_thread, NULL);
+
 	return;
 }
 
