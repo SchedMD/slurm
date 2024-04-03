@@ -33,6 +33,11 @@ documents those changes that are of interest to users and administrators.
     signaling via slurmctld.
  -- Fix combination of --nodelist and --exclude not always respecting the
     excluded node list.
+ -- Fix jobs incorrectly allocating nodes exclusively when started on a
+    partition that doesn't enforce it. This could happen if a multi-partition
+    job doesn't specify --exclusive and is evaluated first on a partition
+    configured with OverSubscribe=EXCLUSIVE but ends up starting in a partition
+    configured with OverSubscribe!=EXCLUSIVE evaluated afterwards.
 
 * Changes in Slurm 23.11.5
 ==========================

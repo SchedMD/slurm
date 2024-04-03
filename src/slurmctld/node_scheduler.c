@@ -2353,6 +2353,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
 	part_record_t *part_ptr = NULL;
+	uint8_t orig_whole_node, orig_share_res;
 	uint32_t min_nodes = 0, max_nodes = 0, req_nodes = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
@@ -2370,6 +2371,17 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
+
+	/*
+	 * The call path from _get_req_features() (called later in this
+	 * function) can eventually call _resolve_shared_status(). This latter
+	 * function can alter the job_ptr->details->{whole_node,share_res}.
+	 *
+	 * Saving the original values here and restoring them at cleanup time
+	 * at the bottom of this function if needed.
+	 */
+	orig_whole_node = job_ptr->details->whole_node;
+	orig_share_res = job_ptr->details->share_res;
 
 	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
 		return ESLURM_ACCOUNTING_POLICY;
@@ -2883,6 +2895,31 @@ cleanup:
 		}
 	} else
 		FREE_NULL_LIST(gres_list_pre);
+
+	/*
+	 * Unless the job is allocated resources now, we need to restore the
+	 * original whole_node/share_res values since _resolve_shared_status()
+	 * might have altered them during evaluation, and we don't want to
+	 * propagate the changes for potential subsequent evaluations for the
+	 * same job in a different partition with different configuration.
+	 *
+	 * NOTE: If we ever add an early return between the call to
+	 * _get_req_features() and the last return below we should ensure to
+	 * ammend the restore logic consequently (probably copy this snippet
+	 * before such early return).
+	 *
+	 * NOTE: We could have moved this snippet right after the call to
+	 * _get_req_features(), but we need it here since after the call the
+	 * error_code might change.
+	 *
+	 * NOTE: select_nodes() is the first common caller ancestor of the
+	 * different call tree ramifications ending in _resolve_shared_status(),
+	 * thus considered the appropriate spot for the save/restore logic.
+	 */
+	if (test_only || (error_code != SLURM_SUCCESS)) {
+		job_ptr->details->whole_node = orig_whole_node;
+		job_ptr->details->share_res = orig_share_res;
+	}
 
 	return error_code;
 }
