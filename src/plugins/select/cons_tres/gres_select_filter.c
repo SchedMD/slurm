@@ -426,14 +426,18 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 				       no_repeat, node_inx, ANY_SOCK_TEST,
 				       gres_needed, topo_index);
 
-	for (int s = 0;
-	     !enforce_binding && (s < sock_gres->sock_cnt) && *gres_needed;
-	     s++) {
-		if (used_sock[s]) /* Only test the sockets we ignored before */
-			continue;
-		_pick_shared_gres_topo(sock_gres, use_busy_dev, use_single_dev,
-				       no_repeat, node_inx, s, gres_needed,
-				       topo_index);
+	if (gres_needed && !enforce_binding) {
+		for (int s = 0;
+		     (s < sock_gres->sock_cnt) && *gres_needed;
+		     s++) {
+			/* Only test the sockets we ignored before */
+			if (used_sock[s])
+				continue;
+			_pick_shared_gres_topo(sock_gres, use_busy_dev,
+					       use_single_dev, no_repeat,
+					       node_inx, s, gres_needed,
+					       topo_index);
+		}
 	}
 
 	xfree(topo_index);
