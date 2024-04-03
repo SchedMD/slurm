@@ -454,7 +454,7 @@ static xahash_foreach_control_t _foreach_cache_job(void *entry, void *state_ptr,
 						   void *arg)
 {
 	const job_state_cached_t *js = entry;
-	cache_table_state_t *state = state_ptr;
+	ONLY_DEBUG(cache_table_state_t *state = state_ptr;)
 	job_state_args_t *args = arg;
 
 	xassert(!state || (state->magic == MAGIC_CACHE_TABLE_STATE));
