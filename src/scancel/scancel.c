@@ -814,7 +814,7 @@ _cancel_job_id (void *ci)
 	char *job_type = "";
 	DEF_TIMERS;
 
-	_init_flags(&job_type);
+	flags = _init_flags(&job_type);
 	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
