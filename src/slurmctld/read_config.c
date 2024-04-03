@@ -1503,6 +1503,7 @@ extern int read_slurm_conf(int recover)
 	char *old_select_type = xstrdup(slurm_conf.select_type);
 	char *old_switch_type = xstrdup(slurm_conf.switch_type);
 	char *state_save_dir = xstrdup(slurm_conf.state_save_location);
+	char *tmp_ptr = NULL;
 	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
 	uint16_t reconfig_flags = slurm_conf.reconfig_flags;
@@ -1802,6 +1803,12 @@ extern int read_slurm_conf(int recover)
 
 	consolidate_config_list(true, true);
 	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "max_powered_nodes="))) {
+		max_powered_nodes =
+			strtol(tmp_ptr + strlen("max_powered_nodes="),
+			       NULL, 10);
+	}
 
 	slurm_conf.last_update = time(NULL);
 end_it:

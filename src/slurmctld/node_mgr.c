@@ -1706,6 +1706,33 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 	}
 
+	if ((max_powered_nodes != NO_VAL) &&
+	    (update_node_msg->node_state & NODE_STATE_POWER_UP)) {
+		bitstr_t *bmp = NULL;
+		int count;
+
+		if (hostlist2bitmap(host_list, false, &bmp)) {
+			info("update_node: hostlist2bitmap failed");
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			FREE_NULL_HOSTLIST(hostname_list);
+			FREE_NULL_BITMAP(bmp);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+		bit_or(bmp, power_up_node_bitmap);
+		count = bit_set_count(bmp);
+		FREE_NULL_BITMAP(bmp);
+		if (count > max_powered_nodes) {
+			error("update_node: Cannot power up more nodes due to MaxPoweredUpNodes=%d",
+			      max_powered_nodes);
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			FREE_NULL_HOSTLIST(hostname_list);
+			return ESLURM_MAX_POWERED_NODES;
+		}
+		log_flag(POWER, "powered nodes good %d", count);
+	}
+
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 		bool acct_updated = false;

@@ -56,6 +56,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add contain_spank option to SlurmdParameters. When set, spank_user_init(),
     spank_task_post_fork(), and spank_task_exit() will execute within the
     job_container/tmpfs plugin namespace.
+ -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
+    nodes after the max is reached.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

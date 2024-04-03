@@ -4786,6 +4786,13 @@ nodes. Default is 0.
 .IP
 
 .TP
+\fBmax_powered_nodes\fR
+The max number of powered up nodes across the cluster. Once this is reached,
+jobs requesting additional nodes will not start, and "scontrol power up
+<nodes>" will fail.
+.IP
+
+.TP
 \fBmax_dbd_msg_action\fR
 Action used once MaxDBDMsgs is reached, options are 'discard' (default) and 'exit'.
 

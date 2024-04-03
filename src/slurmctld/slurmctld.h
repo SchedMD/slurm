@@ -256,6 +256,7 @@ extern bool disable_remote_singleton;
 extern int listen_nports;
 extern struct pollfd *listen_fds;
 extern int max_depend_depth;
+extern uint32_t max_powered_nodes;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern pthread_mutex_t purge_thread_lock;

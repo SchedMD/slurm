@@ -2536,6 +2536,42 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	} else
 		selected_node_cnt = req_nodes;
 
+	if (!test_only && select_bitmap && (max_powered_nodes != NO_VAL)) {
+		bitstr_t *tmp = bit_copy(select_bitmap);
+		hostlist_t *select = NULL, *need = NULL;
+		char *select_str = NULL, *need_str = NULL;
+		int32_t count, powerup_count, before_count = 0;
+
+		/* selected and powered down */
+		bit_and(tmp, power_node_bitmap);
+		powerup_count = bit_set_count(tmp);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
+			select = bitmap2hostlist(select_bitmap);
+			select_str = slurm_hostlist_ranged_string_xmalloc(
+				select);
+			need = bitmap2hostlist(tmp);
+			need_str = slurm_hostlist_ranged_string_xmalloc(need);
+			before_count = bit_set_count(power_up_node_bitmap);
+		}
+		bit_or(tmp, power_up_node_bitmap);
+		count = bit_set_count(tmp);
+		log_flag(POWER, "Need to power up %d nodes (%s) from (%s). powered up count before: %d after: %d",
+			 powerup_count, need_str, select_str, before_count,
+			 count);
+
+		if ((powerup_count > 0) && (count > max_powered_nodes)) {
+			error_code = ESLURM_MAX_POWERED_NODES;
+			log_flag(POWER, "%s: Cannot power up more nodes for %pJ due to MaxPoweredUpNodes limit",
+				 __func__, job_ptr);
+		}
+
+		FREE_NULL_BITMAP(tmp);
+		FREE_NULL_HOSTLIST(need);
+		FREE_NULL_HOSTLIST(select);
+		xfree(select_str);
+		xfree(need_str);
+	}
+
 	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	tres_req_cnt[TRES_ARRAY_CPU] =
 		(uint64_t)(job_ptr->total_cpus ?
@@ -2675,6 +2711,9 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			 * may be wrong.
 			 */
 			job_ptr->state_reason = FAIL_CONSTRAINTS;
+			xfree(job_ptr->state_desc);
+		} else if ((error_code == ESLURM_MAX_POWERED_NODES)) {
+			job_ptr->state_reason = WAIT_MAX_POWERED_NODES;
 			xfree(job_ptr->state_desc);
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;

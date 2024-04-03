@@ -1938,6 +1938,11 @@ skip_start:
 			/* potentially starve this job */
 			if (assoc_limit_stop)
 				fail_by_part = true;
+		} else if (error_code == ESLURM_MAX_POWERED_NODES) {
+			sched_debug2("%pJ cannot start: %s",
+				   job_ptr, slurm_strerror(error_code));
+			job_ptr->state_reason = WAIT_MAX_POWERED_NODES;
+			xfree(job_ptr->state_desc);
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&

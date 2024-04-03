@@ -164,6 +164,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow NodeSet names to be used in SuspendExcNodes.
  -- SuspendExcNodes=<nodes>:N now counts allocated nodes in N. The first N
     powered up nodes in <nodes> are protected from being suspended.
+ -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
+    nodes after the max is reached.
 
 * Changes in Slurm 23.11.7
 ==========================
