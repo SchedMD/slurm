@@ -34,19 +34,21 @@
 \*****************************************************************************/
 
 /*
- * fixed size xahash_t is designed to have all O(1) operations. This requires a
- * good bit of design that is not generally used in the rest of Slurm to achieve
- * the goal.
+ * Fixed size xahash_t is designed to have all operations with a cost of O(1).
+ * This requires a good bit of design to achieve the goal.
  *
  * Fixed size hash table: xahash_table_t
- * The fixed count xahash_table_t is does 1 xmalloc() call unless there are hash
- * collisions. Then it is 1 xmalloc() per each insert with a hash collision.
+ * The fixed count xahash_table_t does 1 xmalloc() call unless there are hash
+ * collisions. Then it does 1 xmalloc() per each insert with a hash collision.
+ *
  * This is the memory layout of each hash table:
  *
- * |----------------------------| xahash_table_t* and xahash_table_header_t*
- * | hash table header          | body of xahash_table_header_t
- * |----------------------------| _get_state()
- * | state blob                 | xahash_table_header_t->state_blob_bytes
+ * |----------------------------|
+ * | hash table header          | xahash_table_t* and xahash_table_header_t*
+ * |                            | body of xahash_table_header_t
+ * |----------------------------|
+ * | state blob                 | _get_state()
+ * |                            | xahash_table_header_t->state_blob_bytes
  * |----------------------------|
  * | |----------------|         | _get_fentry(index), fentry_header_t*
  * | | entry header   |         |
@@ -55,7 +57,7 @@
  * | |----------------|         | _get_fentry(index,depth) + xahash_table_header_t->bytes_per_entry_blob
  * |----------------------------|
  *
- * Each entry fails into a linked list on a hash collision:
+ * Each entry fails down into a linked list on a hash collision:
  *
  *                       <-------------- xmalloc() per entry --->
  * |----------------|    |----------------|    |----------------|
@@ -64,6 +66,8 @@
  * |----------------|    |----------------|    |----------------|
  * | entry blob     |    | entry blob     |    | entry blob     |
  * |----------------|    |----------------|    |----------------|
+ *
+ * Hash collisions are slow and break the O(1) design and should be avoided.
  *
  */
 
