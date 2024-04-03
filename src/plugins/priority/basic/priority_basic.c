@@ -101,6 +101,11 @@ int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+void priority_p_thread_start(void)
+{
+	return;
+}
+
 /*
  * The remainder of this file implements the standard Slurm priority API.
  */

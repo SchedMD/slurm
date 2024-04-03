@@ -1820,6 +1820,11 @@ int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+void priority_p_thread_start(void)
+{
+	return;
+}
+
 extern uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)
 {
 	uint32_t priority;

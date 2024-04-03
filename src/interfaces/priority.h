@@ -54,6 +54,7 @@ extern int priority_g_fini(void);
 extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
 extern void priority_g_reconfig(bool assoc_clear);
 extern uint32_t priority_g_recover(uint32_t prio_boost);
+extern void priority_g_thread_start(void);
 
 /* sets up the normalized usage and the effective usage of an
  * association.
