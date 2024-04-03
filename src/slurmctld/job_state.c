@@ -897,7 +897,7 @@ static void _unlink_array_job(const job_record_t *job_ptr,
 		if (!xahash_free_entry(array_job_cache_table, &job_id,
 				       sizeof(job_id)))
 			fatal_abort("Unable to remove %pJ after just finding it",
-				ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
+				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
 		return;
 	} else if (js->array_job_id == js->job_id) {
 		_log_array_job_chain(js, __func__,
@@ -1027,10 +1027,10 @@ static void _on_array_job_removal(const job_record_t *job_ptr,
 
 		if (ats)
 			fatal_abort("found array task when there should not be one: %pJ",
-				ARRAY_TASK_STATE_MIMIC_RECORD(ats));
+				    ARRAY_TASK_STATE_MIMIC_RECORD(ats));
 		if (ajs && (js->job_id != js->array_job_id))
 			fatal_abort("found array job link when there should not be one: %pJ",
-				ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
+				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
 	}
 }
 
