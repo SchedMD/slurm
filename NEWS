@@ -103,6 +103,9 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/{elasticsearch,kafka} - Send priority alongside the rest of fields.
  -- mpi/pmix - Fix multiple races with heterogeneous jobs, causing job's client
     command to hang or segfault at random.
+ -- Add contain_spank option to SlurmdParameters. When set, spank_user_init(),
+    spank_task_post_fork(), and spank_task_exit() will execute within the
+    job_container/tmpfs plugin namespace.
 
 * Changes in Slurm 23.11.6
 ==========================

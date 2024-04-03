@@ -45,6 +45,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
     without rebooting compute nodes.
  -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
+ -- Add contain_spank option to SlurmdParameters. When set, spank_user_init(),
+    spank_task_post_fork(), and spank_task_exit() will execute within the
+    job_container/tmpfs plugin namespace.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
