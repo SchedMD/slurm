@@ -971,8 +971,8 @@ static void _unlink_array_job(const job_record_t *job_ptr,
 			if (!xahash_free_entry(array_job_cache_table,
 					       &array_job_id,
 					       sizeof(array_job_id)))
-				fatal_abort("[%pJ] Unable to remove placeholder",
-					JOB_STATE_MIMIC_RECORD(meta_js));
+				fatal_abort("[JobId=%u] Unable to remove array meta job placeholder link",
+					    array_job_id);
 		}
 	}
 }
