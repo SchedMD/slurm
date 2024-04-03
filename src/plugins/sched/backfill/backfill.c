@@ -3875,7 +3875,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
 	het_job_rec_t *rec;
 	list_itr_t *iter;
-	int mcs_select, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
@@ -3908,9 +3908,6 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		bit_and(avail_bitmap, up_node_bitmap);
 		if (used_bitmap)
 			bit_and_not(avail_bitmap, used_bitmap);
-		filter_by_node_owner(job_ptr, avail_bitmap);
-		mcs_select = slurm_mcs_get_select(job_ptr);
-		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);
