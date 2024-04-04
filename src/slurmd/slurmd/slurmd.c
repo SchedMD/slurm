@@ -1106,7 +1106,7 @@ _read_config(void)
 	 * configuration file because the slurmctld creates bitmaps
 	 * for scheduling before these nodes check in.
 	 */
-	config_overrides = cf->conf_flags & CTL_CONF_OR;
+	config_overrides = cf->conf_flags & CONF_FLAG_OR;
 	if (conf->dynamic_type == DYN_NODE_FUTURE) {
 		/* Already set to actual config earlier in _dynamic_init() */
 	} else if (conf->dynamic_type == DYN_NODE_NORM) {
@@ -1470,7 +1470,7 @@ _print_conf(void)
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
 	debug3("TaskPluginParam = %u",   cf->task_plugin_param);
-	debug3("UsePAM      = %"PRIu64, (cf->conf_flags & CTL_CONF_PAM));
+	debug3("UsePAM      = %"PRIu64, (cf->conf_flags & CONF_FLAG_PAM));
 	slurm_conf_unlock();
 }
 

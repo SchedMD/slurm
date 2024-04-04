@@ -3246,7 +3246,7 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int rc = EINVAL;
 	uint16_t job_node_req;
 
-	if (!(slurm_conf.conf_flags & CTL_CONF_ASRU))
+	if (!(slurm_conf.conf_flags & CONF_FLAG_ASRU))
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {

@@ -818,7 +818,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->preempt_mode = part->preempt_mode;
 
 	if (part->disable_root_jobs == NO_VAL8) {
-		if (slurm_conf.conf_flags & CTL_CONF_DRJ)
+		if (slurm_conf.conf_flags & CONF_FLAG_DRJ)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
 	} else if (part->disable_root_jobs) {
 		part_ptr->flags |= PART_FLAG_NO_ROOT;
@@ -2069,7 +2069,7 @@ static void _gres_reconfig(void)
 			node_ptr->config_ptr->threads,
 			node_ptr->config_ptr->cores,
 			node_ptr->config_ptr->tot_sockets,
-			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
+			slurm_conf.conf_flags & CONF_FLAG_OR, NULL);
 	}
 }
 

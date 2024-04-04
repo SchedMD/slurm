@@ -423,7 +423,7 @@ extern uint16_t slurm_get_track_wckey(void)
 		track_wckey = slurmdbd_conf->track_wckey;
 	} else {
 		conf = slurm_conf_lock();
-		track_wckey = conf->conf_flags & CTL_CONF_WCKEY ? 1 : 0;
+		track_wckey = conf->conf_flags & CONF_FLAG_WCKEY ? 1 : 0;
 		slurm_conf_unlock();
 	}
 	return track_wckey;

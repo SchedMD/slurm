@@ -2826,21 +2826,21 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_DEFER_BATCH	0x0020 /* defer REQUEST_BATCH_JOB_LAUNCH until prolog end on all nodes */
 #define PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL 0x0040 /* always requeue job on prolog failure */
 
-#define CTL_CONF_OR             SLURM_BIT(0) /*SlurmdParameters=config_overrides*/
-#define CTL_CONF_SJC            SLURM_BIT(1) /* AccountingStoreFlags=job_comment*/
-#define CTL_CONF_DRJ            SLURM_BIT(2) /* DisableRootJobs */
-#define CTL_CONF_ASRU           SLURM_BIT(3) /* AllowSpecResourcesUsage */
-#define CTL_CONF_PAM            SLURM_BIT(4) /* UsePam */
-#define CTL_CONF_WCKEY          SLURM_BIT(5) /* TrackWCKey */
-#define CTL_CONF_IPV4_ENABLED   SLURM_BIT(6) /* IPv4 is enabled */
-#define CTL_CONF_IPV6_ENABLED   SLURM_BIT(7) /* IPv6 is enabled */
-#define CTL_CONF_SJX            SLURM_BIT(8) /* AccountingStoreFlags=job_extra */
-#define CTL_CONF_SJS            SLURM_BIT(9) /* AccountingStoreFlags=job_script */
-#define CTL_CONF_SJE            SLURM_BIT(10) /* AccountingStoreFlags=job_env */
-#define CTL_CONF_L3CSOCK        SLURM_BIT(11) /* SlurmdParameters=l3cache_as_socket */
-#define CTL_CONF_NNSOCK         SLURM_BIT(12) /* SlurmdParameters=numa_node_as_socket */
-#define CTL_CONF_ECORE          SLURM_BIT(13) /* SlurmdParameters=allow_ecores */
-#define CTL_CONF_SHR            SLURM_BIT(14) /* SlurmdParameters=shutdown_on_reboot */
+#define CONF_FLAG_OR		SLURM_BIT(0) /* SlurmdParameters=config_overrides */
+#define CONF_FLAG_SJC		SLURM_BIT(1) /* AccountingStoreFlags=job_comment */
+#define CONF_FLAG_DRJ		SLURM_BIT(2) /* DisableRootJobs */
+#define CONF_FLAG_ASRU		SLURM_BIT(3) /* AllowSpecResourcesUsage */
+#define CONF_FLAG_PAM		SLURM_BIT(4) /* UsePam */
+#define CONF_FLAG_WCKEY		SLURM_BIT(5) /* TrackWCKey */
+#define CONF_FLAG_IPV4_ENABLED	SLURM_BIT(6) /* IPv4 is enabled */
+#define CONF_FLAG_IPV6_ENABLED	SLURM_BIT(7) /* IPv6 is enabled */
+#define CONF_FLAG_SJX		SLURM_BIT(8) /* AccountingStoreFlags=job_extra */
+#define CONF_FLAG_SJS		SLURM_BIT(9) /* AccountingStoreFlags=job_script */
+#define CONF_FLAG_SJE		SLURM_BIT(10) /* AccountingStoreFlags=job_env */
+#define CONF_FLAG_L3CSOCK	SLURM_BIT(11) /* SlurmdParameters=l3cache_as_socket */
+#define CONF_FLAG_NNSOCK	SLURM_BIT(12) /* SlurmdParameters=numa_node_as_socket */
+#define CONF_FLAG_ECORE		SLURM_BIT(13) /* SlurmdParameters=allow_ecores */
+#define CONF_FLAG_SHR		SLURM_BIT(14) /* SlurmdParameters=shutdown_on_reboot */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
@@ -2893,8 +2893,7 @@ typedef struct {
 	char *comm_params;     /* Communication parameters */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
 				 * scheduling another job */
-	uint32_t conf_flags;   	/* various CTL_CONF_* flags to determine
-				 * settings */
+	uint32_t conf_flags;   	/* CONF_FLAG_* flags */
 	char **control_addr;	/* comm path of slurmctld
 				 * primary server and backups */
 	uint32_t control_cnt;	/* Length of control_addr & control_machine */

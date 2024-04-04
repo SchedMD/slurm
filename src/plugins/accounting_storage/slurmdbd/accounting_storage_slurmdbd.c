@@ -277,11 +277,11 @@ static void _sending_script_env(dbd_id_rc_msg_t *id_ptr, job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
-	if ((slurm_conf.conf_flags & CTL_CONF_SJS) &&
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJS) &&
 	    (id_ptr->flags & JOB_SEND_SCRIPT) &&
 	    job_ptr->details->script_hash)
 		job_ptr->bit_flags |= JOB_SEND_SCRIPT;
-	if ((slurm_conf.conf_flags & CTL_CONF_SJE) &&
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJE) &&
 	    (id_ptr->flags & JOB_SEND_ENV) &&
 	    job_ptr->details->env_hash)
 		job_ptr->bit_flags |= JOB_SEND_ENV;
@@ -3083,9 +3083,9 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 
 	req.admin_comment = job_ptr->admin_comment;
 
-	if (slurm_conf.conf_flags & CTL_CONF_SJC)
+	if (slurm_conf.conf_flags & CONF_FLAG_SJC)
 		req.comment = job_ptr->comment;
-	if (slurm_conf.conf_flags & CTL_CONF_SJX)
+	if (slurm_conf.conf_flags & CONF_FLAG_SJX)
 		req.extra = job_ptr->extra;
 
 	req.db_index    = job_ptr->db_index;

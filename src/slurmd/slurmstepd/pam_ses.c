@@ -80,7 +80,7 @@ pam_setup (char *user, char *host)
 	struct pam_conv conv = {misc_conv, NULL};
         int             rc = 0;
 
-	if (!(slurm_conf.conf_flags & CTL_CONF_PAM))
+	if (!(slurm_conf.conf_flags & CONF_FLAG_PAM))
 		return SLURM_SUCCESS;
 	/*
 	 * Slurm uses PAM to obtain resource limits established by the system
@@ -141,7 +141,7 @@ pam_finish ()
 	 * ending the association with PAM.
 	 */
 
-	if (!(slurm_conf.conf_flags & CTL_CONF_PAM))
+	if (!(slurm_conf.conf_flags & CONF_FLAG_PAM))
 		return;
 
         if (pam_h != NULL) {

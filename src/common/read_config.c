@@ -3746,7 +3746,7 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_WCKEYS;
-			conf->conf_flags |= CTL_CONF_WCKEY;
+			conf->conf_flags |= CONF_FLAG_WCKEY;
 		} else if (!xstrcasecmp(tok, "qos")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
@@ -3754,7 +3754,7 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 				|= ACCOUNTING_ENFORCE_QOS;
 		} else if (!xstrcasecmp(tok, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
-			conf->conf_flags |= CTL_CONF_WCKEY;
+			conf->conf_flags |= CONF_FLAG_WCKEY;
 			/*
 			 * If all is used, nojobs and nosteps aren't
 			 * part of it.  They must be requested as well.
@@ -3779,7 +3779,7 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 			error("Invalid parameter for AccountingStorageEnforce: %s",
 			      tok);
 			conf->accounting_storage_enforce = 0;
-			conf->conf_flags &= ~CTL_CONF_WCKEY;
+			conf->conf_flags &= ~CONF_FLAG_WCKEY;
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -4035,9 +4035,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	conf->conf_flags = 0;
 	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl)) {
 		if (truth)
-			conf->conf_flags |= CTL_CONF_ASRU;
+			conf->conf_flags |= CONF_FLAG_ASRU;
 	} else if (DEFAULT_ALLOW_SPEC_RESOURCE_USAGE)
-		conf->conf_flags |= CTL_CONF_ASRU;
+		conf->conf_flags |= CONF_FLAG_ASRU;
 
 	if (!s_p_get_string(&conf->bcast_parameters, "BcastParameters",
 			    hashtbl) &&
@@ -4072,14 +4072,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	 * IPv4 on by default, can be disabled.
 	 * IPv6 off by default, can be turned on.
 	 */
-	conf->conf_flags |= CTL_CONF_IPV4_ENABLED;
+	conf->conf_flags |= CONF_FLAG_IPV4_ENABLED;
 	if (xstrcasestr(slurm_conf.comm_params, "EnableIPv6"))
-		conf->conf_flags |= CTL_CONF_IPV6_ENABLED;
+		conf->conf_flags |= CONF_FLAG_IPV6_ENABLED;
 	if (xstrcasestr(slurm_conf.comm_params, "DisableIPv4"))
-		conf->conf_flags &= ~CTL_CONF_IPV4_ENABLED;
+		conf->conf_flags &= ~CONF_FLAG_IPV4_ENABLED;
 
-	if (!(conf->conf_flags & CTL_CONF_IPV4_ENABLED) &&
-	    !(conf->conf_flags & CTL_CONF_IPV6_ENABLED))
+	if (!(conf->conf_flags & CONF_FLAG_IPV4_ENABLED) &&
+	    !(conf->conf_flags & CONF_FLAG_IPV6_ENABLED))
 		fatal("Both IPv4 and IPv6 support disabled, cannot communicate");
 
 	if ((temp_str = xstrcasestr(conf->comm_params,
@@ -4179,7 +4179,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			      "DependencyParameters", hashtbl);
 
 	if (s_p_get_boolean(&truth, "DisableRootJobs", hashtbl) && truth)
-		conf->conf_flags |= CTL_CONF_DRJ;
+		conf->conf_flags |= CONF_FLAG_DRJ;
 
 	if (s_p_get_string(&temp_str,
 			   "EnforcePartLimits", hashtbl)) {
@@ -4560,7 +4560,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
 
 	if (s_p_get_boolean((bool *)&truth, "TrackWCKey", hashtbl) && truth)
-		conf->conf_flags |= CTL_CONF_WCKEY;
+		conf->conf_flags |= CONF_FLAG_WCKEY;
 
 	if (!s_p_get_string(&conf->accounting_storage_type,
 			    "AccountingStorageType", hashtbl)) {
@@ -4643,13 +4643,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (s_p_get_string(&temp_str, "AccountingStoreFlags", hashtbl)) {
 		if (xstrcasestr(temp_str, "job_comment"))
-			conf->conf_flags |= CTL_CONF_SJC;
+			conf->conf_flags |= CONF_FLAG_SJC;
 		if (xstrcasestr(temp_str, "job_env"))
-			conf->conf_flags |= CTL_CONF_SJE;
+			conf->conf_flags |= CONF_FLAG_SJE;
 		if (xstrcasestr(temp_str, "job_extra"))
-			conf->conf_flags |= CTL_CONF_SJX;
+			conf->conf_flags |= CONF_FLAG_SJX;
 		if (xstrcasestr(temp_str, "job_script"))
-			conf->conf_flags |= CTL_CONF_SJS;
+			conf->conf_flags |= CONF_FLAG_SJS;
 		xfree(temp_str);
 	}
 
@@ -5226,22 +5226,22 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->slurmd_params, "SlurmdParameters", hashtbl);
 	/* This also matches documented "config_overrides" */
 	if (xstrcasestr(conf->slurmd_params, "config_override"))
-		conf->conf_flags |= CTL_CONF_OR;
+		conf->conf_flags |= CONF_FLAG_OR;
 
 	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket"))
-		conf->conf_flags |= CTL_CONF_L3CSOCK;
+		conf->conf_flags |= CONF_FLAG_L3CSOCK;
 	else if (xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
-		conf->conf_flags |= CTL_CONF_NNSOCK;
+		conf->conf_flags |= CONF_FLAG_NNSOCK;
 
 	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket") &&
 	    xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
 		error_in_daemon("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
 
 	if (xstrcasestr(conf->slurmd_params, "allow_ecores"))
-		conf->conf_flags |= CTL_CONF_ECORE;
+		conf->conf_flags |= CONF_FLAG_ECORE;
 
 	if (xstrcasestr(conf->slurmd_params, "shutdown_on_reboot"))
-		conf->conf_flags |= CTL_CONF_SHR;
+		conf->conf_flags |= CONF_FLAG_SHR;
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
@@ -5486,7 +5486,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	if (s_p_get_boolean(&truth, "UsePAM", hashtbl) && truth)
-		conf->conf_flags |= CTL_CONF_PAM;
+		conf->conf_flags |= CONF_FLAG_PAM;
 
 	s_p_get_string(&conf->unkillable_program,
 		       "UnkillableStepProgram", hashtbl);

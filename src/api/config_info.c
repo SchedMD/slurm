@@ -574,16 +574,16 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AccountingStoreFlags");
-	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJC)
+	if (slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_SJC)
 		xstrfmtcat(key_pair->value, "%sjob_comment",
 			   key_pair->value ? "," : "");
-	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJE)
+	if (slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_SJE)
 		xstrfmtcat(key_pair->value, "%sjob_env",
 			   key_pair->value ? "," : "");
-	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJX)
+	if (slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_SJX)
 		xstrfmtcat(key_pair->value, "%sjob_extra",
 			   key_pair->value ? "," : "");
-	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJS)
+	if (slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_SJS)
 		xstrfmtcat(key_pair->value, "%sjob_script",
 			   key_pair->value ? "," : "");
 	list_append(ret_list, key_pair);
@@ -620,7 +620,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowSpecResourcesUsage");
 	key_pair->value = xstrdup(
-		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_ASRU) ?
+		(slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_ASRU) ?
 		"Yes" : "No");
 	list_append(ret_list, key_pair);
 
@@ -749,7 +749,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("DisableRootJobs");
 	key_pair->value = xstrdup(
-		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_DRJ) ? "Yes" : "No");
+		(slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_DRJ) ? "Yes" : "No");
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("EioTimeout");
@@ -1791,7 +1791,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackWCKey");
 	key_pair->value = xstrdup(
-		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_WCKEY) ?
+		(slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_WCKEY) ?
 		"Yes" : "No");
 	list_append(ret_list, key_pair);
 
@@ -1805,7 +1805,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("UsePam");
 	key_pair->value = xstrdup(
-		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_PAM) ? "Yes" : "No");
+		(slurm_ctl_conf_ptr->conf_flags & CONF_FLAG_PAM) ? "Yes" : "No");
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

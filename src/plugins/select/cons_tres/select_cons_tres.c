@@ -348,7 +348,7 @@ extern int select_p_node_init(void)
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if ((slurm_conf.select_type_param & CR_SOCKET) &&
-		    (slurm_conf.conf_flags & CTL_CONF_ASRU) == 0)
+		    (slurm_conf.conf_flags & CONF_FLAG_ASRU) == 0)
 			_check_allocatable_sockets(node_ptr);
 
 		select_node_usage[node_ptr->index].node_state =

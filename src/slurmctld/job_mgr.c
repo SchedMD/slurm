@@ -8451,7 +8451,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		}
 		job_ptr->batch_flag = 1;
 
-		if (slurm_conf.conf_flags & CTL_CONF_SJE) {
+		if (slurm_conf.conf_flags & CONF_FLAG_SJE) {
 			tmp = xstring_bytes2hex(job_desc->env_hash.hash,
 						sizeof(job_desc->env_hash.hash),
 						NULL);
@@ -8462,7 +8462,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			xfree(tmp);
 		}
 
-		if (slurm_conf.conf_flags & CTL_CONF_SJS) {
+		if (slurm_conf.conf_flags & CONF_FLAG_SJS) {
 			tmp = xstring_bytes2hex(
 				job_desc->script_hash.hash,
 				sizeof(job_desc->script_hash.hash), NULL);
@@ -9433,7 +9433,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_details_t *detail_ptr;
 	job_record_t *job_ptr;
 
-	if (slurm_conf.conf_flags & CTL_CONF_WCKEY) {
+	if (slurm_conf.conf_flags & CONF_FLAG_WCKEY) {
 		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
@@ -9657,7 +9657,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	}
 	if (job_desc->contiguous != NO_VAL16)
 		detail_ptr->contiguous = job_desc->contiguous;
-	if (slurm_conf.conf_flags & CTL_CONF_ASRU)
+	if (slurm_conf.conf_flags & CONF_FLAG_ASRU)
 		detail_ptr->core_spec = job_desc->core_spec;
 	else
 		detail_ptr->core_spec = NO_VAL16;
@@ -14283,7 +14283,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->core_spec != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator && (slurm_conf.conf_flags & CTL_CONF_ASRU)) {
+		else if (operator && (slurm_conf.conf_flags & CONF_FLAG_ASRU)) {
 			if (job_desc->core_spec == INFINITE16)
 				detail_ptr->core_spec = NO_VAL16;
 			else

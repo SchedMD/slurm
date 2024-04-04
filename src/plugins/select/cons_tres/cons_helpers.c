@@ -116,7 +116,7 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	int rem_core_spec, node_core_spec, thread_spec = 0;
 	node_record_t *node_ptr;
 	bitstr_t *core_map = NULL;
-	uint16_t use_spec_cores = slurm_conf.conf_flags & CTL_CONF_ASRU;
+	uint16_t use_spec_cores = slurm_conf.conf_flags & CONF_FLAG_ASRU;
 	uint32_t coff;
 
 	avail_cores = build_core_array();

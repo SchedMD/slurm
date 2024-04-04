@@ -6162,7 +6162,7 @@ static void _validate_spec_cores_options(slurm_opt_t *opt)
 		    slurm_option_set_by_cli(opt, LONG_OPT_THREAD_SPEC))) == 0))
 		fatal("Both --core-spec and --thread-spec set using environment variables. Those options are mutually exclusive.");
 
-	if (!(slurm_conf.conf_flags & CTL_CONF_ASRU)) {
+	if (!(slurm_conf.conf_flags & CONF_FLAG_ASRU)) {
 		error("Ignoring %s since it's not allowed by configuration (AllowSpecResourcesUsage = No)",
 		      (opt->core_spec & CORE_SPEC_THREAD) ?
 		      "--thread-spec":"-S");

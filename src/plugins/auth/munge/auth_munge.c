@@ -391,7 +391,7 @@ char *auth_p_get_host(auth_credential_t *cred)
 		/* at this point, the name lookup failed */
 		hostname = xmalloc(INET_ADDRSTRLEN);
 		slurm_get_ip_str(&addr, hostname, INET_ADDRSTRLEN);
-		if (!(slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED))
+		if (!(slurm_conf.conf_flags & CONF_FLAG_IPV6_ENABLED))
 			error("%s: Lookup failed for %s", __func__, hostname);
 	}
 

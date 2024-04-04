@@ -458,7 +458,7 @@ int main(int argc, char **argv)
 
 	if (accounting_enforce && !slurm_with_slurmdbd()) {
 		accounting_enforce = 0;
-		slurm_conf.conf_flags &= (~CTL_CONF_WCKEY);
+		slurm_conf.conf_flags &= (~CONF_FLAG_WCKEY);
 		slurm_conf.accounting_storage_enforce = 0;
 
 		error("You can not have AccountingStorageEnforce set for AccountingStorageType='%s'",

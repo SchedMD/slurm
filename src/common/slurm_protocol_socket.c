@@ -714,7 +714,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	 * Make sure we return the v6 wildcard address first (when applicable)
 	 * since we want v6 to be the default.
 	 */
-	if (host || !(slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED)) {
+	if (host || !(slurm_conf.conf_flags & CONF_FLAG_IPV6_ENABLED)) {
 		ai_ptr = ai_start;
 	} else {
 		for (ai_ptr = ai_start; ai_ptr; ai_ptr = ai_ptr->ai_next) {

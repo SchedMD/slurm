@@ -347,7 +347,7 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
 static void _init_part_record(part_record_t *part_ptr)
 {
 	part_ptr->magic = PART_MAGIC;
-	if (slurm_conf.conf_flags & CTL_CONF_DRJ)
+	if (slurm_conf.conf_flags & CONF_FLAG_DRJ)
 		part_ptr->flags |= PART_FLAG_NO_ROOT;
 	part_ptr->max_nodes_orig = INFINITE;
 	part_ptr->min_nodes = 1;
