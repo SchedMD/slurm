@@ -536,8 +536,8 @@ static int _set_shared_task_bits(int node_inx,
 	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
 
 	if (!tasks_per_socket) {
-		error("%s: tasks_per_socket unset for job %u on node %d",
-		      __func__, job_id, node_inx);
+		error("%s: tasks_per_socket unset for job %u on node %s",
+		      __func__, job_id, node_record_table_ptr[node_inx]->name);
 		return SLURM_ERROR;
 	}
 
