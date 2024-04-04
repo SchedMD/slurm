@@ -229,6 +229,8 @@ static void _log_kill_job_error(char *job_id_str, char *err_msg)
 static int _ctld_signal_jobs(void)
 {
 	int rc;
+	bool successful_job_resp = false;
+	char *job_type = "";
 	kill_jobs_msg_t kill_msg = {
 		.account = opt.account,
 		.job_name = opt.job_name,
@@ -246,7 +248,9 @@ static int _ctld_signal_jobs(void)
 	};
 	kill_jobs_resp_msg_t *kill_msg_resp = NULL;
 
-	kill_msg.flags = _init_flags(NULL);
+	kill_msg.flags = _init_flags(&job_type);
+	if (opt.verbose)
+		kill_msg.flags |= KILL_JOBS_VERBOSE;
 	if (kill_msg.signal == NO_VAL16)
 		kill_msg.signal = SIGKILL;
 
@@ -259,6 +263,9 @@ static int _ctld_signal_jobs(void)
 		kill_jobs_resp_job_t *job_resp =
 			&kill_msg_resp->job_responses[i];
 		uint32_t error_code = job_resp->error_code;
+
+		if (error_code == SLURM_SUCCESS)
+			successful_job_resp = true;
 
 		if (opt.verbose ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
@@ -283,12 +290,20 @@ static int _ctld_signal_jobs(void)
 			if (rc != SLURM_SUCCESS)
 				error("Bad job id format returned: %s; %s",
 				      slurm_strerror(rc), job_resp->error_msg);
+			else if (job_resp->error_code != SLURM_SUCCESS)
+				_log_kill_job_error(job_id_str,
+						    job_resp->error_msg);
 			else
-				error("Job %s: %s",
-				      job_id_str, job_resp->error_msg);
+				_log_signal_job_msg(job_type, job_id_str,
+						    kill_msg.signal);
 			xfree(job_id_str);
 		}
 	}
+
+	if (opt.verbose && _has_filter_opt() &&
+	    (!kill_msg_resp->jobs_cnt || !successful_job_resp))
+		_log_filter_err_msg();
+
 	slurm_free_kill_jobs_response_msg(kill_msg_resp);
 
 	return SLURM_SUCCESS;
