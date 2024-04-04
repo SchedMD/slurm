@@ -1110,6 +1110,13 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
+
+	if (!tasks_per_socket) {
+		error("%s: tasks_per_socket unset for job %u on node %s",
+		      __func__, job_id, node_record_table_ptr[node_inx]->name);
+		return;
+	}
+
 	if (gres_ns->link_len == gres_cnt)
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
 
@@ -1120,7 +1127,7 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     s < sock_cnt; s++) {
 		if ((s > 0) &&
-		    (!tasks_per_socket || (tasks_per_socket[s] == 0)))
+		    (!tasks_per_socket[s]))
 			continue;
 		sock_gres_needed = MIN(gres_needed,
 				       (tasks_per_socket[s] *
