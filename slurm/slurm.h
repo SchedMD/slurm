@@ -3697,6 +3697,7 @@ typedef struct {
 				       * magnetic reservation. */
 #define KILL_NO_CRON     SLURM_BIT(9) /* request killing cron Jobs */
 #define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
+#define KILL_JOBS_VERBOSE SLURM_BIT(11) /* Verbose response requested */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */
