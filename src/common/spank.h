@@ -48,6 +48,24 @@
 
 #define SPANK_OPTION_ENV_PREFIX "_SLURM_SPANK_OPTION_"
 
+/*
+ *  SPANK plugin hook types
+ */
+typedef enum {
+	SPANK_INIT = 0,
+	SPANK_JOB_PROLOG = 2,
+	SPANK_INIT_POST_OPT,
+	SPANK_LOCAL_USER_INIT,
+	SPANK_STEP_USER_INIT,
+	SPANK_STEP_TASK_INIT_PRIV,
+	SPANK_STEP_USER_TASK_INIT,
+	SPANK_STEP_TASK_POST_FORK,
+	SPANK_STEP_TASK_EXIT,
+	SPANK_JOB_EPILOG,
+	SPANK_SLURMD_EXIT,
+	SPANK_EXIT,
+} step_fn_t;
+
 struct spank_launcher_job_info {
 	uid_t       uid;
 	gid_t       gid;

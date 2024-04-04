@@ -141,24 +141,6 @@ enum spank_context_type {
 };
 
 /*
- *  SPANK plugin hook types:
- */
-typedef enum step_fn {
-	SPANK_INIT = 0,
-	SPANK_JOB_PROLOG = 2,
-	SPANK_INIT_POST_OPT,
-	LOCAL_USER_INIT,
-	STEP_USER_INIT,
-	STEP_TASK_INIT_PRIV,
-	STEP_USER_TASK_INIT,
-	STEP_TASK_POST_FORK,
-	STEP_TASK_EXIT,
-	SPANK_JOB_EPILOG,
-	SPANK_SLURMD_EXIT,
-	SPANK_EXIT
-} step_fn_t;
-
-/*
  *  Job information in prolog/epilog context:
  */
 struct job_script_info {
@@ -667,17 +649,17 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("job_prolog");
 	case SPANK_INIT_POST_OPT:
 		return ("init_post_opt");
-	case LOCAL_USER_INIT:
+	case SPANK_LOCAL_USER_INIT:
 		return ("local_user_init");
-	case STEP_USER_INIT:
+	case SPANK_STEP_USER_INIT:
 		return ("user_init");
-	case STEP_TASK_INIT_PRIV:
+	case SPANK_STEP_TASK_INIT_PRIV:
 		return ("task_init_privileged");
-	case STEP_USER_TASK_INIT:
+	case SPANK_STEP_USER_TASK_INIT:
 		return ("task_init");
-	case STEP_TASK_POST_FORK:
+	case SPANK_STEP_TASK_POST_FORK:
 		return ("task_post_fork");
-	case STEP_TASK_EXIT:
+	case SPANK_STEP_TASK_EXIT:
 		return ("task_exit");
 	case SPANK_JOB_EPILOG:
 		return ("job_epilog");
@@ -700,17 +682,17 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 		return (sp->ops.job_prolog);
 	case SPANK_INIT_POST_OPT:
 		return (sp->ops.init_post_opt);
-	case LOCAL_USER_INIT:
+	case SPANK_LOCAL_USER_INIT:
 		return (sp->ops.local_user_init);
-	case STEP_USER_INIT:
+	case SPANK_STEP_USER_INIT:
 		return (sp->ops.user_init);
-	case STEP_TASK_INIT_PRIV:
+	case SPANK_STEP_TASK_INIT_PRIV:
 		return (sp->ops.task_init_privileged);
-	case STEP_USER_TASK_INIT:
+	case SPANK_STEP_USER_TASK_INIT:
 		return (sp->ops.user_task_init);
-	case STEP_TASK_POST_FORK:
+	case SPANK_STEP_TASK_POST_FORK:
 		return (sp->ops.task_post_fork);
-	case STEP_TASK_EXIT:
+	case SPANK_STEP_TASK_EXIT:
 		return (sp->ops.task_exit);
 	case SPANK_JOB_EPILOG:
 		return (sp->ops.job_epilog);
@@ -863,35 +845,37 @@ int spank_init_post_opt (void)
 
 int spank_user(stepd_step_rec_t *step)
 {
-	return (_do_call_stack(global_spank_stack, STEP_USER_INIT, step, -1));
+	return (_do_call_stack(global_spank_stack, SPANK_STEP_USER_INIT,
+			       step, -1));
 }
 
 int spank_local_user(struct spank_launcher_job_info *job)
 {
-	return (_do_call_stack(global_spank_stack, LOCAL_USER_INIT, job, -1));
+	return (_do_call_stack(global_spank_stack, SPANK_LOCAL_USER_INIT,
+			       job, -1));
 }
 
 int spank_task_privileged(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_INIT_PRIV,
+	return (_do_call_stack(global_spank_stack, SPANK_STEP_TASK_INIT_PRIV,
 			       step, taskid));
 }
 
 int spank_user_task(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_USER_TASK_INIT,
+	return (_do_call_stack(global_spank_stack, SPANK_STEP_USER_TASK_INIT,
 			       step, taskid));
 }
 
 int spank_task_post_fork(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_POST_FORK,
+	return (_do_call_stack(global_spank_stack, SPANK_STEP_TASK_POST_FORK,
 			       step, taskid));
 }
 
 int spank_task_exit(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_EXIT,
+	return (_do_call_stack(global_spank_stack, SPANK_STEP_TASK_EXIT,
 			       step, taskid));
 }
 
@@ -1587,7 +1571,7 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 
 	if ((sp->phase == SPANK_INIT) ||
 	    (sp->phase == SPANK_INIT_POST_OPT) ||
-	    (sp->phase == STEP_TASK_POST_FORK) ||
+	    (sp->phase == SPANK_STEP_TASK_POST_FORK) ||
 	    (sp->phase == SPANK_SLURMD_EXIT) ||
 	    (sp->phase == SPANK_EXIT))
 		return (ESPANK_NOT_AVAIL);
@@ -1739,8 +1723,8 @@ void spank_clear_remote_options_env (char **env)
 
 static int tasks_execd (spank_t spank)
 {
-	return ( (spank->phase == STEP_TASK_POST_FORK)
-	      || (spank->phase == STEP_TASK_EXIT)
+	return ( (spank->phase == SPANK_STEP_TASK_POST_FORK)
+	      || (spank->phase == SPANK_STEP_TASK_EXIT)
 	      || (spank->phase == SPANK_EXIT) );
 }
 
@@ -2422,8 +2406,8 @@ spank_err_t spank_prepend_task_argv(spank_t spank, int argc,
 		return ESPANK_BAD_ARG;
 
 	if (!spank->task || !spank->task->argv ||
-	    ((spank->phase != STEP_TASK_INIT_PRIV) &&
-	     (spank->phase != STEP_USER_TASK_INIT)))
+	    ((spank->phase != SPANK_STEP_TASK_INIT_PRIV) &&
+	     (spank->phase != SPANK_STEP_USER_TASK_INIT)))
 		return ESPANK_NOT_TASK;
 
 	new_argc = argc + spank->task->argc;
