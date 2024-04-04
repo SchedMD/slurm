@@ -2255,7 +2255,7 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 	if ((step_ptr->threads_per_core == 1) ||
 	    ((step_ptr->threads_per_core == NO_VAL16) &&
 	     (job_ptr->details->mc_ptr->threads_per_core == 1)) ||
-	    ((job_resrcs_ptr->whole_node != 1) &&
+	    ((job_resrcs_ptr->whole_node != WHOLE_NODE_REQUIRED) &&
 	     (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
 	     (job_ptr->details &&
 	      (job_ptr->details->cpu_bind_type != NO_VAL16) &&

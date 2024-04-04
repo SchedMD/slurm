@@ -258,7 +258,7 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
 		     i++) {
 			node_off++;
-			if (job_res->whole_node == 1) {
+			if (job_res->whole_node == WHOLE_NODE_REQUIRED) {
 				gres_state_t *gres_state_node;
 				gres_node_state_t *gres_ns;
 

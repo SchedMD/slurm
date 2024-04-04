@@ -1567,7 +1567,8 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 		for (int core = 0; core < node_ptr->tot_cores; core++) {
 			if (!bit_test(full_bitmap, full_bit_inx + core))
 				continue;
-			if ((job_resrcs_ptr->whole_node == 1) ||
+			if ((job_resrcs_ptr->whole_node ==
+			     WHOLE_NODE_REQUIRED) ||
 				bit_test(job_resrcs_ptr->core_bitmap,
 					job_bit_inx + core)) {
 				return 0;
@@ -1604,7 +1605,8 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 		int full_bit_inx = cr_node_cores_offset[full_node_inx];
 
 		for (int core = 0; core < node_ptr->tot_cores; core++) {
-			if ((job_resrcs_ptr->whole_node != 1) &&
+			if ((job_resrcs_ptr->whole_node !=
+			     WHOLE_NODE_REQUIRED) &&
 			    !bit_test(job_resrcs_ptr->core_bitmap,
 				      job_bit_inx + core))
 				continue;

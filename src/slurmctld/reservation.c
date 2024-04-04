@@ -6880,7 +6880,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    bit_overlap_any(job_ptr->details->req_node_bitmap,
 					    resv_ptr->node_bitmap) &&
 			    (!resv_ptr->tres_str ||
-			     job_ptr->details->whole_node == 1)) {
+			     job_ptr->details->whole_node ==
+			     WHOLE_NODE_REQUIRED)) {
 				if (move_time)
 					*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
@@ -6888,7 +6889,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			}
 
 			if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ||
-			    (job_ptr->details->whole_node == 1)) {
+			    (job_ptr->details->whole_node ==
+			     WHOLE_NODE_REQUIRED)) {
 				log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
 					 __func__, resv_ptr->name, job_ptr);
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);

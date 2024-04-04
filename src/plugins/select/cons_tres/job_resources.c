@@ -301,7 +301,8 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 				node_gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
 			if (job_ptr->details &&
-			    (job_ptr->details->whole_node == 1))
+			    (job_ptr->details->whole_node ==
+			     WHOLE_NODE_REQUIRED))
 				gres_ctld_job_alloc_whole_node(
 					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,

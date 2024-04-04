@@ -603,7 +603,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 				}
 			}
 		}
-		if (to_job_ptr->details->whole_node == 1) {
+		if (to_job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) {
 			to_job_ptr->total_cpus +=
 				node_record_table_ptr[i]->cpus_efctv;
 		} else {

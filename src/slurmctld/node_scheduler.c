@@ -797,7 +797,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 
 	/* no sharing if partition OverSubscribe=EXCLUSIVE */
 	if (part_max_share == 0) {
-		job_ptr->details->whole_node = 1;
+		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
 		job_ptr->details->share_res = 0;
 		return 0;
 	}
@@ -2320,7 +2320,7 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	xassert(select_bitmap);
 
 	if (!job_ptr->details ||
-	    !(job_ptr->details->whole_node == 1))
+	    !(job_ptr->details->whole_node == WHOLE_NODE_REQUIRED))
 		return NULL;
 
 	if (job_ptr->gres_list_req)

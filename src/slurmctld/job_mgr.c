@@ -3598,7 +3598,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->script_hash = xstrdup(job_details->script_hash);
 
 	if (job_ptr->gres_list_req) {
-		if (details_new->whole_node == 1) {
+		if (details_new->whole_node == WHOLE_NODE_REQUIRED) {
 			/*
 			 * We need to reset the gres_list to what was requested
 			 * instead of what was given exclusively.
@@ -8444,7 +8444,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	else
 		detail_ptr->core_spec = NO_VAL16;
 	if (detail_ptr->core_spec != NO_VAL16)
-		detail_ptr->whole_node = 1;
+		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
 	if (job_desc->task_dist != NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task == NO_VAL16) {
@@ -9255,7 +9255,7 @@ extern int job_update_tres_cnt(job_record_t *job_ptr, int node_inx)
 
 	xassert(job_ptr);
 
-	if (job_ptr->details->whole_node == 1) {
+	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) {
 		/*
 		 * Since we are allocating whole nodes don't rely on
 		 * the job_resrcs since it could be less because the
@@ -13183,7 +13183,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			sched_info("%s: setting core_spec to %u for %pJ",
 				   __func__, detail_ptr->core_spec, job_ptr);
 			if (detail_ptr->core_spec != NO_VAL16)
-				detail_ptr->whole_node = 1;
+				detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
 		} else {
 			sched_error("%s Attempt to modify core_spec for %pJ",
 				    __func__, job_ptr);
@@ -15627,7 +15627,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
 		job_ptr->details->accrue_time = 0;
 
-		if ((job_ptr->details->whole_node == 1) &&
+		if ((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
 		    job_ptr->gres_list_req) {
 			/*
 			 * We need to reset the gres_list to what was requested
