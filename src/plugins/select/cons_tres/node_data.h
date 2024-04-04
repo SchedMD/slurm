@@ -46,6 +46,7 @@ typedef struct {
 				       * defined in in src/interfaces/gres.h.
 				       * Local data used only in state copy
 				       * to emulate future node state */
+	List jobs; /* List of jobs running on node */
 	uint16_t node_state;	      /* see node_cr_state comments */
 } node_use_record_t;
 

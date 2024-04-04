@@ -2683,6 +2683,13 @@ In any case, time\-slicing won't happen between jobs on different partitions.
 
 \fBNOTE\fR:
 Heterogeneous jobs are excluded from GANG scheduling operations.
+
+\fBNOTE\fR:
+In case of overlapping partitions. If the node is allocated job that allows
+sharing of resources (Oversubscribe=FORCE or Oversubscribe=YES and job was
+submitted with \fB\-s\fR/\fB\-\-oversubscribe\fR) it can only be allocated by
+jobs from the same partition.
+
 .IP
 
 .TP

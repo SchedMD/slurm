@@ -403,6 +403,10 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			if (job->cpus[n] == 0)
 				continue;  /* node lost by job resize */
 			select_node_usage[i].node_state += job->node_req;
+			if (!select_node_usage[i].jobs)
+				select_node_usage[i].jobs = list_create(NULL);
+			if (action == JOB_RES_ACTION_NORMAL)
+				list_append(select_node_usage[i].jobs, job_ptr);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: (after):");
@@ -588,6 +592,12 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 					node_usage[i].node_state =
 						NODE_CR_AVAILABLE;
 				}
+				if ((action == JOB_RES_ACTION_NORMAL) &&
+				    node_usage[i].jobs)
+					list_delete_first(
+						node_usage[i].jobs,
+						slurm_find_ptr_in_list,
+						job_ptr);
 			}
 		}
 	}
