@@ -1014,7 +1014,8 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
  */
 static void _set_node_bits(int node_inx, int job_node_inx,
 			   sock_gres_t *sock_gres, uint32_t job_id,
-			   uint32_t *used_cores_on_sock, uint32_t used_core_cnt)
+			   uint32_t *used_cores_on_sock, uint32_t used_core_cnt,
+			   bool enforce_binding)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -1085,13 +1086,16 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	 * Use any additional available GRES. Again, favor use of GRES
 	 * which are best linked to GRES which have already been selected.
 	 */
-	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-		if (used_cores_on_sock[s]) /* Sockets we ignored before */
-			continue;
-		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
-					       s, sorted_gres, links_cnt);
+	if (gres_needed && !enforce_binding) {
+		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+			/* Sockets we ignored before */
+			if (used_cores_on_sock[s])
+				continue;
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, sorted_gres,
+						       links_cnt);
+		}
 	}
-
 	xfree(links_cnt);
 	xfree(sorted_gres);
 }
@@ -1107,7 +1111,8 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 
  */
 static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, uint32_t *tasks_per_socket)
+			   uint32_t job_id, uint32_t *tasks_per_socket,
+			   bool enforce_binding)
 {
 	uint16_t sock_cnt = 0;
 	int gres_cnt, g, s;
@@ -1155,12 +1160,17 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 					       ANY_SOCK_TEST, sorted_gres,
 					       links_cnt);
 
-	/*
-	 * Next pick additional GRES as needed.
-	 */
-	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
-		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
-					       s, sorted_gres, links_cnt);
+
+	if (gres_needed && !enforce_binding) {
+		/*
+		 * Were unable to find gres on sockets that matched tasks.
+		 * Trying sockets now.
+		 */
+		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, sorted_gres,
+						       links_cnt);
+		}
 	}
 	xfree(links_cnt);
 	xfree(sorted_gres);
@@ -1444,6 +1454,7 @@ static int _select_and_set_node(void *x, void *arg)
 	struct job_resources *job_res;
 	int node_cnt, gres_cnt;
 	uint32_t job_id;
+	bool enforce_binding;
 
 	node_record_t *node_ptr;
 	job_record_t *job_ptr;
@@ -1467,6 +1478,7 @@ static int _select_and_set_node(void *x, void *arg)
 	job_res = job_ptr->job_resrcs;
 	job_id = job_ptr->job_id;
 	node_cnt = bit_size(job_res->node_bitmap);
+	enforce_binding = job_ptr->bit_flags & GRES_ENFORCE_BIND;
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	if (!gres_js || !gres_ns)
@@ -1540,12 +1552,10 @@ static int _select_and_set_node(void *x, void *arg)
 		if (gres_js->gres_per_node) {
 			*rc = _set_shared_node_bits(
 				node_inx, job_node_inx, sock_gres, job_id,
-				(job_ptr->bit_flags & GRES_ENFORCE_BIND),
-				args->used_cores_on_sock);
+				enforce_binding, args->used_cores_on_sock);
 		} else if (gres_js->gres_per_task) {
 			*rc = _set_shared_task_bits(
-				node_inx, sock_gres, job_id,
-				(job_ptr->bit_flags & GRES_ENFORCE_BIND),
+				node_inx, sock_gres, job_id, enforce_binding,
 				(job_ptr->bit_flags &
 				 GRES_ONE_TASK_PER_SHARING),
 				tasks_per_node_socket[node_inx]);
@@ -1556,14 +1566,16 @@ static int _select_and_set_node(void *x, void *arg)
 		}
 	} else if (gres_js->gres_per_node) {
 		_set_node_bits(node_inx, job_node_inx, sock_gres, job_id,
-			       args->used_cores_on_sock, args->used_core_cnt);
+			       args->used_cores_on_sock, args->used_core_cnt,
+			       enforce_binding);
 	} else if (gres_js->gres_per_socket) {
 		_set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
 			       tres_mc_ptr, args->used_cores_on_sock,
 			       args->used_sock_cnt);
 	} else if (gres_js->gres_per_task) {
 		_set_task_bits(node_inx, sock_gres, job_id,
-			       tasks_per_node_socket[node_inx]);
+			       tasks_per_node_socket[node_inx],
+			       enforce_binding);
 	} else if (gres_js->gres_per_job) {
 		int tmp = _set_job_bits1(node_inx, job_node_inx, rem_node_cnt,
 					 sock_gres, job_id, tres_mc_ptr,
