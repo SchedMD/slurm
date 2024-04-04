@@ -1178,10 +1178,6 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 						       node_inx, s, l,
 						       links_cnt);
 		}
-		if (gres_needed)
-			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, ANY_SOCK_TEST,
-						       l, links_cnt);
 	}
 	xfree(links_cnt);
 
