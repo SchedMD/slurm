@@ -100,6 +100,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SystemdTimeout= parameter in cgroup.conf.
  -- Add QOS limit MaxTRESRunMinsPerAccount.
  -- Add QOS limit MaxTRESRunMinsPerUser.
+ -- jobcomp/{elasticsearch,kafka} - Send priority alongside the rest of fields.
 
 * Changes in Slurm 23.11.6
 ==========================
