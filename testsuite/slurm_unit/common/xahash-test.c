@@ -89,7 +89,7 @@ static void _on_insert(void *ptr, const void *key, const size_t key_bytes, void 
 	state_t *s = ptr;
 
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert(s);
+	ck_assert(s != NULL);
 	ck_assert(key_bytes == KEY_SIZE);
 
 	*s = (state_t) {
@@ -104,7 +104,7 @@ static void _on_free(void *ptr, void *state)
 	state_t *s = ptr;
 
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert(s);
+	ck_assert(s != NULL);
 	ck_assert(s->magic == STATE_MAGIC);
 
 	*s = (state_t) {
@@ -118,9 +118,9 @@ static xahash_foreach_control_t _foreach(void *entry, void *state, void *arg)
 	global_state_t *gs = state;
 	state_t *s = entry;
 
-	ck_assert(gs);
+	ck_assert(gs != NULL);
 	ck_assert(gs->magic == GLOBAL_STATE_MAGIC);
-	ck_assert(s);
+	ck_assert(s != NULL);
 	ck_assert(s->magic == STATE_MAGIC);
 
 	return XAHASH_FOREACH_CONT;
@@ -136,12 +136,12 @@ START_TEST(test_fixed_basic)
 			      sizeof(global_state_t), sizeof(state_t),
 			      FIXED_STATE_ENTRIES);
 
-	ck_assert_msg(ht, "hashtable created");
+	ck_assert_msg(ht != NULL, "hashtable created");
 
 	/* check global state table works */
 	gs = xahash_get_state_ptr(ht);
 
-	ck_assert_msg(ht, "hashtable state created");
+	ck_assert_msg(ht != NULL, "hashtable state created");
 
 	*gs = (global_state_t) {
 		.magic = GLOBAL_STATE_MAGIC,
@@ -173,7 +173,7 @@ START_TEST(test_fixed_basic)
 
 	/* verify we can find new entry */
 	f = xahash_find_entry(ht, &s, KEY_SIZE);
-	ck_assert(f);
+	ck_assert(f != NULL);
 	ck_assert(f == s);
 	ck_assert(f->magic == STATE_MAGIC);
 	ck_assert(f->key == &s);
@@ -235,7 +235,7 @@ START_TEST(test_fixed_mass)
 
 		/* verify we can find every entry */
 		state_t *f = xahash_find_entry(ht, &s[i], KEY_SIZE);
-		ck_assert(f);
+		ck_assert(f != NULL);
 		ck_assert(f == s[i]);
 		ck_assert(f->magic == STATE_MAGIC);
 		ck_assert(f->key == &s[i]);
@@ -252,7 +252,7 @@ START_TEST(test_fixed_mass)
 
 		/* verify we can find every entry */
 		state_t *f = xahash_find_entry(ht, &s[i], KEY_SIZE);
-		ck_assert(f);
+		ck_assert(f != NULL);
 		ck_assert(f == s[i]);
 		ck_assert(f->magic == STATE_MAGIC);
 		ck_assert(f->key == &s[i]);
