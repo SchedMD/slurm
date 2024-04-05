@@ -317,4 +317,11 @@ typedef enum {
 	/* reserve 64000 for SACK API codes */
 } slurm_msg_type_t;
 
+/*
+ * Map slurm_msg_type_t values back to the enum name.
+ *
+ * WARNING: Strings are not xmalloc()'d. Do NOT xfree().
+ */
+extern const char *rpc_num2string(uint16_t msg_type);
+
 #endif

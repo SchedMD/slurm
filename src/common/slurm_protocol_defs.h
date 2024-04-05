@@ -1617,12 +1617,6 @@ extern int get_cluster_node_offset(char *cluster_name,
 extern void print_multi_line_string(char *user_msg, int inx,
 				    log_level_t loglevel);
 
-/* Given a protocol opcode return its string
- * description mapping the slurm_msg_type_t
- * to its name.
- */
-extern const char *rpc_num2string(uint16_t opcode);
-
 /*
  * Given a numeric suffix, return the equivalent multiplier for the numeric
  * portion. For example: "k" returns 1024, "KB" returns 1000, etc.
