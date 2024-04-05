@@ -52,7 +52,7 @@ typedef struct {
 	slurmctld_lock_t locks;
 
 	/* Queue structual elements */
-	char *msg_name; /* automatically derived from msg_type */
+	const char *msg_name; /* automatically derived from msg_type */
 
 	bool queue_enabled;
 	bool shutdown;

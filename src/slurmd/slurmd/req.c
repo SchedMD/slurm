@@ -304,7 +304,7 @@ slurmd_req(slurm_msg_t *msg)
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		char *p = rpc_num2string(msg->msg_type);
+		const char *p = rpc_num2string(msg->msg_type);
 		info("%s: received opcode %s from %pA uid %u",
 		     __func__, p, &msg->address, msg->auth_uid);
 	}

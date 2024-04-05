@@ -1902,7 +1902,7 @@ extern void print_multi_line_string(char *user_msg, int inx,
  * description mapping the slurm_msg_type_t
  * to its name.
  */
-extern char *rpc_num2string(uint16_t opcode);
+extern const char *rpc_num2string(uint16_t opcode);
 
 /*
  * Given a numeric suffix, return the equivalent multiplier for the numeric

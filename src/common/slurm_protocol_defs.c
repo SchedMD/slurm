@@ -5144,8 +5144,7 @@ extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
  * description mapping the slurm_msg_type_t
  * to its name.
  */
-char *
-rpc_num2string(uint16_t opcode)
+extern const char *rpc_num2string(uint16_t opcode)
 {
 	static char buf[16];
 

@@ -6946,7 +6946,7 @@ void slurmctld_req(slurm_msg_t *msg)
 	 */
 	START_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		char *p = rpc_num2string(msg->msg_type);
+		const char *p = rpc_num2string(msg->msg_type);
 		if (msg->conn) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, msg->conn->cluster_name,
