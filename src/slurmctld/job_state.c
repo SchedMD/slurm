@@ -40,6 +40,13 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Macro to only include the code inside of ONLY_DEBUG if !NDEBUG */
+#ifndef NDEBUG
+#define ONLY_DEBUG(...) __VA_ARGS__
+#else
+#define ONLY_DEBUG(...)
+#endif
+
 #define JOB_STATE_MIMIC_RECORD(js)                                             \
 	&(const job_record_t)                                                  \
 	{                                                                      \
@@ -453,7 +460,7 @@ static xahash_foreach_control_t _foreach_cache_job(void *entry, void *state_ptr,
 						   void *arg)
 {
 	const job_state_cached_t *js = entry;
-	cache_table_state_t *state = state_ptr;
+	ONLY_DEBUG(cache_table_state_t *state = state_ptr;)
 	job_state_args_t *args = arg;
 
 	xassert(!state || (state->magic == MAGIC_CACHE_TABLE_STATE));
@@ -896,7 +903,7 @@ static void _unlink_array_job(const job_record_t *job_ptr,
 		if (!xahash_free_entry(array_job_cache_table, &job_id,
 				       sizeof(job_id)))
 			fatal_abort("Unable to remove %pJ after just finding it",
-				ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
+				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
 		return;
 	} else if (js->array_job_id == js->job_id) {
 		_log_array_job_chain(js, __func__,
@@ -970,8 +977,8 @@ static void _unlink_array_job(const job_record_t *job_ptr,
 			if (!xahash_free_entry(array_job_cache_table,
 					       &array_job_id,
 					       sizeof(array_job_id)))
-				fatal_abort("[%pJ] Unable to remove placeholder",
-					JOB_STATE_MIMIC_RECORD(meta_js));
+				fatal_abort("[JobId=%u] Unable to remove array meta job placeholder link",
+					    array_job_id);
 		}
 	}
 }
@@ -1026,10 +1033,10 @@ static void _on_array_job_removal(const job_record_t *job_ptr,
 
 		if (ats)
 			fatal_abort("found array task when there should not be one: %pJ",
-				ARRAY_TASK_STATE_MIMIC_RECORD(ats));
+				    ARRAY_TASK_STATE_MIMIC_RECORD(ats));
 		if (ajs && (js->job_id != js->array_job_id))
 			fatal_abort("found array job link when there should not be one: %pJ",
-				ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
+				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
 	}
 }
 
