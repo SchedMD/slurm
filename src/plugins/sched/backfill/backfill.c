@@ -2009,6 +2009,8 @@ static void _attempt_backfill(void)
 			continue;
 		if (!part_ptr)
 			continue;
+		if (!_job_part_valid(job_ptr, part_ptr))
+			continue;	/* Partition change during lock yield */
 
 		if (job_ptr->resv_list)
 			job_queue_rec_resv_list(job_queue_rec);
@@ -2173,8 +2175,6 @@ next_task:
 			continue;
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
-		if (!_job_part_valid(job_ptr, part_ptr))
-			continue;	/* Partition change during lock yield */
 		if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 			if (reject_array_job &&
 			    (reject_array_job->array_job_id ==
@@ -2370,6 +2370,8 @@ next_task:
 				continue;	/* No available frontend */
 			}
 			job_ptr->resv_ptr = save_resv_ptr;
+			if (!_job_part_valid(job_ptr, part_ptr))
+				continue;	/* Partition change during lock yield */
 			if (!job_independent(job_ptr)) {
 				log_flag(BACKFILL, "%pJ no longer independent after bf yield",
 					 job_ptr);

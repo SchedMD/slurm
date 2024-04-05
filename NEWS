@@ -113,6 +113,9 @@ documents those changes that are of interest to users and administrators.
     already finished.
  -- Remote SPANK callbacks invoked by srun get called once instead of twice.
  -- auth/slurm - Support multiple keys through slurm.jwks.
+ -- sched/backfill - Fix issue with bf_continue where a job partition request
+    could be incorrectly reset back to a partition that is no longer specified
+    after a job partition update processed during a lock yield time window.
 
 * Changes in Slurm 23.11.7
 ==========================
