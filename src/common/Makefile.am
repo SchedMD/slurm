@@ -68,6 +68,8 @@ libcommon_la_SOURCES =				\
 	log.c					\
 	log.h					\
 	macros.h				\
+	msg_type.c				\
+	msg_type.h				\
 	net.c					\
 	net.h					\
 	node_conf.c				\
