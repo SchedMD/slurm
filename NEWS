@@ -134,6 +134,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Allow ContentBody for all methods per RFC7230 even if ignored.
  -- slurmrestd - Add 'DELETE /slurm/v0.0.40/jobs' endpoint to allow bulk job
     signaling via slurmctld.
+ -- Fix combination of --nodelist and --exclude not always respecting the
+    excluded node list.
 
 * Changes in Slurm 23.11.5
 ==========================
