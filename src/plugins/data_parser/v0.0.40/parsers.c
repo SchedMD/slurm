@@ -6059,7 +6059,8 @@ static int PARSE_FUNC(KILL_JOBS_MSG_JOBS_ARRAY)(const parser_t *const parser,
 			return rc;
 
 		msg->jobs_cnt = 1;
-		xrecalloc(msg->jobs_array, msg->jobs_cnt,
+		/* Add 1 for NULL terminated array */
+		xrecalloc(msg->jobs_array, (msg->jobs_cnt + 1),
 			  sizeof(*msg->jobs_array));
 
 		msg->jobs_array[0] = job_str;
@@ -6074,7 +6075,8 @@ static int PARSE_FUNC(KILL_JOBS_MSG_JOBS_ARRAY)(const parser_t *const parser,
 				.parent_path = parent_path,
 			};
 
-			xrecalloc(msg->jobs_array, msg->jobs_cnt,
+			/* Add 1 for NULL terminated array */
+			xrecalloc(msg->jobs_array, (msg->jobs_cnt + 1),
 				  sizeof(*msg->jobs_array));
 			(void) data_list_for_each(src, _foreach_kill_jobs_job,
 						  &fargs);
