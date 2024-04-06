@@ -1870,9 +1870,8 @@ Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBJobContainerType\fR
-Identifies the plugin to be used for job tracking.
-\fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
-\fBProctrackType\fR applies to job steps.
+Identifies the plugin to be used for job isolation through Linux namespaces.
+\fBNOTE\fR: See \fBProctrackType\fR for resource containment and usage tracking.
 Acceptable values at present include:
 .IP
 .RS
@@ -3094,8 +3093,8 @@ identify all processes associated with a job since processes
 can become a child of the init process (when the parent process
 terminates) or change their process group.
 To reliably track all processes, "proctrack/cgroup" is highly recommended.
-\fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
-\fBProctrackType\fR applies to job steps.
+\fBNOTE\fR: The \fBJobContainerType\fR applies to a job namespace isolation,
+while \fBProctrackType\fR applies to job resource limits and tracking.
 Acceptable values at present include:
 .IP
 .RS
