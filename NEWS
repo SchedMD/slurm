@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- `scancel --ctld` and `DELETE /slurm/v0.0/40/jobs` - Fix support for job
     array expressions (e.g. 1_[3-5]). Also fix signaling a single pending array
     task (e.g. 1_10), which previously signaled the whole array job instead.
+ -- Fix a possible slurmctld segfault when at some point we failed to create an
+    external launcher step.
 
 * Changes in Slurm 23.11.6
 ==========================
