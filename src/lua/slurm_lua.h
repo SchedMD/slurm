@@ -44,6 +44,8 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/data.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 #ifndef LUA_OK
@@ -124,6 +126,21 @@ extern bool slurm_lua_is_function_defined(lua_State *L, const char *func_name);
  */
 extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
 			   char **err_ptr, const char *caller);
+
+/*
+ * Push Lua value representing src onto stack
+ * IN l - lua state table pointer
+ * IN src - data_t pointer to convert to lua table and push on stack
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_lua_from_data(lua_State *L, const data_t *src);
+/*
+ * Convert top of stack into data_t
+ * IN l - lua state table pointer
+ * IN dst - data_t pointer be populated with value on top of stack
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_lua_to_data(lua_State *L, data_t *dst);
 
 #else
 # define LUA_VERSION_NUM 0

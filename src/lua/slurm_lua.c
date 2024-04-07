@@ -1114,3 +1114,13 @@ extern void slurm_lua_fini(void)
 	if (lua_handle)
 		dlclose(lua_handle);
 }
+
+extern int slurm_lua_from_data(lua_State *L, const data_t *src)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int slurm_lua_to_data(lua_State *L, data_t *dst)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
