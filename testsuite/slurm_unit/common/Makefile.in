@@ -88,8 +88,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = log-test$(EXEEXT) $(am__EXEEXT_1)
+check_PROGRAMS = $(am__EXEEXT_3)
+TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 serializer-test \
@@ -101,6 +101,8 @@ TESTS = log-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@	 reverse_tree-test \
 @HAVE_CHECK_TRUE@	 xahash-test
 
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__append_2 = lua-test
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__append_3 = $(lua_CFLAGS)
 subdir = testsuite/slurm_unit/common
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -170,7 +172,8 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack-test$(EXEEXT) reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
-am__EXEEXT_2 = log-test$(EXEEXT) $(am__EXEEXT_1)
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__EXEEXT_2 = lua-test$(EXEEXT)
+am__EXEEXT_3 = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 data_test_SOURCES = data-test.c
 data_test_OBJECTS = data_test-data-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
@@ -196,6 +199,15 @@ log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
 log_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
+lua_test_SOURCES = lua-test.c
+lua_test_OBJECTS = lua_test-lua-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@lua_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_2) \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_1)
+lua_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(lua_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack_test-pack-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@pack_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -266,7 +278,8 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/job_resources_test-job-resources-test.Po \
-	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/pack_test-pack-test.Po \
+	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/lua_test-lua-test.Po \
+	./$(DEPDIR)/pack_test-pack-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
 	./$(DEPDIR)/serializer_test-serializer-test.Po \
@@ -293,9 +306,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
-	parse_time-test.c reverse_tree-test.c serializer-test.c \
-	sluid-test.c xahash-test.c xhash-test.c xstring-test.c
+SOURCES = data-test.c job-resources-test.c log-test.c lua-test.c \
+	pack-test.c parse_time-test.c reverse_tree-test.c \
+	serializer-test.c sluid-test.c xahash-test.c xhash-test.c \
+	xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -802,7 +816,7 @@ SUBDIRS = bitstring \
 	  slurmdb_defs \
 	  slurmdb_pack
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(am__append_3)
 LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE
 @HAVE_CHECK_TRUE@xhash_test_CFLAGS = $(MYCFLAGS)
@@ -825,6 +839,14 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@reverse_tree_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@lua_test_CFLAGS = $(MYCFLAGS) \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	-DLUA_TEST_SCRIPT=\"$(top_srcdir)/testsuite/slurm_unit/common/lua-test.lua\"
+
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@lua_test_LDADD = \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(LDADD) @CHECK_LIBS@ \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
+@HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	$(lua_LIBS)
+
 all: all-recursive
 
 .SUFFIXES:
@@ -880,6 +902,10 @@ log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 	@rm -f log-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(log_test_OBJECTS) $(log_test_LDADD) $(LIBS)
 
+lua-test$(EXEEXT): $(lua_test_OBJECTS) $(lua_test_DEPENDENCIES) $(EXTRA_lua_test_DEPENDENCIES) 
+	@rm -f lua-test$(EXEEXT)
+	$(AM_V_CCLD)$(lua_test_LINK) $(lua_test_OBJECTS) $(lua_test_LDADD) $(LIBS)
+
 pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) $(EXTRA_pack_test_DEPENDENCIES) 
 	@rm -f pack-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_test_LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
@@ -921,6 +947,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources_test-job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lua_test-lua-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_test-pack-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
@@ -984,6 +1011,20 @@ job_resources_test-job-resources-test.obj: job-resources-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='job-resources-test.c' object='job_resources_test-job-resources-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -c -o job_resources_test-job-resources-test.obj `if test -f 'job-resources-test.c'; then $(CYGPATH_W) 'job-resources-test.c'; else $(CYGPATH_W) '$(srcdir)/job-resources-test.c'; fi`
+
+lua_test-lua-test.o: lua-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lua_test_CFLAGS) $(CFLAGS) -MT lua_test-lua-test.o -MD -MP -MF $(DEPDIR)/lua_test-lua-test.Tpo -c -o lua_test-lua-test.o `test -f 'lua-test.c' || echo '$(srcdir)/'`lua-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lua_test-lua-test.Tpo $(DEPDIR)/lua_test-lua-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lua-test.c' object='lua_test-lua-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lua_test_CFLAGS) $(CFLAGS) -c -o lua_test-lua-test.o `test -f 'lua-test.c' || echo '$(srcdir)/'`lua-test.c
+
+lua_test-lua-test.obj: lua-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lua_test_CFLAGS) $(CFLAGS) -MT lua_test-lua-test.obj -MD -MP -MF $(DEPDIR)/lua_test-lua-test.Tpo -c -o lua_test-lua-test.obj `if test -f 'lua-test.c'; then $(CYGPATH_W) 'lua-test.c'; else $(CYGPATH_W) '$(srcdir)/lua-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lua_test-lua-test.Tpo $(DEPDIR)/lua_test-lua-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lua-test.c' object='lua_test-lua-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lua_test_CFLAGS) $(CFLAGS) -c -o lua_test-lua-test.obj `if test -f 'lua-test.c'; then $(CYGPATH_W) 'lua-test.c'; else $(CYGPATH_W) '$(srcdir)/lua-test.c'; fi`
 
 pack_test-pack-test.o: pack-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_test_CFLAGS) $(CFLAGS) -MT pack_test-pack-test.o -MD -MP -MF $(DEPDIR)/pack_test-pack-test.Tpo -c -o pack_test-pack-test.o `test -f 'pack-test.c' || echo '$(srcdir)/'`pack-test.c
@@ -1420,6 +1461,13 @@ xahash-test.log: xahash-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+lua-test.log: lua-test$(EXEEXT)
+	@p='lua-test$(EXEEXT)'; \
+	b='lua-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1483,6 +1531,7 @@ distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
+	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
@@ -1539,6 +1588,7 @@ maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
+	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
