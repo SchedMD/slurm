@@ -136,7 +136,7 @@ define hlctl-create
 	[ $$(stat -c '%a' ~/.ssh/authorized_keys) -eq 600 ] || chown 600 ~/.ssh/authorized_keys; \
 	[ -f ~/.ssh/id_rsa.pub ] || ssh-keygen -t rsa -N "" -f ~/.ssh/authorized_keys/id_rsa; \
 	grep -q ~/.ssh/id_rsa.pub ~/.ssh/authorized_keys || cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
-	/home/mwalter/gerrit/hlctl/dist/hlctl create vm --namespace devops --flavor g1.l --image u22 --disable-autofs=false \
+	hlctl create vm --namespace devops --flavor g1.l --image u22 --disable-autofs=false \
 		| awk '$$1=="VM:" {print $$2}' | grep '.'
 endef
 
