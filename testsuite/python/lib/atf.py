@@ -448,7 +448,7 @@ def start_slurm(clean=False, quiet=False):
             ):
                 pytest.fail(f"Slurmdbd is not running")
 
-    # Remove unnecessary default node1 from config to avoid being used or reserved
+    # Remove unnecessary default node0 from config to avoid being used or reserved
     output = run_command_output(
         f"cat {properties['slurm-config-dir']}/slurm.conf",
         user=properties["slurm-user"],
@@ -456,7 +456,7 @@ def start_slurm(clean=False, quiet=False):
     )
     if len(re.findall(r"NodeName=", output)) > 1:
         run_command(
-            f"sed -i '/NodeName=node1 /d' {properties['slurm-config-dir']}/slurm.conf",
+            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
             user=properties["slurm-user"],
             quiet=quiet,
         )
@@ -2587,7 +2587,7 @@ def require_nodes(requested_node_count, requirements_list=[]):
     if qualifying_node_count < requested_node_count:
         # If auto-config, configure what is required
         if properties["auto-config"]:
-            # Create new nodes to meet requirements ignoring default node1
+            # Create new nodes to meet requirements ignoring default node0
             new_node_count = requested_node_count
 
             # If we already have a qualifying node, we will use it as the template

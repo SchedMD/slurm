@@ -25,7 +25,7 @@ def test_explicit_gres_requested():
     and explicitly requesting 'explicit' gres"""
 
     with_gres_output = atf.run_command_output(
-        "salloc -wnode2 --gres=r2 --exclusive scontrol show node node2 -d",
+        "salloc -wnode1 --gres=r2 --exclusive scontrol show node node1 -d",
         timeout=2,
         fatal=True,
     )
@@ -39,7 +39,7 @@ def test_explicit_gres_not_requested():
     and not explicitly requesting 'explict' gres"""
 
     without_gres_output = atf.run_command_output(
-        "salloc -wnode2 --exclusive scontrol show node node2 -d", timeout=2, fatal=True
+        "salloc -wnode1 --exclusive scontrol show node node1 -d", timeout=2, fatal=True
     )
     assert (
         re.search("GresUsed=r1:1,r2:0", without_gres_output) is not None
