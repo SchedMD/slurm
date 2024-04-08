@@ -27,7 +27,7 @@ def create_resv(delete_old_resv):
     atf.run_command(
         f"scontrol create reservation reservationname=resv1 "
         f"user={atf.properties['test-user']} start=now end=now+1 "
-        f"nodes=node1",
+        f"nodes=node0",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
@@ -36,7 +36,7 @@ def create_resv(delete_old_resv):
 def test_clear_job_expired_deadline(create_resv):
     """Put several jobs in the queue that will go past the resv deadline"""
     job_id = atf.submit_job_sbatch(
-        sbatch_args=rf" -w node1 --deadline=now+4 "
+        sbatch_args=rf" -w node0 --deadline=now+4 "
         f"--begin=now --reservation=resv1 "
         f'--wrap="sleep 300"'
     )
