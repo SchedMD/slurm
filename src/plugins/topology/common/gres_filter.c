@@ -949,6 +949,9 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			}
 		}
 
+		sock_gres->total_cnt = MIN(cnt_avail_total,
+					   sock_gres->total_cnt);
+
 		/*
 		 * Set a minimum required core count to fulfill the job's
 		 * cpus_per_gres request or enforce_binding. Without
