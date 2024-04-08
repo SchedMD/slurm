@@ -96,12 +96,9 @@ const uint32_t plugin_id = MPI_PLUGIN_PMIX5;
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
-static bool setup_done = false;
+void *libpmix_plug = NULL;
 
-static void *libpmix_plug = NULL;
-static char *process_mapping = NULL;
+char *process_mapping = NULL;
 
 s_p_options_t pmix_options[] = {
 	{"PMIxCliTmpDirBase", S_P_STRING},
@@ -269,6 +266,9 @@ extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 extern mpi_plugin_client_state_t *
 mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 {
+	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
+	static bool setup_done = false;
 	uint32_t nnodes, ntasks, **tids;
 	uint16_t *task_cnt;
 	int ret;
@@ -310,10 +310,7 @@ mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 
 extern int mpi_p_client_fini(void)
 {
-	slurm_mutex_lock(&setup_mutex);
-	if (setup_done)
-		xfree(process_mapping);
-	slurm_mutex_unlock(&setup_mutex);
+	xfree(process_mapping);
 	return pmixp_abort_agent_stop();
 }
 
