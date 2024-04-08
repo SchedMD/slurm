@@ -465,7 +465,8 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 						   max_tasks);
 		}
 
-		if (gres_js->ntasks_per_gres) {
+		if (gres_js->ntasks_per_gres &&
+		    (gres_js->ntasks_per_gres != NO_VAL16)) {
 			max_tasks = cnt_avail_total * gres_js->ntasks_per_gres;
 			*max_tasks_this_node = MIN(*max_tasks_this_node,
 						   max_tasks);
