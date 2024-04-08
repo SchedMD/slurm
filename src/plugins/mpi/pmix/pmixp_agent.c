@@ -58,14 +58,14 @@
 #include "pmixp_dconn.h"
 
 static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t agent_mutex_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t agent_running_cond = PTHREAD_COND_INITIALIZER;
 
-static eio_handle_t *_agent_eio_handle = NULL;
-static eio_handle_t *_abort_eio_handle = NULL;
+static eio_handle_t *_io_handle = NULL;
+static eio_handle_t *_abort_handle = NULL;
 
-static pthread_t _agent_eio_tid = 0;
-static pthread_t _agent_timer_tid = 0;
-static pthread_t _abort_eio_tid = 0;
+static pthread_t _agent_tid = 0;
+static pthread_t _timer_tid = 0;
+static pthread_t _abort_tid = 0;
 
 struct timer_data_t {
 	int work_in, work_out;
@@ -276,49 +276,49 @@ static void _shutdown_timeout_fds(void)
 }
 
 /*
- * main loop of agent EIO thread
+ * main loop of agent thread
  */
-static void *_agent_eio_thread(void *unused)
+static void *_agent_thread(void *unused)
 {
-	PMIXP_DEBUG("Start agent EIO thread");
+	PMIXP_DEBUG("Start agent thread");
 	eio_obj_t *obj;
 
-	_agent_eio_handle = eio_handle_create(0);
+	_io_handle = eio_handle_create(0);
 
 	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops,
 			     (void *)(-1));
-	eio_new_initial_obj(_agent_eio_handle, obj);
+	eio_new_initial_obj(_io_handle, obj);
 
 	obj = eio_obj_create(timer_data.work_in, &to_ops, (void *)(-1));
-	eio_new_initial_obj(_agent_eio_handle, obj);
+	eio_new_initial_obj(_io_handle, obj);
 
-	pmixp_info_io_set(_agent_eio_handle);
+	pmixp_info_io_set(_io_handle);
 
 	if (PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type()) {
 		obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops,
 				     (void *)(-1));
-		eio_new_initial_obj(_agent_eio_handle, obj);
+		eio_new_initial_obj(_io_handle, obj);
 	} else {
-		pmixp_dconn_regio(_agent_eio_handle);
+		pmixp_dconn_regio(_io_handle);
 	}
 
 	slurm_mutex_lock(&agent_mutex);
-	slurm_cond_signal(&agent_mutex_cond);
+	slurm_cond_signal(&agent_running_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
-	eio_handle_mainloop(_agent_eio_handle);
+	eio_handle_mainloop(_io_handle);
 
-	PMIXP_DEBUG("agent EIO thread exit");
-	eio_handle_destroy(_agent_eio_handle);
+	PMIXP_DEBUG("agent thread exit");
+	eio_handle_destroy(_io_handle);
 
 	return NULL;
 }
 
-static void *_agent_timer_thread(void *unused)
+static void *_pmix_timer_thread(void *unused)
 {
 	struct pollfd pfds[1];
 
-	PMIXP_DEBUG("Start agent timer thread");
+	PMIXP_DEBUG("Start timer thread");
 
 	pfds[0].fd = timer_data.stop_in;
 	pfds[0].events = POLLIN;
@@ -337,23 +337,22 @@ static void *_agent_timer_thread(void *unused)
 			/* there was an event on stop_fd, exit */
 			break;
 		}
-		/* activate main (agent EIO) thread's timer event */
+		/* activate main thread's timer event */
 		safe_write(timer_data.work_out, &c, 1);
 	}
 
 rwfail:
-	PMIXP_DEBUG("agent timer thread exit");
 	return NULL;
 }
 
 /*
  * thread for codes from abort
  */
-static void *_abort_eio_thread(void *unused)
+static void *_pmix_abort_thread(void *args)
 {
-	PMIXP_DEBUG("Start abort EIO thread");
-	eio_handle_mainloop(_abort_eio_handle);
-	PMIXP_DEBUG("Abort thread EIO exit");
+	PMIXP_DEBUG("Start abort thread");
+	eio_handle_mainloop(_abort_handle);
+	PMIXP_DEBUG("Abort thread exit");
 	return NULL;
 }
 
@@ -384,19 +383,19 @@ int pmixp_abort_agent_start(char ***env)
 	setenvf(env, PMIXP_SLURM_ABORT_AGENT_PORT, "%d",
 		slurm_get_port(&abort_server));
 
-	_abort_eio_handle = eio_handle_create(0);
+	_abort_handle = eio_handle_create(0);
 	obj = eio_obj_create(abort_server_socket, &abort_ops, (void *)(-1));
-	eio_new_initial_obj(_abort_eio_handle, obj);
-	slurm_thread_create(&_abort_eio_tid, _abort_eio_thread, NULL);
+	eio_new_initial_obj(_abort_handle, obj);
+	slurm_thread_create(&_abort_tid, _pmix_abort_thread, NULL);
 
 	return SLURM_SUCCESS;
 }
 
 int pmixp_abort_agent_stop(void)
 {
-	if (_abort_eio_tid) {
-		eio_signal_shutdown(_abort_eio_handle);
-		slurm_thread_join(_abort_eio_tid);
+	if (_abort_tid) {
+		eio_signal_shutdown(_abort_handle);
+		slurm_thread_join(_abort_tid);
 	}
 	return pmixp_abort_code_get();
 }
@@ -407,11 +406,11 @@ int pmixp_agent_start(void)
 
 	_setup_timeout_fds();
 
-	/* start agent EIO thread */
-	slurm_thread_create(&_agent_eio_tid, _agent_eio_thread, NULL);
+	/* start agent thread */
+	slurm_thread_create(&_agent_tid, _agent_thread, NULL);
 
-	/* wait for the agent EIO thread to initialize */
-	slurm_cond_wait(&agent_mutex_cond, &agent_mutex);
+	/* wait for the agent thread to initialize */
+	slurm_cond_wait(&agent_running_cond, &agent_mutex);
 
 	/* Establish the early direct connection */
 	if (pmixp_info_srv_direct_conn_early()) {
@@ -436,13 +435,13 @@ int pmixp_agent_start(void)
 		pmixp_server_run_cperf();
 	}
 
-	PMIXP_DEBUG("agent EIO thread started: tid = %lu",
-		    (unsigned long) _agent_eio_tid);
+	PMIXP_DEBUG("agent thread started: tid = %lu",
+		    (unsigned long) _agent_tid);
 
-	slurm_thread_create(&_agent_timer_tid, _agent_timer_thread, NULL);
+	slurm_thread_create(&_timer_tid, _pmix_timer_thread, NULL);
 
-	PMIXP_DEBUG("agent timer thread started: tid = %lu",
-		    (unsigned long) _agent_timer_tid);
+	PMIXP_DEBUG("timer thread started: tid = %lu",
+		    (unsigned long) _timer_tid);
 
 	slurm_mutex_unlock(&agent_mutex);
 	return SLURM_SUCCESS;
@@ -455,19 +454,19 @@ int pmixp_agent_stop(void)
 
 	slurm_mutex_lock(&agent_mutex);
 
-	if (_agent_eio_tid) {
-		eio_signal_shutdown(_agent_eio_handle);
-		/* wait for the agent EIO thread to stop */
-		slurm_thread_join(_agent_eio_tid);
+	if (_agent_tid) {
+		eio_signal_shutdown(_io_handle);
+		/* wait for the agent thread to stop */
+		slurm_thread_join(_agent_tid);
 	}
 
-	if (_agent_timer_tid) {
-		/* cancel timer thread */
+	if (_timer_tid) {
+		/* cancel timer */
 		if (write(timer_data.stop_out, &c, 1) == -1)
 			rc = SLURM_ERROR;
-		slurm_thread_join(_agent_timer_tid);
+		slurm_thread_join(_timer_tid);
 
-		/* close timer FDs */
+		/* close timer fds */
 		_shutdown_timeout_fds();
 	}
 
