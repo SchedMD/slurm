@@ -1148,8 +1148,8 @@ static void *_power_save_thread(void *arg)
 
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&power_mutex);
-		ts.tv_sec = time(NULL) + 1;
-		slurm_cond_timedwait(&power_cond, &power_mutex, &ts);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += 1;
 		slurm_mutex_unlock(&power_mutex);
 
 		if (slurmctld_config.shutdown_time)
