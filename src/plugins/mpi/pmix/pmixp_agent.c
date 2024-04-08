@@ -59,8 +59,6 @@
 
 static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t agent_mutex_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t abort_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t abort_mutex_cond = PTHREAD_COND_INITIALIZER;
 
 static eio_handle_t *_agent_eio_handle = NULL;
 static eio_handle_t *_abort_eio_handle = NULL;
@@ -354,10 +352,6 @@ rwfail:
 static void *_abort_eio_thread(void *unused)
 {
 	PMIXP_DEBUG("Start abort EIO thread");
-	slurm_mutex_lock(&abort_mutex);
-	slurm_cond_signal(&abort_mutex_cond);
-	slurm_mutex_unlock(&abort_mutex);
-
 	eio_handle_mainloop(_abort_eio_handle);
 	PMIXP_DEBUG("Abort thread EIO exit");
 	return NULL;
@@ -370,7 +364,6 @@ int pmixp_abort_agent_start(char ***env)
 	eio_obj_t *obj;
 	uint16_t *ports;
 
-	slurm_mutex_lock(&abort_mutex);
 	if ((ports = slurm_get_srun_port_range()))
 		abort_server_socket = slurm_init_msg_engine_ports(ports);
 	else
@@ -396,22 +389,15 @@ int pmixp_abort_agent_start(char ***env)
 	eio_new_initial_obj(_abort_eio_handle, obj);
 	slurm_thread_create(&_abort_eio_tid, _abort_eio_thread, NULL);
 
-	/* wait for the abort EIO thread to initialize */
-	slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
-
-	slurm_mutex_unlock(&abort_mutex);
 	return SLURM_SUCCESS;
 }
 
 int pmixp_abort_agent_stop(void)
 {
-	slurm_mutex_lock(&abort_mutex);
 	if (_abort_eio_tid) {
 		eio_signal_shutdown(_abort_eio_handle);
 		slurm_thread_join(_abort_eio_tid);
 	}
-	slurm_mutex_unlock(&abort_mutex);
-
 	return pmixp_abort_code_get();
 }
 
