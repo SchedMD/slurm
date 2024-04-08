@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "March 2024" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "April 2024" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -1129,12 +1129,25 @@ are handled.
 
 .TP
 \f3Timelimit\fP
-What the timelimit was/is for the job. Format is the same as \f3Elapsed\fP.
+What the timelimit was/is for the job. Format is the same as \fBElapsed\fR,
+but two additional special values can be displayed:
+.RS
+.TP
+\fBPartition_limit\fR
+Indicates that the job did not have its time limit set and was not yet
+subjected to a partition MaxTime (i.e. job is pending). You can define the
+\fBDefaultTime\fR on the partition to avoid seeing this value.
+.IP
+.TP
+\fBUNLIMITED\fR
+Indicates the job did not have a time limit defined.
+.RE
 .IP
 
 .TP
 \f3TimelimitRaw\fP
 What the timelimit was/is for the job. Format is in number of minutes.
+\fBNOTE\fR: See \fBTimeLimit\fR description.
 .IP
 
 .TP
