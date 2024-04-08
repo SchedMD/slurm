@@ -307,8 +307,13 @@ extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 {
 	uint32_t job_state;
 
-	/* FIXME: avoid triggering on bug#19472 */
-	if (flag != JOB_UPDATE_DB)
+	if (flag == JOB_UPDATE_DB)
+		/*
+		 * As stated in _set_db_inx_thread(), a db update will use the
+		 * JOB_READ_LOCK
+		 */
+		xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	else
 		xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xassert(!(flag & JOB_STATE_BASE));
