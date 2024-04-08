@@ -1161,9 +1161,9 @@ static void *_power_save_thread(void *arg)
 		}
 
 		now = time(NULL);
-		if ((now >= (last_power_scan + power_save_min_interval)) &&
-		    ((last_node_update >= last_power_scan) ||
-		     (now >= (last_power_scan + power_save_interval)))) {
+		if ((now > (last_power_scan + power_save_min_interval)) &&
+		    ((last_node_update > last_power_scan) ||
+		     (now > (last_power_scan + power_save_interval)))) {
 			lock_slurmctld(node_write_lock);
 			_do_power_work(now);
 			unlock_slurmctld(node_write_lock);
