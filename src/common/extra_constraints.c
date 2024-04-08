@@ -214,10 +214,10 @@ static op_t _str2op(char *str, const char *valid_chars, char **end_out)
 	char save_char;
 	char *end = str;
 
-	xassert(strchr(valid_chars, *str));
+	xassert(xstrchr(valid_chars, *str));
 
 	while (*end) {
-		if (!strchr(valid_chars, *end))
+		if (!xstrchr(valid_chars, *end))
 			break;
 		end++;
 	}
@@ -248,7 +248,7 @@ static char *_find_op_in_string(char *str)
 		return NULL;
 
 	while (*str) {
-		if ((p = strchr(op_chars, *str)))
+		if ((p = xstrchr(op_chars, *str)))
 			return p;
 		str++;
 	}
@@ -273,7 +273,7 @@ static elem_t *_parse_leaf(char *str)
 		return NULL;
 
 	/* This is not a leaf if there are paren */
-	xassert(!strchr(str, '(') && !strchr(str, ')'));
+	xassert(!xstrchr(str, '(') && !xstrchr(str, ')'));
 
 	if (*str == '\0') {
 #if _DEBUG
@@ -287,7 +287,7 @@ static elem_t *_parse_leaf(char *str)
 	/* Find the first leaf operator character */
 	op_ptr = key;
 	while (*op_ptr) {
-		if (strchr(leaf_op_chars, *op_ptr))
+		if (xstrchr(leaf_op_chars, *op_ptr))
 			break;
 		op_ptr++;
 	}
@@ -305,11 +305,11 @@ static elem_t *_parse_leaf(char *str)
 
 	if (op == OP_NONE) {
 		/*
-		 * The strchr check verified that an operator
+		 * The xstrchr check verified that an operator
 		 * character exists, but not that the whole
 		 * operator string is valid. For example, there
 		 * could be repeating operator characters:
-		 * strchr would return a pointer to the first
+		 * xstrchr would return a pointer to the first
 		 * one, but _str2op would correctly identify
 		 * that the operator is invalid.
 		 */
@@ -359,7 +359,7 @@ static char *_find_leaf_end(char *str)
 
 	/* None of the following characters are allowed in a leaf */
 	while (*ptr) {
-		if (strchr(child_op_chars, *ptr) ||
+		if (xstrchr(child_op_chars, *ptr) ||
 		    (*ptr == '(') || (*ptr == ')'))
 			break;
 		ptr++;
@@ -499,21 +499,21 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 		/* Check if we are at a child operator. */
 		if (**str_ptr == '\0') {
 			/*
-			 * End of string. strchr will find the '\0' character
+			 * End of string. xstrchr will find the '\0' character
 			 * in a string, so we need to avoid that when looking
 			 * for child operator characters.
 			 */
-		} else if (strchr(child_op_chars, **str_ptr)) {
+		} else if (xstrchr(child_op_chars, **str_ptr)) {
 			char *tmp_end = NULL;
 			op_t op = _str2op(*str_ptr, child_op_chars, &tmp_end);
 
 			if (op == OP_NONE) {
 				/*
-				 * The strchr check verified that an operator
+				 * The xstrchr check verified that an operator
 				 * character exists, but not that the whole
 				 * operator string is valid. For example, there
 				 * could be repeating operator characters:
-				 * strchr would return a pointer to the first
+				 * xstrchr would return a pointer to the first
 				 * one, but _str2op would correctly identify
 				 * that the operator is invalid.
 				 */
