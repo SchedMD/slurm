@@ -17,7 +17,7 @@ the primary server fails.
 \fB\-c\fR
 Clear all previous \fBslurmctld\fR state from its last checkpoint.
 With this option, all jobs, including both running and queued, and all
-node states, will be deleted.  Without this option, previously running
+node states, will be deleted. Without this option, previously running
 jobs will be preserved along with node \fIState\fR of DOWN, DRAINED
 and DRAINING nodes and the associated \fIReason\fR field for those nodes.
 \fBNOTE\fR: It is rare you would ever want to use this in production as all
@@ -66,7 +66,7 @@ Set the daemon's nice value to the specified value, typically a negative number.
 .TP
 \fB\-r\fR
 Recover partial state from last checkpoint: jobs and node DOWN/DRAIN
-state and reason information state.  No partition state is recovered.
+state and reason information state. No partition state is recovered.
 This is the default action.
 .IP
 
@@ -152,7 +152,7 @@ Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
 
 .TP
 \fBSIGUSR2\fR
-Reread the log level from the configs, and then reopen the log file.  This
+Reread the log level from the configs, and then reopen the log file. This
 should be used when setting up \fBlogrotate\fR(8).
 .IP
 
@@ -164,7 +164,7 @@ These signals are explicitly ignored.
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
 configuration parameters using a distinct configuration file
-(e.g. timeouts).  However, this special configuration file will not be
+(e.g. timeouts). However, this special configuration file will not be
 used by the \fBslurmd\fR daemon or the Slurm programs, unless you
 specifically tell each of them to use it. If you desire changing
 communication ports, the location of the temporary file system, or
@@ -188,7 +188,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

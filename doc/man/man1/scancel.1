@@ -76,7 +76,7 @@ used.
 
 .TP
 \fB\-c\fR, \fB\-\-cron\fR
-Confirm request to cancel a job submitted by scrontab.  This option only has
+Confirm request to cancel a job submitted by scrontab. This option only has
 effect with the "explicit_scancel" option is set in \fBScronParameters\fR.
 .IP
 
@@ -120,7 +120,7 @@ Restrict the scancel operation to jobs owned by the current user.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist=\fIhost1,host2,...\fR
-Cancel any jobs using any of the given hosts.  The list may be specified as
+Cancel any jobs using any of the given hosts. The list may be specified as
 a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for
 example), or a filename. The host list will be assumed to be a filename only
 if it contains a "/" character.
@@ -345,10 +345,10 @@ only the jobs satisfying all of the filtering options will be signaled.
 Cancelling a job step will not result in the job being terminated.
 The job must be cancelled to release a resource allocation.
 .LP
-To cancel a job, invoke \fBscancel\fR without \-\-signal option.  This
+To cancel a job, invoke \fBscancel\fR without \-\-signal option. This
 will send first a SIGCONT to all steps to eventually wake them up followed by
 a SIGTERM, then wait the KillWait duration defined in the slurm.conf file
-and finally if they have not terminated send a SIGKILL.  This gives
+and finally if they have not terminated send a SIGKILL. This gives
 time for the running job/step(s) to clean up.
 .LP
 If a signal value of "KILL" is sent to an entire job, this will cancel
@@ -423,7 +423,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

@@ -199,7 +199,7 @@ compiled into slurmd.
 
 .TP 20
 \fBSLURM_CONF\fR
-The location of the Slurm configuration file.  This is overridden by
+The location of the Slurm configuration file. This is overridden by
 explicitly naming a configuration file on the command line.
 .IP
 
@@ -224,7 +224,7 @@ Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
 
 .TP
 \fBSIGUSR2\fR
-Reread the log level from the configs, and then reopen the log file.  This
+Reread the log level from the configs, and then reopen the log file. This
 should be used when setting up \fBlogrotate\fR(8).
 .IP
 
@@ -238,7 +238,7 @@ If slurmd is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.
 Otherwise if \fBSlurmdLogFile\fR is a fully qualified path name
 (starting with a slash), the core file will be written to the same
-directory as the log file.  Otherwise the core file will be written to
+directory as the log file. Otherwise the core file will be written to
 the \fBSlurmdSpoolDir\fR directory, or "/var/tmp/" as a last resort. If
 none of the above directories can be written, no core file will be
 produced.
@@ -246,7 +246,7 @@ produced.
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmd\fR specific
 configuration parameters using a distinct configuration file
-(e.g. timeouts).  However, this special configuration file will not be
+(e.g. timeouts). However, this special configuration file will not be
 used by the \fBslurmctld\fR daemon or the Slurm programs, unless you
 specifically tell each of them to use it. If you desire changing
 communication ports, the location of the temporary file system, or
@@ -275,7 +275,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "FILES"

@@ -10,7 +10,7 @@ Slurm's job_container/tmpfs plugin. The plugin reads the
 job_container.conf file to find out the configuration settings. Based on them it
 constructs a private (or optionally shared) filesystem namespace for the job and
 mounts a list of directories (defaults to /tmp and /dev/shm) inside it. This
-gives the job a private view of these directories.  These paths are mounted
+gives the job a private view of these directories. These paths are mounted
 inside the location specified by 'BasePath' in the \fBjob_container.conf\fR
 file. When the job completes, the private namespace is unmounted and all
 files therein are automatically removed.
@@ -62,7 +62,7 @@ the name is replaced with the Slurm node name on which the \fBslurmd\fR is
 running. Set \fIPATH\fR to 'none' to disable the tmpfs plugin on node subsets
 when there is a global setting.
 
-\fBNOTE\fR: The \fBBasePath\fR must be unique to each node.  If BasePath is on a
+\fBNOTE\fR: The \fBBasePath\fR must be unique to each node. If BasePath is on a
 shared filesystem, you can use "%h" or "%n" to create node-uinque directories.
 
 \fBNOTE\fR: The \fBBasePath\fR parameter cannot be set to any of
@@ -171,7 +171,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

@@ -241,7 +241,7 @@ The hierarchy may have an arbitrary depth.
 \fBassociation\fR
 The entity used to group information consisting of four parameters:
 \fBaccount\fR, \fBcluster\fR, \fBpartition\fR (optional), and \fBuser\fR.
-Used only with the \fBlist\fR or \fBshow\fR command.  Add, modify, and
+Used only with the \fBlist\fR or \fBshow\fR command. Add, modify, and
 delete should be done to a user, account or cluster entity, which will
 in turn update the underlying associations. Modification of attributes like
 limits is allowed for an association but not a modification of the four
@@ -316,7 +316,7 @@ among clusters.
 \fBRunawayJobs\fR
 Used only with the \fBlist\fR or \fBshow\fR command to report current
 jobs that have been orphaned on the local cluster and are now
-runaway.  If there are jobs in this state it will also give you an
+runaway. If there are jobs in this state it will also give you an
 option to "fix" them.
 \fBNOTE\fR: You must have an \fBAdminLevel\fR of at least \fBOperator\fR to perform
 this.
@@ -373,11 +373,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 .PD
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
-this means that the parent association is used for fairshare.  If
+this means that the parent association is used for fairshare. If
 Fairshare=parent is set on an account, that account's children will be
 effectively re\-parented for fairshare calculations to the first parent
-of their parent that is not Fairshare=parent.  Limits remain the same,
-only its fairshare value is affected.  To clear a previously set
+of their parent that is not Fairshare=parent. Limits remain the same,
+only its fairshare value is affected. To clear a previously set
 value use the modify command with a new value of \-1.
 .IP
 
@@ -432,12 +432,12 @@ value of \-1 for each TRES id.
 of available resources by running \fBsacctmgr show tres\fR.
 
 \fBNOTE\fR: This limit is not enforced if set on the root
-association of a cluster.  So even though it may appear in sacctmgr
+association of a cluster. So even though it may appear in sacctmgr
 output, it will not be enforced.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
-plugin.  The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
+plugin. The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf. When this limit
 is reached all associated jobs running will be killed and all future
 jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
@@ -446,7 +446,7 @@ they are able to run inside the limit.
 .TP
 \fBGrpTRESRunMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children.  This takes into
+jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up. To clear a previously set value use the modify command
@@ -464,12 +464,12 @@ this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 \fBNOTE\fR: This limit is not enforced if set on the root association of a
-cluster.  So even though it may appear in sacctmgr output, it will not
+cluster. So even though it may appear in sacctmgr output, it will not
 be enforced.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
-plugin.  The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
+plugin. The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf. When this limit
 is reached all associated jobs running will be killed and all future
 jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
@@ -563,10 +563,10 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fBQosLevel\fR<\fIoperator\fR><\fIcomma_separated_list_of_qos_names\fR>
 Specify the default Quality of Service's that jobs are able to run at
-for this association.  To get a list of valid QOSs use 'sacctmgr list qos'.
+for this association. To get a list of valid QOSs use 'sacctmgr list qos'.
 This value will override its parents value and push down to its
-children as the new default.  Setting a QosLevel to '' (two single
-quotes with nothing between them) restores its default setting.  You
+children as the new default. Setting a QosLevel to '' (two single
+quotes with nothing between them) restores its default setting. You
 can also use the operator += and \-= to add or remove certain QOSs
 from a QOS list.
 
@@ -604,7 +604,7 @@ querying for Accounts.
 
 .TP
 \fBCluster\fR=<\fIcluster\fR>
-Specific cluster to add account to.  Default is all in system.
+Specific cluster to add account to. Default is all in system.
 .IP
 
 .TP
@@ -633,7 +633,7 @@ level account.
 .TP
 \fBRawUsage\fR=<\fIvalue\fR>
 This allows an administrator to reset the raw usage accrued to an
-account.  The only value currently supported is 0 (zero).  This is a
+account. The only value currently supported is 0 (zero). This is a
 settable specification only \- it cannot be used as a filter to list
 accounts.
 .IP
@@ -658,8 +658,8 @@ the \fBWithDeleted\fR flag.
 .P
 \fBNOTE\fR: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
-this account may have.  These extra options can be found in the
-\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+this account may have. These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section. You can also use the
 general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
 ASSOCIATION BASED ENTITIES\fP section.
 .IP
@@ -754,8 +754,8 @@ the \fBWithDeleted\fR flag.
 
 .TP
 \fBWithSubAccounts\fR
-Display information with subaccounts.  Only really valuable when used
-with the account= option.  This will display all the subaccount
+Display information with subaccounts. Only really valuable when used
+with the account= option. This will display all the subaccount
 associations along with the accounts listed in the option.
 .IP
 
@@ -808,10 +808,10 @@ the QOS list mentioned below.
 .PD
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
-this means that the parent association is used for fairshare.  If
+this means that the parent association is used for fairshare. If
 Fairshare=parent is set on an account, that account's children will be
 effectively re\-parented for fairshare calculations to the first parent
-of their parent that is not Fairshare=parent.  Limits remain the same,
+of their parent that is not Fairshare=parent. Limits remain the same,
 only its fairshare value is affected.
 .IP
 
@@ -851,7 +851,7 @@ present and future jobs running from this association and its children.
 .TP
 \fBGrpTRESRunMins\fR
 Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children.  This takes into
+jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
@@ -871,7 +871,7 @@ The id of the association.
 .TP
 \fBLFT\fR
 Associations are kept in a hierarchy: this is the left most
-spot in the hierarchy.  When used with the RGT variable, all
+spot in the hierarchy. When used with the RGT variable, all
 associations with a LFT inside this LFT and before the RGT are
 children of this association.
 .IP
@@ -953,7 +953,7 @@ What priority will be added to a job's priority when using this association.
 .TP
 \fBRGT\fR
 Associations are kept in a hierarchy: this is the right most
-spot in the hierarchy.  When used with the LFT variable, all
+spot in the hierarchy. When used with the LFT variable, all
 associations with a LFT inside this RGT and after the LFT are
 children of this association.
 .IP
@@ -1159,7 +1159,7 @@ Memory, and Node) this cluster is accounting for.
 
 .P
 \fBNOTE\fR: You can also view the information about the root association for
-the cluster.  The Association format fields are described
+the cluster. The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .IP
 
@@ -1203,7 +1203,7 @@ Shortcut to get time period for all time.
 
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
-List the events of the cluster(s).  Default is the cluster where the
+List the events of the cluster(s). Default is the cluster where the
 command was run.
 .IP
 
@@ -1268,8 +1268,8 @@ should be surrounded by quotes.
 
 .TP
 \fBStart\fR=<\fIOPT\fR>
-Period start of events.  Default is 00:00:00 of previous day, unless
-states are given with the States=<spec> events.  If this is the case
+Period start of events. Default is 00:00:00 of previous day, unless
+states are given with the States=<spec> events. If this is the case
 the default behavior is to return events currently in
 the states specified.
 .br
@@ -1289,13 +1289,13 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 .TP
 \fBStates\fR=<\fIstate\fR>[,<\fIstate\fR>,...]
-State of a node in a node event.  If this is set, the event type is
+State of a node in a node event. If this is set, the event type is
 set automatically to Node.
 .IP
 
 .TP
 \fBUser\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
-Query against users who set the event.  If this is set, the event type is
+Query against users who set the event. If this is set, the event type is
 set automatically to Node since only the slurm user can perform a cluster
 event.
 .IP
@@ -1341,7 +1341,7 @@ Numeric value of the name of the event.
 
 .TP
 \fBNodeName\fR
-The node affected by the event.  In a cluster event, this is blank.
+The node affected by the event. In a cluster event, this is blank.
 .IP
 
 .TP
@@ -1455,7 +1455,7 @@ These are options you can specify to filter for specific instances.
 
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
-Name of the cluster that the instance ran on.  Default is the cluster where the
+Name of the cluster that the instance ran on. Default is the cluster where the
 command was run.
 .IP
 
@@ -1498,7 +1498,7 @@ The node on which the instance ran.
 
 .TP
 \fBStart\fR=<\fIOPT\fR>
-Period start of instances.  Default is 00:00:00 of previous day.
+Period start of instances. Default is 00:00:00 of previous day.
 
 Valid time formats are:
 .br
@@ -1576,7 +1576,7 @@ of '' (two single quotes with nothing between them).
 .TP
 \fBComment\fR=<\fIcomment\fR>
 The job's comment string when the AccountingStoreFlags parameter
-in the slurm.conf file contains 'job_comment'.  The user can only
+in the slurm.conf file contains 'job_comment'. The user can only
 modify the comment string of their own job. To clear a previously set value,
 use the modify command with a new value of '' (two single quotes with nothing
 between them).
@@ -1611,7 +1611,7 @@ value of '' (two single quotes with nothing between them).
 
 .TP
 \fBJobID\fR=<\fIjobid_list\fR>
-The id of the job to change.  Not needed if altering multiple jobs using wckey
+The id of the job to change. Not needed if altering multiple jobs using wckey
 specification.
 .IP
 
@@ -1705,11 +1705,11 @@ will be held until their Fairshare Usage goes above the Threshold.
 \fBNoDecay\fR
 If set, this QOS will not have its GrpTRESMins,
 GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
-PriorityUsageResetPeriod settings.  This allows a QOS to provide aggregate
-limits that, once consumed, will not be replenished automatically.  Such a
+PriorityUsageResetPeriod settings. This allows a QOS to provide aggregate
+limits that, once consumed, will not be replenished automatically. Such a
 QOS will act as a time\-limited quota of resources for an association
-that has access to it.  Account/user usage will still be decayed for
-associations using the QOS.  The QOS GrpTRESMins and
+that has access to it. Account/user usage will still be decayed for
+associations using the QOS. The QOS GrpTRESMins and
 GrpWall limits can be increased or the QOS RawUsage value reset to 0
 (zero) to again allow jobs submitted with this QOS to be queued (if
 DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
@@ -1842,8 +1842,8 @@ for each TRES id.
 of available resources by running \fBsacctmgr show tres\fR.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
-plugin.  The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
+plugin. The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf. When this limit
 is reached all associated jobs running will be killed and all future jobs
 submitted with this QOS will be delayed until they are able to run
 inside the limit.
@@ -1852,7 +1852,7 @@ inside the limit.
 .TP
 \fBGrpTRESRunMins\fR
 Used to limit the combined total number of TRES
-minutes used by all jobs running with this QOS.  This takes into
+minutes used by all jobs running with this QOS. This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
@@ -2207,9 +2207,9 @@ value of \-1.
 .TP
 \fBUsageThreshold\fR
 A float representing the lowest fairshare of an association allowable
-to run a job.  If an association falls below this threshold and has
+to run a job. If an association falls below this threshold and has
 pending jobs or submits new jobs those jobs will be held until the
-usage goes back above the threshold.  Use \fIsshare\fP to see current
+usage goes back above the threshold. Use \fIsshare\fP to see current
 shares on the system.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
@@ -2409,7 +2409,7 @@ for preemption.
 .TP
 \fBPreemptMode\fR
 Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
-is configured to \fIpreempt/qos\fP.  The default preemption mechanism
+is configured to \fIpreempt/qos\fP. The default preemption mechanism
 is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
 .IP
 
@@ -2449,7 +2449,7 @@ These are options you can specify to filter for specific reservations.
 
 .TP
 \fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
-List the reservations of the cluster(s).  Default is the cluster where the
+List the reservations of the cluster(s). Default is the cluster where the
 command was run.
 .IP
 
@@ -2487,7 +2487,7 @@ Node names where reservation ran.
 
 .TP
 \fBStart\fR=<\fIOPT\fR>
-Period start of reservations.  Default is 00:00:00 of previous day.
+Period start of reservations. Default is 00:00:00 of previous day.
 
 Valid time formats are:
 .br
@@ -2580,7 +2580,7 @@ the system being controlled by a resource manager.
 .TP
 \fBClusters\fR=<\fIname_list\fR>
 Comma separated list of cluster names on which specified resources are to be
-available.  If no names are designated then the clusters already
+available. If no names are designated then the clusters already
 allowed to use this resource will be altered.
 .IP
 
@@ -2615,7 +2615,7 @@ the numbers in the database back to percentages. This is required by the user.
 .TP
 \fBNames\fR=<\fIOPT\fR>
 Comma separated list of the name of a resource configured on the
-system being controlled by a resource manager.  If this resource is
+system being controlled by a resource manager. If this resource is
 seen on the slurmctld its name will be name@server to distinguish it
 from local resources defined in a slurm.conf.
 .IP
@@ -2627,7 +2627,7 @@ Percentage/Count of a specific resource that can be used on specified cluster.
 
 .TP
 \fBServer\fR=<\fIOPT\fR>
-The name of the server serving up the resource.  Default is 'slurmdb' indicating
+The name of the server serving up the resource. Default is 'slurmdb' indicating
 the licenses are being served by the database.
 .IP
 
@@ -2639,7 +2639,7 @@ FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
 
 .TP
 \fBType\fR=<\fIOPT\fR>
-The type of the resource represented by this record.  Currently the only valid
+The type of the resource represented by this record. Currently the only valid
 type is License.
 .IP
 
@@ -2790,12 +2790,12 @@ Only print out the transactions affecting specified clusters.
 
 .TP
 \fBEnd\fR=<\fIDate_and_time_of_last_transaction_to_return\fR>
-Return all transactions before this Date and time.  Default is now.
+Return all transactions before this Date and time. Default is now.
 .IP
 
 .TP
 \fBStart\fR=<\fIDate_and_time_of_first_transaction_to_return\fR>
-Return all transactions after this Date and time.  Default is epoch.
+Return all transactions after this Date and time. Default is epoch.
 
 Valid time formats for End and Start are:
 .br
@@ -2854,7 +2854,7 @@ Displays when the transaction occurred.
 Displays details of the constraints for the transaction.
 .P
 \fBNOTE\fR: If using the WithAssoc option you can also view the information
-about the various associations the transaction affected.  The
+about the various associations the transaction affected. The
 Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .IP
@@ -2882,12 +2882,12 @@ Account name to add this user to.
 
 .TP
 \fBAdminLevel\fR=<\fIlevel\fR>
-Admin level of user.  Valid levels are None, Operator, and Admin.
+Admin level of user. Valid levels are None, Operator, and Admin.
 .IP
 
 .TP
 \fBCluster\fR=<\fIcluster\fR>
-Specific cluster to add user to the account on.  Default is all in system.
+Specific cluster to add user to the account on. Default is all in system.
 .IP
 
 .TP
@@ -2919,7 +2919,7 @@ Partition name.
 .TP
 \fBRawUsage\fR=<\fIvalue\fR>
 This allows an administrator to reset the raw usage accrued to a user.
-The only value currently supported is 0 (zero).  This is a settable
+The only value currently supported is 0 (zero). This is a settable
 specification only \- it cannot be used as a filter to list users.
 .IP
 
@@ -2948,8 +2948,8 @@ the \fBWithDeleted\fR flag.
 .P
 \fBNOTE\fR: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
-this user may have.  These extra options can be found in the
-\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+this user may have. These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section. You can also use the
 general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
 ASSOCIATION BASED ENTITIES\fP section.
 .IP
@@ -3050,9 +3050,9 @@ in the database.
 
 .TP
 \fBName\fR
-The name of the trackable resource.  This option is required for
-TRES types BB (Burst buffer), GRES, and License.  Types CPU, Energy,
-Memory, and Node do not have Names.  For example if GRES is the
+The name of the trackable resource. This option is required for
+TRES types BB (Burst buffer), GRES, and License. Types CPU, Energy,
+Memory, and Node do not have Names. For example if GRES is the
 type then name is the denomination of the GRES itself e.g. GPU.
 .IP
 
@@ -3064,10 +3064,10 @@ buffer), CPU, Energy, GRES, License, Memory, and Node.
 
 .SH "TRES information"
 Trackable RESources (TRES) are used in many QOS or Association limits.
-When setting the limits they are comma separated list.  Each TRES has
+When setting the limits they are comma separated list. Each TRES has
 a different limit, i.e. GrpTRESMins=cpu=10,mem=20 would make 2
 different limits 1 for 10 cpu minutes and 1 for 20 MB memory minutes.
-This is the case for each limit that deals with TRES.  To remove the
+This is the case for each limit that deals with TRES. To remove the
 limit \-1 is used i.e. GrpTRESMins=cpu=\-1 would remove only the cpu
 TRES limit.
 
@@ -3084,11 +3084,11 @@ When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
 e.g. format=name%30 will print 30 characters of field name right
-justified.  A \-30 will print 30 characters left justified.
+justified. A \-30 will print 30 characters left justified.
 
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump Slurm association data to and
-from a file.  This method can easily add a new cluster or copy an
+from a file. This method can easily add a new cluster or copy an
 existing cluster's associations into a new cluster with similar
 accounts. Each file contains Slurm association data for a single
 cluster. Be aware that QOS information is not currently included in the
@@ -3162,8 +3162,8 @@ Specify a flat file to load from.
 .SH "SPECIFICATIONS FOR FLAT FILE"
 
 Since the associations in the system follow a hierarchy, so does the
-file.  Anything that is a parent needs to be defined before any
-children.  The only exception is the understood 'root' account.  This
+file. Anything that is a parent needs to be defined before any
+children. The only exception is the understood 'root' account. This
 is always a default for any cluster and does not need to be defined.
 
 To edit/create a file start with a cluster line for the new cluster:
@@ -3173,7 +3173,7 @@ To edit/create a file start with a cluster line for the new cluster:
 .fi
 
 Anything included on this line will be the default for all
-associations on this cluster.  The options for the cluster are:
+associations on this cluster. The options for the cluster are:
 .RS
 
 .TP
@@ -3222,7 +3222,7 @@ present and future jobs running from this association and its children.
 .TP
 \fBGrpTRESRunMins=\fR
 Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children.  This takes into
+jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
@@ -3290,7 +3290,7 @@ be allocated in aggregate for this association and all associations
 which are children of this association.
 \fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children.  This takes into
+jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
@@ -3420,9 +3420,9 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 
 .SH "ARCHIVE FUNCTIONALITY"
 Sacctmgr has the capability to archive to a flatfile and or load that
-data if needed later.  The archiving is usually done by the slurmdbd
+data if needed later. The archiving is usually done by the slurmdbd
 and it is highly recommended you only do it through sacctmgr if you
-completely understand what you are doing.  For slurmdbd options see
+completely understand what you are doing. For slurmdbd options see
 "man slurmdbd" for more information.
 Loading data into the database can be done from these files to either
 view old data or regenerate rolled up data.
@@ -3444,19 +3444,19 @@ Directory to store the archive data.
 
 .TP
 \fBEvents\fR
-Archive Events.  If not specified and PurgeEventAfter is set
+Archive Events. If not specified and PurgeEventAfter is set
 all event data removed will be lost permanently.
 .IP
 
 .TP
 \fBJobs\fR
-Archive Jobs.  If not specified and PurgeJobAfter is set
+Archive Jobs. If not specified and PurgeJobAfter is set
 all job data removed will be lost permanently.
 .IP
 
 .TP
 \fBPurgeEventAfter=\fR
-Purge cluster event records older than time stated in months.  If you
+Purge cluster event records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
@@ -3464,7 +3464,7 @@ value of '12hours' would purge everything older than 12 hours.)
 
 .TP
 \fBPurgeJobAfter=\fR
-Purge job records older than time stated in months.  If you
+Purge job records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
@@ -3472,7 +3472,7 @@ value of '12hours' would purge everything older than 12 hours.)
 
 .TP
 \fBPurgeStepAfter=\fR
-Purge step records older than time stated in months.  If you
+Purge step records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
@@ -3480,7 +3480,7 @@ value of '12hours' would purge everything older than 12 hours.)
 
 .TP
 \fBPurgeSuspendAfter=\fR
-Purge job suspend records older than time stated in months.  If you
+Purge job suspend records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
@@ -3493,13 +3493,13 @@ Run this script instead of the generic form of archive to flat files.
 
 .TP
 \fBSteps\fR
-Archive Steps.  If not specified and PurgeStepAfter is set
+Archive Steps. If not specified and PurgeStepAfter is set
 all step data removed will be lost permanently.
 .IP
 
 .TP
 \fBSuspend\fR
-Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
+Archive Suspend Data. If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
 .IP
 .RE
@@ -3526,7 +3526,7 @@ which is not necessarily the machine running the command.
 
 .TP
 \fBInsert=\fR
-SQL to insert directly into the database.  This should be used very
+SQL to insert directly into the database. This should be used very
 cautiously since this is writing your sql into the database.
 .IP
 .RE
@@ -3589,8 +3589,8 @@ account can be deleted.
 
 When modifying an object placing the key words 'set' and the
 optional 'where' is critical to perform correctly below are examples to
-produce correct results.  As a rule of thumb anything you put in front
-of the set will be used as a quantifier.  If you want to put a
+produce correct results. As a rule of thumb anything you put in front
+of the set will be used as a quantifier. If you want to put a
 quantifier after the key word 'set' you should use the key
 word 'where'. The following is wrong:
 
@@ -3607,7 +3607,7 @@ $ sacctmgr modify user name=adam set fairshare=10 where cluster=tux
 .fi
 
 When changing qos for something only use the '=' operator when wanting
-to explicitly set the qos to something.  In most cases you will want
+to explicitly set the qos to something. In most cases you will want
 to use the '+=' or '\-=' operator to either add to or remove from the
 existing qos already in place.
 
@@ -3729,7 +3729,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

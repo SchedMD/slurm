@@ -10,8 +10,8 @@ sprio \- view the factors that comprise a job's scheduling priority
 \fBsprio\fR is used to view the components of a job's scheduling
 priority when the multi\-factor priority plugin is installed.
 \fBsprio\fR is a read\-only utility that extracts information from the
-multi\-factor priority plugin.  By default, \fBsprio\fR returns
-information for all pending jobs.  Options exist to display specific
+multi\-factor priority plugin. By default, \fBsprio\fR returns
+information for all pending jobs. Options exist to display specific
 jobs by job ID and user name.
 
 .SH "OPTIONS"
@@ -31,7 +31,7 @@ Show jobs in federation if a member of one.
 .TP
 \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed, its size and position (right
-or left justified).  The default formats when all factors have been
+or left justified). The default formats when all factors have been
 assigned non\-zero weights are
 .IP
 .RS
@@ -193,7 +193,7 @@ Print a help message describing all options \fBsprio\fR.
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
-Requests a comma separated list of job ids to display.  Defaults to
+Requests a comma separated list of job ids to display. Defaults to
 all jobs. Since this option's argument is optional, for proper parsing
 the single letter option must be followed immediately with the value
 and not include a space between them. For example "\-j1008,1009" and
@@ -223,7 +223,7 @@ Display the normalized priority factors for the selected jobs.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_list\fR>
-Requests a comma separated list of partitions to display.  Defaults to
+Requests a comma separated list of partitions to display. Defaults to
 all partitions.
 .IP
 
@@ -255,7 +255,7 @@ Print a brief help message listing the \fBsprio\fR options.
 
 .TP
 \fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
-Request jobs from a comma separated list of users.  The list can
+Request jobs from a comma separated list of users. The list can
 consist of user names or user id numbers.
 .IP
 
@@ -271,8 +271,8 @@ Print version information and exit.
 
 .TP
 \fB\-w\fR, \fB\-\-weights\fR
-Display the configured weights for each factor.  This is for information
-purposes only.  Actual job data is suppressed.
+Display the configured weights for each factor. This is for information
+purposes only. Actual job data is suppressed.
 .IP
 
 .SH "PERFORMANCE"
@@ -399,7 +399,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 \fBsqueue\fR(1), \fBsshare\fR(1)
