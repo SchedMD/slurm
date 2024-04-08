@@ -2491,6 +2491,8 @@ next_task:
 						       job_ptr)) {
 					licenses_unavail = true;
 					later_start = node_space[j].end_time;
+					xfree(job_ptr->state_desc);
+					job_ptr->state_reason = WAIT_LICENSES;
 				}
 			} else
 				break;
