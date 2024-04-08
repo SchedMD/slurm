@@ -71,34 +71,22 @@ def setup():
     atf.require_accounting(modify=True)
     atf.require_config_parameter("AccountingStorageEnforce", "limits")
 
-    # RealMemory is a problem, it defaults as 1M and thus restricts it,
-    # require_nodes doesn't set it on default node1 for some reason, below is a fix.
-    # See: https://bugs.schedmd.com/show_bug.cgi?id=3807#c1
-
     # Gather a list of nodes that meet the RealMemory Requirement (node_list)
     atf.require_nodes(4, [("RealMemory", max_mem_node + 1)])
-    nodes_dict = atf.get_nodes(live=False)
 
-    for node_name, node_dict in nodes_dict.items():
-        for parameter_name, parameter_value in node_dict.items():
-            if parameter_name == "RealMemory" and int(parameter_value) >= (
-                max_mem_node + 1
-            ):
-                node_list.append(node_name)
-
+    p1_node_str = "node1,node2"
     atf.require_config_parameter(
         "PartitionName",
         {
-            "p1": {"Nodes": ",".join(node_list[0:2]), "Default": "NO", "State": "UP"},
+            "p1": {"Nodes": p1_node_str, "Default": "NO", "State": "UP"},
             "p2": {
-                "Nodes": ",".join(node_list[2:5]),
+                "Nodes": "node3,node4",
                 "State": "UP",
                 "MaxTime": "INFINITE",
             },
         },
     )
 
-    p1_node_str = ",".join(node_list[0:2])
     atf.require_slurm_running()
 
 
