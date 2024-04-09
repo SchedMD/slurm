@@ -578,9 +578,9 @@ typedef struct data_parser_s data_parser_t;
 
 /* data_parser plugin for current Slurm version */
 #define SLURM_DATA_PARSER_VERSION \
-	("data_parser/v" XSTRINGIFY(SLURM_API_AGE) "." \
+	"data_parser/v" XSTRINGIFY(SLURM_API_AGE) "." \
 	 XSTRINGIFY(SLURM_API_REVISION) "." \
-	 XSTRINGIFY(SLURM_API_CURRENT))
+	 XSTRINGIFY(SLURM_API_CURRENT)
 
 /* Separator character for parameters for a given data_parser plugin list */
 #define SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR "+"
