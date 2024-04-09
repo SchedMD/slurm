@@ -585,6 +585,10 @@ typedef struct data_parser_s data_parser_t;
 /* Separator character for parameters for a given data_parser plugin list */
 #define SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR "+"
 
+/* data_parser plugin for current Slurm version with complex mode active */
+#define SLURM_DATA_PARSER_VERSION_COMPLEX \
+	SLURM_DATA_PARSER_VERSION SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR "complex"
+
 /*
  * Initialize new data parser against given plugin
  * IN on_parse_error - callback when an parsing error is encountered
