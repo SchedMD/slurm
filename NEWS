@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     archive dump.
  -- slurmdbd - Fix minor race condition when sending updates to a shutdown
     slurmctld.
+ -- slurmctld - Fix invalid refusal of a reservation update.
 
 * Changes in Slurm 23.11.5
 ==========================

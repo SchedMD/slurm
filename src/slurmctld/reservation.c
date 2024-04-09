@@ -3529,10 +3529,12 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 			/*
 			 * If the reservation already has a reoccurring flag
-			 * or is being updated to have multiple reoccurring
-			 * flags, then reject the update
+			 * that differs from the requested one, or is being
+			 * updated to have multiple reoccurring flags, then
+			 * reject the update
 			 */
-			if ((resv_ptr->flags & RESERVE_REOCCURRING) ||
+			if (((resv_ptr->flags & RESERVE_REOCCURRING) !=
+			     (resv_desc_ptr->flags & RESERVE_REOCCURRING)) ||
 			    (_has_multiple_reoccurring(resv_desc_ptr))) {
 				info("Cannot update reservation to have multiple reoccurring flags. Please specify only one reoccurring flag");
 				if (err_msg)
