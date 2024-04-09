@@ -632,6 +632,26 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ERRTAB_ENTRY(ESLURM_FED_NO_VALID_CLUSTERS),
 	  "No eligible clusters for federated job"		},
 
+	/* Lua wrapper errors */
+	{ ERRTAB_ENTRY(ESLURM_LUA_INVALID_STATE),
+	  "Invalid or NULL Lua state pointer" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_INVALID_SYNTAX),
+	  "Lua script loading failed due to invalid syntax" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_NOT_FOUND),
+	  "Requested Lua function not found" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_INVALID_RC),
+	  "Lua function returned nil or table instead of numeric result" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_FAILED),
+	  "Lua function execution failed for unknown reasons" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
+	  "Lua function execution failed due to runtime error" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_FAILED_ENOMEM),
+	  "Lua function execution failed due to memory allocation failure. Either not enough memory for Lua script's variables or memory allocation request for a variable was way too large." },
+	{ ERRTAB_ENTRY(ESLURM_LUA_FUNC_FAILED_GARBAGE_COLLECTOR),
+	  "Lua function execution failed due to unknown failure in Lua's garbage collector" },
+	{ ERRTAB_ENTRY(ESLURM_LUA_INVALID_CONVERSION_TYPE),
+	  "Unknown or unparsable Lua type found at top of Lua stack" },
+
 	/* plugin and custom errors */
 	{ ERRTAB_ENTRY(ESLURM_MISSING_TIME_LIMIT),
 	  "Time limit specification required, but not provided"	},
