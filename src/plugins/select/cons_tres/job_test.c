@@ -1023,8 +1023,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		} else if (node_usage[i].node_state >= NODE_CR_ONE_ROW) {
 			if ((job_node_req == NODE_CR_RESERVED) ||
 			    (job_node_req == NODE_CR_AVAILABLE)) {
-				debug3("node %s non-sharing",
-				       node_ptr->name);
+				log_flag(SELECT_TYPE, "node %s is running --exclusive job",
+					 node_ptr->name);
 				goto clear_bit;
 			}
 			/*
@@ -1034,8 +1034,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (_is_node_busy(cr_part_ptr, i, 1,
 					  job_ptr->part_ptr, qos_preemptor,
 					  node_usage[i].jobs)) {
-				debug3("node %s sharing?",
-				       node_ptr->name);
+				log_flag(SELECT_TYPE, "node %s is running job that shares resouces in other partition",
+					 node_ptr->name);
 				goto clear_bit;
 			}
 
@@ -1046,8 +1046,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 						  job_ptr->part_ptr,
 						  qos_preemptor,
 						  node_usage[i].jobs)) {
-					debug3("node %s busy",
-					       node_ptr->name);
+					log_flag(SELECT_TYPE, "node %s is running other jobs, cannot run --exclusive job here",
+						 node_ptr->name);
 					goto clear_bit;
 				}
 			} else if (job_node_req == NODE_CR_ONE_ROW) {
@@ -1059,8 +1059,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 						  job_ptr->part_ptr,
 						  qos_preemptor,
 						  node_usage[i].jobs)) {
-					debug3("node %s vbusy",
-					       node_ptr->name);
+					log_flag(SELECT_TYPE, "node %s is running job that shares resources in other partition",
+						 node_ptr->name);
 					goto clear_bit;
 				}
 			}
