@@ -165,8 +165,11 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 	int devnull;
 
 	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-		error("%s: Unable to open /dev/null: %m",
-		      __func__);
+		/*
+		 * We must avoid calling non-async-signal-safe functions at
+		 * this point (like error() or similar), so we won't log
+		 * anything now. If we want to log we could use write().
+		 */
 		_exit(127);
 	}
 	dup2(devnull, STDIN_FILENO);
