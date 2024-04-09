@@ -120,7 +120,7 @@ extern void closeall(int fd)
 
 extern void fd_close(int *fd)
 {
-	if (*fd && *fd >= 0) {
+	if (fd && *fd >= 0) {
 		close(*fd);
 		*fd = -1;
 	}
