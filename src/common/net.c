@@ -307,6 +307,9 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	int port = 0;
 	char *host = NULL;
 
+	if (addr->ss_family == AF_UNSPEC)
+		return NULL;
+
 	if (addr->ss_family == AF_UNIX) {
 		const struct sockaddr_un *addr_un =
 			(const struct sockaddr_un *) addr;
