@@ -44,6 +44,16 @@
 #include "src/slurmctld/slurmctld.h"
 #include "slurm/slurm_errno.h"
 
+/* Using typedef as Lua status codes are distinct from POSIX return codes */
+typedef int lua_status_code_t;
+
+/* Get string description of Lua status code */
+extern const char *slurm_lua_status_code_string(lua_status_code_t sc);
+/* Get stringified form of status codes macro from lua.h */
+extern const char *slurm_lua_status_code_stringify(lua_status_code_t sc);
+/* Get slurm_err_t of status codes macro from lua.h */
+extern slurm_err_t slurm_lua_status_error(lua_status_code_t sc);
+
 /* Generic stack dump function for debugging purposes */
 extern void slurm_lua_stack_dump(const char *plugin,
 				 char *header, lua_State *L);

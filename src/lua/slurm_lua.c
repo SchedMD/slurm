@@ -67,6 +67,64 @@ uint16_t accounting_enforce = 0;
 void *acct_db_conn = NULL;
 #endif
 
+#define T(status_code, string, err) { status_code, #status_code, string, err }
+
+static const struct {
+	lua_status_code_t status_code;
+	const char *status_code_string;
+	const char *string;
+	slurm_err_t err;
+} lua_status_codes[] = {
+	/*
+	 * Status codes macros from lua.h and messages derived from:
+	 *	https://www.lua.org/manual/5.3/manual.html
+	 */
+	T(LUA_OK, "SUCCESS", SLURM_SUCCESS),
+	T(LUA_YIELD, "Thread yielded", ESLURM_LUA_FUNC_FAILED),
+	T(LUA_ERRRUN, "Runtime error", ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
+	T(LUA_ERRSYNTAX, "Syntax error during precompilation",
+	  ESLURM_LUA_INVALID_SYNTAX),
+	T(LUA_ERRMEM, "Memory allocation error", ESLURM_LUA_FUNC_FAILED_ENOMEM),
+#ifdef LUA_ERRGCMM
+	T(LUA_ERRGCMM, "Error while running a __gc metamethod",
+	  ESLURM_LUA_FUNC_FAILED_GARBAGE_COLLECTOR),
+#endif
+	T(LUA_ERRERR, "Error while running the message handler",
+	  ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
+};
+#undef T
+
+extern const char *slurm_lua_status_code_string(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].string;
+
+	/*
+	 * Should never happen but only Lua controls returns these values so it
+	 * is out of Slurm's control.
+	 */
+	return "Unknown Lua status code";
+}
+
+extern const char *slurm_lua_status_code_stringify(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].status_code_string;
+
+	return "INVALID";
+}
+
+extern slurm_err_t slurm_lua_status_error(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].err;
+
+	return ESLURM_LUA_FUNC_FAILED;
+}
+
 static int _setup_stringarray(lua_State *L, int limit, char **data)
 {
 	/*
