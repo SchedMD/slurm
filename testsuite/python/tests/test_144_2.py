@@ -29,7 +29,7 @@ def test_gpu_socket_sharing():
 
     output = atf.run_command_output(
         "srun --gres-flags=enforce-binding --ntasks-per-socket=1 \
-                    --cpus-per-task=1 --ntasks-per-node=1 -N1 \
+                    --cpus-per-task=1 --ntasks-per-node=2 -N1 \
                     --gpus-per-task=1 scontrol show nodes node1 -d",
         timeout=2,
         fatal=True,
