@@ -4014,7 +4014,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		     resv_req_inx[safe_attributes[0]]);
 	for (i = 1; safe_attributes[i] < RESV_REQ_COUNT; i++) {
 		xstrfmtcatat(insert, &insert_pos, ", %s",
-			     resv_req_inx[safe_attributes[1]]);
+			     resv_req_inx[safe_attributes[i]]);
 	}
 	/* Some attributes that might be NULL require special handling */
 	for (i = 0; null_attributes[i] < RESV_REQ_COUNT; i++)

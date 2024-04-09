@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid checking for wsrep_on when restoring streaming replication settings.
  -- Clarify in the logs that error "1193 Unknown system variable 'wsrep_on'" is
     innocuous.
+ -- accounting_storage/mysql - Fix problem when loading reservations from an
+    archive dump.
 
 * Changes in Slurm 23.11.5
 ==========================
