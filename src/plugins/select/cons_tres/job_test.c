@@ -721,7 +721,7 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  * allocated CPUs with multi-row partitions.
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
-			 int sharing_only, part_record_t *my_part_ptr,
+			 bool sharing_only, part_record_t *my_part_ptr,
 			 bool qos_preemptor, List jobs)
 {
 	uint32_t r;
@@ -1031,7 +1031,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			 * cannot use this node if it is running jobs
 			 * in sharing partitions
 			 */
-			if (_is_node_busy(cr_part_ptr, i, 1,
+			if (_is_node_busy(cr_part_ptr, i, true,
 					  job_ptr->part_ptr, qos_preemptor,
 					  node_usage[i].jobs)) {
 				log_flag(SELECT_TYPE, "node %s is running job that shares resouces in other partition",
@@ -1042,7 +1042,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			/* node is NODE_CR_AVAILABLE - check job request */
 		} else {
 			if (job_node_req == NODE_CR_RESERVED) {
-				if (_is_node_busy(cr_part_ptr, i, 0,
+				if (_is_node_busy(cr_part_ptr, i, false,
 						  job_ptr->part_ptr,
 						  qos_preemptor,
 						  node_usage[i].jobs)) {
@@ -1055,7 +1055,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				 * cannot use this node if it is running jobs
 				 * in sharing partitions
 				 */
-				if (_is_node_busy(cr_part_ptr, i, 1,
+				if (_is_node_busy(cr_part_ptr, i, true,
 						  job_ptr->part_ptr,
 						  qos_preemptor,
 						  node_usage[i].jobs)) {
