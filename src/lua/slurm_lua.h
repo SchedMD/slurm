@@ -98,6 +98,14 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
 extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 				      const char *name);
 
+/*
+ * Check if a function is present in script
+ * IN L - lua state table pointer
+ * IN func_name - name of function to check
+ * RET true if function is present or false is function not found
+ */
+extern bool slurm_lua_is_function_defined(lua_State *L, const char *func_name);
+
 #else
 # define LUA_VERSION_NUM 0
 #endif

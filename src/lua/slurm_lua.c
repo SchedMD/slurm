@@ -141,10 +141,7 @@ static int _setup_stringarray(lua_State *L, int limit, char **data)
 	return 1;
 }
 
-/*
- *  check that global symbol [name] in lua script is a function
- */
-static bool _check_lua_script_function(lua_State *L, const char *name)
+extern bool slurm_lua_is_function_defined(lua_State *L, const char *name)
 {
 	bool rc = false;
 
@@ -165,7 +162,7 @@ static int _check_lua_script_functions(lua_State *L, const char *plugin,
 	int rc = 0;
 	const char **ptr = NULL;
 	for (ptr = req_fxns; ptr && *ptr; ptr++) {
-		if (!_check_lua_script_function(L, *ptr)) {
+		if (!slurm_lua_is_function_defined(L, *ptr)) {
 			error("%s: %s: missing required function %s",
 			      plugin, script_path, *ptr);
 			rc = -1;
