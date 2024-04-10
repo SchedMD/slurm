@@ -214,7 +214,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		if (first_pass && !sock_gres->total_cnt_before_filter)
 			sock_gres->total_cnt_before_filter =
 				sock_gres->total_cnt;
-		else
+		else if (sock_gres->total_cnt_before_filter)
 			sock_gres->total_cnt =
 				sock_gres->total_cnt_before_filter;
 
