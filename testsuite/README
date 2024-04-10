@@ -654,7 +654,6 @@ test28.5   Validates that scontrol can hold and release a whole job
 test28.6   Validates that when a job array is submitted to multiple
 	   partitions that the jobs run on them.
 test28.7   Confirms job array dependencies.
-test28.8   Test of job array suspend/resume.
 test28.9   Test of maximum running task count in a job array.
 test28.10  Test change to maximum running task count in a job array.
 test28.11  Test that job arrays requesting features with --constraint are
@@ -946,6 +945,7 @@ test_122_#   Testing of job_arrays.
 ===================================
 test_122_1   /features/job_arrays/test_basics.py
 test_122_2   Test job array with gres
+test_122_3   Test suspension of job arrays
 
 test_123_#   Testing of reservations.
 =====================================
