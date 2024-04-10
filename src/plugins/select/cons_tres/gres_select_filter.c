@@ -317,8 +317,8 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 		if (use_busy_dev && (gres_ns->topo_gres_cnt_alloc[t] == 0))
 			continue;
 		cnt_avail = gres_ns->topo_gres_cnt_avail[t] -
-			    gres_ns->topo_gres_cnt_alloc[t] -
-			    gres_js->gres_per_bit_select[node_inx][t];
+			gres_ns->topo_gres_cnt_alloc[t] -
+			gres_js->gres_per_bit_select[node_inx][t];
 		if  (cnt_avail < (use_single_dev ? *gres_needed : 1))
 			continue; /* Insufficient resources */
 		if ((s == -1) && (!sock_gres->bits_any_sock ||
@@ -382,7 +382,7 @@ static int *_get_sorted_topo_by_least_loaded(gres_node_state_t *gres_ns)
 		nonalloc_gres[t] /= gres_ns->topo_gres_cnt_avail[t];
 	}
 	qsort(topo_index, gres_ns->topo_cnt, sizeof(int),
-		_sort_topo_by_avail_cnt);
+	      _sort_topo_by_avail_cnt);
 	xfree(nonalloc_gres);
 
 	return topo_index;
@@ -546,8 +546,8 @@ static int _set_shared_task_bits(int node_inx,
 	if (!(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
 		/* Allow only one sharing gres for the entire job */
 		uint64_t gres_needed = gres_js->gres_per_task *
-				       _get_task_cnt_node(tasks_per_socket,
-							  sock_gres->sock_cnt);
+			_get_task_cnt_node(tasks_per_socket,
+					   sock_gres->sock_cnt);
 		if (no_task_sharing)
 			error("one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring.");
 
@@ -685,8 +685,7 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 	    gres_ns->gres_bit_alloc && sock_gres->bits_by_sock) {
 		if (tres_mc_ptr->sockets_per_node > used_sock_cnt) {
 			/* Somehow we have too few sockets in job allocation */
-			error("%s: Inconsistent requested/allocated socket count "
-			      "(%d > %d) for job %u on node %d",
+			error("%s: Inconsistent requested/allocated socket count (%d > %d) for job %u on node %d",
 			      __func__, tres_mc_ptr->sockets_per_node,
 			      used_sock_cnt, job_id, node_inx);
 			for (s = 0; s < sock_cnt; s++) {
@@ -708,8 +707,7 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 			}
 		} else {
 			/* May have needed extra CPUs, exceeding socket count */
-			debug("%s: Inconsistent requested/allocated socket count "
-			      "(%d < %d) for job %u on node %d",
+			debug("%s: Inconsistent requested/allocated socket count (%d < %d) for job %u on node %d",
 			      __func__, tres_mc_ptr->sockets_per_node,
 			      used_sock_cnt, job_id, node_inx);
 			for (s = 0; s < sock_cnt; s++) {
@@ -1447,8 +1445,8 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 
 	if (total_gres_cnt < total_gres_goal) {
 		/* Something bad happened on task layout for this GRES type */
-		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u "
-		      "(%"PRIu64" < %"PRIu64")",  __func__,
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (%"PRIu64" < %"PRIu64")",
+		      __func__,
 		      sock_gres->gres_state_job->gres_name, job_id, node_inx,
 		      total_gres_cnt, total_gres_goal);
 	}
