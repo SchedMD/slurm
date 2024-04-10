@@ -33,7 +33,7 @@ PERIODIC_TIMEOUT = 30
 
 
 def get_open_port():
-    """Finds an open port
+    """Finds an open port.
 
     Warning: Race conditions abound so be ready to retry calling function;
 
@@ -118,19 +118,19 @@ def run_command(
     """Executes a command and returns a dictionary result.
 
     Args:
-        command (string): The command to execute. The command is run within a
-            bash subshell, so pipes, redirection, etc. are performed.
-        fatal (boolean): If True, a non-zero exit code (or zero if combined
-            with xfail) will result in the test failing.
-        timeout (integer): If the command does not exit before timeout number
-            of seconds, this function will return with an exit code of 110.
-        chdir (directory): Change to the specified directory before executing
-            the command.
-        user (user name): Run the command as the specified user. This requires
-            the invoking user to have unprompted sudo rights.
-        input (string): The specified input is supplied to the command as stdin.
-        xfail (boolean): If True, the command is expected to fail.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
+       command (string): The command to execute. The command is run within a
+           bash subshell, so pipes, redirection, etc. are performed.
+       fatal (boolean): If True, a non-zero exit code (or zero if combined
+           with xfail) will result in the test failing.
+       timeout (integer): If the command does not exit before timeout number
+           of seconds, this function will return with an exit code of 110.
+       quiet (boolean): If True, logging is performed at the TRACE log level.
+       chdir (directory): Change to the specified directory before executing
+           the command.
+       user (user name): Run the command as the specified user. This requires
+           the invoking user to have unprompted sudo rights.
+       input (string): The specified input is supplied to the command as stdin.
+       xfail (boolean): If True, the command is expected to fail.
 
     Returns:
         A dictionary containing the following keys:
@@ -139,6 +139,16 @@ def run_command(
             exit_code: exit code for the command
             stdout: command stdout as a string
             stderr: command stderr as a string
+
+    Example:
+        >>> run_command('ls -l', fatal=True)
+        {'command': 'ls -l', 'start_time': 1712268971.532, 'duration': 0.007, 'exit_code': 0, 'stdout': 'total 124\n-rw-rw-r-- 1 slurm slurm 118340 Apr  4 22:15 atf.py\n-rw-rw-r-- 1 slurm slurm    498 Apr  4 22:09 test.py\n-rw-rw-r-- 1 slurm slurm   1013 Apr  4 22:09 python_script.py\n', 'stderr': ''}
+
+        >>> run_command('ls /non/existent/path', xfail=True)
+        {'command': 'ls /non/existent/path', 'start_time': 1712269123.2, 'duration': 0.005, 'exit_code': 2, 'stdout': '', 'stderr': "ls: cannot access '/non/existent/path': No such file or directory\n"}
+
+        >>> run_command('sleep 5', timeout=2)
+        {'command': 'sleep 5', 'start_time': 1712269157.113, 'duration': 2.0, 'exit_code': 110, 'stdout': '', 'stderr': ''}
     """
 
     additional_run_kwargs = {}
@@ -240,6 +250,23 @@ def run_command_error(command, **run_command_kwargs):
     """Executes a command and returns the standard error.
 
     This function accepts the same arguments as run_command.
+
+    Args:
+        command (string): The command to execute. The command is run within a
+            bash subshell, so pipes, redirection, etc. are performed.
+
+    Returns:
+        The standard error (stderr) output of the command as a string.
+
+    Example:
+        >>> run_command_error('ls /non/existent/path')
+        "ls: cannot access '/non/existent/path': No such file or directory\n"
+
+        >>> run_command_error('grep foo /etc/passwd', quiet=True)
+        ''
+
+        >>> run_command_error('echo error message >&2', xfail=True)
+        'error message\n'
     """
 
     results = run_command(command, **run_command_kwargs)
@@ -251,6 +278,23 @@ def run_command_output(command, **run_command_kwargs):
     """Executes a command and returns the standard output.
 
     This function accepts the same arguments as run_command.
+
+    Args:
+        command (string): The command to execute. The command is run within a
+            Bash subshell, so pipes, redirection, etc. are performed.
+
+    Returns:
+        The standard output (stdout) of the command as a string.
+
+    Example:
+        >>> run_command_output('ls')
+        'file1.txt\nfile2.txt\nscript.py\n'
+
+        >>> run_command_output('echo Hello, World!')
+        'Hello, World!\n'
+
+        >>> run_command_output('grep foo /etc/passwd', xfail=True)
+        ''
     """
 
     results = run_command(command, **run_command_kwargs)
@@ -262,6 +306,23 @@ def run_command_exit(command, **run_command_kwargs):
     """Executes a command and returns the exit code.
 
     This function accepts the same arguments as run_command.
+
+    Args:
+        command (string): The command to execute. The command is run within a
+            Bash subshell, so pipes, redirection, etc. are performed.
+
+    Returns:
+        The exit code of the command as an integer.
+
+    Example:
+        >>> run_command_exit('ls')
+        0
+
+        >>> run_command_exit('grep foo /etc/passwd', xfail=True)
+        1
+
+        >>> run_command_exit('sleep 5', timeout=2)
+        110
     """
 
     results = run_command(command, **run_command_kwargs)
@@ -327,7 +388,7 @@ def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
 
     This function accepts the same arguments as repeat_until.
 
-    Additional Args:
+    Args:
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Example:
@@ -341,6 +402,26 @@ def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
 
 
 def pids_from_exe(executable):
+    """Finds process IDs (PIDs) of running processes with given executable name.
+
+    Args:
+        executable (string): The name of the executable for which to find running processes.
+
+    Returns:
+        A list of integer process IDs (PIDs) for running processes that match the given
+        executable name.
+
+    Example:
+        >>> pids_from_exe('/usr/bin/python3')
+        [12345, 67890]
+
+        >>> pids_from_exe('/usr/sbin/sshd')
+        [54321]
+
+        >>> pids_from_exe('/bin/non-existent')
+        []
+    """
+
     # We have to elevate privileges here, but forking off thousands of sudo
     # commands is expensive, so we will sudo a dynamic bash script for speed
     script = f"""cd /proc
@@ -364,6 +445,13 @@ def is_slurmctld_running(quiet=False):
 
     Returns:
         True if the slurmctld is running, False otherwise.
+
+    Example:
+        >>> is_slurmctld_running()
+        True
+
+        >>> is_slurmctld_running(quiet=True)
+        True
     """
 
     # Check whether slurmctld is running
@@ -374,13 +462,20 @@ def is_slurmctld_running(quiet=False):
 
 
 def start_slurmctld(clean=False, quiet=False):
-    """Starts the slurmctld daemon.
+    """Starts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
 
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+
+    Example:
+        >>> start_slurmctld()  # Start slurmctld with default settings
+        >>> start_slurmctld(clean=True, quiet=True)  # Start slurmctld with clean state and quiet logging
     """
 
     if not properties["auto-config"]:
@@ -405,16 +500,23 @@ def start_slurmctld(clean=False, quiet=False):
 
 
 def start_slurm(clean=False, quiet=False):
-    """Starts all applicable slurm daemons.
+    """Starts all applicable Slurm daemons.
 
-    This function examines the slurm configuration files in order to
-    determine which daemons need to be started.
+    This function examines the Slurm configuration files to determine which daemons
+    need to be started.
 
     This function may only be used in auto-config mode.
 
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+
+    Example:
+        >>> start_slurm()  # Start all Slurm daemons with default settings
+        >>> start_slurm(clean=True, quiet=True)  # Start all Slurm daemons with clean state and quiet logging
     """
 
     if not properties["auto-config"]:
@@ -501,12 +603,19 @@ def start_slurm(clean=False, quiet=False):
 
 
 def stop_slurmctld(quiet=False):
-    """Stops the slurmctld daemon.
+    """Stops the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
 
     Args:
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+
+    Example:
+        >>> stop_slurmctld()  # Stop slurmctld with default logging
+        >>> stop_slurmctld(quiet=True)  # Stop slurmctld with quiet logging
     """
 
     if not properties["auto-config"]:
@@ -528,17 +637,25 @@ def stop_slurmctld(quiet=False):
 def stop_slurm(fatal=True, quiet=False):
     """Stops all applicable Slurm daemons.
 
-    This function examines the Slurm configuration files in order to
-    determine which daemons need to be stopped.
+    This function examines the Slurm configuration files to determine which daemons
+    need to be stopped.
 
     This function may only be used in auto-config mode.
 
     Args:
-        fatal (boolean): If True, a failure to stop all daemons will result in the test failing.
+        fatal (boolean): If True, a failure to stop all daemons will result in the
+            test failing.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
         True if all Slurm daemons were stopped, False otherwise.
+
+    Example:
+        >>> stop_slurm()  # Stop all Slurm daemons with default settings
+        True
+
+        >>> stop_slurm(fatal=False, quiet=True)  # Stop all Slurm daemons with non-fatal failures and quiet logging
+        False
     """
 
     failures = []
@@ -617,13 +734,20 @@ def stop_slurm(fatal=True, quiet=False):
 
 
 def restart_slurmctld(clean=False, quiet=False):
-    """Restarts the slurmctld daemons.
+    """Restarts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
 
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+
+    Example:
+        >>> restart_slurmctld()  # Restart slurmctld with default settings
+        >>> restart_slurmctld(clean=True, quiet=True)  # Restart slurmctld with clean state and quiet logging
     """
 
     stop_slurmctld(quiet=quiet)
@@ -631,13 +755,20 @@ def restart_slurmctld(clean=False, quiet=False):
 
 
 def restart_slurm(clean=False, quiet=False):
-    """Restarts all applicable slurm daemons.
+    """Restarts all applicable Slurm daemons.
 
     This function may only be used in auto-config mode.
 
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+
+    Example:
+        >>> restart_slurm()  # Restart all Slurm daemons with default settings
+        >>> restart_slurm(clean=True, quiet=True)  # Restart all Slurm daemons with clean state and quiet logging
     """
 
     stop_slurm(quiet=quiet)
@@ -645,13 +776,22 @@ def restart_slurm(clean=False, quiet=False):
 
 
 def require_slurm_running():
-    """Ensures that the slurm daemons are running.
+    """Ensures that the Slurm daemons are running.
 
-    In local-config mode, the test is skipped if slurm is not running.
-    In auto-config mode, slurm is started if necessary.
+    In local-config mode, the test is skipped if Slurm is not running.
+    In auto-config mode, Slurm is started if necessary.
 
     In order to avoid multiple restarts of Slurm (in auto-config), this function
     should be called at the end of the setup preconditions.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Example:
+        >>> require_slurm_running()  # Ensure Slurm is running or start it in auto-config mode
     """
 
     global nodes
@@ -676,7 +816,15 @@ def backup_config_file(config="slurm"):
     This function may only be used in auto-config mode.
 
     Args:
-        config: Name of config file to back up (without the .conf suffix).
+        config (string): Name of the config file to back up (without the .conf suffix).
+
+    Returns:
+        None
+
+    Example:
+        >>> backup_config_file('slurm')
+        >>> backup_config_file('gres')
+        >>> backup_config_file('cgroup')
     """
 
     if not properties["auto-config"]:
@@ -724,7 +872,15 @@ def restore_config_file(config="slurm"):
     This function may only be used in auto-config mode.
 
     Args:
-        config: Name of config file to back up (without the .conf suffix).
+        config (string): Name of config file to restore (without the .conf suffix).
+
+    Returns:
+        None
+
+    Example:
+        >>> restore_config_file('slurm')
+        >>> restore_config_file('gres')
+        >>> restore_config_file('cgroup')
     """
 
     config_file = f"{properties['slurm-config-dir']}/{config}.conf"
@@ -775,23 +931,32 @@ def restore_config_file(config="slurm"):
 
 
 def get_config(live=True, source="slurm", quiet=False):
-    """Returns the slurm configuration as a dictionary.
+    """Returns the Slurm configuration as a dictionary.
 
     Args:
         live (boolean):
             If True, the configuration information is obtained via
-            a query to the relevant slurm daemon (e.g. scontrol show config).
+            a query to the relevant Slurm daemon (e.g., scontrol show config).
             If False, the configuration information is obtained by directly
-            parsing the relevant slurm configuration file (e.g. slurm.conf).
+            parsing the relevant Slurm configuration file (e.g. slurm.conf).
         source (string):
             If live is True, source should be either scontrol or sacctmgr.
             If live is False, source should be the name of the config file
             without the .conf prefix (e.g. slurmdbd).
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: A dictionary comprised of the parameter names and their values.
+    Returns:
+        A dictionary comprised of the parameter names and their values.
         For parameters that can have multiple lines and subparameters,
         the dictionary value will be a dictionary of dictionaries.
+
+    Example:
+        >>> get_config()
+        {'AccountingStorageBackupHost': '(null)', 'AccountingStorageEnforce': 'none', 'AccountingStorageHost': 'localhost', 'AccountingStorageExternalHost': '(null)', 'AccountingStorageParameters': '(null)', 'AccountingStoragePort': '0', 'AccountingStorageTRES': 'cpu,mem,energy,node,billing,fs/disk,vmem,pages', ...}
+        >>> get_config(live=False, source='slurm')
+        {'SlurmctldHost': 'nathan-atf-docstrings', 'SlurmUser': 'slurm', 'SlurmctldLogFile': '/var/slurm/log/slurmctld.log', 'SlurmctldPidFile': '/var/slurm/run/slurmctld.pid', 'SlurmctldDebug': 'debug3', 'SlurmdLogFile': '/var/slurm/log/slurmd.%n.log', 'SlurmdPidFile': '/var/slurm/run/slurmd.%n.pid', ...}
+        >>> get_config(live=True, source='scontrol', quiet=True)
+        {'AccountingStorageBackupHost': '(null)', 'AccountingStorageEnforce': 'none', 'AccountingStorageHost': 'localhost', 'AccountingStorageExternalHost': '(null)', 'AccountingStorageParameters': '(null)', 'AccountingStoragePort': '0', 'AccountingStorageTRES': 'cpu,mem,energy,node,billing,fs/disk,vmem,pages', ...}
     """
 
     slurm_dict = {}
@@ -863,16 +1028,25 @@ def get_config(live=True, source="slurm", quiet=False):
 
 
 def get_config_parameter(name, default=None, **get_config_kwargs):
-    """Obtains the value for a slurm configuration parameter.
+    """Obtains the value for a Slurm configuration parameter.
 
     This function accepts the same arguments as get_config.
 
-    Additional Args:
+    Args:
         name (string): The parameter name.
         default (string or None): This value is returned if the parameter
             is not found.
 
-    Returns: The value of the specified parameter, or the default if not found.
+    Returns:
+        The value of the specified parameter, or the default if not found.
+
+    Example:
+        >>> get_config_parameter('JobAcctGatherFrequency')
+        '30'
+        >>> get_config_parameter('MaxJobCount', default='10000')
+        '10000'
+        >>> get_config_parameter('partitionname', default='debug', live=True, source='scontrol')
+        'debug'
     """
 
     config_dict = get_config(**get_config_kwargs)
@@ -897,11 +1071,12 @@ def config_parameter_includes(name, value, **get_config_kwargs):
 
     This function accepts the same arguments as get_config.
 
-    Additional Args:
+    Args:
         name (string): The parameter name.
         value (string): The value you are looking for.
 
-    Returns: True if the specified string value is found within the parameter
+    Returns:
+        True if the specified string value is found within the parameter
         value list, False otherwise.
 
     Example:
@@ -946,6 +1121,9 @@ def set_config_parameter(
         When setting a complex parameter (one which may be repeated and has
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries.
+
+    Returns:
+        None
 
     Example:
         >>> set_config_parameter('ClusterName', 'cluster1')
@@ -1040,6 +1218,9 @@ def add_config_parameter_value(name, value, source="slurm"):
         value (string): The value to add.
         source (string): Name of the config file without the .conf prefix.
 
+    Returns:
+        None
+
     Example:
         >>> add_config_parameter_value('SlurmdParameters', 'config_overrides')
     """
@@ -1071,6 +1252,9 @@ def remove_config_parameter_value(name, value, source="slurm"):
         value (string): The value to remove.
         source (string): Name of the config file without the .conf prefix.
 
+    Returns:
+        None
+
     Example:
         >>> remove_config_parameter_value('SlurmdParameters', 'config_overrides')
     """
@@ -1090,21 +1274,47 @@ def remove_config_parameter_value(name, value, source="slurm"):
 
 
 def is_tool(tool):
-    """Returns True if the tool is found in PATH"""
+    """Returns True if the tool is found in PATH.
+
+    Args:
+        tool (string): The name of the tool to check for in the PATH environment variable.
+
+    Returns:
+        True if the tool is found in PATH, False otherwise.
+
+    Example:
+        >>> is_tool('ls')
+        True
+        >>> is_tool('uninstalled-tool-name')
+        False
+    """
+
     from shutil import which
 
     return which(tool) is not None
 
 
 def require_tool(tool):
-    """Skips if the supplied tool is not found"""
+    """Skips if the supplied tool is not found.
+
+    Args:
+        tool (string): The name of the tool to check for in the PATH environment variable.
+
+    Returns:
+        None
+
+    Example:
+        >>> require_tool('ls')
+        >>> require_tool('uninstalled-tool-name')
+    """
+
     if not is_tool(tool):
         msg = f"This test requires '{tool}' and it was not found"
         pytest.skip(msg, allow_module_level=True)
 
 
 def require_whereami(is_cray=False):
-    """Compiles the whereami.c program to be used by tests
+    """Compiles the whereami.c program to be used by tests.
 
     This function installs the whereami program.  To get the
     correct output, TaskPlugin is required in the slurm.conf
@@ -1113,6 +1323,12 @@ def require_whereami(is_cray=False):
 
     The file will be installed in the testsuite/python/lib/scripts
     directory where the whereami.c file is located
+
+    Args:
+        None
+
+    Returns:
+        None
 
     Examples:
         >>> atf.require_whereami()
@@ -1166,6 +1382,9 @@ def require_config_parameter(
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries. See the
         fourth example for multi-line parameters.
+
+    Returns:
+        None
 
     Examples:
         >>> require_config_parameter('SelectType', 'select/cons_tres')
@@ -1224,6 +1443,9 @@ def require_config_parameter_includes(name, value, source="slurm"):
         value (string): The value we want to be in the list.
         source (string): Name of the config file without the .conf prefix.
 
+    Returns:
+        None
+
     Example:
         >>> require_config_parameter_includes('SlurmdParameters', 'config_overrides')
     """
@@ -1243,18 +1465,20 @@ def require_config_parameter_includes(name, value, source="slurm"):
 def require_config_parameter_excludes(name, value, source="slurm"):
     """Ensures that a configuration parameter list does not contain a value.
 
-      In local-config mode, the test is skipped if the configuration parameter
-    includes the specified value.
-      In auto-config mode, removes the specified value from the configuration
-      parameter list if necessary.
+    In local-config mode, the test is skipped if the configuration parameter
+    includes the specified value. In auto-config mode, removes the specified
+    value from the configuration parameter list if necessary.
 
-      Args:
-          name (string): The parameter name.
-          value (string): The value we do not want to be in the list.
-          source (string): Name of the config file without the .conf prefix.
+    Args:
+        name (string): The parameter name.
+        value (string): The value we do not want to be in the list.
+        source (string): Name of the config file without the .conf prefix.
 
-      Example:
-          >>> require_config_parameter_excludes('SlurmdParameters', 'config_overrides')
+    Returns:
+        None
+
+    Example:
+        >>> require_config_parameter_excludes('SlurmdParameters', 'config_overrides')
     """
     if properties["auto-config"]:
         remove_config_parameter_value(name, value, source=source)
@@ -1269,6 +1493,19 @@ def require_config_parameter_excludes(name, value, source="slurm"):
 
 
 def require_tty(number):
+    """Creates a TTY device file if it does not exist.
+
+    Args:
+        number (integer): The number of the TTY device.
+
+    Returns:
+        None
+
+    Example:
+        >>> require_tty(1)
+        >>> require_tty(2)
+    """
+
     tty_file = f"/dev/tty{number}"
     if not os.path.exists(tty_file):
         run_command(
@@ -1297,6 +1534,9 @@ def require_auto_config(reason=""):
         reason (string): Augments the skip reason with a context-specific
             explanation for why the auto-config mode is needed by the test.
 
+    Returns:
+        None
+
     Example:
         >>> require_auto_config("wants to set the Epilog")
     """
@@ -1309,17 +1549,23 @@ def require_auto_config(reason=""):
 
 
 def require_accounting(modify=False):
-    """Ensures that slurm accounting is configured.
+    """Ensures that Slurm accounting is configured.
 
-    In local-config mode, the test is skipped if slurm accounting is not
-    configured.
-    In auto-config mode, configures slurm accounting if necessary.
+    In local-config mode, the test is skipped if Slurm accounting is not
+    configured. In auto-config mode, configures Slurm accounting if necessary.
 
     Args:
         modify (boolean): If True, this indicates to the ATF that the test
             will modify the accounting database (e.g. adding accounts, etc).
             A database backup is automatically created and the original dump
             is restored after the test completes.
+
+    Returns:
+        None
+
+    Example:
+        >>> require_accounting()
+        >>> require_accounting(modify=True)
     """
 
     if properties["auto-config"]:
@@ -1344,6 +1590,18 @@ def require_accounting(modify=False):
 
 
 def get_user_name():
+    """Returns the username of the current user.
+
+    Args:
+        None
+
+    Returns:
+        The username of the current user.
+
+    Example:
+        >>> get_user_name()
+        'john_doe'
+    """
     return pwd.getpwuid(os.getuid()).pw_name
 
 
@@ -1364,6 +1622,16 @@ def cancel_jobs(
             polls.
         fatal (boolean): If True, a timeout will result in the test failing.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        True if all jobs were successfully cancelled and completed within
+        the timeout period, False otherwise.
+
+    Example:
+        >>> cancel_jobs([1234, 5678], timeout=60, fatal=True)
+        True
+        >>> cancel_jobs([9876, 5432], timeout=30, fatal=False)
+        False
     """
 
     job_list_string = " ".join(str(i) for i in job_list)
@@ -1395,13 +1663,23 @@ def cancel_jobs(
 def cancel_all_jobs(
     timeout=default_polling_timeout, poll_interval=0.1, fatal=False, quiet=False
 ):
-    """Cancels all jobs belonging to the test user.
+    """Cancels all jobs by the test user and waits for them to be cancelled.
 
     Args:
         fatal (boolean): If True, a timeout will result in the test failing.
         timeout (integer): If timeout number of seconds expires before the
             jobs are verified to be cancelled, fail.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        True if all jobs were successfully cancelled and completed within
+        the timeout period, False otherwise.
+
+    Example:
+        >>> cancel_all_jobs(timeout=60, fatal=True)
+        True
+        >>> cancel_all_jobs(timeout=30, fatal=False)
+        False
     """
 
     user_name = get_user_name()
@@ -1447,12 +1725,19 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
             If True, the node configuration information is obtained via a query
             to the slurmctld daemon (e.g. scontrol show config).
             If False, the node configuration information is obtained by
-            directly parsing the slurm configuration file (slurm.conf).
+            directly parsing the Slurm configuration file (slurm.conf).
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: A dictionary of dictionaries where the first level keys are the
-        node names and with the their values being a dictionary of
-        configuration parameters for the respective node.
+    Returns:
+        A dictionary of dictionaries where the first level keys are the node
+        names and with their values being a dictionary of configuration
+        parameters for the respective node.
+
+    Example:
+        >>> get_nodes()
+        {'node1': {'NodeName': 'node1', 'Arch': 'x86_64', 'CoresPerSocket': 1, 'CPUAlloc': 0, 'CPUEfctv': 1, 'CPUTot': 1, 'CPULoad': 91.4, 'AvailableFeatures': None, 'ActiveFeatures': None, 'Gres': None, 'NodeAddr': 'slurm-host', 'NodeHostName': 'slurm-host', 'Port': 6821, 'Version': '24.05.0-0rc1', ...}}
+        >>> get_nodes(live=False, quiet=True)
+        {'node1': {'NodeHostname': 'slurm-host', 'Port': 6821, 'NodeName': 'node1'}}
     """
 
     nodes_dict = {}
@@ -1540,10 +1825,18 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
             If True, the node configuration information is obtained via a query
             to the slurmctld daemon (e.g. scontrol show config).
             If False, the node configuration information is obtained by
-            directly parsing the slurm configuration file (slurm.conf).
+            directly parsing the Slurm configuration file (slurm.conf).
 
-    Returns: The value of the specified node parameter, or the default if not
-        found.
+    Returns:
+        The value of the specified node parameter, or the default if not found.
+
+    Example:
+        >>> get_node_parameter('node1', 'State')
+        'IDLE'
+        >>> get_node_parameter('node2', 'RealMemory', default=4)
+        1
+        >>> get_node_parameter('node3', 'Partitions', default='primary', live=False)
+        'primary'
     """
 
     nodes_dict = get_nodes(live=live)
@@ -1573,6 +1866,9 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
         new_parameter_name (string): The parameter name.
         new_parameter_value (string): The parameter value.
             Use a value of None to unset a node parameter.
+
+    Returns:
+        None
 
     Example:
         >>> set_node_parameter('node1', 'Features', 'f1')
@@ -1682,9 +1978,14 @@ def get_reservations(quiet=False, **run_command_kwargs):
     Args:
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: A dictionary of dictionaries where the first level keys are the
-        reservation names and with the their values being a dictionary of
+    Returns:
+        A dictionary of dictionaries where the first level keys are the
+        reservation names and with their values being a dictionary of
         configuration parameters for the respective reservation.
+
+    Example:
+        >>> get_reservations()
+        {'resv1': {'ReservationName': 'resv1', 'StartTime': '2024-04-06T00:00:17', 'EndTime': '2024-04-06T00:15:17', 'Duration': '00:15:00', 'Nodes': 'node1', 'NodeCnt': 1, 'CoreCnt': 1, 'Features': None, 'PartitionName': 'primary', 'Flags': 'DAILY,REPLACE_DOWN,PURGE_COMP=00:01:00', 'TRES': 'cpu=1', 'Users': 'atf', 'Groups': None, 'Accounts': None, 'Licenses': None, 'State': 'INACTIVE', 'BurstBuffer': None, 'MaxStartDelay': None}}
     """
 
     resvs_dict = {}
@@ -1714,7 +2015,7 @@ def get_reservations(quiet=False, **run_command_kwargs):
             # Add it to the temporary resv dictionary
             resv_dict[parameter_name] = parameter_value
 
-        # Add the redv dictionary to the resv dictionary
+        # Add the resv dictionary to the resvs dictionary
         resvs_dict[resv_dict["ReservationName"]] = resv_dict
 
         # Clear the resv dictionary for use by the next resv
@@ -1732,8 +2033,14 @@ def get_reservation_parameter(resv_name, parameter_name, default=None):
         default (string or None): This value is returned if the parameter
             is not found.
 
-    Returns: The value of the specified reservation parameter, or the default if not
-        found.
+    Returns:
+        The value of the specified reservation parameter, or the default if not found.
+
+    Example:
+        >>> get_reservation_parameter('resv1', 'PartitionName')
+        'primary'
+        >>> get_reservation_parameter('resv2', 'EndTime', default='2024-04-06T00:15:17')
+        '2024-04-06T00:15:17'
     """
 
     resvs_dict = get_reservations()
@@ -1750,6 +2057,19 @@ def get_reservation_parameter(resv_name, parameter_name, default=None):
 
 
 def is_super_user():
+    """Checks if the current user is a super user.
+
+    Args:
+        None
+
+    Returns:
+        True if the current user is a super user, False otherwise.
+
+    Example:
+        >>> is_super_user()
+        False
+    """
+
     uid = os.getuid()
 
     if uid == 0:
@@ -1763,6 +2083,17 @@ def is_super_user():
 
 
 def require_sudo_rights():
+    """Skips the test if the test user does not have unprompted sudo privileges.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Example:
+        >>> require_sudo_rights()
+    """
     if not properties["sudo-rights"]:
         pytest.skip(
             "This test requires the test user to have unprompted sudo privileges",
@@ -1775,13 +2106,17 @@ def submit_job_sbatch(sbatch_args='--wrap "sleep 60"', **run_command_kwargs):
 
     The submitted job will automatically be cancelled when the test ends.
 
-    Args*:
+    Args:
         sbatch_args (string): The arguments to sbatch.
 
-    * run_command arguments are also accepted (e.g. fatal) and will be supplied
-        to the underlying run_command call.
+    Returns:
+        The job id.
 
-    Returns: The job id
+    Example:
+        >>> submit_job_sbatch('--wrap "echo Hello"')
+        1234
+        >>> submit_job_sbatch('-J myjob --wrap "echo World"', fatal=True)
+        5678
     """
 
     output = run_command_output(f"sbatch {sbatch_args}", **run_command_kwargs)
@@ -1801,13 +2136,17 @@ def run_job(srun_args, **run_command_kwargs):
     If the srun command times out, it will automatically be cancelled when the
     test ends.
 
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The srun run_command results dictionary.
 
-    Returns: The srun run_command results dictionary.
+    Example:
+        >>> run_job('-n 4 --output=output.txt ./my_executable', timeout=60)
+        {'command': 'srun -n 4 --output=output.txt ./my_executable', 'start_time': 1712276708.827, 'duration': 60.0, 'exit_code': 110, 'stdout': '', 'stderr': 'srun: Requested partition configuration not available now\nsrun: job 15 queued and waiting for resources\n'}
+        >>> run_job('-n 1 --error=error.txt ./my_executable', fatal=True)
+        {'command': 'srun -n 1 --error=error.txt my_executable', 'start_time': 1712277798.016, 'duration': 0.06, 'exit_code': 0, 'stdout': 'foo bar\n', 'stderr': ''}
     """
 
     results = run_command(f"srun {srun_args}", **run_command_kwargs)
@@ -1822,13 +2161,17 @@ def run_job_exit(srun_args, **run_command_kwargs):
     If the srun command times out, it will automatically be cancelled when the
     test ends.
 
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The exit code from srun.
 
-    Returns: The exit code from srun.
+    Example:
+        >>> run_job_exit('-n 4 --output=output.txt ./my_executable', timeout=60)
+        2
+        >>> run_job_exit('-n 2 --error=error.txt ./my_executable', fatal=True)
+        0
     """
 
     results = run_job(srun_args, **run_command_kwargs)
@@ -1843,13 +2186,17 @@ def run_job_output(srun_args, **run_command_kwargs):
     If the srun command times out, it will automatically be cancelled when the
     test ends.
 
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The standard output from srun.
 
-    Returns: The standard output from srun.
+    Example:
+        >>> run_job_output('-n 4 ./my_executable', timeout=60)
+        'stdout of the command'
+        >>> run_job_output('-n 2 --output=output.txt ./my_executable', fatal=True)
+        ''
     """
 
     results = run_job(srun_args, **run_command_kwargs)
@@ -1864,13 +2211,16 @@ def run_job_error(srun_args, **run_command_kwargs):
     If the srun command times out, it will automatically be cancelled when the
     test ends.
 
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The standard error from srun.
 
-    Returns: The standard error from srun.
+    Example:
+        >>> run_job_error('-n 4 --output=output.txt ./my_executable', timeout=60)
+        'stderr of the command'
+        >>> run_job_error('-n 200000 ./my_executable', fatal=True) # Will automatically fail the test due to resources
     """
 
     results = run_job(srun_args, **run_command_kwargs)
@@ -1882,19 +2232,21 @@ def run_job_error(srun_args, **run_command_kwargs):
 def submit_job_srun(srun_args, **run_command_kwargs):
     """Runs a job using srun and returns the job id.
 
-    This function obtains the job id by adding the -v option to srun
-    and parsing out the job id.
+    This function obtains the job id by adding the -v option to srun and parsing
+    out the job id. If the srun command times out, it will automatically be
+    cancelled when the test ends.
 
-    If the srun command times out, it will automatically be cancelled when the
-    test ends.
-
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The job id from srun.
 
-    Returns: The job id from srun.
+    Example:
+        >>> submit_job_srun('-n 4 --output=output.txt ./my_executable')
+        12345
+        >>> submit_job_srun('-n 2 --output=output.txt ./my_executable', timeout=60)
+        67890
     """
 
     results = run_job(" ".join(["-v", srun_args]), **run_command_kwargs)
@@ -1911,13 +2263,17 @@ def submit_job_salloc(salloc_args, **run_command_kwargs):
 
     The submitted job will automatically be cancelled when the test ends.
 
-    Args*:
+    Args:
         salloc_args (string): The arguments to salloc.
 
-    * run_command arguments are also accepted (e.g. fatal) and will be supplied
-        to the underlying run_command call.
+    Returns:
+        The job id.
 
-    Returns: The job id
+    Example:
+        >>> submit_job_salloc('-N 1 -t 60 --output=output.txt ./my_executable')
+        12345
+        >>> submit_job_salloc('-N 2 -t 120 --output=output.txt ./my_executable', timeout=60)
+        67890
     """
 
     results = run_command(f"salloc {salloc_args}", **run_command_kwargs)
@@ -1931,18 +2287,24 @@ def submit_job_salloc(salloc_args, **run_command_kwargs):
 
 # Return job id
 def submit_job(command, job_param, job, *, wrap_job=True, **run_command_kwargs):
-    """Submits a job using given command and returns the job id.
+    """Submits a job using the given command and returns the job id.
 
-    Args*:
+    Args:
         command (string): The command to submit the job (salloc, srun, sbatch).
         job_param (string): The arguments to the job.
         job (string): The command or job file to be executed.
-        wrap_job (boolean): If job needs to be wrapped when command is sbatch.
+        wrap_job (boolean): If True, the job will be wrapped when the command is 'sbatch'.
 
-    * run_command arguments are also accepted (e.g. fatal) and will be supplied
-        to the underlying job_id and subsequent run_command call.
+    Returns:
+        The job id.
 
-    Returns: The job id.
+    Example:
+        >>> submit_job('salloc', '-N 1 -t 60', './my_executable', quiet=True)
+        12345
+        >>> submit_job('srun', '-N 2 -t 120', './my_executable', quiet=True)
+        67890
+        >>> submit_job('sbatch', '-N 1 -t 60', './my_script.sh', wrap_job=False, quiet=True)
+        23456
     """
 
     # Make sure command is a legal command to run a job
@@ -1966,19 +2328,21 @@ def submit_job(command, job_param, job, *, wrap_job=True, **run_command_kwargs):
 def run_job_nodes(srun_args, **run_command_kwargs):
     """Runs a job using srun and returns the allocated node list.
 
-    This function obtains the job id by adding the -v option to srun
-    and parsing out the allocated node list.
+    This function obtains the job id by adding the -v option to srun and parsing
+    out the allocated node list. If the srun command times out, it will
+    automatically be cancelled when the test ends.
 
-    If the srun command times out, it will automatically be cancelled when the
-    test ends.
-
-    Args*:
+    Args:
         srun_args (string): The arguments to srun.
 
-    * run_command arguments are also accepted (e.g. timeout) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        The allocated node list for the job.
 
-    Returns: The allocated node list for the job.
+    Example:
+        >>> run_job_nodes('-N 2 hostname', quiet=True)
+        ['node001', 'node002']
+        >>> run_job_nodes('-N 1 --exclude=node001 hostname', quiet=True)
+        ['node002']
     """
 
     results = run_command(f"srun -v {srun_args}", **run_command_kwargs)
@@ -1992,14 +2356,20 @@ def run_job_nodes(srun_args, **run_command_kwargs):
 def get_jobs(job_id=None, **run_command_kwargs):
     """Returns the job configuration as a dictionary of dictionaries.
 
-    Args*:
+    Args:
+        job_id (integer): The id of a specific job of which to get parameters.
 
-    * run_command arguments are also accepted (e.g. quiet) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        A dictionary of dictionaries where the first level keys are the job ids
+        and with their values being a dictionary of configuration parameters for
+        the respective job.
 
-    Returns: A dictionary of dictionaries where the first level keys are the
-        job ids and with the their values being a dictionary of configuration
-        parameters for the respective job.
+    Example:
+        >>> get_jobs()
+        {38: {'JobId': 38, 'JobName': 'wrap', 'UserId': 'atf(1002)', 'GroupId': 'atf(1002)', ...},
+         39: {'JobId': 39, 'JobName': 'wrap', 'UserId': 'atf(1002)', 'GroupId': 'atf(1002)', ...}}
+        >>> get_jobs(job_id='12345', quiet=True)
+        {12345: {'JobId': '12345', 'JobName': 'foo.sh', 'UserId': 'test(1003)', ...}}
     """
 
     jobs_dict = {}
@@ -2044,14 +2414,23 @@ def get_jobs(job_id=None, **run_command_kwargs):
 def get_steps(step_id=None, **run_command_kwargs):
     """Returns the steps as a dictionary of dictionaries.
 
-    Args*:
+    Args:
+        step_id (string): The specific step ID to retrieve information for. If
+            not provided, information for all steps will be returned.
 
-    * run_command arguments are also accepted (e.g. quiet) and will be
-        supplied to the underlying run_command call.
+    Returns:
+        A dictionary of dictionaries where the first level keys are the step ids
+        and with their values being a dictionary of configuration parameters for
+        the respective step.
 
-    Returns: A dictionary of dictionaries where the first level keys are the
-        step ids and with the their values being a dictionary of configuration
-        parameters for the respective step.
+    Example:
+        >>> get_steps()
+        {'44.batch': {'StepId': '44.batch', 'UserId': 1002, 'StartTime': '2024-04-05T01:17:53', ...},
+         '44.0': {'StepId': 44.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:17:54', ...},
+         '45.batch': {'StepId': '45.batch', 'UserId': 1002, 'StartTime': '2024-04-05T01:17:53', ...},
+         '45.0': {'StepId': 45.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:17:54', ...}}
+        >>> get_steps(step_id='123.0', quiet=True)
+        {'123.0': {'StepId': 123.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:21:14', ...}}
     """
 
     steps_dict = {}
@@ -2097,10 +2476,18 @@ def get_job(job_id, quiet=False):
     """Returns job information for a specific job as a dictionary.
 
     Args:
-        job_id (integer): The job id.
+        job_id (integer): The id of the job for which information is requested.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: A dictionary of parameters for the specified job.
+    Returns:
+        A dictionary containing parameters for the specified job. If the job id
+        is not found, an empty dictionary is returned.
+
+    Example:
+        >>> get_job(51)
+        {'JobId': 51, 'JobName': 'wrap', 'UserId': 'atf(1002)', 'GroupId': 'atf(1002)', ...}
+        >>> get_job(182, quiet=True)
+        {'JobId': 182, 'JobName': 'foo.sh', 'UserId': 'atf(1002)', 'GroupId': 'atf(1002)', ...}
     """
 
     jobs_dict = get_jobs(job_id, quiet=quiet)
@@ -2109,17 +2496,23 @@ def get_job(job_id, quiet=False):
 
 
 def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
-    """Obtains the value for a job parameter.
+    """Returns the value of a specific parameter for a given job.
 
     Args:
-        job_id (integer): The job id.
-        parameter_name (string): The parameter name.
-        default (string or None): This value is returned if the parameter
-            is not found.
+        job_id (integer): The id of the job for which the parameter value is requested.
+        parameter_name (string): The name of the parameter whose value is to be obtained.
+        default (string or None): The value to be returned if the parameter is not found.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: The value of the specified job parameter, or the default if not
-        found.
+    Returns:
+        The value of the specified job parameter, or the default value if the
+        parameter is not found.
+
+    Example:
+        >>> get_job_parameter(12345, 'UserId')
+        'atf(1002)'
+        >>> get_job_parameter(67890, 'Partition', default='normal', quiet=True)
+        'primary'
     """
 
     jobs_dict = get_jobs(quiet=quiet)
@@ -2136,17 +2529,23 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
 
 
 def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
-    """Obtains the value for a step parameter.
+    """Returns the value of a specific parameter for a given step.
 
     Args:
-        step_id (integer): The step id.
-        parameter_name (string): The parameter name.
-        default (string or None): This value is returned if the parameter
-            is not found.
+        step_id (string): The id of the step for which the parameter value is requested.
+        parameter_name (string): The name of the parameter whose value is to be obtained.
+        default (string or None): The value to be returned if the parameter is not found.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
-    Returns: The value of the specified step parameter, or the default if not
-        found.
+    Returns:
+        The value of the specified step parameter, or the default value if the
+        parameter is not found.
+
+    Example:
+        >>> get_step_parameter("45.0", 'NodeList')
+        'node[2,4]'
+        >>> get_step_parameter("60.1", 'Partition', default='normal', quiet=True)
+        'primary'
     """
 
     steps_dict = get_steps(quiet=quiet)
@@ -2170,21 +2569,27 @@ def wait_for_node_state(
     fatal=False,
     reverse=False,
 ):
-    """Waits for the specified node state to be reached.
+    """Wait for a specified node state to be reached.
 
-    This function polls the node state every poll interval seconds, waiting up
-    to the timeout for the specified node state to be reached.
+    Polls the node state every poll interval seconds, waiting up to the timeout
+    for the specified node state to be reached.
 
     Args:
-        nodename (string): The name of the node.
-        desired_node_state (string): The desired node state.
-        timeout (integer): Number of seconds to poll before timing out.
-        poll_interval (float): Number of seconds to wait between node state
-            polls.
-        fatal (boolean): If True, a timeout will result in the test failing.
-        reverse (boolean): If True, wait for the node to lose the desired_node_state.
+        nodename (string): The name of the node whose state is being monitored.
+        desired_node_state (string): The state that the node is expected to reach.
+        timeout (integer): The number of seconds to wait before timing out.
+        poll_interval (float): Number of seconds between node state polls.
+        fatal (boolean): If True, a timeout will cause the test to fail.
+        reverse (boolean): If True, wait for the node to lose the desired state.
 
-    Returns: If the node ever reached the desired state or not as a boolean.
+    Returns:
+        Boolean value indicating whether the node ever reached the desired state.
+
+    Example:
+        >>> wait_for_node_state('node1', 'IDLE', timeout=60, poll_interval=5)
+        True
+        >>> wait_for_node_state('node2', 'DOWN', timeout=30, fatal=True)
+        False
     """
 
     # Figure out if we're waiting for the desired_node_state to be present or to be gone
@@ -2208,16 +2613,23 @@ def wait_for_node_state(
 
 
 def wait_for_step(job_id, step_id, **repeat_until_kwargs):
-    """Waits for the specified step to be running.
+    """Wait for the specified step of a job to be running.
+
+    Continuously polls the step state until it becomes running or until a
+    timeout occurs.
 
     Args:
-        job_id (integer): The job id.
-        step_id (integer): The step id (eg, 0, 1..).
+        job_id (integer): The id of the job.
+        step_id (integer): The id of the step within the job.
 
-    * This function also accepts auxilliary arguments from repeat_until, viz.:
-        timeout (integer): Number of seconds to poll before timing out.
-        poll_interval (float): Number of seconds to wait between polls
-        fatal (boolean): If True, a timeout will result in the test failing.
+    Returns:
+        A boolean value indicating whether the specified step is running or not.
+
+    Example:
+        >>> wait_for_step(1234, 0, timeout=60, poll_interval=5, fatal=True)
+        True
+        >>> wait_for_step(5678, 1, timeout=30)
+        False
     """
 
     step_str = f"{job_id}.{step_id}"
@@ -2229,16 +2641,24 @@ def wait_for_step(job_id, step_id, **repeat_until_kwargs):
 
 
 def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
-    """Waits for the specified step to be in the accounting DB.
+    """Wait for specified job step to appear in accounting database (`sacct`).
+
+    Continuously polls the database until the step is accounted for or until a
+    timeout occurs.
 
     Args:
-        job_id (integer): The job id.
-        step_id (integer): The step id (eg, 0, 1..).
+        job_id (integer): The id of the job.
+        step_id (integer): The id of the step within the job.
 
-    * This function also accepts auxilliary arguments from repeat_until, viz.:
-        timeout (integer): Number of seconds to poll before timing out.
-        poll_interval (float): Number of seconds to wait between polls
-        fatal (boolean): If True, a timeout will result in the test failing.
+    Returns:
+        A boolean value indicating whether the specified step is accounted for
+        in the database or not.
+
+    Example:
+        >>> wait_for_step_accounted(1234, 0, timeout=60, poll_interval=5, fatal=True)
+        True
+        >>> wait_for_step_accounted(5678, 1, timeout=30)
+        False
     """
 
     step_str = f"{job_id}.{step_id}"
@@ -2257,26 +2677,34 @@ def wait_for_job_state(
     fatal=False,
     quiet=False,
 ):
-    """Waits for the specified job state to be reached.
+    """Wait for the specified job to reach the desired state.
 
-    This function polls the job state every poll interval seconds, waiting up
-    to the timeout for the specified job state to be reached.
+    Continuously polls the job state until the desired state is reached or until
+    a timeout occurs.
 
-    Some of the supported job states are aggregate states, and may be satisfied
-    by multiple discrete states. Some logic is built-in to fail if a job
-    reaches a state that makes the desired job state impossible to reach.
+    Some supported job states are aggregate states, which may include multiple
+    discrete states. Some logic is built-in to fail if a job reaches a state
+    that makes the desired job state impossible to reach.
 
     Current supported aggregate states:
-        DONE
+    - DONE
 
     Args:
-        job_id (integer): The job id.
-        desired_job_state (string): The desired job state.
-        timeout (integer): Number of seconds to poll before timing out.
-        poll_interval (float): Number of seconds to wait between job state
-            polls.
-        fatal (boolean): If True, a timeout will result in the test failing.
+        job_id (integer): The id of the job.
+        desired_job_state (string): The desired state of the job.
+        timeout (integer): The number of seconds to poll before timing out.
+        poll_interval (float): Time (in seconds) between job state polls.
+        fatal (boolean): If True, a timeout will cause the test to fail.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        Boolean value indicating whether the job reached the desired state.
+
+    Example:
+        >>> wait_for_job_state(1234, 'COMPLETED', timeout=300, poll_interval=10, fatal=True)
+        True
+        >>> wait_for_job_state(5678, 'RUNNING', timeout=60)
+        False
     """
 
     if poll_interval is None:
@@ -2352,18 +2780,21 @@ def wait_for_job_state(
 def create_node(node_dict):
     """Creates a node with the properties described by the supplied dictionary.
 
-    Currently this function is only used as a helper function within other
-    library functions (e.g. require_nodes).
-
-    This function modifies the slurm configuration file and restarts
-    the relevant slurm daemons. A backup is automatically created and the
-    original configuration is restored after the test completes.
-
-    This function may only be used in auto-config mode.
+    This function is currently only used as a helper function within other
+    library functions (e.g. require_nodes). It modifies the Slurm configuration
+    file and restarts the relevant Slurm daemons. A backup is automatically
+    created, and the original configuration is restored after the test
+    completes. This function may only be used in auto-config mode.
 
     Args:
         node_dict (dictionary): A dictionary containing the desired node
             properties.
+
+    Returns:
+        None
+
+    Example:
+        >>> create_node({'NodeName': 'new_node', 'CPUs': 4, 'RealMemory': 16384})
     """
 
     if not properties["auto-config"]:
@@ -2441,6 +2872,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
         Cores
         RealMemory
         Gres
+
+    Returns:
+        None
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
@@ -2624,9 +3058,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict[
-                    "NodeName"
-                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                new_node_dict["NodeName"] = (
+                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                )
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)
@@ -2643,11 +3077,17 @@ def require_nodes(requested_node_count, requirements_list=[]):
 
 
 def make_bash_script(script_name, script_contents):
-    """Creates an executable bash script with the specified contents.
+    """Creates an executable Bash script with the specified contents.
 
     Args:
-        script_name (string): Name of script to create.
-        script_contents (string): Contents of script.
+        script_name (string): Name of the script to create.
+        script_contents (string): Contents of the script.
+
+    Returns:
+        None
+
+    Example:
+        >>> make_bash_script("my_script.sh", "echo 'Hello, World!'") # This creates an executable Bash script named "my_script.sh" with the contents "echo 'Hello, World!'"
     """
 
     with open(script_name, "w") as f:
@@ -2659,17 +3099,19 @@ def make_bash_script(script_name, script_contents):
 def wait_for_file(file_name, **repeat_until_kwargs):
     """Waits for the specified file to be present.
 
-    This function waits up to timeout seconds for the file to be present,
-    polling every poll interval seconds. The default timeout and poll_interval
-    are inherited from repeat_until.
+    This function waits up to the specified timeout seconds for the file to be
+    present, polling every poll_interval seconds. The default timeout and
+    poll_interval are inherited from repeat_until.
 
-    Args*:
+    Args:
         file_name (string): The file name.
 
-    * This function also accepts auxilliary arguments from repeat_until, viz.:
-        timeout (integer): Number of seconds to poll before timing out.
-        poll_interval (float): Number of seconds to wait between polls
-        fatal (boolean): If True, a timeout will result in the test failing.
+    Returns:
+        True if the file was found, False otherwise.
+
+    Example:
+        >>> wait_for_file("my_file.txt", timeout=30, poll_interval=0.5)
+        True
     """
 
     logging.debug(f"Waiting for file ({file_name}) to be present")
@@ -2682,9 +3124,17 @@ def wait_for_file(file_name, **repeat_until_kwargs):
 def backup_accounting_database():
     """Backs up the accounting database.
 
-    This function may only be used in auto-config mode.
+    This function may only be used in auto-config mode. The database dump is
+    automatically restored when the test ends.
 
-    The database dump is automatically be restored when the test ends.
+    Args:
+        None
+
+    Returns:
+        None
+
+    Example:
+        >>> backup_accounting_database() # Backs up Slurm accounting database to file in the test's temporary directory.
     """
 
     if not properties["auto-config"]:
@@ -2760,6 +3210,15 @@ def restore_accounting_database():
     """Restores the accounting database from the backup.
 
     This function may only be used in auto-config mode.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Example:
+        >>> restore_accounting_database() # Restores Slurm accounting database from previously created backup.
     """
 
     if not properties["accounting-database-modified"] or not properties["auto-config"]:
@@ -2841,14 +3300,22 @@ def compile_against_libslurm(
 ):
     """Compiles a test program against either libslurm.so or libslurmfull.so.
 
+    This function compiles the specified source file against the Slurm library,
+    either libslurm.so or libslurmfull.so, and creates the target binary file.
+
     Args:
         source_file (string): The name of the source file.
         dest_file (string): The name of the target binary file.
-        build_args (string): Additional string to be appended to the build
-            command.
+        build_args (string): Additional string to be appended to the build command.
         full (boolean): Use libslurmfull.so instead of libslurm.so.
-        shared (boolean): Produces a shared library (adds the -shared compiler
-            option and adds a .so suffix to the output file name).
+        shared (boolean): Produces a shared library (adds the -shared compiler option
+            and adds a .so suffix to the output file name).
+
+    Returns:
+        None
+
+    Example:
+        >>> compile_against_libslurm("my_test.c", "my_test", build_args="-Wall -Werror")
     """
 
     if full:
@@ -2877,14 +3344,21 @@ def compile_against_libslurm(
 
 
 def get_partitions(**run_command_kwargs):
-    """Returns the partition configuration as a dictionary of dictionaries.
+    """Returns the Slurm partition configuration as a dictionary of dictionaries.
 
-    This function accepts auxilliary arguments from run_command (e.g. quiet,
-    fatal, timeout, etc).
+    Args:
+        **run_command_kwargs: Auxiliary arguments to be passed to the
+            run_command function (e.g., quiet, fatal, timeout, etc.).
 
-    Returns: A dictionary of dictionaries where the first level keys are the
-        partition names and with the their values being a dictionary of
-        configuration parameters for the respective partition.
+    Returns:
+        A dictionary of dictionaries, where the first-level keys are the
+        partition names, and the values are dictionaries containing the
+        configuration parameters for the respective partitions.
+
+    Example:
+        >>> get_partitions(quiet=True)
+        {'partition1': {'PartitionName': 'partition1', 'AllowGroups': 'ALL', 'Defaults': 'YES', ...},
+         'partition2': {'PartitionName': 'partition2', 'AllowGroups': 'group1,group2', 'Defaults': 'YES', ...}}
     """
 
     partitions_dict = {}
@@ -2925,16 +3399,26 @@ def get_partitions(**run_command_kwargs):
 
 
 def get_partition_parameter(partition_name, parameter_name, default=None):
-    """Obtains the value for a partition configuration parameter.
+    """Obtains the value for a Slurm partition configuration parameter.
+
+    This function retrieves the value of the specified parameter for the given
+    partition. If the parameter is not present, the default value is returned.
 
     Args:
-        partition_name (string): The partition name.
-        parameter_name (string): The parameter name.
-        default (string or None): This value is returned if the parameter
-            is not found.
+        partition_name (string): The name of the partition.
+        parameter_name (string): The name of the parameter to retrieve.
+        default (string or None): The default value to return if the parameter is
+            not found.
 
-    Returns: The value of the specified partition parameter, or the default if
-        not found.
+    Returns:
+        The value of the specified partition parameter, or the default if not
+        found.
+
+    Example:
+        >>> get_partition_parameter('my_partition', 'AllowAccounts')
+        'ALL'
+        >>> get_partition_parameter('second_partition', 'DefaultTime', '00:30:00')
+        '00:30:00'
     """
 
     partitions_dict = get_partitions()
@@ -3046,7 +3530,21 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
 
 
 def default_partition():
-    """Returns the default partition name."""
+    """Returns the name of the default Slurm partition.
+
+    This function retrieves the Slurm partition configuration and returns the
+    name of the partition that is marked as the default.
+
+    Args:
+        None
+
+    Returns:
+        The name of the default Slurm partition.
+
+    Example:
+        >>> default_partition()
+        'my_default_partition'
+    """
 
     partitions_dict = get_partitions()
 
