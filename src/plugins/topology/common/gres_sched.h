@@ -60,12 +60,30 @@ extern bool gres_sched_test(List job_gres_list, uint32_t job_id);
 
 /*
  * Update a job's total_gres counter as we add a node to potential allocation
- * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
- * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
  * IN/OUT avail_cpus - CPUs currently available on this node
+ * IN/OUT avail_core - Core bitmap of currently available cores on this node
+ * IN/OUT avail_cores_per_sock - Number of cores per socket available
+ * IN/OUT sock_gres_list - Per socket GRES availability on this node
+ *			   (sock_gres_t). Updates total_cnt
+ * IN job_gres_list - List of job's GRES requirements (gres_state_job_t)
+ * IN res_cores_per_gpu - Number of restricted cores per gpu
+ * IN sockets - Number of sockets on the node
+ * IN cores_per_socket - Number of cores on each socket on the node
+ * IN cpus_per_core - Number of threads per core on the node
+ * IN cr_type - Allocation type (sockets, cores, etc.)
  */
-extern void gres_sched_add(List job_gres_list, List sock_gres_list,
-			   uint16_t *avail_cpus);
+extern bool gres_sched_add(uint16_t *avail_cpus,
+			   bitstr_t *avail_core,
+			   uint16_t *avail_cores_per_sock,
+			   List sock_gres_list,
+			   List job_gres_list,
+			   uint16_t res_cores_per_gpu,
+			   int sockets,
+			   uint16_t cores_per_socket,
+			   uint16_t cpus_per_core,
+			   uint16_t cr_type,
+			   uint16_t min_cpus,
+			   int node_i);
 
 /*
  * Create/update List GRES that can be made available on the specified node

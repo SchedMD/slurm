@@ -138,14 +138,111 @@ extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 	return rc;
 }
 
+static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
+					   uint16_t *avail_cores_per_sock,
+					   uint16_t *actual_cores_per_sock,
+					   uint64_t *tot_cores,
+					   uint16_t *avail_cpus,
+					   uint64_t *gres_limit,
+					   gres_job_state_t *gres_js,
+					   uint16_t res_cores_per_gpu,
+					   int sockets,
+					   uint16_t cores_per_socket,
+					   uint16_t cpus_per_core,
+					   uint16_t cr_type,
+					   int node_i)
+{
+	bitstr_t *res_cores;
+	uint16_t tot_res_core;
+	uint64_t max_res_cores = 0;
+	int i = (sockets * cores_per_socket) - 1;
+	bool done = false;
+	int cnt;
+
+	if (cr_type & CR_SOCKET)
+		return;
+	if (!gres_js->res_gpu_cores &&
+	    !gres_js->res_gpu_cores[node_i])
+		return;
+
+	max_res_cores = *gres_limit * res_cores_per_gpu;
+	res_cores = bit_copy(gres_js->res_gpu_cores[node_i]);
+	bit_and(res_cores, avail_core);
+	tot_res_core = bit_set_count(res_cores);
+
+	if (tot_res_core <= max_res_cores) {
+		FREE_NULL_BITMAP(res_cores);
+		return;
+	}
+
+	while (!done) {
+		while (tot_res_core > max_res_cores) {
+			int s;
+			/*
+			* Must remove resticted cores from the end of the
+			* bitmap first since cores are picked from front to
+			* back. This helps the needed restricted cores get
+			* picked.
+			*/
+			i  = bit_fls_from_bit(res_cores, i);
+			if (i < 0)
+				break; /* This should never happen */
+			bit_clear(avail_core, i);
+			tot_res_core--;
+
+			s = i / cores_per_socket;
+			actual_cores_per_sock[s]--;
+			(*tot_cores)--;
+			if (actual_cores_per_sock[s] <
+			    avail_cores_per_sock[s])
+				avail_cores_per_sock[s]--;
+			i--;
+		}
+		cnt = *tot_cores * cpus_per_core;
+		if (cnt < *avail_cpus)
+			*avail_cpus = cnt;
+		if (gres_js->cpus_per_gres) {
+			uint64_t new_gres_limit =
+				*avail_cpus / gres_js->cpus_per_gres;
+			if (new_gres_limit < *gres_limit) {
+				*gres_limit = new_gres_limit;
+				max_res_cores = *gres_limit * res_cores_per_gpu;
+			} else
+				done = true;
+		} else
+			done = true;
+	}
+	FREE_NULL_BITMAP(res_cores);
+}
+
 /*
  * Update a job's total_gres counter as we add a node to potential allocation
- * IN job_gres_list - List of job's GRES requirements (gres_state_job_t)
- * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
  * IN/OUT avail_cpus - CPUs currently available on this node
+ * IN/OUT avail_core - Core bitmap of currently available cores on this node
+ * IN/OUT avail_cores_per_sock - Number of cores per socket available
+ * IN/OUT sock_gres_list - Per socket GRES availability on this node
+ *			   (sock_gres_t). Updates total_cnt
+ * IN job_gres_list - List of job's GRES requirements (gres_state_job_t)
+ * IN res_cores_per_gpu - Number of restricted cores per gpu
+ * IN sockets - Number of sockets on the node
+ * IN cores_per_socket - Number of cores on each socket on the node
+ * IN cpus_per_core - Number of threads per core on the node
+ * IN cr_type - Allocation type (sockets, cores, etc.)
+ * IN min_cpus - Minimum cpus required on this node
+ * IN node_i - Index of the current node
  */
-extern void gres_sched_add(List job_gres_list, List sock_gres_list,
-			   uint16_t *avail_cpus)
+extern bool gres_sched_add(uint16_t *avail_cpus,
+			   bitstr_t *avail_core,
+			   uint16_t *avail_cores_per_sock,
+			   List sock_gres_list,
+			   List job_gres_list,
+			   uint16_t res_cores_per_gpu,
+			   int sockets,
+			   uint16_t cores_per_socket,
+			   uint16_t cpus_per_core,
+			   uint16_t cr_type,
+			   uint16_t min_cpus,
+			   int node_i)
 {
 	list_itr_t *iter;
 	gres_state_t *gres_state_job;
@@ -153,9 +250,12 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 	sock_gres_t *sock_data;
 	uint64_t gres_limit;
 	uint16_t gres_cpus = 0;
+	uint16_t *actual_cores_per_sock = NULL;
+	uint64_t tot_cores = 0;
+	uint64_t min_gres;
 
 	if (!job_gres_list || !(*avail_cpus))
-		return;
+		return true;
 
 	iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = list_next(iter))) {
@@ -174,11 +274,60 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 					gres_limit * gres_js->cpus_per_gres);
 		} else
 			gres_limit = sock_data->total_cnt;
+
+		min_gres = MAX(gres_js->gres_per_node, 1);
+		if (gres_js->gres_per_task ||
+		    (gres_js->ntasks_per_gres &&
+		     (gres_js->ntasks_per_gres != NO_VAL16))) {
+			/*
+			 * Already assumed a number of gres tasks
+			 * on this node.
+			 */
+			min_gres = gres_limit;
+		}
+		if (gres_js->gres_per_job > gres_js->total_gres) {
+			gres_limit = MIN((gres_js->gres_per_job -
+					  gres_js->total_gres),
+					 gres_limit);
+		}
+		gres_limit = MAX(gres_limit, min_gres);
+
+		if ((gres_state_job->plugin_id == gres_get_gpu_plugin_id()) &&
+		    res_cores_per_gpu) {
+			if (!actual_cores_per_sock) {
+				actual_cores_per_sock =
+					xcalloc(sockets, sizeof(uint16_t));
+				for (int s = 0; s < sockets; s++) {
+					int start_core = s * cores_per_socket;
+					int end_core = start_core +
+						cores_per_socket;
+					actual_cores_per_sock[s] =
+						bit_set_count_range(avail_core,
+								    start_core,
+								    end_core);
+					tot_cores += actual_cores_per_sock[s];
+				}
+			}
+
+			_gres_per_job_reduce_res_cores(
+				avail_core, avail_cores_per_sock,
+				actual_cores_per_sock, &tot_cores, avail_cpus,
+				&gres_limit, gres_js, res_cores_per_gpu,
+				sockets, cores_per_socket, cpus_per_core,
+				cr_type, node_i);
+			if ((gres_limit < min_gres) ||
+			    (min_cpus > *avail_cpus))
+				return false;
+		}
+
+		sock_data->total_cnt = gres_limit;
 		gres_js->total_gres += gres_limit;
 	}
 	list_iterator_destroy(iter);
-	if (gres_cpus)
+	if (gres_cpus && (gres_cpus < *avail_cpus))
 		*avail_cpus = gres_cpus;
+	xfree(actual_cores_per_sock);
+	return true;
 }
 
 /*

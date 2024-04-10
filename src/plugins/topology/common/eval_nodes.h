@@ -71,10 +71,13 @@ extern int eval_nodes(topology_eval_t *topo_eval);
  * allocation unit (node, socket, core, etc.) and making sure that
  * resources will be available for nodes considered later in the
  * scheduling process
+ * This also check as the gres gets layed out that if restricted gpu cores are
+ * removed their are still enough cpus on the node. It returns true if the Gres
+ * requirment could be satified or false if not
  */
-extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
+extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 				   int64_t rem_max_cpus, int rem_nodes,
-				   uint32_t *max_tasks, bool check_gres);
+				   uint64_t *max_tasks, bool check_gres);
 
 /*
  * Reduce the cores per socket to match avail_cores_per_sock set by
@@ -86,12 +89,33 @@ extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 extern void eval_nodes_clip_socket_cores(topology_eval_t *topo_eval);
 
 /*
+ * Reduce the gres_max_tasks and total GRES available to a node based on
+ * what will be layed out on the node.
+ * If the GRES available gets reduced and RestrictedCoresPerGPU
+ * is used, any unusable restricted cores will be removed.
+ * If to many cores are removed such that the node is no longer usable
+ * in the allocation it returns false, else true.
+ */
+extern bool eval_nodes_gres(topology_eval_t *topo_eval,
+			    uint64_t *maxtasks,
+			    job_record_t *job_ptr,
+			    node_record_t *node_ptr,
+			    int rem_nodes,
+			    int node_i,
+			    int select_inx);
+
+/*
  * Identify the specific cores and GRES available to this job on this node.
  * The job's requirements for tasks-per-socket, cpus-per-task, etc. are
  * not considered at this point, but must be considered later.
  */
 extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 				    int node_inx, int rem_nodes);
+
+/* Returns the maximum tasks the job allocation could have */
+extern uint64_t eval_nodes_set_max_tasks(job_record_t *job_ptr,
+					 uint64_t max_cpus,
+					 uint32_t max_nodes);
 
 /*
  * Return the max amount of cpus still remaining to search for.
