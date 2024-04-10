@@ -665,6 +665,9 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	rc = SLURM_ERROR;
 
 fini:
+	if (rc == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+
 	if ((job_ptr->req_switch > 0) && (rc == SLURM_SUCCESS) &&
 	    switch_node_bitmap) {
 		/* req_switch == 1 here; enforced at the top of the function. */
@@ -1241,6 +1244,9 @@ try_again:
 	rc = SLURM_ERROR;
 
 fini:
+	if (rc == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+
 	if (job_ptr->req_switch > 0 && rc == SLURM_SUCCESS) {
 		int leaf_switch_count = 0;
 

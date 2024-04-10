@@ -104,6 +104,43 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 	return node_list;
 }
 
+extern void eval_nodes_clip_socket_cores(topology_eval_t *topo_eval)
+{
+	bitstr_t *avail_core;
+	uint16_t *avail_cores_per_sock;
+	uint16_t actual_core_cnt;
+	node_record_t *node_ptr;
+	int start_core;
+	int end_core;
+
+	if (!topo_eval->job_ptr->gres_list_req)
+		return;
+
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(topo_eval->node_map, &i));
+	     i++) {
+		avail_core = topo_eval->avail_core[i];
+		avail_cores_per_sock =
+			topo_eval->avail_res_array[i]->avail_cores_per_sock;
+		for (int s = 0; s < node_ptr->tot_sockets; s++) {
+			start_core = s * node_ptr->cores;
+			end_core = start_core + node_ptr->cores;
+			actual_core_cnt = bit_set_count_range(avail_core,
+							      start_core,
+							      end_core);
+			for (int c = node_ptr->cores - 1; c >= 0; c--) {
+				int i = (s * node_ptr->cores) + c;
+				if (actual_core_cnt <= avail_cores_per_sock[s])
+					break;
+				if (!bit_test(avail_core, i))
+					continue;
+				bit_clear(avail_core, i);
+				actual_core_cnt--;
+			}
+		}
+	}
+}
+
 /*
  * A variation of _eval_nodes() to select resources using busy nodes first.
  */
@@ -268,7 +305,10 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
@@ -787,7 +827,10 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	    eval_nodes_enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
-fini:	xfree(avail_cpu_per_node);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	xfree(avail_cpu_per_node);
 	xfree(consec_cpus);
 	xfree(consec_nodes);
 	xfree(consec_start);
@@ -992,7 +1035,10 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
@@ -1155,7 +1201,10 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 
@@ -1311,7 +1360,10 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }

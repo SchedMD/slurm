@@ -76,6 +76,15 @@ extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 				   int64_t rem_max_cpus, int rem_nodes);
 
 /*
+ * Reduce the cores per socket to match avail_cores_per_sock set by
+ * gres_filter_sock_core().
+ * If gres_filter_sock_core() is called then avail_cores_per_sock is reduced
+ * while the avail_core bitmap is left alone, unless a core can not be used.
+ * This is to allow for restricted cores per gpu.
+ */
+extern void eval_nodes_clip_socket_cores(topology_eval_t *topo_eval);
+
+/*
  * Identify the specific cores and GRES available to this job on this node.
  * The job's requirements for tasks-per-socket, cpus-per-task, etc. are
  * not considered at this point, but must be considered later.

@@ -779,6 +779,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	rc = SLURM_ERROR;
 
 fini:
+	if (rc == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
 	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
