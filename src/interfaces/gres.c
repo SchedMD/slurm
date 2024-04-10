@@ -4692,7 +4692,41 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 		gres_ns = _build_gres_node_state();
 
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpack32(&config_flags, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
+			safe_unpack16(&gres_bitmap_size, buffer);
+
+			safe_unpack16(&gres_ns->topo_cnt, buffer);
+			if (gres_ns->topo_cnt) {
+				gres_ns->topo_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				for (int i = 0; i < gres_ns->topo_cnt; i++) {
+					unpack_bit_str_hex(
+						&gres_ns->topo_core_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->topo_gres_bitmap[i],
+						buffer);
+				}
+			}
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_alloc,
+					    &tmp_uint32, buffer);
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_avail,
+					    &tmp_uint32, buffer);
+			safe_unpack32_array(&gres_ns->topo_type_id, &tmp_uint32,
+					    buffer);
+			safe_unpackstr_array(&gres_ns->topo_type_name,
+					     &tmp_uint32, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
