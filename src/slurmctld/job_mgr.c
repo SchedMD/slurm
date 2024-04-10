@@ -5695,7 +5695,7 @@ static void _add_signal_job_resp(signal_jobs_args_t *signal_args,
 	job_resp->error_code = error_code;
 	if (err_msg)
 		job_resp->error_msg = err_msg;
-	else
+	else if (error_code != SLURM_SUCCESS)
 		job_resp->error_msg = xstrdup(slurm_strerror(error_code));
 	job_resp->id = xmalloc(sizeof(*job_resp->id));
 	memcpy(job_resp->id, id, sizeof(*id));
@@ -6075,7 +6075,7 @@ static int _foreach_signal_job(void *x, void *arg)
 					kill_msg->flags,
 					signal_args->auth_uid, 0);
 
-	if (error_code) {
+	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE)) {
 		slurm_selected_step_t id;
 
 		_slurm_selected_step_init(job_ptr, &id);

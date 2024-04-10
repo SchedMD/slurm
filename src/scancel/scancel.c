@@ -155,9 +155,82 @@ static uint16_t _init_flags(char **job_type)
 	return flags;
 }
 
+static bool _has_filter_opt(void)
+{
+	return ((opt.account) ||
+		(opt.job_name) ||
+		(opt.nodelist) ||
+		(opt.partition) ||
+		(opt.qos) ||
+		(opt.reservation) ||
+		(opt.state != JOB_END) ||
+		(opt.user_name) ||
+		(opt.wckey));
+}
+
+static char *_filters2str(void)
+{
+	char *str = NULL;
+
+	if (opt.account)
+		xstrfmtcat(str, "account=%s ", opt.account);
+	if (opt.job_name)
+		xstrfmtcat(str, "job_name=%s ", opt.job_name);
+	if (opt.nodelist)
+		xstrfmtcat(str, "nodelist=%s ", opt.nodelist);
+	if (opt.partition)
+		xstrfmtcat(str, "partition=%s ", opt.partition);
+	if (opt.qos)
+		xstrfmtcat(str, "qos=%s ", opt.qos);
+	if (opt.reservation)
+		xstrfmtcat(str, "reservation=%s ", opt.reservation);
+	if (opt.state != JOB_END) {
+		xstrfmtcat(str, "state=%s ",
+			   job_state_string(opt.state));
+	}
+	if (opt.user_name)
+		xstrfmtcat(str, "user_name=%s ", opt.user_name);
+	if (opt.wckey)
+		xstrfmtcat(str, "wckey=%s ", opt.wckey);
+
+	return str;
+}
+
+static void _log_filter_err_msg(void)
+{
+	char *err_msg = _filters2str();
+
+	if (err_msg) {
+		error("No active jobs match ALL job filters, including: %s",
+		      err_msg);
+		xfree(err_msg);
+	}
+}
+
+static void _log_signal_job_msg(char *job_type, char *job_id_str,
+				uint16_t signal)
+{
+	/*
+	 * If signal was not explicitly requested, just say "terminating job".
+	 * Otherwise, specify the signal number even if it is SIGKILL which is
+	 * the default.
+	 */
+	if (opt.signal == NO_VAL16)
+		verbose("Terminating %sjob %s", job_type, job_id_str);
+	else
+		verbose("Signal %u to %sjob %s", signal, job_type, job_id_str);
+}
+
+static void _log_kill_job_error(char *job_id_str, char *err_msg)
+{
+	error("Kill job error on job id %s: %s", job_id_str, err_msg);
+}
+
 static int _ctld_signal_jobs(void)
 {
 	int rc;
+	bool successful_job_resp = false;
+	char *job_type = "";
 	kill_jobs_msg_t kill_msg = {
 		.account = opt.account,
 		.job_name = opt.job_name,
@@ -175,7 +248,9 @@ static int _ctld_signal_jobs(void)
 	};
 	kill_jobs_resp_msg_t *kill_msg_resp = NULL;
 
-	kill_msg.flags = _init_flags(NULL);
+	kill_msg.flags = _init_flags(&job_type);
+	if (opt.verbose)
+		kill_msg.flags |= KILL_JOBS_VERBOSE;
 	if (kill_msg.signal == NO_VAL16)
 		kill_msg.signal = SIGKILL;
 
@@ -188,6 +263,9 @@ static int _ctld_signal_jobs(void)
 		kill_jobs_resp_job_t *job_resp =
 			&kill_msg_resp->job_responses[i];
 		uint32_t error_code = job_resp->error_code;
+
+		if (error_code == SLURM_SUCCESS)
+			successful_job_resp = true;
 
 		if (opt.verbose ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
@@ -212,12 +290,20 @@ static int _ctld_signal_jobs(void)
 			if (rc != SLURM_SUCCESS)
 				error("Bad job id format returned: %s; %s",
 				      slurm_strerror(rc), job_resp->error_msg);
+			else if (job_resp->error_code != SLURM_SUCCESS)
+				_log_kill_job_error(job_id_str,
+						    job_resp->error_msg);
 			else
-				error("Job %s: %s",
-				      job_id_str, job_resp->error_msg);
+				_log_signal_job_msg(job_type, job_id_str,
+						    kill_msg.signal);
 			xfree(job_id_str);
 		}
 	}
+
+	if (opt.verbose && _has_filter_opt() &&
+	    (!kill_msg_resp->jobs_cnt || !successful_job_resp))
+		_log_filter_err_msg();
+
 	slurm_free_kill_jobs_response_msg(kill_msg_resp);
 
 	return SLURM_SUCCESS;
@@ -255,17 +341,8 @@ _proc_cluster(void)
 
 	_load_job_records();
 	rc = _verify_job_ids();
-	if ((opt.account) ||
-	    (opt.job_name) ||
-	    (opt.nodelist) ||
-	    (opt.partition) ||
-	    (opt.qos) ||
-	    (opt.reservation) ||
-	    (opt.state != JOB_END) ||
-	    (opt.user_name) ||
-	    (opt.wckey)) {
+	if (_has_filter_opt())
 		_filter_job_records();
-	}
 	rc2 = _cancel_jobs();
 	rc = MAX(rc, rc2);
 	slurm_free_job_info_msg(job_buffer_ptr);
@@ -380,9 +457,8 @@ static int _verify_job_ids(void)
 		if (opt.verbose < 0) {
 			;
 		} else if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
-			error("Kill job error on job id %s: %s",
-			      job_id_str,
-			      slurm_strerror(ESLURM_INVALID_JOB_ID));
+			char *err_msg = slurm_strerror(ESLURM_INVALID_JOB_ID);
+			_log_kill_job_error(job_id_str, err_msg);
 		} else {
 			error("Kill job error on job step id %s.%u: %s",
 			      job_id_str, opt.step_id[j],
@@ -522,34 +598,9 @@ static void _filter_job_records(void)
 	}
 
 
-	if ((job_matches == 0) && (opt.verbose > 0)) {
-		char *err_msg = NULL;
-		if (opt.account)
-			xstrfmtcat(err_msg, "account=%s ", opt.account);
-		if (opt.job_name)
-			xstrfmtcat(err_msg, "job_name=%s ", opt.job_name);
-		if (opt.nodelist)
-			xstrfmtcat(err_msg, "nodelist=%s ", opt.nodelist);
-		if (opt.partition)
-			xstrfmtcat(err_msg, "partition=%s ", opt.partition);
-		if (opt.qos)
-			xstrfmtcat(err_msg, "qos=%s ", opt.qos);
-		if (opt.reservation)
-			xstrfmtcat(err_msg, "reservation=%s ", opt.reservation);
-		if (opt.state != JOB_END) {
-			xstrfmtcat(err_msg, "state=%s ",
-				   job_state_string(opt.state));
-		}
-		if (opt.user_name)
-			xstrfmtcat(err_msg, "user_name=%s ", opt.user_name);
-		if (opt.wckey)
-			xstrfmtcat(err_msg, "wckey=%s ", opt.wckey);
-		if (err_msg) {
-			error("No active jobs match ALL job filters, including: %s",
-			      err_msg);
-			xfree(err_msg);
-		}
-	}
+	if ((job_matches == 0) && (opt.verbose > 0))
+		_log_filter_err_msg();
+
 	return;
 }
 
@@ -809,7 +860,6 @@ _cancel_job_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
-	bool sig_set = true;
 	uint16_t flags = 0;
 	char *job_type = "";
 	DEF_TIMERS;
@@ -817,7 +867,6 @@ _cancel_job_id (void *ci)
 	flags = _init_flags(&job_type);
 	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
-		sig_set = false;
 	}
 
 	if (!cancel_info->job_id_str) {
@@ -835,13 +884,8 @@ _cancel_job_id (void *ci)
 		}
 	}
 
-	if (!sig_set) {
-		verbose("Terminating %sjob %s", job_type,
-			cancel_info->job_id_str);
-	} else {
-		verbose("Signal %u to %sjob %s", cancel_info->sig, job_type,
-			cancel_info->job_id_str);
-	}
+	_log_signal_job_msg(job_type, cancel_info->job_id_str,
+			    cancel_info->sig);
 
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		_add_delay();
@@ -867,9 +911,8 @@ _cancel_job_id (void *ci)
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
 		     (error_code != ESLURM_INVALID_JOB_ID))) {
-			error("Kill job error on job id %s: %s",
-			      cancel_info->job_id_str,
-			      slurm_strerror(slurm_get_errno()));
+			_log_kill_job_error(cancel_info->job_id_str,
+					    slurm_strerror(slurm_get_errno()));
 		}
 		if (((error_code == ESLURM_ALREADY_DONE) ||
 		     (error_code == ESLURM_INVALID_JOB_ID)) &&
