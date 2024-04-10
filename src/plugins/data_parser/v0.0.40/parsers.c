@@ -5939,7 +5939,7 @@ static void *NEW_FUNC(KILL_JOBS_MSG)(void)
 {
 	kill_jobs_msg_t *msg = xmalloc_nz(sizeof(*msg));
 	*msg = (kill_jobs_msg_t) {
-		.flags = KILL_FULL_JOB,
+		.flags = KILL_NO_CRON,
 		.signal = SIGKILL,
 		.state = JOB_END,
 		.user_id = SLURM_AUTH_NOBODY,
