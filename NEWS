@@ -181,6 +181,7 @@ documents those changes that are of interest to users and administrators.
     'scontrol show jobs --{json|yaml}' and 'squeue --{json|yaml}' responses.
  -- Add SlurmctldParameters=step_mgr_enable to enable step management through
     the slurmstepd instead of the controller.
+ -- Avoid slurmstepd infinite loop waiting for tasks termination.
 
 * Changes in Slurm 23.11.7
 ==========================

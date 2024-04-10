@@ -2655,19 +2655,22 @@ _wait_for_all_tasks(stepd_step_rec_t *step)
 
 	for (i = 0; i < tasks_left; ) {
 		int rc;
-		rc = _wait_for_any_task(step, true);
-		if (rc != -1) {
-			i += rc;
-			if (i < tasks_left) {
-				/* To limit the amount of traffic back
-				 * we will sleep a bit to make sure we
-				 * have most if not all the tasks
-				 * completed before we return */
-				usleep(100000);	/* 100 msec */
-				rc = _wait_for_any_task(step, false);
-				if (rc != -1)
-					i += rc;
-			}
+		if ((rc = _wait_for_any_task(step, true)) == -1) {
+			error("%s: No child processes. node_tasks:%u, expected:%d, reaped:%d",
+			      __func__, step->node_tasks, tasks_left, i);
+			break;
+		}
+
+		i += rc;
+		if (i < tasks_left) {
+			/* To limit the amount of traffic back
+			 * we will sleep a bit to make sure we
+			 * have most if not all the tasks
+			 * completed before we return */
+			usleep(100000);	/* 100 msec */
+			rc = _wait_for_any_task(step, false);
+			if (rc != -1)
+				i += rc;
 		}
 
 		if (i < tasks_left) {
