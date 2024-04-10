@@ -1459,6 +1459,9 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
 	list_for_each_ro(bcast_libdir_list, _foreach_libdir_set_path, &arg);
 	slurm_rwlock_unlock(&file_bcast_lock);
 
+	if (!arg.new_path)
+		return;
+
 	if ((orig = getenvp(req->env, "LD_LIBRARY_PATH")))
 		xstrfmtcatat(arg.new_path, &arg.pos, ":%s", orig);
 
