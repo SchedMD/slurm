@@ -132,8 +132,6 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 static pthread_t decay_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t decay_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t decay_init_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t decay_init_cond = PTHREAD_COND_INITIALIZER;
 static bool running_decay = 0, reconfig = 0, calc_fairshare = 1;
 static time_t plugin_shutdown = 0;
 static uint16_t damp_factor = 1;  /* weight for age factor */
@@ -148,6 +146,7 @@ static uint32_t weight_qos;  /* weight for QOS factor */
 static double  *weight_tres; /* tres weights */
 static uint32_t flags;       /* Priority Flags */
 static time_t g_last_ran = 0; /* when the last poll ran */
+static time_t g_last_reset = 0; /* when the last reset was done */
 static double decay_factor = 1; /* The decay factor when decaying time. */
 
 /* variables defined in priority_multifactor.h */
@@ -1263,7 +1262,7 @@ static int _decay_apply_new_usage_and_weighted_factors(job_record_t *job_ptr,
 static void *_decay_thread(void *no_data)
 {
 	time_t start_time = time(NULL);
-	time_t last_reset = 0, next_reset = 0;
+	time_t next_reset = 0;
 	double decay_hl = (double) slurm_conf.priority_decay_hl;
 	uint16_t reset_period = slurm_conf.priority_reset_period;
 
@@ -1283,56 +1282,14 @@ static void *_decay_thread(void *no_data)
 		error("%s: cannot set my name to %s %m", __func__, "decay");
 	}
 #endif
-	/*
-	 * DECAY_FACTOR DESCRIPTION:
-	 *
-	 * The decay thread applies an exponential decay over the past
-	 * consumptions using a rolling approach.
-	 * Every calc period p in seconds, the already computed usage is
-	 * computed again applying the decay factor of that slice :
-	 * decay_factor_slice.
-	 *
-	 * To ease the computation, the notion of decay_factor
-	 * is introduced and corresponds to the decay factor
-	 * required for a slice of 1 second. Thus, for any given
-	 * slice ot time of n seconds, decay_factor_slice will be
-	 * defined as : df_slice = pow(df,n)
-	 *
-	 * For a slice corresponding to the defined half life 'decay_hl' and
-	 * a usage x, we will therefore have :
-	 *    >>  x * pow(decay_factor,decay_hl) = 1/2 x  <<
-	 *
-	 * This expression helps to define the value of decay_factor that
-	 * is necessary to apply the previously described logic.
-	 *
-	 * The expression is equivalent to :
-	 *    >> decay_hl * ln(decay_factor) = ln(1/2)
-	 *    >> ln(decay_factor) = ln(1/2) / decay_hl
-	 *    >> decay_factor = e( ln(1/2) / decay_hl )
-	 *
-	 * Applying THe power series e(x) = sum(x^n/n!) for n from 0 to infinity
-	 *    >> decay_factor = 1 + ln(1/2)/decay_hl
-	 *    >> decay_factor = 1 - ( 0.693 / decay_hl)
-	 *
-	 * This explain the following declaration.
-	 */
-
-	slurm_mutex_lock(&decay_init_mutex);
-
-	if (decay_hl > 0)
-		decay_factor = 1 - (0.693 / decay_hl);
 
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
 	abs.tv_sec = tvnow.tv_sec;
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	_read_last_decay_ran(&g_last_ran, &last_reset);
-	if (last_reset == 0)
-		last_reset = start_time;
-
-	slurm_cond_signal(&decay_init_cond);
-	slurm_mutex_unlock(&decay_init_mutex);
+	if (g_last_reset == 0)
+		g_last_reset = start_time;
 
 	_init_grp_used_tres_run_secs(g_last_ran);
 
@@ -1370,7 +1327,7 @@ static void *_decay_thread(void *no_data)
 		case PRIORITY_RESET_NOW:	/* do once */
 			_reset_usage();
 			reset_period = PRIORITY_RESET_NONE;
-			last_reset = now;
+			g_last_reset = now;
 			break;
 		case PRIORITY_RESET_DAILY:
 		case PRIORITY_RESET_WEEKLY:
@@ -1379,13 +1336,13 @@ static void *_decay_thread(void *no_data)
 		case PRIORITY_RESET_YEARLY:
 			if (next_reset == 0) {
 				next_reset = _next_reset(reset_period,
-							 last_reset);
+							 g_last_reset);
 			}
 			if (now >= next_reset) {
 				_reset_usage();
-				last_reset = next_reset;
+				g_last_reset = next_reset;
 				next_reset = _next_reset(reset_period,
-							 last_reset);
+							 g_last_reset);
 			}
 		}
 
@@ -1445,7 +1402,7 @@ static void *_decay_thread(void *no_data)
 
 		g_last_ran = start_time;
 
-		_write_last_decay_ran(g_last_ran, last_reset);
+		_write_last_decay_ran(g_last_ran, g_last_reset);
 
 		running_decay = 0;
 
@@ -1554,6 +1511,51 @@ static void _set_norm_shares(List children_list)
 	list_iterator_destroy(itr);
 }
 
+/* We need to set up some global variables that are needed outside of the
+* decay_thread (i.e. decay_factor, g_last_ran). These are needed if a job was
+* completing and the slurmctld was reset. If they aren't setup before
+* continuing we could get more time added than should be on a restart.
+*/
+static void _init_decay_vars()
+{
+	double decay_hl = (double) slurm_conf.priority_decay_hl;
+	/*
+	* DECAY_FACTOR DESCRIPTION:
+	*
+	* The decay thread applies an exponential decay over the past
+	* consumptions using a rolling approach.
+	* Every calc period p in seconds, the already computed usage is
+	* computed again applying the decay factor of that slice :
+	* decay_factor_slice.
+	*
+	* To ease the computation, the notion of decay_factor
+	* is introduced and corresponds to the decay factor
+	* required for a slice of 1 second. Thus, for any given
+	* slice ot time of n seconds, decay_factor_slice will be
+	* defined as : df_slice = pow(df,n)
+	*
+	* For a slice corresponding to the defined half life 'decay_hl' and
+	* a usage x, we will therefore have :
+	*    >>  x * pow(decay_factor,decay_hl) = 1/2 x  <<
+	*
+	* This expression helps to define the value of decay_factor that
+	* is necessary to apply the previously described logic.
+	*
+	* The expression is equivalent to :
+	*    >> decay_hl * ln(decay_factor) = ln(1/2)
+	*    >> ln(decay_factor) = ln(1/2) / decay_hl
+	*    >> decay_factor = e( ln(1/2) / decay_hl )
+	*
+	* Applying the power series e(x) = sum(x^n/n!) for n from 0 to infinity
+	*    >> decay_factor = 1 + ln(1/2)/decay_hl
+	*    >> decay_factor = 1 - ( 0.693 / decay_hl)
+	*
+	* This explains the following declaration.
+	*/
+	if (decay_hl > 0)
+		decay_factor = 1 - (0.693 / decay_hl);
+	_read_last_decay_ran(&g_last_ran, &g_last_reset);
+}
 
 static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
@@ -1705,23 +1707,8 @@ int init ( void )
 		weight_age = 0;
 		weight_fs = 0;
 	} else if (assoc_mgr_root_assoc) {
+		_init_decay_vars();
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
-
-		/* The decay_thread sets up some global variables that are
-		 * needed outside of the decay_thread (i.e. decay_factor,
-		 * g_last_ran).  These are needed if a job was completing and
-		 * the slurmctld was reset.  If they aren't setup before
-		 * continuing we could get more time added than should be on a
-		 * restart.  So wait until they are set up. Set the lock now so
-		 * that the decay thread won't trigger the conditional before we
-		 * wait for it. */
-		slurm_mutex_lock(&decay_init_mutex);
-
-		slurm_thread_create(&decay_handler_thread,
-				    _decay_thread, NULL);
-
-		slurm_cond_wait(&decay_init_cond, &decay_init_mutex);
-		slurm_mutex_unlock(&decay_init_mutex);
 	} else {
 		if (weight_fs) {
 			fatal("It appears you don't have any association "
@@ -1761,6 +1748,13 @@ int fini ( void )
 	site_factor_g_fini();
 
 	return SLURM_SUCCESS;
+}
+
+void priority_p_thread_start(void)
+{
+	slurm_thread_create(&decay_handler_thread, _decay_thread, NULL);
+
+	return;
 }
 
 extern uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)

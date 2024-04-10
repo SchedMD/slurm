@@ -618,6 +618,8 @@ int main(int argc, char **argv)
 			}
 		}
 
+		priority_g_thread_start();
+
 		if (slurmctld_primary || backup_has_control) {
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
