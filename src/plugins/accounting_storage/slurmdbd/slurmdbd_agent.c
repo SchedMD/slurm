@@ -637,10 +637,14 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
 			END_TIMER2("slurmdbd agent: sleep");
-			log_flag(AGENT, "slurmdbd agent sleeping with agent_count=%d",
-				 list_count(agent_list));
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
+			if (*slurmdbd_conn->shutdown != 0) {
+				slurm_mutex_unlock(&agent_lock);
+				break;
+			}
+			log_flag(AGENT, "slurmdbd agent sleeping with agent_count=%d",
+				 list_count(agent_list));
 			slurm_cond_timedwait(&agent_cond, &agent_lock,
 					     &abs_time);
 			slurm_mutex_unlock(&agent_lock);
@@ -788,38 +792,14 @@ static void _create_agent(void)
 
 static void _shutdown_agent(void)
 {
-	struct timespec ts = {0, 0};
-	int rc;
-
 	if (!agent_tid)
 		return;
 
 	slurmdbd_shutdown = time(NULL);
 	slurm_mutex_lock(&agent_lock);
-	if (!agent_running) {
-		slurm_mutex_unlock(&agent_lock);
-		goto fini;
-	}
-
-	slurm_cond_broadcast(&agent_cond);
-	ts.tv_sec = time(NULL) + 5;
-	rc = pthread_cond_timedwait(&shutdown_cond, &agent_lock, &ts);
+	if (agent_running)
+		slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_lock);
-
-	if (rc == ETIMEDOUT) {
-		/*
-		 * On rare occasions agent thread may not end quickly,
-		 * perhaps due to communication problems with slurmdbd.
-		 * Cancel it and join before returning or we could remove
-		 * and leave the agent without valid data.
-		 */
-		error("agent failed to shutdown gracefully");
-		error("unable to save pending requests");
-		/* FIXME: this is not safe! */
-		pthread_cancel(agent_tid);
-	}
-
-fini:
 	pthread_join(agent_tid,  NULL);
 	agent_tid = 0;
 }
