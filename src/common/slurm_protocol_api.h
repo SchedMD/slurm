@@ -538,7 +538,6 @@ extern void convert_num_unit(double num, char *buf, int buf_size,
 extern int revert_num_unit(const char *buf);
 extern int get_convert_unit_val(int base_type, char convert_to);
 extern int get_unit_type(char unit);
-extern void parse_int_to_array(int in, int *out);
 
 /*
  * slurm_job_step_create - Ask the slurm controller for a new job step
