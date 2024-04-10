@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     configured with OverSubscribe=EXCLUSIVE but ends up starting in a partition
     configured with OverSubscribe!=EXCLUSIVE evaluated afterwards.
  -- Setting GLOB_SILENCE flag no longer exposes old bugged behavior.
+ -- Fix associations AssocGrpCPURunMinutes being incorrectly computed for
+    running jobs after a controller reconfiguration/restart.
 
 * Changes in Slurm 23.11.5
 ==========================
