@@ -2001,7 +2001,7 @@ static int _child_fn(void *arg)
 	cmdstr = child_args->cmdstr;
 	tmp_env = child_args->tmp_env;
 
-	if ((devnull = open("/dev/null", O_RDONLY)) != -1) {
+	if ((devnull = open("/dev/null", O_RDWR)) != -1) {
 		dup2(devnull, STDIN_FILENO);
 		dup2(devnull, STDERR_FILENO);
 	}
