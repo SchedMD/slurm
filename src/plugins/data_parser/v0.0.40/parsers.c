@@ -6015,7 +6015,6 @@ static void *NEW_FUNC(KILL_JOBS_MSG)(void)
 {
 	kill_jobs_msg_t *msg = xmalloc_nz(sizeof(*msg));
 	*msg = (kill_jobs_msg_t) {
-		.flags = KILL_NO_CRON,
 		.signal = SIGKILL,
 		.state = JOB_END,
 		.user_id = SLURM_AUTH_NOBODY,
@@ -7875,6 +7874,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(WARN_FLAGS)[] = {
 	add_flag_bit(KILL_OOM, "OUT_OF_MEMORY"),
 	add_flag_bit(KILL_NO_SIBS, "NO_SIBLING_JOBS"),
 	add_flag_bit(KILL_JOB_RESV, "RESERVATION_JOB"),
+	add_flag_bit(KILL_NO_CRON, "NO_CRON_JOBS"),
 	add_flag_bit(KILL_JOBS_VERBOSE, "VERBOSE"),
 	add_flag_bit(WARN_SENT, "WARNING_SENT"),
 };
