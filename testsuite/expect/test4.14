@@ -66,7 +66,7 @@ proc cleanup {} {
 delete_part
 
 # get a node for the test partition
-spawn $bin_bash -c "$sinfo -h --state=idle -o%n | head -n1"
+spawn $bin_bash -c "$sinfo -h --state=idle -o%N -N | head -n1"
 expect {
 	-re "($re_word_str)" {
 		set test_node $expect_out(1,string)
