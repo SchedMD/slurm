@@ -88,7 +88,7 @@ build-debian-package:
 	cd $(REPO_DIR); \
 	mkdir debian-packages/; \
 	autoreconf; \
-	yes | mk-build-deps -i debian/controll; \
+	yes | mk-build-deps -i debian/control; \
 	debuild -b -uc -us; \
 	mv ../slurm-smd*.deb debian-packages
 
