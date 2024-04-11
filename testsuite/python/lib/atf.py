@@ -391,6 +391,9 @@ def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
     Args:
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
+    Returns:
+        True if the condition is met by the timeout, False otherwise.
+
     Example:
         >>> repeat_command_until("scontrol ping", lambda results: re.search(r'is UP', results['stdout']))
         True
@@ -2528,6 +2531,37 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
         return job_dict[parameter_name]
     else:
         return default
+
+
+def get_job_id_from_array_task(array_job_id, array_task_id, fatal=False, quiet=True):
+    """Returns the raw job id of a task of a job array.
+
+    Args:
+        array_job_id (integer): The id of the job array.
+        array_task_id (integer): The id of the task of the job array.
+        fatal (boolean): If True, fails if the raw job id is not found in the system.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The raw job id of the given task of a job array, or 0 if not found.
+
+    Example:
+        >>> get_job_id_from_array_task(234, 2)
+        241
+    """
+
+    jobs_dict = get_jobs(quiet=quiet)
+    for job_id, job_values in jobs_dict.items():
+        if (
+            job_values["ArrayJobId"] == array_job_id
+            and job_values["ArrayTaskId"] == array_task_id
+        ):
+            return job_id
+
+    if fatal:
+        pytest.fail(f"{array_job_id}_{array_task_id} was not found in the system")
+
+    return 0
 
 
 def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
