@@ -1342,16 +1342,16 @@ extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn)
 {
 	int rc;
 	char *query;
-	uint64_t wsrep_on;
 
-	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
-		wsrep_on = 0;
-
-	debug2("wsrep_on=%"PRIu64, wsrep_on);
-
-	if (!wsrep_on)
+	/*
+	 * Check if the conection has saved streaming replication settings.  If
+	 * not there is nothing to restore.
+	 */
+	if (!mysql_conn->wsrep_trx_fragment_unit_orig &&
+	    (mysql_conn->wsrep_trx_fragment_size_orig == NO_VAL64)) {
+		debug2("no streaming replication settings to restore");
 		return;
+	}
 
 	if (mysql_conn->wsrep_trx_fragment_unit_orig) {
 		query = xstrdup_printf(

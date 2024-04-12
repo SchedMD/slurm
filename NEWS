@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
       'DELETE /slurm/v0.0.40/job/{job_id}?flags=' flags query parameter.
  -- Fix scontrol segfault/assert failure if the TRESPerNode parameter is used
     when creating reservations.
+ -- Avoid checking for wsrep_on when restoring streaming replication settings.
 
 * Changes in Slurm 23.11.5
 ==========================
