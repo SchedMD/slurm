@@ -11169,6 +11169,7 @@ extern void job_mgr_list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list_req);
 	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
+	FREE_NULL_IDENTITY(job_ptr->id);
 	xfree(job_ptr->licenses);
 	xfree(job_ptr->lic_req);
 	FREE_NULL_LIST(job_ptr->license_list);

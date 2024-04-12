@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     slurmctld.
  -- slurmctld - Fix invalid refusal of a reservation update.
  -- openapi - Fix memory leak of /meta/slurm/cluster response field.
+ -- Fix memory leak when using auth/slurm and AuthInfo=use_client_ids.
 
 * Changes in Slurm 23.11.5
 ==========================
