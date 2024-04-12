@@ -839,7 +839,7 @@ static int _init_new_scope_dbus(char *scope_path)
 	    != SLURM_SUCCESS) {
 		kill(pid, SIGKILL);
 		waitpid(pid, &status, WNOHANG);
-		fatal("Scope init timed out, systemd might need cleanup with 'systemctl reset-failed', please consider increasing SystemdTimeout in cgroup.conf (SystemdTimeout=%ld).",
+		fatal("Scope init timed out, systemd might need cleanup with 'systemctl reset-failed', please consider increasing SystemdTimeout in cgroup.conf (SystemdTimeout=%"PRIu64").",
 		      slurm_cgroup_conf.systemd_timeout);
 	}
 
