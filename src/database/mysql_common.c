@@ -1255,8 +1255,11 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	uint64_t wsrep_on, wsrep_max_ws_size, fragment_size;
 
 	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
+	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on)) {
 		wsrep_on = 0;
+		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
+			error("The prior error message regarding an undefined 'wsrep_on' variable is innocuous.  MySQL and MariaDB < 10.1 do not have this variable and Slurm will operate normally without it.");
+	}
 
 	debug2("wsrep_on=%"PRIu64, wsrep_on);
 

@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix scontrol segfault/assert failure if the TRESPerNode parameter is used
     when creating reservations.
  -- Avoid checking for wsrep_on when restoring streaming replication settings.
+ -- Clarify in the logs that error "1193 Unknown system variable 'wsrep_on'" is
+    innocuous.
 
 * Changes in Slurm 23.11.5
 ==========================
