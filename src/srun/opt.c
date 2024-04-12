@@ -1139,10 +1139,8 @@ static bool _opt_verify(void)
 	/* massage the numbers */
 	if (opt.nodelist && !opt.nodes_set) {
 		hl = hostlist_create(opt.nodelist);
-		if (!hl) {
-			error("memory allocation failure");
-			exit(error_exit);
-		}
+		if (!hl)
+			fatal("Invalid node list specified");
 		hostlist_uniq(hl);
 		hl_cnt = hostlist_count(hl);
 		opt.min_nodes = hl_cnt;
@@ -1173,10 +1171,8 @@ static bool _opt_verify(void)
 		if (opt.nodelist) {
 			FREE_NULL_HOSTLIST(hl);
 			hl = hostlist_create(opt.nodelist);
-			if (!hl) {
-				error("memory allocation failure");
-				exit(error_exit);
-			}
+			if (!hl)
+				fatal("Invalid node list specified");
 			if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
 			     SLURM_DIST_ARBITRARY) && !opt.ntasks_set) {
 				opt.ntasks = hostlist_count(hl);
