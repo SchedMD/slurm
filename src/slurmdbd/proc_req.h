@@ -46,6 +46,7 @@
 typedef struct {
 	slurm_persist_conn_t *conn;
 	slurm_persist_conn_t *conn_send;
+	pthread_mutex_t conn_send_lock;
 	void *db_conn; /* database connection */
 	char *tres_str;
 } slurmdbd_conn_t;

@@ -136,8 +136,11 @@ static void _connection_fini_callback(void *arg)
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
 	bool stay_locked = false;
 
+	slurm_mutex_lock(&conn->conn_send_lock);
 	slurm_persist_conn_destroy(conn->conn_send);
 	conn->conn_send = NULL;
+	slurm_mutex_unlock(&conn->conn_send_lock);
+
 	if (conn->conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
@@ -178,6 +181,7 @@ static void _connection_fini_callback(void *arg)
 		slurm_mutex_unlock(&registered_lock);
 	/* handled directly in the internal persist_conn code */
 	//slurm_persist_conn_members_destroy(&conn->conn);
+	slurm_mutex_destroy(&conn->conn_send_lock);
 	xfree(conn->tres_str);
 	xfree(conn);
 }

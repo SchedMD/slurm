@@ -2835,10 +2835,18 @@ static int _send_ctld_update(void *x, void *arg)
 	    (db_conn->conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
-	xassert(db_conn->conn_send);
+	slurm_mutex_lock(&db_conn->conn_send_lock);
+
+	if (!db_conn->conn_send) {
+		debug("slurmctld for cluster %s left at the moment we were about to send to it.", db_conn->conn->cluster_name);
+		slurm_mutex_unlock(&db_conn->conn_send_lock);
+		return 0;
+	}
+
 	(void) slurmdb_send_accounting_update_persist(
 		update_list, db_conn->conn_send);
 
+	slurm_mutex_unlock(&db_conn->conn_send_lock);
 	return 0;
 }
 

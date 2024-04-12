@@ -167,6 +167,8 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	}
 	list_iterator_destroy(itr);
 	if (!slurmdbd_conn) {
+		slurm_mutex_init(&db_conn->conn_send_lock);
+		slurm_mutex_lock(&db_conn->conn_send_lock);
 		db_conn->conn_send = xmalloc(sizeof(slurm_persist_conn_t));
 		db_conn->conn_send->cluster_name =
 			xstrdup(db_conn->conn->cluster_name);
@@ -181,6 +183,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 		db_conn->conn_send->timeout = 0;
 		db_conn->conn_send->r_uid = SLURM_AUTH_UID_ANY;
 		db_conn->conn_send->flags |= PERSIST_FLAG_RECONNECT;
+		slurm_mutex_unlock(&db_conn->conn_send_lock);
 		/*
 		 * We can't open a pipe back to the slurmctld right
 		 * now, the slurmctld might just be starting up and the
