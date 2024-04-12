@@ -451,26 +451,6 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		    (gres_js->gres_per_task > cnt_avail_total)) {
 			*max_tasks_this_node = 0;
 		}
-		if (gres_js->gres_per_task) {
-			if (gres_id_shared(
-				    sock_gres->gres_state_job->config_flags))
-				max_tasks = _shared_gres_task_limit(
-					gres_js, sock_gres->use_total_gres,
-					sock_gres->gres_state_node->gres_data);
-			else
-				max_tasks = cnt_avail_total /
-					    gres_js->gres_per_task;
-
-			*max_tasks_this_node = MIN(*max_tasks_this_node,
-						   max_tasks);
-		}
-
-		if (gres_js->ntasks_per_gres &&
-		    (gres_js->ntasks_per_gres != NO_VAL16)) {
-			max_tasks = cnt_avail_total * gres_js->ntasks_per_gres;
-			*max_tasks_this_node = MIN(*max_tasks_this_node,
-						   max_tasks);
-		}
 		if (cpus_per_gres && cnt_avail_total) {
 			uint32_t gres_cpus;
 
@@ -499,6 +479,26 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				*max_tasks_this_node =
 					MIN(*max_tasks_this_node, gres_tasks);
 			}
+		}
+		if (gres_js->gres_per_task) {
+			if (gres_id_shared(
+				    sock_gres->gres_state_job->config_flags))
+				max_tasks = _shared_gres_task_limit(
+					gres_js, sock_gres->use_total_gres,
+					sock_gres->gres_state_node->gres_data);
+			else
+				max_tasks = cnt_avail_total /
+					    gres_js->gres_per_task;
+
+			*max_tasks_this_node = MIN(*max_tasks_this_node,
+						   max_tasks);
+		}
+
+		if (gres_js->ntasks_per_gres &&
+		    (gres_js->ntasks_per_gres != NO_VAL16)) {
+			max_tasks = cnt_avail_total * gres_js->ntasks_per_gres;
+			*max_tasks_this_node = MIN(*max_tasks_this_node,
+						   max_tasks);
 		}
 
 		/*
