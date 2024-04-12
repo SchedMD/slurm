@@ -6018,7 +6018,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		 * so, continue with validation. If not, then the request is
 		 * invalid: reject the request.
 		 */
-		slurm_option_update_tres_per_task_cpu(0, &tmp);
+		slurm_option_update_tres_per_task(0, "cpu", &tmp);
 		if (tmp) {
 			xfree(tmp);
 			return ESLURM_UNSUPPORTED_GRES;
