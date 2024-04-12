@@ -232,12 +232,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(
 				topo_eval, i, rem_max_cpus, min_rem_nodes);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			if (topo_eval->avail_cpus == 0) {
 				log_flag(SELECT_TYPE, "%pJ insufficient resources on required node",
 				       job_ptr);
@@ -450,12 +444,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(
 				topo_eval, i, rem_max_cpus, min_rem_nodes);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
@@ -600,13 +588,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
-				if (topo_eval->gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[j]->
-						sock_gres_list,
-						&topo_eval->avail_cpus);
-				}
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -652,13 +633,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
-				if (topo_eval->gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[j]->
-						sock_gres_list,
-						&topo_eval->avail_cpus);
-				}
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -845,12 +819,6 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
 					       rem_max_cpus, min_rem_nodes);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			if (topo_eval->avail_cpus == 0) {
 				debug2("%pJ insufficient resources on required node",
 				       job_ptr);
@@ -1107,12 +1075,6 @@ try_again:
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(topo_eval, i,
 					       rem_max_cpus, min_rem_nodes);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
@@ -1194,13 +1156,6 @@ try_again:
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
-				if (topo_eval->gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[j]->
-						sock_gres_list,
-						&topo_eval->avail_cpus);
-				}
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -1261,12 +1216,6 @@ try_again:
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(topo_eval, i,
 					       rem_max_cpus, min_rem_nodes);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
