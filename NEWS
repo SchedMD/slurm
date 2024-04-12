@@ -137,6 +137,11 @@ documents those changes that are of interest to users and administrators.
  -- Always use the QOS name for SLURM_JOB_QOS environment variables.
     Previously the batch environment would use the description field,
     which was usually equivalent to the name.
+ -- slurmrestd - Add "CRON_JOBS" as possible flag value to the following:
+      'DELETE /slurm/v0.0.40/jobs' flags field.
+      'DELETE /slurm/v0.0.41/jobs' flags field.
+      'DELETE /slurm/v0.0.40/job/{job_id}?flags=' flags query parameter.
+      'DELETE /slurm/v0.0.41/job/{job_id}?flags=' flags query parameter.
 
 * Changes in Slurm 23.11.7
 ==========================

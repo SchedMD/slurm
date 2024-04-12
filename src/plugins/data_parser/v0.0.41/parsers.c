@@ -8013,6 +8013,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(WARN_FLAGS)[] = {
 	add_flag_bit(KILL_NO_SIBS, "NO_SIBLING_JOBS"),
 	add_flag_bit(KILL_JOB_RESV, "RESERVATION_JOB"),
 	add_flag_bit(KILL_JOBS_VERBOSE, "VERBOSE"),
+	add_flag_bit(KILL_CRON, "CRON_JOBS"),
 	add_flag_bit(WARN_SENT, "WARNING_SENT"),
 };
 
