@@ -3706,9 +3706,12 @@ typedef struct {
 #define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
 #define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
 				       * magnetic reservation. */
-#define KILL_NO_CRON     SLURM_BIT(9) /* Do not request killing cron Jobs */
+#define KILL_NO_CRON     SLURM_BIT(9) /* Do not request killing cron Jobs.
+				       * Remove this two versions after 23.11.
+				       */
 #define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
 #define KILL_JOBS_VERBOSE SLURM_BIT(11) /* Verbose response requested */
+#define KILL_CRON SLURM_BIT(12) /* Request killing cron jobs */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */
