@@ -2111,40 +2111,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_gpus_per_task(slurm_opt_t *opt, const char *arg)
-{
-	xfree(opt->gpus_per_task);
-	xfree(opt->tres_per_task);
-	opt->gpus_per_task = xstrdup(arg);
-	xstrfmtcat(opt->tres_per_task, "gres/gpu:%s", opt->gpus_per_task);
-
-	return SLURM_SUCCESS;
-}
-static int arg_set_data_gpus_per_task(slurm_opt_t *opt, const data_t *arg,
-				      data_t *errors)
-{
-	int rc;
-	char *str = NULL;
-
-	if ((rc = data_get_string_converted(arg, &str)))
-		ADD_DATA_ERROR("Unable to read string", rc);
-	else {
-		xfree(opt->gpus_per_task);
-		xfree(opt->tres_per_task);
-		opt->gpus_per_task = xstrdup(str);
-		xstrfmtcat(opt->tres_per_task, "gres/gpu:%s",
-			   opt->gpus_per_task);
-	}
-
-	xfree(str);
-	return rc;
-}
-static void arg_reset_gpus_per_task(slurm_opt_t *opt)
-{
-	xfree(opt->gpus_per_task);
-	xfree(opt->tres_per_task);
-}
-COMMON_STRING_OPTION_GET(gpus_per_task);
+COMMON_STRING_OPTION(gpus_per_task);
 static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.name = "gpus-per-task",
 	.has_arg = required_argument,
@@ -6343,6 +6310,89 @@ extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
 	*tres_per_task_p = tres_per_task;
 }
 
+static void _validate_gpus_per_task(slurm_opt_t *opt)
+{
+	int gpu_cnt = 0, tmp_int;
+	char *gpu_per_task_ptr = NULL, *gpu_str = NULL, *num_str;
+	/*
+	 * See if gpus-per-task was set with tres-per-task
+	 * Either one specified on the command line overrides the other in the
+	 * environment.
+	 * They can both be in the environment because specifying just
+	 * --tres-per-task=gres/gpu=# will cause SLURM_GPUS_PER_TASK to be set
+	 * as well. So if they're both in the environment, verify that they're
+	 * the same.
+	 *
+	 * If either of these options are set, then make sure that both of these
+	 * options are set to the same thing:
+	 * opt->gpus_per_task and opt->tres_per_task=gres/gpu=#.
+	 */
+
+	if (opt->gpus_per_task) {
+		xstrcat(gpu_str, "gres/gpu");
+		if ((num_str = xstrstr(opt->gpus_per_task, ":"))) {
+			*num_str = '\0';
+			xstrfmtcat(gpu_str, ":%s", opt->gpus_per_task);
+			*num_str = ':';
+			num_str += 1;
+		} else {
+			num_str = opt->gpus_per_task;
+		}
+		gpu_cnt = atoi(num_str);
+	}
+
+	gpu_per_task_ptr = xstrcasestr(opt->tres_per_task, gpu_str);
+	if (!gpu_per_task_ptr) {
+		if (opt->gpus_per_task)
+			slurm_option_update_tres_per_task(gpu_cnt, gpu_str,
+				&opt->tres_per_task);
+		return;
+	}
+
+	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
+		fatal("You can not have --tres-per-task=gres/gpu: and gpus-per-task please use one or the other");
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK) &&
+		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
+		/*
+		 * The value is already in opt->gpus_per_task.
+		 * Update the gpus part of the env variable.
+		 */
+		slurm_option_update_tres_per_task(gpu_cnt, gpu_str,
+						  &opt->tres_per_task);
+		if (opt->verbose)
+			info("Updating SLURM_TRES_PER_TASK to %s as --gpus-per-task takes precedence over the environment variables.",
+			     opt->tres_per_task);
+		return;
+	}
+
+
+	tmp_int = atoi(gpu_per_task_ptr + strlen(gpu_str) + 1);
+	if (tmp_int <= 0) {
+		fatal("Invalid --tres-per-task=cpu:%d",
+		      tmp_int);
+	}
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK) &&
+	    (tmp_int != gpu_cnt)) {
+		fatal("gpus_per_task set by two different environment variables SLURM_GPUS_PER_TASK=%s != SLURM_TRES_PER_TASK=gres/gpu:%s",
+		      opt->gpus_per_task, gpu_per_task_ptr);
+	}
+
+	/*
+	 * Now we know that either tres-per-task is set by cli and gpus-per-task
+	 * is set by env, or only tres-per-task is set either by cli or env.
+	 * Either way, set gpus_per_task from tres-per-task.
+	 */
+	opt->gpus_per_task = gpu_per_task_ptr;
+
+	if (opt->verbose &&
+	    slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
+		info("Ignoring SLURM_GPUS_PER_TASK since --tres-per-task=gres/gpu: was given as a command line option.");
+}
+
 static void _validate_cpus_per_task(slurm_opt_t *opt)
 {
 	int tmp_int;
@@ -6468,10 +6518,7 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	slurm_format_tres_string(&opt->tres_per_task, "license");
 	slurm_format_tres_string(&opt->tres_per_task, "gres");
 
-	if (slurm_option_isset(opt, "gpus-per-task") &&
-	    slurm_option_isset(opt, "tres-per-task"))
-		fatal("gpus-per-task is mutually exclusive with tres-per-task");
-
+	_validate_gpus_per_task(opt);
 	_validate_cpus_per_task(opt);
 	_implicitly_bind_tres_per_task(opt);
 }
