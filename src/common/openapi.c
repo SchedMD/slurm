@@ -245,6 +245,7 @@ extern void free_openapi_resp_meta(void *obj)
 	xfree(x->slurm.version.micro);
 	xfree(x->slurm.version.minor);
 	xfree(x->slurm.release);
+	xfree(x->slurm.cluster);
 	xfree(x);
 }
 

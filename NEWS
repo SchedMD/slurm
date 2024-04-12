@@ -164,6 +164,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - Fix minor race condition when sending updates to a shutdown
     slurmctld.
  -- slurmctld - Fix invalid refusal of a reservation update.
+ -- openapi - Fix memory leak of /meta/slurm/cluster response field.
 
 * Changes in Slurm 23.11.5
 ==========================
