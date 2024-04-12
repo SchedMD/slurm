@@ -6813,6 +6813,10 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	 */
 	if (opt_local->nodelist) {
 		hostlist_t *hl = hostlist_create(opt_local->nodelist);
+		if (!hl) {
+			error("Invalid node list specified");
+			return NULL;
+		}
 		xfree(opt_local->nodelist);
 		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		if (((opt_local->distribution & SLURM_DIST_STATE_BASE) !=
