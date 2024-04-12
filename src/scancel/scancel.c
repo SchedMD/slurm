@@ -138,11 +138,11 @@ static uint16_t _init_flags(char **job_type)
 	 * scancel requests for a cron job should be rejected unless the --cron
 	 * flag is specified.
 	 * To prevent introducing this option from influencing anything other
-	 * than user requests, it has been set up so that when KILL_NO_CRON is
+	 * than user requests, it has been set up so that when KILL_CRON is not
 	 * set when explicit_scancel is also set, the request will be rejected.
 	 */
-	if (!opt.cron)
-		flags |= KILL_NO_CRON;
+	if (opt.cron)
+		flags |= KILL_CRON;
 
 	if (opt.full) {
 		flags |= KILL_FULL_JOB;

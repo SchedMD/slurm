@@ -7351,6 +7351,8 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, buf_t *buffer,
 		safe_unpackstr(&msg->sibling, buffer);
 		safe_unpack16(&msg->signal, buffer);
 		safe_unpack16(&msg->flags, buffer);
+		if (!(msg->flags & KILL_NO_CRON))
+			msg->flags |= KILL_CRON;
 	}
 
 	return SLURM_SUCCESS;
@@ -9455,6 +9457,8 @@ static int _unpack_kill_jobs_msg(kill_jobs_msg_t **msg_ptr, buf_t *buffer,
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpack16(&msg->flags, buffer);
+		if (!(msg->flags & KILL_NO_CRON))
+			msg->flags |= KILL_CRON;
 		safe_unpackstr(&msg->job_name, buffer);
 		safe_unpackstr_array(&msg->jobs_array, &msg->jobs_cnt, buffer);
 		safe_unpackstr(&msg->partition, buffer);
