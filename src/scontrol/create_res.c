@@ -300,7 +300,6 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->flags = RESERVE_TRES_PER_NODE;
 			else
 				resv_msg_ptr->flags |= RESERVE_TRES_PER_NODE;
-			*res_free_flags |= RESV_FREE_STR_TRES;
 		} else if (xstrncasecmp(tag, "res", 3) == 0) {
 			continue;
 		} else {

@@ -154,6 +154,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add "NO_CRON_JOBS" as possible flag value to the following:
       'DELETE /slurm/v0.0.40/jobs' flags field.
       'DELETE /slurm/v0.0.40/job/{job_id}?flags=' flags query parameter.
+ -- Fix scontrol segfault/assert failure if the TRESPerNode parameter is used
+    when creating reservations.
 
 * Changes in Slurm 23.11.5
 ==========================
