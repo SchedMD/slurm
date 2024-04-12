@@ -1446,7 +1446,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 
 	xassert(mc_ptr->cpus_per_task);
 
-	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
+	rem_nodes = MAX(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
 		max_tasks_this_node = mc_ptr->ntasks_per_node;
