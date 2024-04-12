@@ -675,7 +675,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				if (!avail_cpu_per_node[j])
 					continue;
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
-				eval_nodes_cpus_to_use(topo_eval, i,
+				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
 				if (gres_per_job) {

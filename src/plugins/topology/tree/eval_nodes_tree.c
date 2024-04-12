@@ -596,7 +596,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				    !avail_cpu_per_node[j])
 					continue;
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
-				eval_nodes_cpus_to_use(topo_eval, i,
+				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
 				if (gres_per_job) {
@@ -648,7 +648,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				    !avail_cpu_per_node[j])
 					continue;
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
-				eval_nodes_cpus_to_use(topo_eval, i,
+				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
 				if (gres_per_job) {
@@ -1189,7 +1189,7 @@ try_again:
 				    !avail_cpu_per_node[j])
 					continue;
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
-				eval_nodes_cpus_to_use(topo_eval, i,
+				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
 						       min_rem_nodes);
 				if (gres_per_job) {
