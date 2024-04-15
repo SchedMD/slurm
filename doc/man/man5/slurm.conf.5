@@ -7347,6 +7347,9 @@ Used to extend the limits available to a QOS on a partition.  Jobs will not be
 associated to this QOS outside of being associated to the partition.  They
 will still be associated to their requested QOS.
 By default, no QOS is used.
+Additional details are in the QOS documentation at
+<https://slurm.schedmd.com/qos.html>, including special conditions
+when a relative QOS is used for this parameter.
 \fBNOTE\fR: If a limit is set in both the Partition's QOS and the Job's QOS
 the Partition QOS will be honored unless the Job's QOS has the
 \fBOverPartQOS\fR flag set in which the Job's QOS will have priority.
