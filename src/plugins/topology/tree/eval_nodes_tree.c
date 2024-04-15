@@ -231,7 +231,8 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(
-				topo_eval, i, rem_max_cpus, min_rem_nodes);
+				topo_eval, i, rem_max_cpus, min_rem_nodes,
+				NULL, true);
 			if (topo_eval->avail_cpus == 0) {
 				log_flag(SELECT_TYPE, "%pJ insufficient resources on required node",
 				       job_ptr);
@@ -443,7 +444,8 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		     i++) {
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(
-				topo_eval, i, rem_max_cpus, min_rem_nodes);
+				topo_eval, i, rem_max_cpus, min_rem_nodes,
+				NULL, true);
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
@@ -587,7 +589,8 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -632,7 +635,8 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -821,7 +825,8 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus == 0) {
 				debug2("%pJ insufficient resources on required node",
 				       job_ptr);
@@ -1077,7 +1082,8 @@ try_again:
 		     i++) {
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
@@ -1158,7 +1164,8 @@ try_again:
 				topo_eval->avail_cpus = avail_cpu_per_node[j];
 				eval_nodes_cpus_to_use(topo_eval, j,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -1218,7 +1225,8 @@ try_again:
 				continue;
 			topo_eval->avail_cpus = avail_cpu_per_node[i];
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			rem_nodes--;
 			min_rem_nodes--;
 			topo_eval->max_nodes--;

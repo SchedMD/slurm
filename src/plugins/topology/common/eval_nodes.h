@@ -73,7 +73,8 @@ extern int eval_nodes(topology_eval_t *topo_eval);
  * scheduling process
  */
 extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
-				   int64_t rem_max_cpus, int rem_nodes);
+				   int64_t rem_max_cpus, int rem_nodes,
+				   uint32_t *max_tasks, bool check_gres);
 
 /*
  * Reduce the cores per socket to match avail_cores_per_sock set by

@@ -205,7 +205,8 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
 					       rem_max_cpus,
-					       min_rem_nodes);
+					       min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -269,7 +270,8 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 							min_rem_nodes);
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				if (topo_eval->avail_cpus == 0)
 					continue;
 				total_cpus += topo_eval->avail_cpus;
@@ -420,7 +422,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			} else
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 			if (topo_eval->avail_cpus == 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -689,7 +692,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 */
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				total_cpus += topo_eval->avail_cpus;
 				bit_set(topo_eval->node_map, i);
 				rem_nodes--;
@@ -720,7 +724,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 */
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				total_cpus += topo_eval->avail_cpus;
 				rem_cpus -= topo_eval->avail_cpus;
 				rem_max_cpus -= topo_eval->avail_cpus;
@@ -802,7 +807,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 */
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				total_cpus += topo_eval->avail_cpus;
 				rem_cpus -= topo_eval->avail_cpus;
 				rem_max_cpus -= topo_eval->avail_cpus;
@@ -905,7 +911,8 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s not available",
 				      job_ptr, node_ptr->name);
@@ -965,7 +972,8 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 							min_rem_nodes);
 				eval_nodes_cpus_to_use(topo_eval, i,
 						       rem_max_cpus,
-						       min_rem_nodes);
+						       min_rem_nodes,
+						       NULL, true);
 				if (topo_eval->avail_cpus == 0)
 					continue;
 				/*
@@ -1106,7 +1114,8 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -1160,7 +1169,8 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 				continue;
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus == 0)
 				continue;
 			total_cpus += topo_eval->avail_cpus;
@@ -1273,7 +1283,8 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -1325,7 +1336,8 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 				continue;
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus == 0)
 				continue;
 			total_cpus += topo_eval->avail_cpus;
@@ -1440,7 +1452,8 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 }
 
 extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
-				   int64_t rem_max_cpus, int rem_nodes)
+				   int64_t rem_max_cpus, int rem_nodes,
+				   uint32_t *max_tasks, bool check_gres)
 {
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
@@ -1472,7 +1485,7 @@ extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 	avail_res->avail_res_cnt = avail_res->avail_cpus +
 				   avail_res->avail_gpus;
 check_gres_per_job:
-	if (topo_eval->gres_per_job) {
+	if (check_gres && topo_eval->gres_per_job) {
 		gres_sched_add(job_ptr->gres_list_req,
 			       avail_res->sock_gres_list,
 			       &topo_eval->avail_cpus);
