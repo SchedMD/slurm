@@ -2755,6 +2755,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->comment = ret_assoc->comment;
 	assoc->def_qos_id = ret_assoc->def_qos_id;
 
+	assoc->flags = ret_assoc->flags;
+
 	if (!assoc->grp_tres_mins)
 		assoc->grp_tres_mins    = ret_assoc->grp_tres_mins;
 	if (!assoc->grp_tres_run_mins)
@@ -2800,6 +2802,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (!assoc->qos_list)
 		assoc->qos_list = ret_assoc->qos_list;
+
+	assoc->priority = ret_assoc->priority;
 
 	assoc->rgt              = ret_assoc->rgt;
 
