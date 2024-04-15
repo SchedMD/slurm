@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
  -- Allow running jobs on overlapping partitions if jobs don't specify -s.
  -- Fix segfault when requesting a shared gres along with an exclusive
     allocation.
+ -- Fix regression in 23.02 where afternotok and afterok dependencies were
+    rejected for federated jobs not running on the origin cluster of the
+    submitting job.
 
 * Changes in Slurm 23.11.6
 ==========================

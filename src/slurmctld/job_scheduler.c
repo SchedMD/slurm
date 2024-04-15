@@ -3430,7 +3430,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 
 		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
 
-		if (!dep_job_ptr &&
+		if (!dep_job_ptr && fed_mgr_is_origin_job_id(job_id) &&
 		    ((depend_type == SLURM_DEPEND_AFTER_OK) ||
 		     (depend_type == SLURM_DEPEND_AFTER_NOT_OK))) {
 			/*
