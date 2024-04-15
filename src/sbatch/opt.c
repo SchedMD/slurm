@@ -856,6 +856,8 @@ static bool _opt_verify(void)
 	    && (!opt.nodes_set || !opt.ntasks_set)) {
 		FREE_NULL_HOSTLIST(hl);
 		hl = hostlist_create(opt.nodelist);
+		if (!hl)
+			fatal("Invalid node list specified");
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = 1;
 			opt.ntasks = hostlist_count(hl);

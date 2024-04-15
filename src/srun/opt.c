@@ -1050,6 +1050,9 @@ static bool _opt_verify(void)
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t *hl = hostlist_create(opt.nodelist);
+
+		if (!hl)
+			fatal("Invalid node list specified");
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = true;
 			opt.ntasks = hostlist_count(hl);
