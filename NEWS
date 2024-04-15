@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Tagged `script` field as deprecated in
     'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
     OpenAPI plugin versions.
+ -- Fix salloc/sbatch/srun crashing with certain invalid nodelist requests.
 
 * Changes in Slurm 23.11.6
 ==========================
