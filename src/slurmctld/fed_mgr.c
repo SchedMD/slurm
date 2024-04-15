@@ -2996,7 +2996,7 @@ static void _handle_dependencies_for_modified_fed(uint64_t added_clusters,
 	list_itr_t *itr;
 	depend_spec_t find_dep = { 0 };
 
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (!fed_mgr_cluster_rec)
