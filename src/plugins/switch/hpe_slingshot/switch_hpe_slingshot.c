@@ -113,8 +113,12 @@ static void _state_defaults(void)
 extern int init(void)
 {
 	debug("loaded");
-	if (running_in_slurmctld())
+	if (running_in_slurmctld()) {
 		_state_defaults();
+		if (!slingshot_setup_config(slurm_conf.switch_param))
+			return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
