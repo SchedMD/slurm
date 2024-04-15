@@ -1564,9 +1564,6 @@ extern int read_slurm_conf(int recover)
 		fatal("Failed to initialize the various schedulers");
 	}
 
-	if (switch_init(1) != SLURM_SUCCESS)
-		fatal("Failed to initialize switch plugin");
-
 	if (default_part_loc == NULL)
 		error("%s: default partition not set.", __func__);
 
