@@ -155,7 +155,7 @@ static dynamic_plugin_data_t *_create_dynamic_plugin_data(uint32_t plugin_id)
 	return jobinfo_ptr;
 }
 
-extern int switch_init(bool only_default)
+extern int switch_g_init(bool only_default)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "switch";

@@ -364,7 +364,7 @@ main (int argc, char **argv)
 		error("Unable to restore job_container state.");
 	if (prep_g_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
-	if (switch_init(0) < 0)
+	if (switch_g_init(false) < 0)
 		fatal("Unable to initialize switch plugin.");
 	if (node_features_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node_features plugin");

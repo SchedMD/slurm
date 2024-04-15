@@ -643,8 +643,8 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	}
 
 	/* Init switch before unpack_msg to only init the default */
-	if (switch_init(1) != SLURM_SUCCESS)
-		fatal( "failed to initialize authentication plugin" );
+	if (switch_g_init(true) != SLURM_SUCCESS)
+		fatal("failed to initialize switch plugin");
 
 	if (cred_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize credential plugin");

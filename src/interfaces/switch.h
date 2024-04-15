@@ -61,7 +61,7 @@ typedef struct slurm_switch_context slurm_switch_context_t;
 \*******************************************/
 
 /* initialize the switch plugin */
-extern int  switch_init(bool only_default);
+extern int switch_g_init(bool only_default);
 
 /* terminate the switch plugin and free all memory */
 extern int switch_fini (void);

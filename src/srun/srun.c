@@ -180,7 +180,7 @@ int srun(int ac, char **av)
 		fatal("failed to initialize cli_filter plugin");
 	if (cred_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cred plugin");
-	if (switch_init(0) != SLURM_SUCCESS )
+	if (switch_g_init(false) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
 
 	_setup_env_working_cluster();

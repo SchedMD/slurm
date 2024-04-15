@@ -525,7 +525,7 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize MPI plugins.");
 	if (serializer_g_init(NULL, NULL))
 		fatal("Failed to initialize serialization plugins.");
-	if (switch_init(1) != SLURM_SUCCESS)
+	if (switch_g_init(true) != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
 
 	agent_init();
