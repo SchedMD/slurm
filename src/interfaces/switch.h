@@ -64,7 +64,7 @@ typedef struct slurm_switch_context slurm_switch_context_t;
 extern int switch_g_init(bool only_default);
 
 /* terminate the switch plugin and free all memory */
-extern int switch_fini (void);
+extern int switch_g_fini(void);
 
 /* save any global switch state to a file within the specified directory
  * the actual file name used in plugin specific

@@ -241,7 +241,7 @@ int srun(int ac, char **av)
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
 	mpi_fini();
-	switch_fini();
+	switch_g_fini();
 	slurm_reset_all_options(&opt, false);
 	auth_g_fini();
 	slurm_conf_destroy();

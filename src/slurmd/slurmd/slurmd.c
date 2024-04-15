@@ -2341,7 +2341,7 @@ _slurmd_fini(void)
 	jobacct_gather_fini();
 	acct_gather_profile_fini();
 	cred_state_fini();
-	switch_fini();
+	switch_g_fini();
 	slurmd_task_fini();
 	slurm_conf_destroy();
 	proctrack_g_fini();

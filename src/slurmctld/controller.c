@@ -838,7 +838,7 @@ int main(int argc, char **argv)
 	topology_g_fini();
 	auth_g_fini();
 	hash_g_fini();
-	switch_fini();
+	switch_g_fini();
 	site_factor_g_fini();
 
 	/* purge remaining data structures */

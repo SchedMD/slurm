@@ -220,7 +220,7 @@ done:
 	return retval;
 }
 
-extern int switch_fini(void)
+extern int switch_g_fini(void)
 {
 	int rc = SLURM_SUCCESS, i;
 
