@@ -76,6 +76,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -6888,9 +6889,21 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				break;
 			}
 
-			if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ||
-			    (job_ptr->details->whole_node &
-			     WHOLE_NODE_REQUIRED)) {
+			if (job_ptr->details->whole_node &
+			    WHOLE_TOPO) {
+				bitstr_t *efctv_bitmap =
+					bit_copy(resv_ptr->node_bitmap);
+				topology_g_whole_topo(efctv_bitmap);
+
+				log_flag(RESERVATION, "%s: %pJ will can not share topology with %s",
+					 __func__, job_ptr, resv_ptr->name);
+				bit_and_not(*node_bitmap, efctv_bitmap);
+				FREE_NULL_BITMAP(efctv_bitmap);
+
+			} else if ((resv_ptr->ctld_flags &
+				    RESV_CTLD_FULL_NODE) ||
+				  (job_ptr->details->whole_node &
+				   WHOLE_NODE_REQUIRED)) {
 				log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
 					 __func__, resv_ptr->name, job_ptr);
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);

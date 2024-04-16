@@ -149,6 +149,54 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 	}
 }
 
+static void _block_by_topology(job_record_t *job_ptr,
+			       part_res_record_t *p_ptr,
+			       bitstr_t *node_bitmap)
+{
+	bitstr_t *tmp_bitmap = NULL;
+	static int enable_exclusive_topo = -1;
+
+	if (enable_exclusive_topo == -1) {
+		enable_exclusive_topo = 0;
+		(void) topology_g_get(TOPO_DATA_EXCLUSIVE_TOPO,
+				      &enable_exclusive_topo);
+	}
+
+	if (!enable_exclusive_topo)
+		return;
+
+	for (; p_ptr; p_ptr = p_ptr->next) {
+		if (!p_ptr->row)
+			continue;
+		for (int i = 0; i < p_ptr->num_rows; i++) {
+			for (int j = 0; j < p_ptr->row[i].num_jobs; j++) {
+				struct job_resources *job;
+				job = p_ptr->row[i].job_list[j];
+
+				if (!job->node_bitmap)
+					continue;
+				if (!(job_ptr->details->whole_node &
+				      WHOLE_TOPO) &&
+				    !(job->whole_node & WHOLE_TOPO))
+					continue;
+				if (tmp_bitmap)
+					bit_or(tmp_bitmap, job->node_bitmap);
+				else
+					tmp_bitmap = bit_copy(job->node_bitmap);
+
+			}
+		}
+	}
+
+	if (tmp_bitmap) {
+		topology_g_whole_topo(tmp_bitmap);
+		bit_and_not(node_bitmap, tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
+	}
+
+	return;
+}
+
 static uint16_t _valid_uint16(uint16_t arg)
 {
 	if ((arg == NO_VAL16) || (arg == INFINITE16))
@@ -1364,6 +1412,8 @@ try_next_nodes_cnt:
 	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
+	_block_by_topology(job_ptr, cr_part_ptr, node_bitmap);
+
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
@@ -1448,6 +1498,8 @@ try_next_nodes_cnt:
 	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
+	_block_by_topology(job_ptr, cr_part_ptr, node_bitmap);
+
 	/* make these changes permanent */
 	avail_cores_tmp = avail_cores;
 	avail_cores = copy_core_array(free_cores);
@@ -1496,6 +1548,8 @@ try_next_nodes_cnt:
 	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
+	_block_by_topology(job_ptr, cr_part_ptr, node_bitmap);
+
 	free_cores_tmp  = copy_core_array(free_cores);
 	node_bitmap_tmp = bit_copy(node_bitmap);
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
@@ -1527,6 +1581,9 @@ try_next_nodes_cnt:
 				_block_whole_nodes(node_bitmap_tmp, avail_cores,
 						   free_cores_tmp);
 			}
+
+			_block_by_topology(job_ptr, cr_part_ptr,
+					   node_bitmap_tmp);
 
 			free_cores_tmp2  = copy_core_array(free_cores_tmp);
 			node_bitmap_tmp2 = bit_copy(node_bitmap_tmp);
@@ -1607,6 +1664,9 @@ try_next_nodes_cnt:
 		bit_copybits(node_bitmap, orig_node_map);
 		if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 			_block_whole_nodes(node_bitmap, avail_cores,free_cores);
+
+		_block_by_topology(job_ptr, cr_part_ptr, node_bitmap);
+
 		avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 						req_nodes, node_bitmap,
 						free_cores, node_usage, cr_type,
@@ -2223,6 +2283,20 @@ static void _set_sched_weight(bitstr_t *node_bitmap)
 	}
 }
 
+static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
+				     bitstr_t *node_bitmap,
+				     bitstr_t **efctv_bitmap)
+{
+	if (job_ptr->details->whole_node & WHOLE_TOPO) {
+		if (!(*efctv_bitmap)) {
+			*efctv_bitmap = bit_copy(node_bitmap);
+			topology_g_whole_topo(*efctv_bitmap);
+		}
+		return *efctv_bitmap;
+	} else
+		return node_bitmap;
+}
+
 /*
  * Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
@@ -2332,6 +2406,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		int time_window = 30;
 		time_t end_time = 0;
 		bool more_jobs = true;
+		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		DEF_TIMERS;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		START_TIMER;
@@ -2348,17 +2423,22 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 					more_jobs = false;
 					break;
 				}
+				efctv_bitmap_ptr = _select_topo_bitmap(
+							tmp_job_ptr,
+							node_bitmap,
+							&efctv_bitmap);
 				if (slurm_conf.debug_flags &
 				    DEBUG_FLAG_SELECT_TYPE) {
-					overlap = bit_overlap(node_bitmap,
-					                      tmp_job_ptr->
-					                      node_bitmap);
+					overlap = bit_overlap(efctv_bitmap_ptr,
+							      tmp_job_ptr->
+							      node_bitmap);
 					info("%pJ: overlap=%d", tmp_job_ptr,
 					      overlap);
 				} else
-					overlap = bit_overlap_any(node_bitmap,
-					                          tmp_job_ptr->
-					                          node_bitmap);
+					overlap = bit_overlap_any(
+							efctv_bitmap_ptr,
+							tmp_job_ptr->
+							node_bitmap);
 				if (overlap == 0)  /* job has no usable nodes */
 					continue;  /* skip it */
 				if (!end_time) {
@@ -2426,10 +2506,12 @@ timer_check:
 				break;	/* Quit after 2 seconds wall time */
 		}
 		list_iterator_destroy(job_iterator);
+		FREE_NULL_BITMAP(efctv_bitmap);
 	}
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
+		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		/*
 		 * Build list of preemptee jobs whose resources are
 		 * actually used. List returned even if not killed
@@ -2440,12 +2522,16 @@ timer_check:
 		}
 		preemptee_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			if (!bit_overlap_any(node_bitmap,
+			efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr,
+							       node_bitmap,
+							       &efctv_bitmap);
+			if (!bit_overlap_any(efctv_bitmap_ptr,
 					     tmp_job_ptr->node_bitmap))
 				continue;
 			list_append(*preemptee_job_list, tmp_job_ptr);
 		}
 		list_iterator_destroy(preemptee_iterator);
+		FREE_NULL_BITMAP(efctv_bitmap);
 	}
 
 	FREE_NULL_LIST(cr_job_list);

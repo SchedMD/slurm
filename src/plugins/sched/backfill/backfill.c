@@ -84,6 +84,7 @@
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
 
 
 #include "src/slurmctld/acct_policy.h"
@@ -3087,6 +3088,10 @@ skip_start:
 		reject_array_part = NULL;
 		reject_array_resv = NULL;
 
+		if (job_ptr->details->whole_node & WHOLE_TOPO) {
+			topology_g_whole_topo(avail_bitmap);
+		}
+
 		if ((orig_start_time == 0) ||
 		    (job_ptr->start_time < orig_start_time)) {
 			/* Can't start earlier in different partition. */
@@ -3509,6 +3514,13 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 {
 	bool overlap = false;
 	int j = 0;
+	bitstr_t *use_bitmap_efctv = NULL;
+
+	if (job_ptr->details->whole_node & WHOLE_TOPO) {
+		use_bitmap_efctv = bit_copy(use_bitmap);
+		topology_g_whole_topo(use_bitmap_efctv);
+		use_bitmap = use_bitmap_efctv;
+	}
 
 	while (true) {
 		if ((node_space[j].end_time > start_time) &&
@@ -3532,6 +3544,7 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
+	FREE_NULL_BITMAP(use_bitmap_efctv);
 	return overlap;
 }
 
