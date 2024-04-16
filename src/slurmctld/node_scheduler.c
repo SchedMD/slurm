@@ -830,6 +830,27 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 	}
 }
 
+typedef struct {
+	job_record_t *job_ptr;
+	bitstr_t *usable_node_mask;
+} foreach_filter_by_node_t;
+
+static int _foreach_filter_by_node_owner(void *x, void *arg)
+{
+	job_record_t *job_ptr2 = x;
+	foreach_filter_by_node_t *argstruct = arg;
+	job_record_t *job_ptr = argstruct->job_ptr;
+	bitstr_t *usable_node_mask = argstruct->usable_node_mask;
+
+	if (IS_JOB_PENDING(job_ptr2) || IS_JOB_COMPLETED(job_ptr2) ||
+	    (job_ptr->user_id == job_ptr2->user_id) || !job_ptr2->node_bitmap)
+		return 0;
+
+	bit_and_not(usable_node_mask, job_ptr2->node_bitmap);
+
+	return 0;
+}
+
 /*
  * Remove nodes from consideration for allocation based upon "ownership" by
  * other users
@@ -839,25 +860,18 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 extern void filter_by_node_owner(job_record_t *job_ptr,
 				 bitstr_t *usable_node_mask)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr2;
 	node_record_t *node_ptr;
 	int i;
+	foreach_filter_by_node_t argstruct = { .job_ptr = job_ptr,
+					      .usable_node_mask =
+					      usable_node_mask };
 
 	if ((job_ptr->details->whole_node == WHOLE_NODE_USER) ||
 	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
 		/* Need to remove all nodes allocated to any active job from
 		 * any other user */
-		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr2 = list_next(job_iterator))) {
-			if (IS_JOB_PENDING(job_ptr2) ||
-			    IS_JOB_COMPLETED(job_ptr2) ||
-			    (job_ptr->user_id == job_ptr2->user_id) ||
-			    !job_ptr2->node_bitmap)
-				continue;
-			bit_and_not(usable_node_mask, job_ptr2->node_bitmap);
-		}
-		list_iterator_destroy(job_iterator);
+		list_for_each(job_list, _foreach_filter_by_node_owner,
+			      &argstruct);
 		return;
 	}
 
