@@ -2751,8 +2751,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 	memset(cpu_cnt, 0, sockets * sizeof(uint16_t));
 
-	if (entire_sockets_only && details_ptr->whole_node &&
-	    (details_ptr->core_spec != NO_VAL16)) {
+	if ((details_ptr->whole_node & WHOLE_NODE_REQUIRED) &&
+	    entire_sockets_only && (details_ptr->core_spec != NO_VAL16)) {
 		/* Ignore specialized cores when allocating "entire" socket */
 		entire_sockets_only = false;
 	}
@@ -2893,7 +2893,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 
-		if (job_ptr->details->whole_node) {
+		if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) {
 			log_flag(SELECT_TYPE, "Total cpu count greater than max_cpus_per_node on exclusive job. (%d > %d)",
 				 free_cpu_count + used_cpu_count,
 				 job_ptr->part_ptr->max_cpus_per_node);
