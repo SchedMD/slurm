@@ -115,6 +115,8 @@ struct conmgr_fd_s {
 	bool on_data_tried;
 	/* list of buf_t to write (in order) */
 	list_t *out;
+	/* socket maximum segment size (MSS) or NO_VAL if not known */
+	int mss;
 	/* this is a socket fd */
 	bool is_socket;
 	/* path to unix socket if it is one */
@@ -799,6 +801,7 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		.events = events,
 		/* save socket type to avoid calling fstat() again */
 		.is_socket = (addr && S_ISSOCK(fbuf.st_mode)),
+		.mss = NO_VAL,
 		.is_listen = is_listen,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
@@ -887,6 +890,9 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 		xfree(infd);
 		xfree(outfd);
 	}
+
+	if (!con->is_listen && con->is_socket)
+		con->mss = fd_get_maxmss(con->output_fd, con->name);
 
 	log_flag(NET, "%s: [%s] new connection input_fd=%u output_fd=%u",
 		 __func__, con->name, input_fd, output_fd);
