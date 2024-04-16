@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-23.11.5&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-23.11.6&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -29,6 +29,7 @@
   <h4><a href="#Slurm">Slurm</a></h4>
   <ul>
   <li><a href="#slurmV0040DeleteJob"><code><span class="http-method">delete</span> /slurm/v0.0.40/job/{job_id}</code></a></li>
+  <li><a href="#slurmV0040DeleteJobs"><code><span class="http-method">delete</span> /slurm/v0.0.40/jobs</code></a></li>
   <li><a href="#slurmV0040DeleteNode"><code><span class="http-method">delete</span> /slurm/v0.0.40/node/{node_name}</code></a></li>
   <li><a href="#slurmV0040GetDiag"><code><span class="http-method">get</span> /slurm/v0.0.40/diag</code></a></li>
   <li><a href="#slurmV0040GetJob"><code><span class="http-method">get</span> /slurm/v0.0.40/job/{job_id}</code></a></li>
@@ -285,6 +286,137 @@
     <h4 class="field-label">default</h4>
     Job cancel request failed
         <a href="#v0.0.40_openapi_resp">v0.0.40_openapi_resp</a>
+  </div> <!-- method -->
+  <hr>
+  <div class="method"><a name="slurmV0040DeleteJobs">
+    </a><div class="method-path"><a name="slurmV0040DeleteJobs">
+    </a><a class="up" href="#__Methods">Up</a>
+    <pre class="delete"><code class="huge"><span class="http-method">delete</span> /slurm/v0.0.40/jobs</code></pre></div>
+    <div class="method-summary">send signal to list of jobs (<span class="nickname">slurmV0040DeleteJobs</span>)</div>
+    <div class="method-notes"></div>
+
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>application/x-yaml</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">v0.0.40_kill_jobs_msg <a href="#v0.0.40_kill_jobs_msg">v0.0.40_kill_jobs_msg</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> —  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#v0.0.40_openapi_kill_jobs_resp">v0.0.40_openapi_kill_jobs_resp</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "meta" : {
+    "slurm" : {
+      "cluster" : "cluster",
+      "release" : "release",
+      "version" : {
+        "major" : "major",
+        "minor" : "minor",
+        "micro" : "micro"
+      }
+    },
+    "plugin" : {
+      "accounting_storage" : "accounting_storage",
+      "name" : "name",
+      "type" : "type",
+      "data_parser" : "data_parser"
+    },
+    "client" : {
+      "source" : "source",
+      "user" : "user",
+      "group" : "group"
+    },
+    "command" : [ "command", "command" ]
+  },
+  "warnings" : [ {
+    "description" : "description",
+    "source" : "source"
+  }, {
+    "description" : "description",
+    "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 1
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 1
+  } ],
+  "status" : [ {
+    "federation" : {
+      "sibling" : "sibling"
+    },
+    "job_id" : {
+      "number" : 5,
+      "set" : false,
+      "infinite" : true
+    },
+    "error" : {
+      "code" : 0,
+      "string" : "string",
+      "message" : "message"
+    },
+    "step_id" : "step_id"
+  }, {
+    "federation" : {
+      "sibling" : "sibling"
+    },
+    "job_id" : {
+      "number" : 5,
+      "set" : false,
+      "infinite" : true
+    },
+    "error" : {
+      "code" : 0,
+      "string" : "string",
+      "message" : "message"
+    },
+    "step_id" : "step_id"
+  } ]
+}</code></pre>
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/x-yaml</div>
+    <pre class="example"><code>Custom MIME type example not yet supported: application/x-yaml</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>application/x-yaml</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    result of signals request
+        <a href="#v0.0.40_openapi_kill_jobs_resp">v0.0.40_openapi_kill_jobs_resp</a>
+    <h4 class="field-label">default</h4>
+    result of signals request
+        <a href="#v0.0.40_openapi_kill_jobs_resp">v0.0.40_openapi_kill_jobs_resp</a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0040DeleteNode">
@@ -14688,6 +14820,8 @@
     <li><a href="#v0.0.40_job_res"><code>v0.0.40_job_res</code> - </a></li>
     <li><a href="#v0.0.40_job_submit_req"><code>v0.0.40_job_submit_req</code> - </a></li>
     <li><a href="#v0.0.40_job_submit_response_msg"><code>v0.0.40_job_submit_response_msg</code> - </a></li>
+    <li><a href="#v0.0.40_kill_jobs_msg"><code>v0.0.40_kill_jobs_msg</code> - </a></li>
+    <li><a href="#v0.0.40_kill_jobs_resp_job"><code>v0.0.40_kill_jobs_resp_job</code> - </a></li>
     <li><a href="#v0.0.40_license"><code>v0.0.40_license</code> - </a></li>
     <li><a href="#v0.0.40_node"><code>v0.0.40_node</code> - </a></li>
     <li><a href="#v0.0.40_openapi_accounts_add_cond_resp"><code>v0.0.40_openapi_accounts_add_cond_resp</code> - </a></li>
@@ -14704,6 +14838,7 @@
     <li><a href="#v0.0.40_openapi_job_info_resp"><code>v0.0.40_openapi_job_info_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_job_post_response"><code>v0.0.40_openapi_job_post_response</code> - </a></li>
     <li><a href="#v0.0.40_openapi_job_submit_response"><code>v0.0.40_openapi_job_submit_response</code> - </a></li>
+    <li><a href="#v0.0.40_openapi_kill_jobs_resp"><code>v0.0.40_openapi_kill_jobs_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_licenses_resp"><code>v0.0.40_openapi_licenses_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_meta"><code>v0.0.40_openapi_meta</code> - </a></li>
     <li><a href="#v0.0.40_openapi_nodes_resp"><code>v0.0.40_openapi_nodes_resp</code> - </a></li>
@@ -14782,6 +14917,8 @@
     <li><a href="#v0_0_40_job_time"><code>v0_0_40_job_time</code> - </a></li>
     <li><a href="#v0_0_40_job_time_system"><code>v0_0_40_job_time_system</code> - </a></li>
     <li><a href="#v0_0_40_job_tres"><code>v0_0_40_job_tres</code> - </a></li>
+    <li><a href="#v0_0_40_kill_jobs_resp_job_error"><code>v0_0_40_kill_jobs_resp_job_error</code> - </a></li>
+    <li><a href="#v0_0_40_kill_jobs_resp_job_federation"><code>v0_0_40_kill_jobs_resp_job_federation</code> - </a></li>
     <li><a href="#v0_0_40_openapi_meta_client"><code>v0_0_40_openapi_meta_client</code> - </a></li>
     <li><a href="#v0_0_40_openapi_meta_plugin"><code>v0_0_40_openapi_meta_plugin</code> - </a></li>
     <li><a href="#v0_0_40_openapi_meta_slurm"><code>v0_0_40_openapi_meta_slurm</code> - </a></li>
@@ -15453,6 +15590,39 @@
     </div>  <!-- field-items -->
   </div>
   <div class="model">
+    <h3><a name="v0.0.40_kill_jobs_msg"><code>v0.0.40_kill_jobs_msg</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">account (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific account </div>
+<div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Filter jobs according to flags </div>
+        <div class="param-enum-header">Enum:</div>
+        
+<div class="param">job_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific name </div>
+<div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+<div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific partition </div>
+<div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific QOS </div>
+<div class="param">reservation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific reservation </div>
+<div class="param">signal (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Signal to send to jobs </div>
+<div class="param">job_state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Filter jobs to a specific state </div>
+        <div class="param-enum-header">Enum:</div>
+        
+<div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific numeric user id </div>
+<div class="param">user_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific user name </div>
+<div class="param">wckey (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific wckey </div>
+<div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0.0.40_kill_jobs_resp_job"><code>v0.0.40_kill_jobs_resp_job</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">error (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_kill_jobs_resp_job_error">v0_0_40_kill_jobs_resp_job_error</a></span>  </div>
+<div class="param">step_id </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job or Step ID that signaling failed </div>
+<div class="param">job_id </div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_uint32_no_val">v0.0.40_uint32_no_val</a></span>  </div>
+<div class="param">federation (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_40_kill_jobs_resp_job_federation">v0_0_40_kill_jobs_resp_job_federation</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
     <h3><a name="v0.0.40_license"><code>v0.0.40_license</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
@@ -15676,6 +15846,16 @@
 <div class="param">job_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> submited JobId format: int32</div>
 <div class="param">step_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> submited StepID </div>
 <div class="param">job_submit_user_msg (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> job submision user message </div>
+<div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_meta">v0.0.40_openapi_meta</a></span>  </div>
+<div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_error">array[v0.0.40_openapi_error]</a></span>  </div>
+<div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_warning">array[v0.0.40_openapi_warning]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0.0.40_openapi_kill_jobs_resp"><code>v0.0.40_openapi_kill_jobs_resp</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">status </div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_kill_jobs_resp_job">array[v0.0.40_kill_jobs_resp_job]</a></span> List of jobs signal responses </div>
 <div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_meta">v0.0.40_openapi_meta</a></span>  </div>
 <div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_error">array[v0.0.40_openapi_error]</a></span>  </div>
 <div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_warning">array[v0.0.40_openapi_warning]</a></span>  </div>
@@ -16537,6 +16717,22 @@
     <div class="field-items">
       <div class="param">allocated (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_tres">array[v0.0.40_tres]</a></span>  </div>
 <div class="param">requested (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_tres">array[v0.0.40_tres]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0_0_40_kill_jobs_resp_job_error"><code>v0_0_40_kill_jobs_resp_job_error</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">string (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> String error encountered signaling job </div>
+<div class="param">code (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Numeric error encountered signaling job format: int32</div>
+<div class="param">message (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Error message why signaling job failed </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0_0_40_kill_jobs_resp_job_federation"><code>v0_0_40_kill_jobs_resp_job_federation</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">sibling (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of federation sibling (may be empty for non-federation) </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
