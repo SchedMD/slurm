@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
@@ -711,4 +712,22 @@ extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 #else /* FIONREAD */
 	return ESLURM_NOT_SUPPORTED;
 #endif /* !FIONREAD */
+}
+
+extern int fd_get_maxmss(int fd, const char *con_name)
+{
+	int mss = NO_VAL;
+
+#if defined(TCP_MAXSEG)
+	if (getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &mss,
+		       (&(socklen_t) {sizeof(mss)})))
+		log_net(fd, con_name,
+			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG) failed: %m",
+			fd);
+	else
+		log_net(fd, con_name,
+			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG)=%d", fd, mss);
+#endif /* defined(TCP_MAXSEG) */
+
+	return mss;
 }
