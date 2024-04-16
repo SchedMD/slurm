@@ -133,6 +133,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --ntasks-per-node not being treated as a max count of tasks per node
     when used in combination with --ntasks. --ntasks option will now take
     precedence as it is documented.
+ -- Accept X11 cookies that do not have a display number associated with it.
 
 * Changes in Slurm 23.11.7
 ==========================
