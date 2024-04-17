@@ -198,7 +198,7 @@ struct conmgr_s {
 	 * list of complete connections pending cleanup
 	 * type: conmgr_fd_t
 	 */
-	list_t *complete;
+	list_t *complete_conns;
 	/*
 	 * True if _watch() is running
 	 * Changes protected by watch_mutex
@@ -554,11 +554,11 @@ static void _atfork_child(void)
 #ifdef MEMORY_LEAK_DEBUG
 	_atfork_flush_con_list(mgr.connections);
 	_atfork_flush_con_list(mgr.listen_conns);
-	_atfork_flush_con_list(mgr.complete);
+	_atfork_flush_con_list(mgr.complete_conns);
 
 	FREE_NULL_LIST(mgr.connections);
 	FREE_NULL_LIST(mgr.listen_conns);
-	FREE_NULL_LIST(mgr.complete);
+	FREE_NULL_LIST(mgr.complete_conns);
 	FREE_NULL_LIST(mgr.delayed_work);
 	FREE_NULL_LIST(mgr.deferred_funcs);
 	xfree(mgr.signal_handlers);
@@ -625,7 +625,7 @@ extern void init_conmgr(int thread_count, int max_connections,
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);
-	mgr.complete = list_create(NULL);
+	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.workq = new_workq(thread_count);
 	mgr.deferred_funcs = list_create(NULL);
@@ -755,7 +755,7 @@ extern void free_conmgr(void)
 	 */
 	FREE_NULL_LIST(mgr.connections);
 	FREE_NULL_LIST(mgr.listen_conns);
-	FREE_NULL_LIST(mgr.complete);
+	FREE_NULL_LIST(mgr.complete_conns);
 
 	if (mgr.delayed_work) {
 		FREE_NULL_LIST(mgr.delayed_work);
@@ -1766,7 +1766,7 @@ static void _inspect_connections(void *x)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (list_transfer_match(mgr.connections, mgr.complete,
+	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_handle_connection, NULL))
 		slurm_cond_broadcast(&mgr.cond);
 	mgr.inspecting = false;
@@ -2294,7 +2294,7 @@ watch:
 
 	work = false;
 
-	if (!list_is_empty(mgr.complete)) {
+	if (!list_is_empty(mgr.complete_conns)) {
 		if (mgr.listen_active || mgr.poll_active) {
 			/*
 			 * Must wait for all poll() calls to complete or
@@ -2312,7 +2312,7 @@ watch:
 			 * conmgr that references the connection.
 			 */
 
-			while ((con = list_pop(mgr.complete)))
+			while ((con = list_pop(mgr.complete_conns)))
 				_queue_func(true, _connection_fd_delete, con,
 					    "_connection_fd_delete");
 		}
@@ -2326,7 +2326,7 @@ watch:
 		}
 
 		/* run any queued work */
-		list_transfer_match(mgr.listen_conns, mgr.complete,
+		list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				    _handle_connection, NULL);
 
 		if (!mgr.listen_active) {
