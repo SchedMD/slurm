@@ -403,7 +403,8 @@ static void _edit_and_update_crontab(char *crontab)
 
 edit:
 	if (edit_only && crontab) {
-		slurm_hash_t before = { 0 }, after = { 0 };
+		slurm_hash_t before = { .type = HASH_PLUGIN_K12 };
+		slurm_hash_t after = { .type = HASH_PLUGIN_K12 };
 		int before_len, after_len;
 
 		before_len = hash_g_compute(crontab, strlen(crontab), NULL, 0,
