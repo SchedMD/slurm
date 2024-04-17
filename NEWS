@@ -112,6 +112,7 @@ documents those changes that are of interest to users and administrators.
  -- Optimize jobacctgather by not iterating every time over pids that have
     already finished.
  -- Remote SPANK callbacks invoked by srun get called once instead of twice.
+ -- auth/slurm - Support multiple keys through slurm.jwks.
 
 * Changes in Slurm 23.11.7
 ==========================

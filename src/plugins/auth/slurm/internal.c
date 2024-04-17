@@ -49,14 +49,20 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/serializer.h"
+
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 typedef struct {
+	char *kid;
+	time_t exp;
 	unsigned char *key;
 	unsigned int keylen;
 } key_details_t;
 
 static key_details_t *default_key = NULL;
+static data_t *key_data = NULL;
+static list_t *key_list = NULL;
 static int lifespan = DEFAULT_TTL;
 static char *this_hostname = NULL;
 
@@ -86,27 +92,148 @@ static void _check_key_permissions(const char *path, int bad_perms)
 		      plugin_type, path, statbuf.st_mode & 0777);
 }
 
+static void _free_key_details(void *x)
+{
+	key_details_t *key = x;
+
+	xfree(key->key);
+	xfree(key);
+}
+
+static int _find_kid(void *x, void *y)
+{
+	key_details_t *key = x;
+	char *kid = y;
+
+	return (!xstrcmp(key->kid, kid));
+}
+
+/*
+ * slurm.jwks: Must be a JSON list of "keys".
+ *
+ * Fields for each key are:
+ * alg - Required. MUST be "HS256".
+ * kty - Required. MUST be "oct".
+ * kid - Required. Case-sensitive text field.
+ * k - Required. Base64 / Base64url encoded binary blob.
+ * use - Optional. "default" indicates the default key.
+ * exp - Optional. Unix timestamp for key expiration.
+ */
+static data_for_each_cmd_t _build_key_list(data_t *d, void *arg)
+{
+	key_details_t *key_ptr;
+	char *kty = NULL, *alg = NULL, *k = NULL, *k_base64 = NULL, *use = NULL;
+	data_t *exp = NULL;
+
+	key_ptr = xmalloc(sizeof(*key_ptr));
+
+	if (!(key_ptr->kid = data_get_string(data_key_get(d, "kid"))))
+		fatal("%s: failed to load kid field", __func__);
+	if (list_find_first_ro(key_list, _find_kid, key_ptr->kid))
+		fatal("%s: kid fields must be unique", __func__);
+
+	if (!(kty = data_get_string(data_key_get(d, "kty"))))
+		fatal("%s: failed to load kty field", __func__);
+	if (xstrcasecmp(kty, "oct"))
+		fatal("%s: kty field must be oct", __func__);
+
+	if (!(alg = data_get_string(data_key_get(d, "alg"))))
+		fatal("%s: failed to load alg field", __func__);
+	if (xstrcasecmp(alg, "HS256"))
+		fatal("%s: alg field must be HS256", __func__);
+
+	if (!(k = data_get_string(data_key_get(d, "k"))))
+		fatal("%s: failed to load key field", __func__);
+
+	k_base64 = xbase64_from_base64url(k);
+	key_ptr->key = xmalloc(strlen(k_base64));
+	key_ptr->keylen = jwt_Base64decode(key_ptr->key, k_base64);
+	xfree(k_base64);
+
+	if (key_ptr->keylen < 16)
+		fatal("%s: key lacks sufficient entropy", __func__);
+
+	if ((use = data_get_string(data_key_get(d, "use"))) &&
+	    !xstrcasecmp(use, "default")) {
+		if (default_key)
+			fatal("%s: multiple default keys defined", __func__);
+
+		default_key = key_ptr;
+	}
+
+	if ((exp = data_key_get(d, "exp"))) {
+		int64_t expiration;
+		data_get_int_converted(exp, &expiration);
+		key_ptr->exp = expiration;
+	}
+
+	list_append(key_list, key_ptr);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static void _read_keys_file(char *key_file)
+{
+	buf_t *jwks = NULL;
+	data_t *keys = NULL;
+
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("%s: serializer_g_init() failed", __func__);
+
+	debug("loading keys file `%s`", key_file);
+
+	if (!(jwks = create_mmap_buf(key_file)))
+		fatal("%s: Could not load keys file (%s)",
+		      plugin_type, key_file);
+
+	if (serialize_g_string_to_data(&key_data, jwks->head, jwks->size,
+				       MIME_TYPE_JSON))
+		fatal("%s: failed to deserialize keys file `%s`",
+			__func__, key_file);
+
+	key_list = list_create(_free_key_details);
+
+	if (!(keys = data_key_get(key_data, "keys")))
+		fatal("%s: jwks file invalid", __func__);
+
+	(void) data_list_for_each(keys, _build_key_list, NULL);
+
+	if (!default_key)
+		default_key = list_peek(key_list);
+
+	FREE_NULL_BUFFER(jwks);
+}
+
 extern void init_internal(void)
 {
-	buf_t *slurm_key = NULL;
+	struct stat statbuf;
 	char *key_file = xstrdup(getenv("SLURM_SACK_KEY"));
+	char *jwks_file = xstrdup(getenv("SLURM_SACK_JWKS"));
 
 	if (!key_file)
 		key_file = get_extra_conf_path("slurm.key");
+	if (!jwks_file)
+		jwks_file = get_extra_conf_path("slurm.jwks");
 
-	_check_key_permissions(key_file, S_IRWXO);
+	if (!stat(jwks_file, &statbuf)) {
+		_check_key_permissions(jwks_file, S_IRWXO);
+		_read_keys_file(jwks_file);
+	} else {
+		buf_t *slurm_key = NULL;
+		_check_key_permissions(key_file, S_IRWXO);
 
-	debug("loading key: `%s`", key_file);
-	if (!(slurm_key = create_mmap_buf(key_file))) {
-		fatal("%s: Could not load key file (%s)",
-		      plugin_type, key_file);
+		debug("loading key: `%s`", key_file);
+		if (!(slurm_key = create_mmap_buf(key_file))) {
+			fatal("%s: Could not load key file (%s)",
+			      plugin_type, key_file);
+		}
+
+		default_key = xmalloc(sizeof(*default_key));
+		default_key->key = xmalloc(slurm_key->size);
+		default_key->keylen = slurm_key->size;
+		memcpy(default_key->key, slurm_key->head, slurm_key->size);
+		FREE_NULL_BUFFER(slurm_key);
 	}
-
-	default_key = xmalloc(sizeof(*default_key));
-	default_key->keylen = slurm_key->size;
-	default_key->key = xfer_buf_data(slurm_key);
-
-	xfree(key_file);
 
 	this_hostname = xshort_hostname();
 
@@ -116,8 +243,14 @@ extern void init_internal(void)
 
 extern void fini_internal(void)
 {
-	xfree(default_key->key);
-	xfree(default_key);
+	if (key_data) {
+		FREE_NULL_DATA(key_data);
+		FREE_NULL_LIST(key_list);
+	} else {
+		xfree(default_key->key);
+		xfree(default_key);
+	}
+
 	xfree(this_hostname);
 	/* save token cache to state */
 	/* terminate processing thread */
@@ -194,6 +327,14 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 			goto fail;
 		}
 		xfree(payload);
+	}
+
+	/* Set the kid if available. */
+	if (default_key->kid) {
+		if (jwt_add_header(jwt, "kid", default_key->kid)) {
+			error("%s: jwt_add_header failure", __func__);
+			goto fail;
+		}
 	}
 
 	if (jwt_set_alg(jwt, opt_alg, default_key->key, default_key->keylen)) {
@@ -283,7 +424,48 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	const char *alg;
 	long r_uid, expiration;
 
-	if (verify) {
+	if (verify && key_list) {
+		jwt_t *unverified_jwt = NULL;
+		key_details_t *key = NULL;
+		const char *kid = NULL;
+
+		if ((rc = jwt_decode(&unverified_jwt, token, NULL, 0))) {
+			error("%s: jwt_decode failure: %s",
+			      __func__, slurm_strerror(rc));
+			goto fail;
+		}
+
+		if ((kid = jwt_get_header(unverified_jwt, "kid"))) {
+			/* Find the kid in our keys list */
+			if (!(key = list_find_first_ro(key_list, _find_kid,
+						       (char *) kid))) {
+				error("%s: could not find kid=%s",
+				      __func__, kid);
+				jwt_free(unverified_jwt);
+				goto fail;
+			}
+		} else {
+			debug2("%s: jwt_get_header failed for kid, using default key",
+			       __func__);
+			key = default_key;
+		}
+
+		kid = NULL;	/* pointer into unverified_jwt */
+		jwt_free(unverified_jwt);
+		unverified_jwt = NULL;
+
+		if (key->exp && (key->exp < time(NULL))) {
+			error("%s: token received for expired key kid=%s",
+			      __func__, key->kid);
+			goto fail;
+		}
+
+		if ((rc = jwt_decode(&jwt, token, key->key, key->keylen))) {
+			error("%s: jwt_decode (with key kid=%s) failure: %s",
+			      __func__, key->kid, slurm_strerror(rc));
+			goto fail;
+		}
+	} else if (verify) {
 		if ((rc = jwt_decode(&jwt, token, default_key->key,
 				     default_key->keylen))) {
 			error("%s: jwt_decode (with key) failure: %s",
