@@ -1978,6 +1978,31 @@ again:
 	}
 }
 
+static void _init_poll_fds(poll_args_t *args, struct pollfd **fds_ptr_p,
+			   int conn_count)
+{
+	struct pollfd *fds_ptr = NULL;
+
+	xrecalloc(args->fds, ((conn_count * 2) + 2), sizeof(*args->fds));
+
+	args->nfds = 0;
+	fds_ptr = args->fds;
+
+	/* Add signal fd */
+	fds_ptr->fd = mgr.signal_fd[0];
+	fds_ptr->events = POLLIN;
+	fds_ptr++;
+	args->nfds++;
+
+	/* Add event fd */
+	fds_ptr->fd = mgr.event_fd[0];
+	fds_ptr->events = POLLIN;
+	fds_ptr++;
+	args->nfds++;
+
+	*fds_ptr_p = fds_ptr;
+}
+
 /*
  * Poll all processing connections sockets and
  * signal_fd and event_fd.
@@ -2011,22 +2036,7 @@ static void _poll_connections(void *x)
 		goto done;
 	}
 
-	xrecalloc(args->fds, ((count * 2) + 2), sizeof(*args->fds));
-
-	args->nfds = 0;
-	fds_ptr = args->fds;
-
-	/* Add signal fd */
-	fds_ptr->fd = mgr.signal_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
-
-	/* Add event fd */
-	fds_ptr->fd = mgr.event_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
+	_init_poll_fds(args, &fds_ptr, count);
 
 	/*
 	 * populate sockets with !work_active
@@ -2143,21 +2153,7 @@ static void _listen(void *x)
 		goto cleanup;
 	}
 
-	xrecalloc(args->fds, (count + 2), sizeof(*args->fds));
-	fds_ptr = args->fds;
-	args->nfds = 0;
-
-	/* Add signal fd */
-	fds_ptr->fd = mgr.signal_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
-
-	/* Add event fd */
-	fds_ptr->fd = mgr.event_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
+	_init_poll_fds(args, &fds_ptr, count);
 
 	/* populate listening sockets */
 	itr = list_iterator_create(mgr.listen_conns);
