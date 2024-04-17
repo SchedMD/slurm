@@ -79,6 +79,8 @@ extern int hash_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "hash";
+	char *hash_plugin_list = NULL, *plugin_list = NULL, *type = NULL;
+	char *save_ptr = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -88,25 +90,43 @@ extern int hash_g_init(void)
 	g_context_num = 0;
 	memset(hash_id_to_inx, 0xff, HASH_PLUGIN_CNT);
 
-	xrecalloc(ops, g_context_num + 1, sizeof(slurm_ops_t));
-	xrecalloc(g_context, g_context_num + 1, sizeof(plugin_context_t *));
+	/* ensure k12 plugin is always loaded */
+	hash_plugin_list = xstrdup(slurm_conf.hash_plugin);
+	if (!xstrstr(hash_plugin_list, "k12"))
+		xstrcat(hash_plugin_list, ",k12");
+	plugin_list = hash_plugin_list;
 
-	g_context[g_context_num] = plugin_context_create(
-		plugin_type, "hash/k12", (void **)&ops[g_context_num],
-		syms, sizeof(syms));
-	if (!g_context[g_context_num] ||
-	    (*(ops[g_context_num].plugin_id) != HASH_PLUGIN_K12)) {
-		error("cannot create %s context for K12", plugin_type);
-		rc = SLURM_ERROR;
-		goto done;
+	while ((type = strtok_r(hash_plugin_list, ",", &save_ptr))) {
+		xrecalloc(ops, g_context_num + 1, sizeof(slurm_ops_t));
+		xrecalloc(g_context, g_context_num + 1,
+			  sizeof(plugin_context_t *));
+
+		/* allow plugins to be specified as either "hash/k12" or "k12" */
+		if (!xstrncmp(type, "hash/", 5))
+			type += 5;
+		type = xstrdup_printf("hash/%s", type);
+
+		g_context[g_context_num] = plugin_context_create(
+			plugin_type, type, (void **) &ops[g_context_num],
+			syms, sizeof(syms));
+
+		if (!g_context[g_context_num]) {
+			error("cannot create %s context for %s",
+			      plugin_type, type);
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		hash_id_to_inx[*(ops[g_context_num].plugin_id)] = g_context_num;
+		g_context_num++;
+		hash_plugin_list = NULL; /* for next iteration */
 	}
-	hash_id_to_inx[*(ops[g_context_num].plugin_id)] = g_context_num;
-	g_context_num++;
 
 	hash_id_to_inx[HASH_PLUGIN_DEFAULT] = 0;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
+	xfree(plugin_list);
 
 	return rc;
 }
