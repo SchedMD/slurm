@@ -163,7 +163,8 @@ static data_for_each_cmd_t _build_key_list(data_t *d, void *arg)
 
 	if ((exp = data_key_get(d, "exp"))) {
 		int64_t expiration;
-		data_get_int_converted(exp, &expiration);
+		if (data_get_int_converted(exp, &expiration))
+			fatal("%s: invalid value for exp", __func__);
 		key_ptr->exp = expiration;
 	}
 
