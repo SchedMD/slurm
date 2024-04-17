@@ -153,7 +153,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libhash_common_xkcp_la_LIBADD =
-am_libhash_common_xkcp_la_OBJECTS = KangarooTwelve.lo \
+am_libhash_common_xkcp_la_OBJECTS = KangarooTwelve.lo KeccakHash.lo \
 	KeccakP-1600-opt64.lo KeccakSponge.lo
 libhash_common_xkcp_la_OBJECTS = $(am_libhash_common_xkcp_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -176,7 +176,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/KangarooTwelve.Plo \
-	./$(DEPDIR)/KeccakP-1600-opt64.Plo \
+	./$(DEPDIR)/KeccakHash.Plo ./$(DEPDIR)/KeccakP-1600-opt64.Plo \
 	./$(DEPDIR)/KeccakSponge.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -480,6 +480,8 @@ libhash_common_xkcp_la_SOURCES = \
 	config-xkcp.h			\
 	KangarooTwelve.c		\
 	KangarooTwelve.h		\
+	KeccakHash.c			\
+	KeccakHash.h			\
 	KeccakP-1600-64.macros		\
 	KeccakP-1600-opt64.c		\
 	KeccakP-1600-opt64-config.h	\
@@ -546,6 +548,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/KangarooTwelve.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/KeccakHash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/KeccakP-1600-opt64.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/KeccakSponge.Plo@am__quote@ # am--include-marker
 
@@ -675,6 +678,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/KangarooTwelve.Plo
+	-rm -f ./$(DEPDIR)/KeccakHash.Plo
 	-rm -f ./$(DEPDIR)/KeccakP-1600-opt64.Plo
 	-rm -f ./$(DEPDIR)/KeccakSponge.Plo
 	-rm -f Makefile
@@ -723,6 +727,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/KangarooTwelve.Plo
+	-rm -f ./$(DEPDIR)/KeccakHash.Plo
 	-rm -f ./$(DEPDIR)/KeccakP-1600-opt64.Plo
 	-rm -f ./$(DEPDIR)/KeccakSponge.Plo
 	-rm -f Makefile

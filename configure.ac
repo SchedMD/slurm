@@ -446,6 +446,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/hash/Makefile
 		 src/plugins/hash/common_xkcp/Makefile
 		 src/plugins/hash/k12/Makefile
+		 src/plugins/hash/sha3/Makefile
 		 src/plugins/job_container/Makefile
 		 src/plugins/job_container/tmpfs/Makefile
 		 src/plugins/job_submit/Makefile

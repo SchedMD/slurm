@@ -12,6 +12,8 @@ libhash_common_xkcp_la_SOURCES =	\
 	config-xkcp.h			\
 	KangarooTwelve.c		\
 	KangarooTwelve.h		\
+	KeccakHash.c			\
+	KeccakHash.h			\
 	KeccakP-1600-64.macros		\
 	KeccakP-1600-opt64.c		\
 	KeccakP-1600-opt64-config.h	\
