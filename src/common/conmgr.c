@@ -2214,6 +2214,191 @@ static void _wait_for_watch(void)
 	slurm_mutex_unlock(&mgr.watch_mutex);
 }
 
+static void _handle_complete_conns(void)
+{
+	if (mgr.listen_active || mgr.poll_active) {
+		/*
+		 * Must wait for all poll() calls to complete or
+		 * there may be a use after free of a connection.
+		 *
+		 * Send signal to break out of any active poll()s.
+		 */
+		_signal_change(true);
+	} else {
+		conmgr_fd_t *con;
+
+		/*
+		 * Memory cleanup of connections can be done entirely
+		 * independently as there should be nothing left in
+		 * conmgr that references the connection.
+		 */
+
+		while ((con = list_pop(mgr.complete_conns)))
+			_queue_func(true, _connection_fd_delete, con,
+				    "_connection_fd_delete");
+	}
+}
+
+static void _handle_listen_conns(poll_args_t **listen_args_p, int conn_count)
+{
+	if (!*listen_args_p) {
+		*listen_args_p = xmalloc(sizeof(**listen_args_p));
+		(*listen_args_p)->magic = MAGIC_POLL_ARGS;
+	}
+
+	/* run any queued work */
+	list_transfer_match(mgr.listen_conns, mgr.complete_conns,
+			    _handle_connection, NULL);
+
+	if (!mgr.listen_active) {
+		/* only try to listen if number connections is below limit */
+		if (conn_count >= mgr.max_connections)
+			log_flag(NET, "%s: deferring accepting new connections until count is below max: %u/%u",
+				 __func__, conn_count, mgr.max_connections);
+		else { /* request a listen thread to run */
+			log_flag(NET, "%s: queuing up listen",
+				 __func__);
+			mgr.listen_active = true;
+			_queue_func(true, _listen, *listen_args_p,
+				    "_listen");
+		}
+	} else
+		log_flag(NET, "%s: listeners active already", __func__);
+}
+
+static void _handle_new_conns(poll_args_t **poll_args_p)
+{
+	if (!*poll_args_p) {
+		*poll_args_p = xmalloc(sizeof(**poll_args_p));
+		(*poll_args_p)->magic = MAGIC_POLL_ARGS;
+	}
+
+	if (!mgr.inspecting) {
+		mgr.inspecting = true;
+		_queue_func(true, _inspect_connections, NULL,
+			    "_inspect_connections");
+	}
+
+	if (!mgr.poll_active) {
+		/* request a listen thread to run */
+		log_flag(NET, "%s: queuing up poll", __func__);
+		mgr.poll_active = true;
+		_queue_func(true, _poll_connections, *poll_args_p,
+			    "_poll_connections");
+	} else
+		log_flag(NET, "%s: poll active already", __func__);
+}
+
+static void _handle_events(poll_args_t **listen_args_p,
+			   poll_args_t **poll_args_p,
+			   bool *work)
+{
+	int count;
+
+	/* grab counts once */
+	count = list_count(mgr.connections);
+
+	log_flag(NET, "%s: starting connections=%u listen_conns=%u",
+		 __func__, count, list_count(mgr.listen_conns));
+
+	*work = false;
+
+	if (!list_is_empty(mgr.complete_conns))
+		_handle_complete_conns();
+
+	/* start listen thread if needed */
+	if (!list_is_empty(mgr.listen_conns)) {
+		_handle_listen_conns(listen_args_p, count);
+		*work = true;
+	}
+
+	/* start poll thread if needed */
+	if (count) {
+		_handle_new_conns(poll_args_p);
+		*work = true;
+	}
+}
+
+static void _read_event_fd(void)
+{
+	int event_read;
+	char buf[100]; /* buffer for event_read */
+
+	/*
+	 * Only clear signal and event pipes once both polls
+	 * are done.
+	 */
+	event_read = read(mgr.event_fd[0], buf, sizeof(buf));
+	if (event_read > 0) {
+		log_flag(NET, "%s: detected %u events from event fd",
+			 __func__, event_read);
+		mgr.event_signaled = 0;
+	} else if (!event_read || (errno == EWOULDBLOCK) ||
+		   (errno == EAGAIN))
+		log_flag(NET, "%s: nothing to read from event fd", __func__);
+	else if (errno == EINTR)
+		log_flag(NET, "%s: try again on read of event fd: %m",
+			 __func__);
+	else
+		fatal("%s: unable to read from event fd: %m",
+		      __func__);
+}
+
+static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
+{
+	bool work = false; /* is there any work to do? */
+
+	if (mgr.shutdown)
+		_close_all_connections(true);
+	else if (mgr.quiesced) {
+		if (mgr.poll_active || mgr.listen_active) {
+			/*
+			 * poll() hasn't returned yet so signal it to
+			 * stop again and wait for the thread to return
+			 */
+			_signal_change(true);
+			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+			return true;
+		}
+
+		return false;
+	}
+
+	if (!mgr.poll_active && !mgr.listen_active) {
+		_read_event_fd();
+		if (mgr.signaled) {
+			_handle_signals();
+			return true;
+		}
+	}
+
+	_handle_events(listen_args_p, poll_args_p, &work);
+
+	if (!work && (mgr.poll_active || mgr.listen_active)) {
+		/*
+		 * poll() hasn't returned yet so signal it to stop again
+		 * and wait for the thread to return
+		 */
+		_signal_change(true);
+		slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		return true;
+	}
+
+	if (work) {
+		/* wait until something happens */
+		slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		return true;
+	}
+
+	log_flag(NET, "%s: cleaning up", __func__);
+	_signal_change(true);
+	_fini_signal_handler();
+
+	xassert(!mgr.poll_active);
+	xassert(!mgr.listen_active);
+	return false;
+}
+
 /*
  * Poll all connections and handle any events
  * IN blocking - non-zero if blocking
@@ -2222,9 +2407,6 @@ static void _watch(void *blocking)
 {
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
-	int count, event_read;
-	char buf[100]; /* buffer for event_read */
-	bool work; /* is there any work to do? */
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -2247,156 +2429,8 @@ static void _watch(void *blocking)
 
 	_init_signal_handler();
 
-watch:
-	if (mgr.shutdown)
-		_close_all_connections(true);
-	else if (mgr.quiesced) {
-		if (mgr.poll_active || mgr.listen_active) {
-			/*
-			 * poll() hasn't returned yet so signal it to stop again
-			 * and wait for the thread to return
-			 */
-			_signal_change(true);
-			slurm_cond_wait(&mgr.cond, &mgr.mutex);
-			goto watch;
-		}
+	while (_watch_loop(&listen_args, &poll_args));
 
-		goto quiesced;
-	}
-
-	/* grab counts once */
-	count = list_count(mgr.connections);
-
-	log_flag(NET, "%s: starting connections=%u listen_conns=%u",
-		 __func__, count, list_count(mgr.listen_conns));
-
-	if (!mgr.poll_active && !mgr.listen_active) {
-		/* only clear signal and event pipes once both polls are done */
-		event_read = read(mgr.event_fd[0], buf, sizeof(buf));
-		if (event_read > 0) {
-			log_flag(NET, "%s: detected %u events from event fd",
-				 __func__, event_read);
-			mgr.event_signaled = 0;
-		} else if (!event_read || (errno == EWOULDBLOCK) ||
-			   (errno == EAGAIN))
-			log_flag(NET, "%s: nothing to read from event fd", __func__);
-		else if (errno == EINTR)
-			log_flag(NET, "%s: try again on read of event fd: %m",
-				 __func__);
-		else
-			fatal("%s: unable to read from event fd: %m", __func__);
-
-		if (mgr.signaled) {
-			_handle_signals();
-			goto watch;
-		}
-	}
-
-	work = false;
-
-	if (!list_is_empty(mgr.complete_conns)) {
-		if (mgr.listen_active || mgr.poll_active) {
-			/*
-			 * Must wait for all poll() calls to complete or
-			 * there may be a use after free of a connection.
-			 *
-			 * Send signal to break out of any active poll()s.
-			 */
-			_signal_change(true);
-		} else {
-			conmgr_fd_t *con;
-
-			/*
-			 * Memory cleanup of connections can be done entirely
-			 * independently as there should be nothing left in
-			 * conmgr that references the connection.
-			 */
-
-			while ((con = list_pop(mgr.complete_conns)))
-				_queue_func(true, _connection_fd_delete, con,
-					    "_connection_fd_delete");
-		}
-	}
-
-	/* start listen thread if needed */
-	if (!list_is_empty(mgr.listen_conns)) {
-		if (!listen_args) {
-			listen_args = xmalloc(sizeof(*listen_args));
-			listen_args->magic = MAGIC_POLL_ARGS;
-		}
-
-		/* run any queued work */
-		list_transfer_match(mgr.listen_conns, mgr.complete_conns,
-				    _handle_connection, NULL);
-
-		if (!mgr.listen_active) {
-			/* only try to listen if number connections is below limit */
-			if (count >= mgr.max_connections)
-				log_flag(NET, "%s: deferring accepting new connections until count is below max: %u/%u",
-					 __func__, count, mgr.max_connections);
-			else { /* request a listen thread to run */
-				log_flag(NET, "%s: queuing up listen", __func__);
-				mgr.listen_active = true;
-				_queue_func(true, _listen, listen_args,
-					    "_listen");
-			}
-		} else
-			log_flag(NET, "%s: listeners active already", __func__);
-
-		work = true;
-	}
-
-	/* start poll thread if needed */
-	if (count) {
-		if (!poll_args) {
-			poll_args = xmalloc(sizeof(*poll_args));
-			poll_args->magic = MAGIC_POLL_ARGS;
-		}
-
-		if (!mgr.inspecting) {
-			mgr.inspecting = true;
-			_queue_func(true, _inspect_connections, NULL,
-				    "_inspect_connections");
-		}
-
-		if (!mgr.poll_active) {
-			/* request a listen thread to run */
-			log_flag(NET, "%s: queuing up poll", __func__);
-			mgr.poll_active = true;
-			_queue_func(true, _poll_connections, poll_args,
-				    "_poll_connections");
-		} else
-			log_flag(NET, "%s: poll active already", __func__);
-
-		work = true;
-	}
-
-	if (!work && (mgr.poll_active || mgr.listen_active)) {
-		/*
-		 * poll() hasn't returned yet so signal it to stop again
-		 * and wait for the thread to return
-		 */
-		_signal_change(true);
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
-		goto watch;
-	}
-
-	if (work) {
-		/* wait until something happens */
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
-		goto watch;
-	}
-
-	log_flag(NET, "%s: cleaning up", __func__);
-
-	_signal_change(true);
-
-	_fini_signal_handler();
-
-	xassert(!mgr.poll_active);
-	xassert(!mgr.listen_active);
-
-quiesced:
 	xassert(mgr.watching);
 	mgr.watching = false;
 
