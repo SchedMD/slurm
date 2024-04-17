@@ -214,12 +214,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_STATE_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_STATE_RESP"
                 }
               }
             }
@@ -229,12 +229,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_STATE_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_JOBS_STATE_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_STATE_RESP"
                 }
               }
             }
