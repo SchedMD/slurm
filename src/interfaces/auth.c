@@ -193,7 +193,7 @@ extern int auth_g_init(void)
 			auth_get_plugin_name(AUTH_PLUGIN_JWT));
 	}
 
-	if (getenv("SLURM_SACK_KEY")) {
+	if (getenv("SLURM_SACK_KEY") || getenv("SLURM_SACK_JWKS")) {
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = xstrdup(
 			auth_get_plugin_name(AUTH_PLUGIN_SLURM));

@@ -151,7 +151,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	List controllers = NULL;
 	pid_t pid;
-	char *sack_key = NULL;
+	char *sack_jwks = NULL, *sack_key = NULL;
 	struct stat statbuf;
 
 	/*
@@ -195,14 +195,13 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	}
 
 	/* If the slurm.key file exists, assume we're using auth/slurm */
+	sack_jwks = get_extra_conf_path("slurm.jwks");
 	sack_key = get_extra_conf_path("slurm.key");
-	if (!stat(sack_key, &statbuf)) {
-		/*
-		 * This envvar will ensure both the config fetching process
-		 * as well as ourselves will use the original key location.
-		 */
+	if (!stat(sack_jwks, &statbuf))
+		setenv("SLURM_SACK_JWKS", sack_jwks, 1);
+	else if (!stat(sack_key, &statbuf))
 		setenv("SLURM_SACK_KEY", sack_key, 1);
-	}
+	xfree(sack_jwks);
 	xfree(sack_key);
 
 	/*
