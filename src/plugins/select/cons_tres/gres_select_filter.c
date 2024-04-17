@@ -1436,6 +1436,25 @@ static int _get_gres_node_cnt(gres_node_state_t *gres_ns, int node_inx)
 	return gres_cnt;
 }
 
+static int _get_node_sock_specs(struct job_resources *job_res,
+				uint16_t *sock_cnt,
+				uint16_t *cores_per_socket_cnt,
+				int *core_offset,
+				uint32_t job_node_inx)
+{
+	if (get_job_resources_cnt(job_res, job_node_inx, sock_cnt,
+				  cores_per_socket_cnt) != SLURM_SUCCESS) {
+		error("%s: Invalid socket/core count", __func__);
+		return SLURM_ERROR;
+	}
+	*core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (*core_offset < 0) {
+		error("%s: Invalid core offset", __func__);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 /* Set array of allocated cores for each socket on this node */
 static int _set_used_cnts(select_and_set_args_t *args)
 {
@@ -1452,18 +1471,8 @@ static int _set_used_cnts(select_and_set_args_t *args)
 	xassert(args->used_sock_cnt == 0);
 	xassert(args->sock_cnt == 0);
 
-	if (get_job_resources_cnt(job_res, args->job_node_inx,
-				  &(args->sock_cnt),
-				  &cores_per_socket_cnt) != SLURM_SUCCESS) {
-		error("%s: Invalid socket/core count", __func__);
-		return SLURM_ERROR;
-	}
-	core_offset = get_job_resources_offset(args->job_ptr->job_resrcs,
-					       args->job_node_inx, 0, 0);
-	if (core_offset < 0) {
-		error("%s: Invalid core offset", __func__);
-		return SLURM_ERROR;
-	}
+	_get_node_sock_specs(job_res, &(args->sock_cnt), &cores_per_socket_cnt,
+			     &core_offset, args->job_node_inx);
 
 	args->used_cores_on_sock = xcalloc(args->sock_cnt, sizeof(int));
 	for (socket_inx = 0; socket_inx < args->sock_cnt; socket_inx++) {
