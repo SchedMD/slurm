@@ -273,12 +273,20 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	const char *alg;
 	long r_uid, expiration;
 
-	if ((rc = jwt_decode(&jwt, token,
-			     verify ? (unsigned char *) slurm_key->head : NULL,
-			     verify ? slurm_key->size : 0))) {
-		error("%s: jwt_decode failure: %s",
-		      __func__, slurm_strerror(rc));
-		goto fail;
+	if (verify) {
+		if ((rc = jwt_decode(&jwt, token,
+				     (unsigned char *) slurm_key->head,
+				     slurm_key->size))) {
+			error("%s: jwt_decode (with key) failure: %s",
+			      __func__, slurm_strerror(rc));
+			goto fail;
+		}
+	} else {
+		if ((rc = jwt_decode(&jwt, token, NULL, 0))) {
+			error("%s: jwt_decode failure: %s",
+			      __func__, slurm_strerror(rc));
+			goto fail;
+		}
 	}
 
 	/*
