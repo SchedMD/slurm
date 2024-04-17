@@ -22,7 +22,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 #include <string.h>
 #include "align.h"
-#include "k12-config.h"
+#include "config-xkcp.h"
 
 #define XKCP_DeclareSpongeStructure(prefix, size, alignment) \
     ALIGN(alignment) typedef struct prefix##_SpongeInstanceStruct { \

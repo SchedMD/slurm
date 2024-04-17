@@ -1,3 +1,3 @@
 # Makefile for hash plugins
 
-SUBDIRS = k12
+SUBDIRS = common_xkcp k12

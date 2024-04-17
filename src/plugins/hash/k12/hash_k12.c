@@ -40,7 +40,7 @@
 #include "src/interfaces/hash.h"
 #include "src/common/log.h"
 
-#include "KangarooTwelve.h"
+#include "src/plugins/hash/common_xkcp/KangarooTwelve.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
