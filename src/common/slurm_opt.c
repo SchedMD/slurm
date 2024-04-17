@@ -1763,7 +1763,7 @@ static slurm_cli_opt_t slurm_opt_export = {
 COMMON_SRUN_BOOL_OPTION(external_launcher);
 static slurm_cli_opt_t slurm_opt_external_launcher = {
 	.name = "external-launcher",
-	.has_arg = no_argument,
+	.has_arg = optional_argument,
 	.val = LONG_OPT_EXTERNAL_LAUNCHER,
 	.set_func_srun = arg_set_external_launcher,
 	.get_func = arg_get_external_launcher,
