@@ -262,4 +262,9 @@ extern char *xstring_bytes2hex(const unsigned char *string, int len,
 extern char *xstring_bytes2printable(const unsigned char *string, int len,
 				     const char replace);
 
+/*
+ * Return an xmalloc'd string in base64 format given a base64url string.
+ */
+extern char *xbase64_from_base64url(const char *in);
+
 #endif /* !_XSTRING_H */

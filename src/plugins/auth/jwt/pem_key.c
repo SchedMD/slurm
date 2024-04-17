@@ -61,37 +61,6 @@ static void _handle_prepend(char **string)
 	}
 }
 
-static char *_to_base64_from_base64url(char *in)
-{
-	char *out;
-	int i;
-
-	/* extra padding in case the padding was stripped off */
-	out = xmalloc(strlen(in) + 3);
-
-	for (i = 0; i < strlen(in); i++) {
-		switch (in[i]) {
-		case '-':
-			out[i] = '+';
-			break;
-		case '_':
-			out[i] = '/';
-			break;
-		default:
-			out[i] = in[i];
-		}
-	}
-
-	/*
-	 * Fix padding in case it was trimmed.
-	 * String length must be a multiple of 4.
-	 */
-	for (int padding = 4 - (i % 4); padding < 4 && padding; padding--)
-		out[i++] = '=';
-
-	return out;
-}
-
 /*
  * Convert base64url encoded value to DER formatted hex.
  * Returns an xmalloc()'d string.
@@ -102,7 +71,7 @@ static char *_to_hex(char *base64url)
 	unsigned char *bin;
 	int binlen;
 
-	base64 = _to_base64_from_base64url(base64url);
+	base64 = xbase64_from_base64url(base64url);
 
 	/*
 	 * The binary format is ~33% smaller,

@@ -94,6 +94,7 @@ strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 strong_alias(xstrncasecmp,      slurm_xstrncasecmp);
 strong_alias(xstrstr,           slurm_xstrstr);
 strong_alias(xstrcasestr,       slurm_xstrcasestr);
+strong_alias(xbase64_from_base64url, slurm_xbase64_from_base64url);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -897,4 +898,35 @@ extern char *xstring_bytes2printable(const unsigned char *string, int len,
 	}
 
 	return str;
+}
+
+extern char *xbase64_from_base64url(const char *in)
+{
+	char *out;
+	int i;
+
+	/* extra padding in case the padding was stripped off */
+	out = xmalloc(strlen(in) + 3);
+
+	for (i = 0; i < strlen(in); i++) {
+		switch (in[i]) {
+		case '-':
+			out[i] = '+';
+			break;
+		case '_':
+			out[i] = '/';
+			break;
+		default:
+			out[i] = in[i];
+		}
+	}
+
+	/*
+	 * Fix padding in case it was trimmed.
+	 * String length must be a multiple of 4.
+	 */
+	for (int padding = 4 - (i % 4); padding < 4 && padding; padding--)
+		out[i++] = '=';
+
+	return out;
 }

@@ -410,6 +410,7 @@
 #define xstrncasecmp		slurm_xstrncasecmp
 #define	xstrstr			slurm_xstrstr
 #define xstrcasestr		slurm_xstrcasestr
+#define xbase64_from_base64url	slurm_xbase64_from_base64url
 
 /* slurm_protocol_api.[ch] functions */
 #define convert_num_unit2       slurm_convert_num_unit2
