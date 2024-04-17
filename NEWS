@@ -121,6 +121,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Tag all /slurm/v0.0.39/ and /slurmdb/v0.0.39/ endpoints as
     deprecated in anticipation of removal in Slurm 24.11.
  -- Add ELIGIBLE environment variable to jobcomp/script plugin.
+ -- slurmrestd,sackd,scrun - Improve outgoing data efficiency using
+    non-contiguous write support in kernel.
 
 * Changes in Slurm 23.11.7
 ==========================

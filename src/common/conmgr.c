@@ -45,6 +45,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
@@ -347,6 +348,21 @@ typedef struct {
 	void *arg;
 	conmgr_con_type_t type;
 } socket_listen_init_t;
+
+/*
+ * Default number of write()s to queue up using the stack instead of xmalloc().
+ * Avoid the slow down from calling xmalloc() on a majority of the writev()s.
+ */
+#define IOV_STACK_COUNT 16
+#define HANDLE_WRITEV_ARGS_MAGIC 0x1a4afb40
+typedef struct {
+	int magic; /* HANDLE_WRITEV_ARGS_MAGIC */
+	int index;
+	const int iov_count;
+	conmgr_fd_t *con;
+	struct iovec *iov;
+	ssize_t wrote;
+} handle_writev_args_t;
 
 static int _close_con_for_each(void *x, void *arg);
 static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -1084,72 +1100,132 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 }
 
+static int _foreach_add_writev_iov(void *x, void *arg)
+{
+	buf_t *out = x;
+	handle_writev_args_t *args = arg;
+	struct iovec *iov = &args->iov[args->index];
+
+	xassert(out->magic == BUF_MAGIC);
+	xassert(args->magic == HANDLE_WRITEV_ARGS_MAGIC);
+
+	if (args->index >= args->iov_count)
+		return -1;
+
+	iov->iov_base = ((void *) get_buf_data(out)) + get_buf_offset(out);
+	iov->iov_len = remaining_buf(out);
+
+	log_flag(NET, "%s: [%s] queued writev[%d] %u/%u bytes to outgoing fd %u",
+		 __func__, args->con->name, args->index, remaining_buf(out),
+		 size_buf(out), args->con->output_fd);
+
+	args->index++;
+	return 0;
+}
+
+static int _foreach_writev_flush_bytes(void *x, void *arg)
+{
+	buf_t *out = x;
+	handle_writev_args_t *args = arg;
+
+	xassert(out->magic == BUF_MAGIC);
+	xassert(args->magic == HANDLE_WRITEV_ARGS_MAGIC);
+	xassert(args->wrote >= 0);
+
+	if (!args->wrote)
+		return 0;
+
+	if (args->wrote >= remaining_buf(out)) {
+		log_flag(NET, "%s: [%s] completed write[%d] of %u/%u bytes to outgoing fd %u",
+			 __func__, args->con->name, args->index,
+			 remaining_buf(out), size_buf(out),
+			 args->con->output_fd);
+		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
+				   get_buf_offset(out), size_buf(out),
+				   "%s: [%s] completed write[%d] of %u/%u bytes",
+				   __func__, args->con->name, args->index,
+				   remaining_buf(out), size_buf(out));
+
+		args->wrote -= remaining_buf(out);
+		args->index++;
+		return 1;
+	} else {
+		log_flag(NET, "%s: [%s] partial write[%d] of %zd/%u bytes to outgoing fd %u",
+			 __func__, args->con->name, args->index,
+			 args->wrote, size_buf(out), args->con->output_fd);
+		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
+				   get_buf_offset(out), args->wrote,
+				   "%s: [%s] partial write[%d] of %zd/%u bytes",
+				   __func__, args->con->name, args->index,
+				   args->wrote, remaining_buf(out));
+
+		set_buf_offset(out, get_buf_offset(out) + args->wrote);
+		args->wrote = 0;
+		args->index++;
+		return 0;
+	}
+}
+
+static void _handle_writev(conmgr_fd_t *con, const int out_count)
+{
+	const int iov_count = MIN(IOV_MAX, out_count);
+	struct iovec iov_stack[IOV_STACK_COUNT];
+	handle_writev_args_t args = {
+		.magic = HANDLE_WRITEV_ARGS_MAGIC,
+		.iov_count = iov_count,
+		.con = con,
+		.iov = iov_stack,
+	};
+
+	/* Try to use stack for small write counts when possible */
+	if (iov_count > ARRAY_SIZE(iov_stack))
+		args.iov = xcalloc(iov_count, sizeof(*args.iov));
+
+	(void) list_for_each_ro(con->out, _foreach_add_writev_iov, &args);
+	xassert(args.index == iov_count);
+
+	args.wrote = writev(con->output_fd, args.iov, iov_count);
+
+	if (args.wrote == -1) {
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+			log_flag(NET, "%s: [%s] retry write: %m",
+				 __func__, con->name);
+		} else {
+			error("%s: [%s] error while write: %m",
+			      __func__, con->name);
+			/* drop outbound data on the floor */
+			list_flush(con->out);
+			_close_con(false, con);
+		}
+	} else if (args.wrote == 0) {
+		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
+	} else {
+		log_flag(NET, "%s: [%s] wrote %zd bytes",
+			 __func__, con->name, args.wrote);
+
+		args.index = 0;
+		(void) list_delete_all(con->out, _foreach_writev_flush_bytes,
+				       &args);
+		xassert(!args.wrote);
+	}
+
+	if (args.iov != iov_stack)
+		xfree(args.iov);
+}
+
 static void _handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 			  conmgr_work_status_t status, const char *tag,
 			  void *arg)
 {
-	buf_t *out;
-	ssize_t wrote;
-	int bytes;
-	void *buffer;
+	int out_count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (!(out = list_peek(con->out))) {
+	if (!(out_count = list_count(con->out)))
 		log_flag(NET, "%s: [%s] skipping attempt with zero writes",
 			 __func__, con->name);
-		return;
-	}
-
-	xassert(out->magic == BUF_MAGIC);
-	bytes = remaining_buf(out);
-	buffer = get_buf_data(out) + get_buf_offset(out);
-
-	xassert(bytes > 0);
-
-	log_flag(NET, "%s: [%s] attempting to write %u bytes to fd %u",
-		 __func__, con->name, bytes, con->output_fd);
-
-	/* write in non-blocking fashion as we can always continue later */
-	if (con->is_socket)
-		/* avoid ESIGPIPE on sockets and never block */
-		wrote = send(con->output_fd, buffer, bytes,
-			     (MSG_DONTWAIT | MSG_NOSIGNAL));
-	else /* normal write for non-sockets */
-		wrote = write(con->output_fd, buffer, bytes);
-
-	if (wrote == -1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			log_flag(NET, "%s: [%s] retry write: %m",
-				 __func__, con->name);
-			return;
-		}
-
-		error("%s: [%s] error while write: %m", __func__, con->name);
-		/* drop outbound data on the floor */
-		list_flush(con->out);
-		_close_con(false, con);
-		return;
-	} else if (wrote == 0) {
-		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
-		return;
-	}
-
-	log_flag(NET, "%s: [%s] wrote %zu/%u bytes of %d pending writes",
-		 __func__, con->name, wrote, bytes, list_count(con->out));
-	log_flag_hex(NET_RAW, get_buf_data(out), wrote,
-		     "%s: [%s] wrote", __func__, con->name);
-
-	if (wrote != bytes) {
-		/* Update offset with bytes written so far */
-		set_buf_offset(out, (get_buf_offset(out) + wrote));
-	} else {
-		buf_t *cleanup = list_pop(con->out);
-
-		xassert(cleanup == out);
-
-		FREE_NULL_BUFFER(cleanup);
-	}
+	else
+		_handle_writev(con, out_count);
 }
 
 static int _on_rpc_connection_data(conmgr_fd_t *con, void *arg)
