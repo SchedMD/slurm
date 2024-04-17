@@ -51,8 +51,13 @@
 
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
+typedef struct {
+	unsigned char *key;
+	unsigned int keylen;
+} key_details_t;
+
+static key_details_t *default_key = NULL;
 static int lifespan = DEFAULT_TTL;
-static buf_t *slurm_key = NULL;
 static char *this_hostname = NULL;
 
 static void _check_key_permissions(const char *path, int bad_perms)
@@ -83,6 +88,7 @@ static void _check_key_permissions(const char *path, int bad_perms)
 
 extern void init_internal(void)
 {
+	buf_t *slurm_key = NULL;
 	char *key_file = xstrdup(getenv("SLURM_SACK_KEY"));
 
 	if (!key_file)
@@ -96,6 +102,10 @@ extern void init_internal(void)
 		      plugin_type, key_file);
 	}
 
+	default_key = xmalloc(sizeof(*default_key));
+	default_key->keylen = slurm_key->size;
+	default_key->key = xfer_buf_data(slurm_key);
+
 	xfree(key_file);
 
 	this_hostname = xshort_hostname();
@@ -106,7 +116,8 @@ extern void init_internal(void)
 
 extern void fini_internal(void)
 {
-	FREE_NULL_BUFFER(slurm_key);
+	xfree(default_key->key);
+	xfree(default_key);
 	xfree(this_hostname);
 	/* save token cache to state */
 	/* terminate processing thread */
@@ -121,8 +132,8 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 	char *token = NULL, *xtoken = NULL;
 	long grant_time = now + lifespan;
 
-	if (!slurm_key || !this_hostname)
-		fatal("slurm_key or this_hostname missing");
+	if (!default_key || !this_hostname)
+		fatal("default_key or this_hostname missing");
 
 	if (jwt_new(&jwt)) {
 		error("%s: jwt_new failure", __func__);
@@ -185,8 +196,7 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 		xfree(payload);
 	}
 
-	if (jwt_set_alg(jwt, opt_alg, (unsigned char *) slurm_key->head,
-			slurm_key->size)) {
+	if (jwt_set_alg(jwt, opt_alg, default_key->key, default_key->keylen)) {
 		error("%s: jwt_set_alg failure", __func__);
 		goto fail;
 	}
@@ -212,8 +222,8 @@ extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid)
 {
 	jwt_t *jwt = NULL;
 
-	if (!slurm_key)
-		fatal("slurm_key missing");
+	if (!default_key)
+		fatal("default_key missing");
 
 	if (!cred) {
 		error("%s: rejecting NULL cred", __func__);
@@ -274,9 +284,8 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	long r_uid, expiration;
 
 	if (verify) {
-		if ((rc = jwt_decode(&jwt, token,
-				     (unsigned char *) slurm_key->head,
-				     slurm_key->size))) {
+		if ((rc = jwt_decode(&jwt, token, default_key->key,
+				     default_key->keylen))) {
 			error("%s: jwt_decode (with key) failure: %s",
 			      __func__, slurm_strerror(rc));
 			goto fail;
