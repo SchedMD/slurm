@@ -213,6 +213,7 @@ extern char *run_command(run_command_args_t *args)
 	pid_t cpid;
 	char *resp = NULL;
 	int pfd[2] = { -1, -1 };
+	bool free_argv = false;
 
 	if ((args->script_path == NULL) || (args->script_path[0] == '\0')) {
 		error("%s: no script specified", __func__);
@@ -239,6 +240,11 @@ extern char *run_command(run_command_args_t *args)
 		*(args->status) = 127;
 		resp = xstrdup("System error");
 		return resp;
+	}
+	if (!(args->script_argv)) {
+		args->script_argv = xcalloc(2, sizeof(char *));
+		args->script_argv[0] = xstrdup(args->script_path);
+		free_argv = true;
 	}
 	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
@@ -270,6 +276,10 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
+	}
+	if (free_argv) {
+		xfree(args->script_argv[0]);
+		xfree(args->script_argv);
 	}
 
 	return resp;
