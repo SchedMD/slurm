@@ -193,7 +193,7 @@ struct conmgr_s {
 	 * list of connections that only listen
 	 * type: conmgr_fd_t
 	 */
-	list_t *listen;
+	list_t *listen_conns;
 	/*
 	 * list of complete connections pending cleanup
 	 * type: conmgr_fd_t
@@ -553,11 +553,11 @@ static void _atfork_child(void)
 {
 #ifdef MEMORY_LEAK_DEBUG
 	_atfork_flush_con_list(mgr.connections);
-	_atfork_flush_con_list(mgr.listen);
+	_atfork_flush_con_list(mgr.listen_conns);
 	_atfork_flush_con_list(mgr.complete);
 
 	FREE_NULL_LIST(mgr.connections);
-	FREE_NULL_LIST(mgr.listen);
+	FREE_NULL_LIST(mgr.listen_conns);
 	FREE_NULL_LIST(mgr.complete);
 	FREE_NULL_LIST(mgr.delayed_work);
 	FREE_NULL_LIST(mgr.deferred_funcs);
@@ -624,7 +624,7 @@ extern void init_conmgr(int thread_count, int max_connections,
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
-	mgr.listen = list_create(NULL);
+	mgr.listen_conns = list_create(NULL);
 	mgr.complete = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.workq = new_workq(thread_count);
@@ -707,7 +707,7 @@ static void _close_all_connections(bool locked)
 
 	/* close all connections */
 	list_for_each(mgr.connections, _close_con_for_each, NULL);
-	list_for_each(mgr.listen, _close_con_for_each, NULL);
+	list_for_each(mgr.listen_conns, _close_con_for_each, NULL);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -754,7 +754,7 @@ extern void free_conmgr(void)
 	 * It should be safe to shutdown the mgr.
 	 */
 	FREE_NULL_LIST(mgr.connections);
-	FREE_NULL_LIST(mgr.listen);
+	FREE_NULL_LIST(mgr.listen_conns);
 	FREE_NULL_LIST(mgr.complete);
 
 	if (mgr.delayed_work) {
@@ -962,7 +962,7 @@ static conmgr_fd_t *_add_connection(conmgr_con_type_t type,
 
 	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen)
-		list_append(mgr.listen, con);
+		list_append(mgr.listen_conns, con);
 	else
 		list_append(mgr.connections, con);
 	slurm_mutex_unlock(&mgr.mutex);
@@ -2116,7 +2116,7 @@ static void _listen(void *x)
 	/* if shutdown has been requested: then don't listen() anymore */
 	if (mgr.shutdown) {
 		log_flag(NET, "%s: caught shutdown. closing %u listeners",
-			 __func__, list_count(mgr.listen));
+			 __func__, list_count(mgr.listen_conns));
 		goto cleanup;
 	}
 
@@ -2133,7 +2133,7 @@ static void _listen(void *x)
 	}
 
 	/* grab counts once */
-	count = list_count(mgr.listen);
+	count = list_count(mgr.listen_conns);
 
 	log_flag(NET, "%s: listeners=%u", __func__, count);
 
@@ -2160,7 +2160,7 @@ static void _listen(void *x)
 	args->nfds++;
 
 	/* populate listening sockets */
-	itr = list_iterator_create(mgr.listen);
+	itr = list_iterator_create(mgr.listen_conns);
 	while ((con = list_next(itr))) {
 		/* already accept queued or listener already closed */
 		if (con->work_active || con->read_eof)
@@ -2188,7 +2188,7 @@ static void _listen(void *x)
 		 __func__, args->nfds, (count + 2));
 
 	/* _poll() will lock mgr.mutex */
-	_poll(args, mgr.listen, _handle_listen_event, __func__);
+	_poll(args, mgr.listen_conns, _handle_listen_event, __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 cleanup:
@@ -2267,8 +2267,8 @@ watch:
 	/* grab counts once */
 	count = list_count(mgr.connections);
 
-	log_flag(NET, "%s: starting connections=%u listen=%u",
-		 __func__, count, list_count(mgr.listen));
+	log_flag(NET, "%s: starting connections=%u listen_conns=%u",
+		 __func__, count, list_count(mgr.listen_conns));
 
 	if (!mgr.poll_active && !mgr.listen_active) {
 		/* only clear signal and event pipes once both polls are done */
@@ -2319,14 +2319,14 @@ watch:
 	}
 
 	/* start listen thread if needed */
-	if (!list_is_empty(mgr.listen)) {
+	if (!list_is_empty(mgr.listen_conns)) {
 		if (!listen_args) {
 			listen_args = xmalloc(sizeof(*listen_args));
 			listen_args->magic = MAGIC_POLL_ARGS;
 		}
 
 		/* run any queued work */
-		list_transfer_match(mgr.listen, mgr.complete,
+		list_transfer_match(mgr.listen_conns, mgr.complete,
 				    _handle_connection, NULL);
 
 		if (!mgr.listen_active) {
@@ -2752,7 +2752,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 
 	memcpy(&address, addr, addrlen);
 
-	if (list_find_first_ro(mgr.listen, _match_socket_address, &address))
+	if (list_find_first_ro(mgr.listen_conns, _match_socket_address,
+			       &address))
 		return true;
 
 	return false;
