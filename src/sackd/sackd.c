@@ -278,6 +278,13 @@ static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
 	info("Caught SIGUSR2. Ignoring.");
 }
 
+static void _on_sigpipe(conmgr_fd_t *con, conmgr_work_type_t type,
+		        conmgr_work_status_t status, const char *tag,
+		        void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
 static void _try_to_reconfig(void)
 {
 	extern char **environ;
@@ -403,6 +410,7 @@ extern int main(int argc, char **argv)
 	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
 	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
 	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
+	conmgr_add_signal_work(SIGPIPE, _on_sigpipe, NULL, "on_sigpipe()");
 
 	_establish_config_source();
 	slurm_conf_init(conf_file);
