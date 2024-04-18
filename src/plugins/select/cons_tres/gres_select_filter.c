@@ -999,6 +999,9 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 
 	if (gres_js->gres_per_job <= gres_js->total_gres)
 		fini = 1;
+
+	xfree(links_cnt);
+	xfree(sorted_gres);
 	return fini;
 }
 
