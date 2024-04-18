@@ -5429,6 +5429,14 @@ extern void gres_job_state_delete(gres_job_state_t *gres_js)
 		}
 		xfree(gres_js->gres_per_bit_select);
 	}
+
+	if (gres_js->res_gpu_cores) {
+		for (i = 0; i < gres_js->res_array_size; i++) {
+			FREE_NULL_BITMAP(gres_js->res_gpu_cores[i]);
+		}
+		xfree(gres_js->res_gpu_cores);
+	}
+
 	xfree(gres_js->gres_cnt_node_alloc);
 	xfree(gres_js->gres_cnt_node_select);
 	xfree(gres_js->type_name);
@@ -6627,6 +6635,7 @@ static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 	new_gres_js->mem_per_gres = gres_js->mem_per_gres;
 	new_gres_js->ntasks_per_gres = gres_js->ntasks_per_gres;
 	new_gres_js->node_cnt = gres_js->node_cnt;
+	new_gres_js->res_array_size = gres_js->res_array_size;
 	new_gres_js->total_gres	= gres_js->total_gres;
 	new_gres_js->total_node_cnt = gres_js->total_node_cnt;
 	new_gres_js->type_id = gres_js->type_id;
@@ -6735,6 +6744,17 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_cnt, sizeof(uint64_t));
 			memcpy(new_gres_js->gres_per_bit_select[i],
 			       gres_js->gres_per_bit_select[i], bit_cnt);
+		}
+	}
+
+	if (gres_js->res_gpu_cores) {
+		new_gres_js->res_gpu_cores = xcalloc(gres_js->res_array_size,
+						     sizeof(bitstr_t *));
+		for (i = 0; i < gres_js->res_array_size; i++) {
+			if (gres_js->res_gpu_cores[i] == NULL)
+				continue;
+			new_gres_js->res_gpu_cores[i] =
+				bit_copy(gres_js->res_gpu_cores[i]);
 		}
 	}
 
