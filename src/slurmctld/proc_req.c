@@ -235,7 +235,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 {
 	slurm_conf_t *conf = &slurm_conf;
 	uint32_t next_job_id;
-	int i;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
@@ -302,7 +301,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->control_addr = xcalloc(conf->control_cnt + 1, sizeof(char *));
 	conf_ptr->control_machine = xcalloc(conf->control_cnt + 1,
 					    sizeof(char *));
-	for (i = 0; i < conf_ptr->control_cnt; i++) {
+	for (int i = 0; i < conf_ptr->control_cnt; i++) {
 		conf_ptr->control_addr[i] = xstrdup(conf->control_addr[i]);
 		conf_ptr->control_machine[i] =
 			xstrdup(conf->control_machine[i]);
