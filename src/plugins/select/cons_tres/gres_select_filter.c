@@ -749,22 +749,44 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 		}
 	}
 
+
+	gres_needed = used_sock_cnt * gres_js->gres_per_socket;
 	/*
 	 * Now pick specific GRES for these sockets.
 	 */
 	for (s = 0; s < sock_cnt; s++) {
 		if (!used_sock[s])
 			continue;
-		gres_needed = gres_js->gres_per_socket;
-		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
-					       s, sorted_gres, links_cnt);
-		if (gres_needed) {
-			/* Add GRES unconstrained by socket as needed */
+		gres_needed -= _pick_gres_topo(sock_gres,
+					       gres_js->gres_per_socket,
+					       node_inx, s, sorted_gres,
+					       links_cnt);
+	}
+	if (gres_needed) {
+		/* Add GRES unconstrained by socket as needed */
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						node_inx, ANY_SOCK_TEST,
+						sorted_gres, links_cnt);
+	}
+
+	if (gres_needed) {
+		/* Allocate extra to other used sockets if needed */
+		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+			if (!used_sock[s])
+				continue;
 			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-						       node_inx, ANY_SOCK_TEST,
-						       sorted_gres, links_cnt);
+						       node_inx, s, sorted_gres,
+						       links_cnt);
 		}
 	}
+
+	if (gres_needed) {
+		/* Something bad happened on task layout for this GRES type */
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64")",
+		      __func__, sock_gres->gres_state_job->gres_name, job_id,
+		      node_inx, gres_needed);
+	}
+
 	xfree(links_cnt);
 	xfree(sorted_gres);
 	if (allocated_array_copy)
