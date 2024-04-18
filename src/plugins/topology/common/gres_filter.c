@@ -192,6 +192,73 @@ static uint64_t _set_max_gres(gres_job_state_t *gres_js,
 	return max_gres;
 }
 
+static void _reduce_restricted_cores(bitstr_t *avail_core,
+				     uint16_t *avail_cpus,
+				     uint16_t *avail_cores_tot,
+				     uint16_t *res_core_tot,
+				     bitstr_t *res_cores,
+				     uint16_t *res_cores_per_sock,
+				     uint64_t max_res_cores,
+				     uint16_t sockets,
+				     uint16_t cores_per_socket,
+				     uint16_t cpus_per_core,
+				     bool *req_sock,
+				     bool enforce_binding,
+				     bool first_pass)
+{
+	int cnt;
+
+	/*
+	 * In the case where cores have been reduced to
+	 * min_core_cnt partial res_cores_per_gpu might be left.
+	 */
+	if (!enforce_binding && !first_pass) {
+		for (int s = 0; s < sockets; s++) {
+			if (*res_core_tot <= max_res_cores)
+				break;
+			if (req_sock[s] || !res_cores_per_sock[s])
+				continue;
+			for (int c = 0; c < cores_per_socket; c++) {
+				int i = (s * cores_per_socket) + c;
+				if (!bit_test(res_cores, i) ||
+				    !bit_test(avail_core, i))
+					continue;
+				bit_clear(avail_core, i);
+				avail_cores_per_sock[s]--;
+				(*avail_cores_tot)--;
+				(*res_core_tot)--;
+				res_cores_per_sock[s]--;
+				if (*res_core_tot <= max_res_cores)
+					break;
+			}
+
+		}
+	}
+	for (int s = 0; s < sockets; s++) {
+		if (*res_core_tot <= max_res_cores)
+			break;
+		if (!req_sock[s] || !res_cores_per_sock[s])
+			continue;
+		for (int c = 0; c < cores_per_socket; c++) {
+			int i = (s * cores_per_socket) + c;
+			if (!bit_test(res_cores, i) || !bit_test(avail_core, i))
+				continue;
+			bit_clear(avail_core, i);
+			avail_cores_per_sock[s]--;
+			(*avail_cores_tot)--;
+			(*res_core_tot)--;
+			res_cores_per_sock[s]--;
+			if (*res_core_tot <= max_res_cores)
+				break;
+		}
+
+	}
+
+	cnt = *avail_cores_tot * cpus_per_core;
+	if (*avail_cpus < cnt)
+		*avail_cpus = cnt;
+}
+
 extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  gres_mc_data_t *mc_ptr,
 				  List sock_gres_list,
@@ -207,7 +274,9 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  bool first_pass,
 				  bitstr_t *avail_core,
 				  char *node_name,
-				  uint16_t cr_type)
+				  uint16_t cr_type,
+				  uint16_t res_cores_per_gpu,
+				  int node_i)
 {
 	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -217,6 +286,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 	int *socket_index; /* Socket indexes */
 	bool has_cpus_per_gres = false;
 	int removed_tasks, efctv_cpt;
+	uint16_t *res_cores_per_sock = NULL;
 
 	xassert(mc_ptr->cpus_per_task);
 
@@ -248,9 +318,11 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		uint64_t cnt_avail_total, max_tasks;
 		uint64_t max_gres = 0;
 		uint16_t avail_cores_tot = 0;
+		uint16_t res_core_tot = 0;
 		uint16_t cpus_per_gres = 0;
 		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
 		int threads_per_core;
+		bool is_res_gpu = false;
 
 		/*
 		 * sock_gres->total_cnt is a value used by gres_sched_add
@@ -275,6 +347,33 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		if (!sock_gres->gres_state_job)
 			continue;
 		gres_js = sock_gres->gres_state_job->gres_data;
+
+		if (!(cr_type & CR_SOCKET) &&
+		    (sock_gres->gres_state_job->plugin_id ==
+		     gres_get_gpu_plugin_id()) &&
+		    res_cores_per_gpu && gres_js->res_gpu_cores &&
+		    gres_js->res_gpu_cores[node_i])
+			is_res_gpu = true;
+
+		if (is_res_gpu) {
+			bitstr_t *res_cores =
+				bit_copy(gres_js->res_gpu_cores[node_i]);
+			bit_and(res_cores, avail_core);
+			xfree(res_cores_per_sock);
+			res_cores_per_sock = xcalloc(sockets, sizeof(uint16_t));
+			for (int s = 0; s < sockets; s++) {
+				int start_core = s * cores_per_socket;
+				int end_core = start_core + cores_per_socket;
+				res_cores_per_sock[s] =
+					bit_set_count_range(res_cores,
+							    start_core,
+							    end_core);
+				res_core_tot += res_cores_per_sock[s];
+			}
+			FREE_NULL_BITMAP(res_cores);
+		}
+
+
 		rem_nodes = MAX(rem_nodes, 1);
 		rem_sockets = MAX(1, mc_ptr->sockets_per_node);
 		max_gres = _set_max_gres(gres_js, sock_gres, rem_nodes,
@@ -400,6 +499,14 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 							cpus_per_core;
 						if (cnt < *avail_cpus)
 							*avail_cpus = cnt;
+						if (is_res_gpu &&
+						    bit_test(
+							gres_js->
+							res_gpu_cores[node_i],
+							i)) {
+							res_core_tot--;
+							res_cores_per_sock[s]--;
+						}
 						if (tot_core_cnt <=
 						    min_core_cnt)
 							break;
@@ -555,8 +662,36 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 					if (cnt < *avail_cpus)
 						*avail_cpus = cnt;
 
+					if (res_core_tot &&
+					    bit_test(gres_js->
+						     res_gpu_cores[node_i],
+						     i)) {
+						res_core_tot--;
+						res_cores_per_sock[s]--;
+					}
+
 				}
 			}
+		}
+
+		/*
+		 * If the gres is a gpu and RestrictedCoresPerGPU is configured
+		 * remove restricted cores that can not be used according to
+		 * cnt_avail_total.
+		 */
+		if (is_res_gpu) {
+			uint64_t max_res_cores;
+			max_res_cores = cnt_avail_total * res_cores_per_gpu;
+
+			_reduce_restricted_cores(avail_core, avail_cpus,
+						 &avail_cores_tot,
+						 &res_core_tot,
+						 gres_js->res_gpu_cores[node_i],
+						 res_cores_per_sock,
+						 max_res_cores, sockets,
+						 cores_per_socket,
+						 cpus_per_core, req_sock,
+						 enforce_binding, first_pass);
 		}
 
 		if (*max_tasks_this_node == NO_VAL) {
@@ -615,7 +750,38 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			(*max_tasks_this_node)--;
 			req_cores = *max_tasks_this_node;
 			req_cores *= efctv_cpt;
+
+			if (!gres_js->gres_per_node &&
+			    (gres_js->gres_per_task ||
+			     (gres_js->ntasks_per_gres &&
+			      (gres_js->ntasks_per_gres != NO_VAL16)))) {
+				uint32_t gres_limit;
+
+				if(gres_js->gres_per_task)
+					gres_limit = *max_tasks_this_node *
+						gres_js->gres_per_task;
+				else
+					gres_limit = *max_tasks_this_node /
+						gres_js->ntasks_per_gres;
+				if (cnt_avail_total > gres_limit)
+					cnt_avail_total = gres_limit;
+				if (is_res_gpu) {
+					uint32_t max_res_cores =
+						cnt_avail_total *
+						res_cores_per_gpu;
+					_reduce_restricted_cores(
+						avail_core, avail_cpus,
+						&avail_cores_tot, &res_core_tot,
+						gres_js->res_gpu_cores[node_i],
+						res_cores_per_sock,
+						max_res_cores, sockets,
+						cores_per_socket, cpus_per_core,
+						req_sock, enforce_binding,
+						first_pass);
+				}
+			}
 		}
+
 		if (cpus_per_gres) {
 			int i;
 			if (gres_js->gres_per_node) {
@@ -797,6 +963,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 	xfree(avail_cores_per_sock);
 	xfree(req_sock);
 	xfree(socket_index);
+	xfree(res_cores_per_sock);
 
 	if (!has_cpus_per_gres &&
 	    ((mc_ptr->cpus_per_task > 1) ||

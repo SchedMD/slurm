@@ -1525,7 +1525,9 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 			rem_nodes, enforce_binding, first_pass,
 			avail_core[node_inx],
 			node_record_table_ptr[node_inx]->name,
-			cr_type);
+			cr_type,
+			node_ptr->config_ptr->res_cores_per_gpu,
+			node_inx);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;

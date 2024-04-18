@@ -75,6 +75,8 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  bool first_pass,
 				  bitstr_t *avail_core,
 				  char *node_name,
-				  uint16_t cr_type);
+				  uint16_t cr_type,
+				  uint16_t res_cores_per_gpu,
+				  int node_i);
 
 #endif
