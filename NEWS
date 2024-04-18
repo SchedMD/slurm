@@ -126,6 +126,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.7
 ==========================
+ -- slurmrestd - Correct OpenAPI specification for
+    'GET /slurm/v0.0.40/jobs/state' having response as null.
 
 * Changes in Slurm 23.11.6
 ==========================
