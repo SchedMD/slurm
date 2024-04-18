@@ -1372,7 +1372,10 @@ completed), TIME_LIMIT, TIME_LIMIT_90 (reached 90 percent of time limit),
 TIME_LIMIT_80 (reached 80 percent of time limit), TIME_LIMIT_50 (reached 50
 percent of time limit) and ARRAY_TASKS (send emails for each array task).
 Multiple \fItype\fR values may be specified in a comma separated list.
+NONE will suppress all event notifications, ignoring any other values specified.
+By default no email notifications are sent.
 The user to be notified is indicated with \fB\-\-mail\-user\fR.
+
 Unless the ARRAY_TASKS option is specified, mail notifications on job BEGIN,
 END, FAIL and REQUEUE apply to a job array as a whole rather than generating
 individual email messages for each task in the job array.
@@ -1381,7 +1384,9 @@ individual email messages for each task in the job array.
 .TP
 \fB\-\-mail\-user\fR=<\fIuser\fR>
 User to receive email notification of state changes as defined by
-\fB\-\-mail\-type\fR.
+\fB\-\-mail\-type\fR. This may be a full email address or a username. If a
+username is specified, the value from \fBMailDomain\fR in slurm.conf will be
+appended to create an email address.
 The default value is the submitting user.
 .IP
 
