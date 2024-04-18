@@ -237,6 +237,17 @@ static int _find_job (void *x, void *key)
 	return 0;
 }
 
+static int _is_job_sharing(void *x, void *key)
+{
+	job_record_t *job_ptr = x;
+	if ((job_ptr->details->share_res == 1) ||
+	    (job_ptr->part_ptr->max_share & SHARED_FORCE)) {
+		debug3("%pJ is sharing resources.", job_ptr);
+		return 1;
+	}
+	return 0;
+}
+
 static void _free_avail_res(avail_res_t *avail_res)
 {
 	if (!avail_res)
@@ -711,11 +722,10 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 int sharing_only, part_record_t *my_part_ptr,
-			 bool qos_preemptor)
+			 bool qos_preemptor, List jobs)
 {
-	uint32_t r, c, core_begin, core_end;
+	uint32_t r;
 	uint16_t num_rows;
-	bitstr_t *use_row_bitmap = NULL;
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		num_rows = p_ptr->num_rows;
@@ -733,13 +743,10 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 
 			if (!p_ptr->row[r].row_bitmap[node_i])
 				continue;
-			use_row_bitmap = p_ptr->row[r].row_bitmap[node_i];
-			core_begin = 0;
-			core_end = bit_size(p_ptr->row[r].row_bitmap[node_i]);
 
-			for (c = core_begin; c < core_end; c++)
-				if (bit_test(use_row_bitmap, c))
-					return 1;
+			if (jobs &&
+			    list_find_first(jobs, _is_job_sharing, NULL))
+				return 1;
 		}
 	}
 	return 0;
@@ -1025,7 +1032,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			 * in sharing partitions
 			 */
 			if (_is_node_busy(cr_part_ptr, i, 1,
-					  job_ptr->part_ptr, qos_preemptor)) {
+					  job_ptr->part_ptr, qos_preemptor,
+					  node_usage[i].jobs)) {
 				debug3("node %s sharing?",
 				       node_ptr->name);
 				goto clear_bit;
@@ -1036,7 +1044,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (job_node_req == NODE_CR_RESERVED) {
 				if (_is_node_busy(cr_part_ptr, i, 0,
 						  job_ptr->part_ptr,
-						  qos_preemptor)) {
+						  qos_preemptor,
+						  node_usage[i].jobs)) {
 					debug3("node %s busy",
 					       node_ptr->name);
 					goto clear_bit;
@@ -1048,7 +1057,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				 */
 				if (_is_node_busy(cr_part_ptr, i, 1,
 						  job_ptr->part_ptr,
-						  qos_preemptor)) {
+						  qos_preemptor,
+						  node_usage[i].jobs)) {
 					debug3("node %s vbusy",
 					       node_ptr->name);
 					goto clear_bit;
