@@ -114,15 +114,18 @@ Group=GROUPNAME
 </pre></li>
 </ul>
 </li>
-<li>Configure the socket for slurmrestd. This may be accomplished by
-creating/changing permissions on the parent directory and/or changing the path
-to the socket in the service file.
+<li>(Slurm 24.05 and newer) Optional: Customize the socket for slurmrestd.
+By default it will listen only on TCP port 6820. You may change this behavior
+by changing <code>SLURMRESTD_LISTEN</code>
+(see <a href="#customization">Customizing slurmrestd.service</a>).</li>
+<li>(Slurm 23.11 and earlier) Configure the socket for slurmrestd. This may be
+accomplished by creating/changing permissions on the parent directory and/or
+changing the path to the socket in the service file.
 <ul>
 <li><b>Permissions</b>: The user running the service must have write+execute
-permissions on directory that will contain the socket</li>
-<li><b>Changing socket</b>: Currently the way to change or disable the socket
-is to modify the 'ExecStart' line of the service (this is known to be an
-inelegant procedure and will be changed in the next major release)
+permissions on the directory that will contain the UNIX socket</li>
+<li><b>Changing socket</b>: On Slurm 23.11, the way to change or disable the
+socket is to modify the 'ExecStart' line of the service
 <ol>
 <li>Run <code>systemctl edit slurmrestd</code></li>
 <li>Add the following contents to the <code>[Service]</code> section:
@@ -133,10 +136,9 @@ Environment=SLURMRESTD_LISTEN=:6820
 </pre></li>
 <li>Adjust the assignment of SLURMRESTD_LISTEN to contain the socket(s) you want
 the daemon to listen on.</li>
+<li>After a future upgrade to Slurm 24.05+, the 'ExecStart' overrides will be
+unnecessary but will not conflict with the newer version.</li>
 </ol>
-<p><b>NOTE</b>: Currently the way to change or disable the socket is to modify
-the 'ExecStart' line of the service. This is known to be an inelegant procedure
-and will be changed in the next major release (after 23.11).</p>
 </li>
 </ul>
 </li>
@@ -145,7 +147,7 @@ and will be changed in the next major release (after 23.11).</p>
 <h3 id="customization">Customizing slurmrestd.service
 <a class="slurm_link" href="#customization"></a></h3>
 
-<p>The next major release (after 23.11) changes the operation of
+<p>The Slurm 24.05 release changes the operation of
 the default service file and may break existing overrides. If you have
 overridden <code>ExecStart=</code> to contain any TCP/UNIX sockets directly, it
 will cause the service to fail if it duplicates any sockets contained in
@@ -162,12 +164,14 @@ You may set any environment variables recognized by
 <a href="slurmrestd.html#SECTION_ENVIRONMENT-VARIABLES">slurmrestd</a>,
 but the following are particularly relevant:
 <ul>
-<li>SLURMRESTD_OPTIONS: CLI options to add to the slurmrestd command (see
-<a href="slurmrestd.html">slurmrestd</a>)</li>
-<li>SLURMRESTD_LISTEN: Comma-delimited list of host:port pairs or unix sockets
-to listen on
-<br><b>NOTE</b>: if this duplicates what is already set in the
-'ExecStart' line in the service file, it will fail</li>
+<li><b>SLURMRESTD_OPTIONS</b>: CLI options to add to the slurmrestd command
+(see <a href="slurmrestd.html">slurmrestd</a>)</li>
+<li><b>SLURMRESTD_LISTEN</b>: Comma-delimited list of host:port pairs or
+unix:$SOCKET_PATH sockets to listen on
+<br><b>NOTE</b>: If this duplicates what is already set in the
+'ExecStart' line in the service file, it will fail. Starting in Slurm 24.05,
+the default service file contains no sockets in 'ExecStart' and fully relies on
+this variable to contain the desired sockets.</li>
 </ul>
 </li>
 <li><b>Service editing</b>: Systemd has a built in way to edit services
@@ -176,8 +180,10 @@ by running <code>systemctl edit slurmrestd</code>.
 <li>This will create an override file in '/etc/systemd/' containing directives
 that will add to or replace directives in the default unit in '/lib/systemd/'.
 </li>
-<li>Note that the override file must have the appropriate section declaration(s)
+<li>The override file must have the appropriate section declaration(s)
 for the directives you use (e.g., <code>[Service]</code>).</li>
+<li>Environment variables may be set with <code>Environment=NAME=value</code>
+(refer to systemd documentation for more details)</li>
 <li>Changes may be reverted by running <code>systemctl revert slurmrestd</code>
 </li>
 </ul>
