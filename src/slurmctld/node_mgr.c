@@ -3050,12 +3050,19 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 		return ESLURM_RES_CORES_PER_GPU_TOPO;
 	}
 
+	if (!gres_ns->topo_res_core_bitmap)
+		gres_ns->topo_res_core_bitmap = xcalloc(gres_ns->topo_cnt,
+							 sizeof(bitstr_t *));
+
 	node_ptr->gpu_spec_bitmap = bit_alloc(node_ptr->tot_cores);
 	for (int i = 0; i < gres_ns->topo_cnt; i++) {
 		int cnt = 0;
 		uint32_t this_gpu_res_cnt;
 		if (!gres_ns->topo_core_bitmap[i])
 			continue;
+		FREE_NULL_BITMAP(gres_ns->topo_res_core_bitmap[i]);
+		gres_ns->topo_res_core_bitmap[i] =
+			bit_alloc(node_ptr->tot_cores);
 		this_gpu_res_cnt = res_cnt * gres_ns->topo_gres_cnt_avail[i];
 		/* info("%d has %s", i, */
 		/*      bit_fmt_full(gres_ns->topo_core_bitmap[i])); */
@@ -3068,6 +3075,7 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 				continue;
 			/* info("setting %d", j); */
 			bit_set(node_ptr->gpu_spec_bitmap, j);
+			bit_set(gres_ns->topo_res_core_bitmap[i], j);
 			if (++cnt >= this_gpu_res_cnt)
 				break;
 		}
