@@ -86,11 +86,11 @@ AC_DEFUN([X_AC_BPF], [
 
 AC_DEFUN([X_AC_DBUS],
 [
-       PKG_CHECK_MODULES([dbus], [dbus-1],
+       PKG_CHECK_MODULES([dbus], [dbus-1 >= 1.11.16],
                          [x_ac_have_dbus="yes"],
                          [x_ac_have_dbus="no"])
        AM_CONDITIONAL(WITH_DBUS, test "x$x_ac_have_dbus" = "xyes")
        if test "x$x_ac_have_dbus" = "xno"; then
-          AC_MSG_WARN([unable to link against dbus-1 libraries required for cgroup/v2])
+          AC_MSG_WARN([unable to locate dbus-1 development headers >= 1.11.16])
        fi
 ])

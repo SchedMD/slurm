@@ -35,6 +35,7 @@ HIGHLIGHTS
  -- Always use the QOS name for SLURM_JOB_QOS environment variables.
     Previously the batch environment would use the description field,
     which was usually equivalent to the name.
+ -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

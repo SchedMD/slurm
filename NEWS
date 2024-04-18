@@ -147,6 +147,7 @@ documents those changes that are of interest to users and administrators.
     cancelled. The NO_CRON_JOBS flag is ignored in v0.0.40 and removed in
     v0.0.41.
  -- Pass multi-partition job priorities to job for squeue to display.
+ -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
 
 * Changes in Slurm 23.11.7
 ==========================
