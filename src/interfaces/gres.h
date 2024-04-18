@@ -223,6 +223,7 @@ typedef struct gres_node_state {
 	int link_len;			/* Size of link_cnt */
 	int **links_cnt;		/* Count of links between GRES */
 	bitstr_t **topo_core_bitmap;
+	bitstr_t **topo_res_core_bitmap;
 	bitstr_t **topo_gres_bitmap;
 	uint64_t *topo_gres_cnt_alloc;
 	uint64_t *topo_gres_cnt_avail;

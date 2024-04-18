@@ -2917,6 +2917,8 @@ static void _gres_node_state_delete_topo(gres_node_state_t *gres_ns)
 			FREE_NULL_BITMAP(gres_ns->topo_gres_bitmap[i]);
 		if (gres_ns->topo_core_bitmap)
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[i]);
+		if (gres_ns->topo_res_core_bitmap)
+			FREE_NULL_BITMAP(gres_ns->topo_res_core_bitmap[i]);
 		xfree(gres_ns->topo_type_name[i]);
 	}
 	xfree(gres_ns->topo_gres_bitmap);
@@ -3666,6 +3668,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			xrealloc(gres_ns->topo_core_bitmap,
 				 slurmd_conf_tot.topo_cnt *
 				 sizeof(bitstr_t *));
+		gres_ns->topo_res_core_bitmap =
+			xrealloc(gres_ns->topo_res_core_bitmap,
+				 slurmd_conf_tot.topo_cnt *
+				 sizeof(bitstr_t *));
 		gres_ns->topo_type_id = xrealloc(gres_ns->topo_type_id,
 						 slurmd_conf_tot.topo_cnt *
 						 sizeof(uint32_t));
@@ -3989,6 +3995,9 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 		shared_gres_ns->topo_core_bitmap =
 			xrealloc(shared_gres_ns->topo_core_bitmap,
 				 sizeof(bitstr_t *) * sharing_cnt);
+		shared_gres_ns->topo_res_core_bitmap =
+			xrealloc(shared_gres_ns->topo_res_core_bitmap,
+				 sizeof(uint64_t) * sharing_cnt);
 		shared_gres_ns->topo_gres_bitmap =
 			xrealloc(shared_gres_ns->topo_gres_bitmap,
 				 sizeof(bitstr_t *) * sharing_cnt);
@@ -4006,6 +4015,8 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 				 sizeof(char *) * sharing_cnt);
 	} else {
 		shared_gres_ns->topo_core_bitmap =
+			xcalloc(sharing_cnt, sizeof(bitstr_t *));
+		shared_gres_ns->topo_res_core_bitmap =
 			xcalloc(sharing_cnt, sizeof(bitstr_t *));
 		shared_gres_ns->topo_gres_bitmap =
 			xcalloc(sharing_cnt, sizeof(bitstr_t *));
@@ -4632,6 +4643,8 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 		for (int i = 0; i < gres_ns->topo_cnt; i++) {
 			pack_bit_str_hex(gres_ns->topo_core_bitmap[i], buffer);
 			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i], buffer);
+			pack_bit_str_hex(gres_ns->topo_res_core_bitmap[i],
+					 buffer);
 		}
 		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
 			     buffer);
@@ -4709,12 +4722,19 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				gres_ns->topo_gres_bitmap =
 					xcalloc(gres_ns->topo_cnt,
 						sizeof(bitstr_t *));
+				gres_ns->topo_res_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
 				for (int i = 0; i < gres_ns->topo_cnt; i++) {
 					unpack_bit_str_hex(
 						&gres_ns->topo_core_bitmap[i],
 						buffer);
 					unpack_bit_str_hex(
 						&gres_ns->topo_gres_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->
+						topo_res_core_bitmap[i],
 						buffer);
 				}
 			}
@@ -4741,6 +4761,9 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 					xcalloc(gres_ns->topo_cnt,
 						sizeof(bitstr_t *));
 				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_res_core_bitmap =
 					xcalloc(gres_ns->topo_cnt,
 						sizeof(bitstr_t *));
 				for (int i = 0; i < gres_ns->topo_cnt; i++) {
@@ -4843,6 +4866,8 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 							sizeof(bitstr_t *));
 		new_gres_ns->topo_gres_bitmap = xcalloc(gres_ns->topo_cnt,
 							sizeof(bitstr_t *));
+		new_gres_ns->topo_res_core_bitmap = xcalloc(gres_ns->topo_cnt,
+							    sizeof(bitstr_t *));
 		new_gres_ns->topo_gres_cnt_alloc = xcalloc(gres_ns->topo_cnt,
 							   sizeof(uint64_t));
 		new_gres_ns->topo_gres_cnt_avail = xcalloc(gres_ns->topo_cnt,
@@ -4855,6 +4880,11 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 			if (gres_ns->topo_core_bitmap[i]) {
 				new_gres_ns->topo_core_bitmap[i] =
 					bit_copy(gres_ns->topo_core_bitmap[i]);
+			}
+			if (gres_ns->topo_res_core_bitmap[i]) {
+				new_gres_ns->topo_res_core_bitmap[i] =
+					bit_copy(gres_ns->
+						 topo_res_core_bitmap[i]);
 			}
 			new_gres_ns->topo_gres_bitmap[i] =
 				bit_copy(gres_ns->topo_gres_bitmap[i]);
