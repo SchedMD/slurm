@@ -554,9 +554,9 @@ were correctly detected on your system.</p>
 <colgroup>
 <col width="5%">
 <col width="20%">
+<col width="20%">
 <col width="15%">
-<col width="15%">
-<col width="35%">
+<col width="30%">
 </colgroup>
 <tr bgcolor="#e0e0e0">
 <td><u><b>Library</b></u></td>
@@ -568,14 +568,14 @@ were correctly detected on your system.</p>
 <tr>
 <td>eBPF</td>
 <td>include/linux/bpf.h</td>
-<td>kernel-headers</td>
+<td>kernel-headers (>= 5.7)</td>
 <td>--with-bpf=</td>
 <td>Constrain devices to a job/step/task</td>
 </tr>
 <tr>
 <td>dBus</td>
 <td>dbus-1.0/dbus/dbus.h</td>
-<td>dbus-devel</td>
+<td>dbus-devel (>= 1.11.16)</td>
 <td>n/a</td>
 <td>dBus API for contacting systemd</td>
 </tr>
@@ -615,6 +615,6 @@ RSS value provided by procfs. Nevertheless it is the same value that the kernel
 uses in its OOM killer logic.
 </p>
 
-<p style="text-align:center;">Last modified 23 February 2024</p>
+<p style="text-align:center;">Last modified 22 April 2024</p>
 
 <!--#include virtual="footer.txt"-->
