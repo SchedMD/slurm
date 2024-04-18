@@ -45,6 +45,13 @@ Verbose mode. Multiple \-v's increase verbosity.
 The following environment variables can be used to override settings
 compiled into sackd.
 
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sackd to use. See DebugFlags in the \fBslurm.conf\fR(5)
+man page for a full list of flags. The environment variable takes precedence
+over the setting in the slurm.conf.
+.IP
+
 .SH "SIGNALS"
 
 .TP 6
