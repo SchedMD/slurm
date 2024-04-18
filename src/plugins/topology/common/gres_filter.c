@@ -276,7 +276,8 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  char *node_name,
 				  uint16_t cr_type,
 				  uint16_t res_cores_per_gpu,
-				  int node_i)
+				  int node_i,
+				  uint16_t **cores_per_sock_limit)
 {
 	list_itr_t *sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -510,6 +511,22 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 						if (tot_core_cnt <=
 						    min_core_cnt)
 							break;
+						if (!avail_cores_per_sock[s])
+							break;
+					}
+
+					if (!avail_cores_per_sock[s]) {
+						int start = s *
+							cores_per_socket;
+						int end = (s + 1) *
+							cores_per_socket;
+						bit_nclear(avail_core, start,
+							   end - 1);
+						if (is_res_gpu) {
+							res_core_tot = 0;
+							res_cores_per_sock[s] =
+								0;
+						}
 					}
 				}
 			}
@@ -868,7 +885,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		}
 
 		/*
-		 * Clear extra avail_core bits on sockets we don't need
+		 * Clear extra cores on sockets we don't need
 		 * up to required number of cores based on max_tasks_this_node.
 		 * In case of enforce-binding those are already cleared.
 		 */
@@ -877,26 +894,29 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		    !enforce_binding && !first_pass &&
 		    (req_sock_cnt != sockets)) {
 			for (int s = 0; s < sockets; s++) {
+				int cnt;
+				int remove_cores = avail_cores_tot - req_cores;
 				if (avail_cores_tot == req_cores)
 					break;
 				if (req_sock[s])
 					continue;
-				for (int c = cores_per_socket - 1; c >= 0; c--) {
-					int i = (s * cores_per_socket) + c;
-					int cnt;
-					if (!bit_test(avail_core, i))
-						continue;
-					bit_clear(avail_core, i);
 
-					avail_cores_tot--;
-					avail_cores_per_sock[s]--;
+				remove_cores = MIN(remove_cores,
+						   avail_cores_per_sock[s]);
+				avail_cores_per_sock[s] -= remove_cores;
+				avail_cores_tot -= remove_cores;
+				cnt = avail_cores_tot * cpus_per_core;
+				if (cnt < *avail_cpus)
+					*avail_cpus = cnt;
 
-					cnt = avail_cores_tot * cpus_per_core;
-					if (cnt < *avail_cpus)
-						*avail_cpus = cnt;
-
-					if (avail_cores_tot == req_cores)
-						break;
+				if (!avail_cores_per_sock[s]) {
+					int start = s * cores_per_socket;
+					int end = (s + 1) * cores_per_socket;
+					bit_nclear(avail_core, start, end - 1);
+					if (is_res_gpu) {
+						res_core_tot = 0;
+						res_cores_per_sock[s] = 0;
+					}
 				}
 			}
 		}
@@ -909,6 +929,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		while (!(cr_type & CR_SOCKET) &&
 		       (req_sock_cnt && (avail_cores_tot > req_cores))) {
 			int full_socket = -1;
+			int cnt;
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
@@ -923,21 +944,21 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			}
 			if (full_socket == -1)
 				break;
-			for (int c = cores_per_socket - 1; c >= 0; c--) {
-				int i = (full_socket * cores_per_socket) + c;
-				int cnt;
-				if (!bit_test(avail_core, i))
-					continue;
-				bit_clear(avail_core, i);
+			avail_cores_per_sock[full_socket]--;
+			avail_cores_tot--;
 
-				avail_cores_per_sock[full_socket]--;
-				avail_cores_tot--;
+			cnt = avail_cores_tot * cpus_per_core;
+			if (cnt < *avail_cpus)
+				*avail_cpus = cnt;
 
-				cnt = avail_cores_tot * cpus_per_core;
-				if (cnt < *avail_cpus)
-					*avail_cpus = cnt;
-
-				break;
+			if (!avail_cores_per_sock[full_socket]) {
+				int start = full_socket * cores_per_socket;
+				int end = (full_socket + 1) * cores_per_socket;
+				bit_nclear(avail_core, start, end - 1);
+				if (is_res_gpu) {
+					res_core_tot = 0;
+					res_cores_per_sock[full_socket] = 0;
+				}
 			}
 		}
 		if (cpus_per_gres) {
@@ -963,10 +984,17 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				MIN(*min_cores_this_node, req_cores);
 	}
 	list_iterator_destroy(sock_gres_iter);
-	xfree(avail_cores_per_sock);
 	xfree(req_sock);
 	xfree(socket_index);
 	xfree(res_cores_per_sock);
+
+	if (*max_tasks_this_node) {
+		if (*cores_per_sock_limit)
+			xfree(*cores_per_sock_limit);
+		*cores_per_sock_limit = avail_cores_per_sock;
+		avail_cores_per_sock = NULL;
+	}
+	xfree(avail_cores_per_sock);
 
 	if (!has_cpus_per_gres &&
 	    ((mc_ptr->cpus_per_task > 1) ||
