@@ -657,7 +657,8 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 static void _set_sock_bits(int node_inx, int job_node_inx,
 			   sock_gres_t *sock_gres, uint32_t job_id,
 			   gres_mc_data_t *tres_mc_ptr,
-			   uint32_t *used_cores_on_sock, uint32_t used_sock_cnt)
+			   uint32_t *used_cores_on_sock, uint32_t used_sock_cnt,
+			   bool enforce_binding)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -773,6 +774,17 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 		/* Allocate extra to other used sockets if needed */
 		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
 			if (!used_sock[s])
+				continue;
+			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
+						       node_inx, s, sorted_gres,
+						       links_cnt);
+		}
+	}
+
+	if (gres_needed && !enforce_binding) {
+		/* Allocate extra to other unused sockets if needed */
+		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
+			if (used_sock[s])
 				continue;
 			gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
 						       node_inx, s, sorted_gres,
@@ -1596,7 +1608,7 @@ static int _select_and_set_node(void *x, void *arg)
 	} else if (gres_js->gres_per_socket) {
 		_set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
 			       tres_mc_ptr, args->used_cores_on_sock,
-			       args->used_sock_cnt);
+			       args->used_sock_cnt, enforce_binding);
 	} else if (gres_js->gres_per_task) {
 		_set_task_bits(node_inx, sock_gres, job_id,
 			       tasks_per_node_socket[node_inx],
