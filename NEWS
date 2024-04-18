@@ -123,6 +123,8 @@ documents those changes that are of interest to users and administrators.
  -- Add ELIGIBLE environment variable to jobcomp/script plugin.
  -- slurmrestd,sackd,scrun - Improve outgoing data efficiency using
     non-contiguous write support in kernel.
+  -- sackd - Add support for SACKD_DEBUG, SACKD_STDERR_DEBUG, and
+     SACKD_SYSLOG_DEBUG environment variables to control logging.
 
 * Changes in Slurm 23.11.7
 ==========================

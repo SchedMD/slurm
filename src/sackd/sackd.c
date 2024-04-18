@@ -80,6 +80,7 @@ static void _parse_args(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	int c = 0, option_index = 0;
+	char *str = NULL;
 
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
@@ -93,6 +94,27 @@ static void _parse_args(int argc, char **argv)
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
+
+	if ((str = getenv("SACKD_DEBUG"))) {
+		logopt.stderr_level = logopt.syslog_level = log_string2num(str);
+
+		if (logopt.syslog_level == NO_VAL16)
+			fatal("Invalid env SACKD_DEBUG: %s", str);
+	}
+
+	if ((str = getenv("SACKD_SYSLOG_DEBUG"))) {
+		logopt.syslog_level = log_string2num(str);
+
+		if (logopt.syslog_level == NO_VAL16)
+			fatal("Invalid env SACKD_SYSLOG_DEBUG: %s", str);
+	}
+
+	if ((str = getenv("SACKD_STDERR_DEBUG"))) {
+		logopt.stderr_level = log_string2num(str);
+
+		if (logopt.stderr_level == NO_VAL16)
+			fatal("Invalid env SACKD_STDERR_DEBUG: %s", str);
+	}
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 

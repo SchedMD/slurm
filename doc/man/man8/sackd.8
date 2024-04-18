@@ -1,4 +1,4 @@
-.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "February 2024" "Slurm Auth and Cred Kiosk Daemon"
+.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "April 2024" "Slurm Auth and Cred Kiosk Daemon"
 
 .SH "NAME"
 sackd \- Slurm Auth and Cred Kiosk Daemon.
@@ -44,6 +44,25 @@ Verbose mode. Multiple \-v's increase verbosity.
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into sackd.
+
+.TP
+\fBSACKD_DEBUG\fR
+Set debug level explicitly for syslog and stderr. Valid values are 0\-9, or the
+same string values as the debug options such as SlurmctldDebug in
+slurm.conf(5).
+.IP
+
+.TP
+\fBSACKD_STDERR_DEBUG\fR
+Set debug level explicitly for stderr. Valid values are 0\-9, or the same
+string values as the debug options such as SlurmctldDebug in slurm.conf(5).
+.IP
+
+.TP
+\fBSACKD_SYSLOG_DEBUG\fR
+Set debug level explicitly for syslog. Valid values are 0\-9, or the same
+string values as the debug options such as SlurmctldDebug in slurm.conf(5).
+.IP
 
 .TP
 \fBSLURM_CONF\fR
