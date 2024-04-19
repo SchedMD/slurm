@@ -572,7 +572,7 @@ extern void conmgr_init(int max_connections, conmgr_callbacks_t callbacks)
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
 
 	/* block for writes only */
-	fd_set_nonblocking(mgr.signal_fd[0]);
+	fd_set_blocking(mgr.signal_fd[0]);
 	fd_set_blocking(mgr.signal_fd[1]);
 
 	_add_signal_work(SIGALRM, _on_signal_alarm, NULL, "_on_signal_alarm()");
