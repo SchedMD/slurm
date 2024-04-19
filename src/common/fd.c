@@ -41,6 +41,8 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
+#include <stdint.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -58,6 +60,24 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/*
+ * Helper macro to log_flag(NET, ...) against a given connection
+ * IN fd - file descriptor relavent for logging
+ * IN con_name - human friendly name for fd or NULL (to auto resolve)
+ * IN fmt - log message format
+ */
+#define log_net(fd, con_name, fmt, ...) \
+do { \
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) { \
+		char *log_name = NULL; \
+		if (!con_name) \
+			con_name = log_name = fd_resolve_path(fd); \
+		log_flag(NET, "%s: [%s] " fmt, \
+			 __func__, con_name, ##__VA_ARGS__); \
+		xfree(log_name); \
+	} \
+} while (false)
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -634,4 +654,62 @@ extern int rmdir_recursive(const char *path, bool remove_top)
 		      __func__, path, rc);
 
 	return rc;
+}
+
+
+extern int fd_get_readable_bytes(int fd, int *readable_ptr,
+				 const char *con_name)
+{
+#ifdef FIONREAD
+	/* default readable to max positive 32 bit signed integer */
+	int readable = INT32_MAX;
+
+	/* assert readable_ptr is set but gracefully allow for it not to be */
+	xassert(readable_ptr);
+
+	if (fd < 0) {
+		log_net(fd, con_name,
+			"Refusing request for ioctl(%d, FIONREAD) with invalid file descriptor: %d",
+			fd, fd);
+		return EINVAL;
+	}
+
+	/* request kernel tell us the size of the incoming buffer */
+	if (ioctl(fd, FIONREAD, &readable)) {
+		int rc = errno;
+		log_net(fd, con_name,
+			"ioctl(%d, FIONREAD, 0x%"PRIxPTR") failed: %s",
+			fd, (uintptr_t) &readable, slurm_strerror(rc));
+		return rc;
+	}
+
+	/* validate response from kernel is sane (or likely sane) */
+	if (readable < 0) {
+		/* invalid FIONREAD response -> bad driver response */
+		log_net(fd, con_name,
+			"Invalid response: ioctl(%d, FIONREAD, 0x%"PRIxPTR")=%d",
+			 fd, (uintptr_t) &readable, readable);
+		return ENOSYS;
+	}
+	/* verify if readable was even set */
+	if (readable == INT32_MAX) {
+		/* ioctl() did not error but did not change readable?? */
+		log_net(fd, con_name,
+			"Invalid unchanged readable value: ioctl(%d, FIONREAD, 0x%"PRIxPTR")=%d",
+			fd, (uintptr_t) &readable, readable);
+		return ENOSYS;
+	}
+
+	if (readable_ptr) {
+		*readable_ptr = readable;
+
+		log_net(fd, con_name,
+			"Successful query: ioctl(%d, FIONREAD, 0x%"PRIxPTR")=%d",
+			 fd, (uintptr_t) readable_ptr, readable);
+	}
+
+	return SLURM_SUCCESS;
+#else /* FIONREAD */
+	return ESLURM_NOT_SUPPORTED;
+#endif /* !FIONREAD */
 }
