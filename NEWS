@@ -185,6 +185,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix logging of JSON/YAML values in some messages where nothing would be
     printed as the value instead of the actual JSONified version of the parsed
     string.
+ -- slurmrestd,sackd,scrun - Improve logic around handling kernel provided
+    buffer size of incoming data in files/sockets/pipes to avoid crashes.
 
 * Changes in Slurm 23.11.7
 ==========================
