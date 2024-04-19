@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow the slurmctld to open a connection to the slurmdbd if the first
     attempt fails due to a protocol error.
  -- mpi/cray_shasta - Fix launch for non-het-steps within a hetjob.
+ -- sacct - Fix "gpuutil" TRES usage output being incorrect when using --units.
 
 * Changes in Slurm 23.11.6
 ==========================

@@ -3692,6 +3692,10 @@ extern char *slurmdb_make_tres_string_from_simple(
 					count /= CPU_TIME_ADJ;
 					secs2time_str((time_t)count, outbuf,
 						      FORMAT_STRING_SIZE);
+				} else if (!xstrcasecmp(tres_rec->name,
+							"gpuutil")) {
+					snprintf(outbuf, sizeof(outbuf),
+						 "%"PRIu64, count);
 				} else
 					convert_num_unit((double)count, outbuf,
 							 sizeof(outbuf),
