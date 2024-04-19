@@ -125,6 +125,9 @@ documents those changes that are of interest to users and administrators.
     non-contiguous write support in kernel.
   -- sackd - Add support for SACKD_DEBUG, SACKD_STDERR_DEBUG, and
      SACKD_SYSLOG_DEBUG environment variables to control logging.
+ -- mpi/pmi2 - PMI_process_mapping values have been adapted for executions
+    where arbitrary distribution/SLURM_HOSTFILE is used. Now it can take into
+    account multiple instances of the same node inside SLURM_HOSTFILE.
 
 * Changes in Slurm 23.11.7
 ==========================

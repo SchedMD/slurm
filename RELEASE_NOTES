@@ -74,3 +74,16 @@ SLURMRESTD CHANGES
     'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
     OpenAPI plugin versions. Job submissions should set the `job.script` (or
     `jobs[0].script` for HetJobs) fields instead.
+
+MPI/PMI2 CHANGES
+================
+ -- Jobs submitted with the SLURM_HOSTFILE environment variable set implies
+    using an arbitrary distribution. Nevertheless, the logic used in PMI2 when
+    generating their associated PMI_process_mapping values has been changed and
+    will now be the same used for the plane distribution, as if "-m plane" were
+    used. This has been changed because the original arbitrary distribution
+    implementation did not account for multiple instances of the same host being
+    present in SLURM_HOSTFILE, providing an incorrect process mapping in such
+    case. This change also enables distributing tasks in blocks when using
+    arbitrary distribution, which was not the case before. This only affects
+    mpi/pmi2 plugin.
