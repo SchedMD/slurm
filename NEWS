@@ -134,6 +134,9 @@ documents those changes that are of interest to users and administrators.
     when used in combination with --ntasks. --ntasks option will now take
     precedence as it is documented.
  -- Accept X11 cookies that do not have a display number associated with it.
+ -- Always use the QOS name for SLURM_JOB_QOS environment variables.
+    Previously the batch environment would use the description field,
+    which was usually equivalent to the name.
 
 * Changes in Slurm 23.11.7
 ==========================

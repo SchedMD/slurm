@@ -32,6 +32,9 @@ HIGHLIGHTS
  -- Add QOS limit MaxTRESRunMinsPerAccount.
  -- Add QOS limit MaxTRESRunMinsPerUser.
  -- Add ELIGIBLE environment variable to jobcomp/script plugin.
+ -- Always use the QOS name for SLURM_JOB_QOS environment variables.
+    Previously the batch environment would use the description field,
+    which was usually equivalent to the name.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

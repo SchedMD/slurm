@@ -2332,15 +2332,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	       job_ptr->job_resrcs->cpu_array_reps,
 	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 
-	if (job_ptr->qos_ptr) {
-		if (!xstrcmp(job_ptr->qos_ptr->description,
-			     "Normal QOS default"))
-			launch_msg_ptr->qos = xstrdup("normal");
-		else
-			launch_msg_ptr->qos = xstrdup(
-				job_ptr->qos_ptr->description);
-	}
 	launch_msg_ptr->account = xstrdup(job_ptr->account);
+	if (job_ptr->qos_ptr)
+		launch_msg_ptr->qos = xstrdup(job_ptr->qos_ptr->name);
 
 	/*
 	 * Use resv_ptr->name instead of job_ptr->resv_name as the job
@@ -2508,18 +2502,10 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 				het_job_offset, "%s", het_job->partition);
 		}
 		if (het_job->qos_ptr) {
-			slurmdb_qos_rec_t *qos;
-			char *qos_name;
-
-			qos = (slurmdb_qos_rec_t *) het_job->qos_ptr;
-			if (!xstrcmp(qos->description, "Normal QOS default"))
-				qos_name = "normal";
-			else
-				qos_name = qos->description;
 			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_JOB_QOS",
-				het_job_offset, "%s", qos_name);
+				het_job_offset, "%s", het_job->qos_ptr->name);
 		}
 		if (het_job->resv_ptr) {
 			(void) env_array_overwrite_het_fmt(
