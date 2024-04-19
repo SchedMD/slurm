@@ -41,7 +41,6 @@
 #include <netdb.h>
 #include <poll.h>
 #include <signal.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
