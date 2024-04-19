@@ -1771,11 +1771,12 @@ static int _read_signal(int fd, const char *con_name)
 
 	return sig;
 rwfail:
-	if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-		return -1;
+	/* safe_read() should never pass these errors along */
+	xassert(errno != EAGAIN);
+	xassert(errno != EWOULDBLOCK);
 
-	fatal("%s: unable to read(%d): %m",
-	      __func__, fd);
+	/* this should never happen! */
+	fatal_abort("%s: Unexpected safe_read(%d) failure: %m", __func__, fd);
 }
 
 static void _on_signal(int signal)
