@@ -106,6 +106,7 @@
 #include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
+#include "src/slurmd/common/job_status.h"
 #include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
@@ -1203,6 +1204,53 @@ static int _set_xauthority(stepd_step_rec_t *step)
 	return rc;
 }
 
+static bool _wait_for_step_completion(uint32_t job_id, int max_time)
+{
+	int sec = 0;
+	int pause = 1;
+	bool rc = false;
+	int count = 0;
+
+	while ((sec < max_time) || (max_time == 0)) {
+		rc = is_job_running(job_id, true);
+		if (!rc)
+			break;
+		if (sec > 10) {
+			/* Reduce logging frequency about unkillable tasks */
+			if (max_time)
+				pause = MIN((max_time - sec), 10);
+			else
+				pause = 10;
+		}
+		/*
+		 * Most steps will usually finish up within the first .02 sec.
+		 * If not gradually increase the sleep until we get to a second.
+		 */
+		if (count == 0) {
+			usleep(20000);
+			count++;
+		} else if (count == 1) {
+			usleep(50000);
+			count++;
+		} else if (count == 2) {
+			usleep(100000);
+			count++;
+		} else if (count == 3) {
+			usleep(500000);
+			count++;
+			sec = 1;
+		} else {
+			sleep(pause);
+			sec += pause;
+		}
+	}
+
+	/*
+	 * Return true if all steps apart from extern are completed
+	 */
+	return (!rc);
+}
+
 static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
@@ -1376,6 +1424,10 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
 		;	       /* Wait until above process exits from signal */
+	}
+
+	if (!_wait_for_step_completion(jobid, MAX(slurm_conf.kill_wait, 5))) {
+		warning("steps did not complete quickly");
 	}
 
 	/* remove all tracked tasks */
