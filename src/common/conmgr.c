@@ -1752,24 +1752,21 @@ static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
 
 static int _read_signal(int fd, const char *con_name)
 {
-	int sig;
+	int sig, rc, readable;
 
-#ifdef FIONREAD
-	int readable;
-
-	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(fd, FIONREAD, &readable))
-		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
-			 __func__, fd);
-
-	if (!readable) {
-		/* Didn't fail but buffer is empty so no more signals */
-		return -1;
-	} else if (readable < sizeof(sig)) {
-		/* write() must have not completed */
+	if ((rc = fd_get_readable_bytes(fd, &readable, con_name)) ||
+	    !readable) {
+		log_flag(NET, "%s: [%s] no pending bytes to read()",
+			 __func__, con_name);
 		return -1;
 	}
-#endif /* FIONREAD */
+
+	/*
+	 * According to pipe(7), writes less than PIPE_BUF in size must be
+	 * atomic. Posix.1 requries PIPE_BUF to be at least 512 bytes.
+	 * Therefore, a write() of 4 bytes to a pipe is always atomic in Linux.
+	 */
+	xassert(readable >= sizeof(sig));
 
 	safe_read(fd, &sig, sizeof(sig));
 
