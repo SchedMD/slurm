@@ -978,7 +978,13 @@ static int _get_fd_readable(conmgr_fd_t *con)
 	 */
 	readable = MIN(readable, MAX_MSG_SIZE);
 
-	xassert(readable >= 0);
+	/*
+	 * Even if there are zero bytes to read, we want to make sure that we
+	 * already try to do the read to avoid a shutdown(SHUT_RDWR) file
+	 * descriptor never getting the final read()=0.
+	 */
+	readable = MAX(readable, DEFAULT_READ_BYTES);
+
 	return readable;
 }
 
