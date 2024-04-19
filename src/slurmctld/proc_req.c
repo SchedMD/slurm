@@ -81,6 +81,7 @@
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/node_features.h"
+#include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
@@ -2210,6 +2211,17 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			dump_node = true;
 		}
 	}
+
+	/*
+	 * If we've already sent the SIGTERM signal from
+	 * _job_check_grace_internal assume the job completed on signal, that's
+	 * subjected to a race condition. The job may just complete just before
+	 * we deliver the signal.
+	 */
+	if (job_ptr && (job_ptr->bit_flags & GRACE_PREEMPT) &&
+	    job_ptr->details && job_ptr->details->requeue &&
+	    (slurm_job_preempt_mode(job_ptr) == PREEMPT_MODE_REQUEUE))
+		job_requeue = true;
 
 	/* Mark job allocation complete */
 	i = job_complete(comp_msg->job_id, msg->auth_uid, job_requeue, false,

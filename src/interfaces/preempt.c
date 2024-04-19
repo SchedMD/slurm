@@ -453,6 +453,7 @@ static int _job_check_grace_internal(void *x, void *arg)
 			job_signal(job_ptr, SIGCONT, 0, 0, 0);
 			job_signal(job_ptr, SIGTERM, 0, 0, 0);
 		}
+		job_ptr->bit_flags |= GRACE_PREEMPT;
 	} else
 		rc = 1;
 

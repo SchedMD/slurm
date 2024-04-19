@@ -7091,7 +7091,15 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		 * job looks like a new job.
 		 */
 		job_ptr->end_time = now;
-		job_state_set(job_ptr, JOB_NODE_FAIL);
+		if (job_ptr->bit_flags & GRACE_PREEMPT) {
+			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
+
+			/* clear signal sent on GracePeriod start */
+			job_ptr->bit_flags &= (~GRACE_PREEMPT);
+		} else {
+			job_state_set(job_ptr, JOB_NODE_FAIL);
+		}
+
 		job_completion_logger(job_ptr, true);
 		/*
 		 * Do this after the epilog complete.
@@ -7113,6 +7121,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 
 		/* clear signal sent flag on requeue */
 		job_ptr->warn_flags &= ~WARN_SENT;
+
 
 		job_state_set(job_ptr, (JOB_PENDING | job_comp_flag));
 		/*
@@ -7150,6 +7159,8 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
 			job_ptr->requid = uid;
+		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
+			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
 		} else if (job_return_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
 			job_ptr->requid = uid;

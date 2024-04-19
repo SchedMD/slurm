@@ -151,6 +151,8 @@ documents those changes that are of interest to users and administrators.
  -- Add RestrictedCoresPerGPU configuration option.
  -- Fix how ntasks is inferred from --cpus-per-task when using --nodes,
     --threads-per-core, or --hint=nomultithread.
+ -- For PreemptMode=CANCEL and PreemptMode=REQUEUE assume that job signalled
+    for GraceTime was preempted.
 
 * Changes in Slurm 23.11.7
 ==========================
