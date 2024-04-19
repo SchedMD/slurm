@@ -401,6 +401,8 @@ partitions to down so that no new jobs can be scheduled. Then suspend
 jobs. Once maintenance is done resume jobs then resume nodes and/or set all
 partitions back to up.
 Use with caution.
+Only an account coordinator, operator, administrator, SlurmUser, or root can
+resume jobs.
 .IP
 
 .TP
@@ -646,7 +648,8 @@ upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
 If a suspended job is requeued, it will be placed in a held state.
 The time a job is suspended will not count against a job's time limit.
-Only an operator, administrator, SlurmUser, or root can suspend jobs.
+Only an account coordinator, operator, administrator, SlurmUser, or root can
+suspend jobs.
 .IP
 
 .TP

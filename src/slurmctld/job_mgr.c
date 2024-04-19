@@ -16434,18 +16434,20 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
 
-	/* validate the request */
-	if (!validate_operator(uid)) {
-		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		      uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto reply;
-	}
-
 	/* find the job */
 	job_ptr = find_job_record (sus_ptr->job_id);
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+
+	/* validate the request */
+	if (!validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account, false)) {
+		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
+		       uid);
+		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
 
@@ -16503,29 +16505,35 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 		max_array_size = slurm_conf.max_array_sz;
 	}
 
-	/* validate the request */
-	if (!validate_operator(uid)) {
-		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		      uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto reply;
-	}
-
 	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
 	if (end_ptr[0] == '+')
 		rc = ESLURM_NOT_WHOLE_HET_JOB;
 	else if ((long_id <= 0) || (long_id == LONG_MAX) ||
 		 ((end_ptr[0] != '\0') && (end_ptr[0] != '_')))
 		rc = ESLURM_INVALID_JOB_ID;
+	else {
+		job_id = (uint32_t) long_id;
+		job_ptr = find_job_record(job_id);
+		if (job_ptr == NULL)
+			rc = ESLURM_INVALID_JOB_ID;
+	}
 	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, sus_ptr->job_id_str);
 		goto reply;
 	}
 
-	job_id = (uint32_t) long_id;
+	/* validate the request */
+	if (!validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account, false)) {
+		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
+		      uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto reply;
+	}
+
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		job_record_t *job_ptr_done = NULL;
-		job_ptr = find_job_record(job_id);
 		if (job_ptr &&
 		    (((job_ptr->array_task_id == NO_VAL) &&
 		      (job_ptr->array_recs == NULL)) ||

@@ -193,6 +193,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new 'BLOCKED' state to a node.
  -- Account coordinators may not increase association job limits above
     parent ones
+ -- Account coordinators can now suspend/resume jobs owned by member users.
 
 * Changes in Slurm 23.11.7
 ==========================
