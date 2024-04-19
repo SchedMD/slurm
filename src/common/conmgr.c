@@ -1023,12 +1023,23 @@ static void _wrap_work(void *x)
 	xfree(work);
 }
 
+static int _get_fd_readable(conmgr_fd_t *con)
+{
+	int readable = -1;
+
+	if (fd_get_readable_bytes(con->input_fd, &readable, con->name) ||
+	    !readable)
+		readable = DEFAULT_READ_BYTES;
+
+	return readable;
+}
+
 static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 			 conmgr_work_status_t status, const char *tag,
 			 void *arg)
 {
 	ssize_t read_c;
-	int readable, rc;
+	int rc, readable;
 
 	con->can_read = false;
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -1039,24 +1050,7 @@ static void _handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
 		return;
 	}
 
-#ifdef FIONREAD
-	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(con->input_fd, FIONREAD, &readable))
-		log_flag(NET, "%s: [%s] unable to call FIONREAD: %m",
-			 __func__, con->name);
-	else if (readable == 0) {
-		/* Didn't fail but buffer is empty so this may be EOF */
-		readable = 1;
-	}
-
-	if (readable < 0) {
-		/* invalid FIONREAD response */
-		readable = DEFAULT_READ_BYTES;
-	}
-#else
-	/* default to at least 512 available in buffer */
-	readable = DEFAULT_READ_BYTES;
-#endif /* FIONREAD */
+	readable = _get_fd_readable(con);
 
 	/* Grow buffer as needed to handle the incoming data */
 	if ((rc = try_grow_buf_remaining(con->in, readable))) {
