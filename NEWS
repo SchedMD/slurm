@@ -159,6 +159,8 @@ documents those changes that are of interest to users and administrators.
     incoming non-string values into strings. Add warning when incoming value for
     enumerated string arrays can not be converted to string and silently ignore
     instead of rejecting entire request.
+ -- slurmrestd - Require `user` and `association_condition` fields to be
+    populated for requests to 'POST /slurmdb/v0.0.41/users_association'.
 
 * Changes in Slurm 23.11.7
 ==========================
