@@ -11025,3 +11025,9 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
 
 	return false;
 }
+
+/* Return the plugin id made from gres_build_id("gpu") */
+extern uint32_t gres_get_gpu_plugin_id(void)
+{
+	return gpu_plugin_id;
+}
