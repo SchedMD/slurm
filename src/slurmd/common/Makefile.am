@@ -12,6 +12,7 @@ noinst_PROGRAMS = libslurmd_common.o
 
 libslurmd_common_la_SOURCES =    \
 	fname.c fname.h \
+	job_status.c job_status.h \
 	privileges.c privileges.h \
 	slurmd_cgroup.c slurmd_cgroup.h \
 	slurmstepd_init.c slurmstepd_init.h \
