@@ -63,6 +63,7 @@
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
@@ -1768,6 +1769,13 @@ static int _read_signal(int fd, const char *con_name)
 	xassert(readable >= sizeof(sig));
 
 	safe_read(fd, &sig, sizeof(sig));
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+		char *str = sig_num2name(sig);
+		log_flag(NET, "%s: [%s] got signal: %s(%d)",
+			 __func__, con_name, str, sig);
+		xfree(str);
+	}
 
 	return sig;
 rwfail:
