@@ -108,6 +108,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/slurmd/common/fname.h"
+#include "src/slurmd/common/job_status.h"
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -161,7 +162,6 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static int  _job_limits_match(void *x, void *key);
-static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
 				   char *details, bool batch, uid_t req_uid);
 static void _launch_complete_add(uint32_t job_id, bool btch_step);
@@ -4741,39 +4741,6 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 	return step_cnt;
 }
 
-static bool
-_job_still_running(uint32_t job_id)
-{
-	bool         retval = false;
-	list_t *steps;
-	list_itr_t *i;
-	step_loc_t  *s     = NULL;
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((s = list_next(i))) {
-		if (s->step_id.job_id == job_id) {
-			int fd;
-			fd = stepd_connect(s->directory, s->nodename,
-					   &s->step_id, &s->protocol_version);
-			if (fd == -1)
-				continue;
-
-			if (stepd_state(fd, s->protocol_version)
-			    != SLURMSTEPD_NOT_RUNNING) {
-				retval = true;
-				close(fd);
-				break;
-			}
-			close(fd);
-		}
-	}
-	list_iterator_destroy(i);
-	FREE_NULL_LIST(steps);
-
-	return retval;
-}
-
 /*
  * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
  * This indicates that switch_g_job_postfini has completed and
@@ -5600,7 +5567,7 @@ _pause_for_job_completion(uint32_t job_id, int max_time)
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = _job_still_running (job_id);
+		rc = is_job_running(job_id);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {

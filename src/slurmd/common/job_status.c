@@ -33,4 +33,38 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/stepd_api.h"
 #include "src/slurmd/common/job_status.h"
+#include "src/slurmd/slurmd/slurmd.h"
+
+extern bool is_job_running(uint32_t job_id)
+{
+	bool retval = false;
+	list_t *steps;
+	list_itr_t *i;
+	step_loc_t *s = NULL;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((s = list_next(i))) {
+		if (s->step_id.job_id == job_id) {
+			int fd;
+			fd = stepd_connect(s->directory, s->nodename,
+					   &s->step_id, &s->protocol_version);
+			if (fd == -1)
+				continue;
+
+			if (stepd_state(fd, s->protocol_version)
+			    != SLURMSTEPD_NOT_RUNNING) {
+				retval = true;
+				close(fd);
+				break;
+			}
+			close(fd);
+		}
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
+
+	return retval;
+}
