@@ -292,8 +292,7 @@ static void _add_users_association(ctxt_t *ctxt,
 	ret_str = slurmdb_users_add_cond(ctxt->db_conn, add_assoc, user);
 
 	if ((rc = errno))
-		resp_error(ctxt, rc, __func__,
-			   "slurmdb_users_add_cond() failed");
+		resp_error(ctxt, rc, "slurmdb_users_add_cond", "%s", ret_str);
 	else
 		db_query_commit(ctxt);
 
