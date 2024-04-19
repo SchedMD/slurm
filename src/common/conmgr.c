@@ -972,6 +972,13 @@ static int _get_fd_readable(conmgr_fd_t *con)
 			readable = DEFAULT_READ_BYTES;
 	}
 
+	/*
+	 * Limit read byte count to avoid creating huge buffers from a huge MSS
+	 * on a loopback device or a buggy device driver.
+	 */
+	readable = MIN(readable, MAX_MSG_SIZE);
+
+	xassert(readable >= 0);
 	return readable;
 }
 
