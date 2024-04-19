@@ -218,6 +218,10 @@ struct conmgr_s {
 	 */
 	bool poll_active;
 	/*
+	 * True if there is a thread reading signal_fd[0]
+	 */
+	bool read_signals_active;
+	/*
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
@@ -1746,7 +1750,7 @@ static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
 	}
 }
 
-static int _read_signal(void)
+static int _read_signal(int fd, const char *con_name)
 {
 	int sig;
 
@@ -1754,9 +1758,9 @@ static int _read_signal(void)
 	int readable;
 
 	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(mgr.signal_fd[0], FIONREAD, &readable))
+	if (ioctl(fd, FIONREAD, &readable))
 		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
-			 __func__, mgr.signal_fd[0]);
+			 __func__, fd);
 
 	if (!readable) {
 		/* Didn't fail but buffer is empty so no more signals */
@@ -1767,15 +1771,15 @@ static int _read_signal(void)
 	}
 #endif /* FIONREAD */
 
-	safe_read(mgr.signal_fd[0], &sig, sizeof(sig));
+	safe_read(fd, &sig, sizeof(sig));
 
 	return sig;
 rwfail:
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
 		return -1;
 
-	fatal("%s: unable to read(signal_fd[0]=%d): %m",
-	      __func__, mgr.signal_fd[0]);
+	fatal("%s: unable to read(%d): %m",
+	      __func__, fd);
 }
 
 static void _on_signal(int signal)
@@ -1799,17 +1803,58 @@ static void _on_signal(int signal)
 			__func__, strsignal(signal));
 }
 
-static void _handle_signals(void)
+static void _handle_signals(void *ptr)
 {
-	int sig, count = 0;
+	int sig, count = 0, fd = -1;
+	static const char *con_name = "mgr.signal_fd[0]";
 
-	while ((sig = _read_signal()) > 0) {
-		count++;
-		_on_signal(sig);
-	}
+	xassert(ptr == NULL);
 
-	log_flag(NET, "%s: caught %d signals", __func__, count);
-	mgr.signaled = false;
+	slurm_mutex_lock(&mgr.mutex);
+	fd = mgr.signal_fd[0];
+	slurm_mutex_unlock(&mgr.mutex);
+	xassert(fd >= 0);
+
+	do {
+		int readable = 0;
+		int rc;
+
+		while ((sig = _read_signal(fd, con_name)) > 0) {
+			count++;
+			_on_signal(sig);
+		}
+
+		log_flag(NET, "%s: caught %d signals", __func__, count);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(mgr.signaled);
+		xassert(mgr.read_signals_active);
+		xassert(fd == mgr.signal_fd[0]);
+
+		/*
+		 * Catch if another signal has been caught while the existing
+		 * backlog of signals in the pipe were being processed.
+		 */
+		rc = fd_get_readable_bytes(mgr.signal_fd[0], &readable,
+					   con_name);
+
+		if (!rc && (readable > 0)) {
+			slurm_mutex_unlock(&mgr.mutex);
+			/* reset signal counter */
+			count = 0;
+			/* try again as there was a signal sent */
+			continue;
+		}
+
+		/* Remove signal flags as all signals have read */
+		mgr.signaled = false;
+		mgr.read_signals_active = false;
+
+		/* wake up _watch_loop() */
+		slurm_cond_broadcast(&mgr.cond);
+		slurm_mutex_unlock(&mgr.mutex);
+	} while (false);
 }
 
 static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -2285,8 +2330,12 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 	if (!mgr.poll_active && !mgr.listen_active) {
 		_read_event_fd();
 		if (mgr.signaled) {
-			_handle_signals();
-			return true;
+			if (!mgr.read_signals_active) {
+				mgr.read_signals_active = true;
+				_queue_func(true, _handle_signals, NULL,
+					    "conmgr::_handle_signals()");
+			}
+			work = true;
 		}
 	}
 
