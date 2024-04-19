@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Correct OpenAPI specification for
     'GET /slurm/v0.0.40/jobs/state' having response as null.
  -- Allow running jobs on overlapping partitions if jobs don't specify -s.
+ -- Fix segfault when requesting a shared gres along with an exclusive
+    allocation.
 
 * Changes in Slurm 23.11.6
 ==========================

@@ -6663,6 +6663,23 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_copy(gres_js->gres_bit_select[i]);
 		}
 	}
+	if (gres_js->gres_per_bit_select && gres_js->gres_bit_select) {
+		new_gres_js->gres_per_bit_select =
+			xcalloc(gres_js->total_node_cnt, sizeof(uint64_t *));
+		for (i = 0; i < gres_js->total_node_cnt; i++) {
+			int bit_cnt;
+
+			if (!gres_js->gres_bit_select[i])
+				continue;
+
+			bit_cnt = bit_size(gres_js->gres_bit_select[i]);
+			new_gres_js->gres_per_bit_select[i] = xcalloc(
+				bit_cnt, sizeof(uint64_t));
+			memcpy(new_gres_js->gres_per_bit_select[i],
+			       gres_js->gres_per_bit_select[i], bit_cnt);
+		}
+	}
+
 	return new_gres_js;
 }
 
