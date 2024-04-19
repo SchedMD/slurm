@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     pipe to avoid potentially logging an error from a previous syscall.
  -- slurmrestd - Improve the handling of queries when unable to connect to
     slurmdbd by providing responses when possible.
+ -- slurmrestd,sackd,scrun - Avoid rare hangs related to I/O.
 
 * Changes in Slurm 24.05.1
 ==========================
