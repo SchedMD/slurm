@@ -665,12 +665,10 @@ static void _queue_send_console_socket(void)
 	fd_set_nonblocking(fd);
 	fd_set_close_on_exec(fd);
 
-	read_lock_state();
 	if (strlcpy(addr.sun_path, state.console_socket,
 		    sizeof(addr.sun_path)) != strlen(state.console_socket))
 		fatal("console socket address too long: %s",
 		      state.console_socket);
-	unlock_state();
 
 	if ((connect(fd, (struct sockaddr *) &addr, sizeof(addr))) < 0)
 		fatal("%s: [%s] Unable to connect() to console socket: %m",
