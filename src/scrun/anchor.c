@@ -717,12 +717,10 @@ static void _queue_send_console_socket(void)
 static void *_on_event_connection(conmgr_fd_t *con, void *arg)
 {
 	container_state_msg_status_t status;
-	bool has_console_socket;
 
 	xassert(!arg);
 
 	read_lock_state();
-	has_console_socket = state.console_socket && state.console_socket[0];
 	status = state.status;
 	unlock_state();
 
@@ -737,9 +735,6 @@ static void *_on_event_connection(conmgr_fd_t *con, void *arg)
 		stop_anchor(ESLURM_JOB_NOT_PENDING);
 		return NULL;
 	}
-
-	if (has_console_socket)
-		_queue_send_console_socket();
 
 	return &state;
 }
@@ -1581,6 +1576,9 @@ extern int spawn_anchor(void)
 		_adopt_tty();
 	else if (state.requested_terminal)
 		_open_pty();
+
+	if (state.console_socket && state.console_socket[0])
+		_queue_send_console_socket();
 
 	/* scrun anchor process */
 
