@@ -72,12 +72,6 @@
 
 #include "src/scrun/scrun.h"
 
-/*
- * Special file descriptor for SIGCHILD handler
- * Warning: must not change while SIGCHILD handler is active.
- */
-static int sigchld_fd = -1;
-
 static void _open_pty();
 static int _kill_job(conmgr_fd_t *con, int signal);
 static void _notify_started(void);
@@ -226,25 +220,6 @@ static void _daemonize_logs()
 	}
 
 	update_logging();
-}
-
-static void _catch_sigchld(int sig)
-{
-	static const char e = 'C';
-
-	/*
-	 * Can't use normal logging due to possible dead lock:
-	 * skipping: debug("%s: caught SIGCHLD", __func__);
-	 *
-	 * send a single trash byte to trigger callback outside of interrupt
-	 * context.
-	 */
-	safe_write(sigchld_fd, &e, sizeof(e));
-	return;
-
-rwfail:
-	/* would log but it would result in a dead lock here */
-	return;	/* explicit return avoids a compiler error */
 }
 
 static void _tear_down(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -540,19 +515,18 @@ extern void stop_anchor(int status)
 	debug2("%s: end", __func__);
 }
 
-static int _on_event_data(conmgr_fd_t *con, void *arg)
+static void _catch_sigchld(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
+			   void *arg)
 {
 	pid_t pid;
 	pid_t srun_pid;
 	/* we are acting like this is atomic - it is only for logging */
 	static uint32_t reaped = 0;
-	size_t bytes;
 
 	xassert(arg == &state);
 
-	/* clear out the data */
-	conmgr_fd_get_in_buffer(con, NULL, &bytes);
-	conmgr_fd_mark_consumed_in_buffer(con, bytes);
+	debug("%s: caught SIGCHLD", __func__);
 
 	write_lock_state();
 	srun_pid = state.srun_pid;
@@ -561,7 +535,7 @@ static int _on_event_data(conmgr_fd_t *con, void *arg)
 	if (!srun_pid) {
 		debug("%s: ignoring SIGCHLD before srun started",
 		      __func__);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	debug("%s: processing SIGCHLD: finding all anchor children (pid=%"PRIu64")",
@@ -612,8 +586,6 @@ static int _on_event_data(conmgr_fd_t *con, void *arg)
 			}
 		}
 	} while (pid > 0);
-
-	return SLURM_SUCCESS;
 }
 
 static void *_on_cs_connection(conmgr_fd_t *con, void *arg)
@@ -712,84 +684,6 @@ static void _queue_send_console_socket(void)
 
 	debug("%s: listening for console socket requests at %s",
 	      __func__, addr.sun_path);
-}
-
-static void *_on_event_connection(conmgr_fd_t *con, void *arg)
-{
-	container_state_msg_status_t status;
-
-	xassert(!arg);
-
-	read_lock_state();
-	status = state.status;
-	unlock_state();
-
-	debug3("%s: status=%s", __func__,
-	       slurm_container_status_to_str(status));
-
-	if (status > CONTAINER_ST_CREATING) {
-		/* already failed - skip ahead to the exiting */
-		debug("%s: [%s] starting cleanup with status %s",
-		       __func__, conmgr_fd_get_name(con),
-		       slurm_container_status_to_str(status));
-		stop_anchor(ESLURM_JOB_NOT_PENDING);
-		return NULL;
-	}
-
-	return &state;
-}
-
-static void _on_event_finish(void *arg)
-{
-#ifndef NDEBUG
-	static const struct sigaction act = {
-		.sa_handler = SIG_DFL,
-		/* avoid SIGCHLD when srun is only stopped */
-		.sa_flags = SA_NOCLDSTOP,
-	};
-
-	debug3("%s", __func__);
-
-	xassert(arg == &state);
-	check_state();
-
-	if (sigaction(SIGCHLD, &act, NULL))
-		fatal("Unable to reset SIGCHLD handler: %m");
-#endif /* !NDEBUG */
-}
-
-static void _create_child_event_socket(void)
-{
-	int event_fd[2];
-	static const struct sigaction act = {
-		.sa_handler = _catch_sigchld,
-		/* avoid SIGCHLD when srun is only stopped */
-		.sa_flags = SA_NOCLDSTOP,
-	};
-	static const conmgr_events_t events = {
-		.on_connection = _on_event_connection,
-		.on_data = _on_event_data,
-		.on_finish = _on_event_finish,
-	};
-
-	check_state();
-
-	if (pipe(event_fd))
-		fatal("%s: unable to open unnamed pipe: %m", __func__);
-	xassert(event_fd[0] > STDERR_FILENO);
-	xassert(event_fd[1] > STDERR_FILENO);
-
-	/* save the file descriptor for the signal handler */
-	sigchld_fd = event_fd[1];
-
-	if (conmgr_process_fd(CON_TYPE_RAW, event_fd[0], event_fd[1], events,
-			      NULL, 0, NULL))
-		fatal("conmgr rejected event pipe");
-
-	if (sigaction(SIGCHLD, &act, NULL))
-		fatal("Unable to catch SIGCHLD: %m");
-
-	/* SIGCHILD handler is live! */
 }
 
 static int _send_start_response(conmgr_fd_t *con, slurm_msg_t *req_msg, int rc)
@@ -1591,7 +1485,8 @@ extern int spawn_anchor(void)
 		      __func__, slurm_strerror(rc));
 	debug("%s: listening on unix:%s", __func__, state.anchor_socket);
 
-	_create_child_event_socket();
+	conmgr_add_signal_work(SIGCHLD, _catch_sigchld, &state,
+			       "_catch_sigchld");
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
 				    conmgr_startup_events, NULL, 0, NULL)))
