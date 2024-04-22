@@ -195,6 +195,7 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	const parser_t *const parser = args->parser;
 	char *path = NULL;
 	bool matched_any = false;
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST_FLAG);
 	xassert(args->args->magic == MAGIC_ARGS);
@@ -225,18 +226,14 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 
 	}
 
-	args->index++;
-
-	if (!matched_any) {
+	if (!matched_any)
 		on_error(PARSING, parser->type, args->args,
 			 ESLURM_DATA_FLAGS_INVALID, path, __func__,
 			 "Unknown flag \"%s\"", data_get_string(src));
-		xfree(path);
-		return DATA_FOR_EACH_FAIL;
-	}
 
 	xfree(path);
-	return DATA_FOR_EACH_CONT;
+	args->index++;
+	return rc;
 }
 
 static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
