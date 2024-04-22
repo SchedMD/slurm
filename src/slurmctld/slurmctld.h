@@ -723,6 +723,7 @@ typedef struct {
 } het_job_details_t;
 
 typedef struct {
+	time_t last_update;
 	uint32_t *priority_array;
 	char *priority_array_parts;
 } priority_parts_t;

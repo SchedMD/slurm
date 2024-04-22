@@ -687,22 +687,26 @@ static uint32_t _get_priority_internal(time_t start_time,
 		int i = 0;
 		part_prio_args_t arg;
 
-		if (!job_ptr->part_prio) {
+		if (!job_ptr->part_prio)
 			job_ptr->part_prio = xmalloc(sizeof(priority_parts_t));
+
+		if (job_ptr->part_prio &&
+		    (!job_ptr->part_prio->priority_array ||
+		     (job_ptr->part_prio->last_update < last_part_update))) {
+
+			xfree(job_ptr->part_prio->priority_array);
 			i = list_count(job_ptr->part_ptr_list);
 			job_ptr->part_prio->priority_array =
 				xcalloc(i, sizeof(uint32_t));
+
+			list_sort(job_ptr->part_ptr_list,
+				  priority_sort_part_tier);
+			xfree(job_ptr->part_prio->priority_array_parts);
+			job_ptr->part_prio->priority_array_parts =
+				part_list_to_xstr(job_ptr->part_ptr_list);
+
+			job_ptr->part_prio->last_update = time(NULL);
 		}
-
-		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
-
-		/*
-		 * After sorting part_ptr_list, remake the priority_array_parts
-		 * string to be in sync with the priority array.
-		 */
-		xfree(job_ptr->part_prio->priority_array_parts);
-		job_ptr->part_prio->priority_array_parts =
-			part_list_to_xstr(job_ptr->part_ptr_list);
 
 		i = 0;
 		arg.job_ptr = job_ptr,
