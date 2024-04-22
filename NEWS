@@ -173,6 +173,7 @@ documents those changes that are of interest to users and administrators.
     This includes the job_containter/tmpfs plugin not cleaning up.
  -- Add USER_DELETE reservation flag to allow users with access to a reservation
     to delete it.
+ -- Add CgroupPlugin=disabled to disable any interaction with Cgroups.
 
 * Changes in Slurm 23.11.7
 ==========================

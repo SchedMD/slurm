@@ -108,6 +108,7 @@ static const char *syms[] = {
 static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 cgroup_conf_t slurm_cgroup_conf;
 
@@ -660,9 +661,10 @@ extern bool cgroup_memcg_job_confinement(void)
 	/* read cgroup configuration */
 	slurm_rwlock_rdlock(&cg_conf_lock);
 
-	if ((slurm_cgroup_conf.constrain_ram_space ||
-	     slurm_cgroup_conf.constrain_swap_space) &&
-	    xstrstr(slurm_conf.task_plugin, "cgroup"))
+	if (xstrcmp(slurm_cgroup_conf.cgroup_plugin, "disabled") &&
+	    ((slurm_cgroup_conf.constrain_ram_space ||
+	      slurm_cgroup_conf.constrain_swap_space) &&
+	     xstrstr(slurm_conf.task_plugin, "cgroup")))
 		status = true;
 
 	slurm_rwlock_unlock(&cg_conf_lock);
@@ -683,13 +685,18 @@ extern int cgroup_g_init(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (plugin_inited)
 		goto done;
 
 	if (cgroup_conf_init() != SLURM_SUCCESS)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
 
 	type = slurm_cgroup_conf.cgroup_plugin;
+
+	if (!xstrcmp(type, "disabled")) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
+	}
 
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = autodetect_cgroup_version())) {
@@ -704,9 +711,10 @@ extern int cgroup_g_init(void)
 	if (!g_context) {
 		error("cannot create %s context for %s", plugin_type, type);
 		rc = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-
+	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
 
@@ -715,94 +723,131 @@ done:
 
 extern int cgroup_g_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!g_context)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock(&g_context_lock);
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
-	slurm_mutex_unlock(&g_context_lock);
+	if (g_context) {
+		slurm_mutex_lock(&g_context_lock);
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+		slurm_mutex_unlock(&g_context_lock);
+	}
 
 	cgroup_conf_destroy();
+	plugin_inited = PLUGIN_NOT_INITED;
 
 	return rc;
 }
 
 extern int cgroup_g_initialize(cgroup_ctl_type_t sub)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		fatal("%s: Trying to initialize cgroups but CgroupPlugin=disabled is set in cgroup.conf. Please, unset any configuration that is using cgroups.",
+		      __func__);
 
 	return (*(ops.initialize))(sub);
 }
 
 extern int cgroup_g_system_create(cgroup_ctl_type_t sub)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.system_create))(sub);
 }
 
 extern int cgroup_g_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.system_addto))(sub, pids, npids);
 }
 
 extern int cgroup_g_system_destroy(cgroup_ctl_type_t sub)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.system_destroy))(sub);
 }
 
 extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_create))(sub, step);
 }
 
 extern int cgroup_g_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_addto))(sub, pids, npids);
 }
 
 extern int cgroup_g_step_get_pids(pid_t **pids, int *npids)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP) {
+		*npids = 0;
+		*pids = NULL;
+		return SLURM_SUCCESS;
+	}
 
 	return (*(ops.step_get_pids))(pids, npids);
 }
 
 extern int cgroup_g_step_suspend(void)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_suspend))();
 }
 
 extern int cgroup_g_step_resume(void)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_resume))();
 }
 
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_destroy))(sub);
 }
 
 extern bool cgroup_g_has_pid(pid_t pid)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return false;
 
 	return (*(ops.has_pid))(pid);
 }
@@ -810,7 +855,10 @@ extern bool cgroup_g_has_pid(pid_t pid)
 extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 					       cgroup_level_t level)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return NULL;
 
 	return (*(ops.constrain_get))(sub, level);
 }
@@ -818,7 +866,10 @@ extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.constrain_set))(sub, level, limits);
 }
@@ -826,21 +877,32 @@ extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
                                     uint32_t task_id)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
 extern int cgroup_g_step_start_oom_mgr(void)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.step_start_oom_mgr))();
 }
 
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP) {
+		cgroup_oom_t *empty_oom = xmalloc(sizeof(*empty_oom));
+		return empty_oom;
+	}
 
 	return (*(ops.step_stop_oom_mgr))(step);
 }
@@ -848,28 +910,42 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.task_addto))(sub, step, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP) {
+		cgroup_acct_t *empty_acct = xmalloc(sizeof(*empty_acct));
+		return empty_acct;
+	}
 
 	return (*(ops.task_get_acct_data))(taskid);
 }
 
 extern long int cgroup_g_get_acct_units(void)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return (long int)USEC_IN_SEC;
 
 	return (*(ops.get_acct_units))();
 }
 
 extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f)
 {
-	xassert(g_context);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return false;
 
 	return (*(ops.has_feature))(f);
 }

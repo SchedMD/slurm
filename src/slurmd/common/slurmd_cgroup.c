@@ -134,9 +134,10 @@ extern int attach_system_memory_pid(pid_t pid)
 
 extern bool check_corespec_cgroup_job_confinement(void)
 {
-	if ((conf->cpu_spec_list || conf->core_spec_cnt) &&
-	    slurm_cgroup_conf.constrain_cores &&
-	    xstrstr(slurm_conf.task_plugin, "cgroup"))
+	if (xstrcmp(slurm_cgroup_conf.cgroup_plugin, "disabled") &&
+	    ((conf->cpu_spec_list || conf->core_spec_cnt) &&
+	     slurm_cgroup_conf.constrain_cores &&
+	     xstrstr(slurm_conf.task_plugin, "cgroup")))
 		return true;
 
 	return false;

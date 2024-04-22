@@ -31,13 +31,14 @@ cgroup controllers should be mounted. The default \fIPATH\fR is /sys/fs/cgroup.
 .IP
 
 .TP
-\fBCgroupPlugin\fR=\fI<cgroup/v1|cgroup/v2|autodetect>\fR
+\fBCgroupPlugin\fR=\fI<cgroup/v1|cgroup/v2|autodetect|disabled>\fR
 Specify the plugin to be used when interacting with the cgroup subsystem.
-Supported values at the moment are "cgroup/v1" which supports the legacy
-interface of cgroup v1, "cgroup/v2" for unified architecture, or "autodetect"
-which tries to determine which cgroup version does your system provide.
-This is useful if nodes have support for different cgroup versions.
-The default value is "autodetect".
+Supported values are "disabled", to completely disable any interaction with
+the cgroups, "cgroup/v1" which supports the legacy interface of cgroup v1,
+"cgroup/v2" for the unified cgroup2 architecture, and "autodetect" which tries
+to determine which cgroup version does your system provide. "autodetect" is
+useful to have a single configuration in clusters where nodes can have different
+cgroup versions. The default value is "autodetect".
 .IP
 
 .TP
