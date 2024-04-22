@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "January 2024" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2024" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1762,13 +1762,23 @@ override the requested partition's TimeLimit.
 
 .TP
 \fBRelative\fR
-If set the QOS limits will be treated as percentages of a cluster/partition
-instead of absolutes.
-Since the QOS limits will be based on the size of a cluster or partitions some
-limitations are inherit. Namely if this flag is set only one partition can have
-this QOS as it's partition QOS, and if this is used as a partition QOS jobs will
-not be allowed to use it as a normal QOS.
-
+If set, the QOS limits will be treated as percentages of the cluster or
+partition instead of absolute limits (numbers should be less than 100).
+The controller should be restarted or
+reconfigured after adding the \fIRelative\fR flag to the QOS.
+.br
+If this is used as a partition QOS:
+.RS
+.LP
+1. Limits will be calculated relative to the partition's resources.
+.br
+2. Only one partition may have this QOS as its partition QOS.
+.br
+3. Jobs will not be allowed to use it as a normal QOS.
+.RE
+.IP
+Additional details are in the QOS documentation at
+<https://slurm.schedmd.com/qos.html>.
 .IP
 
 .TP
