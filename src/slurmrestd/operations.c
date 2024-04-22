@@ -231,6 +231,9 @@ static int _add_binded_path(const char *path_str,
 	rc = register_path_binding(path_str, op_path, meta, parser, &tag);
 	slurm_rwlock_unlock(&paths_lock);
 
+	if (rc == ESLURM_NOT_SUPPORTED)
+		return SLURM_SUCCESS;
+
 	if (rc)
 		return rc;
 
