@@ -683,6 +683,13 @@ static uint32_t _get_priority_internal(time_t start_time,
 		priority = (double) tmp_64;
 	}
 
+	/* Free after transitioning from multi-part job to single part job. */
+	if (!job_ptr->part_ptr_list && job_ptr->part_prio) {
+		xfree(job_ptr->part_prio->priority_array);
+		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio);
+	}
+
 	if (job_ptr->part_ptr_list) {
 		int i = 0;
 		part_prio_args_t arg;
