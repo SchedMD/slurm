@@ -5198,6 +5198,32 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 	return rc;
 }
 
+#define REBUILD_PENDING SLURM_BIT(0)
+#define REBUILD_ACTIVE SLURM_BIT(1)
+
+typedef struct {
+	uint16_t flags;
+	job_record_t *job_ptr;
+} rebuild_args_t;
+
+static int _build_partition_string(void *object, void *arg) {
+	part_record_t *part_ptr = object;
+	rebuild_args_t *args = arg;
+	uint16_t flags = args->flags;
+	job_record_t *job_ptr = args->job_ptr;
+
+	if (flags & REBUILD_PENDING) {
+		job_ptr->part_ptr = part_ptr;
+		flags &= ~(REBUILD_PENDING);
+	}
+	if ((flags & REBUILD_ACTIVE) && (part_ptr == job_ptr->part_ptr))
+		return SLURM_SUCCESS;       /* already added */
+	if (job_ptr->partition)
+		xstrcat(job_ptr->partition, ",");
+	xstrcat(job_ptr->partition, part_ptr->name);
+	return SLURM_SUCCESS;
+}
+
 /* If a job can run in multiple partitions, when it is started we want to
  * put the name of the partition used _first_ in that list. When slurmctld
  * restarts, that will be used to set the job's part_ptr and that will be
@@ -5205,39 +5231,25 @@ static int _valid_node_feature(char *feature, bool can_reboot)
  * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
-	 bool job_active = false, job_pending = false;
-        part_record_t *part_ptr;
-        list_itr_t *part_iterator;
+	rebuild_args_t arg = {
+		.job_ptr = job_ptr,
+	};
 
-        xfree(job_ptr->partition);
+	xfree(job_ptr->partition);
 
-        if (!job_ptr->part_ptr_list) {
-                job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-                last_job_update = time(NULL);
-                return;
-        }
+	if (!job_ptr->part_ptr_list) {
+		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+		last_job_update = time(NULL);
+		return;
+	}
 
-        if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-                job_active = true;
-                job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-        } else if (IS_JOB_PENDING(job_ptr))
-                job_pending = true;
-
-        part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-        while ((part_ptr = list_next(part_iterator))) {
-                if (job_pending) {
-                        /* Reset job's one partition to a valid one */
-                        job_ptr->part_ptr = part_ptr;
-                        job_pending = false;
-                }
-                if (job_active && (part_ptr == job_ptr->part_ptr))
-                        continue;       /* already added */
-                if (job_ptr->partition)
-                        xstrcat(job_ptr->partition, ",");
-                xstrcat(job_ptr->partition, part_ptr->name);
-        }
-        list_iterator_destroy(part_iterator);
-        last_job_update = time(NULL);
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+		arg.flags |= REBUILD_ACTIVE;
+		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+	} else if (IS_JOB_PENDING(job_ptr))
+		arg.flags |= REBUILD_PENDING;
+	list_for_each(job_ptr->part_ptr_list, _build_partition_string, &arg);
+	last_job_update = time(NULL);
 }
 
 /* cleanup_completing()
