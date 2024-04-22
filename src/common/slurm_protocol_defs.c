@@ -1627,6 +1627,8 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->nodes);
 		xfree(job->sched_nodes);
 		xfree(job->partition);
+		xfree(job->priority_array);
+		xfree(job->priority_array_parts);
 		xfree(job->prefer);
 		xfree(job->qos);
 		xfree(job->req_node_inx);

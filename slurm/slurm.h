@@ -1866,6 +1866,8 @@ typedef struct job_info {
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
+	uint32_t *priority_array; /* partition based priority */
+	char *priority_array_parts; /* partition order of priority_array */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint8_t reboot;		/* node reboot requested before start */

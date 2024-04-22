@@ -604,10 +604,12 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					continue;
 
 				job_part_pairs++;
-				if (job_ptr->priority_array) {
+				if (job_ptr->part_prio &&
+				    job_ptr->part_prio->priority_array) {
 					_job_queue_append(job_queue, job_ptr,
 							  part_ptr,
 							  job_ptr->
+							  part_prio->
 							  priority_array[inx]);
 				} else {
 					_job_queue_append(job_queue, job_ptr,
@@ -1457,7 +1459,6 @@ next_part:
 			array_task_id = job_queue_rec->array_task_id;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
-			job_ptr->priority = job_queue_rec->priority;
 
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
@@ -1485,12 +1486,16 @@ next_part:
 				job_queue_rec_resv_list(job_queue_rec);
 			else
 				job_queue_rec_magnetic_resv(job_queue_rec);
-			xfree(job_queue_rec);
 
-			if (!_job_runnable_test3(job_ptr, part_ptr))
+			if (!_job_runnable_test3(job_ptr, part_ptr)) {
+				xfree(job_queue_rec);
 				continue;
+			}
 
 			job_ptr->part_ptr = part_ptr;
+			job_ptr->priority = job_queue_rec->priority;
+
+			xfree(job_queue_rec);
 		}
 
 		job_ptr->last_sched_eval = time(NULL);
@@ -2147,14 +2152,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p1 = details->priority;
 		else {
 			if (job_rec1->job_ptr->part_ptr_list &&
-			    job_rec1->job_ptr->priority_array)
+			    job_rec1->job_ptr->part_prio &&
+			    job_rec1->job_ptr->part_prio->priority_array)
 				p1 = job_rec1->priority;
 			else
 				p1 = job_rec1->job_ptr->priority;
 		}
 	} else {
 		if (job_rec1->job_ptr->part_ptr_list &&
-		    job_rec1->job_ptr->priority_array)
+		    job_rec1->job_ptr->part_prio &&
+		    job_rec1->job_ptr->part_prio->priority_array)
 			p1 = job_rec1->priority;
 		else
 			p1 = job_rec1->job_ptr->priority;
@@ -2167,14 +2174,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p2 = details->priority;
 		else {
 			if (job_rec2->job_ptr->part_ptr_list &&
-			    job_rec2->job_ptr->priority_array)
+			    job_rec2->job_ptr->part_prio &&
+			    job_rec2->job_ptr->part_prio->priority_array)
 				p2 = job_rec2->priority;
 			else
 				p2 = job_rec2->job_ptr->priority;
 		}
 	} else {
 		if (job_rec2->job_ptr->part_ptr_list &&
-		    job_rec2->job_ptr->priority_array)
+		    job_rec2->job_ptr->part_prio &&
+		    job_rec2->job_ptr->part_prio->priority_array)
 			p2 = job_rec2->priority;
 		else
 			p2 = job_rec2->job_ptr->priority;
@@ -5198,6 +5207,32 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 	return rc;
 }
 
+#define REBUILD_PENDING SLURM_BIT(0)
+#define REBUILD_ACTIVE SLURM_BIT(1)
+
+typedef struct {
+	uint16_t flags;
+	job_record_t *job_ptr;
+} rebuild_args_t;
+
+static int _build_partition_string(void *object, void *arg) {
+	part_record_t *part_ptr = object;
+	rebuild_args_t *args = arg;
+	uint16_t flags = args->flags;
+	job_record_t *job_ptr = args->job_ptr;
+
+	if (flags & REBUILD_PENDING) {
+		job_ptr->part_ptr = part_ptr;
+		flags &= ~(REBUILD_PENDING);
+	}
+	if ((flags & REBUILD_ACTIVE) && (part_ptr == job_ptr->part_ptr))
+		return SLURM_SUCCESS;       /* already added */
+	if (job_ptr->partition)
+		xstrcat(job_ptr->partition, ",");
+	xstrcat(job_ptr->partition, part_ptr->name);
+	return SLURM_SUCCESS;
+}
+
 /* If a job can run in multiple partitions, when it is started we want to
  * put the name of the partition used _first_ in that list. When slurmctld
  * restarts, that will be used to set the job's part_ptr and that will be
@@ -5205,28 +5240,25 @@ static int _valid_node_feature(char *feature, bool can_reboot)
  * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
-	list_itr_t *part_iterator;
-	part_record_t *part_ptr;
-
-	if (!job_ptr->part_ptr_list)
-		return;
-	if (!job_ptr->part_ptr || !job_ptr->part_ptr->name) {
-		error("%pJ has NULL part_ptr or the partition name is NULL",
-		      job_ptr);
-		return;
-	}
+	rebuild_args_t arg = {
+		.job_ptr = job_ptr,
+	};
 
 	xfree(job_ptr->partition);
-	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 
-	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	while ((part_ptr = list_next(part_iterator))) {
-		if (part_ptr == job_ptr->part_ptr)
-			continue;
-		xstrcat(job_ptr->partition, ",");
-		xstrcat(job_ptr->partition, part_ptr->name);
+	if (!job_ptr->part_ptr_list) {
+		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+		last_job_update = time(NULL);
+		return;
 	}
-	list_iterator_destroy(part_iterator);
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+		arg.flags |= REBUILD_ACTIVE;
+		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+	} else if (IS_JOB_PENDING(job_ptr))
+		arg.flags |= REBUILD_PENDING;
+	list_for_each(job_ptr->part_ptr_list, _build_partition_string, &arg);
+	last_job_update = time(NULL);
 }
 
 /* cleanup_completing()

@@ -722,6 +722,12 @@ typedef struct {
 	uint32_t priority;		/* whole hetjob calculated priority */
 } het_job_details_t;
 
+typedef struct {
+	time_t last_update;
+	uint32_t *priority_array;
+	char *priority_array_parts;
+} priority_parts_t;
+
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with job_array_split.
@@ -869,6 +875,7 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
+	priority_parts_t *part_prio;	/* partition based priority */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
 	bool preempt_in_progress;	/* Preemption of other jobs in progress
@@ -879,7 +886,6 @@ struct job_record {
 	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
-	uint32_t *priority_array;	/* partition based priority */
 	priority_factors_t *prio_factors; /* cached value of priority factors
 					   * figured out in the priority plugin
 					   */
@@ -3245,5 +3251,11 @@ extern void controller_fini_scheduling(void);
  * Reconfigure the various schedulers.
  */
 extern void controller_reconfig_scheduling(void);
+
+/*
+ * Return a comma separate xstr of partition names from a list of
+ * part_record_t's.
+ */
+extern char *part_list_to_xstr(list_t *list);
 
 #endif /* !_HAVE_SLURMCTLD_H */

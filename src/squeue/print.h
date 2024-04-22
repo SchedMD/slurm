@@ -64,6 +64,7 @@ typedef struct step_format {
 } step_format_t;
 
 typedef struct squeue_job_rec {
+	uint32_t job_prio;
 	job_info_t *	job_ptr;
 	char *		part_name;
 	uint32_t	part_prio;
