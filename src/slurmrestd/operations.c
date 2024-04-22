@@ -313,7 +313,7 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 		rc = _add_binded_path(path, op_path, meta, parsers[i]);
 
 		xfree(path);
-		if (rc && (rc != ESLURM_DATA_PATH_NOT_FOUND))
+		if (rc)
 			break;
 	}
 
