@@ -127,11 +127,11 @@ will pend until resources are available (as by default without DenyOnLimit).
 Group limits (e.g. <b>GrpTRES</b>) will also be treated like 'Max' limits
 (e.g. <b>MaxTRESPerNode</b>) and jobs will be denied if they would violate the
 limit as stand-alone jobs.
-This currently only applies to QOS and Association limits.
+This currently only applies to QOS and Association limits.</li>
 
 <li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
-will be held until their Fairshare Usage goes above the Threshold.
+will be held until their Fairshare Usage goes above the Threshold.</li>
 
 <li><b>NoDecay</b> If set, this QOS will not have its GrpTRESMins,
 GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife
@@ -143,7 +143,7 @@ usage will still be decayed for associations using the QOS.  The QOS
 GrpTRESMins and GrpWall limits can be increased or
 the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
 with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
-QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).</li>
 
 <li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
 jobs using this QOS will not reserve resources in the backfill
@@ -151,19 +151,19 @@ schedule's  map of resources allocated through time. This flag is
 intended for use with a QOS that may be preempted by jobs associated
 with all other QOS (e.g use with a "standby" QOS). If this flag is
 used with a QOS which can not be preempted by all other QOS, it could
-result in starvation of larger jobs.
+result in starvation of larger jobs.</li>
 
 <li><b>OverPartQOS</b> If set, jobs using this QOS will be able to
-override any limits used by the requested partition's QOS limits.
+override any limits used by the requested partition's QOS limits.</li>
 
 <li><b>PartitionMaxNodes</b> If set, jobs using this QOS will be able to
-override the requested partition's MaxNodes limit.
+override the requested partition's MaxNodes limit.</li>
 
 <li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
-override the requested partition's MinNodes limit.
+override the requested partition's MinNodes limit.</li>
 
 <li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
-override the requested partition's TimeLimit.
+override the requested partition's TimeLimit.</li>
 
 <li><b>Relative</b> If set, the QOS limits will be treated as percentages of
 the cluster or partition instead of absolute limits (numbers should be less than
@@ -179,22 +179,23 @@ the cluster or partition instead of absolute limits (numbers should be less than
 <li><b>RequiresReservation</b> If set, jobs using this QOS must designate a
 reservation when submitting a job.  This option can be useful in
 restricting usage of a QOS that may have greater preemptive capability
-or additional resources to be allowed only within a reservation.
+or additional resources to be allowed only within a reservation.</li>
 
 <li><b>UsageFactorSafe</b> If set, and <b>AccountingStorageEnforce</b> includes
 <b>Safe</b>, jobs will only be able to run if the job can run to completion
-with the <b>UsageFactor</b> applied.
+with the <b>UsageFactor</b> applied.</li>
 </ul>
+</li>
 
 <li><b>GraceTime</b> Preemption grace time to be extended to a job
-  which has been selected for preemption.
+  which has been selected for preemption.</li>
 
 <li><p><b>UsageFactor</b>
 A float that is factored into a job's TRES usage (e.g. RawUsage, TRESMins,
 TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
 second a job ran it would count for 2. If the usagefactor was .5, every second
 would only count for half of the time. A setting of 0 would add no timed usage
-from the job.
+from the job.</li>
 </p>
 
 <p>
@@ -236,7 +237,7 @@ A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has
 pending jobs or submits new jobs those jobs will be held until the
 usage goes back above the threshold.  Use <i>sshare</i> to see current
-shares on the system.
+shares on the system.</li>
 </ul>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
@@ -348,6 +349,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 07 April 2023</p>
+<p style="text-align: center;">Last modified 22 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
