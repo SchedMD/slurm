@@ -6462,7 +6462,7 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 
 	if (slurm_option_set_by_cli(opt, 'c') &&
 	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
-		fatal("You can not have --tres-per-task=cpu= and -c please use one or the other");
+		fatal("You can not have --tres-per-task=cpu= and --cpus-per-task please use one or the other");
 	} else if (slurm_option_set_by_cli(opt, 'c') &&
 		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
 		/*
