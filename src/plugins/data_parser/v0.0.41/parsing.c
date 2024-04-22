@@ -203,6 +203,13 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 
 	path = _flag_parent_path(&path, args);
 
+	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		on_warn(PARSING, parser->type, args->args, path,
+			__func__, "Ignoring unexpected field of type %s",
+			data_get_type_string(src));
+		goto cleanup;
+	}
+
 	for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
 		bool matched = !xstrcasecmp(data_get_string(src), bit->name);
@@ -231,6 +238,7 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 			 ESLURM_DATA_FLAGS_INVALID, path, __func__,
 			 "Unknown flag \"%s\"", data_get_string(src));
 
+cleanup:
 	xfree(path);
 	args->index++;
 	return rc;
