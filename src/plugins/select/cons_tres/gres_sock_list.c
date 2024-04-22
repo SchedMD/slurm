@@ -160,7 +160,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_node,
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
+	uint16_t sockets, uint16_t cores_per_sock, uint32_t res_cores_per_gpu,
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
@@ -266,7 +266,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		 * treat like no topo_core_bitmap is specified
 		 */
 		if (gres_ns->topo_core_bitmap &&
-		    gres_ns->topo_core_bitmap[i]) {
+		    gres_ns->topo_core_bitmap[i] &&
+		    !res_cores_per_gpu) {
 			use_all_sockets = true;
 			for (s = 0; s < sockets; s++) {
 				bool use_this_socket = false;
@@ -868,8 +869,8 @@ extern List gres_sock_list_create(
 				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name, enforce_binding,
-				local_s_p_n, req_sock_map,
+				res_cores_per_gpu, job_id, node_name,
+				enforce_binding, local_s_p_n, req_sock_map,
 				user_id, node_inx);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(

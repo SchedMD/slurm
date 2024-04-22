@@ -1704,9 +1704,11 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 		gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
 					       args->node_inx, socket_inx,
 					       sorted_gres, links_cnt);
-		if (gres_needed)
+		if (gres_needed) {
+			(*res_gres_per_sock)[socket_inx] -= gres_needed;
 			error("%s: More restricted gpu cores allocated then should be possible for job %u on node %d",
 			      __func__, args->job_ptr->job_id, args->node_inx);
+		}
 	}
 	xfree(links_cnt);
 	xfree(sorted_gres);
