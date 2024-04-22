@@ -151,6 +151,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
 #define DEFAULT_TCP_TIMEOUT         2
+#define DEFAULT_TLS_TYPE "tls/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #if defined HAVE_3D
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"

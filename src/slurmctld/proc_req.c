@@ -523,6 +523,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->task_plugin         = xstrdup(conf->task_plugin);
 	conf_ptr->task_plugin_param   = conf->task_plugin_param;
 	conf_ptr->tcp_timeout         = conf->tcp_timeout;
+	conf_ptr->tls_type = xstrdup(conf->tls_type);
 	conf_ptr->tmp_fs              = xstrdup(conf->tmp_fs);
 	conf_ptr->topology_param      = xstrdup(conf->topology_param);
 	conf_ptr->topology_plugin     = xstrdup(conf->topology_plugin);

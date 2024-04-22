@@ -3112,6 +3112,7 @@ typedef struct {
 	char *task_plugin;	/* task launch plugin */
 	uint32_t task_plugin_param;	/* see CPU_BIND_* */
 	char *task_prolog;	/* pathname of task launch prolog */
+	char *tls_type;		/* tls plugin type */
 	uint16_t tcp_timeout;	/* tcp timeout */
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *topology_param;	/* network topology parameters */
