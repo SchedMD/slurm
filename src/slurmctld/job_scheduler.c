@@ -1459,7 +1459,6 @@ next_part:
 			array_task_id = job_queue_rec->array_task_id;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
-			job_ptr->priority = job_queue_rec->priority;
 
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
@@ -1487,12 +1486,16 @@ next_part:
 				job_queue_rec_resv_list(job_queue_rec);
 			else
 				job_queue_rec_magnetic_resv(job_queue_rec);
-			xfree(job_queue_rec);
 
-			if (!_job_runnable_test3(job_ptr, part_ptr))
+			if (!_job_runnable_test3(job_ptr, part_ptr)) {
+				xfree(job_queue_rec);
 				continue;
+			}
 
 			job_ptr->part_ptr = part_ptr;
+			job_ptr->priority = job_queue_rec->priority;
+
+			xfree(job_queue_rec);
 		}
 
 		job_ptr->last_sched_eval = time(NULL);
