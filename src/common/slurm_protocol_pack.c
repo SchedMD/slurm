@@ -3017,6 +3017,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			 uint16_t protocol_version)
 {
 	multi_core_data_t *mc_ptr;
+	uint32_t uint32_tmp;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
@@ -3069,6 +3070,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack_time(&job->last_sched_eval, buffer);
 		safe_unpack_time(&job->preempt_time, buffer);
 		safe_unpack32(&job->priority, buffer);
+		safe_unpack32_array(&job->priority_array, &uint32_tmp, buffer);
+		safe_unpackstr(&job->priority_array_parts, buffer);
 		safe_unpackdouble(&job->billable_tres, buffer);
 		safe_unpackstr(&job->cluster, buffer);
 		safe_unpackstr(&job->nodes, buffer);

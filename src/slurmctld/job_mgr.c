@@ -11504,6 +11504,17 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack_time(dump_job_ptr->last_sched_eval, buffer);
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack32(dump_job_ptr->priority, buffer);
+		if (dump_job_ptr->part_prio) {
+			pack32_array(dump_job_ptr->part_prio->priority_array,
+				     (dump_job_ptr->part_prio->priority_array) ?
+				     list_count(dump_job_ptr->part_ptr_list) :
+				     0, buffer);
+			packstr(dump_job_ptr->part_prio->priority_array_parts,
+				buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+		}
 		packdouble(dump_job_ptr->billable_tres, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
