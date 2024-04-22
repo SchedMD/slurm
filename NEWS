@@ -146,6 +146,7 @@ documents those changes that are of interest to users and administrators.
     query: if the CRON_JOBS flag is not used then cron jobs will not be
     cancelled. The NO_CRON_JOBS flag is ignored in v0.0.40 and removed in
     v0.0.41.
+ -- Pass multi-partition job priorities to job for squeue to display.
 
 * Changes in Slurm 23.11.7
 ==========================
