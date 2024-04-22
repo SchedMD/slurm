@@ -5205,28 +5205,39 @@ static int _valid_node_feature(char *feature, bool can_reboot)
  * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
-	list_itr_t *part_iterator;
-	part_record_t *part_ptr;
+	 bool job_active = false, job_pending = false;
+        part_record_t *part_ptr;
+        list_itr_t *part_iterator;
 
-	if (!job_ptr->part_ptr_list)
-		return;
-	if (!job_ptr->part_ptr || !job_ptr->part_ptr->name) {
-		error("%pJ has NULL part_ptr or the partition name is NULL",
-		      job_ptr);
-		return;
-	}
+        xfree(job_ptr->partition);
 
-	xfree(job_ptr->partition);
-	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+        if (!job_ptr->part_ptr_list) {
+                job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+                last_job_update = time(NULL);
+                return;
+        }
 
-	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	while ((part_ptr = list_next(part_iterator))) {
-		if (part_ptr == job_ptr->part_ptr)
-			continue;
-		xstrcat(job_ptr->partition, ",");
-		xstrcat(job_ptr->partition, part_ptr->name);
-	}
-	list_iterator_destroy(part_iterator);
+        if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+                job_active = true;
+                job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+        } else if (IS_JOB_PENDING(job_ptr))
+                job_pending = true;
+
+        part_iterator = list_iterator_create(job_ptr->part_ptr_list);
+        while ((part_ptr = list_next(part_iterator))) {
+                if (job_pending) {
+                        /* Reset job's one partition to a valid one */
+                        job_ptr->part_ptr = part_ptr;
+                        job_pending = false;
+                }
+                if (job_active && (part_ptr == job_ptr->part_ptr))
+                        continue;       /* already added */
+                if (job_ptr->partition)
+                        xstrcat(job_ptr->partition, ",");
+                xstrcat(job_ptr->partition, part_ptr->name);
+        }
+        list_iterator_destroy(part_iterator);
+        last_job_update = time(NULL);
 }
 
 /* cleanup_completing()

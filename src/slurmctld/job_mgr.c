@@ -3658,45 +3658,6 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return NULL;
 }
 
-/* rebuild a job's partition name list based upon the contents of its
- *	part_ptr_list */
-static void _rebuild_part_name_list(job_record_t *job_ptr)
-{
-	bool job_active = false, job_pending = false;
-	part_record_t *part_ptr;
-	list_itr_t *part_iterator;
-
-	xfree(job_ptr->partition);
-
-	if (!job_ptr->part_ptr_list) {
-		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-		last_job_update = time(NULL);
-		return;
-	}
-
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-		job_active = true;
-		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-	} else if (IS_JOB_PENDING(job_ptr))
-		job_pending = true;
-
-	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	while ((part_ptr = list_next(part_iterator))) {
-		if (job_pending) {
-			/* Reset job's one partition to a valid one */
-			job_ptr->part_ptr = part_ptr;
-			job_pending = false;
-		}
-		if (job_active && (part_ptr == job_ptr->part_ptr))
-			continue;	/* already added */
-		if (job_ptr->partition)
-			xstrcat(job_ptr->partition, ",");
-		xstrcat(job_ptr->partition, part_ptr->name);
-	}
-	list_iterator_destroy(part_iterator);
-	last_job_update = time(NULL);
-}
-
 /*
  * Set a requeued job to PENDING and COMPLETING if all the nodes are completed
  * and the EpilogSlurmctld is not running
@@ -3891,7 +3852,7 @@ extern int kill_job_by_part_name(char *part_name)
 			list_iterator_destroy(part_iterator);
 			if (rebuild_name_list) {
 				if (list_count(job_ptr->part_ptr_list) > 0) {
-					_rebuild_part_name_list(job_ptr);
+					rebuild_job_part_list(job_ptr);
 					job_ptr->part_ptr =
 						list_peek(job_ptr->
 							  part_ptr_list);
@@ -13598,7 +13559,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->part_ptr_list = part_ptr_list;
 		part_ptr_list = NULL;	/* nothing to free */
 
-		_rebuild_part_name_list(job_ptr);
+		rebuild_job_part_list(job_ptr);
 
 		/* Rebuilt in priority/multifactor plugin */
 		xfree(job_ptr->priority_array);
