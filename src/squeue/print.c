@@ -77,11 +77,31 @@ static partition_info_msg_t *part_info_msg = NULL;
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
+static void _create_priority_list(list_t *l,
+				  job_info_t *jobs,
+				  int current_job)
+{
+	char *tmp, *tok, *save_ptr = NULL;
+	squeue_job_rec_t *job_rec_ptr;
+
+	tmp = xstrdup(jobs[current_job].partition);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		if (_filter_job_part(tok) == 0) {
+			job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
+			job_rec_ptr->job_ptr = jobs + current_job;
+			job_rec_ptr->part_name = xstrdup(tok);
+			job_rec_ptr->part_prio = _part_get_prio_tier(tok);
+			list_append(l, (void *) job_rec_ptr);
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+}
 
 extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 {
 	squeue_job_rec_t *job_rec_ptr;
-	char *tmp, *tok, *save_ptr = NULL;
 	int i;
 	List l;
 
@@ -96,21 +116,7 @@ extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 		if (_filter_job(&jobs[i]))
 			continue;
 		if (params.priority_flag) {
-			tmp = xstrdup(jobs[i].partition);
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (_filter_job_part(tok) == 0) {
-					job_rec_ptr = xmalloc(
-						      sizeof(squeue_job_rec_t));
-					job_rec_ptr->job_ptr = jobs + i;
-					job_rec_ptr->part_name = xstrdup(tok);
-					job_rec_ptr->part_prio =
-						_part_get_prio_tier(tok);
-					list_append(l, (void *) job_rec_ptr);
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
+			_create_priority_list(l, jobs, i);
 		} else {
 			if (_filter_job_part(jobs[i].partition))
 				continue;
