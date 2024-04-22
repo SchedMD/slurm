@@ -528,6 +528,75 @@ static double _get_tres_prio_weighted(double *tres_factors)
 	return tmp_tres;
 }
 
+typedef struct {
+	int *counter;
+	job_record_t *job_ptr;
+	char *multi_part_str;
+} part_prio_args_t;
+
+static int _priority_each_partition(void *object, void *arg)
+{
+	part_record_t *part_ptr = (part_record_t *)object;
+	part_prio_args_t *args = arg;
+	job_record_t *job_ptr = args->job_ptr;
+	char *multi_part_str = args->multi_part_str;
+	int *counter = args->counter;
+
+	double part_tres = 0.0;
+	double priority_part;
+	uint64_t tmp_64;
+
+	if (weight_tres) {
+		double part_tres_factors[slurmctld_tres_cnt];
+		memset(part_tres_factors, 0,
+		       sizeof(double) * slurmctld_tres_cnt);
+		_get_tres_factors(job_ptr, part_ptr, part_tres_factors);
+		part_tres = _get_tres_prio_weighted(part_tres_factors);
+	}
+
+	priority_part = ((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+			 part_ptr->priority_job_factor :
+			 part_ptr->norm_priority) *
+			 (double)weight_part;
+
+	priority_part +=
+		(job_ptr->prio_factors->priority_age
+		  + job_ptr->prio_factors->priority_assoc
+		  + job_ptr->prio_factors->priority_fs
+		  + job_ptr->prio_factors->priority_js
+		  + job_ptr->prio_factors->priority_qos
+		  + part_tres
+		  + (double)(((int64_t)job_ptr->prio_factors->priority_site)
+			     - NICE_OFFSET)
+		  - (double)(((int64_t)job_ptr->prio_factors->nice)
+			     - NICE_OFFSET));
+
+	/* Priority 0 is reserved for held jobs */
+	if (priority_part < 1)
+		priority_part = 1;
+
+	tmp_64 = (uint64_t) priority_part;
+	if (tmp_64 > 0xffffffff) {
+		error("%pJ priority '%"PRIu64"' exceeds 32 bits. Reducing it to 4294967295 (2^32 - 1)",
+		      job_ptr, tmp_64);
+		tmp_64 = 0xffffffff;
+		priority_part = (double) tmp_64;
+	}
+	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
+	    (job_ptr->priority_array[*counter] <
+	     (uint32_t) priority_part)) {
+		job_ptr->priority_array[*counter] = (uint32_t) priority_part;
+	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
+		xstrfmtcat(multi_part_str, multi_part_str ?
+			   ", %s=%u" : "%s=%u", part_ptr->name,
+			   job_ptr->priority_array[*counter]);
+	}
+	(*counter)++;
+	return SLURM_SUCCESS;
+}
+
+
 /* Returns the priority after applying the weight factors */
 static uint32_t _get_priority_internal(time_t start_time,
 				       job_record_t *job_ptr)
@@ -614,10 +683,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 	}
 
 	if (job_ptr->part_ptr_list) {
-		part_record_t *part_ptr;
-		double priority_part;
-		list_itr_t *part_iterator;
 		int i = 0;
+		part_prio_args_t arg;
 
 		if (!job_ptr->priority_array) {
 			i = list_count(job_ptr->part_ptr_list);
@@ -626,67 +693,16 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 		i = 0;
 		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
-		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-		while ((part_ptr = list_next(part_iterator))) {
-			double part_tres = 0.0;
 
-			if (weight_tres) {
-				double part_tres_factors[slurmctld_tres_cnt];
-				memset(part_tres_factors, 0,
-				       sizeof(double) * slurmctld_tres_cnt);
-				_get_tres_factors(job_ptr, part_ptr,
-						  part_tres_factors);
-				part_tres = _get_tres_prio_weighted(
-							part_tres_factors);
-			}
+		arg.job_ptr = job_ptr,
+		arg.multi_part_str = multi_part_str,
+		arg.counter = &i,
+		list_for_each(job_ptr->part_ptr_list, _priority_each_partition,
+			      &arg);
 
-			priority_part =
-				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
-				 part_ptr->priority_job_factor :
-				 part_ptr->norm_priority) *
-				(double)weight_part;
-			priority_part +=
-				 (job_ptr->prio_factors->priority_age
-				 + job_ptr->prio_factors->priority_assoc
-				 + job_ptr->prio_factors->priority_fs
-				 + job_ptr->prio_factors->priority_js
-				 + job_ptr->prio_factors->priority_qos
-				 + part_tres
-				 + (double)
-				   (((int64_t)job_ptr->prio_factors->priority_site)
-				    - NICE_OFFSET)
-				 - (double)
-				   (((int64_t)job_ptr->prio_factors->nice)
-				    - NICE_OFFSET));
-
-			/* Priority 0 is reserved for held jobs */
-			if (priority_part < 1)
-				priority_part = 1;
-
-			tmp_64 = (uint64_t) priority_part;
-			if (tmp_64 > 0xffffffff) {
-				error("%pJ priority '%"PRIu64"' exceeds 32 bits. Reducing it to 4294967295 (2^32 - 1)",
-				      job_ptr, tmp_64);
-				tmp_64 = 0xffffffff;
-				priority_part = (double) tmp_64;
-			}
-			if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
-			    (job_ptr->priority_array[i] <
-			     (uint32_t) priority_part)) {
-				job_ptr->priority_array[i] =
-					(uint32_t) priority_part;
-			}
-			if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
-				xstrfmtcat(multi_part_str, multi_part_str ?
-					   ", %s=%u" : "%s=%u", part_ptr->name,
-					   job_ptr->priority_array[i]);
-			}
-			i++;
-		}
 		log_flag(PRIO, "%pJ multi-partition priorities: %s",
 			 job_ptr, multi_part_str);
 		xfree(multi_part_str);
-		list_iterator_destroy(part_iterator);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
