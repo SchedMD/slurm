@@ -97,6 +97,8 @@ extern int hash_g_init(void)
 	plugin_list = hash_plugin_list;
 
 	while ((type = strtok_r(hash_plugin_list, ",", &save_ptr))) {
+		char *full_type = NULL;
+
 		xrecalloc(ops, g_context_num + 1, sizeof(slurm_ops_t));
 		xrecalloc(g_context, g_context_num + 1,
 			  sizeof(plugin_context_t *));
@@ -104,18 +106,20 @@ extern int hash_g_init(void)
 		/* allow plugins to be specified as either "hash/k12" or "k12" */
 		if (!xstrncmp(type, "hash/", 5))
 			type += 5;
-		type = xstrdup_printf("hash/%s", type);
+		full_type = xstrdup_printf("hash/%s", type);
 
 		g_context[g_context_num] = plugin_context_create(
-			plugin_type, type, (void **) &ops[g_context_num],
+			plugin_type, full_type, (void **) &ops[g_context_num],
 			syms, sizeof(syms));
 
 		if (!g_context[g_context_num]) {
 			error("cannot create %s context for %s",
-			      plugin_type, type);
+			      plugin_type, full_type);
 			rc = SLURM_ERROR;
+			xfree(full_type);
 			goto done;
 		}
+		xfree(full_type);
 
 		hash_id_to_inx[*(ops[g_context_num].plugin_id)] = g_context_num;
 		g_context_num++;
