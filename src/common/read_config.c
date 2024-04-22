@@ -2918,7 +2918,11 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->cred_type);
 	xfree (ctl_conf_ptr->dependency_params);
+	for (int i = 0; i < ctl_conf_ptr->epilog_cnt; i++)
+		xfree(ctl_conf_ptr->epilog[i]);
 	xfree (ctl_conf_ptr->epilog);
+	for (int i = 0; i < ctl_conf_ptr->epilog_slurmctld_cnt; i++)
+		xfree(ctl_conf_ptr->epilog_slurmctld[i]);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	xfree (ctl_conf_ptr->fed_params);
 	xfree (ctl_conf_ptr->gres_plugins);
@@ -2960,7 +2964,11 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->priority_type);
 	xfree (ctl_conf_ptr->priority_weight_tres);
 	xfree (ctl_conf_ptr->proctrack_type);
+	for (int i = 0; i < ctl_conf_ptr->prolog_cnt; i++)
+		xfree(ctl_conf_ptr->prolog[i]);
 	xfree (ctl_conf_ptr->prolog);
+	for (int i = 0; i < ctl_conf_ptr->prolog_slurmctld_cnt; i++)
+		xfree(ctl_conf_ptr->prolog_slurmctld[i]);
 	xfree (ctl_conf_ptr->prolog_slurmctld);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
