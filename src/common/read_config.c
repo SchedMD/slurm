@@ -435,6 +435,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskPlugin", S_P_STRING},
 	{"TaskPluginParam", S_P_STRING},
 	{"TCPTimeout", S_P_UINT16},
+	{"TLSParameters", S_P_STRING},
 	{"TLSType", S_P_STRING},
 	{"TmpFS", S_P_STRING},
 	{"TopologyParam", S_P_STRING},
@@ -3014,6 +3015,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_plugin);
 	xfree (ctl_conf_ptr->task_prolog);
+	xfree(ctl_conf_ptr->tls_params);
 	xfree(ctl_conf_ptr->tls_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->topology_param);
@@ -3204,6 +3206,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->task_plugin_param		= 0;
 	xfree (ctl_conf_ptr->task_prolog);
 	ctl_conf_ptr->tcp_timeout		= NO_VAL16;
+	xfree(ctl_conf_ptr->tls_params);
 	xfree(ctl_conf_ptr->tls_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->topology_param);
@@ -5007,6 +5010,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else { /* Default: no Prolog Flags are set */
 		conf->prolog_flags = 0;
 	}
+
+	(void) s_p_get_string(&conf->tls_params, "TLSParameters", hashtbl);
 
 	if (!s_p_get_string(&conf->tls_type, "TLSType", hashtbl))
 		conf->tls_type = xstrdup(DEFAULT_TLS_TYPE);

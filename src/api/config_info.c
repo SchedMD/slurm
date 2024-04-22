@@ -1781,6 +1781,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 					 slurm_ctl_conf_ptr->tcp_timeout);
 	list_append(ret_list, key_pair);
 
+	add_key_pair(ret_list, "TLSParameters", "%s",
+		     slurm_ctl_conf_ptr->tls_params);
 	add_key_pair(ret_list, "TLSType", "%s", slurm_ctl_conf_ptr->tls_type);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
