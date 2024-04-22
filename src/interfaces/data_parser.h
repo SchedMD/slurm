@@ -458,6 +458,10 @@ typedef enum {
 	DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE_PTR, /* job_submit_response_t* */
 	DATA_PARSER_JOB_SUBMIT_REQ, /* job_submit_request_t */
 	DATA_PARSER_JOB_SUBMIT_REQ_PTR, /* job_submit_request_t */
+	DATA_PARSER_OPENAPI_JOB_ALLOC_RESP, /* openapi_job_alloc_response_t */
+	DATA_PARSER_OPENAPI_JOB_ALLOC_RESP_PTR, /* openapi_job_alloc_response_t* */
+	DATA_PARSER_JOB_ALLOC_REQ, /* openapi_job_alloc_request_t */
+	DATA_PARSER_JOB_ALLOC_REQ_PTR, /* openapi_job_alloc_request_t* */
 	DATA_PARSER_JOB_DESC_MSG, /* job_desc_msg_t */
 	DATA_PARSER_JOB_DESC_MSG_ARGV, /* job_desc_msg_t->argv+argc */
 	DATA_PARSER_JOB_DESC_MSG_CPU_FREQ, /* job_desc_msg_t->cpu_freq* */

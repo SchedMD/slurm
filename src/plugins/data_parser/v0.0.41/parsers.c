@@ -9145,6 +9145,14 @@ static const parser_t PARSER_ARRAY(KILL_JOBS_RESP_JOB)[] = {
 #undef add_parse_overload_req
 #undef add_parse_req
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_alloc_request_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_ALLOC_REQ)[] = {
+	add_parse(JOB_DESC_MSG_LIST, hetjob, "hetjob", "HetJob description"),
+	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -9340,6 +9348,17 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 	add_openapi_response_meta(openapi_resp_job_state_t),
 	add_openapi_response_errors(openapi_resp_job_state_t),
 	add_openapi_response_warnings(openapi_resp_job_state_t),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_alloc_response_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
+	add_parse(UINT32, job_id, "job_id", "submited JobId"),
+	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
+	add_openapi_response_meta(openapi_job_submit_response_t),
+	add_openapi_response_errors(openapi_job_submit_response_t),
+	add_openapi_response_warnings(openapi_job_submit_response_t),
 };
 #undef add_parse
 
@@ -9861,6 +9880,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_STATE_QUERY, openapi_job_state_query_t, NULL, NULL),
 	addpap(KILL_JOBS_MSG, kill_jobs_msg_t, NEW_FUNC(KILL_JOBS_MSG), NULL),
 	addpap(KILL_JOBS_RESP_JOB, kill_jobs_resp_job_t, NULL, NULL),
+	addpap(JOB_ALLOC_REQ, openapi_job_alloc_request_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -9897,6 +9917,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_STEP_INFO_MSG, openapi_resp_job_step_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_JOB_STATE_RESP, openapi_resp_job_state_t, NULL, NULL),
 	addoar(OPENAPI_KILL_JOBS_RESP),
+	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
