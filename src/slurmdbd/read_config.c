@@ -183,6 +183,7 @@ extern int read_slurmdbd_conf(void)
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{"TCPTimeout", S_P_UINT16},
+		{"TLSParameters", S_P_STRING},
 		{"TLSType", S_P_STRING},
 		{"TrackWCKey", S_P_BOOLEAN},
 		{"TrackSlurmctldDown", S_P_BOOLEAN},
@@ -591,6 +592,7 @@ extern int read_slurmdbd_conf(void)
 		if (!s_p_get_uint16(&slurm_conf.tcp_timeout, "TCPTimeout", tbl))
 			slurm_conf.tcp_timeout = DEFAULT_TCP_TIMEOUT;
 
+		s_p_get_string(&slurm_conf.tls_params, "TLSParameters", tbl);
 		if (!s_p_get_string(&slurm_conf.tls_type, "TLSType", tbl))
 			slurm_conf.tls_type = xstrdup(DEFAULT_TLS_TYPE);
 
@@ -945,6 +947,8 @@ extern List dump_config(void)
 		     slurm_conf.accounting_storage_user);
 
 	add_key_pair(my_list, "TCPTimeout", "%u secs", slurm_conf.tcp_timeout);
+
+	add_key_pair(my_list, "TLSParameters", "%s", slurm_conf.tls_params);
 
 	add_key_pair(my_list, "TLSType", "%s", slurm_conf.tls_type);
 
