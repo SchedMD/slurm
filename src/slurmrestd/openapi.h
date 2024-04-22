@@ -147,14 +147,17 @@ extern int register_path_tag(const char *path);
  * IN op_path - Operation binding for path
  * IN meta - Meta information from plugin (or NULL)
  * IN parser - Relavent data_parser (or NULL)
- * RET -1 on error or >0 tag value for path.
+ * IN/OUT tag_ptr - Sets tag on success
+ * RET SLURM_SUCCESS or
+ *	ESLURM_NOT_SUPPORTED: if data_parser doesnt support all types in method
+ *	or any other Slurm error
  *
  * Can safely be called multiple times for same path.
  */
 extern int register_path_binding(const char *in_path,
 				 const openapi_path_binding_t *op_path,
 				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser);
+				 data_parser_t *parser, int *tag_ptr);
 
 /*
  * Unregister a given unique tag against a path.

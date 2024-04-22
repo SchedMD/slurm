@@ -224,15 +224,15 @@ static int _add_binded_path(const char *path_str,
 			    const openapi_resp_meta_t *meta,
 			    data_parser_t *parser)
 {
-	int tag;
+	int tag, rc;
 	path_t *path;
 
 	slurm_rwlock_wrlock(&paths_lock);
-	tag = register_path_binding(path_str, op_path, meta, parser);
+	rc = register_path_binding(path_str, op_path, meta, parser, &tag);
 	slurm_rwlock_unlock(&paths_lock);
 
-	if (tag == -1)
-		return ESLURM_DATA_PATH_NOT_FOUND;
+	if (rc)
+		return rc;
 
 	/* path should never be a duplicate */
 	xassert(!list_find_first(paths, _match_path_key, &tag));

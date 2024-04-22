@@ -864,7 +864,7 @@ static void _check_openapi_path_binding(const openapi_path_binding_t *op_path)
 extern int register_path_binding(const char *in_path,
 				 const openapi_path_binding_t *op_path,
 				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser)
+				 data_parser_t *parser, int *tag_ptr)
 {
 	entry_t *entries = NULL;
 	int tag = -1, methods_count = 0, entries_count = 0;
@@ -930,7 +930,8 @@ extern int register_path_binding(const char *in_path,
 	}
 
 	list_append(paths, p);
-	return tag;
+	*tag_ptr = tag;
+	return SLURM_SUCCESS;
 }
 
 extern int register_path_tag(const char *str_path)
