@@ -604,10 +604,12 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					continue;
 
 				job_part_pairs++;
-				if (job_ptr->priority_array) {
+				if (job_ptr->part_prio &&
+				    job_ptr->part_prio->priority_array) {
 					_job_queue_append(job_queue, job_ptr,
 							  part_ptr,
 							  job_ptr->
+							  part_prio->
 							  priority_array[inx]);
 				} else {
 					_job_queue_append(job_queue, job_ptr,
@@ -2147,14 +2149,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p1 = details->priority;
 		else {
 			if (job_rec1->job_ptr->part_ptr_list &&
-			    job_rec1->job_ptr->priority_array)
+			    job_rec1->job_ptr->part_prio &&
+			    job_rec1->job_ptr->part_prio->priority_array)
 				p1 = job_rec1->priority;
 			else
 				p1 = job_rec1->job_ptr->priority;
 		}
 	} else {
 		if (job_rec1->job_ptr->part_ptr_list &&
-		    job_rec1->job_ptr->priority_array)
+		    job_rec1->job_ptr->part_prio &&
+		    job_rec1->job_ptr->part_prio->priority_array)
 			p1 = job_rec1->priority;
 		else
 			p1 = job_rec1->job_ptr->priority;
@@ -2167,14 +2171,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p2 = details->priority;
 		else {
 			if (job_rec2->job_ptr->part_ptr_list &&
-			    job_rec2->job_ptr->priority_array)
+			    job_rec2->job_ptr->part_prio &&
+			    job_rec2->job_ptr->part_prio->priority_array)
 				p2 = job_rec2->priority;
 			else
 				p2 = job_rec2->job_ptr->priority;
 		}
 	} else {
 		if (job_rec2->job_ptr->part_ptr_list &&
-		    job_rec2->job_ptr->priority_array)
+		    job_rec2->job_ptr->part_prio &&
+		    job_rec2->job_ptr->part_prio->priority_array)
 			p2 = job_rec2->priority;
 		else
 			p2 = job_rec2->job_ptr->priority;

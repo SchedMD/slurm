@@ -4767,11 +4767,21 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	/* On jobs that are held the priority_array isn't set up yet,
 	 * so check to see if it exists before copying. */
-	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
-		i = list_count(job_ptr->part_ptr_list) * sizeof(uint32_t);
-		job_ptr_pend->priority_array = xmalloc(i);
-		memcpy(job_ptr_pend->priority_array,
-		       job_ptr->priority_array, i);
+	if (job_ptr->part_ptr_list &&
+	    job_ptr->part_prio) {
+		job_ptr_pend->part_prio = xmalloc(sizeof(priority_parts_t));
+
+		if (job_ptr->part_prio->priority_array) {
+			i = list_count(job_ptr->part_ptr_list);
+			job_ptr_pend->part_prio->priority_array =
+				xcalloc(i, sizeof(uint32_t));
+			memcpy(job_ptr_pend->part_prio->priority_array,
+			       job_ptr->part_prio->priority_array,
+			       i * sizeof(uint32_t));
+		}
+
+		job_ptr_pend->part_prio->priority_array_parts =
+			xstrdup(job_ptr->part_prio->priority_array_parts);
 	}
 	job_ptr_pend->resv_name = xstrdup(job_ptr->resv_name);
 	if (job_ptr->resv_list)
@@ -10865,7 +10875,11 @@ extern void job_mgr_list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->het_job_list);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
-	xfree(job_ptr->priority_array);
+	if (job_ptr->part_prio) {
+		xfree(job_ptr->part_prio->priority_array);
+		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio);
+	}
 	slurm_destroy_priority_factors(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	FREE_NULL_LIST(job_ptr->resv_list);
@@ -12345,10 +12359,12 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 	if (IS_JOB_PENDING(job_ptr))
 		acct_policy_remove_accrue_time(job_ptr, false);
 
-	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
+	if (job_ptr->part_ptr_list &&
+	    job_ptr->part_prio &&
+	    job_ptr->part_prio->priority_array) {
 		j = list_count(job_ptr->part_ptr_list);
 		for (i = 0; i < j; i++) {
-			job_ptr->priority_array[i] = 0;
+			job_ptr->part_prio->priority_array[i] = 0;
 		}
 	}
 	sched_info("%s: hold on %pJ by uid %u", __func__, job_ptr, uid);
@@ -13562,7 +13578,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		rebuild_job_part_list(job_ptr);
 
 		/* Rebuilt in priority/multifactor plugin */
-		xfree(job_ptr->priority_array);
+		if (job_ptr->part_prio)
+			xfree(job_ptr->part_prio->priority_array);
 
 		info("%s: setting partition to %s for %pJ",
 		     __func__, job_desc->partition, job_ptr);
@@ -14028,11 +14045,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_desc->priority;
 				if (job_ptr->part_ptr_list &&
-				    job_ptr->priority_array) {
+				    job_ptr->part_prio &&
+				    job_ptr->part_prio->priority_array) {
 					int i, j = list_count(
 						job_ptr->part_ptr_list);
 					for (i = 0; i < j; i++) {
-						job_ptr->priority_array[i] =
+						job_ptr->part_prio->
+							priority_array[i] =
 							job_desc->priority;
 					}
 				}

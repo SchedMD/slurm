@@ -583,14 +583,15 @@ static int _priority_each_partition(void *object, void *arg)
 		priority_part = (double) tmp_64;
 	}
 	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
-	    (job_ptr->priority_array[*counter] <
+	    (job_ptr->part_prio->priority_array[*counter] <
 	     (uint32_t) priority_part)) {
-		job_ptr->priority_array[*counter] = (uint32_t) priority_part;
+		job_ptr->part_prio->priority_array[*counter] =
+			(uint32_t) priority_part;
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
 		xstrfmtcat(multi_part_str, multi_part_str ?
 			   ", %s=%u" : "%s=%u", part_ptr->name,
-			   job_ptr->priority_array[*counter]);
+			   job_ptr->part_prio->priority_array[*counter]);
 	}
 	(*counter)++;
 	return SLURM_SUCCESS;
@@ -686,9 +687,11 @@ static uint32_t _get_priority_internal(time_t start_time,
 		int i = 0;
 		part_prio_args_t arg;
 
-		if (!job_ptr->priority_array) {
+		if (!job_ptr->part_prio) {
+			job_ptr->part_prio = xmalloc(sizeof(priority_parts_t));
 			i = list_count(job_ptr->part_ptr_list);
-			job_ptr->priority_array = xcalloc(i, sizeof(uint32_t));
+			job_ptr->part_prio->priority_array =
+				xcalloc(i, sizeof(uint32_t));
 		}
 
 		i = 0;
