@@ -77,26 +77,64 @@ static partition_info_msg_t *part_info_msg = NULL;
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
-static void _create_priority_list(list_t *l,
-				  job_info_t *jobs,
-				  int current_job)
+typedef struct {
+	int *count;
+	list_t *req_list;
+	job_info_t *job_ptr;
+} foreach_prio_job_req_arg_t;
+
+static int _foreach_create_prio_job_req(void *x, void *arg)
 {
-	char *tmp, *tok, *save_ptr = NULL;
+	char *part_name = x;
+	foreach_prio_job_req_arg_t *req_arg = arg;
+	job_info_t *job_ptr = req_arg->job_ptr;
 	squeue_job_rec_t *job_rec_ptr;
 
-	tmp = xstrdup(jobs[current_job].partition);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		if (_filter_job_part(tok) == 0) {
-			job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
-			job_rec_ptr->job_ptr = jobs + current_job;
-			job_rec_ptr->part_name = xstrdup(tok);
-			job_rec_ptr->part_prio = _part_get_prio_tier(tok);
-			list_append(l, (void *) job_rec_ptr);
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
+	(*req_arg->count)++;
+
+	if (_filter_job_part(part_name))
+		return SLURM_SUCCESS;
+
+	job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
+	job_rec_ptr->job_ptr = req_arg->job_ptr;
+	job_rec_ptr->part_name = xstrdup(part_name);
+	job_rec_ptr->part_prio = _part_get_prio_tier(part_name);
+
+	if (IS_JOB_PENDING(job_ptr) && job_ptr->priority_array) {
+		job_rec_ptr->job_prio =
+			job_ptr->priority_array[(*req_arg->count) - 1];
+	} else {
+		job_rec_ptr->job_prio = job_ptr->priority;
 	}
-	xfree(tmp);
+	list_append(req_arg->req_list, job_rec_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+static void _create_priority_list(list_t *l,
+				  job_info_t *job_ptr)
+{
+	char *tmp;
+	int j = 0;
+	foreach_prio_job_req_arg_t arg = {0};
+	list_t *part_names = list_create(xfree_ptr);
+
+	/*
+	 * If the job requests multiple partitions then priority_array_parts
+	 * will exist. When a job is running the controller only sends the
+	 * partition that the job is running in in job_ptr->partition so we can
+	 * just use job_ptr->partition and job_ptr->priority.
+	 */
+	if (IS_JOB_PENDING(job_ptr) && job_ptr->priority_array_parts)
+		tmp = job_ptr->priority_array_parts;
+	else
+		tmp = job_ptr->partition;
+	slurm_addto_char_list(part_names, tmp);
+
+	arg.count = &j;
+	arg.job_ptr = job_ptr;
+	arg.req_list = l;
+	list_for_each(part_names, _foreach_create_prio_job_req, &arg);
 }
 
 extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
@@ -116,7 +154,7 @@ extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 		if (_filter_job(&jobs[i]))
 			continue;
 		if (params.priority_flag) {
-			_create_priority_list(l, jobs, i);
+			_create_priority_list(l, &jobs[i]);
 		} else {
 			if (_filter_job_part(jobs[i].partition))
 				continue;
@@ -437,8 +475,11 @@ static int _print_job_from_format(void *x, void *arg)
 		xfree(job_rec_ptr->job_ptr->partition);
 		job_rec_ptr->job_ptr->partition = xstrdup(job_rec_ptr->
 							  part_name);
-
 	}
+
+	if (job_rec_ptr->job_prio)
+		job_rec_ptr->job_ptr->priority = job_rec_ptr->job_prio;
+
 	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
 		char *p;
 
