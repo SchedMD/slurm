@@ -2790,6 +2790,7 @@ proc wait_job_reason args {
 proc get_config args {
 	global sacctmgr scontrol
 
+	set config_dict [list]
 	set command "$scontrol"
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
