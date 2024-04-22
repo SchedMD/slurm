@@ -2328,3 +2328,30 @@ extern int part_update_assoc_lists(void *x, void *arg)
 
 	return 0;
 }
+
+typedef struct {
+	char *names;
+	char *pos;
+} _foreach_part_names_t;
+
+static int _foreach_part_name_to_xstr(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	_foreach_part_names_t *part_names = arg;
+
+	xstrfmtcatat(part_names->names, &part_names->pos, "%s%s",
+		     part_names->names ? "," : "", part_ptr->name);
+
+	return SLURM_SUCCESS;
+}
+
+extern char *part_list_to_xstr(list_t *list)
+{
+	_foreach_part_names_t part_names = {0};
+
+	xassert(list);
+
+	list_for_each(list, _foreach_part_name_to_xstr, &part_names);
+
+	return part_names.names;
+}

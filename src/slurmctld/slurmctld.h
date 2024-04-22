@@ -3251,4 +3251,10 @@ extern void controller_fini_scheduling(void);
  */
 extern void controller_reconfig_scheduling(void);
 
+/*
+ * Return a comma separate xstr of partition names from a list of
+ * part_record_t's.
+ */
+extern char *part_list_to_xstr(list_t *list);
+
 #endif /* !_HAVE_SLURMCTLD_H */
