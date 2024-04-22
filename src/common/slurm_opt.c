@@ -6262,7 +6262,7 @@ extern bool slurm_option_get_tres_per_tres(
  *
  * If cnt == 0, then just remove the string from tres_per_task.
  *
- * tres_per_task takes a form similar to "cpu:10,gres/gpu:gtx:1,license/iop1:1".
+ * tres_per_task takes a form similar to "cpu=10,gres/gpu:gtx=1,license/iop1=1".
  *
  * IN: cnt - new value
  * IN: tres_str - name of tres we want to to be update
@@ -6284,10 +6284,10 @@ extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
 		if (cnt) {
 			/* Add tres to tres_per_task. */
 			if (tres_per_task) {
-				xstrfmtcat(new_str, "%s:%d,%s", tres_str, cnt,
+				xstrfmtcat(new_str, "%s=%d,%s", tres_str, cnt,
 					   tres_per_task);
 			} else {
-				xstrfmtcat(new_str, "%s:%d", tres_str, cnt);
+				xstrfmtcat(new_str, "%s=%d", tres_str, cnt);
 			}
 			xfree(tres_per_task);
 			tres_per_task = new_str;
@@ -6336,14 +6336,14 @@ extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
 	} else {
 		/* Compose the new string. */
 		if (prefix && suffix)
-			xstrfmtcat(new_str, "%s,%s:%d,%s", prefix, tres_str,
+			xstrfmtcat(new_str, "%s,%s=%d,%s", prefix, tres_str,
 				   cnt, suffix);
 		if (prefix && !suffix)
-			xstrfmtcat(new_str, "%s,%s:%d", prefix, tres_str, cnt);
+			xstrfmtcat(new_str, "%s,%s=%d", prefix, tres_str, cnt);
 		if (!prefix && suffix)
-			xstrfmtcat(new_str, "%s:%d,%s", tres_str, cnt, suffix);
+			xstrfmtcat(new_str, "%s=%d,%s", tres_str, cnt, suffix);
 		if (!prefix && !suffix)
-			xstrfmtcat(new_str, "%s:%d", tres_str, cnt);
+			xstrfmtcat(new_str, "%s=%d", tres_str, cnt);
 	}
 
 	xfree(tres_per_task);
@@ -6444,13 +6444,13 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	 * Either one specified on the command line overrides the other in the
 	 * environment.
 	 * They can both be in the environment because specifying just
-	 * --tres-per-task=cpu:# will cause SLURM_CPUS_PER_TASK to be set as
+	 * --tres-per-task=cpu=# will cause SLURM_CPUS_PER_TASK to be set as
 	 * well. So if they're both in the environment, verify that they're the
 	 * same.
 	 *
 	 * If either of these options are set, then make sure that both of these
 	 * options are set to the same thing:
-	 * opt->cpus_per_task and opt->tres_per_task=cpu:#.
+	 * opt->cpus_per_task and opt->tres_per_task=cpu=#.
 	 */
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu");
 	if (!cpu_per_task_ptr) {
@@ -6462,7 +6462,7 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 
 	if (slurm_option_set_by_cli(opt, 'c') &&
 	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
-		fatal("You can not have --tres-per-task=cpu: and -c please use one or the other");
+		fatal("You can not have --tres-per-task=cpu= and -c please use one or the other");
 	} else if (slurm_option_set_by_cli(opt, 'c') &&
 		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
 		/*
@@ -6479,14 +6479,14 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 
 	tmp_int = atoi(cpu_per_task_ptr + 4);
 	if (tmp_int <= 0) {
-		fatal("Invalid --tres-per-task=cpu:%d",
+		fatal("Invalid --tres-per-task=cpu=%d",
 		      tmp_int);
 	}
 
 	if (slurm_option_set_by_env(opt, 'c') &&
 	    slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK) &&
 	    (tmp_int != opt->cpus_per_task)) {
-		fatal("cpus_per_task set by two different environment variables SLURM_CPUS_PER_TASK=%d != SLURM_TRES_PER_TASK=cpu:%d",
+		fatal("cpus_per_task set by two different environment variables SLURM_CPUS_PER_TASK=%d != SLURM_TRES_PER_TASK=cpu=%d",
 		      opt->cpus_per_task, tmp_int);
 	}
 
@@ -6501,7 +6501,7 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	if (opt->verbose &&
 	    slurm_option_set_by_env(opt, 'c') &&
 	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
-		info("Ignoring SLURM_CPUS_PER_TASK since --tres-per-task=cpu: was given as a command line option.");
+		info("Ignoring SLURM_CPUS_PER_TASK since --tres-per-task=cpu= was given as a command line option.");
 }
 
 /*
