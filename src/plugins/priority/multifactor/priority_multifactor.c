@@ -694,9 +694,17 @@ static uint32_t _get_priority_internal(time_t start_time,
 				xcalloc(i, sizeof(uint32_t));
 		}
 
-		i = 0;
 		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
 
+		/*
+		 * After sorting part_ptr_list, remake the priority_array_parts
+		 * string to be in sync with the priority array.
+		 */
+		xfree(job_ptr->part_prio->priority_array_parts);
+		job_ptr->part_prio->priority_array_parts =
+			part_list_to_xstr(job_ptr->part_ptr_list);
+
+		i = 0;
 		arg.job_ptr = job_ptr,
 		arg.multi_part_str = multi_part_str,
 		arg.counter = &i,
