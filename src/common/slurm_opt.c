@@ -6452,7 +6452,7 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	 * options are set to the same thing:
 	 * opt->cpus_per_task and opt->tres_per_task=cpu:#.
 	 */
-	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
+	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu");
 	if (!cpu_per_task_ptr) {
 		if (opt->cpus_set)
 			slurm_option_update_tres_per_task(
@@ -6569,7 +6569,7 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 	bool cpt_set_by_cli;
 	bool cpt_set_by_env;
 
-	if (xstrcasestr(opt->tres_per_task, "cpu:")) {
+	if (xstrcasestr(opt->tres_per_task, "cpu")) {
 		cpt_set_by_cli =
 			(slurm_option_set_by_cli(opt, 'c') ||
 			 slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK));
