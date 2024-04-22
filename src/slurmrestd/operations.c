@@ -261,7 +261,6 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 			       const openapi_resp_meta_t *meta)
 {
 	int rc = SLURM_SUCCESS;
-	openapi_resp_single_t openapi_response = {0};
 	data_t *resp;
 
 	if (!(op_path->flags & OP_BIND_DATA_PARSER)) {
@@ -289,23 +288,7 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	xassert(xstrstr(op_path->path, OPENAPI_DATA_PARSER_PARAM));
 
 	for (int i = 0; !rc && parsers[i]; i++) {
-		char *path = NULL;
-
-		/*
-		 * Skip parser if openapi resp is not supported
-		 * TODO: check to be removed after data_parser/v0.0.39 removed
-		 */
-		data_set_null(resp);
-		if (DATA_DUMP(parsers[i], OPENAPI_RESP, openapi_response,
-			      resp)) {
-			debug4("%s: skipping %s for %s",
-			       __func__,
-			       data_parser_get_plugin_version(parsers[i]),
-			       op_path->path);
-			continue;
-		}
-
-		path = xstrdup(op_path->path);
+		char *path = xstrdup(op_path->path);
 
 		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
 			       data_parser_get_plugin_version(parsers[i]));
