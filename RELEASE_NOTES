@@ -78,6 +78,16 @@ SLURMRESTD CHANGES
     'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
     OpenAPI plugin versions. Job submissions should set the `job.script` (or
     `jobs[0].script` for HetJobs) fields instead.
+ -- slurmrestd - Attempt to automatically convert enumerated string arrays with
+    incoming non-string values into strings. Add warning when incoming value for
+    enumerated string arrays can not be converted to string and silently ignore
+    instead of rejecting entire request. This change affects any endpoint that
+    uses an enunmerated string as given in the OpenAPI specification. An
+    example of this conversion would be to 'POST /slurm/v0.0.41/job/submit' with
+    '.job.exclusive = true'. While the JSON (boolean) true value matches a
+    possible enumeration, it is not the expected "true" string. This change
+    automatically converts the (boolean) true to (string) "true" avoiding a
+    parsing failure.
 
 MPI/PMI2 CHANGES
 ================

@@ -155,6 +155,10 @@ documents those changes that are of interest to users and administrators.
     for GraceTime was preempted.
  -- slurmd - Retry fetching configs indefinitely during startup.
  -- Fix SPANK options not bing sent to remote context when --export was used.
+ -- slurmrestd - Attempt to automatically convert enumerated string arrays with
+    incoming non-string values into strings. Add warning when incoming value for
+    enumerated string arrays can not be converted to string and silently ignore
+    instead of rejecting entire request.
 
 * Changes in Slurm 23.11.7
 ==========================
