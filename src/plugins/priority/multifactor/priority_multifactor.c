@@ -620,7 +620,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		int i = 0;
 
 		if (!job_ptr->priority_array) {
-			i = list_count(job_ptr->part_ptr_list) + 1;
+			i = list_count(job_ptr->part_ptr_list);
 			job_ptr->priority_array = xcalloc(i, sizeof(uint32_t));
 		}
 
