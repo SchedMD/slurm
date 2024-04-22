@@ -861,6 +861,42 @@ static void _check_openapi_path_binding(const openapi_path_binding_t *op_path)
 #endif /* !NDEBUG */
 }
 
+static bool _data_parser_supports_type(data_parser_t *parser,
+				       data_parser_type_t type)
+{
+	openapi_type_t oapi_type;
+
+	oapi_type = data_parser_g_resolve_openapi_type(parser, type, NULL);
+	xassert(oapi_type >= OPENAPI_TYPE_INVALID);
+	xassert(oapi_type < OPENAPI_TYPE_MAX);
+
+	return (oapi_type != OPENAPI_TYPE_INVALID);
+}
+
+static bool _data_parser_supports_method(data_parser_t *parser,
+					 const openapi_path_binding_method_t *m)
+{
+	/* check that parser supports each possible type if set */
+
+	if ((m->response.type != DATA_PARSER_TYPE_INVALID) &&
+	    !_data_parser_supports_type(parser, m->response.type))
+		return false;
+
+	if ((m->parameters != DATA_PARSER_TYPE_INVALID) &&
+	    !_data_parser_supports_type(parser, m->parameters))
+		return false;
+
+	if ((m->query != DATA_PARSER_TYPE_INVALID) &&
+	    !_data_parser_supports_type(parser, m->query))
+		return false;
+
+	if ((m->body.type != DATA_PARSER_TYPE_INVALID) &&
+	    !_data_parser_supports_type(parser, m->body.type))
+		return false;
+
+	return true;
+}
+
 extern int register_path_binding(const char *in_path,
 				 const openapi_path_binding_t *op_path,
 				 const openapi_resp_meta_t *meta,
@@ -871,10 +907,9 @@ extern int register_path_binding(const char *in_path,
 	path_t *p = NULL;
 	const char *path = (in_path ? in_path : op_path->path);
 
-	debug4("%s: binding %s for %s",
-	       __func__,
-	       (parser ? data_parser_get_plugin_version(parser) :
-		"data_parser/none"), path);
+	debug4("%s: attempting to bind %s with %s",
+	       __func__, (parser ? data_parser_get_plugin_version(parser) :
+			  "data_parser/none"), path);
 
 	xassert(!!in_path == !!(op_path->flags & OP_BIND_DATA_PARSER));
 	_check_openapi_path_binding(op_path);
@@ -882,10 +917,19 @@ extern int register_path_binding(const char *in_path,
 	if (!(entries = _parse_openapi_path(path, &entries_count)))
 		fatal("%s: parse_openapi_path(%s) failed", __func__, path);
 
-	for (methods_count = 0;
-	     op_path->methods[methods_count].method != HTTP_REQUEST_INVALID;
-	     methods_count++)
-		/* do nothing */;
+	for (int i = 0; op_path->methods[i].method != HTTP_REQUEST_INVALID;
+	     i++) {
+		if (!_data_parser_supports_method(parser, &op_path->methods[i]))
+			continue;
+
+		methods_count++;
+	}
+
+	if (!methods_count) {
+		debug5("%s: skip binding %s with %s",
+		       __func__, path, data_parser_get_plugin(parser));
+		return ESLURM_NOT_SUPPORTED;
+	}
 
 	tag = path_tag_counter++;
 
@@ -897,13 +941,24 @@ extern int register_path_binding(const char *in_path,
 	p->parser = parser;
 	p->path = xstrdup(path);
 
-	for (int i = 0;; i++) {
+	for (int i = 0, mi = 0;; i++) {
 		const openapi_path_binding_method_t *m = &op_path->methods[i];
-		entry_method_t *t = &p->methods[i];
+		entry_method_t *t = &p->methods[mi];
 		entry_t *e;
 
 		if (m->method == HTTP_REQUEST_INVALID)
 			break;
+
+		/*
+		 * Skip method if data_parser does not support any of the in/out
+		 * types which would just cause slurmrestd to abort() later.
+		 */
+		if (!_data_parser_supports_method(parser, m)) {
+			debug5("%s: skip binding \"%s %s\" with %s",
+			       __func__, get_http_method_string(m->method),
+			       path, data_parser_get_plugin(parser));
+			continue;
+		}
 
 		t->method = m->method;
 		t->bound = m;
@@ -927,6 +982,9 @@ extern int register_path_binding(const char *in_path,
 			       e->name, openapi_type_to_string(e->parameter),
 			       _get_entry_type_string(e->type));
 		}
+
+		/* only move to next method if populated */
+		mi++;
 	}
 
 	list_append(paths, p);
