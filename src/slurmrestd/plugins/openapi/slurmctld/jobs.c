@@ -50,6 +50,14 @@
 
 #include "api.h"
 
+#define FOREACH_ALLOC_JOB_ARGS_MAGIC 0x1f133335
+typedef struct {
+	int magic; /* FOREACH_ALLOC_JOB_ARGS_MAGIC */
+	ctxt_t *ctxt;
+	openapi_job_alloc_response_t *oas_resp;
+	int component; /* index or NO_VAL */
+} foreach_alloc_job_args_t;
+
 /* list from job_allocate() */
 static const slurm_err_t nonfatal_errors[] = {
 	ESLURM_NODES_BUSY,
@@ -504,6 +512,194 @@ extern int op_handler_submit_job(openapi_ctxt_t *ctxt)
 	}
 
 	return ctxt->rc;
+}
+
+static void _job_alloc_rc(ctxt_t *ctxt,
+			  resource_allocation_response_msg_t *resp,
+			  const char *src)
+{
+	int rc;
+
+	if (!resp || !(rc = resp->error_code))
+		return;
+
+	for (int i = 0; i < ARRAY_SIZE(nonfatal_errors); i++) {
+		if (rc == nonfatal_errors[i]) {
+			resp_warn(ctxt, "slurm_submit_batch_job()",
+				"%s", slurm_strerror(rc));
+			return;
+		}
+	}
+
+	resp_error(ctxt, rc, src, NULL);
+}
+
+static int _foreach_alloc_job(void *x, void *arg)
+{
+	job_desc_msg_t *job = x;
+	xassert(!arg);
+
+	/* Force user/group to be determined by auth */
+	job->user_id = SLURM_AUTH_NOBODY;
+	job->group_id = SLURM_AUTH_NOBODY;
+
+	/* Force disable status updates */
+	job->other_port = 0;
+
+	/* force atleast 1 node for job */
+	if (!job->min_nodes || (job->min_nodes >= NO_VAL))
+		job->min_nodes = 1;
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_alloc_job_resp(void *x, void *arg)
+{
+	resource_allocation_response_msg_t *resp = x;
+	foreach_alloc_job_args_t *args = arg;
+	openapi_job_alloc_response_t *oas_resp = args->oas_resp;
+	ctxt_t *ctxt = args->ctxt;
+
+	xassert(args->magic == FOREACH_ALLOC_JOB_ARGS_MAGIC);
+
+	xassert(!oas_resp->job_id || (oas_resp->job_id == resp->job_id));
+	oas_resp->job_id = resp->job_id;
+
+	if (!oas_resp->job_submit_user_msg)
+		oas_resp->job_submit_user_msg = resp->job_submit_user_msg;
+
+	if (args->component == NO_VAL) {
+		debug3("%s:[%s] Job submitted -> JobId=%d rc:%d message:%s",
+		       __func__, ctxt->id, resp->job_id,
+		       resp->error_code, resp->job_submit_user_msg);
+	} else {
+		debug3("%s:[%s] HetJob submitted -> JobId=%d+%d rc:%d message:%s",
+		       __func__, ctxt->id, resp->job_id, args->component,
+		       resp->error_code, resp->job_submit_user_msg);
+		args->component++;
+	}
+
+	_job_alloc_rc(ctxt, resp,
+		      "slurm_allocate_resources_blocking()");
+
+	return SLURM_SUCCESS;
+}
+
+static void _job_post_allocate(ctxt_t *ctxt, job_desc_msg_t *job)
+{
+	resource_allocation_response_msg_t *resp = NULL;
+
+	(void) _foreach_alloc_job(job, NULL);
+
+	if (!(resp = slurm_allocate_resources_blocking(job, 0, NULL))) {
+		resp_error(ctxt, errno, "slurm_allocate_resources_blocking()",
+			   "Job allocation request failed");
+	} else {
+		openapi_job_alloc_response_t oas_resp = {0};
+		foreach_alloc_job_args_t args = {
+			.magic = FOREACH_ALLOC_JOB_ARGS_MAGIC,
+			.ctxt = ctxt,
+			.oas_resp = &oas_resp,
+			.component = NO_VAL,
+		};
+
+		(void) _foreach_alloc_job_resp(resp, &args);
+
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_ALLOC_RESP, oas_resp,
+			  ctxt->resp);
+	}
+
+	slurm_free_resource_allocation_response_msg(resp);
+}
+
+static void _job_post_het_allocate(ctxt_t *ctxt, list_t *hetjob)
+{
+	list_t *resp = NULL;
+
+	if (!hetjob || !list_count(hetjob)) {
+		resp_error(ctxt, errno, __func__,
+			   "Refusing HetJob submission without any components");
+		goto cleanup;
+	}
+
+	if (list_count(hetjob) > MAX_HET_JOB_COMPONENTS) {
+		resp_error(ctxt, errno, __func__,
+			   "Refusing HetJob submission too many components: %d > %u",
+			   list_count(hetjob), MAX_HET_JOB_COMPONENTS);
+		goto cleanup;
+	}
+
+	(void) list_for_each(hetjob, _foreach_alloc_job, NULL);
+
+	if ((resp = slurm_allocate_het_job_blocking(hetjob, 0, NULL)) || !resp) {
+		resp_error(ctxt, errno, "slurm_allocate_het_job_blocking()",
+			   "Job allocation request failed");
+	} else {
+		openapi_job_alloc_response_t oas_resp = {0};
+		foreach_alloc_job_args_t args = {
+			.magic = FOREACH_ALLOC_JOB_ARGS_MAGIC,
+			.ctxt = ctxt,
+			.oas_resp = &oas_resp,
+			.component = 0,
+		};
+
+		(void) list_for_each(hetjob, _foreach_alloc_job_resp, &args);
+
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_ALLOC_RESP, oas_resp,
+			  ctxt->resp);
+	}
+
+cleanup:
+	FREE_NULL_LIST(resp);
+}
+
+extern int op_handler_alloc_job(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	openapi_job_alloc_request_t req = {0};
+
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW) && ctxt->query) {
+		char *buffer = NULL;
+
+		serialize_g_data_to_string(&buffer, NULL, ctxt->query,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
+
+		log_flag(NET_RAW, "%s:[%s] alloc job POST: %s",
+		       __func__, ctxt->id, buffer);
+
+		xfree(buffer);
+	}
+
+	if (!ctxt->query) {
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "unexpected empty query for job");
+	}
+
+	if ((rc = DATA_PARSE(ctxt->parser, JOB_ALLOC_REQ, req, ctxt->query,
+		       ctxt->parent_path)))
+		return rc;
+
+	if (req.job && req.hetjob)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Specify only one \"job\" or \"hetjob\" fields but never both");
+	if (!req.job && !req.hetjob)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Specifing either \"job\" or \"hetjob\" fields are required to allocate job");
+
+	if (req.job)
+		_job_post_allocate(ctxt, req.job);
+	else
+		_job_post_het_allocate(ctxt, req.hetjob);
+
+	slurm_free_job_desc_msg(req.job);
+	FREE_NULL_LIST(req.hetjob);
+
+	return rc;
 }
 
 extern int op_handler_job_states(openapi_ctxt_t *ctxt)

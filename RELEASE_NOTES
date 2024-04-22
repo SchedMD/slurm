@@ -104,6 +104,9 @@ SLURMRESTD CHANGES
     possible enumeration, it is not the expected "true" string. This change
     automatically converts the (boolean) true to (string) "true" avoiding a
     parsing failure.
+ -- slurmrestd - Add 'POST /slurm/v0.0.41/job/allocate' endpoint. This endpoint
+    will create a new job allocation without any steps. The allocation will need
+    to be ended via signaling the job or it will run to the timelimit.
 
 MPI/PMI2 CHANGES
 ================
