@@ -542,7 +542,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->fields);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
-		xassert(!parser->obj_openapi);
+		xassert(parser->obj_openapi == OPENAPI_FORMAT_OBJECT);
 
 		for (int i = 0; i < parser->field_count; i++) {
 			/* recursively check the child parsers */
@@ -9010,6 +9010,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
+		.obj_openapi = OPENAPI_FORMAT_OBJECT,                          \
 		.size = sizeof(typet),                                         \
 		.needs = NEED_NONE,                                            \
 		.fields = PARSER_ARRAY(typev),                                 \
