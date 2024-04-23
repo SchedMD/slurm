@@ -287,6 +287,19 @@ typedef struct {
 	list_t *jobs; /* list of job_desc_msg_t* */
 } openapi_job_submit_request_t;
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	uint32_t job_id;
+	char *job_submit_user_msg;
+} openapi_job_alloc_response_t;
+
+typedef struct {
+	job_desc_msg_t *job;
+	list_t *hetjob; /* list of job_desc_msg_t* */
+} openapi_job_alloc_request_t;
+
 /* mirrors job_step_info_response_msg_t */
 typedef struct {
 	OPENAPI_RESP_STRUCT_META_FIELD;
