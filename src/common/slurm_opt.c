@@ -6444,77 +6444,90 @@ static void _validate_gpus_per_task(slurm_opt_t *opt)
 		info("Ignoring SLURM_GPUS_PER_TASK since --tres-per-task=gres/gpu: was given as a command line option.");
 }
 
-static void _validate_cpus_per_task(slurm_opt_t *opt)
+static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 {
-	int tmp_int;
-	char *cpu_per_task_ptr = NULL;
+	bool set;
+	int tmp_int, cnt, opt_index, tpt_index;
+	char *opt_in_tpt_ptr = NULL, *str = NULL;
+	char *env_variable;
 
 	/*
-	 * See if cpus-per-task was set with tres-per-task
+	 * See if the sibling option was set with tres-per-task
 	 * Either one specified on the command line overrides the other in the
 	 * environment.
 	 * They can both be in the environment because specifying just
-	 * --tres-per-task=cpu=# will cause SLURM_CPUS_PER_TASK to be set as
-	 * well. So if they're both in the environment, verify that they're the
-	 * same.
+	 * --tres-per-task=cpu=# for example, will cause SLURM_CPUS_PER_TASK to
+	 * be set as well. So if they're both in the environment, verify that
+	 * they're the same.
 	 *
-	 * If either of these options are set, then make sure that both of these
-	 * options are set to the same thing:
-	 * opt->cpus_per_task and opt->tres_per_task=cpu=#.
+	 * If tres-per-task or a sibling option are set, then make sure that
+	 * both are set to the same thing:
 	 */
-	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu");
-	if (!cpu_per_task_ptr) {
-		if (opt->cpus_set)
-			slurm_option_update_tres_per_task(
-				opt->cpus_per_task, "cpu", &opt->tres_per_task);
+
+	if (optval == 'c') {
+		cnt = opt->cpus_per_task;
+		str = "cpu";
+		set = opt->cpus_set;
+		env_variable = "SLURM_CPUS_PER_TASK";
+	}
+
+	opt_in_tpt_ptr = xstrcasestr(opt->tres_per_task, str);
+	if (!opt_in_tpt_ptr) {
+		if (set)
+			slurm_option_update_tres_per_task(cnt, str,
+							  &opt->tres_per_task);
 		return;
 	}
 
-	opt_index = _find_option_index_from_optval('c');
+	opt_index = _find_option_index_from_optval(optval);
 	tpt_index = _find_option_index_from_optval(LONG_OPT_TRES_PER_TASK);
 
 	if (_option_index_set_by_cli(opt, opt_index) &&
 	    _option_index_set_by_cli(opt, tpt_index)) {
-		fatal("You can not have --tres-per-task=cpu= and --cpus-per-task please use one or the other");
+		fatal("You can not have --tres-per-task=%s= and --%s please use one or the other",
+		      str, common_options[opt_index]->name);
 	} else if (_option_index_set_by_cli(opt, opt_index) &&
 		   _option_index_set_by_env(opt, tpt_index)) {
 		/*
 		 * The value is already in opt->cpus_per_task.
 		 * Update the cpus part of the env variable.
 		 */
-		slurm_option_update_tres_per_task(opt->cpus_per_task, "cpu",
+		slurm_option_update_tres_per_task(cnt, str,
 						  &opt->tres_per_task);
 		if (opt->verbose)
-			info("Updating SLURM_TRES_PER_TASK to %s as --cpus-per-task takes precedence over the environment variables.",
-			     opt->tres_per_task);
+			info("Updating SLURM_TRES_PER_TASK to %s as --%s takes precedence over the environment variables.",
+			     opt->tres_per_task,
+			     common_options[opt_index]->name);
 		return;
 	}
 
-	tmp_int = atoi(cpu_per_task_ptr + 4);
+	tmp_int = atoi(opt_in_tpt_ptr + strlen(str) + 1);
 	if (tmp_int <= 0) {
-		fatal("Invalid --tres-per-task=cpu=%d",
-		      tmp_int);
+		fatal("Invalid --tres-per-task=%s=%d", str, tmp_int);
 	}
 
 	if (_option_index_set_by_env(opt, opt_index) &&
 	    _option_index_set_by_env(opt, tpt_index) &&
 	    (tmp_int != opt->cpus_per_task)) {
-		fatal("cpus_per_task set by two different environment variables SLURM_CPUS_PER_TASK=%d != SLURM_TRES_PER_TASK=cpu=%d",
-		      opt->cpus_per_task, tmp_int);
+		fatal("%s set by two different environment variables %s=%d != SLURM_TRES_PER_TASK=cpu=%d",
+		      common_options[opt_index]->name, env_variable, cnt,
+		      tmp_int);
 	}
 
 	/*
-	 * Now we know that either tres-per-task is set by cli and cpus-per-task
-	 * is set by env, or only tres-per-task is set either by cli or env.
-	 * Either way, set cpus_per_task from tres-per-task.
+	 * Now we know that either tres-per-task is set by cli and the option
+	 * Either way, set the option from tres-per-task.
 	 */
-	opt->cpus_per_task = tmp_int;
-	opt->cpus_set = true;
+	if (optval == 'c') {
+		opt->cpus_per_task = tmp_int;
+		opt->cpus_set = true;
+	}
 
 	if (opt->verbose &&
 	    _option_index_set_by_env(opt, opt_index) &&
 	    _option_index_set_by_cli(opt, tpt_index))
-		info("Ignoring SLURM_CPUS_PER_TASK since --tres-per-task=cpu= was given as a command line option.");
+		info("Ignoring %s since --tres-per-task=%s= was given as a command line option.",
+		     env_variable, str);
 }
 
 /*
@@ -6573,7 +6586,7 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	slurm_format_tres_string(&opt->tres_per_task, "gres");
 
 	_validate_gpus_per_task(opt);
-	_validate_cpus_per_task(opt);
+	_set_tres_per_task_from_sibling_opt(opt, 'c');
 	_implicitly_bind_tres_per_task(opt);
 }
 
