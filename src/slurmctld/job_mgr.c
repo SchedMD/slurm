@@ -165,10 +165,18 @@ typedef struct {
 } node_inx_cnt_t;
 
 typedef struct {
+	slurm_selected_step_t *filter_id;
+	bool free_array_bitmap;
+	job_record_t *job_ptr;
+} array_task_filter_t;
+
+typedef struct {
 	list_t *array_leader_list; /* list of job_record_t */
+	list_t *pending_array_task_list; /* List of array_task_filter_t */
 	uid_t auth_uid;
 	bool filter_specific_job_ids;
 	kill_jobs_msg_t *kill_msg;
+	time_t now;
 	list_t *other_job_list; /* list of job_record_t */
 	list_t *responses; /* List of kill_jobs_resp_job_t */
 } signal_jobs_args_t;
@@ -218,6 +226,10 @@ static bitstr_t *requeue_exit_hold = NULL;
 static bool     validate_cfgd_licenses = true;
 
 /* Local functions */
+static void _signal_pending_job_array_tasks(job_record_t *job_ptr, bitstr_t
+					    **array_bitmap, uint16_t signal,
+					    uid_t uid, int32_t i_last,
+					    time_t now, int *rc);
 static void _add_job_hash(job_record_t *job_ptr);
 static void _add_job_array_hash(job_record_t *job_ptr);
 static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller);
@@ -6131,7 +6143,36 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 		return;
 	}
 
-	if (job_ptr->array_recs)
+	if (filter_id && !filter_id->array_bitmap &&
+	    (filter_id->array_task_id != NO_VAL) &&
+	    IS_JOB_PENDING(job_ptr) && job_ptr->array_recs) {
+		/*
+		 * A pending job array task that has not been split from the
+		 * meta array record.
+		 */
+		array_task_filter_t *atf = xmalloc(sizeof(*atf));
+
+		/* Copy filter_id, but use a new array_bitmap */
+		atf->filter_id = xmalloc(sizeof(*atf->filter_id));
+		memcpy(atf->filter_id, filter_id, sizeof(*filter_id));
+
+		atf->filter_id->array_bitmap = bit_alloc(max_array_size);
+		bit_set(atf->filter_id->array_bitmap, filter_id->array_task_id);
+		atf->free_array_bitmap = true;
+		atf->job_ptr = job_ptr;
+
+		list_append(signal_args->pending_array_task_list, atf);
+	} else if (filter_id && filter_id->array_bitmap &&
+		   IS_JOB_PENDING(job_ptr) && job_ptr->array_recs) {
+		/* A job array expression with pending array tasks */
+		array_task_filter_t *atf = xmalloc(sizeof(*atf));
+
+		atf->filter_id = xmalloc(sizeof(*atf->filter_id));
+		memcpy(atf->filter_id, filter_id, sizeof(*filter_id));
+		atf->job_ptr = job_ptr;
+
+		list_append(signal_args->pending_array_task_list, atf);
+	} else if (job_ptr->array_recs)
 		list_append(signal_args->array_leader_list, job_ptr);
 	else
 		list_append(signal_args->other_job_list, job_ptr);
@@ -6172,6 +6213,35 @@ static int _foreach_signal_job(void *x, void *arg)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _foreach_signal_job_array_tasks(void *x, void *arg)
+{
+	array_task_filter_t *atf = x;
+	signal_jobs_args_t *signal_args = arg;
+	kill_jobs_msg_t *kill_msg = signal_args->kill_msg;
+	int32_t i_last;
+	int error_code = SLURM_SUCCESS;
+
+	/*
+	 * _signal_pending_job_array_tasks()
+	 * Tasks that were split out are already being handled, so we do not
+	 * need to handle those.
+	 */
+	i_last = bit_fls(atf->filter_id->array_bitmap);
+	if (i_last >= 0)
+		_signal_pending_job_array_tasks(atf->job_ptr,
+						&atf->filter_id->array_bitmap,
+						kill_msg->signal,
+						signal_args->auth_uid,
+						i_last, signal_args->now,
+						&error_code);
+
+	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE))
+		_add_signal_job_resp(signal_args, NULL, error_code, NULL,
+				     atf->filter_id, atf->job_ptr->job_id);
+
+	return 0;
 }
 
 static foreach_job_by_id_control_t _job_not_found(const slurm_selected_step_t
@@ -6922,6 +6992,24 @@ static void _free_selected_step_array(slurm_selected_step_t ***jobs_p,
 	*jobs_p = NULL;
 }
 
+static void _free_array_task_filter(void *x)
+{
+	array_task_filter_t *rec = x;
+
+	if (!rec)
+		return;
+
+	/*
+	 * Do not use slurm_destroy_selected_step() as that will
+	 * unconditionally free the bitmap.
+	 */
+	if (rec->free_array_bitmap)
+		FREE_NULL_BITMAP(rec->filter_id->array_bitmap);
+	xfree(rec->filter_id);
+	/* Do not free rec->job_ptr */
+	xfree(rec);
+}
+
 static int _parse_jobs_array(char **jobs_array, uint32_t jobs_cnt,
 			     slurm_selected_step_t ***jobs_p)
 {
@@ -6996,7 +7084,12 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
 				       kill_msg->jobs_cnt, &jobs);
 		if (rc != SLURM_SUCCESS)
 			return rc;
+		signal_args.pending_array_task_list =
+			list_create(_free_array_task_filter);
 	}
+
+	if (max_array_size == NO_VAL)
+		max_array_size = slurm_conf.max_array_sz;
 
 	/*
 	 * Get a list of jobs to signal first, then signal the jobs outside of
@@ -7018,6 +7111,11 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
 
 	list_for_each(signal_args.array_leader_list, _foreach_signal_job,
 		      &signal_args);
+	if (signal_args.pending_array_task_list) {
+		signal_args.now = time(NULL);
+		list_for_each(signal_args.pending_array_task_list,
+			      _foreach_signal_job_array_tasks, &signal_args);
+	}
 	list_for_each(signal_args.other_job_list, _foreach_signal_job,
 		      &signal_args);
 
@@ -7026,6 +7124,7 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
 	/* Cleanup */
 	_free_selected_step_array(&jobs, kill_msg->jobs_cnt);
 	FREE_NULL_LIST(signal_args.array_leader_list);
+	FREE_NULL_LIST(signal_args.pending_array_task_list);
 	FREE_NULL_LIST(signal_args.other_job_list);
 	FREE_NULL_LIST(signal_args.responses);
 
