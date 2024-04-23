@@ -5819,25 +5819,33 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 }
 
 /*
+ * Find the index into common_options for a given option name.
+ */
+static int _find_option_index_from_optval(int optval)
+{
+	int i;
+
+	for (i = 0; common_options[i]; i++) {
+		if (common_options[i]->val == optval)
+			return i;
+	}
+
+	xassert(false);
+
+	return 0; /* slurm_opt__unknown_ */
+}
+
+/*
  * Was the option set by a cli argument?
  */
 extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 {
-	int i;
+	int i = _find_option_index_from_optval(optval);
 
 	if (!opt) {
 		debug3("%s: opt=NULL optval=%u", __func__, optval);
 		return false;
 	}
-
-	for (i = 0; common_options[i]; i++) {
-		if (common_options[i]->val == optval)
-			break;
-	}
-
-	/* This should not happen... */
-	if (!common_options[i])
-		return false;
 
 	if (!opt->state)
 		return false;
@@ -5856,21 +5864,12 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
  */
 extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval)
 {
-	int i;
+	int i = _find_option_index_from_optval(optval);
 
 	if (!opt) {
 		debug3("%s: opt=NULL optval=%u", __func__, optval);
 		return false;
 	}
-
-	for (i = 0; common_options[i]; i++) {
-		if (common_options[i]->val == optval)
-			break;
-	}
-
-	/* This should not happen... */
-	if (!common_options[i])
-		return false;
 
 	if (!opt->state)
 		return false;
@@ -5883,21 +5882,12 @@ extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval)
  */
 extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval)
 {
-	int i;
+	int i = _find_option_index_from_optval(optval);
 
 	if (!opt) {
 		debug3("%s: opt=NULL optval=%u", __func__, optval);
 		return false;
 	}
-
-	for (i = 0; common_options[i]; i++) {
-		if (common_options[i]->val == optval)
-			break;
-	}
-
-	/* This should not happen... */
-	if (!common_options[i])
-		return false;
 
 	if (!opt->state)
 		return false;
