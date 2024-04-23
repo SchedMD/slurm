@@ -3088,7 +3088,8 @@ skip_start:
 		reject_array_part = NULL;
 		reject_array_resv = NULL;
 
-		if (job_ptr->details->whole_node & WHOLE_TOPO) {
+		if ((job_ptr->details->whole_node & WHOLE_TOPO) ||
+		    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)) {
 			topology_g_whole_topo(avail_bitmap);
 		}
 
@@ -3516,7 +3517,8 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 	int j = 0;
 	bitstr_t *use_bitmap_efctv = NULL;
 
-	if (job_ptr->details->whole_node & WHOLE_TOPO) {
+	if ((job_ptr->details->whole_node & WHOLE_TOPO) ||
+	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)) {
 		use_bitmap_efctv = bit_copy(use_bitmap);
 		topology_g_whole_topo(use_bitmap_efctv);
 		use_bitmap = use_bitmap_efctv;
