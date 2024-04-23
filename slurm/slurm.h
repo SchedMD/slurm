@@ -2500,7 +2500,7 @@ typedef struct partition_info {
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;    /* comma delimited list of denied accounts */
 	char *deny_qos;		/* comma delimited list of denied qos */
-	uint16_t flags;		/* see PART_FLAG_* above */
+	uint32_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
 	list_t *job_defaults_list; /* List of job_defaults_t elements */
 	char *job_defaults_str;	/* String of job defaults,

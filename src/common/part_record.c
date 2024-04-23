@@ -147,7 +147,7 @@ extern void part_record_pack(part_record_t *part_ptr,
 		pack32(part_ptr->max_nodes_orig, buffer);
 		pack32(part_ptr->min_nodes_orig, buffer);
 
-		pack16(part_ptr->flags, buffer);
+		pack32(part_ptr->flags, buffer);
 		pack16(part_ptr->max_share, buffer);
 		pack16(part_ptr->over_time_limit,buffer);
 		pack16(part_ptr->preempt_mode, buffer);
@@ -189,7 +189,7 @@ extern int part_record_unpack(part_record_t **part,
 		safe_unpack32(&part_ptr->max_nodes, buffer);
 		safe_unpack32(&part_ptr->min_nodes, buffer);
 
-		safe_unpack16(&part_ptr->flags, buffer);
+		safe_unpack32(&part_ptr->flags, buffer);
 		safe_unpack16(&part_ptr->max_share, buffer);
 		safe_unpack16(&part_ptr->over_time_limit, buffer);
 		safe_unpack16(&part_ptr->preempt_mode, buffer);
@@ -210,6 +210,7 @@ extern int part_record_unpack(part_record_t **part,
 		safe_unpackstr(&part_ptr->deny_qos, buffer);
 		safe_unpackstr(&part_ptr->nodes, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		safe_unpack32(&part_ptr->cpu_bind, buffer);
 		safe_unpackstr(&part_ptr->name, buffer);
 		safe_unpack32(&part_ptr->grace_time, buffer);
@@ -220,7 +221,8 @@ extern int part_record_unpack(part_record_t **part,
 		safe_unpack32(&part_ptr->max_nodes, buffer);
 		safe_unpack32(&part_ptr->min_nodes, buffer);
 
-		safe_unpack16(&part_ptr->flags, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		part_ptr->flags = tmp_uint16;
 		safe_unpack16(&part_ptr->max_share, buffer);
 		safe_unpack16(&part_ptr->over_time_limit, buffer);
 		safe_unpack16(&part_ptr->preempt_mode, buffer);

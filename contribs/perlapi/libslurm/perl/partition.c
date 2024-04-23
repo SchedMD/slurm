@@ -31,7 +31,7 @@ partition_info_to_hv(partition_info_t *part_info, HV *hv)
 		STORE_FIELD(hv, part_info, deny_accounts, charp);
 	if (part_info->deny_qos)
 		STORE_FIELD(hv, part_info, deny_qos, charp);
-	STORE_FIELD(hv, part_info, flags, uint16_t);
+	STORE_FIELD(hv, part_info, flags, uint32_t);
 	if (part_info->grace_time)
 		STORE_FIELD(hv, part_info, grace_time, uint32_t);
 	if (part_info->max_cpus_per_node)
@@ -97,7 +97,7 @@ hv_to_partition_info(HV *hv, partition_info_t *part_info)
 	FETCH_FIELD(hv, part_info, default_time, uint32_t, TRUE);
 	FETCH_FIELD(hv, part_info, deny_accounts, charp, FALSE);
 	FETCH_FIELD(hv, part_info, deny_qos, charp, FALSE);
-	FETCH_FIELD(hv, part_info, flags, uint16_t, TRUE);
+	FETCH_FIELD(hv, part_info, flags, uint32_t, TRUE);
 	FETCH_FIELD(hv, part_info, grace_time, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_info, max_cpus_per_node, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_info, max_mem_per_cpu, uint64_t, FALSE);
@@ -206,7 +206,7 @@ hv_to_update_part_msg(HV *hv, update_part_msg_t *part_msg)
 	FETCH_FIELD(hv, part_msg, allow_alloc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, allow_groups, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, default_time, uint32_t, FALSE);
-	FETCH_FIELD(hv, part_msg, flags, uint16_t, FALSE);
+	FETCH_FIELD(hv, part_msg, flags, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_share, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_time, uint32_t, FALSE);

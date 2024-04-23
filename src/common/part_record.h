@@ -79,7 +79,7 @@ typedef struct part_record {
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with
 				 * char *deny_qos but used internallly */
-	uint16_t flags;		/* see PART_FLAG_* in slurm.h */
+	uint32_t flags;		/* see PART_FLAG_* in slurm.h */
 	uint32_t grace_time;	/* default preempt grace time in seconds */
 	List job_defaults_list;	/* List of job_defaults_t elements */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */

@@ -1050,7 +1050,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack32(part_ptr->max_cpus_per_socket, buffer);
 		pack64(part_ptr->max_mem_per_cpu, buffer);
 
-		pack16(part_ptr->flags, buffer);
+		pack32(part_ptr->flags, buffer);
 		pack16(part_ptr->max_share, buffer);
 		pack16(part_ptr->over_time_limit, buffer);
 		pack16(part_ptr->preempt_mode, buffer);
@@ -1079,6 +1079,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 				      job_defaults_pack, buffer,
 				      protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1098,7 +1099,8 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack32(part_ptr->max_cpus_per_socket, buffer);
 		pack64(part_ptr->max_mem_per_cpu, buffer);
 
-		pack16(part_ptr->flags, buffer);
+		tmp_uint16 = part_ptr->flags;
+		pack16(tmp_uint16, buffer);
 		pack16(part_ptr->max_share, buffer);
 		pack16(part_ptr->over_time_limit, buffer);
 		pack16(part_ptr->preempt_mode, buffer);

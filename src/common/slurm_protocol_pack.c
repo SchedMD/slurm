@@ -1772,7 +1772,7 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->default_time, buffer);
 		packstr(msg->deny_accounts, buffer);
 		packstr(msg->deny_qos, buffer);
-		pack16(msg->flags, buffer);
+		pack32(msg->flags, buffer);
 		packstr(msg->job_defaults_str, buffer);
 		pack32(msg->grace_time, buffer);
 
@@ -1794,6 +1794,7 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->qos_char, buffer);
 		pack16(msg->state_up, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
@@ -1806,7 +1807,8 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->default_time, buffer);
 		packstr(msg->deny_accounts, buffer);
 		packstr(msg->deny_qos, buffer);
-		pack16(msg->flags, buffer);
+		tmp_uint16 = msg->flags;
+		pack16(tmp_uint16, buffer);
 		packstr(msg->job_defaults_str, buffer);
 		pack32(msg->grace_time, buffer);
 
@@ -1855,7 +1857,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack16(&tmp_ptr->flags, buffer);
+		safe_unpack32(&tmp_ptr->flags, buffer);
 		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
@@ -1877,6 +1879,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->qos_char, buffer);
 		safe_unpack16(&tmp_ptr->state_up, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
 		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
@@ -1889,7 +1892,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack16(&tmp_ptr->flags, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		tmp_ptr->flags = tmp_uint16;
 		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
@@ -2769,7 +2773,7 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpack32(&part->max_cpus_per_node, buffer);
 		safe_unpack32(&part->max_cpus_per_socket, buffer);
 		safe_unpack64(&part->max_mem_per_cpu, buffer);
-		safe_unpack16(&part->flags, buffer);
+		safe_unpack32(&part->flags, buffer);
 		safe_unpack16(&part->max_share, buffer);
 		safe_unpack16(&part->over_time_limit, buffer);
 		safe_unpack16(&part->preempt_mode, buffer);
@@ -2802,6 +2806,7 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		safe_unpackstr(&part->name, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1);/* part->name = "" implicit */
@@ -2817,7 +2822,8 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpack32(&part->max_cpus_per_node, buffer);
 		safe_unpack32(&part->max_cpus_per_socket, buffer);
 		safe_unpack64(&part->max_mem_per_cpu, buffer);
-		safe_unpack16(&part->flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		part->flags = uint16_tmp;
 		safe_unpack16(&part->max_share, buffer);
 		safe_unpack16(&part->over_time_limit, buffer);
 		safe_unpack16(&part->preempt_mode, buffer);
