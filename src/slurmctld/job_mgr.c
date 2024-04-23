@@ -171,7 +171,6 @@ typedef struct {
 	kill_jobs_msg_t *kill_msg;
 	list_t *other_job_list;
 	list_t *responses; /* List of kill_jobs_resp_job_t */
-	int response_error_code;
 } signal_jobs_args_t;
 
 typedef struct {
