@@ -5838,12 +5838,10 @@ static int _find_option_index_from_optval(int optval)
 /*
  * Was the option set by a cli argument?
  */
-extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
+static bool _option_index_set_by_cli(slurm_opt_t *opt, int index)
 {
-	int i = _find_option_index_from_optval(optval);
-
 	if (!opt) {
-		debug3("%s: opt=NULL optval=%u", __func__, optval);
+		debug3("%s: opt=NULL", __func__);
 		return false;
 	}
 
@@ -5855,8 +5853,48 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 	 * are true, then the argument was set through the environment not the
 	 * cli, and we must return false.
 	 */
+	return (opt->state[index].set && !opt->state[index].set_by_env);
+}
 
-	return (opt->state[i].set && !opt->state[i].set_by_env);
+/*
+ * Was the option set by an data_t value?
+ */
+static bool _option_index_set_by_data(slurm_opt_t *opt, int index)
+{
+	if (!opt) {
+		debug3("%s: opt=NULL", __func__);
+		return false;
+	}
+
+	if (!opt->state)
+		return false;
+
+	return opt->state[index].set_by_data;
+}
+
+/*
+ * Was the option set by an env var?
+ */
+static bool _option_index_set_by_env(slurm_opt_t *opt, int index)
+{
+	if (!opt) {
+		debug3("%s: opt=NULL", __func__);
+		return false;
+	}
+
+	if (!opt->state)
+		return false;
+
+	return opt->state[index].set_by_env;
+}
+
+/*
+ * Was the option set by a cli argument?
+ */
+extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
+{
+	int i = _find_option_index_from_optval(optval);
+	return _option_index_set_by_cli(opt, i);
 }
 
 /*
@@ -5865,16 +5903,7 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval)
 {
 	int i = _find_option_index_from_optval(optval);
-
-	if (!opt) {
-		debug3("%s: opt=NULL optval=%u", __func__, optval);
-		return false;
-	}
-
-	if (!opt->state)
-		return false;
-
-	return opt->state[i].set_by_data;
+	return _option_index_set_by_data(opt, i);
 }
 
 /*
@@ -5883,16 +5912,7 @@ extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval)
 extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval)
 {
 	int i = _find_option_index_from_optval(optval);
-
-	if (!opt) {
-		debug3("%s: opt=NULL optval=%u", __func__, optval);
-		return false;
-	}
-
-	if (!opt->state)
-		return false;
-
-	return opt->state[i].set_by_env;
+	return _option_index_set_by_env(opt, i);
 }
 
 /*
