@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     submitting job.
  -- slurmctld - Disable job table locking while job state cache is active when
     replying to `squeue --only-job-state` or `GET /slurm/v0.0.40/jobs/state`.
+ -- Fix sanity check when setting tres-per-task on the job allocation as well as
+    the step.
 
 * Changes in Slurm 23.11.6
 ==========================
