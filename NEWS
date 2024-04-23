@@ -158,6 +158,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 23.02 where afternotok and afterok dependencies were
     rejected for federated jobs not running on the origin cluster of the
     submitting job.
+ -- slurmctld - Disable job table locking while job state cache is active when
+    replying to `squeue --only-job-state` or `GET /slurm/v0.0.40/jobs/state`.
 
 * Changes in Slurm 23.11.6
 ==========================
