@@ -456,8 +456,8 @@ extern bool slurm_option_get_tres_per_tres(
 extern struct option *slurm_option_table_create(slurm_opt_t *opt,
 						char **opt_string);
 extern void slurm_option_table_destroy(struct option *optz);
-extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
-						  char **tres_per_task_p);
+extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
+					      char **tres_per_task_p);
 
 /*
  * Process individual argument for the current job component

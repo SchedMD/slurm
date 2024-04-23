@@ -2110,40 +2110,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_gpus_per_task(slurm_opt_t *opt, const char *arg)
-{
-	xfree(opt->gpus_per_task);
-	xfree(opt->tres_per_task);
-	opt->gpus_per_task = xstrdup(arg);
-	xstrfmtcat(opt->tres_per_task, "gres/gpu:%s", opt->gpus_per_task);
-
-	return SLURM_SUCCESS;
-}
-static int arg_set_data_gpus_per_task(slurm_opt_t *opt, const data_t *arg,
-				      data_t *errors)
-{
-	int rc;
-	char *str = NULL;
-
-	if ((rc = data_get_string_converted(arg, &str)))
-		ADD_DATA_ERROR("Unable to read string", rc);
-	else {
-		xfree(opt->gpus_per_task);
-		xfree(opt->tres_per_task);
-		opt->gpus_per_task = xstrdup(str);
-		xstrfmtcat(opt->tres_per_task, "gres/gpu:%s",
-			   opt->gpus_per_task);
-	}
-
-	xfree(str);
-	return rc;
-}
-static void arg_reset_gpus_per_task(slurm_opt_t *opt)
-{
-	xfree(opt->gpus_per_task);
-	xfree(opt->tres_per_task);
-}
-COMMON_STRING_OPTION_GET(gpus_per_task);
+COMMON_STRING_OPTION(gpus_per_task);
 static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.name = "gpus-per-task",
 	.has_arg = required_argument,
@@ -6209,39 +6176,36 @@ extern bool slurm_option_get_tres_per_tres(
 }
 
 /*
- * Update the cpu:# part of tres_per_task and match it to the cpu count of
- * cpus_per_task.
+ * Update part of the tres_per_task string and match it to the count given
  *
- * If cpus_per_task == 0, then just remove the cpu:# string from
- * tres_per_task.
+ * If cnt == 0, then just remove the string from tres_per_task.
  *
- * tres_per_task takes a form similar to "cpu:10,gres:gpu:gtx:1,license:iop1:1".
+ * tres_per_task takes a form similar to "cpu:10,gres/gpu:gtx:1,license/iop1:1".
  *
- * IN: cpus_per_task - new value for cpus_per_task
+ * IN: cnt - new value
+ * IN: tres_str - name of tres we want to to be update
  * OUT: tres_per_task_p - string to update
  */
-extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
-						  char **tres_per_task_p)
+extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
+					      char **tres_per_task_p)
 {
 	int tres_cpu_cnt;
-	char *end, *prefix, *suffix = NULL, *new_str = NULL;
+	char *prefix, *suffix = NULL, *new_str = NULL;
 	char *tres_per_task;
-	char *tres_cpu_cnt_ptr;
+	char *prev_tres_ptr;
 
 	xassert(tres_per_task_p);
 	tres_per_task = *tres_per_task_p;
-	tres_cpu_cnt_ptr = xstrcasestr(tres_per_task, "cpu:");
+	prev_tres_ptr = xstrcasestr(tres_per_task, tres_str);
 
-	if (!tres_cpu_cnt_ptr) {
-		if (cpus_per_task) {
-			/* Add "cpu:*" to tres_per_task. */
+	if (!prev_tres_ptr) {
+		if (cnt) {
+			/* Add tres to tres_per_task. */
 			if (tres_per_task) {
-				xstrfmtcat(new_str, "cpu:%d,%s",
-					   cpus_per_task,
+				xstrfmtcat(new_str, "%s:%d,%s", tres_str, cnt,
 					   tres_per_task);
 			} else {
-				xstrfmtcat(new_str, "cpu:%d",
-					   cpus_per_task);
+				xstrfmtcat(new_str, "%s:%d", tres_str, cnt);
 			}
 			xfree(tres_per_task);
 			tres_per_task = new_str;
@@ -6250,21 +6214,21 @@ extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
 		return;
 	}
 
-	/* Get the cpu count in tres_per_task */
-	tres_cpu_cnt = atoi(tres_cpu_cnt_ptr + 4);
+	/* Get the count in tres_per_task */
+	tres_cpu_cnt = atoi(prev_tres_ptr + strlen(tres_str) + 1);
 
 	/* Nothing to update. */
-	if (tres_cpu_cnt == cpus_per_task)
+	if (tres_cpu_cnt == cnt)
 		return;
 
-	/* Get the "cpu:#" end ptr and the prefix and suffix strings */
-	if ((end = xstrstr(tres_cpu_cnt_ptr, ","))) {
+	/* Get suffix string */
+	if ((suffix = xstrstr(prev_tres_ptr, ","))) {
 		/* Remove the initial comma in the suffix. */
-		suffix = end + 1;
+		suffix += 1;
 	}
 
 	/* Set the prefix */
-	*tres_cpu_cnt_ptr = '\0';
+	*prev_tres_ptr = '\0';
 	prefix = tres_per_task;
 	if (prefix) {
 		/* Remove the final comma of the prefix. */
@@ -6279,8 +6243,8 @@ extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
 	if (suffix && !*suffix)
 		suffix = NULL;
 
-	if (!cpus_per_task) {
-		/* Exclude the cpus:# string */
+	if (!cnt) {
+		/* Exclude the tres string */
 		if (prefix && suffix)
 			xstrfmtcat(new_str, "%s,%s", prefix, suffix);
 		if (prefix && !suffix)
@@ -6290,21 +6254,102 @@ extern void slurm_option_update_tres_per_task_cpu(int cpus_per_task,
 	} else {
 		/* Compose the new string. */
 		if (prefix && suffix)
-			xstrfmtcat(new_str, "%s,cpu:%d,%s",
-				   prefix, cpus_per_task, suffix);
+			xstrfmtcat(new_str, "%s,%s:%d,%s", prefix, tres_str,
+				   cnt, suffix);
 		if (prefix && !suffix)
-			xstrfmtcat(new_str, "%s,cpu:%d",
-				   prefix, cpus_per_task);
+			xstrfmtcat(new_str, "%s,%s:%d", prefix, tres_str, cnt);
 		if (!prefix && suffix)
-			xstrfmtcat(new_str, "cpu:%d,%s",
-				   cpus_per_task, suffix);
+			xstrfmtcat(new_str, "%s:%d,%s", tres_str, cnt, suffix);
 		if (!prefix && !suffix)
-			xstrfmtcat(new_str, "cpu:%d", cpus_per_task);
+			xstrfmtcat(new_str, "%s:%d", tres_str, cnt);
 	}
 
 	xfree(tres_per_task);
 	tres_per_task = new_str;
 	*tres_per_task_p = tres_per_task;
+}
+
+static void _validate_gpus_per_task(slurm_opt_t *opt)
+{
+	int gpu_cnt = 0, tmp_int;
+	char *gpu_per_task_ptr = NULL, *gpu_str = NULL, *num_str;
+	/*
+	 * See if gpus-per-task was set with tres-per-task
+	 * Either one specified on the command line overrides the other in the
+	 * environment.
+	 * They can both be in the environment because specifying just
+	 * --tres-per-task=gres/gpu=# will cause SLURM_GPUS_PER_TASK to be set
+	 * as well. So if they're both in the environment, verify that they're
+	 * the same.
+	 *
+	 * If either of these options are set, then make sure that both of these
+	 * options are set to the same thing:
+	 * opt->gpus_per_task and opt->tres_per_task=gres/gpu=#.
+	 */
+
+	if (opt->gpus_per_task) {
+		xstrcat(gpu_str, "gres/gpu");
+		if ((num_str = xstrstr(opt->gpus_per_task, ":"))) {
+			*num_str = '\0';
+			xstrfmtcat(gpu_str, ":%s", opt->gpus_per_task);
+			*num_str = ':';
+			num_str += 1;
+		} else {
+			num_str = opt->gpus_per_task;
+		}
+		gpu_cnt = atoi(num_str);
+	}
+
+	gpu_per_task_ptr = xstrcasestr(opt->tres_per_task, gpu_str);
+	if (!gpu_per_task_ptr) {
+		if (opt->gpus_per_task)
+			slurm_option_update_tres_per_task(gpu_cnt, gpu_str,
+				&opt->tres_per_task);
+		return;
+	}
+
+	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
+		fatal("You can not have --tres-per-task=gres/gpu: and gpus-per-task please use one or the other");
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK) &&
+		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
+		/*
+		 * The value is already in opt->gpus_per_task.
+		 * Update the gpus part of the env variable.
+		 */
+		slurm_option_update_tres_per_task(gpu_cnt, gpu_str,
+						  &opt->tres_per_task);
+		if (opt->verbose)
+			info("Updating SLURM_TRES_PER_TASK to %s as --gpus-per-task takes precedence over the environment variables.",
+			     opt->tres_per_task);
+		return;
+	}
+
+
+	tmp_int = atoi(gpu_per_task_ptr + strlen(gpu_str) + 1);
+	if (tmp_int <= 0) {
+		fatal("Invalid --tres-per-task=cpu:%d",
+		      tmp_int);
+	}
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK) &&
+	    (tmp_int != gpu_cnt)) {
+		fatal("gpus_per_task set by two different environment variables SLURM_GPUS_PER_TASK=%s != SLURM_TRES_PER_TASK=gres/gpu:%s",
+		      opt->gpus_per_task, gpu_per_task_ptr);
+	}
+
+	/*
+	 * Now we know that either tres-per-task is set by cli and gpus-per-task
+	 * is set by env, or only tres-per-task is set either by cli or env.
+	 * Either way, set gpus_per_task from tres-per-task.
+	 */
+	opt->gpus_per_task = gpu_per_task_ptr;
+
+	if (opt->verbose &&
+	    slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_TASK) &&
+	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
+		info("Ignoring SLURM_GPUS_PER_TASK since --tres-per-task=gres/gpu: was given as a command line option.");
 }
 
 static void _validate_cpus_per_task(slurm_opt_t *opt)
@@ -6328,8 +6373,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
 	if (!cpu_per_task_ptr) {
 		if (opt->cpus_set)
-			slurm_option_update_tres_per_task_cpu(
-				opt->cpus_per_task, &opt->tres_per_task);
+			slurm_option_update_tres_per_task(
+				opt->cpus_per_task, "cpu", &opt->tres_per_task);
 		return;
 	}
 
@@ -6342,8 +6387,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		 * The value is already in opt->cpus_per_task.
 		 * Update the cpus part of the env variable.
 		 */
-		slurm_option_update_tres_per_task_cpu(opt->cpus_per_task,
-						      &opt->tres_per_task);
+		slurm_option_update_tres_per_task(opt->cpus_per_task, "cpu",
+						  &opt->tres_per_task);
 		if (opt->verbose)
 			info("Updating SLURM_TRES_PER_TASK to %s as --cpus-per-task takes precedence over the environment variables.",
 			     opt->tres_per_task);
@@ -6432,10 +6477,7 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	slurm_format_tres_string(&opt->tres_per_task, "license");
 	slurm_format_tres_string(&opt->tres_per_task, "gres");
 
-	if (slurm_option_isset(opt, "gpus-per-task") &&
-	    slurm_option_isset(opt, "tres-per-task"))
-		fatal("gpus-per-task is mutually exclusive with tres-per-task");
-
+	_validate_gpus_per_task(opt);
 	_validate_cpus_per_task(opt);
 	_implicitly_bind_tres_per_task(opt);
 }
@@ -6491,8 +6533,8 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 		}
 		slurm_option_reset(opt, "cpus-per-task");
 		/* Also clear cpu:# from tres-per-task */
-		slurm_option_update_tres_per_task_cpu(opt->cpus_per_task,
-						      &opt->tres_per_task);
+		slurm_option_update_tres_per_task(opt->cpus_per_task, "cpu",
+						  &opt->tres_per_task);
 	}
 }
 
