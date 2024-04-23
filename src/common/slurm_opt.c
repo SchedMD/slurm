@@ -6470,11 +6470,14 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		return;
 	}
 
-	if (slurm_option_set_by_cli(opt, 'c') &&
-	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK)) {
+	opt_index = _find_option_index_from_optval('c');
+	tpt_index = _find_option_index_from_optval(LONG_OPT_TRES_PER_TASK);
+
+	if (_option_index_set_by_cli(opt, opt_index) &&
+	    _option_index_set_by_cli(opt, tpt_index)) {
 		fatal("You can not have --tres-per-task=cpu= and --cpus-per-task please use one or the other");
-	} else if (slurm_option_set_by_cli(opt, 'c') &&
-		   slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
+	} else if (_option_index_set_by_cli(opt, opt_index) &&
+		   _option_index_set_by_env(opt, tpt_index)) {
 		/*
 		 * The value is already in opt->cpus_per_task.
 		 * Update the cpus part of the env variable.
@@ -6493,8 +6496,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 		      tmp_int);
 	}
 
-	if (slurm_option_set_by_env(opt, 'c') &&
-	    slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK) &&
+	if (_option_index_set_by_env(opt, opt_index) &&
+	    _option_index_set_by_env(opt, tpt_index) &&
 	    (tmp_int != opt->cpus_per_task)) {
 		fatal("cpus_per_task set by two different environment variables SLURM_CPUS_PER_TASK=%d != SLURM_TRES_PER_TASK=cpu=%d",
 		      opt->cpus_per_task, tmp_int);
@@ -6509,8 +6512,8 @@ static void _validate_cpus_per_task(slurm_opt_t *opt)
 	opt->cpus_set = true;
 
 	if (opt->verbose &&
-	    slurm_option_set_by_env(opt, 'c') &&
-	    slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
+	    _option_index_set_by_env(opt, opt_index) &&
+	    _option_index_set_by_cli(opt, tpt_index))
 		info("Ignoring SLURM_CPUS_PER_TASK since --tres-per-task=cpu= was given as a command line option.");
 }
 
