@@ -61,6 +61,10 @@ extern time_t last_job_update;	/* time of last update to job records */
 
 #define OLD_WHOLE_NODE_MCS	0x03
 
+#define IS_JOB_WHOLE_TOPO(_X) \
+	((_X->details->whole_node & WHOLE_TOPO) || \
+	 (_X->part_ptr && (_X->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)))
+
 /* job_details - specification of a job's constraints */
 typedef struct {
 	uint32_t magic;			/* magic cookie for data integrity */

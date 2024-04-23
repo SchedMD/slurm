@@ -175,11 +175,8 @@ static void _block_by_topology(job_record_t *job_ptr,
 
 				if (!job->node_bitmap)
 					continue;
-				if ((job_ptr->details->whole_node &
-				     WHOLE_TOPO) ||
+				if (IS_JOB_WHOLE_TOPO(job_ptr) ||
 				    (job->whole_node & WHOLE_TOPO) ||
-				    (job_ptr->part_ptr->flags &
-				     PART_FLAG_EXCLUSIVE_TOPO) ||
 				    (p_ptr->part_ptr->flags &
 				     PART_FLAG_EXCLUSIVE_TOPO)) {
 					if (tmp_bitmap)
@@ -2293,8 +2290,7 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 				     bitstr_t *node_bitmap,
 				     bitstr_t **efctv_bitmap)
 {
-	if ((job_ptr->details->whole_node & WHOLE_TOPO) ||
-	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)) {
+	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 		if (!(*efctv_bitmap)) {
 			*efctv_bitmap = bit_copy(node_bitmap);
 			topology_g_whole_topo(*efctv_bitmap);
