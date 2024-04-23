@@ -6468,6 +6468,95 @@ static job_record_t *_find_meta_job_record(uint32_t job_id)
 	return job_ptr;
 }
 
+static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
+					    bitstr_t **array_bitmap,
+					    uint16_t signal,
+					    uid_t uid,
+					    int32_t i_last,
+					    time_t now,
+					    int *rc)
+{
+	int len;
+
+	xassert(job_ptr);
+
+	if (!(IS_JOB_PENDING(job_ptr) && job_ptr->array_recs &&
+	      job_ptr->array_recs->task_id_bitmap))
+		return; /* No tasks to signal */
+
+	/* Ensure bitmap sizes match for AND operations */
+	len = bit_size(job_ptr->array_recs->task_id_bitmap);
+	i_last++;
+	if (i_last < len) {
+		bit_realloc(*array_bitmap, len);
+	} else {
+		bit_realloc(*array_bitmap, i_last);
+		bit_realloc(job_ptr->array_recs->task_id_bitmap, i_last);
+	}
+	if (signal == SIGKILL) {
+		uint32_t orig_task_cnt, new_task_count;
+		/* task_id_bitmap changes, so we need a copy of it */
+		bitstr_t *task_id_bitmap_orig =
+			bit_copy(job_ptr->array_recs->task_id_bitmap);
+
+		bit_and_not(job_ptr->array_recs->task_id_bitmap,
+			    *array_bitmap);
+		xfree(job_ptr->array_recs->task_id_str);
+		orig_task_cnt = job_ptr->array_recs->task_cnt;
+		new_task_count = bit_set_count(job_ptr->array_recs->
+					       task_id_bitmap);
+		if (!new_task_count) {
+			last_job_update		= now;
+			job_state_set(job_ptr, JOB_CANCELLED);
+			job_ptr->start_time	= now;
+			job_ptr->end_time	= now;
+			job_ptr->requid		= uid;
+			srun_allocate_abort(job_ptr);
+			job_completion_logger(job_ptr, false);
+			/*
+			 * Master job record, even wihtout tasks,
+			 * counts as one job record
+			 */
+			job_count -= (orig_task_cnt - 1);
+		} else {
+			_job_array_comp(job_ptr, false, false);
+			job_count -= (orig_task_cnt - new_task_count);
+			/*
+			 * Since we are altering the job array's
+			 * task_cnt we must go alter this count in the
+			 * acct_policy code as if they are finishing
+			 * (accrue_cnt/job_submit etc...).
+			 */
+			if (job_ptr->array_recs->task_cnt >
+			    new_task_count) {
+				uint32_t tmp_state = job_ptr->job_state;
+				job_state_set(job_ptr, JOB_CANCELLED);
+
+				job_ptr->array_recs->task_cnt -=
+					new_task_count;
+				acct_policy_remove_job_submit(job_ptr,
+							      false);
+				job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+				job_state_set(job_ptr, tmp_state);
+			}
+		}
+
+		/*
+		 * Set the task_cnt here since
+		 * job_completion_logger needs the total
+		 * pending count to handle the acct_policy
+		 * limit for submitted jobs correctly.
+		 */
+		job_ptr->array_recs->task_cnt = new_task_count;
+		bit_and_not(*array_bitmap, task_id_bitmap_orig);
+		FREE_NULL_BITMAP(task_id_bitmap_orig);
+	} else {
+		bit_and_not(*array_bitmap,
+			    job_ptr->array_recs->task_id_bitmap);
+		*rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
+	}
+}
+
 /*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
@@ -6489,7 +6578,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
 	int32_t i, i_first, i_last;
-	int rc = SLURM_SUCCESS, rc2, len;
+	int rc = SLURM_SUCCESS, rc2;
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurm_conf.max_array_sz;
@@ -6694,81 +6783,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		goto endit;
 	}
 
-	if (IS_JOB_PENDING(job_ptr) &&
-	    job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap) {
-		/* Ensure bitmap sizes match for AND operations */
-		len = bit_size(job_ptr->array_recs->task_id_bitmap);
-		i_last++;
-		if (i_last < len) {
-			bit_realloc(array_bitmap, len);
-		} else {
-			bit_realloc(array_bitmap, i_last);
-			bit_realloc(job_ptr->array_recs->task_id_bitmap,
-				    i_last);
-		}
-		if (signal == SIGKILL) {
-			uint32_t orig_task_cnt, new_task_count;
-			/* task_id_bitmap changes, so we need a copy of it */
-			bitstr_t *task_id_bitmap_orig =
-				bit_copy(job_ptr->array_recs->task_id_bitmap);
-
-			bit_and_not(job_ptr->array_recs->task_id_bitmap,
-				    array_bitmap);
-			xfree(job_ptr->array_recs->task_id_str);
-			orig_task_cnt = job_ptr->array_recs->task_cnt;
-			new_task_count = bit_set_count(job_ptr->array_recs->
-						       task_id_bitmap);
-			if (!new_task_count) {
-				last_job_update		= now;
-				job_state_set(job_ptr, JOB_CANCELLED);
-				job_ptr->start_time	= now;
-				job_ptr->end_time	= now;
-				job_ptr->requid		= uid;
-				srun_allocate_abort(job_ptr);
-				job_completion_logger(job_ptr, false);
-				/*
-				 * Master job record, even wihtout tasks,
-				 * counts as one job record
-				 */
-				job_count -= (orig_task_cnt - 1);
-			} else {
-				_job_array_comp(job_ptr, false, false);
-				job_count -= (orig_task_cnt - new_task_count);
-				/*
-				 * Since we are altering the job array's
-				 * task_cnt we must go alter this count in the
-				 * acct_policy code as if they are finishing
-				 * (accrue_cnt/job_submit etc...).
-				 */
-				if (job_ptr->array_recs->task_cnt >
-				    new_task_count) {
-					uint32_t tmp_state = job_ptr->job_state;
-					job_state_set(job_ptr, JOB_CANCELLED);
-
-					job_ptr->array_recs->task_cnt -=
-						new_task_count;
-					acct_policy_remove_job_submit(job_ptr,
-								      false);
-					job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
-					job_state_set(job_ptr, tmp_state);
-				}
-			}
-
-			/*
-			 * Set the task_cnt here since
-			 * job_completion_logger needs the total
-			 * pending count to handle the acct_policy
-			 * limit for submitted jobs correctly.
-			 */
-			job_ptr->array_recs->task_cnt = new_task_count;
-			bit_and_not(array_bitmap, task_id_bitmap_orig);
-			FREE_NULL_BITMAP(task_id_bitmap_orig);
-		} else {
-			bit_and_not(array_bitmap,
-				    job_ptr->array_recs->task_id_bitmap);
-			rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
-		}
-	}
+	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, signal, uid,
+					i_last, now, &rc);
 
 	i_first = bit_ffs(array_bitmap);
 	if (i_first >= 0)
