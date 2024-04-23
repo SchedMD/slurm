@@ -1552,17 +1552,15 @@ static void _slurm_rpc_job_state(slurm_msg_t *msg)
 	job_state_response_msg_t *jsr = NULL;
 	int rc;
 
-	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
 
 	jsr = xmalloc(sizeof(*jsr));
 
 	START_TIMER;
-	lock_slurmctld(job_read_lock);
 
+	/* Do not lock here. Locking is done conditionally in dump_job_state */
 	rc = dump_job_state(js->count, js->job_ids, &jsr->jobs_count,
 			    &jsr->jobs);
 
-	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 
 	if (rc) {
