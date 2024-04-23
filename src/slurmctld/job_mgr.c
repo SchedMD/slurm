@@ -6447,6 +6447,27 @@ static bool _get_whole_hetjob(void)
 	return whole_hetjob;
 }
 
+static job_record_t *_find_meta_job_record(uint32_t job_id)
+{
+	job_record_t *job_ptr;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		while (job_ptr) {
+			if (job_ptr->array_job_id == job_id)
+				break;
+			job_ptr = job_ptr->job_array_next_j;
+		}
+	}
+	if ((job_ptr == NULL) ||
+	    ((job_ptr->array_task_id == NO_VAL) &&
+	     (job_ptr->array_recs == NULL)))
+		return NULL;
+
+	return job_ptr;
+}
+
 /*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
@@ -6658,18 +6679,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	}
 
 	/* Find some job record and validate the user signaling the job */
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
-		while (job_ptr) {
-			if (job_ptr->array_job_id == job_id)
-				break;
-			job_ptr = job_ptr->job_array_next_j;
-		}
-	}
-	if ((job_ptr == NULL) ||
-	    ((job_ptr->array_task_id == NO_VAL) &&
-	     (job_ptr->array_recs == NULL))) {
+	if (!(job_ptr = _find_meta_job_record(job_id))) {
 		info("%s(5): invalid JobId=%s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
