@@ -846,6 +846,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->exclusive_user)
 		part_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
+	if (part->exclusive_topo)
+		part_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
 	if (part->hidden_flag)
 		part_ptr->flags |= PART_FLAG_HIDDEN;
 	if (part->power_down_on_idle)

@@ -1387,6 +1387,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DenyQos", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"ExclusiveUser", S_P_BOOLEAN}, /* YES or NO */
+		{"ExclusiveTopo", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"LLN", S_P_BOOLEAN}, /* YES or NO */
@@ -1578,6 +1579,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				"DisableRootJobs", tbl);
 
 		s_p_get_boolean((bool *)&p->exclusive_user, "ExclusiveUser",
+				tbl);
+
+		s_p_get_boolean((bool *)&p->exclusive_topo, "ExclusiveTopo",
 				tbl);
 
 		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl))
