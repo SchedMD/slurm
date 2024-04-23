@@ -6238,7 +6238,9 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 		shared = JOB_SHARED_TOPO;	/* User --exclusive=topo */
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */
-		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)
+			shared = JOB_SHARED_TOPO;
+		else if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
 			shared = JOB_SHARED_USER;
 		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
 			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))

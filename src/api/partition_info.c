@@ -226,6 +226,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, " ExclusiveUser=NO");
 
+	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)
+		xstrcat(out, " ExclusiveTopo=YES");
+	else
+		xstrcat(out, " ExclusiveTopo=NO");
+
 	xstrfmtcat(out, " GraceTime=%u", part_ptr->grace_time);
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)

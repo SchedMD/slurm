@@ -322,6 +322,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
 			fprintf(fp, " ExclusiveUser=YES");
 
+		if (p[i].flags & PART_FLAG_EXCLUSIVE_TOPO)
+			fprintf(fp, " ExclusiveTopo=YES");
+
 		if (p[i].grace_time)
 			fprintf(fp, " GraceTime=%u", p[i].grace_time);
 

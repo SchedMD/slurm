@@ -550,6 +550,7 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 
 		if ((part_rec_state->flags & PART_FLAG_DEFAULT_CLR)   ||
 		    (part_rec_state->flags & PART_FLAG_EXC_USER_CLR)  ||
+		    (part_rec_state->flags & PART_FLAG_EXC_TOPO_CLR)  ||
 		    (part_rec_state->flags & PART_FLAG_HIDDEN_CLR)    ||
 		    (part_rec_state->flags & PART_FLAG_NO_ROOT_CLR)   ||
 		    (part_rec_state->flags & PART_FLAG_PDOI_CLR)      ||
@@ -1331,6 +1332,16 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		info("%s: clearing exclusive_user for partition %s", __func__,
 		     part_desc->name);
 		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_USER);
+	}
+
+	if (part_desc->flags & PART_FLAG_EXCLUSIVE_TOPO) {
+		info("%s: setting exclusive_topo for partition %s", __func__,
+		     part_desc->name);
+		part_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
+	} else if (part_desc->flags & PART_FLAG_EXC_TOPO_CLR) {
+		info("%s: clearing exclusive_topo for partition %s", __func__,
+		     part_desc->name);
+		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_TOPO);
 	}
 
 	if (part_desc->flags & PART_FLAG_DEFAULT) {

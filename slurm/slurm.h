@@ -2482,6 +2482,9 @@ typedef struct job_defaults {
 #define PART_FLAG_EXC_USER_CLR	SLURM_BIT(14) /* Clear EXCLUSIVE_USER flag */
 #define PART_FLAG_PDOI_CLR	SLURM_BIT(15) /* Clear PDOI partition flag */
 
+#define PART_FLAG_EXCLUSIVE_TOPO SLURM_BIT(16)/* Set if Topo allocated exclusively */
+#define PART_FLAG_EXC_TOPO_CLR SLURM_BIT(17) /* Clear EXCLUSIVE_TOPO flag */
+
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating
 				 * nodes */
