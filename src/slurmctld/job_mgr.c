@@ -265,7 +265,6 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
 static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
-static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
@@ -6899,10 +6898,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	job_record_t *job_ptr;
 	uint32_t job_id;
 	time_t now = time(NULL);
-	char *end_ptr = NULL, *tok, *tmp;
+	char *end_ptr = NULL;
 	long int long_id;
 	bitstr_t *array_bitmap = NULL;
-	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2;
 
@@ -7073,21 +7071,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	}
 
-	array_bitmap = bit_alloc(max_array_size);
-	tmp = xstrdup(end_ptr + 1);
-	tok = strtok_r(tmp, ",", &end_ptr);
-	while (tok && valid) {
-		valid = _parse_array_tok(tok, array_bitmap,
-					 max_array_size);
-		tok = strtok_r(NULL, ",", &end_ptr);
-	}
-	xfree(tmp);
-	if (valid) {
-		i_last = bit_fls(array_bitmap);
-		if (i_last < 0)
-			valid = false;
-	}
-	if (!valid) {
+	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
+					      &i_last);
+	if (!array_bitmap) {
 		info("%s(4): invalid JobId=%s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
@@ -8863,53 +8849,6 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 	return SLURM_SUCCESS;
 }
 
-/* For each token in a comma delimited job array expression set the matching
- * bitmap entry */
-static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
-{
-	char *end_ptr = NULL;
-	long int i, first, last, step = 1;
-
-	if (tok[0] == '[')	/* Strip leading "[" */
-		tok++;
-	first = strtol(tok, &end_ptr, 10);
-	if (end_ptr[0] == ']')	/* Strip trailing "]" */
-		end_ptr++;
-	if (first < 0)
-		return false;
-	if (end_ptr[0] == '-') {
-		last = strtol(end_ptr + 1, &end_ptr, 10);
-		if (end_ptr[0] == ']')	/* Strip trailing "]" */
-			end_ptr++;
-		if (end_ptr[0] == ':') {
-			step = strtol(end_ptr + 1, &end_ptr, 10);
-			if (end_ptr[0] == ']')	/* Strip trailing "]" */
-				end_ptr++;
-			if ((end_ptr[0] != '\0') && (end_ptr[0] != '%'))
-				return false;
-			if ((step <= 0) || (step >= max))
-				return false;
-		} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
-			return false;
-		}
-		if (last < first)
-			return false;
-	} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
-		return false;
-	} else {
-		last = first;
-	}
-
-	if (last >= max)
-		return false;
-
-	for (i = first; i <= last; i += step) {
-		bit_set(array_bitmap, i);
-	}
-
-	return true;
-}
-
 /* Translate a job array expression into the equivalent bitmap */
 static bool _valid_array_inx(job_desc_msg_t *job_desc)
 {
@@ -8951,8 +8890,8 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	tmp = xstrdup(job_desc->array_inx);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok && valid) {
-		valid = _parse_array_tok(tok, job_desc->array_bitmap,
-					 max_array_size);
+		valid = slurm_parse_array_tok(tok, job_desc->array_bitmap,
+					      max_array_size);
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
@@ -16078,10 +16017,9 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
-	bool valid = true;
 	int32_t i, i_first, i_last;
 	int len, rc = SLURM_SUCCESS, rc2;
-	char *end_ptr, *tok, *tmp = NULL;
+	char *end_ptr, *tmp = NULL;
 	char *job_id_str;
 	char *err_msg = NULL;
 	resp_array_struct_t *resp_array = NULL;
@@ -16207,21 +16145,9 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		goto reply;
 	}
 
-	array_bitmap = bit_alloc(max_array_size);
-	tmp = xstrdup(end_ptr + 1);
-	tok = strtok_r(tmp, ",", &end_ptr);
-	while (tok && valid) {
-		valid = _parse_array_tok(tok, array_bitmap,
-					 max_array_size);
-		tok = strtok_r(NULL, ",", &end_ptr);
-	}
-	xfree(tmp);
-	if (valid) {
-		i_last = bit_fls(array_bitmap);
-		if (i_last < 0)
-			valid = false;
-	}
-	if (!valid) {
+	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
+					      &i_last);
+	if (!array_bitmap) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
@@ -18363,9 +18289,8 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0;
-	char *end_ptr = NULL, *tok, *tmp;
+	char *end_ptr = NULL;
 	bitstr_t *array_bitmap = NULL;
-	bool valid = true;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	resp_array_struct_t *resp_array = NULL;
@@ -18434,20 +18359,9 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	array_bitmap = bit_alloc(max_array_size);
-	tmp = xstrdup(end_ptr + 1);
-	tok = strtok_r(tmp, ",", &end_ptr);
-	while (tok && valid) {
-		valid = _parse_array_tok(tok, array_bitmap,
-					 max_array_size);
-		tok = strtok_r(NULL, ",", &end_ptr);
-	}
-	xfree(tmp);
-	if (valid) {
-		if (bit_fls(array_bitmap) < 0)
-			valid = false;
-	}
-	if (!valid) {
+	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
+					      NULL);
+	if (!array_bitmap) {
 		info("%s: invalid JobId=%s", __func__, sus_ptr->job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
@@ -18848,9 +18762,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0;
-	char *end_ptr = NULL, *tok, *tmp;
+	char *end_ptr = NULL;
 	bitstr_t *array_bitmap = NULL;
-	bool valid = true;
 	uint32_t flags = req_ptr->flags;
 	char *job_id_str = req_ptr->job_id_str;
 	resp_array_struct_t *resp_array = NULL;
@@ -18909,20 +18822,9 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		goto reply;
 	}
 
-	array_bitmap = bit_alloc(max_array_size);
-	tmp = xstrdup(end_ptr + 1);
-	tok = strtok_r(tmp, ",", &end_ptr);
-	while (tok && valid) {
-		valid = _parse_array_tok(tok, array_bitmap,
-					 max_array_size);
-		tok = strtok_r(NULL, ",", &end_ptr);
-	}
-	xfree(tmp);
-	if (valid) {
-		if (bit_fls(array_bitmap) < 0)
-			valid = false;
-	}
-	if (!valid) {
+	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
+					      NULL);
+	if (!array_bitmap) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
