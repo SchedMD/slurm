@@ -228,6 +228,7 @@ static void _log_kill_job_error(char *job_id_str, char *err_msg)
 
 static int _ctld_signal_jobs(void)
 {
+	int i;
 	int rc;
 	bool successful_job_resp = false;
 	char *job_type = "";
@@ -235,7 +236,6 @@ static int _ctld_signal_jobs(void)
 		.account = opt.account,
 		.job_name = opt.job_name,
 		.jobs_array = opt.job_list,
-		.jobs_cnt = opt.job_cnt,
 		.partition = opt.partition,
 		.qos = opt.qos,
 		.reservation = opt.reservation,
@@ -247,6 +247,11 @@ static int _ctld_signal_jobs(void)
 		.nodelist = opt.nodelist,
 	};
 	kill_jobs_resp_msg_t *kill_msg_resp = NULL;
+
+	if (opt.job_list) {
+		for (i = 0; opt.job_list[i]; i++);
+		kill_msg.jobs_cnt = i;
+	}
 
 	kill_msg.flags = _init_flags(&job_type);
 	if (opt.verbose)
