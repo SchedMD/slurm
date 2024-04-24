@@ -1597,6 +1597,31 @@ extern char **slurm_char_array_copy(int n, char **src);
 extern char *slurm_sort_node_list_str(char *node_list);
 
 /*
+ * For each token in a comma delimited job array expression set the matching
+ * bitmap entry.
+ *
+ * IN tok - An array expression. For example: "[1,3-5,8]"
+ * IN array_bitmap - Matching entries in tok are set in this bitmap.
+ * IN max - maximum size of the job array.
+ * RET true if tok is a valid array expression, v
+ */
+extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
+				  uint32_t max);
+/*
+ * Take a string representation of an array range or comma separated values
+ * and translate that into a bitmap.
+ *
+ * IN str - An array expression. For example: "[1,3-5,8]"
+ * IN max_array_size - maximum size of the job array.
+ * OUT i_last_p - (optional) if not NULL, set the value pointed to by i_last_p
+ *                to the last bit set in the array bitmap. This is only changed
+ *                if the string was successfully parsed.
+ * RET array_bitmap if successfull, NULL otherwise.
+ */
+extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
+					int32_t *i_last_p);
+
+/*
  * Take a string identifing any part of a job and parses it into an id
  *
  * Formats parsed:
