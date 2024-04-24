@@ -756,6 +756,91 @@ extern char *slurm_sort_node_list_str(char *node_list)
 	return sorted_node_list;
 }
 
+extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
+				  uint32_t max)
+{
+	char *end_ptr = NULL;
+	long int i, first, last, step = 1;
+
+	if (tok[0] == '[')	/* Strip leading "[" */
+		tok++;
+	first = strtol(tok, &end_ptr, 10);
+	if (end_ptr[0] == ']')	/* Strip trailing "]" */
+		end_ptr++;
+	if (first < 0)
+		return false;
+	if (end_ptr[0] == '-') {
+		last = strtol(end_ptr + 1, &end_ptr, 10);
+		if (end_ptr[0] == ']')	/* Strip trailing "]" */
+			end_ptr++;
+		if (end_ptr[0] == ':') {
+			step = strtol(end_ptr + 1, &end_ptr, 10);
+			if (end_ptr[0] == ']')	/* Strip trailing "]" */
+				end_ptr++;
+			if ((end_ptr[0] != '\0') && (end_ptr[0] != '%'))
+				return false;
+			if ((step <= 0) || (step >= max))
+				return false;
+		} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
+			return false;
+		}
+		if (last < first)
+			return false;
+	} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
+		return false;
+	} else {
+		last = first;
+	}
+
+	if (last >= max)
+		return false;
+
+	for (i = first; i <= last; i += step) {
+		bit_set(array_bitmap, i);
+	}
+
+	return true;
+}
+
+extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
+					int32_t *i_last_p)
+{
+	bitstr_t *array_bitmap;
+	char *tmp, *tok;
+	bool valid = true;
+	int32_t i_last = -1;
+
+	xassert(max_array_size != NO_VAL);
+
+	array_bitmap = bit_alloc(max_array_size);
+	if (!array_bitmap)
+		return NULL;
+
+	tmp = xstrdup(str);
+	tok = strtok_r(tmp, ",", &str);
+	while (tok && valid) {
+		valid = slurm_parse_array_tok(tok, array_bitmap,
+					      max_array_size);
+		tok = strtok_r(NULL, ",", &str);
+	}
+	xfree(tmp);
+
+	if (!valid) {
+		FREE_NULL_BITMAP(array_bitmap);
+		return NULL;
+	}
+	i_last = bit_fls(array_bitmap);
+	if (i_last < 0) {
+		FREE_NULL_BITMAP(array_bitmap);
+		return NULL;
+	}
+
+	if (i_last_p)
+		*i_last_p = i_last;
+
+	return array_bitmap;
+}
+
 extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 {
 	char *end_ptr = NULL, *step_end_ptr = NULL, *step_het_end_ptr = NULL;
