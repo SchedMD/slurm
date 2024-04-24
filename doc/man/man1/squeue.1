@@ -36,7 +36,7 @@ array index values printed using a regular expression).
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIcluster_name\fR>
-Clusters to issue commands to.  Multiple cluster names may be comma separated.
+Clusters to issue commands to. Multiple cluster names may be comma separated.
 A value of '\fIall\fR' will query to run on all clusters.
 Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
 running in a federation with either \fBFederationParameters=fed_display\fR
@@ -152,7 +152,7 @@ default value of zero.
 .TP
 \fB%C\fR
 Number of CPUs (processors) requested by the job or allocated to
-it if already running.  As a job is completing this number will
+it if already running. As a job is completing this number will
 reflect the current number of CPUs allocated.
 (Valid for jobs only)
 .IP
@@ -894,7 +894,7 @@ The number of tasks per socket allocated to the job.
 .TP
 \fBNumCPUs\fR
 Number of CPUs (processors) requested by the job or allocated to
-it if already running.  As a job is completing, this number will
+it if already running. As a job is completing, this number will
 reflect the current number of CPUs allocated.
 (Valid for jobs and job steps)
 .IP
@@ -1359,7 +1359,7 @@ Equivalent to \fB\-\-user=<my username>\fR.
 
 .TP
 \fB\-n\fR, \fB\-\-name\fR=<\fIname_list\fR>
-Request jobs or job steps having one of the specified names.  The
+Request jobs or job steps having one of the specified names. The
 list consists of a comma separated list of job names.
 .IP
 
@@ -1459,7 +1459,7 @@ Slurm is configured to use the backfill scheduling plugin.
 
 .TP
 \fB\-t\fR, \fB\-\-states\fR=<\fIstate_list\fR>
-Specify the states of jobs to view.  Accepts a comma separated list of
+Specify the states of jobs to view. Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
 jobs are reported. See the \fBJOB STATE CODES\fR section below for a list of
@@ -1470,7 +1470,7 @@ equivalent).
 
 .TP
 \fB\-s\fR, \fB\-\-steps\fR[=<\fIstep_list\fR>]
-Specify the job steps to view.  This flag indicates that a comma separated list
+Specify the job steps to view. This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).
 The job step format is "job_id[_array_id].step_id". Defaults to all job
 steps. Since this option's argument is optional, for proper parsing
@@ -2058,7 +2058,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1), \fBsrun\fR(1),

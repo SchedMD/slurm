@@ -20,7 +20,7 @@ are unavailable to the user's group.
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.  Multiple cluster names may be comma separated.
+Clusters to issue commands to. Multiple cluster names may be comma separated.
 A value of '\fBall\fR' will query all clusters.
 Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
 running in a federation with either \fBFederationParameters=fed_display\fR
@@ -202,7 +202,7 @@ Features available the nodes, also see \fB%b\fR.
 .TP
 \fB%F\fR
 Number of nodes by state in the format
-"allocated/idle/other/total".  Note the use of this format option with a node
+"allocated/idle/other/total". Note the use of this format option with a node
 state format option ("%t" or "%T") will result in the different node states
 being be reported on separate lines.
 .IP
@@ -520,7 +520,7 @@ the different node states will be placed on separate lines.
 .TP
 \fBNodeAIOT\fR
 Number of nodes by state in the format
-"allocated/idle/other/total".  Do not use this with a node
+"allocated/idle/other/total". Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
 .IP
@@ -762,22 +762,22 @@ If set only report state information for responding nodes.
 Specification of the order in which records should be reported.
 This uses the same field specification as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
-separated by commas.  The field specifications may be preceded
+separated by commas. The field specifications may be preceded
 by "+" or "\-" for ascending (default) and descending order
-respectively.  The partition field specification, "P", may be
+respectively. The partition field specification, "P", may be
 preceded by a "#" to report partitions in the same order that
-they appear in Slurm's  configuration file, \fBslurm.conf\fR.
+they appear in Slurm's configuration file, \fBslurm.conf\fR.
 For example, a sort value of "+P,\-m" requests that records
 be printed in order of increasing partition name and within a
-partition by decreasing memory size.  The default value of sort
+partition by decreasing memory size. The default value of sort
 is "#P,\-t" (partitions ordered as configured then decreasing
-node state).  If the \fB\-\-Node\fR option is selected, the
+node state). If the \fB\-\-Node\fR option is selected, the
 default sort value is "N" (increasing node name).
 .IP
 
 .TP
 \fB\-t\fR, \fB\-\-states\fR=<\fIstates\fR>
-List nodes only having the given state(s).  Multiple states
+List nodes only having the given state(s). Multiple states
 may be comma separated and the comparison is case insensitive.
 If the states are separated by '&', then the nodes must be in all states.
 Possible values include (case insensitive): ALLOC, ALLOCATED, CLOUD,
@@ -858,22 +858,22 @@ Count of threads on these nodes.
 .TP
 \fBGROUPS\fR
 Resource allocations in this partition are restricted to the
-named groups.  \fBall\fR indicates that all groups may use
+named groups. \fBall\fR indicates that all groups may use
 this partition.
 .IP
 
 .TP
 \fBJOB_SIZE\fR
 Minimum and maximum node count that can be allocated to any
-user job.  A single number indicates the minimum and maximum
-node count are the same.  \fBinfinite\fR is used to identify
+user job. A single number indicates the minimum and maximum
+node count are the same. \fBinfinite\fR is used to identify
 partitions without a maximum node count.
 .IP
 
 .TP
 \fBTIMELIMIT\fR
 Maximum time limit for any user job in
-days\-hours:minutes:seconds.  \fBinfinite\fR is used to identify
+days\-hours:minutes:seconds. \fBinfinite\fR is used to identify
 partitions without a job time limit.
 .IP
 
@@ -906,7 +906,7 @@ state in the form "allocated/idle/other/total".
 
 .TP
 \fBPARTITION\fR
-Name of a partition.  Note that the suffix "*" identifies the
+Name of a partition. Note that the suffix "*" identifies the
 default partition.
 .IP
 
@@ -966,7 +966,7 @@ The following node suffixes and states are used:
 .TP 4
 \fB*\fR
 The node is presently not responding and will not be allocated
-any new work.  If the node remains non\-responsive, it will
+any new work. If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
 \fBFAIL\fR, \fBFAILING\fR nodes).
@@ -1026,7 +1026,7 @@ one or more jobs are in the process of COMPLETING.
 .TP
 \fBCOMPLETING\fR
 All jobs associated with this node are in the process of
-COMPLETING.  This node state will be removed when
+COMPLETING. This node state will be removed when
 all of the job's processes have terminated and the Slurm
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR(5) man page for
@@ -1047,7 +1047,7 @@ and \fBSlurmdTimeout\fR parameter descriptions in the
 .TP
 \fBDRAINED\fR
 The node is unavailable for use per system administrator
-request.  See the \fBupdate node\fR command in the
+request. See the \fBupdate node\fR command in the
 \fBscontrol\fR(1) man page or the \fBslurm.conf\fR(5) man page
 for more information.
 .IP
@@ -1329,7 +1329,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

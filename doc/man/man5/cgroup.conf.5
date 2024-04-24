@@ -87,8 +87,8 @@ the job/step exceeds the hard limit, then it might trigger Out Of Memory (OOM)
 events (including oom\-kill) which will be logged to kernel log ring buffer
 (dmesg in Linux). Setting AllowedRAMSpace above 100 may cause system Out of
 Memory (OOM) events as it allows job/step to allocate more memory than
-configured to the nodes.  Reducing configured node available memory to avoid
-system OOM events is suggested.  Setting AllowedRAMSpace below 100 will result
+configured to the nodes. Reducing configured node available memory to avoid
+system OOM events is suggested. Setting AllowedRAMSpace below 100 will result
 in jobs receiving less memory than allocated and soft memory limit will set to
 the same value as the hard limit.
 Also see \fBConstrainRAMSpace\fR.
@@ -98,9 +98,9 @@ The default value is 100.
 .TP
 \fBAllowedSwapSpace\fR=<number>
 Constrain the job cgroup swap space to this percentage of the allocated
-memory.  The default value is 0, which means that RAM+Swap will be limited
+memory. The default value is 0, which means that RAM+Swap will be limited
 to \fBAllowedRAMSpace\fR. The supplied percentage may be expressed as a
-floating point number, e.g. 50.5.  If the limit is exceeded, the job steps
+floating point number, e.g. 50.5. If the limit is exceeded, the job steps
 will be killed and a warning message will be written to standard error.
 Also see \fBConstrainSwapSpace\fR.
 \fBNOTE\fR: Setting AllowedSwapSpace to 0 does not restrict the Linux kernel
@@ -128,7 +128,7 @@ The default value is "no".
 \fBConstrainRAMSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's RAM usage by setting
 the memory soft limit to the allocated memory and the hard limit to
-the allocated memory * \fBAllowedRAMSpace\fR.  The default value is "no", in
+the allocated memory * \fBAllowedRAMSpace\fR. The default value is "no", in
 which case the job's RAM limit will be set to its swap space limit if
 \fBConstrainSwapSpace\fR is set to "yes". CR_*_Memory must be set in slurm.conf
 for this parameter to take any effect.
@@ -279,7 +279,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

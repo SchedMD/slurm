@@ -32,10 +32,10 @@ MODIFIERS for more details).
 Note on file permissions:
 .LP
 The \fIslurm.conf\fR file must be readable by all users of Slurm, since it
-is used by many of the Slurm commands.  Other files that are defined
+is used by many of the Slurm commands. Other files that are defined
 in the \fIslurm.conf\fR file, such as log files and job accounting files,
 may need to be created/owned by the user "SlurmUser" to be successfully
-accessed.  Use the "chown" and "chmod" commands to set the ownership
+accessed. Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
 about the various files and directories used by Slurm.
@@ -55,7 +55,7 @@ Only used with systems using SlurmDBD, ignored otherwise.
 .TP
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
-on job submissions.  Valid options are any combination of
+on job submissions. Valid options are any combination of
 \fIassociations\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR,
 \fIsafe\fR, and \fIwckeys\fR, or \fIall\fR for all things (except nojobs
 and nosteps, which must be requested as well).
@@ -71,7 +71,7 @@ automatically be set.
 If \fInojobs\fR is set, \fInosteps\fR will automatically be set.
 
 By setting \fIassociations\fR, no new job is allowed to run unless a
-corresponding association exists in the system.  If \fIlimits\fR are
+corresponding association exists in the system. If \fIlimits\fR are
 enforced, users can be limited by association to whatever job size or run
 time limits are defined.
 
@@ -148,14 +148,14 @@ The list of permissible ciphers for SSL encryption.
 .TP
 \fBAccountingStoragePass\fR
 The password used to gain access to the database to store the
-accounting data.  Only used for database type storage plugins, ignored
-otherwise.  In the case of Slurm DBD (Database Daemon) with MUNGE
+accounting data. Only used for database type storage plugins, ignored
+otherwise. In the case of Slurm DBD (Database Daemon) with MUNGE
 authentication this can be configured to use a MUNGE daemon
 specifically configured to provide authentication between clusters
 while the default MUNGE daemon provides authentication within a
-cluster.  In that case, \fBAccountingStoragePass\fR should specify the
+cluster. In that case, \fBAccountingStoragePass\fR should specify the
 named port to be used for communications with the alternate MUNGE
-daemon (e.g.  "/var/run/munge/global.socket.2"). The default value is
+daemon (e.g. "/var/run/munge/global.socket.2"). The default value is
 NULL.
 .IP
 
@@ -208,11 +208,11 @@ gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 
 .TP
 \fBAccountingStorageType\fR
-The accounting storage mechanism type.  Acceptable values at
+The accounting storage mechanism type. Acceptable values at
 present "accounting_storage/slurmdbd".
 The "accounting_storage/slurmdbd" value indicates that accounting records
 will be written to the Slurm DBD, which manages an underlying MySQL
-database. See "man slurmdbd" for more information.  When this is not set it
+database. See "man slurmdbd" for more information. When this is not set it
 indicates that account records are not maintained.
 .IP
 
@@ -403,7 +403,7 @@ acct_gather.conf file.
 \fBAllowSpecResourcesUsage\fR
 If set to "YES", Slurm allows individual jobs to override node's configured
 CoreSpecCount value. For a job to take advantage of this feature,
-a command line option of \-\-core\-spec must be specified.  The default
+a command line option of \-\-core\-spec must be specified. The default
 value for this option is "YES" for Cray systems and "NO" for other system types.
 .IP
 
@@ -418,7 +418,7 @@ will permit for communication. Acceptable values at present include
 should only be visible to the SlurmUser and root. It is not suggested to place
 the jwt_hs256.key on any nodes but the controller running \fBslurmctld\fR.
 \fIauth/jwt\fR can be activated by the presence of the \fISLURM_JWT\fR
-environment variable.  When activated, it will override the default
+environment variable. When activated, it will override the default
 \fBAuthType\fR.
 .IP
 
@@ -472,7 +472,7 @@ Default: (disabled)
 \fBAuthInfo\fR
 Additional information to be used for authentication of communications
 between the Slurm daemons (slurmctld and slurmd) and the Slurm
-clients.  The interpretation of this option is specific to the
+clients. The interpretation of this option is specific to the
 configured \fBAuthType\fR.
 Multiple options may be specified in a comma\-delimited list.
 If not specified, the default authentication information will be used.
@@ -544,7 +544,7 @@ The backup controller recovers state information from the
 \fBStateSaveLocation\fR directory, which must be readable and writable from both
 the primary and backup controllers.
 While not essential, it is recommended that you specify a backup controller.
-See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
+See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 .IP
 
 .TP
@@ -668,7 +668,7 @@ The above will result in a user defined default for each of their jobs of
 .TP
 \fBClusterName\fR
 The name by which this Slurm managed cluster is known in the
-accounting database.  This is needed distinguish accounting records
+accounting database. This is needed distinguish accounting records
 when multiple clusters report to the same database. Because of limitations
 in some databases, any upper case letters in the name will be silently mapped
 to lower case. In order to avoid confusion, it is recommended that the name
@@ -685,7 +685,7 @@ Comma\-separated options identifying communication options.
 \fBblock_null_hash\fR
 Require all Slurm authentication tokens to include a newer (20.11.9 and
 21.08.8) payload that provides an additional layer of security against
-credential replay attacks.  This option should only be enabled once all Slurm
+credential replay attacks. This option should only be enabled once all Slurm
 daemons have been upgraded to 20.11.9/21.08.8 or newer, and all jobs that were
 started before the upgrade have been completed.
 .IP
@@ -2045,7 +2045,7 @@ Acceptable values include:
 .TP 24
 \fBbatch_step_set_cpu_freq\fR
 Set the cpu frequency for the batch step from given \-\-cpu\-freq, or
-slurm.conf CpuFreqDef, option.  By default only steps started with srun will
+slurm.conf CpuFreqDef, option. By default only steps started with srun will
 utilize the cpu freq setting options.
 
 \fBNOTE\fR: If you are using srun to launch your steps inside a batch script
@@ -2278,7 +2278,7 @@ When communication to the SlurmDBD is not possible the slurmctld will queue
 messages meant to processed when the SlurmDBD is available again.
 In order to avoid running out of memory the slurmctld will only queue so many
 messages. The default value is 10000, or \fBMaxJobCount\fR * 2 + Node Count
-* 4, whichever is greater.  The value can not be less than 10000.
+* 4, whichever is greater. The value can not be less than 10000.
 .IP
 
 .TP
@@ -2476,7 +2476,7 @@ Location of the config file for Slurm stackable plugins that use
 the Stackable Plugin Architecture for Node job (K)control (SPANK).
 This provides support for a highly configurable set of plugins to
 be called before and/or after execution of each task spawned as
-part of a user's job step.  Default location is "plugstack.conf"
+part of a user's job step. Default location is "plugstack.conf"
 in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
 .IP
@@ -2751,18 +2751,18 @@ cluster) in determining job priority.
 The record of usage will be decayed over time, with half of the original value
 cleared at age \fBPriorityDecayHalfLife\fR.
 If set to 0 no decay will be applied.
-This is helpful if you want to enforce hard time limits per association.  If
+This is helpful if you want to enforce hard time limits per association. If
 set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
 Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
-or days\-hr).  The default value is 7\-0 (7 days).
+or days\-hr). The default value is 7\-0 (7 days).
 .IP
 
 .TP
 \fBPriorityFavorSmall\fR
 Specifies that small jobs should be given preferential scheduling priority.
 Applicable only if PriorityType=priority/multifactor.
-Supported values are "YES" and "NO".  The default value is "NO".
+Supported values are "YES" and "NO". The default value is "NO".
 .IP
 
 .TP
@@ -2854,7 +2854,7 @@ priority. For example, a value of 30 minutes would result in all jobs over
 30 minutes old would get the same age\-based priority.
 Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
-or days\-hr).  The default value is 7\-0 (7 days).
+or days\-hr). The default value is 7\-0 (7 days).
 .IP
 
 .TP
@@ -2915,10 +2915,10 @@ When not FIFO scheduling, jobs are prioritized in the following order:
 
 .TP
 \fBPriorityUsageResetPeriod\fR
-At this interval the usage of associations will be reset to 0.  This is used
-if you want to enforce hard limits of time usage per association.  If
+At this interval the usage of associations will be reset to 0. This is used
+if you want to enforce hard limits of time usage per association. If
 PriorityDecayHalfLife is set to be 0 no decay will happen and this is the
-only way to reset the usage accumulated by running jobs.  By default this is
+only way to reset the usage accumulated by running jobs. By default this is
 turned off and it is advised to use the PriorityDecayHalfLife option to avoid
 not having anything running on your cluster, but if your schema is set up to
 only allow certain amounts of time on your system this is the way to do it.
@@ -3133,8 +3133,8 @@ the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
 specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
 than one prolog script is configured, they are executed in reverse alphabetical
 order (z-a -> Z-A -> 9-0). The slurmd executes the prolog before starting
-the first job step.  The prolog script or scripts may be used to purge files,
-enable user login, etc.  By default there is no prolog. Any configured script
+the first job step. The prolog script or scripts may be used to purge files,
+enable user login, etc. By default there is no prolog. Any configured script
 is expected to complete execution quickly (in less time than
 \fBMessageTimeout\fR).
 If the prolog fails (returns a non\-zero exit code), this will result in the
@@ -3199,8 +3199,8 @@ allocation completes the prolog.
 
 .TP
 \fBNoHold\fR
-If set, the Alloc flag should also be set.  This will allow for salloc to not
-block until the prolog is finished on each node.  The blocking will happen when
+If set, the Alloc flag should also be set. This will allow for salloc to not
+block until the prolog is finished on each node. The blocking will happen when
 steps reach the slurmd and before any execution has happened in the step.
 This is a much faster way to work and if using srun to launch your tasks you
 should use this flag. This flag cannot be combined with the Contain or X11
@@ -3362,7 +3362,7 @@ The maximum number of processes available
 
 .TP
 \fBRSS\fR
-The maximum resident set size.  Note that this only has effect with Linux
+The maximum resident set size. Note that this only has effect with Linux
 kernels 2.4.30 or older or BSD.
 .IP
 
@@ -3377,7 +3377,7 @@ The maximum stack size
 A comma\-separated list of resource limit names.
 By default, all resource limits will be propagated, (as described by
 the \fBPropagateResourceLimits\fR parameter), except for the limits
-appearing in this list.   The user can override this by specifying which
+appearing in this list. The user can override this by specifying which
 resource limits to propagate with the sbatch or srun "\-\-propagate" option.
 See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 .IP
@@ -3402,8 +3402,8 @@ reconfig" command is issued. Currently the options are:
 \fBKeepPartInfo\fR
 If set, an "scontrol reconfig" command will maintain the in\-memory
 value of partition "state" and other parameters that may have been
-dynamically updated by "scontrol update".  Partition information in
-the slurm.conf file will be merged with in\-memory data.  This flag
+dynamically updated by "scontrol update". Partition information in
+the slurm.conf file will be merged with in\-memory data. This flag
 supersedes the KeepPartState flag.
 .IP
 
@@ -3412,7 +3412,7 @@ supersedes the KeepPartState flag.
 If set, an "scontrol reconfig" command will preserve only the current
 "state" value of in\-memory partitions and will reset all other
 parameters of the partitions that may have been dynamically updated by
-"scontrol update" to the values from the slurm.conf file.  Partition
+"scontrol update" to the values from the slurm.conf file. Partition
 information in the slurm.conf file will be merged with in\-memory
 data.
 .IP
@@ -3574,7 +3574,7 @@ etc. are equal to or greater than the values configured in slurm.conf.
 .TP
 \fB2\fR
 A DOWN node will become available for use upon registration with a
-valid configuration.  The node could have been set DOWN for any reason.
+valid configuration. The node could have been set DOWN for any reason.
 A node registers with a valid configuration if its memory, GRES, CPU count,
 etc. are equal to or greater than the values configured in slurm.conf.
 .RE
@@ -3790,7 +3790,7 @@ The maximum number of jobs per user to attempt starting with the backfill
 scheduler for ALL partitions.
 One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
-to start.  This is similar to the MAXIJOB limit in Maui.
+to start. This is similar to the MAXIJOB limit in Maui.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
 \fBbf_max_job_user_part=#\fR options.
@@ -4158,7 +4158,7 @@ controller resides on an external Cray node.
 .TP
 \fBno_env_cache\fR
 If used, any job started on node that fails to load the env from a node will
-fail instead of using the cached env.  This will also implicitly imply the
+fail instead of using the cached env. This will also implicitly imply the
 requeue_setup_env_fail option as well.
 .IP
 
@@ -4864,14 +4864,14 @@ Allow any user able to run in a reservation to delete it.
 During startup, slurmctld looks up the address for each compute node in the
 system. On large systems this can cause considerable delay, this option permits
 the slurmctld to concurrently handle the lookup calls and can reduce system
-startup time considerably.  The default value is 1. Maximum permitted value is
+startup time considerably. The default value is 1. Maximum permitted value is
 64.
 .RE
 .IP
 
 .TP
 \fBSlurmctldPidFile\fR
-Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon
+Fully qualified pathname of a file into which the \fBslurmctld\fR daemon
 may write its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmctld.pid".
 .IP
@@ -4907,7 +4907,7 @@ This program is executed when a slurmctld daemon running as a backup server
 becomes the primary server. By default no program is executed.
 When using virtual IP addresses to manage High Available Slurm services,
 this program can be used to add the IP address to an interface (and optionally
-try to kill the unresponsive  slurmctld daemon and flush the ARP caches on
+try to kill the unresponsive slurmctld daemon and flush the ARP caches on
 nodes on the local Ethernet fabric).
 See also the related "SlurmctldPrimaryOffProg" parameter.
 .IP
@@ -5047,7 +5047,7 @@ Log errors and verbose informational messages and even more debugging messages
 
 .TP
 \fBSlurmdLogFile\fR
-Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's
+Fully qualified pathname of a file into which the \fBslurmd\fR daemon's
 logs are written.
 The default value is none (performs logging via syslog).
 The first "%h" within the name is replaced with the hostname on which the
@@ -5112,7 +5112,7 @@ container.
 
 .TP
 \fBSlurmdPidFile\fR
-Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write
+Fully qualified pathname of a file into which the \fBslurmd\fR daemon may write
 its process id. This may be used for automated signal processing.
 The first "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
@@ -5155,7 +5155,7 @@ The slurmd daemon will log events to the syslog file at the specified
 level of detail. If not set, the slurmd daemon will log to syslog at
 level \fBfatal\fR, unless there is no \fBSlurmdLogFile\fR and it is running
 in the background, in which case it will log to syslog at the level specified
-by \fBSlurmdDebug\fR  (at \fBfatal\fR in the case that \fBSlurmdDebug\fR
+by \fBSlurmdDebug\fR (at \fBfatal\fR in the case that \fBSlurmdDebug\fR
 is set to \fBquiet\fR) or it is run in the foreground, when it will be set to
 quiet.
 .IP
@@ -5273,8 +5273,8 @@ The default value is "root".
 .TP
 \fBSrunEpilog\fR
 Fully qualified pathname of an executable to be run by srun following
-the completion of a job step.  The command line arguments for the
-executable will be the command and arguments of the job step.  This
+the completion of a job step. The command line arguments for the
+executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-epilog\fR
 parameter. Note that while the other "Epilog" executables (e.g.,
 TaskEpilog) are run by slurmd on the compute nodes where the tasks are
@@ -5314,8 +5314,8 @@ srun \-N 200      will use 12 listening ports.
 .TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by srun prior to
-the launch of a job step.  The command line arguments for the
-executable will be the command and arguments of the job step.  This
+the launch of a job step. The command line arguments for the
+executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-prolog\fR
 parameter. Note that while the other "Prolog" executables (e.g.,
 TaskProlog) are run by slurmd on the compute nodes where the tasks are
@@ -5853,8 +5853,8 @@ man page
 
 .TP
 \fBTrackWCKey\fR
-Boolean yes or no.  Used to set display and track of the Workload
-Characterization Key.  Must be set to track correct wckey usage.
+Boolean yes or no. Used to set display and track of the Workload
+Characterization Key. Must be set to track correct wckey usage.
 \fBNOTE\fR: You must also set TrackWCKey in your slurmdbd.conf file to create
 historical usage reports.
 .IP
@@ -6027,7 +6027,7 @@ Multiple node names may be comma separated (e.g. "alpha,beta,gamma")
 and/or a simple node range expression may optionally be used to
 specify numeric ranges of nodes to avoid building a configuration
 file with large numbers of entries.
-The node range expression can contain one  pair of square brackets
+The node range expression can contain one pair of square brackets
 with a sequence of comma\-separated numbers and/or ranges of numbers
 separated by a "\-" (e.g. "linux[0\-64,128]", or "lx[15,18,32\-33]").
 Note that the numeric ranges can include one or more leading
@@ -6048,7 +6048,7 @@ Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), or any valid domain name associated with the host
 through the host database (/etc/hosts) or DNS, depending on the resolver
-settings.  Note that if the short form of the hostname is not used, it
+settings. Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
@@ -6073,7 +6073,7 @@ Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), or any valid domain name associated with the host
 through the host database (/etc/hosts) or DNS, depending on the resolver
-settings.  Note that if the short form of the hostname is not used, it
+settings. Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 A node range expression can be used to specify a set of nodes.
@@ -6129,7 +6129,7 @@ Isolation of slurmd from user jobs may improve application performance.
 A job can use these cores if AllowSpecResourcesUsage=yes and the user
 explicitly requests less than the configured CoreSpecCount.
 If this option and \fBCpuSpecList\fR are both designated for a
-node, an error is generated.  For information on the algorithm used by Slurm
+node, an error is generated. For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
 ( https://slurm.schedmd.com/core_spec.html ).
 .IP
@@ -6509,7 +6509,7 @@ Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), or any valid domain name associated with the host
 through the host database (/etc/hosts) or DNS, depending on the resolver
-settings.  Note that if the short form of the hostname is not used, it
+settings. Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 If the \fBFrontendName\fR is "DEFAULT", the values specified
@@ -7255,7 +7255,7 @@ The \fBShared\fR configuration parameter has been replaced by the
 
 .TP
 \fBState\fR
-State of partition or availability for use.  Possible values
+State of partition or availability for use. Possible values
 are "UP", "DOWN", "DRAIN" and "INACTIVE". The default value is "UP".
 See also the related "Alternate" keyword.
 .IP
@@ -7367,12 +7367,12 @@ for each job) plus \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR
 Explicitly write output and error messages to an appropriate location
 if you wish to preserve that information.
 
-\fBNOTE\fR:  By default the Prolog script is ONLY run on any individual
+\fBNOTE\fR: By default the Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation. It does not
-run the Prolog immediately when an allocation is granted.  If no job steps
+run the Prolog immediately when an allocation is granted. If no job steps
 from an allocation are run on a node, it will never run the Prolog for that
 allocation. This Prolog behavior can be changed by the
-\fBPrologFlags\fR parameter.  The Epilog, on the other hand, always
+\fBPrologFlags\fR parameter. The Epilog, on the other hand, always
 runs on every node of an allocation when the allocation is released.
 
 If the Epilog fails (returns a non\-zero exit code), this will result in the
@@ -7895,7 +7895,7 @@ without preserving jobs).
 .LP
 Log files and job accounting files
 may need to be created/owned by the "SlurmUser" uid to be successfully
-accessed.  Use the "chown" and "chmod" commands to set the ownership
+accessed. Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
 about the various files and directories used by Slurm.
@@ -7952,7 +7952,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "FILES"

@@ -31,7 +31,7 @@ Set the daemon's nice value to the specified value, typically a negative number.
 \fB\-R[comma separated cluster name list]\fR
 Reset the lft and rgt values of the associations in the given cluster list.
 Lft and rgt values are used to distinguish hierarchical groups in the slurm
-accounting database.  This option should be very rarely used.
+accounting database. This option should be very rarely used.
 .IP
 
 .TP
@@ -57,8 +57,8 @@ written to the current working directory.
 Otherwise if \fBLogFile\fR in "slurmdbd.conf" is a fully qualified
 path name (starting with a slash), the core file will be written to
 the same directory as the log file, provided SlurmUser has write
-permission on the directory.  Otherwise the core file will be written
-to "/var/tmp/" as a last resort.  If neither of the above directories
+permission on the directory. Otherwise the core file will be written
+to "/var/tmp/" as a last resort. If neither of the above directories
 have write permission for SlurmUser, no core file will be produced.
 
 .SH "SIGNALS"
@@ -71,7 +71,7 @@ finish.
 
 .TP
 \fBSIGABRT\fR
-\fBslurmdbd\fR will perform a core dump, then exit.  In\-progress operations
+\fBslurmdbd\fR will perform a core dump, then exit. In\-progress operations
 are killed.
 .IP
 
@@ -82,7 +82,7 @@ Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
 
 .TP
 \fBSIGUSR2\fR
-Reread the log level from the configs, and then reopen the log file.  This
+Reread the log level from the configs, and then reopen the log file. This
 should be used when setting up \fBlogrotate\fR(8).
 .IP
 
@@ -94,7 +94,7 @@ These signals are explicitly ignored.
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
 configuration parameters using a distinct configuration file
-(e.g. timeouts).  However, this special configuration file will not be
+(e.g. timeouts). However, this special configuration file will not be
 used by the \fBslurmd\fR daemon or the Slurm programs, unless you
 specifically tell each of them to use it. If you desire changing
 communication ports, the location of the temporary file system, or
@@ -117,7 +117,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

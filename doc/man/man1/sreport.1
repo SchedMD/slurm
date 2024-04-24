@@ -85,15 +85,15 @@ reports except the job reports, which can only support a single TRES name, or
 The "Reported" Billing TRES is calculated from the largest Billing TRES of each
 node multiplied by the time frame. For example, if a node is part of multiple
 partitions and each has a different TRESBillingWeights defined the Billing TRES
-for the node will be the highest of the partitions.  If TRESBillingWeights is
+for the node will be the highest of the partitions. If TRESBillingWeights is
 not defined on any partition for a node then the Billing TRES will be equal to
 the number of CPUs on the node.
 
 TRES node usage is no longer reported in percent format or in Cluster
-Utilization.  Please use TRES CPU instead.
+Utilization. Please use TRES CPU instead.
 The main issue with using node is in most configurations multiple jobs are able
-to run on the same node.  This makes TRES node accounting count the same node
-multiple times in the same period.  In exclusive node configurations, CPU
+to run on the same node. This makes TRES node accounting count the same node
+multiple times in the same period. In exclusive node configurations, CPU
 accounting returns the same usage node accounting would.
 .IP
 
@@ -266,9 +266,9 @@ in the slurmdbd log stating: "We have more allocated time than is possible."
 .TP
 .B cluster AccountUtilizationByUser
 This report will display account utilization as it appears on the
-hierarchical tree.  Starting with the specified account or the
+hierarchical tree. Starting with the specified account or the
 root account by default this report will list the underlying
-usage with a sum on each level.  Use the 'tree' option to span
+usage with a sum on each level. Use the 'tree' option to span
 the tree for better visibility.
 
 \fBNOTE\fR: Idle reservation time will be split evenly among accounts/users
@@ -346,7 +346,7 @@ Note: The default view for the "Cluster Utilization" report includes the
 following fields: Cluster, Allocated, Down, PlannedDown, Idle, Planned,
 Reported. You can include additional fields like OverCommitted and TresCount
 fields with the \fBFormat\fP option. The TresName will also be included if
-using the \fB\-T,  \-\-tres <tres_names>\fR option.
+using the \fB\-T, \-\-tres <tres_names>\fR option.
 .RE
 .IP
 
@@ -359,8 +359,8 @@ each user on each cluster.
 .TP
 .B job SizesByAccount
 This report will display the amount of time used for job ranges
-specified by the 'grouping=' option.  Only a single level in the tree
-is displayed defaulting to the root dir.  If you specify other
+specified by the 'grouping=' option. Only a single level in the tree
+is displayed defaulting to the root dir. If you specify other
 accounts with the 'account=' option sreport will use those accounts as
 the root account and you will receive the aggregated totals of each listed
 account plus their sub accounts.
@@ -411,7 +411,7 @@ Use all monitored clusters. Default is local cluster.
 
 .TP
 .B Clusters=<OPT>
-List of clusters to include in report.  Default is local cluster.
+List of clusters to include in report. Default is local cluster.
 .IP
 
 .TP
@@ -438,12 +438,12 @@ When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
 e.g. format=name%30 will print 30 characters of field name right
-justified.  A \-30 will print 30 characters left justified.
+justified. A \-30 will print 30 characters left justified.
 .IP
 
 .TP
 .B Start=<OPT>
-Period start for report.  Default is 00:00:00 of previous day.
+Period start for report. Default is 00:00:00 of previous day.
 Valid time formats are...
 .sp
 HH:MM[:SS] [AM|PM]
@@ -479,7 +479,7 @@ accounts as they are in the hierarchy.
 .TP
 .B Users=<OPT>
 When used with any report other than Utilization, List of users to
-include in report.  Default is all.
+include in report. Default is all.
 .IP
 
 .TP
@@ -518,19 +518,19 @@ separate line without any hierarchy.
 
 .TP
 .B GID=<OPT>
-List of group ids to include in report.  Default is all.
+List of group ids to include in report. Default is all.
 .IP
 
 .TP
 .B Grouping=<OPT>
-Comma separated list of size groupings.   (e.g. 50,100,150 would group
-job cpu count 1\-49, 50\-99, 100\-149, > 150).  grouping=individual will
+Comma separated list of size groupings. (e.g. 50,100,150 would group
+job cpu count 1\-49, 50\-99, 100\-149, > 150). grouping=individual will
 result in a single column for each job size found.
 .IP
 
 .TP
 .B Jobs=<OPT>
-List of jobs/steps to include in report.  Default is all.
+List of jobs/steps to include in report. Default is all.
 .IP
 
 .TP
@@ -540,7 +540,7 @@ Only show jobs that ran on these nodes. Default is all.
 
 .TP
 .B Partitions=<OPT>
-List of partitions jobs ran on to include in report.  Default is all.
+List of partitions jobs ran on to include in report. Default is all.
 .IP
 
 .TP
@@ -551,13 +551,13 @@ of time used.
 
 .TP
 .B Users=<OPT>
-List of users jobs to include in report.  Default is all.
+List of users jobs to include in report. Default is all.
 .IP
 
 .TP
 .B Wckeys=<OPT>
-List of wckeys to use for the report.  Default is all.  The
-SizesbyWckey report all users summed together.  If you want only
+List of wckeys to use for the report. Default is all. The
+SizesbyWckey report all users summed together. If you want only
 certain users specify them with the Users= option.
 .RE
 .IP
@@ -588,19 +588,19 @@ List of accounts to use for the report. Default is all.
 
 .TP
 .B Group
-Group all accounts together for each user.  Default is a separate
+Group all accounts together for each user. Default is a separate
 entry for each user and account reference.
 .IP
 
 .TP
 .B TopCount=<OPT>
-Used in the TopUsage report.  Change the number of users displayed.
+Used in the TopUsage report. Change the number of users displayed.
 Default is 10.
 .IP
 
 .TP
 .B Users=<OPT>
-List of users jobs to include in report.  Default is all.
+List of users jobs to include in report. Default is all.
 .RE
 .IP
 
@@ -794,7 +794,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

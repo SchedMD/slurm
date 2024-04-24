@@ -25,7 +25,7 @@ The overall configuration parameters available include:
 
 .TP
 \fBAllowNoDefAcct\fR
-Remove requirement for users to have a default account.  Boolean, yes to turn
+Remove requirement for users to have a default account. Boolean, yes to turn
 on, no (default) to enforce default accounts.
 .IP
 
@@ -39,14 +39,14 @@ to use the numbers as percentages instead.
 .TP
 \fBArchiveDir\fR
 If ArchiveScript is not set the slurmdbd will generate a file that can be
-read in anytime with sacctmgr load filename.  This directory is where the
+read in anytime with sacctmgr load filename. This directory is where the
 file will be placed after a purge event has happened and archive for that
-element is set to true.  Default is /tmp.  The format for this files name is
+element is set to true. Default is /tmp. The format for this files name is
 .na
 $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
 .ad
 We limit archive files to 50000 records per file. If more than 50000 records
-exist during that time period, they will be written to a new file.  Subsequent
+exist during that time period, they will be written to a new file. Subsequent
 archive files during the same time period will have ".<number>" appended
 to the file, for example .2, with the number increasing by one for each file in
 the same time period.
@@ -54,27 +54,27 @@ the same time period.
 
 .TP
 \fBArchiveEvents\fR
-When purging events also archive them.  Boolean, yes to archive event data,
-no otherwise.  Default is no.
+When purging events also archive them. Boolean, yes to archive event data,
+no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveJobs\fR
-When purging jobs also archive them.  Boolean, yes to archive job data,
-no otherwise.  Default is no.
+When purging jobs also archive them. Boolean, yes to archive job data,
+no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveResvs\fR
-When purging reservations also archive them.  Boolean, yes to archive
-reservation data, no otherwise.  Default is no.
+When purging reservations also archive them. Boolean, yes to archive
+reservation data, no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveScript\fR
 This script can be executed every time a rollup happens (every hour,
-day and month), depending on the Purge*After options.  This script is used
-to transfer accounting records out of the database into an archive.  It is
+day and month), depending on the Purge*After options. This script is used
+to transfer accounting records out of the database into an archive. It is
 used in place of the internal process used to archive objects.
 The script is executed with no arguments, and the following environment
 variables are set.
@@ -133,26 +133,26 @@ Time of last suspend start to archive.
 
 .TP
 \fBArchiveSteps\fR
-When purging steps also archive them.  Boolean, yes to archive step data,
-no otherwise.  Default is no.
+When purging steps also archive them. Boolean, yes to archive step data,
+no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveSuspend\fR
-When purging suspend data also archive it.  Boolean, yes to archive
-suspend data, no otherwise.  Default is no.
+When purging suspend data also archive it. Boolean, yes to archive
+suspend data, no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveTXN\fR
-When purging transaction data also archive it.  Boolean, yes to archive
-transaction data, no otherwise.  Default is no.
+When purging transaction data also archive it. Boolean, yes to archive
+transaction data, no otherwise. Default is no.
 .IP
 
 .TP
 \fBArchiveUsage\fR
 When purging usage data (Cluster, Association and WCKey) also archive it.
-Boolean, yes to archive transaction data, no otherwise.  Default is no.
+Boolean, yes to archive transaction data, no otherwise. Default is no.
 .IP
 
 .TP
@@ -248,15 +248,15 @@ Use Slurm's internal authentication plugin.
 
 .TP
 \fBCommitDelay\fR
-How many seconds between commits on a connection from a Slurmctld.  This
-speeds up inserts into the database dramatically.  If you are running a very
-high throughput of jobs you should consider setting this.  In testing, 1 second
-improves the slurmdbd performance dramatically and reduces overhead.  There is
+How many seconds between commits on a connection from a Slurmctld. This
+speeds up inserts into the database dramatically. If you are running a very
+high throughput of jobs you should consider setting this. In testing, 1 second
+improves the slurmdbd performance dramatically and reduces overhead. There is
 a small probability of data loss though since this creates a window in which
 if the slurmdbd exits abnormally for any reason the data not
-committed could be lost.  While this situation should be very rare,
+committed could be lost. While this situation should be very rare,
 it does present an extremely small risk, but may be the only way to run in
-extremely heavy environments.  In all honesty, the risk is quite low, but still
+extremely heavy environments. In all honesty, the risk is quite low, but still
 present.
 .IP
 
@@ -305,7 +305,7 @@ The default value is 30 seconds.
 Name that \fBDbdHost\fR should be referred to in establishing a communications
 path. This name will be used as an argument to the getaddrinfo() function for
 identification. For example, "elx0000" might be used to designate the Ethernet
-address for node "lx0000".  By default the \fBDbdAddr\fR will be identical in
+address for node "lx0000". By default the \fBDbdAddr\fR will be identical in
 value to \fBDbdHost\fR.
 .IP
 
@@ -704,7 +704,7 @@ coordinator of, but can only see themselves when listing users.
 Events are purged from the database after this amount of time has passed since
 they ended.
 This includes node down times and such.
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -719,7 +719,7 @@ If not set (default), then event records are never purged.
 Individual job records are purged from the database after this amount of time
 has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -734,7 +734,7 @@ If not set (default), then job records are never purged.
 Individual reservation records are purged from the database after this amount
 of time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -749,7 +749,7 @@ If not set (default), then reservation records are never purged.
 Individual job step records are purged from the database after this amount of
 time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -764,7 +764,7 @@ If not set (default), then job step records are never purged.
 Individual job suspend records are purged from the database after this amount
 of time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -778,7 +778,7 @@ If not set (default), then suspend records are never purged.
 \fBPurgeTXNAfter\fR
 Individual transaction records are purged from the database after this amount
 of time has passed since they occurred.
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -792,7 +792,7 @@ If not set (default), then transaction records are never purged.
 \fBPurgeUsageAfter\fR
 Usage records (Cluster, Association and WCKey) are purged from the database
 after this amount of time has passed since they were created or last modified.
-The time is a numeric value and is a number of months.  If you want to purge
+The time is a numeric value and is a number of months. If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
 everything older than 12 hours).
@@ -820,8 +820,8 @@ user in this way, you must restart slurmctld.
 .TP
 \fBStorageBackupHost\fR
 Define the name of the backup host the database is running where we are going
-to store the data.  This can be viewed as a backup solution when the
-StorageHost is not responding.  It is up to the backup solution to enforce the
+to store the data. This can be viewed as a backup solution when the
+StorageHost is not responding. It is up to the backup solution to enforce the
 coherency of the accounting information between the two hosts. With clustered
 database solutions (active/passive HA), you would not need to use this feature.
 Default is none.
@@ -908,15 +908,15 @@ Time permitted for TCP connection to be established. Default value is 2 seconds.
 
 .TP
 \fBTrackSlurmctldDown\fR
-Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
-cluster as down when a slurmctld disconnects or is no longer reachable.  The
+Boolean yes or no. If set the slurmdbd will mark all idle resources on the
+cluster as down when a slurmctld disconnects or is no longer reachable. The
 default is no.
 .IP
 
 .TP
 \fBTrackWCKey\fR
-Boolean yes or no.  Used to set display and track of the Workload
-Characterization Key. Must be set to track wckey usage.  This must be set to
+Boolean yes or no. Used to set display and track of the Workload
+Characterization Key. Must be set to track wckey usage. This must be set to
 generate rolled up usage tables from WCKeys.
 \fBNOTE\fR: If TrackWCKey is set here and not in your various slurm.conf files
 all jobs will be attributed to their default WCKey.
@@ -970,7 +970,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "FILES"

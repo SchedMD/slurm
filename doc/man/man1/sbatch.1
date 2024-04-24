@@ -12,7 +12,7 @@ For more details about heterogeneous jobs see the document
 https://slurm.schedmd.com/heterogeneous_jobs.html
 
 .SH "DESCRIPTION"
-sbatch submits a batch script to Slurm.  The batch script may be given to
+sbatch submits a batch script to Slurm. The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
 sbatch will read in a script from standard input. The batch script may contain
 options preceded with "#SBATCH" before any executable commands in the script.
@@ -20,7 +20,7 @@ sbatch will stop processing further #SBATCH directives once the first
 non\-comment non\-whitespace line has been reached in the script.
 
 sbatch exits immediately after the script is successfully transferred to the
-Slurm controller and assigned a Slurm job ID.  The batch script is not
+Slurm controller and assigned a Slurm job ID. The batch script is not
 necessarily granted resources immediately, it may sit in the queue of pending
 jobs for some time before its required resources become available.
 
@@ -75,7 +75,7 @@ command.
 \fB\-\-acctg\-freq\fR=<\fIdatatype\fR>=<\fIinterval\fR>[,<\fIdatatype\fR>=<\fIinterval\fR>...]
 Define the job accounting and profiling sampling intervals in seconds.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in
-the slurm.conf file.  <\fIdatatype\fR>=<\fIinterval\fR> specifies the task
+the slurm.conf file. <\fIdatatype\fR>=<\fIinterval\fR> specifies the task
 sampling interval for the jobacct_gather plugin or a
 sampling interval for a profiling type by the
 acct_gather_profile plugin. Multiple
@@ -90,7 +90,7 @@ profiling by the acct_gather_profile plugin.
 .br
 \fBNOTE\fR: This frequency is used to monitor memory usage. If memory limits
 are enforced, the highest frequency a user can request is what is configured
-in the slurm.conf file.  It can not be disabled.
+in the slurm.conf file. It can not be disabled.
 .IP
 
 .TP
@@ -221,7 +221,7 @@ Notes on date/time specifications:
  \- Although the 'seconds' field of the HH:MM:SS time specification is
 allowed by the code, note that the poll time of the Slurm scheduler
 is not precise enough to guarantee dispatch of the job on the exact
-second.  The job will be eligible to start on the next poll
+second. The job will be eligible to start on the next poll
 following the specified time. The exact poll interval depends on the
 Slurm scheduler (e.g., 60 seconds with the default sched/builtin).
  \- If no time (HH:MM:SS) is specified, the default is (00:00:00).
@@ -249,10 +249,10 @@ features.
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.  Multiple cluster names may be comma separated.
+Clusters to issue commands to. Multiple cluster names may be comma separated.
 The job will be submitted to the one cluster providing the earliest expected
 job initiation time. The default value is the current cluster. A value of
-\(aq\fIall\fR' will query to run on all clusters.  Note the
+\(aq\fIall\fR' will query to run on all clusters. Note the
 \fB\-\-export\fR option to control environment variables exported
 between clusters.
 Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
@@ -436,7 +436,7 @@ the --exclusive option.
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
 Restrict node selection to nodes with at least the specified number of
-cores per socket.  See additional information under \fB\-B\fR option
+cores per socket. See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
@@ -450,7 +450,7 @@ Request that job steps initiated by srun commands inside this sbatch script
 be run at some requested frequency if possible, on the CPUs selected
 for the step on the compute node(s).
 
-\fBp1\fR can be  [#### | low | medium | high | highm1] which will set the
+\fBp1\fR can be [#### | low | medium | high | highm1] which will set the
 frequency scaling_speed to the corresponding value, and set the frequency
 scaling_governor to UserSpace. See below for definition of the values.
 
@@ -462,7 +462,7 @@ When \fBp2\fR is present, \fBp1\fR will be the minimum scaling frequency and
 \fBp2\fR will be the maximum scaling frequency. In that case the governor
 \fBp3\fR or CpuFreqDef cannot be UserSpace since it doesn't support a range.
 
-\fBp2\fR can be  [#### | medium | high | highm1]. p2 must be greater than p1 and
+\fBp2\fR can be [#### | medium | high | highm1]. p2 must be greater than p1 and
 is incompatible with UserSpace governor.
 
 \fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | SchedUtil |
@@ -545,7 +545,7 @@ step when \fB\-\-cpu\-freq\fR option is requested.
 This environment variable can also be used to supply the value for the
 CPU frequency request if it is set when the 'srun' command is issued.
 The \fB\-\-cpu\-freq\fR on the command line will override the
-environment variable value.  The form on the environment variable is
+environment variable value. The form on the environment variable is
 the same as the command line.
 See the \fBENVIRONMENT VARIABLES\fR
 section for a description of the SLURM_CPU_FREQ_REQ variable.
@@ -556,7 +556,7 @@ the requested value is outside the bounds of the legal frequencies, an
 error is logged, but the job step is allowed to continue.
 
 \fBNOTE\fR: Setting the frequency for just the CPUs of the job step
-implies that the tasks are confined to those CPUs.  If task
+implies that the tasks are confined to those CPUs. If task
 confinement (i.e. the task/affinity TaskPlugin is enabled, or the task/cgroup
 TaskPlugin is enabled with "ConstrainCores=yes" set in cgroup.conf) is not
 configured, this parameter is ignored.
@@ -564,7 +564,7 @@ configured, this parameter is ignored.
 \fBNOTE\fR: When the step completes, the frequency and governor of each
 selected CPU is reset to the previous values.
 
-\fBNOTE\fR: When submitting jobs with  the \fB\-\-cpu\-freq\fR option
+\fBNOTE\fR: When submitting jobs with the \fB\-\-cpu\-freq\fR option
 with linuxproc as the ProctrackType can cause jobs to run too quickly before
 Accounting is able to poll for job information. As a result not all of
 accounting information will be present.
@@ -581,13 +581,13 @@ Not compatible with the \fB\-\-cpus\-per\-task\fR option.
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Advise the Slurm controller that ensuing job steps will require \fIncpus\fR
-number of processors per task.  Without this option, the controller will
+number of processors per task. Without this option, the controller will
 just try to allocate one processor per task.
 
 For instance,
-consider an application that has 4 tasks, each requiring 3 processors.  If our
+consider an application that has 4 tasks, each requiring 3 processors. If our
 cluster is comprised of quad\-processors nodes and we simply ask for
-12 processors, the controller might give us only 3 nodes.  However, by using
+12 processors, the controller might give us only 3 nodes. However, by using
 the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
@@ -648,7 +648,7 @@ AND the completion of job 23. However:
 means that any of the conditions (afterok:20 OR afterok:21 OR afterany:23)
 will be enough to release the job.
 Many jobs can share the same dependency and these jobs may even belong to
-different  users. The  value may be changed after job submission using the
+different users. The value may be changed after job submission using the
 scontrol command.
 Dependencies on remote jobs are allowed in a federation.
 Once a job dependency fails due to the termination state of a preceding job,
@@ -751,7 +751,7 @@ that consecutive tasks share a node. For example, consider an
 allocation of three nodes each with two cpus. A four\-task block
 distribution request will distribute those tasks to the nodes with
 tasks one and two on the first node, task three on the second node,
-and task four on the third node.  Block distribution is the default
+and task four on the third node. Block distribution is the default
 behavior if the number of tasks exceeds the number of allocated nodes.
 .IP
 
@@ -788,9 +788,9 @@ https://slurm.schedmd.com/dist_plane.html
 The arbitrary method of distribution will allocate processes in\-order
 as listed in file designated by the environment variable
 SLURM_HOSTFILE. If this variable is listed it will override any
-other method specified.  If not set the method will default to block.
+other method specified. If not set the method will default to block.
 Inside the hostfile must contain at minimum the number of hosts
-requested and be one per line or comma separated.  If specifying a
+requested and be one per line or comma separated. If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
 .br
@@ -993,7 +993,7 @@ variables, and \fIARG1\fR=test.
 Example: \fB\-\-export\fR=ALL,EDITOR=/bin/emacs
 There are two possible outcomes for this example. If the caller has the
 \fIEDITOR\fR environment variable defined, then the job's environment will
-inherit the variable from the caller's environment.  If the caller doesn't
+inherit the variable from the caller's environment. If the caller doesn't
 have an environment variable defined for \fIEDITOR\fR, then the job's
 environment will use the value given by \fB\-\-export\fR.
 .RE
@@ -1004,11 +1004,11 @@ environment will use the value given by \fB\-\-export\fR.
 \fB\-\-export\-file\fR={<\fIfilename\fR>|<\fIfd\fR>}
 If a number between 3 and OPEN_MAX is specified as the argument to
 this option, a readable file descriptor will be assumed (STDIN and
-STDOUT are not supported as valid arguments).  Otherwise a filename is
-assumed.  Export environment variables defined in <\fIfilename\fR> or
+STDOUT are not supported as valid arguments). Otherwise a filename is
+assumed. Export environment variables defined in <\fIfilename\fR> or
 read from <\fIfd\fR> to the job's execution environment. The
 content is one or more environment variable definitions of the form
-NAME=value, each separated by a null character.  This allows the use
+NAME=value, each separated by a null character. This allows the use
 of special characters in environment definitions.
 .IP
 
@@ -1078,7 +1078,7 @@ Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
 If \fBsbatch\fR is run as root, and the \fB\-\-gid\fR option is used,
-submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
+submit the job with \fIgroup\fR's group access permissions. \fIgroup\fR
 may be the group name or the numerical group ID.
 .IP
 
@@ -1636,7 +1636,7 @@ Specify a minimum number of logical cpus/processors per node.
 \fB\-\-network\fR=<\fItype\fR>
 Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
-This option is supported when running Slurm on a Cray natively.  It is
+This option is supported when running Slurm on a Cray natively. It is
 used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
@@ -1646,24 +1646,24 @@ In this configuration supported values include:
 .TP 6
 \fBsystem\fR
 Use the system\-wide network performance counters. Only nodes requested
-will be marked in use for the job allocation.  If the job does not
+will be marked in use for the job allocation. If the job does not
 fill up the entire system the rest of the nodes are not
 able to be used by other jobs using NPC, if idle their state will appear as
-PerfCnts.  These nodes are still available for other jobs not using NPC.
+PerfCnts. These nodes are still available for other jobs not using NPC.
 .IP
 
 .TP
 \fBblade\fR
 Use the blade network performance counters. Only nodes requested
-will be marked in use for the job allocation.  If the job does not
+will be marked in use for the job allocation. If the job does not
 fill up the entire blade(s) allocated to the job those blade(s) are not
 able to be used by other jobs using NPC, if idle their state will appear as
-PerfCnts.  These nodes are still available for other jobs not using NPC.
+PerfCnts. These nodes are still available for other jobs not using NPC.
 .RE
 .IP
 
 In all cases the job allocation request \fBmust specify the
-\-\-exclusive option\fR.  Otherwise the request will be denied.
+\-\-exclusive option\fR. Otherwise the request will be denied.
 
 Also with any of these options steps are not allowed to share blades,
 so resources would remain idle inside an allocation if the step
@@ -1805,7 +1805,7 @@ value increases the priority, otherwise decreases it. The adjustment range is
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR[=off]
 Do not automatically terminate a job if one of the nodes it has been
-allocated fails.  The user will assume the responsibilities for fault\-tolerance
+allocated fails. The user will assume the responsibilities for fault\-tolerance
 should a node fail.
 The job allocation will not be revoked so the user may launch new
 job steps on the remaining nodes in their allocation.
@@ -1840,8 +1840,8 @@ parameter in slurm.conf can override this setting.
 .TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
 Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
-\fInode file\fR.  The node names of the list may also span multiple lines
-in the file.    Duplicate node names in the file will be ignored.
+\fInode file\fR. The node names of the list may also span multiple lines
+in the file. Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 .IP
@@ -1883,7 +1883,7 @@ partition, the job will be rejected.
 Note that the environment
 variable \fBSLURM_JOB_NUM_NODES\fR will be set to the count of nodes actually
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section
-for more information.  If \fB\-N\fR is not specified, the default
+for more information. If \fB\-N\fR is not specified, the default
 behavior is to allocate enough nodes to satisfy the requested resources as
 expressed by per\-job specification options, e.g. \fB\-n\fR, \fB\-c\fR and
 \fB--gpus\fR.
@@ -1950,9 +1950,9 @@ precedence and the \fB\-\-ntasks\-per\-node\fR will be treated as a
 Meant to be used with the \fB\-\-nodes\fR option.
 This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
-each node.  In some cases, it is more convenient to be able to
+each node. In some cases, it is more convenient to be able to
 request that no more than a specific number of tasks be invoked
-on each node.  Examples of this include submitting
+on each node. Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
@@ -2006,7 +2006,7 @@ one task per CPU.
 Normally, \fBsrun\fR will not allocate more than one process per CPU.
 By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
 process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
-permitted to execute per node.  \fBNOTE\fR: \fBMAX_TASKS_PER_NODE\fR is
+permitted to execute per node. \fBNOTE\fR: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 .IP
@@ -2034,7 +2034,7 @@ The values are separated by a semicolon. Errors will still be displayed.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
-Request a specific partition for the resource allocation.  If not specified,
+Request a specific partition for the resource allocation. If not specified,
 the default behavior is to allow the slurm controller to select the default
 partition as designated by the system administrator. If the job can use more
 than one partition, specify their names in a comma separate list and the one
@@ -2182,7 +2182,7 @@ The maximum stack size
 
 .TP
 \fB\-q\fR, \fB\-\-qos\fR=<\fIqos\fR>
-Request a quality of service for the job.  QOS values can be defined
+Request a quality of service for the job. QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
@@ -2247,7 +2247,7 @@ To have the signal sent at preemption time see the \fBsend_user_signal\fR
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
 Restrict node selection to nodes with at least the specified number of
-sockets.  See additional information under \fB\-B\fR option above when
+sockets. See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
@@ -2314,17 +2314,17 @@ was not specified) as one task per requested thread.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
-Set a limit on the total run time of the job allocation.  If the
+Set a limit on the total run time of the job allocation. If the
 requested time limit exceeds the partition's time limit, the job will
-be left in a PENDING state (possibly indefinitely).  The default time
-limit is the partition's default time limit.  When the time limit is reached,
-each task in each job step is sent SIGTERM followed by SIGKILL.  The
+be left in a PENDING state (possibly indefinitely). The default time
+limit is the partition's default time limit. When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL. The
 interval between signals is specified by the Slurm configuration
-parameter \fBKillWait\fR.  The \fBOverTimeLimit\fR configuration parameter may
-permit the job to run longer than scheduled.  Time resolution is one minute
+parameter \fBKillWait\fR. The \fBOverTimeLimit\fR configuration parameter may
+permit the job to run longer than scheduled. Time resolution is one minute
 and second values are rounded up to the next minute.
 
-A time limit of zero requests that no time limit be imposed.  Acceptable time
+A time limit of zero requests that no time limit be imposed. Acceptable time
 formats include "minutes", "minutes:seconds", "hours:minutes:seconds",
 "days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds".
 .IP
@@ -2502,8 +2502,8 @@ If a range of node counts is given, prefer the smaller count.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Increase the verbosity of sbatch's informational messages.  Multiple
-'\fB\-v\fR's will further increase sbatch's verbosity.  By default only
+Increase the verbosity of sbatch's informational messages. Multiple
+'\fB\-v\fR's will further increase sbatch's verbosity. By default only
 errors will be displayed.
 .IP
 
@@ -2542,14 +2542,14 @@ Do not begin execution until all nodes are ready for use.
 
 .TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
-Specify wckey to be used with job.  If TrackWCKey=no (default) in the
+Specify wckey to be used with job. If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
 .IP
 
 .TP
 \fB\-\-wrap\fR=<\fIcommand_string\fR>
 Sbatch will wrap the specified command string in a simple "sh" shell script,
-and submit that script to the slurm controller.  When \-\-wrap is used,
+and submit that script to the slurm controller. When \-\-wrap is used,
 a script name and arguments may not be specified on the command line; instead
 the sbatch\-generated wrapper script is used.
 .IP
@@ -3158,7 +3158,7 @@ Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
 
 .TP
 \fBSLURM_GTIDS\fR
-Global task IDs running on this node.  Zero  origin and comma separated.
+Global task IDs running on this node. Zero origin and comma separated.
 It is read internally by pmi if Slurm was built with pmi support. Leaving
 the variable set may cause problems when using external packages from
 within the job (Abaqus and Ansys have been known to have problems when
@@ -3337,8 +3337,8 @@ Set to \fB1\fR if \fB\-\-overcommit\fR was specified.
 
 .TP
 \fBSLURM_PRIO_PROCESS\fR
-The  scheduling priority (nice value) at the time of job submission.
-This value is  propagated  to the spawned processes.
+The scheduling priority (nice value) at the time of job submission.
+This value is propagated to the spawned processes.
 .IP
 
 .TP
@@ -3400,19 +3400,19 @@ job allocation.
 
 .TP
 \fBSLURM_TOPOLOGY_ADDR\fR
-This is set only if the  system  has  the  topology/tree  plugin
-configured.   The value will be set to the names network switches
-which  may be  involved  in  the  job's  communications from the
-system's top level switch down to the leaf switch and  ending  with
+This is set only if the system has the topology/tree plugin
+configured. The value will be set to the names network switches
+which may be involved in the job's communications from the
+system's top level switch down to the leaf switch and ending with
 node name. A period is used to separate each hardware component name.
 .IP
 
 .TP
 \fBSLURM_TOPOLOGY_ADDR_PATTERN\fR
-This is set only if the  system  has  the  topology/tree  plugin
-configured. The value will be set  component  types  listed   in
-SLURM_TOPOLOGY_ADDR.   Each  component will be identified as
-either "switch" or "node".  A period is  used  to separate each
+This is set only if the system has the topology/tree plugin
+configured. The value will be set component types listed in
+SLURM_TOPOLOGY_ADDR. Each component will be identified as
+either "switch" or "node". A period is used to separate each
 hardware component type.
 .IP
 
@@ -3494,7 +3494,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"

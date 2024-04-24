@@ -1,0 +1,117 @@
+.TH "ext_sensors.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+
+.SH "NAME"
+ext_sensors.conf \- Slurm configuration file for the external sensors plugin
+
+.SH "DESCRIPTION"
+
+\fBext_sensors.conf\fP is an ASCII file which defines parameters used by
+Slurm's external sensors plugins.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+
+.LP
+The following ext_sensors.conf parameters are defined to control data
+collection by the ext_sensors plugins. All of these parameters are optional.
+If a parameter is omitted, data collection of the omitted type is disabled.
+
+.TP
+\fBJobData\fR=\fBenergy\fR
+Specify the data types to be collected by the plugin for jobs/steps.
+.IP
+
+.TP
+\fBNodeData\fR=\fB[energy|temp][,temp|energy]\fR
+Specify the data types to be collected by the plugin for nodes.
+.IP
+
+.TP
+\fBSwitchData\fR=\fBenergy\fR
+Specify the data types to be collected by the plugin for switches.
+.IP
+
+.TP
+\fBColdDoorData\fR=\fBtemp\fR
+Specify the data types to be collected by the plugin for cold doors.
+.IP
+
+.TP
+\fBMinWatt\fR=\fB<number>\fR
+Minimum recorded power consumption, in watts.
+.IP
+
+.TP
+\fBMaxWatt\fR=\fB<number>\fR
+Maximum recorded power consumption, in watts.
+.IP
+
+.TP
+\fBMinTemp\fR=\fB<number>\fR
+Minimum recorded temperature, in Celsius.
+.IP
+
+.TP
+\fBMaxTemp\fR=\fB<number>\fR
+Maximum recorded temperature, in Celsius.
+.IP
+
+.TP
+\fBEnergyRRA\fR=\fB<name>\fR
+Energy RRA name.
+.IP
+
+.TP
+\fBTempRRA\fR=\fB<name>\fR
+Temperature RRA name.
+.IP
+
+.TP
+\fBEnergyPathRRD\fR=\fB<path>\fR
+Pathname of energy RRD file.
+.IP
+
+.TP
+\fBTempPathRRD\fR=\fB<patch>\fR
+Pathname of temperature RRD file.
+.IP
+
+.SH "EXAMPLE"
+.nf
+###
+# Slurm external sensors plugin configuration file
+###
+JobData=energy
+NodeData=energy,temp
+SwitchData=energy
+ColdDoorData=temp
+#
+.fi
+
+.SH "COPYING"
+Copyright (C) 2013 Bull
+Copyright (C) 2013\-2022 SchedMD LLC.
+Produced at Bull (cf, DISCLAIMER).
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

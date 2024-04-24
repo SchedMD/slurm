@@ -27,7 +27,7 @@ run no more frequently than requested, but are managed by setting the
 BeginTime field to the next valid iteration, and are then subject to queuing
 delays. The exact behavior will depend on the local site configuration.
 Because of this method of implementation, the next job in the series won't be
-submitted until after the previous job has completed.  For example, if you
+submitted until after the previous job has completed. For example, if you
 have a monitoring job that is scheduled to run every minute on a busy
 system, if the job scheduled to start at 08:20:00 isn't able to start until
 08:20:30 and it runs for 35 seconds then the job at 08:21:00 will be skipped
@@ -54,14 +54,14 @@ day of week     0\-7 (0 and 7 are Sunday, or use name)
 .LP
 A field can contain an asterisk (*) which means that it's valid for each of
 the allowed values for the given time period. Ranges are allowed where a range
-is two numbers with a hyphen between them.  The second number must be greater
+is two numbers with a hyphen between them. The second number must be greater
 than the first. Lists are allowed, with commas separating the numbers or
 ranges being separated. Step values can be specified by entering a slash
 (/), followed by the step value, causing the job to run at the specified
 interval appropriate for that field.
 
 .LP
-Custom variables can be defined as within a regular shell script.  The `$'
+Custom variables can be defined as within a regular shell script. The `$'
 character introduces variable expansion. Simple parameter expansion is the only
 currently accepted expansion variant (i.e. ${parameter} or ${parameter:\-word}
 are not supported). The variable expansion will only occur within \fBscrontab\fR
@@ -102,7 +102,7 @@ account.
 
 .SH "SCRONTAB OPTIONS"
 \fBscrontab\fR allows you to use shortcuts to specify some common time
-intervals for the specified script to run.  These include the following:
+intervals for the specified script to run. These include the following:
 
 .TP
 \fB@yearly\fR | \fB@annually\fR
@@ -230,7 +230,7 @@ any later version.
 .LP
 Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
