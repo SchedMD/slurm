@@ -1381,15 +1381,18 @@ typedef enum {
  *  Function prototype for operating on each job that matches
  *  Returns control requested for processing
  */
-typedef foreach_job_by_id_control_t (*JobForEachFunc)(job_record_t *job_ptr,
-						      void *arg);
+typedef foreach_job_by_id_control_t (*JobForEachFunc)(
+					job_record_t *job_ptr,
+					const slurm_selected_step_t *id,
+					void *arg);
 /*
  *  Function prototype for operating on each read only job that matches
  *  Returns control requested for processing
  */
-typedef foreach_job_by_id_control_t (*JobROForEachFunc)(const job_record_t
-								*job_ptr,
-							void *arg);
+typedef foreach_job_by_id_control_t (*JobROForEachFunc)(
+					const job_record_t *job_ptr,
+					const slurm_selected_step_t *id,
+					void *arg);
 /*
  * Function prototype for operating on a job id that is not found
  * Returns control requested for processing

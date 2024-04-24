@@ -372,6 +372,7 @@ static bitstr_t *_job_state_array_bitmap(const job_record_t *job_ptr)
 }
 
 static foreach_job_by_id_control_t _foreach_job(const job_record_t *job_ptr,
+						const slurm_selected_step_t *id,
 						void *arg)
 {
 	job_state_args_t *args = arg;
