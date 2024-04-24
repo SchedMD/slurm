@@ -434,7 +434,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		FREE_NULL_LIST(step_list);
 	} else {
 		slurm_selected_step_t id = {0};
-		if (!(error_code = unfmt_job_id_string(job_step_id_str, &id))) {
+		if (!(error_code = unfmt_job_id_string(job_step_id_str, &id,
+						       NO_VAL))) {
 			if (id.array_task_id != NO_VAL)
 				array_id = id.array_task_id;
 

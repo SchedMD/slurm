@@ -4300,7 +4300,7 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 		entry->msg = msg->err_msg[i];
 
 		if ((rc = unfmt_job_id_string(msg->job_array_id[i],
-					      &entry->step))) {
+					      &entry->step, NO_VAL))) {
 			on_warn(DUMPING, parser->type, args,
 				"unfmt_job_id_string()", __func__,
 				"Unable to parse JobId=%s: %s",
@@ -4970,7 +4970,7 @@ static int PARSE_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,
 				   "Expecting string but got %s",
 				   data_get_type_string(src));
 
-	return unfmt_job_id_string(data_get_string(src), step);
+	return unfmt_job_id_string(data_get_string(src), step, NO_VAL);
 }
 
 static int DUMP_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,

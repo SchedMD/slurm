@@ -7147,7 +7147,7 @@ static int _parse_jobs_array(char **jobs_array, uint32_t jobs_cnt,
 		int rc;
 
 		jobs[i] = xmalloc(sizeof(*jobs[i]));
-		rc = unfmt_job_id_string(jobs_array[i], jobs[i]);
+		rc = unfmt_job_id_string(jobs_array[i], jobs[i], NO_VAL);
 		if (rc != SLURM_SUCCESS) {
 			_free_selected_step_array(&jobs, i + 1);
 			return rc;
