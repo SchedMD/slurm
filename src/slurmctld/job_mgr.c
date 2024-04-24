@@ -3280,9 +3280,11 @@ static void _foreach_by_job_callback(job_record_t *job_ptr,
 	xassert(args->control == FOR_EACH_JOB_BY_ID_EACH_CONT);
 
 	if (args->ro_callback)
-		args->control = args->ro_callback(job_ptr, args->callback_arg);
+		args->control = args->ro_callback(job_ptr, args->filter,
+						  args->callback_arg);
 	else
-		args->control = args->callback(job_ptr, args->callback_arg);
+		args->control = args->callback(job_ptr, args->filter,
+					       args->callback_arg);
 
 	xassert(args->control > FOR_EACH_JOB_BY_ID_EACH_INVALID);
 	xassert(args->control < FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX);
@@ -6094,9 +6096,11 @@ static foreach_job_by_id_control_t _job_not_found(const slurm_selected_step_t
 	return FOR_EACH_JOB_BY_ID_EACH_CONT;
 }
 
-static foreach_job_by_id_control_t _filter_job(job_record_t *job_ptr, void *arg)
+static foreach_job_by_id_control_t _filter_job(job_record_t *job_ptr,
+					       const slurm_selected_step_t *id,
+					       void *arg)
 {
-	_apply_signal_jobs_filter(job_ptr, NULL, arg);
+	_apply_signal_jobs_filter(job_ptr, (slurm_selected_step_t *) id, arg);
 
 	return FOR_EACH_JOB_BY_ID_EACH_CONT;
 }
@@ -6823,13 +6827,16 @@ static int _parse_jobs_array(char **jobs_array, uint32_t jobs_cnt,
 
 	if (!jobs_array)
 		return SLURM_SUCCESS;
+	if (max_array_size == NO_VAL)
+		max_array_size = slurm_conf.max_array_sz;
 
 	jobs = xcalloc(jobs_cnt, sizeof(*jobs));
 	for (int i = 0; i < jobs_cnt; i++) {
 		int rc;
 
 		jobs[i] = xmalloc(sizeof(*jobs[i]));
-		rc = unfmt_job_id_string(jobs_array[i], jobs[i], NO_VAL);
+		rc = unfmt_job_id_string(jobs_array[i], jobs[i],
+					 max_array_size);
 		if (rc != SLURM_SUCCESS) {
 			_free_selected_step_array(&jobs, i + 1);
 			return rc;
