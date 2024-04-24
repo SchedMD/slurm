@@ -37,6 +37,12 @@ def pytest_addoption(parser):
         dest="auto_config",
         help="the slurm configuration will not be altered",
     )
+    parser.addoption(
+        "--no-color",
+        action="store_true",
+        dest="no_color",
+        help="the pytest logs won't include colors",
+    )
 
 
 def color_log_level(level, **color_kwargs):
@@ -95,15 +101,15 @@ def color_log_level(level, **color_kwargs):
 def session_setup(request):
     # Set the auto-config property from the option
     atf.properties["auto-config"] = request.config.getoption("--auto-config")
-
-    # Customize logging level colors
-    color_log_level(logging.CRITICAL, red=True, bold=True)
-    color_log_level(logging.ERROR, red=True)
-    color_log_level(logging.WARNING, yellow=True)
-    color_log_level(logging.INFO, green=True)
-    color_log_level(logging.NOTE, cyan=True)
-    color_log_level(logging.DEBUG, blue=True, bold=True)
-    color_log_level(logging.TRACE, purple=True, bold=True)
+    if not request.config.getoption("--no-color"):
+        # Customize logging level colors
+        color_log_level(logging.CRITICAL, red=True, bold=True)
+        color_log_level(logging.ERROR, red=True)
+        color_log_level(logging.WARNING, yellow=True)
+        color_log_level(logging.INFO, green=True)
+        color_log_level(logging.NOTE, cyan=True)
+        color_log_level(logging.DEBUG, blue=True, bold=True)
+        color_log_level(logging.TRACE, purple=True, bold=True)
 
 
 def update_tmp_path_exec_permissions():
