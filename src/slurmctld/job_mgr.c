@@ -3733,6 +3733,97 @@ static void _foreach_job_by_id_array(for_each_by_job_id_args_t *args)
 	}
 }
 
+static void _find_array_expression_jobs(const slurm_selected_step_t *filter,
+					for_each_by_job_id_args_t *args,
+					list_t *match_job_list,
+					list_t *not_found_filters)
+{
+	int32_t i_first, i_last;
+	uint32_t job_id = filter->step_id.job_id;
+	bitstr_t *array_bitmap = filter->array_bitmap;
+	job_record_t *job_ptr;
+	job_record_t *meta_job = NULL;
+
+	i_first = bit_ffs(array_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(array_bitmap);
+	else
+		i_last = -2;
+	for (int i = i_first; i <= i_last; i++) {
+		if (!bit_test(array_bitmap, i))
+			continue;
+		job_ptr = find_job_array_rec(job_id, i);
+		if (!job_ptr && !not_found_filters)
+			continue;
+		if (!job_ptr && not_found_filters) {
+			slurm_selected_step_t *not_found_filter =
+				xmalloc(sizeof(*not_found_filter));
+
+			memcpy(not_found_filter, filter, sizeof(*filter));
+			not_found_filter->array_task_id = i;
+			not_found_filter->array_bitmap = NULL;
+			list_append(not_found_filters, not_found_filter);
+			continue;
+		}
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->array_recs) {
+			meta_job = job_ptr;
+			continue;
+		}
+		list_append(match_job_list, job_ptr);
+	}
+	if (meta_job)
+		list_append(match_job_list, meta_job);
+}
+
+static int _foreach_by_job_null_callback(void *x, void *arg)
+{
+	slurm_selected_step_t *filter = x;
+	for_each_by_job_id_args_t *args = arg;
+
+	/* Only call this if null_callback is set to avoid wasteful cycles */
+	xassert(args->null_callback);
+
+	args->control = args->null_callback(filter, args->callback_arg);
+
+	switch (args->control)
+	{
+	case FOR_EACH_JOB_BY_ID_EACH_STOP:
+	case FOR_EACH_JOB_BY_ID_EACH_CONT:
+		return SLURM_ERROR; /* Stop list_for_each */
+	case FOR_EACH_JOB_BY_ID_EACH_FAIL:
+		return SLURM_ERROR; /* Stop list_for_each */
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID_MAX:
+	case FOR_EACH_JOB_BY_ID_EACH_INVALID:
+		fatal_abort("should never happen");
+	}
+	return SLURM_SUCCESS; /* Continue list_for_each */
+}
+
+static void _foreach_array_bitmap(const slurm_selected_step_t *filter,
+				  for_each_by_job_id_args_t *args)
+{
+	list_t *match_job_list = list_create(NULL); /* List of job_record_t */
+	list_t *not_found_filters = NULL; /* List of slurm_selected_step_t */
+
+	/*
+	 * Call the callback once per record that has been split off.
+	 * Then call it once for the meta record.
+	 */
+	if (args->null_callback)
+		not_found_filters = list_create(slurm_destroy_selected_step);
+	_find_array_expression_jobs(filter, args, match_job_list,
+				    not_found_filters);
+	if (list_count(not_found_filters))
+		(void) list_for_each(not_found_filters,
+				     _foreach_by_job_null_callback, args);
+	if (list_count(match_job_list))
+		(void) list_for_each(match_job_list, _foreach_job_by_id_single,
+				     args);
+
+	FREE_NULL_LIST(match_job_list);
+	FREE_NULL_LIST(not_found_filters);
+}
+
 static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 				       for_each_by_job_id_args_t *args)
 {
@@ -3750,6 +3841,11 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 
 	xassert(!((filter->array_task_id != NO_VAL) &&
 		  (filter->het_job_offset != NO_VAL)));
+
+	if (filter->array_bitmap) {
+		_foreach_array_bitmap(filter, args);
+		goto done;
+	}
 
 	if (filter->array_task_id != NO_VAL)
 		args->job_ptr = find_job_array_rec(filter->step_id.job_id,
