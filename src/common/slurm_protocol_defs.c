@@ -851,6 +851,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 	 */
 
 	/* reset to default of NO_VAL */
+	id->array_bitmap = NULL;
 	id->array_task_id = NO_VAL;
 	id->het_job_offset = NO_VAL;
 	id->step_id.job_id = NO_VAL;
@@ -1338,6 +1339,7 @@ extern const char *slurm_container_status_to_str(
 extern void slurm_destroy_selected_step(void *object)
 {
 	slurm_selected_step_t *step = (slurm_selected_step_t *)object;
+	FREE_NULL_BITMAP(step->array_bitmap);
 	xfree(step);
 }
 

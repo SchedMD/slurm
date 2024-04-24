@@ -5705,6 +5705,7 @@ static void _slurm_selected_step_init(job_record_t *job_ptr,
 {
 	xassert(job_ptr);
 
+	id->array_bitmap = NULL;
 	id->array_task_id = job_ptr->array_task_id;
 	if (job_ptr->array_task_id != NO_VAL)
 		id->step_id.job_id = job_ptr->array_job_id;
