@@ -877,7 +877,24 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 
 	id->step_id.job_id = job;
 
-	if (*end_ptr == '_') {
+	if ((*end_ptr == '_') && (*(end_ptr + 1) == '[')) {
+		char *close_bracket;
+		bitstr_t *array_bitmap;
+
+		if (!max_array_size || (max_array_size == NO_VAL))
+			return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
+
+		close_bracket = xstrchr(end_ptr + 2, ']');
+		if (!close_bracket || (close_bracket[1] != '\0'))
+			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
+
+		array_bitmap = slurm_array_str2bitmap(end_ptr + 1,
+						      max_array_size, NULL);
+		if (!array_bitmap)
+			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
+		id->array_bitmap = array_bitmap;
+		end_ptr = close_bracket + 1;
+	} else if (*end_ptr == '_') {
 		char *array_end_ptr = NULL;
 		long array;
 
