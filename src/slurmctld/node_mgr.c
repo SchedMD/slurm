@@ -5107,9 +5107,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 
 	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
 
-	slurm_reset_alias(node_ptr->name,
-			  node_ptr->comm_name,
-			  node_ptr->node_hostname);
+	slurm_conf_add_node(node_ptr);
 
 	if (config_ptr->feature) {
 		node_ptr->features = xstrdup(config_ptr->feature);
