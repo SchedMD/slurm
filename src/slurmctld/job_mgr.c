@@ -6331,6 +6331,7 @@ fini:
 }
 
 static void _apply_signal_jobs_filter(job_record_t *job_ptr,
+				      slurm_selected_step_t *filter_id,
 				      signal_jobs_args_t *signal_args)
 {
 	uid_t auth_uid = signal_args->auth_uid;
@@ -6362,7 +6363,7 @@ static int _foreach_filter_job_list(void *x, void *arg)
 	job_record_t *job_ptr = x;
 	signal_jobs_args_t *signal_args = arg;
 
-	_apply_signal_jobs_filter(job_ptr, signal_args);
+	_apply_signal_jobs_filter(job_ptr, NULL, signal_args);
 
 	return SLURM_SUCCESS;
 }
@@ -6420,7 +6421,7 @@ static foreach_job_by_id_control_t _job_not_found(const slurm_selected_step_t
 
 static foreach_job_by_id_control_t _filter_job(job_record_t *job_ptr, void *arg)
 {
-	_apply_signal_jobs_filter(job_ptr, arg);
+	_apply_signal_jobs_filter(job_ptr, NULL, arg);
 
 	return FOR_EACH_JOB_BY_ID_EACH_CONT;
 }
