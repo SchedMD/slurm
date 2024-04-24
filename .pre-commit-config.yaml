@@ -1,0 +1,3 @@
+---
+exclude: configure|.+\.in|.+\.m4|LICENSE.OpenSSL
+repos: []
