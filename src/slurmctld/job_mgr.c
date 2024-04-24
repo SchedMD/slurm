@@ -166,11 +166,11 @@ typedef struct {
 } node_inx_cnt_t;
 
 typedef struct {
-	list_t *array_leader_list;
+	list_t *array_leader_list; /* list of job_record_t */
 	uid_t auth_uid;
 	bool filter_specific_job_ids;
 	kill_jobs_msg_t *kill_msg;
-	list_t *other_job_list;
+	list_t *other_job_list; /* list of job_record_t */
 	list_t *responses; /* List of kill_jobs_resp_job_t */
 } signal_jobs_args_t;
 
