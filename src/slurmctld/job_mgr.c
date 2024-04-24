@@ -6005,14 +6005,13 @@ fini:
 	return matches_filter;
 }
 
-static int _foreach_filter_job_list(void *x, void *arg)
+static void _apply_signal_jobs_filter(job_record_t *job_ptr,
+				      signal_jobs_args_t *signal_args)
 {
-	job_record_t *job_ptr = x;
-	signal_jobs_args_t *signal_args = arg;
 	uid_t auth_uid = signal_args->auth_uid;
 
 	if (!_signal_job_matches_filter(job_ptr, signal_args))
-		return SLURM_SUCCESS;
+		return;
 
 	/* Verify that the user can kill the requested job */
 	if ((job_ptr->user_id != auth_uid) &&
@@ -6024,13 +6023,21 @@ static int _foreach_filter_job_list(void *x, void *arg)
 		_slurm_selected_step_init(job_ptr, &id);
 		_add_signal_job_resp(signal_args, NULL, ESLURM_ACCESS_DENIED,
 				     NULL, &id, job_ptr->job_id);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	if (job_ptr->array_recs)
 		list_append(signal_args->array_leader_list, job_ptr);
 	else
 		list_append(signal_args->other_job_list, job_ptr);
+}
+
+static int _foreach_filter_job_list(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	signal_jobs_args_t *signal_args = arg;
+
+	_apply_signal_jobs_filter(job_ptr, signal_args);
 
 	return SLURM_SUCCESS;
 }
@@ -6088,7 +6095,7 @@ static foreach_job_by_id_control_t _job_not_found(const slurm_selected_step_t
 
 static foreach_job_by_id_control_t _filter_job(job_record_t *job_ptr, void *arg)
 {
-	_foreach_filter_job_list(job_ptr, arg);
+	_apply_signal_jobs_filter(job_ptr, arg);
 
 	return FOR_EACH_JOB_BY_ID_EACH_CONT;
 }
