@@ -1347,9 +1347,12 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
  * IN/OUT id - ptr to id to be populated.
  * 	All values are always set to NO_VAL and then populated as parsed.
  *      (Errors during parsing may result in partially populated ID.)
+ * IN max_array_size - Maximum size of a job array. May be 0 or NO_VAL if
+ *                     job array expressions are not expected.
  * RET SLURM_SUCCESS or error
  */
-extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id);
+extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
+			       uint32_t max_array_size);
 /*
  * Dump id into string identifing a part of a job.
  * Dumps same formats as unfmt_job_id_string() parsed.

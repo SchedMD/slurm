@@ -604,7 +604,7 @@ extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 		extern char **environ;
 		slurm_selected_step_t id = {0};
 
-		if ((rc = unfmt_job_id_string(job_id_str, &id))) {
+		if ((rc = unfmt_job_id_string(job_id_str, &id, NO_VAL))) {
 			fatal("%s: invalid SLURM_JOB_ID=%s: %s",
 			      __func__, job_id_str, slurm_strerror(rc));
 			return;

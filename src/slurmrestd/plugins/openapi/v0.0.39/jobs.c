@@ -400,7 +400,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	if (!(job_id_str = get_str_param("job_id", ctxt)))
 		goto done;
 
-	if ((rc = unfmt_job_id_string(job_id_str, &job_id))) {
+	if ((rc = unfmt_job_id_string(job_id_str, &job_id, NO_VAL))) {
 		resp_error(ctxt, rc, __func__, "Failure parsing \"%s\"",
 			   job_id_str);
 		goto done;

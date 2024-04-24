@@ -841,7 +841,8 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 	return array_bitmap;
 }
 
-extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
+extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
+			       uint32_t max_array_size)
 {
 	char *end_ptr = NULL, *step_end_ptr = NULL, *step_het_end_ptr = NULL;
 	long job, step, step_het;
