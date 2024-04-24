@@ -6346,11 +6346,17 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 	    !validate_operator(auth_uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
 					  job_ptr->account, true)) {
+		slurm_selected_step_t *use_id;
 		slurm_selected_step_t id;
 
-		_slurm_selected_step_init(job_ptr, &id);
+		if (filter_id)
+			use_id = filter_id;
+		else {
+			_slurm_selected_step_init(job_ptr, &id);
+			use_id = &id;
+		}
 		_add_signal_job_resp(signal_args, NULL, ESLURM_ACCESS_DENIED,
-				     NULL, &id, job_ptr->job_id);
+				     NULL, use_id, job_ptr->job_id);
 		return;
 	}
 
