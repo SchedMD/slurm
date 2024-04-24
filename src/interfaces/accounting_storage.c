@@ -377,7 +377,7 @@ extern void *acct_storage_g_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback,char *cluster_name)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -388,7 +388,7 @@ extern void *acct_storage_g_get_connection(
 
 extern int acct_storage_g_close_connection(void **db_conn)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -398,7 +398,7 @@ extern int acct_storage_g_close_connection(void **db_conn)
 
 extern int acct_storage_g_commit(void *db_conn, bool commit)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -409,7 +409,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit)
 extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 				    List user_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -422,7 +422,7 @@ extern char *acct_storage_g_add_users_cond(
 	slurmdb_add_assoc_cond_t *add_assoc,
 	slurmdb_user_rec_t *user)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -434,7 +434,7 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 				    List acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -445,7 +445,7 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -458,7 +458,7 @@ extern char *acct_storage_g_add_accounts_cond(
 	slurmdb_add_assoc_cond_t *add_assoc,
 	slurmdb_account_rec_t *acct)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -469,7 +469,7 @@ extern char *acct_storage_g_add_accounts_cond(
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -480,7 +480,7 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
 					  List federation_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -491,7 +491,7 @@ extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
 				   List tres_list_in)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -502,7 +502,7 @@ extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
 				     List assoc_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -513,7 +513,7 @@ extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 				  List qos_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -524,7 +524,7 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
 				  List res_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -534,7 +534,7 @@ extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 				     List wckey_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -545,7 +545,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_reservation(void *db_conn,
 					  slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -557,7 +557,7 @@ extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 					slurmdb_user_cond_t *user_cond,
 					slurmdb_user_rec_t *user)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -569,7 +569,7 @@ extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -581,7 +581,7 @@ extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond,
 					   slurmdb_cluster_rec_t *cluster)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -594,7 +594,7 @@ extern List acct_storage_g_modify_assocs(
 	slurmdb_assoc_cond_t *assoc_cond,
 	slurmdb_assoc_rec_t *assoc)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -607,7 +607,7 @@ extern List acct_storage_g_modify_federations(
 				slurmdb_federation_cond_t *fed_cond,
 				slurmdb_federation_rec_t *fed)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -619,7 +619,7 @@ extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
 				      slurmdb_job_cond_t *job_cond,
 				      slurmdb_job_rec_t *job)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -632,7 +632,7 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -644,7 +644,7 @@ extern List acct_storage_g_modify_res(void *db_conn, uint32_t uid,
 				      slurmdb_res_cond_t *res_cond,
 				      slurmdb_res_rec_t *res)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -656,7 +656,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 					 slurmdb_wckey_cond_t *wckey_cond,
 					 slurmdb_wckey_rec_t *wckey)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -667,7 +667,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_modify_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -678,7 +678,7 @@ extern int acct_storage_g_modify_reservation(void *db_conn,
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
 					slurmdb_user_cond_t *user_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -690,7 +690,7 @@ extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 					List acct_list,
 					slurmdb_user_cond_t *user_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -701,7 +701,7 @@ extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *acct_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -712,7 +712,7 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -724,7 +724,7 @@ extern List acct_storage_g_remove_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -736,7 +736,7 @@ extern List acct_storage_g_remove_federations(
 					void *db_conn, uint32_t uid,
 					slurmdb_federation_cond_t *fed_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -747,7 +747,7 @@ extern List acct_storage_g_remove_federations(
 extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -758,7 +758,7 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 extern List acct_storage_g_remove_res(void *db_conn, uint32_t uid,
 				      slurmdb_res_cond_t *res_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -769,7 +769,7 @@ extern List acct_storage_g_remove_res(void *db_conn, uint32_t uid,
 extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 					 slurmdb_wckey_cond_t *wckey_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -780,7 +780,7 @@ extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_remove_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -791,7 +791,7 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
 extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -802,7 +802,7 @@ extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 					slurmdb_account_cond_t *acct_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -813,7 +813,7 @@ extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -824,7 +824,7 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 					   slurmdb_federation_cond_t *fed_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -834,7 +834,7 @@ extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 
 extern List acct_storage_g_get_config(void *db_conn, char *config_name)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -846,7 +846,7 @@ extern List acct_storage_g_get_tres(
 	void *db_conn, uint32_t uid,
 	slurmdb_tres_cond_t *tres_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -858,7 +858,7 @@ extern List acct_storage_g_get_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -869,7 +869,7 @@ extern List acct_storage_g_get_assocs(
 extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
 				      slurmdb_event_cond_t *event_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -881,7 +881,7 @@ extern List acct_storage_g_get_instances(void *db_conn,
 					 uint32_t uid,
 					 slurmdb_instance_cond_t *instance_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -892,7 +892,7 @@ extern List acct_storage_g_get_instances(void *db_conn,
 extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -903,7 +903,7 @@ extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 				   slurmdb_qos_cond_t *qos_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -914,7 +914,7 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_res(void *db_conn, uint32_t uid,
 				   slurmdb_res_cond_t *res_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -925,7 +925,7 @@ extern List acct_storage_g_get_res(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -936,7 +936,7 @@ extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 extern List acct_storage_g_get_reservations(
 	void *db_conn, uint32_t uid, slurmdb_reservation_cond_t *resv_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -947,7 +947,7 @@ extern List acct_storage_g_get_reservations(
 extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
 				   slurmdb_txn_cond_t *txn_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -959,7 +959,7 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 				    void *in, int type,
 				    time_t start, time_t end)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -972,7 +972,7 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 				     uint16_t archive_data,
 				     List *rollup_stats_list_in)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -984,7 +984,7 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
 					   uint32_t uid, List jobs)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -997,7 +997,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 					   time_t event_time,
 					   char *reason, uint32_t reason_uid)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1008,7 +1008,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 
 extern char *acct_storage_g_node_inx(void *db_conn, char *nodes)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -1020,7 +1020,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 					 node_record_t *node_ptr,
 					 time_t event_time)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1036,7 +1036,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 extern int clusteracct_storage_g_node_update(void *db_conn,
 					     node_record_t *node_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1050,7 +1050,7 @@ extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      time_t event_time,
 					      uint16_t rpc_version)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1061,7 +1061,7 @@ extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1072,7 +1072,7 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 extern int clusteracct_storage_g_register_disconn_ctld(
 	void *db_conn, char *control_host)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1083,7 +1083,7 @@ extern int clusteracct_storage_g_register_disconn_ctld(
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 					   slurmdb_cluster_rec_t *cluster_rec)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1098,7 +1098,7 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 extern int jobacct_storage_g_job_start(void *db_conn,
 				       job_record_t *job_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1131,7 +1131,7 @@ extern int jobacct_storage_g_job_start(void *db_conn,
  */
 extern int jobacct_storage_g_job_heavy(void *db_conn, job_record_t *job_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1147,7 +1147,7 @@ extern int jobacct_storage_g_job_heavy(void *db_conn, job_record_t *job_ptr)
 extern int jobacct_storage_g_job_complete(void *db_conn,
 					  job_record_t *job_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1162,7 +1162,7 @@ extern int jobacct_storage_g_job_complete(void *db_conn,
  */
 extern int jobacct_storage_g_step_start(void *db_conn, step_record_t *step_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1178,7 +1178,7 @@ extern int jobacct_storage_g_step_start(void *db_conn, step_record_t *step_ptr)
 extern int jobacct_storage_g_step_complete(void *db_conn,
 					   step_record_t *step_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1194,7 +1194,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 extern int jobacct_storage_g_job_suspend(void *db_conn,
 					 job_record_t *job_ptr)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1227,7 +1227,7 @@ extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 {
 	List ret_list;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1250,7 +1250,7 @@ extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 extern int jobacct_storage_g_archive(void *db_conn,
 				     slurmdb_archive_cond_t *arch_cond)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1264,7 +1264,7 @@ extern int jobacct_storage_g_archive(void *db_conn,
 extern int jobacct_storage_g_archive_load(void *db_conn,
 					  slurmdb_archive_rec_t *arch_rec)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1279,7 +1279,7 @@ extern int jobacct_storage_g_archive_load(void *db_conn,
  */
 extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1298,7 +1298,7 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
 extern int acct_storage_g_flush_jobs_on_cluster(
 	void *db_conn, time_t event_time)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1313,7 +1313,7 @@ extern int acct_storage_g_flush_jobs_on_cluster(
  */
 extern int acct_storage_g_reconfig(void *db_conn, bool dbd)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1329,7 +1329,7 @@ extern int acct_storage_g_reconfig(void *db_conn, bool dbd)
 extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
 					List cluster_list)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1344,7 +1344,7 @@ extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
  */
 extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1358,7 +1358,7 @@ extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
  */
 extern int acct_storage_g_clear_stats(void *db_conn)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1373,7 +1373,7 @@ extern int acct_storage_g_clear_stats(void *db_conn)
 extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
 				    void *data)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -1388,7 +1388,7 @@ extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
 extern void acct_storage_g_send_all(void *db_conn, time_t event_time,
 				    slurm_msg_type_t msg_type)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return;
@@ -1402,7 +1402,7 @@ extern void acct_storage_g_send_all(void *db_conn, time_t event_time,
  */
 extern int acct_storage_g_shutdown(void *db_conn)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;

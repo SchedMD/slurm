@@ -155,7 +155,7 @@ extern int topology_g_fini(void)
 
 extern int topology_get_plugin_id(void)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	return *(ops.plugin_id);
 }
@@ -165,7 +165,7 @@ extern int topology_g_build_config(void)
 	int rc;
 	DEF_TIMERS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	START_TIMER;
 	rc = (*(ops.build_config))();
@@ -176,7 +176,7 @@ extern int topology_g_build_config(void)
 
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	return (*(ops.eval_nodes))(topo_eval);
 }
@@ -187,7 +187,7 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
  */
 extern bool topology_g_generate_node_ranking(void)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	return (*(ops.node_ranking))();
 }
@@ -195,7 +195,7 @@ extern bool topology_g_generate_node_ranking(void)
 extern int topology_g_get_node_addr(char *node_name, char **addr,
 				    char **pattern)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }
@@ -248,7 +248,7 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 
 extern int topology_g_get(topology_data_t type, void *data)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	return (*(ops.get))(type, data);
 }
@@ -256,7 +256,7 @@ extern int topology_g_get(topology_data_t type, void *data)
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;
@@ -268,7 +268,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char **out)
 {
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;
@@ -281,7 +281,7 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 {
 	dynamic_plugin_data_t *topoinfo_ptr = NULL;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	topoinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*topoinfo = topoinfo_ptr;
@@ -319,7 +319,7 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo) {
 		if (topoinfo->data)

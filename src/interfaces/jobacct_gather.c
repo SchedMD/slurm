@@ -596,7 +596,7 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -629,7 +629,7 @@ extern int jobacct_gather_endpoll(void)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -652,7 +652,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 {
 	struct jobacctinfo *jobacct;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;

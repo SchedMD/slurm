@@ -121,7 +121,7 @@ extern void site_factor_g_set(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return;
@@ -135,7 +135,7 @@ extern void site_factor_g_update(void)
 {
 	DEF_TIMERS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return;

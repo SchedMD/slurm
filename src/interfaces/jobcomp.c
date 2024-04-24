@@ -161,7 +161,7 @@ extern int jobcomp_g_write(job_record_t *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -179,7 +179,7 @@ extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -195,7 +195,7 @@ extern int jobcomp_g_set_location(void)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
