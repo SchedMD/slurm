@@ -1408,6 +1408,9 @@ typedef foreach_job_by_id_control_t
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ *               NOTE: If array_task_id was given and the task has not been
+ *               split from the meta job record, the meta job record will be
+ *               passed to the callback function.
  * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
@@ -1426,6 +1429,9 @@ extern int foreach_job_by_id(const slurm_selected_step_t *filter,
  *
  * IN filter - Filter to select jobs
  * IN callback - Function to call on each matching job record pointer
+ *               NOTE: If array_task_id was given and the task has not been
+ *               split from the meta job record, the meta job record will be
+ *               passed to the callback function.
  * IN null_callback - (optional) Function to call on each non-matching job id
  * IN arg - Arbitrary pointer to pass to callback
  * RET number of jobs matched.
