@@ -58,6 +58,27 @@ LicenseName=fluent
     Total=30 Used=0 Free=30 Remote=no
 </pre>
 
+<p>Licenses may also be requested using the <i>--tres-per-task</i> option for
+job submission. If this approach is used, the license must also be defined in
+the <b>AccountingStorageTRES</b> option of the slurm.conf.</p>
+
+<p>slurm.conf:</p>
+<pre>
+Licenses=fluent:30
+AccountingStorageTRES=license/fluent
+</pre>
+
+<p>Requesting licenses with the <i>--tres-per-task</i> submission option.</p>
+<pre>
+$ sbatch --tres-per-task=license/fluent:4 script.sh
+Submitted batch job 6482
+
+$ scontrol show lic
+LicenseName=fluent
+    Total=30 Used=4 Free=26 Reserved=0 Remote=no
+</pre>
+
+
 <h2 id="remote_licenses">Remote Licenses
 <a class="slurm_link" href="#remote_licenses"></a>
 </h2>
@@ -365,6 +386,6 @@ LicenseName=foobar@slurmdb
     LastConsumed=20 LastDeficit=0 LastUpdate=2023-02-28T16:44:26
 </pre>
 
-<p style="text-align:center;">Last modified 28 Februrary 2023</p>
+<p style="text-align:center;">Last modified 25 April 2024</p>
 
 <!--#include virtual="footer.txt"-->
