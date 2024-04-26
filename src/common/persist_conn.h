@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  slurm_persist_conn.h - Definitions for communicating over a persistent
- *                         connection within Slurm.
+ *  persist_conn.h - Definitions for communicating over a persistent
+ *                   connection within Slurm.
  ******************************************************************************
  *  Copyright (C) SchedMD LLC.
  *

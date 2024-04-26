@@ -88,6 +88,8 @@ libcommon_la_SOURCES =				\
 	parse_time.h				\
 	parse_value.c				\
 	parse_value.h				\
+	persist_conn.c				\
+	persist_conn.h				\
 	plugin.c				\
 	plugin.h				\
 	plugrack.c				\
@@ -112,8 +114,6 @@ libcommon_la_SOURCES =				\
 	slurm_errno.c				\
 	slurm_opt.c				\
 	slurm_opt.h				\
-	slurm_persist_conn.c			\
-	slurm_persist_conn.h			\
 	slurm_protocol_api.c			\
 	slurm_protocol_api.h			\
 	slurm_protocol_common.h			\

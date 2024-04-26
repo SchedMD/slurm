@@ -35,11 +35,13 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
 #ifndef _SLURMDB_DEFS_H
 #define _SLURMDB_DEFS_H
 
-#include "src/common/slurm_persist_conn.h"
 #include "slurm/slurmdb.h"
+
+#include "src/common/persist_conn.h"
 
 /* Defined purge macros */
 #define SLURMDB_PURGE_GET_UNITS(_X) \

@@ -36,7 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/slurm_persist_conn.h"
+#include "src/common/persist_conn.h"
 
 /*
  * dbd_conn_open - Get a connection to the dbd.

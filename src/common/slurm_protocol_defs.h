@@ -55,17 +55,18 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
+
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/msg_type.h"
-#include "src/interfaces/cred.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_common.h"
-#include "src/common/slurm_persist_conn.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
+#include "src/interfaces/cred.h"
 
 /*
  * This is what the UID and GID accessors return on error.

@@ -48,18 +48,18 @@
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
-
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/slurm_persist_conn.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/select.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/locks.h"
 
 #include "as_ext_dbd.h"
 #include "slurmdbd_agent.h"

@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  slurm_persist_conn.c - Definitions for communicating over a persistent
- *                         connection within Slurm.
+ *  persist_conn.c - Definitions for communicating over a persistent
+ *                   connection within Slurm.
  ******************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -47,12 +47,12 @@
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
-#include "src/interfaces/auth.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
-#include "slurm_persist_conn.h"
+#include "src/interfaces/auth.h"
 
 #define MAX_THREAD_COUNT 100
 
