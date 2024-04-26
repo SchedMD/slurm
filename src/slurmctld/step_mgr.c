@@ -3477,12 +3477,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	_set_def_cpu_bind(job_ptr);
 
 	node_count = bit_set_count(nodeset);
-	if (step_specs->num_tasks == NO_VAL) {
-		if (step_specs->cpu_count != NO_VAL)
-			step_specs->num_tasks = step_specs->cpu_count;
-		else
-			step_specs->num_tasks = node_count;
-	}
+	xassert(step_specs->num_tasks != NO_VAL);
 
 	max_tasks = node_count * slurm_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
