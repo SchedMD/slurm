@@ -220,6 +220,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Added possible flags "NoUpdate" and "Exact" to
     `.associations[].flags` for "GET /slurmdb/v0.0.41/associations/"
     and "POST /slurmdb/v0.0.41/associations/" endpoints.
+ -- Fix false success of REQUEST_FORWARD_DATA RPC that made pmix to get out
+    of sync during initialization.
 
 * Changes in Slurm 23.11.7
 ==========================

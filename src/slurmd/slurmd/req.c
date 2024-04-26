@@ -6185,10 +6185,12 @@ _rpc_forward_data(slurm_msg_t *msg)
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 
+	errno = 0;
 	rc = _connect_as_other(req->address, req_uid, msg->auth_gid, &fd);
 
 	if ((rc < 0) || (fd < 0)) {
-		rc = errno;
+		if (errno)
+			rc = errno;
 		debug2("failed connecting to specified socket '%s': %m",
 		       req->address);
 		goto rwfail;
