@@ -1060,6 +1060,12 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 endit:
 	slurm_seterrno(rc);
 
+	/*
+	 * We just set errno, we need to return SLURM_ERROR if not SLURM_SUCCESS
+	 */
+	if (rc != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+
 	return rc;
 }
 
