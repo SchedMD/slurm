@@ -104,6 +104,296 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 	return node_list;
 }
 
+static void _reduce_res_cores(topology_eval_t *topo_eval,
+			      uint64_t *maxtasks,
+			      uint16_t res_cores_per_gpu,
+			      int sockets,
+			      uint16_t cores_per_socket,
+			      uint16_t cpus_per_core,
+			      int node_i)
+{
+	gres_job_state_t *gres_js;
+	gres_state_t *gres_job_state;
+	sock_gres_t *sock_gres;
+	list_t *sock_list = topo_eval->avail_res_array[node_i]->sock_gres_list;
+	bitstr_t *avail_core = topo_eval->avail_core[node_i];
+	uint16_t *avail_cores_per_sock =
+		topo_eval->avail_res_array[node_i]->avail_cores_per_sock;
+	uint16_t *actual_cores_p_s = xcalloc(sockets, sizeof(uint16_t));
+	uint32_t tot_cores = 0;
+
+	if (topo_eval->cr_type & CR_SOCKET)
+		return;
+
+	for (int s = 0; s < sockets; s++) {
+		int start_core = s * cores_per_socket;
+		int end_core = start_core + cores_per_socket;
+		actual_cores_p_s[s] = bit_set_count_range(avail_core,
+							  start_core,
+							  end_core);
+		tot_cores += avail_cores_per_sock[s];
+	}
+
+	list_itr_t *sock_list_iter;
+	sock_list_iter = list_iterator_create(sock_list);
+	while ((sock_gres = list_next(sock_list_iter))) {
+		bitstr_t *res_cores;
+		uint16_t tot_res_core;
+		uint32_t max_res_cores = 0;
+		uint32_t max_gres = 0;
+		uint32_t max_gres_by_cpu = 0;
+		int i = (sockets * cores_per_socket) - 1;
+		bool done = false;
+
+		gres_job_state = sock_gres->gres_state_job;
+		gres_js = gres_job_state->gres_data;
+		if (!gres_js->res_gpu_cores ||
+		    !gres_js->res_gpu_cores[node_i])
+			continue;
+		if (!gres_js->gres_per_task &&
+		    (!gres_js->ntasks_per_gres ||
+		     (gres_js->ntasks_per_gres == NO_VAL16)))
+			continue;
+		/* Gres per node takes priority in selection */
+		if (gres_js->gres_per_node)
+			continue;
+		if (gres_js->gres_per_task)
+			max_gres = *maxtasks * gres_js->gres_per_task;
+		else if (gres_js->ntasks_per_gres) {
+			max_gres = *maxtasks / gres_js->ntasks_per_gres;
+			*maxtasks = max_gres * gres_js->ntasks_per_gres;
+		}
+
+		sock_gres->total_cnt = MIN(sock_gres->total_cnt, max_gres);
+
+		if (!gres_job_state ||
+		    (gres_job_state->plugin_id != gres_get_gpu_plugin_id()))
+			continue;
+
+		max_res_cores = max_gres * res_cores_per_gpu;
+		res_cores = bit_copy(gres_js->res_gpu_cores[node_i]);
+		bit_and(res_cores, avail_core);
+		tot_res_core = bit_set_count(res_cores);
+
+		while (!done) {
+			while (tot_res_core > max_res_cores) {
+				int s;
+				/*
+				* Must remove resticted cores from the end of
+				* the bitmap first since cores are picked from
+				* front to back. This helps the needed
+				* restricted cores get picked.
+				*/
+				i  = bit_fls_from_bit(res_cores, i);
+				if (i < 0)
+					break; /* This should never happen */
+				bit_clear(avail_core, i);
+				tot_res_core--;
+
+				s = i / cores_per_socket;
+				actual_cores_p_s[s]--;
+				if (actual_cores_p_s[s] <
+				    avail_cores_per_sock[s]) {
+					int cnt;
+					avail_cores_per_sock[s]--;
+					tot_cores--;
+					cnt = tot_cores * cpus_per_core;
+					if (cnt < topo_eval->avail_cpus)
+						topo_eval->avail_cpus = cnt;
+				}
+				i--;
+			}
+
+			if (gres_js->cpus_per_gres) {
+				max_gres_by_cpu = topo_eval->avail_cpus /
+					gres_js->cpus_per_gres;
+				while (max_gres_by_cpu < max_gres) {
+					(*maxtasks)--;
+					if (gres_js->gres_per_task) {
+						max_gres = *maxtasks *
+							gres_js->gres_per_task;
+					} else if (gres_js->ntasks_per_gres) {
+						max_gres = *maxtasks /
+							gres_js->
+							ntasks_per_gres;
+						*maxtasks = max_gres * gres_js->
+							ntasks_per_gres;
+					}
+				}
+				sock_gres->total_cnt =
+					MIN(sock_gres->total_cnt, max_gres);
+				max_res_cores = max_gres * res_cores_per_gpu;
+				if (tot_res_core <= max_res_cores)
+					done = true;
+			} else
+				done = true;
+		}
+		FREE_NULL_BITMAP(res_cores);
+	}
+	list_iterator_destroy(sock_list_iter);
+	xfree(actual_cores_p_s);
+}
+
+static uint32_t _reduce_res_core_by_task_cnt(topology_eval_t* topo_eval,
+					     uint64_t maxtasks,
+					     uint32_t *gres_max_tasks,
+					     node_record_t *node_ptr,
+					     int node_i,
+					     int select_inx)
+{
+	job_record_t *job_ptr = topo_eval->job_ptr;
+	uint16_t plane_size = NO_VAL16;
+	uint16_t arbitrary_tasks = NO_VAL16;
+	bool one_task_per_node = false;
+	uint16_t res_cores_per_gpu =  node_ptr->config_ptr->res_cores_per_gpu;
+
+	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
+		one_task_per_node = true;
+	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_PLANE) && !one_task_per_node) {
+		plane_size = 1;
+		if (job_ptr->details->mc_ptr)
+			plane_size = job_ptr->details->mc_ptr->plane_size;
+	} else if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+		   SLURM_DIST_ARBITRARY) {
+		arbitrary_tasks = job_ptr->details->arbitrary_tpn[select_inx];
+	}
+
+	maxtasks = MIN(maxtasks, plane_size);
+	maxtasks = MIN(maxtasks, arbitrary_tasks);
+	if (maxtasks < *gres_max_tasks) {
+		_reduce_res_cores(topo_eval, &maxtasks, res_cores_per_gpu,
+				  node_ptr->tot_sockets, node_ptr->cores,
+				  node_ptr->tpc, node_i);
+		*gres_max_tasks = maxtasks;
+	}
+	maxtasks = MIN(maxtasks, *gres_max_tasks);
+	return maxtasks;
+}
+
+/*
+ * Reduce the gres_max_tasks and total GRES available to a node based on
+ * what will be layed out on the node.
+ * If the GRES available gets reduced and RestrictedCoresPerGPU
+ * is used, any unusable restricted cores will be removed.
+ * If to many cores are removed such that the node is no longer usable
+ * in the allocation it returns false, else true.
+ */
+extern bool eval_nodes_gres(topology_eval_t *topo_eval,
+			    uint64_t *max_tasks,
+			    job_record_t *job_ptr,
+			    node_record_t *node_ptr,
+			    int rem_nodes,
+			    int node_i,
+			    int select_inx)
+{
+	bool use_node = true;
+	uint64_t used_tasks;
+	uint32_t save_tasks = MAX((rem_nodes - 1), 0);
+	uint16_t min_cpus = job_ptr->details->cpus_per_task;
+
+	*max_tasks -= save_tasks;
+	if (!job_ptr->details->overcommit) {
+		used_tasks = MIN(*max_tasks, (topo_eval->avail_cpus /
+					      job_ptr->details->cpus_per_task));
+		if (used_tasks < *max_tasks) {
+			save_tasks += *max_tasks - used_tasks;
+			*max_tasks = used_tasks;
+		}
+	}
+	*max_tasks = MAX(*max_tasks, 1);
+	used_tasks = _reduce_res_core_by_task_cnt(
+		topo_eval, *max_tasks,
+		&topo_eval->avail_res_array[node_i]->gres_max_tasks, node_ptr,
+		node_i, select_inx);
+
+	if (!job_ptr->details->overcommit)
+		min_cpus = job_ptr->details->cpus_per_task * used_tasks;
+	else if (use_node)
+		min_cpus = job_ptr->details->cpus_per_task;
+
+	if (!used_tasks)
+		use_node = false;
+	else
+		use_node = topo_eval->avail_cpus >= min_cpus;
+
+	if (topo_eval->gres_per_job && use_node) {
+		use_node = gres_sched_add(
+			&topo_eval->avail_cpus,
+			topo_eval->avail_core[node_i],
+			topo_eval->avail_res_array[node_i]->
+			avail_cores_per_sock,
+			topo_eval->avail_res_array[node_i]->sock_gres_list,
+			job_ptr->gres_list_req,
+			node_ptr->config_ptr->res_cores_per_gpu,
+			node_ptr->tot_sockets,
+			node_ptr->cores, node_ptr->tpc, topo_eval->cr_type,
+			min_cpus, node_i);
+	}
+
+	if (use_node)
+		*max_tasks -= used_tasks;
+	else
+		topo_eval->avail_cpus = 0;
+
+	topo_eval->avail_res_array[node_i]->avail_cpus = topo_eval->avail_cpus;
+	*max_tasks += save_tasks;
+	return use_node;
+}
+
+extern uint64_t eval_nodes_set_max_tasks(job_record_t *job_ptr,
+					 uint64_t max_cpus,
+					 uint32_t max_nodes) {
+	uint32_t max_tasks = max_cpus;
+	if (!job_ptr->details->overcommit &&
+	    (job_ptr->details->cpus_per_task > 1)) {
+		if (job_ptr->details->ntasks_per_node == 0) {
+			max_tasks = max_tasks / job_ptr->details->cpus_per_task;
+		} else {
+			max_tasks = job_ptr->details->ntasks_per_node *
+				max_nodes;
+		}
+	}
+	return max_tasks;
+}
+
+extern void eval_nodes_clip_socket_cores(topology_eval_t *topo_eval)
+{
+	bitstr_t *avail_core;
+	uint16_t *avail_cores_per_sock;
+	uint16_t actual_core_cnt;
+	node_record_t *node_ptr;
+	int start_core;
+	int end_core;
+
+	if (!topo_eval->job_ptr->gres_list_req)
+		return;
+
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(topo_eval->node_map, &i));
+	     i++) {
+		avail_core = topo_eval->avail_core[i];
+		avail_cores_per_sock =
+			topo_eval->avail_res_array[i]->avail_cores_per_sock;
+		for (int s = 0; s < node_ptr->tot_sockets; s++) {
+			start_core = s * node_ptr->cores;
+			end_core = start_core + node_ptr->cores;
+			actual_core_cnt = bit_set_count_range(avail_core,
+							      start_core,
+							      end_core);
+			for (int c = node_ptr->cores - 1; c >= 0; c--) {
+				int i = (s * node_ptr->cores) + c;
+				if (actual_core_cnt <= avail_cores_per_sock[s])
+					break;
+				if (!bit_test(avail_core, i))
+					continue;
+				bit_clear(avail_core, i);
+				actual_core_cnt--;
+			}
+		}
+	}
+}
+
 /*
  * A variation of _eval_nodes() to select resources using busy nodes first.
  */
@@ -127,6 +417,7 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
+	uint64_t maxtasks;
 
 	topo_eval->avail_cpus = 0;
 
@@ -141,6 +432,8 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
 
 	i_start = bit_ffs(topo_eval->node_map);
 	if (i_start >= 0)
@@ -166,9 +459,10 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 				goto fini;
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
-			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus,
-					       min_rem_nodes);
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus,
+						      min_rem_nodes,
+						      &maxtasks, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -230,9 +524,10 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 					continue;
 				eval_nodes_select_cores(topo_eval, i,
 							min_rem_nodes);
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				(void) eval_nodes_cpus_to_use(topo_eval, i,
+							      rem_max_cpus,
+							      min_rem_nodes,
+							      &maxtasks, true);
 				if (topo_eval->avail_cpus == 0)
 					continue;
 				total_cpus += topo_eval->avail_cpus;
@@ -268,7 +563,10 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
@@ -305,6 +603,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
 	uint16_t *avail_cpu_per_node = NULL;
+	uint64_t maxtasks;
 
 	topo_eval->avail_cpus = 0;
 
@@ -332,6 +631,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	} else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
 
 	/*
 	 * If there are required nodes, first determine the resources they
@@ -371,16 +672,17 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 					avail_res_array[i]->avail_gpus;
 
 				if (topo_eval->gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list,
-						&topo_eval->avail_cpus);
+					eval_nodes_gres(topo_eval, &maxtasks,
+							job_ptr, node_ptr,
+							min_rem_nodes, i,
+							(count - 1));
 				}
 			} else
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				(void) eval_nodes_cpus_to_use(topo_eval, i,
+							      rem_max_cpus,
+							      min_rem_nodes,
+							      &maxtasks, true);
+
 			if (topo_eval->avail_cpus == 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -645,11 +947,16 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out.
+				 * things out. But if the gres's cpu requirment
+				 * can not be satified due to gres layout try
+				 * next node.
 				 */
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				if (!eval_nodes_cpus_to_use(topo_eval, i,
+							    rem_max_cpus,
+							    min_rem_nodes,
+							    &maxtasks, true))
+					continue;
+
 				total_cpus += topo_eval->avail_cpus;
 				bit_set(topo_eval->node_map, i);
 				rem_nodes--;
@@ -676,11 +983,16 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out.
+				 * things out. But if the gres's cpu requirment
+				 * can not be satified due to gres layout try
+				 * next node.
 				 */
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				if (!eval_nodes_cpus_to_use(topo_eval, i,
+							    rem_max_cpus,
+							    min_rem_nodes,
+							    &maxtasks, true))
+					continue;
+
 				total_cpus += topo_eval->avail_cpus;
 				rem_cpus -= topo_eval->avail_cpus;
 				rem_max_cpus -= topo_eval->avail_cpus;
@@ -758,11 +1070,16 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out.
+				 * things out. But if the gres's cpu requirment
+				 * can not be satified due to gres layout try
+				 * next node.
 				 */
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				if (!eval_nodes_cpus_to_use(topo_eval, i,
+							    rem_max_cpus,
+							    min_rem_nodes,
+							    &maxtasks, true))
+					continue;
+
 				total_cpus += topo_eval->avail_cpus;
 				rem_cpus -= topo_eval->avail_cpus;
 				rem_max_cpus -= topo_eval->avail_cpus;
@@ -787,7 +1104,10 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	    eval_nodes_enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
-fini:	xfree(avail_cpu_per_node);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	xfree(avail_cpu_per_node);
 	xfree(consec_cpus);
 	xfree(consec_nodes);
 	xfree(consec_start);
@@ -822,6 +1142,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
+	uint64_t maxtasks;
 
 	topo_eval->avail_cpus = 0;
 
@@ -836,6 +1157,8 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
 
 	i_start = bit_ffs(topo_eval->node_map);
 	if (i_start >= 0)
@@ -861,8 +1184,10 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 				goto fini;
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
-			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus,
+						      min_rem_nodes,
+						      &maxtasks, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s not available",
 				      job_ptr, node_ptr->name);
@@ -918,11 +1243,15 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 				if (!bit_test(nwt->node_bitmap, i) ||
 				    bit_test(topo_eval->node_map, i))
 					continue;
+				if (!avail_res_array[i] ||
+				    !avail_res_array[i]->avail_cpus)
+					continue;
 				eval_nodes_select_cores(topo_eval, i,
 							min_rem_nodes);
-				eval_nodes_cpus_to_use(topo_eval, i,
-						       rem_max_cpus,
-						       min_rem_nodes);
+				(void) eval_nodes_cpus_to_use(topo_eval, i,
+						              rem_max_cpus,
+							      min_rem_nodes,
+							      NULL, false);
 				if (topo_eval->avail_cpus == 0)
 					continue;
 				/*
@@ -953,11 +1282,12 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 			}
 			i = max_cpu_idx;
 			topo_eval->avail_cpus = max_cpu_avail_cpus;
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
+			if (job_ptr->gres_list_req) {
+				node_ptr = node_record_table_ptr[i];
+				if (!eval_nodes_gres(topo_eval, &maxtasks,
+						     job_ptr, node_ptr,
+						     min_rem_nodes, i, 0))
+					continue;
 			}
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += topo_eval->avail_cpus;
@@ -992,7 +1322,10 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
@@ -1020,6 +1353,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
+	uint64_t maxtasks;
 
 	topo_eval->avail_cpus = 0;
 
@@ -1034,6 +1368,8 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
 
 	i_start = bit_ffs(topo_eval->node_map);
 	if (i_start >= 0)
@@ -1059,8 +1395,9 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 				goto fini;
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
-			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus, min_rem_nodes,
+						      &maxtasks, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -1113,8 +1450,9 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			    bit_test(topo_eval->node_map, i))
 				continue;
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
-			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus, min_rem_nodes,
+						      &maxtasks, true);
 			if (topo_eval->avail_cpus == 0)
 				continue;
 			total_cpus += topo_eval->avail_cpus;
@@ -1124,12 +1462,6 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			min_rem_nodes--;
 			topo_eval->max_nodes--;
 			bit_set(topo_eval->node_map, i);
-			if (topo_eval->gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&topo_eval->avail_cpus);
-			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,
 					    job_ptr->job_id)) {
@@ -1155,7 +1487,10 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 
@@ -1184,6 +1519,7 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
+	uint64_t maxtasks;
 
 	topo_eval->avail_cpus = 0;
 
@@ -1198,6 +1534,8 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+					    topo_eval->max_nodes);
 
 	i_start = bit_ffs(topo_eval->node_map);
 	if (i_start >= 0)
@@ -1223,8 +1561,9 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 				goto fini;
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
-			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus, min_rem_nodes,
+						      &maxtasks, true);
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
@@ -1276,7 +1615,8 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 				continue;
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			eval_nodes_cpus_to_use(topo_eval, i,
-					       rem_max_cpus, min_rem_nodes);
+					       rem_max_cpus, min_rem_nodes,
+					       NULL, true);
 			if (topo_eval->avail_cpus == 0)
 				continue;
 			total_cpus += topo_eval->avail_cpus;
@@ -1311,7 +1651,10 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	FREE_NULL_LIST(node_weight_list);
+fini:
+	if (error_code == SLURM_SUCCESS)
+		eval_nodes_clip_socket_cores(topo_eval);
+	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
@@ -1387,8 +1730,9 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 	return _eval_nodes_consec(topo_eval);
 }
 
-extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
-				   int64_t rem_max_cpus, int rem_nodes)
+extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
+				   int64_t rem_max_cpus, int rem_nodes,
+				   uint64_t *max_tasks, bool check_gres)
 {
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
@@ -1420,11 +1764,13 @@ extern void eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 	avail_res->avail_res_cnt = avail_res->avail_cpus +
 				   avail_res->avail_gpus;
 check_gres_per_job:
-	if (topo_eval->gres_per_job) {
-		gres_sched_add(job_ptr->gres_list_req,
-			       avail_res->sock_gres_list,
-			       &topo_eval->avail_cpus);
+	if (check_gres && topo_eval->gres_per_job && topo_eval->avail_cpus) {
+		node_record_t *node_ptr = node_record_table_ptr[node_inx];
+		return eval_nodes_gres(topo_eval, max_tasks, job_ptr, node_ptr,
+				       rem_nodes, node_inx, 0);
 	}
+
+	return true;
 }
 
 extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
@@ -1446,7 +1792,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 
 	xassert(mc_ptr->cpus_per_task);
 
-	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
+	rem_nodes = MAX(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
 		max_tasks_this_node = mc_ptr->ntasks_per_node;
@@ -1525,7 +1871,10 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 			rem_nodes, enforce_binding, first_pass,
 			avail_core[node_inx],
 			node_record_table_ptr[node_inx]->name,
-			cr_type);
+			cr_type,
+			node_ptr->config_ptr->res_cores_per_gpu,
+			node_inx,
+			&avail_res_array[node_inx]->avail_cores_per_sock);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;

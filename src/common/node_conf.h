@@ -72,6 +72,8 @@ typedef struct {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 	char *nodes;		/* name of nodes with this configuration */
 	uint64_t real_memory;	/* MB real memory on the node */
+	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
+				     * to only GPU jobs */
 	uint16_t threads;	/* number of threads per core */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint16_t tot_sockets;	/* number of sockets per node */
@@ -116,6 +118,9 @@ struct node_record {
 					 * use for scheduling purposes */
 	uint64_t free_mem;		/* Free memory in MiB */
 	time_t free_mem_time;		/* Time when free_mem last set */
+	char *gpu_spec;                 /* node's cores reserved for GPU jobs */
+	bitstr_t *gpu_spec_bitmap;	/* node gpu core specialization
+					 * bitmap */
 	char *gres;			/* node's generic resources, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */

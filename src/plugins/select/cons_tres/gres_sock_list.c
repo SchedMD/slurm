@@ -40,6 +40,16 @@
 
 #include "src/common/xstring.h"
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	uint16_t cores_per_sock;
+	bitstr_t *gpu_spec_bitmap;
+	gres_state_t *gres_state_node;
+	const uint32_t node_inx;
+	uint32_t res_cores_per_gpu;
+	uint16_t sockets;
+} foreach_res_gpu_t;
+
 static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
 				   int node_inx, int gres_bit)
 {
@@ -150,7 +160,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_node,
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
+	uint16_t sockets, uint16_t cores_per_sock, uint32_t res_cores_per_gpu,
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
@@ -256,7 +266,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		 * treat like no topo_core_bitmap is specified
 		 */
 		if (gres_ns->topo_core_bitmap &&
-		    gres_ns->topo_core_bitmap[i]) {
+		    gres_ns->topo_core_bitmap[i] &&
+		    !res_cores_per_gpu) {
 			use_all_sockets = true;
 			for (s = 0; s < sockets; s++) {
 				bool use_this_socket = false;
@@ -624,6 +635,147 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
 	list_iterator_destroy(iter);
 }
 
+/* Return true if group_size cores could be selected in the given range */
+static bool _pick_core_group(bitstr_t *gpu_res_core_bitmap,
+			     bitstr_t *core_bitmap,
+			     gres_job_state_t *gres_js, int cur_inx,
+			     int max_inx, uint16_t group_size,
+			     int *picked_cores)
+{
+	xassert(picked_cores);
+	int cnt = 0;
+
+	while (cnt != group_size && (cur_inx < max_inx)) {
+		if (!bit_test(gpu_res_core_bitmap, cur_inx) ||
+		    !bit_test(core_bitmap, cur_inx)) {
+			cur_inx++;
+			continue;
+		}
+		picked_cores[cnt] = cur_inx;
+		cnt++;
+		cur_inx++;
+	}
+	return cnt == group_size;
+}
+
+/*
+ * Reduce the number of restricted cores to just that of the gpu type requested
+ */
+static void _pick_restricted_cores(bitstr_t *core_bitmap,
+				   bitstr_t *gpu_spec_cpy,
+				   gres_job_state_t *gres_js,
+				   gres_node_state_t *gres_ns,
+				   uint32_t res_cores_per_gpu,
+				   uint16_t sockets,
+				   uint16_t cores_per_sock,
+				   uint32_t node_i)
+{
+	int *picked_cores = xcalloc(res_cores_per_gpu, sizeof(int));
+
+	if (!gres_js->res_gpu_cores) {
+		gres_js->res_array_size = node_record_count;
+		gres_js->res_gpu_cores = xcalloc(gres_js->res_array_size,
+						 sizeof(bitstr_t *));
+	}
+	gres_js->res_gpu_cores[node_i] = bit_alloc(bit_size(core_bitmap));
+
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		if (!gres_ns->topo_res_core_bitmap[i])
+			continue;
+		if (gres_js->type_name &&
+		    (gres_js->type_id != gres_ns->topo_type_id[i]))
+			continue;
+		for (int s = 0; s < sockets; s++) {
+			int max_inx = (s + 1) * cores_per_sock;
+			for (int c = 0; c < cores_per_sock; c++) {
+				int cur_inx = (s * cores_per_sock) + c;
+				/*
+				 * Need to pick in groups of res_cores_per_gpu
+				 * since not every gpu job will use all the
+				 * restricted cores allowed.
+				 */
+				if (!_pick_core_group(
+					    gres_ns->topo_res_core_bitmap[i],
+					    core_bitmap, gres_js,
+					    cur_inx, max_inx,
+					    res_cores_per_gpu,
+					    picked_cores))
+					break;
+
+				c = picked_cores[res_cores_per_gpu - 1] -
+					(s * cores_per_sock);
+				for (int j = 0; j < res_cores_per_gpu; j++) {
+					bit_set(gpu_spec_cpy, picked_cores[j]);
+					bit_set(gres_js->res_gpu_cores[node_i],
+						picked_cores[j]);
+				}
+			}
+		}
+	}
+
+	xfree(picked_cores);
+}
+
+static int _foreach_restricted_gpu(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_res_gpu_t *args = arg;
+	gres_job_state_t  *gres_js;
+
+	if ((gres_state_job->plugin_id != gres_get_gpu_plugin_id()) ||
+	    !args->res_cores_per_gpu)
+		return SLURM_SUCCESS;
+	gres_js = gres_state_job->gres_data;
+
+	_pick_restricted_cores(args->core_bitmap, args->gpu_spec_bitmap,
+			       gres_js, args->gres_state_node->gres_data,
+			       args->res_cores_per_gpu, args->sockets,
+			       args->cores_per_sock, args->node_inx);
+
+	return SLURM_SUCCESS;
+}
+
+static void _gres_limit_reserved_cores(
+	List job_gres_list, List node_gres_list, bitstr_t *core_bitmap,
+	uint16_t sockets, uint16_t cores_per_sock,
+	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
+	uint32_t res_cores_per_gpu)
+{
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+	bitstr_t *gpu_spec_cpy;
+	uint32_t gpu_plugin_id = gres_get_gpu_plugin_id();
+	foreach_res_gpu_t args = {
+		.core_bitmap = core_bitmap,
+		.cores_per_sock = cores_per_sock,
+		.node_inx = node_inx,
+		.res_cores_per_gpu = res_cores_per_gpu,
+		.sockets = sockets,
+	};
+
+	if (!gpu_spec_bitmap || !core_bitmap ||
+	    !job_gres_list || !node_gres_list)
+		return;
+
+	gres_state_node = list_find_first(node_gres_list, gres_find_id,
+					  &gpu_plugin_id);
+	if (!gres_state_node)
+		return;
+
+	gres_ns = gres_state_node->gres_data;
+
+	if (!gres_ns || !gres_ns->topo_cnt || !gres_ns->topo_core_bitmap)
+		return;
+
+	gpu_spec_cpy = bit_copy(gpu_spec_bitmap);
+	args.gpu_spec_bitmap = gpu_spec_cpy;
+	args.gres_state_node = gres_state_node;
+
+	list_for_each(job_gres_list, _foreach_restricted_gpu, &args);
+	bit_and(core_bitmap, gpu_spec_cpy);
+	bit_free(gpu_spec_cpy);
+}
+
 extern List gres_sock_list_create(
 	List job_gres_list, List node_gres_list,
 	resv_exc_t *resv_exc_ptr,
@@ -632,7 +784,8 @@ extern List gres_sock_list_create(
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map, uint32_t user_id,
-	const uint32_t node_inx)
+	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
+	uint32_t res_cores_per_gpu, uint16_t cr_type)
 {
 	List sock_gres_list = NULL;
 	list_itr_t *job_gres_iter;
@@ -643,11 +796,20 @@ extern List gres_sock_list_create(
 	list_t *gres_list_resv = NULL;
 	gres_job_state_t **gres_js_resv = NULL;
 
-	if (!job_gres_list || (list_count(job_gres_list) == 0))
+	if (!job_gres_list || (list_count(job_gres_list) == 0)) {
+		if (gpu_spec_bitmap && core_bitmap)
+			bit_and(core_bitmap, gpu_spec_bitmap);
 		return sock_gres_list;
+	}
 	if (!node_gres_list)	/* Node lacks GRES to match */
 		return sock_gres_list;
 	(void) gres_init();
+
+	if (!(cr_type & CR_SOCKET))
+		_gres_limit_reserved_cores(job_gres_list, node_gres_list,
+					   core_bitmap, sockets, cores_per_sock,
+					   node_inx, gpu_spec_bitmap,
+					   res_cores_per_gpu);
 
 	if (resv_exc_ptr) {
 		if (resv_exc_ptr->gres_list_exc) {
@@ -707,8 +869,8 @@ extern List gres_sock_list_create(
 				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name, enforce_binding,
-				local_s_p_n, req_sock_map,
+				res_cores_per_gpu, job_id, node_name,
+				enforce_binding, local_s_p_n, req_sock_map,
 				user_id, node_inx);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(

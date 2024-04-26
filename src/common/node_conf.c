@@ -379,6 +379,7 @@ extern config_record_t *config_record_from_conf_node(
 	config_ptr->mem_spec_limit = conf_node->mem_spec_limit;
 	config_ptr->nodes = xstrdup(conf_node->nodenames);
 	config_ptr->real_memory = conf_node->real_memory;
+	config_ptr->res_cores_per_gpu = conf_node->res_cores_per_gpu;
 	config_ptr->threads = conf_node->threads;
 	config_ptr->tmp_disk = conf_node->tmp_disk;
 	config_ptr->tot_sockets = conf_node->tot_sockets;
@@ -1290,6 +1291,8 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	FREE_NULL_DATA(node_ptr->extra_data);
 	xfree(node_ptr->features);
 	xfree(node_ptr->features_act);
+	xfree(node_ptr->gpu_spec);
+	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
 	xfree(node_ptr->instance_id);

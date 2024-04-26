@@ -223,6 +223,7 @@ typedef struct gres_node_state {
 	int link_len;			/* Size of link_cnt */
 	int **links_cnt;		/* Count of links between GRES */
 	bitstr_t **topo_core_bitmap;
+	bitstr_t **topo_res_core_bitmap;
 	bitstr_t **topo_gres_bitmap;
 	uint64_t *topo_gres_cnt_alloc;
 	uint64_t *topo_gres_cnt_avail;
@@ -283,6 +284,14 @@ typedef struct gres_job_state {
 					 * Used without GRES files */
 	uint64_t **gres_per_bit_select; /* For shared gres to track which
 					   gres was allocated for which bit */
+
+	/*
+	 * Only initialized for gpus. One entry per node on the cluster.
+	 * Used by select/cons_tres to keep track of which restricted cores each
+	 * gpu type has access to.
+	 */
+	bitstr_t **res_gpu_cores;
+	uint32_t res_array_size;
 
 	/* Allocated resources details */
 	/*

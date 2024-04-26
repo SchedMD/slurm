@@ -203,6 +203,8 @@ typedef struct slurm_conf_node {
 	uint64_t real_memory;	/* MB real memory on the node */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *reason;
+	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
+				     * to only GPU jobs */
 	char *state;
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	char *tres_weights_str;	/* per TRES billing weight string */

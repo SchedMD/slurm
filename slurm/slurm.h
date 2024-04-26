@@ -2330,6 +2330,9 @@ typedef struct node_info {
 				 * populated by scontrol */
 	uint16_t port;		/* TCP port number of the slurmd */
 	uint64_t real_memory;	/* configured MB of real memory on the node */
+	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
+				     * to only GPU jobs */
+	char *gpu_spec;         /* node's cores reserved for GPU jobs */
 	char *comment;		/* arbitrary comment */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if

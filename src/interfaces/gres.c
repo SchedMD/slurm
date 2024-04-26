@@ -2917,6 +2917,8 @@ static void _gres_node_state_delete_topo(gres_node_state_t *gres_ns)
 			FREE_NULL_BITMAP(gres_ns->topo_gres_bitmap[i]);
 		if (gres_ns->topo_core_bitmap)
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[i]);
+		if (gres_ns->topo_res_core_bitmap)
+			FREE_NULL_BITMAP(gres_ns->topo_res_core_bitmap[i]);
 		xfree(gres_ns->topo_type_name[i]);
 	}
 	xfree(gres_ns->topo_gres_bitmap);
@@ -3666,6 +3668,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			xrealloc(gres_ns->topo_core_bitmap,
 				 slurmd_conf_tot.topo_cnt *
 				 sizeof(bitstr_t *));
+		gres_ns->topo_res_core_bitmap =
+			xrealloc(gres_ns->topo_res_core_bitmap,
+				 slurmd_conf_tot.topo_cnt *
+				 sizeof(bitstr_t *));
 		gres_ns->topo_type_id = xrealloc(gres_ns->topo_type_id,
 						 slurmd_conf_tot.topo_cnt *
 						 sizeof(uint32_t));
@@ -3989,6 +3995,9 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 		shared_gres_ns->topo_core_bitmap =
 			xrealloc(shared_gres_ns->topo_core_bitmap,
 				 sizeof(bitstr_t *) * sharing_cnt);
+		shared_gres_ns->topo_res_core_bitmap =
+			xrealloc(shared_gres_ns->topo_res_core_bitmap,
+				 sizeof(uint64_t) * sharing_cnt);
 		shared_gres_ns->topo_gres_bitmap =
 			xrealloc(shared_gres_ns->topo_gres_bitmap,
 				 sizeof(bitstr_t *) * sharing_cnt);
@@ -4006,6 +4015,8 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 				 sizeof(char *) * sharing_cnt);
 	} else {
 		shared_gres_ns->topo_core_bitmap =
+			xcalloc(sharing_cnt, sizeof(bitstr_t *));
+		shared_gres_ns->topo_res_core_bitmap =
 			xcalloc(sharing_cnt, sizeof(bitstr_t *));
 		shared_gres_ns->topo_gres_bitmap =
 			xcalloc(sharing_cnt, sizeof(bitstr_t *));
@@ -4632,6 +4643,8 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 		for (int i = 0; i < gres_ns->topo_cnt; i++) {
 			pack_bit_str_hex(gres_ns->topo_core_bitmap[i], buffer);
 			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i], buffer);
+			pack_bit_str_hex(gres_ns->topo_res_core_bitmap[i],
+					 buffer);
 		}
 		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
 			     buffer);
@@ -4692,7 +4705,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 		gres_ns = _build_gres_node_state();
 
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -4707,6 +4720,50 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 					xcalloc(gres_ns->topo_cnt,
 						sizeof(bitstr_t *));
 				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_res_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				for (int i = 0; i < gres_ns->topo_cnt; i++) {
+					unpack_bit_str_hex(
+						&gres_ns->topo_core_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->topo_gres_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->
+						topo_res_core_bitmap[i],
+						buffer);
+				}
+			}
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_alloc,
+					    &tmp_uint32, buffer);
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_avail,
+					    &tmp_uint32, buffer);
+			safe_unpack32_array(&gres_ns->topo_type_id, &tmp_uint32,
+					    buffer);
+			safe_unpackstr_array(&gres_ns->topo_type_name,
+					     &tmp_uint32, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpack32(&config_flags, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
+			safe_unpack16(&gres_bitmap_size, buffer);
+
+			safe_unpack16(&gres_ns->topo_cnt, buffer);
+			if (gres_ns->topo_cnt) {
+				gres_ns->topo_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_res_core_bitmap =
 					xcalloc(gres_ns->topo_cnt,
 						sizeof(bitstr_t *));
 				for (int i = 0; i < gres_ns->topo_cnt; i++) {
@@ -4809,6 +4866,8 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 							sizeof(bitstr_t *));
 		new_gres_ns->topo_gres_bitmap = xcalloc(gres_ns->topo_cnt,
 							sizeof(bitstr_t *));
+		new_gres_ns->topo_res_core_bitmap = xcalloc(gres_ns->topo_cnt,
+							    sizeof(bitstr_t *));
 		new_gres_ns->topo_gres_cnt_alloc = xcalloc(gres_ns->topo_cnt,
 							   sizeof(uint64_t));
 		new_gres_ns->topo_gres_cnt_avail = xcalloc(gres_ns->topo_cnt,
@@ -4821,6 +4880,11 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 			if (gres_ns->topo_core_bitmap[i]) {
 				new_gres_ns->topo_core_bitmap[i] =
 					bit_copy(gres_ns->topo_core_bitmap[i]);
+			}
+			if (gres_ns->topo_res_core_bitmap[i]) {
+				new_gres_ns->topo_res_core_bitmap[i] =
+					bit_copy(gres_ns->
+						 topo_res_core_bitmap[i]);
 			}
 			new_gres_ns->topo_gres_bitmap[i] =
 				bit_copy(gres_ns->topo_gres_bitmap[i]);
@@ -5365,6 +5429,14 @@ extern void gres_job_state_delete(gres_job_state_t *gres_js)
 		}
 		xfree(gres_js->gres_per_bit_select);
 	}
+
+	if (gres_js->res_gpu_cores) {
+		for (i = 0; i < gres_js->res_array_size; i++) {
+			FREE_NULL_BITMAP(gres_js->res_gpu_cores[i]);
+		}
+		xfree(gres_js->res_gpu_cores);
+	}
+
 	xfree(gres_js->gres_cnt_node_alloc);
 	xfree(gres_js->gres_cnt_node_select);
 	xfree(gres_js->type_name);
@@ -6563,6 +6635,7 @@ static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 	new_gres_js->mem_per_gres = gres_js->mem_per_gres;
 	new_gres_js->ntasks_per_gres = gres_js->ntasks_per_gres;
 	new_gres_js->node_cnt = gres_js->node_cnt;
+	new_gres_js->res_array_size = gres_js->res_array_size;
 	new_gres_js->total_gres	= gres_js->total_gres;
 	new_gres_js->total_node_cnt = gres_js->total_node_cnt;
 	new_gres_js->type_id = gres_js->type_id;
@@ -6671,6 +6744,17 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_cnt, sizeof(uint64_t));
 			memcpy(new_gres_js->gres_per_bit_select[i],
 			       gres_js->gres_per_bit_select[i], bit_cnt);
+		}
+	}
+
+	if (gres_js->res_gpu_cores) {
+		new_gres_js->res_gpu_cores = xcalloc(gres_js->res_array_size,
+						     sizeof(bitstr_t *));
+		for (i = 0; i < gres_js->res_array_size; i++) {
+			if (gres_js->res_gpu_cores[i] == NULL)
+				continue;
+			new_gres_js->res_gpu_cores[i] =
+				bit_copy(gres_js->res_gpu_cores[i]);
 		}
 	}
 

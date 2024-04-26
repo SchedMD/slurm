@@ -467,6 +467,12 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Cannot signal job" },
 	{ ERRTAB_ENTRY(ESLURM_SIGNAL_JOBS_INVALID),
 	  "Invalid signal jobs request, at least one job id or filter is required." },
+	{ ERRTAB_ENTRY(ESLURM_RES_CORES_PER_GPU_UNIQUE),
+	  "RestrictedCoresPerGPU: Not enough unique cores per GPU" },
+	{ ERRTAB_ENTRY(ESLURM_RES_CORES_PER_GPU_TOPO),
+	  "RestrictedCoresPerGPU: Missing core topology for GPUs" },
+	{ ERRTAB_ENTRY(ESLURM_RES_CORES_PER_GPU_NO),
+	  "RestrictedCoresPerGPU: No GPUs configured on node" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
