@@ -266,9 +266,34 @@ unpack_error:
 	return NULL;
 }
 
+/*
+ * auth/slurm does not support user aliasing. Only permit this call from the
+ * same user (which means no internal state changes are necessary).
+ */
 extern int auth_p_thread_config(const char *token, const char *username)
 {
-	return ESLURM_AUTH_CRED_INVALID;
+	int rc = ESLURM_AUTH_CRED_INVALID;
+	char *user;
+
+	/* auth/slurm does not accept user provided auth token */
+	if (token || !username) {
+		error("Rejecting thread config token for user %s", username);
+		return rc;
+	}
+
+	user = uid_to_string_or_null(getuid());
+
+	if (!xstrcmp(username, user)) {
+		debug("applying thread config for user %s", username);
+		rc = SLURM_SUCCESS;
+	} else {
+		error("rejecting thread config for user %s while running as %s",
+		      username, user);
+	}
+
+	xfree(user);
+
+	return rc;
 }
 
 extern void auth_p_thread_clear(void)
