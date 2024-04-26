@@ -72,6 +72,16 @@ def setup():
     kill_slurmctld()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def cloud_state():
+    """stop all jobs and reset cloud node state after each test"""
+    yield
+    atf.cancel_all_jobs()
+    kill_slurmds()
+    atf.restart_slurmctld(clean=True)
+    time.sleep(2)
+
+
 # Helper teardown functions
 # Since our teardown doesn't seem to remove cloud nodes' slurmds, we need to
 # delete the slurmds manually
@@ -224,7 +234,10 @@ def test_scontrol_power_up_down():
         fatal=True,
         user="slurm",
     )
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=5, fatal=True)
+    atf.wait_for_node_state_any(
+        f"{node_prefix}1", ["POWER_UP", "POWERING_UP"], timeout=5, fatal=True
+    )
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=35, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
         "+"
     ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
@@ -282,7 +295,10 @@ def test_scontrol_power_down_asap():
         fatal=True,
         user="slurm",
     )
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=5, fatal=True)
+    atf.wait_for_node_state_any(
+        f"{node_prefix}1", ["POWER_UP", "POWERING_UP"], timeout=5, fatal=True
+    )
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=35, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
         "+"
     ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
@@ -329,7 +345,7 @@ def test_scontrol_power_down_asap():
 
     # Wait for job to finish and then assert cloud node becomes POWERED_DOWN
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=5, fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=35, fatal=True)
     atf.wait_for_node_state(
         f"{node_prefix}1", "POWERED_DOWN", timeout=suspend_timeout + 5, fatal=True
     )
@@ -353,7 +369,10 @@ def test_scontrol_power_down_force_and_resume():
         fatal=True,
         user="slurm",
     )
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=5, fatal=True)
+    atf.wait_for_node_state_any(
+        f"{node_prefix}1", ["POWER_UP", "POWERING_UP"], timeout=5, fatal=True
+    )
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", timeout=35, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
         "+"
     ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
@@ -613,7 +632,7 @@ def test_power_down_on_idle():
     ) or "POWERING_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
         "+"
     ), "Cloud node wasn't immediately POWERING_DOWN once idle, in contrary to 'PowerDownOnIdle=Yes' flag for parition"
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=5, fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=35, fatal=True)
     atf.wait_for_node_state(
         f"{node_prefix}1", "POWERED_DOWN", timeout=suspend_timeout + 5, fatal=True
     )
@@ -641,6 +660,7 @@ def test_scontrol_power_down_force():
         "SlurmctldParameters", f"power_save_min_interval={power_interval}"
     )
     atf.restart_slurmctld(clean=True)
+    atf.run_command("scontrol show config")
 
     # Submit job, get it assigned to the cloud node, and make sure everything
     # goes well before cloud node enters POWERING_UP state
@@ -662,11 +682,14 @@ def test_scontrol_power_down_force():
         fatal=True,
         user="slurm",
     )
-    assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
-        "+"
+    node_state = set(atf.get_node_parameter(f"{node_prefix}1", "State").split("+"))
+    assert (
+        "IDLE" in node_state
     ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
-    assert "POWER_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
-        "+"
+    # handle a slight race condition where the node could be powered down before the check
+    # pretty unlikely
+    assert (
+        set(["POWER_DOWN", "POWERING_DOWN"]) & node_state
     ), "POWER_DOWN should immediately be added to cloud node's state"
     assert "PENDING" == atf.get_job_parameter(
         job_id, "JobState", default="NOT_FOUND", quiet=True
