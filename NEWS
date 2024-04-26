@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sanity check when setting tres-per-task on the job allocation as well as
     the step.
  -- slurmrestd - Fix compatiblity with auth/slurm.
+ -- Fix issue where TRESRunMins gets off correct value if using
+    QOS UsageFactor != 1.
 
 * Changes in Slurm 23.11.6
 ==========================
