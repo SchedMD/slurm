@@ -2457,13 +2457,7 @@ extern void env_merge_filter(slurm_opt_t *opt, job_desc_msg_t *desc)
 	}
 	xfree(tmp);
 
-	for (i = 0; environ[i]; i++) {
-		if (xstrncmp("SLURM_", environ[i], 6))
-			continue;
-		save_env[0] = environ[i];
-		env_array_merge(&desc->environment,
-				(const char **)save_env);
-	}
+	env_array_merge_slurm_spank(&desc->environment, (const char **)environ);
 }
 
 extern char **env_array_exclude(const char **env, const regex_t *regex)
