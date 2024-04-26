@@ -1743,7 +1743,9 @@ static void _print_gres(void)
 	o->logfile_level = LOG_LEVEL_QUIET;
 	o->stderr_level = LOG_LEVEL_INFO;
 	o->syslog_level = LOG_LEVEL_INFO;
-	o->prefix_level = false;
+	if (conf->debug_level_set)
+		o->stderr_level = conf->debug_level;
+
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
 
 	_load_gres();
