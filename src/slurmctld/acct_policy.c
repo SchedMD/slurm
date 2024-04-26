@@ -2918,6 +2918,12 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 	time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	new_time_limit_secs = (uint64_t)new_time_limit * 60;
 
+	/* take into account usage factor */
+	if (job_ptr->qos_ptr && (job_ptr->qos_ptr->usage_factor >= 0)) {
+		time_limit_secs *= job_ptr->qos_ptr->usage_factor;
+		new_time_limit_secs *= job_ptr->qos_ptr->usage_factor;
+	}
+
 	/* clang needs these memset to avoid a warning */
 	memset(used_tres_run_secs, 0, sizeof(used_tres_run_secs));
 	memset(new_used_tres_run_secs, 0, sizeof(new_used_tres_run_secs));
