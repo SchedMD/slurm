@@ -607,10 +607,9 @@ static void _print_cred(munge_ctx_t ctx)
 		info("DECODED: %s", slurm_ctime2_r(&decoded, buf));
 }
 
-
 /*
  * auth/munge does not support user aliasing. Only permit this call from the
- * same user (which means no internal state changes are necessary.
+ * same user (which means no internal state changes are necessary).
  */
 int auth_p_thread_config(const char *token, const char *username)
 {
