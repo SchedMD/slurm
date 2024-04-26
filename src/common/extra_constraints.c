@@ -486,6 +486,11 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 				error("Unbalanced parentheses");
 #endif
 				*rc = SLURM_ERROR;
+				/*
+				 * Do not return because we were not recursively
+				 * called to get here.
+				 */
+				break;
 			}
 			if (!parent->num_children) {
 #if _DEBUG

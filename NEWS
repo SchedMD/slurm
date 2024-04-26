@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
     QOS UsageFactor != 1.
  -- slurmrestd - Require `user` and `association_condition` fields to be
     populated for requests to 'POST /slurmdb/v0.0.40/users_association'.
+ -- Avoid a slurmctld crash with extra_constraints enabled when a job requests
+    certain invalid --extra values.
 
 * Changes in Slurm 23.11.6
 ==========================
