@@ -805,7 +805,7 @@ static char *_print_data_json(const data_t *d, char *buffer, int size)
 {
 	int printed;
 	size_t remain;
-	char *nbuf;
+	char *nbuf = NULL;
 
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
@@ -814,14 +814,16 @@ static char *_print_data_json(const data_t *d, char *buffer, int size)
 	 * to handle the va_list this will effectively skip this argument.
 	 */
 	printed = snprintf(buffer, size, "%%.0s");
-	nbuf = buffer + printed;
 	remain = size - printed;
 
 	if (serialize_g_data_to_string(&nbuf, &remain, d, MIME_TYPE_JSON,
 				       SER_FLAGS_COMPACT))
 		snprintf(buffer, size, "%%.0s(JSON serialization failed)");
+	else
+		snprintf(buffer, remain, "%s", nbuf);
 
 	xassert(remain <= size);
+	xfree(nbuf);
 
 	return buffer;
 }

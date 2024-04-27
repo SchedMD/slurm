@@ -182,6 +182,9 @@ documents those changes that are of interest to users and administrators.
  -- Add SlurmctldParameters=step_mgr_enable to enable step management through
     the slurmstepd instead of the controller.
  -- Avoid slurmstepd infinite loop waiting for tasks termination.
+ -- Fix logging of JSON/YAML values in some messages where nothing would be
+    printed as the value instead of the actual JSONified version of the parsed
+    string.
 
 * Changes in Slurm 23.11.7
 ==========================
