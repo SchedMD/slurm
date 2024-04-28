@@ -931,6 +931,13 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = select_context_default;
 
+	/* Remove when 23.02 is no longer supported. */
+	if (!running_in_slurmctld() &&
+	    (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)) {
+		pack32(plugin_id, buffer);
+		return SLURM_SUCCESS;
+	}
+
 	xassert(select_context_cnt >= 0);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -954,6 +961,22 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 					  uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
+
+	/* Remove when 23.02 is no longer supported. */
+	if (!running_in_slurmctld() &&
+	    (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)) {
+		uint32_t plugin_id;
+		safe_unpack32(&plugin_id, buffer);
+		/*
+		 * srun will unpack this and then repack things later when
+		 * sending to the slurmd. Instead of the context here we have
+		 * the actual plugin id.
+		 * This hack works for all systems that aren't cray_aries.
+		 */
+		select_context_default = plugin_id;
+		*jobinfo = NULL;
+		return SLURM_SUCCESS;
+	}
 
 	xassert(select_context_cnt >= 0);
 
