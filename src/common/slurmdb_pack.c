@@ -656,7 +656,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 				     buf_t *buffer)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
-	slurm_persist_conn_t *persist_conn;
+	persist_conn_t *persist_conn;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (!object) {
@@ -862,7 +862,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
 	slurmdb_cluster_accounting_rec_t *slurmdb_info = NULL;
-	slurm_persist_conn_t *conn;
+	persist_conn_t *conn;
 
 	*object = object_ptr;
 
@@ -927,13 +927,13 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}
@@ -1001,13 +1001,13 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}
@@ -1075,13 +1075,13 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn = xmalloc(sizeof(*conn));
 			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}

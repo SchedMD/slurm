@@ -238,7 +238,7 @@ static bool _comm_fail_log(slurmdb_cluster_rec_t *cluster)
 static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
 	int rc = SLURM_SUCCESS;
-//	slurm_persist_conn_t *persist_conn = NULL;
+//	persist_conn_t *persist_conn = NULL;
 
 	xassert(cluster);
 	slurm_mutex_lock(&cluster->lock);
@@ -306,7 +306,7 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 {
 	int rc;
-	slurm_persist_conn_t *persist_conn = NULL;
+	persist_conn_t *persist_conn = NULL;
 	static int timeout = -1;
 
 	if (timeout < 0)
@@ -340,7 +340,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		 cluster->name, cluster->control_host, cluster->control_port);
 
 	if (!cluster->fed.send) {
-		persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
+		persist_conn = xmalloc(sizeof(*persist_conn));
 
 		cluster->fed.send = persist_conn;
 
@@ -388,7 +388,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 /* The cluster->lock should be locked before this is called */
 static int _check_send(slurmdb_cluster_rec_t *cluster)
 {
-	slurm_persist_conn_t *send = cluster->fed.send;
+	persist_conn_t *send = cluster->fed.send;
 
 	if (!send || send->fd == -1) {
 		return _open_controller_conn(cluster, true);
@@ -403,7 +403,7 @@ static void _open_persist_sends(void)
 {
 	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster = NULL;
-	slurm_persist_conn_t *send = NULL;
+	persist_conn_t *send = NULL;
 
 	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list) {
 		log_flag(FEDR, "bailing on empty cluster list");
@@ -826,7 +826,7 @@ static void _leave_federation(void)
 
 static void _persist_callback_fini(void *arg)
 {
-	slurm_persist_conn_t *persist_conn = arg;
+	persist_conn_t *persist_conn = arg;
 	slurmdb_cluster_rec_t *cluster;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -969,7 +969,7 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg_t   sib_msg;
 
 	if (!conn->fed.send ||
-	    (((slurm_persist_conn_t *)conn->fed.send)->fd == -1))
+	    (((persist_conn_t *) conn->fed.send)->fd == -1))
 		return SLURM_SUCCESS;
 
 	slurm_msg_t_init(&req_msg);
@@ -2134,7 +2134,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	slurm_mutex_lock(&sibling->lock);
 	if (!sibling->rpc_version && sibling->fed.recv) {
 		sibling->rpc_version =
-			((slurm_persist_conn_t *)sibling->fed.recv)->version;
+			((persist_conn_t *) sibling->fed.recv)->version;
 	}
 	slurm_mutex_unlock(&sibling->lock);
 
@@ -3563,7 +3563,7 @@ extern uint32_t fed_mgr_get_cluster_id(uint32_t id)
 	return id >> FED_MGR_CLUSTER_ID_BEGIN;
 }
 
-extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
+extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 				    char **out_buffer)
 {
 	slurmdb_cluster_rec_t *cluster = NULL;
@@ -4499,7 +4499,7 @@ static int _job_lock_all_sibs(job_record_t *job_ptr)
 			}
 		} else if (!(sibling = fed_mgr_get_cluster_by_id(sib_id)) ||
 			   (!sibling->fed.send) ||
-			   (((slurm_persist_conn_t *)sibling->fed.send) < 0)) {
+			   (((persist_conn_t *) sibling->fed.send) < 0)) {
 			/*
 			 * Don't consider clusters that are down. They will sync
 			 * up later.
@@ -4568,14 +4568,14 @@ extern int fed_mgr_job_lock(job_record_t *job_ptr)
 		 job_ptr, cluster_id);
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
-		slurm_persist_conn_t *origin_conn = NULL;
+		persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			info("Unable to find origin cluster for %pJ from origin id %d",
 			     job_ptr, origin_id);
 		} else
-			origin_conn = (slurm_persist_conn_t *)
-				       origin_cluster->fed.send;
+			origin_conn =
+				(persist_conn_t *) origin_cluster->fed.send;
 
 		/* Check dbd is up to make sure ctld isn't on an island. */
 		if (acct_db_conn && _slurmdbd_conn_active() &&
@@ -4720,14 +4720,14 @@ extern int fed_mgr_job_unlock(job_record_t *job_ptr)
 		 job_ptr, cluster_id);
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
-		slurm_persist_conn_t *origin_conn = NULL;
+		persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			info("Unable to find origin cluster for %pJ from origin id %d",
 			     job_ptr, origin_id);
 		} else {
-			origin_conn = (slurm_persist_conn_t *)
-				origin_cluster->fed.send;
+			origin_conn =
+				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
 		if (!origin_conn || (origin_conn->fd < 0)) {
@@ -4781,14 +4781,14 @@ extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
 		 job_ptr, cluster_id);
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
-		slurm_persist_conn_t *origin_conn = NULL;
+		persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			info("Unable to find origin cluster for %pJ from origin id %d",
 			     job_ptr, origin_id);
 		} else {
-			origin_conn = (slurm_persist_conn_t *)
-				origin_cluster->fed.send;
+			origin_conn =
+				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
 		if (!origin_conn || (origin_conn->fd < 0)) {
@@ -5190,7 +5190,7 @@ static int _cancel_sibling_jobs(job_record_t *job_ptr, uint16_t signal,
 {
 	int id = 1;
 	uint64_t tmp_sibs;
-	slurm_persist_conn_t *sib_conn;
+	persist_conn_t *sib_conn;
 
 	if (kill_viable) {
 		tmp_sibs = job_ptr->fed_details->siblings_viable;
@@ -5212,7 +5212,7 @@ static int _cancel_sibling_jobs(job_record_t *job_ptr, uint16_t signal,
 
 			/* Don't send request to siblings that are down when
 			 * killing viables */
-			sib_conn = (slurm_persist_conn_t *)cluster->fed.send;
+			sib_conn = (persist_conn_t *) cluster->fed.send;
 			if (kill_viable && (!sib_conn || sib_conn->fd == -1))
 				goto next_job;
 
@@ -6124,7 +6124,7 @@ static int _list_find_not_synced_sib(void *x, void *key)
 
 	if (sib != fed_mgr_cluster_rec &&
 	    sib->fed.send &&
-	    (((slurm_persist_conn_t *)sib->fed.send)->fd >= 0) &&
+	    (((persist_conn_t *) sib->fed.send)->fd >= 0) &&
 	    !sib->fed.sync_recvd)
 		return 1;
 

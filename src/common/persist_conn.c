@@ -58,7 +58,7 @@
 
 typedef struct {
 	void *arg;
-	slurm_persist_conn_t *conn;
+	persist_conn_t *conn;
 	int thread_loc;
 	pthread_t thread_id;
 } persist_service_conn_t;
@@ -69,7 +69,7 @@ static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 static time_t          shutdown_time = 0;
 
-static buf_t *_slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 				      bool reopen);
 
 /* Return time in msec since "start time" */
@@ -86,7 +86,7 @@ static int _tot_wait (struct timeval *start_time)
 
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
-static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
+static bool _comm_fail_log(persist_conn_t *persist_conn)
 {
 	time_t now = time(NULL);
 	time_t old = now - 600;	/* Log failures once every 10 mins */
@@ -98,7 +98,7 @@ static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
 	return false;
 }
 
-/* static void _reopen_persist_conn(slurm_persist_conn_t *persist_conn) */
+/* static void _reopen_persist_conn(persist_conn_t *persist_conn) */
 /* { */
 /*	xassert(persist_conn); */
 /*	fd_close(&persist_conn->fd); */
@@ -107,7 +107,7 @@ static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
 
 /* Wait until a file is readable,
  * RET false if can not be read */
-static bool _conn_readable(slurm_persist_conn_t *persist_conn)
+static bool _conn_readable(persist_conn_t *persist_conn)
 {
 	struct pollfd ufds;
 	int rc, time_left;
@@ -196,7 +196,7 @@ static void _sig_handler(int signal)
 {
 }
 
-static void _persist_free_msg_members(slurm_persist_conn_t *persist_conn,
+static void _persist_free_msg_members(persist_conn_t *persist_conn,
 				      persist_msg_t *persist_msg)
 {
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
@@ -205,8 +205,7 @@ static void _persist_free_msg_members(slurm_persist_conn_t *persist_conn,
 		slurm_free_msg_data(persist_msg->msg_type, persist_msg->data);
 }
 
-static int _process_service_connection(
-	slurm_persist_conn_t *persist_conn, void *arg)
+static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 {
 	uint32_t nw_size = 0, msg_size = 0;
 	char *msg_char = NULL;
@@ -421,7 +420,7 @@ extern void slurm_persist_conn_recv_server_fini(void)
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
-extern void slurm_persist_conn_recv_thread_init(slurm_persist_conn_t *persist_conn,
+extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 						int thread_loc, void *arg)
 {
 	persist_service_conn_t *service_conn;
@@ -521,8 +520,7 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc)
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
-extern int slurm_persist_conn_open_without_init(
-	slurm_persist_conn_t *persist_conn)
+extern int slurm_persist_conn_open_without_init(persist_conn_t *persist_conn)
 {
 	slurm_addr_t addr;
 
@@ -574,7 +572,7 @@ extern int slurm_persist_conn_open_without_init(
  * IN/OUT - persistent connection needing rem_host and rem_port filled in.
  * Returned completely filled in.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
-extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
+extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 {
 	int rc = SLURM_ERROR;
 	slurm_msg_t req_msg;
@@ -615,7 +613,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	} else {
 		buf_t *buffer = _slurm_persist_recv_msg(persist_conn, false);
 		persist_msg_t msg;
-		slurm_persist_conn_t persist_conn_tmp;
+		persist_conn_t persist_conn_tmp;
 
 		if (!buffer) {
 			if (_comm_fail_log(persist_conn)) {
@@ -626,8 +624,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 			goto end_it;
 		}
 		memset(&msg, 0, sizeof(persist_msg_t));
-		memcpy(&persist_conn_tmp, persist_conn,
-		       sizeof(slurm_persist_conn_t));
+		memcpy(&persist_conn_tmp, persist_conn, sizeof(persist_conn_t));
 		/* The first unpack is done the same way for dbd or normal
 		 * communication . */
 		persist_conn_tmp.flags &= (~PERSIST_FLAG_DBD);
@@ -663,7 +660,7 @@ end_it:
 	return rc;
 }
 
-extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
+extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 {
 	if (!persist_conn)
 		return;
@@ -671,7 +668,7 @@ extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
 	fd_close(&persist_conn->fd);
 }
 
-extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn,
 				     bool with_init)
 {
 	slurm_persist_conn_close(persist_conn);
@@ -683,8 +680,7 @@ extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
 }
 
 /* Close the persistent connection */
-extern void slurm_persist_conn_members_destroy(
-	slurm_persist_conn_t *persist_conn)
+extern void slurm_persist_conn_members_destroy(persist_conn_t *persist_conn)
 {
 	if (!persist_conn)
 		return;
@@ -704,7 +700,7 @@ extern void slurm_persist_conn_members_destroy(
 }
 
 /* Close the persistent connection */
-extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
+extern void slurm_persist_conn_destroy(persist_conn_t *persist_conn)
 {
 	if (!persist_conn)
 		return;
@@ -712,7 +708,7 @@ extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 	xfree(persist_conn);
 }
 
-extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 					  persist_msg_t *persist_msg,
 					  char *msg_char, uint32_t msg_size,
 					  buf_t **out_buffer, bool first)
@@ -764,7 +760,7 @@ extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
  *     0 if can not be written to within 5 seconds
  *     -1 if file has been closed POLLHUP
  */
-extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
+extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 {
 	struct pollfd ufds;
 	int write_timeout = 5000;
@@ -854,7 +850,7 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 	return 0;
 }
 
-extern int slurm_persist_send_msg(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 				  buf_t *buffer)
 {
 	uint32_t msg_size, nw_size;
@@ -913,7 +909,7 @@ extern int slurm_persist_send_msg(slurm_persist_conn_t *persist_conn,
 	return SLURM_SUCCESS;
 }
 
-static buf_t *_slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 				      bool reopen)
 {
 	uint32_t msg_size, nw_size;
@@ -999,12 +995,12 @@ endit:
 	return NULL;
 }
 
-extern buf_t *slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+extern buf_t *slurm_persist_recv_msg(persist_conn_t *persist_conn)
 {
 	return _slurm_persist_recv_msg(persist_conn, true);
 }
 
-extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_msg_pack(persist_conn_t *persist_conn,
 				     persist_msg_t *req_msg)
 {
 	buf_t *buffer;
@@ -1034,8 +1030,7 @@ extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 	return buffer;
 }
 
-
-extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 				    persist_msg_t *resp_msg, buf_t *buffer)
 {
 	int rc;
@@ -1189,7 +1184,7 @@ extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg)
 	}
 }
 
-extern buf_t *slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 					uint32_t rc, char *comment,
 					uint16_t ret_info)
 {
@@ -1209,7 +1204,7 @@ extern buf_t *slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
 	return slurm_persist_msg_pack(persist_conn, &resp);
 }
 
-extern buf_t *slurm_persist_make_rc_msg_flags(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
 					      uint32_t rc, char *comment,
 					      uint16_t flags,
 					      uint16_t ret_info)

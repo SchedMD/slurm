@@ -5862,7 +5862,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		 * isn't then _signal_job will signal the sibling jobs
 		 */
 		if (origin && origin->fed.send &&
-		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
+		    (((persist_conn_t *) origin->fed.send)->fd != -1) &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&
@@ -6019,7 +6019,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 				 buf_t **out_buffer)
 {
 	slurm_msg_t msg;
-	slurm_persist_conn_t *persist_conn = arg;
+	persist_conn_t *persist_conn = arg;
 
 	*out_buffer = NULL;
 
@@ -6058,7 +6058,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	buf_t *ret_buf;
-	slurm_persist_conn_t *persist_conn = NULL, p_tmp;
+	persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
@@ -6083,7 +6083,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 		goto end_it;
 	}
 
-	persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
+	persist_conn = xmalloc(sizeof(persist_conn_t));
 
 	persist_conn->auth_uid = msg->auth_uid;
 	persist_conn->auth_gid = msg->auth_gid;
@@ -6114,7 +6114,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	//persist_conn->timeout = 0; /* we want this to be 0 */
 
 	persist_conn->version = persist_init->version;
-	memcpy(&p_tmp, persist_conn, sizeof(slurm_persist_conn_t));
+	memcpy(&p_tmp, persist_conn, sizeof(persist_conn_t));
 
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
 		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);

@@ -184,8 +184,8 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
  * IN persist_conn: connection to send things on
  * RET: error code
  */
-extern int slurmdb_send_accounting_update_persist(
-	List update_list, slurm_persist_conn_t *persist_conn);
+extern int slurmdb_send_accounting_update_persist(list_t *update_list,
+						  persist_conn_t *persist_conn);
 extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 					  char *host, uint16_t port,
 					  uint16_t rpc_version);

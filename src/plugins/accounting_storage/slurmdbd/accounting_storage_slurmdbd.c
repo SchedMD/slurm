@@ -656,7 +656,7 @@ extern void *acct_storage_p_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
 {
-	slurm_persist_conn_t *pc;
+	persist_conn_t *pc;
 
 	if (first)
 		init();
@@ -675,7 +675,7 @@ extern int acct_storage_p_close_connection(void **db_conn)
 {
 	slurmdbd_agent_rem_conn();
 
-	dbd_conn_close((slurm_persist_conn_t **)db_conn);
+	dbd_conn_close((persist_conn_t **) db_conn);
 
 	return SLURM_SUCCESS;
 }
@@ -2919,12 +2919,12 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.data         = &req;
 
 	if (db_conn &&
-	    (((slurm_persist_conn_t *)db_conn)->flags & PERSIST_FLAG_EXT_DBD)) {
+	    (((persist_conn_t *) db_conn)->flags & PERSIST_FLAG_EXT_DBD)) {
 		req.flags |= CLUSTER_FLAG_EXT;
 		info("Registering slurmctld at port %u with slurmdbd %s:%d",
 		     port,
-		     ((slurm_persist_conn_t *)db_conn)->rem_host,
-		     ((slurm_persist_conn_t *)db_conn)->rem_port);
+		     ((persist_conn_t *) db_conn)->rem_host,
+		     ((persist_conn_t *) db_conn)->rem_port);
 	} else
 		info("Registering slurmctld at port %u with slurmdbd", port);
 

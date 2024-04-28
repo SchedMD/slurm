@@ -60,7 +60,7 @@ typedef enum {
 } persist_conn_type_t;
 
 typedef struct {
-	void *conn;		/* slurm_persist_conn_t */
+	void *conn;		/* persist_conn_t */
 	void *data;		/* pointer to a message type below */
 	uint16_t msg_type;	/* slurmdbd_msg_type_t / slurm_msg_type_t */
 } persist_msg_t;
@@ -87,7 +87,7 @@ typedef struct {
 	int timeout;
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
-} slurm_persist_conn_t;
+} persist_conn_t;
 
 typedef struct {
 	char *cluster_name;     /* cluster this message is coming from */
@@ -114,8 +114,9 @@ extern void slurm_persist_conn_recv_server_init(void);
 /* finish up any persistent connections we are listening to */
 extern void slurm_persist_conn_recv_server_fini(void);
 
-/* Create a thread that will wait listening on the fd in the
- * slurm_persist_conn_t.
+/*
+ * Create a thread that will wait listening on the fd in the persist_conn_t.
+ *
  * IN - persist_conn - persistent connection to listen to.  This will be freed
  *                     internally, so forget about once it enters here.
  * IN - thread_loc - location in the persist_conn thread pool.  This number can
@@ -124,7 +125,7 @@ extern void slurm_persist_conn_recv_server_fini(void);
  * IN - arg - arbitrary argument that will be sent to the callback as well as
  *            the callback in the persist_conn.
  */
-extern void slurm_persist_conn_recv_thread_init(slurm_persist_conn_t *persist_conn,
+extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 						int thread_loc, void *arg);
 
 /* Increment thread_count and don't return until its value is no larger
@@ -140,44 +141,42 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc);
  * IN/OUT - persistent connection needing host and port filled in.  Returned
  * mostly filled in without the version to use to communicate.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
-extern int slurm_persist_conn_open_without_init(
-	slurm_persist_conn_t *persist_conn);
+extern int slurm_persist_conn_open_without_init(persist_conn_t *persist_conn);
 
 /* Open a persistent socket connection and sends an init message to establish
  * the connection.
  * IN/OUT - persistent connection needing host and port filled in.  Returned
  * completely filled in.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
-extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
+extern int slurm_persist_conn_open(persist_conn_t *persist_conn);
 
 /* Close the persistent connection don't free structure or members */
-extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
+extern void slurm_persist_conn_close(persist_conn_t *persist_conn);
 
-extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn,
 				     bool with_init);
 
 /* Close the persistent connection members, but don't free structure */
-extern void slurm_persist_conn_members_destroy(
-	slurm_persist_conn_t *persist_conn);
+extern void slurm_persist_conn_members_destroy(persist_conn_t *persist_conn);
 
 /* Close the persistent connection and free structure */
-extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
+extern void slurm_persist_conn_destroy(persist_conn_t *persist_conn);
 
-extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 					  persist_msg_t *persist_msg,
 					  char *msg_char, uint32_t msg_size,
 					  buf_t **out_buffer, bool first);
 
-extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn);
+extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn);
 
-extern int slurm_persist_send_msg(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 				  buf_t *buffer);
-extern buf_t *slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn);
+extern buf_t *slurm_persist_recv_msg(persist_conn_t *persist_conn);
 
 
-extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_msg_pack(persist_conn_t *persist_conn,
 				     persist_msg_t *req_msg);
-extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
+extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 				    persist_msg_t *resp_msg, buf_t *buffer);
 
 extern void slurm_persist_pack_init_req_msg(persist_init_req_msg_t *msg,
@@ -192,11 +191,11 @@ extern int slurm_persist_unpack_rc_msg(persist_rc_msg_t **msg, buf_t *buffer,
 				       uint16_t protocol_version);
 extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg);
 
-extern buf_t *slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 					uint32_t rc, char *comment,
 					uint16_t ret_info);
 
-extern buf_t *slurm_persist_make_rc_msg_flags(slurm_persist_conn_t *persist_conn,
+extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
 					      uint32_t rc, char *comment,
 					      uint16_t flags,
 					      uint16_t ret_info);

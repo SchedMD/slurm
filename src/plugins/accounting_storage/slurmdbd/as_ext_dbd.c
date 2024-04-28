@@ -57,7 +57,7 @@ static pthread_mutex_t ext_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _destroy_external_host_conns(void *object)
 {
-	slurm_persist_conn_t *conn = (slurm_persist_conn_t *)object;
+	persist_conn_t *conn = object;
 	/*
 	 * Don't call dbd_conn_close() to prevent DBD_FINI being sent to
 	 * external DBDs.
@@ -66,10 +66,10 @@ static void _destroy_external_host_conns(void *object)
 }
 
 /* don't connect now as it will block the ctld */
-extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
+extern persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 {
 	uint16_t persist_conn_flags = PERSIST_FLAG_EXT_DBD;
-	slurm_persist_conn_t *dbd_conn =
+	persist_conn_t *dbd_conn =
 		dbd_conn_open(&persist_conn_flags, NULL, host, port);
 
 	dbd_conn->shutdown = &ext_shutdown;
@@ -87,8 +87,8 @@ extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 
 static int _find_ext_conn(void *x, void *key)
 {
-	slurm_persist_conn_t *selected_conn = (slurm_persist_conn_t *)x;
-	slurm_persist_conn_t *query_conn = (slurm_persist_conn_t *)key;
+	persist_conn_t *selected_conn = x;
+	persist_conn_t *query_conn = key;
 
 	if (!xstrcmp(selected_conn->rem_host, query_conn->rem_host) &&
 	    (selected_conn->rem_port == query_conn->rem_port))
@@ -106,7 +106,7 @@ static void _create_ext_conns(void)
 	if ((ext_hosts = xstrdup(slurm_conf.accounting_storage_ext_host)))
 		tok = strtok_r(ext_hosts, ",", &save_ptr);
 	while (ext_hosts && tok) {
-		slurm_persist_conn_t *dbd_conn, tmp_conn = { 0 };
+		persist_conn_t *dbd_conn, tmp_conn = {0};
 		char *colon = xstrstr(tok, ":");
 		int port = slurm_conf.accounting_storage_port;
 		if (colon) {
@@ -145,7 +145,7 @@ static void _create_ext_conns(void)
 static int _for_each_check_ext_conn(void *x, void *arg)
 {
 	bool delete = false;
-	slurm_persist_conn_t *dbd_conn = (slurm_persist_conn_t *)x;
+	persist_conn_t *dbd_conn = x;
 
 	if (slurm_persist_conn_writeable(dbd_conn) == -1) {
 		int rc;

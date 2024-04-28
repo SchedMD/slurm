@@ -55,11 +55,10 @@ bool have_control = false;
  *	mode, assuming control when the primary controller stops responding */
 extern void run_dbd_backup(void)
 {
-	slurm_persist_conn_t slurmdbd_conn;
+	persist_conn_t slurmdbd_conn = {0};
 
 	primary_resumed = false;
 
-	memset(&slurmdbd_conn, 0, sizeof(slurm_persist_conn_t));
 	slurmdbd_conn.rem_host = slurmdbd_conf->dbd_addr;
 	slurmdbd_conn.rem_port = slurmdbd_conf->dbd_port;
 	slurmdbd_conn.cluster_name = "backup_slurmdbd";

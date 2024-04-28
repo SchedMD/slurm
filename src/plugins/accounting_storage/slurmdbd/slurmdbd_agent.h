@@ -43,10 +43,10 @@
 #include "dbd_conn.h"
 #include "src/common/assoc_mgr.h"
 
-extern slurm_persist_conn_t *slurmdbd_conn;
+extern persist_conn_t *slurmdbd_conn;
 
 /* Set the slurmdbd_conn we will use for the agent */
-extern void slurmdbd_agent_set_conn(slurm_persist_conn_t *pc);
+extern void slurmdbd_agent_set_conn(persist_conn_t *pc);
 /* Shut down the agent */
 extern void slurmdbd_agent_rem_conn(void);
 

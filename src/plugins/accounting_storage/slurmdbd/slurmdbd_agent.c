@@ -55,7 +55,7 @@ typedef struct {
 	list_t *my_list;
 } foreach_get_my_list_t;
 
-slurm_persist_conn_t *slurmdbd_conn = NULL;
+persist_conn_t *slurmdbd_conn = NULL;
 
 
 #define DBD_MAGIC		0xDEAD3219
@@ -843,7 +843,7 @@ fini:
  * Socket open/close/read/write functions
  ****************************************************************************/
 
-extern void slurmdbd_agent_set_conn(slurm_persist_conn_t *pc)
+extern void slurmdbd_agent_set_conn(persist_conn_t *pc)
 {
 	if (!running_in_slurmctld())
 		return;

@@ -169,7 +169,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	if (!slurmdbd_conn) {
 		slurm_mutex_init(&db_conn->conn_send_lock);
 		slurm_mutex_lock(&db_conn->conn_send_lock);
-		db_conn->conn_send = xmalloc(sizeof(slurm_persist_conn_t));
+		db_conn->conn_send = xmalloc(sizeof(persist_conn_t));
 		db_conn->conn_send->cluster_name =
 			xstrdup(db_conn->conn->cluster_name);
 		db_conn->conn_send->fd = PERSIST_CONN_NOT_INITED;
