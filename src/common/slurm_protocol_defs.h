@@ -142,6 +142,8 @@
 	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_FUTURE)
 
 /* Derived node states */
+#define IS_NODE_BLOCKED(_X)		\
+	(_X->node_state & NODE_STATE_BLOCKED)
 #define IS_NODE_CLOUD(_X)		\
 	(_X->node_state & NODE_STATE_CLOUD)
 #define IS_NODE_DRAIN(_X)		\

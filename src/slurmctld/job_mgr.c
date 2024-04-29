@@ -11412,6 +11412,7 @@ static void _realloc_nodes(job_record_t *job_ptr, bitstr_t *orig_node_bitmap)
 			continue;
 		make_node_alloc(node_ptr, job_ptr);
 	}
+	node_mgr_make_node_blocked(job_ptr, true);
 }
 
 extern bool permit_job_expansion(void)

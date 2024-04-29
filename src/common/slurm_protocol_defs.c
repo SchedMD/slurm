@@ -118,6 +118,7 @@ static const node_state_flags_t node_states[] = {
 };
 
 static const node_state_flags_t node_state_flags[] = {
+	{ NODE_STATE_BLOCKED, "BLOCKED" },
 	{ NODE_STATE_CLOUD, "CLOUD" },
 	{ NODE_STATE_COMPLETING, "COMPLETING" },
 	{ NODE_STATE_DRAIN, "DRAIN" },
@@ -3295,6 +3296,7 @@ extern uint32_t parse_node_state_flag(char *flag_str)
 extern char *node_state_string(uint32_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);
+	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
@@ -3483,6 +3485,8 @@ extern char *node_state_string(uint32_t inx)
 			return "IDLE*";
 		if (res_flag)
 			return "RESERVED";
+		if (blocked_flag)
+			return "BLOCKED";
 		if (planned_flag)
 			return "PLANNED";
 		return "IDLE";
@@ -3539,6 +3543,7 @@ extern char *node_state_string(uint32_t inx)
 
 extern char *node_state_string_compact(uint32_t inx)
 {
+	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
@@ -3728,6 +3733,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "IDLE*";
 		if (res_flag)
 			return "RESV";
+		if (blocked_flag)
+			return "BLOC";
 		if (planned_flag)
 			return "PLND";
 		return "IDLE";

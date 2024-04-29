@@ -1214,6 +1214,7 @@ extern int select_p_reconfigure(void)
 {
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
+	node_record_t *node_ptr;
 	int rc = SLURM_SUCCESS;
 
 	info("%s: reconfigure", plugin_type);
@@ -1231,6 +1232,9 @@ extern int select_p_reconfigure(void)
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		node_ptr->node_state &= (~NODE_STATE_BLOCKED);
+
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -1245,6 +1249,11 @@ extern int select_p_reconfigure(void)
 			else	/* Gang schedule suspend */
 				(void) job_res_add_job(job_ptr,
 						       JOB_RES_ACTION_NORMAL);
+		}
+
+		if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+		    IS_JOB_WHOLE_TOPO(job_ptr)) {
+			node_mgr_make_node_blocked(job_ptr, true);
 		}
 	}
 	list_iterator_destroy(job_iterator);

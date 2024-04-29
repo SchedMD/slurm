@@ -73,6 +73,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -4483,6 +4484,31 @@ extern void make_node_avail(node_record_t *node_ptr)
 	 * priority jobs on to newly available resources.
 	 */
 	bit_set(bf_ignore_node_bitmap, node_ptr->index);
+}
+
+extern void node_mgr_make_node_blocked(job_record_t *job_ptr, bool set)
+{
+	bitstr_t *tmp_bitmap;
+	node_record_t *node_ptr;
+
+	if (!IS_JOB_WHOLE_TOPO(job_ptr))
+		return;
+
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap)
+		return;
+
+	tmp_bitmap = bit_copy(job_ptr->job_resrcs->node_bitmap);
+	topology_g_whole_topo(tmp_bitmap);
+	bit_and_not(tmp_bitmap, job_ptr->job_resrcs->node_bitmap);
+
+	for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i)); i++) {
+		if (set)
+			node_ptr->node_state |= NODE_STATE_BLOCKED;
+		else
+			node_ptr->node_state &= (~NODE_STATE_BLOCKED);
+	}
+
+	FREE_NULL_BITMAP(tmp_bitmap);
 }
 
 /* make_node_comp - flag specified node as completing a job

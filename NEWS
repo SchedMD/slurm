@@ -190,6 +190,7 @@ documents those changes that are of interest to users and administrators.
  -- Add --segment to job allocation to be used in topology/block.
  -- Add --exclusive=topo for use with topology/block.
  -- Add ExclusiveTopo to a partition definition in slurm.conf.
+ -- Add new 'BLOCKED' state to a node.
 
 * Changes in Slurm 23.11.7
 ==========================

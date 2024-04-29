@@ -1325,6 +1325,8 @@ extern void log_feature_lists(void);
  */
 extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr);
 
+extern void node_mgr_make_node_blocked(job_record_t *job_ptr, bool set);
+
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr  - pointer to job that is completing

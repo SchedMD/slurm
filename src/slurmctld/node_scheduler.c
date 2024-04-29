@@ -177,6 +177,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		make_node_alloc(node_ptr, job_ptr);
 	}
 
+	node_mgr_make_node_blocked(job_ptr, true);
+
 	last_node_update = time(NULL);
 	license_job_get(job_ptr, false);
 	set_initial_job_alias_list(job_ptr);
@@ -330,6 +332,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	acct_policy_job_fini(job_ptr, false);
+
+	node_mgr_make_node_blocked(job_ptr, false);
+
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 
