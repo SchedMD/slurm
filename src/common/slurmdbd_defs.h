@@ -167,6 +167,7 @@ typedef enum {
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
 				    * REQUEST_PERSIST_INIT also used here.
 				    */
+	SLURM_PERSIST_INIT_TLS = 6501,
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

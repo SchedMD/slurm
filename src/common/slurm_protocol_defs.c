@@ -4877,6 +4877,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_front_end_info_msg(data);
 		break;
 	case REQUEST_PERSIST_INIT:
+	case REQUEST_PERSIST_INIT_TLS:
 		slurm_persist_free_init_req_msg(data);
 		break;
 	case PERSIST_RC:

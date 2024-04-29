@@ -238,6 +238,9 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 	} else if (!xstrcasecmp(msg_type,
 				"Persistent Connection Initialization")) {
 		return SLURM_PERSIST_INIT;
+	} else if (!xstrcasecmp(msg_type,
+				"Persistent TLS Connection Initialization")) {
+		return SLURM_PERSIST_INIT_TLS;
 	} else {
 		return NO_VAL;
 	}
@@ -826,6 +829,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Persistent Connection Initialization";
 		break;
+	case SLURM_PERSIST_INIT_TLS:
+		if (get_enum) {
+			return "SLURM_PERSIST_INIT_TLS";
+		} else
+			return "Persistent TLS Connection Initialization";
+		break;
 	default:
 		snprintf(unk_str, sizeof(unk_str), "MsgType=%d", msg_type);
 		return unk_str;
@@ -996,6 +1005,7 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_SHUTDOWN:
 		break;
 	case SLURM_PERSIST_INIT:
+	case SLURM_PERSIST_INIT_TLS:
 		slurm_free_msg(msg->data);
 		break;
 	default:
