@@ -154,8 +154,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn);
 /* Close the persistent connection don't free structure or members */
 extern void slurm_persist_conn_close(persist_conn_t *persist_conn);
 
-extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn,
-				     bool with_init);
+extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn);
 
 /* Close the persistent connection members, but don't free structure */
 extern void slurm_persist_conn_members_destroy(persist_conn_t *persist_conn);

@@ -682,15 +682,10 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	fd_close(&persist_conn->fd);
 }
 
-extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn,
-				     bool with_init)
+extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn)
 {
 	slurm_persist_conn_close(persist_conn);
-
-	if (with_init)
-		return slurm_persist_conn_open(persist_conn);
-	else
-		return slurm_persist_conn_open_without_init(persist_conn);
+	return slurm_persist_conn_open(persist_conn);
 }
 
 /* Close the persistent connection */
@@ -910,7 +905,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 			return SLURM_COMMUNICATIONS_SEND_ERROR;
 
 		if (persist_conn->flags & PERSIST_FLAG_RECONNECT) {
-			slurm_persist_conn_reopen(persist_conn, true);
+			slurm_persist_conn_reopen(persist_conn);
 			rc = slurm_persist_conn_writeable(persist_conn);
 		} else
 			return SLURM_ERROR;
@@ -1021,7 +1016,7 @@ endit:
 	    persist_conn->flags & PERSIST_FLAG_RECONNECT) {
 		log_flag(NET, "%s: reopening persistent connection after error",
 			 __func__);
-		slurm_persist_conn_reopen(persist_conn, true);
+		slurm_persist_conn_reopen(persist_conn);
 	}
 
 	return NULL;

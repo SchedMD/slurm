@@ -90,7 +90,7 @@ extern void run_dbd_backup(void)
 
 		sleep(1);
 		if (writeable <= 0)
-			slurm_persist_conn_reopen(&slurmdbd_conn, false);
+			slurm_persist_conn_reopen(&slurmdbd_conn);
 	}
 
 	slurm_persist_conn_close(&slurmdbd_conn);

@@ -149,7 +149,7 @@ static int _for_each_check_ext_conn(void *x, void *arg)
 
 	if (slurm_persist_conn_writeable(dbd_conn) == -1) {
 		int rc;
-		slurm_persist_conn_reopen(dbd_conn, true);
+		slurm_persist_conn_reopen(dbd_conn);
 
 		/* slurm_persist_send_msg will reconnect */
 		rc = clusteracct_storage_p_register_ctld(
