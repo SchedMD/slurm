@@ -135,6 +135,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_rdkafka.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_s2n.m4 \
 	$(top_srcdir)/auxdir/x_ac_selinux.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sview.m4 \
@@ -351,6 +352,10 @@ RDKAFKA_LIBS = @RDKAFKA_LIBS@
 READLINE_LIBS = @READLINE_LIBS@
 RELEASE = @RELEASE@
 RSMI_CPPFLAGS = @RSMI_CPPFLAGS@
+S2N_CPPFLAGS = @S2N_CPPFLAGS@
+S2N_DIR = @S2N_DIR@
+S2N_LDFLAGS = @S2N_LDFLAGS@
+S2N_LIBS = @S2N_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@

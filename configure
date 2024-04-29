@@ -721,6 +721,12 @@ WITH_CGROUP_FALSE
 WITH_CGROUP_TRUE
 LINUX_BUILD_FALSE
 LINUX_BUILD_TRUE
+WITH_S2N_FALSE
+WITH_S2N_TRUE
+S2N_LDFLAGS
+S2N_DIR
+S2N_CPPFLAGS
+S2N_LIBS
 WITH_RDKAFKA_FALSE
 WITH_RDKAFKA_TRUE
 RDKAFKA_LDFLAGS
@@ -1026,6 +1032,7 @@ with_ucx
 enable_x11
 enable_selinux
 with_rdkafka
+with_s2n
 with_bpf
 enable_sview
 enable_glibtest
@@ -1794,6 +1801,7 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-ucx=PATH         Build with Unified Communication X library support
   --with-rdkafka=PATH     Specify path to librdkafka installation
+  --with-s2n=PATH         Specify path to s2n installation
   --with-bpf=PATH         Specify path to bpf header
   --with-hpe-slingshot=PATH
                           Specify path to HPE Slingshot installation dir
@@ -24763,6 +24771,108 @@ fi
 
 
 
+  _x_ac_s2n_dirs="/usr /usr/local"
+  _x_ac_s2n_libs="lib64 lib"
+
+
+# Check whether --with-s2n was given.
+if test ${with_s2n+y}
+then :
+  withval=$with_s2n; if test "x$with_s2n" != xno && test "x$with_s2n" != xyes
+then :
+  _x_ac_s2n_dirs="$with_s2n"
+fi
+fi
+
+
+  if test "x$with_s2n" = xno; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for s2n disabled" >&5
+printf "%s\n" "$as_me: support for s2n disabled" >&6;}
+  else
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for s2n installation" >&5
+printf %s "checking for s2n installation... " >&6; }
+if test ${x_ac_cv_s2n_dir+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+        for d in $_x_ac_s2n_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/s2n.h" || continue
+          for bit in $_x_ac_s2n_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_s2n_libs_save="$LIBS"
+            LIBS="-L$d/$bit -ls2n $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char s2n_init ();
+int
+main (void)
+{
+return s2n_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  x_ac_cv_s2n_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+            LIBS="$_x_ac_s2n_libs_save"
+            test -n "$x_ac_cv_s2n_dir" && break
+          done
+          test -n "$x_ac_cv_s2n_dir" && break
+        done
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_s2n_dir" >&5
+printf "%s\n" "$x_ac_cv_s2n_dir" >&6; }
+
+    if test -z "$x_ac_cv_s2n_dir"; then
+      if test -z "$with_s2n" ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate s2n library" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate s2n library" >&2;}
+      else
+        as_fn_error $? "unable to locate s2n library" "$LINENO" 5
+      fi
+    else
+
+printf "%s\n" "#define HAVE_S2N 1" >>confdefs.h
+
+      S2N_LIBS="-ls2n"
+      S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
+      S2N_DIR="$x_ac_cv_s2n_dir"
+      if test "$ac_with_rpath" = "yes"; then
+        S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
+      else
+        S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
+      fi
+    fi
+
+
+
+
+
+  fi
+
+   if test -n "$x_ac_cv_s2n_dir"; then
+  WITH_S2N_TRUE=
+  WITH_S2N_FALSE='#'
+else
+  WITH_S2N_TRUE='#'
+  WITH_S2N_FALSE=
+fi
+
+
+
+
   case ${host_os} in
   darwin* | freebsd* | netbsd* )
     with_cgroup=no
@@ -27945,6 +28055,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_RDKAFKA_TRUE}" && test -z "${WITH_RDKAFKA_FALSE}"; then
   as_fn_error $? "conditional \"WITH_RDKAFKA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_S2N_TRUE}" && test -z "${WITH_S2N_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_S2N\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${LINUX_BUILD_TRUE}" && test -z "${LINUX_BUILD_FALSE}"; then
