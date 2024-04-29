@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/hash.h"
+#include "src/interfaces/tls.h"
 
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
@@ -163,6 +164,9 @@ int main(int argc, char **argv)
 	}
 	if (hash_g_init() != SLURM_SUCCESS) {
 		fatal("failed to initialize hash plugin");
+	}
+	if (tls_g_init() != SLURM_SUCCESS) {
+		fatal("Failed to initialize tls plugin");
 	}
 	if (acct_storage_g_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
@@ -317,6 +321,7 @@ end_it:
 	acct_storage_g_fini();
 	auth_g_fini();
 	hash_g_fini();
+	tls_g_fini();
 	log_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
