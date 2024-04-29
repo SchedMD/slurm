@@ -4385,6 +4385,9 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
+		packstr(job->std_err, buffer);
+		packstr(job->std_in, buffer);
+		packstr(job->std_out, buffer);
 		pack_time(job->submit, buffer);
 		packstr(job->submit_line, buffer);
 		pack32(job->suspended, buffer);
@@ -4656,7 +4659,9 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				job_ptr->first_step_ptr = step;
 			list_append(job_ptr->steps, step);
 		}
-
+		safe_unpackstr(&job_ptr->std_err, buffer);
+		safe_unpackstr(&job_ptr->std_in, buffer);
+		safe_unpackstr(&job_ptr->std_out, buffer);
 		safe_unpack_time(&job_ptr->submit, buffer);
 		safe_unpackstr(&job_ptr->submit_line, buffer);
 		safe_unpack32(&job_ptr->suspended, buffer);

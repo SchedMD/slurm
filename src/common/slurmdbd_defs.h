@@ -295,6 +295,9 @@ typedef struct dbd_job_start_msg {
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */
+	char *std_err;          /* The stderr file path of the job */
+	char *std_in;           /* The stdin file path of the job */
+	char *std_out;          /* The stdout file path of the job */
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	time_t   submit_time;	/* job submit time */

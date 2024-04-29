@@ -153,6 +153,9 @@ typedef struct {
 	char *start;
 	char *state;
 	char *state_reason_prev;
+	char *std_err;
+	char *std_in;
+	char *std_out;
 	char *submit;
 	char *submit_line;
 	char *suspended;
@@ -227,6 +230,9 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->start);
 		xfree(object->state);
 		xfree(object->state_reason_prev);
+		xfree(object->std_err);
+		xfree(object->std_in);
+		xfree(object->std_out);
 		xfree(object->submit);
 		xfree(object->submit_line);
 		xfree(object->suspended);
@@ -578,6 +584,9 @@ static char *job_req_inx[] = {
 	"time_start",
 	"state",
 	"state_reason_prev",
+	"std_err",
+	"std_in",
+	"std_out",
 	"submit_line",
 	"system_comment",
 	"time_submit",
@@ -636,6 +645,9 @@ enum {
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_STATE_REASON,
+	JOB_REQ_STDERR,
+	JOB_REQ_STDIN,
+	JOB_REQ_STDOUT,
 	JOB_REQ_SUBMIT_LINE,
 	JOB_REQ_SYSTEM_COMMENT,
 	JOB_REQ_SUBMIT,
@@ -1035,6 +1047,9 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
 	packstr(object->state_reason_prev, buffer);
+	packstr(object->std_err, buffer);
+	packstr(object->std_in, buffer);
+	packstr(object->std_out, buffer);
 	packstr(object->submit, buffer);
 	packstr(object->suspended, buffer);
 	packstr(object->submit_line, buffer);
@@ -1120,6 +1135,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->start, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->state_reason_prev, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
 		safe_unpackstr(&object->submit, buffer);
 		safe_unpackstr(&object->suspended, buffer);
 		safe_unpackstr(&object->submit_line, buffer);
@@ -3516,6 +3534,9 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
 		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
+		job.std_err = row[JOB_REQ_STDERR];
+		job.std_in = row[JOB_REQ_STDIN];
+		job.std_out = row[JOB_REQ_STDOUT];
 		job.submit = row[JOB_REQ_SUBMIT];
 		job.submit_line = row[JOB_REQ_SUBMIT_LINE];
 		job.suspended = row[JOB_REQ_SUSPENDED];
@@ -3572,6 +3593,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_START,
 		JOB_REQ_STATE,
 		JOB_REQ_STATE_REASON,
+		JOB_REQ_STDERR,
+		JOB_REQ_STDIN,
+		JOB_REQ_STDOUT,
 		JOB_REQ_SUBMIT,
 		JOB_REQ_SUSPENDED,
 		JOB_REQ_UID,
@@ -3729,6 +3753,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.start,
 			     object.state,
 			     object.state_reason_prev,
+			     object.std_err,
+			     object.std_in,
+			     object.std_out,
 			     object.submit,
 			     object.suspended,
 			     object.uid,

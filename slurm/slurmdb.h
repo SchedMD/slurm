@@ -887,6 +887,9 @@ typedef struct {
 	uint32_t state;
 	uint32_t state_reason_prev;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
+	char *std_err;
+	char *std_in;
+	char *std_out;
 	time_t submit;
 	char *submit_line;
 	uint32_t suspended;

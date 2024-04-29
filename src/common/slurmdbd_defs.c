@@ -1145,6 +1145,9 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->node_inx);
 		xfree(msg->partition);
 		xfree(msg->script_hash);
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
 		xfree(msg->submit_line);
 		xfree(msg->tres_alloc_str);
 		xfree(msg->tres_req_str);

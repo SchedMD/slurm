@@ -565,6 +565,12 @@ no_rollup_change:
 			xstrcat(query, ", work_dir");
 		if (job_ptr->details->features)
 			xstrcat(query, ", constraints");
+		if (job_ptr->details->std_err)
+			xstrcat(query, ", std_err");
+		if (job_ptr->details->std_in)
+			xstrcat(query, ", std_in");
+		if (job_ptr->details->std_out)
+			xstrcat(query, ", std_out");
 		if (job_ptr->details->submit_line)
 			xstrcat(query, ", submit_line");
 		if (job_ptr->container)
@@ -623,6 +629,15 @@ no_rollup_change:
 		if (job_ptr->details->features)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->details->features);
+		if (job_ptr->details->std_err)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->std_err);
+		if (job_ptr->details->std_in)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->std_in);
+		if (job_ptr->details->std_out)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->details->submit_line);
@@ -696,7 +711,15 @@ no_rollup_change:
 		if (job_ptr->details->features)
 			xstrfmtcat(query, ", constraints='%s'",
 				   job_ptr->details->features);
-
+		if (job_ptr->details->std_err)
+			xstrfmtcat(query, ", std_err='%s'",
+				   job_ptr->details->std_err);
+		if (job_ptr->details->std_in)
+			xstrfmtcat(query, ", std_in='%s'",
+				   job_ptr->details->std_in);
+		if (job_ptr->details->std_out)
+			xstrfmtcat(query, ", std_out='%s'",
+				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, ", submit_line='%s'",
 				   job_ptr->details->submit_line);
@@ -762,7 +785,15 @@ no_rollup_change:
 		if (job_ptr->details->features)
 			xstrfmtcat(query, "constraints='%s', ",
 				   job_ptr->details->features);
-
+		if (job_ptr->details->std_err)
+			xstrfmtcat(query, "std_err='%s', ",
+				   job_ptr->details->std_err);
+		if (job_ptr->details->std_in)
+			xstrfmtcat(query, "std_in='%s', ",
+				   job_ptr->details->std_in);
+		if (job_ptr->details->std_out)
+			xstrfmtcat(query, "std_out='%s', ",
+				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, "submit_line='%s', ",
 				   job_ptr->details->submit_line);
