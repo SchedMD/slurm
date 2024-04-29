@@ -151,9 +151,6 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 
 		gres_job_state = sock_gres->gres_state_job;
 		gres_js = gres_job_state->gres_data;
-		if (!gres_js->res_gpu_cores ||
-		    !gres_js->res_gpu_cores[node_i])
-			continue;
 		if (!gres_js->gres_per_task &&
 		    (!gres_js->ntasks_per_gres ||
 		     (gres_js->ntasks_per_gres == NO_VAL16)))
@@ -170,7 +167,9 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 
 		sock_gres->total_cnt = MIN(sock_gres->total_cnt, max_gres);
 
-		if (gres_job_state->plugin_id != gres_get_gpu_plugin_id())
+		if ((gres_job_state->plugin_id != gres_get_gpu_plugin_id()) ||
+		    !gres_js->res_gpu_cores ||
+		    !gres_js->res_gpu_cores[node_i])
 			continue;
 
 		max_res_cores = max_gres * res_cores_per_gpu;
