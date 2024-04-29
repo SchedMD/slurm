@@ -510,6 +510,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
+		 src/plugins/tls/Makefile
+		 src/plugins/tls/none/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile
 		 src/plugins/topology/block/Makefile

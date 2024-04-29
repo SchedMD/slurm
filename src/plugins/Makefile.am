@@ -29,6 +29,7 @@ SUBDIRS = \
 	site_factor		\
 	switch			\
 	task			\
+	tls			\
 	topology
 
 if WITH_CGROUP
