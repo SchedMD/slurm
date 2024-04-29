@@ -143,8 +143,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 			      persist_conn->timeout);
 			return false;
 		}
-		if ((ufds.revents & POLLHUP) &&
-		    ((ufds.revents & POLLIN) == 0)) {
+		if (ufds.revents & POLLHUP) {
 			log_flag(NET, "%s: persistent connection for fd %d closed",
 				 __func__, persist_conn->fd);
 			return false;
