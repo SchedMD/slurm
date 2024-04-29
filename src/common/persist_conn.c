@@ -53,6 +53,7 @@
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/tls.h"
 
 #define MAX_THREAD_COUNT 100
 
@@ -591,7 +592,9 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	 * other side is running yet.
 	 */
 	req_msg.protocol_version = persist_conn->version;
-	req_msg.msg_type = REQUEST_PERSIST_INIT;
+
+	req_msg.msg_type = tls_enabled() ? REQUEST_PERSIST_INIT_TLS :
+					   REQUEST_PERSIST_INIT;
 
 	req_msg.flags |= SLURM_GLOBAL_AUTH_KEY;
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
@@ -611,9 +614,18 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		fd_close(&persist_conn->fd);
 	} else {
-		buf_t *buffer = _slurm_persist_recv_msg(persist_conn, false);
+		buf_t *buffer = NULL;
 		persist_msg_t msg;
 		persist_conn_t persist_conn_tmp;
+
+		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
+							   TLS_CONN_CLIENT);
+		if (!persist_conn->tls_conn) {
+			error("Failed to enable tls on persistent connection");
+			goto end_it;
+		}
+
+		buffer = _slurm_persist_recv_msg(persist_conn, false);
 
 		if (!buffer) {
 			if (_comm_fail_log(persist_conn)) {
@@ -665,6 +677,8 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
+	tls_g_destroy_conn(persist_conn->tls_conn);
+	persist_conn->tls_conn = NULL;
 	fd_close(&persist_conn->fd);
 }
 
@@ -717,6 +731,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	buf_t *recv_buffer = NULL;
 	char *comment = NULL;
 	bool init_msg = false;
+	tls_conn_mode_t tls_mode = TLS_CONN_NULL;
 
 	/* puts msg_char into buffer struct */
 	recv_buffer = create_buf(msg_char, msg_size);
@@ -727,6 +742,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 				     * without xfree of msg_char
 				     * (done later in this
 				     * function). */
+
 	if (rc != SLURM_SUCCESS) {
 		comment = xstrdup_printf("Failed to unpack %s message",
 					 slurmdbd_msg_type_2_str(
@@ -742,6 +758,9 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	    (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS))
 		init_msg = true;
 
+	if (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS)
+		tls_mode = TLS_CONN_SERVER;
+
 	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
@@ -756,6 +775,13 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
+	} else if (init_msg) {
+		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
+							   tls_mode);
+		if (!persist_conn->tls_conn) {
+			error("CONN:%u tls_g_create_conn() failed", persist_conn->fd);
+			rc = EINVAL;
+		}
 	}
 
 	return rc;
@@ -1067,7 +1093,8 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 	 * future we need to use it in some way to verify things for messages
 	 * that don't have on that will follow on the connection.
 	 */
-	if (resp_msg->msg_type == REQUEST_PERSIST_INIT) {
+	if ((resp_msg->msg_type == REQUEST_PERSIST_INIT) ||
+	    (resp_msg->msg_type == REQUEST_PERSIST_INIT_TLS)) {
 		slurm_msg_t *msg = resp_msg->data;
 		if (persist_conn->auth_cred)
 			auth_g_destroy(persist_conn->auth_cred);

@@ -85,6 +85,7 @@
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -6061,11 +6062,15 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
+	tls_conn_mode_t tls_mode = TLS_CONN_NULL;
 
 	if (msg->conn)
 		error("We already have a persistent connect, this should never happen");
 
 	START_TIMER;
+
+	if (msg->msg_type == REQUEST_PERSIST_INIT_TLS)
+		tls_mode = TLS_CONN_SERVER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
 		persist_init->version = SLURM_PROTOCOL_VERSION;
@@ -6114,6 +6119,13 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	//persist_conn->timeout = 0; /* we want this to be 0 */
 
 	persist_conn->version = persist_init->version;
+
+	if (!(persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
+						         tls_mode))) {
+		error("tls_g_create_conn() failed on persistent connection request");
+		goto end_it;
+	}
+
 	memcpy(&p_tmp, persist_conn, sizeof(persist_conn_t));
 
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
