@@ -699,6 +699,7 @@ enum hash_plugin_type {
  */
 enum tls_plugin_type {
 	TLS_PLUGIN_NONE = 100,
+	TLS_PLUGIN_S2N = 101,
 };
 
 /* Select plugin (id) in use by cluster */
