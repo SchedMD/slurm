@@ -694,6 +694,13 @@ enum hash_plugin_type {
 	HASH_PLUGIN_CNT,
 };
 
+/*
+ * TLS plugin (id) used for communication.
+ */
+enum tls_plugin_type {
+	TLS_PLUGIN_NONE = 100,
+};
+
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */
