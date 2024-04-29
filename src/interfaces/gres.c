@@ -3997,7 +3997,7 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 				 sizeof(bitstr_t *) * sharing_cnt);
 		shared_gres_ns->topo_res_core_bitmap =
 			xrealloc(shared_gres_ns->topo_res_core_bitmap,
-				 sizeof(uint64_t) * sharing_cnt);
+				 sizeof(bitstr_t *) * sharing_cnt);
 		shared_gres_ns->topo_gres_bitmap =
 			xrealloc(shared_gres_ns->topo_gres_bitmap,
 				 sizeof(bitstr_t *) * sharing_cnt);

@@ -119,12 +119,13 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 	bitstr_t *avail_core = topo_eval->avail_core[node_i];
 	uint16_t *avail_cores_per_sock =
 		topo_eval->avail_res_array[node_i]->avail_cores_per_sock;
-	uint16_t *actual_cores_p_s = xcalloc(sockets, sizeof(uint16_t));
+	uint16_t *actual_cores_p_s;
 	uint32_t tot_cores = 0;
 
 	if (topo_eval->cr_type & CR_SOCKET)
 		return;
 
+	actual_cores_p_s = xcalloc(sockets, sizeof(uint16_t));
 	for (int s = 0; s < sockets; s++) {
 		int start_core = s * cores_per_socket;
 		int end_core = start_core + cores_per_socket;
@@ -140,10 +141,13 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 		bitstr_t *res_cores;
 		uint16_t tot_res_core;
 		uint32_t max_res_cores = 0;
-		uint32_t max_gres = 0;
+		uint64_t max_gres = 0;
 		uint32_t max_gres_by_cpu = 0;
 		int i = (sockets * cores_per_socket) - 1;
 		bool done = false;
+
+		if (!sock_gres->gres_state_job)
+			continue;
 
 		gres_job_state = sock_gres->gres_state_job;
 		gres_js = gres_job_state->gres_data;
@@ -166,8 +170,7 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 
 		sock_gres->total_cnt = MIN(sock_gres->total_cnt, max_gres);
 
-		if (!gres_job_state ||
-		    (gres_job_state->plugin_id != gres_get_gpu_plugin_id()))
+		if (gres_job_state->plugin_id != gres_get_gpu_plugin_id())
 			continue;
 
 		max_res_cores = max_gres * res_cores_per_gpu;

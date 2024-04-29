@@ -161,7 +161,7 @@ static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
 
 	if (cr_type & CR_SOCKET)
 		return;
-	if (!gres_js->res_gpu_cores &&
+	if (!gres_js->res_gpu_cores ||
 	    !gres_js->res_gpu_cores[node_i])
 		return;
 
@@ -316,8 +316,10 @@ extern bool gres_sched_add(uint16_t *avail_cpus,
 				sockets, cores_per_socket, cpus_per_core,
 				cr_type, node_i);
 			if ((gres_limit < min_gres) ||
-			    (min_cpus > *avail_cpus))
+			    (min_cpus > *avail_cpus)) {
+				xfree(actual_cores_per_sock);
 				return false;
+			}
 		}
 
 		sock_data->total_cnt = gres_limit;

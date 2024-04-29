@@ -436,11 +436,6 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 		*gres_needed = total_res_gres;
 	}
 
-	if (slurm_conf.select_type_param & LL_SHARED_GRES) {
-		topo_index = _get_sorted_topo_by_least_loaded(
-			sock_gres->gres_state_node->gres_data);
-	}
-
 	if (use_single_dev && total_res_gres && (sock_with_res_cnt > 1)) {
 		/*
 		 * Have to allocate gres accross more then one socket.
@@ -448,6 +443,11 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 		 */
 		*satisfy_res_gres = false;
 		return;
+	}
+
+	if (slurm_conf.select_type_param & LL_SHARED_GRES) {
+		topo_index = _get_sorted_topo_by_least_loaded(
+			sock_gres->gres_state_node->gres_data);
 	}
 
 	/*
@@ -477,6 +477,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 
 			if (sock_gres_needed > extra_gres) {
 				*satisfy_res_gres = false;
+				xfree(topo_index);
 				return;
 			}
 
@@ -491,6 +492,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 					       topo_index);
 			if (res_gres_per_sock && *gres_needed) {
 				*satisfy_res_gres = false;
+				xfree(topo_index);
 				return;
 			}
 		}
