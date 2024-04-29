@@ -66,8 +66,10 @@ extern void run_dbd_backup(void)
 	slurmdbd_conn.shutdown = &shutdown_time;
 	// Prevent constant reconnection tries from filling up the error logs
 	slurmdbd_conn.flags |= PERSIST_FLAG_SUPPRESS_ERR;
+	slurmdbd_conn.flags |= PERSIST_FLAG_DBD;
+	slurmdbd_conn.r_uid = slurm_conf.slurm_user_id;
 
-	slurm_persist_conn_open_without_init(&slurmdbd_conn);
+	slurm_persist_conn_open(&slurmdbd_conn);
 
 	/* repeatedly ping Primary */
 	while (!shutdown_time) {
