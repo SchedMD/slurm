@@ -45,6 +45,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -333,7 +334,13 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	}
 
 	/* Attempt graceful shutdown at TLS layer */
-	while (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+	/*
+	 * FIXME: the dbd agent in slurmctld sleeps periodically if it doesn't have
+	 * anything to send to the slurmdbd, and thus the slurmdbd attempting to
+	 * shut the connection down cleanly will almost always time out.
+	 */
+	while (running_in_slurmctld() &&
+	       (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS)) {
 		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
 			error("%s: s2n_shutdown: %s",
 			      __func__, s2n_strerror(s2n_errno, NULL));
