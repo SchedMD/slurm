@@ -734,8 +734,10 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
-	} else if (first &&
-		   (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
+		return rc;
+	}
+
+	if (first && (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
 		      persist_conn->fd, comment, persist_msg->msg_type);
