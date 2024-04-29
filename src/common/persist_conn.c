@@ -521,7 +521,7 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc)
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
-extern int slurm_persist_conn_open_without_init(persist_conn_t *persist_conn)
+static int _open_persist_conn(persist_conn_t *persist_conn)
 {
 	slurm_addr_t addr;
 
@@ -583,7 +583,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	if (!persist_conn->shutdown)
 		persist_conn->shutdown = &shutdown_time;
 
-	if (slurm_persist_conn_open_without_init(persist_conn) != SLURM_SUCCESS)
+	if (_open_persist_conn(persist_conn) != SLURM_SUCCESS)
 		return rc;
 
 	slurm_msg_t_init(&req_msg);

@@ -137,13 +137,6 @@ extern int slurm_persist_conn_wait_for_thread_loc(void);
 /* Free the index given from slurm_persist_conn_wait_for_thread_loc */
 extern void slurm_persist_conn_free_thread_loc(int thread_loc);
 
-
-/* Open a persistent socket connection
- * IN/OUT - persistent connection needing host and port filled in.  Returned
- * mostly filled in without the version to use to communicate.
- * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
-extern int slurm_persist_conn_open_without_init(persist_conn_t *persist_conn);
-
 /* Open a persistent socket connection and sends an init message to establish
  * the connection.
  * IN/OUT - persistent connection needing host and port filled in.  Returned
