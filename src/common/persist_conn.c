@@ -716,6 +716,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	int rc;
 	buf_t *recv_buffer = NULL;
 	char *comment = NULL;
+	bool init_msg = false;
 
 	/* puts msg_char into buffer struct */
 	recv_buffer = create_buf(msg_char, msg_size);
@@ -737,7 +738,11 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		return rc;
 	}
 
-	if (first && (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
+	if ((persist_msg->msg_type == REQUEST_PERSIST_INIT) ||
+	    (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS))
+		init_msg = true;
+
+	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
 		      persist_conn->fd, comment, persist_msg->msg_type);
@@ -745,8 +750,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment,
 			REQUEST_PERSIST_INIT);
-	} else if (!first &&
-		   (persist_msg->msg_type == REQUEST_PERSIST_INIT)) {
+	} else if (!first && init_msg) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
 		error("CONN:%u %s", persist_conn->fd, comment);
 		rc = EINVAL;
