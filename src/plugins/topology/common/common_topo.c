@@ -398,6 +398,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 
 	for (count = 1; count < most_res; count++) {
 		int nochange = 1;
+		topo_eval->max_nodes = orig_max_nodes;
 		bit_or(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
 		for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
