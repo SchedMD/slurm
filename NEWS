@@ -177,6 +177,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Fix compatiblity with auth/slurm.
  -- Fix issue where TRESRunMins gets off correct value if using
     QOS UsageFactor != 1.
+ -- slurmrestd - Require `user` and `association_condition` fields to be
+    populated for requests to 'POST /slurmdb/v0.0.40/users_association'.
 
 * Changes in Slurm 23.11.6
 ==========================
