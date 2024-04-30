@@ -227,6 +227,11 @@ RunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t"
 <p><b>WARNING</b>: Singularity (v4.0.2) requires <i>sudo</i> for OCI support,
 which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.</p>
+<p><b>WARNING</b>:
+<a href="https://groups.google.com/a/lbl.gov/g/singularity/c/vUMUkMlrpQc/m/gIsEiiP7AwAJ">
+Upstream singularity development</a> of the OCI interface appears to have
+ceased and sites should use the <a href="#singularity_native">user
+namespace support</a> instead.</p>
 
 <h3 id="singularity_hpcng">oci.conf example for hpcng Singularity v3.8.0:
 <a class="slurm_link" href="#singularity_hpcng"></a></h3>
@@ -245,6 +250,11 @@ OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 <p><b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> for OCI support,
 which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.</p>
+<p><b>WARNING</b>:
+<a href="https://groups.google.com/a/lbl.gov/g/singularity/c/vUMUkMlrpQc/m/gIsEiiP7AwAJ">
+Upstream singularity development</a> of the OCI interface appears to have
+ceased and sites should use the <a href="#singularity_native">user
+namespace support</a> instead.</p>
 
 <h3 id="charliecloud">oci.conf example for
 <a href="https://github.com/hpc/charliecloud">Charliecloud</a> (v0.30)
