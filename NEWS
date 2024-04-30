@@ -215,6 +215,11 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add URL query parameter "UsersAreCoords" and
     "RemoveUsersAreCoords" for
     "GET /slurmdb/v0.0.41/accounts?UsersAreCoords&RemoveUsersAreCoords".
+ -- sacctmgr - Add new possible new flags "NoUpdate" and "Exact" to
+    '.associations[].flags' response from 'sacctmgr show assocs --{json|yaml}'.
+ -- slurmrestd - Added possible flags "NoUpdate" and "Exact" to
+    `.associations[].flags` for "GET /slurmdb/v0.0.41/associations/"
+    and "POST /slurmdb/v0.0.41/associations/" endpoints.
 
 * Changes in Slurm 23.11.7
 ==========================

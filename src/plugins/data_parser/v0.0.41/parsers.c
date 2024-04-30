@@ -6521,9 +6521,23 @@ static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 #undef add_parse
 #undef add_parse_req
 
+#define add_flag(flag_value, flag_mask, flag_string, hidden, desc)          \
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),       \
+			   flag_value, flag_mask, XSTRINGIFY(flag_mask),    \
+			   flag_string, hidden, desc)
+#define add_flag_eq(flag_value, mask, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value),     \
+			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
+			   hidden, desc)
 static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
-	add_flag_bit(ASSOC_FLAG_DELETED, "DELETED"),
+	add_flag_eq(ASSOC_FLAG_NONE, ASSOC_FLAG_BASE, "NONE", true, "no flags set"),
+	add_flag_eq(ASSOC_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
+	add_flag(ASSOC_FLAG_DELETED, ASSOC_FLAG_BASE, "DELETED", false, "assocation deleted"),
+	add_flag(ASSOC_FLAG_NO_UPDATE, ASSOC_FLAG_BASE, "NoUpdate", false, "No update requested"),
+	add_flag(ASSOC_FLAG_EXACT, ASSOC_FLAG_BASE, "Exact", false, "only match partition association"),
 };
+#undef add_flag
+#undef add_flag_eq
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_assoc_rec_t, field)
