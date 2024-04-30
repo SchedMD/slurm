@@ -257,6 +257,7 @@ static int  _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 				  buf_t *buffer, uint16_t protocol_version);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
+static void _move_to_purge_jobs_list(void *job_entry);
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
 static buf_t *_open_job_state_file(char **state_file);
@@ -4590,7 +4591,7 @@ void init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
-		job_list = list_create(free_job_record);
+		job_list = list_create(_move_to_purge_jobs_list);
 	}
 
 	last_job_update = time(NULL);
@@ -10812,7 +10813,10 @@ static void _delete_job_common(job_record_t *job_ptr)
 	}
 }
 
-extern void free_job_record(void *job_entry)
+/*
+ * Remove the job record from hash tables and append to purge_jobs_list.
+ */
+static void _move_to_purge_jobs_list(void *job_entry)
 {
 	job_record_t *job_ptr = (job_record_t *) job_entry;
 	int job_array_size;
@@ -10838,6 +10842,18 @@ extern void free_job_record(void *job_entry)
 	} else {
 		job_count -= job_array_size;
 	}
+
+	list_append(purge_jobs_list, job_ptr);
+}
+
+extern void free_job_record(void *job_entry)
+{
+	job_record_t *job_ptr = job_entry;
+
+	if (!job_entry)
+		return;
+
+	xassert(job_ptr->magic == JOB_MAGIC);
 
 	_delete_job_details(job_ptr);
 	xfree(job_ptr->account);
