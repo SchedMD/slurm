@@ -123,6 +123,8 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
 extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
+extern char *slurmdb_acct_flags_2_str(slurmdb_acct_flags_t flags);
+extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flag_str);
 extern char *slurmdb_cluster_fed_states_str(uint32_t states);
 extern uint32_t str_2_cluster_fed_states(char *states);
 extern char *slurmdb_federation_flags_str(uint32_t flags);

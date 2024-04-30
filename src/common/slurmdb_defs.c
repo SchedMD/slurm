@@ -1824,6 +1824,71 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 	return federation_flags;
 }
 
+#define T(flag, str) { flag, XSTRINGIFY(flag), str }
+static const struct {
+	slurmdb_acct_flags_t flag;
+	char *flag_str;
+	char *str;
+} slurmdb_acct_flags_map[] = {
+	T(SLURMDB_ACCT_FLAG_DELETED, "Deleted"),
+	T(SLURMDB_ACCT_FLAG_INVALID, "INVALID"),
+};
+#undef T
+
+static slurmdb_acct_flags_t _str_2_acct_flag(char *flag_in)
+{
+	if (!flag_in || !flag_in[0])
+		return SLURMDB_ACCT_FLAG_NONE;
+
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_acct_flags_map); i++)
+		if (!xstrncasecmp(flag_in, slurmdb_acct_flags_map[i].str,
+				  strlen(flag_in)))
+			return slurmdb_acct_flags_map[i].flag;
+
+	debug("%s: Unable to match %s to a slurmdbd_acct_flags_t flag",
+	      __func__, flag_in);
+	return SLURMDB_ACCT_FLAG_INVALID;
+}
+
+extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flags_in)
+{
+	slurmdb_acct_flags_t acct_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	my_flags = xstrdup(flags_in);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		slurmdb_acct_flags_t f = _str_2_acct_flag(token);
+
+		if (f == SLURMDB_ACCT_FLAG_INVALID)
+			return SLURMDB_ACCT_FLAG_INVALID;
+
+		acct_flags |= f;
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	return acct_flags;
+}
+
+extern char *slurmdb_acct_flags_2_str(slurmdb_acct_flags_t flags)
+{
+	char *acct_flags = NULL, *at = NULL;
+
+	if (flags == SLURMDB_ACCT_FLAG_NONE)
+		return xstrdup("None");
+
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_acct_flags_map); i++) {
+		if ((slurmdb_acct_flags_map[i].flag & flags) ==
+		    slurmdb_acct_flags_map[i].flag)
+			xstrfmtcatat(acct_flags, &at, "%s%s",
+				     (acct_flags ? "," : ""),
+				     slurmdb_acct_flags_map[i].str);
+	}
+
+	return acct_flags;
+}
+
 static uint32_t _str_2_federation_flags(char *flags)
 {
 	return 0;
