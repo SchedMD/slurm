@@ -1113,6 +1113,7 @@ typedef struct {
 
 extern List job_list;			/* list of job_record entries */
 extern List purge_files_list;		/* list of job ids to purge files of */
+extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 
 /*****************************************************************************\
  *  Consumable Resources parameters and data structures
@@ -2383,6 +2384,12 @@ extern void handle_invalid_dependency(job_record_t *job_ptr);
  * NOTE: READ lock slurmctld config and WRITE lock jobs before entry
  */
 void purge_old_job(void);
+
+/*
+ * Free memory from purged job records. This is a distinct phase from
+ * purge_old_job() so this can run outside of the job write lock.
+ */
+extern void free_old_jobs(void);
 
 /* Convert a comma delimited list of QOS names into a bitmap */
 extern void qos_list_build(char *qos, bitstr_t **qos_bits);

@@ -198,6 +198,7 @@ List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 List purge_files_list = NULL;	/* job files to delete */
+list_t *purge_jobs_list = NULL;	/* job_record_t entries to free */
 
 /* Local variables */
 static int      bf_min_age_reserve = 0;
@@ -4583,6 +4584,7 @@ void dump_job_desc(job_desc_msg_t *job_desc)
  *	NOTE: The job hash table size does not change after initial creation.
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
+ *	purge_jobs_list - pointer to purge_jobs_list
  */
 void init_job_conf(void)
 {
@@ -4596,6 +4598,9 @@ void init_job_conf(void)
 	if (!purge_files_list) {
 		purge_files_list = list_create(xfree_ptr);
 	}
+
+	if (!purge_jobs_list)
+		purge_jobs_list = list_create(free_job_record);
 }
 
 /*
@@ -12304,6 +12309,15 @@ void purge_old_job(void)
 	}
 }
 
+extern void free_old_jobs(void)
+{
+	job_record_t *job_ptr;
+	/*
+	 * Delete records one-by-one to avoid blocking purge_job_record().
+	 */
+	while ((job_ptr = list_pop(purge_jobs_list)))
+		free_job_record(job_ptr);
+}
 
 /*
  * purge_job_record - purge specific job record. No testing is performed to
@@ -17052,6 +17066,7 @@ void job_fini (void)
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);
 	FREE_NULL_LIST(purge_files_list);
+	FREE_NULL_LIST(purge_jobs_list);
 	FREE_NULL_BITMAP(requeue_exit);
 	FREE_NULL_BITMAP(requeue_exit_hold);
 }

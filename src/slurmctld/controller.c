@@ -2254,6 +2254,7 @@ static void *_slurmctld_background(void *no_data)
 				unlock_slurmctld(purge_job_locks);
 			}
 			slurm_mutex_unlock(&check_bf_running_lock);
+			free_old_jobs();
 		}
 
 		if (difftime(now, last_full_sched_time) >= sched_interval) {
