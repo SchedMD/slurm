@@ -189,6 +189,9 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	if (!user->coord_accts)
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
 
+	/*
+	 * Get explicit account coordinators
+	 */
 	query = xstrdup_printf(
 		"select acct from %s where user='%s' && deleted=0",
 		acct_coord_table, user->name);
@@ -210,6 +213,51 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		coord->direct = 1;
 	}
 	mysql_free_result(result);
+
+	/*
+	 * Get implicit account coordinators
+	 */
+	query_pos = NULL;
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
+	while ((cluster_name = list_next(itr))) {
+		xstrfmtcatat(query, &query_pos,
+			     "%sselect distinct t2.acct from \"%s_%s\" as t1, "
+			     "\"%s_%s\" as t2 where t1.deleted=0 && "
+			     "t2.deleted=0 && "
+			     "(t1.flags & %u) && t2.lineage like "
+			     "concat('%%/', t1.acct, '/%%0-%s/%%')",
+			     query ? " union " : "", cluster_name, assoc_table,
+			     cluster_name, assoc_table,
+			     ASSOC_FLAG_USER_COORD, user->name);
+	}
+	list_iterator_destroy(itr);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+
+	if (query) {
+		query_pos = NULL;
+
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+
+		if (!(result =
+		      mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+
+		while ((row = mysql_fetch_row(result))) {
+			if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
+				continue;
+
+			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
+			debug2("adding %s to coord_accts for user %s",
+			       row[0], user->name);
+			list_append(user->coord_accts, coord);
+			coord->name = xstrdup(row[0]);
+		}
+		mysql_free_result(result);
+	}
 
 	if (!list_count(user->coord_accts))
 		return SLURM_SUCCESS;
