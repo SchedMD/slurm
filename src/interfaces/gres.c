@@ -1250,6 +1250,60 @@ static void _handle_global_autodetect(char *str)
 	}
 }
 
+static int _slurm_conf_gres_str(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	char **gres_str = arg;
+	if (gres_slurmd_conf && gres_slurmd_conf->name)
+		xstrfmtcat(*gres_str, "%s:%s%s%ld",
+			   gres_slurmd_conf->name,
+			   gres_slurmd_conf->type_name ? gres_slurmd_conf->type_name : "",
+			   gres_slurmd_conf->type_name ? ":" : "",
+			   gres_slurmd_conf->count);
+	return SLURM_SUCCESS;
+}
+
+extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
+				       char **first_gres_str,
+				       char **autodetect_str)
+{
+	list_t *gres_list_system = NULL;
+	char *gres_str = NULL;
+
+	int autodetect_options[] = {
+		GRES_AUTODETECT_GPU_NVML,
+		GRES_AUTODETECT_GPU_RSMI,
+		GRES_AUTODETECT_GPU_ONEAPI,
+		GRES_AUTODETECT_GPU_NRT,
+		GRES_AUTODETECT_UNSET /* For loop is done */
+	};
+
+	for (int i = 0; autodetect_options[i] != GRES_AUTODETECT_UNSET; i++) {
+		autodetect_flags = autodetect_options[i];
+		if (gpu_plugin_init() != SLURM_SUCCESS)
+			continue;
+		gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
+		if (gres_list_system)
+			list_for_each(gres_list_system, _slurm_conf_gres_str,
+				      &gres_str);
+		FREE_NULL_LIST(gres_list_system);
+		gpu_plugin_fini();
+
+		if (!gres_str)
+			continue;
+
+		xstrfmtcat(*autodetect_str, "Found %s with Autodetect=%s (Substring of gpu name may be used instead)",
+			   gres_str,
+			   _get_autodetect_flags_str());
+		if (!*first_gres_str){
+			*first_gres_str = gres_str;
+			gres_str = NULL;
+		} else {
+			xfree(gres_str);
+		}
+	}
+}
+
 /*
  * Check to see if current GRES record matches the name of the previous GRES
  * record that set env flags.

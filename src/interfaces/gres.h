@@ -1070,6 +1070,10 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 			      uint32_t node_inx,
 			      enum gres_step_data_type data_type, void *data);
 
+extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
+				       char **first_gres_str,
+				       char **autodetect_str);
+
 extern uint32_t gres_get_autodetect_flags(void);
 
 /* Convert the major/minor info to a string */

@@ -1707,7 +1707,13 @@ static void
 _print_config(void)
 {
 	int days, hours, mins, secs;
-	char name[128];
+	char name[128], *gres_str = NULL, *autodetect_str = NULL;
+	node_config_load_t node_conf = {
+		/* Set cpu_cnt later */
+		.in_slurmd = true,
+		.gres_name = "gpu",
+		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
+	};
 
 	/* Since it is not running the daemon, silence the log output */
 	(conf->log_opts).logfile_level = LOG_LEVEL_QUIET;
@@ -1729,12 +1735,27 @@ _print_config(void)
 				&conf->actual_threads,
 				&conf->block_map_size,
 				&conf->block_map, &conf->block_map_inv);
+
+	/* Set sockets and cores for xcpuinfo_mac_to_abs */
+	conf->cpus = conf->actual_cpus;
+	conf->boards = conf->actual_boards;
+	conf->sockets = conf->actual_sockets;
+	conf->cores = conf->actual_cores;
+	conf->threads = conf->actual_threads;
+	node_conf.cpu_cnt = MAX(conf->actual_cpus, conf->block_map_size);
+	/* Use default_plugin_path here to avoid reading slurm.conf */
+	slurm_conf.plugindir = xstrdup(default_plugin_path);
+	gres_get_autodetected_gpus(node_conf, &gres_str, &autodetect_str);
+
 	get_memory(&conf->physical_memory_size);
 
-	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"\n",
+	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"%s%s\n",
 	       name, conf->actual_cpus, conf->actual_boards,
 	       (conf->actual_sockets / conf->actual_boards), conf->actual_cores,
-	       conf->actual_threads, conf->physical_memory_size);
+	       conf->actual_threads, conf->physical_memory_size,
+	       gres_str ? " Gres=" : "", gres_str ? gres_str : "");
+	if (autodetect_str)
+		printf("%s\n", autodetect_str);
 
 	get_up_time(&conf->up_time);
 	secs  =  conf->up_time % 60;
