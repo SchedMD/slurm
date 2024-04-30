@@ -659,7 +659,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  *    > 1 - job array create with the task count as num_jobs
  * IN list_add - add to the joblist or not.
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory that should be xfreed with job_mgr_list_delete_job
+ * NOTE: allocates memory that should be xfreed with free_job_record
  */
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
@@ -4588,7 +4588,7 @@ void init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
-		job_list = list_create(job_mgr_list_delete_job);
+		job_list = list_create(free_job_record);
 	}
 
 	last_job_update = time(NULL);
@@ -10807,7 +10807,7 @@ static void _delete_job_common(job_record_t *job_ptr)
 	}
 }
 
-extern void job_mgr_list_delete_job(void *job_entry)
+extern void free_job_record(void *job_entry)
 {
 	job_record_t *job_ptr = (job_record_t *) job_entry;
 	int job_array_size, i;

@@ -3224,12 +3224,12 @@ extern void notify_parent_of_success(void);
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
 
 /*
- * job_mgr_list_delete_job - delete a job record and its corresponding
+ * free_job_record - delete a job record and its corresponding
  *	job_details,
  *	see common/list.h for documentation
  * IN job_entry - pointer to job_record to delete
  */
-extern void job_mgr_list_delete_job(void *job_entry);
+extern void free_job_record(void *job_entry);
 
 /*
  * Build a job rec from an advanced reservation request.
