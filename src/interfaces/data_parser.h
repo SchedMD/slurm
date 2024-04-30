@@ -174,6 +174,9 @@ typedef enum {
 	DATA_PARSER_JOB_CONDITION_DB_FLAGS, /* uint32_t - SLURMDB_JOB_FLAG_* */
 	DATA_PARSER_JOB_CONDITION_SUBMIT_TIME, /* slurmdb_job_cond_t->usage_start&flags */
 	DATA_PARSER_JOB_CONDITION_PTR, /* slurmdb_job_cond_t* */
+	DATA_PARSER_JOB_STDIN, /* slurmdb_job_rec_t->std_in */
+	DATA_PARSER_JOB_STDOUT, /* slurmdb_job_rec_t->std_out */
+	DATA_PARSER_JOB_STDERR, /* slurmdb_job_rec_t->std_err */
 	DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_SLURMDBD_JOB_PARAM, /* openapi_job_param_t */

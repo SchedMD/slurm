@@ -47,6 +47,7 @@
 #include "src/common/net.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/print_fields.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/slurm_protocol_api.h"
@@ -1282,6 +1283,77 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	} else {
 		return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 	}
+}
+
+static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
+{
+	slurmdb_step_rec_t *step = job->first_step_ptr;
+
+	job_stp->array_task_id = job->array_task_id;
+	job_stp->first_step_name = step ? step->stepname : NULL;
+	job_stp->first_step_node = step ? step->nodes : NULL;
+	job_stp->jobid = job->jobid;
+	job_stp->jobname = job->jobname;
+	job_stp->user = job->user;
+	job_stp->work_dir = job->work_dir;
+}
+
+PARSE_DISABLED(JOB_STDIN)
+PARSE_DISABLED(JOB_STDOUT)
+PARSE_DISABLED(JOB_STDERR)
+
+static int DUMP_FUNC(JOB_STDIN)(const parser_t *const parser, void *obj,
+				data_t *dst, args_t *args)
+{
+	slurmdb_job_rec_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *tmp_path = NULL;
+	int rc;
+
+	if (job->std_in && (*job->std_in != '\0')) {
+		_fill_job_stp(&job_stp, job);
+		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
+	}
+
+	rc = DUMP(STRING, tmp_path, dst, args);
+	xfree(tmp_path);
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_STDOUT)(const parser_t *const parser, void *obj,
+				data_t *dst, args_t *args)
+{
+	slurmdb_job_rec_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *tmp_path = NULL;
+	int rc;
+
+	if (job->std_out && (*job->std_out != '\0')) {
+		_fill_job_stp(&job_stp, job);
+		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
+	}
+
+	rc = DUMP(STRING, tmp_path, dst, args);
+	xfree(tmp_path);
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_STDERR)(const parser_t *const parser, void *obj,
+				data_t *dst, args_t *args)
+{
+	slurmdb_job_rec_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *tmp_path = NULL;
+	int rc;
+
+	if (job->std_err && (*job->std_err != '\0')) {
+		_fill_job_stp(&job_stp, job);
+		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
+	}
+
+	rc = DUMP(STRING, tmp_path, dst, args);
+	xfree(tmp_path);
+	return rc;
 }
 
 PARSE_DISABLED(JOB_PLANNED_TIME)
@@ -6714,6 +6786,12 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, resv_name, "reservation/name", NULL),
 	add_complex_parser(slurmdb_job_rec_t, JOB_PLANNED_TIME, false, "time/planned", "Time in seconds required to start job after becoming eligible to run"),
 	add_parse(STRING, script, "script", NULL),
+	add_complex_parser(slurmdb_job_rec_t, JOB_STDIN, false, "stdin_expanded", "Job stdin with expanded fields"),
+	add_complex_parser(slurmdb_job_rec_t, JOB_STDOUT, false, "stdout_expanded", "Job stdout with expanded fields"),
+	add_complex_parser(slurmdb_job_rec_t, JOB_STDERR, false, "stderr_expanded", "Job stderr with expanded fields"),
+	add_parse(STRING, std_out, "stdout", NULL),
+	add_parse(STRING, std_err, "stderr", NULL),
+	add_parse(STRING, std_in, "stdin", NULL),
 	add_skip(show_full),
 	add_parse(TIMESTAMP, start, "time/start", NULL),
 	add_parse_bit_flag_array(slurmdb_job_rec_t, JOB_STATE, false, state, "state/current", NULL),
@@ -9581,6 +9659,9 @@ static const parser_t parsers[] = {
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
+	addpcp(JOB_STDIN, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
+	addpcp(JOB_STDOUT, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
+	addpcp(JOB_STDERR, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
