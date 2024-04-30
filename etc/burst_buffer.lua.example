@@ -433,8 +433,8 @@ end
 --
 --This function is meant to be used to poll if data_out has completed.
 --If the first return value is slurm.SUCCESS and the second return value is
---"BUSY" (or slurm.SLURM_BB_BUSY), then the job will continue to pend and
---this function will continue to be called periodically.
+--"BUSY" (or slurm.SLURM_BB_BUSY), then the job will stay in the completing
+--state and this function will continue to be called periodically.
 --If the first return value is slurm.SUCCESS and the second return value is
 --empty or any other string besides "BUSY", then job and burst buffer state
 --will proceed. If the first return value is not slurm.SUCCESS, then the job
