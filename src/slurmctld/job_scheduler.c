@@ -4501,7 +4501,8 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	if ((boot_node_bitmap == NULL) ||
 	    bit_overlap_any(cloud_node_bitmap, job_ptr->node_bitmap)) {
 		/* launch_job() when all nodes have booted */
-		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		if (bit_overlap_any(power_down_node_bitmap,
+		                    job_ptr->node_bitmap) ||
 		    bit_overlap_any(booting_node_bitmap,
 				    job_ptr->node_bitmap)) {
 			/* Reset job start time when nodes are booted */
@@ -4532,7 +4533,7 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);
-		bit_clear(power_node_bitmap, i);
+		bit_clear(power_down_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
 		node_ptr->boot_req_time = now;
 	}

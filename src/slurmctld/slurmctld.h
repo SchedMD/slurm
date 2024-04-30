@@ -304,7 +304,7 @@ extern List conf_includes_list; /* list of conf_includes_map_t */
  *  cloud_node_bitmap       Set if node in CLOUD state
  *  future_node_bitmap      Set if node in FUTURE state
  *  idle_node_bitmap        Set if node has no jobs allocated to it
- *  power_node_bitmap       Set for nodes which are powered down
+ *  power_down_node_bitmap  Set for nodes which are powered down
  *  power_up_node_bitmap    Set for nodes which are powered down
  *  share_node_bitmap       Set if no jobs allocated exclusive access to
  *                          resources on that node (cleared if --exclusive
@@ -321,7 +321,7 @@ extern bitstr_t *cg_node_bitmap;	/* bitmap of completing nodes */
 extern bitstr_t *cloud_node_bitmap;	/* bitmap of cloud nodes */
 extern bitstr_t *future_node_bitmap;	/* bitmap of FUTURE nodes */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
-extern bitstr_t *power_node_bitmap;	/* Powered down nodes */
+extern bitstr_t *power_down_node_bitmap; /* Powered down nodes */
 extern bitstr_t *power_up_node_bitmap;	/* Powered up and requested nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */

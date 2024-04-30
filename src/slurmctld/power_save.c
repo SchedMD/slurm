@@ -485,7 +485,8 @@ static void _do_power_work(time_t now)
 			list_delete_item(iter);
 			continue;
 		}
-		if (!bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
+		if (!bit_overlap_any(job_ptr->node_bitmap,
+		                     power_down_node_bitmap)) {
 			log_flag(POWER, "%pJ needed resuming but nodes aren't power_save anymore",
 				 job_ptr);
 			list_delete_item(iter);
@@ -495,7 +496,7 @@ static void _do_power_work(time_t now)
 		to_resume_bitmap = bit_alloc(node_record_count);
 
 		need_resume_bitmap = bit_copy(job_ptr->node_bitmap);
-		bit_and(need_resume_bitmap, power_node_bitmap);
+		bit_and(need_resume_bitmap, power_down_node_bitmap);
 
 		for (int i = 0; next_node_bitmap(need_resume_bitmap, &i); i++) {
 			if ((resume_rate == 0) ||
@@ -571,7 +572,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
-			bit_clear(power_node_bitmap, node_ptr->index);
+			bit_clear(power_down_node_bitmap, node_ptr->index);
 			bit_set(power_up_node_bitmap, node_ptr->index);
 			node_ptr->boot_req_time = now;
 			bit_set(booting_node_bitmap, node_ptr->index);
@@ -615,7 +616,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-			bit_set(power_node_bitmap,   node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
 			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_set(sleep_node_bitmap,   node_ptr->index);
 
@@ -699,7 +700,7 @@ static void _do_power_work(time_t now)
 			 * clusteracct_storage_g_node_down().
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
-			bit_set(power_node_bitmap, node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
 			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_clear(booting_node_bitmap, node_ptr->index);
 			node_ptr->last_busy = 0;
@@ -1185,7 +1186,7 @@ static int _build_resume_job_list(void *object, void *arg)
 
 	if (IS_JOB_CONFIGURING(job_ptr) &&
 	    bit_overlap_any(job_ptr->node_bitmap,
-			    power_node_bitmap)) {
+			    power_down_node_bitmap)) {
 		uint32_t *tmp = xmalloc(sizeof(uint32_t));
 		*tmp = job_ptr->job_id;
 		list_append(resume_job_list, tmp);

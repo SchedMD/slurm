@@ -110,7 +110,7 @@ bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
-bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
+bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
 bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
@@ -3462,7 +3462,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (!is_node_in_maint_reservation(node_ptr->index))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 
-		bit_clear(power_node_bitmap, node_ptr->index);
+		bit_clear(power_down_node_bitmap, node_ptr->index);
 		bit_set(power_up_node_bitmap, node_ptr->index);
 
 		last_node_update = now;
@@ -5003,7 +5003,7 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(cloud_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(power_down_node_bitmap);
 	FREE_NULL_BITMAP(power_up_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
@@ -5216,7 +5216,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 	} else if (IS_NODE_CLOUD(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
 		bit_set(cloud_node_bitmap, node_ptr->index);
-		bit_set(power_node_bitmap, node_ptr->index);
+		bit_set(power_down_node_bitmap, node_ptr->index);
 
 		if ((rc = gres_g_node_config_load(node_ptr->config_ptr->cpus,
 						  node_ptr->name,
@@ -5480,7 +5480,7 @@ static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 	bit_clear(cloud_node_bitmap, node_ptr->index);
 	bit_clear(future_node_bitmap, node_ptr->index);
 	bit_clear(idle_node_bitmap, node_ptr->index);
-	bit_clear(power_node_bitmap, node_ptr->index);
+	bit_clear(power_down_node_bitmap, node_ptr->index);
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	bit_clear(rs_node_bitmap, node_ptr->index);
 	bit_clear(share_node_bitmap, node_ptr->index);

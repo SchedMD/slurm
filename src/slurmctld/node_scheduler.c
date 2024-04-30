@@ -2543,7 +2543,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		int32_t count, powerup_count, before_count = 0;
 
 		/* selected and powered down */
-		bit_and(tmp, power_node_bitmap);
+		bit_and(tmp, power_down_node_bitmap);
 		powerup_count = bit_set_count(tmp);
 		if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
 			select = bitmap2hostlist(select_bitmap);
@@ -2876,7 +2876,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);
 
-	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
+	if (bit_overlap_any(job_ptr->node_bitmap, power_down_node_bitmap)) {
 		job_state_set_flag(job_ptr, JOB_POWER_UP_NODE);
 		if (resume_job_list) {
 			uint32_t *tmp = xmalloc(sizeof(uint32_t));
@@ -3974,7 +3974,7 @@ end_node_set:
 	 */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
-					power_node_bitmap);
+					power_down_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
@@ -3997,8 +3997,8 @@ end_node_set:
 		node_set_ptr[node_set_inx].my_bitmap =
 			bit_copy(node_set_ptr[i].my_bitmap);
 		bit_and(node_set_ptr[node_set_inx].my_bitmap,
-			power_node_bitmap);
-		bit_and_not(node_set_ptr[i].my_bitmap, power_node_bitmap);
+			power_down_node_bitmap);
+		bit_and_not(node_set_ptr[i].my_bitmap, power_down_node_bitmap);
 
 		node_set_inx++;
 		if (node_set_inx >= node_set_len) {

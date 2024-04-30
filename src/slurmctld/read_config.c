@@ -372,7 +372,7 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(cloud_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(power_down_node_bitmap);
 	FREE_NULL_BITMAP(power_up_node_bitmap);
 	FREE_NULL_BITMAP(rs_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
@@ -384,7 +384,7 @@ static void _init_bitmaps(void)
 	cloud_node_bitmap = bit_alloc(node_record_count);
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
-	power_node_bitmap = bit_alloc(node_record_count);
+	power_down_node_bitmap = bit_alloc(node_record_count);
 	power_up_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	share_node_bitmap = bit_alloc(node_record_count);
@@ -583,11 +583,11 @@ static void _build_bitmaps(void)
 			bit_set(up_node_bitmap, node_ptr->index);
 		}
 		if (IS_NODE_POWERED_DOWN(node_ptr)) {
-			bit_set(power_node_bitmap, node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
 			bit_clear(power_up_node_bitmap, node_ptr->index);
 		}
 		if (IS_NODE_POWERING_DOWN(node_ptr)) {
-			bit_set(power_node_bitmap, node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
 			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_clear(avail_node_bitmap, node_ptr->index);
 		}
