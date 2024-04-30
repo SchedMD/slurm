@@ -224,9 +224,9 @@ RunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t"
 </pre>
 </p>
 
-<p><b>WARNING</b>: Singularity (v4.0.2) requires <i>sudo</i> for OCI support,
-which is a security risk since the user is able to modify these calls.
-This example is only provided for testing purposes.</p>
+<p><b>WARNING</b>: Singularity (v4.0.2) requires <i>sudo</i> or setuid binaries
+for OCI support, which is a security risk since the user is able to modify
+these calls. This example is only provided for testing purposes.</p>
 <p><b>WARNING</b>:
 <a href="https://groups.google.com/a/lbl.gov/g/singularity/c/vUMUkMlrpQc/m/gIsEiiP7AwAJ">
 Upstream singularity development</a> of the OCI interface appears to have
@@ -247,9 +247,9 @@ OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 </pre>
 </p>
 
-<p><b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> for OCI support,
-which is a security risk since the user is able to modify these calls.
-This example is only provided for testing purposes.</p>
+<p><b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> or setuid binaries
+for OCI support, which is a security risk since the user is able to modify
+these calls. This example is only provided for testing purposes.</p>
 <p><b>WARNING</b>:
 <a href="https://groups.google.com/a/lbl.gov/g/singularity/c/vUMUkMlrpQc/m/gIsEiiP7AwAJ">
 Upstream singularity development</a> of the OCI interface appears to have
@@ -956,6 +956,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 19 March 2024</p>
+<p style="text-align:center;">Last modified 30 April 2024</p>
 
 <!--#include virtual="footer.txt"-->
