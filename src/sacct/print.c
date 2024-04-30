@@ -1843,6 +1843,48 @@ extern void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_STDERR:
+			switch(type) {
+			case JOB:
+				tmp_char = job->std_err;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_STDIN:
+			switch(type) {
+			case JOB:
+				tmp_char = job->std_in;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_STDOUT:
+			switch(type) {
+			case JOB:
+				tmp_char = job->std_out;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_SUBMIT:
 			switch(type) {
 			case JOB:

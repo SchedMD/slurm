@@ -284,14 +284,15 @@ Priority            QOS                 QOSRAW              Reason
 ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
 ReqCPUS             ReqMem              ReqNodes            ReqTRES
 Reservation         ReservationId       Start               State
-Submit              SubmitLine          Suspended           SystemComment
-SystemCPU           Timelimit           TimelimitRaw        TotalCPU
-TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask
-TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot
-TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask
-TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot
-UID                 User                UserCPU             WCKey
-WCKeyID             WorkDir
+StdErr              StdIn               StdOut              Submit
+SubmitLine          Suspended           SystemComment       SystemCPU
+Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
+TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
+TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
+TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
+TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
+User                UserCPU             WCKey               WCKeyID
+WorkDir
 .ft 1
 .fi
 .RE
@@ -1090,6 +1091,27 @@ from RUNNING.
 otherwise) in the time period requested as the job was also RUNNING during that
 time. If you are only looking for jobs that finished, please choose the
 appropriate state(s) without the RUNNING state.
+.IP
+
+.TP
+\f3StdErr\fP
+Display the "\fIfilename pattern\fR" for stderr redirection specified in a
+batch job. Path wildcards will not be substituted and will be shown as defined
+in the original batch submission.
+.IP
+
+.TP
+\f3StdIn\fP
+Display the "\fIfilename pattern\fR" for stdin redirection specified in a
+batch job. Path wildcards will not be substituted and will be shown as defined
+in the original batch submission.
+.IP
+
+.TP
+\f3StdOut\fP
+Display the "\fIfilename pattern\fR" for stdout redirection specified in a
+batch job. Path wildcards will not be substituted and will be shown as defined
+in the original batch submission.
 .IP
 
 .TP
