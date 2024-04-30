@@ -44,6 +44,14 @@ int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
 char *fields_delimiter = NULL;
 
+typedef enum {
+    STATE_INIT,
+    STATE_EXPAND,
+    STATE_DONE,
+    STATE_ESCAPE,
+    STATE_ERROR
+} parser_state;
+
 extern void destroy_print_field(void *object)
 {
 	print_field_t *field = (print_field_t *)object;
@@ -444,4 +452,151 @@ extern void print_fields_char_list(print_field_t *field, void *input, int last)
 			printf("%-*.*s ", abs_len, abs_len, print_this);
 	}
 	xfree(print_this);
+}
+
+static bool _is_wildcard(char *ptr)
+{
+	switch (*ptr) {
+	case 'A': /* Array job ID */
+	case 'a': /* Array task ID */
+	case 'J': /* Jobid.stepid */
+	case 'j': /* Job ID */
+	case 'N': /* Short hostname */
+	case 'n': /* Node id relative to current job */
+	case 's': /* Stepid of the running job */
+	case 't': /* Task id (rank) relative to current job */
+	case 'u': /* User name */
+	case 'x':
+		return true;
+		break;
+	default:
+		break;
+	}
+	return false;
+}
+
+static void _expand_wildcard(char **expanded, char **pos, char *ptr,
+			     uint32_t padding, job_std_pattern_t *job)
+{
+	switch (*ptr) {
+	case 'A': /* Array job ID */
+	case 'J': /* Jobid.stepid */
+	case 'j': /* Job ID */
+		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->jobid);
+		break;
+	case 'a': /* Array task ID */
+		xstrfmtcatat(*expanded, pos, "%0*u", padding,
+			     job->array_task_id);
+		break;
+	case 'N': /* Short hostname */
+		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);
+		break;
+	case 's': /* Stepid of the running job */
+		xstrfmtcatat(*expanded, pos, "%s", job->first_step_name);
+		break;
+	case 'n': /* Node id relative to current job */
+	case 't': /* Task id (rank) relative to current job */
+		xstrfmtcatat(*expanded, pos, "0");
+		break;
+	case 'u': /* User name */
+		xstrfmtcatat(*expanded, pos, "%s", job->user);
+		break;
+	case 'x':
+		xstrfmtcatat(*expanded, pos, "%s", job->jobname);
+		break;
+	default:
+		break;
+	}
+}
+
+/*
+ * Special expansion function for stdin/stdout/stderr filename patterns.
+ * Fields that can potientially map to a range of values will use the first in
+ * that range (e.g %t is replaced by 0).
+ *
+ * The parser do not support steps and is only for batch jobs.
+ *
+ * \      If we found this symbol, don't replace anything.
+ * %%     The character "%".
+ * %A     Job array's master job allocation number.
+ * %a     Job array ID (index) number.
+ * %J     jobid.stepid of the running job. (e.g. "128.0" or "batch")
+ * %j     jobid of the running job.
+ * %N     short hostname. This will create a separate IO file per node.
+ * %n     Node identifier relative to current job.
+ * %s     stepid of the running job.
+ * %t     task identifier (rank) relative to current job.
+ * %u     User name.
+ * %x     Job name.
+ *
+ * A number placed between the percent character and format specifier may be
+ * used to zero-pad the result. Ignored if the format specifier corresponds to
+ * non-numeric data (%N for example). The maximum padding is 10.
+ * job%J.out      job128.0.out
+ * job%4j.out     job0128.out
+ * job%2j-%2t.out job128-00.out, job128-01.out, ...
+ *
+ * OUT - Expanded path as xstring. Must xfree.
+ * IN stdio_path - stdin/stdout/stderr job filepath
+ * IN job - job record in the database
+ */
+extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
+{
+	parser_state curr_state = STATE_INIT;
+	char *ptr, *end, *expanded = NULL, *pos = NULL;
+	uint32_t padding = 0;
+
+	if (!stdio_path || !*stdio_path || !job)
+		return NULL;
+
+	if (stdio_path[0] != '/')
+		xstrcatat(expanded, &pos, job->work_dir);
+
+	/*
+	 * Special case, if we find a \ it means the file has not been
+	 * expanded in any case, so skip any replacement from now on.
+	 */
+	if (xstrstr(stdio_path, "\\"))
+		curr_state = STATE_ESCAPE;
+
+	ptr = stdio_path;
+	while (*ptr) {
+		switch (curr_state) {
+		case STATE_ESCAPE:
+			if (*ptr != '\\')
+				xstrfmtcatat(expanded, &pos, "%c", *ptr);
+			break;
+		case STATE_INIT:
+			if (*ptr == '%')
+				curr_state = STATE_EXPAND;
+			else
+				xstrfmtcatat(expanded, &pos, "%c", *ptr);
+			break;
+		case STATE_EXPAND:
+			if (isdigit(*ptr)) {
+				if ((padding = strtoul(ptr, &end, 10)) > 9) {
+					/* Remove % and double digit 10 */
+					ptr = end;
+					padding = 10;
+				} else
+					ptr++;
+			}
+			if (!_is_wildcard(ptr)) {
+				padding = 0;
+				xstrfmtcatat(expanded, &pos, "%c", *ptr);
+			} else {
+				_expand_wildcard(&expanded, &pos, ptr, padding,
+						 job);
+			}
+			/* If we find another %, don't leave this state yet. */
+			if (*ptr != '%')
+				curr_state = STATE_INIT;
+			break;
+		default:
+			break;
+		}
+		ptr++;
+	}
+
+	return expanded;
 }

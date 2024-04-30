@@ -64,6 +64,16 @@ struct print_field {
 	uint16_t type; /* defined in the local function */
 };
 
+typedef struct {
+	uint32_t array_task_id;
+	char *first_step_name;
+	char *first_step_node;
+	uint32_t jobid;
+	char *jobname;
+	char *user;
+	char *work_dir;
+} job_std_pattern_t;
+
 enum {
 	PRINT_FIELDS_PARSABLE_NOT = 0,
 	PRINT_FIELDS_PARSABLE_ENDING,
@@ -90,6 +100,7 @@ extern void print_fields_time_from_mins(print_field_t *field,
 extern void print_fields_time_from_secs(print_field_t *field,
 					void *input, int last);
 extern void print_fields_char_list(print_field_t *field, void *input, int last);
+extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job);
 
 #define print_fields_uint print_fields_uint32
 #define print_fields_time print_fields_time_from_mins
