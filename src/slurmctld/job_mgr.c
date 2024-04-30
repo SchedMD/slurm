@@ -10810,7 +10810,7 @@ static void _delete_job_common(job_record_t *job_ptr)
 extern void free_job_record(void *job_entry)
 {
 	job_record_t *job_ptr = (job_record_t *) job_entry;
-	int job_array_size, i;
+	int job_array_size;
 
 	if (!job_entry)
 		return;
@@ -10895,7 +10895,7 @@ extern void free_job_record(void *job_entry)
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);
 	xfree(job_ptr->sched_nodes);
-	for (i = 0; i < job_ptr->spank_job_env_size; i++)
+	for (int i = 0; i < job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
