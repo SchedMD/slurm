@@ -383,9 +383,10 @@ typedef struct {
 	uint16_t with_deleted;
 } slurmdb_account_cond_t;
 
-
-#define SLURMDB_ACCT_FLAG_NONE 0
-#define SLURMDB_ACCT_FLAG_DELETED SLURM_BIT(0)
+enum {
+	SLURMDB_ACCT_FLAG_NONE          = 0,
+	SLURMDB_ACCT_FLAG_DELETED       = SLURM_BIT(0),
+};
 
 typedef struct {
 	List assoc_list; /* list of slurmdb_assoc_rec_t *'s */
@@ -1249,8 +1250,10 @@ typedef struct {
 	uint16_t without_defaults;
 } slurmdb_user_cond_t;
 
-#define SLURMDB_USER_FLAG_NONE 0
-#define SLURMDB_USER_FLAG_DELETED SLURM_BIT(0)
+enum {
+	SLURMDB_USER_FLAG_NONE		= 0,
+	SLURMDB_USER_FLAG_DELETED	= SLURM_BIT(0),
+};
 
 struct slurmdb_user_rec {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
@@ -1293,8 +1296,10 @@ typedef struct {
 	uint16_t with_deleted;  /* return deleted associations */
 } slurmdb_wckey_cond_t;
 
-#define SLURMDB_WCKEY_FLAG_NONE 0
-#define SLURMDB_WCKEY_FLAG_DELETED SLURM_BIT(0)
+enum {
+	SLURMDB_WCKEY_FLAG_NONE          = 0,
+	SLURMDB_WCKEY_FLAG_DELETED       = SLURM_BIT(0),
+};
 
 typedef struct {
 	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
