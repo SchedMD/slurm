@@ -65,6 +65,7 @@
 #define OPT_LONG_ARRAY     0x112
 #define OPT_LONG_HELPSTATE 0x113
 #define OPT_LONG_HELPREASON 0x114
+#define OPT_LONG_EXPAND_PATTERNS 0x115
 
 #define JOB_HASH_SIZE 1000
 
@@ -278,6 +279,7 @@ sacct [<OPTION>]                                                            \n \
                    NOTE: Requesting specific job(s) with '-j' is required   \n\
                          for this.                                          \n\
          --federation: Report jobs from federation if a member of a one.    \n\
+     --expand-pattern: substitute wildcards in field name patterns          \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than Slurm's   \n\
                    current accounting log file. (Only appliciable when      \n\
@@ -637,6 +639,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"helpstate",      no_argument,       0,    OPT_LONG_HELPSTATE},
                 {"endtime",        required_argument, 0,    'E'},
                 {"env-vars",       no_argument,       0,    OPT_LONG_ENV},
+		{"expand-patterns",no_argument,       0,    OPT_LONG_EXPAND_PATTERNS},
                 {"file",           required_argument, 0,    'f'},
                 {"flags",          required_argument, 0,    'F'},
                 {"gid",            required_argument, 0,    'g'},
@@ -759,6 +762,9 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_ENV:
 			job_cond->flags |= JOBCOND_FLAG_ENV;
 			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
+			break;
+		case OPT_LONG_EXPAND_PATTERNS:
+			params.expand_patterns = true;
 			break;
 		case 'f':
 			xfree(slurm_conf.job_comp_loc);

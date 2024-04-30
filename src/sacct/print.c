@@ -39,6 +39,7 @@
 #include "sacct.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
+#include "src/common/print_fields.h"
 #include "src/common/uid.h"
 #include "slurm/slurm.h"
 
@@ -278,6 +279,37 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	FREE_NULL_BITMAP(bitmap);
 }
 
+static void _expand_stdio_patterns(slurmdb_job_rec_t *job)
+{
+	char *tmp_path;
+	job_std_pattern_t job_stp;
+	slurmdb_step_rec_t *step = job->first_step_ptr;
+
+	job_stp.array_task_id = job->array_task_id;
+	job_stp.first_step_name = step ? step->stepname : NULL;
+	job_stp.first_step_node = step ? step->nodes : NULL;
+	job_stp.jobid = job->jobid;
+	job_stp.jobname = job->jobname;
+	job_stp.user = job->user;
+	job_stp.work_dir = job->work_dir;
+
+	if (job->std_in && (*job->std_in != '\0')) {
+		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
+		xfree(job->std_in);
+		job->std_in = tmp_path;
+	}
+	if (job->std_err && (*job->std_err != '\0')) {
+		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
+		xfree(job->std_err);
+		job->std_err = tmp_path;
+	}
+	if (job->std_out && (*job->std_out != '\0')) {
+		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
+		xfree(job->std_out);
+		job->std_out = tmp_path;
+	}
+}
+
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -301,6 +333,8 @@ extern void print_fields(type_t type, void *object)
 
 	switch (type) {
 	case JOB:
+		if (params.expand_patterns)
+			_expand_stdio_patterns(job);
 		job_comp = NULL;
 		cpu_tres_rec_count = slurmdb_find_tres_count_in_string(
 			job->tres_alloc_str,
