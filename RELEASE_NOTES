@@ -65,6 +65,12 @@ COMMAND CHANGES (see man pages for details)
  -- Add support for sbcast --preserve when job_container/tmpfs configured
     (previously documented as unsupported).
  -- scontrol - Add new subcommand 'power' for node power control.
+ -- squeue - Adjust StdErr, StdOut, and StdIn output formats. These will now
+    consistently print "(null)" if a value is unavailable. StdErr will no
+    longer display StdOut if it is not distinctly set. StdOut will now
+    correctly display the default filename pattern for job arrays, and no
+    longer show it for non-batch jobs. However, the expansion patterns will
+    no longer be substituted by default.
 
 API CHANGES
 ===========
