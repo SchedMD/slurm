@@ -2137,22 +2137,10 @@ int _print_job_sockets_per_board(job_info_t * job, int width,
 int _print_job_std_err(job_info_t * job, int width,
 		       bool right_justify, char* suffix)
 {
-	char tmp_line[1024];
-
 	if (job == NULL)
 		_print_str("STDERR", width, right_justify, true);
-	else if (!job->batch_flag)
-		_print_str("N/A", width, right_justify, true);
-	else if (job->std_err)
+	else
 		_print_str(job->std_err, width, right_justify, true);
-	else if (job->std_out)
-		_print_str(job->std_out, width, right_justify, true);
-	else {
-		snprintf(tmp_line,sizeof(tmp_line), "%s/slurm-%u.out",
-			 job->work_dir, job->job_id);
-
-		_print_str(tmp_line, width, right_justify, true);
-	}
 
 	if (suffix)
 		printf("%s", suffix);
