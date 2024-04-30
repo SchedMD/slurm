@@ -75,6 +75,7 @@
 #define OPT_LONG_HELPFORMAT   0x115
 #define OPT_LONG_HELPFORMAT2  0x116
 #define OPT_LONG_ONLY_JOB_STATE   0x117
+#define OPT_LONG_EXPAND_PATTERNS 0x118
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -116,6 +117,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
+		{"expand-patterns", no_argument,  0, OPT_LONG_EXPAND_PATTERNS},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
@@ -331,6 +333,9 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
+		case OPT_LONG_EXPAND_PATTERNS:
+			params.expand_patterns = true;
+			break;
 		case OPT_LONG_FEDR:
 			params.federation_flag = true;
 			break;

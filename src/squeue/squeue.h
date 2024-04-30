@@ -68,6 +68,7 @@ struct squeue_parameters {
 	bool all_states;
 	bool array_flag;
 	bool detail_flag;
+	bool expand_patterns;
 	bool federation_flag;
 	int  iterate;
 	bool job_flag;

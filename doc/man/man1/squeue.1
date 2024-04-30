@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "January 2024" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "April 2024" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -42,6 +42,13 @@ Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
 running in a federation with either \fBFederationParameters=fed_display\fR
 configured or the \fB\-\-federation\fR option set.
 This option implicitly sets the \fB\-\-local\fR option.
+.IP
+
+.TP
+\fB\-\-expand\-patterns\fR
+Expand any filename patterns from in \f3StdOut\fP, \f3StdErr\fP and \f3StdIn\fP.
+Fields that map to a range of values will use the first value of the range. For
+example "%t" for task id will be replaced by "0".
 .IP
 
 .TP
