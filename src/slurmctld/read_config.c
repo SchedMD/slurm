@@ -2074,9 +2074,11 @@ static void _gres_reconfig(void)
 		 * time, which can take a while for a node in the cloud
 		 * to boot.
 		 */
-		gres_g_node_config_load(
-			node_ptr->config_ptr->cpus, node_ptr->name,
-			node_ptr->gres_list, NULL, NULL);
+		if (gres_g_node_config_load(node_ptr->config_ptr->cpus,
+					    node_ptr->name, node_ptr->gres_list,
+					    NULL, NULL) != SLURM_SUCCESS)
+			continue; /* No need to validate if load failed */
+
 		gres_node_config_validate(
 			node_ptr->name, node_ptr->config_ptr->gres,
 			&node_ptr->gres, &node_ptr->gres_list,

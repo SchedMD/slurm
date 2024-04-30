@@ -972,8 +972,10 @@ extern int init(void)
 	setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE", 1);
 	setenv("ZE_ENABLE_PCI_ID_DEVICE_ORDER", "1", 1);
 
-	if (zeInit(0) != ZE_RESULT_SUCCESS)
-		fatal("zeInit failed");
+	if (zeInit(0) != ZE_RESULT_SUCCESS) {
+		error("zeInit failed");
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
