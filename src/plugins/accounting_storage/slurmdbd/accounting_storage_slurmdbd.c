@@ -173,6 +173,20 @@ static void _partial_destroy_dbd_job_start(void *object)
 	}
 }
 
+static void _fill_stdout_str(dbd_job_start_msg_t *req, job_record_t *job_ptr)
+{
+	if (job_ptr->details->std_out) {
+		req->std_out = xstrdup(job_ptr->details->std_out);
+	} else if (job_ptr->batch_flag) {
+		if (job_ptr->array_job_id)
+			xstrfmtcat(req->std_out, "%s/slurm-%%A_%%a.out",
+				   job_ptr->details->work_dir);
+                else
+			xstrfmtcat(req->std_out, "%s/slurm-%%j.out",
+				   job_ptr->details->work_dir);
+	}
+}
+
 /* Anything allocated here must be freed in _partial_free_dbd_job_start() */
 static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 				job_record_t *job_ptr)
@@ -254,7 +268,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		req->req_mem = job_ptr->details->pn_min_memory;
 		req->std_err = xstrdup(job_ptr->details->std_err);
 		req->std_in = xstrdup(job_ptr->details->std_in);
-		req->std_out = xstrdup(job_ptr->details->std_out);
+		_fill_stdout_str(req, job_ptr);
 		req->submit_line = xstrdup(job_ptr->details->submit_line);
 		/* Only send this once per instance of the job! */
 		if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
