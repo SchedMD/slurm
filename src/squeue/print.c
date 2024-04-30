@@ -2164,18 +2164,22 @@ int _print_job_std_in(job_info_t * job, int width,
 int _print_job_std_out(job_info_t * job, int width,
 		       bool right_justify, char* suffix)
 {
-	char tmp_line[1024];
+	/*
+	 * Populate the default patterns in std_out for batch jobs.
+	 */
+	if (job && !job->std_out && job->batch_flag) {
+		if (job->array_job_id)
+			xstrfmtcat(job->std_out, "%s/slurm-%%A_%%a.out",
+				   job->work_dir);
+                else
+			xstrfmtcat(job->std_out, "%s/slurm-%%j.out",
+				   job->work_dir);
+	}
 
 	if (job == NULL)
 		_print_str("STDOUT", width, right_justify, true);
-	else if (job->std_out)
+	else
 		_print_str(job->std_out, width, right_justify, true);
-	else {
-		snprintf(tmp_line,sizeof(tmp_line), "%s/slurm-%u.out",
-			 job->work_dir, job->job_id);
-
-		_print_str(tmp_line, width, right_justify, true);
-	}
 
 	if (suffix)
 		printf("%s", suffix);
