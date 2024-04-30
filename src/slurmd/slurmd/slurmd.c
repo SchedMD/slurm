@@ -1709,6 +1709,18 @@ _print_config(void)
 	int days, hours, mins, secs;
 	char name[128];
 
+	/* Since it is not running the daemon, silence the log output */
+	(conf->log_opts).logfile_level = LOG_LEVEL_QUIET;
+	(conf->log_opts).syslog_level = LOG_LEVEL_QUIET;
+
+	/* Print to fatals to terminal by default (-v for more verbosity) */
+	if (conf->debug_level_set)
+		(conf->log_opts).stderr_level = conf->debug_level;
+	else
+		(conf->log_opts).stderr_level = LOG_LEVEL_FATAL;
+
+	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
+
 	gethostname_short(name, sizeof(name));
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
