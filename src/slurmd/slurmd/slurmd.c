@@ -1917,10 +1917,11 @@ static int _establish_configuration(void)
 		return SLURM_SUCCESS;
 	}
 
-	if (!(configs = fetch_config(conf->conf_server,
-				     CONFIG_REQUEST_SLURMD))) {
-		error("%s: failed to load configs", __func__);
-		return SLURM_ERROR;
+	while (!(configs = fetch_config(conf->conf_server,
+					CONFIG_REQUEST_SLURMD))) {
+		error("%s: failed to load configs. Retrying in 10 seconds.",
+		      __func__);
+		sleep(10);
 	}
 
 	/*

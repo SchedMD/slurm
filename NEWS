@@ -153,6 +153,7 @@ documents those changes that are of interest to users and administrators.
     --threads-per-core, or --hint=nomultithread.
  -- For PreemptMode=CANCEL and PreemptMode=REQUEUE assume that job signalled
     for GraceTime was preempted.
+ -- slurmd - Retry fetching configs indefinitely during startup.
 
 * Changes in Slurm 23.11.7
 ==========================
