@@ -385,7 +385,7 @@ typedef struct {
 
 enum {
 	SLURMDB_ACCT_FLAG_NONE          = 0,
-	SLURMDB_ACCT_FLAG_DELETED       = (1 << 0),
+	SLURMDB_ACCT_FLAG_DELETED       = SLURM_BIT(0),
 };
 
 typedef struct {
@@ -1252,7 +1252,7 @@ typedef struct {
 
 enum {
 	SLURMDB_USER_FLAG_NONE		= 0,
-	SLURMDB_USER_FLAG_DELETED	= (1 << 0),
+	SLURMDB_USER_FLAG_DELETED	= SLURM_BIT(0),
 };
 
 struct slurmdb_user_rec {
@@ -1298,7 +1298,7 @@ typedef struct {
 
 enum {
 	SLURMDB_WCKEY_FLAG_NONE          = 0,
-	SLURMDB_WCKEY_FLAG_DELETED       = (1 << 0),
+	SLURMDB_WCKEY_FLAG_DELETED       = SLURM_BIT(0),
 };
 
 typedef struct {
