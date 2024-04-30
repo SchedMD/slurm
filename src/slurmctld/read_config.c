@@ -373,6 +373,7 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(power_up_node_bitmap);
 	FREE_NULL_BITMAP(rs_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
@@ -384,6 +385,7 @@ static void _init_bitmaps(void)
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
 	power_node_bitmap = bit_alloc(node_record_count);
+	power_up_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	share_node_bitmap = bit_alloc(node_record_count);
 	up_node_bitmap = bit_alloc(node_record_count);
@@ -557,6 +559,8 @@ static void _build_bitmaps(void)
 		drain_flag = IS_NODE_DRAIN(node_ptr) |
 			     IS_NODE_FAIL(node_ptr);
 		job_cnt = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
+		if (!IS_NODE_FUTURE(node_ptr))
+			bit_set(power_up_node_bitmap, node_ptr->index);
 
 		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
 		    IS_NODE_DOWN(node_ptr))
@@ -578,10 +582,13 @@ static void _build_bitmaps(void)
 				make_node_avail(node_ptr);
 			bit_set(up_node_bitmap, node_ptr->index);
 		}
-		if (IS_NODE_POWERED_DOWN(node_ptr))
+		if (IS_NODE_POWERED_DOWN(node_ptr)) {
 			bit_set(power_node_bitmap, node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
+		}
 		if (IS_NODE_POWERING_DOWN(node_ptr)) {
 			bit_set(power_node_bitmap, node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_clear(avail_node_bitmap, node_ptr->index);
 		}
 		if (IS_NODE_FUTURE(node_ptr))

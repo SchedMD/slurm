@@ -572,6 +572,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, node_ptr->index);
+			bit_set(power_up_node_bitmap, node_ptr->index);
 			node_ptr->boot_req_time = now;
 			bit_set(booting_node_bitmap, node_ptr->index);
 			bit_set(wake_node_bitmap,    node_ptr->index);
@@ -615,6 +616,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			bit_set(power_node_bitmap,   node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_set(sleep_node_bitmap,   node_ptr->index);
 
 			/* Don't allocate until after SuspendTimeout */
@@ -698,6 +700,7 @@ static void _do_power_work(time_t now)
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			bit_set(power_node_bitmap, node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_clear(booting_node_bitmap, node_ptr->index);
 			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
