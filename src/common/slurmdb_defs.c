@@ -1833,6 +1833,8 @@ static const struct {
 	T(SLURMDB_ACCT_FLAG_DELETED, "Deleted"),
 	T(SLURMDB_ACCT_FLAG_WASSOC, "WithAssociations"),
 	T(SLURMDB_ACCT_FLAG_WCOORD, "WithCoordinators"),
+	T(SLURMDB_ACCT_FLAG_USER_COORD_NO, "NoUsersAreCoords"),
+	T(SLURMDB_ACCT_FLAG_USER_COORD, "UsersAreCoords"),
 	T(SLURMDB_ACCT_FLAG_INVALID, "INVALID"),
 };
 #undef T

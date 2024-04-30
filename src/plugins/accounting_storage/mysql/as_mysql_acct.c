@@ -96,6 +96,16 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 		xstrcatat(*extra, at, ")");
 	}
 
+	if (acct_cond->flags != SLURMDB_ACCT_FLAG_NONE) {
+		if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
+			xstrfmtcatat(*extra, at, " && !(flags & %u)",
+				   SLURMDB_ACCT_FLAG_USER_COORD);
+		} else if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
+			xstrfmtcatat(*extra, at, " && (flags & %u)",
+				   SLURMDB_ACCT_FLAG_USER_COORD);
+		}
+	}
+
 	if (acct_cond->organization_list
 	    && list_count(acct_cond->organization_list)) {
 		int set = 0;
@@ -126,6 +136,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	MYSQL_RES *result = NULL;
 	int cnt;
 	char *query;
+	slurmdb_acct_flags_t base_flags;
 
 	/* Check to see if it is already in the acct_table */
 	query = xstrdup_printf("select name from %s where name='%s' and !deleted",
@@ -155,6 +166,9 @@ static int _foreach_add_acct(void *x, void *arg)
 			org = x;
 	}
 
+	/* Clear flags we don't plan to store */
+	base_flags = acct->flags & ~SLURMDB_ACCT_FLAG_BASE;
+
 	if (!add_acct_cond->ret_str)
 		xstrcatat(add_acct_cond->ret_str, &add_acct_cond->ret_str_pos,
 			  " Adding Account(s)\n");
@@ -165,18 +179,18 @@ static int _foreach_add_acct(void *x, void *arg)
 	if (add_acct_cond->insert_query)
 		xstrfmtcatat(add_acct_cond->insert_query,
 			     &add_acct_cond->insert_query_pos,
-			     ", (%ld, %ld, '%s', '%s', '%s')",
+			     ", (%ld, %ld, '%s', '%s', '%s', %u)",
 			     add_acct_cond->now, add_acct_cond->now,
-			     name, desc, org);
+			     name, desc, org, base_flags);
 	else
 		xstrfmtcatat(add_acct_cond->insert_query,
 			     &add_acct_cond->insert_query_pos,
-			     "insert into %s (creation_time, mod_time, name, description, organization) values (%ld, %ld, '%s', '%s', '%s')",
+			     "insert into %s (creation_time, mod_time, name, description, organization, flags) values (%ld, %ld, '%s', '%s', '%s', %u)",
 			     acct_table, add_acct_cond->now, add_acct_cond->now,
-			     name, desc, org);
+			     name, desc, org, base_flags);
 
-	extra = xstrdup_printf("description='%s', organization='%s'",
-			       desc, org);
+	extra = xstrdup_printf("description='%s', organization='%s', flags='%u'",
+			       desc, org, base_flags);
 	tmp_extra = slurm_add_slash_to_quotes(extra);
 
 	if (add_acct_cond->txn_query)
@@ -247,6 +261,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
 	while ((object = list_next(itr))) {
+		slurmdb_acct_flags_t base_flags;
+
 		if (!object->name || !object->name[0]
 		    || !object->description || !object->description[0]
 		    || !object->organization || !object->organization[0]) {
@@ -257,13 +273,18 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
+
+		base_flags = object->flags & ~SLURMDB_ACCT_FLAG_BASE;
+
 		xstrcat(cols, "creation_time, mod_time, name, "
-			"description, organization");
-		xstrfmtcat(vals, "%ld, %ld, '%s', '%s', '%s'",
+			"description, organization, flags");
+		xstrfmtcat(vals, "%ld, %ld, '%s', '%s', '%s', %u",
 			   now, now, object->name,
-			   object->description, object->organization);
-		xstrfmtcat(extra, ", description='%s', organization='%s'",
-			   object->description, object->organization);
+			   object->description, object->organization,
+			   base_flags);
+		xstrfmtcat(extra, ", description='%s', organization='%s', flags=%u",
+			   object->description, object->organization,
+			   base_flags);
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
@@ -513,6 +534,14 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (acct->organization)
 		xstrfmtcat(vals, ", organization='%s'", acct->organization);
 
+	if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
+		xstrfmtcat(vals, ", flags=flags&%u",
+			   SLURMDB_ACCT_FLAG_USER_COORD);
+	} else if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
+		xstrfmtcat(vals, ", flags=flags|%u",
+			   SLURMDB_ACCT_FLAG_USER_COORD);
+	}
+
 	if (!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
@@ -709,12 +738,14 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		"description",
 		"organization",
 		"deleted",
+		"flags",
 	};
 	enum {
 		SLURMDB_REQ_NAME,
 		SLURMDB_REQ_DESC,
 		SLURMDB_REQ_ORG,
 		SLURMDB_REQ_DELETED,
+		SLURMDB_REQ_FLAGS,
 		SLURMDB_REQ_COUNT
 	};
 
@@ -819,6 +850,7 @@ empty:
 		acct->name =  xstrdup(row[SLURMDB_REQ_NAME]);
 		acct->description = xstrdup(row[SLURMDB_REQ_DESC]);
 		acct->organization = xstrdup(row[SLURMDB_REQ_ORG]);
+		acct->flags = slurm_atoul(row[SLURMDB_REQ_FLAGS]);
 
 		if (slurm_atoul(row[SLURMDB_REQ_DELETED]))
 			acct->flags |= SLURMDB_ACCT_FLAG_DELETED;
