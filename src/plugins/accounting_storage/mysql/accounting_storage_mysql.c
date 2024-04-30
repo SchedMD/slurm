@@ -1210,6 +1210,7 @@ extern int create_cluster_assoc_table(
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "comment", "text" },
+		{ "flags", "int unsigned default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_assoc", "int unsigned not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
@@ -2601,7 +2602,7 @@ just_update:
 			       "grp_tres_run_mins=DEFAULT, "
 			       "qos=DEFAULT, delta_qos=DEFAULT, "
 			       "priority=DEFAULT, is_def=DEFAULT, "
-			       "comment=DEFAULT "
+			       "comment=DEFAULT, flags=DEFAULT "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);

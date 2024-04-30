@@ -113,6 +113,7 @@ char *assoc_req_inx[] = {
 	"deleted",
 	"id_parent",
 	"lineage",
+	"flags",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -148,6 +149,7 @@ enum {
 	ASSOC_REQ_DELETED,
 	ASSOC_REQ_ID_PAR,
 	ASSOC_REQ_LINEAGE,
+	ASSOC_REQ_FLAGS,
 	ASSOC_REQ_COUNT
 };
 
@@ -201,6 +203,7 @@ static char *massoc_req_inx[] = {
 	"max_tres_pj",
 	"max_tres_pn",
 	"lineage",
+	"flags",
 };
 
 enum {
@@ -220,6 +223,7 @@ enum {
 	MASSOC_MTPJ,
 	MASSOC_MTPN,
 	MASSOC_LINEAGE,
+	MASSOC_FLAGS,
 	MASSOC_COUNT
 };
 
@@ -1007,7 +1011,10 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		slurmdb_init_assoc_rec(mod_assoc, 0);
 		mod_assoc->id = slurm_atoul(row[ASSOC_ID]);
 		mod_assoc->cluster = xstrdup(assoc->cluster);
-
+		/*
+		 * DON'T DO FLAGS HERE UNLESS A CHILD NEEDS THE PARENT'S FLAGS
+		 * IN THE FUTURE.
+		 */
 		if (!row[ASSOC_DEF_QOS] && assoc->def_qos_id != NO_VAL) {
 			mod_assoc->def_qos_id = assoc->def_qos_id;
 			modified = 1;
@@ -1661,6 +1668,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
 		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
+		mod_assoc->flags = slurm_atoul(row[MASSOC_FLAGS]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 		if (moved_parent) {
 			/*
@@ -1691,6 +1699,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->def_qos_id = assoc->def_qos_id;
 
 		mod_assoc->comment = xstrdup(assoc->comment);
+
+		mod_assoc->flags |= assoc->flags;
 
 		mod_assoc->is_def = assoc->is_def;
 
@@ -2241,6 +2251,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
 
 		assoc->comment = xstrdup(row[ASSOC_REQ_COMMENT]);
+		assoc->flags = slurm_atoul(row[ASSOC_REQ_FLAGS]);
 
 		if (deleted)
 			assoc->flags |= ASSOC_FLAG_DELETED;
@@ -2892,6 +2903,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc->acct = xstrdup(assoc_in->acct);
 		assoc->cluster = xstrdup(assoc_in->cluster);
 		assoc->comment = xstrdup(assoc_in->comment);
+		assoc->flags = assoc_in->flags & SLURMDB_ACCT_FLAG_BASE;
 
 		assoc->grp_tres = xstrdup(assoc_in->grp_tres);
 		assoc->grp_tres_mins = xstrdup(assoc_in->grp_tres_mins);

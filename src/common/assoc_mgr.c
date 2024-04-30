@@ -3996,6 +3996,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 			}
 
+			/* flags is always set */
+			rec->flags = object->flags;
+
 			if (object->grp_tres) {
 				update_jobs = true;
 				/* If we have a blank string that

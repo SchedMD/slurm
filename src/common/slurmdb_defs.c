@@ -2696,6 +2696,8 @@ extern uint16_t str_2_slurmdb_problem(char *problem)
 extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 			  List qos_list)
 {
+	char *tmp_char = NULL;
+
 	xassert(assoc_ptr);
 
 	if (get_log_level() < LOG_LEVEL_DEBUG2)
@@ -2750,6 +2752,10 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 			      time_buf, sizeof(time_buf));
 		debug2("  GrpWall          : %s", time_buf);
 	}
+
+	tmp_char = slurmdb_assoc_flags_2_str(assoc_ptr->flags);
+	debug2("  Flags            : %s", tmp_char);
+	xfree(tmp_char);
 
 	debug2("  Lineage          : %s", assoc_ptr->lineage);
 
