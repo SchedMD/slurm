@@ -56,6 +56,63 @@ typedef struct {
 	char *user_name;
 } add_acct_cond_t;
 
+static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
+				    char **extra, char **at)
+{
+	list_itr_t *itr = NULL;
+	char *object = NULL;
+
+	if (!acct_cond)
+		return;
+
+	if (acct_cond->assoc_cond &&
+	    acct_cond->assoc_cond->acct_list &&
+	    list_count(acct_cond->assoc_cond->acct_list)) {
+		int set = 0;
+		xstrcatat(*extra, at, " && (");
+		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcatat(*extra, at, " || ");
+			xstrfmtcatat(*extra, at, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if (acct_cond->description_list
+	    && list_count(acct_cond->description_list)) {
+		int set = 0;
+		xstrcatat(*extra, at, " && (");
+		itr = list_iterator_create(acct_cond->description_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcatat(*extra, at, " || ");
+			xstrfmtcatat(*extra, at, "description='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcatat(*extra, at, ")");
+	}
+
+	if (acct_cond->organization_list
+	    && list_count(acct_cond->organization_list)) {
+		int set = 0;
+		xstrcatat(*extra, at, " && (");
+		itr = list_iterator_create(acct_cond->organization_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcatat(*extra, at, " || ");
+			xstrfmtcatat(*extra, at, "organization='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcatat(*extra, at, ")");
+	}
+
+	return;
+}
 
 static int _foreach_add_acct(void *x, void *arg)
 {
@@ -426,14 +483,12 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_account_cond_t *acct_cond,
 				  slurmdb_account_rec_t *acct)
 {
-	list_itr_t *itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
-	char *object = NULL;
+	char *object = NULL, *at = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -450,52 +505,8 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	xstrcat(extra, "where deleted=0");
-	if (acct_cond->assoc_cond
-	    && acct_cond->assoc_cond->acct_list
-	    && list_count(acct_cond->assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->description_list
-	    && list_count(acct_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->organization_list
-	    && list_count(acct_cond->organization_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->organization_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	xstrcatat(extra, &at, "where deleted=0");
+	_setup_acct_cond_limits(acct_cond, &extra, &at);
 
 	if (acct->description)
 		xstrfmtcat(vals, ", description='%s'", acct->description);
@@ -569,13 +580,12 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	List coord_list = NULL;
 	List cluster_list_tmp = NULL;
 	int rc = SLURM_SUCCESS;
-	char *object = NULL;
+	char *object = NULL, *at = NULL;
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *name_char_pos = NULL,
 		*assoc_char = NULL, *assoc_char_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	bool jobs_running = 0;
@@ -594,54 +604,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	xstrcat(extra, "where deleted=0");
-	if (acct_cond->assoc_cond
-	    && acct_cond->assoc_cond->acct_list
-	    && list_count(acct_cond->assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while ((object = list_next(itr))) {
-			if (!object[0])
-				continue;
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->description_list
-	    && list_count(acct_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->organization_list
-	    && list_count(acct_cond->organization_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->organization_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	xstrcatat(extra, &at, "where deleted=0");
+	_setup_acct_cond_limits(acct_cond, &extra, &at);
 
 	if (!extra) {
 		error("Nothing to remove");
@@ -729,11 +693,10 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 			       slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
-	char *extra = NULL;
+	char *extra = NULL, *at = NULL;
 	char *tmp = NULL;
 	List acct_list = NULL;
 	list_itr_t *itr = NULL;
-	char *object = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
@@ -785,55 +748,11 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
+		xstrcatat(extra, &at, "where (deleted=0 || deleted=1)");
 	else
-		xstrcat(extra, "where deleted=0");
+		xstrcatat(extra, &at, "where deleted=0");
 
-	if (acct_cond->assoc_cond
-	    && acct_cond->assoc_cond->acct_list
-	    && list_count(acct_cond->assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->description_list
-	    && list_count(acct_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (acct_cond->organization_list
-	    && list_count(acct_cond->organization_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->organization_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_acct_cond_limits(acct_cond, &extra, &at);
 
 empty:
 
