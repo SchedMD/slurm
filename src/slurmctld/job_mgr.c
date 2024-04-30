@@ -10827,6 +10827,13 @@ extern void free_job_record(void *job_entry)
 		job_array_size = 1;
 	}
 
+	if (job_array_size > job_count) {
+		error("job_count underflow");
+		job_count = 0;
+	} else {
+		job_count -= job_array_size;
+	}
+
 	_delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->admin_comment);
@@ -10916,12 +10923,7 @@ extern void free_job_record(void *job_entry)
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->user_name);
 	xfree(job_ptr->wckey);
-	if (job_array_size > job_count) {
-		error("job_count underflow");
-		job_count = 0;
-	} else {
-		job_count -= job_array_size;
-	}
+
 	job_ptr->job_id = 0;
 	/* make sure we don't delete record twice */
 	job_ptr->magic = ~JOB_MAGIC;
