@@ -1710,8 +1710,6 @@ _print_config(void)
 	char name[128];
 
 	gethostname_short(name, sizeof(name));
-	printf("NodeName=%s ", name);
-
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
 				&conf->actual_sockets,
@@ -1719,14 +1717,12 @@ _print_config(void)
 				&conf->actual_threads,
 				&conf->block_map_size,
 				&conf->block_map, &conf->block_map_inv);
-	printf("CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u "
-	       "ThreadsPerCore=%u ",
-	       conf->actual_cpus, conf->actual_boards,
-	       (conf->actual_sockets / conf->actual_boards),
-	       conf->actual_cores, conf->actual_threads);
-
 	get_memory(&conf->physical_memory_size);
-	printf("RealMemory=%"PRIu64"\n", conf->physical_memory_size);
+
+	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"\n",
+	       name, conf->actual_cpus, conf->actual_boards,
+	       (conf->actual_sockets / conf->actual_boards), conf->actual_cores,
+	       conf->actual_threads, conf->physical_memory_size);
 
 	get_up_time(&conf->up_time);
 	secs  =  conf->up_time % 60;
