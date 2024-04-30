@@ -205,10 +205,10 @@ extern void tls_g_destroy_conn(void *conn)
 {
 	tls_wrapper_t *wrapper = conn;
 
-	xassert(g_context);
-
 	if (!wrapper)
 		return;
+
+	xassert(g_context);
 
 	(*(ops[wrapper->index].destroy_conn))(conn);
 }
