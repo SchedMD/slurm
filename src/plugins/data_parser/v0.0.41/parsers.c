@@ -6834,11 +6834,26 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 #undef add_skip
 #undef add_parse_overload
 
+#define add_flag(flag_value, flag_mask, flag_string, hidden, desc)          \
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),       \
+			   flag_value, flag_mask, XSTRINGIFY(flag_mask),    \
+			   flag_string, hidden, desc)
+#define add_flag_eq(flag_value, mask, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value),     \
+			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
+			   hidden, desc)
 static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
-	add_flag_bit(SLURMDB_ACCT_FLAG_DELETED, "DELETED"),
-	add_flag_bit(SLURMDB_ACCT_FLAG_WASSOC, "WithAssociations"),
-	add_flag_bit(SLURMDB_ACCT_FLAG_WCOORD, "WithCoordinators"),
+	add_flag_eq(SLURMDB_ACCT_FLAG_NONE, SLURMDB_ACCT_FLAG_BASE, "NONE", true, "no flags set"),
+	add_flag_eq(SLURMDB_ACCT_FLAG_BASE, SLURMDB_ACCT_FLAG_BASE, "BASE_MASK", true, "mask for flags not stored in database"),
+	add_flag_eq(SLURMDB_ACCT_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
+	add_flag(SLURMDB_ACCT_FLAG_DELETED, SLURMDB_ACCT_FLAG_BASE, "DELETED", false, "include deleted assocations"),
+	add_flag(SLURMDB_ACCT_FLAG_WASSOC, SLURMDB_ACCT_FLAG_BASE, "WithAssociations", false, "query includes associations"),
+	add_flag(SLURMDB_ACCT_FLAG_WCOORD, SLURMDB_ACCT_FLAG_BASE, "WithCoordinators", false,  "query includes coordinators"),
+	add_flag(SLURMDB_ACCT_FLAG_USER_COORD_NO, SLURMDB_ACCT_FLAG_BASE, "RemoveUsersAreCoords", false, "removed users are coordinators"),
+	add_flag(SLURMDB_ACCT_FLAG_USER_COORD, INFINITE64, "UsersAreCoords", false, "users are coordinators"),
 };
+#undef add_flag
+#undef add_flag_eq
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_rec_t, mtype, false, field, 0, path, desc)
