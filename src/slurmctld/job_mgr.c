@@ -10818,13 +10818,13 @@ static void _delete_job_common(job_record_t *job_ptr)
  */
 static void _move_to_purge_jobs_list(void *job_entry)
 {
-	job_record_t *job_ptr = (job_record_t *) job_entry;
+	job_record_t *job_ptr = job_entry;
 	int job_array_size;
 
 	if (!job_entry)
 		return;
 
-	xassert (job_ptr->magic == JOB_MAGIC);
+	xassert(job_ptr->magic == JOB_MAGIC);
 
 	_delete_job_common(job_ptr);
 
