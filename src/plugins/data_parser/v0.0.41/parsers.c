@@ -8641,8 +8641,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
 	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "assocation filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
-	add_parse_bit_flag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS,
-				 false, flags, "flags", NULL),
+	add_parse_bit_eflag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS, flags, NULL),
 };
 #undef add_parse
 
