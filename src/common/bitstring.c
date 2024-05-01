@@ -1455,7 +1455,7 @@ bit_unfmt(bitstr_t *b, char *str)
  * output: an array of integers
  * NOTE: the caller must xfree the returned memory
  */
-int32_t *bitfmt2int(char *bit_str_ptr)
+extern int32_t *bitfmt2int(const char *bit_str_ptr)
 {
 	int32_t *bit_int_ptr, i, bit_inx, size, sum, start_val;
 	char *tmp = NULL;
