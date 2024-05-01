@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "July 2024" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "August 2024" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2214,8 +2214,8 @@ silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes.
 Specifies that the batch job should be eligible for requeuing.
 The job may be requeued explicitly by a system administrator, after node
 failure, or upon preemption by a higher priority job.
-When a job is requeued, the batch script is initiated from its beginning.
-Also see the \fB\-\-no\-requeue\fR option.
+When a job is requeued, the batch script is initiated from its beginning with
+the same job ID. Also see the \fB\-\-no\-requeue\fR option.
 The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 .IP
