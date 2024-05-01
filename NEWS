@@ -169,6 +169,8 @@ documents those changes that are of interest to users and administrators.
  -- Store output, error and input paths in the database and make them available
     in accounting tools.
  -- slurmrestd - Add 'POST /slurm/v0.0.41/job/allocate' endpoint.
+ -- Fix issues related to the extern step getting killed before other steps.
+    This includes the job_containter/tmpfs plugin not cleaning up.
 
 * Changes in Slurm 23.11.7
 ==========================
