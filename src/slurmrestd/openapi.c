@@ -1502,7 +1502,7 @@ static data_for_each_cmd_t _foreach_strip_dots(data_t *data, void *arg)
 
 static data_for_each_cmd_t _foreach_strip_params(data_t *data, void *arg)
 {
-	char *item = data_get_string(data);
+	const char *item = data_get_string(data);
 	data_t **last_ptr = arg;
 	int len = strlen(item);
 
@@ -2434,10 +2434,10 @@ extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
 	return dbuf;
 }
 
-extern char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
-				   const char *name, const char *caller)
+extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
+					 const char *name, const char *caller)
 {
-	char *str = NULL;
+	const char *str = NULL;
 	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
 
 	if (!dbuf)

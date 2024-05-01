@@ -271,8 +271,8 @@ extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
  * IN caller - should be __func__
  * RET string or NULL (on error or if not found)
  */
-extern char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
-				   const char *name, const char *caller);
+extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
+					 const char *name, const char *caller);
 /*
  * Retrieve OpenAPI UNIX timestamp parameter
  * IN ctxt - connection context
