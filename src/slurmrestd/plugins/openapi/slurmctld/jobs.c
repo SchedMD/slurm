@@ -631,7 +631,7 @@ static void _job_post_het_allocate(ctxt_t *ctxt, list_t *hetjob)
 
 	(void) list_for_each(hetjob, _foreach_alloc_job, NULL);
 
-	if ((resp = slurm_allocate_het_job_blocking(hetjob, 0, NULL)) || !resp) {
+	if (!(resp = slurm_allocate_het_job_blocking(hetjob, 0, NULL))) {
 		resp_error(ctxt, errno, "slurm_allocate_het_job_blocking()",
 			   "Job allocation request failed");
 	} else {
