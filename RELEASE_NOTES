@@ -114,6 +114,8 @@ SLURMRESTD CHANGES
  -- slurmrestd - Add 'POST /slurm/v0.0.41/job/allocate' endpoint. This endpoint
     will create a new job allocation without any steps. The allocation will need
     to be ended via signaling the job or it will run to the timelimit.
+ -- slurmrestd - Allow startup when slurmdbd is not configured and avoid loading
+    slurmdbd specific plugins.
 
 MPI/PMI2 CHANGES
 ================

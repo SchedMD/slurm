@@ -222,6 +222,8 @@ documents those changes that are of interest to users and administrators.
     and "POST /slurmdb/v0.0.41/associations/" endpoints.
  -- Fix false success of REQUEST_FORWARD_DATA RPC that made pmix to get out
     of sync during initialization.
+ -- slurmrestd - Allow startup when slurmdbd is not configured and avoid loading
+    slurmdbd specific plugins.
 
 * Changes in Slurm 23.11.7
 ==========================
