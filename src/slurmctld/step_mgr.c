@@ -6144,5 +6144,10 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	step_set_alloc_tres(step_ptr, 1, false, false);
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 
+	if ((rc = _switch_setup(job_ptr, step_ptr, job_ptr->job_id))) {
+		delete_step_record(job_ptr, step_ptr);
+		return rc;
+	}
+
 	return SLURM_SUCCESS;
 }
