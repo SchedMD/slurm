@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2024" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "May 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -344,6 +344,12 @@ More logging may impact performance.
 Valid subsystems available today (with more to come) include:
 .IP
 .RS
+.TP
+\fBAuditRPCs\fR
+For all inbound RPCs to slurmdbd, print the originating address, authenticated
+user, and RPC type before the connection is processed.
+.IP
+
 .TP
 \fBDB_ARCHIVE\fR
 SQL statements/queries when dealing with archiving and purging the database.
