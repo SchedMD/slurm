@@ -57,13 +57,17 @@ extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog)
 
 	my_env = _build_env(job_ptr, is_epilog);
 	if (!is_epilog && slurm_conf.prolog_slurmctld_cnt)
-		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
-					  slurm_conf.prolog_slurmctld[0],
-					  my_env);
+		for (int i = 0; i < slurm_conf.prolog_slurmctld_cnt; i++) {
+			slurmscriptd_run_prepilog(
+				job_ptr->job_id, is_epilog,
+				slurm_conf.prolog_slurmctld[i], my_env);
+		}
 	else if (is_epilog && slurm_conf.epilog_slurmctld_cnt)
-		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
-					  slurm_conf.epilog_slurmctld[0],
-					  my_env);
+		for (int i = 0; i < slurm_conf.epilog_slurmctld_cnt; i++) {
+			slurmscriptd_run_prepilog(
+				job_ptr->job_id, is_epilog,
+				slurm_conf.epilog_slurmctld[i], my_env);
+		}
 
 	for (int i = 0; my_env[i]; i++)
 		xfree(my_env[i]);

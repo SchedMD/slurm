@@ -150,14 +150,11 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
 {
 	char *name = is_epilog ? "epilog" : "prolog";
-	char *path = NULL;
+	uint32_t script_cnt = is_epilog ? slurm_conf.epilog_cnt :
+					  slurm_conf.prolog_cnt;
+	char **scripts = is_epilog ? slurm_conf.epilog : slurm_conf.prolog;
 	char **env = NULL;
 	int rc = SLURM_SUCCESS;
-
-	if (is_epilog && slurm_conf.epilog_cnt)
-		path = slurm_conf.epilog[0];
-	else if (!is_epilog && slurm_conf.prolog_cnt)
-		path = slurm_conf.prolog[0];
 
 	/*
 	 *  Always run both spank prolog/epilog and real prolog/epilog script,
@@ -172,11 +169,11 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		rc = _run_spank_job_script(name, env, job_env->jobid);
 	}
 
-	if (path) {
+	if (script_cnt) {
 		int status = 0;
 		int timeout = slurm_conf.prolog_epilog_timeout;
 		char *cmd_argv[2] = {0};
-		List path_list;
+		list_t *path_list = NULL;
 		run_command_args_t run_command_args = {
 			.job_id = job_env->jobid,
 			.script_argv = cmd_argv,
@@ -194,10 +191,22 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 
 		run_command_args.env = env;
 		run_command_args.max_wait = timeout;
+		for (int i = 0; i < script_cnt; i++) {
+			list_t *tmp_list = _script_list_create(scripts[i]);
 
-		if (!(path_list = _script_list_create(path)))
-			return error("%s: Unable to create list of paths [%s]",
-				     name, path);
+			if (!tmp_list) {
+				error("%s: Unable to create list of paths [%s]",
+				      name, scripts[i]);
+				return SLURM_ERROR;
+			}
+
+			if (path_list) {
+				list_transfer(path_list, tmp_list);
+				FREE_NULL_LIST(tmp_list);
+			} else {
+				path_list = tmp_list;
+			}
+		}
 		list_for_each(
 			path_list, _run_subpath_command, &run_command_args);
 		FREE_NULL_LIST(path_list);
