@@ -1146,7 +1146,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	switch (data_get_type(src)) {
 	case DATA_TYPE_STRING:
 	{
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		/* treat "" same as null */
 		if (!str || !str[0])
@@ -1808,9 +1808,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 				   "Invalid distribution");
 	}
 
-	dist_str = data_get_string(src);
-
-	dist_tmp = verify_dist_type(dist_str, &plane_tmp);
+	dist_tmp = verify_dist_type(data_get_string(src), &plane_tmp);
 	if (dist_tmp == SLURM_ERROR) {
 		return parse_error(parser, args, parent_path, ESLURM_BAD_DIST,
 				   "Invalid distribution specification");
@@ -2043,7 +2041,7 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		if (!str || !str[0]) {
 			*uid_ptr = SLURM_AUTH_NOBODY;
@@ -2107,7 +2105,7 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		if (!str || !str[0]) {
 			*gid_ptr = SLURM_AUTH_NOBODY;
@@ -4341,7 +4339,7 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
-		char *host_list_str = data_get_string(src);
+		const char *host_list_str = data_get_string(src);
 
 		if (!host_list_str || !host_list_str[0]) {
 			/* empty list -> no hostlist */
