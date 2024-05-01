@@ -155,12 +155,17 @@ static int _parse_exc_nodes(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *save_ptr = NULL, *sep, *tmp, *tok, *node_cnt_str;
+	hostlist_t *hostlist = NULL;
 
 	/* Shortcut if ":<node_cnt>" is not used */
 	sep = strchr(slurm_conf.suspend_exc_nodes, ':');
-	if (!sep)
-		return node_name2bitmap(slurm_conf.suspend_exc_nodes, false,
-					&exc_node_bitmap);
+	if (!sep) {
+		hostlist = nodespec_to_hostlist(slurm_conf.suspend_exc_nodes,
+						false, NULL);
+		rc = hostlist2bitmap(hostlist, false, &exc_node_bitmap);
+		FREE_NULL_HOSTLIST(hostlist);
+		return rc;
+	}
 
 	FREE_NULL_LIST(partial_node_list);
 	partial_node_list = list_create(_exc_node_part_free);
@@ -175,7 +180,9 @@ static int _parse_exc_nodes(void)
 			*node_cnt_str = '\0';
 			ext_node_cnt = strtol(node_cnt_str + 1, NULL, 10);
 		}
-		rc = node_name2bitmap(tok, false, &exc_node_cnt_bitmap);
+		hostlist = nodespec_to_hostlist(tok, false, NULL);
+		rc = hostlist2bitmap(hostlist, false, &exc_node_cnt_bitmap);
+		FREE_NULL_HOSTLIST(hostlist);
 
 		if (!ext_node_cnt) {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
@@ -292,41 +299,105 @@ static bool _node_state_should_suspend(node_record_t *node_ptr)
 }
 
 /*
+ * Is the node in an "active" state, meaning that it is powered up and
+ * idle or allocated
+ */
+static bool _node_state_active(node_record_t *node_ptr)
+{
+	/* inactive if not one of these */
+	if (!IS_NODE_ALLOCATED(node_ptr) &&
+	    !IS_NODE_IDLE(node_ptr)) {
+		return false;
+	}
+
+	/* inactive if any of these */
+	if (IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr) ||
+	    IS_NODE_POWERED_DOWN(node_ptr) ||
+	    IS_NODE_DRAIN(node_ptr) ||
+	    (node_ptr->sus_job_cnt > 0)) {
+		return false;
+	}
+	/* powering up or completing included here */
+	/* active */
+	return true;
+}
+
+/*
  * Select the nodes specific nodes to be excluded from consideration for
- * suspension based upon the node states and specified count. Nodes which
- * can not be used (e.g. ALLOCATED, DOWN, DRAINED, etc.).
+ * suspension based upon the node states and specified count. Active
+ * (powered up and idle or allocated) and suspendable nodes are
+ * counted when fulfilling the exclude count.
  */
 static int _pick_exc_nodes(void *x, void *arg)
 {
 	bitstr_t **orig_exc_nodes = (bitstr_t **) arg;
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
 	bitstr_t *exc_node_cnt_bitmap;
-	int avail_node_cnt, exc_node_cnt;
-	node_record_t *node_ptr;
+	bitstr_t *suspendable_bitmap = NULL;
+	bitstr_t *active_bitmap = NULL;
+	int avail_node_cnt, exc_node_cnt, active_count;
+	node_record_t *node_ptr = NULL;
+	hostlist_t *active_hostlist, *suspend_hostlist;
+	char *suspend_str = NULL, *active_str = NULL;
 
-	avail_node_cnt = bit_set_count(ext_part_struct->exc_node_cnt_bitmap);
-	if (ext_part_struct->exc_node_cnt >= avail_node_cnt) {
+	exc_node_cnt_bitmap = ext_part_struct->exc_node_cnt_bitmap;
+	exc_node_cnt = ext_part_struct->exc_node_cnt;
+
+	avail_node_cnt = bit_set_count(exc_node_cnt_bitmap);
+	if (exc_node_cnt >= avail_node_cnt) {
 		/* Exclude all nodes in this set */
-		exc_node_cnt_bitmap =
-			bit_copy(ext_part_struct->exc_node_cnt_bitmap);
+		exc_node_cnt_bitmap = bit_copy(exc_node_cnt_bitmap);
 	} else {
-		exc_node_cnt_bitmap = bit_alloc(
-			bit_size(ext_part_struct->exc_node_cnt_bitmap));
-		exc_node_cnt = ext_part_struct->exc_node_cnt;
+		/* gather suspendable nodes */
+		/* count active but not suspendable */
+		active_count = 0;
+		suspendable_bitmap = bit_alloc(bit_size(exc_node_cnt_bitmap));
+		active_bitmap = bit_alloc(bit_size(exc_node_cnt_bitmap));
+
 		for (int i = 0;
-		     (node_ptr =
-		      next_node_bitmap(ext_part_struct->exc_node_cnt_bitmap,
-				       &i));
+		     (node_ptr = next_node_bitmap(exc_node_cnt_bitmap, &i));
 		     i++) {
-			if (!_node_state_suspendable(node_ptr)		||
-			    IS_NODE_DOWN(node_ptr)			||
-			    IS_NODE_DRAIN(node_ptr)			||
-			    (node_ptr->sus_job_cnt > 0))
-				continue;
-			bit_set(exc_node_cnt_bitmap, i);
-			if (--exc_node_cnt <= 0)
-				break;
+			/*
+			 * a powered down node is technically suspendable, but
+			 * it should not count toward suspendable nodes here
+			 */
+			if (_node_state_suspendable(node_ptr) &&
+			    !IS_NODE_POWERED_DOWN(node_ptr)) {
+				bit_set(suspendable_bitmap, i);
+			} else if (_node_state_active(node_ptr)) {
+				bit_set(active_bitmap, i);
+				active_count++;
+			}
 		}
+
+		if (power_save_debug && (get_log_level() >= LOG_LEVEL_DEBUG)) {
+			active_hostlist = bitmap2hostlist(active_bitmap);
+			active_str = slurm_hostlist_ranged_string_xmalloc(
+				active_hostlist);
+			suspend_hostlist = bitmap2hostlist(suspendable_bitmap);
+			suspend_str = slurm_hostlist_ranged_string_xmalloc(
+				suspend_hostlist);
+
+			log_flag(POWER, "avoid %d nodes: active: %d (%s), suspendable: (%s)",
+			         exc_node_cnt, active_count, active_str,
+				 suspend_str);
+			FREE_NULL_HOSTLIST(active_hostlist);
+			FREE_NULL_HOSTLIST(suspend_hostlist);
+			xfree(active_str);
+			xfree(suspend_str);
+		}
+
+		/* Exclude any remaining suspendable nodes */
+		exc_node_cnt -= active_count;
+		if (exc_node_cnt > 0) {
+			bit_pick_firstn(suspendable_bitmap, exc_node_cnt);
+		} else {
+			bit_clear_all(suspendable_bitmap);
+		}
+
+		exc_node_cnt_bitmap = suspendable_bitmap;
+		FREE_NULL_BITMAP(active_bitmap);
 	}
 
 	if (*orig_exc_nodes == NULL) {
@@ -414,7 +485,8 @@ static void _do_power_work(time_t now)
 			list_delete_item(iter);
 			continue;
 		}
-		if (!bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
+		if (!bit_overlap_any(job_ptr->node_bitmap,
+		                     power_down_node_bitmap)) {
 			log_flag(POWER, "%pJ needed resuming but nodes aren't power_save anymore",
 				 job_ptr);
 			list_delete_item(iter);
@@ -424,7 +496,7 @@ static void _do_power_work(time_t now)
 		to_resume_bitmap = bit_alloc(node_record_count);
 
 		need_resume_bitmap = bit_copy(job_ptr->node_bitmap);
-		bit_and(need_resume_bitmap, power_node_bitmap);
+		bit_and(need_resume_bitmap, power_down_node_bitmap);
 
 		for (int i = 0; next_node_bitmap(need_resume_bitmap, &i); i++) {
 			if ((resume_rate == 0) ||
@@ -500,7 +572,8 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
-			bit_clear(power_node_bitmap, node_ptr->index);
+			bit_clear(power_down_node_bitmap, node_ptr->index);
+			bit_set(power_up_node_bitmap, node_ptr->index);
 			node_ptr->boot_req_time = now;
 			bit_set(booting_node_bitmap, node_ptr->index);
 			bit_set(wake_node_bitmap,    node_ptr->index);
@@ -543,7 +616,8 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-			bit_set(power_node_bitmap,   node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_set(sleep_node_bitmap,   node_ptr->index);
 
 			/* Don't allocate until after SuspendTimeout */
@@ -626,7 +700,8 @@ static void _do_power_work(time_t now)
 			 * clusteracct_storage_g_node_down().
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
-			bit_set(power_node_bitmap, node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
+			bit_clear(power_up_node_bitmap, node_ptr->index);
 			bit_clear(booting_node_bitmap, node_ptr->index);
 			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
@@ -1111,7 +1186,7 @@ static int _build_resume_job_list(void *object, void *arg)
 
 	if (IS_JOB_CONFIGURING(job_ptr) &&
 	    bit_overlap_any(job_ptr->node_bitmap,
-			    power_node_bitmap)) {
+			    power_down_node_bitmap)) {
 		uint32_t *tmp = xmalloc(sizeof(uint32_t));
 		*tmp = job_ptr->job_id;
 		list_append(resume_job_list, tmp);
@@ -1148,8 +1223,8 @@ static void *_power_save_thread(void *arg)
 
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&power_mutex);
-		ts.tv_sec = time(NULL) + 1;
-		slurm_cond_timedwait(&power_cond, &power_mutex, &ts);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += 1;
 		slurm_mutex_unlock(&power_mutex);
 
 		if (slurmctld_config.shutdown_time)
@@ -1161,9 +1236,9 @@ static void *_power_save_thread(void *arg)
 		}
 
 		now = time(NULL);
-		if ((now >= (last_power_scan + power_save_min_interval)) &&
-		    ((last_node_update >= last_power_scan) ||
-		     (now >= (last_power_scan + power_save_interval)))) {
+		if ((now > (last_power_scan + power_save_min_interval)) &&
+		    ((last_node_update > last_power_scan) ||
+		     (now > (last_power_scan + power_save_interval)))) {
 			lock_slurmctld(node_write_lock);
 			_do_power_work(now);
 			unlock_slurmctld(node_write_lock);

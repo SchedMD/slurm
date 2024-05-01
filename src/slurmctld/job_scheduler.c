@@ -1938,6 +1938,11 @@ skip_start:
 			/* potentially starve this job */
 			if (assoc_limit_stop)
 				fail_by_part = true;
+		} else if (error_code == ESLURM_MAX_POWERED_NODES) {
+			sched_debug2("%pJ cannot start: %s",
+				   job_ptr, slurm_strerror(error_code));
+			job_ptr->state_reason = WAIT_MAX_POWERED_NODES;
+			xfree(job_ptr->state_desc);
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
@@ -4496,7 +4501,8 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	if ((boot_node_bitmap == NULL) ||
 	    bit_overlap_any(cloud_node_bitmap, job_ptr->node_bitmap)) {
 		/* launch_job() when all nodes have booted */
-		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		if (bit_overlap_any(power_down_node_bitmap,
+		                    job_ptr->node_bitmap) ||
 		    bit_overlap_any(booting_node_bitmap,
 				    job_ptr->node_bitmap)) {
 			/* Reset job start time when nodes are booted */
@@ -4527,7 +4533,7 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);
-		bit_clear(power_node_bitmap, i);
+		bit_clear(power_down_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
 		node_ptr->boot_req_time = now;
 	}

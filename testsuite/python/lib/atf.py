@@ -2555,6 +2555,54 @@ def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
         return default
 
 
+def wait_for_node_state_any(
+    nodename,
+    desired_node_states,
+    timeout=default_polling_timeout,
+    poll_interval=None,
+    fatal=False,
+    reverse=False,
+):
+    """Wait for any of the specified node states to be reached.
+
+    Polls the node state every poll interval seconds, waiting up to the timeout
+    for the specified node state to be reached.
+
+    Args:
+        nodename (string): The name of the node whose state is being monitored.
+        desired_node_states (iterable): The states that the node is expected to reach.
+        timeout (integer): The number of seconds to wait before timing out.
+        poll_interval (float): Number of seconds between node state polls.
+        fatal (boolean): If True, a timeout will cause the test to fail.
+        reverse (boolean): If True, wait for the node to lose the desired state.
+
+    Returns:
+        Boolean value indicating whether the node ever reached the desired state.
+
+    Example:
+        >>> wait_for_node_state_any('node1', ['IDLE', 'ALLOCATED'], timeout=60, poll_interval=5)
+        True
+        >>> wait_for_node_state_any('node2', ['DOWN'], timeout=30, fatal=True)
+        False
+    """
+
+    state_set = frozenset(desired_node_states)
+
+    def any_overlap(state):
+        return bool(state_set & set(state.split("+"))) != reverse
+
+    # Wrapper for the repeat_until command to do all our state checking for us
+    repeat_until(
+        lambda: get_node_parameter(nodename, "State"),
+        any_overlap,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        fatal=fatal,
+    )
+
+    return any_overlap(get_node_parameter(nodename, "State"))
+
+
 def wait_for_node_state(
     nodename,
     desired_node_state,

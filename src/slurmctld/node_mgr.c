@@ -110,10 +110,11 @@ bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
-bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
+bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
 bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
+bitstr_t *power_up_node_bitmap = NULL;	/* bitmap of power_up requested nodes */
 
 static int _delete_node_ptr(node_record_t *node_ptr);
 static void 	_dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer);
@@ -1705,6 +1706,33 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 	}
 
+	if ((max_powered_nodes != NO_VAL) &&
+	    (update_node_msg->node_state & NODE_STATE_POWER_UP)) {
+		bitstr_t *bmp = NULL;
+		int count;
+
+		if (hostlist2bitmap(host_list, false, &bmp)) {
+			info("update_node: hostlist2bitmap failed");
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			FREE_NULL_HOSTLIST(hostname_list);
+			FREE_NULL_BITMAP(bmp);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+		bit_or(bmp, power_up_node_bitmap);
+		count = bit_set_count(bmp);
+		FREE_NULL_BITMAP(bmp);
+		if (count > max_powered_nodes) {
+			error("update_node: Cannot power up more nodes due to MaxPoweredUpNodes=%d",
+			      max_powered_nodes);
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			FREE_NULL_HOSTLIST(hostname_list);
+			return ESLURM_MAX_POWERED_NODES;
+		}
+		log_flag(POWER, "powered nodes good %d", count);
+	}
+
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 		bool acct_updated = false;
@@ -2054,6 +2082,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 							NODE_STATE_DYNAMIC_NORM;
 					bit_set(future_node_bitmap,
 						node_ptr->index);
+					bit_clear(power_up_node_bitmap,
+						  node_ptr->index);
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
 						node_ptr, now,
@@ -2235,6 +2265,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					info("powering up node %s",
 					     this_node_name);
 				}
+				bit_set(power_up_node_bitmap, node_ptr->index);
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				free(this_node_name);
@@ -3431,7 +3462,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (!is_node_in_maint_reservation(node_ptr->index))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 
-		bit_clear(power_node_bitmap, node_ptr->index);
+		bit_clear(power_down_node_bitmap, node_ptr->index);
+		bit_set(power_up_node_bitmap, node_ptr->index);
 
 		last_node_update = now;
 
@@ -4971,7 +5003,8 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(cloud_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(power_down_node_bitmap);
+	FREE_NULL_BITMAP(power_up_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
 	FREE_NULL_BITMAP(rs_node_bitmap);
@@ -5177,12 +5210,13 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 		node_ptr->features_act = xstrdup(config_ptr->feature);
 	}
 
+	bit_clear(power_up_node_bitmap, node_ptr->index);
 	if (IS_NODE_FUTURE(node_ptr)) {
 		bit_set(future_node_bitmap, node_ptr->index);
 	} else if (IS_NODE_CLOUD(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
 		bit_set(cloud_node_bitmap, node_ptr->index);
-		bit_set(power_node_bitmap, node_ptr->index);
+		bit_set(power_down_node_bitmap, node_ptr->index);
 
 		if ((rc = gres_g_node_config_load(node_ptr->config_ptr->cpus,
 						  node_ptr->name,
@@ -5388,6 +5422,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	xfree(node_ptr->node_hostname);
 	node_ptr->node_hostname = xstrdup(reg_msg->hostname);
 	slurm_conf_add_node(node_ptr);
+	bit_set(power_up_node_bitmap, node_ptr->index);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,
@@ -5445,7 +5480,8 @@ static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 	bit_clear(cloud_node_bitmap, node_ptr->index);
 	bit_clear(future_node_bitmap, node_ptr->index);
 	bit_clear(idle_node_bitmap, node_ptr->index);
-	bit_clear(power_node_bitmap, node_ptr->index);
+	bit_clear(power_down_node_bitmap, node_ptr->index);
+	bit_clear(power_up_node_bitmap, node_ptr->index);
 	bit_clear(rs_node_bitmap, node_ptr->index);
 	bit_clear(share_node_bitmap, node_ptr->index);
 	bit_clear(up_node_bitmap, node_ptr->index);

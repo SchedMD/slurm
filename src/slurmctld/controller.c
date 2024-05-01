@@ -183,6 +183,7 @@ int listen_nports = 0;
 struct pollfd *listen_fds = NULL;
 int max_depend_depth = 10;
 time_t	last_proc_req_start = 0;
+uint32_t max_powered_nodes = NO_VAL;
 bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
