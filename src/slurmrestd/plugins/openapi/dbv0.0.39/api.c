@@ -481,7 +481,9 @@ extern void slurm_openapi_p_init(void)
 {
 	/* Check to see if we are running a supported accounting plugin */
 	if (!slurm_with_slurmdbd()) {
-		fatal("%s: slurm not configured with slurmdbd", __func__);
+		debug("%s: refusing to load. Slurm not configured with slurmdbd",
+		      __func__);
+		return;
 	}
 
 	xassert(!global_parser);
