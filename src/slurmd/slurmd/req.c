@@ -2279,7 +2279,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS, node_id = 0;
 	prolog_launch_msg_t *req = msg->data;
 	job_env_t job_env;
-	bool     first_job_run;
 
 	if (req == NULL)
 		return;
@@ -2302,69 +2301,72 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	cred_handle_reissue(req->cred, false);
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->job_id);
-	if (first_job_run) {
+
+	if (cred_jobid_cached(req->job_id)) {
+		/* prolog has already run */
+		slurm_mutex_unlock(&prolog_mutex);
+		_notify_result_rpc_prolog(req, rc);
+		return;
+	}
+
 #ifndef HAVE_FRONT_END
-		/* It is always 0 for front end systems */
-		node_id = nodelist_find(req->nodes, conf->node_name);
+	/* It is always 0 for front end systems */
+	node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
-		if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN &&
-		    ((rc = _make_prolog_mem_container(msg)) != SLURM_SUCCESS)) {
-			error("%s: aborting prolog due to _make_prolog_mem_container failure: %s. Consider increasing cred_expire window if job prologs take large amount of time.",
-			      __func__, slurm_strerror(rc));
-			slurm_mutex_unlock(&prolog_mutex);
-			_notify_result_rpc_prolog(req, rc);
-			return;
-		}
-
-		cred_insert_jobid(req->job_id);
-		_add_job_running_prolog(req->job_id);
-		/* signal just in case the batch rpc got here before we did */
-		slurm_cond_broadcast(&conf->prolog_running_cond);
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN &&
+	    ((rc = _make_prolog_mem_container(msg)) != SLURM_SUCCESS)) {
+		error("%s: aborting prolog due to _make_prolog_mem_container failure: %s. Consider increasing cred_expire window if job prologs take large amount of time.",
+		      __func__, slurm_strerror(rc));
 		slurm_mutex_unlock(&prolog_mutex);
-		memset(&job_env, 0, sizeof(job_env));
-		gres_g_prep_set_env(&job_env.gres_job_env,
-				    req->job_gres_prep, node_id);
+		_notify_result_rpc_prolog(req, rc);
+		return;
+	}
 
-		job_env.jobid = req->job_id;
-		job_env.step_id = 0;	/* not available */
-		job_env.node_aliases = req->alias_list;
-		job_env.node_list = req->nodes;
-		job_env.het_job_id = req->het_job_id;
-		job_env.spank_job_env = req->spank_job_env;
-		job_env.spank_job_env_size = req->spank_job_env_size;
-		job_env.work_dir = req->work_dir;
-		job_env.uid = req->uid;
-		job_env.gid = req->gid;
+	cred_insert_jobid(req->job_id);
+	_add_job_running_prolog(req->job_id);
+	/* signal just in case the batch rpc got here before we did */
+	slurm_cond_broadcast(&conf->prolog_running_cond);
+	slurm_mutex_unlock(&prolog_mutex);
+	memset(&job_env, 0, sizeof(job_env));
+	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
 
-		rc = _run_prolog(&job_env, req->cred, false);
-		_free_job_env(&job_env);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig    = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("[job %u] prolog failed status=%d:%d",
-			      req->job_id, exit_status, term_sig);
-			rc = ESLURMD_PROLOG_FAILED;
-		}
+	job_env.jobid = req->job_id;
+	job_env.step_id = 0; /* not available */
+	job_env.node_aliases = req->alias_list;
+	job_env.node_list = req->nodes;
+	job_env.het_job_id = req->het_job_id;
+	job_env.spank_job_env = req->spank_job_env;
+	job_env.spank_job_env_size = req->spank_job_env_size;
+	job_env.work_dir = req->work_dir;
+	job_env.uid = req->uid;
+	job_env.gid = req->gid;
 
-		if ((rc == SLURM_SUCCESS) &&
-		    (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
-			rc = _spawn_prolog_stepd(msg);
+	rc = _run_prolog(&job_env, req->cred, false);
+	_free_job_env(&job_env);
+	if (rc) {
+		int term_sig = 0, exit_status = 0;
+		if (WIFSIGNALED(rc))
+			term_sig = WTERMSIG(rc);
+		else if (WIFEXITED(rc))
+			exit_status = WEXITSTATUS(rc);
+		error("[job %u] prolog failed status=%d:%d",
+		      req->job_id, exit_status, term_sig);
+		rc = ESLURMD_PROLOG_FAILED;
+	}
 
-		/*
-		 * Revoke cred so that the slurmd won't launch tasks if the
-		 * prolog failed. The slurmd waits for the prolog to finish but
-		 * can't check the return code.
-		 */
-		if (rc)
-			cred_revoke(req->job_id, time(NULL), time(NULL));
+	if ((rc == SLURM_SUCCESS) &&
+	    (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+		rc = _spawn_prolog_stepd(msg);
 
-		_remove_job_running_prolog(req->job_id);
-	} else
-		slurm_mutex_unlock(&prolog_mutex);
+	/*
+	 * Revoke cred so that the slurmd won't launch tasks if the prolog
+	 * failed. The slurmd waits for the prolog to finish, but can't check
+	 * the return code.
+	 */
+	if (rc)
+		cred_revoke(req->job_id, time(NULL), time(NULL));
+
+	_remove_job_running_prolog(req->job_id);
 
 	_notify_result_rpc_prolog(req, rc);
 }
