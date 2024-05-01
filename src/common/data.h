@@ -345,7 +345,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *ptr_buffer);
  * IN data data to convert into a string
  * RET data string or NULL on failure
  */
-extern char *data_get_string(data_t *data);
+extern const char *data_get_string(const data_t *data);
 
 /*
  * Get const data as string
