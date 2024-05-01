@@ -2712,7 +2712,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			 */
 			job_ptr->state_reason = FAIL_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
-		} else if ((error_code == ESLURM_MAX_POWERED_NODES)) {
+		} else if (error_code == ESLURM_MAX_POWERED_NODES) {
 			job_ptr->state_reason = WAIT_MAX_POWERED_NODES;
 			xfree(job_ptr->state_desc);
 		} else {
