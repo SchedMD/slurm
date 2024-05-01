@@ -643,7 +643,7 @@ static void _job_post_het_allocate(ctxt_t *ctxt, list_t *hetjob)
 			.component = 0,
 		};
 
-		(void) list_for_each(hetjob, _foreach_alloc_job_resp, &args);
+		(void) list_for_each(resp, _foreach_alloc_job_resp, &args);
 
 		DATA_DUMP(ctxt->parser, OPENAPI_JOB_ALLOC_RESP, oas_resp,
 			  ctxt->resp);
