@@ -562,7 +562,8 @@ static int _foreach_alloc_job_resp(void *x, void *arg)
 
 	xassert(args->magic == FOREACH_ALLOC_JOB_ARGS_MAGIC);
 
-	xassert(!oas_resp->job_id || (oas_resp->job_id == resp->job_id));
+	xassert(!oas_resp->job_id || (oas_resp->job_id == resp->job_id) ||
+		(oas_resp->job_id == (resp->job_id - args->component)));
 	oas_resp->job_id = resp->job_id;
 
 	if (!oas_resp->job_submit_user_msg)
