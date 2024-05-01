@@ -2840,6 +2840,7 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 #define PROLOG_FLAG_DEFER_BATCH	0x0020 /* defer REQUEST_BATCH_JOB_LAUNCH until prolog end on all nodes */
 #define PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL 0x0040 /* always requeue job on prolog failure */
+#define PROLOG_FLAG_RUN_IN_JOB 0x0080 /* run prolog/epilog in slurmstepd */
 
 #define CONF_FLAG_OR		SLURM_BIT(0) /* SlurmdParameters=config_overrides */
 #define CONF_FLAG_SJC		SLURM_BIT(1) /* AccountingStoreFlags=job_comment */
