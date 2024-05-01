@@ -619,6 +619,14 @@ _service_connection(void *arg)
 	}
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
+		slurm_addr_t cli_addr;
+		(void) slurm_get_peer_addr(con->fd, &cli_addr);
+		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
+			 rpc_num2string(msg->msg_type), msg->auth_uid,
+			 &cli_addr, msg->protocol_version);
+	}
+
 	slurmd_req(msg);
 
 cleanup:

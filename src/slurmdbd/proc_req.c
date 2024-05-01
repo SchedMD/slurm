@@ -3484,6 +3484,15 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		}
 	}
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
+		slurm_addr_t cli_addr;
+		(void) slurm_get_peer_addr(slurmdbd_conn->conn->fd, &cli_addr);
+		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
+			 slurmdbd_msg_type_2_str(msg->msg_type, 1),
+			 slurmdbd_conn->conn->auth_uid,
+			 &cli_addr, slurmdbd_conn->conn->version);
+	}
+
 	switch (msg->msg_type) {
 	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_INIT_TLS:

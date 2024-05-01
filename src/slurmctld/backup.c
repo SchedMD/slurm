@@ -441,8 +441,18 @@ static void *_background_rpc_mgr(void *no_data)
 		slurm_msg_t_init(&msg);
 		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
-		else
+		else {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
+				slurm_addr_t cli_addr;
+				(void) slurm_get_peer_addr(newsockfd, &cli_addr);
+				log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
+					 rpc_num2string(msg.msg_type),
+					 msg.auth_uid, &cli_addr,
+					 msg.protocol_version);
+			}
+
 			_background_process_msg(&msg);
+		}
 
 		slurm_free_msg_members(&msg);
 
