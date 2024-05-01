@@ -145,7 +145,7 @@ static void _check_key_permissions(const char *path, int bad_perms)
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
-	char *alg, *kid, *n, *e, *key;
+	const char *alg, *kid, *n, *e, *key;
 
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
@@ -305,7 +305,7 @@ typedef struct {
 
 static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 {
-	char *alg, *kid, *key;
+	const char *alg, *kid, *key;
 	int len;
 	jwt_t *jwt;
 	int rc;
