@@ -166,6 +166,8 @@ documents those changes that are of interest to users and administrators.
     powered up nodes in <nodes> are protected from being suspended.
  -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
     nodes after the max is reached.
+ -- Store output, error and input paths in the database and make them available
+    in accounting tools.
 
 * Changes in Slurm 23.11.7
 ==========================

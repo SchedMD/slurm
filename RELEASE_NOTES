@@ -39,6 +39,7 @@ HIGHLIGHTS
  -- Allow NodeSet names to be used in SuspendExcNodes.
  -- SuspendExcNodes=<nodes>:N now counts allocated nodes in N. The first N
     powered up nodes in <nodes> are protected from being suspended.
+ -- Store job output, input and error paths in SlurmDBD.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -58,6 +59,10 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     job_container/tmpfs plugin namespace.
  -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
     nodes after the max is reached.
+ -- squeue - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
+ -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
