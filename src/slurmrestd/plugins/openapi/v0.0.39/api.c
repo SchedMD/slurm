@@ -42,6 +42,7 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -170,7 +171,7 @@ extern ctxt_t *init_connection(const char *context_id,
 	ctxt->errors = errors;
 	ctxt->warnings = warn;
 
-	if (!ctxt->db_conn)
+	if (!ctxt->db_conn && slurm_conf.accounting_storage_type)
 		resp_error(ctxt, ESLURM_DB_CONNECTION, __func__,
 			   "openapi_get_db_conn() failed to open slurmdb connection");
 
