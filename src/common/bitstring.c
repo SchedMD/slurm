@@ -1429,8 +1429,7 @@ char *bit_fmt_range(bitstr_t *b, int offset, int len)
  * Convert range string format, e.g. "0-5,42" to bitmap
  * Ret 0 on success, -1 on error
  */
-int
-bit_unfmt(bitstr_t *b, char *str)
+extern int bit_unfmt(bitstr_t *b, const char *str)
 {
 	int32_t *intvec;
 	int rc = 0;
