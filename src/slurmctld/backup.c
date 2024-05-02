@@ -322,8 +322,8 @@ void run_backup(void)
 		 */
 		list_flush(conf_includes_list);
 	}
-	unlock_slurmctld(config_write_lock);
 	select_g_select_nodeinfo_set_all();
+	unlock_slurmctld(config_write_lock);
 }
 
 /*
