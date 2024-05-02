@@ -564,8 +564,11 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			}
 		}
 		if (n) {
-			/* job was found and removed, so refresh the bitmaps */
-			part_data_build_row_bitmaps(p_ptr, job_ptr);
+			/* job was found and removed, so bitmaps need be rebuild */
+			if (p_ptr->num_rows == 1)
+				part_data_build_row_bitmaps(p_ptr, job_ptr);
+			else
+				p_ptr->rebuild_rows = true;
 			/*
 			 * Adjust the node_state of all nodes affected by
 			 * the removal of this job. If all cores are now

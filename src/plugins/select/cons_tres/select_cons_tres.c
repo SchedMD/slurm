@@ -769,9 +769,11 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		return SLURM_ERROR;
 	}
 
-
-	/* some node of job removed from core-bitmap, so rebuild core bitmaps */
-	part_data_build_row_bitmaps(p_ptr, NULL);
+	/*
+	 * some node of job removed from core-bitmap, so lets know _job_test()
+	 * to do part_data_build_row_bitmaps(p_ptr, NULL);
+	 */
+	p_ptr->rebuild_rows = true;
 
 	/*
 	 * Adjust the node_state of the node removed from this job.
@@ -967,6 +969,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 		if (!p_ptr->row)
 			continue;
+		if (p_ptr->rebuild_rows)
+			part_data_build_row_bitmaps(p_ptr, NULL);
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!p_ptr->row[i].row_bitmap)
 				continue;

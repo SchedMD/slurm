@@ -134,6 +134,8 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	part_row_data_t *this_row, *orig_row;
 	sort_support_t *ss;
 
+	p_ptr->rebuild_rows = false;
+
 	if (!p_ptr->row)
 		return;
 
@@ -453,10 +455,16 @@ extern part_res_record_t *part_data_dup_res(
 		if (node_map && orig_ptr->part_ptr->node_bitmap &&
 		    bit_overlap_any(node_map,
 				    orig_ptr->part_ptr->node_bitmap)) {
+			if (orig_ptr->rebuild_rows) {
+				/* This shouldn't happen. */
+				part_data_rebuild_rows(orig_ptr);
+			}
 			new_ptr->num_rows = orig_ptr->num_rows;
 			new_ptr->row = part_data_dup_row(orig_ptr->row,
 							 orig_ptr->num_rows);
-		}
+			new_ptr->rebuild_rows = orig_ptr->rebuild_rows;
+		} else
+			new_ptr->rebuild_rows = true;
 		if (orig_ptr->next) {
 			new_ptr->next = xmalloc(sizeof(part_res_record_t));
 			new_ptr = new_ptr->next;
