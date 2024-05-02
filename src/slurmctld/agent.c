@@ -109,7 +109,7 @@
 
 #define MAX_RETRIES		100
 #define MAX_RPC_PACK_CNT	100
-#define RPC_PACK_MAX_AGE	30	/* Rebuild data over 30 seconds old */
+#define RPC_PACK_MAX_AGE	1	/* Rebuild data over 1 seconds old */
 #define DUMP_RPC_COUNT 		25
 #define HOSTLIST_MAX_SIZE 	80
 #define MAIL_PROG_TIMEOUT 120 /* Timeout in seconds */
