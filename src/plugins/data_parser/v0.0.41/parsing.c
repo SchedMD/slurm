@@ -1135,6 +1135,9 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 {
 	bool found;
 
+	if (bit->hidden)
+		return;
+
 	if (bit->type == FLAG_BIT_TYPE_BIT)
 		found = _match_flag_bit(parser, src, bit, *used_equal_bits);
 	else if (bit->type == FLAG_BIT_TYPE_EQUAL)
