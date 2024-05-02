@@ -7687,7 +7687,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	if (!resv_name)
-		return found_it;
+		return false;
 
 	if (sched_update != slurm_conf.last_update) {
 		if (xstrcasestr(slurm_conf.slurmctld_params,
@@ -7702,7 +7702,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 		return false;
 
 	if ((!user_resv_delete) && !(resv_ptr->flags & RESERVE_FLAG_USER_DEL))
-		return found_it;
+		return false;
 
 	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc.uid = uid;
