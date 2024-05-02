@@ -5732,31 +5732,27 @@ static void _clear_rpc_stats(void)
 
 static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 {
-	uint32_t i;
-
 	slurm_mutex_lock(&rpc_mutex);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		for (i = 0; i < RPC_TYPE_SIZE; i++) {
-			if (rpc_type_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack16_array(rpc_type_id,   i, buffer);
-		pack32_array(rpc_type_cnt,  i, buffer);
-		pack64_array(rpc_type_time, i, buffer);
+		uint32_t rpc_count = 0, user_count = 1;
 
-		for (i = 1; i < RPC_USER_SIZE; i++) {
-			if (rpc_user_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack32_array(rpc_user_id,   i, buffer);
-		pack32_array(rpc_user_cnt,  i, buffer);
-		pack64_array(rpc_user_time, i, buffer);
+		while (rpc_type_id[rpc_count])
+			rpc_count++;
+		pack32(rpc_count, buffer);
+		pack16_array(rpc_type_id, rpc_count, buffer);
+		pack32_array(rpc_type_cnt, rpc_count, buffer);
+		pack64_array(rpc_type_time, rpc_count, buffer);
+
+		/* user_count starts at 1 as root is in index 0 */
+		while (rpc_user_id[user_count])
+			user_count++;
+		pack32(user_count, buffer);
+		pack32_array(rpc_user_id, user_count, buffer);
+		pack32_array(rpc_user_cnt, user_count, buffer);
+		pack64_array(rpc_user_time, user_count, buffer);
 
 		agent_pack_pending_rpc_stats(buffer);
-
 	}
 
 	slurm_mutex_unlock(&rpc_mutex);
