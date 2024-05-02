@@ -55,7 +55,8 @@ in order for slurmrestd to be compiled:</p>
 	<li><a href="download.html#yaml">LibYAML</a> (optional, &gt;= v0.2.5)
 	</li>
 	<li><a href="download.html#json">JSON-C</a> (&gt;= v1.12.0)</li>
-	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
+	<li><a href="download.html#jwt">JWT Authentication</a>
+    (optional, used in this guide)</li>
 </ul>
 
 <p>Additionally, it is highly recommended that you have
@@ -330,6 +331,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 29 February 2024</p>
+<p style="text-align:center;">Last modified 20 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
