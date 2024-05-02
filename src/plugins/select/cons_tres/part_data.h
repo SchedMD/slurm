@@ -57,6 +57,7 @@ typedef struct part_res_record {
 	struct part_res_record *next; /* Ptr to next part_res_record */
 	uint16_t num_rows;	      /* Number of elements in "row" array */
 	part_record_t *part_ptr; /* controller part record pointer */
+	bool rebuild_rows;
 	part_row_data_t *row;    /* array of rows containing jobs */
 } part_res_record_t;
 

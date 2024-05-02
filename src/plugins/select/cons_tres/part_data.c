@@ -349,6 +349,7 @@ extern void part_data_create_array(void)
 			this_ptr->num_rows = 1;
 		/* we'll leave the 'row' array blank for now */
 		this_ptr->row = NULL;
+		this_ptr->rebuild_rows = false;
 		list_append(part_rec_list, this_ptr);
 	}
 	list_iterator_destroy(part_iterator);
