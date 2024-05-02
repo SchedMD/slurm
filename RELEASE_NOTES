@@ -40,6 +40,8 @@ HIGHLIGHTS
  -- SuspendExcNodes=<nodes>:N now counts allocated nodes in N. The first N
     powered up nodes in <nodes> are protected from being suspended.
  -- Store job output, input and error paths in SlurmDBD.
+ -- Add USER_DELETE reservation flag to allow users with access to a reservation
+    to delete it.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

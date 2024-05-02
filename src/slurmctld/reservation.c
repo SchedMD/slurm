@@ -2841,6 +2841,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					RESERVE_FLAG_REPLACE_DOWN |
 					RESERVE_FLAG_NO_HOLD_JOBS |
 					RESERVE_FLAG_MAGNETIC |
+					RESERVE_FLAG_USER_DEL |
 					RESERVE_TRES_PER_NODE;
 	}
 
@@ -3528,6 +3529,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags &= (~RESERVE_FLAG_MAGNETIC);
 			remove_magnetic_resv = true;
 		}
+		if (resv_desc_ptr->flags & RESERVE_FLAG_USER_DEL)
+			resv_ptr->flags |= RESERVE_FLAG_USER_DEL;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_USER_DEL)
+			resv_ptr->flags &= (~RESERVE_FLAG_USER_DEL);
 
 		/* handle skipping later */
 		if (resv_desc_ptr->flags & RESERVE_FLAG_SKIP) {
@@ -7693,7 +7698,10 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 		sched_update = slurm_conf.last_update;
 	}
 
-	if (!user_resv_delete)
+	if (!(resv_ptr = find_resv_name(resv_name)))
+		return false;
+
+	if ((!user_resv_delete) && !(resv_ptr->flags & RESERVE_FLAG_USER_DEL))
 		return found_it;
 
 	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
@@ -7707,10 +7715,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	    != SLURM_SUCCESS)
 		goto end_it;
 
-	resv_ptr = find_resv_name(resv_name);
-
-	if (resv_ptr &&
-	    _validate_user_access(resv_ptr, assoc_list, uid))
+	if (_validate_user_access(resv_ptr, assoc_list, uid))
 		found_it = true;
 end_it:
 	FREE_NULL_LIST(assoc_list);

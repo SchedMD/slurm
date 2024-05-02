@@ -7963,6 +7963,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 	add_flag_bit(RESERVE_FLAG_SKIP, "SKIP"),
 	add_flag_bit(RESERVE_FLAG_HOURLY, "HOURLY"),
 	add_flag_bit(RESERVE_FLAG_NO_HOURLY, "NO_HOURLY"),
+	add_flag_bit(RESERVE_FLAG_USER_DEL, "USER_DELETE"),
+	add_flag_bit(RESERVE_FLAG_NO_USER_DEL, "NO_USER_DELETE"),
 	add_flag_bit(RESERVE_REOCCURRING, "REOCCURRING"),
 };
 

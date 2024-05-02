@@ -3008,6 +3008,16 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_MAGNETIC");
 	}
+	if (flags & RESERVE_FLAG_USER_DEL) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "USER_DELETE");
+	}
+	if (flags & RESERVE_FLAG_NO_USER_DEL) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_USER_DELETE");
+	}
 
 
 	return flag_str;

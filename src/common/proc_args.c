@@ -1591,6 +1591,12 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 					 MAX(taglen, 1)) && op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_NO_HOLD_JOBS;
+		} else if (!xstrncasecmp(curr, "User_Delete", MAX(taglen, 1))) {
+			curr += taglen;
+			if (op == RESV_REM)
+				outflags |= RESERVE_FLAG_NO_USER_DEL;
+			else
+				outflags |= RESERVE_FLAG_USER_DEL;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return INFINITE64;

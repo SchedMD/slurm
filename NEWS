@@ -171,6 +171,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add 'POST /slurm/v0.0.41/job/allocate' endpoint.
  -- Fix issues related to the extern step getting killed before other steps.
     This includes the job_containter/tmpfs plugin not cleaning up.
+ -- Add USER_DELETE reservation flag to allow users with access to a reservation
+    to delete it.
 
 * Changes in Slurm 23.11.7
 ==========================

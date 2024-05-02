@@ -2658,6 +2658,9 @@ typedef struct will_run_response_msg {
 						  * requested */
 #define RESERVE_TRES_PER_NODE      SLURM_BIT(38) /* If the tres_str is per-node
 						  * instead of per-job */
+#define RESERVE_FLAG_USER_DEL	   SLURM_BIT(39) /* Allow users in the ACL to
+						    delete this reservation */
+#define RESERVE_FLAG_NO_USER_DEL   SLURM_BIT(40) /* Clear USER_DEL flag */
 
 #define RESERVE_REOCCURRING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
 				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \
