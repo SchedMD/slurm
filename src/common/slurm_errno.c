@@ -108,6 +108,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Unable to contact slurm controller (shutdown failure)"},
 	{ ERRTAB_ENTRY(SLURMCTLD_COMMUNICATIONS_BACKOFF),
 	  "Rate limit exceeded, please retry momentarily"},
+	{ ERRTAB_ENTRY(SLURMCTLD_COMMUNICATIONS_HARD_DROP),
+	  "Rate limit exceeded, please retry later"},
 
 	/* _info.c/communication layer RESPONSE_SLURM_RC message codes */
 
