@@ -188,6 +188,13 @@ int main(int argc, char **argv)
 			(void) _set_rlimit_env();
 		}
 
+		/*
+		 * if the environment is coming from a file, the
+		 * environment at execution startup, must be unset.
+		 */
+		if (sbopt.export_file != NULL)
+			env_unset_environment();
+
 		_set_prio_process_env();
 		_set_spank_env();
 		_set_submit_dir_env();
@@ -423,6 +430,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->wait_all_nodes = sbopt.wait_all_nodes;
 
 	desc->environment = NULL;
+	if (sbopt.export_file) {
+		desc->environment = env_array_from_file(sbopt.export_file);
+		if (desc->environment == NULL)
+			exit(1);
+	}
 	if (opt.export_env == NULL) {
 		env_array_merge(&desc->environment, (const char **) environ);
 	} else if (!xstrcasecmp(opt.export_env, "ALL")) {

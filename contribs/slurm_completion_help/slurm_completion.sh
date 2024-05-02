@@ -1601,6 +1601,7 @@ function __slurm_comp_common_flags() {
 	-x | --exclude) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	--exclusive) __slurm_compreply "${exclusive_types[*]}" ;;
 	--export) __slurm_compreply "${export_types[*]}" ;;
+	--export-file) _filedir ;;
 	--get-user-env) __slurm_compreply "${env_modes[*]}" ;;
 	--gid) __slurm_compreply "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	--gpu-bind) __slurm_compreply "${gpubind_types[*]}" ;;

@@ -312,6 +312,12 @@ int env_array_overwrite_het_fmt(char ***array_ptr, const char *name,
 void env_array_set_environment(char **env_array);
 
 /*
+ * load environment from specified file name.
+ */
+char **env_array_from_file(const char *filename);
+
+
+/*
  * Write environment to specified file name.
  * IN newline - if true, write 1 env variable terminated with \n
  * 	if false, write 1 env variable terminated with \0

@@ -213,6 +213,7 @@ typedef struct {
 typedef struct {
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
+	char *export_file;		/* --export-file=file		*/
 	bool ignore_pbs;		/* --ignore-pbs			*/
 	int minsockets;			/* --minsockets=n		*/
 	int mincores;			/* --mincores=n			*/

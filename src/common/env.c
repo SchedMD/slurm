@@ -1887,6 +1887,101 @@ static int _bracket_cnt(char *value)
 	return count;
 }
 
+/*
+ * Load user environment from a specified file or file descriptor.
+ *
+ * This will read in a user specified file or fd, that is invoked
+ * via the --export-file option in sbatch. The NAME=value entries must
+ * be NULL separated to support special characters in the environment
+ * definitions.
+ *
+ * (Note: This is being added to a minor release. For the
+ * next major release, it might be a consideration to merge
+ * this functionality with that of load_env_cache and update
+ * env_cache_builder to use the NULL character.)
+ */
+char **env_array_from_file(const char *fname)
+{
+	char *buf = NULL, *ptr = NULL, *eptr = NULL;
+	char *value, *p;
+	char **env = NULL;
+	char name[256];
+	int buf_size = BUFSIZ, buf_left;
+	int file_size = 0, tmp_size;
+	int separator = '\0';
+	int fd;
+
+	if (!fname)
+		return NULL;
+
+	/*
+	 * If file name is a numeric value, then it is assumed to be a
+	 * file descriptor.
+	 */
+	fd = (int)strtol(fname, &p, 10);
+	if ((*p != '\0') || (fd < 3) || (fd > sysconf(_SC_OPEN_MAX)) ||
+	    (fcntl(fd, F_GETFL) < 0)) {
+		fd = open(fname, O_RDONLY);
+		if (fd == -1) {
+			error("Could not open user environment file %s", fname);
+			return NULL;
+		}
+		verbose("Getting environment variables from %s", fname);
+	} else
+		verbose("Getting environment variables from fd %d", fd);
+
+	/*
+	 * Read in the user's environment data.
+	 */
+	buf = ptr = xmalloc(buf_size);
+	buf_left = buf_size;
+	while ((tmp_size = read(fd, ptr, buf_left))) {
+		if (tmp_size < 0) {
+			if (errno == EINTR)
+				continue;
+			error("read(environment_file): %m");
+			break;
+		}
+		buf_left  -= tmp_size;
+		file_size += tmp_size;
+		if (buf_left == 0) {
+			buf_size += BUFSIZ;
+			xrealloc(buf, buf_size);
+		}
+		ptr = buf + file_size;
+		buf_left = buf_size - file_size;
+	}
+	close(fd);
+
+	/*
+	 * Parse the buffer into individual environment variable names
+	 * and build the environment.
+	 */
+	env   = env_array_create();
+	value = xmalloc(ENV_BUFSIZE);
+	for (ptr = buf; ; ptr = eptr+1) {
+		eptr = strchr(ptr, separator);
+		if ((ptr == eptr) || (eptr == NULL))
+			break;
+		if (_env_array_entry_splitter(ptr, name, sizeof(name),
+					      value, ENV_BUFSIZE) &&
+		    (!_discard_env(name, value))) {
+			/*
+			 * Unset the SLURM_SUBMIT_DIR if it is defined so
+			 * that this new value does not get overwritten
+			 * in the subsequent call to env_array_merge().
+			 */
+			if (xstrcmp(name, "SLURM_SUBMIT_DIR") == 0)
+				unsetenv(name);
+			env_array_overwrite(&env, name, value);
+		}
+	}
+	xfree(buf);
+	xfree(value);
+
+	return env;
+}
+
 int env_array_to_file(const char *filename, const char **env_array,
 		      bool newline)
 {
