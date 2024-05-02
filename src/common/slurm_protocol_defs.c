@@ -1348,6 +1348,10 @@ extern const char *slurm_container_status_to_str(
 extern void slurm_destroy_selected_step(void *object)
 {
 	slurm_selected_step_t *step = (slurm_selected_step_t *)object;
+
+	if (!step)
+		return;
+
 	FREE_NULL_BITMAP(step->array_bitmap);
 	xfree(step);
 }
