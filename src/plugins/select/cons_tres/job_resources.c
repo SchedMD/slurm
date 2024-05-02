@@ -172,28 +172,17 @@ static void _log_tres_state(node_use_record_t *node_usage,
 #if _DEBUG
 	node_record_t *node_ptr;
 	part_res_record_t *p_ptr;
-	part_row_data_t *row;
-	char *core_str;
 	int i;
 
-	for (i = 0; (node_ptr = next_node, &i)); i++) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,
-		     node_ptr[i]->name,
-		     _node_state_str(node_usage[i].node_state),
+		     node_ptr->name,
+		     common_node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
-		     node_ptr[i]->real_memory);
+		     node_ptr->real_memory);
 	}
-
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
-		info("Part:%s Rows:%u", p_ptr->part_ptr->name, p_ptr->num_rows);
-		if (!(row = p_ptr->row))	/* initial/unused state */
-			continue;
-		for (i = 0; i < p_ptr->num_rows; i++) {
-			core_str = _build_core_str(row[i].row_bitmap);
-			info("  Row:%d Jobs:%u Cores:%s",
-			     i, row[i].num_jobs, core_str);
-			xfree(core_str);
-		}
+		part_data_dump_res(p_ptr);
 	}
 #endif
 }
