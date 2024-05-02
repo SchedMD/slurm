@@ -2720,8 +2720,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint16_t cps, avail_cpus = 0, num_tasks = 0;
 	uint16_t req_sock_cpus = 0;
 	uint32_t c;
-	uint32_t core_begin;
-	uint32_t core_end;
 	job_details_t *details_ptr = job_ptr->details;
 	uint16_t cpus_per_task = details_ptr->cpus_per_task;
 	uint16_t free_core_count = 0, spec_threads = 0;
@@ -2745,10 +2743,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	bool use_tpc = false;
 	uint32_t socket_begin;
 	uint32_t socket_end;
-
-
-	core_begin = 0;
-	core_end = node_ptr->tot_cores;
 
 	memset(free_cores, 0, sockets * sizeof(uint16_t));
 	memset(used_cores, 0, sockets * sizeof(uint16_t));
@@ -2852,8 +2846,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		bit_and_not(tmp_core, core_map);
 	}
 
-	socket_begin = core_begin;
-	socket_end = core_begin + cores_per_socket;
+	socket_begin = 0;
+	socket_end = cores_per_socket;
 	for (i = 0; i < sockets; i++) {
 		free_cores[i] = bit_set_count_range(core_map, socket_begin,
 						    socket_end);
@@ -3102,13 +3096,13 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			}
 		}
 	}
-	for (c = core_begin; c < core_end ; c++) {
+	for (c = 0; c < node_ptr->tot_cores; c++) {
 		if (!bit_test(core_map, c) || (tmp_core &&
 					       bit_test(tmp_core, c)))
 			continue;
 
 		/* Socket index */
-		i = (uint16_t) ((c - core_begin) / cores_per_socket);
+		i = (uint16_t) (c / cores_per_socket);
 		if (free_cores[i] > 0 && (avail_cpus > 0)) {
 			/*
 			 * this socket has free cores, but make sure we don't
@@ -3135,7 +3129,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 fini:
 	/* if num_tasks == 0 then clear all bits on this node */
 	if (num_tasks == 0) {
-		bit_nclear(core_map, core_begin, core_end-1);
+		bit_clear_all(core_map);
 		cpu_count = 0;
 	}
 
@@ -3162,8 +3156,8 @@ fini:
 
 	avail_res->min_cpus = *cpu_alloc_size;
 	avail_res->avail_cores_per_sock = xcalloc(sockets, sizeof(uint16_t));
-	socket_begin = core_begin;
-	socket_end = core_begin + cores_per_socket;
+	socket_begin = 0;
+	socket_end = cores_per_socket;
 	for (i = 0; i < sockets; i++) {
 		avail_res->avail_cores_per_sock[i] =
 			bit_set_count_range(core_map, socket_begin, socket_end);
