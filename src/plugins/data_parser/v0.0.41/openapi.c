@@ -209,8 +209,12 @@ static void _add_eflags(data_t *props, const parser_t *parser,
 
 	for (int i = 0; i < parser->flag_bit_array_count; i++) {
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
-		data_t *dchild = data_key_set(props, bit->name);
+		data_t *dchild;
 
+		if (bit->hidden)
+			continue;
+
+		dchild = data_key_set(props, bit->name);
 		_set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
 	}
 }
