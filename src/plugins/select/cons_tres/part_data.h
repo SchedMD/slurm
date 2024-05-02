@@ -93,6 +93,9 @@ extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows);
 /* Log contents of partition structure */
 extern void part_data_dump_res(part_res_record_t *p_ptr);
 
+/* rebuild select_part_record rows*/
+extern void part_data_rebuild_rows(part_res_record_t *part_ptr);
+
 /* Create a duplicate part_res_record list */
 extern part_res_record_t *part_data_dup_res(
 	part_res_record_t *orig_ptr, bitstr_t *node_map);

@@ -520,3 +520,12 @@ extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,
 	}
 	return new_row;
 }
+
+/* rebuild select_part_record rows*/
+extern void part_data_rebuild_rows(part_res_record_t *part_ptr)
+{
+	for (; part_ptr; part_ptr = part_ptr->next) {
+		if (part_ptr->rebuild_rows)
+			part_data_build_row_bitmaps(part_ptr, NULL);
+	}
+}
