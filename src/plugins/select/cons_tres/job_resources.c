@@ -74,9 +74,6 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 {
 	int c, c_off = 0;
 	bitstr_t **core_array;
-	bitstr_t *use_core_array;
-	uint32_t core_begin;
-	uint32_t core_end;
 	uint16_t cores_per_node;
 	node_record_t *node_ptr;
 
@@ -100,17 +97,13 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	     i++) {
 		cores_per_node = node_ptr->tot_cores;
 
-		core_begin = 0;
-		core_end = node_record_table_ptr[i]->tot_cores;
-		use_core_array = core_array[i];
-
 		/*
 		 * This segment properly handles the core counts when whole
 		 * nodes are allocated, including when explicitly requesting
 		 * specialized cores.
 		 */
 		if (job_resrcs_ptr->whole_node == 1) {
-			if (!use_core_array) {
+			if (!core_array[i]) {
 				if (type != HANDLE_JOB_RES_TEST)
 					error("core_array for node %d is NULL %d",
 					      i, type);
@@ -119,17 +112,15 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 
 			switch (type) {
 			case HANDLE_JOB_RES_ADD:
-				bit_nset(use_core_array,
-					 core_begin, core_end-1);
-				r_ptr->row_set_count += (core_end - core_begin);
+				bit_set_all(core_array[i]);
+				r_ptr->row_set_count += cores_per_node;
 				break;
 			case HANDLE_JOB_RES_REM:
-				bit_nclear(use_core_array,
-					   core_begin, core_end-1);
-				r_ptr->row_set_count -= (core_end - core_begin);
+				bit_clear_all(core_array[i]);
+				r_ptr->row_set_count -= cores_per_node;
 				break;
 			case HANDLE_JOB_RES_TEST:
-				if (bit_ffs(use_core_array) != -1)
+				if (bit_ffs(core_array[i]) != -1)
 					return 0;
 				break;
 			}
@@ -139,7 +130,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 		for (c = 0; c < cores_per_node; c++) {
 			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
 				continue;
-			if (!use_core_array) {
+			if (!core_array[i]) {
 				if (type != HANDLE_JOB_RES_TEST)
 					error("core_array for node %d is NULL %d",
 					      i, type);
@@ -147,15 +138,15 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			}
 			switch (type) {
 			case HANDLE_JOB_RES_ADD:
-				bit_set(use_core_array, core_begin + c);
+				bit_set(core_array[i], c);
 			        r_ptr->row_set_count++;
 				break;
 			case HANDLE_JOB_RES_REM:
-				bit_clear(use_core_array, core_begin + c);
+				bit_clear(core_array[i], c);
 				r_ptr->row_set_count--;
 				break;
 			case HANDLE_JOB_RES_TEST:
-				if (bit_test(use_core_array, core_begin + c))
+				if (bit_test(core_array[i], c))
 					return 0;    /* Core conflict on node */
 				break;
 			}
