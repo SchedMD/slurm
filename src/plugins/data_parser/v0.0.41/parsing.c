@@ -1482,6 +1482,10 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 
 		for (int i = 0; i < parser->flag_bit_array_count; i++) {
 			const flag_bit_t *bit = &parser->flag_bit_array[i];
+
+			if (bit->hidden)
+				continue;
+
 			data_t *bit_dst = data_define_dict_path(dst, bit->name);
 
 			xassert(src);
