@@ -718,7 +718,8 @@ set to 0 cache is disabled. The default value is 60.
 
 .TP
 \fBkeepaliveinterval=#\fR
-Specifies the interval between keepalive probes on idle connections.
+Specifies the interval, in seconds, between keepalive probes on idle
+connections.
 This affects connections between srun and its slurmstepd process as well as all
 connections to the slurmdbd.
 The default is to use the system default settings.
@@ -735,9 +736,9 @@ The default is to use the system default settings.
 
 .TP
 \fBkeepalivetime=#\fR
-Specifies how long before a connection is marked as needing a keepalive probe as
-well as how long to delay closing a connection to process messages still in the
-queue.
+Specifies how long, in seconds,  before a connection is marked as needing a
+keepalive probe as well as how long to delay closing a connection to process
+messages still in the queue.
 This affects connections between srun and its slurmstepd process as well as all
 connections to the slurmdbd.
 Longer values can be used to improve reliability of communications in the event
