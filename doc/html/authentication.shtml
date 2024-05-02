@@ -72,7 +72,7 @@ validate credentials. It validates that the requests come from legitimate UIDs
 and GIDs on other hosts with matching users and groups. All hosts in the
 cluster must have a shared cryptographic key.</p>
 
-<h4 id="slurm_setup">Setup<a class="slurm_link" href="#slurm_setup"></a></h4>
+<h4 id="single_key_setup">Single Key Setup<a class="slurm_link" href="#single_key_setup"></a></h4>
 
 <ol>
 <li>For the authentication to happen correctly you must have a shared key on
@@ -83,8 +83,9 @@ dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1
 </pre>
 </li>
 
-<li>This key should be owned by SlurmUser and should not be readable or
-writable by other users. This example assumes the SlurmUser is 'slurm':
+<li>The slurm.key or slurm.jwks should be owned by SlurmUser and should not be
+readable or writable by other users. This example assumes the SlurmUser is
+'slurm':
 <pre>
 chown slurm:slurm /etc/slurm/slurm.key
 chmod 600 /etc/slurm/slurm.key
@@ -104,6 +105,67 @@ CredType = cred/slurm
 
 <li>Start the daemons back up with the appropriate method for your cluster.</li>
 </ol>
+
+<p>Beginning with version 24.05, you may alternatively create a slurm.jwks file
+with multiple keys defined. The slurm.jwks file aids with key rotation, as
+the cluster does not need to be restarted at once when a key is rotated.
+Instead, an scontrol reconfigure is sufficient. There are no slurm.conf
+parameters required to use the slurm.jwks file, instead, the presence of the
+slurm.jwks file enables this functionality. If the slurm.jwks is not present or
+cannot be read, the cluster defaults to the slurm.key.</p>
+
+<h4 id="multiple_key_setup">Multiple Key Setup<a class="slurm_link" href="#multiple_key_setup"></a></h4>
+
+<p>Setup for multiple keys is very similar to the single key setup with the
+exception of a richer key file. The key file is composed of one jwks-esque
+"keys" list, with a number of "key" entries into this list. The key entries
+have many different fields. An example file is below.
+</p>
+
+<pre>
+{
+  "keys": [
+    {
+      "alg": "HS256",
+      "kty": "oct",
+      "kid": "key-identifier",
+      "k": "VGhlIGtleSBiZWxvdyBtZSBuZXZlciBsaWVz",
+      "exp": 1718200800
+    },
+    {
+      "alg": "HS256",
+      "kty": "oct",
+      "kid": "key-identifier-2",
+      "k": "VGhlIGtleSBhYm92ZSBtZSBhbHdheXMgbGllcw==",
+      "use": "default"
+    }
+  ]
+}
+</pre>
+
+<p>The following fields are used by auth/slurm. (Additional fields can be
+present, but will be ignored.)
+<ul>
+<li><b>alg</b> &mdash; The cryptographic algorithm used with the key. This
+field is required, and the value MUST be HS256.</li>
+<li><b>kty</b> &mdash; The family of cryptographic algorithms used to sign the
+key. This field is required, and the value MUST be oct.</li>
+<li><b>kid</b> &mdash; The case-sensitive text identifier used for key
+matching. This field is required, and the text must be unique.</li>
+<li><b>k</b> &mdash; The actual key, represented in a Base64 or Base64url
+encoded binary blob. This field is required, and must be longer than 16
+bytes.</li>
+<li><b>use</b> &mdash; Determines whether this key is the default key.
+Acceptable values are only "default", which denotes this key as the default
+key. There can only be one default key. This field is optional.</li>
+<li><b>exp</b> &mdash; The expiration date of the key as a Unix timestamp. This
+field is optional.</li>
+</ul>
+</p>
+
+<p>Once the slurm.jwks file has been created, use the same process for setting
+up auth/slurm as in the single key setup, except use the slurm.jwks file instead
+of the slurm.key file.</p>
 
 <p>If the cluster does not have access to consistent user ids from LDAP or
 the operating system, you can use the
@@ -131,6 +193,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 12 March 2024</p>
+<p style="text-align:center;">Last modified 01 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
