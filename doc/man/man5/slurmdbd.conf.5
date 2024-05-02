@@ -282,7 +282,8 @@ should also be set in your \fBslurm.conf\fR file.
 \fBkeepaliveinterval=#\fR
 Specifies the interval, in seconds, between keepalive probes on idle
 connections.
-This primarily impacts the connection between the backup and primary slurmdbd.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 30 seconds.
 .IP
 
@@ -290,7 +291,8 @@ The default value is 30 seconds.
 \fBkeepaliveprobes=#\fR
 Specifies the number of unacknowledged keepalive probes sent before considering
 a connection broken.
-This primarily impacts the connection between the backup and primary slurmdbd.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 3.
 .IP
 
@@ -299,7 +301,8 @@ The default value is 3.
 Specifies how long, in seconds, a connection must be idle before starting to
 send keepalive probes as well as how long to delay closing a connection to
 process messages still in the queue.
-This primarily impacts the connection between the backup and primary slurmdbd.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 30 seconds.
 .RE
 .IP
