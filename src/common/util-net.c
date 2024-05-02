@@ -366,12 +366,12 @@ static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
 			  NI_NAMEREQD);
 	if (err == EAI_SYSTEM) {
-		error("%s: getnameinfo() failed: %s: %m",
-		      __func__, gai_strerror(err));
+		log_flag(NET, "%s: getnameinfo() failed: %s: %m",
+			 __func__, gai_strerror(err));
 		return NULL;
 	} else if (err) {
-		error("%s: getnameinfo() failed: %s",
-		      __func__, gai_strerror(err));
+		log_flag(NET, "%s: getnameinfo() failed: %s",
+			 __func__, gai_strerror(err));
 		return NULL;
 	}
 
