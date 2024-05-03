@@ -4422,26 +4422,6 @@ bool is_node_resp (char *name)
 }
 
 /*
- * find_first_node_record - find a record for first node in the bitmap
- * IN node_bitmap
- */
-node_record_t *find_first_node_record(bitstr_t *node_bitmap)
-{
-	int inx;
-
-	if (node_bitmap == NULL) {
-		error ("find_first_node_record passed null bitstring");
-		return NULL;
-	}
-
-	inx = bit_ffs (node_bitmap);
-	if (inx < 0)
-		return NULL;
-	else
-		return node_record_table_ptr[inx];
-}
-
-/*
  * msg_to_slurmd - send given msg_type (REQUEST_RECONFIGURE or REQUEST_SHUTDOWN)
  * to every slurmd
  */

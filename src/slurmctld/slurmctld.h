@@ -849,12 +849,6 @@ extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id);
 extern job_record_t *find_job_record(uint32_t job_id);
 
 /*
- * find_first_node_record - find a record for first node in the bitmap
- * IN node_bitmap
- */
-extern node_record_t *find_first_node_record(bitstr_t *node_bitmap);
-
-/*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition
  * RET pointer to partition or NULL if not found

@@ -292,6 +292,26 @@ extern void srun_timeout(job_record_t *job_ptr)
 }
 
 /*
+ * _find_first_node_record - find a record for first node in the bitmap
+ * IN node_bitmap
+ */
+static node_record_t *_find_first_node_record(bitstr_t *node_bitmap)
+{
+	int inx;
+
+	if (node_bitmap == NULL) {
+		error ("_find_first_node_record passed null bitstring");
+		return NULL;
+	}
+
+	inx = bit_ffs (node_bitmap);
+	if (inx < 0)
+		return NULL;
+	else
+		return node_record_table_ptr[inx];
+}
+
+/*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
  */
 extern int srun_user_message(job_record_t *job_ptr, char *msg)
@@ -335,7 +355,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 
 #else
 		node_record_t *node_ptr;
-		node_ptr = find_first_node_record(job_ptr->node_bitmap);
+		node_ptr = _find_first_node_record(job_ptr->node_bitmap);
 		if (node_ptr == NULL)
 			return ESLURM_DISABLED;	/* no allocated nodes */
 
