@@ -542,6 +542,39 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
+static void _slurm_rpc_step_layout(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	slurm_step_id_t *step_id = msg->data;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	job_uid = _get_job_uid(step_id->job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -701,6 +734,9 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_slurm_rpc_update_step(msg);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_slurm_rpc_step_layout(msg);
 		break;
 	default:
 		error("%s: invalid request msg type %d",

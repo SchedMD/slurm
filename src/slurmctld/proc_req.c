@@ -3437,6 +3437,12 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		unlock_slurmctld(job_read_lock);
+		return;
+	}
+
 	error_code = step_mgr_get_step_layouts(job_ptr, req, &step_layout);
 	unlock_slurmctld(job_read_lock);
 

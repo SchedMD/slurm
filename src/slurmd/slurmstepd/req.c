@@ -909,6 +909,72 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	slurm_step_id_t *request;
+	slurm_step_layout_t *step_layout = NULL;
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = REQUEST_STEP_LAYOUT;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, JOB_STEP_GET_INFO RPC from uid=%u",
+		      uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("%s on a non-step mgr stepd",
+		      rpc_num2string(msg.msg_type));
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	request = msg.data;
+
+	rc = step_mgr_get_step_layouts(job_step_ptr, request, &step_layout);
+	if (!rc) {
+		slurm_msg_t response_msg;
+		response_init(&response_msg, &msg, RESPONSE_STEP_LAYOUT,
+			      step_layout);
+		slurm_send_node_msg(msg.conn_fd, &response_msg);
+		slurm_step_layout_destroy(step_layout);
+	}
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
 int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
@@ -1040,6 +1106,9 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 	case REQUEST_UPDATE_JOB_STEP:
 		debug("Handling REQUEST_CANCEL_JOB_STEP");
 		rc = _handle_update_step(fd, step, uid);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_handle_step_layout(fd, step, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);

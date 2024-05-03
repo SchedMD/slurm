@@ -618,6 +618,7 @@ extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id)
 	slurm_step_id_t data;
 	slurm_msg_t req, resp;
 	int errnum;
+	char *stepmgr_nodename = NULL;
 
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
@@ -626,10 +627,47 @@ extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id)
 	req.data = &data;
 	memcpy(&data, step_id, sizeof(data));
 
-	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <0)
+trystepmgr:
+	if (stepmgr_nodename) {
+		slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
+
+		if (slurm_conf_get_addr(stepmgr_nodename, &req.address,
+					req.flags)) {
+			/*
+			 * The node isn't in the conf, see if the
+			 * controller has an address for it.
+			 */
+			slurm_node_alias_addrs_t *alias_addrs;
+			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
+							&alias_addrs)) {
+				add_remote_nodes_to_conf_tbls(
+					alias_addrs->node_list,
+					alias_addrs->node_addrs);
+			}
+			slurm_free_node_alias_addrs(alias_addrs);
+			slurm_conf_get_addr(stepmgr_nodename, &req.address,
+					    req.flags);
+		}
+
+		if (slurm_send_recv_node_msg(&req, &resp, 0))
+			return NULL;
+	} else if (slurm_send_recv_controller_msg(&req, &resp,
+						  working_cluster_rec) <0)
 		return NULL;
 
 	switch (resp.msg_type) {
+	case RESPONSE_SLURM_REROUTE_MSG:
+	{
+		reroute_msg_t *rr_msg = resp.data;
+		stepmgr_nodename = rr_msg->step_mgr;
+		if (stepmgr_nodename) {
+			goto trystepmgr;
+		} else {
+			errno = SLURM_ERROR;
+			return NULL;
+		}
+		break;
+	}
 	case RESPONSE_STEP_LAYOUT:
 		return (slurm_step_layout_t *)resp.data;
 	case RESPONSE_SLURM_RC:
