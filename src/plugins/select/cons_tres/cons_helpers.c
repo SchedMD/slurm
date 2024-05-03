@@ -224,4 +224,3 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 
 	return avail_cores;
 }
-
