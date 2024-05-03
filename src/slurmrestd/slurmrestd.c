@@ -70,6 +70,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
@@ -730,6 +731,7 @@ int main(int argc, char **argv)
 	slurm_fini();
 	hash_g_fini();
 	tls_g_fini();
+	cred_g_fini();
 	auth_g_fini();
 	log_fini();
 
