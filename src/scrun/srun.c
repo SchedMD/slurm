@@ -73,7 +73,7 @@ data_for_each_cmd_t _add_argv_entry(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		fatal("invalid args data type");
 
-	args->cmd[args->i] = xstrdup(data_get_string_const(data));
+	args->cmd[args->i] = xstrdup(data_get_string(data));
 	args->i++;
 
 	return DATA_FOR_EACH_CONT;
