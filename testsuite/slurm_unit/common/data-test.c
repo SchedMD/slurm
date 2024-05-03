@@ -39,6 +39,8 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -362,9 +364,15 @@ Suite *suite_data(void)
 int main(void)
 {
 	int number_failed;
-
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
-	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
+	const char *debug_env = getenv("SLURM_DEBUG");
+	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
+
+	if (debug_env)
+		log_opts.stderr_level = log_string2num(debug_env);
+	if (debug_flags_env)
+		debug_str2flags(debug_flags_env, &slurm_conf.debug_flags);
+
 	log_init("data-test", log_opts, 0, NULL);
 
 	SRunner *sr = srunner_create(suite_data());
@@ -373,5 +381,6 @@ int main(void)
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
+	log_fini();
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
