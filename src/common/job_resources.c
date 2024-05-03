@@ -568,6 +568,9 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		pack_bit_str_hex(job_resrcs_ptr->core_bitmap, buffer);
 		pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used,
 				 buffer);
+
+		pack_bit_str_hex(job_resrcs_ptr->node_bitmap, buffer);
+
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
@@ -721,6 +724,9 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
 		unpack_bit_str_hex(&job_resrcs->core_bitmap_used,
 				   buffer);
+
+		unpack_bit_str_hex(&job_resrcs->node_bitmap, buffer);
+
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&empty, buffer);
 		if (empty == NO_VAL) {
