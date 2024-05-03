@@ -6187,6 +6187,24 @@ extern bool validate_slurm_user(uid_t uid)
 		return false;
 }
 
+/*
+ * validate_slurmd_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmdUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurmd_user(uid_t uid)
+{
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	if ((uid == 0) || (uid == slurm_conf.slurmd_user_id))
+		return true;
+	else
+		return false;
+}
+
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;
