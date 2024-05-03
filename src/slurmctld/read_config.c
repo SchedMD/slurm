@@ -89,9 +89,9 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/step_mgr.h"
 
 #define FEATURE_MAGIC	0x34dfd8b5

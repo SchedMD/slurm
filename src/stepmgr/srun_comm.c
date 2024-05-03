@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "config.h"
+#include "srun_comm.h"
 
 #include <string.h>
 
@@ -48,10 +49,8 @@
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/proc_req.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
+
+#include "src/stepmgr/step_mgr.h"
 
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for

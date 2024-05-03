@@ -40,7 +40,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
+
+#include "src/stepmgr/srun_comm.h"
 
 extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 					   bool timed_out)

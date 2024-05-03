@@ -63,8 +63,6 @@ slurmctld_SOURCES =     \
 	slurmscriptd_protocol_defs.h \
 	slurmscriptd_protocol_pack.c \
 	slurmscriptd_protocol_pack.h \
-	srun_comm.c	\
-	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\

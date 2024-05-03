@@ -10,6 +10,8 @@ noinst_LTLIBRARIES = libstepmgr.la
 libstepmgr_la_SOURCES = \
 	gres_ctld.c \
 	gres_ctld.h \
+	srun_comm.c \
+	srun_comm.h \
 	step_mgr.h \
 	step_mgr.c
 libstepmgr_o_SOURCES =

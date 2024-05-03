@@ -105,7 +105,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/srun_comm.h"
+
+#include "src/stepmgr/srun_comm.h"
 
 #define MAX_RETRIES		100
 #define MAX_RPC_PACK_CNT	100

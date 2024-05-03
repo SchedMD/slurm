@@ -91,10 +91,10 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/step_mgr.h"
 
 #ifndef CORRESPOND_ARRAY_TASK_CNT

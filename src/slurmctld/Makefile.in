@@ -194,9 +194,8 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	proc_req.$(OBJEXT) rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
 	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) sackd_mgr.$(OBJEXT) \
 	slurmscriptd.$(OBJEXT) slurmscriptd_protocol_defs.$(OBJEXT) \
-	slurmscriptd_protocol_pack.$(OBJEXT) srun_comm.$(OBJEXT) \
-	state_save.$(OBJEXT) statistics.$(OBJEXT) \
-	trigger_mgr.$(OBJEXT)
+	slurmscriptd_protocol_pack.$(OBJEXT) state_save.$(OBJEXT) \
+	statistics.$(OBJEXT) trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmctld_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -233,8 +232,8 @@ am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/sackd_mgr.Po ./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
-	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
-	./$(DEPDIR)/statistics.Po ./$(DEPDIR)/trigger_mgr.Po
+	./$(DEPDIR)/state_save.Po ./$(DEPDIR)/statistics.Po \
+	./$(DEPDIR)/trigger_mgr.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -592,8 +591,6 @@ slurmctld_SOURCES = \
 	slurmscriptd_protocol_defs.h \
 	slurmscriptd_protocol_pack.c \
 	slurmscriptd_protocol_pack.h \
-	srun_comm.c	\
-	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\
@@ -753,7 +750,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_defs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_pack.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_comm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trigger_mgr.Po@am__quote@ # am--include-marker
@@ -916,7 +912,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/srun_comm.Po
 	-rm -f ./$(DEPDIR)/state_save.Po
 	-rm -f ./$(DEPDIR)/statistics.Po
 	-rm -f ./$(DEPDIR)/trigger_mgr.Po
@@ -995,7 +990,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/srun_comm.Po
 	-rm -f ./$(DEPDIR)/state_save.Po
 	-rm -f ./$(DEPDIR)/statistics.Po
 	-rm -f ./$(DEPDIR)/trigger_mgr.Po

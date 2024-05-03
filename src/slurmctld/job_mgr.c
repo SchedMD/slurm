@@ -107,11 +107,11 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/step_mgr.h"
 
 #define ARRAY_ID_BUF_SIZE 32

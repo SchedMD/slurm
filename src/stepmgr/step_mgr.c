@@ -78,9 +78,9 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
 
 #include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/srun_comm.h"
 
 typedef struct {
 	uint16_t flags;

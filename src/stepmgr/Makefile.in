@@ -157,7 +157,7 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libstepmgr_la_LIBADD =
-am_libstepmgr_la_OBJECTS = gres_ctld.lo step_mgr.lo
+am_libstepmgr_la_OBJECTS = gres_ctld.lo srun_comm.lo step_mgr.lo
 libstepmgr_la_OBJECTS = $(am_libstepmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -182,7 +182,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/gres_ctld.Plo \
-	./$(DEPDIR)/step_mgr.Plo
+	./$(DEPDIR)/srun_comm.Plo ./$(DEPDIR)/step_mgr.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -485,6 +485,8 @@ noinst_LTLIBRARIES = libstepmgr.la
 libstepmgr_la_SOURCES = \
 	gres_ctld.c \
 	gres_ctld.h \
+	srun_comm.c \
+	srun_comm.h \
 	step_mgr.h \
 	step_mgr.c
 
@@ -553,6 +555,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_ctld.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_comm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_mgr.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -680,6 +683,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/gres_ctld.Plo
+	-rm -f ./$(DEPDIR)/srun_comm.Plo
 	-rm -f ./$(DEPDIR)/step_mgr.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -727,6 +731,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/gres_ctld.Plo
+	-rm -f ./$(DEPDIR)/srun_comm.Plo
 	-rm -f ./$(DEPDIR)/step_mgr.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
