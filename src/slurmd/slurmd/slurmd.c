@@ -370,6 +370,8 @@ main (int argc, char **argv)
 		fatal("failed to initialize node_features plugin");
 	if (mpi_g_daemon_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize MPI plugins.");
+	if (select_g_init(1) != SLURM_SUCCESS)
+		fatal("Failed to initialize select plugins.");
 	file_bcast_init();
 	run_command_init();
 	plugins_registered = true;
