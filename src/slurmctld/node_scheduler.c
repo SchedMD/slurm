@@ -58,6 +58,7 @@
 #include "src/common/id_util.h"
 #include "src/common/job_features.h"
 #include "src/common/list.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -3128,7 +3129,14 @@ extern void launch_prolog(job_record_t *job_ptr)
 						  job_ptr->spank_job_env);
 
 	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
-		prolog_msg_ptr->job_ptr = job_ptr;
+		/*
+		 * Pack while we are in locks so that we don't need to make a
+		 * copies of job_ptr and job_node_array since the agent queue
+		 * doesn't pack until sending.
+		 */
+		prolog_msg_ptr->job_ptr_buf = init_buf(BUF_SIZE);
+		slurm_pack_job_rec(job_ptr, prolog_msg_ptr->job_ptr_buf,
+				   protocol_version);
 	}
 
 	xassert(job_ptr->job_resrcs);

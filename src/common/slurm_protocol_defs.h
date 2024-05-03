@@ -845,6 +845,7 @@ typedef struct prolog_launch_msg {
 
 	/* To send to step_mgr */
 	job_record_t *job_ptr;
+	buf_t *job_ptr_buf;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

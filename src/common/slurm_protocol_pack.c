@@ -7788,10 +7788,9 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			      buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 
-		if (msg->job_ptr) {
+		if (msg->job_ptr_buf) {
 			packbool(true, buffer);
-			slurm_pack_job_rec(msg->job_ptr, buffer,
-					   smsg->protocol_version);
+			packbuf(msg->job_ptr_buf, buffer);
 		} else {
 			packbool(false, buffer);
 		}
