@@ -1784,6 +1784,30 @@ extern char *schedule_exit2string(uint16_t opcode);
 
 extern char *bf_exit2string(uint16_t opcode);
 
+/*
+ * Parse reservation request option Watts
+ * IN watts_str - value to parse
+ * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern uint32_t slurm_watts_str_to_int(char *watts_str, char **err_msg);
+
+typedef struct {
+	uint32_t	node_count;	/* number of nodes to communicate
+					 * with */
+	uint16_t	retry;		/* if set, keep trying */
+	uid_t r_uid;			/* receiver UID */
+	bool r_uid_set;			/* true if receiver UID set */
+	slurm_addr_t    *addr;          /* if set will send to this
+					   addr not hostlist */
+	hostlist_t *hostlist;		/* hostlist containing the
+					 * nodes we are sending to */
+	uint16_t        protocol_version; /* protocol version to use */
+	slurm_msg_type_t msg_type;	/* RPC to be issued */
+	void		*msg_args;	/* RPC data to be transmitted */
+	uint16_t msg_flags;		/* Flags to be added to msg */
+} agent_arg_t;
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
