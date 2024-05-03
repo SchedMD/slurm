@@ -5688,6 +5688,14 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 		goto end_it;
 	}
 
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		if (lock_func)
+			lock_func(false);
+		return SLURM_SUCCESS;
+	}
+
 	error_code = step_create(job_ptr, req_step_msg, &step_rec,
 				 msg->protocol_version, &err_msg);
 

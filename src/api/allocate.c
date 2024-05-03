@@ -750,6 +750,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 re_send:
 	if ((stepmgr_nodename = getenv("SLURM_STEP_MGR"))) {
+trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
 		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
@@ -769,6 +770,7 @@ re_send:
 			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
 					    req_msg.flags);
 		}
+
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
 			return SLURM_ERROR;
 	} else if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
@@ -777,6 +779,16 @@ re_send:
 	}
 
 	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_REROUTE_MSG:
+	{
+		reroute_msg_t *rr_msg = resp_msg.data;
+		stepmgr_nodename = rr_msg->step_mgr;
+		if (stepmgr_nodename)
+			goto trystepmgr;
+		else
+			return SLURM_ERROR;
+		break;
+	}
 	case RESPONSE_SLURM_RC:
 		rc = _handle_rc_msg(&resp_msg);
 		if ((rc < 0) && (errno == EAGAIN)) {
