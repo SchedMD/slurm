@@ -4831,15 +4831,6 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	if (!step_rec)
 		return SLURM_ERROR;
 
-	step_ptr = *step_rec = create_step_record(job_ptr, protocol_version);
-
-	if (!step_ptr) {
-		error("%s: Can't create step_record! This should never happen",
-		      __func__);
-		return SLURM_ERROR;
-	}
-	*step_mgr_ops->last_job_update = time(NULL);
-
 	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
 		return SLURM_ERROR;
 
@@ -4886,6 +4877,16 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	log_flag(STEPS, "Picked nodes %s when accumulating from %s",
 		 step_node_list, step_specs->node_list);
 
+	step_ptr = *step_rec = create_step_record(job_ptr, protocol_version);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		select_g_select_jobinfo_free(select_jobinfo);
+		return SLURM_ERROR;
+	}
+	*step_mgr_ops->last_job_update = time(NULL);
+
 	/* We want 1 task per node. */
 	step_ptr->step_node_bitmap = nodeset;
 	node_count = bit_set_count(nodeset);
@@ -4899,6 +4900,7 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 
 	if (!step_ptr->step_layout) {
 		select_g_select_jobinfo_free(select_jobinfo);
+		delete_step_record(job_ptr, step_ptr);
 		return SLURM_ERROR;
 	}
 
