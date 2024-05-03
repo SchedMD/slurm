@@ -45,6 +45,7 @@
 
 #define STEPD_MESSAGE_COMP_WAIT 3 /* seconds */
 
+extern job_record_t *job_step_ptr;
 extern int slurmstepd_blocked_signals[];
 
 typedef struct {

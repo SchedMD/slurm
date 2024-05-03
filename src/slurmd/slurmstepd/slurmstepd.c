@@ -70,6 +70,7 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 #include "src/interfaces/topology.h"
@@ -83,6 +84,8 @@
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+#include "src/stepmgr/step_mgr.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);
@@ -111,6 +114,41 @@ int slurmstepd_blocked_signals[] = {
 /* global variable */
 slurmd_conf_t * conf;
 extern char  ** environ;
+
+list_t *job_list = NULL;
+job_record_t *job_step_ptr = NULL;
+time_t last_job_update = 0;
+
+extern job_record_t *find_job_record(uint32_t job_id)
+{
+	xassert(job_step_ptr);
+
+	return job_step_ptr;
+}
+
+step_mgr_ops_t stepd_step_mgr_ops = {
+	.find_job_record = find_job_record,
+	.last_job_update = &last_job_update
+};
+
+static void _init_stepd_step_mgr(void)
+{
+	if (!job_step_ptr)
+		return;
+
+	stepd_step_mgr_ops.up_node_bitmap =
+		bit_alloc(bit_size(job_step_ptr->node_bitmap));
+	bit_set_all(stepd_step_mgr_ops.up_node_bitmap);
+	step_mgr_init(&stepd_step_mgr_ops);
+
+	if (!node_record_table_ptr) {
+		config_list = list_create(NULL);
+		build_all_nodeline_info(false, 0);
+	}
+
+	select_g_init(1);
+	acct_storage_g_init();
+}
 
 int
 main (int argc, char **argv)
@@ -143,6 +181,8 @@ main (int argc, char **argv)
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
 	}
+
+	_init_stepd_step_mgr();
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */
