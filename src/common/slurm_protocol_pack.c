@@ -51,6 +51,7 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/part_record.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -6829,6 +6830,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 			slurm_pack_list(msg->job_node_array,
 					node_record_pack, buffer,
 					protocol_version);
+			part_record_pack(msg->part_ptr, buffer,
+					 protocol_version);
 		} else {
 			packbool(false, buffer);
 		}
@@ -7205,6 +7208,9 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					      node_record_unpack,
 					      purge_node_rec, buffer,
 					      protocol_version))
+				goto unpack_error;
+			if (part_record_unpack(&msg->part_ptr, buffer,
+					       protocol_version))
 				goto unpack_error;
 		}
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
@@ -7801,6 +7807,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			packbool(true, buffer);
 			packbuf(msg->job_ptr_buf, buffer);
 			packbuf(msg->job_node_array_buf, buffer);
+			packbuf(msg->part_ptr_buf, buffer);
 		} else {
 			packbool(false, buffer);
 		}
@@ -7898,6 +7905,9 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 					      node_record_unpack,
 					      purge_node_rec, buffer,
 					      smsg->protocol_version))
+				goto unpack_error;
+			if (part_record_unpack(&msg->part_ptr, buffer,
+					       smsg->protocol_version))
 				goto unpack_error;
 		}
 	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {

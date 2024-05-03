@@ -727,6 +727,7 @@ typedef struct launch_tasks_request_msg {
 	/* To send to step_mgr */
 	job_record_t *job_ptr;
 	list_t *job_node_array;
+	part_record_t *part_ptr;
 
 	char *step_mgr; /* Hostname of step_mgr */
 } launch_tasks_request_msg_t;
@@ -848,9 +849,13 @@ typedef struct prolog_launch_msg {
 	/* To send to step_mgr */
 	job_record_t *job_ptr;
 	buf_t *job_ptr_buf;
+
 	list_t *job_node_array; /* node_record_t array of size
 				 * job_ptr->node_cnt for step_mgr. */
 	buf_t *job_node_array_buf;
+
+	part_record_t *part_ptr;
+	buf_t *part_ptr_buf;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

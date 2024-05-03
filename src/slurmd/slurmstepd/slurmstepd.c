@@ -864,6 +864,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
 			/* only allow one stepd to be stepmgr. */
 			job_step_ptr = task_msg->job_ptr;
+			job_step_ptr->part_ptr = task_msg->part_ptr;
 			job_node_array = task_msg->job_node_array;
 		}
 
