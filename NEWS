@@ -191,6 +191,8 @@ documents those changes that are of interest to users and administrators.
  -- Add --exclusive=topo for use with topology/block.
  -- Add ExclusiveTopo to a partition definition in slurm.conf.
  -- Add new 'BLOCKED' state to a node.
+ -- Account coordinators may not increase association job limits above
+    parent ones
 
 * Changes in Slurm 23.11.7
 ==========================
