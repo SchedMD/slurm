@@ -4831,8 +4831,10 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	if (!step_rec)
 		return SLURM_ERROR;
 
-	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
-		return SLURM_ERROR;
+	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt) {
+		error("%s: %pJ MaxStepCount limit reached", __func__, job_ptr);
+		return ESLURM_STEP_LIMIT;
+	}
 
 	/* Reset some fields we're going to ignore in _pick_step_nodes. */
 	step_specs->flags = SSF_EXT_LAUNCHER;
