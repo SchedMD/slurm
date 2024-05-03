@@ -1472,8 +1472,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	int moved_parent = 0;
 	char *query = NULL, *vals = NULL, *object = NULL, *name_char = NULL;
 	char *reset_query = NULL;
+	char *str = NULL;
 	time_t now = time(NULL);
 	uint32_t rpc_version = 0;
+	bool is_coord = false;
 
 	xassert(result);
 
@@ -1574,6 +1576,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			}
+			is_coord = true;
 		}
 
 		if (row[MASSOC_PART][0]) {
@@ -1805,6 +1808,17 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->priority = alt_assoc.priority;
 		else
 			mod_assoc->priority = assoc->priority;
+
+		if (is_coord &&
+		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str)) {
+			error("Coordinators can not increase %s above the parent limit",
+			      str);
+			xfree(str);
+			slurmdb_destroy_assoc_rec(mod_assoc);
+			xfree(reset_query);
+			rc = ESLURM_COORD_NO_INCREASE_JOB_LIMIT;
+			goto end_it;
+		}
 
 		if (assoc->qos_list && list_count(assoc->qos_list)) {
 			list_itr_t *new_qos_itr =

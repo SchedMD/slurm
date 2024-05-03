@@ -34,7 +34,8 @@ For configuration information, see
 users or sub-accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on account and
 user associations, as well as cancel, requeue or reassign accounts of jobs
-inside their realm.</p>
+inside their realm. Note that a coordinator may not increase job limits above
+the parent ones.</p>
 
 <p>Set using a table in Slurm's database defining users and accounts for
 which they can serve as coordinators.
