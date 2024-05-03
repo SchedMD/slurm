@@ -1906,7 +1906,7 @@ extern int job_mgr_dump_job_state(void *object, void *arg);
  * NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
  * calling
  */
-extern int job_mgr_load_job_state(buf_t *buffer, job_record_t **job_ptr_out,
+extern int job_mgr_load_job_state(buf_t *buffer,
 				  uint16_t protocol_version);
 
 
