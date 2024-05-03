@@ -798,6 +798,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	node_ptr->real_memory = config_ptr->real_memory;
+	node_ptr->res_cores_per_gpu = config_ptr->res_cores_per_gpu;
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->tot_sockets = config_ptr->tot_sockets;

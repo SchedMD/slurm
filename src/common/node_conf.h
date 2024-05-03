@@ -165,6 +165,8 @@ struct node_record {
 					 * set, ignore if no reason is set. */
 	uint32_t reason_uid;		/* User that set the reason, ignore if
 					 * no reason is set. */
+	uint16_t res_cores_per_gpu;	/* number of cores per GPU to allow to
+					 * only GPU jobs */
 	time_t resume_after;		/* automatically resume DOWN or DRAINED
 					 * node at this point in time */
 	uint16_t resume_timeout; 	/* time required in order to perform a

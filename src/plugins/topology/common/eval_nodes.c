@@ -247,7 +247,7 @@ static uint32_t _reduce_res_core_by_task_cnt(topology_eval_t* topo_eval,
 	uint16_t plane_size = NO_VAL16;
 	uint16_t arbitrary_tasks = NO_VAL16;
 	bool one_task_per_node = false;
-	uint16_t res_cores_per_gpu =  node_ptr->config_ptr->res_cores_per_gpu;
+	uint16_t res_cores_per_gpu =  node_ptr->res_cores_per_gpu;
 
 	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
 		one_task_per_node = true;
@@ -327,7 +327,7 @@ extern bool eval_nodes_gres(topology_eval_t *topo_eval,
 			avail_cores_per_sock,
 			topo_eval->avail_res_array[node_i]->sock_gres_list,
 			job_ptr->gres_list_req,
-			node_ptr->config_ptr->res_cores_per_gpu,
+			node_ptr->res_cores_per_gpu,
 			node_ptr->tot_sockets,
 			node_ptr->cores, node_ptr->tpc, topo_eval->cr_type,
 			min_cpus, node_i);
@@ -1874,7 +1874,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 			avail_core[node_inx],
 			node_record_table_ptr[node_inx]->name,
 			cr_type,
-			node_ptr->config_ptr->res_cores_per_gpu,
+			node_ptr->res_cores_per_gpu,
 			node_inx,
 			&avail_res_array[node_inx]->avail_cores_per_sock);
 	}

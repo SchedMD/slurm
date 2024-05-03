@@ -319,7 +319,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack16  (dump_node_ptr->core_spec_cnt, buffer);
 	pack16  (dump_node_ptr->threads, buffer);
 	pack64  (dump_node_ptr->real_memory, buffer);
-	pack16(dump_node_ptr->config_ptr->res_cores_per_gpu, buffer);
+	pack16(dump_node_ptr->res_cores_per_gpu, buffer);
 	pack_bit_str_hex(dump_node_ptr->gpu_spec_bitmap, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
@@ -738,8 +738,7 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->tot_cores = sockets * cores;
 					node_ptr->threads       = threads;
 					node_ptr->real_memory   = real_memory;
-					node_ptr->config_ptr->
-						res_cores_per_gpu =
+					node_ptr->res_cores_per_gpu =
 						res_cores_per_gpu;
 					node_ptr->tmp_disk      = tmp_disk;
 				}
@@ -857,8 +856,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->tot_cores = sockets * cores;
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
-			node_ptr->config_ptr->res_cores_per_gpu =
-				res_cores_per_gpu;
+			node_ptr->res_cores_per_gpu = res_cores_per_gpu;
 			node_ptr->gpu_spec_bitmap = gpu_spec_bitmap;
 			gpu_spec_bitmap = NULL; /* Nothing to free */
 			node_ptr->tmp_disk      = tmp_disk;
@@ -1271,7 +1269,6 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack16(dump_node_ptr->config_ptr->cores, buffer);
 		pack16(dump_node_ptr->config_ptr->threads, buffer);
 		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
-		pack16(dump_node_ptr->config_ptr->res_cores_per_gpu, buffer);
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
 		packstr(dump_node_ptr->gpu_spec, buffer);
@@ -1286,6 +1283,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->cpu_load, buffer);
 		pack64(dump_node_ptr->free_mem, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
+		pack16(dump_node_ptr->res_cores_per_gpu, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
 
 		pack_time(dump_node_ptr->boot_time, buffer);
@@ -3053,7 +3051,7 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 	static uint32_t gpu_plugin_id = NO_VAL;
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
-	uint32_t res_cnt = node_ptr->config_ptr->res_cores_per_gpu;
+	uint32_t res_cnt = node_ptr->res_cores_per_gpu;
 
 	xassert(reason_down);
 
@@ -3279,7 +3277,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 
-	if (node_ptr->config_ptr->res_cores_per_gpu) {
+	if (node_ptr->res_cores_per_gpu) {
 		/*
 		 * We need to make gpu_spec_bitmap now that we know the cores
 		 * used per gres.
@@ -3289,7 +3287,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	}
 
-	if (node_ptr->config_ptr->res_cores_per_gpu) {
+	if (node_ptr->res_cores_per_gpu) {
 		/*
 		 * We need to make gpu_spec_bitmap now that we know the cores
 		 * used per gres.
