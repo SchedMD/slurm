@@ -1379,3 +1379,23 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version)
 rwfail:
 	return NO_VAL;
 }
+
+extern int stepd_relay_msg(int fd, slurm_msg_t *msg, uint16_t protocol_version)
+{
+	int req = msg->msg_type;
+	uint32_t buf_size;
+
+	safe_write(fd, &req, sizeof(int));
+
+	buf_size = get_buf_offset(msg->buffer) - msg->body_offset;
+
+	safe_write(fd, &msg->protocol_version, sizeof(uint16_t));
+	send_fd_over_pipe(fd, msg->conn_fd);
+	safe_write(fd, &buf_size, sizeof(uint32_t));
+	safe_write(fd, &msg->buffer->head[msg->body_offset], buf_size);
+
+	return 0;
+
+rwfail:
+	return -1;
+}
