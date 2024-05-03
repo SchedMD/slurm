@@ -159,14 +159,6 @@ extern void suspend_job_step(job_record_t *job_ptr);
 extern void resume_job_step(job_record_t *job_ptr);
 
 /*
- * dump_job_step_state - dump the state of a specific job step to a buffer,
- *	load with load_step_state
- * IN step_ptr - pointer to job step for which information is to be dumped
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-extern int dump_job_step_state(void *x, void *arg);
-
-/*
  * Create a new job step from data in a buffer (as created by
  * dump_job_stepstate)
  * IN/OUT - job_ptr - point to a job for which the step is to be loaded.

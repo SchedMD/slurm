@@ -657,4 +657,17 @@ typedef struct {
 
 extern int pack_ctld_job_step_info(void *x, void *arg);
 
+extern int job_record_pack(job_record_t *dump_job_ptr,
+			   int tres_cnt,
+			   buf_t *buffer,
+			   uint16_t proto_version);
+
+/*
+ * dump_job_step_state - dump the state of a specific job step to a buffer,
+ *	load with load_step_state
+ * IN step_ptr - pointer to job step for which information is to be dumped
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+extern int dump_job_step_state(void *x, void *arg);
+
 #endif /* _SLURM_JOB_RECORD_H */
