@@ -266,7 +266,7 @@ sleep 10
 # Look at all job steps with scontrol
 #
 set matches 0
-spawn $scontrol show step
+spawn $scontrol show step $job_id1
 expect {
 	-re "StepId=$job_id1\\.$step_id " {
 		incr matches
