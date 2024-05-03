@@ -82,6 +82,7 @@
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/step_mgr.h"
 
 static void *_handle_accept(void *arg);
@@ -677,6 +678,180 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	/*
+	 * We currently don't need anything in the message
+	 * srun_job_complete_msg_t *request;
+	 */
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = SRUN_JOB_COMPLETE;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("%s on a non-step mgr stepd",
+		      rpc_num2string(msg.msg_type));
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	srun_job_complete(job_step_ptr);
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
+static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	srun_node_fail_msg_t *request;
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = SRUN_NODE_FAIL;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("Tried to update a step on a non-step mgr stepd");
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	request = msg.data;
+	srun_node_fail(job_step_ptr, request->nodelist);
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
+static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	/*
+	 * We currently don't need anything in the message
+	 * srun_timeout_msg_t *request;
+	 */
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = SRUN_TIMEOUT;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("Tried to update a step on a non-step mgr stepd");
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	srun_timeout(job_step_ptr);
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
+
 static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc;
@@ -852,6 +1027,15 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 	case REQUEST_CANCEL_JOB_STEP:
 		debug("Handling REQUEST_CANCEL_JOB_STEP");
 		rc = _handle_cancel_job_step(fd, step, uid);
+		break;
+	case SRUN_JOB_COMPLETE:
+		_handle_srun_job_complete(fd, step, uid);
+		break;
+	case SRUN_NODE_FAIL:
+		_handle_srun_node_fail(fd, step, uid);
+		break;
+	case SRUN_TIMEOUT:
+		_handle_srun_timeout(fd, step, uid);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		debug("Handling REQUEST_CANCEL_JOB_STEP");

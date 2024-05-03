@@ -174,6 +174,21 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_node_fail_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
+		msg_arg->step_id.step_het_comp = NO_VAL;
+		msg_arg->nodelist = xstrdup(node_name);
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_NODE_FAIL,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
+
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		srun_node_fail_msg_t *msg_arg;
 		slurm_addr_t * addr;
@@ -288,6 +303,22 @@ extern void srun_timeout(job_record_t *job_ptr)
 	}
 
 	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
+
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_timeout_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
+		msg_arg->step_id.step_het_comp = NO_VAL;
+		msg_arg->timeout = job_ptr->end_time;
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_TIMEOUT,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
+
 }
 
 /*
@@ -403,6 +434,20 @@ extern void srun_job_complete(job_record_t *job_ptr)
 	}
 
 	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
+
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_job_complete_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id = NO_VAL;
+		msg_arg->step_het_comp = NO_VAL;
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
 }
 
 /*
