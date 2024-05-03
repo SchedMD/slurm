@@ -1043,7 +1043,7 @@ extern int data_get_string_converted(const data_t *d, char **buffer)
 		FREE_NULL_DATA(dclone);
 		cloned = true;
 	} else {
-		_buffer = xstrdup(data_get_string_const(d));
+		_buffer = xstrdup(data_get_string(d));
 		if (!_buffer)
 			_buffer = xstrdup("");
 		cloned = false;
@@ -2060,13 +2060,12 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		return rc;
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		rc = !xstrcmp(data_get_string_const(a),
-			      data_get_string_const(b));
+		rc = !xstrcmp(data_get_string(a), data_get_string(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
 			 _type_to_string(a->type), (uintptr_t) a,
-			 data_get_string_const(a), (rc ? "=" : "!="),
+			 data_get_string(a), (rc ? "=" : "!="),
 			 _type_to_string(b->type), (uintptr_t) b,
-			 data_get_string_const(b));
+			 data_get_string(b));
 		return rc;
 	case TYPE_BOOL:
 		rc = (data_get_bool(a) == data_get_bool(b));
@@ -2295,7 +2294,7 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	switch (src->type) {
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		return data_set_string(dest, data_get_string_const(src));
+		return data_set_string(dest, data_get_string(src));
 	case TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
 	case TYPE_INT_64:
