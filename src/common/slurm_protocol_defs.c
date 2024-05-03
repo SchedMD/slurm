@@ -6242,3 +6242,12 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 
 	return shared;
 }
+
+extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object)
+{
+	if (!object)
+		return;
+
+	xfree(object->step_mgr);
+	xfree(object);
+}

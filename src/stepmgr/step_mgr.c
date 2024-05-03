@@ -5748,6 +5748,10 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args)
 		    !args->steps_packed)
 			error_code = ESLURM_INVALID_JOB_ID;
 
+		slurm_pack_list(args->step_mgr_jobs,
+				slurm_pack_step_mgr_job_info, args->buffer,
+				args->proto_version);
+
 		/* put the real record count in the message body header */
 		tmp_offset = get_buf_offset(args->buffer);
 		set_buf_offset(args->buffer, 0);

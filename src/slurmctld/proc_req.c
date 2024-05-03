@@ -2311,13 +2311,30 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 		step_record_t *step_ptr = find_step_record(job_ptr,
 							   args->step_id);
 		if (!step_ptr)
-			return 0;
+			goto fini;
 		pack_ctld_job_step_info(step_ptr, args);
 	} else {
 		list_for_each(job_ptr->step_list,
 			      pack_ctld_job_step_info,
 			      args);
 	}
+
+fini:
+	/*
+	 * Only return step_mgr_jobs if looking for a specific job to avoid
+	 * querying all step_mgr's for all steps.
+	 */
+	if ((args->step_id->job_id != NO_VAL) &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED) &&
+	    IS_JOB_RUNNING(job_ptr)) {
+		step_mgr_job_info_t *sji = xmalloc(sizeof(*sji));
+		if (!args->step_mgr_jobs)
+			args->step_mgr_jobs = list_create(NULL);
+		sji->job_id = job_ptr->job_id;
+		sji->step_mgr = job_ptr->batch_host;
+		list_append(args->step_mgr_jobs, sji);
+	}
+
 	return 0;
 }
 

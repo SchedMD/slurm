@@ -545,6 +545,80 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	job_step_info_request_msg_t *request;
+	slurm_msg_t response_msg;
+	pack_step_args_t args =  {0};
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = REQUEST_JOB_STEP_INFO;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("%s on a non-step mgr stepd",
+		      rpc_num2string(msg.msg_type));
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	request = msg.data;
+
+	buffer = init_buf(BUF_SIZE);
+
+	args.step_id = &request->step_id,
+	args.steps_packed = 0,
+	args.buffer = buffer,
+	args.proto_version = protocol_version,
+	args.job_step_list = job_step_ptr->step_list,
+	args.pack_job_step_list_func = pack_ctld_job_step_info,
+
+	pack_job_step_info_response_msg(&args);
+
+	response_init(&response_msg, &msg, RESPONSE_JOB_STEP_INFO,
+		      buffer);
+	slurm_send_node_msg(msg.conn_fd, &response_msg);
+	FREE_NULL_BUFFER(buffer);
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
 int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
@@ -628,6 +702,9 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 	case REQUEST_JOB_STEP_CREATE:
 		debug("Handling REQUEST_STEP_CREATE");
 		rc = _handle_step_create(fd, step, uid);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		rc = _handle_job_step_get_info(fd, step, uid);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		debug("Handling REQUEST_JOB_NOTIFY");

@@ -2271,10 +2271,16 @@ typedef struct {
 	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 
+typedef struct {
+	uint32_t job_id;
+	char *step_mgr;
+} step_mgr_job_info_t;
+
 typedef struct job_step_info_response_msg {
 	time_t last_update;		/* time of latest info */
 	uint32_t job_step_count;	/* number of records */
 	job_step_info_t *job_steps;	/* the job step records */
+	list_t *step_mgr_jobs;
 } job_step_info_response_msg_t;
 
 typedef struct {

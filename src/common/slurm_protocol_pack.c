@@ -2968,6 +2968,11 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 			if (_unpack_job_step_info_members(&step[i], buffer,
 							  protocol_version))
 				goto unpack_error;
+
+		if (slurm_unpack_list(&(*msg)->step_mgr_jobs,
+				       slurm_unpack_step_mgr_job_info,
+				       xfree_ptr, buffer, protocol_version))
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(*msg)->job_step_count, buffer);
 		safe_unpack_time(&(*msg)->last_update, buffer);
@@ -2987,6 +2992,37 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 unpack_error:
 	slurm_free_job_step_info_response_msg(*msg);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+extern void slurm_pack_step_mgr_job_info(void *in, uint16_t protocol_version,
+					 buf_t *buffer)
+{
+	step_mgr_job_info_t *object = in;
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		pack32(object->job_id, buffer);
+		packstr(object->step_mgr, buffer);
+	}
+}
+
+extern int slurm_unpack_step_mgr_job_info(void **out,
+					  uint16_t protocol_version,
+					  buf_t *buffer)
+{
+	step_mgr_job_info_t *object = xmalloc(sizeof(*object));
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpack32(&object->job_id, buffer);
+		safe_unpackstr(&object->step_mgr, buffer);
+		*out =  object;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+
+	slurm_free_step_mgr_job_info(object);
 	return SLURM_ERROR;
 }
 

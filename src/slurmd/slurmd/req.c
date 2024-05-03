@@ -328,6 +328,41 @@ error:
 	slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 }
 
+static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
+{
+	int fd, rc;
+	job_step_info_request_msg_t *request = msg->data;
+	slurm_step_id_t step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	step_id = request->step_id;
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -457,6 +492,9 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_JOB_STEP_PIDS:
 		_rpc_list_pids(msg);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		_slurm_rpc_job_step_get_info(msg);
 		break;
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);

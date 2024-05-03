@@ -1852,6 +1852,11 @@ extern bool validate_slurmd_user(uid_t uid);
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
 
+/*
+ * Free step_mgr_job_info_t
+ */
+extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

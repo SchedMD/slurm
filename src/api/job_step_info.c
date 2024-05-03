@@ -304,6 +304,58 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	return out;
 }
 
+static int _get_step_mgr_steps(void *x, void *arg)
+{
+	step_mgr_job_info_t *sji = x;
+	slurm_msg_t resp_msg;
+	slurm_msg_t_init(&resp_msg);
+
+	job_step_info_response_msg_t *ctld_resp = arg;
+
+	slurm_msg_t req_msg;
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+	slurm_conf_get_addr(sji->step_mgr, &req_msg.address,
+			    req_msg.flags);
+
+	job_step_info_request_msg_t req_data = {0};
+	req_data.step_id.job_id = sji->job_id;
+	req_data.step_id.step_id = NO_VAL;
+	req_data.step_id.step_het_comp = NO_VAL;
+
+	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
+	req_msg.data = &req_data;
+	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
+		return SLURM_ERROR;
+
+	if (resp_msg.msg_type == RESPONSE_JOB_STEP_INFO) {
+		uint32_t new_rec_cnt;
+		job_step_info_response_msg_t *step_mgr_resp;
+		step_mgr_resp = (job_step_info_response_msg_t *) resp_msg.data;
+
+		/* Merge the step records into a single response message */
+		new_rec_cnt = ctld_resp->job_step_count +
+			step_mgr_resp->job_step_count;
+		if (step_mgr_resp->job_step_count) {
+			ctld_resp->job_steps =
+				xrealloc(ctld_resp->job_steps,
+					 sizeof(job_step_info_t) *
+					 new_rec_cnt);
+			(void) memcpy(ctld_resp->job_steps +
+				      ctld_resp->job_step_count,
+				      step_mgr_resp->job_steps,
+				      sizeof(job_step_info_t) *
+				      step_mgr_resp->job_step_count);
+			ctld_resp->job_step_count = new_rec_cnt;
+
+			xfree(step_mgr_resp->job_steps);
+			xfree(step_mgr_resp);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int
 _load_cluster_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 		    slurmdb_cluster_rec_t *cluster)
@@ -322,6 +374,11 @@ _load_cluster_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	case RESPONSE_JOB_STEP_INFO:
 		*resp = (job_step_info_response_msg_t *) resp_msg.data;
 		resp_msg.data = NULL;
+
+		if ((*resp)->step_mgr_jobs) {
+			list_for_each((*resp)->step_mgr_jobs,
+				      _get_step_mgr_steps, *resp);
+		}
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

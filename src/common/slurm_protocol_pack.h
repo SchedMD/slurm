@@ -152,4 +152,12 @@ extern void slurm_pack_job_rec(job_record_t *job_ptr,
 extern int slurm_unpack_job_rec(job_record_t **job,
 				buf_t *buffer,
 				uint16_t protocol_version);
+
+extern void slurm_pack_step_mgr_job_info(void *in,
+					 uint16_t protocol_version,
+					 buf_t *buffer);
+extern int slurm_unpack_step_mgr_job_info(void **out,
+					  uint16_t protocol_version,
+					  buf_t *buffer);
+
 #endif
