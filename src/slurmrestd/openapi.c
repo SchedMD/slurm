@@ -367,7 +367,7 @@ static const data_t *_resolve_ref(const data_t *spec, const data_t *dref)
 	if (!dref)
 		return NULL;
 
-	ref = data_get_string_const(dref);
+	ref = data_get_string(dref);
 
 	if (ref[0] == '#')
 		ref = &ref[1];
@@ -589,7 +589,7 @@ static data_for_each_cmd_t _match_server_override(const data_t *data,
 		      __func__, d);
 	}
 
-	spath = parse_url_path(data_get_string_const(surl), true, true);
+	spath = parse_url_path(data_get_string(surl), true, true);
 
 	if (_match_server_path(spath, fargs[1], fargs[0])) {
 		fargs[2] = data;
@@ -659,8 +659,8 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 		      __func__, d);
 	}
 
-	args->server_path = spath = parse_url_path(data_get_string_const(surl),
-						   true, true);
+	args->server_path = spath =
+		parse_url_path(data_get_string(surl), true, true);
 
 	if ((data_dict_for_each_const(args->path_list, _match_path_string, arg)
 	     < 0) || args->found)
@@ -715,7 +715,7 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 
 	dname = data_key_get_const(data, "name");
 
-	if (!dname || !(key = data_get_string_const(dname)) || !key[0]) {
+	if (!dname || !(key = data_get_string(dname)) || !key[0]) {
 		/* parameter doesn't have a name! */
 		fatal("%s: path %s parameter has invalid name",
 		      __func__, args->str_path);
@@ -1138,10 +1138,10 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 		if (data_get_type(data) != DATA_TYPE_STRING)
 			return DATA_FOR_EACH_FAIL;
 
-		match = !xstrcmp(data_get_string_const(data), entry->entry);
+		match = !xstrcmp(data_get_string(data), entry->entry);
 
 		debug5("%s: string attempt match %s to %s: %s",
-		       __func__, entry->entry, data_get_string_const(data),
+		       __func__, entry->entry, data_get_string(data),
 		       (match ? "SUCCESS" : "FAILURE"));
 
 		if (!match)
@@ -1737,8 +1737,7 @@ static data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	if (data_convert_type(url, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	p_args.server_path = parse_url_path(data_get_string_const(url),
-					    false, false);
+	p_args.server_path = parse_url_path(data_get_string(url), false, false);
 
 	if (args->src_paths &&
 	    (data_dict_for_each(args->src_paths, _merge_path, &p_args) < 0))
