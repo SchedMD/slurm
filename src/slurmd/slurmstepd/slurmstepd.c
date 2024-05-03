@@ -48,6 +48,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/forward.h"
 #include "src/common/macros.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
@@ -121,13 +122,28 @@ list_t *job_list = NULL;
 job_record_t *job_step_ptr = NULL;
 time_t last_job_update = 0;
 
+static int _foreach_ret_data_info(void *x, void *arg)
+{
+	int rc;
+	ret_data_info_t *ret_data_info = x;
+
+	if ((rc = slurm_get_return_code(ret_data_info->type,
+					ret_data_info->data))) {
+		error("step_mgr failed to send message %s: rc=%d(%s)",
+		      rpc_num2string(ret_data_info->type), rc,
+		      slurm_strerror(rc));
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static void *_rpc_thread(void *data)
 {
 	agent_arg_t *agent_arg_ptr = data;
 	slurm_msg_t msg;
 	slurm_msg_t_init(&msg);
 
-	msg.address = *agent_arg_ptr->addr;
 	msg.data = agent_arg_ptr->msg_args;
 	msg.flags = agent_arg_ptr->msg_flags;
 	msg.msg_type = agent_arg_ptr->msg_type;
@@ -135,9 +151,21 @@ static void *_rpc_thread(void *data)
 
 	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
 
-	if (slurm_send_only_node_msg(&msg)) {
-		error("failed to send message type %d/%s",
-		      msg.msg_type, rpc_num2string(msg.msg_type));
+	if (agent_arg_ptr->addr) {
+		msg.address = *agent_arg_ptr->addr;
+		if (slurm_send_only_node_msg(&msg)) {
+			error("failed to send message type %d/%s",
+			      msg.msg_type, rpc_num2string(msg.msg_type));
+		}
+	} else {
+		list_t *ret_list = NULL;
+		if (!(ret_list = start_msg_tree(agent_arg_ptr->hostlist,
+						&msg, 0))) {
+			error("%s: no ret_list given", __func__);
+		} else {
+			list_for_each(ret_list, _foreach_ret_data_info, NULL);
+			FREE_NULL_LIST(ret_list);
+		}
 	}
 
 	purge_agent_args(agent_arg_ptr);
