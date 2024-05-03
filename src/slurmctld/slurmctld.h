@@ -609,7 +609,7 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	job_record_t *job_ptr);
 
 /*
- * create_part_record - create a partition record
+ * create_ctld_part_record - create a partition record
  * IN name - name will be xstrdup()'d into the part_record
  * RET a pointer to the record or NULL if error
  * global: default_part - default partition parameters
@@ -617,7 +617,7 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
  * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-extern part_record_t *create_part_record(const char *name);
+extern part_record_t *create_ctld_part_record(const char *name);
 
 /*
  * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap

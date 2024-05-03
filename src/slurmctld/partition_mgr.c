@@ -371,11 +371,11 @@ static void _init_part_record(part_record_t *part_ptr)
 }
 
 /*
- * create_part_record - create a partition record
+ * create_ctld_part_record - create a partition record
  * RET a pointer to the record or NULL if error
  * global: part_list - global partition list
  */
-part_record_t *create_part_record(const char *name)
+part_record_t *create_ctld_part_record(const char *name)
 {
 	part_record_t *part_ptr = xmalloc(sizeof(*part_ptr));
 
@@ -696,7 +696,7 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		if (!part_ptr && (reconfig_flags & RECONFIG_KEEP_PART_INFO)) {
 			info("%s: partition %s missing from configuration file, creating",
 			     __func__, part_name);
-			part_ptr = create_part_record(part_name);
+			part_ptr = create_ctld_part_record(part_name);
 		} else if (!part_ptr) {
 			info("%s: partition %s removed from configuration file, skipping",
 			     __func__, part_name);
@@ -1298,7 +1298,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		}
 		info("%s: partition %s being created", __func__,
 		     part_desc->name);
-		part_ptr = create_part_record(part_desc->name);
+		part_ptr = create_ctld_part_record(part_desc->name);
 	} else {
 		if (!part_ptr) {
 			verbose("%s: Update for partition not found (%s)",

@@ -806,7 +806,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		fatal("%s: duplicate entry for partition %s",
 		      __func__, part->name);
 
-	part_ptr = create_part_record(part->name);
+	part_ptr = create_ctld_part_record(part->name);
 
 	if (part->default_flag) {
 		if (default_part_name &&
