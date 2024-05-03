@@ -4223,7 +4223,6 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
 	xassert(step_ptr);
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
