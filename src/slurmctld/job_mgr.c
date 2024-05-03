@@ -8376,6 +8376,24 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	lic_req = NULL;
 }
 
+static void _enable_step_mgr(job_record_t *job_ptr)
+{
+	static bool first_time = true;
+	static bool step_mgr_enabled = false;
+
+	if (first_time) {
+		first_time = false;
+		step_mgr_enabled = xstrstr(slurm_conf.slurmctld_params,
+					   "step_mgr_enable");
+	}
+
+	if (step_mgr_enabled) {
+		job_ptr->bit_flags |= STEP_MGR_ENABLED;
+	} else {
+		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+	}
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	This performs only basic tests for request validity (access to
@@ -8829,6 +8847,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			job_ptr->wait4switch = _max_switch_wait(INFINITE);
 	}
 	job_ptr->best_switch = true;
+
+	_enable_step_mgr(job_ptr);
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(gres_list);

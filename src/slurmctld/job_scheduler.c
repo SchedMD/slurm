@@ -2334,6 +2334,14 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		goto job_failed;
 	}
 
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		xrealloc(launch_msg_ptr->environment,
+			 sizeof(char *) * (launch_msg_ptr->envc + 1));
+		env_array_overwrite(&launch_msg_ptr->environment,
+				    "SLURM_STEP_MGR", job_ptr->batch_host);
+		launch_msg_ptr->envc++;
+	}
+
 	_split_env(launch_msg_ptr);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
@@ -2665,16 +2673,6 @@ extern void launch_job(job_record_t *job_ptr)
 		return;
 	if (launch_job_ptr->het_job_id)
 		_set_het_job_env(launch_job_ptr, launch_msg_ptr);
-
-	if (xstrstr(slurm_conf.slurmctld_params, "step_mgr_enable")) {
-		xrealloc(launch_msg_ptr->environment,
-			 sizeof(char *) * (launch_msg_ptr->envc + 1));
-		env_array_overwrite(&launch_msg_ptr->environment,
-				    "SLURM_STEP_MGR", job_ptr->batch_host);
-		launch_msg_ptr->envc++;
-
-		job_ptr->bit_flags |= STEP_MGR_ENABLED;
-	}
 
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
