@@ -5547,3 +5547,221 @@ extern int list_find_feature(void *feature_entry, void *key)
 		return 1;
 	return 0;
 }
+
+static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
+				   void (*lock_func)(bool lock))
+{
+	int rc, rem;
+	uint32_t step_rc;
+	DEF_TIMERS;
+	/* init */
+	START_TIMER;
+	error("Step creation timed out: Deallocating %ps nodes %u-%u",
+	      &req->step_id, req->range_first, req->range_last);
+
+	if (lock_func)
+		lock_func(true);
+
+	rc = step_partial_comp(req, msg->auth_uid, true, &rem, &step_rc);
+
+	if (lock_func)
+		lock_func(false);
+
+	END_TIMER2(__func__);
+	log_flag(STEPS, "%s: %ps rc:%s %s",
+		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+}
+
+/* create a credential for a given job step, return error code */
+static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
+			   uint16_t protocol_version)
+{
+	slurm_cred_arg_t cred_arg;
+	job_record_t *job_ptr = step_ptr->job_ptr;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+
+	xassert(job_resrcs_ptr && job_resrcs_ptr->cpus);
+
+	setup_cred_arg(&cred_arg, job_ptr);
+
+	memcpy(&cred_arg.step_id, &step_ptr->step_id, sizeof(cred_arg.step_id));
+	if (job_resrcs_ptr->memory_allocated) {
+		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
+					    job_resrcs_ptr->nhosts,
+					    &cred_arg.job_mem_alloc,
+					    &cred_arg.job_mem_alloc_rep_count,
+					    &cred_arg.job_mem_alloc_size);
+	}
+
+	cred_arg.step_gres_list  = step_ptr->gres_list_alloc;
+
+	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	cred_arg.step_hostlist   = job_ptr->batch_host;
+#else
+	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
+#endif
+	if (step_ptr->memory_allocated) {
+		slurm_array64_to_value_reps(step_ptr->memory_allocated,
+					    step_ptr->step_layout->node_cnt,
+					    &cred_arg.step_mem_alloc,
+					    &cred_arg.step_mem_alloc_rep_count,
+					    &cred_arg.step_mem_alloc_size);
+	}
+
+	*slurm_cred = slurm_cred_create(&cred_arg, true, protocol_version);
+
+	xfree(cred_arg.job_mem_alloc);
+	xfree(cred_arg.job_mem_alloc_rep_count);
+	xfree(cred_arg.step_mem_alloc);
+	xfree(cred_arg.step_mem_alloc_rep_count);
+	if (*slurm_cred == NULL) {
+		error("slurm_cred_create error");
+		return ESLURM_INVALID_JOB_CREDENTIAL;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int step_create_from_msg(slurm_msg_t *msg,
+				void (*lock_func)(bool lock),
+				void (*fail_lock_func)(bool lock))
+{
+	char *err_msg = NULL;
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	slurm_msg_t resp;
+	step_record_t *step_rec;
+	job_step_create_response_msg_t job_step_resp;
+	job_step_create_request_msg_t *req_step_msg = msg->data;
+	slurm_cred_t *slurm_cred = NULL;
+
+	START_TIMER;
+
+	xassert(msg->auth_ids_set);
+
+	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
+		req_step_msg->user_id = msg->auth_uid;
+
+		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+			char *host = auth_g_get_host(msg);
+			debug3("%s: [%s] set RPC user_id to %d",
+			       __func__, host, msg->auth_uid);
+			xfree(host);
+		}
+	} else if (msg->auth_uid != req_step_msg->user_id) {
+		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
+		      msg->auth_uid, req_step_msg->user_id);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+#if defined HAVE_FRONT_END
+	/* Limited job step support */
+	/* Non-super users not permitted to run job steps on front-end.
+	 * A single slurmd can not handle a heavy load. */
+	if (!validate_slurm_user(msg->auth_uid)) {
+		info("Attempt to execute job step by uid=%u", msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
+		return ESLURM_USER_ID_MISSING;
+	}
+#endif
+
+	dump_step_desc(req_step_msg);
+
+	if (lock_func) {
+		lock_func(true);
+
+	}
+	error_code = step_create(req_step_msg, &step_rec,
+				 msg->protocol_version, &err_msg);
+
+	if (error_code == SLURM_SUCCESS) {
+		error_code = _make_step_cred(step_rec, &slurm_cred,
+					     step_rec->start_protocol_ver);
+	}
+	END_TIMER2(__func__);
+
+	/* return result */
+	if (error_code) {
+		if (lock_func)
+			lock_func(false);
+
+		if (error_code == ESLURM_PROLOG_RUNNING)
+			log_flag(STEPS, "%s for configuring %ps: %s",
+				 __func__, &req_step_msg->step_id,
+				 slurm_strerror(error_code));
+		else if (error_code == ESLURM_DISABLED)
+			log_flag(STEPS, "%s for suspended %ps: %s",
+				 __func__, &req_step_msg->step_id,
+				 slurm_strerror(error_code));
+		else
+			log_flag(STEPS, "%s for %ps: %s",
+				 __func__, &req_step_msg->step_id,
+				 slurm_strerror(error_code));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+	} else {
+		slurm_step_layout_t *step_layout = NULL;
+		dynamic_plugin_data_t *switch_job = NULL;
+
+		log_flag(STEPS, "%s: %pS %s %s",
+			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
+
+		memset(&job_step_resp, 0, sizeof(job_step_resp));
+		job_step_resp.job_id = step_rec->step_id.job_id;
+		job_step_resp.job_step_id = step_rec->step_id.step_id;
+		job_step_resp.resv_ports  = step_rec->resv_ports;
+
+		step_layout = slurm_step_layout_copy(step_rec->step_layout);
+		job_step_resp.step_layout = step_layout;
+
+#ifdef HAVE_FRONT_END
+		if (step_rec->job_ptr->batch_host) {
+			job_step_resp.step_layout->front_end =
+				xstrdup(step_rec->job_ptr->batch_host);
+		}
+#endif
+		if (step_rec->job_ptr && step_rec->job_ptr->details &&
+		    (step_rec->job_ptr->details->cpu_bind_type != NO_VAL16)) {
+			job_step_resp.def_cpu_bind_type =
+				step_rec->job_ptr->details->cpu_bind_type;
+		}
+		job_step_resp.cred = slurm_cred;
+		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
+
+		if (step_rec->switch_job)
+			switch_g_duplicate_jobinfo(step_rec->switch_job,
+						   &switch_job);
+		job_step_resp.switch_job = switch_job;
+
+		if (lock_func)
+			lock_func(false);
+		response_init(&resp, msg, RESPONSE_JOB_STEP_CREATE,
+			      &job_step_resp);
+		resp.protocol_version = step_rec->start_protocol_ver;
+
+		if (slurm_send_node_msg(msg->conn_fd, &resp) < 0) {
+			step_complete_msg_t req;
+
+			memset(&req, 0, sizeof(req));
+			req.step_id = step_rec->step_id;
+			req.jobacct = step_rec->jobacct;
+			req.step_rc = SIGKILL;
+			req.range_first = 0;
+			req.range_last = step_layout->node_cnt - 1;
+			_kill_step_on_msg_fail(&req, msg, fail_lock_func);
+		}
+
+		slurm_cred_destroy(slurm_cred);
+		slurm_step_layout_destroy(step_layout);
+		switch_g_free_jobinfo(switch_job);
+	}
+
+	xfree(err_msg);
+
+	return error_code;
+}

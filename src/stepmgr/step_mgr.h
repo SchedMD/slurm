@@ -198,4 +198,8 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
  */
 extern int list_find_feature(void *feature_entry, void *key);
 
+extern int step_create_from_msg(slurm_msg_t *msg,
+				void (*lock_func)(bool lock),
+				void (*fail_lock_func)(bool lock));
+
 #endif /* _SLURM_STEP_MGR_H */
