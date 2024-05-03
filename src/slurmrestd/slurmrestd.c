@@ -725,6 +725,7 @@ int main(int argc, char **argv)
 	xfree(auth_plugin_handles);
 	select_g_fini();
 	slurm_fini();
+	auth_g_fini();
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */
