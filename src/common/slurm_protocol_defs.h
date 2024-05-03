@@ -1829,6 +1829,7 @@ typedef struct {
 
 /* Set r_uid of agent_arg */
 extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
+extern void purge_agent_args(agent_arg_t *agent_arg_ptr);
 
 /*
  * validate_slurm_user - validate that the uid is authorized to see
