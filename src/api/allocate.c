@@ -921,17 +921,54 @@ extern int slurm_sbcast_lookup(slurm_selected_step_t *selected_step,
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
+	char *stepmgr_nodename = NULL;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
 	req_msg.data     = selected_step;
 
-	if (slurm_send_recv_controller_msg(&req_msg,
-					   &resp_msg,working_cluster_rec) < 0)
+trystepmgr:
+	if (stepmgr_nodename) {
+		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+
+		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
+					req_msg.flags)) {
+			/*
+			 * The node isn't in the conf, see if the
+			 * controller has an address for it.
+			 */
+			slurm_node_alias_addrs_t *alias_addrs;
+			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
+							&alias_addrs)) {
+				add_remote_nodes_to_conf_tbls(
+					alias_addrs->node_list,
+					alias_addrs->node_addrs);
+			}
+			slurm_free_node_alias_addrs(alias_addrs);
+			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
+					    req_msg.flags);
+		}
+
+		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
+			return SLURM_ERROR;
+	} else if (slurm_send_recv_controller_msg(
+		    &req_msg,
+		    &resp_msg,working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_REROUTE_MSG:
+	{
+		reroute_msg_t *rr_msg = resp_msg.data;
+		stepmgr_nodename = rr_msg->step_mgr;
+		if (stepmgr_nodename)
+			goto trystepmgr;
+		else
+			return SLURM_ERROR;
+
+		break;
+	}
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
 			return SLURM_ERROR;

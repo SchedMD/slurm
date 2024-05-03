@@ -2998,6 +2998,13 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	if (error_code)
 		goto error;
 
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		unlock_slurmctld(job_read_lock);
+		xfree(local_node_list);
+		return;
+	}
+
 	if (!job_ptr) {
 		error_code = ESLURM_INVALID_JOB_ID;
 		goto error;
