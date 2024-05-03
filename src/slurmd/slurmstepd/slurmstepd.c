@@ -121,6 +121,8 @@ extern char  ** environ;
 list_t *job_list = NULL;
 job_record_t *job_step_ptr = NULL;
 time_t last_job_update = 0;
+bool timie_limit_thread_shutdown = false;
+pthread_t time_limit_thread_id = 0;
 
 static int _foreach_ret_data_info(void *x, void *arg)
 {
@@ -185,6 +187,22 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return job_step_ptr;
 }
 
+static void *_step_time_limit_thread(void *data)
+{
+	time_t now;
+
+	xassert(job_step_ptr);
+
+	while (!timie_limit_thread_shutdown) {
+		now = time(NULL);
+		list_for_each(job_step_ptr->step_list,
+			      check_job_step_time_limit, &now);
+		sleep(1);
+	}
+
+	return NULL;
+}
+
 step_mgr_ops_t stepd_step_mgr_ops = {
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
@@ -217,6 +235,9 @@ static void _init_stepd_step_mgr(void)
 	} else {
 			acct_storage_g_init();
 	}
+
+	slurm_thread_create(&time_limit_thread_id, _step_time_limit_thread,
+			    NULL);
 }
 
 int
@@ -336,6 +357,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			error("container_g_stepd_delete(%u): %m",
 			      step->step_id.job_id);
 	}
+
+	timie_limit_thread_shutdown = true;
+	slurm_thread_join(time_limit_thread_id);
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
