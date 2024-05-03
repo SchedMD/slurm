@@ -119,6 +119,21 @@ static int _find_worker(void *x, void *arg)
 	return (x == arg);
 }
 
+static void _worker_free(void *x)
+{
+	workq_worker_t *worker = x;
+
+	if (!worker)
+		return;
+
+	_check_magic_worker(worker);
+
+	log_flag(WORKQ, "%s: [%u] free worker", __func__, worker->id);
+
+	worker->magic = ~MAGIC_WORKER;
+	xfree(worker);
+}
+
 static void _worker_delete(void *x)
 {
 	workq_worker_t *worker = x;
@@ -138,10 +153,7 @@ static void _worker_delete(void *x)
 	slurm_mutex_unlock(&worker->workq->mutex);
 	xassert(worker == x);
 
-	log_flag(WORKQ, "%s: [%u] free worker", __func__, worker->id);
-
-	worker->magic = ~MAGIC_WORKER;
-	xfree(worker);
+	_worker_free(worker);
 }
 
 static void _work_delete(void *x)
