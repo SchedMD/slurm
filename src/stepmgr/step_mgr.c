@@ -3261,12 +3261,12 @@ static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 	return SLURM_SUCCESS;
 }
 
-extern int step_create(job_step_create_request_msg_t *step_specs,
+extern int step_create(job_record_t *job_ptr,
+		       job_step_create_request_msg_t *step_specs,
 		       step_record_t** new_step_record,
 		       uint16_t protocol_version, char **err_msg)
 {
 	step_record_t *step_ptr;
-	job_record_t *job_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
 	uint32_t node_count = 0;
@@ -3281,15 +3281,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	slurm_step_layout_t *step_layout = NULL;
 
 	*new_step_record = NULL;
-	if (step_specs->array_task_id != NO_VAL)
-		job_ptr = step_mgr_ops->find_job_array_rec(
-			step_specs->step_id.job_id, step_specs->array_task_id);
-	else
-		job_ptr = step_mgr_ops->find_job_record(
-			step_specs->step_id.job_id);
 
-	if (job_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID ;
+	xassert(job_ptr);
 
 	/*
 	 * NOTE: We have already confirmed the UID originating
@@ -5643,6 +5636,7 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	slurm_cred_t *slurm_cred = NULL;
+	job_record_t *job_ptr = NULL;
 
 	START_TIMER;
 
@@ -5679,9 +5673,22 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 
 	if (lock_func) {
 		lock_func(true);
-
 	}
-	error_code = step_create(req_step_msg, &step_rec,
+
+	if (req_step_msg->array_task_id != NO_VAL)
+		job_ptr = step_mgr_ops->find_job_array_rec(
+			req_step_msg->step_id.job_id,
+			req_step_msg->array_task_id);
+	else
+		job_ptr = step_mgr_ops->find_job_record(
+			req_step_msg->step_id.job_id);
+
+	if (job_ptr == NULL) {
+		error_code = ESLURM_INVALID_JOB_ID ;
+		goto end_it;
+	}
+
+	error_code = step_create(job_ptr, req_step_msg, &step_rec,
 				 msg->protocol_version, &err_msg);
 
 	if (error_code == SLURM_SUCCESS) {
@@ -5690,6 +5697,7 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 	}
 	END_TIMER2(__func__);
 
+end_it:
 	/* return result */
 	if (error_code) {
 		if (lock_func)
