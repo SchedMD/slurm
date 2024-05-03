@@ -725,6 +725,7 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
+	acct_storage_g_fini();
 	select_g_fini();
 	slurm_fini();
 	hash_g_fini();
