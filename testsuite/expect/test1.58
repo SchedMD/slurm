@@ -59,6 +59,10 @@ if {$job_id == 0} {
 # allocation.
 #
 set pattern "sdiouetj49udfj"
+
+# give time for step_mgr to be created
+sleep 1
+
 set got_pattern 0
 spawn $srun --jobid $job_id echo $pattern
 expect {
