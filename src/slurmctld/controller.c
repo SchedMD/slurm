@@ -1874,7 +1874,7 @@ static int _update_job_tres(void *x, void *args)
 					 0, true, false, NULL))
 		job_set_alloc_tres(job_ptr, true);
 
-	update_job_limit_set_tres(&job_ptr->limit_set.tres);
+	update_job_limit_set_tres(&job_ptr->limit_set.tres, slurmctld_tres_cnt);
 
 	return 0;
 }

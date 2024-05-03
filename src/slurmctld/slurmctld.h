@@ -856,16 +856,6 @@ extern job_record_t *find_job_record(uint32_t job_id);
 extern part_record_t *find_part_record(char *name);
 
 /*
- * find_step_record - return a pointer to the step record with the given
- *	job_id and step_id
- * IN job_ptr - pointer to job table entry to have step record added
- * IN step_id - id+het_comp of the desired job step
- * RET pointer to the job step's record, NULL on error
- */
-extern step_record_t *find_step_record(job_record_t *job_ptr,
-				       slurm_step_id_t *step_id);
-
-/*
  * get_job_env - return the environment variables and their count for a
  *	given job
  * IN job_ptr - pointer to job for which data is required
@@ -2247,17 +2237,6 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
  */
 extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 				     bool assoc_mgr_locked);
-
-/*
- * Realloc and possibly update a job_ptr->limit_set->tres array.
- *
- * If a new TRES is added the TRES positions in the array could have been moved
- * around. The array either needs to be grown and/or the values need to be put
- * in their new position.
- *
- * IN: tres_limits - job_ptr->limit_set->tres array.
- */
-extern void update_job_limit_set_tres(uint16_t **tres_limits);
 
 /*
  * Check for node timed events

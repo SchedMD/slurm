@@ -670,4 +670,58 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
  */
 extern int dump_job_step_state(void *x, void *arg);
 
+/*
+ * Create a new job step from data in a buffer (as created by
+ * dump_job_stepstate)
+ * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
+ * IN/OUT buffer - location from which to get data, pointers
+ *                 automatically advanced
+ */
+extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
+			   uint16_t protocol_version);
+
+extern int job_record_unpack(job_record_t **out,
+			     int tres_cnt,
+			     buf_t *buffer,
+			     uint16_t protocol_version);
+
+/*
+ * create_step_record - create an empty step_record for the specified job.
+ * IN job_ptr - pointer to job table entry to have step record added
+ * IN protocol_version - slurm protocol version of client
+ * RET a pointer to the record or NULL if error
+ * NOTE: allocates memory that should be xfreed with delete_step_record
+ */
+extern step_record_t *create_step_record(job_record_t *job_ptr,
+					 uint16_t protocol_version);
+
+/*
+ * _find_step_id - Find specific step_id entry in the step list,
+ *		   see common/list.h for documentation
+ * - object - the step list from a job_record_t
+ * - key - slurm_step_id_t
+ */
+extern int find_step_id(void *object, void *key);
+
+/*
+ * find_step_record - return a pointer to the step record with the given
+ *	job_id and step_id
+ * IN job_ptr - pointer to job table entry to have step record added
+ * IN step_id - id+het_comp of the desired job step
+ * RET pointer to the job step's record, NULL on error
+ */
+extern step_record_t *find_step_record(job_record_t *job_ptr,
+				       slurm_step_id_t *step_id);
+
+/*
+ * Realloc and possibly update a job_ptr->limit_set->tres array.
+ *
+ * If a new TRES is added the TRES positions in the array could have been moved
+ * around. The array either needs to be grown and/or the values need to be put
+ * in their new position.
+ *
+ * IN: tres_limits - job_ptr->limit_set->tres array.
+ */
+extern void update_job_limit_set_tres(uint16_t **tres_limits, int tres_cnt);
+
 #endif /* _SLURM_JOB_RECORD_H */

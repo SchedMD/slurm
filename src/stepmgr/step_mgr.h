@@ -158,16 +158,6 @@ extern void suspend_job_step(job_record_t *job_ptr);
 /* Update time stamps for job step resume */
 extern void resume_job_step(job_record_t *job_ptr);
 
-/*
- * Create a new job step from data in a buffer (as created by
- * dump_job_stepstate)
- * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
- * IN/OUT buffer - location from which to get data, pointers
- *                 automatically advanced
- */
-extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
-			   uint16_t protocol_version);
-
 /* Process job step update request from specified user,
  * RET - 0 or error code */
 extern int update_step(step_update_request_msg_t *req, uid_t uid);
