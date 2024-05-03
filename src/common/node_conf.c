@@ -941,44 +941,50 @@ static int _find_config_ptr(void *x, void *arg)
 	return (x == arg);
 }
 
-extern void insert_node_record(node_record_t *node_ptr)
+extern void insert_node_record_at(node_record_t *node_ptr, int index)
 {
-	for (int i = 0; i < node_record_count; i++) {
-		if (node_record_table_ptr[i])
-			continue;
+	xassert(node_ptr);
+	xassert(node_ptr->config_ptr);
 
-		if (i > last_node_index)
-			last_node_index = i;
-
-		if (!node_ptr->config_ptr)
-			error("node should have config_ptr from previous tables");
-
-		if (!list_find_first(config_list, _find_config_ptr,
-				     node_ptr->config_ptr))
-			list_append(config_list, node_ptr->config_ptr);
-
-		node_record_table_ptr[i] = node_ptr;
-		/*
-		 * _build_bitmaps_pre_select() will reset bitmaps on
-		 * start/reconfig. Set here to be consistent in case this is
-		 * called elsewhere.
-		 */
-		bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
-		node_ptr->index = i;
-		bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
-		xhash_add(node_hash_table, node_ptr);
-		active_node_record_count++;
-
-		/* re-add node to conf node hash tables */
-		slurm_conf_add_node(node_ptr);
-
+	if (node_record_table_ptr[index]) {
+		error("existing node '%s' already exists at index %d, can't add node '%s'",
+		      node_record_table_ptr[index]->name, index,
+		      node_ptr->name);
 		return;
 	}
 
-	error("Not able to add node '%s' to node_record_table_ptr",
-	      node_ptr->name);
-}
+	if (index >= node_record_count) {
+		error("trying to add node '%s' at index %d past node_record_count %d",
+		      node_ptr->name, index, node_record_count);
+		return;
+	}
 
+	if (index > last_node_index)
+		last_node_index = index;
+
+	if (!node_ptr->config_ptr)
+		error("node should have config_ptr from previous tables");
+
+	if (!list_find_first(config_list, _find_config_ptr,
+			     node_ptr->config_ptr))
+		list_append(config_list, node_ptr->config_ptr);
+
+	node_record_table_ptr[index] = node_ptr;
+	/*
+	 * _build_bitmaps_pre_select() will reset bitmaps on
+	 * start/reconfig. Set here to be consistent in case this is
+	 * called elsewhere.
+	 */
+	bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+	node_ptr->index = index;
+	bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+	xhash_add(node_hash_table, node_ptr);
+	active_node_record_count++;
+
+	/* add node to conf node hash tables */
+	slurm_conf_remove_node(node_ptr->name);
+	slurm_conf_add_node(node_ptr);
+}
 extern void delete_node_record(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
