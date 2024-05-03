@@ -6442,7 +6442,14 @@ _pack_reroute_msg(reroute_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
 	xassert(buffer);
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 protocol_version, buffer);
+		} else
+			pack8(0, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
 			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
@@ -6464,7 +6471,14 @@ _unpack_reroute_msg(reroute_msg_t **msg, buf_t *buffer, uint16_t protocol_versio
 	reroute_msg = xmalloc(sizeof(reroute_msg_t));
 	*msg = reroute_msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+				(void **)&reroute_msg->working_cluster_rec,
+				protocol_version, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
