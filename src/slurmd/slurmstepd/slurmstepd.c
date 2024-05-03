@@ -49,7 +49,6 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/topology.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -73,6 +72,7 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
