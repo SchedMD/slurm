@@ -3181,7 +3181,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
 		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 		job_ptr->gres_list_req = NULL; /* Nothing left to free */
-		free_job_record(resv_desc_ptr->job_ptr);
+		job_record_delete(resv_desc_ptr->job_ptr);
 		resv_desc_ptr->job_ptr = NULL; /* Nothing left to free */
 	}
 
@@ -3258,7 +3258,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	return SLURM_SUCCESS;
 
  bad_parse:
-	free_job_record(resv_desc_ptr->job_ptr);
+	job_record_delete(resv_desc_ptr->job_ptr);
 	resv_desc_ptr->job_ptr = NULL;
 	for (i = 0; i < account_cnt; i++)
 		xfree(account_list[i]);
@@ -4561,7 +4561,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 			job_ptr->gres_list_req = NULL;
 
-			free_job_record(resv_desc.job_ptr);
+			job_record_delete(resv_desc.job_ptr);
 			resv_desc.job_ptr = NULL;
 
 			if (log_it ||
@@ -4592,7 +4592,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			}
 			break;
 		}
-		free_job_record(resv_desc.job_ptr);
+		job_record_delete(resv_desc.job_ptr);
 		add_nodes /= 2;	/* Try to get idle nodes as possible */
 		if (log_it ||
 		    (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
@@ -4678,7 +4678,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
 		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 		job_ptr->gres_list_req = NULL;
-		free_job_record(resv_desc.job_ptr);
+		job_record_delete(resv_desc.job_ptr);
 		resv_desc.job_ptr = NULL;
 		info("modified reservation %s due to unusable nodes, "
 		     "new nodes: %s", resv_ptr->name, resv_ptr->node_list);
@@ -4689,7 +4689,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		debug("reservation %s contains unusable nodes, "
 		      "can't reallocate now", resv_ptr->name);
 	}
-	free_job_record(resv_desc.job_ptr);
+	job_record_delete(resv_desc.job_ptr);
 	_free_resv_select_members(&resv_select);
 }
 
@@ -5077,10 +5077,10 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
 		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 		job_ptr->gres_list_req = NULL;
-		free_job_record(resv_desc.job_ptr);
+		job_record_delete(resv_desc.job_ptr);
 		resv_desc.job_ptr = NULL;
 	}
-	free_job_record(resv_desc.job_ptr);
+	job_record_delete(resv_desc.job_ptr);
 
 	return i;
 }

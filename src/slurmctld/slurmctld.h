@@ -866,12 +866,6 @@ extern step_record_t *find_step_record(job_record_t *job_ptr,
 				       slurm_step_id_t *step_id);
 
 /*
- * free_null_array_recs - free an xmalloc'd job_array_struct_t structure inside
- *                        of a job_record_t and set job_ptr->array_recs to NULL.
- */
-extern void free_null_array_recs(job_record_t *array_recs);
-
-/*
  * get_job_env - return the environment variables and their count for a
  *	given job
  * IN job_ptr - pointer to job for which data is required
@@ -2241,11 +2235,6 @@ extern void
 set_remote_working_response(resource_allocation_response_msg_t *resp,
 			    job_record_t *job_ptr,
 			    const char *req_cluster);
-
-/*
- * Free job's fed_details ptr.
- */
-extern void free_job_fed_details(job_fed_details_t **fed_details_pptr);
 
 /*
  * Calculate billable TRES based on partition's defined BillingWeights. If none

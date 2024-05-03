@@ -1336,7 +1336,7 @@ static void _destroy_dep_job(void *object)
 			FREE_NULL_LIST(job_ptr->details->depend_list);
 			xfree(job_ptr->details);
 		}
-		free_null_array_recs(job_ptr);
+		job_record_free_null_array_recs(job_ptr);
 		job_ptr->magic = 0;
 		job_ptr->job_id = 0;
 		job_ptr->user_id = 0;
@@ -1457,7 +1457,7 @@ static void _cleanup_removed_origin_jobs(void)
 			running_remotely = true;
 
 		/* free fed_job_details so it can't call home. */
-		free_job_fed_details(&job_ptr->fed_details);
+		job_record_free_fed_details(&job_ptr->fed_details);
 
 		/* allow running/completing jobs to finish. */
 		if (IS_JOB_COMPLETED(job_ptr) ||
@@ -1563,7 +1563,7 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 				continue;
 
 			/* free fed_job_details so it can't call home. */
-			free_job_fed_details(&job_ptr->fed_details);
+			job_record_free_fed_details(&job_ptr->fed_details);
 
 			/*
 			 * If this job originated from the origin (which is

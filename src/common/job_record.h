@@ -622,4 +622,22 @@ extern job_record_t *create_job_record(void);
 /* free_step_record - delete a step record's data structures */
 extern void free_step_record(void *x);
 
+/*
+ *  Delete a job record and its corresponding job_details,
+ *
+ * IN job_entry - pointer to job_record to delete
+ */
+extern void job_record_delete(void *job_entry);
+
+/*
+ * Free an xmalloc'd job_array_struct_t structure inside of a job_record_t and
+ * set job_ptr->array_recs to NULL.
+ */
+extern void job_record_free_null_array_recs(job_record_t *array_recs);
+
+/*
+ * Free job's fed_details ptr.
+ */
+extern void job_record_free_fed_details(job_fed_details_t **fed_details_pptr);
+
 #endif /* _SLURM_JOB_RECORD_H */
