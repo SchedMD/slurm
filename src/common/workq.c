@@ -178,7 +178,7 @@ extern workq_t *new_workq(int count)
 	xassert(count < 1024);
 
 	workq->magic = MAGIC_WORKQ;
-	workq->workers = list_create(NULL);
+	workq->workers = list_create(_worker_free);
 	workq->work = list_create(_work_delete);
 	workq->threads = count;
 
