@@ -418,7 +418,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
-extern void purge_node_rec(node_record_t *node_ptr);
+extern void purge_node_rec(void *in);
 
 /*
  * rehash_node - build a hash table of the node_record entries.

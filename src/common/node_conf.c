@@ -1282,8 +1282,10 @@ static void _delete_node_config_ptr(node_record_t *node_ptr)
 }
 
 /* Purge the contents of a node record */
-extern void purge_node_rec(node_record_t *node_ptr)
+extern void purge_node_rec(void *in)
 {
+	node_record_t *node_ptr = in;
+
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comment);
 	xfree(node_ptr->comm_name);
