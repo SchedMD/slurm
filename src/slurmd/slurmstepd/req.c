@@ -677,6 +677,63 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	step_update_request_msg_t *request;
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = REQUEST_UPDATE_JOB_STEP;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto done;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, JOB_STEP_GET_INFO RPC from uid=%u",
+		      uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
+	}
+
+	if (!job_step_ptr) {
+		error("Tried to update a step on a non-step mgr stepd");
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto done;
+	}
+
+	request = msg.data;
+
+	rc = update_step(request, uid);
+
+done:
+	slurm_send_rc_msg(&msg, rc);
+
+	return rc;
+
+rwfail:
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+
+	return SLURM_ERROR;
+}
+
 int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
@@ -795,6 +852,10 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 	case REQUEST_CANCEL_JOB_STEP:
 		debug("Handling REQUEST_CANCEL_JOB_STEP");
 		rc = _handle_cancel_job_step(fd, step, uid);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		debug("Handling REQUEST_CANCEL_JOB_STEP");
+		rc = _handle_update_step(fd, step, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);

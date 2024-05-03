@@ -5041,6 +5041,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	} else {
 		step_ptr = find_step_record(job_ptr, &step_id);
 
+		if (!step_ptr && (job_ptr->bit_flags & STEP_MGR_ENABLED))
+			goto step_mgr;
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
 		if (req->time_limit) {
@@ -5050,6 +5052,31 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			     step_ptr, req->time_limit);
 		}
 	}
+
+step_mgr:
+	if (running_in_slurmctld() && !step_ptr &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		agent_arg_t *agent_args = NULL;
+		step_update_request_msg_t *agent_update_msg = NULL;
+
+		agent_update_msg = xmalloc(sizeof(*agent_update_msg));
+		agent_update_msg->job_id = req->job_id;
+		agent_update_msg->step_id = req->step_id;
+		agent_update_msg->time_limit = req->time_limit;
+
+		agent_args = xmalloc(sizeof(*agent_args));
+		agent_args->msg_type = REQUEST_UPDATE_JOB_STEP;
+		agent_args->retry = 1;
+		agent_args->hostlist = hostlist_create(job_ptr->batch_host);
+		agent_args->node_count = 1;
+		agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+
+		agent_args->msg_args = agent_update_msg;
+		set_agent_arg_r_uid(agent_args, slurm_conf.slurmd_user_id);
+		step_mgr_ops->agent_queue_request(agent_args);
+		args.mod_cnt++;
+	}
+
 	if (args.mod_cnt)
 		*step_mgr_ops->last_job_update = time(NULL);
 
