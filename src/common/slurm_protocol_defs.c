@@ -50,19 +50,20 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+#include "src/common/uid.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/topology.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_time.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
-#include "src/common/uid.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/interfaces/topology.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
