@@ -1615,6 +1615,7 @@ extern void node_record_pack(void *in,
 		pack_time(object->last_response, buffer);
 		pack16(object->port, buffer);
 		pack16(object->protocol_version, buffer);
+		pack16(object->tpc, buffer);
 		packstr(object->mcs_label, buffer);
 		(void) gres_node_state_pack(object->gres_list, buffer,
 					    object->name);
@@ -1664,6 +1665,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->last_response, buffer);
 		safe_unpack16(&object->port, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
+		safe_unpack16(&object->tpc, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		if (gres_node_state_unpack(&object->gres_list, buffer,
 					   object->name, protocol_version) !=
