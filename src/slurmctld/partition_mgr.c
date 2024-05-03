@@ -457,36 +457,7 @@ static int _dump_part_state(void *x, void *arg)
 	else
 		part_ptr->flags &= (~PART_FLAG_DEFAULT);
 
-	pack32(part_ptr->cpu_bind,	 buffer);
-	packstr(part_ptr->name,          buffer);
-	pack32(part_ptr->grace_time,	 buffer);
-	pack32(part_ptr->max_time,       buffer);
-	pack32(part_ptr->default_time,   buffer);
-	pack32(part_ptr->max_cpus_per_node, buffer);
-	pack32(part_ptr->max_cpus_per_socket, buffer);
-	pack32(part_ptr->max_nodes_orig, buffer);
-	pack32(part_ptr->min_nodes_orig, buffer);
-
-	pack16(part_ptr->flags,          buffer);
-	pack16(part_ptr->max_share,      buffer);
-	pack16(part_ptr->over_time_limit,buffer);
-	pack16(part_ptr->preempt_mode,   buffer);
-	pack16(part_ptr->priority_job_factor, buffer);
-	pack16(part_ptr->priority_tier,  buffer);
-
-	pack16(part_ptr->state_up,       buffer);
-	pack16(part_ptr->cr_type,        buffer);
-
-	packstr(part_ptr->allow_accounts, buffer);
-	packstr(part_ptr->allow_groups,  buffer);
-	packstr(part_ptr->allow_qos,     buffer);
-	packstr(part_ptr->qos_char,      buffer);
-	packstr(part_ptr->allow_alloc_nodes, buffer);
-	packstr(part_ptr->alternate,     buffer);
-	packstr(part_ptr->deny_accounts, buffer);
-	packstr(part_ptr->deny_qos,      buffer);
-	/* Save orig_nodes as nodes will be built from orig_nodes */
-	packstr(part_ptr->orig_nodes, buffer);
+	part_record_pack(part_ptr, buffer, SLURM_PROTOCOL_VERSION);
 
 	return 0;
 }
@@ -523,24 +494,13 @@ static buf_t *_open_part_state_file(char **state_file)
  */
 extern int load_all_part_state(uint16_t reconfig_flags)
 {
-	char *part_name = NULL, *nodes = NULL;
-	char *allow_accounts = NULL, *allow_groups = NULL, *allow_qos = NULL;
-	char *deny_accounts = NULL, *deny_qos = NULL, *qos_char = NULL;
 	char *state_file = NULL;
-	uint32_t max_time, default_time, max_nodes, min_nodes;
-	uint32_t max_cpus_per_node = INFINITE, cpu_bind = 0, grace_time = 0;
-	uint32_t max_cpus_per_socket = INFINITE;
 	time_t time;
-	uint16_t flags, priority_job_factor, priority_tier;
-	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
-	uint16_t state_up, cr_type;
 	part_record_t *part_ptr;
 	int error_code = 0, part_cnt = 0;
 	buf_t *buffer;
 	char *ver_str = NULL;
-	char* allow_alloc_nodes = NULL;
 	uint16_t protocol_version = NO_VAL16;
-	char* alternate = NULL;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
@@ -582,149 +542,110 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			safe_unpack32(&cpu_bind, buffer);
-			safe_unpackstr(&part_name, buffer);
-			safe_unpack32(&grace_time, buffer);
-			safe_unpack32(&max_time, buffer);
-			safe_unpack32(&default_time, buffer);
-			safe_unpack32(&max_cpus_per_node, buffer);
-			safe_unpack32(&max_cpus_per_socket, buffer);
-			safe_unpack32(&max_nodes, buffer);
-			safe_unpack32(&min_nodes, buffer);
+		part_record_t *part_rec_state = NULL;
 
-			safe_unpack16(&flags,        buffer);
-			safe_unpack16(&max_share,    buffer);
-			safe_unpack16(&over_time_limit, buffer);
-			safe_unpack16(&preempt_mode, buffer);
-
-			safe_unpack16(&priority_job_factor, buffer);
-			safe_unpack16(&priority_tier, buffer);
-			if (priority_job_factor > part_max_priority)
-				part_max_priority = priority_job_factor;
-
-			safe_unpack16(&state_up, buffer);
-			safe_unpack16(&cr_type, buffer);
-
-			safe_unpackstr(&allow_accounts, buffer);
-			safe_unpackstr(&allow_groups, buffer);
-			safe_unpackstr(&allow_qos, buffer);
-			safe_unpackstr(&qos_char, buffer);
-			safe_unpackstr(&allow_alloc_nodes, buffer);
-			safe_unpackstr(&alternate, buffer);
-			safe_unpackstr(&deny_accounts, buffer);
-			safe_unpackstr(&deny_qos, buffer);
-			safe_unpackstr(&nodes, buffer);
-			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
-			    (flags & PART_FLAG_EXC_USER_CLR)  ||
-			    (flags & PART_FLAG_HIDDEN_CLR)    ||
-			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
-			    (flags & PART_FLAG_PDOI_CLR)      ||
-			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
-			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
-			    (flags & PART_FLAG_LLN_CLR)) {
-				error("Invalid data for partition %s: flags=%u",
-				      part_name, flags);
-				error_code = EINVAL;
-			}
-		} else {
-			error("%s: protocol_version %hu not supported",
-			      __func__, protocol_version);
+		if ((error_code = part_record_unpack(&part_rec_state, buffer,
+						     protocol_version)))
 			goto unpack_error;
+
+		if ((part_rec_state->flags & PART_FLAG_DEFAULT_CLR)   ||
+		    (part_rec_state->flags & PART_FLAG_EXC_USER_CLR)  ||
+		    (part_rec_state->flags & PART_FLAG_HIDDEN_CLR)    ||
+		    (part_rec_state->flags & PART_FLAG_NO_ROOT_CLR)   ||
+		    (part_rec_state->flags & PART_FLAG_PDOI_CLR)      ||
+		    (part_rec_state->flags & PART_FLAG_ROOT_ONLY_CLR) ||
+		    (part_rec_state->flags & PART_FLAG_REQ_RESV_CLR)  ||
+		    (part_rec_state->flags & PART_FLAG_LLN_CLR)) {
+			error("Invalid data for partition %s: flags=%u",
+			      part_rec_state->name, part_rec_state->flags);
+			error_code = EINVAL;
 		}
 		/* validity test as possible */
-		if (state_up > PARTITION_UP) {
+		if (part_rec_state->state_up > PARTITION_UP) {
 			error("Invalid data for partition %s: state_up=%u",
-			      part_name, state_up);
+			      part_rec_state->name, part_rec_state->state_up);
 			error_code = EINVAL;
 		}
 		if (error_code) {
 			error("No more partition data will be processed from "
 			      "the checkpoint file");
-			xfree(allow_accounts);
-			xfree(allow_groups);
-			xfree(allow_qos);
-			xfree(qos_char);
-			xfree(allow_alloc_nodes);
-			xfree(alternate);
-			xfree(deny_accounts);
-			xfree(deny_qos);
-			xfree(part_name);
-			xfree(nodes);
+			part_record_delete(part_rec_state);
 			error_code = EINVAL;
 			break;
 		}
 
 		/* find record and perform update */
 		part_ptr = list_find_first(part_list, &list_find_part,
-					   part_name);
+					   part_rec_state->name);
 		if (!part_ptr && (reconfig_flags & RECONFIG_KEEP_PART_INFO)) {
 			info("%s: partition %s missing from configuration file, creating",
-			     __func__, part_name);
-			part_ptr = create_ctld_part_record(part_name);
+			     __func__, part_rec_state->name);
+			part_ptr = create_ctld_part_record(part_rec_state->name);
 		} else if (!part_ptr) {
 			info("%s: partition %s removed from configuration file, skipping",
-			     __func__, part_name);
+			     __func__, part_rec_state->name);
 		}
 
 		/* Handle RECONFIG_KEEP_PART_STAT */
 		if (part_ptr) {
 			part_cnt++;
-			part_ptr->state_up = state_up;
+			part_ptr->state_up = part_rec_state->state_up;
 		}
 
 		if (!(reconfig_flags & RECONFIG_KEEP_PART_INFO)) {
-			xfree(allow_accounts);
-			xfree(allow_groups);
-			xfree(allow_qos);
-			xfree(qos_char);
-			xfree(allow_alloc_nodes);
-			xfree(alternate);
-			xfree(deny_accounts);
-			xfree(deny_qos);
-			xfree(part_name);
-			xfree(nodes);
+			part_record_delete(part_rec_state);
 			continue;
 		}
 
-		part_ptr->cpu_bind       = cpu_bind;
-		part_ptr->flags          = flags;
+		part_ptr->cpu_bind = part_rec_state->cpu_bind;
+		part_ptr->flags = part_rec_state->flags;
 		if (part_ptr->flags & PART_FLAG_DEFAULT) {
 			xfree(default_part_name);
-			default_part_name = xstrdup(part_name);
+			default_part_name = xstrdup(part_rec_state->name);
 			default_part_loc = part_ptr;
 		}
-		part_ptr->max_time       = max_time;
-		part_ptr->default_time   = default_time;
-		part_ptr->max_cpus_per_node = max_cpus_per_node;
-		part_ptr->max_cpus_per_socket = max_cpus_per_socket;
-		part_ptr->max_nodes      = max_nodes;
-		part_ptr->max_nodes_orig = max_nodes;
-		part_ptr->min_nodes      = min_nodes;
-		part_ptr->min_nodes_orig = min_nodes;
-		part_ptr->max_share      = max_share;
-		part_ptr->grace_time     = grace_time;
-		part_ptr->over_time_limit = over_time_limit;
-		if (preempt_mode != NO_VAL16)
-			part_ptr->preempt_mode   = preempt_mode;
-		part_ptr->priority_job_factor = priority_job_factor;
-		part_ptr->priority_tier  = priority_tier;
-		part_ptr->cr_type	 = cr_type;
+		part_ptr->max_time = part_rec_state->max_time;
+		part_ptr->default_time = part_rec_state->default_time;
+		part_ptr->max_cpus_per_node = part_rec_state->max_cpus_per_node;
+		part_ptr->max_cpus_per_socket =
+			part_rec_state->max_cpus_per_socket;
+		part_ptr->max_nodes = part_rec_state->max_nodes;
+		part_ptr->max_nodes_orig = part_rec_state->max_nodes;
+		part_ptr->min_nodes = part_rec_state->min_nodes;
+		part_ptr->min_nodes_orig = part_rec_state->min_nodes;
+		part_ptr->max_share = part_rec_state->max_share;
+		part_ptr->grace_time = part_rec_state->grace_time;
+		part_ptr->over_time_limit = part_rec_state->over_time_limit;
+		if (part_rec_state->preempt_mode != NO_VAL16)
+			part_ptr->preempt_mode = part_rec_state->preempt_mode;
+		part_ptr->priority_job_factor =
+			part_rec_state->priority_job_factor;
+		part_ptr->priority_tier = part_rec_state->priority_tier;
+		part_ptr->cr_type = part_rec_state->cr_type;
+
 		xfree(part_ptr->allow_accounts);
-		part_ptr->allow_accounts = allow_accounts;
-		xfree(part_ptr->allow_groups);
+		part_ptr->allow_accounts = part_rec_state->allow_accounts;
+		part_rec_state->allow_accounts = NULL;
+
 		FREE_NULL_LIST(part_ptr->allow_accts_list);
 		part_ptr->allow_accts_list =
 			accounts_list_build(part_ptr->allow_accounts, false);
-		part_ptr->allow_groups   = allow_groups;
-		xfree(part_ptr->allow_qos);
-		part_ptr->allow_qos      = allow_qos;
-		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
 
-		if (qos_char) {
+		xfree(part_ptr->allow_groups);
+		part_ptr->allow_groups   = part_rec_state->allow_groups;
+		part_rec_state->allow_groups = NULL;
+
+		xfree(part_ptr->allow_qos);
+		part_ptr->allow_qos = part_rec_state->allow_qos;
+		part_rec_state->allow_qos = NULL;
+		qos_list_build(part_ptr->allow_qos,
+			       &part_ptr->allow_qos_bitstr);
+
+		if (part_rec_state->qos_char) {
 			slurmdb_qos_rec_t qos_rec;
 			xfree(part_ptr->qos_char);
-			part_ptr->qos_char = qos_char;
+			part_ptr->qos_char = part_rec_state->qos_char;
+			part_rec_state->qos_char = NULL;
 
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.name = part_ptr->qos_char;
@@ -740,16 +661,23 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		}
 
 		xfree(part_ptr->allow_alloc_nodes);
-		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
+		part_ptr->allow_alloc_nodes = part_rec_state->allow_alloc_nodes;
+		part_rec_state->allow_alloc_nodes = NULL;
+
 		xfree(part_ptr->alternate);
-		part_ptr->alternate      = alternate;
+		part_ptr->alternate = part_rec_state->alternate;
+		part_rec_state->alternate = NULL;
+
 		xfree(part_ptr->deny_accounts);
-		part_ptr->deny_accounts  = deny_accounts;
+		part_ptr->deny_accounts = part_rec_state->deny_accounts;
+		part_rec_state->deny_accounts = NULL;
 		FREE_NULL_LIST(part_ptr->deny_accts_list);
 		part_ptr->deny_accts_list =
 			accounts_list_build(part_ptr->deny_accounts, false);
+
 		xfree(part_ptr->deny_qos);
-		part_ptr->deny_qos       = deny_qos;
+		part_ptr->deny_qos = part_rec_state->deny_qos;
+		part_rec_state->deny_qos = NULL;
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
 
 		/*
@@ -758,9 +686,10 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		 */
 		xfree(part_ptr->nodes);
 		xfree(part_ptr->orig_nodes);
-		part_ptr->orig_nodes = nodes;
+		part_ptr->orig_nodes = part_rec_state->nodes;
+		part_rec_state->nodes = NULL;
 
-		xfree(part_name);
+		part_record_delete(part_rec_state);
 	}
 
 	info("Recovered state of %d partitions", part_cnt);

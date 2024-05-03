@@ -37,6 +37,7 @@
 
 #include "slurm/slurmdb.h"
 
+#include "src/common/pack.h"
 #include "src/common/xhash.h"
 
 typedef struct {
@@ -125,5 +126,11 @@ typedef struct part_record {
 
 extern part_record_t *part_record_create(void);
 extern void part_record_delete(part_record_t *part_ptr);
+extern void part_record_pack(part_record_t *part_ptr,
+			     buf_t *buffer,
+			     uint16_t protocol_version);
+extern int part_record_unpack(part_record_t **part,
+			      buf_t *buffer,
+			      uint16_t protocol_version);
 
 #endif /* _SLURM_PART_RECORD_H */
