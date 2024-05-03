@@ -99,20 +99,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       uint16_t plane_size);
 
 /*
- * pack_ctld_job_step_info_response_msg - packs job step info
- * IN step_id - specific id or NO_VAL/NO_VAL for all
- * IN uid - user issuing request
- * IN show_flags - job step filtering options
- * OUT buffer - location to store data, pointers automatically advanced
- * IN protocol_version - slurm protocol version of client
- * RET - 0 or error code
- * NOTE: MUST free_buf buffer
- */
-extern int pack_ctld_job_step_info_response_msg(
-	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
-	buf_t *buffer, uint16_t protocol_version);
-
-/*
  * kill_step_on_node - determine if the specified job has any job steps
  *	allocated to the specified node and kill them unless no_kill flag
  *	is set on the step

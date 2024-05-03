@@ -20381,3 +20381,272 @@ extern uint16_t job_mgr_determine_cpus_per_core(
 
 	return threads_per_core;
 }
+
+typedef struct {
+	slurm_step_id_t *step_id;
+	uint16_t show_flags;
+	uid_t uid;
+	uint32_t steps_packed;
+	buf_t *buffer;
+	bool privileged;
+	uint16_t proto_version;
+	bool valid_job;
+	part_record_t **visible_parts;
+} pack_step_args_t;
+
+/* Pack the data for a specific job step record */
+static int _pack_ctld_job_step_info(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+	buf_t *buffer = args->buffer;
+	uint32_t task_cnt, cpu_cnt;
+	char *node_list = NULL;
+	time_t begin_time, run_time;
+	bitstr_t *pack_bitstr;
+
+#if defined HAVE_FRONT_END
+	/* On front-end systems, the steps only execute on one node.
+	 * We need to make them appear like they are running on the job's
+	 * entire allocation (which they really are). */
+	task_cnt = step_ptr->job_ptr->cpu_cnt;
+	node_list = step_ptr->job_ptr->nodes;
+	pack_bitstr = step_ptr->job_ptr->node_bitmap;
+
+	if (step_ptr->job_ptr->total_cpus)
+		cpu_cnt = step_ptr->job_ptr->total_cpus;
+	else if (step_ptr->job_ptr->details)
+		cpu_cnt = step_ptr->job_ptr->details->min_cpus;
+	else
+		cpu_cnt = step_ptr->job_ptr->cpu_cnt;
+#else
+	pack_bitstr = step_ptr->step_node_bitmap;
+	if (step_ptr->step_layout) {
+		task_cnt = step_ptr->step_layout->task_cnt;
+		node_list = step_ptr->step_layout->node_list;
+	} else {
+		task_cnt = step_ptr->cpu_count;
+		node_list = step_ptr->job_ptr->nodes;
+	}
+	cpu_cnt = step_ptr->cpu_count;
+#endif
+
+	if (args->proto_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
+
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+		pack32(step_ptr->srun_pid, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(slurm_conf.cluster_name, buffer);
+		packstr(step_ptr->container, buffer);
+		packstr(step_ptr->container_id, buffer);
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->host, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_str_hex(pack_bitstr, buffer);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+
+		packstr(step_ptr->cpus_per_tres, buffer);
+		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->submit_line, buffer);
+		packstr(step_ptr->tres_bind, buffer);
+		packstr(step_ptr->tres_freq, buffer);
+		packstr(step_ptr->tres_per_step, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
+		packstr(step_ptr->tres_per_socket, buffer);
+		packstr(step_ptr->tres_per_task, buffer);
+	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
+
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+		pack32(step_ptr->srun_pid, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(slurm_conf.cluster_name, buffer);
+		packstr(step_ptr->container, buffer);
+		packstr(step_ptr->container_id, buffer);
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->host, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_str_hex(pack_bitstr, buffer);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+
+		packstr(step_ptr->cpus_per_tres, buffer);
+		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->submit_line, buffer);
+		packstr(step_ptr->tres_bind, buffer);
+		packstr(step_ptr->tres_freq, buffer);
+		packstr(step_ptr->tres_per_step, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
+		packstr(step_ptr->tres_per_socket, buffer);
+		packstr(step_ptr->tres_per_task, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, args->proto_version);
+	}
+
+	args->steps_packed++;
+
+	return 0;
+}
+
+static int _pack_job_steps(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+
+	if ((args->step_id->job_id != NO_VAL) &&
+	    (args->step_id->job_id != job_ptr->job_id) &&
+	    (args->step_id->job_id != job_ptr->array_job_id))
+		return 0;
+
+	args->valid_job = 1;
+
+	if (((args->show_flags & SHOW_ALL) == 0) && !args->privileged &&
+	    (job_ptr->part_ptr) &&
+	    part_not_on_list(args->visible_parts, job_ptr->part_ptr))
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->uid) && !args->privileged) {
+		if (slurm_mcs_get_privatedata()) {
+			if (mcs_g_check_mcs_label(args->uid,
+						  job_ptr->mcs_label, false))
+				return 0;
+		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
+							 args->uid,
+							 job_ptr->account,
+							 false)) {
+			return 0;
+		}
+	}
+
+	/*
+	 * Pack a single requested step, or pack all steps.
+	 */
+	if (args->step_id->step_id != NO_VAL ) {
+		step_record_t *step_ptr = find_step_record(job_ptr,
+							   args->step_id);
+		if (!step_ptr)
+			return 0;
+		_pack_ctld_job_step_info(step_ptr, args);
+	} else {
+		list_for_each(job_ptr->step_list,
+			      _pack_ctld_job_step_info,
+			      args);
+	}
+
+	return 0;
+}
+
+/*
+ * pack_ctld_job_step_info_response_msg - packs job step info
+ * IN step_id - specific id or NO_VAL/NO_VAL for all
+ * IN uid - user issuing request
+ * IN show_flags - job step filtering options
+ * OUT buffer - location to store data, pointers automatically advanced
+ * RET - 0 or error code
+ * NOTE: MUST free_buf buffer
+ */
+extern int pack_ctld_job_step_info_response_msg(
+	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
+	buf_t *buffer, uint16_t protocol_version)
+{
+	int error_code = 0;
+	uint32_t tmp_offset;
+	time_t now = time(NULL);
+	bool privileged = validate_operator(uid);
+	bool skip_visible_parts = (show_flags & SHOW_ALL) || privileged;
+	pack_step_args_t args = {
+		.step_id = step_id,
+		.show_flags = show_flags,
+		.uid = uid,
+		.steps_packed = 0,
+		.buffer = buffer,
+		.privileged = privileged,
+		.proto_version = protocol_version,
+		.valid_job = false,
+		.visible_parts = build_visible_parts(uid, skip_visible_parts),
+	};
+
+	pack32(args.steps_packed, buffer);/* steps_packed placeholder */
+	pack_time(now, buffer);
+
+	list_for_each_ro(job_list, _pack_job_steps, &args);
+
+	if (list_count(job_list) && !args.valid_job && !args.steps_packed)
+		error_code = ESLURM_INVALID_JOB_ID;
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(args.steps_packed, buffer);
+
+	set_buf_offset(buffer, tmp_offset);
+	xfree(args.visible_parts);
+
+	return error_code;
+}
