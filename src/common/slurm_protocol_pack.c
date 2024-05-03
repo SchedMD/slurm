@@ -6824,7 +6824,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 		if (msg->job_ptr) {
 			packbool(true, buffer);
-			slurm_pack_job_rec(msg->job_ptr, buffer, protocol_version);
+			job_record_pack(msg->job_ptr, 0, buffer,
+					protocol_version);
 			slurm_pack_list(msg->job_node_array,
 					node_record_pack, buffer,
 					protocol_version);
@@ -7197,8 +7198,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
-			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
-						 protocol_version))
+			if (job_record_unpack(&msg->job_ptr, 0, buffer,
+					      protocol_version))
 				goto unpack_error;
 			if (slurm_unpack_list(&msg->job_node_array,
 					      node_record_unpack,
@@ -7890,8 +7891,8 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
-			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
-						 smsg->protocol_version))
+			if (job_record_unpack(&msg->job_ptr, 0, buffer,
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (slurm_unpack_list(&msg->job_node_array,
 					      node_record_unpack,
@@ -13329,143 +13330,5 @@ extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
 unpack_error:
 	slurm_destroy_selected_step(step_ptr);
 	*step = NULL;
-	return SLURM_ERROR;
-}
-
-extern void slurm_pack_job_rec(job_record_t *job_ptr,
-			       buf_t *buffer,
-			       uint16_t protocol_version)
-{
-	job_details_t *detail_ptr;
-
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
-		if (!job_ptr) {
-			pack8(0, buffer);
-			return;
-		}
-
-		pack8(1, buffer);
-
-		detail_ptr = job_ptr->details;
-
-		pack32(job_ptr->job_id, buffer);
-		pack_job_resources(job_ptr->job_resrcs, buffer,
-				   protocol_version);
-		(void) gres_job_state_pack(job_ptr->gres_list_alloc,
-					   buffer, job_ptr->job_id,
-					   true, protocol_version);
-		packstr(job_ptr->batch_host, buffer);
-		pack_bit_str_hex(job_ptr->node_bitmap, buffer);
-		pack32(job_ptr->node_cnt, buffer);
-		pack64(job_ptr->bit_flags, buffer);
-		pack32(job_ptr->total_cpus, buffer);
-		packstr(job_ptr->tres_per_job, buffer);
-		packstr(job_ptr->tres_per_node, buffer);
-		packstr(job_ptr->tres_per_socket, buffer);
-		packstr(job_ptr->tres_per_task, buffer);
-		pack_time(job_ptr->end_time, buffer);
-		packstr(job_ptr->name, buffer);
-		packstr(job_ptr->network, buffer);
-		packstr(job_ptr->nodes, buffer);
-		pack32(job_ptr->job_state, buffer);
-		pack32(job_ptr->user_id, buffer);
-		pack32(job_ptr->group_id, buffer);
-
-		if (IS_JOB_RUNNING(job_ptr) && job_ptr->part_ptr) {
-			packstr(job_ptr->part_ptr->name, buffer);
-
-			pack32(job_ptr->part_ptr->cpu_bind, buffer);
-			pack32(job_ptr->part_ptr->max_time, buffer);
-			pack16(job_ptr->part_ptr->over_time_limit, buffer);
-		} else {
-			packstr(job_ptr->partition, buffer);
-
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack16(0, buffer);
-		}
-
-		/* part_ptr */
-
-
-		pack64(detail_ptr->orig_pn_min_memory, buffer);
-		packstr(detail_ptr->req_nodes,  buffer);
-		pack_multi_core_data(detail_ptr->mc_ptr, buffer,
-				     protocol_version);
-		pack_time(detail_ptr->submit_time,  buffer);
-		packstr(detail_ptr->cpu_bind, buffer);
-		pack16(detail_ptr->cpu_bind_type, buffer);
-	}
-}
-
-extern int slurm_unpack_job_rec(job_record_t **job,
-				buf_t *buffer,
-				uint16_t protocol_version)
-{
-	job_record_t *job_ptr = NULL;
-	job_details_t *detail_ptr = NULL;
-
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
-		uint8_t tmp_uint8;
-
-		safe_unpack8(&tmp_uint8, buffer);
-		if (!tmp_uint8)
-			return SLURM_SUCCESS;
-
-		job_ptr = create_job_record();
-		detail_ptr = job_ptr->details;
-
-		*job = job_ptr;
-
-		safe_unpack32(&job_ptr->job_id, buffer);
-		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
-					 protocol_version))
-			goto unpack_error;
-		if (gres_job_state_unpack(
-			&job_ptr->gres_list_alloc, buffer,
-			job_ptr->job_id, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpackstr(&job_ptr->batch_host, buffer);
-		unpack_bit_str_hex(&job_ptr->node_bitmap, buffer);
-		safe_unpack32(&job_ptr->node_cnt, buffer);
-		safe_unpack64(&job_ptr->bit_flags, buffer);
-		safe_unpack32(&job_ptr->total_cpus, buffer);
-		safe_unpackstr(&job_ptr->tres_per_job, buffer);
-		safe_unpackstr(&job_ptr->tres_per_node, buffer);
-		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
-		safe_unpackstr(&job_ptr->tres_per_task, buffer);
-		safe_unpack_time(&job_ptr->end_time, buffer);
-		safe_unpackstr(&job_ptr->name, buffer);
-		safe_unpackstr(&job_ptr->network, buffer);
-		safe_unpackstr(&job_ptr->nodes, buffer);
-		safe_unpack32(&job_ptr->job_state, buffer);
-		safe_unpack32(&job_ptr->user_id, buffer);
-		safe_unpack32(&job_ptr->group_id, buffer);
-
-		safe_unpackstr(&job_ptr->partition, buffer);
-		job_ptr->part_ptr = xmalloc(sizeof(*job_ptr->part_ptr));
-		safe_unpack32(&job_ptr->part_ptr->cpu_bind, buffer);
-		safe_unpack32(&job_ptr->part_ptr->max_time, buffer);
-		safe_unpack16(&job_ptr->part_ptr->over_time_limit, buffer);
-
-		safe_unpack64(&detail_ptr->orig_pn_min_memory, buffer);
-		safe_unpackstr(&detail_ptr->req_nodes,  buffer);
-		unpack_multi_core_data(&detail_ptr->mc_ptr, buffer,
-				       protocol_version);
-		safe_unpack_time(&detail_ptr->submit_time, buffer);
-		safe_unpackstr(&detail_ptr->cpu_bind, buffer);
-		safe_unpack16(&detail_ptr->cpu_bind_type, buffer);
-	} else {
-		goto unpack_error;
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-
-	job_record_delete(job_ptr);
-	*job = NULL;
 	return SLURM_ERROR;
 }

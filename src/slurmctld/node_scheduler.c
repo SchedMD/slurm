@@ -3145,8 +3145,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 		 * doesn't pack until sending.
 		 */
 		prolog_msg_ptr->job_ptr_buf = init_buf(BUF_SIZE);
-		slurm_pack_job_rec(job_ptr, prolog_msg_ptr->job_ptr_buf,
-				   protocol_version);
+		job_record_pack(job_ptr, slurmctld_tres_cnt,
+				prolog_msg_ptr->job_ptr_buf, protocol_version);
 		prolog_msg_ptr->job_node_array_buf = init_buf(BUF_SIZE);
 		slurm_pack_list(job_node_array, node_record_pack,
 				prolog_msg_ptr->job_node_array_buf,
