@@ -2997,7 +2997,14 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		goto error;
 
 	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
-		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
+			error("rpc %s from non-supported client version %d for step_mgr job",
+			      rpc_num2string(msg->msg_type),
+			      msg->protocol_version);
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+		} else {
+			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		}
 		unlock_slurmctld(job_read_lock);
 		xfree(local_node_list);
 		return;
@@ -3417,7 +3424,14 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	}
 
 	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
-		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
+			error("rpc %s from non-supported client version %d for step_mgr job",
+			      rpc_num2string(msg->msg_type),
+			      msg->protocol_version);
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+		} else {
+			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		}
 		unlock_slurmctld(job_read_lock);
 		return;
 	}

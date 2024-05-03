@@ -8387,7 +8387,8 @@ static void _enable_step_mgr(job_record_t *job_ptr)
 					   "step_mgr_enable");
 	}
 
-	if (step_mgr_enabled) {
+	if (step_mgr_enabled &&
+	    (job_ptr->start_protocol_ver >= SLURM_24_05_PROTOCOL_VERSION)) {
 		job_ptr->bit_flags |= STEP_MGR_ENABLED;
 	} else {
 		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;

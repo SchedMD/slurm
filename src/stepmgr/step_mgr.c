@@ -5690,7 +5690,14 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 
 	if (running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
-		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
+			error("rpc %s from non-supported client version %d for step_mgr job",
+			      rpc_num2string(msg->msg_type),
+			      msg->protocol_version);
+			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+		} else {
+			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+		}
 		if (lock_func)
 			lock_func(false);
 		return SLURM_SUCCESS;
