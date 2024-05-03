@@ -57,7 +57,7 @@ typedef struct {
 
 extern step_mgr_ops_t *step_mgr_ops;
 
-extern void step_mgr_init();
+extern void step_mgr_init(step_mgr_ops_t *ops);
 
 /*
  * delete_step_records - delete step record for specified job_ptr
