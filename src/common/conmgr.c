@@ -1025,7 +1025,7 @@ static void _wrap_work(void *x)
 
 static int _get_fd_readable(conmgr_fd_t *con)
 {
-	int readable = -1;
+	int readable = 0;
 
 	if (fd_get_readable_bytes(con->input_fd, &readable, con->name) ||
 	    !readable)
