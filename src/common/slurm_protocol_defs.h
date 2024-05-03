@@ -213,6 +213,10 @@
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
 #define RESV_FREE_STR_TRES      SLURM_BIT(9)
 
+#ifndef NDEBUG
+extern __thread bool drop_priv;
+#endif
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */

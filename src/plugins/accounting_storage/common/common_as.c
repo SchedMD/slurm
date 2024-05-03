@@ -42,6 +42,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "src/common/env.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/interfaces/auth.h"
@@ -49,6 +51,18 @@
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 #include "common_as.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined(__APPLE__)
+extern __thread bool drop_priv __attribute__((weak_import));
+extern slurmdbd_conf_t *slurmdbd_conf __attribute__((weak_import));
+#else
+__thread bool drop_priv;
+slurmdbd_conf_t *slurmdbd_conf;
+#endif
 
 extern char *assoc_day_table;
 extern char *assoc_hour_table;
@@ -61,10 +75,6 @@ extern char *cluster_month_table;
 extern char *wckey_day_table;
 extern char *wckey_hour_table;
 extern char *wckey_month_table;
-
-#ifndef NDEBUG
-extern __thread bool drop_priv;
-#endif
 
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
