@@ -291,7 +291,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(job_record_t *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
-static int _update_job_nodes_str(void *x, void *arg);
+static int _update_job_nodes_str(job_record_t *job_ptr);
 static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
 			    List part_ptr_list,
@@ -1319,7 +1319,7 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 
 	if (dump_job_ptr->array_recs)
 		build_array_str(dump_job_ptr);
-	_update_job_nodes_str((void *)dump_job_ptr, NULL);
+	_update_job_nodes_str(dump_job_ptr);
 
 	job_record_pack(dump_job_ptr, slurmctld_tres_cnt, buffer,
 			SLURM_PROTOCOL_VERSION);
@@ -17343,10 +17343,8 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	return SLURM_SUCCESS;
 }
 
-static int _update_job_nodes_str(void *x, void *arg)
+static int _update_job_nodes_str(job_record_t *job_ptr)
 {
-	job_record_t *job_ptr = x;
-
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
 
