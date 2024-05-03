@@ -55,6 +55,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
 #include "src/common/extra_constraints.h"
+#include "src/common/front_end.h"
 #include "src/common/identity.h"
 #include "src/common/job_resources.h"
 #include "src/common/job_state_reason.h"
@@ -326,50 +327,6 @@ extern bitstr_t *power_up_node_bitmap;	/* Powered up and requested nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
-
-/*****************************************************************************\
- *  FRONT_END parameters and data structures
-\*****************************************************************************/
-#define FRONT_END_MAGIC 0xfe9b82fe
-
-typedef struct {
-	uint32_t magic;			/* magic cookie to test data integrity */
-					/* DO NOT ALPHABETIZE */
-	gid_t *allow_gids;		/* zero terminated list of allowed groups */
-	char *allow_groups;		/* allowed group string */
-	uid_t *allow_uids;		/* zero terminated list of allowed users */
-	char *allow_users;		/* allowed user string */
-	time_t boot_time;		/* Time of node boot,
-					 * computed from up_time */
-	char *comm_name;		/* communications path name to node */
-	gid_t *deny_gids;		/* zero terminated list of denied groups */
-	char *deny_groups;		/* denied group string */
-	uid_t *deny_uids;		/* zero terminated list of denied users */
-	char *deny_users;		/* denied user string */
-	uint32_t job_cnt_comp;		/* count of completing jobs on node */
-	uint16_t job_cnt_run;		/* count of running or suspended jobs */
-	time_t last_response;		/* Time of last communication */
-	char *name;			/* frontend node name */
-	uint32_t node_state;		/* enum node_states, ORed with
-					 * NODE_STATE_NO_RESPOND if not
-					 * responding */
-	bool not_responding;		/* set if fails to respond,
-					 * clear after logging this */
-	slurm_addr_t slurm_addr;	/* network address */
-	uint16_t port;			/* frontend specific port */
-	uint16_t protocol_version;	/* Slurm version number */
-	char *reason;			/* reason for down frontend node */
-	time_t reason_time;		/* Time stamp when reason was set,
-					 * ignore if no reason is set. */
-	uint32_t reason_uid;   		/* User that set the reason, ignore if
-					 * no reason is set. */
-	time_t slurmd_start_time;	/* Time of slurmd startup */
-	char *version;			/* Slurm version */
-} front_end_record_t;
-
-extern front_end_record_t *front_end_nodes;
-extern uint16_t front_end_node_cnt;
-extern time_t last_front_end_update;	/* time of last front_end update */
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures

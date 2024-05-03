@@ -40,6 +40,7 @@ libcommon_la_SOURCES =				\
 	fetch_config.h				\
 	forward.c				\
 	forward.h				\
+	front_end.h				\
 	global_defaults.c			\
 	group_cache.c				\
 	group_cache.h				\
