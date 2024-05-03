@@ -666,6 +666,8 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
+	static bool cloud_dns = false;
+	static time_t last_update = 0;
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
@@ -680,6 +682,14 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	signal_tasks_msg->signal      = signal;
 	if (step_ptr->flags & SSF_NO_SIG_FAIL)
 		signal_tasks_msg->flags |= KILL_NO_SIG_FAIL;
+
+        if (last_update != slurm_conf.last_update) {
+                if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
+                        cloud_dns = true;
+                else
+                        cloud_dns = false;
+                last_update = slurm_conf.last_update;
+        }
 
 	log_flag(STEPS, "%s: queueing signal %d with flags=0x%x for %pS",
 	      __func__, signal, signal_tasks_msg->flags, step_ptr);
@@ -4882,6 +4892,8 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
+	static bool cloud_dns = false;
+	static time_t last_update = 0;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
@@ -4904,6 +4916,14 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	kill_step->time      = now;
 	kill_step->start_time = job_ptr->start_time;
 	kill_step->details = xstrdup(job_ptr->state_desc);
+
+        if (last_update != slurm_conf.last_update) {
+                if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
+                        cloud_dns = true;
+                else
+                        cloud_dns = false;
+                last_update = slurm_conf.last_update;
+        }
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
