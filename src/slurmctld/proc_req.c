@@ -2273,6 +2273,54 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	}
 }
 
+static int _pack_ctld_job_steps(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+
+	if ((args->step_id->job_id != NO_VAL) &&
+	    (args->step_id->job_id != job_ptr->job_id) &&
+	    (args->step_id->job_id != job_ptr->array_job_id))
+		return 0;
+
+	args->valid_job = 1;
+
+	if (((args->show_flags & SHOW_ALL) == 0) && !args->privileged &&
+	    (job_ptr->part_ptr) &&
+	    part_not_on_list(args->visible_parts, job_ptr->part_ptr))
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->uid) && !args->privileged) {
+		if (slurm_mcs_get_privatedata()) {
+			if (mcs_g_check_mcs_label(args->uid,
+						  job_ptr->mcs_label, false))
+				return 0;
+		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
+							 args->uid,
+							 job_ptr->account,
+							 false)) {
+			return 0;
+		}
+	}
+
+	/*
+	 * Pack a single requested step, or pack all steps.
+	 */
+	if (args->step_id->step_id != NO_VAL ) {
+		step_record_t *step_ptr = find_step_record(job_ptr,
+							   args->step_id);
+		if (!step_ptr)
+			return 0;
+		pack_ctld_job_step_info(step_ptr, args);
+	} else {
+		list_for_each(job_ptr->step_list,
+			      pack_ctld_job_step_info,
+			      args);
+	}
+	return 0;
+}
+
 /* _slurm_rpc_job_step_get_info - process request for job step info */
 static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 {
@@ -2292,10 +2340,28 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 		log_flag(STEPS, "%s: no change", __func__);
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
+		bool privileged = validate_operator(msg->auth_uid);
+		bool skip_visible_parts =
+			(request->show_flags & SHOW_ALL) || privileged;
+		pack_step_args_t args = {0};
+
 		buffer = init_buf(BUF_SIZE);
-		error_code = pack_ctld_job_step_info_response_msg(
-			&request->step_id, msg->auth_uid, request->show_flags,
-			buffer, msg->protocol_version);
+
+		args.step_id = &request->step_id,
+		args.show_flags = request->show_flags,
+		args.uid = msg->auth_uid,
+		args.steps_packed = 0,
+		args.buffer = buffer,
+		args.privileged = privileged,
+		args.proto_version = msg->protocol_version,
+		args.valid_job = false,
+		args.visible_parts = build_visible_parts(msg->auth_uid,
+							 skip_visible_parts),
+		args.job_step_list = job_list,
+		args.pack_job_step_list_func = _pack_ctld_job_steps,
+
+		error_code = pack_job_step_info_response_msg(&args);
+
 		unlock_slurmctld(job_read_lock);
 		END_TIMER2(__func__);
 		if (error_code) {

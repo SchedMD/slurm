@@ -217,4 +217,16 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock));
 
+/*
+ * pack_job_step_info_response_msg - packs job step info
+ * IN step_id - specific id or NO_VAL/NO_VAL for all
+ * IN uid - user issuing request
+ * IN show_flags - job step filtering options
+ * OUT buffer - location to store data, pointers automatically advanced
+ * IN protocol_version - slurm protocol version of client
+ * RET - 0 or error code
+ * NOTE: MUST free_buf buffer
+ */
+extern int pack_job_step_info_response_msg(pack_step_args_t *args);
+
 #endif /* _SLURM_STEP_MGR_H */

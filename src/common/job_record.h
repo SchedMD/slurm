@@ -651,6 +651,7 @@ typedef struct {
 	bool valid_job;
 	part_record_t **visible_parts;
 	list_t *job_step_list;
+	int (*pack_job_step_list_func)(void *x, void *arg);
 } pack_step_args_t;
 
 extern int pack_ctld_job_step_info(void *x, void *arg);

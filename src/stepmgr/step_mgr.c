@@ -5720,3 +5720,61 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 
 	return error_code;
 }
+
+/*
+ * pack_job_step_info_response_msg - packs job step info
+ * IN step_id - specific id or NO_VAL/NO_VAL for all
+ * IN uid - user issuing request
+ * IN show_flags - job step filtering options
+ * OUT buffer - location to store data, pointers automatically advanced
+ * RET - 0 or error code
+ * NOTE: MUST free_buf buffer
+ */
+extern int pack_job_step_info_response_msg(pack_step_args_t *args)
+{
+	int error_code = 0;
+	uint32_t tmp_offset;
+	time_t now = time(NULL);
+
+	if (args->proto_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		/* steps_packed placeholder */
+		pack32(args->steps_packed, args->buffer);
+		pack_time(now, args->buffer);
+
+		list_for_each_ro(args->job_step_list,
+				 args->pack_job_step_list_func, args);
+
+		if (list_count(job_list) && !args->valid_job &&
+		    !args->steps_packed)
+			error_code = ESLURM_INVALID_JOB_ID;
+
+		/* put the real record count in the message body header */
+		tmp_offset = get_buf_offset(args->buffer);
+		set_buf_offset(args->buffer, 0);
+		pack32(args->steps_packed, args->buffer);
+
+		set_buf_offset(args->buffer, tmp_offset);
+	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/* steps_packed placeholder */
+		pack32(args->steps_packed, args->buffer);
+		pack_time(now, args->buffer);
+
+		list_for_each_ro(args->job_step_list,
+				 args->pack_job_step_list_func, args);
+
+		if (list_count(job_list) && !args->valid_job &&
+		    !args->steps_packed)
+			error_code = ESLURM_INVALID_JOB_ID;
+
+		/* put the real record count in the message body header */
+		tmp_offset = get_buf_offset(args->buffer);
+		set_buf_offset(args->buffer, 0);
+		pack32(args->steps_packed, args->buffer);
+
+		set_buf_offset(args->buffer, tmp_offset);
+	}
+
+	xfree(args->visible_parts);
+
+	return error_code;
+}
