@@ -62,7 +62,6 @@ typedef struct {
 
 typedef struct {
 	int magic; /* MIME_ARRAY_MAGIC */
-	char **mime_array;
 	int index;
 } mime_type_array_args_t;
 
@@ -83,6 +82,7 @@ typedef struct {
 
 /* list of all of the known mime types */
 static List mime_types_list = NULL;
+static char **mime_array = NULL;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -222,9 +222,9 @@ static int _foreach_add_mime_type(void *x, void *arg)
 	mime_type_array_args_t *args = arg;
 
 	xassert(args->magic == MIME_ARRAY_MAGIC);
-	xassert(!args->mime_array[args->index]);
+	xassert(!mime_array[args->index]);
 
-	args->mime_array[args->index] = xstrdup(pmt->mime_type);
+	mime_array[args->index] = xstrdup(pmt->mime_type);
 	args->index++;
 
 	return SLURM_SUCCESS;
@@ -233,7 +233,6 @@ static int _foreach_add_mime_type(void *x, void *arg)
 extern const char **get_mime_type_array(void)
 {
 	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	static char **mime_array = NULL;
 
 	slurm_mutex_lock(&lock);
 
@@ -247,8 +246,6 @@ extern const char **get_mime_type_array(void)
 
 		xrecalloc(mime_array, (list_count(mime_types_list) + 1),
 			  sizeof(*mime_array));
-
-		args.mime_array = mime_array;
 
 		list_for_each_ro(mime_types_list, _foreach_add_mime_type,
 				 &args);
@@ -300,6 +297,11 @@ extern void serializer_g_fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);
+	if (mime_array) {
+		for (int i = 0; mime_array[i]; i++)
+			xfree(mime_array[i]);
+		xfree(mime_array);
+	}
 	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);
 	slurm_mutex_unlock(&init_mutex);
