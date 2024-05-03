@@ -595,6 +595,9 @@ slurm_errtab_t slurm_errtab[] = {
 	  "There is something internally wrong with the SQL needed for this. Please consult the slurmdbd log for more info."                    },
 	{ ERRTAB_ENTRY(ESLURM_NO_REMOVE_DEFAULT_QOS),
 	  "This request would make it so some associations would not have access to their default qos."                                         },
+	{ ERRTAB_ENTRY(ESLURM_COORD_NO_INCREASE_JOB_LIMIT),
+	  "Coordinators can not increase job limits beyond the parent ones" },
+
 
 	/* Federation Errors */
 	{ ERRTAB_ENTRY(ESLURM_FED_CLUSTER_MAX_CNT),
