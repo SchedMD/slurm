@@ -44,10 +44,12 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/priority.h"
-#include "src/common/slurmdbd_pack.h"
+
 #include "src/slurmdbd/read_config.h"
 
 #define ASSOC_HASH_SIZE 1000
