@@ -46,9 +46,6 @@
  */
 extern void delete_step_records(job_record_t *job_ptr);
 
-/* free_step_record - delete a step record's data structures */
-extern void free_step_record(void *x);
-
 /*
  * job_step_signal - signal the specified job step
  * IN step_id - filled in slurm_step_id_t

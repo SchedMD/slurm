@@ -677,8 +677,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  */
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
-	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
-	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
+	job_record_t *job_ptr = create_job_record();
 
 	if (list_add) {
 		if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
@@ -690,22 +689,8 @@ static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 		list_append(job_list, job_ptr);
 	}
 
-	job_ptr->magic = JOB_MAGIC;
-	job_ptr->array_task_id = NO_VAL;
-	job_ptr->details = detail_ptr;
-	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_t));
-	job_ptr->site_factor = NICE_OFFSET;
-	job_ptr->step_list = list_create(free_step_record);
-
-	detail_ptr->magic = DETAILS_MAGIC;
-	detail_ptr->submit_time = time(NULL);
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet  */
-	job_ptr->billable_tres = (double)NO_VAL;
-
 	return job_ptr;
 }
-
 
 /*
  * _delete_job_details - delete a job's detail record and clear it's pointer

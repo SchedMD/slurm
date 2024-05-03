@@ -447,59 +447,6 @@ extern void delete_step_records(job_record_t *job_ptr)
 	list_delete_all(job_ptr->step_list, _step_not_cleaning, &remaining);
 }
 
-/* free_step_record - delete a step record's data structures */
-extern void free_step_record(void *x)
-{
-	step_record_t *step_ptr = (step_record_t *) x;
-	xassert(step_ptr);
-	xassert(step_ptr->magic == STEP_MAGIC);
-/*
- * FIXME: If job step record is preserved after completion,
- * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur simultaneously.
- */
-	if (step_ptr->switch_job) {
-		if (step_ptr->step_layout)
-			switch_g_job_step_complete(
-				step_ptr->switch_job,
-				step_ptr->step_layout->node_list);
-		switch_g_free_jobinfo (step_ptr->switch_job);
-	}
-	resv_port_free(step_ptr);
-
-	xfree(step_ptr->container);
-	xfree(step_ptr->container_id);
-	xfree(step_ptr->host);
-	xfree(step_ptr->name);
-	slurm_step_layout_destroy(step_ptr->step_layout);
-	jobacctinfo_destroy(step_ptr->jobacct);
-	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
-	xfree(step_ptr->cpu_alloc_reps);
-	xfree(step_ptr->cpu_alloc_values);
-	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
-	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
-	xfree(step_ptr->resv_port_array);
-	xfree(step_ptr->resv_ports);
-	xfree(step_ptr->network);
-	FREE_NULL_LIST(step_ptr->gres_list_alloc);
-	FREE_NULL_LIST(step_ptr->gres_list_req);
-	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
-	xfree(step_ptr->tres_alloc_str);
-	xfree(step_ptr->tres_fmt_alloc_str);
-	xfree(step_ptr->cpus_per_tres);
-	xfree(step_ptr->mem_per_tres);
-	xfree(step_ptr->submit_line);
-	xfree(step_ptr->tres_bind);
-	xfree(step_ptr->tres_freq);
-	xfree(step_ptr->tres_per_step);
-	xfree(step_ptr->tres_per_node);
-	xfree(step_ptr->tres_per_socket);
-	xfree(step_ptr->tres_per_task);
-	xfree(step_ptr->memory_allocated);
-	step_ptr->magic = ~STEP_MAGIC;
-	xfree(step_ptr);
-}
-
 /*
  * delete_step_record - delete record for job step for specified job_ptr
  *	and step_id

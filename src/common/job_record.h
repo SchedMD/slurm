@@ -612,4 +612,14 @@ typedef struct {
 	slurmctld_resv_t *resv_ptr;
 } job_queue_req_t;
 
+/*
+ * Create and initialize job_record_t.
+ *
+ * Not added to a global job list.
+ */
+extern job_record_t *create_job_record(void);
+
+/* free_step_record - delete a step record's data structures */
+extern void free_step_record(void *x);
+
 #endif /* _SLURM_JOB_RECORD_H */
