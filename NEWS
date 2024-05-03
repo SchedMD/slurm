@@ -187,8 +187,6 @@ documents those changes that are of interest to users and administrators.
     string.
  -- slurmrestd,sackd,scrun - Improve logic around handling kernel provided
     buffer size of incoming data in files/sockets/pipes to avoid crashes.
- -- slurmrestd - Avoid ignoring numerical only endpoints during startup with
-    older libjson-c due to type parsing mismatching.
 
 * Changes in Slurm 23.11.7
 ==========================
