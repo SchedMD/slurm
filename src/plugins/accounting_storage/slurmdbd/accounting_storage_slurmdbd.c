@@ -55,8 +55,10 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/select.h"
+
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
