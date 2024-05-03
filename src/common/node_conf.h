@@ -521,4 +521,11 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
  */
 extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
 
+extern void node_record_pack(void *in,
+			     uint16_t protocol_version,
+			     buf_t *buffer);
+extern int node_record_unpack(void **out,
+			      uint16_t protocol_version,
+			      buf_t *buffer);
+
 #endif /* !_HAVE_NODE_CONF_H */
