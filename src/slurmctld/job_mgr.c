@@ -20351,24 +20351,6 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	return job_ptr;
 }
 
-extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr)
-{
-	slurm_node_alias_addrs_t *alias_addrs;
-
-	if (!job_ptr || !job_ptr->node_addrs)
-		return NULL;
-
-	alias_addrs = xmalloc(sizeof(slurm_node_alias_addrs_t));
-	alias_addrs->node_cnt = job_ptr->node_cnt;
-	alias_addrs->node_addrs = xcalloc(job_ptr->node_cnt,
-					  sizeof(slurm_addr_t));
-	memcpy(alias_addrs->node_addrs, job_ptr->node_addrs,
-	       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-	alias_addrs->node_list = xstrdup(job_ptr->nodes);
-
-	return alias_addrs;
-}
-
 extern uint16_t job_mgr_determine_cpus_per_core(
 	job_details_t *details, int node_inx)
 {

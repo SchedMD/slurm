@@ -189,4 +189,9 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
  */
 extern step_record_t *build_extern_step(job_record_t *job_ptr);
 
+/*
+ * build_alias_addrs - build alias_addrs for step_layout
+ */
+extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
+
 #endif /* _SLURM_STEP_MGR_H */
