@@ -64,4 +64,30 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 			    slurmdb_user_cond_t *user_cond);
 
+/*
+ * as_mysql_user_add_coord_update - Manage the user_recs that are getting coord
+ *                                  updates.
+ * IN/OUT: mysql_conn - Database connection.
+ * IN/OUT: user_list - List of slurmdb_user_rec_t needs to be freed afterwards.
+ * IN: user - Name of user.
+ */
+extern slurmdb_user_rec_t *as_mysql_user_add_coord_update(
+	mysql_conn_t *mysql_conn,
+	list_t **user_list,
+	char *user,
+	bool locked);
+
+/*
+ * as_mysql_user_handle_user_coord_flag - Add or Remove coord account from a
+ *                                        user.
+ * IN/OUT: user_rec - coord_accts is altered based on 'flags'.
+ * IN: flags - ASSOC_FLAG_USER_COORD_NO to remove ASSOC_FLAG_USER_COORD to add
+ *             'acct' to user_rec->coord_accts.
+ * IN: acct - Name of acct.
+ *
+ */
+extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
+						 slurmdb_assoc_flags_t flags,
+						 char *acct);
+
 #endif

@@ -1902,6 +1902,8 @@ static const struct {
 	T(ASSOC_FLAG_DELETED, "Deleted"),
 	T(ASSOC_FLAG_NO_UPDATE, "NoUpdate"),
 	T(ASSOC_FLAG_EXACT, "Exact"),
+	T(ASSOC_FLAG_USER_COORD_NO, "NoUsersAreCoords"),
+	T(ASSOC_FLAG_USER_COORD, "UsersAreCoords"),
 	T(ASSOC_FLAG_INVALID, "INVALID"),
 };
 #undef T

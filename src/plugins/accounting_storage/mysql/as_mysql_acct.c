@@ -412,6 +412,10 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	/* Transfer over relavant flags from the account to the association. */
+	if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD)
+		add_assoc->assoc.flags |= ASSOC_FLAG_USER_COORD;
+
 	memset(&add_acct_cond, 0, sizeof(add_acct_cond));
 	add_acct_cond.acct_in = acct;
 	add_acct_cond.assoc_in = &add_assoc->assoc;

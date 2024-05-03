@@ -651,4 +651,10 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
 extern bool assoc_mgr_check_coord_qos(char *cluster_name, char *account,
 				     char *coord_name, list_t *qos_list);
 
+/*
+ * Here we are checking to see if the association given has the flag
+ * ASSOC_FLAG_USER_COORD set anywhere in the upper tree.
+ */
+extern bool assoc_mgr_tree_has_user_coord(slurmdb_assoc_rec_t *assoc,
+					  bool locked);
 #endif /* _SLURM_ASSOC_MGR_H */

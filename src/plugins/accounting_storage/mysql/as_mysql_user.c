@@ -1902,3 +1902,126 @@ get_wckeys:
 
 	return user_list;
 }
+
+static int _find_user(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	char *name = arg;
+
+	return slurm_find_char_exact_in_list(user_rec->name, name);
+}
+
+static slurmdb_user_rec_t *_make_user_rec_with_coords(
+	mysql_conn_t *mysql_conn, char *user, bool locked)
+{
+	slurmdb_user_rec_t *user_rec = NULL;
+	/*
+	 * We can't use user_rec just yet since we get that filled up
+	 * with variables that we don't own. We will eventually free it
+	 * later which causes issues memory wise.
+	 */
+	slurmdb_user_rec_t user_tmp = {
+		.name = user,
+		.uid = NO_VAL,
+	};
+
+	assoc_mgr_lock_t locks = {
+		.user = READ_LOCK
+	};
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
+
+	if (assoc_mgr_fill_in_user(mysql_conn, &user_tmp,
+				   ACCOUNTING_ENFORCE_ASSOCS,
+				   NULL, true) != SLURM_SUCCESS) {
+		/* New User */
+		goto end_it;
+	}
+	/*
+	 * The association manager expects the dbd to do all the lifting
+	 * here, so we get a full list and then remove from it.
+	 */
+	user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
+	user_rec->name = xstrdup(user_tmp.name);
+	user_rec->uid = NO_VAL;
+	user_rec->coord_accts = slurmdb_list_copy_coord(
+		user_tmp.coord_accts);
+
+	/* This shouldn't be needed, but just in case */
+	if (!user_rec->coord_accts)
+		user_rec->coord_accts =
+			list_create(slurmdb_destroy_coord_rec);
+end_it:
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+	return user_rec;
+}
+
+extern slurmdb_user_rec_t *as_mysql_user_add_coord_update(
+	mysql_conn_t *mysql_conn, list_t **user_list, char *user, bool locked)
+{
+	slurmdb_user_rec_t *user_rec;
+
+	xassert(user_list);
+	xassert(user);
+
+	if (!*user_list) {
+		/* the mysql_conn->update_list will free the contents */
+		*user_list = list_create(NULL);
+	}
+
+	/* See if we have already added it. */
+	if ((user_rec = list_find_first(*user_list, _find_user, user)))
+		return user_rec;
+
+	user_rec = _make_user_rec_with_coords(mysql_conn, user, locked);
+
+	if (!user_rec)
+		return NULL;
+
+	list_append(*user_list, user_rec);
+
+	/*
+	 * NOTE: REMOVE|ADD do the same thing, they both expect the full list so
+	 * we can use either one to do the same thing.
+	 */
+	if (addto_update_list(mysql_conn->update_list,
+			      SLURMDB_REMOVE_COORD, user_rec) !=
+	    SLURM_SUCCESS) {
+		error("Couldn't add removal of coord, this should never happen.");
+		slurmdb_destroy_user_rec(user_rec);
+		return NULL;
+	}
+
+	return user_rec;
+}
+
+extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
+						 slurmdb_assoc_flags_t flags,
+						 char *acct)
+{
+	xassert(user_rec);
+	xassert(user_rec->coord_accts);
+	xassert(acct);
+
+	if (flags & ASSOC_FLAG_USER_COORD_NO) {
+		(void) list_delete_first(user_rec->coord_accts,
+					 assoc_mgr_find_nondirect_coord_by_name,
+					 acct);
+		debug2("Removing user %s from being a coordinator of account %s",
+		       user_rec->name, acct);
+	} else if ((flags & ASSOC_FLAG_USER_COORD) &&
+		 !list_find_first(user_rec->coord_accts,
+				  assoc_mgr_find_coord_in_user,
+				  acct)) {
+		slurmdb_coord_rec_t *coord = xmalloc(sizeof(*coord));
+
+		coord->name = xstrdup(acct);
+		list_append(user_rec->coord_accts, coord);
+		debug2("Adding user %s as a coordinator of account %s",
+		       user_rec->name, acct);
+	}
+}

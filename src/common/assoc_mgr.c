@@ -7599,3 +7599,38 @@ end_it:
 
 	return rc;
 }
+
+extern bool assoc_mgr_tree_has_user_coord(slurmdb_assoc_rec_t *assoc,
+					  bool locked)
+{
+	assoc_mgr_lock_t locks = {
+		.assoc = READ_LOCK
+	};
+	bool rc = false;
+
+	xassert(assoc);
+	xassert(assoc->id);
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+
+	/* We don't have an assoc_mgr pointer given, let's find it */
+	if (!assoc->usage)
+		assoc = _find_assoc_rec(assoc);
+
+	/* See if this assoc or ansestor is making users coordinators */
+	while (assoc) {
+		if (assoc->flags & ASSOC_FLAG_USER_COORD) {
+			rc = true;
+			break;
+		}
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return rc;
+}

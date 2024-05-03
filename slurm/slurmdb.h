@@ -254,9 +254,12 @@ typedef enum {
 					  * a non-partition based association
 					  * when calling
 					  * assoc_mgr_fill_in_assoc() */
+	ASSOC_FLAG_USER_COORD_NO = SLURM_BIT(3),
 
 	/* Anything above this (0-15) will not be stored in the database. */
 	ASSOC_FLAG_BASE = 0x0000ffff,
+
+	ASSOC_FLAG_USER_COORD = SLURM_BIT(16),
 
 	ASSOC_FLAG_INVALID
 } slurmdb_assoc_flags_t;

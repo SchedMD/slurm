@@ -1978,6 +1978,33 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", comment='%s'", assoc->comment);
 	}
 
+	if (assoc->flags) {
+		xstrcat(*cols, ", flags");
+
+		if (for_add) {
+			uint16_t base_flags = assoc->flags & ~ASSOC_FLAG_BASE;
+			xstrfmtcat(*vals, ", %u", base_flags);
+			xstrfmtcat(*extra, ", flags=%u", base_flags);
+		} else {
+			/*
+			 * At the moment this only works well with this one flag
+			 * future versions of this code will probably need to
+			 * handle multiple.
+			 */
+			if (assoc->flags & ASSOC_FLAG_USER_COORD_NO) {
+				xstrfmtcat(*vals, ", flags&~%u",
+					   ASSOC_FLAG_USER_COORD);
+				xstrfmtcat(*extra, ", flags=flags&~%u",
+					   ASSOC_FLAG_USER_COORD);
+			} else if (assoc->flags & ASSOC_FLAG_USER_COORD) {
+				xstrfmtcat(*vals, ", flags|%u",
+					   ASSOC_FLAG_USER_COORD);
+				xstrfmtcat(*extra, ", flags=flags|%u",
+					   ASSOC_FLAG_USER_COORD);
+			}
+		}
+	}
+
 	/* When modifying anything below this comment it happens in
 	 * the actual function since we have to wait until we hear
 	 * about the parent first.
