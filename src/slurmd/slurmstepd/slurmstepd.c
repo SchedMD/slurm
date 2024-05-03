@@ -703,10 +703,14 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		step_id.step_het_comp = NO_VAL;
 		break;
 	case LAUNCH_TASKS:
-		memcpy(&step_id,
-		       &((launch_tasks_request_msg_t *)msg->data)->step_id,
-		       sizeof(step_id));
+	{
+		launch_tasks_request_msg_t *task_msg;
+		task_msg = (launch_tasks_request_msg_t *)msg->data;
+
+		memcpy(&step_id, &task_msg->step_id, sizeof(step_id));
+
 		break;
+	}
 	default:
 		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
 		break;
