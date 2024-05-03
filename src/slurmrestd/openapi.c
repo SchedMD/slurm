@@ -489,10 +489,7 @@ again:
 	return entries;
 
 fail:
-	for (entry = entries; entry <= entries + count; entry++)
-		xfree(entry->entry);
-
-	xfree(entries);
+	_free_entry_list(entries, -1, NULL);
 	xfree(buffer);
 	if (count_ptr)
 		*count_ptr = -1;
