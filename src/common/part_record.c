@@ -30,3 +30,104 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "part_record.h"
+
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+
+/*
+ * Free memory for cached backfill data in partition record
+ */
+static void _bf_data_free(bf_part_data_t **datap)
+{
+	bf_part_data_t *data;
+	if (!datap || !*datap)
+		return;
+
+	data = *datap;
+
+	slurmdb_destroy_bf_usage(data->job_usage);
+        slurmdb_destroy_bf_usage(data->resv_usage);
+	xhash_free(data->user_usage);
+	xfree(data);
+
+	*datap = NULL;
+}
+
+/*
+ * Sync with _init_conf_part().
+ *
+ * _init_conf_part() initializes default values from slurm.conf parameters.
+ * After parsing slurm.conf, _build_single_partitionline_info() copies
+ * slurm_conf_partition_t to part_record_t. Default values between
+ * slurm_conf_partition_t and part_record_t should stay in sync in case a
+ * part_record_t is created outside of slurm.conf parsing.
+ */
+static void _init_part_record(part_record_t *part_ptr)
+{
+	part_ptr->magic = PART_MAGIC;
+	if (slurm_conf.conf_flags & CONF_FLAG_DRJ)
+		part_ptr->flags |= PART_FLAG_NO_ROOT;
+	part_ptr->max_nodes_orig = INFINITE;
+	part_ptr->min_nodes = 1;
+	part_ptr->min_nodes_orig = 1;
+
+	/* sync with slurm_conf_partition_t */
+	part_ptr->default_time = NO_VAL;
+	part_ptr->max_cpus_per_node = INFINITE;
+	part_ptr->max_cpus_per_socket = INFINITE;
+	part_ptr->max_nodes = INFINITE;
+	part_ptr->max_share = 1;
+	part_ptr->max_time = INFINITE;
+	part_ptr->over_time_limit = NO_VAL16;
+	part_ptr->preempt_mode = NO_VAL16;
+	part_ptr->priority_job_factor = 1;
+	part_ptr->priority_tier = 1;
+	part_ptr->resume_timeout = NO_VAL16;
+	part_ptr->state_up = PARTITION_UP;
+	part_ptr->suspend_time = NO_VAL;
+	part_ptr->suspend_timeout = NO_VAL16;
+}
+
+extern part_record_t *part_record_create(void)
+{
+	part_record_t *part_ptr = xmalloc(sizeof(*part_ptr));
+
+	_init_part_record(part_ptr);
+
+	return part_ptr;
+}
+
+extern void part_record_delete(part_record_t *part_ptr)
+{
+	if (!part_ptr)
+		return;
+
+	xfree(part_ptr->allow_accounts);
+	FREE_NULL_LIST(part_ptr->allow_accts_list);
+	xfree(part_ptr->allow_alloc_nodes);
+	xfree(part_ptr->allow_groups);
+	xfree(part_ptr->allow_uids);
+	xfree(part_ptr->allow_qos);
+	FREE_NULL_BITMAP(part_ptr->allow_qos_bitstr);
+	xfree(part_ptr->alternate);
+	xfree(part_ptr->billing_weights_str);
+	xfree(part_ptr->billing_weights);
+	xfree(part_ptr->deny_accounts);
+	FREE_NULL_LIST(part_ptr->deny_accts_list);
+	xfree(part_ptr->deny_qos);
+	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
+	FREE_NULL_LIST(part_ptr->job_defaults_list);
+	xfree(part_ptr->name);
+	xfree(part_ptr->orig_nodes);
+	xfree(part_ptr->nodes);
+	xfree(part_ptr->nodesets);
+	FREE_NULL_BITMAP(part_ptr->node_bitmap);
+	xfree(part_ptr->qos_char);
+	xfree(part_ptr->tres_cnt);
+	xfree(part_ptr->tres_fmt_str);
+	_bf_data_free(&part_ptr->bf_data);
+
+	xfree(part_ptr);
+}

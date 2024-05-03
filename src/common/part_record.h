@@ -123,4 +123,7 @@ typedef struct part_record {
 	bf_part_data_t *bf_data;/* backfill data, NO PACK */
 } part_record_t;
 
+extern part_record_t *part_record_create(void);
+extern void part_record_delete(part_record_t *part_ptr);
+
 #endif /* _SLURM_PART_RECORD_H */
