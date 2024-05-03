@@ -71,6 +71,7 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/tls.h"
@@ -726,6 +727,7 @@ int main(int argc, char **argv)
 	xfree(auth_plugin_handles);
 	select_g_fini();
 	slurm_fini();
+	hash_g_fini();
 	tls_g_fini();
 	auth_g_fini();
 	log_fini();
