@@ -725,16 +725,16 @@ extern int cgroup_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
+	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
-		slurm_mutex_lock(&g_context_lock);
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
-		slurm_mutex_unlock(&g_context_lock);
 	}
 
 	cgroup_conf_destroy();
 	plugin_inited = PLUGIN_NOT_INITED;
 
+	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
