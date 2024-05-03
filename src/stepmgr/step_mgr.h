@@ -39,6 +39,7 @@
 
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
+#include "src/common/slurm_step_layout.h"
 
 typedef struct {
 	void *acct_db_conn;
@@ -230,5 +231,12 @@ extern int step_create_from_msg(slurm_msg_t *msg,
  * NOTE: MUST free_buf buffer
  */
 extern int pack_job_step_info_response_msg(pack_step_args_t *args);
+
+/*
+ * Return combined layouts of all job_ptr steps
+ */
+extern int step_mgr_get_step_layouts(job_record_t *job_ptr,
+				     slurm_step_id_t *step_id,
+				     slurm_step_layout_t **out_step_layout);
 
 #endif /* _SLURM_STEP_MGR_H */

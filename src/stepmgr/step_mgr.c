@@ -5853,3 +5853,69 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args)
 
 	return error_code;
 }
+
+extern int step_mgr_get_step_layouts(job_record_t *job_ptr,
+				     slurm_step_id_t *step_id,
+				     slurm_step_layout_t **out_step_layout)
+{
+	list_itr_t *itr;
+	step_record_t *step_ptr = NULL;
+	slurm_step_layout_t *step_layout = NULL;
+
+	/* We can't call find_step_record here since we may need more than 1 */
+	itr = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = list_next(itr))) {
+		if (!verify_step_id(&step_ptr->step_id, step_id))
+			continue;
+		/*
+		 * Rebuild alias_addrs if need after restart of slurmctld
+		 */
+		 if (job_ptr->node_addrs &&
+		     !step_ptr->step_layout->alias_addrs) {
+			step_ptr->step_layout->alias_addrs =
+				build_alias_addrs(job_ptr);
+		}
+
+		if (step_layout)
+			slurm_step_layout_merge(step_layout,
+						step_ptr->step_layout);
+		else
+			step_layout = slurm_step_layout_copy(
+				step_ptr->step_layout);
+
+		/* break if don't need to look for further het_steps */
+		if (step_ptr->step_id.step_het_comp == NO_VAL)
+			break;
+		/*
+		 * If we are looking for a specific het step we can break here
+		 * as well.
+		 */
+		if (step_id->step_het_comp != NO_VAL)
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if (!step_layout) {
+		log_flag(STEPS, "%s: %pJ StepId=%u Not Found",
+			 __func__, job_ptr, step_id->step_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	/*
+	 * The cpt_compact* fields don't go to the client because they are not
+	 * handled in slurm_step_layout_merge(). Free them so the client does
+	 * not get bad data.
+	 */
+	xfree(step_layout->cpt_compact_array);
+	xfree(step_layout->cpt_compact_reps);
+	step_layout->cpt_compact_cnt = 0;
+
+#ifdef HAVE_FRONT_END
+	if (job_ptr->batch_host)
+		step_layout->front_end = xstrdup(job_ptr->batch_host);
+#endif
+
+	*out_step_layout = step_layout;
+
+	return SLURM_SUCCESS;
+}

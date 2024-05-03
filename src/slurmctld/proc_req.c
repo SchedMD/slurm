@@ -3417,8 +3417,6 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr = NULL;
-	step_record_t *step_ptr = NULL;
-	list_itr_t *itr;
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
@@ -3439,61 +3437,13 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
-	/* We can't call find_step_record here since we may need more than 1 */
-	itr = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(itr))) {
-		if (!verify_step_id(&step_ptr->step_id, req))
-			continue;
-		/*
-		 * Rebuild alias_addrs if need after restart of slurmctld
-		 */
-		 if (job_ptr->node_addrs &&
-		     !step_ptr->step_layout->alias_addrs) {
-			step_ptr->step_layout->alias_addrs =
-				build_alias_addrs(job_ptr);
-		}
+	error_code = step_mgr_get_step_layouts(job_ptr, req, &step_layout);
+	unlock_slurmctld(job_read_lock);
 
-		if (step_layout)
-			slurm_step_layout_merge(step_layout,
-						step_ptr->step_layout);
-		else
-			step_layout = slurm_step_layout_copy(
-				step_ptr->step_layout);
-
-		/* break if don't need to look for further het_steps */
-		if (step_ptr->step_id.step_het_comp == NO_VAL)
-			break;
-		/*
-		 * If we are looking for a specific het step we can break here
-		 * as well.
-		 */
-		if (req->step_het_comp != NO_VAL)
-			break;
-	}
-	list_iterator_destroy(itr);
-
-	if (!step_layout) {
-		unlock_slurmctld(job_read_lock);
-		log_flag(STEPS, "%s: %pJ StepId=%u Not Found",
-			 __func__, job_ptr, req->step_id);
-		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+	if (error_code) {
+		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
-
-	/*
-	 * The cpt_compact* fields don't go to the client because they are not
-	 * handled in slurm_step_layout_merge(). Free them so the client does
-	 * not get bad data.
-	 */
-	xfree(step_layout->cpt_compact_array);
-	xfree(step_layout->cpt_compact_reps);
-	step_layout->cpt_compact_cnt = 0;
-
-#ifdef HAVE_FRONT_END
-	if (job_ptr->batch_host)
-		step_layout->front_end = xstrdup(job_ptr->batch_host);
-#endif
-	unlock_slurmctld(job_read_lock);
 
 	response_init(&response_msg, msg, RESPONSE_STEP_LAYOUT, step_layout);
 
