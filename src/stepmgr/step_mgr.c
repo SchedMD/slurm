@@ -296,7 +296,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64) &&
 	    (remaining == 1)) {
-		set_job_tres_alloc_str(job_ptr, false);
+		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 		/* This flag says we have processed the tres alloc including
 		 * energy from all steps, so don't process or handle it again
 		 * with the job.  It also tells the slurmdbd plugin to send it

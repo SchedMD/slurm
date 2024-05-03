@@ -593,12 +593,6 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr);
  */
 extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked);
 
-/* set the tres_alloc_str and tres_alloc_fmt_str for the job.  assoc_mgr_locked
- * is set if the assoc_mgr read lock is already set.
- */
-extern void set_job_tres_alloc_str(job_record_t *job_ptr,
-				   bool assoc_mgr_locked);
-
 /* Note that the backup slurmctld has assumed primary control.
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void);

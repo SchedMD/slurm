@@ -7297,3 +7297,25 @@ extern bool assoc_mgr_valid_tres_cnt(char *tres, bool gres_tres_enforce)
 
 	return (rc == SLURM_SUCCESS) ? true : false;
 }
+
+extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
+					     bool assoc_mgr_locked)
+{
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	xassert(job_ptr);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
+	xfree(job_ptr->tres_alloc_str);
+	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
+
+	xfree(job_ptr->tres_fmt_alloc_str);
+	job_ptr->tres_fmt_alloc_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_alloc_cnt, TRES_STR_CONVERT_UNITS, true);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
+}

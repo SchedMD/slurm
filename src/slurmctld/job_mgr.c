@@ -1205,28 +1205,6 @@ extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
 
-extern void set_job_tres_alloc_str(job_record_t *job_ptr,
-				   bool assoc_mgr_locked)
-{
-	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-
-	xassert(job_ptr);
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
-
-	xfree(job_ptr->tres_alloc_str);
-	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
-
-	xfree(job_ptr->tres_fmt_alloc_str);
-	job_ptr->tres_fmt_alloc_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_alloc_cnt, TRES_STR_CONVERT_UNITS, true);
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_unlock(&locks);
-}
-
 /* Note that the backup slurmctld has assumed primary control.
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void)
@@ -2501,7 +2479,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 			    !(job_ptr->bit_flags & TRES_STR_CALC) &&
 			    job_ptr->tres_alloc_cnt &&
 			    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
-				set_job_tres_alloc_str(job_ptr, false);
+				assoc_mgr_set_job_tres_alloc_str(job_ptr,
+								 false);
 			jobacct_storage_g_job_complete(
 				acct_db_conn, job_ptr);
 			job_finished = 1;
@@ -10625,7 +10604,7 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 		calc_job_billable_tres(job_ptr, job_ptr->start_time, true);
 
 	/* now that the array is filled lets make the string from it */
-	set_job_tres_alloc_str(job_ptr, true);
+	assoc_mgr_set_job_tres_alloc_str(job_ptr, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -17376,7 +17355,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
-		set_job_tres_alloc_str(job_ptr, false);
+		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 
 	jobcomp_g_write(job_ptr);
 
@@ -19302,7 +19281,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
-		set_job_tres_alloc_str(job_ptr, false);
+		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
 	debug("%s: %pJ state 0x%x", __func__, job_ptr, state);

@@ -618,4 +618,10 @@ extern int assoc_mgr_tres_pos_changed(void);
  */
 extern bool assoc_mgr_valid_tres_cnt(char *tres, bool gres_tres_enforce);
 
+/* set the tres_alloc_str and tres_alloc_fmt_str for the job.  assoc_mgr_locked
+ * is set if the assoc_mgr read lock is already set.
+ */
+extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
+					     bool assoc_mgr_locked);
+
 #endif /* _SLURM_ASSOC_MGR_H */
