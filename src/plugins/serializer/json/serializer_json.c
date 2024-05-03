@@ -220,7 +220,7 @@ static json_object *_data_to_json(const data_t *d)
 	}
 	case DATA_TYPE_STRING:
 	{
-		const char *str = data_get_string_const(d);
+		const char *str = data_get_string(d);
 		if (str)
 			return json_object_new_string(str);
 		else
