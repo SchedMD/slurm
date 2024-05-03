@@ -716,12 +716,6 @@ static void _close_all_connections(bool locked)
 extern void free_conmgr(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
-	if (mgr.shutdown) {
-		log_flag(NET, "%s: connection manager already shutdown",
-			 __func__);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
 
 	mgr.shutdown = true;
 	mgr.quiesced = false;
