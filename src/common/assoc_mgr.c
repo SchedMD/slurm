@@ -6865,10 +6865,6 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 {
 	int diff_cnt = 0, i;
 
-	/* This isn't needed on the dbd */
-	if (slurmdbd_conf)
-		return SLURM_SUCCESS;
-
 	xassert(tres_cnt);
 
 	/* When doing the cnt the string is always the
@@ -6900,10 +6896,6 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 /* tres read lock needs to be locked before this is called. */
 extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 {
-	/* This isn't needed on the dbd */
-	if (slurmdbd_conf)
-		return;
-
 	xassert(assoc_mgr_tres_array);
 
 	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres,
