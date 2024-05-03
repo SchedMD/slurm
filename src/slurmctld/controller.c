@@ -131,6 +131,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 #include "src/stepmgr/srun_comm.h"
+#include "src/stepmgr/step_mgr.h"
 
 decl_static_data(usage_txt);
 
@@ -312,6 +313,14 @@ int main(int argc, char **argv)
 	bool create_clustername_file;
 	bool backup_has_control = false;
 	char *conf_file;
+	step_mgr_ops_t step_mgr_ops = {0};
+
+	step_mgr_ops.agent_queue_request = agent_queue_request;
+	step_mgr_ops.find_job_array_rec = find_job_array_rec;
+	step_mgr_ops.find_job_record = find_job_record;
+	step_mgr_ops.job_config_fini = job_config_fini;
+	step_mgr_ops.last_job_update = &last_job_update;
+	step_mgr_init(&step_mgr_ops);
 
 	main_argc = argc;
 	main_argv = argv;
@@ -646,6 +655,12 @@ int main(int argc, char **argv)
 			if (!slurmctld_config.resume_backup && slurmctld_primary)
 				trigger_primary_ctld_res_op();
 		}
+
+		/* Set pointers after they have been set */
+		step_mgr_ops.acct_db_conn = acct_db_conn;
+		step_mgr_ops.active_feature_list = active_feature_list;
+		step_mgr_ops.job_list = job_list;
+		step_mgr_ops.up_node_bitmap = up_node_bitmap;
 
 		_accounting_cluster_ready();
 		_send_future_cloud_to_db();

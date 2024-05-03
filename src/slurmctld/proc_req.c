@@ -6870,7 +6870,7 @@ static bool _pending_het_jobs(job_record_t *job_ptr)
 	if (job_ptr->het_job_id == 0)
 		return false;
 
-	het_job_leader = find_job_record(job_ptr->het_job_id);
+	het_job_leader = step_mgr_ops->find_job_record(job_ptr->het_job_id);
 	if (!het_job_leader) {
 		error("Hetjob leader %pJ not found", job_ptr);
 		return false;
@@ -6938,7 +6938,8 @@ extern void srun_allocate(job_record_t *job_ptr)
 				   job_ptr->start_protocol_ver);
 	} else if (_pending_het_jobs(job_ptr)) {
 		return;
-	} else if ((het_job_leader = find_job_record(job_ptr->het_job_id))) {
+	} else if ((het_job_leader =
+		    step_mgr_ops->find_job_record(job_ptr->het_job_id))) {
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, het_job_leader->alloc_resp_port,
 			       het_job_leader->resp_host);

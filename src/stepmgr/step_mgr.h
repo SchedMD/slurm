@@ -40,6 +40,24 @@
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 
+typedef struct {
+	void *acct_db_conn;
+	list_t *active_feature_list;
+	list_t *job_list;
+	time_t *last_job_update;
+	bitstr_t *up_node_bitmap;
+
+	void (*job_config_fini)(job_record_t *job_ptr);
+	job_record_t *(*find_job_record)(uint32_t job_id);
+	job_record_t *(*find_job_array_rec)(uint32_t array_job_id,
+					    uint32_t array_task_id);
+	void (*agent_queue_request)(agent_arg_t *agent_arg_ptr);
+} step_mgr_ops_t;
+
+extern step_mgr_ops_t *step_mgr_ops;
+
+extern void step_mgr_init();
+
 /*
  * delete_step_records - delete step record for specified job_ptr
  * IN job_ptr - pointer to job table entry to have step records removed
