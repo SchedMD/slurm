@@ -272,11 +272,6 @@ extern int select_p_node_init(void)
 	int i;
 	node_record_t *node_ptr;
 
-	if (!slurm_conf.select_type_param) {
-		info("%s SelectTypeParameters not specified, using default value: CR_Core_Memory",
-		     plugin_type);
-		slurm_conf.select_type_param = (CR_CORE | CR_MEMORY);
-	}
 	if (!(slurm_conf.select_type_param & (CR_CPU | CR_CORE | CR_SOCKET))) {
 		fatal("Invalid SelectTypeParameters: %s (%u), "
 		      "You need at least CR_(CPU|CORE|SOCKET)*",

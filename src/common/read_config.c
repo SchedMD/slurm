@@ -5137,8 +5137,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		}
 		conf->select_type_param = type_param;
 		xfree(temp_str);
-	} else
+	} else if (xstrstr(conf->select_type, "cons_tres")) {
+		slurm_conf.select_type_param = (CR_CORE | CR_MEMORY);
+	} else {
 		conf->select_type_param = 0;
+	}
 
 	if (!s_p_get_string( &conf->slurm_user_name, "SlurmUser", hashtbl)) {
 		conf->slurm_user_name = xstrdup("root");
