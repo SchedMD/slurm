@@ -5496,3 +5496,22 @@ extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr)
 
 	return alias_addrs;
 }
+
+extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
+{
+	int node_inx = -1;
+
+	if (!node_name)
+		return -1;
+
+	xassert(node_bitmap);
+
+	node_inx = node_name_get_inx(node_name);
+	if (node_inx == -1)
+		return -1;
+
+	if (!bit_test(node_bitmap, node_inx))
+		return -1;
+
+	return bit_set_count_range(node_bitmap, 0, node_inx);
+}

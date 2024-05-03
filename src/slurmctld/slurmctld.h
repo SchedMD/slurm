@@ -2391,16 +2391,6 @@ extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
 extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
 
 /*
- * Given a full system bitmap return the nth bit set where node_name is in it
- * IN - node_name - name of node
- * IN - node_bitmap - full system bitmap
- *
- * Used when you have a job/step specific array and you want to find the index
- * where that node is represented in that array.
- */
-extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
-
-/*
  * update_node_active_features - Update active features associated with nodes
  * IN node_names - List of nodes to update
  * IN active_features - New active features value

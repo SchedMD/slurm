@@ -20186,25 +20186,6 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	return my_env;
 }
 
-extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
-{
-	int node_inx = -1;
-
-	if (!node_name)
-		return -1;
-
-	xassert(node_bitmap);
-
-	node_inx = node_name_get_inx(node_name);
-	if (node_inx == -1)
-		return -1;
-
-	if (!bit_test(node_bitmap, node_inx))
-		return -1;
-
-	return bit_set_count_range(node_bitmap, 0, node_inx);
-}
-
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;

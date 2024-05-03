@@ -180,4 +180,14 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr);
  */
 extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
 
+/*
+ * Given a full system bitmap return the nth bit set where node_name is in it
+ * IN - node_name - name of node
+ * IN - node_bitmap - full system bitmap
+ *
+ * Used when you have a job/step specific array and you want to find the index
+ * where that node is represented in that array.
+ */
+extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
+
 #endif /* _SLURM_STEP_MGR_H */
