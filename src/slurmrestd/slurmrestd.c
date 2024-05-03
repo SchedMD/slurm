@@ -73,6 +73,7 @@
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
+#include "src/interfaces/tls.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
@@ -725,6 +726,7 @@ int main(int argc, char **argv)
 	xfree(auth_plugin_handles);
 	select_g_fini();
 	slurm_fini();
+	tls_g_fini();
 	auth_g_fini();
 	log_fini();
 
