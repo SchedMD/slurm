@@ -91,6 +91,8 @@ libcommon_la_SOURCES =				\
 	parse_time.h				\
 	parse_value.c				\
 	parse_value.h				\
+	part_record.c				\
+	part_record.h				\
 	persist_conn.c				\
 	persist_conn.h				\
 	plugin.c				\

@@ -37,12 +37,8 @@
 #include "src/common/cron.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/front_end.h"
+#include "src/common/part_record.h"
 #include "src/common/slurm_protocol_defs.h"
-
-#ifndef __part_record_t_defined
-#  define __part_record_t_defined
-typedef struct part_record part_record_t;
-#endif
 
 #ifndef __slurmctld_resv_t_defined
 #  define __slurmctld_resv_t_defined
