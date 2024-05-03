@@ -53,6 +53,8 @@
 
 #include "src/interfaces/accounting_storage.h"
 
+#include "../common/common_as.h"
+
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -548,6 +550,25 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
  */
 extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
+	int rc;
+	slurm_msg_t msg = {0};
+	persist_msg_t persist_msg = {0};
+	dbd_step_start_msg_t req = {0};
+
+	if (as_build_step_start_msg(&req, step_ptr))
+	    return SLURM_ERROR;
+
+	persist_msg.msg_type = DBD_STEP_START;
+	persist_msg.data = &req;
+
+	msg.msg_type = REQUEST_DBD_RELAY;
+	msg.conn = db_conn;
+	msg.data = &persist_msg;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL))
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -557,6 +578,25 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 extern int jobacct_storage_p_step_complete(void *db_conn,
 					   step_record_t *step_ptr)
 {
+	int rc;
+	slurm_msg_t msg = {0};
+	persist_msg_t persist_msg = {0};
+	dbd_step_comp_msg_t req = {0};
+
+	if (as_build_step_comp_msg(&req, step_ptr))
+		return SLURM_ERROR;
+
+	persist_msg.msg_type = DBD_STEP_COMPLETE;
+	persist_msg.data = &req;
+
+	msg.msg_type = REQUEST_DBD_RELAY;
+	msg.conn = db_conn;
+	msg.data = &persist_msg;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL))
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
