@@ -56,6 +56,182 @@ typedef struct {
 	char *user_name;
 } add_acct_cond_t;
 
+typedef struct {
+	char *acct;
+	list_t *acct_list;
+	char *cluster_name;
+	slurmdb_assoc_flags_t flags;
+	mysql_conn_t *mysql_conn;
+	char *query;
+	char *query_pos;
+	list_t *user_list;
+} flag_coord_acct_t;
+
+static int _foreach_flag_coord_handle(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	flag_coord_acct_t *flag_coord_acct = arg;
+
+	as_mysql_user_handle_user_coord_flag(
+		user_rec,
+		flag_coord_acct->flags,
+		flag_coord_acct->acct);
+	return 0;
+}
+
+static int _foreach_flag_coord_user(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = x;
+	flag_coord_acct_t *flag_coord_acct = arg;
+	int rc = 0;
+
+	/* In the children_list the user assocs are always first */
+	if (assoc_ptr->user) {
+		slurmdb_user_rec_t *user_rec = as_mysql_user_add_coord_update(
+			flag_coord_acct->mysql_conn,
+			&flag_coord_acct->user_list,
+			assoc_ptr->user,
+			true);
+		as_mysql_user_handle_user_coord_flag(
+			user_rec,
+			flag_coord_acct->flags,
+			assoc_ptr->acct);
+		return 0;
+	}
+
+	/*
+	 * We have a non-user assoc, so add/remove that from the full user list.
+	 */
+	if (flag_coord_acct->user_list) {
+		flag_coord_acct->acct = assoc_ptr->acct;
+		rc = list_for_each(flag_coord_acct->user_list,
+				   _foreach_flag_coord_handle,
+				   flag_coord_acct);
+		flag_coord_acct->acct = NULL;
+	}
+
+	if (assoc_ptr->usage->children_list)
+		rc = list_for_each(assoc_ptr->usage->children_list,
+				   _foreach_flag_coord_user,
+				   flag_coord_acct);
+
+	return rc;
+}
+
+static int _foreach_flag_coord_acct(void *x, void *arg)
+{
+	int rc = 1;
+	flag_coord_acct_t *flag_coord_acct = arg;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc_req = {
+		.cluster = flag_coord_acct->cluster_name,
+		.acct = x,
+		.uid = NO_VAL,
+	};
+
+	if (assoc_mgr_fill_in_assoc(flag_coord_acct->mysql_conn,
+				     &assoc_req,
+				     ACCOUNTING_ENFORCE_ASSOCS,
+				     &assoc_ptr,
+				     true) != SLURM_SUCCESS)
+		return -1;
+	/* Only change if needed */
+	if (((assoc_ptr->flags & ASSOC_FLAG_USER_COORD) &&
+	     (flag_coord_acct->flags & ASSOC_FLAG_USER_COORD_NO)) ||
+	    (!(assoc_ptr->flags & ASSOC_FLAG_USER_COORD) &&
+	     (flag_coord_acct->flags & ASSOC_FLAG_USER_COORD))) {
+		slurmdb_assoc_rec_t *mod_assoc =
+			xmalloc(sizeof(slurmdb_assoc_rec_t));
+		mod_assoc->id = assoc_ptr->id;
+		mod_assoc->cluster = xstrdup(assoc_ptr->cluster);
+		mod_assoc->flags = assoc_ptr->flags;
+		if (flag_coord_acct->flags & ASSOC_FLAG_USER_COORD_NO)
+			mod_assoc->flags &= ~ASSOC_FLAG_USER_COORD;
+		else
+			mod_assoc->flags |= ASSOC_FLAG_USER_COORD;
+
+		if (addto_update_list(flag_coord_acct->mysql_conn->update_list,
+				      SLURMDB_MODIFY_ASSOC, mod_assoc) !=
+		    SLURM_SUCCESS) {
+			error("Couldn't add removal of coord, this should never happen.");
+			slurmdb_destroy_user_rec(mod_assoc);
+			return 0;
+		}
+
+		/* set up query to remove the flag */
+		if (!flag_coord_acct->query) {
+			xstrfmtcatat(flag_coord_acct->query,
+				     &flag_coord_acct->query_pos,
+				     "update \"%s_%s\" set flags = %u where id_assoc IN (%u",
+				     mod_assoc->cluster, assoc_table,
+				     mod_assoc->flags, mod_assoc->id);
+		} else {
+			xstrfmtcatat(flag_coord_acct->query,
+				     &flag_coord_acct->query_pos,
+				     ",%u",
+				     mod_assoc->id);
+		}
+
+		if (assoc_ptr->usage->children_list)
+			rc = list_for_each(assoc_ptr->usage->children_list,
+					   _foreach_flag_coord_user,
+					   flag_coord_acct);
+	}
+
+	return rc;
+}
+
+static int _foreach_flag_coord_cluster(void *x, void *arg)
+{
+	int rc;
+	flag_coord_acct_t *flag_coord_acct = arg;
+
+	flag_coord_acct->cluster_name = x;
+
+	rc = list_for_each_ro(flag_coord_acct->acct_list,
+			      _foreach_flag_coord_acct,
+			      flag_coord_acct);
+	if (!rc)
+		return rc;
+
+	if (flag_coord_acct->query) {
+		xstrcatat(flag_coord_acct->query,
+			  &flag_coord_acct->query_pos,
+			  ");");
+		/* Now clear the flag for the associations in the database */
+		DB_DEBUG(DB_ASSOC, flag_coord_acct->mysql_conn->conn,
+			 "query\n%s",
+			 flag_coord_acct->query);
+		if ((rc = mysql_db_query(flag_coord_acct->mysql_conn,
+					 flag_coord_acct->query)) !=
+		    SLURM_SUCCESS) {
+			error("Couldn't update flags");
+			rc = 0;
+		}
+
+		xfree(flag_coord_acct->query);
+	}
+
+	return rc;
+}
+
+static void _handle_flag_coord(flag_coord_acct_t *flag_coord_acct)
+{
+	assoc_mgr_lock_t locks = {
+		.assoc = READ_LOCK,
+		.user = READ_LOCK,
+	};
+
+	assoc_mgr_lock(&locks);
+	(void) list_for_each_ro(as_mysql_cluster_list,
+				_foreach_flag_coord_cluster,
+				flag_coord_acct);
+	assoc_mgr_unlock(&locks);
+
+	FREE_NULL_LIST(flag_coord_acct->user_list);
+	xfree(flag_coord_acct->query);
+}
+
 static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 				    char **extra, char **at)
 {
@@ -514,6 +690,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
+	slurmdb_assoc_flags_t assoc_flags = ASSOC_FLAG_NONE;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -541,9 +718,11 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
 		xstrfmtcat(vals, ", flags=flags&%u",
 			   SLURMDB_ACCT_FLAG_USER_COORD);
+		assoc_flags |= ASSOC_FLAG_USER_COORD_NO;
 	} else if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
 		xstrfmtcat(vals, ", flags=flags|%u",
 			   SLURMDB_ACCT_FLAG_USER_COORD);
+		assoc_flags |= ASSOC_FLAG_USER_COORD;
 	}
 
 	if (!extra || !vals) {
@@ -601,6 +780,19 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xfree(name_char);
 	xfree(vals);
+
+	if (ret_list &&
+	    (assoc_flags &
+	     (ASSOC_FLAG_USER_COORD_NO | ASSOC_FLAG_USER_COORD))) {
+		flag_coord_acct_t flag_coord_acct = {
+			.acct_list = ret_list,
+			.flags = assoc_flags,
+			.mysql_conn = mysql_conn,
+		};
+
+		/* Update associations based on account flags */
+		_handle_flag_coord(&flag_coord_acct);
+	}
 
 	return ret_list;
 }
