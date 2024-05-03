@@ -48,8 +48,6 @@
 
 #include "src/interfaces/select.h"
 
-#include "src/slurmctld/agent.h"
-
 #include "src/stepmgr/step_mgr.h"
 
 /* Launch the srun request. Note that retry is always zero since

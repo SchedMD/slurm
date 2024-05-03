@@ -42,10 +42,10 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
+#include "src/common/job_record.h"
+#include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/slurmctld/slurmctld.h"
 
 #define  _DEBUG 0
 

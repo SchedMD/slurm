@@ -73,12 +73,6 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 
-#include "src/slurmctld/agent.h"
-#include "src/slurmctld/front_end.h"
-#include "src/slurmctld/locks.h"
-#include "src/slurmctld/node_scheduler.h"
-#include "src/slurmctld/slurmctld.h"
-
 #include "src/stepmgr/gres_ctld.h"
 #include "src/stepmgr/srun_comm.h"
 
