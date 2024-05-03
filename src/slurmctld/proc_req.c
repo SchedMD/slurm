@@ -775,6 +775,8 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 					    "SLURM_STEP_MGR",
 					    job_ptr->batch_host);
 			alloc_msg->env_size++;
+
+			job_ptr->bit_flags |= STEP_MGR_ENABLED;
 		}
 	} else {
 		/* alloc_msg->pn_min_memory = 0; */

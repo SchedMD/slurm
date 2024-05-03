@@ -2672,6 +2672,8 @@ extern void launch_job(job_record_t *job_ptr)
 		env_array_overwrite(&launch_msg_ptr->environment,
 				    "SLURM_STEP_MGR", job_ptr->batch_host);
 		launch_msg_ptr->envc++;
+
+		job_ptr->bit_flags |= STEP_MGR_ENABLED;
 	}
 
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));

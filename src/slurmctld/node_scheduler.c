@@ -3127,7 +3127,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
-	if (xstrstr(slurm_conf.slurmctld_params, "step_mgr_enable")) {
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
 		prolog_msg_ptr->job_ptr = job_ptr;
 	}
 
