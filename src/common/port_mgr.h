@@ -40,11 +40,9 @@
 #ifndef _HAVE_PORT_MGR_H
 #define _HAVE_PORT_MGR_H
 
-#include "src/slurmctld/slurmctld.h"
-
 /* Configure reserved ports.
  * Call with mpi_params==NULL to free memory */
-extern int reserve_port_config(char *mpi_params);
+extern int reserve_port_config(char *mpi_params, list_t *job_list);
 
 /* Reserve ports for a job step
  * RET SLURM_SUCCESS or an error code */

@@ -56,6 +56,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/port_mgr.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/strnatcmp.h"
@@ -83,7 +84,6 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
-#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -1690,7 +1690,7 @@ extern int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 
-	reserve_port_config(slurm_conf.mpi_params);
+	reserve_port_config(slurm_conf.mpi_params, job_list);
 
 	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurm_conf.licenses);

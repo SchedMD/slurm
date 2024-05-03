@@ -190,9 +190,8 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	job_scheduler.$(OBJEXT) job_state.$(OBJEXT) licenses.$(OBJEXT) \
 	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
 	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	prep_slurmctld.$(OBJEXT) proc_req.$(OBJEXT) \
-	rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
+	power_save.$(OBJEXT) prep_slurmctld.$(OBJEXT) \
+	proc_req.$(OBJEXT) rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
 	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) sackd_mgr.$(OBJEXT) \
 	slurmscriptd.$(OBJEXT) slurmscriptd_protocol_defs.$(OBJEXT) \
 	slurmscriptd_protocol_pack.$(OBJEXT) srun_comm.$(OBJEXT) \
@@ -227,12 +226,11 @@ am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/job_state.Po ./$(DEPDIR)/licenses.Po \
 	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
 	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
-	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/port_mgr.Po \
-	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/prep_slurmctld.Po \
-	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/rate_limit.Po \
-	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/reservation.Po \
-	./$(DEPDIR)/rpc_queue.Po ./$(DEPDIR)/sackd_mgr.Po \
-	./$(DEPDIR)/slurmscriptd.Po \
+	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/power_save.Po \
+	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
+	./$(DEPDIR)/rate_limit.Po ./$(DEPDIR)/read_config.Po \
+	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
+	./$(DEPDIR)/sackd_mgr.Po ./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
 	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
@@ -572,8 +570,6 @@ slurmctld_SOURCES = \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
-	port_mgr.c	\
-	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
 	prep_slurmctld.c \
@@ -746,7 +742,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_scheduler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep_slurmctld.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
@@ -910,7 +905,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/node_scheduler.Po
 	-rm -f ./$(DEPDIR)/partition_mgr.Po
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
@@ -990,7 +984,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/node_scheduler.Po
 	-rm -f ./$(DEPDIR)/partition_mgr.Po
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
