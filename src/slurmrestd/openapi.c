@@ -1817,8 +1817,11 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 	if (method->description)
 		data_set_string(data_key_set(dmethod, "description"),
 				method->description);
-	data_set_string(data_key_set(dmethod, "operationId"),
-			_get_method_operationId(spec, path, method));
+
+	{
+		char *opid = _get_method_operationId(spec, path, method);
+		data_set_string_own(data_key_set(dmethod, "operationId"), opid);
+	}
 
 	if (method->parameters || method->query) {
 		/*
