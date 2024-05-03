@@ -7507,3 +7507,92 @@ end_it:
 
 	return rc;
 }
+
+static int _find_qos_not_in_coord_assoc(void *x, void *y)
+{
+	return list_find_first(y, slurm_find_char_exact_in_list, x) ? 0 : 1;
+}
+
+extern int assoc_mgr_find_coord_in_user(void *x, void *y)
+{
+	slurmdb_coord_rec_t *coord = x;
+
+	return slurm_find_char_exact_in_list(coord->name, y);
+}
+
+/* assoc_mgr_lock_t should be clear before coming in here. */
+extern bool assoc_mgr_check_coord_qos(char *cluster_name, char *account,
+				      char *coord_name, list_t *qos_list)
+{
+	bool rc = true;
+	slurmdb_assoc_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t req_assoc = {
+		.acct = account,
+		.cluster = cluster_name,
+		.uid = NO_VAL,
+	};
+	slurmdb_user_rec_t req_user = {
+		.name = coord_name,
+		.uid = NO_VAL,
+	};
+	slurmdb_user_rec_t *user;
+	assoc_mgr_lock_t locks = {
+		.assoc = READ_LOCK,
+		.user = READ_LOCK,
+	};
+
+	if (!qos_list || !list_count(qos_list))
+		return true;
+
+	assoc_mgr_lock(&locks);
+
+	/* check if coord_name is coord of account name */
+
+	if ((user = list_find_first_ro(assoc_mgr_coord_list,
+				       _list_find_user, &req_user))) {
+		if (list_find_first(user->coord_accts,
+				    assoc_mgr_find_coord_in_user,
+				    account)) {
+			/*
+			 * coord_name is coord of account so get account assoc
+			 */
+			assoc = _find_assoc_rec(&req_assoc);
+		}
+	}
+
+	if (!assoc)  {
+		/*
+		 * coord_name is not coordinator of account name so see if
+		 * there's an assoc record for coord_name and the account
+		 */
+		req_assoc.user = coord_name;
+		assoc = _find_assoc_rec(&req_assoc);
+		if (!assoc) {
+			rc = false;
+			goto end_it;
+		}
+	}
+
+	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+		char *qos_string = slurm_char_list_to_xstr(qos_list);
+		debug2("string from qos_list is \"%s\"", qos_string);
+		xfree(qos_string);
+
+		qos_string = slurm_char_list_to_xstr(qos_list);
+		debug2("string from assoc->qos_list is \"%s\"", qos_string);
+		xfree(qos_string);
+	}
+
+	/*
+	 * see if each qos name in qos_list matches one in
+	 * coord->assoc->qos_list
+	 */
+	if (list_find_first(qos_list, _find_qos_not_in_coord_assoc,
+			    assoc->qos_list))
+		rc = false;
+
+end_it:
+	assoc_mgr_unlock(&locks);
+
+	return rc;
+}

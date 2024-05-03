@@ -614,6 +614,11 @@ extern int assoc_mgr_get_old_tres_pos(int cur_pos);
 extern int assoc_mgr_tres_pos_changed(void);
 
 /*
+ * To be used finding account a slurmdb_user_rec_t->coord_accts
+ */
+extern int assoc_mgr_find_coord_in_user(void *x, void *y);
+
+/*
  * Validate TRES specification of the form:
  * "name=tres_type/name|count[:#|type:#]"
  * For example: "cpu:2,gres/gpu:kepler:2,gres/craynetwork:1"
@@ -634,5 +639,16 @@ extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
  */
 extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
 					   char **str);
+
+/*
+ * Verify a User 'coord_name' is a coordinator of all the qos in qos_list
+ * IN: cluster_name: Cluster we are dealing with.
+ * IN: account: Account name we are interested in.
+ * IN: coord_name: User name given.
+ * IN: qos_list: List of all QOS we need to verify.
+ * RET: true if they are or false if they are not
+ */
+extern bool assoc_mgr_check_coord_qos(char *cluster_name, char *account,
+				     char *coord_name, list_t *qos_list);
 
 #endif /* _SLURM_ASSOC_MGR_H */

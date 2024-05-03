@@ -795,38 +795,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 		"@def_qos_id, @qos, @delta_qos, @prio;"
 		"END;";
-	char *get_coord_qos =
-		"drop procedure if exists get_coord_qos; "
-		"create procedure get_coord_qos(my_table text, acct text, "
-		"cluster text, coord text) "
-		"begin "
-		"set @qos = ''; "
-		"set @delta_qos = ''; "
-		"set @found_coord = NULL; "
-		"set @my_acct = acct; "
-		"REPEAT "
-		"set @s = 'select @qos := t1.qos, "
-		"@delta_qos := REPLACE(CONCAT(t1.delta_qos, @delta_qos), "
-		"\\\',,\\\', \\\',\\\'), @my_acct_new := parent_acct, "
-		"@found_coord_curr := t2.user '; "
-		"set @s = concat(@s, 'from \"', cluster, '_', my_table, '\" "
-		"as t1 left outer join acct_coord_table as t2 on "
-		"t1.acct=t2.acct where t1.acct = @my_acct && t1.user=\\\'\\\' "
-		"&& (t2.user=\\\'', coord, '\\\' || t2.user is null)'); "
-		"prepare query from @s; "
-		"execute query; "
-		"deallocate prepare query; "
-		"if @found_coord_curr is not NULL then "
-		"set @found_coord = @found_coord_curr; "
-		"end if; "
-		"if @found_coord is NULL then "
-		"set @qos = ''; "
-		"set @delta_qos = ''; "
-		"end if; "
-		"set @my_acct = @my_acct_new; "
-		"UNTIL @qos != '' || @my_acct = '' END REPEAT; "
-		"select REPLACE(CONCAT(@qos, @delta_qos), ',,', ','); "
-		"END;";
 	/*
 	 * 2 versions after 23.11 we can remove [get|set]_lineage, it is only
 	 * used in converting.  Don't forget to drop procedure for 2 versions
@@ -1141,12 +1109,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	rc = mysql_db_query(mysql_conn, get_parent_proc);
 	if (rc != SLURM_SUCCESS) {
 		error("issue making get_parent_proc procedure");
-		return rc;
-	}
-
-	rc = mysql_db_query(mysql_conn, get_coord_qos);
-	if (rc != SLURM_SUCCESS) {
-		error("issue making get_coord_qos procedure");
 		return rc;
 	}
 

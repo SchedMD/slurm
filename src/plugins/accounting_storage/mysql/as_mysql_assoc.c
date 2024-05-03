@@ -365,66 +365,6 @@ end_it:
 	return rc;
 }
 
-/* assoc_mgr_lock_t should be clear before coming in here. */
-static int _check_coord_qos(mysql_conn_t *mysql_conn, char *cluster_name,
-			    char *account, char *coord_name, List qos_list)
-{
-	char *query;
-	bitstr_t *request_qos, *valid_qos;
-	MYSQL_RES *result;
-	MYSQL_ROW row;
-	int rc = SLURM_SUCCESS;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-
-	if (!qos_list || !list_count(qos_list))
-		return SLURM_SUCCESS;
-
-	/* If there is a variable cleared here we need to make
-	   sure we get the parent's information, if any. */
-	query = xstrdup_printf(
-		"call get_coord_qos('%s', '%s', '%s', '%s');",
-		assoc_table, account,
-		cluster_name, coord_name);
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(row = mysql_fetch_row(result)) || !row[0]) {
-		mysql_free_result(result);
-		return SLURM_ERROR;
-	}
-
-	/* First set the values of the valid ones this coordinator has
-	   access to.
-	*/
-
-	assoc_mgr_lock(&locks);
-	valid_qos = bit_alloc(g_qos_count);
-	request_qos = bit_alloc(g_qos_count);
-	assoc_mgr_unlock(&locks);
-
-	set_qos_bitstr_from_string(valid_qos, row[0]);
-
-	mysql_free_result(result);
-
-	/* Now set the ones they are requesting */
-	set_qos_bitstr_from_list(request_qos, qos_list);
-
-	/* If they are authorized their list should be in the super set */
-	if (!bit_super_set(request_qos, valid_qos))
-		rc = SLURM_ERROR;
-
-	FREE_NULL_BITMAP(valid_qos);
-	FREE_NULL_BITMAP(request_qos);
-
-	return rc;
-}
-
 static int _make_sure_user_has_default_internal(
 	mysql_conn_t *mysql_conn, char *user, char *cluster)
 {
@@ -1561,10 +1501,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
-			} else if (_check_coord_qos(mysql_conn, cluster_name,
-						    account, user->name,
-						    assoc->qos_list)
-				   == SLURM_ERROR) {
+			} else if (!assoc_mgr_check_coord_qos(cluster_name,
+							     account,
+							     user->name,
+							     assoc->qos_list)) {
 				assoc_mgr_lock_t locks = {
 					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3383,12 +3323,11 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 	acct_assoc.uid = NO_VAL;
 
 	if (add_assoc_cond->is_coord &&
-	    _check_coord_qos(add_assoc_cond->mysql_conn,
-			     acct_assoc.cluster,
-			     acct_assoc.acct,
-			     add_assoc_cond->user_name,
-			     add_assoc_cond->add_assoc->assoc.qos_list) !=
-	    SLURM_SUCCESS) {
+	    !assoc_mgr_check_coord_qos(
+		    acct_assoc.cluster,
+		    acct_assoc.acct,
+		    add_assoc_cond->user_name,
+		    add_assoc_cond->add_assoc->assoc.qos_list)) {
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
@@ -3751,10 +3690,9 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		if (add_assoc_cond.is_coord &&
-		    _check_coord_qos(mysql_conn, object->cluster,
-				     object->acct, add_assoc_cond.user_name,
-				     object->qos_list)
-		    == SLURM_ERROR) {
+		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
+					      add_assoc_cond.user_name,
+					      object->qos_list)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
