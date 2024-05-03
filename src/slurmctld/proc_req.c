@@ -3606,6 +3606,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 static void _slurm_rpc_step_update(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
+	job_record_t *job_ptr;
 	step_update_request_msg_t *req = msg->data;
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock = {
@@ -3614,7 +3615,27 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
+
+	job_ptr = find_job_record(req->job_id);
+	if (job_ptr == NULL) {
+		error("%s: invalid JobId=%u", __func__, req->job_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto fail;
+	}
+
+	if ((job_ptr->user_id != msg->auth_uid) &&
+	    !validate_operator(msg->auth_uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth_uid,
+					  job_ptr->account, false)) {
+		error("Security violation, STEP_UPDATE RPC from uid %u",
+		      msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto fail;
+	}
+
 	rc = update_step(req, msg->auth_uid);
+
+fail:
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
 

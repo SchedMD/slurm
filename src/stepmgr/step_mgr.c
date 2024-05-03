@@ -5031,13 +5031,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	step_id.step_id = req->step_id;
 	step_id.step_het_comp = NO_VAL;
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("Security violation, STEP_UPDATE RPC from uid %u", uid);
-		return ESLURM_USER_ID_MISSING;
-	}
-
 	/*
 	 * No need to limit step time limit as job time limit will kill
 	 * any steps with any time limit
