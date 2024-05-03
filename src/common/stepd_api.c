@@ -1153,6 +1153,8 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 		safe_write(fd, &sent->range_first, sizeof(int));
 		safe_write(fd, &sent->range_last, sizeof(int));
 		safe_write(fd, &sent->step_rc, sizeof(int));
+		safe_write(fd, &sent->step_id.step_id, sizeof(uint32_t));
+		safe_write(fd, &sent->send_to_step_mgr, sizeof(bool));
 
 		/*
 		 * We must not use setinfo over a pipe with slurmstepd here

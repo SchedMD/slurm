@@ -494,6 +494,7 @@ typedef struct step_complete_msg {
 	slurm_step_id_t step_id;
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
+	bool send_to_step_mgr;
 } step_complete_msg_t;
 
 typedef struct signal_tasks_msg {
@@ -603,6 +604,7 @@ typedef struct job_step_create_response_msg {
 	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
+	char *step_mgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
 	dynamic_plugin_data_t *switch_job;	/* switch opaque data type */
@@ -723,6 +725,8 @@ typedef struct launch_tasks_request_msg {
 
 	/* To send to step_mgr */
 	job_record_t *job_ptr;
+
+	char *step_mgr; /* Hostname of step_mgr */
 } launch_tasks_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;

@@ -1789,7 +1789,8 @@ _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
 	char *buf = NULL;
 	int len;
 	buf_t *buffer = NULL;
-	bool lock_set = false;
+	bool lock_set = false, do_step_mgr = false;
+	uint32_t step_id;
 
 	debug("_handle_completion for %ps", &step->step_id);
 
@@ -1808,6 +1809,8 @@ _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
+	safe_read(fd, &step_id, sizeof(uint32_t));
+	safe_read(fd, &do_step_mgr, sizeof(bool));
 
 	/*
 	 * We must not use getinfo over a pipe with slurmd here
@@ -1827,6 +1830,31 @@ _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
 			       PROTOCOL_TYPE_SLURM, buffer, 1) != SLURM_SUCCESS)
 		goto rwfail;
 	FREE_NULL_BUFFER(buffer);
+
+	if (job_step_ptr && do_step_mgr) {
+		int rem = 0;
+		uint32_t max_rc;
+		slurm_step_id_t temp_id = {
+			.job_id = job_step_ptr->job_id,
+			.step_het_comp = NO_VAL,
+			.step_id = step_id
+		};
+
+		step_complete_msg_t req = {
+			.range_first = first,
+			.range_last = last,
+			.step_id = temp_id,
+			.step_rc = step_rc,
+			.jobacct = jobacct
+		};
+
+		step_partial_comp(&req, uid, true, &rem, &max_rc);
+
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, &errnum, sizeof(int));
+
+		return SLURM_SUCCESS;
+	}
 
 	/*
 	 * Record the completed nodes

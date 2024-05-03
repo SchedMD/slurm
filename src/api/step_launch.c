@@ -316,6 +316,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.cpt_compact_cnt = params->cpt_compact_cnt;
 	launch.cpt_compact_reps = params->cpt_compact_reps;
 	launch.tres_per_task	= ctx->step_req->tres_per_task;
+	launch.step_mgr = xstrdup(ctx->step_resp->step_mgr);
 
 	launch.threads_per_core	= params->threads_per_core;
 	launch.ntasks_per_board = params->ntasks_per_board;
@@ -391,6 +392,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.resp_port = xcalloc(launch.num_resp_port, sizeof(uint16_t));
 	memcpy(launch.resp_port, ctx->launch_state->resp_port,
 	       (sizeof(uint16_t) * launch.num_resp_port));
+
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
 			   params->tree_width, launch.complete_nodelist);
 

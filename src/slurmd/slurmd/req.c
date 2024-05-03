@@ -3616,10 +3616,21 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uint16_t protocol_version;
+	slurm_step_id_t *tmp_step_id;
+	slurm_step_id_t step_id = {
+		.job_id = req->step_id.job_id,
+		.step_het_comp = NO_VAL,
+		.step_id = SLURM_EXTERN_CONT,
+	};
+
+	if (req->send_to_step_mgr)
+		tmp_step_id = &step_id;
+	else
+		tmp_step_id = &req->step_id;
 
 	debug3("Entering _rpc_step_complete");
 	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &req->step_id, &protocol_version);
+			   tmp_step_id, &protocol_version);
 	if (fd == -1) {
 		error("stepd_connect to %ps failed: %m", &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;

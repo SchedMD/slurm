@@ -5690,6 +5690,9 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 						   &switch_job);
 		job_step_resp.switch_job = switch_job;
 
+		if (step_rec->job_ptr->bit_flags & STEP_MGR_ENABLED)
+			job_step_resp.step_mgr = step_rec->job_ptr->batch_host;
+
 		if (lock_func)
 			lock_func(false);
 		response_init(&resp, msg, RESPONSE_JOB_STEP_CREATE,

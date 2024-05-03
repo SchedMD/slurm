@@ -2089,6 +2089,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target);
 
+	xfree(msg->step_mgr);
 	job_record_delete(msg->job_ptr);
 
 	xfree(msg);
@@ -3940,6 +3941,7 @@ extern void slurm_free_job_step_create_response_msg(
 {
 	if (msg) {
 		xfree(msg->resv_ports);
+		xfree(msg->step_mgr);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
 		if (msg->select_jobinfo)

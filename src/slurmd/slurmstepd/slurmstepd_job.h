@@ -256,6 +256,7 @@ typedef struct {
 	char *x11_xauthority;		/* temporary XAUTHORITY location, or NULL */
 
 	char *selinux_context;
+	char *step_mgr;
 } stepd_step_rec_t;
 
 
