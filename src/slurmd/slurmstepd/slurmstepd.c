@@ -569,7 +569,9 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
 
 	log_build_step_id_str(step_id, tmp_char, sizeof(tmp_char),
 			      STEP_ID_FLAG_NO_PREFIX);
-	buf = xstrdup_printf("[%s]", tmp_char);
+	buf = xstrdup_printf("[%s%s]",
+			     tmp_char,
+			     job_step_ptr ? " stepmgr" : "");
 
 	setproctitle("%s", buf);
 	/* note: will claim ownership of buf, do not free */
