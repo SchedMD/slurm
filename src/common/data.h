@@ -348,13 +348,6 @@ extern int data_get_int_converted(const data_t *d, int64_t *ptr_buffer);
 extern const char *data_get_string(const data_t *data);
 
 /*
- * Get const data as string
- * IN data data to convert into a string
- * RET data string or NULL on failure
- */
-extern const char *data_get_string_const(const data_t *data);
-
-/*
  * Get data as string and force conversion if possible.
  * IN data data to convert to string
  * IN ptr_buffer ptr to set if string conversion is successful (must xfree()) or

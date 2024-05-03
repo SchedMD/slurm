@@ -1005,25 +1005,6 @@ extern const char *data_get_string(const data_t *data)
 	}
 }
 
-extern const char *data_get_string_const(const data_t *data)
-{
-	_check_magic(data);
-
-	if (!data)
-		return NULL;
-
-	xassert((data->type == TYPE_STRING_PTR) ||
-		(data->type == TYPE_STRING_INLINE));
-
-	if (data->type == TYPE_STRING_PTR) {
-		return data->data.string_ptr_u;
-	} else if (data->type == TYPE_STRING_INLINE) {
-		return data->data.string_inline_u;
-	} else {
-		return NULL;
-	}
-}
-
 extern int data_get_string_converted(const data_t *d, char **buffer)
 {
 	_check_magic(d);
