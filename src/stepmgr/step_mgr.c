@@ -597,6 +597,34 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 
 	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
 
+	if (!step_signal.found && running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		agent_arg_t *agent_args = NULL;
+		job_step_kill_msg_t *kill_msg = NULL;
+		node_record_t *node_ptr;
+
+		kill_msg = xmalloc(sizeof(*kill_msg));
+		kill_msg->signal = signal;
+		kill_msg->flags = flags;
+		kill_msg->step_id = *step_id;
+
+		agent_args = xmalloc(sizeof(agent_arg_t));
+		agent_args->msg_type = REQUEST_CANCEL_JOB_STEP;
+		agent_args->retry = 1;
+		agent_args->hostlist = hostlist_create(job_ptr->batch_host);
+		agent_args->node_count = 1;
+		if ((node_ptr = find_node_record(job_ptr->batch_host)))
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
+
+		agent_args->msg_args = kill_msg;
+		set_agent_arg_r_uid(agent_args, slurm_conf.slurmd_user_id);
+		step_mgr_ops->agent_queue_request(agent_args);
+
+		step_signal.found = true;
+		step_signal.rc_in = SLURM_SUCCESS;
+	}
+
 	if (!step_signal.found) {
 		info("%s: %pJ StepId=%u not found",
 		     __func__, job_ptr, step_id->step_id);
