@@ -3260,20 +3260,17 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 						buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
+			pack32(0, buffer);
 			return;
 		}
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
 		_pack_list_of_str(object->description_list, buffer);
-		_pack_list_of_str(object->organization_list, buffer);
 
-		pack16(object->with_assocs, buffer);
-		pack16(object->with_coords, buffer);
-		pack16(object->with_deleted, buffer);
+		pack32(object->flags, buffer);
+
+		_pack_list_of_str(object->organization_list, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			slurmdb_pack_assoc_cond(NULL, protocol_version,
@@ -3291,9 +3288,12 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->description_list, buffer);
 		_pack_list_of_str(object->organization_list, buffer);
 
-		pack16(object->with_assocs, buffer);
-		pack16(object->with_coords, buffer);
-		pack16(object->with_deleted, buffer);
+		if (object->flags & SLURMDB_ACCT_FLAG_WASSOC)
+			pack16(1, buffer);
+		if (object->flags & SLURMDB_ACCT_FLAG_WCOORD)
+			pack16(1, buffer);
+		if (object->flags & SLURMDB_ACCT_FLAG_DELETED)
+			pack16(1, buffer);
 	}
 }
 
@@ -3325,6 +3325,9 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
 					    tmp_info);
 			}
 		}
+
+		safe_unpack32(&object_ptr->flags, buffer);
+
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->organization_list = list_create(xfree_ptr);
@@ -3335,11 +3338,8 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
 					    tmp_info);
 			}
 		}
-
-		safe_unpack16(&object_ptr->with_assocs, buffer);
-		safe_unpack16(&object_ptr->with_coords, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp16;
 		if (slurmdb_unpack_assoc_cond(
 			    (void **)&object_ptr->assoc_cond,
 			    protocol_version, buffer) == SLURM_ERROR)
@@ -3366,9 +3366,15 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
 			}
 		}
 
-		safe_unpack16(&object_ptr->with_assocs, buffer);
-		safe_unpack16(&object_ptr->with_coords, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&tmp16, buffer);
+		if (tmp16)
+			object_ptr->flags |= SLURMDB_ACCT_FLAG_WASSOC;
+		safe_unpack16(&tmp16, buffer);
+		if (tmp16)
+			object_ptr->flags |= SLURMDB_ACCT_FLAG_WCOORD;
+		safe_unpack16(&tmp16, buffer);
+		if (tmp16)
+			object_ptr->flags |= SLURMDB_ACCT_FLAG_DELETED;
 	}
 
 	return SLURM_SUCCESS;

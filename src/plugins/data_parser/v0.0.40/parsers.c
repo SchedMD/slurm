@@ -6184,6 +6184,90 @@ static int DUMP_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 	return rc;
 }
 
+static int PARSE_FUNC(ACCOUNT_CONDITION_WITH_ASSOC_V40)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= SLURMDB_ACCT_FLAG_WASSOC;
+	else
+		cond->flags &= SLURMDB_ACCT_FLAG_WASSOC;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ACCOUNT_CONDITION_WITH_ASSOC_V40)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag = cond->flags & SLURMDB_ACCT_FLAG_WASSOC;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
+static int PARSE_FUNC(ACCOUNT_CONDITION_WITH_WCOORD_V40)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= SLURMDB_ACCT_FLAG_WCOORD;
+	else
+		cond->flags &= SLURMDB_ACCT_FLAG_WCOORD;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ACCOUNT_CONDITION_WITH_WCOORD_V40)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag = cond->flags & SLURMDB_ACCT_FLAG_WCOORD;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
+static int PARSE_FUNC(ACCOUNT_CONDITION_WITH_DELETED_V40)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= SLURMDB_ACCT_FLAG_DELETED;
+	else
+		cond->flags &= SLURMDB_ACCT_FLAG_DELETED;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ACCOUNT_CONDITION_WITH_DELETED_V40)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_account_cond_t *cond = obj;
+	bool flag = cond->flags & SLURMDB_ACCT_FLAG_DELETED;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8384,16 +8468,19 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(shares_response_msg_t, mtype, false, path, desc)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
 	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "assocation filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
-	add_parse(BOOL16, with_assocs, "with_assocs", "include associations"),
-	add_parse(BOOL16, with_coords, "with_coords", "include coordinators"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted accounts"),
+	add_cparse(ACCOUNT_CONDITION_WITH_ASSOC_V40, "with_assocs", "include associations"),
+	add_cparse(ACCOUNT_CONDITION_WITH_WCOORD_V40, "with_coords", "include coordinators"),
+	add_cparse(ACCOUNT_CONDITION_WITH_DELETED_V40, "with_deleted", "include deleted accounts"),
 };
 #undef add_parse
+#undef add_cparse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_cluster_param_t, mtype, false, field, 0, path, desc)
@@ -9365,6 +9452,9 @@ static const parser_t parsers[] = {
 	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, SHARES_FLOAT128_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
 	addpca(KILL_JOBS_MSG_JOBS_ARRAY, STRING, kill_jobs_msg_t, NEED_NONE, NULL),
+	addpcp(ACCOUNT_CONDITION_WITH_ASSOC_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
+	addpcp(ACCOUNT_CONDITION_WITH_WCOORD_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
+	addpcp(ACCOUNT_CONDITION_WITH_DELETED_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(EXT_SENSORS_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),

@@ -1831,6 +1831,8 @@ static const struct {
 	char *str;
 } slurmdb_acct_flags_map[] = {
 	T(SLURMDB_ACCT_FLAG_DELETED, "Deleted"),
+	T(SLURMDB_ACCT_FLAG_WASSOC, "WithAssociations"),
+	T(SLURMDB_ACCT_FLAG_WCOORD, "WithCoordinators"),
 	T(SLURMDB_ACCT_FLAG_INVALID, "INVALID"),
 };
 #undef T

@@ -376,6 +376,11 @@ typedef struct {
 typedef enum {
 	SLURMDB_ACCT_FLAG_NONE = 0,
 	SLURMDB_ACCT_FLAG_DELETED = SLURM_BIT(0),
+	SLURMDB_ACCT_FLAG_WASSOC = SLURM_BIT(1),
+	SLURMDB_ACCT_FLAG_WCOORD = SLURM_BIT(2),
+
+	/* Anything above this (0-15) will not be stored in the database. */
+	SLURMDB_ACCT_FLAG_BASE = 0x0000ffff,
 
 	SLURMDB_ACCT_FLAG_INVALID
 } slurmdb_acct_flags_t;
@@ -384,10 +389,8 @@ typedef struct {
 	slurmdb_assoc_cond_t *assoc_cond;/* use acct_list here for
 						  names */
 	List description_list; /* list of char * */
+	slurmdb_acct_flags_t flags;  /* SLURMDB_ACCT_FLAG_* */
 	List organization_list; /* list of char * */
-	uint16_t with_assocs;
-	uint16_t with_coords;
-	uint16_t with_deleted;
 } slurmdb_account_cond_t;
 
 typedef struct {

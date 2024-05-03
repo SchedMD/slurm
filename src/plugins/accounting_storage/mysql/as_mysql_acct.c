@@ -784,7 +784,7 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		goto empty;
 	}
 
-	if (acct_cond->with_deleted)
+	if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
 		xstrcat(extra, "where (deleted=0 || deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
@@ -880,14 +880,16 @@ empty:
 
 	acct_list = list_create(slurmdb_destroy_account_rec);
 
-	if (acct_cond && acct_cond->assoc_cond && acct_cond->with_assocs) {
+	if (acct_cond && acct_cond->assoc_cond &&
+	    (acct_cond->flags & SLURMDB_ACCT_FLAG_WASSOC)) {
 		/* We are going to be freeing the inners of
 		   this list in the acct->name so we don't
 		   free it here
 		*/
 		FREE_NULL_LIST(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
-		acct_cond->assoc_cond->with_deleted = acct_cond->with_deleted;
+		if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
+			acct_cond->assoc_cond->with_deleted = 1;
 	}
 
 	while ((row = mysql_fetch_row(result))) {
@@ -902,11 +904,12 @@ empty:
 		if (slurm_atoul(row[SLURMDB_REQ_DELETED]))
 			acct->flags |= SLURMDB_ACCT_FLAG_DELETED;
 
-		if (acct_cond && acct_cond->with_coords)
+		if (acct_cond && (acct_cond->flags & SLURMDB_ACCT_FLAG_WCOORD))
 			acct->coordinators =
 				assoc_mgr_acct_coords(mysql_conn, acct->name);
 
-		if (acct_cond && acct_cond->with_assocs) {
+		if (acct_cond && (acct_cond->flags &
+				  SLURMDB_ACCT_FLAG_WASSOC)) {
 			if (!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
 					sizeof(slurmdb_assoc_cond_t));
@@ -918,7 +921,9 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if (acct_cond && acct_cond->with_assocs && acct_cond->assoc_cond
+	if (acct_cond &&
+	    (acct_cond->flags & SLURMDB_ACCT_FLAG_WASSOC) &&
+	    acct_cond->assoc_cond
 	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		list_itr_t *assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;

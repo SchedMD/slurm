@@ -196,6 +196,25 @@ documents those changes that are of interest to users and administrators.
  -- Account coordinators can now suspend/resume jobs owned by member users.
  -- Add DisableCoordDBD slurmdbd configuration parameter to disable the
     coordinator status in all slurmdbd interactions.
+ -- slurmrestd - Added possible flags "WithAssociations" and "WithCoordinators"
+    to `.accounts[].flags` for "GET /slurmdb/v0.0.41/accounts/" and
+    "POST /slurmdb/v0.0.41/accounts/" endpoints.
+ -- sacctmgr - Added possible flags "WithAssociations" and "WithCoordinators"
+    to `.accounts[].flags` for `sacctmgr show accounts --{json|yaml}` response.
+ -- slurmrestd - Rename URL query parameter "with_assocs" to "WithAssociations"
+    for "GET /slurmdb/v0.0.41/accounts?WithAssociations".
+ -- slurmrestd - Rename URL query parameter "with_coords" to "WithCoordinators"
+    for "GET /slurmdb/v0.0.41/accounts?WithCoordinators".
+ -- slurmrestd - Rename URL query parameter "with_deleted" to "deleted"
+    for "GET /slurmdb/v0.0.41/accounts?deleted".
+ -- slurmrestd - Added possible flags "RemoveUsersAreCoords" and
+    "UsersAreCoords" to `.accounts[].flags` for "GET /slurmdb/v0.0.41/accounts/"
+    and "POST /slurmdb/v0.0.41/accounts/" endpoints.
+ -- sacctmgr - Added possible flags "RemoveUsersAreCoords" and "UsersAreCoords"
+    to `.accounts[].flags` for `sacctmgr show accounts --{json|yaml}` response.
+ -- slurmrestd - Add URL query parameter "UsersAreCoords" and
+    "RemoveUsersAreCoords" for
+    "GET /slurmdb/v0.0.41/accounts?UsersAreCoords&RemoveUsersAreCoords".
 
 * Changes in Slurm 23.11.7
 ==========================

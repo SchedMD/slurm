@@ -84,15 +84,15 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithAssoc",
 					 MAX(command_len, 5))) {
-			acct_cond->with_assocs = 1;
+			acct_cond->flags |= SLURMDB_ACCT_FLAG_WASSOC;
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithCoordinators",
 					 MAX(command_len, 5))) {
-			acct_cond->with_coords = 1;
+			acct_cond->flags |= SLURMDB_ACCT_FLAG_WCOORD;
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
-			acct_cond->with_deleted = 1;
+			acct_cond->flags |= SLURMDB_ACCT_FLAG_DELETED;
 			assoc_cond->with_deleted = 1;
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithRawQOSLevel",
@@ -127,8 +127,13 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(acct_cond->description_list,
 						 argv[i]+end))
 				cond_set |= SA_SET_USER;
+		} else if (!xstrncasecmp(argv[i], "Flags",
+					 MAX(command_len, 2))) {
+			acct_cond->flags |= str_2_slurmdb_acct_flags(
+				argv[i]+end);
+			cond_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Format",
-					 MAX(command_len, 1))) {
+					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "Organizations",
@@ -221,6 +226,10 @@ static int _set_rec(int *start, int argc, char **argv,
 			acct->description =  strip_quotes(argv[i]+end, NULL, 1);
 			rec_set |= SA_SET_USER;
 
+		} else if (!xstrncasecmp(argv[i], "Flags",
+					 MAX(command_len, 2))) {
+			acct->flags = str_2_slurmdb_acct_flags(argv[i]+end);
+			rec_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Organization",
 					 MAX(command_len, 1))) {
 			acct->organization = strip_quotes(argv[i]+end, NULL, 1);
@@ -354,7 +363,8 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	List format_list = list_create(xfree_ptr);
 	List print_fields_list; /* types are of print_field_t */
 
-	acct_cond->with_assocs = with_assoc_flag;
+	if (with_assoc_flag)
+		acct_cond->flags |= SLURMDB_ACCT_FLAG_WASSOC;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -371,7 +381,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Acc,Des,O");
-		if (acct_cond->with_assocs)
+		if (acct_cond->flags & SLURMDB_ACCT_FLAG_WASSOC)
 			slurm_addto_char_list(format_list,
 					      "Cl,ParentN,U,Share,Priority,"
 					      "GrpJ,GrpN,"
@@ -379,12 +389,13 @@ extern int sacctmgr_list_account(int argc, char **argv)
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 
-		if (acct_cond->with_coords)
+		if (acct_cond->flags & SLURMDB_ACCT_FLAG_WCOORD)
 			slurm_addto_char_list(format_list, "Coord");
 
 	}
 
-	if (!acct_cond->with_assocs && (cond_set & SA_SET_ASSOC)) {
+	if (!(acct_cond->flags & SLURMDB_ACCT_FLAG_WASSOC) &&
+	    (cond_set & SA_SET_ASSOC)) {
 		if (!commit_check("You requested options that are only valid "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
@@ -507,6 +518,14 @@ extern int sacctmgr_list_account(int argc, char **argv)
 						field, acct->description,
 						(curr_inx ==
 						 field_count));
+					break;
+				case PRINT_FLAGS:
+					tmp_char = slurmdb_acct_flags_2_str(
+						acct->flags);
+					field->print_routine(
+						field, tmp_char,
+						(curr_inx == field_count));
+					xfree(tmp_char);
 					break;
 				case PRINT_ORG:
 					field->print_routine(

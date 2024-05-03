@@ -6836,6 +6836,8 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 	add_flag_bit(SLURMDB_ACCT_FLAG_DELETED, "DELETED"),
+	add_flag_bit(SLURMDB_ACCT_FLAG_WASSOC, "WithAssociations"),
+	add_flag_bit(SLURMDB_ACCT_FLAG_WCOORD, "WithCoordinators"),
 };
 
 #define add_parse(mtype, field, path, desc) \
@@ -8624,9 +8626,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
 	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "assocation filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
-	add_parse(BOOL16, with_assocs, "with_assocs", "include associations"),
-	add_parse(BOOL16, with_coords, "with_coords", "include coordinators"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted accounts"),
+	add_parse_bit_flag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS,
+				 false, flags, "flags", NULL),
 };
 #undef add_parse
 
