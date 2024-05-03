@@ -76,6 +76,10 @@ if {[param_contains [get_config_param "JobContainerType"] "*tmpfs"]} {
 	skip "This test can't be run with JobContainerType=job_container/tmpfs"
 }
 
+if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
+	skip "This test can't be run with SlurmctldParameters=step_mgr_enable. Needs PrologFlags=contain"
+}
+
 if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
