@@ -925,6 +925,7 @@ extern int register_path_binding(const char *in_path,
 	if (!methods_count) {
 		debug5("%s: skip binding %s with %s",
 		       __func__, path, data_parser_get_plugin(parser));
+		_free_entry_list(entries, -1, NULL);
 		return ESLURM_NOT_SUPPORTED;
 	}
 
