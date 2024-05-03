@@ -939,3 +939,68 @@ rwfail:
 
 	return SLURM_ERROR;
 }
+
+extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
+				   step_record_t *step_ptr)
+{
+	uint32_t tasks = 0, nodes = 0, task_dist = 0;
+	char *node_list = NULL;
+
+	xassert(req);
+	xassert(step_ptr);
+
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		tasks = step_ptr->job_ptr->total_cpus;
+		nodes = step_ptr->job_ptr->total_nodes;
+		node_list = step_ptr->job_ptr->nodes;
+	} else {
+		tasks = step_ptr->step_layout->task_cnt;
+		nodes = step_ptr->step_layout->node_cnt;
+		task_dist = step_ptr->step_layout->task_dist;
+		node_list = step_ptr->step_layout->node_list;
+	}
+
+	if (!step_ptr->job_ptr->db_index
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+	memset(req, 0, sizeof(dbd_step_start_msg_t));
+
+	req->assoc_id    = step_ptr->job_ptr->assoc_id;
+	req->container   = step_ptr->container;
+	req->db_index    = step_ptr->job_ptr->db_index;
+	req->name        = step_ptr->name;
+	req->nodes       = node_list;
+	/* reate req->node_inx outside of locks when packing */
+	req->node_cnt    = nodes;
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req->start_time = step_ptr->start_time;
+	else
+		req->start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req->job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
+		req->job_submit_time   =
+			step_ptr->job_ptr->details->submit_time;
+
+	memcpy(&req->step_id, &step_ptr->step_id, sizeof(req->step_id));
+
+	if (step_ptr->step_layout)
+		req->task_dist   = step_ptr->step_layout->task_dist;
+	req->task_dist   = task_dist;
+
+	req->total_tasks = tasks;
+
+	req->submit_line = step_ptr->submit_line;
+	req->tres_alloc_str = step_ptr->tres_alloc_str;
+
+	req->req_cpufreq_min = step_ptr->cpu_freq_min;
+	req->req_cpufreq_max = step_ptr->cpu_freq_max;
+	req->req_cpufreq_gov = step_ptr->cpu_freq_gov;
+
+	return SLURM_SUCCESS;
+}
