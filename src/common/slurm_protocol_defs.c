@@ -1260,6 +1260,7 @@ extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->step_mgr);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 		xfree(msg);
 	}

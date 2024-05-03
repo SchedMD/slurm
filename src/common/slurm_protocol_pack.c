@@ -6449,6 +6449,7 @@ _pack_reroute_msg(reroute_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
 						 protocol_version, buffer);
 		} else
 			pack8(0, buffer);
+		packstr(msg->step_mgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
@@ -6478,6 +6479,7 @@ _unpack_reroute_msg(reroute_msg_t **msg, buf_t *buffer, uint16_t protocol_versio
 				(void **)&reroute_msg->working_cluster_rec,
 				protocol_version, buffer);
 		}
+		safe_unpackstr(&reroute_msg->step_mgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {

@@ -454,7 +454,8 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout);
  * IN cluster_rec - cluster to direct msg to.
  */
 int slurm_send_reroute_msg(slurm_msg_t *msg,
-			   slurmdb_cluster_rec_t *cluster_rec);
+			   slurmdb_cluster_rec_t *cluster_rec,
+			   char *step_mgr);
 
 /*
  *  Send a message to msg->address

@@ -4713,7 +4713,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 			fed_mgr_get_cluster_by_id(
 					job_ptr->fed_details->cluster_lock);
 		if (dst) {
-			slurm_send_reroute_msg(msg, dst);
+			slurm_send_reroute_msg(msg, dst, NULL);
 			info("%s: %s %pJ uid %u routed to %s",
 			     __func__, rpc_num2string(msg->msg_type),
 			     job_ptr, msg->auth_uid, dst->name);
@@ -5072,7 +5072,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 			fed_mgr_get_cluster_by_id(
 					job_ptr->fed_details->cluster_lock);
 		if (dst) {
-			slurm_send_reroute_msg(msg, dst);
+			slurm_send_reroute_msg(msg, dst, NULL);
 			info("%s: %s %pJ uid %u routed to %s",
 			     __func__, rpc_num2string(msg->msg_type),
 			     job_ptr, msg->auth_uid, dst->name);
@@ -5796,7 +5796,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 				      origin_id);
 				slurm_send_rc_msg(msg, SLURM_ERROR);
 			} else {
-				slurm_send_reroute_msg(msg, dst);
+				slurm_send_reroute_msg(msg, dst, NULL);
 				info("%s: REQUEST_KILL_JOB JobId=%s uid %u routed to %s",
 				     __func__, kill->sjob_id, msg->auth_uid,
 				     dst->name);
@@ -6285,7 +6285,7 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 				      origin_id);
 				slurm_send_rc_msg(msg, SLURM_ERROR);
 			} else {
-				slurm_send_reroute_msg(msg, dst);
+				slurm_send_reroute_msg(msg, dst, NULL);
 				info("%s: %s JobId=%u uid %u routed to %s",
 				     __func__, rpc_num2string(msg->msg_type),
 				     job_id, msg->auth_uid, dst->name);

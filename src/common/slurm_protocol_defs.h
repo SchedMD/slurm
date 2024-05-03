@@ -740,6 +740,7 @@ typedef struct return_code2_msg {
 } return_code2_msg_t;
 
 typedef struct {
+	char *step_mgr;
 	slurmdb_cluster_rec_t *working_cluster_rec;
 } reroute_msg_t;
 
