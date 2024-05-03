@@ -709,6 +709,12 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 		memcpy(&step_id, &task_msg->step_id, sizeof(step_id));
 
+		if (task_msg->job_ptr &&
+		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
+			/* only allow one stepd to be stepmgr. */
+			job_step_ptr = task_msg->job_ptr;
+		}
+
 		break;
 	}
 	default:

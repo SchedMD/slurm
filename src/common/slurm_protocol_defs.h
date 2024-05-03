@@ -720,6 +720,9 @@ typedef struct launch_tasks_request_msg {
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
+
+	/* To send to step_mgr */
+	job_record_t *job_ptr;
 } launch_tasks_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -834,6 +837,9 @@ typedef struct prolog_launch_msg {
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
+
+	/* To send to step_mgr */
+	job_record_t *job_ptr;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

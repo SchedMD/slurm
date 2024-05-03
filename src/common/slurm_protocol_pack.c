@@ -71,6 +71,8 @@
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
+#include "src/stepmgr/step_mgr.h"
+
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);
 
@@ -6750,6 +6752,13 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->x11_magic_cookie, buffer);
 		packstr(msg->x11_target, buffer);
 		pack16(msg->x11_target_port, buffer);
+
+		if (msg->job_ptr) {
+			packbool(true, buffer);
+			slurm_pack_job_rec(msg->job_ptr, buffer, protocol_version);
+		} else {
+			packbool(false, buffer);
+		}
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -6961,6 +6970,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					    uint16_t protocol_version)
 {
 	uint32_t uint32_tmp = 0;
+	bool tmp_bool;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
 
@@ -7110,6 +7120,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->x11_magic_cookie, buffer);
 		safe_unpackstr(&msg->x11_target, buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
+
+		safe_unpackbool(&tmp_bool, buffer);
+		if (tmp_bool) {
+			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
+						 protocol_version))
+				goto unpack_error;
+		}
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -7699,6 +7716,14 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
+
+		if (msg->job_ptr) {
+			packbool(true, buffer);
+			slurm_pack_job_rec(msg->job_ptr, buffer,
+					   smsg->protocol_version);
+		} else {
+			packbool(false, buffer);
+		}
 	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		gres_prep_pack(msg->job_gres_prep, buffer,
 			       smsg->protocol_version);
@@ -7753,6 +7778,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
+	bool tmp_bool;
 	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
@@ -7782,6 +7808,13 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (!(msg->cred = slurm_cred_unpack(buffer,
 						    smsg->protocol_version)))
 			goto unpack_error;
+
+		safe_unpackbool(&tmp_bool, buffer);
+		if (tmp_bool) {
+			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
+						 smsg->protocol_version))
+				goto unpack_error;
+		}
 	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
 				     smsg->protocol_version))

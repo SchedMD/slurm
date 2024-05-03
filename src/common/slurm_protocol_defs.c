@@ -1639,6 +1639,9 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		}
 		slurm_cred_destroy(msg->cred);
 
+		/* step_mgr variables */
+		job_record_delete(msg->job_ptr);
+
 		xfree(msg);
 	}
 }
@@ -2085,6 +2088,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->x11_alloc_host);
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target);
+
+	job_record_delete(msg->job_ptr);
 
 	xfree(msg);
 }

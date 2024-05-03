@@ -2196,6 +2196,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
 						  sizeof(uint16_t));
 
+	launch_req->job_ptr = req->job_ptr;
+
 	/*
 	 * determine which node this is in the allocation and if
 	 * it should setup the x11 forwarding or not
