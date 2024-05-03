@@ -80,4 +80,9 @@ extern int archive_write_file(buf_t *buffer, char *cluster_name,
 			      char *arch_dir, char *arch_type,
 			      uint32_t archive_period);
 
+extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
+				   step_record_t *step_ptr);
+extern int as_build_step_comp_msg(dbd_step_comp_msg_t *req,
+				  step_record_t *step_ptr);
+
 #endif

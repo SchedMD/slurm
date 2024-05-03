@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "config.h"
+#include "srun_comm.h"
 
 #include <string.h>
 
@@ -47,11 +48,7 @@
 
 #include "src/interfaces/select.h"
 
-#include "src/slurmctld/agent.h"
-#include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/proc_req.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
+#include "src/stepmgr/step_mgr.h"
 
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for
@@ -72,113 +69,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	set_agent_arg_r_uid(agent_args, r_uid);
 	agent_args->protocol_version = protocol_version;
 
-	agent_queue_request(agent_args);
-}
-
-static bool _pending_het_jobs(job_record_t *job_ptr)
-{
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
-	bool pending_job = false;
-
-	if (job_ptr->het_job_id == 0)
-		return false;
-
-	het_job_leader = find_job_record(job_ptr->het_job_id);
-	if (!het_job_leader) {
-		error("Hetjob leader %pJ not found", job_ptr);
-		return false;
-	}
-	if (!het_job_leader->het_job_list) {
-		error("Hetjob leader %pJ lacks het_job_list",
-		      job_ptr);
-		return false;
-	}
-
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (IS_JOB_PENDING(het_job)) {
-			pending_job = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return pending_job;
-}
-
-static void _free_srun_alloc(void *x)
-{
-	resource_allocation_response_msg_t *alloc_msg;
-
-	alloc_msg = (resource_allocation_response_msg_t *) x;
-	/* NULL working_cluster_rec because it's pointing to global memory */
-	alloc_msg->working_cluster_rec = NULL;
-	slurm_free_resource_allocation_response_msg(alloc_msg);
-}
-
-/*
- * srun_allocate - notify srun of a resource allocation
- * IN job_ptr - job allocated resources
- */
-extern void srun_allocate(job_record_t *job_ptr)
-{
-	job_record_t *het_job, *het_job_leader;
-	resource_allocation_response_msg_t *msg_arg = NULL;
-	slurm_addr_t *addr;
-	list_itr_t *iter;
-	List job_resp_list = NULL;
-
-	xassert(job_ptr);
-	if (!job_ptr || !job_ptr->alloc_resp_port || !job_ptr->alloc_node ||
-	    !job_ptr->resp_host || !job_ptr->job_resrcs ||
-	    !job_ptr->job_resrcs->cpu_array_cnt)
-		return;
-
-	if (job_ptr->het_job_id == 0) {
-		addr = xmalloc(sizeof(slurm_addr_t));
-		slurm_set_addr(addr, job_ptr->alloc_resp_port,
-			job_ptr->resp_host);
-
-		msg_arg = build_alloc_msg(job_ptr, SLURM_SUCCESS, NULL);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
-				   job_ptr->user_id,
-				   job_ptr->start_protocol_ver);
-	} else if (_pending_het_jobs(job_ptr)) {
-		return;
-	} else if ((het_job_leader = find_job_record(job_ptr->het_job_id))) {
-		addr = xmalloc(sizeof(slurm_addr_t));
-		slurm_set_addr(addr, het_job_leader->alloc_resp_port,
-			       het_job_leader->resp_host);
-		job_resp_list = list_create(_free_srun_alloc);
-		iter = list_iterator_create(het_job_leader->het_job_list);
-		while ((het_job = list_next(iter))) {
-			if (het_job_leader->het_job_id !=
-				het_job->het_job_id) {
-				error("%s: Bad het_job_list for %pJ",
-				      __func__, het_job_leader);
-				continue;
-			}
-			msg_arg = build_alloc_msg(het_job, SLURM_SUCCESS,
-						  NULL);
-			list_append(job_resp_list, msg_arg);
-			msg_arg = NULL;
-		}
-		list_iterator_destroy(iter);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   RESPONSE_HET_JOB_ALLOCATION, job_resp_list,
-				   job_ptr->user_id,
-				   job_ptr->start_protocol_ver);
-	} else {
-		error("%s: Can not find hetjob leader %pJ",
-		      __func__, job_ptr);
-	}
+	step_mgr_ops->agent_queue_request(agent_args);
 }
 
 /*
@@ -267,8 +158,6 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		.bit_position = -1,
 		.node_name = node_name,
 	};
-	slurm_addr_t * addr;
-	srun_node_fail_msg_t *msg_arg;
 
 	xassert(job_ptr);
 	xassert(node_name);
@@ -285,7 +174,25 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_node_fail_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
+		msg_arg->step_id.step_het_comp = NO_VAL;
+		msg_arg->nodelist = xstrdup(node_name);
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_NODE_FAIL,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
+
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		srun_node_fail_msg_t *msg_arg;
+		slurm_addr_t * addr;
+
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
@@ -338,7 +245,7 @@ extern void srun_ping (void)
 	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	list_for_each_ro(job_list, _srun_ping, &old);
+	list_for_each_ro(step_mgr_ops->job_list, _srun_ping, &old);
 }
 
 static int _srun_step_timeout(void *x, void *arg)
@@ -396,6 +303,42 @@ extern void srun_timeout(job_record_t *job_ptr)
 	}
 
 	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
+
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_timeout_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
+		msg_arg->step_id.step_het_comp = NO_VAL;
+		msg_arg->timeout = job_ptr->end_time;
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_TIMEOUT,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
+
+}
+
+/*
+ * _find_first_node_record - find a record for first node in the bitmap
+ * IN node_bitmap
+ */
+static node_record_t *_find_first_node_record(bitstr_t *node_bitmap)
+{
+	int inx;
+
+	if (node_bitmap == NULL) {
+		error ("_find_first_node_record passed null bitstring");
+		return NULL;
+	}
+
+	inx = bit_ffs (node_bitmap);
+	if (inx < 0)
+		return NULL;
+	else
+		return node_record_table_ptr[inx];
 }
 
 /*
@@ -422,46 +365,34 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 				   job_ptr->start_protocol_ver);
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
-#ifndef HAVE_FRONT_END
-		node_record_t *node_ptr;
-#endif
 		job_notify_msg_t *notify_msg_ptr;
-		agent_arg_t *agent_arg_ptr;
-#ifdef HAVE_FRONT_END
-		if (job_ptr->batch_host == NULL)
-			return ESLURM_DISABLED;	/* no allocated nodes */
-		agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
-		agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
-		if (!agent_arg_ptr->hostlist)
-			fatal("Invalid srun host: %s", job_ptr->batch_host);
-
-		if (job_ptr->front_end_ptr)
-			agent_arg_ptr->protocol_version =
-				job_ptr->front_end_ptr->protocol_version;
-
-#else
-		node_ptr = find_first_node_record(job_ptr->node_bitmap);
-		if (node_ptr == NULL)
-			return ESLURM_DISABLED;	/* no allocated nodes */
-		agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
-		agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
-		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
-		if (!agent_arg_ptr->hostlist)
-			fatal("Invalid srun host: %s", node_ptr->name);
-#endif
 		notify_msg_ptr = (job_notify_msg_t *)
 				 xmalloc(sizeof(job_notify_msg_t));
 		notify_msg_ptr->step_id.job_id = job_ptr->job_id;
 		notify_msg_ptr->step_id.step_id = NO_VAL;
 		notify_msg_ptr->step_id.step_het_comp = NO_VAL;
 		notify_msg_ptr->message = xstrdup(msg);
-		agent_arg_ptr->node_count = 1;
-		agent_arg_ptr->retry = 0;
-		agent_arg_ptr->msg_type = REQUEST_JOB_NOTIFY;
-		agent_arg_ptr->msg_args = (void *) notify_msg_ptr;
-		/* Launch the RPC via agent */
-		set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);
-		agent_queue_request(agent_arg_ptr);
+
+#ifdef HAVE_FRONT_END
+		if (job_ptr->batch_host == NULL)
+			return ESLURM_DISABLED;	/* no allocated nodes */
+
+		srun_agent_launch(NULL, job_ptr->batch_host, REQUEST_JOB_NOTIFY,
+				  notify_msg_ptr, SLURM_AUTH_UID_ANY,
+				  (job_ptr->front_end_ptr ?
+				   job_ptr->front_end_ptr->protocol_version :
+				   0));
+
+#else
+		node_record_t *node_ptr;
+		node_ptr = _find_first_node_record(job_ptr->node_bitmap);
+		if (node_ptr == NULL)
+			return ESLURM_DISABLED;	/* no allocated nodes */
+
+		_srun_agent_launch(NULL, node_ptr->name, REQUEST_JOB_NOTIFY,
+				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
+				   node_ptr->protocol_version);
+#endif
 		return SLURM_SUCCESS;
 	}
 	return ESLURM_DISABLED;
@@ -483,12 +414,13 @@ static int _srun_job_complete(void *x, void *arg)
  */
 extern void srun_job_complete(job_record_t *job_ptr)
 {
-	slurm_addr_t * addr;
-	srun_job_complete_msg_t *msg_arg;
 
 	xassert(job_ptr);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		srun_job_complete_msg_t *msg_arg;
+		slurm_addr_t * addr;
+
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
@@ -502,6 +434,20 @@ extern void srun_job_complete(job_record_t *job_ptr)
 	}
 
 	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
+
+	if (running_in_slurmctld() &&
+	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+		srun_job_complete_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id = NO_VAL;
+		msg_arg->step_het_comp = NO_VAL;
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+	}
 }
 
 /*
@@ -610,7 +556,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
  */
 extern void srun_response(slurm_step_id_t *step_id)
 {
-	job_record_t *job_ptr = find_job_record(step_id->job_id);
+	job_record_t *job_ptr = step_mgr_ops->find_job_record(step_id->job_id);
 	step_record_t *step_ptr;
 	time_t now = time(NULL);
 

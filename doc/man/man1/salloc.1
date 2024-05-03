@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "April 2024" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "May 2024" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2021,6 +2021,14 @@ was not specified) as one task per requested thread.
 Spread the job allocation over as many nodes as possible and attempt to
 evenly distribute tasks across the allocated nodes.
 This option disables the topology/tree plugin.
+.IP
+
+.TP
+\fB\-\-stepmgr\fR
+Enable slurmstepd step management per\-job if it isn't enabled system wide.
+This enables job steps to be managed by a single extern slurmstepd associated
+with the job to manage steps. This is beneficial for jobs that submit many
+steps inside their allocations. \fBPrologFlags=contain\fR must be set.
 .IP
 
 .TP

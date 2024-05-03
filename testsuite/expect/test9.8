@@ -44,6 +44,10 @@ proc cleanup {} {
 	cancel_job $job_list
 }
 
+if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
+	skip "This test can't because squeue --steps doesn't work for step_mgr jobs"
+}
+
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set mem_per_step 0
 } else {

@@ -48,21 +48,24 @@
 #include "src/common/cron.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
+#include "src/common/job_record.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+#include "src/common/slurmdbd_defs.h"
+#include "src/common/uid.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/topology.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_time.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
-#include "src/common/uid.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/interfaces/topology.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -85,6 +88,19 @@ strong_alias(private_data_string, slurm_private_data_string);
 strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
+
+#ifndef NDEBUG
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+__thread bool drop_priv = false;
+#endif
 
 typedef struct {
 	uint32_t flag;
@@ -1244,6 +1260,7 @@ extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->step_mgr);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 		xfree(msg);
 	}
@@ -1623,6 +1640,11 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 			xfree(msg->spank_job_env);
 		}
 		slurm_cred_destroy(msg->cred);
+
+		/* step_mgr variables */
+		job_record_delete(msg->job_ptr);
+		part_record_delete(msg->part_ptr);
+		FREE_NULL_LIST(msg->job_node_array);
 
 		xfree(msg);
 	}
@@ -2070,6 +2092,9 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->x11_alloc_host);
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target);
+
+	xfree(msg->step_mgr);
+	job_record_delete(msg->job_ptr);
 
 	xfree(msg);
 }
@@ -3920,6 +3945,7 @@ extern void slurm_free_job_step_create_response_msg(
 {
 	if (msg) {
 		xfree(msg->resv_ports);
+		xfree(msg->step_mgr);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
 		if (msg->select_jobinfo)
@@ -5121,6 +5147,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_SUSPEND_EXC_STATES:
 		slurm_free_suspend_exc_update_msg(data);
 		break;
+	case REQUEST_DBD_RELAY:
+		slurmdbd_free_msg(data);
+		break;
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);
 		break;
@@ -6082,4 +6111,146 @@ char *bf_exit2string(uint16_t opcode)
 	default:
 		return "unknown";
 	}
+}
+
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid)
+{
+	agent_arg_ptr->r_uid = r_uid;
+	agent_arg_ptr->r_uid_set = true;
+}
+
+extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
+{
+	if (agent_arg_ptr == NULL)
+		return;
+
+	hostlist_destroy(agent_arg_ptr->hostlist);
+	xfree(agent_arg_ptr->addr);
+	if (agent_arg_ptr->msg_args) {
+		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+			slurm_free_job_launch_msg(agent_arg_ptr->msg_args);
+		} else if (agent_arg_ptr->msg_type ==
+				RESPONSE_RESOURCE_ALLOCATION) {
+			resource_allocation_response_msg_t *alloc_msg =
+				agent_arg_ptr->msg_args;
+			/* NULL out working_cluster_rec because it's pointing to
+			 * the actual cluster_rec. */
+			alloc_msg->working_cluster_rec = NULL;
+			slurm_free_resource_allocation_response_msg(
+					agent_arg_ptr->msg_args);
+		} else if (agent_arg_ptr->msg_type ==
+				RESPONSE_HET_JOB_ALLOCATION) {
+			List alloc_list = agent_arg_ptr->msg_args;
+			FREE_NULL_LIST(alloc_list);
+		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)    ||
+			 (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)  ||
+			 (agent_arg_ptr->msg_type == REQUEST_KILL_PREEMPTED) ||
+			 (agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT))
+			slurm_free_kill_job_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_USER_MSG)
+			slurm_free_srun_user_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_NODE_FAIL)
+			slurm_free_srun_node_fail_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_STEP_MISSING)
+			slurm_free_srun_step_missing_msg(
+				agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL)
+			slurm_free_job_step_kill_msg(
+				agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
+			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_SUSPEND_INT)
+			slurm_free_suspend_int_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_LAUNCH_PROLOG)
+			slurm_free_prolog_launch_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)
+			slurm_free_reboot_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_SACKD)
+			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG)
+			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
+		else
+			xfree(agent_arg_ptr->msg_args);
+	}
+	xfree(agent_arg_ptr);
+}
+
+/*
+ * validate_slurm_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurm_user(uid_t uid)
+{
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
+		return true;
+	else
+		return false;
+}
+
+/*
+ * validate_slurmd_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmdUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurmd_user(uid_t uid)
+{
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	if ((uid == 0) || (uid == slurm_conf.slurmd_user_id))
+		return true;
+	else
+		return false;
+}
+
+extern uint16_t get_job_share_value(job_record_t *job_ptr)
+{
+	uint16_t shared = 0;
+	job_details_t *detail_ptr = job_ptr->details;
+
+	if (!detail_ptr)
+		shared = NO_VAL16;
+	else if (detail_ptr->share_res == 1)	/* User --share */
+		shared = JOB_SHARED_OK;
+	else if ((detail_ptr->share_res == 0) ||
+		 (detail_ptr->whole_node == 1))
+		shared = JOB_SHARED_NONE;	/* User --exclusive */
+	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
+		shared = JOB_SHARED_USER;	/* User --exclusive=user */
+	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
+		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
+	else if (job_ptr->part_ptr) {
+		/* Report shared status based upon latest partition info */
+		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+			shared = JOB_SHARED_USER;
+		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
+			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
+			shared = 1; /* Partition OverSubscribe=force */
+		else if (job_ptr->part_ptr->max_share == 0)
+			/* Partition OverSubscribe=exclusive */
+			shared = JOB_SHARED_NONE;
+		else
+			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
+	} else
+		shared = NO_VAL16;	/* No user or partition info */
+
+	return shared;
+}
+
+extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object)
+{
+	if (!object)
+		return;
+
+	xfree(object->step_mgr);
+	xfree(object);
 }

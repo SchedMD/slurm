@@ -14,6 +14,9 @@ accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c \
 	dbd_conn.c dbd_conn.h \
 	slurmdbd_agent.c slurmdbd_agent.h
 accounting_storage_slurmdbd_la_LDFLAGS = $(PLUGIN_FLAGS)
+accounting_storage_slurmdbd_la_LIBADD = \
+	../common/libaccounting_storage_common.la
 
-
-
+force:
+$(accounting_storage_slurmdbd_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

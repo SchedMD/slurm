@@ -420,6 +420,11 @@ typedef struct dbd_step_start_msg {
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */
 } dbd_step_start_msg_t;
 
+typedef struct {
+	void *data;
+	uint16_t msg_type;
+} dbd_relay_msg_t;
+
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/

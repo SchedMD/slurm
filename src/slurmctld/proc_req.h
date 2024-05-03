@@ -92,4 +92,10 @@ extern char **xduparray(uint32_t size, char ** array);
 extern resource_allocation_response_msg_t *build_alloc_msg(
 	job_record_t *job_ptr, int error_code, char *job_submit_user_msg);
 
+/*
+ * srun_allocate - notify srun of a resource allocation
+ * IN job_ptr - job allocated resources
+ */
+extern void srun_allocate(job_record_t *job_ptr);
+
 #endif /* !_HAVE_PROC_REQ_H */

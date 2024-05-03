@@ -46,12 +46,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * srun_allocate - notify srun of a resource allocation
- * IN job_ptr - job allocated resources
- */
-extern void srun_allocate(job_record_t *job_ptr);
-
-/*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */

@@ -49,22 +49,6 @@
 #define LOTS_OF_AGENTS_CNT 50
 #define LOTS_OF_AGENTS ((get_agent_count() <= LOTS_OF_AGENTS_CNT) ? 0 : 1)
 
-typedef struct agent_arg {
-	uint32_t	node_count;	/* number of nodes to communicate
-					 * with */
-	uint16_t	retry;		/* if set, keep trying */
-	uid_t r_uid;			/* receiver UID */
-	bool r_uid_set;			/* true if receiver UID set */
-	slurm_addr_t    *addr;          /* if set will send to this
-					   addr not hostlist */
-	hostlist_t *hostlist;		/* hostlist containing the
-					 * nodes we are sending to */
-	uint16_t        protocol_version; /* protocol version to use */
-	slurm_msg_type_t msg_type;	/* RPC to be issued */
-	void		*msg_args;	/* RPC data to be transmitted */
-	uint16_t msg_flags;		/* Flags to be added to msg */
-} agent_arg_t;
-
 /* Start a thread to manage queued agent requests */
 extern void agent_init(void);
 
@@ -118,8 +102,5 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type);
 
 /* Return length of agent's retry_list */
 extern int retry_list_size(void);
-
-/* Set r_uid of agent_arg */
-extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
 
 #endif /* !_AGENT_H */

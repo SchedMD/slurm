@@ -82,7 +82,6 @@
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -92,8 +91,11 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
+
+#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/srun_comm.h"
+#include "src/stepmgr/step_mgr.h"
 
 #ifndef CORRESPOND_ARRAY_TASK_CNT
 #  define CORRESPOND_ARRAY_TASK_CNT 10
@@ -2330,6 +2332,14 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	if (!launch_msg_ptr->container && !launch_msg_ptr->environment) {
 		fail_why = "Unable to load job environment";
 		goto job_failed;
+	}
+
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		xrealloc(launch_msg_ptr->environment,
+			 sizeof(char *) * (launch_msg_ptr->envc + 1));
+		env_array_overwrite(&launch_msg_ptr->environment,
+				    "SLURM_STEP_MGR", job_ptr->batch_host);
+		launch_msg_ptr->envc++;
 	}
 
 	_split_env(launch_msg_ptr);

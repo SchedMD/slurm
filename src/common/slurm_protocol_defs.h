@@ -61,6 +61,7 @@
 #include "src/common/macros.h"
 #include "src/common/msg_type.h"
 #include "src/common/persist_conn.h"
+#include "src/common/part_record.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
@@ -213,12 +214,21 @@
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
 #define RESV_FREE_STR_TRES      SLURM_BIT(9)
 
+#ifndef NDEBUG
+extern __thread bool drop_priv;
+#endif
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
    typedef struct switch_jobinfo   switch_jobinfo_t;
+#endif
+
+#ifndef __job_record_t_defined
+#  define __job_record_t_defined
+typedef struct job_record job_record_t;
 #endif
 
 /*****************************************************************************\
@@ -485,6 +495,7 @@ typedef struct step_complete_msg {
 	slurm_step_id_t step_id;
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
+	bool send_to_step_mgr;
 } step_complete_msg_t;
 
 typedef struct signal_tasks_msg {
@@ -594,6 +605,7 @@ typedef struct job_step_create_response_msg {
 	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
+	char *step_mgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
 	dynamic_plugin_data_t *switch_job;	/* switch opaque data type */
@@ -711,6 +723,13 @@ typedef struct launch_tasks_request_msg {
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
+
+	/* To send to step_mgr */
+	job_record_t *job_ptr;
+	list_t *job_node_array;
+	part_record_t *part_ptr;
+
+	char *step_mgr; /* Hostname of step_mgr */
 } launch_tasks_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -724,6 +743,7 @@ typedef struct return_code2_msg {
 } return_code2_msg_t;
 
 typedef struct {
+	char *step_mgr;
 	slurmdb_cluster_rec_t *working_cluster_rec;
 } reroute_msg_t;
 
@@ -825,6 +845,17 @@ typedef struct prolog_launch_msg {
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
+
+	/* To send to step_mgr */
+	job_record_t *job_ptr;
+	buf_t *job_ptr_buf;
+
+	list_t *job_node_array; /* node_record_t array of size
+				 * job_ptr->node_cnt for step_mgr. */
+	buf_t *job_node_array_buf;
+
+	part_record_t *part_ptr;
+	buf_t *part_ptr_buf;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {
@@ -1783,6 +1814,60 @@ extern uint32_t slurm_select_cr_type(void);
 extern char *schedule_exit2string(uint16_t opcode);
 
 extern char *bf_exit2string(uint16_t opcode);
+
+/*
+ * Parse reservation request option Watts
+ * IN watts_str - value to parse
+ * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern uint32_t slurm_watts_str_to_int(char *watts_str, char **err_msg);
+
+typedef struct {
+	uint32_t	node_count;	/* number of nodes to communicate
+					 * with */
+	uint16_t	retry;		/* if set, keep trying */
+	uid_t r_uid;			/* receiver UID */
+	bool r_uid_set;			/* true if receiver UID set */
+	slurm_addr_t    *addr;          /* if set will send to this
+					   addr not hostlist */
+	hostlist_t *hostlist;		/* hostlist containing the
+					 * nodes we are sending to */
+	uint16_t        protocol_version; /* protocol version to use */
+	slurm_msg_type_t msg_type;	/* RPC to be issued */
+	void		*msg_args;	/* RPC data to be transmitted */
+	uint16_t msg_flags;		/* Flags to be added to msg */
+} agent_arg_t;
+
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
+extern void purge_agent_args(agent_arg_t *agent_arg_ptr);
+
+/*
+ * validate_slurm_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurm_user(uid_t uid);
+
+/*
+ * validate_slurmd_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurmd_user(uid_t uid);
+
+/*
+ * Return the job's sharing value from job or partition value.
+ */
+extern uint16_t get_job_share_value(job_record_t *job_ptr);
+
+/*
+ * Free step_mgr_job_info_t
+ */
+extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

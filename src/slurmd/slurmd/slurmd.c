@@ -370,6 +370,8 @@ main (int argc, char **argv)
 		fatal("failed to initialize node_features plugin");
 	if (mpi_g_daemon_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize MPI plugins.");
+	if (select_g_init(1) != SLURM_SUCCESS)
+		fatal("Failed to initialize select plugins.");
 	file_bcast_init();
 	run_command_init();
 	plugins_registered = true;
@@ -601,6 +603,7 @@ _service_connection(void *arg)
 
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
+	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");

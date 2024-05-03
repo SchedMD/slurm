@@ -23,8 +23,6 @@ slurmctld_SOURCES =     \
 	front_end.h	\
 	gang.c		\
 	gang.h		\
-	gres_ctld.c	\
-	gres_ctld.h	\
 	groups.c	\
 	groups.h	\
 	heartbeat.c	\
@@ -43,8 +41,6 @@ slurmctld_SOURCES =     \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
-	port_mgr.c	\
-	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
 	prep_slurmctld.c \
@@ -67,22 +63,21 @@ slurmctld_SOURCES =     \
 	slurmscriptd_protocol_defs.h \
 	slurmscriptd_protocol_pack.c \
 	slurmscriptd_protocol_pack.h \
-	srun_comm.c	\
-	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\
-	step_mgr.c	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
 
 sbin_PROGRAMS = slurmctld
 
-slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES)
+slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) \
+		  $(top_builddir)/src/stepmgr/libstepmgr.o
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES) \
+			 $(top_builddir)/src/stepmgr/libstepmgr.o
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include

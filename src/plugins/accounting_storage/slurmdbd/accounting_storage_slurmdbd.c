@@ -55,14 +55,18 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/select.h"
+
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
 #include "as_ext_dbd.h"
 #include "slurmdbd_agent.h"
+
+#include "../common/common_as.h"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -130,6 +134,17 @@ static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int prev_node_record_count = -1;
 static bitstr_t *total_node_bitmap = NULL;
+
+/* Satisfy common lib */
+char *assoc_day_table = NULL;
+char *assoc_hour_table = NULL;
+char *assoc_month_table = NULL;
+char *cluster_day_table = NULL;
+char *cluster_hour_table = NULL;
+char *cluster_month_table = NULL;
+char *wckey_day_table = NULL;
+char *wckey_hour_table = NULL;
+char *wckey_month_table = NULL;
 
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
@@ -3155,62 +3170,11 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
  */
 extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
-	uint32_t tasks = 0, nodes = 0, task_dist = 0;
-	char *node_list = NULL;
 	persist_msg_t msg = {0};
-	dbd_step_start_msg_t req;
+	dbd_step_start_msg_t req = {0};
 
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		tasks = step_ptr->job_ptr->total_cpus;
-		nodes = step_ptr->job_ptr->total_nodes;
-		node_list = step_ptr->job_ptr->nodes;
-	} else {
-		tasks = step_ptr->step_layout->task_cnt;
-		nodes = step_ptr->step_layout->node_cnt;
-		task_dist = step_ptr->step_layout->task_dist;
-		node_list = step_ptr->step_layout->node_list;
-	}
-
-	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
-		error("jobacct_storage_p_step_start: "
-		      "Not inputing this job, it has no submit time.");
-		return SLURM_ERROR;
-	}
-	memset(&req, 0, sizeof(dbd_step_start_msg_t));
-
-	req.assoc_id    = step_ptr->job_ptr->assoc_id;
-	req.container   = step_ptr->container;
-	req.db_index    = step_ptr->job_ptr->db_index;
-	req.name        = step_ptr->name;
-	req.nodes       = node_list;
-	/* reate req->node_inx outside of locks when packing */
-	req.node_cnt    = nodes;
-	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
-		req.start_time = step_ptr->start_time;
-	else
-		req.start_time = step_ptr->job_ptr->resize_time;
-
-	if (step_ptr->job_ptr->resize_time)
-		req.job_submit_time   = step_ptr->job_ptr->resize_time;
-	else if (step_ptr->job_ptr->details)
-		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
-
-	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
-
-	if (step_ptr->step_layout)
-		req.task_dist   = step_ptr->step_layout->task_dist;
-	req.task_dist   = task_dist;
-
-	req.total_tasks = tasks;
-
-	req.submit_line = step_ptr->submit_line;
-	req.tres_alloc_str = step_ptr->tres_alloc_str;
-
-	req.req_cpufreq_min = step_ptr->cpu_freq_min;
-	req.req_cpufreq_max = step_ptr->cpu_freq_max;
-	req.req_cpufreq_gov = step_ptr->cpu_freq_gov;
+	if (as_build_step_start_msg(&req, step_ptr))
+	    return SLURM_ERROR;
 
 	msg.msg_type    = DBD_STEP_START;
 	msg.conn        = db_conn;
@@ -3228,64 +3192,11 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 extern int jobacct_storage_p_step_complete(void *db_conn,
 					   step_record_t *step_ptr)
 {
-	uint32_t tasks = 0;
 	persist_msg_t msg = {0};
-	dbd_step_comp_msg_t req;
+	dbd_step_comp_msg_t req = {0};
 
-	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
-		tasks = 1;
-	else {
-		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			tasks = step_ptr->job_ptr->total_cpus;
-		else
-			tasks = step_ptr->step_layout->task_cnt;
-	}
-
-	if (!step_ptr->job_ptr->db_index
-	    && ((!step_ptr->job_ptr->details
-		 || !step_ptr->job_ptr->details->submit_time)
-		&& !step_ptr->job_ptr->resize_time)) {
-		error("jobacct_storage_p_step_complete: "
-		      "Not inputing this job, it has no submit time.");
+	if (as_build_step_comp_msg(&req, step_ptr))
 		return SLURM_ERROR;
-	}
-
-	memset(&req, 0, sizeof(dbd_step_comp_msg_t));
-
-	req.assoc_id    = step_ptr->job_ptr->assoc_id;
-	req.db_index    = step_ptr->job_ptr->db_index;
-	req.end_time    = time(NULL);	/* called at step completion */
-	req.exit_code   = step_ptr->exit_code;
-#ifndef HAVE_FRONT_END
-	/* Only send this info on a non-frontend system since this
-	 * information is of no use on systems that run on a front-end
-	 * node.  Since something else is running the job.
-	 */
-	req.jobacct     = step_ptr->jobacct;
-#else
-	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
-		req.jobacct     = step_ptr->jobacct;
-#endif
-
-	req.req_uid     = step_ptr->requid;
-	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
-		req.start_time = step_ptr->start_time;
-	else
-		req.start_time = step_ptr->job_ptr->resize_time;
-
-	if (step_ptr->job_ptr->resize_time)
-		req.job_submit_time   = step_ptr->job_ptr->resize_time;
-	else if (step_ptr->job_ptr->details)
-		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
-
-	if (step_ptr->job_ptr->bit_flags & TRES_STR_CALC)
-		req.job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
-
-	req.state       = step_ptr->state;
-
-	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
-
-	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;
 	msg.conn        = db_conn;
@@ -3618,4 +3529,14 @@ extern int acct_storage_p_shutdown(void *db_conn)
 	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
 	return rc;
+}
+
+extern int acct_storage_p_relay_msg(void *db_conn, persist_msg_t *msg)
+{
+	msg->conn = db_conn;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }

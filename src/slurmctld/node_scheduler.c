@@ -58,6 +58,7 @@
 #include "src/common/id_util.h"
 #include "src/common/job_features.h"
 #include "src/common/list.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -77,7 +78,6 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -85,6 +85,9 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+
+#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/step_mgr.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
@@ -3033,55 +3036,6 @@ end_it:
 	return error_code;
 }
 
-extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
-{
-	memset(cred_arg, 0, sizeof(slurm_cred_arg_t));
-
-	cred_arg->id = job_ptr->id;
-
-	cred_arg->gid = job_ptr->group_id;
-	cred_arg->job_account = job_ptr->account;
-	cred_arg->job_alias_list = job_ptr->alias_list;
-	cred_arg->job_comment = job_ptr->comment;
-	cred_arg->job_end_time = job_ptr->end_time;
-	cred_arg->job_extra = job_ptr->extra;
-	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
-	cred_arg->job_licenses = job_ptr->licenses;
-	cred_arg->job_node_addrs = job_ptr->node_addrs;
-	cred_arg->job_reservation = job_ptr->resv_name;
-	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
-	cred_arg->job_selinux_context = job_ptr->selinux_context;
-	cred_arg->job_start_time = job_ptr->start_time;
-	cred_arg->uid = job_ptr->user_id;
-
-	if (job_ptr->details) {
-		cred_arg->job_constraints = job_ptr->details->features_use;
-		cred_arg->job_core_spec = job_ptr->details->core_spec;
-		cred_arg->job_ntasks = job_ptr->details->num_tasks;
-		cred_arg->job_oversubscribe = get_job_share_value(job_ptr);
-		cred_arg->job_std_err = job_ptr->details->std_err;
-		cred_arg->job_std_in = job_ptr->details->std_in;
-		cred_arg->job_std_out = job_ptr->details->std_out;
-		cred_arg->job_x11 = job_ptr->details->x11;
-	}
-
-	if (job_ptr->job_resrcs) {
-		job_resources_t *resrcs = job_ptr->job_resrcs;
-		cred_arg->cores_per_socket = resrcs->cores_per_socket;
-		cred_arg->cpu_array_count = resrcs->cpu_array_cnt;
-		cred_arg->cpu_array = resrcs->cpu_array_value;
-		cred_arg->cpu_array_reps = resrcs->cpu_array_reps;
-		cred_arg->job_core_bitmap = resrcs->core_bitmap;
-		cred_arg->job_hostlist = resrcs->nodes;
-		cred_arg->job_nhosts = resrcs->nhosts;
-		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
-		cred_arg->sockets_per_node = resrcs->sockets_per_node;
-	}
-
-	if (job_ptr->part_ptr)
-		cred_arg->job_partition = job_ptr->part_ptr->name;
-}
-
 /*
  * Launch prolog via RPC to slurmd. This is useful when we need to run
  * prolog at allocation stage. Then we ask slurmd to launch the prolog
@@ -3174,6 +3128,39 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
+	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		node_record_t *bit_node;
+
+		/* Only keep pointers to nodes */
+		list_t *job_node_array = list_create(NULL);
+		for (int i = 0;
+		     (bit_node = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
+			list_append(job_node_array, bit_node);
+		}
+
+		/*
+		 * Pack while we are in locks so that we don't need to make a
+		 * copies of job_ptr and job_node_array since the agent queue
+		 * doesn't pack until sending.
+		 */
+		prolog_msg_ptr->job_ptr_buf = init_buf(BUF_SIZE);
+		job_record_pack(job_ptr, slurmctld_tres_cnt,
+				prolog_msg_ptr->job_ptr_buf, protocol_version);
+
+		prolog_msg_ptr->job_node_array_buf = init_buf(BUF_SIZE);
+		slurm_pack_list(job_node_array, node_record_pack,
+				prolog_msg_ptr->job_node_array_buf,
+				protocol_version);
+
+		prolog_msg_ptr->part_ptr_buf = init_buf(BUF_SIZE);
+		part_record_pack(job_ptr->part_ptr,
+				 prolog_msg_ptr->part_ptr_buf,
+				 protocol_version);
+
+		FREE_NULL_LIST(job_node_array);
+	}
+
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	setup_cred_arg(&cred_arg, job_ptr);
@@ -3246,25 +3233,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 	/* Launch the RPC via agent */
 	set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_arg_ptr);
-}
-
-/*
- * list_find_feature - find an entry in the feature list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-extern int list_find_feature(void *feature_entry, void *key)
-{
-	node_feature_t *feature_ptr;
-
-	if (key == NULL)
-		return 1;
-
-	feature_ptr = (node_feature_t *) feature_entry;
-	if (xstrcmp(feature_ptr->name, (char *) key) == 0)
-		return 1;
-	return 0;
 }
 
 /*

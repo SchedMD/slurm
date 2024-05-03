@@ -186,18 +186,16 @@ am__v_lt_1 =
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) controller.$(OBJEXT) crontab.$(OBJEXT) \
 	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
-	gres_ctld.$(OBJEXT) groups.$(OBJEXT) heartbeat.$(OBJEXT) \
-	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) job_state.$(OBJEXT) \
-	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
-	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	prep_slurmctld.$(OBJEXT) proc_req.$(OBJEXT) \
-	rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
+	groups.$(OBJEXT) heartbeat.$(OBJEXT) job_mgr.$(OBJEXT) \
+	job_scheduler.$(OBJEXT) job_state.$(OBJEXT) licenses.$(OBJEXT) \
+	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
+	power_save.$(OBJEXT) prep_slurmctld.$(OBJEXT) \
+	proc_req.$(OBJEXT) rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
 	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) sackd_mgr.$(OBJEXT) \
 	slurmscriptd.$(OBJEXT) slurmscriptd_protocol_defs.$(OBJEXT) \
-	slurmscriptd_protocol_pack.$(OBJEXT) srun_comm.$(OBJEXT) \
-	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
-	trigger_mgr.$(OBJEXT)
+	slurmscriptd_protocol_pack.$(OBJEXT) state_save.$(OBJEXT) \
+	statistics.$(OBJEXT) trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmctld_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -222,21 +220,19 @@ am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/backup.Po ./$(DEPDIR)/controller.Po \
 	./$(DEPDIR)/crontab.Po ./$(DEPDIR)/fed_mgr.Po \
 	./$(DEPDIR)/front_end.Po ./$(DEPDIR)/gang.Po \
-	./$(DEPDIR)/gres_ctld.Po ./$(DEPDIR)/groups.Po \
-	./$(DEPDIR)/heartbeat.Po ./$(DEPDIR)/job_mgr.Po \
-	./$(DEPDIR)/job_scheduler.Po ./$(DEPDIR)/job_state.Po \
-	./$(DEPDIR)/licenses.Po ./$(DEPDIR)/locks.Po \
-	./$(DEPDIR)/node_mgr.Po ./$(DEPDIR)/node_scheduler.Po \
-	./$(DEPDIR)/partition_mgr.Po ./$(DEPDIR)/ping_nodes.Po \
-	./$(DEPDIR)/port_mgr.Po ./$(DEPDIR)/power_save.Po \
+	./$(DEPDIR)/groups.Po ./$(DEPDIR)/heartbeat.Po \
+	./$(DEPDIR)/job_mgr.Po ./$(DEPDIR)/job_scheduler.Po \
+	./$(DEPDIR)/job_state.Po ./$(DEPDIR)/licenses.Po \
+	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
+	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
+	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/power_save.Po \
 	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
 	./$(DEPDIR)/rate_limit.Po ./$(DEPDIR)/read_config.Po \
 	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
 	./$(DEPDIR)/sackd_mgr.Po ./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
-	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
-	./$(DEPDIR)/statistics.Po ./$(DEPDIR)/step_mgr.Po \
+	./$(DEPDIR)/state_save.Po ./$(DEPDIR)/statistics.Po \
 	./$(DEPDIR)/trigger_mgr.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -555,8 +551,6 @@ slurmctld_SOURCES = \
 	front_end.h	\
 	gang.c		\
 	gang.h		\
-	gres_ctld.c	\
-	gres_ctld.h	\
 	groups.c	\
 	groups.h	\
 	heartbeat.c	\
@@ -575,8 +569,6 @@ slurmctld_SOURCES = \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
-	port_mgr.c	\
-	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
 	prep_slurmctld.c \
@@ -599,18 +591,18 @@ slurmctld_SOURCES = \
 	slurmscriptd_protocol_defs.h \
 	slurmscriptd_protocol_pack.c \
 	slurmscriptd_protocol_pack.h \
-	srun_comm.c	\
-	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\
-	step_mgr.c	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) $(LIB_REF)
+slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) \
+	$(top_builddir)/src/stepmgr/libstepmgr.o $(LIB_REF)
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES) \
+			 $(top_builddir)/src/stepmgr/libstepmgr.o
+
 REF = usage.txt
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
@@ -736,7 +728,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_ctld.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heartbeat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@ # am--include-marker
@@ -748,7 +739,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_scheduler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep_slurmctld.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
@@ -760,10 +750,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_defs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_pack.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_comm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trigger_mgr.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -902,7 +890,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
 	-rm -f ./$(DEPDIR)/front_end.Po
 	-rm -f ./$(DEPDIR)/gang.Po
-	-rm -f ./$(DEPDIR)/gres_ctld.Po
 	-rm -f ./$(DEPDIR)/groups.Po
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
@@ -914,7 +901,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/node_scheduler.Po
 	-rm -f ./$(DEPDIR)/partition_mgr.Po
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
@@ -926,10 +912,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/srun_comm.Po
 	-rm -f ./$(DEPDIR)/state_save.Po
 	-rm -f ./$(DEPDIR)/statistics.Po
-	-rm -f ./$(DEPDIR)/step_mgr.Po
 	-rm -f ./$(DEPDIR)/trigger_mgr.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -984,7 +968,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
 	-rm -f ./$(DEPDIR)/front_end.Po
 	-rm -f ./$(DEPDIR)/gang.Po
-	-rm -f ./$(DEPDIR)/gres_ctld.Po
 	-rm -f ./$(DEPDIR)/groups.Po
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
@@ -996,7 +979,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/node_scheduler.Po
 	-rm -f ./$(DEPDIR)/partition_mgr.Po
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
@@ -1008,10 +990,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/srun_comm.Po
 	-rm -f ./$(DEPDIR)/state_save.Po
 	-rm -f ./$(DEPDIR)/statistics.Po
-	-rm -f ./$(DEPDIR)/step_mgr.Po
 	-rm -f ./$(DEPDIR)/trigger_mgr.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

@@ -66,6 +66,8 @@
 #include <unistd.h>
 #include <utime.h>
 
+#include "src/bcast/file_bcast.h"
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
@@ -73,46 +75,44 @@
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
-#include "src/interfaces/gres.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/interfaces/node_features.h"
-#include "src/interfaces/prep.h"
 #include "src/common/read_config.h"
 #include "src/common/reverse_tree.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/cred.h"
-#include "src/interfaces/acct_gather_energy.h"
-#include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/mpi.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
-#include "src/interfaces/switch.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
-#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
-
-#include "src/bcast/file_bcast.h"
-
-#include "src/slurmd/slurmd/cred_context.h"
-#include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/slurmd/slurmd.h"
+#include "src/interfaces/cred.h"
+#include "src/interfaces/gres.h"
+#include "src/interfaces/job_container.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/mpi.h"
+#include "src/interfaces/node_features.h"
+#include "src/interfaces/prep.h"
+#include "src/interfaces/proctrack.h"
+#include "src/interfaces/switch.h"
+#include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/job_status.h"
-#include "src/interfaces/job_container.h"
-#include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
-#include "src/interfaces/task.h"
+#include "src/slurmd/slurmd/cred_context.h"
+#include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #define _LIMIT_INFO 0
 
@@ -278,6 +278,337 @@ static list_t *bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static int _step_mgr_connect(slurm_step_id_t *step_id,
+			    uint16_t *protocol_version)
+{
+	int fd = SLURM_ERROR;
+
+	step_id->step_id = SLURM_EXTERN_CONT;
+	if ((fd = stepd_connect(conf->spooldir, conf->node_name, step_id,
+				protocol_version)) == -1) {
+		error("%s to %ps failed: %m",
+		      __func__, &step_id->job_id);
+	}
+
+	return fd;
+}
+
+static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
+{
+	int fd;
+	uid_t job_uid;
+	uint16_t protocol_version;
+	slurm_step_id_t step_id = {.step_het_comp = NO_VAL};
+
+	job_step_create_request_msg_t *req_step_msg = msg->data;
+	step_id.job_id = req_step_msg->step_id.job_id;
+
+	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u",
+		      step_id.job_id, msg->auth_uid);
+		goto error;
+	}
+
+	if (msg->auth_uid != job_uid) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		goto error;
+	}
+
+	if ((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	    SLURM_ERROR) {
+		stepd_relay_msg(fd, msg, protocol_version);
+		return;
+	}
+
+	error("failed to return step rpc:%s job:%ps uid:%u",
+	      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+error:
+	slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+}
+
+static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
+{
+	int fd, rc;
+	job_step_info_request_msg_t *request = msg->data;
+	slurm_step_id_t step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	step_id = request->step_id;
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	job_step_kill_msg_t *request = msg->data;
+	slurm_step_id_t step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	step_id = request->step_id;
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	srun_job_complete_msg_t *request = msg->data;
+	slurm_step_id_t step_id = {0};
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	step_id.job_id = request->job_id;
+	step_id.step_id = SLURM_EXTERN_CONT;
+	step_id.step_het_comp = NO_VAL;
+
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	srun_node_fail_msg_t *request = msg->data;
+	slurm_step_id_t step_id = request->step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	srun_timeout_msg_t *request = msg->data;
+	slurm_step_id_t step_id = request->step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_update_step(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	step_update_request_msg_t *request = msg->data;
+	slurm_step_id_t step_id = {0};
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	step_id.job_id = request->job_id;
+	step_id.step_id = request->step_id;
+	step_id.step_het_comp = NO_VAL;
+
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_step_layout(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	slurm_step_id_t *step_id = msg->data;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	job_uid = _get_job_uid(step_id->job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
+{
+	int fd, rc;
+
+	step_alloc_info_msg_t *request = msg->data;
+	slurm_step_id_t step_id = request->step_id;
+	uid_t job_uid;
+	uint16_t protocol_version;
+
+	job_uid = _get_job_uid(step_id.job_id);
+
+	if ((job_uid != msg->auth_uid) &&
+	    !_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+		goto done;
+	}
+
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
+		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+	}
+
+done:
+	slurm_send_rc_msg(msg, rc);
+}
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -399,11 +730,17 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_STEP_COMPLETE:
 		_rpc_step_complete(msg);
 		break;
+	case REQUEST_JOB_STEP_CREATE:
+		_slurm_rpc_job_step_create(msg);
+		break;
 	case REQUEST_JOB_STEP_STAT:
 		_rpc_stat_jobacct(msg);
 		break;
 	case REQUEST_JOB_STEP_PIDS:
 		_rpc_list_pids(msg);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		_slurm_rpc_job_step_get_info(msg);
 		break;
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);
@@ -416,6 +753,27 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		_rpc_network_callerid(msg);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+		_slurm_rpc_job_step_kill(msg);
+		break;
+	case SRUN_JOB_COMPLETE:
+		_slurm_rpc_srun_job_complete(msg);
+		break;
+	case SRUN_NODE_FAIL:
+		_slurm_rpc_srun_node_fail(msg);
+		break;
+	case SRUN_TIMEOUT:
+		_slurm_rpc_srun_timeout(msg);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_slurm_rpc_update_step(msg);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_slurm_rpc_step_layout(msg);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		_slurm_rpc_sbcast_cred(msg);
 		break;
 	default:
 		error("%s: invalid request msg type %d",
@@ -2143,6 +2501,10 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
 						  sizeof(uint16_t));
 
+	launch_req->job_ptr = req->job_ptr;
+	launch_req->job_node_array = req->job_node_array;
+	launch_req->part_ptr = req->part_ptr;
+
 	/*
 	 * determine which node this is in the allocation and if
 	 * it should setup the x11 forwarding or not
@@ -3561,10 +3923,21 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uint16_t protocol_version;
+	slurm_step_id_t *tmp_step_id;
+	slurm_step_id_t step_id = {
+		.job_id = req->step_id.job_id,
+		.step_het_comp = NO_VAL,
+		.step_id = SLURM_EXTERN_CONT,
+	};
+
+	if (req->send_to_step_mgr)
+		tmp_step_id = &step_id;
+	else
+		tmp_step_id = &req->step_id;
 
 	debug3("Entering _rpc_step_complete");
 	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &req->step_id, &protocol_version);
+			   tmp_step_id, &protocol_version);
 	if (fd == -1) {
 		error("stepd_connect to %ps failed: %m", &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;

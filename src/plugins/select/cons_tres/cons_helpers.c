@@ -44,7 +44,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 
-#include "src/slurmctld/gres_ctld.h"
+#include "src/stepmgr/gres_ctld.h"
 
 /* Global variables */
 
@@ -224,4 +224,3 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 
 	return avail_cores;
 }
-

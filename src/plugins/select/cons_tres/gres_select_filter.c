@@ -1629,8 +1629,8 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 	uint16_t cores_per_socket_cnt = 0;
 	uint16_t sock_cnt = 0;
 	uint32_t gres_needed;
-	uint32_t res_cores_per_gpu = node_record_table_ptr[args->node_inx]->
-		config_ptr->res_cores_per_gpu;
+	uint32_t res_cores_per_gpu =
+		node_record_table_ptr[args->node_inx]->res_cores_per_gpu;
 
 	xassert(job_res->core_bitmap);
 

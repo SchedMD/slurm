@@ -95,7 +95,13 @@ wait_for_job -fail $job_id "RUNNING"
 set step_cnt 0
 wait_for {$step_cnt == $steps_started} {
 	set step_cnt 0
-	spawn $squeue -s --state=RUNNING -o %i --noheader
+
+	if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
+		spawn $bin_bash -c "exec $scontrol show steps $job_id | $bin_grep -o \"StepId=\\S\\+\""
+	} else {
+		spawn $squeue -s --state=RUNNING -o %i --noheader
+	}
+
 	expect {
 		-re "($job_id)\\.($number)" {
 			incr step_cnt

@@ -142,7 +142,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* accounting_storage_params */
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
-	/* accounting_storage_type */
+	packstr(slurm_conf.accounting_storage_type, buffer);
 	/* accounting_storage_user */
 	/* acct_gather_conf */
 	packstr(slurm_conf.acct_gather_energy_type, buffer);
@@ -228,7 +228,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
 	/* max_step_cnt */
-	/* max_tasks_per_node */
+	pack16(slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
 	/* min_job_age */
@@ -364,7 +364,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* accounting_storage_params */
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
-	/* accounting_storage_type */
+	safe_unpackstr(&slurm_conf.accounting_storage_type, buffer);
 	/* accounting_storage_user */
 	/* acct_gather_conf */
 	safe_unpackstr(&slurm_conf.acct_gather_energy_type, buffer);
@@ -453,7 +453,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
 	/* max_step_cnt */
-	/* max_tasks_per_node */
+	safe_unpack16(&slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
 	/* min_job_age */

@@ -613,6 +613,12 @@ extern int acct_storage_g_clear_stats(void *db_conn);
  */
 extern int acct_storage_g_shutdown(void *db_conn);
 
+/*
+ * Relay message to the dbd
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_relay_msg(void *db_conn, persist_msg_t *msg);
+
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 /*

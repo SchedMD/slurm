@@ -48,12 +48,14 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/forward.h"
+#include "src/common/macros.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/topology.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/macros.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
@@ -71,8 +73,10 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
@@ -83,6 +87,8 @@
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+#include "src/stepmgr/step_mgr.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);
@@ -111,6 +117,179 @@ int slurmstepd_blocked_signals[] = {
 /* global variable */
 slurmd_conf_t * conf;
 extern char  ** environ;
+
+list_t *job_list = NULL;
+job_record_t *job_step_ptr = NULL;
+list_t *job_node_array = NULL;
+time_t last_job_update = 0;
+bool timie_limit_thread_shutdown = false;
+pthread_t time_limit_thread_id = 0;
+
+static int _foreach_ret_data_info(void *x, void *arg)
+{
+	int rc;
+	ret_data_info_t *ret_data_info = x;
+
+	if ((rc = slurm_get_return_code(ret_data_info->type,
+					ret_data_info->data))) {
+		error("step_mgr failed to send message %s: rc=%d(%s)",
+		      rpc_num2string(ret_data_info->type), rc,
+		      slurm_strerror(rc));
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static void *_rpc_thread(void *data)
+{
+	agent_arg_t *agent_arg_ptr = data;
+	slurm_msg_t msg;
+	slurm_msg_t_init(&msg);
+
+	msg.data = agent_arg_ptr->msg_args;
+	msg.flags = agent_arg_ptr->msg_flags;
+	msg.msg_type = agent_arg_ptr->msg_type;
+	msg.protocol_version = agent_arg_ptr->protocol_version;
+
+	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
+
+	if (agent_arg_ptr->addr) {
+		msg.address = *agent_arg_ptr->addr;
+		if (slurm_send_only_node_msg(&msg)) {
+			error("failed to send message type %d/%s",
+			      msg.msg_type, rpc_num2string(msg.msg_type));
+		}
+	} else {
+		list_t *ret_list = NULL;
+		if (!(ret_list = start_msg_tree(agent_arg_ptr->hostlist,
+						&msg, 0))) {
+			error("%s: no ret_list given", __func__);
+		} else {
+			list_for_each(ret_list, _foreach_ret_data_info, NULL);
+			FREE_NULL_LIST(ret_list);
+		}
+	}
+
+	purge_agent_args(agent_arg_ptr);
+
+	return NULL;
+}
+
+static void _agent_queue_request(agent_arg_t *agent_arg_ptr)
+{
+	slurm_thread_create_detached(_rpc_thread, agent_arg_ptr);
+}
+
+extern job_record_t *find_job_record(uint32_t job_id)
+{
+	xassert(job_step_ptr);
+
+	return job_step_ptr;
+}
+
+static void *_step_time_limit_thread(void *data)
+{
+	time_t now;
+
+	xassert(job_step_ptr);
+
+	while (!timie_limit_thread_shutdown) {
+		now = time(NULL);
+		list_for_each(job_step_ptr->step_list,
+			      check_job_step_time_limit, &now);
+		sleep(1);
+	}
+
+	return NULL;
+}
+
+step_mgr_ops_t stepd_step_mgr_ops = {
+	.find_job_record = find_job_record,
+	.last_job_update = &last_job_update,
+	.agent_queue_request = _agent_queue_request
+};
+
+static int _foreach_job_node_array(void *x, void *arg)
+{
+	node_record_t *job_node_ptr = x;
+	int *table_index = arg;
+
+	config_record_t *config_ptr;
+	config_ptr = create_config_record();
+	config_ptr->boards = job_node_ptr->boards;
+	config_ptr->core_spec_cnt = job_node_ptr->core_spec_cnt;
+	config_ptr->cores = job_node_ptr->cores;
+	config_ptr->cpu_spec_list = xstrdup(job_node_ptr->cpu_spec_list);
+	config_ptr->cpus = job_node_ptr->cpus;
+	config_ptr->feature = xstrdup(job_node_ptr->features);
+	config_ptr->gres = xstrdup(job_node_ptr->gres);
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
+	config_ptr->nodes = xstrdup(job_node_ptr->name);
+	config_ptr->real_memory = job_node_ptr->real_memory;
+	config_ptr->res_cores_per_gpu = job_node_ptr->res_cores_per_gpu;
+	config_ptr->threads = job_node_ptr->threads;
+	config_ptr->tmp_disk = job_node_ptr->tmp_disk;
+	config_ptr->tot_sockets = job_node_ptr->tot_sockets;
+	config_ptr->weight = job_node_ptr->weight;
+
+	*table_index = bit_ffs_from_bit(job_step_ptr->node_bitmap, *table_index);
+
+	job_node_ptr->config_ptr = config_ptr;
+	insert_node_record_at(job_node_ptr, *table_index);
+
+	(*table_index)++;
+
+	/*
+	 * Sanity check to make sure we can take a version we
+	 * actually understand.
+	 */
+	if (job_node_ptr->protocol_version < SLURM_MIN_PROTOCOL_VERSION)
+		job_node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
+
+	return SLURM_SUCCESS;
+}
+
+static void _setup_step_mgr_nodes(void)
+{
+	int table_index = 0;
+	init_node_conf();
+
+	xassert(job_node_array);
+	/*
+	 * next_node_bitmap() asserts
+	 * bit_size(node_bitmap) == node_record_count
+	 */
+	node_record_count = bit_size(job_step_ptr->node_bitmap);
+	grow_node_record_table_ptr();
+	list_for_each(job_node_array, _foreach_job_node_array, &table_index);
+}
+
+static void _init_stepd_step_mgr(void)
+{
+	if (!job_step_ptr)
+		return;
+
+	stepd_step_mgr_ops.up_node_bitmap =
+		bit_alloc(bit_size(job_step_ptr->node_bitmap));
+	bit_set_all(stepd_step_mgr_ops.up_node_bitmap);
+	step_mgr_init(&stepd_step_mgr_ops);
+
+	_setup_step_mgr_nodes();
+
+	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
+			 "accounting_storage/slurmdbd")) {
+		xfree(slurm_conf.accounting_storage_type);
+		slurm_conf.accounting_storage_type =
+			xstrdup("accounting_storage/ctld_relay");
+		acct_storage_g_init();
+	} else {
+			acct_storage_g_init();
+	}
+
+	slurm_thread_create(&time_limit_thread_id, _step_time_limit_thread,
+			    NULL);
+}
 
 int
 main (int argc, char **argv)
@@ -143,6 +322,8 @@ main (int argc, char **argv)
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
 	}
+
+	_init_stepd_step_mgr();
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */
@@ -227,6 +408,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			error("container_g_stepd_delete(%u): %m",
 			      step->step_id.job_id);
 	}
+
+	timie_limit_thread_shutdown = true;
+	slurm_thread_join(time_limit_thread_id);
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
@@ -529,7 +713,9 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
 
 	log_build_step_id_str(step_id, tmp_char, sizeof(tmp_char),
 			      STEP_ID_FLAG_NO_PREFIX);
-	buf = xstrdup_printf("[%s]", tmp_char);
+	buf = xstrdup_printf("[%s%s]",
+			     tmp_char,
+			     job_step_ptr ? " stepmgr" : "");
 
 	setproctitle("%s", buf);
 	/* note: will claim ownership of buf, do not free */
@@ -561,6 +747,11 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	/* receive conf from slurmd */
 	if (!(conf = _read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
+
+	/*
+	 * Init select plugin after reading slurm.conf and before receiving step
+	 */
+	select_g_init(false);
 
 	slurm_conf.slurmd_port = conf->port;
 	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
@@ -663,10 +854,22 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		step_id.step_het_comp = NO_VAL;
 		break;
 	case LAUNCH_TASKS:
-		memcpy(&step_id,
-		       &((launch_tasks_request_msg_t *)msg->data)->step_id,
-		       sizeof(step_id));
+	{
+		launch_tasks_request_msg_t *task_msg;
+		task_msg = (launch_tasks_request_msg_t *)msg->data;
+
+		memcpy(&step_id, &task_msg->step_id, sizeof(step_id));
+
+		if (task_msg->job_ptr &&
+		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
+			/* only allow one stepd to be stepmgr. */
+			job_step_ptr = task_msg->job_ptr;
+			job_step_ptr->part_ptr = task_msg->part_ptr;
+			job_node_array = task_msg->job_node_array;
+		}
+
 		break;
+	}
 	default:
 		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
 		break;

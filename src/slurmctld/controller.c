@@ -68,6 +68,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/port_mgr.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -117,7 +118,6 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
-#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/rate_limit.h"
@@ -127,9 +127,11 @@
 #include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
+
+#include "src/stepmgr/srun_comm.h"
+#include "src/stepmgr/step_mgr.h"
 
 decl_static_data(usage_txt);
 
@@ -311,6 +313,14 @@ int main(int argc, char **argv)
 	bool create_clustername_file;
 	bool backup_has_control = false;
 	char *conf_file;
+	step_mgr_ops_t step_mgr_ops = {0};
+
+	step_mgr_ops.agent_queue_request = agent_queue_request;
+	step_mgr_ops.find_job_array_rec = find_job_array_rec;
+	step_mgr_ops.find_job_record = find_job_record;
+	step_mgr_ops.job_config_fini = job_config_fini;
+	step_mgr_ops.last_job_update = &last_job_update;
+	step_mgr_init(&step_mgr_ops);
 
 	main_argc = argc;
 	main_argv = argv;
@@ -646,6 +656,12 @@ int main(int argc, char **argv)
 				trigger_primary_ctld_res_op();
 		}
 
+		/* Set pointers after they have been set */
+		step_mgr_ops.acct_db_conn = acct_db_conn;
+		step_mgr_ops.active_feature_list = active_feature_list;
+		step_mgr_ops.job_list = job_list;
+		step_mgr_ops.up_node_bitmap = up_node_bitmap;
+
 		_accounting_cluster_ready();
 		_send_future_cloud_to_db();
 
@@ -831,7 +847,7 @@ int main(int argc, char **argv)
 	resv_fini();
 	trigger_fini();
 	assoc_mgr_fini(1);
-	reserve_port_config(NULL);
+	reserve_port_config(NULL, NULL);
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
@@ -1858,7 +1874,7 @@ static int _update_job_tres(void *x, void *args)
 					 0, true, false, NULL))
 		job_set_alloc_tres(job_ptr, true);
 
-	update_job_limit_set_tres(&job_ptr->limit_set.tres);
+	update_job_limit_set_tres(&job_ptr->limit_set.tres, slurmctld_tres_cnt);
 
 	return 0;
 }

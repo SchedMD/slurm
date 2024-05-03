@@ -4322,6 +4322,39 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_stepmgr(slurm_opt_t *opt, const char *arg)
+{
+	opt->job_flags |= STEP_MGR_ENABLED;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_stepmgr(slurm_opt_t *opt)
+{
+	if (opt->job_flags & STEP_MGR_ENABLED)
+		return xstrdup("set");
+	return xstrdup("unset");
+}
+static int arg_set_data_stepmgr(slurm_opt_t *opt, const data_t *arg,
+				data_t *errors)
+{
+	opt->job_flags |= STEP_MGR_ENABLED;
+
+	return SLURM_SUCCESS;
+}
+static void arg_reset_stepmgr(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~STEP_MGR_ENABLED;
+}
+static slurm_cli_opt_t slurm_opt_stepmgr = {
+	.name = "stepmgr",
+	.has_arg = no_argument,
+	.val = LONG_OPT_STEPMGR,
+	.set_func = arg_set_stepmgr,
+	.set_func_data = arg_set_data_stepmgr,
+	.get_func = arg_get_stepmgr,
+	.reset_func = arg_reset_stepmgr,
+};
+
 static int arg_set_switch_req(slurm_opt_t *opt, const char *arg)
 {
 	opt->req_switch = parse_int("--switches", arg, true);
@@ -5391,6 +5424,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_slurmd_debug,
 	&slurm_opt_sockets_per_node,
 	&slurm_opt_spread_job,
+	&slurm_opt_stepmgr,
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,

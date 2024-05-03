@@ -217,6 +217,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	step->accel_bind_type = msg->accel_bind_type;
 	step->tres_bind = xstrdup(msg->tres_bind);
 	step->tres_freq = xstrdup(msg->tres_freq);
+	step->step_mgr = xstrdup(msg->step_mgr);
 
 	return step;
 }
@@ -802,6 +803,22 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
+	}
+
+	if (step->step_mgr) {
+		slurm_msg_t resp_msg;
+
+		slurm_msg_t_init(&resp_msg);
+
+		slurm_conf_get_addr(step->step_mgr, &req.address,
+				    req.flags);
+		slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
+		msg.send_to_step_mgr = true;
+		debug3("sending complete to step_ctld host:%s",
+		       step->step_mgr);
+		if (slurm_send_recv_node_msg(&req, &resp_msg, 0))
+			return;
+		goto finished;
 	}
 
 	/* Retry step complete RPC send to slurmctld indefinitely.

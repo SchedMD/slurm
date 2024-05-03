@@ -38,8 +38,9 @@
 #include "select_cons_tres.h"
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/licenses.h"
+
+#include "src/stepmgr/gres_ctld.h"
 
 bool select_state_initializing = true;
 

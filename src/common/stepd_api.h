@@ -335,4 +335,10 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version);
  * On error returns -1.
  */
 extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version);
+
+/*
+ * Relay message to stepd.
+ */
+extern int stepd_relay_msg(int fd, slurm_msg_t *msg, uint16_t protocol_version);
+
 #endif /* _STEPD_API_H */

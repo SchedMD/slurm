@@ -56,6 +56,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/port_mgr.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/strnatcmp.h"
@@ -83,14 +84,15 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
-#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
+
+#include "src/stepmgr/srun_comm.h"
+#include "src/stepmgr/step_mgr.h"
 
 #define FEATURE_MAGIC	0x34dfd8b5
 
@@ -804,7 +806,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		fatal("%s: duplicate entry for partition %s",
 		      __func__, part->name);
 
-	part_ptr = create_part_record(part->name);
+	part_ptr = create_ctld_part_record(part->name);
 
 	if (part->default_flag) {
 		if (default_part_name &&
@@ -1530,6 +1532,10 @@ extern int read_slurm_conf(int recover)
 	if (topology_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
+	if (xstrcasestr(slurm_conf.slurmctld_params, "step_mgr_enable") &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+		fatal("STEP_MGR not supported without PrologFlags=contain");
+
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
 	/* Increase node table to handle dynamic nodes. */
@@ -1688,7 +1694,7 @@ extern int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 
-	reserve_port_config(slurm_conf.mpi_params);
+	reserve_port_config(slurm_conf.mpi_params, job_list);
 
 	if (license_update(slurm_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurm_conf.licenses);

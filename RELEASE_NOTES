@@ -42,6 +42,8 @@ HIGHLIGHTS
  -- Store job output, input and error paths in SlurmDBD.
  -- Add USER_DELETE reservation flag to allow users with access to a reservation
     to delete it.
+ -- Add SlurmctldParameters=step_mgr_enable to enable step management through
+    the slurmstepd instead of the controller.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -345,27 +345,31 @@ expect {
 }
 subtest {$match == 4} "Verify scontrol step format" "scontrol did not provide correct step values ($match != 4)"
 
-set match 0
-set cpu_match 0
-set cnt 0
-foreach option [array names sq_step_format] {
-	incr cnt 1
-	set this_match 0
-	spawn $squeue --step=$sq_step_format(stepid) --noheader -O$option
-	expect {
-		-re "$sq_step_format($option)" {
-			incr match 1
-			incr this_match 1
-			exp_continue
+if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
+	subskip "squeue --steps doesn't work with step_mgr enabled jobs"
+} else {
+	set match 0
+	set cpu_match 0
+	set cnt 0
+	foreach option [array names sq_step_format] {
+		incr cnt 1
+		set this_match 0
+		spawn $squeue --step=$sq_step_format(stepid) --noheader -O$option
+		expect {
+			-re "$sq_step_format($option)" {
+				incr match 1
+				incr this_match 1
+				exp_continue
+			}
+			timeout {
+				fail "squeue is not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		timeout {
-			fail "squeue is not responding"
-		}
-		eof {
-			wait
-		}
+		subtest {$this_match != 0} "Verify step format value $option" "Failed to match $option with $sq_step_format($option)"
 	}
-	subtest {$this_match != 0} "Verify step format value $option" "Failed to match $option with $sq_step_format($option)"
-}
 
-subtest {$match == $cnt} "Verify all expected step format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
+	subtest {$match == $cnt} "Verify all expected step format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
+}

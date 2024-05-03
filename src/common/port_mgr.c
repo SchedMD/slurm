@@ -42,10 +42,10 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
+#include "src/common/job_record.h"
+#include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/slurmctld/slurmctld.h"
 
 #define  _DEBUG 0
 
@@ -55,7 +55,7 @@ int        port_resv_min   = 0;
 int        port_resv_max   = 0;
 
 static void _dump_resv_port_info(void);
-static void _make_all_resv(void);
+static void _make_all_resv(list_t *job_list);
 static void _make_step_resv(step_record_t *step_ptr);
 static void _rebuild_port_array(step_record_t *step_ptr);
 
@@ -135,7 +135,7 @@ static void _make_step_resv(step_record_t *step_ptr)
 
 /* Identify every job step with a port reservation and put the
  * reservation into the local reservation table. */
-static void _make_all_resv(void)
+static void _make_all_resv(list_t *job_list)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
@@ -156,7 +156,7 @@ static void _make_all_resv(void)
 
 /* Configure reserved ports.
  * Call with mpi_params==NULL to free memory */
-extern int reserve_port_config(char *mpi_params)
+extern int reserve_port_config(char *mpi_params, list_t *job_list)
 {
 	char *tmp_e=NULL, *tmp_p=NULL;
 	int i, p_min, p_max;
@@ -204,7 +204,7 @@ extern int reserve_port_config(char *mpi_params)
 	for (i=0; i<port_resv_cnt; i++)
 		port_resv_table[i] = bit_alloc(node_record_count);
 
-	_make_all_resv();
+	_make_all_resv(job_list);
 	_dump_resv_port_info();
 	return SLURM_SUCCESS;
 }

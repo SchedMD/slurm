@@ -1498,6 +1498,10 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	void *auth_cred = NULL;
 	buf_t *buffer;
 	char *peer = NULL;
+	bool keep_buffer = false;
+
+	if (msg->flags & SLURM_MSG_KEEP_BUFFER)
+		keep_buffer = true;
 
 	xassert(fd >= 0);
 
@@ -1664,6 +1668,8 @@ skip_auth:
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
+	msg->body_offset = get_buf_offset(buffer);
+
 	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
@@ -1674,7 +1680,10 @@ skip_auth:
 	}
 	msg->auth_cred = auth_cred;
 
-	FREE_NULL_BUFFER(buffer);
+	if (keep_buffer)
+		msg->buffer = buffer;
+	else
+		FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -2126,7 +2135,9 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
  * IN msg	  - msg to respond to.
  * IN cluster_rec - cluster to direct msg to.
  */
-int slurm_send_reroute_msg(slurm_msg_t *msg, slurmdb_cluster_rec_t *cluster_rec)
+int slurm_send_reroute_msg(slurm_msg_t *msg,
+			   slurmdb_cluster_rec_t *cluster_rec,
+			   char *step_mgr)
 {
 	slurm_msg_t resp_msg;
 	reroute_msg_t reroute_msg = {0};
@@ -2138,6 +2149,7 @@ int slurm_send_reroute_msg(slurm_msg_t *msg, slurmdb_cluster_rec_t *cluster_rec)
 
 	/* Don't free the cluster_rec, it's pointing to the actual object. */
 	reroute_msg.working_cluster_rec = cluster_rec;
+	reroute_msg.step_mgr = step_mgr;
 
 	response_init(&resp_msg, msg, RESPONSE_SLURM_REROUTE_MSG,
 			&reroute_msg);
@@ -2354,18 +2366,20 @@ tryagain:
 	if (!rc && (response_msg->msg_type == RESPONSE_SLURM_REROUTE_MSG)) {
 		reroute_msg_t *rr_msg = response_msg->data;
 
-		/*
-		 * Don't expect mutliple hops but in the case it does
-		 * happen, free the previous rr cluster_rec.
-		 */
-		if (comm_cluster_rec &&
-		    (comm_cluster_rec != save_comm_cluster_rec))
-			slurmdb_destroy_cluster_rec(comm_cluster_rec);
+		if (rr_msg->working_cluster_rec) {
+			/*
+			 * Don't expect mutliple hops but in the case it does
+			 * happen, free the previous rr cluster_rec.
+			 */
+			if (comm_cluster_rec &&
+			    (comm_cluster_rec != save_comm_cluster_rec))
+				slurmdb_destroy_cluster_rec(comm_cluster_rec);
 
-		comm_cluster_rec = rr_msg->working_cluster_rec;
-		slurmdb_setup_cluster_rec(comm_cluster_rec);
-		rr_msg->working_cluster_rec = NULL;
-		goto tryagain;
+			comm_cluster_rec = rr_msg->working_cluster_rec;
+			slurmdb_setup_cluster_rec(comm_cluster_rec);
+			rr_msg->working_cluster_rec = NULL;
+			goto tryagain;
+		}
 	}
 
 	if (comm_cluster_rec != save_comm_cluster_rec)

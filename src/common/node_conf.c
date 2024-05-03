@@ -798,6 +798,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	node_ptr->real_memory = config_ptr->real_memory;
+	node_ptr->res_cores_per_gpu = config_ptr->res_cores_per_gpu;
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->tot_sockets = config_ptr->tot_sockets;
@@ -940,44 +941,50 @@ static int _find_config_ptr(void *x, void *arg)
 	return (x == arg);
 }
 
-extern void insert_node_record(node_record_t *node_ptr)
+extern void insert_node_record_at(node_record_t *node_ptr, int index)
 {
-	for (int i = 0; i < node_record_count; i++) {
-		if (node_record_table_ptr[i])
-			continue;
+	xassert(node_ptr);
+	xassert(node_ptr->config_ptr);
 
-		if (i > last_node_index)
-			last_node_index = i;
-
-		if (!node_ptr->config_ptr)
-			error("node should have config_ptr from previous tables");
-
-		if (!list_find_first(config_list, _find_config_ptr,
-				     node_ptr->config_ptr))
-			list_append(config_list, node_ptr->config_ptr);
-
-		node_record_table_ptr[i] = node_ptr;
-		/*
-		 * _build_bitmaps_pre_select() will reset bitmaps on
-		 * start/reconfig. Set here to be consistent in case this is
-		 * called elsewhere.
-		 */
-		bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
-		node_ptr->index = i;
-		bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
-		xhash_add(node_hash_table, node_ptr);
-		active_node_record_count++;
-
-		/* re-add node to conf node hash tables */
-		slurm_conf_add_node(node_ptr);
-
+	if (node_record_table_ptr[index]) {
+		error("existing node '%s' already exists at index %d, can't add node '%s'",
+		      node_record_table_ptr[index]->name, index,
+		      node_ptr->name);
 		return;
 	}
 
-	error("Not able to add node '%s' to node_record_table_ptr",
-	      node_ptr->name);
-}
+	if (index >= node_record_count) {
+		error("trying to add node '%s' at index %d past node_record_count %d",
+		      node_ptr->name, index, node_record_count);
+		return;
+	}
 
+	if (index > last_node_index)
+		last_node_index = index;
+
+	if (!node_ptr->config_ptr)
+		error("node should have config_ptr from previous tables");
+
+	if (!list_find_first(config_list, _find_config_ptr,
+			     node_ptr->config_ptr))
+		list_append(config_list, node_ptr->config_ptr);
+
+	node_record_table_ptr[index] = node_ptr;
+	/*
+	 * _build_bitmaps_pre_select() will reset bitmaps on
+	 * start/reconfig. Set here to be consistent in case this is
+	 * called elsewhere.
+	 */
+	bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+	node_ptr->index = index;
+	bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+	xhash_add(node_hash_table, node_ptr);
+	active_node_record_count++;
+
+	/* add node to conf node hash tables */
+	slurm_conf_remove_node(node_ptr->name);
+	slurm_conf_add_node(node_ptr);
+}
 extern void delete_node_record(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
@@ -1281,8 +1288,10 @@ static void _delete_node_config_ptr(node_record_t *node_ptr)
 }
 
 /* Purge the contents of a node record */
-extern void purge_node_rec(node_record_t *node_ptr)
+extern void purge_node_rec(void *in)
 {
+	node_record_t *node_ptr = in;
+
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comment);
 	xfree(node_ptr->comm_name);
@@ -1558,4 +1567,194 @@ extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap)
 		return;
 
 	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
+}
+
+/*
+ * Pack node_record_t to buffer.
+ *
+ * Used for dumping node state and passing node_record_t between ctld and
+ * step_mgr.
+ */
+extern void node_record_pack(void *in,
+			     uint16_t protocol_version,
+			     buf_t *buffer)
+{
+	node_record_t *object = in;
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		packstr(object->comm_name, buffer);
+		packstr(object->name, buffer);
+		packstr(object->node_hostname, buffer);
+		packstr(object->comment, buffer);
+		packstr(object->extra, buffer);
+		packstr(object->reason, buffer);
+		packstr(object->features, buffer);
+		packstr(object->features_act, buffer);
+		packstr(object->gres, buffer);
+		packstr(object->instance_id, buffer);
+		packstr(object->instance_type, buffer);
+		packstr(object->cpu_spec_list, buffer);
+		pack32(object->next_state, buffer);
+		pack32(object->node_state, buffer);
+		pack32(object->cpu_bind, buffer);
+		pack16(object->cpus, buffer);
+		pack16(object->boards, buffer);
+		pack16(object->tot_sockets, buffer);
+		pack16(object->cores, buffer);
+		pack16(object->core_spec_cnt, buffer);
+		pack16(object->threads, buffer);
+		pack64(object->real_memory, buffer);
+		pack16(object->res_cores_per_gpu, buffer);
+		pack_bit_str_hex(object->gpu_spec_bitmap, buffer);
+		pack32(object->tmp_disk, buffer);
+		pack32(object->reason_uid, buffer);
+		pack_time(object->reason_time, buffer);
+		pack_time(object->resume_after, buffer);
+		pack_time(object->boot_req_time, buffer);
+		pack_time(object->power_save_req_time, buffer);
+		pack_time(object->last_response, buffer);
+		pack16(object->port, buffer);
+		pack16(object->protocol_version, buffer);
+		pack16(object->tpc, buffer);
+		packstr(object->mcs_label, buffer);
+		(void) gres_node_state_pack(object->gres_list, buffer,
+					    object->name);
+		pack32(object->weight, buffer);
+	}
+}
+
+extern int node_record_unpack(void **out,
+			      uint16_t protocol_version,
+			      buf_t *buffer)
+{
+	node_record_t *object = xmalloc(sizeof(*object));
+	object->magic = NODE_MAGIC;
+	*out = object;
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->comm_name, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->node_hostname, buffer);
+		safe_unpackstr(&object->comment, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->reason, buffer);
+		safe_unpackstr(&object->features, buffer);
+		safe_unpackstr(&object->features_act, buffer);
+		safe_unpackstr(&object->gres, buffer);
+		safe_unpackstr(&object->instance_id, buffer);
+		safe_unpackstr(&object->instance_type, buffer);
+		safe_unpackstr(&object->cpu_spec_list, buffer);
+		safe_unpack32(&object->next_state, buffer);
+		safe_unpack32(&object->node_state, buffer);
+		safe_unpack32(&object->cpu_bind, buffer);
+		safe_unpack16(&object->cpus, buffer);
+		safe_unpack16(&object->boards, buffer);
+		safe_unpack16(&object->tot_sockets, buffer);
+		safe_unpack16(&object->cores, buffer);
+		safe_unpack16(&object->core_spec_cnt, buffer);
+		safe_unpack16(&object->threads, buffer);
+		safe_unpack64(&object->real_memory, buffer);
+		safe_unpack16(&object->res_cores_per_gpu, buffer);
+		unpack_bit_str_hex(&object->gpu_spec_bitmap, buffer);
+		safe_unpack32(&object->tmp_disk, buffer);
+		safe_unpack32(&object->reason_uid, buffer);
+		safe_unpack_time(&object->reason_time, buffer);
+		safe_unpack_time(&object->resume_after, buffer);
+		safe_unpack_time(&object->boot_req_time, buffer);
+		safe_unpack_time(&object->power_save_req_time, buffer);
+		safe_unpack_time(&object->last_response, buffer);
+		safe_unpack16(&object->port, buffer);
+		safe_unpack16(&object->protocol_version, buffer);
+		safe_unpack16(&object->tpc, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		if (gres_node_state_unpack(&object->gres_list, buffer,
+					   object->name, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&object->weight, buffer);
+	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->comm_name, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->node_hostname, buffer);
+		safe_unpackstr(&object->comment, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->reason, buffer);
+		safe_unpackstr(&object->features, buffer);
+		safe_unpackstr(&object->features_act, buffer);
+		safe_unpackstr(&object->gres, buffer);
+		safe_unpackstr(&object->instance_id, buffer);
+		safe_unpackstr(&object->instance_type, buffer);
+		safe_unpackstr(&object->cpu_spec_list, buffer);
+		safe_unpack32(&object->next_state, buffer);
+		safe_unpack32(&object->node_state, buffer);
+		safe_unpack32(&object->cpu_bind, buffer);
+		safe_unpack16(&object->cpus, buffer);
+		safe_unpack16(&object->boards, buffer);
+		safe_unpack16(&object->tot_sockets, buffer);
+		safe_unpack16(&object->cores, buffer);
+		safe_unpack16(&object->core_spec_cnt, buffer);
+		safe_unpack16(&object->threads, buffer);
+		safe_unpack64(&object->real_memory, buffer);
+		safe_unpack32(&object->tmp_disk, buffer);
+		safe_unpack32(&object->reason_uid, buffer);
+		safe_unpack_time(&object->reason_time, buffer);
+		safe_unpack_time(&object->resume_after, buffer);
+		safe_unpack_time(&object->boot_req_time, buffer);
+		safe_unpack_time(&object->power_save_req_time, buffer);
+		safe_unpack_time(&object->last_response, buffer);
+		safe_unpack16(&object->port, buffer);
+		safe_unpack16(&object->protocol_version, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		if (gres_node_state_unpack(&object->gres_list, buffer,
+					   object->name, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&object->weight, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->comm_name, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->node_hostname, buffer);
+		safe_unpackstr(&object->comment, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->reason, buffer);
+		safe_unpackstr(&object->features, buffer);
+		safe_unpackstr(&object->features_act, buffer);
+		safe_unpackstr(&object->gres, buffer);
+		safe_unpackstr(&object->cpu_spec_list, buffer);
+		safe_unpack32(&object->next_state, buffer);
+		safe_unpack32(&object->node_state, buffer);
+		safe_unpack32(&object->cpu_bind, buffer);
+		safe_unpack16(&object->cpus, buffer);
+		safe_unpack16(&object->boards, buffer);
+		safe_unpack16(&object->tot_sockets, buffer);
+		safe_unpack16(&object->cores, buffer);
+		safe_unpack16(&object->core_spec_cnt, buffer);
+		safe_unpack16(&object->threads, buffer);
+		safe_unpack64(&object->real_memory, buffer);
+		safe_unpack32(&object->tmp_disk, buffer);
+		safe_unpack32(&object->reason_uid, buffer);
+		safe_unpack_time(&object->reason_time, buffer);
+		safe_unpack_time(&object->resume_after, buffer);
+		safe_unpack_time(&object->boot_req_time, buffer);
+		safe_unpack_time(&object->power_save_req_time, buffer);
+		safe_unpack_time(&object->last_response, buffer);
+		safe_unpack16(&object->protocol_version, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		if (gres_node_state_unpack(&object->gres_list, buffer,
+					   object->name, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&object->weight, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	purge_node_rec(object);
+	*out = NULL;
+	return SLURM_ERROR;
 }

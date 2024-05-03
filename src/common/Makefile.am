@@ -40,6 +40,7 @@ libcommon_la_SOURCES =				\
 	fetch_config.h				\
 	forward.c				\
 	forward.h				\
+	front_end.h				\
 	global_defaults.c			\
 	group_cache.c				\
 	group_cache.h				\
@@ -59,6 +60,8 @@ libcommon_la_SOURCES =				\
 	job_features.h				\
 	job_options.c				\
 	job_options.h				\
+	job_record.c				\
+	job_record.h				\
 	job_resources.c				\
 	job_resources.h				\
 	job_state_reason.c			\
@@ -88,12 +91,16 @@ libcommon_la_SOURCES =				\
 	parse_time.h				\
 	parse_value.c				\
 	parse_value.h				\
+	part_record.c				\
+	part_record.h				\
 	persist_conn.c				\
 	persist_conn.h				\
 	plugin.c				\
 	plugin.h				\
 	plugrack.c				\
 	plugrack.h				\
+	port_mgr.c				\
+	port_mgr.h				\
 	print_fields.c				\
 	print_fields.h				\
 	proc_args.c				\

@@ -488,7 +488,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i,
 					node_ptr->gpu_spec_bitmap,
-					node_ptr->config_ptr->res_cores_per_gpu,
+					node_ptr->res_cores_per_gpu,
 					cr_type);
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %s: gres_sock_list_create",

@@ -106,9 +106,9 @@ proc test_srun {expected_tot expected_gpu srun_args {srun_env ""}} {
 	global srun constrain_dev
 
 	if {$srun_env != ""} {
-		set output [run_command_output "env $srun_env $srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
+		set output [run_command_output "env $srun_env $srun $srun_args --quiet -t1 printenv CUDA_VISIBLE_DEVICES"]
 	} else {
-		set output [run_command_output "$srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
+		set output [run_command_output "$srun $srun_args --quiet -t1 printenv CUDA_VISIBLE_DEVICES"]
 	}
 
 	set result [get_count_two_gpus $output]

@@ -165,6 +165,8 @@ struct node_record {
 					 * set, ignore if no reason is set. */
 	uint32_t reason_uid;		/* User that set the reason, ignore if
 					 * no reason is set. */
+	uint16_t res_cores_per_gpu;	/* number of cores per GPU to allow to
+					 * only GPU jobs */
 	time_t resume_after;		/* automatically resume DOWN or DRAINED
 					 * node at this point in time */
 	uint16_t resume_timeout; 	/* time required in order to perform a
@@ -339,13 +341,12 @@ extern int add_node_record(char *alias, config_record_t *config_ptr,
 			   node_record_t **node_ptr);
 
 /*
- * Add existing record to node_record_table_ptr
+ * Add existing record to node_record_table_ptr at specific index
  *
- * e.g. Preserving dynamic nodes after a reconfig.
  * Node must fit in currently allocated node_record_count/MaxNodeCount.
  * node_ptr->config_ptr is added to the the global config_list.
  */
-extern void insert_node_record(node_record_t *node_ptr);
+extern void insert_node_record_at(node_record_t *node_ptr, int index);
 
 /*
  * Delete node from node_record_table_ptr.
@@ -416,7 +417,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
-extern void purge_node_rec(node_record_t *node_ptr);
+extern void purge_node_rec(void *in);
 
 /*
  * rehash_node - build a hash table of the node_record entries.
@@ -518,5 +519,12 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
  *                      size of the cluster.
  */
 extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
+
+extern void node_record_pack(void *in,
+			     uint16_t protocol_version,
+			     buf_t *buffer);
+extern int node_record_unpack(void **out,
+			      uint16_t protocol_version,
+			      buf_t *buffer);
 
 #endif /* !_HAVE_NODE_CONF_H */
