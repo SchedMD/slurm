@@ -11115,3 +11115,13 @@ extern uint32_t gres_get_gpu_plugin_id(void)
 {
 	return gpu_plugin_id;
 }
+
+extern bool gres_valid_name(char *name)
+{
+	if (!name || (name[0] == '\0'))
+		return false;
+	if (gres_get_system_cnt(name) != NO_VAL64)
+		return true;
+
+	return false;
+}

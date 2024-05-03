@@ -10134,7 +10134,7 @@ extern bool valid_tres_cnt(char *tres, bool gres_tres_enforce)
 		}
 		/* gres doesn't have to be a TRES to be valid */
 		if (!gres_tres_enforce && !xstrcmp(tres_type, "gres")) {
-			pos = valid_gres_name(name) ? 1 : -1;
+			pos = gres_valid_name(name) ? 1 : -1;
 		} else {
 			slurmdb_tres_rec_t tres_rec = {
 				.type = tres_type,

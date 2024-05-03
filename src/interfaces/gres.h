@@ -1222,4 +1222,10 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
 /* Return the plugin id made from gres_build_id("gpu") */
 extern uint32_t gres_get_gpu_plugin_id(void);
 
+/*
+ * Validate the named GRES is valid for scheduling parameters.
+ * This is currently a subset of all defined TRES.
+ */
+extern bool gres_valid_name(char *name);
+
 #endif
