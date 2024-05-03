@@ -624,4 +624,13 @@ extern bool assoc_mgr_valid_tres_cnt(char *tres, bool gres_tres_enforce);
 extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
 					     bool assoc_mgr_locked);
 
+/*
+ * Check if any assoc job limits are increasing the current ones.
+ * IN: assoc - assoc to check
+ * IN/OUT: str - description of parameter found to be increasing the limit
+ * RET: returns true if any limit is increasing the current one
+ */
+extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
+					   char **str);
+
 #endif /* _SLURM_ASSOC_MGR_H */

@@ -7311,3 +7311,198 @@ extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
+
+static bool _check_incr(uint32_t a, uint32_t b)
+{
+	if ((a != NO_VAL) && (a != INFINITE) &&
+	    (b != NO_VAL) && (b != INFINITE) &&
+	    (a > b))
+		return true;
+	return false;
+}
+
+static bool _find_tres_incr(uint64_t *a, uint64_t *b, int *tres_pos)
+{
+	for (int i = 0; i < g_tres_count; i++)
+		if ((a[i] != NO_VAL64) && (a[i] != INFINITE64) &&
+		    (b[i] != NO_VAL64) && (b[i] != INFINITE64) &&
+		    (a[i] > b[i])) {
+			*tres_pos = i;
+			return true;
+		}
+	return false;
+}
+
+static char *_make_tres_str(char *spec, int tres_pos)
+{
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+
+	return xstrdup_printf("%s for tres %s", spec,
+			      assoc_mgr_tres_name_array[tres_pos]);
+}
+
+extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
+					   char **str)
+{
+	slurmdb_assoc_rec_t *curr;
+	bool rc = false;
+	int tres_pos = 0;
+	/* tres read lock needed to look up tres name */
+	assoc_mgr_lock_t locks = {
+		.assoc = READ_LOCK,
+		.tres = READ_LOCK,
+	};
+
+	assoc_mgr_lock(&locks);
+
+	if (!assoc_mgr_assoc_list)
+		goto end_it;
+
+	curr = _find_assoc_rec(assoc);
+	if (!curr)
+		goto end_it;
+
+	if ((rc = _check_incr(assoc->grp_jobs, curr->grp_jobs))) {
+		if (str)
+			*str = xstrdup("GrpJobs");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->grp_jobs_accrue, curr->grp_jobs_accrue))) {
+		if (str)
+			*str = xstrdup("GrpJobsAccrue");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->grp_submit_jobs, curr->grp_submit_jobs))) {
+		if (str)
+			*str = xstrdup("GrpSubmitJobs");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->grp_wall, curr->grp_wall))) {
+		if (str)
+			*str = xstrdup("GrpWall");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->max_jobs, curr->max_jobs))) {
+		if (str)
+			*str = xstrdup("MaxJobs");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->max_jobs_accrue, curr->max_jobs_accrue))) {
+		if (str)
+			*str = xstrdup("MaxJobsAccrue");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->min_prio_thresh, curr->min_prio_thresh))) {
+		if (str)
+			*str = xstrdup("MinPrioThreshold");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->max_submit_jobs, curr->max_submit_jobs))) {
+		if (str)
+			*str = xstrdup("MaxSubmitJobs");
+		goto end_it;
+	}
+	if ((rc = _check_incr(assoc->max_wall_pj, curr->max_wall_pj))) {
+		if (str)
+			*str = xstrdup("MaxWall");
+		goto end_it;
+	}
+	/* priority 0 is infinite so skip check if so */
+	if ((curr->priority != 0) &&
+	    (rc = _check_incr(assoc->priority, curr->priority))) {
+		if (str)
+			*str = xstrdup("Priority");
+		goto end_it;
+	}
+
+	/* curr assoc will already have *ctld arrays filled in */
+
+	if (assoc->grp_tres) {
+		assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld,
+					     assoc->grp_tres, INFINITE64, 1,
+					     false, NULL);
+		if ((rc = _find_tres_incr(assoc->grp_tres_ctld,
+					  curr->grp_tres_ctld, &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("GrpTRES", tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->grp_tres_mins) {
+		assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_mins_ctld,
+					     assoc->grp_tres_mins, INFINITE64,
+					     1, false, NULL);
+		if ((rc = _find_tres_incr(assoc->grp_tres_mins_ctld,
+					  curr->grp_tres_mins_ctld,
+					  &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("GrpTRESMins", tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->grp_tres_run_mins) {
+		assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
+					     assoc->grp_tres_run_mins,
+					     INFINITE64, 1, false, NULL);
+		if ((rc = _find_tres_incr(assoc->grp_tres_run_mins_ctld,
+					  curr->grp_tres_run_mins_ctld,
+					  &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("GrpTRESRunMins",
+						      tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->max_tres_mins_pj) {
+		assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
+					     assoc->max_tres_mins_pj,
+					     INFINITE64,
+					     1, false, NULL);
+		if ((rc = _find_tres_incr(assoc->max_tres_mins_ctld,
+					  curr->max_tres_mins_ctld,
+					  &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("MaxTRESMins", tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->max_tres_run_mins) {
+		assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
+					     assoc->max_tres_run_mins,
+					     INFINITE64, 1, false, NULL);
+		if ((rc = _find_tres_incr(assoc->max_tres_run_mins_ctld,
+					  curr->max_tres_run_mins_ctld,
+					  &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("MaxTRESRunMins",
+						      tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->max_tres_pj) {
+		assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
+					     assoc->max_tres_pj, INFINITE64, 1,
+					     false, NULL);
+		if ((rc = _find_tres_incr(assoc->max_tres_ctld,
+					  curr->max_tres_ctld, &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("MaxTRES", tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->max_tres_pn) {
+		assoc_mgr_set_tres_cnt_array(&assoc->max_tres_pn_ctld,
+					     assoc->max_tres_pn, INFINITE64, 1,
+					     false, NULL);
+		if ((rc = _find_tres_incr(assoc->max_tres_pn_ctld,
+					  curr->max_tres_pn_ctld, &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("MaxTRESPn", tres_pos);
+		}
+	}
+
+end_it:
+	assoc_mgr_unlock(&locks);
+
+	return rc;
+}
