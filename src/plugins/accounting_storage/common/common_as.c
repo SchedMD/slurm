@@ -1004,3 +1004,70 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 
 	return SLURM_SUCCESS;
 }
+
+extern int as_build_step_comp_msg(dbd_step_comp_msg_t *req,
+				  step_record_t *step_ptr)
+{
+	uint32_t tasks = 0;
+
+	xassert(req);
+	xassert(step_ptr);
+
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		tasks = 1;
+	else {
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			tasks = step_ptr->job_ptr->total_cpus;
+		else
+			tasks = step_ptr->step_layout->task_cnt;
+	}
+
+	if (!step_ptr->job_ptr->db_index
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
+		error("jobacct_storage_p_step_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
+	memset(req, 0, sizeof(dbd_step_comp_msg_t));
+
+	req->assoc_id    = step_ptr->job_ptr->assoc_id;
+	req->db_index    = step_ptr->job_ptr->db_index;
+	req->end_time    = time(NULL);	/* called at step completion */
+	req->exit_code   = step_ptr->exit_code;
+#ifndef HAVE_FRONT_END
+	/* Only send this info on a non-frontend system since this
+	 * information is of no use on systems that run on a front-end
+	 * node.  Since something else is running the job.
+	 */
+	req->jobacct     = step_ptr->jobacct;
+#else
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		req->jobacct     = step_ptr->jobacct;
+#endif
+
+	req->req_uid     = step_ptr->requid;
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req->start_time = step_ptr->start_time;
+	else
+		req->start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req->job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
+		req->job_submit_time   =
+			step_ptr->job_ptr->details->submit_time;
+
+	if (step_ptr->job_ptr->bit_flags & TRES_STR_CALC)
+		req->job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
+
+	req->state       = step_ptr->state;
+
+	memcpy(&req->step_id, &step_ptr->step_id, sizeof(req->step_id));
+
+	req->total_tasks = tasks;
+
+	return SLURM_SUCCESS;
+}
