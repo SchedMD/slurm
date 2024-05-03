@@ -56,6 +56,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -11755,6 +11756,47 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_dbd_relay(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	persist_msg_t *msg = smsg->data;
+	uint32_t grow_size;
+
+	if (smsg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		pack16(msg->msg_type, buffer);
+
+		buf_t *dbd_buffer = pack_slurmdbd_msg(msg,
+						      smsg->protocol_version);
+		grow_size = size_buf(dbd_buffer);
+		grow_buf(buffer, grow_size);
+		memcpy(&buffer->head[get_buf_offset(buffer)],
+		       get_buf_data(dbd_buffer), grow_size);
+		set_buf_offset(buffer,
+			       get_buf_offset(buffer) + grow_size);
+		FREE_NULL_BUFFER(dbd_buffer);
+	}
+}
+
+static int _unpack_dbd_relay(slurm_msg_t *smsg, buf_t *buffer)
+{
+	persist_msg_t *msg = NULL;
+
+	if (smsg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		msg = xmalloc(sizeof(*msg));
+		safe_unpack16(&msg->msg_type, buffer);
+		if (unpack_slurmdbd_msg(msg, smsg->protocol_version, buffer))
+			goto unpack_error;
+
+		smsg->data = msg;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -12271,6 +12313,8 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_suspend_exc_update_msg(
 			(suspend_exc_update_msg_t *) msg->data, buffer,
 			msg->protocol_version);
+	case REQUEST_DBD_RELAY:
+		_pack_dbd_relay(msg, buffer);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
 		_pack_accounting_update_msg(
@@ -12956,6 +13000,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_suspend_exc_update_msg(
 			(suspend_exc_update_msg_t **) &(msg->data), buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_DBD_RELAY:
+		rc = _unpack_dbd_relay(msg, buffer);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
 		rc = _unpack_accounting_update_msg(

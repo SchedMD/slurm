@@ -6421,6 +6421,28 @@ end_it:
 	FREE_NULL_BITMAP(node_bitmap);
 }
 
+static void _slurm_rpc_dbd_relay(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	int rc;
+	persist_msg_t *persist_msg = msg->data;
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_DBD_RELAY");
+
+	if (!validate_slurmd_user(msg->auth_uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		return;
+	}
+
+	rc = acct_storage_g_relay_msg(acct_db_conn, persist_msg);
+
+	END_TIMER2(__func__);
+
+	slurm_send_rc_msg(msg, rc);
+}
+
 slurmctld_rpc_t slurmctld_rpcs[] =
 {
 	{
@@ -6779,6 +6801,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_NODE_ALIAS_ADDRS,
 		.func = _slurm_rpc_node_alias_addrs,
+	},{
+		.msg_type = REQUEST_DBD_RELAY,
+		.func = _slurm_rpc_dbd_relay,
 	},{	/* terminate the array. this must be last. */
 		.msg_type = 0,
 		.func = NULL,
