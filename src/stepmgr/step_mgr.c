@@ -5919,3 +5919,64 @@ extern int step_mgr_get_step_layouts(job_record_t *job_ptr,
 
 	return SLURM_SUCCESS;
 }
+
+extern int step_mgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
+				    slurm_step_id_t *step_id,
+				    char *hetjob_nodelist,
+				    uint16_t protocol_version,
+				    job_sbcast_cred_msg_t **out_sbcast_cred_msg)
+{
+	sbcast_cred_t *sbcast_cred;
+	sbcast_cred_arg_t sbcast_arg;
+	step_record_t *step_ptr = NULL;
+	char *node_list = NULL;
+	job_sbcast_cred_msg_t *job_info_resp_msg;
+
+	xassert(job_ptr);
+
+	node_list = hetjob_nodelist;
+
+	if (step_id->step_id != NO_VAL) {
+		step_ptr = find_step_record(job_ptr, step_id);
+		if (!step_ptr) {
+			return ESLURM_INVALID_JOB_ID;
+		} else if (step_ptr->step_layout &&
+			   (step_ptr->step_layout->node_cnt !=
+			    job_ptr->node_cnt)) {
+			node_list = step_ptr->step_layout->node_list;
+		}
+	}
+
+	if (!node_list)
+		node_list = job_ptr->nodes;
+
+	/*
+	 * Note - using pointers to other xmalloc'd elements owned by other
+	 * structures to avoid copy overhead. Do not free them!
+	 */
+	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
+	sbcast_arg.job_id = job_ptr->job_id;
+	sbcast_arg.het_job_id = job_ptr->het_job_id;
+	if (step_ptr)
+		sbcast_arg.step_id = step_ptr->step_id.step_id;
+	else
+		sbcast_arg.step_id = job_ptr->next_step_id;
+	sbcast_arg.nodes = node_list; /* avoid extra copy */
+	sbcast_arg.expiration = job_ptr->end_time;
+
+	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg, job_ptr->user_id,
+					       job_ptr->group_id,
+					       protocol_version))) {
+		error("%s %pJ cred create error", __func__, job_ptr);
+		return SLURM_ERROR;
+	}
+
+	job_info_resp_msg = xmalloc(sizeof(*job_info_resp_msg));
+	job_info_resp_msg->job_id = job_ptr->job_id;
+	job_info_resp_msg->node_list = xstrdup(node_list);
+	job_info_resp_msg->sbcast_cred = sbcast_cred;
+
+	*out_sbcast_cred_msg = job_info_resp_msg;
+
+	return SLURM_SUCCESS;
+}

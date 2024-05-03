@@ -2939,13 +2939,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	job_record_t *job_ptr = NULL, *het_job_ptr;
-	step_record_t *step_ptr = NULL;
 	char *local_node_list = NULL, *node_list = NULL;
 	DEF_TIMERS;
 	step_alloc_info_msg_t *job_info_msg = msg->data;
-	job_sbcast_cred_msg_t job_info_resp_msg;
-	sbcast_cred_arg_t sbcast_arg;
-	sbcast_cred_t *sbcast_cred;
+	job_sbcast_cred_msg_t *job_info_resp_msg = NULL;
+	char job_id_str[64];
 	/* Locks: Read config, job, read node */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -2997,85 +2995,61 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		}
 	}
 
-	if (job_ptr && !validate_operator(msg->auth_uid) &&
-	    (job_ptr->user_id != msg->auth_uid))
-		error_code = ESLURM_USER_ID_MISSING;
+	if (error_code)
+		goto error;
 
-	if ((error_code == SLURM_SUCCESS) && job_ptr
-	    && (job_info_msg->step_id.step_id != NO_VAL)) {
-		step_ptr = find_step_record(job_ptr, &job_info_msg->step_id);
-		if (!step_ptr) {
-			job_ptr = NULL;
-			error_code = ESLURM_INVALID_JOB_ID;
-		} else if (step_ptr->step_layout &&
-			   (step_ptr->step_layout->node_cnt !=
-			    job_ptr->node_cnt)) {
-			node_list = step_ptr->step_layout->node_list;
-		}
+	if (!job_ptr) {
+		error_code = ESLURM_INVALID_JOB_ID;
+		goto error;
 	}
-	if ((error_code == SLURM_SUCCESS) && job_ptr && !node_list)
-		node_list = job_ptr->nodes;
+
+	if (!validate_operator(msg->auth_uid) &&
+	    (job_ptr->user_id != msg->auth_uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		goto error;
+	}
+
+	error_code = step_mgr_get_job_sbcast_cred_msg(job_ptr,
+						      &job_info_msg->step_id,
+						      node_list,
+						      msg->protocol_version,
+						      &job_info_resp_msg);
+	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 
-	/* return result */
-	if (error_code || (job_ptr == NULL)) {
-		char job_id_str[64];
-		unlock_slurmctld(job_read_lock);
-		debug2("%s: JobId=%s, uid=%u: %s",
-		       __func__,
-		       slurm_get_selected_step_id(job_id_str,
-						  sizeof(job_id_str),
-						  job_info_msg),
-		       msg->auth_uid,
-		       slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-		xfree(local_node_list);
-		return ;
-	}
+	if (error_code)
+		goto error;
 
-	/*
-	 * Note - using pointers to other xmalloc'd elements owned by other
-	 * structures to avoid copy overhead. Do not free them!
-	 */
-	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
-	sbcast_arg.job_id = job_ptr->job_id;
-	sbcast_arg.het_job_id = job_ptr->het_job_id;
-	if (step_ptr)
-		sbcast_arg.step_id = step_ptr->step_id.step_id;
-	else
-		sbcast_arg.step_id = job_ptr->next_step_id;
-	sbcast_arg.nodes = node_list; /* avoid extra copy */
-	sbcast_arg.expiration = job_ptr->end_time;
+	info("%s: %s NodeList=%s - %s",
+	     __func__,
+	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
+					job_info_msg),
+	     node_list,
+	     TIME_STR);
 
-	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg, job_ptr->user_id,
-					       job_ptr->group_id,
-					       msg->protocol_version))) {
-		unlock_slurmctld(job_read_lock);
-		error("%s %pJ cred create error", __func__, job_ptr);
-		slurm_send_rc_msg(msg, SLURM_ERROR);
-	} else {
-		char job_id_str[64];
-		info("%s: %s NodeList=%s - %s",
-		     __func__,
-		     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
-						job_info_msg),
-		     node_list,
-		     TIME_STR);
+	response_init(&response_msg, msg, RESPONSE_JOB_SBCAST_CRED,
+		      job_info_resp_msg);
 
-		memset(&job_info_resp_msg, 0, sizeof(job_info_resp_msg));
-		job_info_resp_msg.job_id         = job_ptr->job_id;
-		job_info_resp_msg.node_list      = xstrdup(node_list);
-		job_info_resp_msg.sbcast_cred    = sbcast_cred;
-		unlock_slurmctld(job_read_lock);
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
 
-		response_init(&response_msg, msg, RESPONSE_JOB_SBCAST_CRED,
-			      &job_info_resp_msg);
-
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(job_info_resp_msg.node_list);
-		delete_sbcast_cred(sbcast_cred);
-	}
+	slurm_free_sbcast_cred_msg(job_info_resp_msg);
 	xfree(local_node_list);
+
+	return;
+
+error:
+	unlock_slurmctld(job_read_lock);
+	xfree(local_node_list);
+
+	debug2("%s: JobId=%s, uid=%u: %s",
+	       __func__,
+	       slurm_get_selected_step_id(job_id_str,
+					  sizeof(job_id_str),
+					  job_info_msg),
+	       msg->auth_uid,
+	       slurm_strerror(error_code));
+
+	slurm_send_rc_msg(msg, error_code);
 #endif
 }
 

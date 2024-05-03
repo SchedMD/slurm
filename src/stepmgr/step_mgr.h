@@ -239,4 +239,14 @@ extern int step_mgr_get_step_layouts(job_record_t *job_ptr,
 				     slurm_step_id_t *step_id,
 				     slurm_step_layout_t **out_step_layout);
 
+/*
+ * Create a job_sbcast_cred_msg_t with a sbcast_cred to send back to client
+ */
+extern int step_mgr_get_job_sbcast_cred_msg(
+	job_record_t *job_ptr,
+	slurm_step_id_t *step_id,
+	char *hetjob_nodelist,
+	uint16_t protocol_version,
+	job_sbcast_cred_msg_t **out_sbcast_cred_msg);
+
 #endif /* _SLURM_STEP_MGR_H */
