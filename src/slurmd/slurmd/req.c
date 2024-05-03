@@ -278,6 +278,56 @@ static list_t *bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static int _step_mgr_connect(slurm_step_id_t *step_id,
+			    uint16_t *protocol_version)
+{
+	int fd = SLURM_ERROR;
+
+	step_id->step_id = SLURM_EXTERN_CONT;
+	if ((fd = stepd_connect(conf->spooldir, conf->node_name, step_id,
+				protocol_version)) == -1) {
+		error("%s to %ps failed: %m",
+		      __func__, &step_id->job_id);
+	}
+
+	return fd;
+}
+
+static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
+{
+	int fd;
+	uid_t job_uid;
+	uint16_t protocol_version;
+	slurm_step_id_t step_id = {.step_het_comp = NO_VAL};
+
+	job_step_create_request_msg_t *req_step_msg = msg->data;
+	step_id.job_id = req_step_msg->step_id.job_id;
+
+	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u",
+		      step_id.job_id, msg->auth_uid);
+		goto error;
+	}
+
+	if (msg->auth_uid != job_uid) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		goto error;
+	}
+
+	if ((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	    SLURM_ERROR) {
+		stepd_relay_msg(fd, msg, protocol_version);
+		return;
+	}
+
+	error("failed to return step rpc:%s job:%ps uid:%u",
+	      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+error:
+	slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+}
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -398,6 +448,9 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_rpc_step_complete(msg);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		_slurm_rpc_job_step_create(msg);
 		break;
 	case REQUEST_JOB_STEP_STAT:
 		_rpc_stat_jobacct(msg);

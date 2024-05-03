@@ -55,6 +55,7 @@
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/stepd_api.h"
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"
@@ -80,6 +81,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
+
+#include "src/stepmgr/step_mgr.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *step,
@@ -482,6 +485,65 @@ rwfail:
 	return NULL;
 }
 
+static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	buf_t *buffer;
+	char *data;
+	slurm_msg_t msg = {0};
+	uint16_t protocol_version;
+	uint32_t client_fd;
+	uint32_t data_size;
+	job_step_create_request_msg_t *req_step_msg;
+
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
+	client_fd = receive_fd_over_pipe(fd);
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = client_fd;
+	msg.msg_type = REQUEST_JOB_STEP_CREATE;
+	msg.protocol_version = protocol_version;
+
+	buffer = create_buf(data, data_size);
+	rc = unpack_msg(&msg, buffer);
+	xfree(buffer);
+	if (rc) {
+		goto rwfail;
+	}
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation, %s RPC from uid=%u",
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto rwfail;
+	}
+
+	if (!job_step_ptr) {
+		error("%s on a non-step mgr stepd",
+		      rpc_num2string(msg.msg_type));
+		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
+		goto rwfail;
+	}
+
+	req_step_msg = msg.data;
+	msg.auth_uid = req_step_msg->user_id = job_step_ptr->user_id;
+	msg.auth_ids_set = true;
+
+	/* step_create_from_msg responds to the client */
+	step_create_from_msg(&msg, NULL, NULL);
+
+	slurm_free_msg_members(&msg);
+
+	return SLURM_SUCCESS;
+
+rwfail:
+	slurm_free_msg_members(&msg);
+	slurm_send_rc_msg(&msg, SLURM_ERROR);
+	return SLURM_ERROR;
+}
 
 int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 {
@@ -562,6 +624,10 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 	case REQUEST_STEP_RECONFIGURE:
 		debug("Handling REQUEST_STEP_RECONFIGURE");
 		rc = _handle_reconfig(fd, step, uid);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		debug("Handling REQUEST_STEP_CREATE");
+		rc = _handle_step_create(fd, step, uid);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		debug("Handling REQUEST_JOB_NOTIFY");
