@@ -78,7 +78,6 @@
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/groups.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -87,6 +86,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
+
+#include "src/stepmgr/gres_ctld.h"
 
 #define RESV_MAGIC	0x3b82
 

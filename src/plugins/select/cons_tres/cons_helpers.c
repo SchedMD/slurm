@@ -44,7 +44,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 
-#include "src/slurmctld/gres_ctld.h"
+#include "src/stepmgr/gres_ctld.h"
 
 /* Global variables */
 

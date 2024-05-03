@@ -46,7 +46,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/gres_ctld.h"
+#include "src/stepmgr/gres_ctld.h"
 
 #include "select_cons_tres.h"
 #include "job_test.h"

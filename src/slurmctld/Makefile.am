@@ -23,8 +23,6 @@ slurmctld_SOURCES =     \
 	front_end.h	\
 	gang.c		\
 	gang.h		\
-	gres_ctld.c	\
-	gres_ctld.h	\
 	groups.c	\
 	groups.h	\
 	heartbeat.c	\

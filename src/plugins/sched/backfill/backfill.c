@@ -89,7 +89,6 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -97,6 +96,9 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
+
+#include "src/stepmgr/gres_ctld.h"
+
 #include "backfill.h"
 
 #define BACKFILL_INTERVAL	30

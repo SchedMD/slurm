@@ -74,10 +74,11 @@
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
+
+#include "src/stepmgr/gres_ctld.h"
 
 #define NO_SHARE_LIMIT	0xfffe
 #define NODEINFO_MAGIC	0x82ad

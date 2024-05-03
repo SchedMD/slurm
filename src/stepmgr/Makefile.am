@@ -8,6 +8,8 @@ noinst_PROGRAMS = libstepmgr.o
 noinst_LTLIBRARIES = libstepmgr.la
 
 libstepmgr_la_SOURCES = \
+	gres_ctld.c \
+	gres_ctld.h \
 	step_mgr.h \
 	step_mgr.c
 libstepmgr_o_SOURCES =
