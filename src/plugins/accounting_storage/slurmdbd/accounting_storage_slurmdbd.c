@@ -3530,3 +3530,13 @@ extern int acct_storage_p_shutdown(void *db_conn)
 
 	return rc;
 }
+
+extern int acct_storage_p_relay_msg(void *db_conn, persist_msg_t *msg)
+{
+	msg->conn = db_conn;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}

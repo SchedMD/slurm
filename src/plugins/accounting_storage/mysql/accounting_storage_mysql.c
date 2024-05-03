@@ -3796,3 +3796,8 @@ extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
 {
 	return SLURM_SUCCESS;
 }
+
+extern int acct_storage_p_relay_msg(void *db_conn, persist_msg_t *msg)
+{
+	return SLURM_SUCCESS;
+}

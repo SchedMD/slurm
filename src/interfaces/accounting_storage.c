@@ -210,6 +210,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*flush_jobs)          (void *db_conn,
 				    time_t event_time);
 	int (*reconfig)            (void *db_conn, bool dbd);
+	int (*relay_msg)           (void *db_conn, persist_msg_t *msg);
 	int (*reset_lft_rgt)       (void *db_conn, uid_t uid,
 				    List cluster_list);
 	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
@@ -298,6 +299,7 @@ static const char *syms[] = {
 	"acct_storage_p_update_shares_used",
 	"acct_storage_p_flush_jobs_on_cluster",
 	"acct_storage_p_reconfig",
+	"acct_storage_p_relay_msg",
 	"acct_storage_p_reset_lft_rgt",
 	"acct_storage_p_get_stats",
 	"acct_storage_p_clear_stats",
@@ -1408,4 +1410,14 @@ extern int acct_storage_g_shutdown(void *db_conn)
 		return SLURM_SUCCESS;
 
 	return (*(ops.shutdown))(db_conn);
+}
+
+extern int acct_storage_g_relay_msg(void *db_conn, persist_msg_t *msg)
+{
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.relay_msg))(db_conn, msg);
 }
