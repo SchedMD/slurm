@@ -54,6 +54,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/macros.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
@@ -120,6 +121,35 @@ list_t *job_list = NULL;
 job_record_t *job_step_ptr = NULL;
 time_t last_job_update = 0;
 
+static void *_rpc_thread(void *data)
+{
+	agent_arg_t *agent_arg_ptr = data;
+	slurm_msg_t msg;
+	slurm_msg_t_init(&msg);
+
+	msg.address = *agent_arg_ptr->addr;
+	msg.data = agent_arg_ptr->msg_args;
+	msg.flags = agent_arg_ptr->msg_flags;
+	msg.msg_type = agent_arg_ptr->msg_type;
+	msg.protocol_version = agent_arg_ptr->protocol_version;
+
+	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
+
+	if (slurm_send_only_node_msg(&msg)) {
+		error("failed to send message type %d/%s",
+		      msg.msg_type, rpc_num2string(msg.msg_type));
+	}
+
+	purge_agent_args(agent_arg_ptr);
+
+	return NULL;
+}
+
+static void _agent_queue_request(agent_arg_t *agent_arg_ptr)
+{
+	slurm_thread_create_detached(_rpc_thread, agent_arg_ptr);
+}
+
 extern job_record_t *find_job_record(uint32_t job_id)
 {
 	xassert(job_step_ptr);
@@ -129,7 +159,8 @@ extern job_record_t *find_job_record(uint32_t job_id)
 
 step_mgr_ops_t stepd_step_mgr_ops = {
 	.find_job_record = find_job_record,
-	.last_job_update = &last_job_update
+	.last_job_update = &last_job_update,
+	.agent_queue_request = _agent_queue_request
 };
 
 static void _init_stepd_step_mgr(void)
