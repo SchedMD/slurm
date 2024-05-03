@@ -4993,7 +4993,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	update_step_args_t args = { .mod_cnt = 0 };
 	slurm_step_id_t step_id;
 
-	job_ptr = find_job_record(req->job_id);
+	job_ptr = step_mgr_ops->find_job_record(req->job_id);
 	if (job_ptr == NULL) {
 		error("%s: invalid JobId=%u", __func__, req->job_id);
 		return ESLURM_INVALID_JOB_ID;
@@ -5023,7 +5023,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		}
 	}
 	if (args.mod_cnt)
-		last_job_update = time(NULL);
+		*step_mgr_ops->last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
 }

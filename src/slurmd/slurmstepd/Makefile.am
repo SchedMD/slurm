@@ -5,7 +5,8 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-depend_libs = ../common/libslurmd_common.o
+depend_libs = ../common/libslurmd_common.o \
+	      $(top_builddir)/src/stepmgr/libstepmgr.o
 
 # If slurmstepd_LDADD or slurmstepd_LDFLAGS change
 # make sure you alter the below depend_[ldadd|ldflags] to look identical in the
