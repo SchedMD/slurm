@@ -4857,10 +4857,6 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 				   select_jobinfo, &rc);
 	if (nodeset == NULL) {
 		select_g_select_jobinfo_free(select_jobinfo);
-		if ((rc == ESLURM_NODES_BUSY) ||
-		    (rc == ESLURM_PORTS_BUSY) ||
-		    (rc == ESLURM_INTERCONNECT_BUSY))
-			_build_pending_step(job_ptr, step_specs);
 		return rc;
 	}
 
