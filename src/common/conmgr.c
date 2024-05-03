@@ -761,7 +761,8 @@ extern void free_conmgr(void)
 	    ((mgr.event_fd[1] >= 0) && close(mgr.event_fd[1])))
 		error("%s: unable to close event_fd: %m", __func__);
 
-	if (close(mgr.signal_fd[0]) || close(mgr.signal_fd[1]))
+	if (((mgr.signal_fd[0] >= 0) && close(mgr.signal_fd[0])) ||
+	    ((mgr.signal_fd[1] >= 0) && close(mgr.signal_fd[1])))
 		error("%s: unable to close signal_fd: %m", __func__);
 
 	slurm_mutex_destroy(&mgr.mutex);
