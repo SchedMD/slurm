@@ -2145,14 +2145,6 @@ extern int validate_nodes_via_front_end(
 		uint16_t protocol_version, bool *newly_up);
 
 /*
- * validate_slurm_user - validate that the uid is authorized to see
- *      privileged data (either user root or SlurmUser)
- * IN uid - user to validate
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_slurm_user(uid_t uid);
-
-/*
  * validate_super_user - validate that the uid is authorized at the
  *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
  * IN uid - user to validate

@@ -530,24 +530,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 }
 
 /*
- * validate_slurm_user - validate that the uid is authorized to see
- *      privileged data (either user root or SlurmUser)
- * IN uid - user to validate
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_slurm_user(uid_t uid)
-{
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
-		return true;
-	else
-		return false;
-}
-
-/*
  * validate_super_user - validate that the uid is authorized at the
  *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
  * IN uid - user to validate

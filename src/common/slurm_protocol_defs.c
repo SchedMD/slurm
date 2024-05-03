@@ -6104,3 +6104,21 @@ extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid)
 	agent_arg_ptr->r_uid = r_uid;
 	agent_arg_ptr->r_uid_set = true;
 }
+
+/*
+ * validate_slurm_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurm_user(uid_t uid)
+{
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
+		return true;
+	else
+		return false;
+}

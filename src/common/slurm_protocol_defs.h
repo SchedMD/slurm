@@ -1815,6 +1815,14 @@ typedef struct {
 /* Set r_uid of agent_arg */
 extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
 
+/*
+ * validate_slurm_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurm_user(uid_t uid);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
