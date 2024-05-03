@@ -3129,6 +3129,16 @@ extern void launch_prolog(job_record_t *job_ptr)
 						  job_ptr->spank_job_env);
 
 	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		node_record_t *bit_node;
+
+		/* Only keep pointers to nodes */
+		list_t *job_node_array = list_create(NULL);
+		for (int i = 0;
+		     (bit_node = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
+			list_append(job_node_array, bit_node);
+		}
+
 		/*
 		 * Pack while we are in locks so that we don't need to make a
 		 * copies of job_ptr and job_node_array since the agent queue
@@ -3137,6 +3147,12 @@ extern void launch_prolog(job_record_t *job_ptr)
 		prolog_msg_ptr->job_ptr_buf = init_buf(BUF_SIZE);
 		slurm_pack_job_rec(job_ptr, prolog_msg_ptr->job_ptr_buf,
 				   protocol_version);
+		prolog_msg_ptr->job_node_array_buf = init_buf(BUF_SIZE);
+		slurm_pack_list(job_node_array, node_record_pack,
+				prolog_msg_ptr->job_node_array_buf,
+				protocol_version);
+
+		FREE_NULL_LIST(job_node_array);
 	}
 
 	xassert(job_ptr->job_resrcs);

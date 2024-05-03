@@ -1643,6 +1643,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 
 		/* step_mgr variables */
 		job_record_delete(msg->job_ptr);
+		FREE_NULL_LIST(msg->job_node_array);
 
 		xfree(msg);
 	}

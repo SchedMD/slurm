@@ -6825,6 +6825,9 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		if (msg->job_ptr) {
 			packbool(true, buffer);
 			slurm_pack_job_rec(msg->job_ptr, buffer, protocol_version);
+			slurm_pack_list(msg->job_node_array,
+					node_record_pack, buffer,
+					protocol_version);
 		} else {
 			packbool(false, buffer);
 		}
@@ -7196,6 +7199,11 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (tmp_bool) {
 			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
 						 protocol_version))
+				goto unpack_error;
+			if (slurm_unpack_list(&msg->job_node_array,
+					      node_record_unpack,
+					      purge_node_rec, buffer,
+					      protocol_version))
 				goto unpack_error;
 		}
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
@@ -7791,6 +7799,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		if (msg->job_ptr_buf) {
 			packbool(true, buffer);
 			packbuf(msg->job_ptr_buf, buffer);
+			packbuf(msg->job_node_array_buf, buffer);
 		} else {
 			packbool(false, buffer);
 		}
@@ -7883,6 +7892,11 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (tmp_bool) {
 			if (slurm_unpack_job_rec(&msg->job_ptr, buffer,
 						 smsg->protocol_version))
+				goto unpack_error;
+			if (slurm_unpack_list(&msg->job_node_array,
+					      node_record_unpack,
+					      purge_node_rec, buffer,
+					      smsg->protocol_version))
 				goto unpack_error;
 		}
 	} else if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {

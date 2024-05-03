@@ -2314,6 +2314,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 						  sizeof(uint16_t));
 
 	launch_req->job_ptr = req->job_ptr;
+	launch_req->job_node_array = req->job_node_array;
 
 	/*
 	 * determine which node this is in the allocation and if

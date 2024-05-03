@@ -120,6 +120,7 @@ extern char  ** environ;
 
 list_t *job_list = NULL;
 job_record_t *job_step_ptr = NULL;
+list_t *job_node_array = NULL;
 time_t last_job_update = 0;
 bool timie_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
@@ -209,6 +210,61 @@ step_mgr_ops_t stepd_step_mgr_ops = {
 	.agent_queue_request = _agent_queue_request
 };
 
+static int _foreach_job_node_array(void *x, void *arg)
+{
+	node_record_t *job_node_ptr = x;
+	int *table_index = arg;
+
+	config_record_t *config_ptr;
+	config_ptr = create_config_record();
+	config_ptr->boards = job_node_ptr->boards;
+	config_ptr->core_spec_cnt = job_node_ptr->core_spec_cnt;
+	config_ptr->cores = job_node_ptr->cores;
+	config_ptr->cpu_spec_list = xstrdup(job_node_ptr->cpu_spec_list);
+	config_ptr->cpus = job_node_ptr->cpus;
+	config_ptr->feature = xstrdup(job_node_ptr->features);
+	config_ptr->gres = xstrdup(job_node_ptr->gres);
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
+	config_ptr->nodes = xstrdup(job_node_ptr->name);
+	config_ptr->real_memory = job_node_ptr->real_memory;
+	config_ptr->res_cores_per_gpu = job_node_ptr->res_cores_per_gpu;
+	config_ptr->threads = job_node_ptr->threads;
+	config_ptr->tmp_disk = job_node_ptr->tmp_disk;
+	config_ptr->tot_sockets = job_node_ptr->tot_sockets;
+	config_ptr->weight = job_node_ptr->weight;
+
+	*table_index = bit_ffs_from_bit(job_step_ptr->node_bitmap, *table_index);
+
+	job_node_ptr->config_ptr = config_ptr;
+	insert_node_record_at(job_node_ptr, *table_index);
+
+	(*table_index)++;
+
+	/*
+	 * Sanity check to make sure we can take a version we
+	 * actually understand.
+	 */
+	if (job_node_ptr->protocol_version < SLURM_MIN_PROTOCOL_VERSION)
+		job_node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
+
+	return SLURM_SUCCESS;
+}
+
+static void _setup_step_mgr_nodes(void)
+{
+	int table_index = 0;
+	init_node_conf();
+
+	xassert(job_node_array);
+	/*
+	 * next_node_bitmap() asserts
+	 * bit_size(node_bitmap) == node_record_count
+	 */
+	node_record_count = bit_size(job_step_ptr->node_bitmap);
+	grow_node_record_table_ptr();
+	list_for_each(job_node_array, _foreach_job_node_array, &table_index);
+}
+
 static void _init_stepd_step_mgr(void)
 {
 	if (!job_step_ptr)
@@ -219,10 +275,7 @@ static void _init_stepd_step_mgr(void)
 	bit_set_all(stepd_step_mgr_ops.up_node_bitmap);
 	step_mgr_init(&stepd_step_mgr_ops);
 
-	if (!node_record_table_ptr) {
-		config_list = list_create(NULL);
-		build_all_nodeline_info(false, 0);
-	}
+	_setup_step_mgr_nodes();
 
 	select_g_init(1);
 
@@ -808,6 +861,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
 			/* only allow one stepd to be stepmgr. */
 			job_step_ptr = task_msg->job_ptr;
+			job_node_array = task_msg->job_node_array;
 		}
 
 		break;
