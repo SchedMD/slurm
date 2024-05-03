@@ -158,8 +158,6 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		.bit_position = -1,
 		.node_name = node_name,
 	};
-	slurm_addr_t * addr;
-	srun_node_fail_msg_t *msg_arg;
 
 	xassert(job_ptr);
 	xassert(node_name);
@@ -177,6 +175,9 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		srun_node_fail_msg_t *msg_arg;
+		slurm_addr_t * addr;
+
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
@@ -382,12 +383,13 @@ static int _srun_job_complete(void *x, void *arg)
  */
 extern void srun_job_complete(job_record_t *job_ptr)
 {
-	slurm_addr_t * addr;
-	srun_job_complete_msg_t *msg_arg;
 
 	xassert(job_ptr);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		srun_job_complete_msg_t *msg_arg;
+		slurm_addr_t * addr;
+
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
