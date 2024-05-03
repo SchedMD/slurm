@@ -28,6 +28,7 @@ SUBDIRS =		\
 	srun		\
 	sshare		\
 	sstat		\
+	stepmgr 	\
 	strigger	\
 	sview
 

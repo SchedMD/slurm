@@ -72,17 +72,18 @@ slurmctld_SOURCES =     \
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\
-	step_mgr.c	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
 
 sbin_PROGRAMS = slurmctld
 
-slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES)
+slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) \
+		  $(top_builddir)/src/stepmgr/libstepmgr.o
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES) \
+			 $(top_builddir)/src/stepmgr/libstepmgr.o
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include

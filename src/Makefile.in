@@ -203,7 +203,8 @@ am__define_uniq_tagged_files = \
 DIST_SUBDIRS = api bcast common database interfaces lua plugins sacct \
 	sacctmgr sackd salloc sattach sbatch sbcast scancel scontrol \
 	scrontab sdiag sinfo slurmctld slurmd slurmdbd slurmrestd \
-	sprio squeue sreport srun sshare sstat strigger sview scrun
+	sprio squeue sreport srun sshare sstat stepmgr strigger sview \
+	scrun
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -461,7 +462,7 @@ top_srcdir = @top_srcdir@
 SUBDIRS = api bcast common database interfaces lua plugins sacct \
 	sacctmgr sackd salloc sattach sbatch sbcast scancel scontrol \
 	scrontab sdiag sinfo slurmctld slurmd slurmdbd slurmrestd \
-	sprio squeue sreport srun sshare sstat strigger sview \
+	sprio squeue sreport srun sshare sstat stepmgr strigger sview \
 	$(am__append_1)
 all: all-recursive
 

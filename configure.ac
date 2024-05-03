@@ -555,6 +555,7 @@ AC_CONFIG_FILES([Makefile
 		 src/srun/Makefile
 		 src/sshare/Makefile
 		 src/sstat/Makefile
+		 src/stepmgr/Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 testsuite/Makefile

@@ -109,6 +109,8 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+#include "src/stepmgr/step_mgr.h"
+
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define RPC_TYPE_SIZE 100
 static uint16_t rpc_type_id[RPC_TYPE_SIZE] = { 0 };

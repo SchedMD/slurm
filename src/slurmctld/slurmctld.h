@@ -662,15 +662,6 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr);
 extern void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
 
 /*
- * delete_step_records - delete step record for specified job_ptr
- * IN job_ptr - pointer to job table entry to have step records removed
- */
-extern void delete_step_records(job_record_t *job_ptr);
-
-/* free_step_record - delete a step record's data structures */
-extern void free_step_record(void *x);
-
-/*
  * Copy a job's dependency list
  * IN depend_list_src - a job's depend_lst
  * RET copy of depend_list_src, must bee freed by caller
@@ -732,14 +723,6 @@ extern int dump_all_part_state ( void );
  * IN job_desc - job specification from RPC
  */
 extern void dump_job_desc(job_desc_msg_t *job_desc);
-
-/*
- * dump_job_step_state - dump the state of a specific job step to a buffer,
- *	load with load_step_state
- * IN step_ptr - pointer to job step for which information is to be dumped
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-extern int dump_job_step_state(void *x, void *arg);
 
 /*
  * dump_step_desc - dump the incoming step initiate request message
@@ -1325,19 +1308,6 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		       uint16_t protocol_version);
 
 /*
- * job_step_signal - signal the specified job step
- * IN step_id - filled in slurm_step_id_t
- * IN signal - user id of user issuing the RPC
- * IN flags - RPC flags
- * IN uid - user id of user issuing the RPC
- * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_step_signal(slurm_step_id_t *step_id,
-			   uint16_t signal, uint16_t flags, uid_t uid);
-
-/*
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
@@ -1409,17 +1379,6 @@ extern int kill_job_by_front_end_name(char *node_name);
  */
 extern int kill_running_job_by_node_name(char *node_name);
 
-/*
- * kill_step_on_node - determine if the specified job has any job steps
- *	allocated to the specified node and kill them unless no_kill flag
- *	is set on the step
- * IN job_ptr - pointer to an active job record
- * IN node_ptr - pointer to a node record
- * IN node_fail - true of removed node has failed
- */
-extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
-			      bool node_fail);
-
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
 int list_compare_config (void *config_entry1, void *config_entry2);
@@ -1476,16 +1435,6 @@ extern void load_part_uid_allow_list(bool force);
  *	file data.
  */
 extern int load_all_part_state(uint16_t reconfig_flags);
-
-/*
- * Create a new job step from data in a buffer (as created by
- * dump_job_stepstate)
- * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
- * IN/OUT buffer - location from which to get data, pointers
- *                 automatically advanced
- */
-extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
-			   uint16_t protocol_version);
 
 /*
  * Log contents of avail_feature_list and active_feature_list
@@ -1603,20 +1552,6 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 
 /* Pack all scheduling statistics */
 extern buf_t *pack_all_stat(uint16_t protocol_version);
-
-/*
- * pack_ctld_job_step_info_response_msg - packs job step info
- * IN step_id - specific id or NO_VAL/NO_VAL for all
- * IN uid - user issuing request
- * IN show_flags - job step filtering options
- * OUT buffer - location to store data, pointers automatically advanced
- * IN protocol_version - slurm protocol version of client
- * RET - 0 or error code
- * NOTE: MUST free_buf buffer
- */
-extern int pack_ctld_job_step_info_response_msg(
-	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
-	buf_t *buffer, uint16_t protocol_version);
 
 /*
  * pack_all_part - dump all partition information for all partitions in
@@ -1827,24 +1762,6 @@ extern void verify_job_state_cache_synced(void);
 #define verify_job_state_cache_synced() {}
 #endif
 
-/*
- * Rebuild a job step's core_bitmap_job after a job has just changed size
- * job_ptr IN - job that was just re-sized
- * orig_job_node_bitmap IN - The job's original node bitmap
- */
-extern void rebuild_step_bitmaps(job_record_t *job_ptr,
-				 bitstr_t *orig_job_node_bitmap);
-
-/*
- * Create the extern step and add it to the job.
- */
-extern step_record_t *build_extern_step(job_record_t *job_ptr);
-
-/*
- * Create the batch step and add it to the job.
- */
-extern step_record_t *build_batch_step(job_record_t *job_ptr_in);
-
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 
@@ -1866,9 +1783,6 @@ extern void reset_stats(int level);
  *              2 = use data from node record, built from saved state
  */
 extern void restore_node_features(int recover);
-
-/* Update time stamps for job step resume */
-extern void resume_job_step(job_record_t *job_ptr);
 
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
@@ -1987,65 +1901,6 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
  * RET 0 or error code
  */
 extern int slurmctld_shutdown(void);
-
-/*
- * step_create - creates a step_record in step_specs->job_id, sets up the
- *	according to the step_specs.
- * IN step_specs - job step specifications
- * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN protocol_version - slurm protocol version of client
- * OUT err_msg - Custom error message to the user, caller to xfree results
-  * RET - 0 or error code
- * NOTE: don't free the returned step_record because that is managed through
- * 	the job.
- */
-extern int step_create(job_step_create_request_msg_t *step_specs,
-		       step_record_t **new_step_record,
-		       uint16_t protocol_version, char **err_msg);
-
-/*
- * step_layout_create - creates a step_layout according to the inputs.
- * IN step_ptr - step having tasks layed out
- * IN step_node_list - node list of hosts in step
- * IN node_count - count of nodes in step allocation
- * IN num_tasks - number of tasks in step
- * IN cpus_per_task - number of cpus per task
- * IN task_dist - type of task distribution
- * IN plane_size - size of plane (only needed for the plane distribution)
- * RET - NULL or slurm_step_layout_t *
- * NOTE: you need to free the returned step_layout usually when the
- *       step is freed.
- */
-extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
-					       char *step_node_list,
-					       uint32_t node_count,
-					       uint32_t num_tasks,
-					       uint16_t cpus_per_task,
-					       uint32_t task_dist,
-					       uint16_t plane_size);
-
-/*
- * step_partial_comp - Note the completion of a job step on at least
- *	some of its nodes
- * IN req     - step_completion_msg RPC from slurmstepd
- * IN uid     - UID issuing the request
- * IN finish  - If true, no error, and no rem is 0 finish the step.
- * OUT rem    - count of nodes for which responses are still pending
- * OUT max_rc - highest return code for any step thus far
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
-			     int *rem, uint32_t *max_rc);
-
-/*
- * step_set_alloc_tres - set the tres up when allocating the step.
- * Only set when job is running.
- * NOTE: job write lock must be locked before calling this */
-extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
-				bool assoc_mgr_locked, bool make_formatted);
-
-/* Update time stamps for job step suspend */
-extern void suspend_job_step(job_record_t *job_ptr);
 
 /*
  * job_mgr_dump_job_state - dump the state of a specific job, its details, and
@@ -2234,10 +2089,6 @@ extern int set_partition_billing_weights(char *billing_weights_str,
  *	last_part_update - update time of partition records
  */
 extern int update_part (update_part_msg_t * part_desc, bool create_flag);
-
-/* Process job step update request from specified user,
- * RET - 0 or error code */
-extern int update_step(step_update_request_msg_t *req, uid_t uid);
 
 /*
  * validate_alloc_node - validate that the allocating node
