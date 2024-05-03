@@ -146,4 +146,10 @@ extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version);
 
+extern void slurm_pack_job_rec(job_record_t *job_ptr,
+			       buf_t *buffer,
+			       uint16_t protocol_version);
+extern int slurm_unpack_job_rec(job_record_t **job,
+				buf_t *buffer,
+				uint16_t protocol_version);
 #endif
