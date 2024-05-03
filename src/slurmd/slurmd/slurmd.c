@@ -601,6 +601,7 @@ _service_connection(void *arg)
 
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
+	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");

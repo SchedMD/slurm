@@ -1498,6 +1498,10 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	void *auth_cred = NULL;
 	buf_t *buffer;
 	char *peer = NULL;
+	bool keep_buffer = false;
+
+	if (msg->flags & SLURM_MSG_KEEP_BUFFER)
+		keep_buffer = true;
 
 	xassert(fd >= 0);
 
@@ -1664,6 +1668,8 @@ skip_auth:
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
+	msg->body_offset = get_buf_offset(buffer);
+
 	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
@@ -1674,7 +1680,10 @@ skip_auth:
 	}
 	msg->auth_cred = auth_cred;
 
-	FREE_NULL_BUFFER(buffer);
+	if (keep_buffer)
+		msg->buffer = buffer;
+	else
+		FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
