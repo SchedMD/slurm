@@ -776,3 +776,52 @@ extern void *extract_net_cred(char *net_cred, uint16_t protocol_version)
 
 	return (*(ops.extract_net_cred))(net_cred, protocol_version);
 }
+
+extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
+{
+	memset(cred_arg, 0, sizeof(slurm_cred_arg_t));
+
+	cred_arg->id = job_ptr->id;
+
+	cred_arg->gid = job_ptr->group_id;
+	cred_arg->job_account = job_ptr->account;
+	cred_arg->job_alias_list = job_ptr->alias_list;
+	cred_arg->job_comment = job_ptr->comment;
+	cred_arg->job_end_time = job_ptr->end_time;
+	cred_arg->job_extra = job_ptr->extra;
+	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
+	cred_arg->job_licenses = job_ptr->licenses;
+	cred_arg->job_node_addrs = job_ptr->node_addrs;
+	cred_arg->job_reservation = job_ptr->resv_name;
+	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
+	cred_arg->job_selinux_context = job_ptr->selinux_context;
+	cred_arg->job_start_time = job_ptr->start_time;
+	cred_arg->uid = job_ptr->user_id;
+
+	if (job_ptr->details) {
+		cred_arg->job_constraints = job_ptr->details->features_use;
+		cred_arg->job_core_spec = job_ptr->details->core_spec;
+		cred_arg->job_ntasks = job_ptr->details->num_tasks;
+		cred_arg->job_oversubscribe = get_job_share_value(job_ptr);
+		cred_arg->job_std_err = job_ptr->details->std_err;
+		cred_arg->job_std_in = job_ptr->details->std_in;
+		cred_arg->job_std_out = job_ptr->details->std_out;
+		cred_arg->job_x11 = job_ptr->details->x11;
+	}
+
+	if (job_ptr->job_resrcs) {
+		job_resources_t *resrcs = job_ptr->job_resrcs;
+		cred_arg->cores_per_socket = resrcs->cores_per_socket;
+		cred_arg->cpu_array_count = resrcs->cpu_array_cnt;
+		cred_arg->cpu_array = resrcs->cpu_array_value;
+		cred_arg->cpu_array_reps = resrcs->cpu_array_reps;
+		cred_arg->job_core_bitmap = resrcs->core_bitmap;
+		cred_arg->job_hostlist = resrcs->nodes;
+		cred_arg->job_nhosts = resrcs->nhosts;
+		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
+		cred_arg->sockets_per_node = resrcs->sockets_per_node;
+	}
+
+	if (job_ptr->part_ptr)
+		cred_arg->job_partition = job_ptr->part_ptr->name;
+}
