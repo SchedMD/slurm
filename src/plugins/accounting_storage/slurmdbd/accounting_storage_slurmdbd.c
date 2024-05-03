@@ -133,6 +133,17 @@ static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int prev_node_record_count = -1;
 static bitstr_t *total_node_bitmap = NULL;
 
+/* Satisfy common lib */
+char *assoc_day_table = NULL;
+char *assoc_hour_table = NULL;
+char *assoc_month_table = NULL;
+char *cluster_day_table = NULL;
+char *cluster_hour_table = NULL;
+char *cluster_month_table = NULL;
+char *wckey_day_table = NULL;
+char *wckey_hour_table = NULL;
+char *wckey_month_table = NULL;
+
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
