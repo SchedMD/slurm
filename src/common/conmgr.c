@@ -757,7 +757,8 @@ extern void free_conmgr(void)
 			fatal("%s: timer_delete() failed: %m", __func__);
 	}
 
-	if (close(mgr.event_fd[0]) || close(mgr.event_fd[1]))
+	if (((mgr.event_fd[0] >= 0) && close(mgr.event_fd[0])) ||
+	    ((mgr.event_fd[1] >= 0) && close(mgr.event_fd[1])))
 		error("%s: unable to close event_fd: %m", __func__);
 
 	if (close(mgr.signal_fd[0]) || close(mgr.signal_fd[1]))
