@@ -8376,7 +8376,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	lic_req = NULL;
 }
 
-static void _enable_step_mgr(job_record_t *job_ptr)
+static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
 	static bool first_time = true;
 	static bool step_mgr_enabled = false;
@@ -8387,7 +8387,7 @@ static void _enable_step_mgr(job_record_t *job_ptr)
 					   "step_mgr_enable");
 	}
 
-	if (step_mgr_enabled &&
+	if ((step_mgr_enabled || (job_desc->bitflags & STEP_MGR_ENABLED)) &&
 	    (job_ptr->start_protocol_ver >= SLURM_24_05_PROTOCOL_VERSION)) {
 		job_ptr->bit_flags |= STEP_MGR_ENABLED;
 	} else {
@@ -8855,7 +8855,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 	job_ptr->best_switch = true;
 
-	_enable_step_mgr(job_ptr);
+	_enable_step_mgr(job_ptr, job_desc);
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(gres_list);
