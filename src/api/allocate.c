@@ -741,6 +741,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 {
 	slurm_msg_t req_msg, resp_msg;
 	int delay = 0, rc, retry = 0;
+	char *stepmgr_nodename;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -748,9 +749,16 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	req_msg.data     = req;
 
 re_send:
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
+	if ((stepmgr_nodename = getenv("SLURM_STEP_MGR"))) {
+		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+		slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
+				    req_msg.flags);
+		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
+			return SLURM_ERROR;
+	} else if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+						  working_cluster_rec) < 0) {
 		return SLURM_ERROR;
+	}
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:

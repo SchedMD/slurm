@@ -2666,6 +2666,14 @@ extern void launch_job(job_record_t *job_ptr)
 	if (launch_job_ptr->het_job_id)
 		_set_het_job_env(launch_job_ptr, launch_msg_ptr);
 
+	if (xstrstr(slurm_conf.slurmctld_params, "step_mgr_enable")) {
+		xrealloc(launch_msg_ptr->environment,
+			 sizeof(char *) * (launch_msg_ptr->envc + 1));
+		env_array_overwrite(&launch_msg_ptr->environment,
+				    "SLURM_STEP_MGR", job_ptr->batch_host);
+		launch_msg_ptr->envc++;
+	}
+
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
 	agent_arg_ptr->node_count = 1;

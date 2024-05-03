@@ -768,6 +768,14 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 					xstrdup(job_ptr->details->env_sup[i]);
 			}
 		}
+		if (xstrstr(slurm_conf.slurmctld_params, "step_mgr_enable")) {
+			xrealloc(alloc_msg->environment,
+				 sizeof(char *) * (alloc_msg->env_size + 1));
+			env_array_overwrite(&alloc_msg->environment,
+					    "SLURM_STEP_MGR",
+					    job_ptr->batch_host);
+			alloc_msg->env_size++;
+		}
 	} else {
 		/* alloc_msg->pn_min_memory = 0; */
 		alloc_msg->ntasks_per_board  = NO_VAL16;
