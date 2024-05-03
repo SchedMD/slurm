@@ -1384,14 +1384,6 @@ extern int kill_running_job_by_node_name(char *node_name);
 int list_compare_config (void *config_entry1, void *config_entry2);
 
 /*
- * list_find_feature - find an entry in the feature list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-extern int list_find_feature(void *feature_entry, void *key);
-
-/*
  * list_find_part - find an entry in the partition list, see common/list.h
  *	for documentation
  * IN key - partition name or "universal_key" for all partitions
