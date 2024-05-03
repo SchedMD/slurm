@@ -2341,8 +2341,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		return;
 	}
 
-	dump_step_desc(req_step_msg);
-
 #if defined HAVE_FRONT_END
 	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
@@ -2353,6 +2351,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		return;
 	}
 #endif
+
+	dump_step_desc(req_step_msg);
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		_throttle_start(&active_rpc_cnt);
