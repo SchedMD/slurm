@@ -60,6 +60,7 @@ libcommon_la_SOURCES =				\
 	job_features.h				\
 	job_options.c				\
 	job_options.h				\
+	job_record.c				\
 	job_record.h				\
 	job_resources.c				\
 	job_resources.h				\
