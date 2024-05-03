@@ -225,6 +225,11 @@ extern __thread bool drop_priv;
    typedef struct switch_jobinfo   switch_jobinfo_t;
 #endif
 
+#ifndef __job_record_t_defined
+#  define __job_record_t_defined
+typedef struct job_record job_record_t;
+#endif
+
 /*****************************************************************************\
  * core api configuration struct
 \*****************************************************************************/
@@ -1822,6 +1827,11 @@ extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_slurm_user(uid_t uid);
+
+/*
+ * Return the job's sharing value from job or partition value.
+ */
+extern uint16_t get_job_share_value(job_record_t *job_ptr);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

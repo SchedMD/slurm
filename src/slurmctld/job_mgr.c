@@ -20165,40 +20165,6 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	return my_env;
 }
 
-extern uint16_t get_job_share_value(job_record_t *job_ptr)
-{
-	uint16_t shared = 0;
-	job_details_t *detail_ptr = job_ptr->details;
-
-	if (!detail_ptr)
-		shared = NO_VAL16;
-	else if (detail_ptr->share_res == 1)	/* User --share */
-		shared = JOB_SHARED_OK;
-	else if ((detail_ptr->share_res == 0) ||
-		 (detail_ptr->whole_node == 1))
-		shared = JOB_SHARED_NONE;	/* User --exclusive */
-	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
-		shared = JOB_SHARED_USER;	/* User --exclusive=user */
-	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
-		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
-	else if (job_ptr->part_ptr) {
-		/* Report shared status based upon latest partition info */
-		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
-			shared = JOB_SHARED_USER;
-		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
-			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
-			shared = 1; /* Partition OverSubscribe=force */
-		else if (job_ptr->part_ptr->max_share == 0)
-			/* Partition OverSubscribe=exclusive */
-			shared = JOB_SHARED_NONE;
-		else
-			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
-	} else
-		shared = NO_VAL16;	/* No user or partition info */
-
-	return shared;
-}
-
 extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	resv_desc_msg_t *resv_desc_ptr)
 {
