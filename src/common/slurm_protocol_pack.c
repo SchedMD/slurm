@@ -13208,11 +13208,20 @@ extern void slurm_pack_job_rec(job_record_t *job_ptr,
 
 		if (IS_JOB_RUNNING(job_ptr) && job_ptr->part_ptr) {
 			packstr(job_ptr->part_ptr->name, buffer);
+
+			pack32(job_ptr->part_ptr->cpu_bind, buffer);
+			pack32(job_ptr->part_ptr->max_time, buffer);
+			pack16(job_ptr->part_ptr->over_time_limit, buffer);
 		} else {
 			packstr(job_ptr->partition, buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack16(0, buffer);
 		}
 
 		/* part_ptr */
+
 
 		pack64(detail_ptr->orig_pn_min_memory, buffer);
 		packstr(detail_ptr->req_nodes,  buffer);
@@ -13271,6 +13280,10 @@ extern int slurm_unpack_job_rec(job_record_t **job,
 		safe_unpack32(&job_ptr->group_id, buffer);
 
 		safe_unpackstr(&job_ptr->partition, buffer);
+		job_ptr->part_ptr = xmalloc(sizeof(*job_ptr->part_ptr));
+		safe_unpack32(&job_ptr->part_ptr->cpu_bind, buffer);
+		safe_unpack32(&job_ptr->part_ptr->max_time, buffer);
+		safe_unpack16(&job_ptr->part_ptr->over_time_limit, buffer);
 
 		safe_unpack64(&detail_ptr->orig_pn_min_memory, buffer);
 		safe_unpackstr(&detail_ptr->req_nodes,  buffer);
