@@ -1808,6 +1808,9 @@ typedef struct {
 	uint16_t msg_flags;		/* Flags to be added to msg */
 } agent_arg_t;
 
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

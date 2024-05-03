@@ -6084,3 +6084,10 @@ char *bf_exit2string(uint16_t opcode)
 		return "unknown";
 	}
 }
+
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid)
+{
+	agent_arg_ptr->r_uid = r_uid;
+	agent_arg_ptr->r_uid_set = true;
+}
