@@ -1532,6 +1532,10 @@ extern int read_slurm_conf(int recover)
 	if (topology_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
+	if (xstrcasestr(slurm_conf.slurmctld_params, "step_mgr_enable") &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+		fatal("STEP_MGR not supported without PrologFlags=contain");
+
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
 	/* Increase node table to handle dynamic nodes. */

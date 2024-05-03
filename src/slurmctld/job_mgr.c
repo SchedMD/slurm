@@ -8393,6 +8393,12 @@ static void _enable_step_mgr(job_record_t *job_ptr)
 	} else {
 		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
 	}
+
+	if ((job_ptr->bit_flags & STEP_MGR_ENABLED) &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)) {
+		error("STEP_MGR not supported without PrologFlags=contain");
+		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+	}
 }
 
 /*
