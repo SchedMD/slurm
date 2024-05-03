@@ -48,6 +48,7 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/gres.h"
 #include "src/interfaces/priority.h"
 
 #include "src/slurmdbd/read_config.h"
@@ -7247,4 +7248,52 @@ extern int assoc_mgr_get_old_tres_pos(int cur_pos)
 	if (!assoc_mgr_tres_old_pos || (cur_pos >= g_tres_count))
 		return -1;
 	return assoc_mgr_tres_old_pos[cur_pos];
+}
+
+extern bool assoc_mgr_valid_tres_cnt(char *tres, bool gres_tres_enforce)
+{
+	char *tres_type = NULL, *name = NULL, *type = NULL, *save_ptr = NULL;
+	int rc = true, pos = -1;
+	uint64_t cnt = 0;
+
+	while (((rc = slurm_get_next_tres(&tres_type,
+					  tres,
+					  &name, &type,
+					  &cnt, &save_ptr)) == SLURM_SUCCESS) &&
+	       save_ptr) {
+		/*
+		 * This is here to handle the old craynetwork:0
+		 * Any gres that is formatted correctly and has a count
+		 * of 0 is valid to be thrown away but allow job to
+		 * allocate.
+		 */
+		if (gres_tres_enforce && type) {
+			xstrfmtcat(name, ":%s", type);
+		}
+		xfree(type);
+		if (cnt == 0) {
+			xfree(tres_type);
+			xfree(name);
+			continue;
+		}
+		/* gres doesn't have to be a TRES to be valid */
+		if (!gres_tres_enforce && !xstrcmp(tres_type, "gres")) {
+			pos = gres_valid_name(name) ? 1 : -1;
+		} else {
+			slurmdb_tres_rec_t tres_rec = {
+				.type = tres_type,
+				.name = name,
+			};
+			pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+		}
+		xfree(tres_type);
+		xfree(name);
+
+		if (pos == -1) {
+			rc = SLURM_ERROR;
+			break;
+		}
+	}
+
+	return (rc == SLURM_SUCCESS) ? true : false;
 }

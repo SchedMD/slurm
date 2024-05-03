@@ -264,7 +264,7 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 	/*
 	 * Here we need to verify all the TRES (including GRES) are real TRES.
 	 */
-	if (!valid_tres_cnt(resv_desc_ptr->tres_str, true))
+	if (!assoc_mgr_valid_tres_cnt(resv_desc_ptr->tres_str, true))
 		return ESLURM_INVALID_TRES;
 
 	/*

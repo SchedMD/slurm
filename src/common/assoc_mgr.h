@@ -611,4 +611,11 @@ extern int assoc_mgr_get_old_tres_pos(int cur_pos);
  */
 extern int assoc_mgr_tres_pos_changed(void);
 
+/*
+ * Validate TRES specification of the form:
+ * "name=tres_type/name|count[:#|type:#]"
+ * For example: "cpu:2,gres/gpu:kepler:2,gres/craynetwork:1"
+ */
+extern bool assoc_mgr_valid_tres_cnt(char *tres, bool gres_tres_enforce);
+
 #endif /* _SLURM_ASSOC_MGR_H */

@@ -3044,19 +3044,6 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 extern void update_job_limit_set_tres(uint16_t **tres_limits);
 
 /*
- * Validate TRES specification of the form:
- * "name=[type:]#[,[type:]#][;name=[type:]#]"
- * For example: "gpu:kepler:2,craynetwork=1"
- */
-extern bool valid_tres_cnt(char *tres, bool gres_tres_enforce);
-
-/*
- * Validate the named GRES is valid for scheduling parameters.
- * This is currently a subset of all defined TRES.
- */
-extern bool valid_gres_name(char *name);
-
-/*
  * Check for node timed events
  *
  * Such as:
