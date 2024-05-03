@@ -2956,7 +2956,19 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 	xassert(msg);
 	*msg = xmalloc(sizeof(job_step_info_response_msg_t));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpack32(&(*msg)->job_step_count, buffer);
+		safe_unpack_time(&(*msg)->last_update, buffer);
+
+		safe_xcalloc((*msg)->job_steps, (*msg)->job_step_count,
+			     sizeof(job_step_info_t));
+		step = (*msg)->job_steps;
+
+		for (i = 0; i < (*msg)->job_step_count; i++)
+			if (_unpack_job_step_info_members(&step[i], buffer,
+							  protocol_version))
+				goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(*msg)->job_step_count, buffer);
 		safe_unpack_time(&(*msg)->last_update, buffer);
 

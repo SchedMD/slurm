@@ -20398,7 +20398,22 @@ extern int pack_ctld_job_step_info_response_msg(
 		.visible_parts = build_visible_parts(uid, skip_visible_parts),
 	};
 
-	if (SLURM_PROTOCOL_VERSION >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		pack32(args.steps_packed, buffer);/* steps_packed placeholder */
+		pack_time(now, buffer);
+
+		list_for_each_ro(job_list, _pack_job_steps, &args);
+
+		if (list_count(job_list) && !args.valid_job && !args.steps_packed)
+			error_code = ESLURM_INVALID_JOB_ID;
+
+		/* put the real record count in the message body header */
+		tmp_offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, 0);
+		pack32(args.steps_packed, buffer);
+
+		set_buf_offset(buffer, tmp_offset);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(args.steps_packed, buffer);/* steps_packed placeholder */
 		pack_time(now, buffer);
 
