@@ -63,10 +63,6 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     job_container/tmpfs plugin namespace.
  -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
     nodes after the max is reached.
- -- squeue - Add --expand-patterns option to expand StdErr, StdOut, StdIn
-    filename patterns as best as possible.
- -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
-    filename patterns as best as possible.
  -- Add ExclusiveTopo to a partition definition in slurm.conf.
 
 COMMAND CHANGES (see man pages for details)
@@ -83,6 +79,10 @@ COMMAND CHANGES (see man pages for details)
     no longer be substituted by default.
  -- Add --segment to job allocation to be used in topology/block.
  -- Add --exclusive=topo for use with topology/block.
+ -- squeue - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
+ -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
 
 API CHANGES
 ===========
