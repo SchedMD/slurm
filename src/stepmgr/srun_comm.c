@@ -367,7 +367,20 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 				   job_ptr->start_protocol_ver);
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
+#ifndef HAVE_FRONT_END
+		node_record_t *node_ptr;
+#endif
 		job_notify_msg_t *notify_msg_ptr;
+
+#ifdef HAVE_FRONT_END
+		if (job_ptr->batch_host == NULL)
+			return ESLURM_DISABLED;	/* no allocated nodes */
+#else
+		node_ptr = _find_first_node_record(job_ptr->node_bitmap);
+		if (node_ptr == NULL)
+			return ESLURM_DISABLED;	/* no allocated nodes */
+#endif
+
 		notify_msg_ptr = (job_notify_msg_t *)
 				 xmalloc(sizeof(job_notify_msg_t));
 		notify_msg_ptr->step_id.job_id = job_ptr->job_id;
@@ -376,9 +389,6 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		notify_msg_ptr->message = xstrdup(msg);
 
 #ifdef HAVE_FRONT_END
-		if (job_ptr->batch_host == NULL)
-			return ESLURM_DISABLED;	/* no allocated nodes */
-
 		_srun_agent_launch(NULL, job_ptr->batch_host, REQUEST_JOB_NOTIFY,
 				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
 				   (job_ptr->front_end_ptr ?
@@ -386,11 +396,6 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 				    0));
 
 #else
-		node_record_t *node_ptr;
-		node_ptr = _find_first_node_record(job_ptr->node_bitmap);
-		if (node_ptr == NULL)
-			return ESLURM_DISABLED;	/* no allocated nodes */
-
 		_srun_agent_launch(NULL, node_ptr->name, REQUEST_JOB_NOTIFY,
 				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
 				   node_ptr->protocol_version);
