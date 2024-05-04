@@ -3292,6 +3292,11 @@ typedef struct stats_info_response_msg {
 	uint16_t *rpc_type_id;
 	uint32_t *rpc_type_cnt;
 	uint64_t *rpc_type_time;
+	uint8_t rpc_queue_enabled;
+	uint16_t *rpc_type_queued;
+	uint64_t *rpc_type_dropped;
+	uint16_t *rpc_type_cycle_last;
+	uint16_t *rpc_type_cycle_max;
 
 	uint32_t rpc_user_size;
 	uint32_t *rpc_user_id;

@@ -2245,6 +2245,10 @@ extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 		xfree(msg->rpc_type_id);
 		xfree(msg->rpc_type_cnt);
 		xfree(msg->rpc_type_time);
+		xfree(msg->rpc_type_queued);
+		xfree(msg->rpc_type_dropped);
+		xfree(msg->rpc_type_cycle_last);
+		xfree(msg->rpc_type_cycle_max);
 		xfree(msg->rpc_user_id);
 		xfree(msg->rpc_user_cnt);
 		xfree(msg->rpc_user_time);

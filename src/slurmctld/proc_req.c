@@ -102,6 +102,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
+#include "src/slurmctld/rpc_queue.h"
 #include "src/slurmctld/sackd_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
@@ -116,6 +117,10 @@ static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint16_t rpc_type_id[RPC_TYPE_SIZE] = { 0 };
 static uint32_t rpc_type_cnt[RPC_TYPE_SIZE] = { 0 };
 static uint64_t rpc_type_time[RPC_TYPE_SIZE] = { 0 };
+static uint16_t rpc_type_queued[RPC_TYPE_SIZE] = { 0 };
+static uint64_t rpc_type_dropped[RPC_TYPE_SIZE] = { 0 };
+static uint16_t rpc_type_cycle_last[RPC_TYPE_SIZE] = { 0 };
+static uint16_t rpc_type_cycle_max[RPC_TYPE_SIZE] = { 0 };
 #define RPC_USER_SIZE 200
 static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
 static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
@@ -5571,6 +5576,10 @@ static void _clear_rpc_stats(void)
 	memset(rpc_type_cnt, 0, sizeof(rpc_type_cnt));
 	memset(rpc_type_id, 0, sizeof(rpc_type_id));
 	memset(rpc_type_time, 0, sizeof(rpc_type_time));
+	memset(rpc_type_queued, 0, sizeof(rpc_type_queued));
+	memset(rpc_type_dropped, 0, sizeof(rpc_type_dropped));
+	memset(rpc_type_cycle_last, 0, sizeof(rpc_type_cycle_last));
+	memset(rpc_type_cycle_max, 0, sizeof(rpc_type_cycle_max));
 	memset(rpc_user_cnt, 0, sizeof(rpc_user_cnt));
 	memset(rpc_user_id, 0, sizeof(rpc_user_id));
 	memset(rpc_user_time, 0, sizeof(rpc_user_time));
@@ -5583,6 +5592,7 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		uint32_t rpc_count = 0, user_count = 1;
+		uint8_t queue_enabled = rpc_queue_enabled();
 
 		while (rpc_type_id[rpc_count])
 			rpc_count++;
@@ -5590,6 +5600,14 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 		pack16_array(rpc_type_id, rpc_count, buffer);
 		pack32_array(rpc_type_cnt, rpc_count, buffer);
 		pack64_array(rpc_type_time, rpc_count, buffer);
+
+		pack8(queue_enabled, buffer);
+		if (queue_enabled) {
+			pack16_array(rpc_type_queued, rpc_count, buffer);
+			pack64_array(rpc_type_dropped, rpc_count, buffer);
+			pack16_array(rpc_type_cycle_last, rpc_count, buffer);
+			pack16_array(rpc_type_cycle_max, rpc_count, buffer);
+		}
 
 		/* user_count starts at 1 as root is in index 0 */
 		while (rpc_user_id[user_count])

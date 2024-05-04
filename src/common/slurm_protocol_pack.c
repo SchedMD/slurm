@@ -10800,6 +10800,18 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 		safe_unpack32_array(&msg->rpc_type_cnt, &uint32_tmp, buffer);
 		safe_unpack64_array(&msg->rpc_type_time, &uint32_tmp, buffer);
 
+		safe_unpack8(&msg->rpc_queue_enabled, buffer);
+		if (msg->rpc_queue_enabled) {
+			safe_unpack16_array(&msg->rpc_type_queued,
+					    &uint32_tmp, buffer);
+			safe_unpack64_array(&msg->rpc_type_dropped,
+					    &uint32_tmp, buffer);
+			safe_unpack16_array(&msg->rpc_type_cycle_last,
+					    &uint32_tmp, buffer);
+			safe_unpack16_array(&msg->rpc_type_cycle_max,
+					    &uint32_tmp, buffer);
+		}
+
 		safe_unpack32(&msg->rpc_user_size, buffer);
 		safe_unpack32_array(&msg->rpc_user_id, &uint32_tmp, buffer);
 		safe_unpack32_array(&msg->rpc_user_cnt, &uint32_tmp, buffer);
