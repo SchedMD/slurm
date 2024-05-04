@@ -492,7 +492,7 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -554,7 +554,7 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -630,7 +630,7 @@ static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -690,7 +690,7 @@ static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -751,7 +751,7 @@ static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -809,7 +809,7 @@ static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -870,7 +870,7 @@ static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -929,7 +929,7 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -997,7 +997,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	buf_t *buffer;
 	char *data;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;

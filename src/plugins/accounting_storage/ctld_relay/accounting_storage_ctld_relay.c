@@ -551,7 +551,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
 	int rc;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	persist_msg_t persist_msg = {0};
 	dbd_step_start_msg_t req = {0};
 
@@ -561,6 +561,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	persist_msg.msg_type = DBD_STEP_START;
 	persist_msg.data = &req;
 
+	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_DBD_RELAY;
 	msg.conn = db_conn;
 	msg.data = &persist_msg;
@@ -579,7 +580,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 					   step_record_t *step_ptr)
 {
 	int rc;
-	slurm_msg_t msg = {0};
+	slurm_msg_t msg;
 	persist_msg_t persist_msg = {0};
 	dbd_step_comp_msg_t req = {0};
 
@@ -589,6 +590,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	persist_msg.msg_type = DBD_STEP_COMPLETE;
 	persist_msg.data = &req;
 
+	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_DBD_RELAY;
 	msg.conn = db_conn;
 	msg.data = &persist_msg;
