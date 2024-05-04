@@ -80,6 +80,7 @@ COMMAND CHANGES (see man pages for details)
     correctly display the default filename pattern for job arrays, and no
     longer show it for non-batch jobs. However, the expansion patterns will
     no longer be substituted by default.
+ -- Add --segment to job allocation to be used in topology/block.
 
 API CHANGES
 ===========
