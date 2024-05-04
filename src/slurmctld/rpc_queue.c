@@ -163,7 +163,12 @@ static void *_rpc_queue_worker(void *arg)
 		} else {
 			DEF_TIMERS;
 			START_TIMER;
-
+			if (q->max_queued) {
+				slurm_mutex_lock(&q->mutex);
+				q->queued--;
+				record_rpc_queue_stats(q);
+				slurm_mutex_unlock(&q->mutex);
+			}
 			msg->flags |= CTLD_QUEUE_PROCESSING;
 			q->func(msg);
 			if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
@@ -247,6 +252,22 @@ extern int rpc_enqueue(slurm_msg_t *msg)
 		if (q->msg_type == msg->msg_type) {
 			if (!q->queue_enabled)
 				break;
+
+			if (q->max_queued) {
+				slurm_mutex_lock(&q->mutex);
+				if (q->queued >= q->max_queued) {
+					q->dropped++;
+					record_rpc_queue_stats(q);
+					slurm_mutex_unlock(&q->mutex);
+					if (q->hard_drop)
+						return SLURMCTLD_COMMUNICATIONS_HARD_DROP;
+					else
+						return SLURMCTLD_COMMUNICATIONS_BACKOFF;
+				}
+				q->queued++;
+				record_rpc_queue_stats(q);
+				slurm_mutex_unlock(&q->mutex);
+			}
 
 			list_enqueue(q->work, msg);
 			slurm_mutex_lock(&q->mutex);
