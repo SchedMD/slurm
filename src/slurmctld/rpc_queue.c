@@ -204,8 +204,10 @@ extern void rpc_queue_init(void)
 		slurm_mutex_init(&q->mutex);
 		q->shutdown = false;
 
-		log_flag(PROTOCOL, "%s: starting queue for %s",
-			 __func__, q->msg_name);
+		verbose("starting rpc_queue for %s: max_per_cycle=%u max_usec_per_cycle=%u max_queued=%d hard_drop=%d yield_sleep=%d interval=%d",
+			q->msg_name, q->max_per_cycle, q->max_usec_per_cycle,
+			q->max_queued, q->hard_drop, q->yield_sleep,
+			q->interval);
 		slurm_thread_create(&q->thread, _rpc_queue_worker, q);
 	}
 }
