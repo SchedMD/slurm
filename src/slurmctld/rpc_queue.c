@@ -59,6 +59,7 @@ static void *_rpc_queue_worker(void *arg)
 {
 	slurmctld_rpc_t *q = (slurmctld_rpc_t *) arg;
 	int processed = 0;
+	long processed_usec = 0;
 
 #if HAVE_SYS_PRCTL_H
 	char *name = xstrdup_printf("rpcq-%u", q->msg_type);
@@ -80,8 +81,16 @@ static void *_rpc_queue_worker(void *arg)
 	 */
 	while (true) {
 		slurm_msg_t *msg = NULL;
+		bool highload = false;
+		long sleep_usec = 0;
 
-		msg = list_dequeue(q->work);
+		/* apply per-cycle rate limiting, if configured */
+		if ((q->max_per_cycle && (processed == q->max_per_cycle)) ||
+		    (q->max_usec_per_cycle &&
+		     (processed_usec >= q->max_usec_per_cycle)))
+			highload = true;
+		else
+			msg = list_dequeue(q->work);
 
 		if (!msg) {
 			unlock_slurmctld(q->locks);
@@ -98,9 +107,16 @@ static void *_rpc_queue_worker(void *arg)
 				slurm_mutex_unlock(&q->mutex);
 			}
 
-			log_flag(PROTOCOL, "%s(%s): sleeping after processing %d",
-				 __func__, q->msg_name, processed);
-			processed = 0;
+			/*
+			 * Use yield_sleep if there's more work to be done,
+			 * otherwise interval if set, otherwise 500 usec.
+			 */
+			if (highload && (q->yield_sleep > 0))
+				sleep_usec = q->yield_sleep;
+			else if (q->interval > 0)
+				sleep_usec = q->interval;
+			else
+				sleep_usec = 500;
 
 			/*
 			 * Rate limit RPC processing. Ensure that when we
@@ -114,7 +130,14 @@ static void *_rpc_queue_worker(void *arg)
 			 * This extends the race described below, but this
 			 * is handled properly.
 			 */
-			usleep(500);
+
+			log_flag(PROTOCOL, "%s(%s): sleeping %ld usec after processing %d/%u msgs (processed_usec=%ld/%d)",
+				 __func__, q->msg_name, sleep_usec,
+				 processed, q->max_per_cycle,
+				 processed_usec, q->max_usec_per_cycle);
+			processed = 0;
+			processed_usec = 0;
+			usleep(sleep_usec);
 
 			slurm_mutex_lock(&q->mutex);
 
@@ -150,6 +173,7 @@ static void *_rpc_queue_worker(void *arg)
 			record_rpc_stats(msg, DELTA_TIMER);
 			slurm_free_msg(msg);
 			processed++;
+			processed_usec += DELTA_TIMER;
 		}
 	}
 
