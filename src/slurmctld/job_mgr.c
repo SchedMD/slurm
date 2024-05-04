@@ -6839,6 +6839,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 
 static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
+#ifndef HAVE_FRONT_END
 	static bool first_time = true;
 	static bool step_mgr_enabled = false;
 
@@ -6861,6 +6862,7 @@ static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		error("STEP_MGR not supported without PrologFlags=contain");
 		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
 	}
+#endif
 }
 
 /*
