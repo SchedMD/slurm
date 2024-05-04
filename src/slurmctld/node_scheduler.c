@@ -797,7 +797,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 
 	/* no sharing if partition OverSubscribe=EXCLUSIVE */
 	if (part_max_share == 0) {
-		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
+		job_ptr->details->whole_node |= WHOLE_NODE_REQUIRED;
 		job_ptr->details->share_res = 0;
 		return 0;
 	}
@@ -811,13 +811,13 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 
 	if (slurm_select_cr_type()) {
 		if ((job_ptr->details->share_res  == 0) ||
-		    (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)) {
+		    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
 			job_ptr->details->share_res = 0;
 			return 0;
 		}
 		return 1;
 	} else {
-		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
+		job_ptr->details->whole_node |= WHOLE_NODE_REQUIRED;
 		if (part_max_share == 1) { /* partition is OverSubscribe=NO */
 			job_ptr->details->share_res = 0;
 			return 0;
@@ -866,7 +866,7 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
 					      .usable_node_mask =
 					      usable_node_mask };
 
-	if ((job_ptr->details->whole_node == WHOLE_NODE_USER) ||
+	if ((job_ptr->details->whole_node & WHOLE_NODE_USER) ||
 	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
 		/* Need to remove all nodes allocated to any active job from
 		 * any other user */
@@ -2320,7 +2320,7 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	xassert(select_bitmap);
 
 	if (!job_ptr->details ||
-	    !(job_ptr->details->whole_node == WHOLE_NODE_REQUIRED))
+	    !(job_ptr->details->whole_node & WHOLE_NODE_REQUIRED))
 		return NULL;
 
 	if (job_ptr->gres_list_req)

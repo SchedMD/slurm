@@ -2411,7 +2411,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	job_ptr->node_cnt = bit_set_count(node_bitmap);
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		if ((job_ptr->details &&
-		     (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
+		     (job_ptr->details->whole_node & WHOLE_NODE_USER)) ||
 		    (job_ptr->part_ptr &&
 		     (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))) {
 			node_ptr->owner_job_cnt++;

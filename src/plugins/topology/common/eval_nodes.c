@@ -1742,7 +1742,7 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
 	/* Use all resources on node */
-	if (details_ptr->whole_node == WHOLE_NODE_REQUIRED)
+	if (details_ptr->whole_node & WHOLE_NODE_REQUIRED)
 		goto check_gres_per_job;
 
 	resv_cpus = MAX((rem_nodes - 1), 0);

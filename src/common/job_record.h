@@ -56,7 +56,9 @@ extern time_t last_job_update;	/* time of last update to job records */
  */
 #define WHOLE_NODE_REQUIRED	0x01
 #define WHOLE_NODE_USER		0x02
-#define WHOLE_NODE_MCS		0x03
+#define WHOLE_NODE_MCS		0x04
+
+#define OLD_WHOLE_NODE_MCS	0x03
 
 /* job_details - specification of a job's constraints */
 typedef struct {

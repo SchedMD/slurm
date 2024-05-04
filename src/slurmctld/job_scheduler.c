@@ -4195,7 +4195,7 @@ next_part:
 				save_share_res  = job_ptr->details->share_res;
 				save_whole_node = job_ptr->details->whole_node;
 				job_ptr->details->share_res = 0;
-				job_ptr->details->whole_node =
+				job_ptr->details->whole_node |=
 					WHOLE_NODE_REQUIRED;
 				test_fini = 0;
 			}

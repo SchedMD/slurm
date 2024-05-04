@@ -547,7 +547,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			s_p_n,
 			job_ptr->details->ntasks_per_node,
 			job_ptr->details->cpus_per_task,
-			(job_ptr->details->whole_node == WHOLE_NODE_REQUIRED),
+			(job_ptr->details->whole_node & WHOLE_NODE_REQUIRED),
 			&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
 			log_flag(SELECT_TYPE, "Test fail on node %d: gres_select_filter_remove_unusable",
@@ -575,7 +575,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			/* memory is per-CPU */
 			if (!(job_ptr->bit_flags & BF_WHOLE_NODE_TEST) &&
 			    ((req_mem * cpus) > avail_mem) &&
-			    (job_ptr->details->whole_node ==
+			    (job_ptr->details->whole_node &
 			     WHOLE_NODE_REQUIRED)) {
 				cpus = 0;
 			} else if (!(cr_type & CR_CPU) &&
@@ -983,7 +983,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		}
 
 		/* Exclude nodes with reserved cores */
-		if ((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
+		if ((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		    resv_exc_ptr->exc_cores) {
 			if (resv_exc_ptr->exc_cores[i] &&
 			    (bit_ffs(resv_exc_ptr->exc_cores[i]) != -1)) {
@@ -998,7 +998,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 
-		if ((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
+		if ((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		    gres_node_state_list_has_alloc_gres(gres_list)) {
 			debug3("node %s has GRES in use (whole node requested)",
 			       node_ptr->name);
@@ -1361,7 +1361,7 @@ try_next_nodes_cnt:
 			}
 		}
 	}
-	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)
+	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
@@ -1445,7 +1445,7 @@ try_next_nodes_cnt:
 		}
 	}
 
-	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)
+	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
 	/* make these changes permanent */
@@ -1493,7 +1493,7 @@ try_next_nodes_cnt:
 		}
 	}
 
-	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)
+	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
 	free_cores_tmp  = copy_core_array(free_cores);
@@ -1522,7 +1522,7 @@ try_next_nodes_cnt:
 				core_array_and_not(free_cores_tmp,
 						   p_ptr->row[i].row_bitmap);
 			}
-			if (job_ptr->details->whole_node ==
+			if (job_ptr->details->whole_node &
 			    WHOLE_NODE_REQUIRED) {
 				_block_whole_nodes(node_bitmap_tmp, avail_cores,
 						   free_cores_tmp);
@@ -1605,7 +1605,7 @@ try_next_nodes_cnt:
 		free_cores = copy_core_array(avail_cores);
 		core_array_and_not(free_cores, jp_ptr->row[i].row_bitmap);
 		bit_copybits(node_bitmap, orig_node_map);
-		if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)
+		if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)
 			_block_whole_nodes(node_bitmap, avail_cores,free_cores);
 		avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 						req_nodes, node_bitmap,
@@ -1902,7 +1902,7 @@ alloc_job:
 
 	/* translate job_res->cpus array into format with repitition count */
 	build_cnt = build_job_resources_cpu_array(job_res);
-	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) {
+	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) {
 		job_ptr->total_cpus = 0;
 		for (i = 0;
 		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
@@ -3260,11 +3260,11 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (!(slurm_conf.conf_flags & CONF_FLAG_ASRU))
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
-	    (job_ptr->details->whole_node != WHOLE_NODE_REQUIRED)) {
+	    !(job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
 		info("Setting Exclusive mode for %pJ with CoreSpec=%u",
 		     job_ptr,
 		     job_ptr->details->core_spec);
-		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
+		job_ptr->details->whole_node |= WHOLE_NODE_REQUIRED;
 	}
 
 	if (!job_ptr->details->mc_ptr)

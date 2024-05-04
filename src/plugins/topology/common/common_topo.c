@@ -337,7 +337,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		 * Make sure we don't say we can use a node exclusively
 		 * that is bigger than our whole-job maximum CPU count.
 		 */
-		if (((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
+		if (((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus <
 		      avail_res_array[i]->avail_cpus)) ||

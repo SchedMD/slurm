@@ -325,7 +325,7 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 
 	if (label == NULL) {
 		if ((slurm_mcs_get_enforced() == 0) && job_ptr->details &&
-		    (job_ptr->details->whole_node != WHOLE_NODE_MCS))
+		    !(job_ptr->details->whole_node & WHOLE_NODE_MCS))
 			return SLURM_SUCCESS;
 
 		rc = _get_user_groups(job_ptr->user_id,job_ptr->group_id,

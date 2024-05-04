@@ -4444,7 +4444,7 @@ extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 	}
 
 	if ((job_ptr->details &&
-	     (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
+	     (job_ptr->details->whole_node & WHOLE_NODE_USER)) ||
 	    (job_ptr->part_ptr &&
 	     (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))) {
 		node_ptr->owner_job_cnt++;
@@ -4758,7 +4758,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 fini:
 	if (job_ptr &&
 	    ((job_ptr->details &&
-	      (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
+	      (job_ptr->details->whole_node & WHOLE_NODE_USER)) ||
 	     (job_ptr->part_ptr &&
 	      (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)))) {
 		if (node_ptr->owner_job_cnt == 0) {

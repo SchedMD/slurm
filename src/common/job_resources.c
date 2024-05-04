@@ -582,7 +582,11 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		pack32(job_resrcs_ptr->ncpus, buffer);
 		pack32(job_resrcs_ptr->node_req, buffer);
 		packstr(job_resrcs_ptr->nodes, buffer);
-		pack8(job_resrcs_ptr->whole_node, buffer);
+		if (job_resrcs_ptr->whole_node & WHOLE_NODE_MCS) {
+			uint8_t tmp8 = OLD_WHOLE_NODE_MCS;
+			pack8(tmp8, buffer);
+		} else
+			pack8(job_resrcs_ptr->whole_node, buffer);
 		pack16(job_resrcs_ptr->threads_per_core, buffer);
 		pack16(job_resrcs_ptr->cr_type, buffer);
 
@@ -728,6 +732,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		unpack_bit_str_hex(&job_resrcs->node_bitmap, buffer);
 
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint8_t tmp8;
 		safe_unpack32(&empty, buffer);
 		if (empty == NO_VAL) {
 			*job_resrcs_pptr = NULL;
@@ -739,7 +744,11 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		safe_unpack32(&job_resrcs->ncpus, buffer);
 		safe_unpack32(&job_resrcs->node_req, buffer);
 		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
-		safe_unpack8(&job_resrcs->whole_node, buffer);
+		safe_unpack8(&tmp8, buffer);
+		if (tmp8 == OLD_WHOLE_NODE_MCS)
+			job_resrcs->whole_node = WHOLE_NODE_MCS;
+		else
+			job_resrcs->whole_node = tmp8;
 		safe_unpack16(&job_resrcs->threads_per_core, buffer);
 		safe_unpack16(&job_resrcs->cr_type, buffer);
 
@@ -1567,7 +1576,7 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 		for (int core = 0; core < node_ptr->tot_cores; core++) {
 			if (!bit_test(full_bitmap, full_bit_inx + core))
 				continue;
-			if ((job_resrcs_ptr->whole_node ==
+			if ((job_resrcs_ptr->whole_node &
 			     WHOLE_NODE_REQUIRED) ||
 				bit_test(job_resrcs_ptr->core_bitmap,
 					job_bit_inx + core)) {
@@ -1605,7 +1614,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 		int full_bit_inx = cr_node_cores_offset[full_node_inx];
 
 		for (int core = 0; core < node_ptr->tot_cores; core++) {
-			if ((job_resrcs_ptr->whole_node !=
+			if (!(job_resrcs_ptr->whole_node &
 			     WHOLE_NODE_REQUIRED) &&
 			    !bit_test(job_resrcs_ptr->core_bitmap,
 				      job_bit_inx + core))

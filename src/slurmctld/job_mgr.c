@@ -3598,7 +3598,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->script_hash = xstrdup(job_details->script_hash);
 
 	if (job_ptr->gres_list_req) {
-		if (details_new->whole_node == WHOLE_NODE_REQUIRED) {
+		if (details_new->whole_node & WHOLE_NODE_REQUIRED) {
 			/*
 			 * We need to reset the gres_list to what was requested
 			 * instead of what was given exclusively.
@@ -9255,7 +9255,7 @@ extern int job_update_tres_cnt(job_record_t *job_ptr, int node_inx)
 
 	xassert(job_ptr);
 
-	if (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) {
+	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) {
 		/*
 		 * Since we are allocating whole nodes don't rely on
 		 * the job_resrcs since it could be less because the
@@ -13183,7 +13183,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			sched_info("%s: setting core_spec to %u for %pJ",
 				   __func__, detail_ptr->core_spec, job_ptr);
 			if (detail_ptr->core_spec != NO_VAL16)
-				detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
+				detail_ptr->whole_node |= WHOLE_NODE_REQUIRED;
 		} else {
 			sched_error("%s Attempt to modify core_spec for %pJ",
 				    __func__, job_ptr);
@@ -15627,7 +15627,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
 		job_ptr->details->accrue_time = 0;
 
-		if ((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
+		if ((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		    job_ptr->gres_list_req) {
 			/*
 			 * We need to reset the gres_list to what was requested
@@ -17649,11 +17649,11 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->script_buf        = get_job_script(job_ptr);
 	if (details->share_res == 1)
 		job_desc->shared     = JOB_SHARED_OK;
-	else if (details->whole_node == WHOLE_NODE_REQUIRED)
+	else if (details->whole_node & WHOLE_NODE_REQUIRED)
 		job_desc->shared     =  JOB_SHARED_NONE;
-	else if (details->whole_node == WHOLE_NODE_USER)
+	else if (details->whole_node & WHOLE_NODE_USER)
 		job_desc->shared     =  JOB_SHARED_USER;
-	else if (details->whole_node == WHOLE_NODE_MCS)
+	else if (details->whole_node & WHOLE_NODE_MCS)
 		job_desc->shared     =  JOB_SHARED_MCS;
 	else
 		job_desc->shared     = NO_VAL16;

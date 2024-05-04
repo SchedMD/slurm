@@ -6226,11 +6226,11 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 	else if (detail_ptr->share_res == 1)	/* User --share */
 		shared = JOB_SHARED_OK;
 	else if ((detail_ptr->share_res == 0) ||
-		 (detail_ptr->whole_node == WHOLE_NODE_REQUIRED))
+		 (detail_ptr->whole_node & WHOLE_NODE_REQUIRED))
 		shared = JOB_SHARED_NONE;	/* User --exclusive */
-	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
+	else if (detail_ptr->whole_node & WHOLE_NODE_USER)
 		shared = JOB_SHARED_USER;	/* User --exclusive=user */
-	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
+	else if (detail_ptr->whole_node & WHOLE_NODE_MCS)
 		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */

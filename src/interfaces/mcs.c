@@ -221,7 +221,7 @@ extern int slurm_mcs_get_select(job_record_t *job_ptr)
 	if ((select_value == MCS_SELECT_SELECT) ||
 	    ((select_value == MCS_SELECT_ONDEMANDSELECT) &&
 	    job_ptr->details &&
-	    (job_ptr->details->whole_node == WHOLE_NODE_MCS)))
+	    (job_ptr->details->whole_node & WHOLE_NODE_MCS)))
 		return 1;
 	else
 		return 0;
