@@ -1863,7 +1863,13 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		schedule_job_save();		/* Has own locking */
 	}
 
-	/* NOTE: RPC has no response */
+	/*
+	 * Pre-24.05 no response was expected by the sender, and an error
+	 * would be printed if we attempted to send one here.
+	 * Simplify this once 23.11 is no longer supported.
+	 */
+	if (msg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION)
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or

@@ -5176,6 +5176,7 @@ static int _epilog_complete(uint32_t jobid, int rc)
 {
 	slurm_msg_t msg;
 	epilog_complete_msg_t req;
+	int ctld_rc;
 
 	slurm_msg_t_init(&msg);
 	memset(&req, 0, sizeof(req));
@@ -5188,10 +5189,12 @@ static int _epilog_complete(uint32_t jobid, int rc)
 	msg.data = &req;
 
 	/*
-	 * Note: No return code from message, slurmctld will resend
-	 * TERMINATE_JOB request if message send fails.
+	 * Note: Return code is only used within the communication layer
+	 * to back off the send. No other return code should be seen here.
+	 * slurmctld will resend TERMINATE_JOB request if message send fails.
 	 */
-	if (slurm_send_only_controller_msg(&msg, working_cluster_rec) < 0) {
+	if (slurm_send_recv_controller_rc_msg(&msg, &ctld_rc,
+					      working_cluster_rec) < 0) {
 		error("Unable to send epilog complete message: %m");
 		return SLURM_ERROR;
 	}
