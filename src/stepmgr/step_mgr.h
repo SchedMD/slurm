@@ -37,6 +37,7 @@
 #ifndef _SLURM_STEP_MGR_H
 #define _SLURM_STEP_MGR_H
 
+#include "src/common/front_end.h"
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_step_layout.h"
@@ -53,6 +54,8 @@ typedef struct {
 	job_record_t *(*find_job_array_rec)(uint32_t array_job_id,
 					    uint32_t array_task_id);
 	void (*agent_queue_request)(agent_arg_t *agent_arg_ptr);
+
+	front_end_record_t *(*find_front_end_record)(char *name);
 } step_mgr_ops_t;
 
 extern step_mgr_ops_t *step_mgr_ops;

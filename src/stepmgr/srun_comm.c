@@ -321,6 +321,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 
 }
 
+#ifndef HAVE_FRONT_END
 /*
  * _find_first_node_record - find a record for first node in the bitmap
  * IN node_bitmap
@@ -340,6 +341,7 @@ static node_record_t *_find_first_node_record(bitstr_t *node_bitmap)
 	else
 		return node_record_table_ptr[inx];
 }
+#endif
 
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
@@ -377,11 +379,11 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		if (job_ptr->batch_host == NULL)
 			return ESLURM_DISABLED;	/* no allocated nodes */
 
-		srun_agent_launch(NULL, job_ptr->batch_host, REQUEST_JOB_NOTIFY,
-				  notify_msg_ptr, SLURM_AUTH_UID_ANY,
-				  (job_ptr->front_end_ptr ?
-				   job_ptr->front_end_ptr->protocol_version :
-				   0));
+		_srun_agent_launch(NULL, job_ptr->batch_host, REQUEST_JOB_NOTIFY,
+				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
+				   (job_ptr->front_end_ptr ?
+				    job_ptr->front_end_ptr->protocol_version :
+				    0));
 
 #else
 		node_record_t *node_ptr;
