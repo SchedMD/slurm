@@ -6576,6 +6576,12 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
 		.func = _slurm_rpc_epilog_complete,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
 		.func = _slurm_rpc_job_step_kill,
