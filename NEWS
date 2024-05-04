@@ -188,6 +188,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd,sackd,scrun - Improve logic around handling kernel provided
     buffer size of incoming data in files/sockets/pipes to avoid crashes.
  -- Add --segment to job allocation to be used in topology/block.
+ -- Add --exclusive=topo for use with topology/block.
 
 * Changes in Slurm 23.11.7
 ==========================

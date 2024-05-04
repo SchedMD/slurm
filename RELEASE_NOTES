@@ -81,6 +81,7 @@ COMMAND CHANGES (see man pages for details)
     longer show it for non-batch jobs. However, the expansion patterns will
     no longer be substituted by default.
  -- Add --segment to job allocation to be used in topology/block.
+ -- Add --exclusive=topo for use with topology/block.
 
 API CHANGES
 ===========
