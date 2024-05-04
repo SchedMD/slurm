@@ -401,6 +401,10 @@ typedef struct {
 typedef struct {
 	uint16_t id;
 	uint32_t count;
+	uint16_t queued;
+	uint64_t dropped;
+	uint16_t cycle_last;
+	uint16_t cycle_max;
 	uint64_t time;
 	uint64_t average_time;
 } STATS_MSG_RPC_TYPE_t;
@@ -3290,6 +3294,13 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 			.time = stats->rpc_type_time[i],
 			.average_time = NO_VAL64,
 		};
+
+		if (stats->rpc_queue_enabled) {
+			rpc.queued = stats->rpc_type_queued[i];
+			rpc.dropped = stats->rpc_type_dropped[i];
+			rpc.cycle_last = stats->rpc_type_cycle_last[i];
+			rpc.cycle_max = stats->rpc_type_cycle_max[i];
+		}
 
 		if ((stats->rpc_type_time[i] > 0) &&
 		    (stats->rpc_type_cnt[i] > 0))
@@ -7255,6 +7266,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_BF_QUEUE_LEN_MEAN, "bf_table_size_mean", NULL),
 	add_parse(TIMESTAMP_NO_VAL, bf_when_last_cycle, "bf_when_last_cycle", NULL),
 	add_cparse(STATS_MSG_BF_ACTIVE, "bf_active", NULL),
+	add_skip(rpc_queue_enabled),
 	add_skip(rpc_type_size),
 	add_cparse(STATS_MSG_RPCS_BY_TYPE, "rpcs_by_message_type", NULL),
 	add_skip(rpc_type_id), /* handled by STATS_MSG_RPCS_BY_TYPE */
@@ -9037,6 +9049,10 @@ static const parser_t PARSER_ARRAY(STATS_MSG_RPC_TYPE)[] = {
 	add_parse_req_overload(UINT16, id, 1, "type_id", "Message type as integer"),
 	add_parse_req_overload(RPC_ID, id, 1, "message_type", "Message type as string"),
 	add_parse_req(UINT32, count, "count", "Number of RPCs received"),
+	add_parse_req(UINT16, queued, "queued", "Number of RPCs queued"),
+	add_parse_req(UINT64, dropped, "dropped", "Number of RPCs dropped"),
+	add_parse_req(UINT16, cycle_last, "cycle_last", "Number of RPCs processed within the last RPC queue cycle"),
+	add_parse_req(UINT16, cycle_max, "cycle_max", "Maximum number of RPCs processed within a RPC queue cycle since start"),
 	add_parse_req(UINT64, time, "total_time", "Total time spent processing RPC in seconds"),
 	add_parse_req(UINT64_NO_VAL, average_time, "average_time", "Average time spent processing RPC in seconds"),
 };
