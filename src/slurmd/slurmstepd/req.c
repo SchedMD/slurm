@@ -575,7 +575,7 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -649,7 +649,7 @@ static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -712,7 +712,7 @@ static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -770,7 +770,7 @@ static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -831,7 +831,7 @@ static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -889,7 +889,7 @@ static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -949,7 +949,7 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -1018,7 +1018,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
