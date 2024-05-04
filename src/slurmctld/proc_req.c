@@ -180,6 +180,24 @@ extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 	slurm_mutex_unlock(&rpc_mutex);
 }
 
+extern void record_rpc_queue_stats(slurmctld_rpc_t *q)
+{
+	slurm_mutex_lock(&rpc_mutex);
+	for (int i = 0; i < RPC_TYPE_SIZE; i++) {
+		if (!rpc_type_id[i])
+			rpc_type_id[i] = q->msg_type;
+		else if (rpc_type_id[i] != q->msg_type)
+			continue;
+
+		rpc_type_queued[i] = q->queued;
+		rpc_type_dropped[i] = q->dropped;
+		rpc_type_cycle_last[i] = q->cycle_last;
+		rpc_type_cycle_max[i] = q->cycle_max;
+		break;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
+}
+
 /* These functions prevent certain RPCs from keeping the slurmctld write locks
  * constantly set, which can prevent other RPCs and system functions from being
  * processed. For example, a steady stream of batch submissions can prevent

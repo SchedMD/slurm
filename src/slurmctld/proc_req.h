@@ -84,6 +84,11 @@ void slurmctld_req(slurm_msg_t *msg);
  */
 extern void record_rpc_stats(slurm_msg_t *msg, long delta);
 
+/*
+ * Update slurmctld stats structure related to a particular rpc_queue
+ */
+extern void record_rpc_queue_stats(slurmctld_rpc_t *q);
+
 /* Copy an array of type char **, xmalloc() the array and xstrdup() the
  * strings in the array */
 extern char **xduparray(uint32_t size, char ** array);
