@@ -42,6 +42,6 @@ extern void rpc_queue_shutdown(void);
 
 extern bool rpc_queue_enabled(void);
 
-extern bool rpc_enqueue(slurm_msg_t *msg);
+extern int rpc_enqueue(slurm_msg_t *msg);
 
 #endif

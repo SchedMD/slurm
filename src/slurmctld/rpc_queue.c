@@ -213,10 +213,10 @@ extern bool rpc_queue_enabled(void)
 	return enabled;
 }
 
-extern bool rpc_enqueue(slurm_msg_t *msg)
+extern int rpc_enqueue(slurm_msg_t *msg)
 {
 	if (!enabled)
-		return false;
+		return ESLURM_NOT_SUPPORTED;
 
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
 		if (q->msg_type == msg->msg_type) {
@@ -227,10 +227,10 @@ extern bool rpc_enqueue(slurm_msg_t *msg)
 			slurm_mutex_lock(&q->mutex);
 			slurm_cond_signal(&q->cond);
 			slurm_mutex_unlock(&q->mutex);
-			return true;
+			return SLURM_SUCCESS;
 		}
 	}
 
 	/* RPC does not have a dedicated queue */
-	return false;
+	return ESLURM_NOT_SUPPORTED;
 }

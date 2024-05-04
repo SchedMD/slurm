@@ -1453,13 +1453,19 @@ static void *_service_connection(void *arg)
 	if (rate_limit_exceeded(msg)) {
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 	} else {
-		if (rpc_enqueue(msg)) {
+		int rc = rpc_enqueue(msg);
+
+		if (rc == SLURM_SUCCESS) {
 			server_thread_decr();
 			return NULL;
+		} else if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
+			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
+		} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
+			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
+		} else {
+			/* directly process the request */
+			slurmctld_req(msg);
 		}
-
-		/* process the request */
-		slurmctld_req(msg);
 	}
 
 	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
