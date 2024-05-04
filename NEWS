@@ -189,6 +189,7 @@ documents those changes that are of interest to users and administrators.
     buffer size of incoming data in files/sockets/pipes to avoid crashes.
  -- Add --segment to job allocation to be used in topology/block.
  -- Add --exclusive=topo for use with topology/block.
+ -- Add ExclusiveTopo to a partition definition in slurm.conf.
 
 * Changes in Slurm 23.11.7
 ==========================

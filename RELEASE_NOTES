@@ -67,6 +67,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     filename patterns as best as possible.
  -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
     filename patterns as best as possible.
+ -- Add ExclusiveTopo to a partition definition in slurm.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
