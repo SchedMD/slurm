@@ -5716,7 +5716,8 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 	 * reside on this cluster but doesn't own it (e.g. pending jobs), then
 	 * route the request back to the origin to handle it.
 	 */
-	lock_slurmctld(fed_job_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(fed_job_read_lock);
 	if (fed_mgr_fed_rec) {
 		uint32_t job_id, origin_id;
 		job_record_t *job_ptr;
@@ -5750,19 +5751,22 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 				     __func__, kill->sjob_id, msg->auth_uid,
 				     dst->name);
 			}
-
-			unlock_slurmctld(fed_job_read_lock);
+			if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+				unlock_slurmctld(fed_job_read_lock);
 			return;
 		}
 	}
-	unlock_slurmctld(fed_job_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(fed_job_read_lock);
 
 	START_TIMER;
 	info("%s: REQUEST_KILL_JOB JobId=%s uid %u",
 	     __func__, kill->sjob_id, msg->auth_uid);
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(lock);
+	}
 	if (kill->sibling) {
 		uint32_t job_id = strtol(kill->sjob_id, NULL, 10);
 		cc = fed_mgr_remove_active_sibling(job_id, kill->sibling);
@@ -5770,8 +5774,10 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		cc = job_str_signal(kill->sjob_id, kill->signal, kill->flags,
 				    msg->auth_uid, 0);
 	}
-	unlock_slurmctld(lock);
-	_throttle_fini(&active_rpc_cnt);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		unlock_slurmctld(lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 
 	if (cc == ESLURM_ALREADY_DONE) {
 		debug2("%s: job_str_signal() uid=%u JobId=%s sig=%d returned: %s",
@@ -6803,6 +6809,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_KILL_JOB,
 		.func = _slurm_rpc_kill_job,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_KILL_JOBS,
 		.func = _slurm_rpc_kill_jobs,
