@@ -65,6 +65,10 @@ typedef struct {
 	uint32_t count;
 	uint64_t time;
 	uint64_t average_time;
+	uint16_t queued;
+	uint64_t dropped;
+	uint16_t cycle_last;
+	uint16_t cycle_max;
 } rpc_stat_t;
 
 rpc_stat_t *types = NULL, *users = NULL;
@@ -135,6 +139,7 @@ static int _print_stats(void)
 	printf("*******************************************************\n");
 
 	printf("Server thread count:  %d\n", buf->server_thread_count);
+	printf("RPC queue enabled:    %d\n", buf->rpc_queue_enabled);
 	printf("Agent queue size:     %d\n", buf->agent_queue_size);
 	printf("Agent count:          %d\n", buf->agent_count);
 	printf("Agent thread count:   %d\n", buf->agent_thread_count);
@@ -231,9 +236,18 @@ static int _print_stats(void)
 
 	printf("\nRemote Procedure Call statistics by message type\n");
 	for (i = 0; i < buf->rpc_type_size; i++) {
-		printf("\t%-40s(%5u) count:%-6u ave_time:%-6"PRIu64" total_time:%"PRIu64"\n",
-		       rpc_num2string(types[i].id), types[i].id, types[i].count,
-		       types[i].average_time, types[i].time);
+		if (!buf->rpc_queue_enabled)
+			printf("\t%-40s(%5u) count:%-6u ave_time:%-6"PRIu64" total_time:%"PRIu64"\n",
+			       rpc_num2string(types[i].id), types[i].id,
+			       types[i].count, types[i].average_time,
+			       types[i].time);
+		else
+			printf("\t%-40s(%5u) count:%-6u ave_time:%-6"PRIu64" total_time:%-12"PRIu64" queued:%-6u cycle_last:%-6u cycle_max:%-6u dropped:%"PRIu64"\n",
+			       rpc_num2string(types[i].id), types[i].id,
+			       types[i].count, types[i].average_time,
+			       types[i].time, types[i].queued,
+			       types[i].cycle_last, types[i].cycle_max,
+			       types[i].dropped);
 	}
 
 	printf("\nRemote Procedure Call statistics by user\n");
@@ -331,6 +345,10 @@ static void _sort_rpc(void)
 		if (buf->rpc_type_cnt[i])
 			types[i].average_time = buf->rpc_type_time[i] /
 						buf->rpc_type_cnt[i];
+		types[i].queued = buf->rpc_type_queued[i];
+		types[i].dropped = buf->rpc_type_dropped[i];
+		types[i].cycle_last = buf->rpc_type_cycle_last[i];
+		types[i].cycle_max = buf->rpc_type_cycle_max[i];
 	}
 
 	users = xcalloc(buf->rpc_user_size, sizeof(rpc_stat_t));
