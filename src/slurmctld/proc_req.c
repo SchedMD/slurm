@@ -6611,6 +6611,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_epilog_complete,
 		.queue_enabled = true,
 		.locks = {
@@ -6633,6 +6634,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_complete_batch_script,
 		.queue_enabled = true,
 		.locks = {
@@ -6710,6 +6712,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_shutdown_controller,
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_JOB,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_submit_batch_job,
 		.queue_enabled = true,
 		.locks = {
@@ -6784,6 +6787,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_step_by_container_id,
 	},{
 		.msg_type = REQUEST_STEP_COMPLETE,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_step_complete,
 		.queue_enabled = true,
 		.locks = {
@@ -6856,6 +6860,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_dump_licenses,
 	},{
 		.msg_type = REQUEST_KILL_JOB,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_kill_job,
 		.queue_enabled = true,
 		.locks = {
