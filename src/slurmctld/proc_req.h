@@ -63,6 +63,12 @@ typedef struct {
 	pthread_mutex_t mutex;
 
 	List work;
+
+	/* Queue processing statistics */
+	uint16_t queued;
+	uint64_t dropped;
+	uint16_t cycle_last;
+	uint16_t cycle_max;
 } slurmctld_rpc_t;
 
 extern slurmctld_rpc_t slurmctld_rpcs[];
