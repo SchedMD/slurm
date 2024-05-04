@@ -12850,6 +12850,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_suspend_exc_update_msg(
 			(suspend_exc_update_msg_t *) msg->data, buffer,
 			msg->protocol_version);
+		break;
 	case REQUEST_DBD_RELAY:
 		_pack_dbd_relay(msg, buffer);
 		break;
