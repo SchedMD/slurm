@@ -292,7 +292,7 @@ static int _sort_id(const void *p1, const void *p2)
 
 	if (s1->id > s2->id)
 		return 1;
-	else if (s2->id < s2->id)
+	else if (s1->id < s2->id)
 		return -1;
 	return 0;
 }
@@ -304,7 +304,7 @@ static int _sort_time(const void *p1, const void *p2)
 
 	if (s1->time < s2->time)
 		return 1;
-	else if (s2->time > s2->time)
+	else if (s1->time > s2->time)
 		return -1;
 	return 0;
 }
@@ -316,7 +316,7 @@ static int _sort_average_time(const void *p1, const void *p2)
 
 	if (s1->average_time < s2->average_time)
 		return 1;
-	else if (s2->average_time > s2->average_time)
+	else if (s1->average_time > s2->average_time)
 		return -1;
 	return 0;
 }
@@ -328,7 +328,7 @@ static int _sort_count(const void *p1, const void *p2)
 
 	if (s1->count < s2->count)
 		return 1;
-	else if (s2->count > s2->count)
+	else if (s1->count > s2->count)
 		return -1;
 	return 0;
 }
