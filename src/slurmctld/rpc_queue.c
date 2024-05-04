@@ -88,6 +88,15 @@ static void *_rpc_queue_worker(void *arg)
 			if (processed && q->post_func)
 				q->post_func();
 
+			if (processed) {
+				slurm_mutex_lock(&q->mutex);
+				q->cycle_last = processed;
+				if (processed > q->cycle_max)
+					q->cycle_max = processed;
+				record_rpc_queue_stats(q);
+				slurm_mutex_unlock(&q->mutex);
+			}
+
 			log_flag(PROTOCOL, "%s(%s): sleeping after processing %d",
 				 __func__, q->msg_name, processed);
 			processed = 0;
