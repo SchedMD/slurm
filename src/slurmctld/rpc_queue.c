@@ -58,7 +58,6 @@ bool enabled = true;
 static void *_rpc_queue_worker(void *arg)
 {
 	slurmctld_rpc_t *q = (slurmctld_rpc_t *) arg;
-	slurm_msg_t *msg;
 	int processed = 0;
 
 #if HAVE_SYS_PRCTL_H
@@ -80,6 +79,8 @@ static void *_rpc_queue_worker(void *arg)
 	 * acquisition, then fall back to sleep until additional work is queued.
 	 */
 	while (true) {
+		slurm_msg_t *msg = NULL;
+
 		msg = list_dequeue(q->work);
 
 		if (!msg) {
