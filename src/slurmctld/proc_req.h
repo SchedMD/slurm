@@ -56,7 +56,15 @@ typedef struct {
 
 	bool skip_stale; /* skip processing if connection is stale */
 	bool queue_enabled;
+	bool hard_drop; /* discard traffic if max_queued exceeded */
 	bool shutdown;
+
+	int yield_sleep; /* usec sleep between cycles when busy */
+	int interval; /* usec sleep after cycle if no longer busy */
+
+	uint16_t max_queued;
+	uint16_t max_per_cycle;
+	uint32_t max_usec_per_cycle;
 
 	pthread_t thread;
 	pthread_cond_t cond;
