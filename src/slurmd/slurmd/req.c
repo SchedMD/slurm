@@ -316,11 +316,16 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		goto error;
 	}
 
-	if ((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	    SLURM_ERROR) {
-		stepd_relay_msg(fd, msg, protocol_version);
+	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
+	     SLURM_ERROR) &&
+	    !stepd_relay_msg(fd, msg, protocol_version)) {
+		/* stepd will reply back directly. */
 		close(fd);
 		return;
+	} else {
+		rc = SLURM_ERROR;
+		error("failed to return step rpc:%s job:%ps uid:%u",
+		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
 	if (fd != SLURM_ERROR)
 		close(fd);
