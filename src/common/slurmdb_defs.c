@@ -1864,8 +1864,10 @@ extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flags_in)
 	while (token) {
 		slurmdb_acct_flags_t f = _str_2_acct_flag(token);
 
-		if (f == SLURMDB_ACCT_FLAG_INVALID)
-			return SLURMDB_ACCT_FLAG_INVALID;
+		if (f == SLURMDB_ACCT_FLAG_INVALID) {
+			acct_flags = SLURMDB_ACCT_FLAG_INVALID;
+			break;
+		}
 
 		acct_flags |= f;
 		token = strtok_r(NULL, ",", &last);
@@ -1933,9 +1935,10 @@ extern slurmdb_assoc_flags_t str_2_slurmdb_assoc_flags(char *flags_in)
 	while (token) {
 		slurmdb_assoc_flags_t f = _str_2_assoc_flag(token);
 
-		if (f == ASSOC_FLAG_INVALID)
-			return ASSOC_FLAG_INVALID;
-
+		if (f == ASSOC_FLAG_INVALID) {
+			assoc_flags = ASSOC_FLAG_INVALID;
+			break;
+		}
 		assoc_flags |= f;
 		token = strtok_r(NULL, ",", &last);
 	}
