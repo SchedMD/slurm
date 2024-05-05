@@ -196,7 +196,7 @@ static int _find_acct_by_name(void *x, void *y)
 	return 0;
 }
 
-static int _find_nondirect_acct_by_name(void *x, void *y)
+extern int assoc_mgr_find_nondirect_coord_by_name(void *x, void *y)
 {
 	slurmdb_coord_rec_t *acct = x;
 
@@ -2274,7 +2274,8 @@ static int _delete_nondirect_coord_children(void *x, void *arg)
 	slurmdb_user_rec_t *user = arg;
 
 	(void) list_delete_first(user->coord_accts,
-				 _find_nondirect_acct_by_name, assoc->acct);
+				 assoc_mgr_find_nondirect_coord_by_name,
+				 assoc->acct);
 	if (assoc->usage->children_list)
 		(void) list_for_each(assoc->usage->children_list,
 				     _delete_nondirect_coord_children, user);

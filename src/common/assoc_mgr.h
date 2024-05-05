@@ -138,6 +138,8 @@ extern bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype,
 extern bool verify_assoc_unlock(assoc_mgr_lock_datatype_t datatype);
 #endif
 
+extern int assoc_mgr_find_nondirect_coord_by_name(void *x, void *y);
+
 /* ran after a new tres_list is given */
 extern int assoc_mgr_post_tres_list(List new_list);
 
