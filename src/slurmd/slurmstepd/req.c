@@ -546,7 +546,7 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 
 rwfail:
 	slurm_free_msg_members(&msg);
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
+	slurm_send_rc_msg(&msg, rc);
 	return SLURM_ERROR;
 }
 
