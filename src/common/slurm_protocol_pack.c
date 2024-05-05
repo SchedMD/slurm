@@ -3134,11 +3134,11 @@ extern int slurm_unpack_step_mgr_job_info(void **out,
 					  buf_t *buffer)
 {
 	step_mgr_job_info_t *object = xmalloc(sizeof(*object));
+	*out = object;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&object->job_id, buffer);
 		safe_unpackstr(&object->step_mgr, buffer);
-		*out =  object;
 	}
 
 	return SLURM_SUCCESS;
