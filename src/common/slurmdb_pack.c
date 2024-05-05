@@ -1257,7 +1257,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 
 			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
+			pack32(0, buffer);
 
 			pack32(NO_VAL, buffer);
 
@@ -1305,7 +1305,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->comment, buffer);
 
 		pack32(object->def_qos_id, buffer);
-		pack16(object->flags, buffer);
+		pack32(object->flags, buffer);
 
 		/* this used to be named fairshare to not have to redo
 		   the order of things just to be in alpha order we
@@ -1345,6 +1345,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->user, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1400,7 +1401,8 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->comment, buffer);
 
 		pack32(object->def_qos_id, buffer);
-		pack16(object->flags, buffer);
+		tmp_uint16 = object->flags;
+		pack16(tmp_uint16, buffer);
 
 		/* this used to be named fairshare to not have to redo
 		   the order of things just to be in alpha order we
@@ -1440,6 +1442,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->user, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1496,7 +1499,8 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->comment, buffer);
 
 		pack32(object->def_qos_id, buffer);
-		pack16(object->flags, buffer);
+		tmp_uint16 = object->flags;
+		pack16(tmp_uint16, buffer);
 
 		/* this used to be named fairshare to not have to redo
 		   the order of things just to be in alpha order we
@@ -1578,7 +1582,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr(&object_ptr->comment, buffer);
 
 		safe_unpack32(&object_ptr->def_qos_id, buffer);
-		safe_unpack16(&object_ptr->flags, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
@@ -1635,6 +1639,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
@@ -1658,7 +1663,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr(&object_ptr->comment, buffer);
 
 		safe_unpack32(&object_ptr->def_qos_id, buffer);
-		safe_unpack16(&object_ptr->flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		object_ptr->flags = uint16_tmp;
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
@@ -1715,6 +1721,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
@@ -1738,7 +1745,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr(&object_ptr->comment, buffer);
 
 		safe_unpack32(&object_ptr->def_qos_id, buffer);
-		safe_unpack16(&object_ptr->flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		object_ptr->flags = uint16_tmp;
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
