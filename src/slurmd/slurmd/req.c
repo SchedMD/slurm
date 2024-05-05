@@ -295,7 +295,7 @@ static int _step_mgr_connect(slurm_step_id_t *step_id,
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	int fd;
+	int fd, rc;
 	uid_t job_uid;
 	uint16_t protocol_version;
 	slurm_step_id_t step_id = {.step_het_comp = NO_VAL};
@@ -305,8 +305,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 
 	job_uid = _get_job_uid(step_id.job_id);
 	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u",
-		      step_id.job_id, msg->auth_uid);
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
 		goto error;
 	}
 
@@ -333,7 +335,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	error("failed to return step rpc:%s job:%ps uid:%u",
 	      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 error:
-	slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+	slurm_send_rc_msg(msg, rc);
 }
 
 static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
@@ -346,6 +348,13 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 
 	step_id = request->step_id;
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_uid != msg->auth_uid) &&
@@ -385,6 +394,13 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 
 	step_id = request->step_id;
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -426,6 +442,13 @@ static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 	step_id.step_het_comp = NO_VAL;
 
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -463,6 +486,13 @@ static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
 	uint16_t protocol_version;
 
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -500,6 +530,13 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 	uint16_t protocol_version;
 
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -541,6 +578,13 @@ static void _slurm_rpc_update_step(slurm_msg_t *msg)
 	step_id.step_het_comp = NO_VAL;
 
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -577,6 +621,13 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	uint16_t protocol_version;
 
 	job_uid = _get_job_uid(step_id->job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id->job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
@@ -614,6 +665,13 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 	uint16_t protocol_version;
 
 	job_uid = _get_job_uid(step_id.job_id);
+	if (job_uid == INFINITE) {
+		error("No stepd for jobid %u from uid %u for rpc %s",
+		      step_id.job_id, msg->auth_uid,
+		      rpc_num2string(msg->msg_type));
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if ((job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
