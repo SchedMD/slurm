@@ -514,21 +514,21 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	rc = unpack_msg(&msg, buffer);
 	xfree(buffer);
 	if (rc) {
-		goto rwfail;
+		goto done;
 	}
 
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation, %s RPC from uid=%u",
 		      rpc_num2string(msg.msg_type), uid);
 		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto rwfail;
+		goto done;
 	}
 
 	if (!job_step_ptr) {
 		error("%s on a non-step mgr stepd",
 		      rpc_num2string(msg.msg_type));
 		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto rwfail;
+		goto done;
 	}
 
 	req_step_msg = msg.data;
@@ -544,9 +544,12 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	return SLURM_SUCCESS;
 
-rwfail:
+done:
 	slurm_free_msg_members(&msg);
 	slurm_send_rc_msg(&msg, rc);
+	return SLURM_ERROR;
+
+rwfail:
 	return SLURM_ERROR;
 }
 
@@ -621,8 +624,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -681,8 +682,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -742,7 +741,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
 
 	return SLURM_ERROR;
 }
@@ -800,8 +798,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -860,8 +856,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -920,8 +914,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -988,8 +980,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -1062,8 +1052,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
