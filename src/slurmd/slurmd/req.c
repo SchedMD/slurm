@@ -319,8 +319,11 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	if ((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
 	    SLURM_ERROR) {
 		stepd_relay_msg(fd, msg, protocol_version);
+		close(fd);
 		return;
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 	error("failed to return step rpc:%s job:%ps uid:%u",
 	      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
@@ -352,12 +355,15 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -387,12 +393,15 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -425,12 +434,15 @@ static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -459,12 +471,15 @@ static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -493,12 +508,15 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -531,12 +549,15 @@ static void _slurm_rpc_update_step(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -564,12 +585,15 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -598,12 +622,15 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
+		close(fd);
 		return;
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
 		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
 	}
+	if (fd != SLURM_ERROR)
+		close(fd);
 
 done:
 	slurm_send_rc_msg(msg, rc);
