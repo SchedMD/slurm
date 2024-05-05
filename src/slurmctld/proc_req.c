@@ -3025,6 +3025,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	if (error_code)
 		goto error;
 
+	if (!job_ptr) {
+		error_code = ESLURM_INVALID_JOB_ID;
+		goto error;
+	}
+
 	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
 			error("rpc %s from non-supported client version %d for step_mgr job",
@@ -3037,11 +3042,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		unlock_slurmctld(job_read_lock);
 		xfree(local_node_list);
 		return;
-	}
-
-	if (!job_ptr) {
-		error_code = ESLURM_INVALID_JOB_ID;
-		goto error;
 	}
 
 	if (!validate_operator(msg->auth_uid) &&

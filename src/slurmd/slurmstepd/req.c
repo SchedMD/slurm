@@ -136,7 +136,8 @@ typedef struct {
 } extern_pid_t;
 
 
-static pthread_mutex_t step_mgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t step_mgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
 static int message_connections = 0;
@@ -513,21 +514,21 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	rc = unpack_msg(&msg, buffer);
 	xfree(buffer);
 	if (rc) {
-		goto rwfail;
+		goto done;
 	}
 
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation, %s RPC from uid=%u",
 		      rpc_num2string(msg.msg_type), uid);
 		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto rwfail;
+		goto done;
 	}
 
 	if (!job_step_ptr) {
 		error("%s on a non-step mgr stepd",
 		      rpc_num2string(msg.msg_type));
 		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto rwfail;
+		goto done;
 	}
 
 	req_step_msg = msg.data;
@@ -543,9 +544,12 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	return SLURM_SUCCESS;
 
-rwfail:
+done:
 	slurm_free_msg_members(&msg);
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
+	slurm_send_rc_msg(&msg, rc);
+	return SLURM_ERROR;
+
+rwfail:
 	return SLURM_ERROR;
 }
 
@@ -575,7 +579,7 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -620,8 +624,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -649,7 +651,7 @@ static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -680,8 +682,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -712,7 +712,7 @@ static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -741,7 +741,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
 
 	return SLURM_ERROR;
 }
@@ -770,7 +769,7 @@ static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -799,8 +798,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -831,7 +828,7 @@ static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -859,8 +856,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -889,7 +884,7 @@ static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -919,8 +914,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -949,7 +942,7 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -987,8 +980,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 
@@ -1018,7 +1009,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(&msg, buffer);
-	xfree(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc) {
 		goto done;
 	}
@@ -1061,8 +1052,6 @@ done:
 	return rc;
 
 rwfail:
-	slurm_send_rc_msg(&msg, SLURM_ERROR);
-
 	return SLURM_ERROR;
 }
 

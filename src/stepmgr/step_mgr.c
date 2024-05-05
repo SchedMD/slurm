@@ -5223,8 +5223,8 @@ end_it:
 						   &switch_job);
 		job_step_resp.switch_job = switch_job;
 
-		if (step_rec->job_ptr->bit_flags & STEP_MGR_ENABLED)
-			job_step_resp.step_mgr = step_rec->job_ptr->batch_host;
+		if (job_ptr->bit_flags & STEP_MGR_ENABLED)
+			job_step_resp.step_mgr = job_ptr->batch_host;
 
 		if (lock_func)
 			lock_func(false);
