@@ -122,7 +122,7 @@ list_t *job_list = NULL;
 job_record_t *job_step_ptr = NULL;
 list_t *job_node_array = NULL;
 time_t last_job_update = 0;
-bool timie_limit_thread_shutdown = false;
+bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
 
 static int _foreach_ret_data_info(void *x, void *arg)
@@ -192,9 +192,10 @@ static void *_step_time_limit_thread(void *data)
 {
 	time_t now;
 
+
 	xassert(job_step_ptr);
 
-	while (!timie_limit_thread_shutdown) {
+	while (!time_limit_thread_shutdown) {
 		now = time(NULL);
 		list_for_each(job_step_ptr->step_list,
 			      check_job_step_time_limit, &now);
@@ -409,7 +410,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			      step->step_id.job_id);
 	}
 
-	timie_limit_thread_shutdown = true;
+	time_limit_thread_shutdown = true;
 	slurm_thread_join(time_limit_thread_id);
 
 #ifdef MEMORY_LEAK_DEBUG
