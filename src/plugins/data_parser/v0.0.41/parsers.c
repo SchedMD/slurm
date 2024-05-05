@@ -6608,7 +6608,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, comment, "comment", "comment for the association"),
 	add_parse(QOS_ID, def_qos_id, "default/qos", NULL),
-	add_parse_bit_flag_array(slurmdb_assoc_rec_t, ASSOC_FLAGS, false, flags, "flags", NULL),
+	add_parse(ASSOC_FLAGS, flags, "flags", "Active flags"),
 	add_parse(UINT32_NO_VAL, grp_jobs, "max/jobs/per/count", NULL),
 	add_parse(UINT32_NO_VAL, grp_jobs_accrue, "max/jobs/per/accruing", NULL),
 	add_parse(UINT32_NO_VAL, grp_submit_jobs, "max/jobs/per/submitted", NULL),
@@ -9953,7 +9953,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
 
 	/* Flag bit arrays */
-	addfa(ASSOC_FLAGS, uint16_t),
+	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
 	addfa(USER_FLAGS, uint32_t),
 	addfa(SLURMDB_JOB_FLAGS, uint32_t),
 	addfa(ACCOUNT_FLAGS, uint32_t),

@@ -125,6 +125,8 @@ extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
 extern char *slurmdb_acct_flags_2_str(slurmdb_acct_flags_t flags);
 extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flag_str);
+extern char *slurmdb_assoc_flags_2_str(slurmdb_assoc_flags_t flags);
+extern slurmdb_assoc_flags_t str_2_slurmdb_assoc_flags(char *flag_str);
 extern char *slurmdb_cluster_fed_states_str(uint32_t states);
 extern uint32_t str_2_cluster_fed_states(char *states);
 extern char *slurmdb_federation_flags_str(uint32_t flags);

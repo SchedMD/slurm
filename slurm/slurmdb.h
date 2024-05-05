@@ -245,12 +245,21 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
 
 /* Assoc flags */
-#define ASSOC_FLAG_DELETED  SLURM_BIT(0)
-#define ASSOC_FLAG_NO_UPDATE SLURM_BIT(1)
-#define ASSOC_FLAG_EXACT SLURM_BIT(2) /* If looking for a partition based
-				       * association don't return SUCCESS for a
-				       * non-partition based association when
-				       * calling assoc_mgr_fill_in_assoc() */
+typedef enum {
+	ASSOC_FLAG_NONE = 0,
+	ASSOC_FLAG_DELETED = SLURM_BIT(0),
+	ASSOC_FLAG_NO_UPDATE = SLURM_BIT(1),
+	ASSOC_FLAG_EXACT = SLURM_BIT(2), /* If looking for a partition based
+					  * association don't return SUCCESS for
+					  * a non-partition based association
+					  * when calling
+					  * assoc_mgr_fill_in_assoc() */
+
+	/* Anything above this (0-15) will not be stored in the database. */
+	ASSOC_FLAG_BASE = 0x0000ffff,
+
+	ASSOC_FLAG_INVALID
+} slurmdb_assoc_flags_t;
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
@@ -494,7 +503,7 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
-	uint32_t flags;            /* various flags see ASSOC_FLAG_* */
+	slurmdb_assoc_flags_t flags; /* various flags see ASSOC_FLAG_* */
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
