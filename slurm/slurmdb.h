@@ -245,12 +245,24 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
 
 /* Assoc flags */
-#define ASSOC_FLAG_DELETED  SLURM_BIT(0)
-#define ASSOC_FLAG_NO_UPDATE SLURM_BIT(1)
-#define ASSOC_FLAG_EXACT SLURM_BIT(2) /* If looking for a partition based
-				       * association don't return SUCCESS for a
-				       * non-partition based association when
-				       * calling assoc_mgr_fill_in_assoc() */
+typedef enum {
+	ASSOC_FLAG_NONE = 0,
+	ASSOC_FLAG_DELETED = SLURM_BIT(0),
+	ASSOC_FLAG_NO_UPDATE = SLURM_BIT(1),
+	ASSOC_FLAG_EXACT = SLURM_BIT(2), /* If looking for a partition based
+					  * association don't return SUCCESS for
+					  * a non-partition based association
+					  * when calling
+					  * assoc_mgr_fill_in_assoc() */
+	ASSOC_FLAG_USER_COORD_NO = SLURM_BIT(3),
+
+	/* Anything above this (0-15) will not be stored in the database. */
+	ASSOC_FLAG_BASE = 0x0000ffff,
+
+	ASSOC_FLAG_USER_COORD = SLURM_BIT(16),
+
+	ASSOC_FLAG_INVALID
+} slurmdb_assoc_flags_t;
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
@@ -373,26 +385,34 @@ typedef struct {
 
 /************** alphabetical order of structures **************/
 
+typedef enum {
+	SLURMDB_ACCT_FLAG_NONE = 0,
+	SLURMDB_ACCT_FLAG_DELETED = SLURM_BIT(0),
+	SLURMDB_ACCT_FLAG_WASSOC = SLURM_BIT(1),
+	SLURMDB_ACCT_FLAG_WCOORD = SLURM_BIT(2),
+	SLURMDB_ACCT_FLAG_USER_COORD_NO = SLURM_BIT(3),
+
+	/* Anything above this (0-15) will not be stored in the database. */
+	SLURMDB_ACCT_FLAG_BASE = 0x0000ffff,
+
+	SLURMDB_ACCT_FLAG_USER_COORD = SLURM_BIT(16),
+
+	SLURMDB_ACCT_FLAG_INVALID
+} slurmdb_acct_flags_t;
+
 typedef struct {
 	slurmdb_assoc_cond_t *assoc_cond;/* use acct_list here for
 						  names */
 	List description_list; /* list of char * */
+	slurmdb_acct_flags_t flags;  /* SLURMDB_ACCT_FLAG_* */
 	List organization_list; /* list of char * */
-	uint16_t with_assocs;
-	uint16_t with_coords;
-	uint16_t with_deleted;
 } slurmdb_account_cond_t;
-
-enum {
-	SLURMDB_ACCT_FLAG_NONE          = 0,
-	SLURMDB_ACCT_FLAG_DELETED       = SLURM_BIT(0),
-};
 
 typedef struct {
 	List assoc_list; /* list of slurmdb_assoc_rec_t *'s */
 	List coordinators; /* list of slurmdb_coord_rec_t *'s */
 	char *description;
-	uint32_t flags; /* SLURMDB_ACCT_FLAG_* */
+	slurmdb_acct_flags_t flags; /* SLURMDB_ACCT_FLAG_* */
 	char *name;
 	char *organization;
 } slurmdb_account_rec_t;
@@ -486,7 +506,7 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
-	uint32_t flags;            /* various flags see ASSOC_FLAG_* */
+	slurmdb_assoc_flags_t flags; /* various flags see ASSOC_FLAG_* */
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */

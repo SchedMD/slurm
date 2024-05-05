@@ -61,9 +61,8 @@ static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
 	};
 	slurmdb_account_cond_t acct_cond = {
 		.assoc_cond = &assoc_cond,
-		.with_deleted = true,
-		.with_assocs = true,
-		.with_coords = true,
+		.flags = SLURMDB_ACCT_FLAG_DELETED |
+		SLURMDB_ACCT_FLAG_WASSOC | SLURMDB_ACCT_FLAG_WCOORD,
 	};
 	slurmdb_user_cond_t user_cond = {
 		.assoc_cond = &assoc_cond,

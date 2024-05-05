@@ -600,6 +600,10 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		else
 			field->print_routine(field, &assoc->shares_raw, last);
 		break;
+	case PRINT_FLAGS:
+		tmp_char = slurmdb_assoc_flags_2_str(assoc->flags);
+		field->print_routine(field, tmp_char, last);
+		break;
 	case PRINT_GRPCM:
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
 					assoc->grp_tres_mins, TRES_CPU),

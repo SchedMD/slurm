@@ -617,6 +617,23 @@ An arbitrary string describing an account.
 .IP
 
 .TP
+\fBFlags\fR=<\fIflag\fR>[,<\fIflag\fR>,...]
+.PD
+Valid options are:
+.RS
+.TP
+\fBNoUsersAreCoords\fR
+Remove the privilege \fIUsersAreCoords\fR sets.
+.IP
+.TP
+\fBUsersAreCoords\fR
+If set, all users in this account will have the coordinator status here and of
+any sub-account in it's hierarchy.
+.IP
+.RE
+.IP
+
+.TP
 \fBName\fR=<\fIname\fR>
 The name of a bank account.
 Note the name must be unique and can not be represent different bank
@@ -817,6 +834,11 @@ Fairshare=parent is set on an account, that account's children will be
 effectively re\-parented for fairshare calculations to the first parent
 of their parent that is not Fairshare=parent. Limits remain the same,
 only its fairshare value is affected.
+.IP
+
+.TP
+\fBFlags\fR
+Flags set on the association.
 .IP
 
 .TP
