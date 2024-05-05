@@ -136,7 +136,8 @@ typedef struct {
 } extern_pid_t;
 
 
-static pthread_mutex_t step_mgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t step_mgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
 static int message_connections = 0;

@@ -197,8 +197,10 @@ static void *_step_time_limit_thread(void *data)
 
 	while (!time_limit_thread_shutdown) {
 		now = time(NULL);
+		slurm_mutex_lock(&step_mgr_mutex);
 		list_for_each(job_step_ptr->step_list,
 			      check_job_step_time_limit, &now);
+		slurm_mutex_unlock(&step_mgr_mutex);
 		sleep(1);
 	}
 
