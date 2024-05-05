@@ -284,6 +284,7 @@ static int _step_mgr_connect(slurm_step_id_t *step_id,
 	int fd = SLURM_ERROR;
 
 	step_id->step_id = SLURM_EXTERN_CONT;
+	step_id->step_het_comp = NO_VAL;
 	if ((fd = stepd_connect(conf->spooldir, conf->node_name, step_id,
 				protocol_version)) == -1) {
 		error("%s to %ps failed: %m",
@@ -293,330 +294,9 @@ static int _step_mgr_connect(slurm_step_id_t *step_id,
 	return fd;
 }
 
-static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
+static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg)
 {
 	int fd, rc;
-	uid_t job_uid;
-	uint16_t protocol_version;
-	slurm_step_id_t step_id = {.step_het_comp = NO_VAL};
-
-	job_step_create_request_msg_t *req_step_msg = msg->data;
-	step_id.job_id = req_step_msg->step_id.job_id;
-
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto error;
-	}
-
-	if (msg->auth_uid != job_uid) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		goto error;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-	error("failed to return step rpc:%s job:%ps uid:%u",
-	      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-error:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
-{
-	int fd, rc;
-	job_step_info_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	step_id = request->step_id;
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	job_step_kill_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	step_id = request->step_id;
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id = {0};
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	step_id.job_id = request->job_id;
-	step_id.step_id = SLURM_EXTERN_CONT;
-	step_id.step_het_comp = NO_VAL;
-
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	srun_node_fail_msg_t *request = msg->data;
-	slurm_step_id_t step_id = request->step_id;
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	srun_timeout_msg_t *request = msg->data;
-	slurm_step_id_t step_id = request->step_id;
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_update_step(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id = {0};
-	uid_t job_uid;
-	uint16_t protocol_version;
-
-	step_id.job_id = request->job_id;
-	step_id.step_id = request->step_id;
-	step_id.step_het_comp = NO_VAL;
-
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_step_layout(slurm_msg_t *msg)
-{
-	int fd, rc;
-
-	slurm_step_id_t *step_id = msg->data;
 	uid_t job_uid;
 	uint16_t protocol_version;
 
@@ -629,7 +309,8 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((job_uid != msg->auth_uid) &&
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_uid != msg->auth_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation, %s from uid %u",
 		      rpc_num2string(msg->msg_type), msg->auth_uid);
@@ -646,7 +327,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	} else {
 		rc = SLURM_ERROR;
 		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
+		      rpc_num2string(msg->msg_type), step_id, msg->auth_uid);
 	}
 	if (fd != SLURM_ERROR)
 		close(fd);
@@ -655,48 +336,76 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
+
+static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
+{
+	slurm_step_id_t step_id = {NO_VAL};
+
+	job_step_create_request_msg_t *req_step_msg = msg->data;
+	step_id.job_id = req_step_msg->step_id.job_id;
+
+	_relay_stepd_msg(&step_id, msg);
+}
+
+static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
+{
+	job_step_info_request_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg);
+}
+
+static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
+{
+	job_step_kill_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg);
+}
+
+static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
+{
+	srun_job_complete_msg_t *request = msg->data;
+	slurm_step_id_t step_id = {NO_VAL};
+
+	step_id.job_id = request->job_id;
+
+	_relay_stepd_msg(&step_id, msg);
+}
+
+static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
+{
+	srun_node_fail_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg);
+}
+
+static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
+{
+	srun_timeout_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg);
+}
+
+static void _slurm_rpc_update_step(slurm_msg_t *msg)
+{
+	step_update_request_msg_t *request = msg->data;
+	slurm_step_id_t step_id = {NO_VAL};
+
+	step_id.job_id = request->job_id;
+	step_id.step_id = request->step_id;
+
+	_relay_stepd_msg(&step_id, msg);
+}
+
+static void _slurm_rpc_step_layout(slurm_msg_t *msg)
+{
+	_relay_stepd_msg(msg->data, msg);
+}
+
 static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 {
-	int fd, rc;
-
 	step_alloc_info_msg_t *request = msg->data;
-	slurm_step_id_t step_id = request->step_id;
-	uid_t job_uid;
-	uint16_t protocol_version;
 
-	job_uid = _get_job_uid(step_id.job_id);
-	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id.job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	}
-
-	if ((job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
-
-	if (((fd = _step_mgr_connect(&step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
-		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), &step_id, msg->auth_uid);
-	}
-	if (fd != SLURM_ERROR)
-		close(fd);
-
-done:
-	slurm_send_rc_msg(msg, rc);
+	_relay_stepd_msg(&request->step_id, msg);
 }
 
 void
