@@ -41,7 +41,6 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/interfaces/serializer.h"
 
 #define _DEBUG 0 /* Set this to non-zero to see detailed debugging */
 
