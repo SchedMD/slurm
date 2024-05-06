@@ -4363,7 +4363,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				    "keepaliveinterval="))) {
 		long tmp_val = strtol(temp_str + 18, NULL, 10);
 		if (tmp_val >= 0 && tmp_val <= INT_MAX)
-			slurm_conf.keepalive_interval = tmp_val;
+			conf->keepalive_interval = tmp_val;
 		else
 			error("CommunicationParameters option keepaliveinterval=%ld is invalid, ignored",
 			      tmp_val);
@@ -4372,7 +4372,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				    "keepaliveprobes="))) {
 		long tmp_val = strtol(temp_str + 16, NULL, 10);
 		if (tmp_val >= 0 && tmp_val <= INT_MAX)
-			slurm_conf.keepalive_probes = tmp_val;
+			conf->keepalive_probes = tmp_val;
 		else
 			error("CommunicationParameters option keepaliveprobes=%ld is invalid, ignored",
 			      tmp_val);
@@ -4381,7 +4381,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				    "keepalivetime="))) {
 		long tmp_val = strtol(temp_str + 14, NULL, 10);
 		if ((tmp_val >= 0) && (tmp_val <= INT_MAX))
-			slurm_conf.keepalive_time = tmp_val;
+			conf->keepalive_time = tmp_val;
 		else
 			error("CommunicationParameters option keepalivetime=%ld is invalid, ignored",
 			      tmp_val);
