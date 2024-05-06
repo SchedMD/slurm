@@ -71,7 +71,7 @@ typedef struct {
 	uint16_t cycle_max;
 } rpc_stat_t;
 
-rpc_stat_t *types = NULL, *users = NULL;
+static rpc_stat_t *types = NULL, *users = NULL;
 
 struct sdiag_parameters params = {0};
 
