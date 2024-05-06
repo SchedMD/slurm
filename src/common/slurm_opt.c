@@ -6394,7 +6394,7 @@ static bool _get_gpu_cnt_and_str(slurm_opt_t *opt, int *gpu_cnt, char **gpu_str)
 static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 {
 	bool set;
-	int tmp_int, cnt, opt_index, tpt_index;
+	int tmp_int, cnt = 0, opt_index, tpt_index;
 	char *opt_in_tpt_ptr = NULL, *str = NULL;
 	char *env_variable;
 
