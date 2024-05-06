@@ -104,6 +104,8 @@ typedef struct node_record node_record_t;
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #endif
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
+#define DEFAULT_KEEPALIVE_INTERVAL (NO_VAL)
+#define DEFAULT_KEEPALIVE_PROBES (NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30

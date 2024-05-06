@@ -4359,6 +4359,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	 * Parse keepalivetime option here so CommunicationParameters takes
 	 * precedence over the deprecated KeepAliveTime standalone option.
 	 */
+	conf->keepalive_interval = DEFAULT_KEEPALIVE_INTERVAL;
 	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
 				    "keepaliveinterval="))) {
 		long tmp_val = strtol(temp_str + 18, NULL, 10);
@@ -4368,6 +4369,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			error("CommunicationParameters option keepaliveinterval=%ld is invalid, ignored",
 			      tmp_val);
 	}
+	conf->keepalive_probes = DEFAULT_KEEPALIVE_PROBES;
 	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
 				    "keepaliveprobes="))) {
 		long tmp_val = strtol(temp_str + 16, NULL, 10);
