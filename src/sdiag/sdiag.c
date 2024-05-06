@@ -345,10 +345,12 @@ static void _sort_rpc(void)
 		if (buf->rpc_type_cnt[i])
 			types[i].average_time = buf->rpc_type_time[i] /
 						buf->rpc_type_cnt[i];
-		types[i].queued = buf->rpc_type_queued[i];
-		types[i].dropped = buf->rpc_type_dropped[i];
-		types[i].cycle_last = buf->rpc_type_cycle_last[i];
-		types[i].cycle_max = buf->rpc_type_cycle_max[i];
+		if (buf->rpc_queue_enabled) {
+			types[i].queued = buf->rpc_type_queued[i];
+			types[i].dropped = buf->rpc_type_dropped[i];
+			types[i].cycle_last = buf->rpc_type_cycle_last[i];
+			types[i].cycle_max = buf->rpc_type_cycle_max[i];
+		}
 	}
 
 	users = xcalloc(buf->rpc_user_size, sizeof(rpc_stat_t));
