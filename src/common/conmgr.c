@@ -308,7 +308,7 @@ typedef struct {
 	const char *tag;
 } deferred_func_t;
 
-struct {
+static struct {
 	conmgr_work_status_t status;
 	const char *string;
 } statuses[] = {
@@ -318,7 +318,7 @@ struct {
 	{ CONMGR_WORK_STATUS_CANCELLED, "CANCELLED" },
 };
 
-struct {
+static struct {
 	conmgr_work_type_t type;
 	const char *string;
 } types[] = {
