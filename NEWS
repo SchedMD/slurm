@@ -249,6 +249,8 @@ documents those changes that are of interest to users and administrators.
     task (e.g. 1_10), which previously signaled the whole array job instead.
  -- Fix a possible slurmctld segfault when at some point we failed to create an
     external launcher step.
+ -- Allow the slurmctld to open a connection to the slurmdbd if the first
+    attempt fails due to a protocol error.
 
 * Changes in Slurm 23.11.6
 ==========================

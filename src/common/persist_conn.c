@@ -655,11 +655,13 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 		FREE_NULL_BUFFER(buffer);
 
 		resp = (persist_rc_msg_t *)msg.data;
-		if (resp && (rc == SLURM_SUCCESS)) {
+		/*
+		 * On an internal error from REQUEST_PERSIST_INIT, the value of
+		 * resp->ret_info will not be the protocol version but instead
+		 * the type of RPC sent. Handle this after we look at resp->rc.
+		 */
+		if (resp && (rc == SLURM_SUCCESS))
 			rc = resp->rc;
-			persist_conn->version = resp->ret_info;
-			persist_conn->flags |= resp->flags;
-		}
 
 		if (rc != SLURM_SUCCESS) {
 			if (resp) {
@@ -673,6 +675,9 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      persist_conn->rem_port);
 			}
 			fd_close(&persist_conn->fd);
+		} else if (resp) {
+			persist_conn->version = resp->ret_info;
+			persist_conn->flags |= resp->flags;
 		}
 	}
 
