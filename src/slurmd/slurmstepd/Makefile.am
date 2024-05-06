@@ -6,7 +6,8 @@ AUTOMAKE_OPTIONS = foreign
 sbin_PROGRAMS = slurmstepd
 
 depend_libs = ../common/libslurmd_common.o \
-	      $(top_builddir)/src/stepmgr/libstepmgr.o
+	      $(top_builddir)/src/stepmgr/libstepmgr.la \
+	      $(SLURMD_INTERFACES)
 
 # If slurmstepd_LDADD or slurmstepd_LDFLAGS change
 # make sure you alter the below depend_[ldadd|ldflags] to look identical in the
@@ -20,7 +21,7 @@ depend_ldflags = $(HWLOC_LDFLAGS)
 
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(depend_ldadd) $(libselinux_LIBS) $(SLURMD_INTERFACES)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(depend_ldadd) $(libselinux_LIBS)
 
 slurmstepd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 
@@ -39,7 +40,7 @@ slurmstepd_SOURCES = 	        	\
 	step_terminate_monitor.c step_terminate_monitor.h \
 	x11_forwarding.c x11_forwarding.h
 
-slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD) $(SLURMD_INTERFACES)
+slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
 force:
 $(slurmstepd_DEPENDENCIES) : force

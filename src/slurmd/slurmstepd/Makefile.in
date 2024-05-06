@@ -163,7 +163,10 @@ am_slurmstepd_OBJECTS = container.$(OBJEXT) slurmstepd.$(OBJEXT) \
 	step_terminate_monitor.$(OBJEXT) x11_forwarding.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+am__DEPENDENCIES_2 = ../common/libslurmd_common.o \
+	$(top_builddir)/src/stepmgr/libstepmgr.la \
+	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -492,7 +495,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 depend_libs = ../common/libslurmd_common.o \
-	      $(top_builddir)/src/stepmgr/libstepmgr.o
+	      $(top_builddir)/src/stepmgr/libstepmgr.la \
+	      $(SLURMD_INTERFACES)
 
 
 # If slurmstepd_LDADD or slurmstepd_LDFLAGS change
@@ -505,7 +509,7 @@ depend_libs = ../common/libslurmd_common.o \
 depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 depend_ldflags = $(HWLOC_LDFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(depend_ldadd) $(libselinux_LIBS) $(SLURMD_INTERFACES)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(depend_ldadd) $(libselinux_LIBS)
 slurmstepd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 slurmstepd_SOURCES = \
 	container.c container.h	\
@@ -522,7 +526,7 @@ slurmstepd_SOURCES = \
 	step_terminate_monitor.c step_terminate_monitor.h \
 	x11_forwarding.c x11_forwarding.h
 
-slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD) $(SLURMD_INTERFACES)
+slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 
 .SUFFIXES:

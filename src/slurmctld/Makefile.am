@@ -72,12 +72,12 @@ slurmctld_SOURCES =     \
 
 sbin_PROGRAMS = slurmctld
 
-slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) \
-		  $(top_builddir)/src/stepmgr/libstepmgr.o
+dependencies = $(SLURMCTLD_INTERFACES) $(top_builddir)/src/stepmgr/libstepmgr.la
+
+slurmctld_LDADD = $(LIB_SLURM) $(dependencies)
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES) \
-			 $(top_builddir)/src/stepmgr/libstepmgr.o
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(dependencies)
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include

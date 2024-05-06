@@ -8,7 +8,8 @@ sbin_PROGRAMS = slurmd
 
 depend_libs = \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
-	../common/libslurmd_common.o
+	../common/libslurmd_common.o \
+	$(SLURMD_INTERFACES)
 
 # These 2 depend_* should look the same in ../slurmstepd/Makefile.am
 depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
@@ -20,7 +21,7 @@ depend_ldflags += -Wl,--no-as-needed
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
-	$(depend_ldadd) $(SLURMD_INTERFACES)
+	$(depend_ldadd)
 
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 
@@ -32,7 +33,7 @@ SLURMD_SOURCES = \
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 
-slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD) $(SLURMD_INTERFACES)
+slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include

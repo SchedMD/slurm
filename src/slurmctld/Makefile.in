@@ -198,6 +198,8 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	statistics.$(OBJEXT) trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/stepmgr/libstepmgr.la
 slurmctld_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmctld_LDFLAGS) $(LDFLAGS) -o $@
@@ -597,12 +599,10 @@ slurmctld_SOURCES = \
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDADD = $(LIB_SLURM) $(SLURMCTLD_INTERFACES) \
-	$(top_builddir)/src/stepmgr/libstepmgr.o $(LIB_REF)
+dependencies = $(SLURMCTLD_INTERFACES) $(top_builddir)/src/stepmgr/libstepmgr.la
+slurmctld_LDADD = $(LIB_SLURM) $(dependencies) $(LIB_REF)
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES) \
-			 $(top_builddir)/src/stepmgr/libstepmgr.o
-
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(dependencies)
 REF = usage.txt
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
