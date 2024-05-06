@@ -713,22 +713,32 @@ set to 0 cache is disabled. The default value is 60.
 
 .TP
 \fBkeepaliveinterval=#\fR
-Specifies the interval between keepalive probes on the socket communications
-between srun and its slurmstepd process.
+Specifies the interval, in seconds, between keepalive probes on idle
+connections.
+This affects connections between srun and its slurmstepd process as well as all
+connections to the slurmdbd.
+The default is to use the system default settings.
 .IP
 
 .TP
 \fBkeepaliveprobes=#\fR
-Specifies the number of keepalive probes sent on the socket communications
-between srun command and its slurmstepd process before the connection is
-considered broken.
+Specifies the number of unacknowledged keepalive probes sent before considering
+the connection broken.
+This affects connections between srun and its slurmstepd process as well as all
+connections to the slurmdbd.
+The default is to use the system default settings.
 .IP
 
 .TP
 \fBkeepalivetime=#\fR
-Specifies how long sockets communications used between the srun command and its
-slurmstepd process are kept alive after disconnect. Longer values can be used
-to improve reliability of communications in the event of network failures.
+Specifies how long, in seconds,  before a connection is marked as needing a
+keepalive probe as well as how long to delay closing a connection to process
+messages still in the queue.
+This affects connections between srun and its slurmstepd process as well as all
+connections to the slurmdbd.
+Longer values can be used to improve reliability of communications in the event
+of network failures.
+The default is for keepalive to be disabled.
 .IP
 
 .TP

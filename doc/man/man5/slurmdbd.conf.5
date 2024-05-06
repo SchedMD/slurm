@@ -280,23 +280,29 @@ should also be set in your \fBslurm.conf\fR file.
 
 .TP
 \fBkeepaliveinterval=#\fR
-Once socket communications between the primary and backup slurmdbd have been
-idle for some time, keepalive probes are sent at this specified interval.
+Specifies the interval, in seconds, between keepalive probes on idle
+connections.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 30 seconds.
 .IP
 
 .TP
 \fBkeepaliveprobes=#\fR
-Specifies the number of keepalive probes sent on the socket communications
-between the backup and primary slurmdbd once the socket has been idle for
-some time. If probes are not answered, the connection is dropped.
+Specifies the number of unacknowledged keepalive probes sent before considering
+a connection broken.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 3.
 .IP
 
 .TP
 \fBkeepalivetime=#\fR
-Specifies how long a socket must be idle before starting to send keepalive
-probes between the primary and backup slurmdbd processes.
+Specifies how long, in seconds, a connection must be idle before starting to
+send keepalive probes as well as how long to delay closing a connection to
+process messages still in the queue.
+This affects most outgoing connections from the slurmdbd (e.g. between the
+primary and backup, or from the slurmdbd to the slurmctld).
 The default value is 30 seconds.
 .RE
 .IP
