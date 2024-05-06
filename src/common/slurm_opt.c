@@ -6419,6 +6419,10 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 		str = "cpu";
 		set = opt->cpus_set;
 		env_variable = "SLURM_CPUS_PER_TASK";
+	} else {
+		/* This function only supports [gpus|cpus]_per_task */
+		xassert(0); /* let me know if it isn't */
+		return;
 	}
 
 	opt_in_tpt_ptr = xstrcasestr(opt->tres_per_task, str);
