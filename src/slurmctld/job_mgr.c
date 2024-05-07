@@ -8524,21 +8524,6 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return buf;
 }
 
-/* Return the number of CPUs on the first node in the identified partition */
-static uint16_t _cpus_per_node_part(part_record_t *part_ptr)
-{
-	int node_inx = -1;
-	node_record_t *node_ptr;
-
-	if (part_ptr->node_bitmap)
-		node_inx = bit_ffs(part_ptr->node_bitmap);
-	if (node_inx >= 0) {
-		node_ptr = node_record_table_ptr[node_inx];
-		return node_ptr->config_ptr->cpus;
-	}
-	return 0;
-}
-
 /* Return memory on the first node in the identified partition */
 static uint64_t _mem_per_node_part(part_record_t *part_ptr)
 {
@@ -8631,7 +8616,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 	 * values for comparison. */
 	if (part_ptr && (!part_ptr->max_share || !job_desc_msg->shared)) {
 		/* Whole node allocation */
-		cpus_per_node = _cpus_per_node_part(part_ptr);
+		cpus_per_node = part_ptr->max_cpu_cnt;
 	} else {
 		if ((job_desc_msg->ntasks_per_node != NO_VAL16) &&
 		    (job_desc_msg->ntasks_per_node != 0))

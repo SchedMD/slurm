@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     non-async-signal safe calls between a fork and an exec. We fork ourselves
     now and executes the commands in a safe environment. This includes spank
     prolog/epilog executions.
+ -- Improve MaxMemPerCPU enforcement when exclusive jobs request per node memory
+    and the partition has heterogeneous nodes.
 
 * Changes in Slurm 24.05.1
 ==========================
