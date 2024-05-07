@@ -765,6 +765,8 @@ extern void free_conmgr(void)
 	    ((mgr.signal_fd[1] >= 0) && close(mgr.signal_fd[1])))
 		error("%s: unable to close signal_fd: %m", __func__);
 
+	xfree(mgr.signal_work);
+
 	slurm_mutex_destroy(&mgr.mutex);
 	slurm_cond_destroy(&mgr.cond);
 }
