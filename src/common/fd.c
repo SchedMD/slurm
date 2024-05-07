@@ -469,7 +469,7 @@ extern void send_fd_over_pipe(int socket, int fd)
 	struct msghdr msg = { 0 };
 	struct cmsghdr *cmsg;
 	char buf[CMSG_SPACE(sizeof(fd))];
-	char c;
+	char c = '\0';
 	struct iovec iov[1];
 
 	memset(buf, '\0', sizeof(buf));

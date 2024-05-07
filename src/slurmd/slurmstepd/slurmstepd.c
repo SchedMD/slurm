@@ -192,7 +192,6 @@ static void *_step_time_limit_thread(void *data)
 {
 	time_t now;
 
-
 	xassert(job_step_ptr);
 
 	while (!time_limit_thread_shutdown) {
@@ -370,6 +369,8 @@ ending:
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			 slurm_addr_t *cli, int rc, bool only_mem)
 {
+	time_limit_thread_shutdown = true;
+
 	slurm_mutex_lock(&cleanup_mutex);
 
 	if (cleanup)
@@ -412,7 +413,10 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			      step->step_id.job_id);
 	}
 
-	time_limit_thread_shutdown = true;
+	/*
+	 * join() must be done before _step_cleanup() where job_step_ptr is
+	 * freed.
+	 */
 	slurm_thread_join(time_limit_thread_id);
 
 #ifdef MEMORY_LEAK_DEBUG
