@@ -716,7 +716,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", organization='%s'", acct->organization);
 
 	if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
-		xstrfmtcat(vals, ", flags=flags&%u",
+		xstrfmtcat(vals, ", flags=flags&~%u",
 			   SLURMDB_ACCT_FLAG_USER_COORD);
 		assoc_flags |= ASSOC_FLAG_USER_COORD_NO;
 	} else if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
