@@ -192,7 +192,6 @@ static void *_step_time_limit_thread(void *data)
 {
 	time_t now;
 
-
 	xassert(job_step_ptr);
 
 	while (!time_limit_thread_shutdown) {
