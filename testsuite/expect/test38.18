@@ -422,10 +422,10 @@ proc test_gpus_per_task {} {
 	]
 
 	set regexes [list \
-		"^JobId=.*TresPerTask=.*gpu:1.*JobId=.*TresPerTask=.*gpu:2" \
-		"^JobId=.*TresPerTask=.*gpu:2.*JobId=.*TresPerTask=.*gpu:1" \
-		"^JobId=.*TresPerTask=.*gpu:2.*JobId=.*" \
-		"^JobId=.*JobId=.*TresPerTask=.*gpu:2" \
+		"^JobId=.*TresPerTask=.*gpu=1.*JobId=.*TresPerTask=.*gpu=2" \
+		"^JobId=.*TresPerTask=.*gpu=2.*JobId=.*TresPerTask=.*gpu=1" \
+		"^JobId=.*TresPerTask=.*gpu=2.*JobId=.*" \
+		"^JobId=.*JobId=.*TresPerTask=.*gpu=2" \
 	]
 
 	foreach cmd {sbatch srun salloc} {

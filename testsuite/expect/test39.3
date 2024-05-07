@@ -103,7 +103,7 @@ subtest {[regexp -all "0: *TresBind=gres/gpu:$gpu_bind" $output] == 1} "Verify T
 subtest {[regexp -all "0: *TresFreq=gpu:$gpu_freq" $output] == 1} "Verify TresFreq"
 subtest {[regexp -all "0: *TresPerStep=cpu:$tot_cpus,gres/gpu:$tot_gpus" $output] == 1} "Verify TresPerStep"
 subtest {[regexp -all "0: *TresPerNode=gres/gpu:$gpus_per_node" $output] == 1} "Verify TresPerNode"
-subtest {[regexp -all "0: *TresPerTask=gres/gpu:$gpus_per_task" $output] == 1} "Verify TresPerTask"
+subtest {[regexp -all "0: *TresPerTask=gres/gpu=$gpus_per_task" $output] == 1} "Verify TresPerTask"
 
 #
 # Spawn srun job with various --gpu options

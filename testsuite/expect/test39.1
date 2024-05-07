@@ -119,7 +119,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "TresPerTask=gres/gpu:$gpus_per_task" {
+	-re "TresPerTask=gres/gpu=$gpus_per_task" {
 		incr match
 		exp_continue
 	}

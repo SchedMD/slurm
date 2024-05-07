@@ -90,7 +90,7 @@ subtest {[regexp -all "TresBind=gres/gpu:$gpu_bind" $output] == 1} "Verify TresB
 subtest {[regexp -all "TresFreq=gpu:$gpu_freq" $output] == 1} "Verify TresFreq"
 subtest {[regexp -all "TresPerJob=gres/gpu:$tot_gpus" $output] == 1} "Verify TresPerJob"
 subtest {[regexp -all "TresPerNode=gres/gpu:$gpus_per_node" $output] == 1} "Verify TresPerNode"
-subtest {[regexp -all "TresPerTask=gres/gpu:$gpus_per_task" $output] == 1} "Verify TresPerTask"
+subtest {[regexp -all "TresPerTask=gres/gpu=$gpus_per_task" $output] == 1} "Verify TresPerTask"
 
 #
 # Spawn a salloc job with various --gpu options
