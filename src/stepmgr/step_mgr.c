@@ -1365,6 +1365,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		    !(step_spec->flags & SSF_EXT_LAUNCHER)) {
 			_set_max_num_tasks(step_spec, job_ptr, nodes_avail,
 					   cpus_per_task);
+			if (step_spec->num_tasks == 0) {
+				log_flag(STEPS, "%s: Step requested more processors per task (%d) than can be satisfied.",
+					 __func__, cpus_per_task);
+				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+				goto cleanup;
+			}
 		}
 
 		xfree(usable_cpu_cnt);
@@ -1537,6 +1543,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 		_set_max_num_tasks(step_spec, job_ptr, node_bitmap,
 				   cpus_per_task);
+		if (step_spec->num_tasks == 0) {
+			log_flag(STEPS, "%s: Step requested more processors per task (%d) than can be satisfied.",
+				 __func__, cpus_per_task);
+			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+			goto cleanup;
+		}
 	}
 
 	/*
