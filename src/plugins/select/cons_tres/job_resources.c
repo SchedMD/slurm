@@ -359,7 +359,10 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			      part_name);
 			return SLURM_ERROR;
 		}
-		xassert(!p_ptr->rebuild_rows);
+
+		if (p_ptr->rebuild_rows)
+			part_data_build_row_bitmaps(p_ptr, NULL);
+
 		if (!p_ptr->row) {
 			p_ptr->row = xcalloc(p_ptr->num_rows,
 					     sizeof(part_row_data_t));
