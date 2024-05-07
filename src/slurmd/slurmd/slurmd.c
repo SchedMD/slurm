@@ -1115,6 +1115,20 @@ _read_config(void)
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
 	if (conf->dynamic_type == DYN_NODE_FUTURE) {
 		/* Already set to actual config earlier in _dynamic_init() */
+	} else if ((conf->conf_sockets == conf->actual_cpus) &&
+		   (conf->conf_cpus == conf->actual_cpus) &&
+		   (conf->conf_cores == 1) &&
+		   (conf->conf_threads == 1)) {
+		/*
+		 * Only "CPUs=" was configured in the node definition. Lie about
+		 * the actual hardware so that more than one job can run on a
+		 * single core. Keep the current configured values.
+		 */
+		conf->cpus = conf->conf_cpus;
+		conf->boards = conf->conf_boards;
+		conf->sockets = conf->actual_sockets = conf->actual_cpus;
+		conf->cores = conf->actual_cores = 1;
+		conf->threads = conf->actual_threads = 1;
 	} else if (conf->dynamic_type == DYN_NODE_NORM) {
 		conf->cpus = conf->conf_cpus;
 		conf->boards = conf->conf_boards;
