@@ -1725,6 +1725,10 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		part_record_delete(msg->part_ptr);
 		FREE_NULL_LIST(msg->job_node_array);
 
+		FREE_NULL_BUFFER(msg->job_ptr_buf);
+		FREE_NULL_BUFFER(msg->job_node_array_buf);
+		FREE_NULL_BUFFER(msg->part_ptr_buf);
+
 		xfree(msg);
 	}
 }
