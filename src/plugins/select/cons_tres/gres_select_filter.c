@@ -431,7 +431,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 	uint64_t extra_gres;
 
 	if (total_res_gres && (total_res_gres > *gres_needed)) {
-		error("%s: Needed less gres then required by allocated restricted cores (%ld < %d). Increasing needed gres for job %u on node %d",
+		error("%s: Needed less gres then required by allocated restricted cores (%"PRIu64" < %d). Increasing needed gres for job %u on node %d",
 		      __func__, *gres_needed, total_res_gres, job_id, node_inx);
 		*gres_needed = total_res_gres;
 	}
