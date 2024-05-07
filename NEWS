@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     external launcher step.
  -- Allow the slurmctld to open a connection to the slurmdbd if the first
     attempt fails due to a protocol error.
+ -- mpi/cray_shasta - Fix launch for non-het-steps within a hetjob.
 
 * Changes in Slurm 23.11.6
 ==========================
