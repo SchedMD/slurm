@@ -50,18 +50,18 @@ typedef struct {
 static int _compare_support(const void *v1, const void *v2)
 {
 	sort_support_t *s1, *s2;
+	int rc;
 
 	s1 = (sort_support_t *) v1;
 	s2 = (sort_support_t *) v2;
 
-	if (s1->jstart < s2->jstart)
-		return -1;
-	else if (s1->jstart > s2->jstart)
-		return 1;
-	else if (s1->tmpjobs->ncpus < s2->tmpjobs->ncpus)
-		return -1;
-	else if (s1->tmpjobs->ncpus > s2->tmpjobs->ncpus)
-		return 1;
+	rc = slurm_sort_int_list_asc(&s1->jstart, &s2->jstart);
+	if (rc)
+		return rc;
+
+	rc = slurm_sort_uint_list_asc(&s1->tmpjobs->ncpus, &s2->tmpjobs->ncpus);
+	if (rc)
+		return rc;
 
 	return 0;
 }
