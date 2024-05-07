@@ -376,15 +376,8 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 
 static int _sort_topo_by_avail_cnt(const void *x, const void *y)
 {
-	int64_t cx = nonalloc_gres[*(int *) x];
-	int64_t cy = nonalloc_gres[*(int *) y];
-
-	if (cx < cy)
-		return 1;
-	else if (cx > cy)
-		return -1;
-
-	return 0;
+	return slurm_sort_int64_list_desc(&nonalloc_gres[*(int *) x],
+					  &nonalloc_gres[*(int *) y]);
 }
 
 static int *_get_sorted_topo_by_least_loaded(gres_node_state_t *gres_ns)
