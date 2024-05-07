@@ -50,6 +50,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -181,19 +182,6 @@ extern char *uid_to_string(uid_t uid)
 	return result;
 }
 
-static int _uid_compare(const void *a, const void *b)
-{
-	uid_t ua = *(const uid_t *)a;
-	uid_t ub = *(const uid_t *)b;
-
-	if (ua < ub)
-		return -1;
-	else if (ua > ub)
-		return 1;
-
-	return 0;
-}
-
 extern void uid_cache_clear(void)
 {
 	int i;
@@ -213,7 +201,7 @@ extern char *uid_to_string_cached(uid_t uid)
 
 	slurm_mutex_lock(&uid_lock);
 	entry = bsearch(&target, uid_cache, uid_cache_used,
-			sizeof(uid_cache_entry_t), _uid_compare);
+			sizeof(uid_cache_entry_t), slurm_sort_uint_list_asc);
 	if (entry == NULL) {
 		uid_cache_entry_t new_entry = {uid, uid_to_string(uid)};
 		uid_cache_used++;
@@ -221,7 +209,7 @@ extern char *uid_to_string_cached(uid_t uid)
 				     sizeof(uid_cache_entry_t)*uid_cache_used);
 		uid_cache[uid_cache_used-1] = new_entry;
 		qsort(uid_cache, uid_cache_used, sizeof(uid_cache_entry_t),
-		      _uid_compare);
+		      slurm_sort_uint_list_asc);
 		slurm_mutex_unlock(&uid_lock);
 		return new_entry.username;
 	}
