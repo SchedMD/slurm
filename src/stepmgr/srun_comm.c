@@ -175,6 +175,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
 	if (running_in_slurmctld() &&
+	    job_ptr->batch_host &&
 	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
 		srun_node_fail_msg_t *msg_arg;
 
@@ -305,6 +306,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
 
 	if (running_in_slurmctld() &&
+	    job_ptr->batch_host &&
 	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
 		srun_timeout_msg_t *msg_arg;
 
@@ -443,6 +445,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
 
 	if (running_in_slurmctld() &&
+	    job_ptr->batch_host &&
 	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
 		srun_job_complete_msg_t *msg_arg;
 
