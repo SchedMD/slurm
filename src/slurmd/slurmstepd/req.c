@@ -738,7 +738,6 @@ static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_mutex_unlock(&step_mgr_mutex);
 
 done:
-	slurm_send_rc_msg(&msg, rc);
 	slurm_free_msg_members(&msg);
 
 	return rc;
@@ -796,7 +795,6 @@ static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_mutex_unlock(&step_mgr_mutex);
 
 done:
-	slurm_send_rc_msg(&msg, rc);
 	slurm_free_msg_members(&msg);
 
 	return rc;
@@ -855,7 +853,6 @@ static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_mutex_unlock(&step_mgr_mutex);
 
 done:
-	slurm_send_rc_msg(&msg, rc);
 	slurm_free_msg_members(&msg);
 
 	return rc;
