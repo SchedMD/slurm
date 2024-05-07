@@ -1361,7 +1361,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	}
 
 	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
-		if ((step_spec->num_tasks == NO_VAL) && nodes_avail) {
+		if ((step_spec->num_tasks == NO_VAL) && nodes_avail &&
+		    !(step_spec->flags & SSF_EXT_LAUNCHER)) {
 			_set_max_num_tasks(step_spec, job_ptr, nodes_avail,
 					   cpus_per_task);
 		}
@@ -1515,7 +1516,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		xfree(temp2);
 	}
 
-	if (step_spec->num_tasks == NO_VAL) {
+	if ((step_spec->num_tasks == NO_VAL) &&
+	    !(step_spec->flags & SSF_EXT_LAUNCHER)) {
 		uint32_t cnt = 0;
 		bitstr_t *node_bitmap = NULL;
 
