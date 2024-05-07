@@ -105,6 +105,4 @@ extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
  */
 extern void gpu_common_underscorify_tolower(char *str);
 
-extern int gpu_common_sort_freq_descending(const void *a, const void *b);
-
 #endif /* !_GPU_COMMON_H */

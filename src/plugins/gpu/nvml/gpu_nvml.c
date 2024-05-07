@@ -263,7 +263,7 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
 	}
 
 	qsort(mem_freqs, *mem_freqs_size, sizeof(unsigned int),
-	      gpu_common_sort_freq_descending);
+	      slurm_sort_uint_list_desc);
 
 	if ((*mem_freqs_size > 1) &&
 	    (mem_freqs[0] <= mem_freqs[(*mem_freqs_size)-1])) {
@@ -308,7 +308,7 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
 	}
 
 	qsort(gfx_freqs, *gfx_freqs_size, sizeof(unsigned int),
-	      gpu_common_sort_freq_descending);
+	      slurm_sort_uint_list_desc);
 
 	if ((*gfx_freqs_size > 1) &&
 	    (gfx_freqs[0] <= gfx_freqs[(*gfx_freqs_size)-1])) {
