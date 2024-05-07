@@ -130,12 +130,7 @@ static int _sock_gres_sort(void *x, void *y)
 	if (gres_js2 && !gres_js2->gres_per_socket)
 		weight2 += 0x01;
 
-	if (weight1 < weight2)
-		return -1;
-	else if (weight1 > weight2)
-		return 1;
-
-	return 0;
+	return slurm_sort_int_list_asc(&weight1, &weight2);
 }
 
 static uint64_t _set_max_gres(gres_job_state_t *gres_js,
