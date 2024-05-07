@@ -1982,7 +1982,8 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", flags");
 
 		if (for_add) {
-			uint16_t base_flags = assoc->flags & ~ASSOC_FLAG_BASE;
+			slurmdb_assoc_flags_t base_flags =
+				assoc->flags & ~ASSOC_FLAG_BASE;
 			xstrfmtcat(*vals, ", %u", base_flags);
 			xstrfmtcat(*extra, ", flags=%u", base_flags);
 		} else {

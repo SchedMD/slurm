@@ -3013,8 +3013,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc->acct = xstrdup(assoc_in->acct);
 		assoc->cluster = xstrdup(assoc_in->cluster);
 		assoc->comment = xstrdup(assoc_in->comment);
-		assoc->flags = assoc_in->flags & SLURMDB_ACCT_FLAG_BASE;
-
+		assoc->flags = assoc_in->flags & ~ASSOC_FLAG_BASE;
 		assoc->grp_tres = xstrdup(assoc_in->grp_tres);
 		assoc->grp_tres_mins = xstrdup(assoc_in->grp_tres_mins);
 		assoc->grp_tres_run_mins = xstrdup(assoc_in->grp_tres_run_mins);
