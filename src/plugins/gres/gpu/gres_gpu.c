@@ -369,12 +369,7 @@ static int _sort_gpu_by_links_order(void *x, void *y)
 	if (index_x < -1 || index_y < -1)
 		error("%s: invalid links value found", __func__);
 
-	if (index_x < index_y)
-		return -1;
-	else if (index_x > index_y)
-		return 1;
-
-	return 0;
+	return slurm_sort_int_list_asc(&index_x, &index_y);
 }
 
 /*
