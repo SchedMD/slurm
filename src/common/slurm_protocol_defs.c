@@ -748,6 +748,84 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern int slurm_sort_uint_list_asc(const void *v1, const void *v2)
+{
+	uint64_t uint64a = *(uint64_t *) v1;
+	uint64_t uint64b = *(uint64_t *) v2;
+
+	if (uint64a < uint64b)
+		return -1;
+	else if (uint64a > uint64b)
+		return 1;
+
+	return 0;
+}
+
+extern int slurm_sort_uint_list_desc(const void *v1, const void *v2)
+{
+	uint64_t uint64a = *(uint64_t *) v1;
+	uint64_t uint64b = *(uint64_t *) v2;
+
+	if (uint64a > uint64b)
+		return -1;
+	else if (uint64a < uint64b)
+		return 1;
+
+	return 0;
+}
+
+extern int slurm_sort_int_list_asc(const void *v1, const void *v2)
+{
+	int inta = *(int *) v1;
+	int intb = *(int *) v2;
+
+	if (inta < intb)
+		return -1;
+	else if (inta > intb)
+		return 1;
+
+	return 0;
+}
+
+extern int slurm_sort_int_list_desc(const void *v1, const void *v2)
+{
+	int inta = *(int *) v1;
+	int intb = *(int *) v2;
+
+	if (inta > intb)
+		return -1;
+	else if (inta < intb)
+		return 1;
+
+	return 0;
+}
+
+extern int slurm_sort_int64_list_asc(const void *v1, const void *v2)
+{
+	int64_t int64a = *(int64_t *) v1;
+	int64_t int64b = *(int64_t *) v2;
+
+	if (int64a < int64b)
+		return -1;
+	else if (int64a > int64b)
+		return 1;
+
+	return 0;
+}
+
+extern int slurm_sort_int64_list_desc(const void *v1, const void *v2)
+{
+	int64_t int64a = *(int64_t *) v1;
+	int64_t int64b = *(int64_t *) v2;
+
+	if (int64a > int64b)
+		return -1;
+	else if (int64a < int64b)
+		return 1;
+
+	return 0;
+}
+
 extern char **slurm_char_array_copy(int n, char **src)
 {
 	char **dst = xcalloc(n + 1, sizeof(char *));
