@@ -154,6 +154,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
+	bool notify_job = true;
 	srun_node_fail_args_t args = {
 		.bit_position = -1,
 		.node_name = node_name,
@@ -188,9 +189,13 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_NODE_FAIL,
 				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
+
+		/* If step mgr, if enabled, will take care of notify the job. */
+		notify_job = false;
 	}
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		srun_node_fail_msg_t *msg_arg;
 		slurm_addr_t * addr;
 
@@ -283,6 +288,7 @@ static int _srun_step_timeout(void *x, void *arg)
  */
 extern void srun_timeout(job_record_t *job_ptr)
 {
+	bool notify_job = true;
 	slurm_addr_t * addr;
 	srun_timeout_msg_t *msg_arg;
 
@@ -306,9 +312,13 @@ extern void srun_timeout(job_record_t *job_ptr)
 		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_TIMEOUT,
 				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
+
+		/* If step mgr, if enabled, will take care of notify the job. */
+		notify_job = false;
 	}
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
@@ -422,6 +432,7 @@ static int _srun_job_complete(void *x, void *arg)
  */
 extern void srun_job_complete(job_record_t *job_ptr)
 {
+	bool notify_job = true;
 
 	xassert(job_ptr);
 
@@ -440,9 +451,13 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
 				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
+
+		notify_job = false;
 	}
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	/* If step mgr, if enabled, will take care of notify the job. */
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		srun_job_complete_msg_t *msg_arg;
 		slurm_addr_t * addr;
 
