@@ -116,21 +116,6 @@ static int _cmp_int_ascend(const void *a, const void *b)
 	return 0;
 }
 
-/* qsort compare function for descending int list */
-static int _cmp_int_descend(const void *a, const void *b)
-{
-	int ca = *((int *) a);
-	int cb = *((int *) b);
-
-	if (ca < cb)
-		return 1;
-	else if (ca > cb)
-		return -1;
-
-	return 0;
-}
-
-
 /* qsort compare function for board combination socket list
  * NOTE: sockets_core_cnt is a global symbol in this module */
 static int _cmp_sock(const void *a, const void *b)
@@ -619,7 +604,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 
 		/* Sort boards in descending order of available core count */
 		qsort(sort_brds_core_cnt, nboards_nb, sizeof(int),
-		      _cmp_int_descend);
+		      slurm_sort_int_list_desc);
 		/*
 		 * Determine minimum number of boards required for the
 		 * allocation (b_min)
