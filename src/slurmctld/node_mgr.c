@@ -3127,14 +3127,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	}
 
-	if (node_ptr->res_cores_per_gpu) {
-		/*
-		 * We need to make gpu_spec_bitmap now that we know the cores
-		 * used per gres.
-		 */
-		error_code = _set_gpu_spec(node_ptr, &reason_down);
-	}
-
 	if (!(slurm_conf.conf_flags & CONF_FLAG_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->tot_sockets;
