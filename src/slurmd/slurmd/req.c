@@ -300,6 +300,8 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg)
 	uid_t job_uid;
 	uint16_t protocol_version;
 
+	step_id->step_het_comp = NO_VAL; /* het jobs aren't supported. */
+
 	job_uid = _get_job_uid(step_id->job_id);
 	if (job_uid == INFINITE) {
 		error("No stepd for jobid %u from uid %u for rpc %s",
@@ -339,7 +341,7 @@ done:
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	slurm_step_id_t step_id = {NO_VAL};
+	slurm_step_id_t step_id;
 
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
@@ -364,7 +366,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id = {NO_VAL};
+	slurm_step_id_t step_id;
 
 	step_id.job_id = request->job_id;
 
@@ -388,7 +390,7 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id = {NO_VAL};
+	slurm_step_id_t step_id;
 
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
