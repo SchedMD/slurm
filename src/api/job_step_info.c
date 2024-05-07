@@ -648,6 +648,7 @@ trystepmgr:
 			slurm_conf_get_addr(stepmgr_nodename, &req.address,
 					    req.flags);
 		}
+		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req, &resp, 0))
 			return NULL;
@@ -660,6 +661,7 @@ trystepmgr:
 	{
 		reroute_msg_t *rr_msg = resp.data;
 		stepmgr_nodename = rr_msg->step_mgr;
+		rr_msg->step_mgr = NULL;
 		if (stepmgr_nodename) {
 			goto trystepmgr;
 		} else {
