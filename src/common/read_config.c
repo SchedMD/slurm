@@ -1657,6 +1657,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {
 			p->preempt_mode = preempt_mode_num(tmp);
+			if (p->preempt_mode & PREEMPT_MODE_GANG) {
+				error_in_daemon("PreemptMode=GANG is a cluster-wide option and cannot be set at partition level, option ignored.");
+				p->preempt_mode &= (~PREEMPT_MODE_GANG);
+			}
 			if (p->preempt_mode == NO_VAL16) {
 				error("Bad value \"%s\" for PreemptMode", tmp);
 				xfree(tmp);
