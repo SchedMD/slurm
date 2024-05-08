@@ -2023,7 +2023,8 @@ static void _update_it(int argc, char **argv)
 
 	if (error_code) {
 		exit_code = 1;
-		slurm_perror ("slurm_update error");
+		if (errno)
+			slurm_perror ("slurm_update error");
 	}
 	/* The slurm error message is already
 	 * printed for each array task in
