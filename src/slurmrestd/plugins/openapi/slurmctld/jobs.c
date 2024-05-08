@@ -430,28 +430,28 @@ static void _job_post(ctxt_t *ctxt)
 	if (!ctxt->query) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "unexpected empty query for job");
-		return;
+		goto cleanup;
 	}
 
 	if (DATA_PARSE(ctxt->parser, JOB_SUBMIT_REQ, req, ctxt->query,
 		       ctxt->parent_path))
-		return;
+		goto cleanup;
 
 	if (!req.jobs && (!req.script || !req.script[0]) &&
 	    (!req.job || !req.job->script)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
-		return;
+		goto cleanup;
 	}
 	if (req.job && req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specify only one \"job\" or \"jobs\" fields but never both");
-		return;
+		goto cleanup;
 	}
 	if (!req.job && !req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specifing either \"job\" or \"jobs\" fields are required to submit job");
-		return;
+		goto cleanup;
 	}
 
 	if (req.job) {
@@ -460,6 +460,7 @@ static void _job_post(ctxt_t *ctxt)
 		_job_post_het_submit(ctxt, req.jobs, req.script);
 	}
 
+cleanup:
 	slurm_free_job_desc_msg(req.job);
 	FREE_NULL_LIST(req.jobs);
 	xfree(req.script);
