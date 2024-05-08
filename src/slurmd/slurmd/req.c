@@ -2374,20 +2374,21 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		 */
 	} else {
 		hostlist_t *step_hset = hostlist_create(req->nodes);
-		int rc;
+		int forkexec_rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
-		rc = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
-					  cli, step_hset,
-					  msg->protocol_version);
+		forkexec_rc = _forkexec_slurmstepd(LAUNCH_TASKS,
+						   (void *) launch_req,
+						   cli, step_hset,
+						   msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
-		       __func__, rc);
+		       __func__, forkexec_rc);
 
-		if (rc != SLURM_SUCCESS) {
+		if (forkexec_rc != SLURM_SUCCESS) {
 			_launch_job_fail(
 			    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
 			    req->het_job_id : req->job_id,
-			    rc);
+			    forkexec_rc);
 		}
 
 		FREE_NULL_HOSTLIST(step_hset);
