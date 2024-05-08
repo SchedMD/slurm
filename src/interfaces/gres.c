@@ -2925,6 +2925,7 @@ static void _gres_node_state_delete_topo(gres_node_state_t *gres_ns)
 	xfree(gres_ns->topo_core_bitmap);
 	xfree(gres_ns->topo_gres_cnt_alloc);
 	xfree(gres_ns->topo_gres_cnt_avail);
+	xfree(gres_ns->topo_res_core_bitmap);
 	xfree(gres_ns->topo_type_id);
 	xfree(gres_ns->topo_type_name);
 }
