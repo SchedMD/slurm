@@ -156,6 +156,7 @@ typedef struct {
 	char *req_context;		/* requested SELinux context */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
+	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
 	uint16_t segment_size;
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */

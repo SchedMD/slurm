@@ -580,6 +580,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 	packstr(detail_ptr->env_hash, buffer);
 	packstr(detail_ptr->script_hash, buffer);
 	pack16(detail_ptr->segment_size, buffer);
+	pack16(detail_ptr->resv_port_cnt, buffer);
 }
 
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
@@ -1413,6 +1414,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t ntasks_per_node, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type;
 	uint16_t segment_size = 0;
+	uint16_t resv_port_cnt = NO_VAL16;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node, features_use = 0;
 	time_t begin_time, accrue_time = 0, submit_time;
@@ -1490,6 +1492,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&env_hash, buffer);
 		safe_unpackstr(&script_hash, buffer);
 		safe_unpack16(&segment_size, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t plane_size;
 		safe_unpack32(&min_cpus, buffer);
@@ -1681,6 +1684,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->prolog_running = prolog_running;
 	job_ptr->details->req_nodes = req_nodes;
 	job_ptr->details->requeue = requeue;
+	job_ptr->details->resv_port_cnt = resv_port_cnt;
 	job_ptr->details->segment_size = segment_size;
 	job_ptr->details->share_res = share_res;
 	job_ptr->details->submit_time = submit_time;
