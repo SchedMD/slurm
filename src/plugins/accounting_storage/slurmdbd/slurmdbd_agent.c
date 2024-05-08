@@ -816,8 +816,7 @@ static void _shutdown_agent(void)
 	if (agent_running)
 		slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_lock);
-	pthread_join(agent_tid,  NULL);
-	agent_tid = 0;
+	slurm_thread_join(agent_tid);
 }
 
 /****************************************************************************
