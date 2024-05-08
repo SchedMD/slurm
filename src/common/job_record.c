@@ -266,6 +266,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);
 	xfree(job_ptr->resv_ports);
+	xfree(job_ptr->resv_port_array);
 	xfree(job_ptr->sched_nodes);
 	for (int i = 0; i < job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
