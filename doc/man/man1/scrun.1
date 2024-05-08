@@ -1239,7 +1239,12 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 				end
 			end
 
-			mount["options"] = opts
+			if (opts ~= nil and #opts > 0)
+			then
+				mount["options"] = opts
+			else
+				mount["options"] = nil
+			end
 		end
 
 		-- Remove all bind mounts by copying files into rootfs
