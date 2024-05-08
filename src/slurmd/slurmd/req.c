@@ -108,7 +108,7 @@
 #include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
-#include "src/slurmd/common/job_status.h"
+#include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"

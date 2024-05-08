@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_status.c - functions for determining job status
+ *  slurmd_common.c - functions for determining job status
  *****************************************************************************
  *  Copyright (C) 2024 SchedMD LLC.
  *

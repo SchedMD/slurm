@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_status.c - functions for determining job status
+ *  slurmd_common.c - functions for determining job status
  *****************************************************************************
  *  Copyright (C) 2024 SchedMD LLC.
  *
@@ -34,7 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/stepd_api.h"
-#include "src/slurmd/common/job_status.h"
+#include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 extern bool is_job_running(uint32_t job_id, bool ignore_extern)

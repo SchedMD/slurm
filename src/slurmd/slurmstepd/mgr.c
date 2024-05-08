@@ -106,10 +106,10 @@
 #include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
-#include "src/slurmd/common/job_status.h"
 #include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
+#include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
