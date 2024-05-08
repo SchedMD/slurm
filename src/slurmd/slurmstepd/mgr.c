@@ -1532,6 +1532,9 @@ fail1:
 	stepd_send_step_complete_msgs(step);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
+		/* Force all other steps to end before epilog starts */
+		pause_for_job_completion(jobid, 0, true);
+
 		int epilog_rc = _run_prolog_epilog(step, true);
 		epilog_complete(step->step_id.job_id, step->node_list,
 				epilog_rc);
