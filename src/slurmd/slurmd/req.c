@@ -5285,8 +5285,6 @@ static void
 _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
-	job_env_t       job_env;
-	int		node_id = 0;
 
 	debug("%s: uid = %u", __func__, msg->auth_uid);
 	/*
@@ -5344,25 +5342,30 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
+		int node_id = 0;
+		job_env_t job_env;
 #ifndef HAVE_FRONT_END
-	/* It is always 0 for front end systems */
-	node_id = nodelist_find(req->nodes, conf->node_name);
+		/* It is always 0 for front end systems */
+		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
-	memset(&job_env, 0, sizeof(job_env));
-	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
-	job_env.jobid = req->step_id.job_id;
-	job_env.derived_ec = req->derived_ec;
-	job_env.exit_code = req->exit_code;
-	job_env.node_list = req->nodes;
-	job_env.het_job_id = req->het_job_id;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.work_dir = req->work_dir;
-	job_env.uid = req->job_uid;
-	job_env.gid = req->job_gid;
+		memset(&job_env, 0, sizeof(job_env));
+		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
+				    node_id);
+		job_env.jobid = req->step_id.job_id;
+		job_env.derived_ec = req->derived_ec;
+		job_env.exit_code = req->exit_code;
+		job_env.node_list = req->nodes;
+		job_env.het_job_id = req->het_job_id;
+		job_env.spank_job_env = req->spank_job_env;
+		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->work_dir;
+		job_env.uid = req->job_uid;
+		job_env.gid = req->job_gid;
 
-	_run_epilog(&job_env, req->cred);
-	_free_job_env(&job_env);
+		_run_epilog(&job_env, req->cred);
+		_free_job_env(&job_env);
+	}
 
 	_launch_complete_rm(req->step_id.job_id);
 }
@@ -5374,8 +5377,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	kill_job_msg_t *req    = msg->data;
 	int             nsteps = 0;
 	int		delay;
-	int		node_id = 0;
-	job_env_t       job_env;
 
 	debug("%s: uid = %u %ps", __func__, msg->auth_uid, &req->step_id);
 	/*
@@ -5572,38 +5573,43 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
+		int node_id = 0;
+		job_env_t job_env;
 #ifndef HAVE_FRONT_END
-	/* It is always 0 for front end systems */
-	node_id = nodelist_find(req->nodes, conf->node_name);
+		/* It is always 0 for front end systems */
+		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
-	memset(&job_env, 0, sizeof(job_env));
-	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
+		memset(&job_env, 0, sizeof(job_env));
+		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
+				    node_id);
 
-	job_env.jobid = req->step_id.job_id;
-	job_env.derived_ec = req->derived_ec;
-	job_env.exit_code = req->exit_code;
-	job_env.node_list = req->nodes;
-	job_env.het_job_id = req->het_job_id;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.work_dir = req->work_dir;
-	job_env.uid = req->job_uid;
-	job_env.gid = req->job_gid;
+		job_env.jobid = req->step_id.job_id;
+		job_env.derived_ec = req->derived_ec;
+		job_env.exit_code = req->exit_code;
+		job_env.node_list = req->nodes;
+		job_env.het_job_id = req->het_job_id;
+		job_env.spank_job_env = req->spank_job_env;
+		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->work_dir;
+		job_env.uid = req->job_uid;
+		job_env.gid = req->job_gid;
 
-	rc = _run_epilog(&job_env, req->cred);
-	_free_job_env(&job_env);
-
-	if (rc) {
-		int term_sig = 0, exit_status = 0;
-		if (WIFSIGNALED(rc))
-			term_sig    = WTERMSIG(rc);
-		else if (WIFEXITED(rc))
-			exit_status = WEXITSTATUS(rc);
-		error("[job %u] epilog failed status=%d:%d",
-		      req->step_id.job_id, exit_status, term_sig);
-		rc = ESLURMD_EPILOG_FAILED;
-	} else
-		debug("completed epilog for jobid %u", req->step_id.job_id);
+		rc = _run_epilog(&job_env, req->cred);
+		_free_job_env(&job_env);
+		if (rc) {
+			int term_sig = 0, exit_status = 0;
+			if (WIFSIGNALED(rc))
+				term_sig = WTERMSIG(rc);
+			else if (WIFEXITED(rc))
+				exit_status = WEXITSTATUS(rc);
+			error("[job %u] epilog failed status=%d:%d",
+			req->step_id.job_id, exit_status, term_sig);
+			rc = ESLURMD_EPILOG_FAILED;
+		} else
+			debug("completed epilog for jobid %u",
+			      req->step_id.job_id);
+	}
 	_launch_complete_rm(req->step_id.job_id);
 
 done:
