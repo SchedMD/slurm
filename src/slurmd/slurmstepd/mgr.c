@@ -101,6 +101,7 @@
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
@@ -1268,6 +1269,54 @@ static bool _wait_for_step_completion(uint32_t job_id, int max_time)
 	return (!rc);
 }
 
+static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
+{
+	int rc = SLURM_SUCCESS;
+	job_env_t job_env;
+	list_t *tmp_list;
+
+	memset(&job_env, 0, sizeof(job_env));
+
+	tmp_list = gres_g_prep_build_env(step->job_gres_list, step->node_list);
+	gres_g_prep_set_env(&job_env.gres_job_env, tmp_list, step->nodeid);
+	FREE_NULL_LIST(tmp_list);
+
+	job_env.jobid = step->step_id.job_id;
+	job_env.step_id = SLURM_EXTERN_CONT;
+	job_env.node_list = step->node_list;
+	job_env.het_job_id = step->het_job_id;
+	job_env.partition = step->msg->cred->arg->job_partition;
+	job_env.spank_job_env = step->msg->spank_job_env;
+	job_env.spank_job_env_size = step->msg->spank_job_env_size;
+	job_env.work_dir = step->cwd;
+	job_env.uid = step->uid;
+	job_env.gid = step->gid;
+
+	if (!is_epilog)
+		rc = prep_g_prolog(&job_env, step->msg->cred);
+	else
+		rc = prep_g_epilog(&job_env, step->msg->cred);
+
+	if (job_env.gres_job_env) {
+		for (int i = 0; job_env.gres_job_env[i]; i++)
+			xfree(job_env.gres_job_env[i]);
+		xfree(job_env.gres_job_env);
+	}
+
+	if (rc) {
+		int term_sig = 0, exit_status = 0;
+		if (WIFSIGNALED(rc))
+			term_sig = WTERMSIG(rc);
+		else if (WIFEXITED(rc))
+			exit_status = WEXITSTATUS(rc);
+		error("[job %u] %s failed status=%d:%d", step->step_id.job_id,
+		      is_epilog ? "epilog" : "prolog", exit_status, term_sig);
+		rc = is_epilog ? ESLURMD_EPILOG_FAILED : ESLURMD_PROLOG_FAILED;
+	}
+
+	return rc;
+}
+
 static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
@@ -1415,7 +1464,11 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, -1, NULL) < 0) {
 		error("spank extern task post-fork failed");
 		rc = SLURM_ERROR;
+	} else if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
+		rc = _run_prolog_epilog(step, false);
+	}
 
+	if (rc != SLURM_SUCCESS) {
 		/*
 		 * Failure before the tasks have even started, so we will need
 		 * to mark all of them as failed unless there is already an
@@ -1522,6 +1575,12 @@ fail1:
 		step_complete.step_rc = rc;
 
 	stepd_send_step_complete_msgs(step);
+
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
+		int epilog_rc = _run_prolog_epilog(step, true);
+		epilog_complete(step->step_id.job_id, step->node_list,
+				epilog_rc);
+	}
 
 	return rc;
 }

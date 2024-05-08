@@ -72,6 +72,7 @@
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -891,6 +892,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
+	    (prep_g_init(NULL) != SLURM_SUCCESS) ||
 	    (proctrack_g_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||

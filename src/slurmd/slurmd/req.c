@@ -2389,6 +2389,9 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 			    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
 			    req->het_job_id : req->job_id,
 			    forkexec_rc);
+
+			if (forkexec_rc == ESLURMD_PROLOG_FAILED)
+				rc = forkexec_rc;
 		}
 
 		FREE_NULL_HOSTLIST(step_hset);
@@ -5577,7 +5580,8 @@ done:
 	_wait_state_completed(req->step_id.job_id, 5);
 	_waiter_complete(req->step_id.job_id);
 
-	epilog_complete(req->step_id.job_id, req->nodes, rc);
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB))
+		epilog_complete(req->step_id.job_id, req->nodes, rc);
 }
 
 /*
