@@ -158,7 +158,6 @@ typedef struct {
 	char *pos;
 } foreach_libdir_args_t;
 
-static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static int  _job_limits_match(void *x, void *key);
@@ -213,7 +212,6 @@ static void _rpc_network_callerid(slurm_msg_t *msg);
 
 static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
 static bool _slurm_authorized_user(uid_t uid);
-static void _sync_messages_kill(char *node_list);
 static int  _waiter_init (uint32_t jobid);
 static void _waiter_complete(uint32_t jobid);
 
@@ -4975,45 +4973,6 @@ _steps_completed_now(uint32_t jobid)
 	return rc;
 }
 
-/*
- *  Send epilog complete message to currently active controller.
- *   Returns SLURM_SUCCESS if message sent successfully,
- *           SLURM_ERROR if epilog complete message fails to be sent.
- */
-static int _epilog_complete(uint32_t jobid, char *node_list, int rc)
-{
-	slurm_msg_t msg;
-	epilog_complete_msg_t req;
-	int ctld_rc;
-
-	_sync_messages_kill(node_list);
-
-	slurm_msg_t_init(&msg);
-	memset(&req, 0, sizeof(req));
-
-	req.job_id = jobid;
-	req.return_code = rc;
-	req.node_name = conf->node_name;
-
-	msg.msg_type = MESSAGE_EPILOG_COMPLETE;
-	msg.data = &req;
-
-	/*
-	 * Note: Return code is only used within the communication layer
-	 * to back off the send. No other return code should be seen here.
-	 * slurmctld will resend TERMINATE_JOB request if message send fails.
-	 */
-	if (slurm_send_recv_controller_rc_msg(&msg, &ctld_rc,
-					      working_cluster_rec) < 0) {
-		error("Unable to send epilog complete message: %m");
-		return SLURM_ERROR;
-	}
-
-	debug("JobId=%u: sent epilog complete msg: rc = %d", jobid, rc);
-
-	return SLURM_SUCCESS;
-}
-
 /* if a lock is granted to the job then return 1; else return 0 if
  * the lock for the job is already taken or there's no more locks */
 static int
@@ -5528,7 +5487,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			/* The epilog complete message processing on
 			 * slurmctld is equivalent to that of a
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
-			_epilog_complete(req->step_id.job_id, req->nodes, rc);
+			epilog_complete(req->step_id.job_id, req->nodes, rc);
 		}
 
 		_launch_complete_rm(req->step_id.job_id);
@@ -5617,73 +5576,7 @@ done:
 	_wait_state_completed(req->step_id.job_id, 5);
 	_waiter_complete(req->step_id.job_id);
 
-	_epilog_complete(req->step_id.job_id, req->nodes, rc);
-}
-
-/* On a parallel job, every slurmd may send the EPILOG_COMPLETE
- * message to the slurmctld at the same time, resulting in lost
- * messages. We add a delay here to spead out the message traffic
- * assuming synchronized clocks across the cluster.
- * Allow 10 msec processing time in slurmctld for each RPC. */
-static void _sync_messages_kill(char *node_list)
-{
-	int host_cnt, host_inx;
-	char *host;
-	hostset_t *hosts;
-
-	hosts = hostset_create(node_list);
-	host_cnt = hostset_count(hosts);
-	if (host_cnt <= 64)
-		goto fini;
-	if (conf->hostname == NULL)
-		goto fini;	/* should never happen */
-
-	for (host_inx=0; host_inx<host_cnt; host_inx++) {
-		host = hostset_shift(hosts);
-		if (host == NULL)
-			break;
-		if (xstrcmp(host, conf->node_name) == 0) {
-			free(host);
-			break;
-		}
-		free(host);
-	}
-
-	_delay_rpc(host_inx, host_cnt, slurm_conf.epilog_msg_time);
-
-fini:	hostset_destroy(hosts);
-}
-
-/* Delay a message based upon the host index, total host count and RPC_TIME.
- * This logic depends upon synchronized clocks across the cluster. */
-static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
-{
-	struct timeval tv1;
-	uint32_t cur_time;	/* current time in usec (just 9 digits) */
-	uint32_t tot_time;	/* total time expected for all RPCs */
-	uint32_t offset_time;	/* relative time within tot_time */
-	uint32_t target_time;	/* desired time to issue the RPC */
-	uint32_t delta_time;
-
-again:	if (gettimeofday(&tv1, NULL)) {
-		usleep(host_inx * usec_per_rpc);
-		return;
-	}
-
-	cur_time = ((tv1.tv_sec % 1000) * 1000000) + tv1.tv_usec;
-	tot_time = host_cnt * usec_per_rpc;
-	offset_time = cur_time % tot_time;
-	target_time = host_inx * usec_per_rpc;
-	if (target_time < offset_time)
-		delta_time = target_time - offset_time + tot_time;
-	else
-		delta_time = target_time - offset_time;
-	if (usleep(delta_time)) {
-		if (errno == EINVAL) /* usleep for more than 1 sec */
-			usleep(900000);
-		/* errno == EINTR */
-		goto again;
-	}
+	epilog_complete(req->step_id.job_id, req->nodes, rc);
 }
 
 /*

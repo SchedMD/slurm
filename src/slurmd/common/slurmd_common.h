@@ -39,6 +39,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/*
+ *  Send epilog complete message to currently active controller.
+ *   Returns SLURM_SUCCESS if message sent successfully,
+ *           SLURM_ERROR if epilog complete message fails to be sent.
+ */
+extern int epilog_complete(uint32_t jobid, char *node_list, int rc);
+
 /* Connect to the slurmd and determine if the requested job has running steps */
 extern bool is_job_running(uint32_t job_id, bool ignore_extern);
 
