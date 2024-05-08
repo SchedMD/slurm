@@ -68,6 +68,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/id_util.h"
 #include "src/common/parse_time.h"
+#include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
@@ -8202,6 +8203,13 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	set_job_tres_req_str(job_ptr, false);
 	_add_job_hash(job_ptr);
 
+	job_ptr->resv_port_cnt = job_desc->resv_port_cnt;
+	if (job_desc->resv_port_cnt != NO_VAL16) {
+		error_code = resv_port_check_job_request_cnt(job_ptr);
+		if (error_code)
+			return error_code;
+	}
+
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	/* skip copy, just take ownership */
@@ -8409,6 +8417,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->orig_pn_min_memory = detail_ptr->pn_min_memory;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
+
 	detail_ptr->segment_size = job_desc->segment_size;
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
 	detail_ptr->std_in = xstrdup(job_desc->std_in);

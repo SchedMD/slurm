@@ -273,6 +273,17 @@ extern int resv_port_alloc(step_record_t *step_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
+{
+
+	if (job_ptr->resv_port_cnt > port_resv_cnt) {
+		info("%pJ needs %u reserved ports, but only %d exist",
+		     job_ptr, job_ptr->resv_port_cnt, port_resv_cnt);
+		return ESLURM_PORTS_INVALID;
+	}
+	return SLURM_SUCCESS;
+}
+
 /* Release reserved ports for a job step
  * RET SLURM_SUCCESS or an error code */
 extern void resv_port_free(step_record_t *step_ptr)
