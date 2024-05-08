@@ -194,7 +194,8 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern)
  *
  *  Returns true if all job processes are gone
  */
-extern bool pause_for_job_completion(uint32_t job_id, int max_time)
+extern bool pause_for_job_completion(uint32_t job_id, int max_time,
+				     bool ignore_extern)
 {
 	int sec = 0;
 	int pause = 1;
@@ -202,11 +203,11 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time)
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(job_id, false);
+		rc = is_job_running(job_id, ignore_extern);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
-			terminate_all_steps(job_id, true);
+			terminate_all_steps(job_id, true, !ignore_extern);
 		}
 		if (sec > 10) {
 			/* Reduce logging frequency about unkillable tasks */
@@ -249,9 +250,11 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time)
  * terminate_all_steps - signals the container of all steps of a job
  * jobid IN - id of job to signal
  * batch IN - if true signal batch script, otherwise skip it
+ * extern_step IN - if true signal extern step, otherwise skip it
+
  * RET count of signaled job steps (plus batch script, if applicable)
  */
-extern int terminate_all_steps(uint32_t jobid, bool batch)
+extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step)
 {
 	list_t *steps;
 	list_itr_t *i;
@@ -270,6 +273,9 @@ extern int terminate_all_steps(uint32_t jobid, bool batch)
 		}
 
 		if ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) && !batch)
+			continue;
+		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
+		    !extern_step)
 			continue;
 
 		step_cnt++;

@@ -55,7 +55,8 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern);
  *
  *  Returns true if all job processes are gone
  */
-extern bool pause_for_job_completion(uint32_t job_id, int max_time);
+extern bool pause_for_job_completion(uint32_t job_id, int max_time,
+				     bool ignore_extern);
 
 /*
  * terminate_all_steps - signals the container of all steps of a job
@@ -63,6 +64,6 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time);
  * batch IN - if true signal batch script, otherwise skip it
  * RET count of signaled job steps (plus batch script, if applicable)
  */
-extern int terminate_all_steps(uint32_t jobid, bool batch);
+extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step);
 
 #endif /* _JOB_STATUS_H */
