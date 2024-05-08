@@ -287,6 +287,25 @@ extern int resv_port_step_alloc(step_record_t *step_ptr)
 	return rc;
 }
 
+extern int resv_port_job_alloc(job_record_t *job_ptr)
+{
+	int rc;
+	int port_inx;
+
+	rc = _resv_port_alloc(job_ptr->resv_port_cnt,
+			      job_ptr->node_bitmap, &job_ptr->resv_ports,
+			      &job_ptr->resv_port_array, &port_inx);
+	if (rc == ESLURM_PORTS_INVALID)
+		info("%pJ needs %u reserved ports, but only %d exist",
+		     job_ptr, job_ptr->resv_port_cnt, port_resv_cnt);
+	else if (rc == ESLURM_PORTS_BUSY)
+		info("insufficient ports for %pJ to reserve (%d of %u)",
+		     job_ptr, port_inx, job_ptr->resv_port_cnt);
+
+	debug("reserved ports %s for %pJ", job_ptr->resv_ports, job_ptr);
+	return rc;
+}
+
 extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
 {
 
