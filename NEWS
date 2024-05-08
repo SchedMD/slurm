@@ -255,6 +255,8 @@ documents those changes that are of interest to users and administrators.
     '.jobs[].exclusive' field.
  -- scontrol - Add "topo" as possible value to output of
     'scontrol show jobs --{json|yaml}' to '.jobs[].exclusive' field.
+ -- slurmrestd - Add fields '.job.segment_size' and '.jobs[].segment_size' to
+    'POST /slurm/v0.0.41/job/submit' and 'POST /slurm/v0.0.41/job/allocate'.
 
 * Changes in Slurm 23.11.7
 ==========================
