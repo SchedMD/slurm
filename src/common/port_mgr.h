@@ -46,7 +46,7 @@ extern int reserve_port_config(char *mpi_params, list_t *job_list);
 
 /* Reserve ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern int resv_port_alloc(step_record_t *step_ptr);
+extern int resv_port_step_alloc(step_record_t *step_ptr);
 
 /*
  * Verify that the requested resv_port_cnt is valid.

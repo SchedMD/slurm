@@ -3631,7 +3631,7 @@ extern int step_create(job_record_t *job_ptr,
 	if ((step_specs->resv_port_cnt != NO_VAL16) &&
 	    (step_specs->resv_port_cnt != 0)) {
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-		i = resv_port_alloc(step_ptr);
+		i = resv_port_step_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
 			delete_step_record(job_ptr, step_ptr);
 			return i;
