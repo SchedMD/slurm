@@ -1694,6 +1694,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint16_t requeue;	/* enable or disable job requeue option */
 	char *reservation;	/* name of reservation to use */
+	uint16_t resv_port_cnt;	/* count of MPI ports reserved per node */
 	char *script;		/* the actual job script, default NONE */
 	void *script_buf;	/* job script as mmap buf */
 	slurm_hash_t script_hash; /* hash value of script NO NOT PACK */
