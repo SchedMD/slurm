@@ -685,20 +685,25 @@ extern int op_handler_alloc_job(openapi_ctxt_t *ctxt)
 
 	if ((rc = DATA_PARSE(ctxt->parser, JOB_ALLOC_REQ, req, ctxt->query,
 		       ctxt->parent_path)))
-		return rc;
+		goto cleanup;
 
-	if (req.job && req.hetjob)
-		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specify only one \"job\" or \"hetjob\" fields but never both");
-	if (!req.job && !req.hetjob)
-		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specifing either \"job\" or \"hetjob\" fields are required to allocate job");
+	if (req.job && req.hetjob) {
+		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				"Specify only one \"job\" or \"hetjob\" fields but never both");
+		goto cleanup;
+	}
+	if (!req.job && !req.hetjob) {
+		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				"Specifing either \"job\" or \"hetjob\" fields are required to allocate job");
+		goto cleanup;
+	}
 
 	if (req.job)
 		_job_post_allocate(ctxt, req.job);
 	else
 		_job_post_het_allocate(ctxt, req.hetjob);
 
+cleanup:
 	slurm_free_job_desc_msg(req.job);
 	FREE_NULL_LIST(req.hetjob);
 

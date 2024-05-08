@@ -267,6 +267,8 @@ documents those changes that are of interest to users and administrators.
     subdivide them at the step level.
  -- slurmrestd - Fix possible memory leak from failed job submissions to
     'POST /slurm/v0.0.{39,40,41}/job/submit'.
+ -- slurmrestd - Fix possible memory leak from failed job allocation requests to
+    'POST /slurm/v0.0.{39,40,41}/job/allocate'.
 
 * Changes in Slurm 23.11.7
 ==========================
