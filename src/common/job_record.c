@@ -1319,7 +1319,7 @@ static int _comp_node_inx(const void *n1, const void *n2)
 	return slurm_sort_int_list_asc(&node1->node_index, &node2->node_index);
 }
 
-static int _calc_arbitrary_tpn(job_record_t *job_ptr)
+extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr)
 {
 	uint16_t *arbitrary_tasks_np = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1684,7 +1684,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->work_dir = work_dir;
 
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY) && _calc_arbitrary_tpn(job_ptr))
+	     SLURM_DIST_ARBITRARY) && job_record_calc_arbitrary_tpn(job_ptr))
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

@@ -683,6 +683,8 @@ extern int dump_job_step_state(void *x, void *arg);
 extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version);
 
+extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr);
+
 extern int job_record_unpack(job_record_t **out,
 			     int tres_cnt,
 			     buf_t *buffer,
