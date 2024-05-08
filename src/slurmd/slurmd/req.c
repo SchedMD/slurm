@@ -2438,9 +2438,8 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS, node_id = 0;
+	int rc = SLURM_SUCCESS;
 	prolog_launch_msg_t *req = msg->data;
-	job_env_t job_env;
 
 	if (req == NULL)
 		return;
@@ -2471,10 +2470,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		return;
 	}
 
-#ifndef HAVE_FRONT_END
-	/* It is always 0 for front end systems */
-	node_id = nodelist_find(req->nodes, conf->node_name);
-#endif
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN &&
 	    ((rc = _make_prolog_mem_container(msg)) != SLURM_SUCCESS)) {
 		error("%s: aborting prolog due to _make_prolog_mem_container failure: %s. Consider increasing cred_expire window if job prologs take large amount of time.",
@@ -2489,31 +2484,43 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	/* signal just in case the batch rpc got here before we did */
 	slurm_cond_broadcast(&conf->prolog_running_cond);
 	slurm_mutex_unlock(&prolog_mutex);
-	memset(&job_env, 0, sizeof(job_env));
-	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
 
-	job_env.jobid = req->job_id;
-	job_env.step_id = 0; /* not available */
-	job_env.node_aliases = req->alias_list;
-	job_env.node_list = req->nodes;
-	job_env.het_job_id = req->het_job_id;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.work_dir = req->work_dir;
-	job_env.uid = req->uid;
-	job_env.gid = req->gid;
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
+		int node_id = 0;
+		job_env_t job_env;
 
-	rc = _run_prolog(&job_env, req->cred, false);
-	_free_job_env(&job_env);
-	if (rc) {
-		int term_sig = 0, exit_status = 0;
-		if (WIFSIGNALED(rc))
-			term_sig = WTERMSIG(rc);
-		else if (WIFEXITED(rc))
-			exit_status = WEXITSTATUS(rc);
-		error("[job %u] prolog failed status=%d:%d",
-		      req->job_id, exit_status, term_sig);
-		rc = ESLURMD_PROLOG_FAILED;
+#ifndef HAVE_FRONT_END
+		/* It is always 0 for front end systems */
+		node_id = nodelist_find(req->nodes, conf->node_name);
+#endif
+
+		memset(&job_env, 0, sizeof(job_env));
+		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
+				    node_id);
+
+		job_env.jobid = req->job_id;
+		job_env.step_id = 0; /* not available */
+		job_env.node_aliases = req->alias_list;
+		job_env.node_list = req->nodes;
+		job_env.het_job_id = req->het_job_id;
+		job_env.spank_job_env = req->spank_job_env;
+		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->work_dir;
+		job_env.uid = req->uid;
+		job_env.gid = req->gid;
+
+		rc = _run_prolog(&job_env, req->cred, false);
+		_free_job_env(&job_env);
+		if (rc) {
+			int term_sig = 0, exit_status = 0;
+			if (WIFSIGNALED(rc))
+				term_sig = WTERMSIG(rc);
+			else if (WIFEXITED(rc))
+				exit_status = WEXITSTATUS(rc);
+			error("[job %u] prolog failed status=%d:%d",
+			      req->job_id, exit_status, term_sig);
+			rc = ESLURMD_PROLOG_FAILED;
+		}
 	}
 
 	if ((rc == SLURM_SUCCESS) &&
