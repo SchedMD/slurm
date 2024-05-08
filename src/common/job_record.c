@@ -622,13 +622,15 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 				tmp_32 = 0;
 			pack32(tmp_32, buffer);
 			if (tmp_32)
-				packstr(dump_job_ptr->array_recs->task_id_str, buffer);
-			pack32(dump_job_ptr->array_recs->array_flags,    buffer);
-			pack32(dump_job_ptr->array_recs->max_run_tasks,  buffer);
-			pack32(dump_job_ptr->array_recs->tot_run_tasks,  buffer);
-			pack32(dump_job_ptr->array_recs->min_exit_code,  buffer);
-			pack32(dump_job_ptr->array_recs->max_exit_code,  buffer);
-			pack32(dump_job_ptr->array_recs->tot_comp_tasks, buffer);
+				packstr(dump_job_ptr->array_recs->task_id_str,
+					buffer);
+			pack32(dump_job_ptr->array_recs->array_flags, buffer);
+			pack32(dump_job_ptr->array_recs->max_run_tasks, buffer);
+			pack32(dump_job_ptr->array_recs->tot_run_tasks, buffer);
+			pack32(dump_job_ptr->array_recs->min_exit_code, buffer);
+			pack32(dump_job_ptr->array_recs->max_exit_code, buffer);
+			pack32(dump_job_ptr->array_recs->tot_comp_tasks,
+			       buffer);
 		} else {
 			tmp_32 = NO_VAL;
 			pack32(tmp_32, buffer);
@@ -1774,28 +1776,41 @@ extern int job_record_unpack(job_record_t **out,
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
+			job_ptr->array_recs =
+				xmalloc(sizeof(job_array_struct_t));
 			if (task_id_size) {
 				job_ptr->array_recs->task_id_bitmap =
 					bit_alloc(task_id_size);
-				safe_unpackstr(&job_ptr->array_recs->task_id_str, buffer);
+				safe_unpackstr(
+					&job_ptr->array_recs->task_id_str,
+					buffer);
 				if (job_ptr->array_recs->task_id_str) {
 					if (bit_unfmt_hexmask(
-						    job_ptr->array_recs->task_id_bitmap,
-						    job_ptr->array_recs->task_id_str) == -1)
+						    job_ptr->array_recs->
+						    task_id_bitmap,
+						    job_ptr->array_recs->
+						    task_id_str) == -1)
 						error("%s: bit_unfmt_hexmask error on '%s'",
-						      __func__, job_ptr->array_recs->task_id_str);
+						      __func__,
+						      job_ptr->array_recs->
+						      task_id_str);
 				}
 				job_ptr->array_recs->task_cnt =
 					bit_set_count(job_ptr->array_recs->
 						      task_id_bitmap);
 			}
-			safe_unpack32(&job_ptr->array_recs->array_flags, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->min_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks, buffer);
+			safe_unpack32(&job_ptr->array_recs->array_flags,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->min_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks,
+				      buffer);
 		}
 
 		safe_unpack32(&job_ptr->assoc_id, buffer);
@@ -1987,28 +2002,41 @@ extern int job_record_unpack(job_record_t **out,
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
+			job_ptr->array_recs =
+				xmalloc(sizeof(job_array_struct_t));
 			if (task_id_size) {
 				job_ptr->array_recs->task_id_bitmap =
 					bit_alloc(task_id_size);
-				safe_unpackstr(&job_ptr->array_recs->task_id_str, buffer);
+				safe_unpackstr(
+					&job_ptr->array_recs->task_id_str,
+					buffer);
 				if (job_ptr->array_recs->task_id_str) {
 					if (bit_unfmt_hexmask(
-						    job_ptr->array_recs->task_id_bitmap,
-						    job_ptr->array_recs->task_id_str) == -1)
+						    job_ptr->array_recs->
+						    task_id_bitmap,
+						    job_ptr->array_recs->
+						    task_id_str) == -1)
 						error("%s: bit_unfmt_hexmask error on '%s'",
-						      __func__, job_ptr->array_recs->task_id_str);
+						      __func__,
+						      job_ptr->array_recs->
+						      task_id_str);
 				}
 				job_ptr->array_recs->task_cnt =
 					bit_set_count(job_ptr->array_recs->
 						      task_id_bitmap);
 			}
-			safe_unpack32(&job_ptr->array_recs->array_flags, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->min_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks, buffer);
+			safe_unpack32(&job_ptr->array_recs->array_flags,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->min_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks,
+				      buffer);
 		}
 
 		safe_unpack32(&job_ptr->assoc_id, buffer);
@@ -2198,29 +2226,42 @@ extern int job_record_unpack(job_record_t **out,
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
+			job_ptr->array_recs =
+				xmalloc(sizeof(job_array_struct_t));
 
 			if (task_id_size) {
 				job_ptr->array_recs->task_id_bitmap =
 					bit_alloc(task_id_size);
-				safe_unpackstr(&job_ptr->array_recs->task_id_str, buffer);
+				safe_unpackstr(
+					&job_ptr->array_recs->task_id_str,
+					buffer);
 				if (job_ptr->array_recs->task_id_str) {
 					if (bit_unfmt_hexmask(
-						    job_ptr->array_recs->task_id_bitmap,
-						    job_ptr->array_recs->task_id_str) == -1)
+						    job_ptr->array_recs->
+						    task_id_bitmap,
+						    job_ptr->array_recs->
+						    task_id_str) == -1)
 						error("%s: bit_unfmt_hexmask error on '%s'",
-						      __func__, job_ptr->array_recs->task_id_str);
+						      __func__,
+						      job_ptr->array_recs->
+						      task_id_str);
 				}
 				job_ptr->array_recs->task_cnt =
 					bit_set_count(job_ptr->array_recs->
 						      task_id_bitmap);
 			}
-			safe_unpack32(&job_ptr->array_recs->array_flags, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_run_tasks, buffer);
-			safe_unpack32(&job_ptr->array_recs->min_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->max_exit_code, buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks, buffer);
+			safe_unpack32(&job_ptr->array_recs->array_flags,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->min_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks,
+				      buffer);
 		}
 
 		safe_unpack32(&job_ptr->assoc_id, buffer);
