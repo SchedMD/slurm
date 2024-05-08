@@ -1,4 +1,4 @@
-.TH "helpers.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
+.TH "helpers.conf" "5" "Slurm Configuration File" "May 2024" "Slurm Configuration File"
 
 .SH "NAME"
 helpers.conf \- Slurm configuration file for the helpers plugin.
@@ -81,6 +81,7 @@ execute the \fBHelper\fR in one of two ways:
 1. Execute with no arguments to query the status of node features.
 .LP
 2. Execute with a single argument of the feature to be activated on node reboot.
+In the case of multiple features the script is called multiple times.
 .RE
 
 .TP
