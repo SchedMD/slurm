@@ -49,4 +49,20 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc);
 /* Connect to the slurmd and determine if the requested job has running steps */
 extern bool is_job_running(uint32_t job_id, bool ignore_extern);
 
+/*
+ *  Wait for up to max_time seconds.
+ *  If max_time == 0, send SIGKILL to tasks repeatedly
+ *
+ *  Returns true if all job processes are gone
+ */
+extern bool pause_for_job_completion(uint32_t job_id, int max_time);
+
+/*
+ * terminate_all_steps - signals the container of all steps of a job
+ * jobid IN - id of job to signal
+ * batch IN - if true signal batch script, otherwise skip it
+ * RET count of signaled job steps (plus batch script, if applicable)
+ */
+extern int terminate_all_steps(uint32_t jobid, bool batch);
+
 #endif /* _JOB_STATUS_H */

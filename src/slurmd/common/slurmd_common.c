@@ -187,3 +187,108 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern)
 
 	return retval;
 }
+
+/*
+ *  Wait for up to max_time seconds.
+ *  If max_time == 0, send SIGKILL to tasks repeatedly
+ *
+ *  Returns true if all job processes are gone
+ */
+extern bool pause_for_job_completion(uint32_t job_id, int max_time)
+{
+	int sec = 0;
+	int pause = 1;
+	bool rc = false;
+	int count = 0;
+
+	while ((sec < max_time) || (max_time == 0)) {
+		rc = is_job_running(job_id, false);
+		if (!rc)
+			break;
+		if ((max_time == 0) && (sec > 1)) {
+			terminate_all_steps(job_id, true);
+		}
+		if (sec > 10) {
+			/* Reduce logging frequency about unkillable tasks */
+			if (max_time)
+				pause = MIN((max_time - sec), 10);
+			else
+				pause = 10;
+		}
+
+		/*
+		 * The job will usually finish up within the first .02 sec.  If
+		 * not gradually increase the sleep until we get to a second.
+		 */
+		if (count == 0) {
+			usleep(20000);
+			count++;
+		} else if (count == 1) {
+			usleep(50000);
+			count++;
+		} else if (count == 2) {
+			usleep(100000);
+			count++;
+		} else if (count == 3) {
+			usleep(500000);
+			count++;
+			sec = 1;
+		} else {
+			sleep(pause);
+			sec += pause;
+		}
+	}
+
+	/*
+	 * Return true if job is NOT running
+	 */
+	return (!rc);
+}
+
+/*
+ * terminate_all_steps - signals the container of all steps of a job
+ * jobid IN - id of job to signal
+ * batch IN - if true signal batch script, otherwise skip it
+ * RET count of signaled job steps (plus batch script, if applicable)
+ */
+extern int terminate_all_steps(uint32_t jobid, bool batch)
+{
+	list_t *steps;
+	list_itr_t *i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;
+	int fd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		if (stepd->step_id.job_id != jobid) {
+			/* multiple jobs expected on shared nodes */
+			debug3("Step from other job: jobid=%u (this jobid=%u)",
+			       stepd->step_id.job_id, jobid);
+			continue;
+		}
+
+		if ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) && !batch)
+			continue;
+
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd == -1) {
+			debug3("Unable to connect to %ps", &stepd->step_id);
+			continue;
+		}
+
+		debug2("terminate %ps", &stepd->step_id);
+		if (stepd_terminate(fd, stepd->protocol_version) < 0)
+			debug("kill %ps failed: %m", &stepd->step_id);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
+	if (step_cnt == 0)
+		debug2("No steps in job %u to terminate", jobid);
+	return step_cnt;
+}

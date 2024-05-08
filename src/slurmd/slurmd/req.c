@@ -172,7 +172,6 @@ static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
 static int  _prolog_is_running (uint32_t jobid);
 static int  _step_limits_match(void *x, void *key);
-static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *msg);
@@ -210,7 +209,6 @@ static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
 static void _rpc_forward_data(slurm_msg_t *msg);
 static void _rpc_network_callerid(slurm_msg_t *msg);
 
-static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
 static bool _slurm_authorized_user(uid_t uid);
 static int  _waiter_init (uint32_t jobid);
 static void _waiter_complete(uint32_t jobid);
@@ -2731,7 +2729,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		     req->job_id);
 		sleep(1);	/* give slurmstepd time to create
 				 * the communication socket */
-		_terminate_all_steps(req->job_id, true);
+		terminate_all_steps(req->job_id, true);
 		rc = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
@@ -4875,54 +4873,6 @@ extern int ume_notify(void)
 		debug2("No steps to send SIG_UME");
 	return step_cnt;
 }
-/*
- * _terminate_all_steps - signals the container of all steps of a job
- * jobid IN - id of job to signal
- * batch IN - if true signal batch script, otherwise skip it
- * RET count of signaled job steps (plus batch script, if applicable)
- */
-static int
-_terminate_all_steps(uint32_t jobid, bool batch)
-{
-	list_t *steps;
-	list_itr_t *i;
-	step_loc_t *stepd;
-	int step_cnt  = 0;
-	int fd;
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id != jobid) {
-			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: jobid=%u (this jobid=%u)",
-			       stepd->step_id.job_id, jobid);
-			continue;
-		}
-
-		if ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) && !batch)
-			continue;
-
-		step_cnt++;
-
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1) {
-			debug3("Unable to connect to %ps", &stepd->step_id);
-			continue;
-		}
-
-		debug2("terminate %ps", &stepd->step_id);
-		if (stepd_terminate(fd, stepd->protocol_version) < 0)
-			debug("kill %ps failed: %m", &stepd->step_id);
-		close(fd);
-	}
-	list_iterator_destroy(i);
-	FREE_NULL_LIST(steps);
-	if (step_cnt == 0)
-		debug2("No steps in job %u to terminate", jobid);
-	return step_cnt;
-}
 
 /*
  * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
@@ -5289,7 +5239,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion(req->step_id.job_id, 0);
+		pause_for_job_completion(req->step_id.job_id, 0);
 	}
 
 	/*
@@ -5457,7 +5407,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * bother with a "nice" termination.
 		 */
 		debug2("Job is currently suspended, terminating");
-		nsteps = _terminate_all_steps(req->step_id.job_id, true);
+		nsteps = terminate_all_steps(req->step_id.job_id, true);
 	} else {
 		nsteps = _kill_all_active_steps(req->step_id.job_id, SIGTERM, 0,
 						req->details, true,
@@ -5514,12 +5464,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *  Check for corpses
 	 */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!_pause_for_job_completion(req->step_id.job_id, delay) &&
-	    _terminate_all_steps(req->step_id.job_id, true) ) {
+	if (!pause_for_job_completion(req->step_id.job_id, delay) &&
+	    terminate_all_steps(req->step_id.job_id, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion(req->step_id.job_id, 0);
+		pause_for_job_completion(req->step_id.job_id, 0);
 	}
 
 	/*
@@ -5638,64 +5588,6 @@ static void _waiter_complete(uint32_t jobid)
 	if (waiters)
 		list_delete_all(waiters, _find_waiter, &jobid);
 	slurm_mutex_unlock(&waiter_mutex);
-}
-
-/*
- *  Like _wait_for_procs(), but only wait for up to max_time seconds
- *  if max_time == 0, send SIGKILL to tasks repeatedly
- *
- *  Returns true if all job processes are gone
- */
-static bool
-_pause_for_job_completion(uint32_t job_id, int max_time)
-{
-	int sec = 0;
-	int pause = 1;
-	bool rc = false;
-	int count = 0;
-
-	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(job_id, false);
-		if (!rc)
-			break;
-		if ((max_time == 0) && (sec > 1)) {
-			_terminate_all_steps(job_id, true);
-		}
-		if (sec > 10) {
-			/* Reduce logging frequency about unkillable tasks */
-			if (max_time)
-				pause = MIN((max_time - sec), 10);
-			else
-				pause = 10;
-		}
-
-		/*
-		 * The job will usually finish up within the first .02 sec.  If
-		 * not gradually increase the sleep until we get to a second.
-		 */
-		if (count == 0) {
-			usleep(20000);
-			count++;
-		} else if (count == 1) {
-			usleep(50000);
-			count++;
-		} else if (count == 2) {
-			usleep(100000);
-			count++;
-		} else if (count == 3) {
-			usleep(500000);
-			count++;
-			sec = 1;
-		} else {
-			sleep(pause);
-			sec += pause;
-		}
-	}
-
-	/*
-	 * Return true if job is NOT running
-	 */
-	return (!rc);
 }
 
 static void _free_job_env(job_env_t *env_ptr)
