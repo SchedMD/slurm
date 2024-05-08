@@ -240,6 +240,21 @@ documents those changes that are of interest to users and administrators.
     '.jobs[].shared' field.
  -- scontrol - Add "topo" as possible value to output of
     'scontrol show jobs --{json|yaml}' to '.jobs[].shared' field.
+ -- slurmrestd - Add "topo" as possible value to the following:
+      'GET /slurm/v0.0.41/jobs' in '.jobs[].exclusive' field
+      'GET /slurm/v0.0.41/job/{job_id}' in '.jobs[].exclusive' field
+      'POST /slurm/v0.0.41/job/submit' in '.job.exclusive' and
+        '.jobs[].exclusive'
+      'POST /slurm/v0.0.41/job/allocate' in '.job.exclusive' and
+        '.jobs[].exclusive'
+ -- sacctmgr - Added possible flags "RemoveUsersAreCoords" and "UsersAreCoords"
+    to `.accounts[].flags` for `sacctmgr show accounts --{json|yaml}` response.
+ -- sacct - Add "topo" as possible value to output of 'sacct --{json|yaml}' to
+    '.jobs[].exclusive' field.
+ -- squeue - Add "topo" as possible value to output of 'squeue --{json|yaml}' to
+    '.jobs[].exclusive' field.
+ -- scontrol - Add "topo" as possible value to output of
+    'scontrol show jobs --{json|yaml}' to '.jobs[].exclusive' field.
 
 * Changes in Slurm 23.11.7
 ==========================

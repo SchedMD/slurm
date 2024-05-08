@@ -7552,6 +7552,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
 	add_flag_equal(JOB_SHARED_OK, INFINITE16, "false"),
 	add_flag_equal(JOB_SHARED_USER, INFINITE16, "user"),
 	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
+	add_flag_equal(JOB_SHARED_TOPO , INFINITE16, "topo"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(OVERSUBSCRIBE_FLAGS)[] = {
