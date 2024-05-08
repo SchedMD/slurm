@@ -213,7 +213,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg);
 
 static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
 static bool _slurm_authorized_user(uid_t uid);
-static void _sync_messages_kill(kill_job_msg_t *req);
+static void _sync_messages_kill(char *node_list);
 static int  _waiter_init (uint32_t jobid);
 static void _waiter_complete(uint32_t jobid);
 
@@ -4980,11 +4980,13 @@ _steps_completed_now(uint32_t jobid)
  *   Returns SLURM_SUCCESS if message sent successfully,
  *           SLURM_ERROR if epilog complete message fails to be sent.
  */
-static int _epilog_complete(uint32_t jobid, int rc)
+static int _epilog_complete(uint32_t jobid, char *node_list, int rc)
 {
 	slurm_msg_t msg;
 	epilog_complete_msg_t req;
 	int ctld_rc;
+
+	_sync_messages_kill(node_list);
 
 	slurm_msg_t_init(&msg);
 	memset(&req, 0, sizeof(req));
@@ -5522,12 +5524,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * could remain "completing" unnecessarily, until the request
 		 * to terminate is resent.
 		 */
-		_sync_messages_kill(req);
 		if (msg->conn_fd < 0) {
 			/* The epilog complete message processing on
 			 * slurmctld is equivalent to that of a
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
-			_epilog_complete(req->step_id.job_id, rc);
+			_epilog_complete(req->step_id.job_id, req->nodes, rc);
 		}
 
 		_launch_complete_rm(req->step_id.job_id);
@@ -5615,9 +5616,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 done:
 	_wait_state_completed(req->step_id.job_id, 5);
 	_waiter_complete(req->step_id.job_id);
-	_sync_messages_kill(req);
 
-	_epilog_complete(req->step_id.job_id, rc);
+	_epilog_complete(req->step_id.job_id, req->nodes, rc);
 }
 
 /* On a parallel job, every slurmd may send the EPILOG_COMPLETE
@@ -5625,13 +5625,13 @@ done:
  * messages. We add a delay here to spead out the message traffic
  * assuming synchronized clocks across the cluster.
  * Allow 10 msec processing time in slurmctld for each RPC. */
-static void _sync_messages_kill(kill_job_msg_t *req)
+static void _sync_messages_kill(char *node_list)
 {
 	int host_cnt, host_inx;
 	char *host;
 	hostset_t *hosts;
 
-	hosts = hostset_create(req->nodes);
+	hosts = hostset_create(node_list);
 	host_cnt = hostset_count(hosts);
 	if (host_cnt <= 64)
 		goto fini;
