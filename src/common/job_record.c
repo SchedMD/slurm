@@ -51,7 +51,7 @@ typedef struct {
 	int node_count;
 } node_inx_cnt_t;
 
-extern job_record_t *create_job_record(void)
+extern job_record_t *job_record_create(void)
 {
 	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
 	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
@@ -1766,7 +1766,7 @@ extern int job_record_unpack(job_record_t **out,
 	uint16_t details, step_flag;
 	int error_code;
 
-	job_record_t *job_ptr = create_job_record();
+	job_record_t *job_ptr = job_record_create();
 	*out = job_ptr;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {

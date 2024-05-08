@@ -675,7 +675,7 @@ static int _add_job_record(job_record_t *job_ptr, int num_jobs)
  */
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
-	job_record_t *job_ptr = create_job_record();
+	job_record_t *job_ptr = job_record_create();
 
 	if (list_add) {
 		_add_job_record(job_ptr, num_jobs);
