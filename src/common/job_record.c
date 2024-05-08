@@ -265,6 +265,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->resp_host);
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);
+	xfree(job_ptr->resv_ports);
 	xfree(job_ptr->sched_nodes);
 	for (int i = 0; i < job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
@@ -704,6 +705,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 
 		pack16(dump_job_ptr->alloc_resp_port, buffer);
 		pack16(dump_job_ptr->other_port, buffer);
+		packstr(dump_job_ptr->resv_ports, buffer);
 		pack8(0, buffer); /* was power_flags */
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
 		packdouble(dump_job_ptr->billable_tres, buffer);
@@ -1885,6 +1887,7 @@ extern int job_record_unpack(job_record_t **out,
 
 		safe_unpack16(&job_ptr->alloc_resp_port, buffer);
 		safe_unpack16(&job_ptr->other_port, buffer);
+		safe_unpackstr(&job_ptr->resv_ports, buffer);
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
 		safe_unpackdouble(&job_ptr->billable_tres, buffer);
