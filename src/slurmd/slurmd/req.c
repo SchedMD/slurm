@@ -2729,7 +2729,9 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		     req->job_id);
 		sleep(1);	/* give slurmstepd time to create
 				 * the communication socket */
-		terminate_all_steps(req->job_id, true, true);
+		terminate_all_steps(req->job_id, true,
+				    !(slurm_conf.prolog_flags &
+				      PROLOG_FLAG_RUN_IN_JOB));
 		rc = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
 	}
@@ -5239,7 +5241,9 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0, false);
+		pause_for_job_completion(req->step_id.job_id, 0,
+					 (slurm_conf.prolog_flags &
+					  PROLOG_FLAG_RUN_IN_JOB));
 	}
 
 	/*
@@ -5407,7 +5411,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * bother with a "nice" termination.
 		 */
 		debug2("Job is currently suspended, terminating");
-		nsteps = terminate_all_steps(req->step_id.job_id, true, true);
+		nsteps = terminate_all_steps(req->step_id.job_id, true,
+					     !(slurm_conf.prolog_flags &
+					       PROLOG_FLAG_RUN_IN_JOB));
 	} else {
 		nsteps = _kill_all_active_steps(req->step_id.job_id, SIGTERM, 0,
 						req->details, true,
@@ -5464,12 +5470,18 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *  Check for corpses
 	 */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!pause_for_job_completion(req->step_id.job_id, delay, false) &&
-	    terminate_all_steps(req->step_id.job_id, true) ) {
+	if (!pause_for_job_completion(req->step_id.job_id, delay,
+				      (slurm_conf.prolog_flags &
+				       PROLOG_FLAG_RUN_IN_JOB)) &&
+	    terminate_all_steps(req->step_id.job_id, true,
+				!(slurm_conf.prolog_flags &
+				  PROLOG_FLAG_RUN_IN_JOB))) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0, false);
+		pause_for_job_completion(req->step_id.job_id, 0,
+					 (slurm_conf.prolog_flags &
+					  PROLOG_FLAG_RUN_IN_JOB));
 	}
 
 	/*
