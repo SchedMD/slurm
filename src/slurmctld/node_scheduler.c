@@ -58,6 +58,7 @@
 #include "src/common/id_util.h"
 #include "src/common/job_features.h"
 #include "src/common/list.h"
+#include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -2374,6 +2375,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	struct node_set *node_set_ptr = NULL;
 	part_record_t *part_ptr = NULL;
 	uint8_t orig_whole_node, orig_share_res;
+	uint16_t orig_resv_port_cnt = 0;
 	uint32_t min_nodes = 0, max_nodes = 0, req_nodes = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
@@ -2769,6 +2771,59 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	job_ptr->node_bitmap = select_bitmap;
 	select_bitmap = NULL;	/* nothing left to free */
 
+	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
+		if (slurm_conf.mpi_params &&
+		    (job_ptr->resv_port_cnt == NO_VAL16)) {
+			if (!job_ptr->job_resrcs) {
+				error("Select plugin failed to set job resources");
+				/*
+				* Do not attempt to allocate the select_bitmap nodes
+				* since select plugin failed to set job resources
+				*/
+				error_code = ESLURM_NODES_BUSY;
+				job_ptr->start_time = 0;
+				job_ptr->time_last_active = 0;
+				job_ptr->end_time = 0;
+				job_ptr->state_reason = WAIT_RESOURCES;
+				last_job_update = now;
+				xfree(job_ptr->state_desc);
+				goto cleanup;
+			}
+
+			orig_resv_port_cnt = job_ptr->resv_port_cnt;
+			job_ptr->resv_port_cnt = 0;
+
+			/*
+			* reserved port count set to maximum task count on
+			* any node plus one
+			*/
+			for (int i = 0; i < selected_node_cnt; i++) {
+				job_ptr->resv_port_cnt =
+					MAX(job_ptr->resv_port_cnt,
+					    job_ptr->job_resrcs->
+					    tasks_per_node[i]);
+			}
+			job_ptr->resv_port_cnt++;
+		}
+		if ((job_ptr->resv_port_cnt != NO_VAL16) &&
+		    (job_ptr->resv_port_cnt != 0)) {
+			error_code = resv_port_job_alloc(job_ptr);
+			if (error_code) {
+				job_ptr->start_time = 0;
+				job_ptr->time_last_active = 0;
+				job_ptr->end_time = 0;
+				job_ptr->state_reason = WAIT_RESOURCES;
+				last_job_update = now;
+				xfree(job_ptr->state_desc);
+
+				if (error_code == ESLURM_PORTS_BUSY)
+					error_code = ESLURM_NODES_BUSY;
+
+				goto cleanup;
+			}
+		}
+	}
+
 	/*
 	 * we need to have these times set to know when the endtime
 	 * is for the job when we place it
@@ -2950,6 +3005,13 @@ cleanup:
 		    (job_ptr->gres_list_req != gres_list_pre)) {
 			FREE_NULL_LIST(job_ptr->gres_list_req);
 			job_ptr->gres_list_req = gres_list_pre;
+		}
+
+		if (orig_resv_port_cnt == NO_VAL16)
+			job_ptr->resv_port_cnt = orig_resv_port_cnt;
+		if (job_ptr->resv_ports) {
+			resv_port_job_free(job_ptr);
+			xfree(job_ptr->resv_ports);
 		}
 	} else
 		FREE_NULL_LIST(gres_list_pre);

@@ -15707,6 +15707,9 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 
 	xassert(job_ptr);
 
+	if (job_ptr->resv_ports)
+		resv_port_job_free(job_ptr);
+
 	acct_policy_remove_job_submit(job_ptr, false);
 	if (job_ptr->nodes && ((job_ptr->bit_flags & JOB_KILL_HURRY) == 0)
 	    && !IS_JOB_RESIZING(job_ptr)) {
