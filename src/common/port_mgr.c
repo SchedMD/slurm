@@ -57,7 +57,9 @@ int        port_resv_max   = 0;
 static void _dump_resv_port_info(void);
 static void _make_all_resv(list_t *job_list);
 static void _make_step_resv(step_record_t *step_ptr);
-static void _rebuild_port_array(step_record_t *step_ptr);
+static int _rebuild_port_array(const char *resv_ports,
+			       uint16_t *resv_port_cnt,
+			       int **resv_port_array);
 
 static void _dump_resv_port_info(void)
 {
@@ -76,38 +78,34 @@ static void _dump_resv_port_info(void)
 #endif
 }
 
-/* Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _rebuild_port_array(step_record_t *step_ptr)
+/* Builds the resv_port_array based upon resv_ports (a string) */
+static int _rebuild_port_array(const char *resv_ports,
+			       uint16_t *resv_port_cnt,
+			       int **resv_port_array)
 {
 	int i;
 	char *tmp_char;
 	hostlist_t *hl;
 
-	tmp_char = xstrdup_printf("[%s]", step_ptr->resv_ports);
+	tmp_char = xstrdup_printf("[%s]", resv_ports);
 	hl = hostlist_create(tmp_char);
 	xfree(tmp_char);
-	if (!hl) {
-		error("%pS has invalid reserved ports: %s",
-		      step_ptr, step_ptr->resv_ports);
-		xfree(step_ptr->resv_ports);
-		return;
-	}
+	if (!hl)
+		return SLURM_ERROR;
 
-	step_ptr->resv_port_array = xmalloc(sizeof(int) *
-					    step_ptr->resv_port_cnt);
-	step_ptr->resv_port_cnt = 0;
+	*resv_port_array = xcalloc(*resv_port_cnt, *resv_port_cnt);
+	*resv_port_cnt = 0;
 	while ((tmp_char = hostlist_shift(hl))) {
 		i = atoi(tmp_char);
 		if (i > 0)
-			step_ptr->resv_port_array[step_ptr->resv_port_cnt++]=i;
+			(*resv_port_array)[(*resv_port_cnt)++]=i;
 		free(tmp_char);
 	}
 	hostlist_destroy(hl);
-	if (step_ptr->resv_port_cnt == 0) {
-		error("Problem recovering resv_port_array for %pS: %s",
-		      step_ptr, step_ptr->resv_ports);
-		xfree(step_ptr->resv_ports);
-	}
+	if (*resv_port_cnt == 0)
+		return ESLURM_PORTS_INVALID;
+
+	return SLURM_SUCCESS;
 }
 
 /* Update the local reservation table for one job step.
@@ -121,8 +119,22 @@ static void _make_step_resv(step_record_t *step_ptr)
 	    (step_ptr->resv_ports[0] == '\0'))
 		return;
 
-	if (step_ptr->resv_port_array == NULL)
-		_rebuild_port_array(step_ptr);
+	if (step_ptr->resv_port_array == NULL) {
+		int rc;
+		if ((rc = _rebuild_port_array(step_ptr->resv_ports,
+					      &step_ptr->resv_port_cnt,
+					      &step_ptr->resv_port_array))) {
+			if (rc == ESLURM_PORTS_INVALID)
+				error("%pS has invalid reserved ports: %s",
+				      step_ptr, step_ptr->resv_ports);
+			else
+				error("Problem recovering resv_port_array for %pS: %s",
+				      step_ptr, step_ptr->resv_ports);
+
+			xfree(step_ptr->resv_ports);
+			return;
+		}
+	}
 
 	for (i=0; i<step_ptr->resv_port_cnt; i++) {
 		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
