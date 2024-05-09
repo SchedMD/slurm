@@ -3192,6 +3192,7 @@ static int _switch_setup(job_record_t *job_ptr, step_record_t *step_ptr,
 				   step_ptr->step_id.step_id) < 0)
 		fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
+	errno = 0;
 	if (switch_g_build_jobinfo(step_ptr->switch_job,
 				   step_ptr->step_layout,
 				   step_ptr) < 0) {
