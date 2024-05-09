@@ -3189,8 +3189,7 @@ static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 	return SLURM_SUCCESS;
 }
 
-static int _switch_setup(job_record_t *job_ptr, step_record_t *step_ptr,
-			 uint32_t jobid)
+static int _switch_setup(job_record_t *job_ptr, step_record_t *step_ptr)
 {
 	xassert(job_ptr);
 	xassert(step_ptr);
@@ -3199,7 +3198,7 @@ static int _switch_setup(job_record_t *job_ptr, step_record_t *step_ptr,
 		return SLURM_SUCCESS;
 
 	if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
-				   jobid,
+				   job_ptr->job_id,
 				   step_ptr->step_id.step_id) < 0)
 		fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
@@ -3622,7 +3621,7 @@ extern int step_create(job_record_t *job_ptr,
 		}
 	}
 
-	if ((ret_code = _switch_setup(job_ptr, step_ptr, job_ptr->job_id))) {
+	if ((ret_code = _switch_setup(job_ptr, step_ptr))) {
 		delete_step_record(job_ptr, step_ptr);
 		return ret_code;
 	}
@@ -4956,7 +4955,7 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	step_set_alloc_tres(step_ptr, 1, false, false);
 	jobacct_storage_g_step_start(step_mgr_ops->acct_db_conn, step_ptr);
 
-	if ((rc = _switch_setup(job_ptr, step_ptr, job_ptr->job_id))) {
+	if ((rc = _switch_setup(job_ptr, step_ptr))) {
 		delete_step_record(job_ptr, step_ptr);
 		return rc;
 	}
