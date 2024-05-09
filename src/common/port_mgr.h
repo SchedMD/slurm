@@ -62,6 +62,6 @@ extern int resv_port_check_job_request_cnt(job_record_t *job_ptr);
 
 /* Release reserved ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern void resv_port_free(step_record_t *step_ptr);
+extern void resv_port_step_free(step_record_t *step_ptr);
 
 #endif	/* !_HAVE_PORT_MGR_H */

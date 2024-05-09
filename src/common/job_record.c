@@ -90,7 +90,7 @@ extern void free_step_record(void *x)
 				step_ptr->step_layout->node_list);
 		switch_g_free_jobinfo (step_ptr->switch_job);
 	}
-	resv_port_free(step_ptr);
+	resv_port_step_free(step_ptr);
 
 	xfree(step_ptr->container);
 	xfree(step_ptr->container_id);

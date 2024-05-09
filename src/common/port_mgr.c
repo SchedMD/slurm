@@ -317,23 +317,37 @@ extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Release reserved ports for a job step
- * RET SLURM_SUCCESS or an error code */
-extern void resv_port_free(step_record_t *step_ptr)
+/*
+ * Release reserved ports
+ * RET SLURM_SUCCESS or an error code
+ */
+static void _resv_port_free(uint16_t resv_port_cnt,
+			    int *resv_port_array,
+			    bitstr_t *node_bitmap)
 {
 	int i, j;
 
-	if (step_ptr->resv_port_array == NULL)
+	if (resv_port_array == NULL)
 		return;
 
-	for (i=0; i<step_ptr->resv_port_cnt; i++) {
-		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
-		    (step_ptr->resv_port_array[i] > port_resv_max))
+	for (i=0; i<resv_port_cnt; i++) {
+		if ((resv_port_array[i] < port_resv_min) ||
+		    (resv_port_array[i] > port_resv_max))
 			continue;
-		j = step_ptr->resv_port_array[i] - port_resv_min;
-		bit_and_not(port_resv_table[j], step_ptr->step_node_bitmap);
+		j = resv_port_array[i] - port_resv_min;
+		bit_and_not(port_resv_table[j], node_bitmap);
 
 	}
+}
+
+/*
+ * Release reserved ports for a job step
+ * RET SLURM_SUCCESS or an error code
+ */
+extern void resv_port_step_free(step_record_t *step_ptr)
+{
+	_resv_port_free(step_ptr->resv_port_cnt, step_ptr->resv_port_array,
+			step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
 
 	debug("freed ports %s for %pS",
