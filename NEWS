@@ -224,6 +224,8 @@ documents those changes that are of interest to users and administrators.
     of sync during initialization.
  -- slurmrestd - Allow startup when slurmdbd is not configured and avoid loading
     slurmdbd specific plugins.
+ -- Added PrologFlags=RunInJob to make prolog and epilog run inside the job
+    extern step to include it in the job's cgroup.
 
 * Changes in Slurm 23.11.7
 ==========================
