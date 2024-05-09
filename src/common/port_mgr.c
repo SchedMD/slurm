@@ -353,3 +353,14 @@ extern void resv_port_step_free(step_record_t *step_ptr)
 	debug("freed ports %s for %pS",
 	      step_ptr->resv_ports, step_ptr);
 }
+
+extern void resv_port_job_free(job_record_t *job_ptr)
+{
+	_resv_port_free(job_ptr->resv_port_cnt,
+			job_ptr->resv_port_array,
+			job_ptr->node_bitmap);
+	xfree(job_ptr->resv_port_array);
+
+	debug("freed ports %s for %pJ",
+	      job_ptr->resv_ports, job_ptr);
+}
