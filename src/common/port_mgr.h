@@ -44,6 +44,13 @@
  * Call with mpi_params==NULL to free memory */
 extern int reserve_port_config(char *mpi_params, list_t *job_list);
 
+/*
+ * Configure reserved ports passed on job's resv_ports and resv_port_cnt
+ * Call with job_ptr->resv_ports == NULL to free memory.
+ * This should only be called by the slurmstepd when acting as step manager.
+ */
+extern int reserve_port_stepmgr_init(job_record_t *job_ptr);
+
 /* Reserve ports for a job step
  * RET SLURM_SUCCESS or an error code */
 extern int resv_port_step_alloc(step_record_t *step_ptr);
