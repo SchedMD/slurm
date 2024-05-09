@@ -461,6 +461,8 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("PlannedDown", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("PLNDDown", object,
 					 MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER_TRES_PLAN_DOWN;
 			field->name = xstrdup("PLND Down");
