@@ -277,7 +277,6 @@ typedef struct {
 	char *pty;			/* --pty[=fd]			*/
 	bool quit_on_intr;		/* --quit-on-interrupt		*/
 	int relative;			/* --relative			*/
-	int resv_port_cnt;		/* --resv_ports			*/
 	bool send_libs;			/* --send-libs			*/
 	int slurmd_debug;		/* --slurmd-debug		*/
 	char *task_epilog;		/* --task-epilog		*/
@@ -405,6 +404,7 @@ typedef struct {
 	int get_user_env_mode;		/* --get-user-env=[S|L]		*/
 	char *wckey;			/* workload characterization key */
 	char *reservation;		/* --reservation		*/
+	int resv_port_cnt;		/* --resv_ports			*/
 	int req_switch;			/* min number of switches	*/
 	int wait4switch;		/* max time to wait for min switches */
 	char **spank_job_env;		/* SPANK controlled environment for job
