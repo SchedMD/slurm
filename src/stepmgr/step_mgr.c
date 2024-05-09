@@ -276,6 +276,9 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 	/*
 	 * Derived exit code is the highest exit code of srun steps, so we
 	 * exclude the batch and extern steps.
+	 *
+	 * Sync with _get_derived_ec_update_str() for setting derived_ec on the
+	 * dbd side.
 	 */
 	if ((step_ptr->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) &&

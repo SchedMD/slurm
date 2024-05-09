@@ -1139,6 +1139,29 @@ endit:
 	return ret_list;
 }
 
+/*
+ * Get update format for setting derived_ec on the dbd side.
+ *
+ * stepmgr jobs don't update the controller job's derived_ec so we update as the
+ * step and job come into the dbd.
+ */
+static char *_get_derived_ec_update_str(uint32_t exit_code)
+{
+	char *derived_str = NULL;
+
+	/*
+	 * Sync with _internal_step_complete() for setting derived_ec on the
+	 * contoller.
+	 */
+	if (exit_code == SIG_OOM)
+		derived_str = xstrdup_printf("%u", exit_code);
+	else
+		derived_str = xstrdup_printf("GREATEST(%u, derived_ec)",
+					     exit_code);
+
+	return derived_str;
+}
+
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				 job_record_t *job_ptr)
 {
@@ -1235,8 +1258,12 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			       mysql_conn->cluster_name, job_table,
 			       end_time, job_state);
 
-	if (job_ptr->derived_ec != NO_VAL)
-		xstrfmtcat(query, ", derived_ec=%u", job_ptr->derived_ec);
+	if (job_ptr->derived_ec != NO_VAL) {
+		char *derived_ec_str =
+			_get_derived_ec_update_str(job_ptr->derived_ec);
+		xstrfmtcat(query, ", derived_ec=%s", derived_ec_str);
+		xfree(derived_ec_str);
+	}
 
 	if (job_ptr->tres_alloc_str)
 		xstrfmtcat(query, ", tres_alloc='%s'", job_ptr->tres_alloc_str);
@@ -1696,15 +1723,30 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	/* set the energy for the entire job. */
 	if (step_ptr->job_ptr->tres_alloc_str) {
+		char *derived_ec_str = _get_derived_ec_update_str(exit_code);
 		query = xstrdup_printf(
-			"update \"%s_%s\" set tres_alloc='%s' where "
+			"update \"%s_%s\" set tres_alloc='%s', derived_ec=%s where "
 			"job_db_inx=%"PRIu64,
 			mysql_conn->cluster_name, job_table,
-			step_ptr->job_ptr->tres_alloc_str,
+			step_ptr->job_ptr->tres_alloc_str, derived_ec_str,
 			step_ptr->job_ptr->db_index);
 		DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
+		xfree(derived_ec_str);
+	} else if (exit_code &&
+		   (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) &&
+		   (step_ptr->step_id.step_id != SLURM_EXTERN_CONT)) {
+		char *derived_ec_str = _get_derived_ec_update_str(exit_code);
+		query = xstrdup_printf(
+			"update \"%s_%s\" set derived_ec=%s where "
+			"job_db_inx=%"PRIu64,
+			mysql_conn->cluster_name, job_table, derived_ec_str,
+			step_ptr->job_ptr->db_index);
+		DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		xfree(derived_ec_str);
 	}
 
 	return rc;
