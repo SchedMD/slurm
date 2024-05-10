@@ -6831,7 +6831,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	lic_req = NULL;
 }
 
-static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
+static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
 #ifndef HAVE_FRONT_END
 	static bool first_time = true;
@@ -7313,7 +7313,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 	job_ptr->best_switch = true;
 
-	_enable_step_mgr(job_ptr, job_desc);
+	_enable_stepmgr(job_ptr, job_desc);
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(gres_list);

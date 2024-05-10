@@ -2635,7 +2635,7 @@ static void _pack_job_step_create_response_msg(
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
 				       protocol_version);
-		packstr(msg->step_mgr, buffer);
+		packstr(msg->stepmgr, buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
 				      protocol_version);
@@ -2673,7 +2673,7 @@ static int _unpack_job_step_create_response_msg(
 		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
 					     protocol_version))
 			goto unpack_error;
-		safe_unpackstr(&tmp_ptr->step_mgr, buffer);
+		safe_unpackstr(&tmp_ptr->stepmgr, buffer);
 
 		if (!(tmp_ptr->cred = slurm_cred_unpack(buffer,
 							protocol_version)))
@@ -3092,8 +3092,8 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 							  protocol_version))
 				goto unpack_error;
 
-		if (slurm_unpack_list(&(*msg)->step_mgr_jobs,
-				       slurm_unpack_step_mgr_job_info,
+		if (slurm_unpack_list(&(*msg)->stepmgr_jobs,
+				      slurm_unpack_stepmgr_job_info,
 				       xfree_ptr, buffer, protocol_version))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -3118,34 +3118,34 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurm_pack_step_mgr_job_info(void *in, uint16_t protocol_version,
+extern void slurm_pack_stepmgr_job_info(void *in, uint16_t protocol_version,
 					 buf_t *buffer)
 {
-	step_mgr_job_info_t *object = in;
+	stepmgr_job_info_t *object = in;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack32(object->job_id, buffer);
-		packstr(object->step_mgr, buffer);
+		packstr(object->stepmgr, buffer);
 	}
 }
 
-extern int slurm_unpack_step_mgr_job_info(void **out,
+extern int slurm_unpack_stepmgr_job_info(void **out,
 					  uint16_t protocol_version,
 					  buf_t *buffer)
 {
-	step_mgr_job_info_t *object = xmalloc(sizeof(*object));
+	stepmgr_job_info_t *object = xmalloc(sizeof(*object));
 	*out = object;
 
 	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&object->job_id, buffer);
-		safe_unpackstr(&object->step_mgr, buffer);
+		safe_unpackstr(&object->stepmgr, buffer);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
 
-	slurm_free_step_mgr_job_info(object);
+	slurm_free_stepmgr_job_info(object);
 	return SLURM_ERROR;
 }
 
@@ -6887,7 +6887,7 @@ _pack_reroute_msg(reroute_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
 						 protocol_version, buffer);
 		} else
 			pack8(0, buffer);
-		packstr(msg->step_mgr, buffer);
+		packstr(msg->stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
@@ -6917,7 +6917,7 @@ _unpack_reroute_msg(reroute_msg_t **msg, buf_t *buffer, uint16_t protocol_versio
 				(void **)&reroute_msg->working_cluster_rec,
 				protocol_version, buffer);
 		}
-		safe_unpackstr(&reroute_msg->step_mgr, buffer);
+		safe_unpackstr(&reroute_msg->stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
@@ -7258,7 +7258,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->x11_target, buffer);
 		pack16(msg->x11_target_port, buffer);
 
-		packstr(msg->step_mgr, buffer);
+		packstr(msg->stepmgr, buffer);
 
 		if (msg->job_ptr) {
 			packbool(true, buffer);
@@ -7634,7 +7634,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->x11_target, buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 
-		safe_unpackstr(&msg->step_mgr, buffer);
+		safe_unpackstr(&msg->stepmgr, buffer);
 
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
@@ -8541,7 +8541,7 @@ _pack_step_complete_msg(step_complete_msg_t * msg, buf_t *buffer,
 		pack32((uint32_t)msg->step_rc, buffer);
 		jobacctinfo_pack(msg->jobacct, protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
-		packbool(msg->send_to_step_mgr, buffer);
+		packbool(msg->send_to_stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32((uint32_t)msg->range_first, buffer);
@@ -8572,7 +8572,7 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, buf_t *buffer,
 				       PROTOCOL_TYPE_SLURM, buffer, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackbool(&msg->send_to_step_mgr, buffer);
+		safe_unpackbool(&msg->send_to_stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)

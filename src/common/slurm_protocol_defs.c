@@ -1339,7 +1339,7 @@ extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->step_mgr);
+		xfree(msg->stepmgr);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 		xfree(msg);
 	}
@@ -1720,7 +1720,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		}
 		slurm_cred_destroy(msg->cred);
 
-		/* step_mgr variables */
+		/* stepmgr variables */
 		job_record_delete(msg->job_ptr);
 		part_record_delete(msg->part_ptr);
 		FREE_NULL_LIST(msg->job_node_array);
@@ -2176,7 +2176,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target);
 
-	xfree(msg->step_mgr);
+	xfree(msg->stepmgr);
 	job_record_delete(msg->job_ptr);
 
 	xfree(msg);
@@ -4040,7 +4040,7 @@ extern void slurm_free_job_step_create_response_msg(
 {
 	if (msg) {
 		xfree(msg->resv_ports);
-		xfree(msg->step_mgr);
+		xfree(msg->stepmgr);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
 		if (msg->select_jobinfo)
@@ -6345,11 +6345,11 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 	return shared;
 }
 
-extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object)
+extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object)
 {
 	if (!object)
 		return;
 
-	xfree(object->step_mgr);
+	xfree(object->stepmgr);
 	xfree(object);
 }

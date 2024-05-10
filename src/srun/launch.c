@@ -991,7 +991,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	{
 		uint16_t base_dist;
 		/* Leave distribution set to unknown if taskcount <= nodes and
-		 * memory is set to 0. step_mgr will handle the mem=0 case. */
+		 * memory is set to 0. stepmgr will handle the mem=0 case. */
 		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory ||
 		    srun_opt->interactive)
 			base_dist = SLURM_DIST_UNKNOWN;

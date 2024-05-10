@@ -785,8 +785,8 @@ trystepmgr:
 	{
 		reroute_msg_t *rr_msg = resp_msg.data;
 		xfree(stepmgr_nodename);
-		stepmgr_nodename = rr_msg->step_mgr;
-		rr_msg->step_mgr = NULL;
+		stepmgr_nodename = rr_msg->stepmgr;
+		rr_msg->stepmgr = NULL;
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else
@@ -966,8 +966,8 @@ trystepmgr:
 	case RESPONSE_SLURM_REROUTE_MSG:
 	{
 		reroute_msg_t *rr_msg = resp_msg.data;
-		stepmgr_nodename = rr_msg->step_mgr;
-		rr_msg->step_mgr = NULL;
+		stepmgr_nodename = rr_msg->stepmgr;
+		rr_msg->stepmgr = NULL;
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else

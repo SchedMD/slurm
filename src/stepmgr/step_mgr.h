@@ -56,11 +56,11 @@ typedef struct {
 	void (*agent_queue_request)(agent_arg_t *agent_arg_ptr);
 
 	front_end_record_t *(*find_front_end_record)(char *name);
-} step_mgr_ops_t;
+} stepmgr_ops_t;
 
-extern step_mgr_ops_t *step_mgr_ops;
+extern stepmgr_ops_t *stepmgr_ops;
 
-extern void step_mgr_init(step_mgr_ops_t *ops);
+extern void stepmgr_init(stepmgr_ops_t *ops);
 
 /*
  * delete_step_records - delete step record for specified job_ptr
@@ -220,14 +220,14 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args);
 /*
  * Return combined layouts of all job_ptr steps
  */
-extern int step_mgr_get_step_layouts(job_record_t *job_ptr,
-				     slurm_step_id_t *step_id,
-				     slurm_step_layout_t **out_step_layout);
+extern int stepmgr_get_step_layouts(job_record_t *job_ptr,
+				    slurm_step_id_t *step_id,
+				    slurm_step_layout_t **out_step_layout);
 
 /*
  * Create a job_sbcast_cred_msg_t with a sbcast_cred to send back to client
  */
-extern int step_mgr_get_job_sbcast_cred_msg(
+extern int stepmgr_get_job_sbcast_cred_msg(
 	job_record_t *job_ptr,
 	slurm_step_id_t *step_id,
 	char *hetjob_nodelist,

@@ -274,7 +274,7 @@ static list_t *bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int _step_mgr_connect(slurm_step_id_t *step_id,
+static int _stepmgr_connect(slurm_step_id_t *step_id,
 			    uint16_t *protocol_version)
 {
 	int fd = SLURM_ERROR;
@@ -316,7 +316,7 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (((fd = _step_mgr_connect(step_id, &protocol_version)) !=
+	if (((fd = _stepmgr_connect(step_id, &protocol_version)) !=
 	     SLURM_ERROR) &&
 	    !stepd_relay_msg(fd, msg, protocol_version)) {
 		/* stepd will reply back directly. */
@@ -3740,7 +3740,7 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 		.step_id = SLURM_EXTERN_CONT,
 	};
 
-	if (req->send_to_step_mgr)
+	if (req->send_to_stepmgr)
 		tmp_step_id = &step_id;
 	else
 		tmp_step_id = &req->step_id;

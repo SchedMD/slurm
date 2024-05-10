@@ -1573,7 +1573,7 @@ extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap)
  * Pack node_record_t to buffer.
  *
  * Used for dumping node state and passing node_record_t between ctld and
- * step_mgr.
+ * stepmgr.
  */
 extern void node_record_pack(void *in,
 			     uint16_t protocol_version,

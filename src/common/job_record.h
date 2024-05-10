@@ -654,7 +654,7 @@ typedef struct {
 	bool valid_job;
 	part_record_t **visible_parts;
 	list_t *job_step_list;
-	list_t *step_mgr_jobs;
+	list_t *stepmgr_jobs;
 	int (*pack_job_step_list_func)(void *x, void *arg);
 } pack_step_args_t;
 

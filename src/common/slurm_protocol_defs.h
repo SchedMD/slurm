@@ -497,7 +497,7 @@ typedef struct step_complete_msg {
 	slurm_step_id_t step_id;
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
-	bool send_to_step_mgr;
+	bool send_to_stepmgr;
 } step_complete_msg_t;
 
 typedef struct signal_tasks_msg {
@@ -607,7 +607,7 @@ typedef struct job_step_create_response_msg {
 	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
-	char *step_mgr;
+	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
 	dynamic_plugin_data_t *switch_job;	/* switch opaque data type */
@@ -726,12 +726,12 @@ typedef struct launch_tasks_request_msg {
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 
-	/* To send to step_mgr */
+	/* To send to stepmgr */
 	job_record_t *job_ptr;
 	list_t *job_node_array;
 	part_record_t *part_ptr;
 
-	char *step_mgr; /* Hostname of step_mgr */
+	char *stepmgr; /* Hostname of stepmgr */
 } launch_tasks_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -745,7 +745,7 @@ typedef struct return_code2_msg {
 } return_code2_msg_t;
 
 typedef struct {
-	char *step_mgr;
+	char *stepmgr;
 	slurmdb_cluster_rec_t *working_cluster_rec;
 } reroute_msg_t;
 
@@ -848,12 +848,12 @@ typedef struct prolog_launch_msg {
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 
-	/* To send to step_mgr */
+	/* To send to stepmgr */
 	job_record_t *job_ptr;
 	buf_t *job_ptr_buf;
 
 	list_t *job_node_array; /* node_record_t array of size
-				 * job_ptr->node_cnt for step_mgr. */
+				 * job_ptr->node_cnt for stepmgr. */
 	buf_t *job_node_array_buf;
 
 	part_record_t *part_ptr;
@@ -1875,9 +1875,9 @@ extern bool validate_slurmd_user(uid_t uid);
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
 
 /*
- * Free step_mgr_job_info_t
+ * Free stepmgr_job_info_t
  */
-extern void slurm_free_step_mgr_job_info(step_mgr_job_info_t *object);
+extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

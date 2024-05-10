@@ -69,7 +69,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	set_agent_arg_r_uid(agent_args, r_uid);
 	agent_args->protocol_version = protocol_version;
 
-	step_mgr_ops->agent_queue_request(agent_args);
+	stepmgr_ops->agent_queue_request(agent_args);
 }
 
 /*
@@ -251,7 +251,7 @@ extern void srun_ping (void)
 	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	list_for_each_ro(step_mgr_ops->job_list, _srun_ping, &old);
+	list_for_each_ro(stepmgr_ops->job_list, _srun_ping, &old);
 }
 
 static int _srun_step_timeout(void *x, void *arg)
@@ -580,7 +580,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
  */
 extern void srun_response(slurm_step_id_t *step_id)
 {
-	job_record_t *job_ptr = step_mgr_ops->find_job_record(step_id->job_id);
+	job_record_t *job_ptr = stepmgr_ops->find_job_record(step_id->job_id);
 	step_record_t *step_ptr;
 	time_t now = time(NULL);
 

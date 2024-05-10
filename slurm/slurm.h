@@ -1207,7 +1207,7 @@ enum node_states {
 #define GRES_MULT_TASKS_PER_SHARING SLURM_BIT(39)/* Negate
 						  * GRES_ONE_TASK_PER_SHARING */
 #define GRES_ALLOW_TASK_SHARING SLURM_BIT(40) /* Allow tasks to share gres */
-#define STEPMGR_ENABLED SLURM_BIT(41) /* enable(d) step_mgr or not */
+#define STEPMGR_ENABLED SLURM_BIT(41) /* enable(d) stepmgr or not */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
@@ -2276,14 +2276,14 @@ typedef struct {
 
 typedef struct {
 	uint32_t job_id;
-	char *step_mgr;
-} step_mgr_job_info_t;
+	char *stepmgr;
+} stepmgr_job_info_t;
 
 typedef struct job_step_info_response_msg {
 	time_t last_update;		/* time of latest info */
 	uint32_t job_step_count;	/* number of records */
 	job_step_info_t *job_steps;	/* the job step records */
-	list_t *step_mgr_jobs;
+	list_t *stepmgr_jobs;
 } job_step_info_response_msg_t;
 
 typedef struct {

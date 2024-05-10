@@ -45,7 +45,7 @@ proc cleanup {} {
 }
 
 if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
-	skip "This test can't because squeue --steps doesn't work for step_mgr jobs"
+	skip "This test can't because squeue --steps doesn't work for stepmgr jobs"
 }
 
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {

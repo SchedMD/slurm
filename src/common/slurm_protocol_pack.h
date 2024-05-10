@@ -145,11 +145,11 @@ extern void slurm_pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
 extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version);
-extern void slurm_pack_step_mgr_job_info(void *in,
+extern void slurm_pack_stepmgr_job_info(void *in,
+					uint16_t protocol_version,
+					buf_t *buffer);
+extern int slurm_unpack_stepmgr_job_info(void **out,
 					 uint16_t protocol_version,
 					 buf_t *buffer);
-extern int slurm_unpack_step_mgr_job_info(void **out,
-					  uint16_t protocol_version,
-					  buf_t *buffer);
 
 #endif

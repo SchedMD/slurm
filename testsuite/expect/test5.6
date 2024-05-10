@@ -235,7 +235,7 @@ expect {
 }
 
 if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
-	subskip "squeue --steps doesn't work with step_mgr enabled jobs"
+	subskip "squeue --steps doesn't work with stepmgr enabled jobs"
 } else {
 	#
 	# Wait long enough to make sure the job step is running and has

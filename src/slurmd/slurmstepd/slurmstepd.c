@@ -133,7 +133,7 @@ static int _foreach_ret_data_info(void *x, void *arg)
 
 	if ((rc = slurm_get_return_code(ret_data_info->type,
 					ret_data_info->data))) {
-		error("step_mgr failed to send message %s: rc=%d(%s)",
+		error("stepmgr failed to send message %s: rc=%d(%s)",
 		      rpc_num2string(ret_data_info->type), rc,
 		      slurm_strerror(rc));
 		return SLURM_ERROR;
@@ -197,17 +197,17 @@ static void *_step_time_limit_thread(void *data)
 
 	while (!time_limit_thread_shutdown) {
 		now = time(NULL);
-		slurm_mutex_lock(&step_mgr_mutex);
+		slurm_mutex_lock(&stepmgr_mutex);
 		list_for_each(job_step_ptr->step_list,
 			      check_job_step_time_limit, &now);
-		slurm_mutex_unlock(&step_mgr_mutex);
+		slurm_mutex_unlock(&stepmgr_mutex);
 		sleep(1);
 	}
 
 	return NULL;
 }
 
-step_mgr_ops_t stepd_step_mgr_ops = {
+stepmgr_ops_t stepd_stepmgr_ops = {
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
 	.agent_queue_request = _agent_queue_request
@@ -253,7 +253,7 @@ static int _foreach_job_node_array(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _setup_step_mgr_nodes(void)
+static void _setup_stepmgr_nodes(void)
 {
 	int table_index = 0;
 	init_node_conf();
@@ -268,17 +268,17 @@ static void _setup_step_mgr_nodes(void)
 	list_for_each(job_node_array, _foreach_job_node_array, &table_index);
 }
 
-static void _init_stepd_step_mgr(void)
+static void _init_stepd_stepmgr(void)
 {
 	if (!job_step_ptr)
 		return;
 
-	stepd_step_mgr_ops.up_node_bitmap =
+	stepd_stepmgr_ops.up_node_bitmap =
 		bit_alloc(bit_size(job_step_ptr->node_bitmap));
-	bit_set_all(stepd_step_mgr_ops.up_node_bitmap);
-	step_mgr_init(&stepd_step_mgr_ops);
+	bit_set_all(stepd_stepmgr_ops.up_node_bitmap);
+	stepmgr_init(&stepd_stepmgr_ops);
 
-	_setup_step_mgr_nodes();
+	_setup_stepmgr_nodes();
 
 	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
 			 "accounting_storage/slurmdbd")) {
@@ -326,7 +326,7 @@ main (int argc, char **argv)
 		goto ending;
 	}
 
-	_init_stepd_step_mgr();
+	_init_stepd_stepmgr();
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */

@@ -2288,7 +2288,7 @@ static void _step_create_job_fail_lock(bool lock)
 }
 
 /* _slurm_rpc_job_step_create - process RPC to create/register a job step
- *	with the step_mgr */
+ *	with the stepmgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
 	if (!step_create_from_msg(msg,
@@ -2348,18 +2348,18 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 
 fini:
 	/*
-	 * Only return step_mgr_jobs if looking for a specific job to avoid
-	 * querying all step_mgr's for all steps.
+	 * Only return stepmgr_jobs if looking for a specific job to avoid
+	 * querying all stepmgr's for all steps.
 	 */
 	if ((args->step_id->job_id != NO_VAL) &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED) &&
 	    IS_JOB_RUNNING(job_ptr)) {
-		step_mgr_job_info_t *sji = xmalloc(sizeof(*sji));
-		if (!args->step_mgr_jobs)
-			args->step_mgr_jobs = list_create(NULL);
+		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
+		if (!args->stepmgr_jobs)
+			args->stepmgr_jobs = list_create(NULL);
 		sji->job_id = job_ptr->job_id;
-		sji->step_mgr = job_ptr->batch_host;
-		list_append(args->step_mgr_jobs, sji);
+		sji->stepmgr = job_ptr->batch_host;
+		list_append(args->stepmgr_jobs, sji);
 	}
 
 	return 0;
@@ -3032,7 +3032,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
-			error("rpc %s from non-supported client version %d for step_mgr job",
+			error("rpc %s from non-supported client version %d for stepmgr job",
 			      rpc_num2string(msg->msg_type),
 			      msg->protocol_version);
 			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
@@ -3050,11 +3050,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		goto error;
 	}
 
-	error_code = step_mgr_get_job_sbcast_cred_msg(job_ptr,
-						      &job_info_msg->step_id,
-						      node_list,
-						      msg->protocol_version,
-						      &job_info_resp_msg);
+	error_code = stepmgr_get_job_sbcast_cred_msg(job_ptr,
+						     &job_info_msg->step_id,
+						     node_list,
+						     msg->protocol_version,
+						     &job_info_resp_msg);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 
@@ -3454,7 +3454,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
-			error("rpc %s from non-supported client version %d for step_mgr job",
+			error("rpc %s from non-supported client version %d for stepmgr job",
 			      rpc_num2string(msg->msg_type),
 			      msg->protocol_version);
 			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
@@ -3465,7 +3465,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
-	error_code = step_mgr_get_step_layouts(job_ptr, req, &step_layout);
+	error_code = stepmgr_get_step_layouts(job_ptr, req, &step_layout);
 	unlock_slurmctld(job_read_lock);
 
 	if (error_code) {
@@ -7003,7 +7003,7 @@ static bool _pending_het_jobs(job_record_t *job_ptr)
 	if (job_ptr->het_job_id == 0)
 		return false;
 
-	het_job_leader = step_mgr_ops->find_job_record(job_ptr->het_job_id);
+	het_job_leader = stepmgr_ops->find_job_record(job_ptr->het_job_id);
 	if (!het_job_leader) {
 		error("Hetjob leader %pJ not found", job_ptr);
 		return false;
@@ -7072,7 +7072,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	} else if (_pending_het_jobs(job_ptr)) {
 		return;
 	} else if ((het_job_leader =
-		    step_mgr_ops->find_job_record(job_ptr->het_job_id))) {
+		    stepmgr_ops->find_job_record(job_ptr->het_job_id))) {
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, het_job_leader->alloc_resp_port,
 			       het_job_leader->resp_host);

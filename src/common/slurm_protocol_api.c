@@ -2134,7 +2134,7 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
  */
 int slurm_send_reroute_msg(slurm_msg_t *msg,
 			   slurmdb_cluster_rec_t *cluster_rec,
-			   char *step_mgr)
+			   char *stepmgr)
 {
 	slurm_msg_t resp_msg;
 	reroute_msg_t reroute_msg = {0};
@@ -2146,7 +2146,7 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 
 	/* Don't free the cluster_rec, it's pointing to the actual object. */
 	reroute_msg.working_cluster_rec = cluster_rec;
-	reroute_msg.step_mgr = step_mgr;
+	reroute_msg.stepmgr = stepmgr;
 
 	response_init(&resp_msg, msg, RESPONSE_SLURM_REROUTE_MSG,
 			&reroute_msg);

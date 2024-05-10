@@ -60,7 +60,7 @@ if {$job_id == 0} {
 #
 set pattern "sdiouetj49udfj"
 
-# give time for step_mgr to be created
+# give time for stepmgr to be created
 sleep 1
 
 set got_pattern 0
