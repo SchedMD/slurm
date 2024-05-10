@@ -59,6 +59,9 @@ extern int net_stream_listen(int *fd, uint16_t *port);
 /* set keepalive time on socket */
 extern int net_set_keep_alive(int sock);
 
+/* set TCP_NODELAY on socket */
+extern void net_set_nodelay(int sock);
+
 extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
 
 /*

@@ -193,6 +193,17 @@ extern int net_set_keep_alive(int sock)
 	return 0;
 }
 
+extern void net_set_nodelay(int sock)
+{
+	int opt_int = 1;
+
+	if (sock < 0)
+		return;
+
+	if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &opt_int, sizeof(int)) < 0)
+		error("Unable to set TCP_NODELAY: %m");
+}
+
 /*
  * Check if we can bind() the socket s to port port.
  *
