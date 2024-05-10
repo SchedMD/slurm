@@ -209,7 +209,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			debug("%s at %d of %zu, timeout", __func__, sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			sent = SLURM_ERROR;
-			goto done;
+			break;
 		}
 
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
@@ -220,7 +220,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 				      __func__, sent, size, strerror(errno));
 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
-				goto done;
+				break;
 			}
 		}
 
@@ -243,7 +243,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 
 			slurm_seterrno(e);
 			sent = SLURM_ERROR;
-			goto done;
+			break;
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
 		    (recv(fd, &temp, 1, 0) == 0)) {
@@ -256,7 +256,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 				       __func__, slurm_strerror(so_err));
 			slurm_seterrno(so_err);
 			sent = SLURM_ERROR;
-			goto done;
+			break;
 		}
 		if ((ufds.revents & POLLOUT) != POLLOUT) {
 			error("%s: Poll failure, revents:%d",
@@ -275,7 +275,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			}
  			slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 			sent = SLURM_ERROR;
-			goto done;
+			break;
 		}
 		if (rc == 0) {
 			/*
@@ -290,7 +290,6 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 		sent += rc;
 	}
 
-    done:
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != -1) {
 		int slurm_err = slurm_get_errno();
