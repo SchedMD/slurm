@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- Prevent unnecessary log statement when free'ing ports.
  -- Fix regression in rc1 causing communication problems when sending large
     responses from slurmctld.
+ -- sreport - fix parsing of 'format=Planned' to prevent it from being
+    misinterpreted as 'PlannedDown'. 'PlannedDown' is now also known as
+    'PLNDDown' to match what is printed as the column title.
 
 * Changes in Slurm 24.05.0rc1
 =============================

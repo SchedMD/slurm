@@ -87,6 +87,11 @@ COMMAND CHANGES (see man pages for details)
     filename patterns as best as possible.
  -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
     filename patterns as best as possible.
+ -- sreport - Requesting format=Planned will now return the expected Planned
+    time as documented, instead of PlannedDown. To request Planned Down,
+    one must use now format=PLNDDown or format=PlannedDown explicitly. The
+    abbreviations "Pl" or "Pla" will now make reference to Planned instead of
+    PlannedDown.
 
 API CHANGES
 ===========
