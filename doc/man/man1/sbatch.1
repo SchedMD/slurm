@@ -2231,6 +2231,21 @@ reservation used will replace it.
 .IP
 
 .TP
+\fB\-\-segment\fR=<\fIsegment_size\fR>
+When a block topology is used, this defines the size of the segments that
+will be used to create the job allocation.
+No requirement would be placed on all segments for a job needing to
+be placed within the same higher-level block.
+
+\fBNOTE\fR: The segment size must always be evenly divisible by
+the requested node count.
+
+\fBNOTE\fR: The segment size must be less than or equal to
+the planning base block size. E.g., for a system with 30 nodes as the
+planning base block size, "--segment 40" would be invalid
+.IP
+
+.TP
 \fB\-\-signal\fR=[{R|B}:]<\fIsig_num\fR>[@\fIsig_time\fR]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
