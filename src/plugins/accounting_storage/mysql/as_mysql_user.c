@@ -1997,7 +1997,10 @@ static slurmdb_user_rec_t *_make_user_rec_with_coords(
 	user_rec->coord_accts = slurmdb_list_copy_coord(
 		user_tmp.coord_accts);
 
-	/* This shouldn't be needed, but just in case */
+	/*
+	 * This is needed if the user is being added for the first time right
+	 * now as they will not be in the assoc mgr just yet.
+	 */
 	if (!user_rec->coord_accts)
 		user_rec->coord_accts =
 			list_create(slurmdb_destroy_coord_rec);
