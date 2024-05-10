@@ -6826,6 +6826,13 @@ root to execute jobs).
 .IP
 
 .TP
+\fBExclusiveTopo\fR
+If set to "YES," then only one job may be run on a single topology segment.
+This capability is also available on a per\-job basis by using the
+\fB\-\-exclusive=topo\fR option.
+.IP
+
+.TP
 \fBExclusiveUser\fR
 If set to "YES" then nodes will be exclusively allocated to users.
 Multiple jobs may be run for the same user, but only one user can be active
