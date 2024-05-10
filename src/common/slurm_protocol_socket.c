@@ -187,7 +187,6 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 {
-	int rc;
 	int sent = 0;
 	int fd_flags;
 	struct pollfd ufds;
@@ -205,6 +204,8 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 
 	while (sent < size) {
 		ssize_t bytes_sent = 0;
+		int rc;
+
 		timeleft = *timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, sent, size);
@@ -233,7 +234,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 		 * nonblocking read means just that.
 		 */
 		if (ufds.revents & POLLERR) {
-			int e, rc;
+			int e;
 
 			if ((rc = fd_get_socket_error(fd, &e)))
 				debug("%s: Socket POLLERR, fd_get_socket_error failed: %s",
@@ -248,7 +249,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
 		    (recv(fd, &temp, 1, 0) == 0)) {
-			int so_err, rc;
+			int so_err;
 			if ((rc = fd_get_socket_error(fd, &so_err)))
 				debug2("%s: Socket no longer there, fd_get_socket_error failed: %s",
 				       __func__, slurm_strerror(rc));
