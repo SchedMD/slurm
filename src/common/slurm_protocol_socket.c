@@ -185,8 +185,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 	return len;
 }
 
-static int _send_timeout(int fd, char *buf, size_t size,
-			 uint32_t flags, int *timeout)
+static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 {
 	int rc;
 	int sent = 0;
@@ -247,7 +246,7 @@ static int _send_timeout(int fd, char *buf, size_t size,
 			goto done;
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
-		    (recv(fd, &temp, 1, flags) == 0)) {
+		    (recv(fd, &temp, 1, 0) == 0)) {
 			int so_err, rc;
 			if ((rc = fd_get_socket_error(fd, &so_err)))
 				debug2("%s: Socket no longer there, fd_get_socket_error failed: %s",
@@ -264,7 +263,7 @@ static int _send_timeout(int fd, char *buf, size_t size,
 			      __func__, ufds.revents);
 		}
 
-		rc = send(fd, &buf[sent], (size - sent), flags);
+		rc = send(fd, &buf[sent], (size - sent), 0);
 		if (rc < 0) {
  			if (errno == EINTR)
 				continue;
@@ -311,7 +310,7 @@ static int _send_timeout(int fd, char *buf, size_t size,
  */
 extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
-	return _send_timeout(fd, buf, size, 0, &timeout);
+	return _send_timeout(fd, buf, size, &timeout);
 }
 
 extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
@@ -339,26 +338,26 @@ extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 
 	usize = htonl(size);
 
-	if ((len = _send_timeout(fd, (char *) &usize, sizeof(usize), 0,
+	if ((len = _send_timeout(fd, (char *) &usize, sizeof(usize),
 				 &timeout)) < 0)
 		goto done;
 
 	if ((part_len = _send_timeout(fd, get_buf_data(buffers->header),
-				      get_buf_offset(buffers->header), 0,
+				      get_buf_offset(buffers->header),
 				      &timeout)) < 0)
 			goto done;
 	len += part_len;
 
 	if (buffers->auth) {
 		if ((part_len = _send_timeout(fd, get_buf_data(buffers->auth),
-					      get_buf_offset(buffers->auth), 0,
+					      get_buf_offset(buffers->auth),
 					      &timeout)) < 0)
 				goto done;
 		len += part_len;
 	}
 
 	if ((part_len = _send_timeout(fd, get_buf_data(buffers->body),
-				      get_buf_offset(buffers->body), 0,
+				      get_buf_offset(buffers->body),
 				      &timeout)) < 0)
 			goto done;
 	len += part_len;
