@@ -87,7 +87,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #include "src/stepmgr/gres_ctld.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */

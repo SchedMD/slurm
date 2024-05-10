@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  step_mgr.h - manage the job step information of slurm
+ *  stepmgr.h - manage the job step information of slurm
  *****************************************************************************
  *  Copyright (C) 2024 SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>

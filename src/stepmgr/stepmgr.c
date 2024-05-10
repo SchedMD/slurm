@@ -51,7 +51,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "step_mgr.h"
+#include "stepmgr.h"
 
 #include "slurm/slurm_errno.h"
 

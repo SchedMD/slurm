@@ -89,7 +89,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);

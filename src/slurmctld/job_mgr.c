@@ -112,7 +112,7 @@
 
 #include "src/stepmgr/gres_ctld.h"
 #include "src/stepmgr/srun_comm.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #define ARRAY_ID_BUF_SIZE 32
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */

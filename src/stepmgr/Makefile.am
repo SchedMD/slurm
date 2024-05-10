@@ -12,8 +12,8 @@ libstepmgr_la_SOURCES = \
 	gres_ctld.h \
 	srun_comm.c \
 	srun_comm.h \
-	step_mgr.h \
-	step_mgr.c
+	stepmgr.h \
+	stepmgr.c
 libstepmgr_o_SOURCES =
 libstepmgr.o$(EXEEXT) :  $(libstepmgr_la_OBJECTS) $(libstepmgr_la_DEPENDENCIES)
 	$(LINK)  $(libstepmgr_la_OBJECTS)

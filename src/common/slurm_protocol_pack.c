@@ -73,7 +73,7 @@
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);

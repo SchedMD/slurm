@@ -48,7 +48,7 @@
 
 #include "src/interfaces/select.h"
 
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for

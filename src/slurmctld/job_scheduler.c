@@ -95,7 +95,7 @@
 
 #include "src/stepmgr/gres_ctld.h"
 #include "src/stepmgr/srun_comm.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #ifndef CORRESPOND_ARRAY_TASK_CNT
 #  define CORRESPOND_ARRAY_TASK_CNT 10

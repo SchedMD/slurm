@@ -89,7 +89,7 @@
 #include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_ctld.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #define RESV_MAGIC	0x3b82
 

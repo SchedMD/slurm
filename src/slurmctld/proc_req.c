@@ -110,7 +110,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 #include "src/stepmgr/srun_comm.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define RPC_TYPE_SIZE 100
