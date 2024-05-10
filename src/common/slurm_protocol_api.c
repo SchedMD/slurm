@@ -1039,7 +1039,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
 		rc = errno;
 		if (!rc)
 			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
@@ -1138,7 +1138,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1342,7 +1342,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	 * length and allocate space on the heap for a buffer containing the
 	 * message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1533,7 +1533,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0,
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen,
 				       (slurm_conf.msg_timeout * 1000)) < 0) {
 		forward_init(&header.forward);
 		rc = errno;

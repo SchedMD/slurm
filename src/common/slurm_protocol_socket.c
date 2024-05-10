@@ -125,7 +125,7 @@ static void _sock_bind_wild(int sockfd)
 }
 
 extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
-					  uint32_t flags, int timeout)
+					  int timeout)
 {
 	ssize_t  len;
 	uint32_t msglen;

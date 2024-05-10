@@ -62,8 +62,8 @@
  * timing out after `timeout' milliseconds.
  *
  */
-extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf,
-		size_t *len, uint32_t flags, int timeout);
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf, size_t *len,
+					  int timeout);
 
 /* slurm_msg_sendto
  * Send message over the given connection, default timeout value
