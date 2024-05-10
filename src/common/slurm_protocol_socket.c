@@ -173,12 +173,11 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 	usize = htonl(size);
 
-	if ((len = slurm_send_timeout(
-				fd, (char *)&usize, sizeof(usize), 0,
-				timeout)) < 0)
+	if ((len = slurm_send_timeout(fd, (char *) &usize, sizeof(usize),
+				      timeout)) < 0)
 		goto done;
 
-	if ((len = slurm_send_timeout(fd, buffer, size, 0, timeout)) < 0)
+	if ((len = slurm_send_timeout(fd, buffer, size, timeout)) < 0)
 		goto done;
 
 
@@ -311,10 +310,9 @@ static int _send_timeout(int fd, char *buf, size_t size,
  * Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error
  */
-extern int slurm_send_timeout(int fd, char *buf, size_t size,
-			      uint32_t flags, int timeout)
+extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
-	return _send_timeout(fd, buf, size, flags, &timeout);
+	return _send_timeout(fd, buf, size, 0, &timeout);
 }
 
 extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
