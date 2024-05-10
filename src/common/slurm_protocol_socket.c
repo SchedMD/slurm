@@ -56,17 +56,17 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
-#include "src/common/log.h"
-#include "src/common/fd.h"
 #include "src/common/strlcpy.h"
+#include "src/common/util-net.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/util-net.h"
 
 #define PORT_RETRIES    3
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
