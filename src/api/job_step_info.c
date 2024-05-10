@@ -304,9 +304,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	return out;
 }
 
-static int _get_step_mgr_steps(void *x, void *arg)
+static int _get_stepmgr_steps(void *x, void *arg)
 {
-	step_mgr_job_info_t *sji = x;
+	stepmgr_job_info_t *sji = x;
 	slurm_msg_t resp_msg;
 	slurm_msg_t_init(&resp_msg);
 
@@ -315,7 +315,7 @@ static int _get_step_mgr_steps(void *x, void *arg)
 	slurm_msg_t req_msg;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
-	slurm_conf_get_addr(sji->step_mgr, &req_msg.address,
+	slurm_conf_get_addr(sji->stepmgr, &req_msg.address,
 			    req_msg.flags);
 
 	job_step_info_request_msg_t req_data = {0};
@@ -330,26 +330,26 @@ static int _get_step_mgr_steps(void *x, void *arg)
 
 	if (resp_msg.msg_type == RESPONSE_JOB_STEP_INFO) {
 		uint32_t new_rec_cnt;
-		job_step_info_response_msg_t *step_mgr_resp;
-		step_mgr_resp = (job_step_info_response_msg_t *) resp_msg.data;
+		job_step_info_response_msg_t *stepmgr_resp;
+		stepmgr_resp = (job_step_info_response_msg_t *) resp_msg.data;
 
 		/* Merge the step records into a single response message */
 		new_rec_cnt = ctld_resp->job_step_count +
-			step_mgr_resp->job_step_count;
-		if (step_mgr_resp->job_step_count) {
+			stepmgr_resp->job_step_count;
+		if (stepmgr_resp->job_step_count) {
 			ctld_resp->job_steps =
 				xrealloc(ctld_resp->job_steps,
 					 sizeof(job_step_info_t) *
 					 new_rec_cnt);
 			(void) memcpy(ctld_resp->job_steps +
 				      ctld_resp->job_step_count,
-				      step_mgr_resp->job_steps,
+				      stepmgr_resp->job_steps,
 				      sizeof(job_step_info_t) *
-				      step_mgr_resp->job_step_count);
+				      stepmgr_resp->job_step_count);
 			ctld_resp->job_step_count = new_rec_cnt;
 
-			xfree(step_mgr_resp->job_steps);
-			xfree(step_mgr_resp);
+			xfree(stepmgr_resp->job_steps);
+			xfree(stepmgr_resp);
 		}
 	}
 
@@ -375,9 +375,9 @@ _load_cluster_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 		*resp = (job_step_info_response_msg_t *) resp_msg.data;
 		resp_msg.data = NULL;
 
-		if ((*resp)->step_mgr_jobs) {
-			list_for_each((*resp)->step_mgr_jobs,
-				      _get_step_mgr_steps, *resp);
+		if ((*resp)->stepmgr_jobs) {
+			list_for_each((*resp)->stepmgr_jobs, _get_stepmgr_steps,
+				      *resp);
 		}
 		break;
 	case RESPONSE_SLURM_RC:
@@ -660,8 +660,8 @@ trystepmgr:
 	case RESPONSE_SLURM_REROUTE_MSG:
 	{
 		reroute_msg_t *rr_msg = resp.data;
-		stepmgr_nodename = rr_msg->step_mgr;
-		rr_msg->step_mgr = NULL;
+		stepmgr_nodename = rr_msg->stepmgr;
+		rr_msg->stepmgr = NULL;
 		if (stepmgr_nodename) {
 			goto trystepmgr;
 		} else {

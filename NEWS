@@ -174,12 +174,12 @@ documents those changes that are of interest to users and administrators.
  -- Add USER_DELETE reservation flag to allow users with access to a reservation
     to delete it.
  -- Add CgroupPlugin=disabled to disable any interaction with Cgroups.
- -- slurmrestd - Add "STEP_MGR_ENABLED" as possible flag value to the following:
+ -- slurmrestd - Add "STEPMGR_ENABLED" as possible flag value to the following:
       'GET /slurm/v0.0.41/jobs' flags field.
       'GET /slurm/v0.0.41/job/{job_id}' flags query parameter.
- -- scontrol,squeue - Added possible flags "STEP_MGR_ENABLED" to '.jobs[].flags' for
+ -- scontrol,squeue - Added possible flags "STEPMGR_ENABLED" to '.jobs[].flags' for
     'scontrol show jobs --{json|yaml}' and 'squeue --{json|yaml}' responses.
- -- Add SlurmctldParameters=step_mgr_enable to enable step management through
+ -- Add SlurmctldParameters=enable_stepmgr to enable step management through
     the slurmstepd instead of the controller.
  -- Avoid slurmstepd infinite loop waiting for tasks termination.
  -- Fix logging of JSON/YAML values in some messages where nothing would be

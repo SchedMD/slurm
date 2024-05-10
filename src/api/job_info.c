@@ -618,7 +618,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, line_end);
 
 	/****** Line 14 (optional) ******/
-	if (job_ptr->bitflags & STEP_MGR_ENABLED) {
+	if (job_ptr->bitflags & STEPMGR_ENABLED) {
 		xstrfmtcat(out, "StepMgrEnabled=Yes");
 		xstrcat(out, line_end);
 	}

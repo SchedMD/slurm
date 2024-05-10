@@ -345,8 +345,8 @@ expect {
 }
 subtest {$match == 4} "Verify scontrol step format" "scontrol did not provide correct step values ($match != 4)"
 
-if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
-	subskip "squeue --steps doesn't work with step_mgr enabled jobs"
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
+	subskip "squeue --steps doesn't work with stepmgr enabled jobs"
 } else {
 	set match 0
 	set cpu_match 0

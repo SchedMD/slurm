@@ -316,7 +316,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.cpt_compact_cnt = params->cpt_compact_cnt;
 	launch.cpt_compact_reps = params->cpt_compact_reps;
 	launch.tres_per_task	= ctx->step_req->tres_per_task;
-	launch.step_mgr = xstrdup(ctx->step_resp->step_mgr);
+	launch.stepmgr = xstrdup(ctx->step_resp->stepmgr);
 
 	launch.threads_per_core	= params->threads_per_core;
 	launch.ntasks_per_board = params->ntasks_per_board;

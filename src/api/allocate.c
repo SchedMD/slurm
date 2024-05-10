@@ -750,7 +750,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 re_send:
 	/* xstrdup() to be consistent with reroute and be able to free. */
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEP_MGR")))) {
+	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
 trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
@@ -785,8 +785,8 @@ trystepmgr:
 	{
 		reroute_msg_t *rr_msg = resp_msg.data;
 		xfree(stepmgr_nodename);
-		stepmgr_nodename = rr_msg->step_mgr;
-		rr_msg->step_mgr = NULL;
+		stepmgr_nodename = rr_msg->stepmgr;
+		rr_msg->stepmgr = NULL;
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else
@@ -966,8 +966,8 @@ trystepmgr:
 	case RESPONSE_SLURM_REROUTE_MSG:
 	{
 		reroute_msg_t *rr_msg = resp_msg.data;
-		stepmgr_nodename = rr_msg->step_mgr;
-		rr_msg->step_mgr = NULL;
+		stepmgr_nodename = rr_msg->stepmgr;
+		rr_msg->stepmgr = NULL;
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else

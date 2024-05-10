@@ -92,7 +92,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 #include "src/stepmgr/srun_comm.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #define FEATURE_MAGIC	0x34dfd8b5
 
@@ -1529,7 +1529,7 @@ extern int read_slurm_conf(int recover)
 	if (topology_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
-	if (xstrcasestr(slurm_conf.slurmctld_params, "step_mgr_enable") &&
+	if (xstrcasestr(slurm_conf.slurmctld_params, "enable_stepmgr") &&
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 		fatal("STEP_MGR not supported without PrologFlags=contain");
 

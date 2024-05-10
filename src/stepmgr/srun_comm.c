@@ -48,7 +48,7 @@
 
 #include "src/interfaces/select.h"
 
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for
@@ -69,7 +69,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	set_agent_arg_r_uid(agent_args, r_uid);
 	agent_args->protocol_version = protocol_version;
 
-	step_mgr_ops->agent_queue_request(agent_args);
+	stepmgr_ops->agent_queue_request(agent_args);
 }
 
 /*
@@ -154,6 +154,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
+	bool notify_job = true;
 	srun_node_fail_args_t args = {
 		.bit_position = -1,
 		.node_name = node_name,
@@ -176,7 +177,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		srun_node_fail_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
@@ -188,9 +189,13 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_NODE_FAIL,
 				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
+
+		/* If step mgr, if enabled, will take care of notify the job. */
+		notify_job = false;
 	}
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		srun_node_fail_msg_t *msg_arg;
 		slurm_addr_t * addr;
 
@@ -246,7 +251,7 @@ extern void srun_ping (void)
 	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	list_for_each_ro(step_mgr_ops->job_list, _srun_ping, &old);
+	list_for_each_ro(stepmgr_ops->job_list, _srun_ping, &old);
 }
 
 static int _srun_step_timeout(void *x, void *arg)
@@ -283,6 +288,7 @@ static int _srun_step_timeout(void *x, void *arg)
  */
 extern void srun_timeout(job_record_t *job_ptr)
 {
+	bool notify_job = true;
 	slurm_addr_t * addr;
 	srun_timeout_msg_t *msg_arg;
 
@@ -290,24 +296,11 @@ extern void srun_timeout(job_record_t *job_ptr)
 	if (!IS_JOB_RUNNING(job_ptr))
 		return;
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(slurm_addr_t));
-		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
-		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->step_id.job_id   = job_ptr->job_id;
-		msg_arg->step_id.step_id  = NO_VAL;
-		msg_arg->step_id.step_het_comp = NO_VAL;
-		msg_arg->timeout  = job_ptr->end_time;
-		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_TIMEOUT,
-				   msg_arg, job_ptr->user_id,
-				   job_ptr->start_protocol_ver);
-	}
-
 	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
 
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		srun_timeout_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
@@ -319,8 +312,24 @@ extern void srun_timeout(job_record_t *job_ptr)
 		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_TIMEOUT,
 				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
+
+		/* If step mgr, if enabled, will take care of notify the job. */
+		notify_job = false;
 	}
 
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		addr = xmalloc(sizeof(slurm_addr_t));
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
+		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
+		msg_arg->step_id.job_id   = job_ptr->job_id;
+		msg_arg->step_id.step_id  = NO_VAL;
+		msg_arg->step_id.step_het_comp = NO_VAL;
+		msg_arg->timeout  = job_ptr->end_time;
+		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_TIMEOUT,
+				   msg_arg, job_ptr->user_id,
+				   job_ptr->start_protocol_ver);
+	}
 }
 
 #ifndef HAVE_FRONT_END
@@ -423,10 +432,32 @@ static int _srun_job_complete(void *x, void *arg)
  */
 extern void srun_job_complete(job_record_t *job_ptr)
 {
+	bool notify_job = true;
 
 	xassert(job_ptr);
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
+
+	if (running_in_slurmctld() &&
+	    job_ptr->batch_host &&
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
+		srun_job_complete_msg_t *msg_arg;
+
+		msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id = NO_VAL;
+		msg_arg->step_het_comp = NO_VAL;
+
+		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
+				   msg_arg, slurm_conf.slurmd_user_id,
+				   job_ptr->start_protocol_ver);
+
+		notify_job = false;
+	}
+
+	/* If step mgr, if enabled, will take care of notify the job. */
+	if (notify_job &&
+	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		srun_job_complete_msg_t *msg_arg;
 		slurm_addr_t * addr;
 
@@ -439,23 +470,6 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE, msg_arg,
 				   job_ptr->user_id,
-				   job_ptr->start_protocol_ver);
-	}
-
-	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
-
-	if (running_in_slurmctld() &&
-	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
-		srun_job_complete_msg_t *msg_arg;
-
-		msg_arg = xmalloc(sizeof(*msg_arg));
-		msg_arg->job_id = job_ptr->job_id;
-		msg_arg->step_id = NO_VAL;
-		msg_arg->step_het_comp = NO_VAL;
-
-		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
-				   msg_arg, slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
 	}
 }
@@ -566,7 +580,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
  */
 extern void srun_response(slurm_step_id_t *step_id)
 {
-	job_record_t *job_ptr = step_mgr_ops->find_job_record(step_id->job_id);
+	job_record_t *job_ptr = stepmgr_ops->find_job_record(step_id->job_id);
 	step_record_t *step_ptr;
 	time_t now = time(NULL);
 

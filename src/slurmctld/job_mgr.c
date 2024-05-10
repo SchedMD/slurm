@@ -112,7 +112,7 @@
 
 #include "src/stepmgr/gres_ctld.h"
 #include "src/stepmgr/srun_comm.h"
-#include "src/stepmgr/step_mgr.h"
+#include "src/stepmgr/stepmgr.h"
 
 #define ARRAY_ID_BUF_SIZE 32
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
@@ -675,7 +675,7 @@ static int _add_job_record(job_record_t *job_ptr, int num_jobs)
  */
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
-	job_record_t *job_ptr = create_job_record();
+	job_record_t *job_ptr = job_record_create();
 
 	if (list_add) {
 		_add_job_record(job_ptr, num_jobs);
@@ -6831,30 +6831,30 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	lic_req = NULL;
 }
 
-static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
+static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
 #ifndef HAVE_FRONT_END
 	static bool first_time = true;
-	static bool step_mgr_enabled = false;
+	static bool stepmgr_enabled = false;
 
 	if (first_time) {
 		first_time = false;
-		step_mgr_enabled = xstrstr(slurm_conf.slurmctld_params,
-					   "step_mgr_enable");
+		stepmgr_enabled = xstrstr(slurm_conf.slurmctld_params,
+					  "enable_stepmgr");
 	}
 
-	if ((step_mgr_enabled || (job_desc->bitflags & STEP_MGR_ENABLED)) &&
+	if ((stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
 	    (job_desc->het_job_offset == NO_VAL) &&
 	    (job_ptr->start_protocol_ver >= SLURM_24_05_PROTOCOL_VERSION)) {
-		job_ptr->bit_flags |= STEP_MGR_ENABLED;
+		job_ptr->bit_flags |= STEPMGR_ENABLED;
 	} else {
-		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
 	}
 
-	if ((job_ptr->bit_flags & STEP_MGR_ENABLED) &&
+	if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)) {
 		error("STEP_MGR not supported without PrologFlags=contain");
-		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
 	}
 #endif
 }
@@ -7313,7 +7313,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 	job_ptr->best_switch = true;
 
-	_enable_step_mgr(job_ptr, job_desc);
+	_enable_stepmgr(job_ptr, job_desc);
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(gres_list);

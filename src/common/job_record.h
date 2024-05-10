@@ -620,7 +620,7 @@ typedef struct {
  *
  * Not added to a global job list.
  */
-extern job_record_t *create_job_record(void);
+extern job_record_t *job_record_create(void);
 
 /* free_step_record - delete a step record's data structures */
 extern void free_step_record(void *x);
@@ -654,7 +654,7 @@ typedef struct {
 	bool valid_job;
 	part_record_t **visible_parts;
 	list_t *job_step_list;
-	list_t *step_mgr_jobs;
+	list_t *stepmgr_jobs;
 	int (*pack_job_step_list_func)(void *x, void *arg);
 } pack_step_args_t;
 
