@@ -80,9 +80,9 @@ extern ssize_t slurm_msg_sendto(int open_fd,
  * Send message over the given connection, default timeout value
  * IN open_fd - an open file descriptor
  * IN buffers - array of buffers to transmit
- * RET number of bytes written
+ * RET number of bytes written or SLURM_ERROR on error
  */
-extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers);
+extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers);
 
 /********************/
 /* stream functions */
