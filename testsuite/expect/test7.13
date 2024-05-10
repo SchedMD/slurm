@@ -78,7 +78,7 @@ wait_for_job -fail $job_id "DONE"
 #
 set job_exit_code [get_job_param $job_id "ExitCode"]
 subtest {$job_exit_code eq "0:0"} "Verify ExitCode in job record" "$job_exit_code != 0:0"
-if {[param_contains [get_config_param "SlurmctldParameters"] "step_mgr_enable"]} {
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
 	subskip "stepmgr jobs don't track DerivedExitCode on the controller."
 } else {
 	set derived_exit_code [get_job_param $job_id "DerivedExitCode"]

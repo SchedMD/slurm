@@ -6840,7 +6840,7 @@ static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 	if (first_time) {
 		first_time = false;
 		step_mgr_enabled = xstrstr(slurm_conf.slurmctld_params,
-					   "step_mgr_enable");
+					   "enable_stepmgr");
 	}
 
 	if ((step_mgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&

@@ -42,7 +42,7 @@ HIGHLIGHTS
  -- Store job output, input and error paths in SlurmDBD.
  -- Add USER_DELETE reservation flag to allow users with access to a reservation
     to delete it.
- -- Add SlurmctldParameters=step_mgr_enable to enable step management through
+ -- Add SlurmctldParameters=enable_stepmgr to enable step management through
     the slurmstepd instead of the controller.
  -- Added PrologFlags=RunInJob to make prolog and epilog run inside the job
     extern step to include it in the job's cgroup.
