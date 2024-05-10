@@ -119,14 +119,14 @@ cleanup:
 }
 
 /* set keepalive time on socket */
-extern int net_set_keep_alive(int sock)
+extern void net_set_keep_alive(int sock)
 {
 	int opt_int;
 	socklen_t opt_len;
 	struct linger opt_linger;
 
 	if (slurm_conf.keepalive_time == NO_VAL)
-		return 0;
+		return;
 
 	opt_len = sizeof(struct linger);
 	opt_linger.l_onoff = 1;
@@ -138,7 +138,7 @@ extern int net_set_keep_alive(int sock)
 	opt_int = slurm_conf.keepalive_time;
 	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &opt_int, opt_len) < 0) {
 		error("Unable to set keepalive socket option: %m");
-		return -1;
+		return;
 	}
 
 /*
@@ -154,7 +154,7 @@ extern int net_set_keep_alive(int sock)
 		if (setsockopt(sock, SOL_TCP, TCP_KEEPINTVL,
 			       &opt_int, opt_len) < 0) {
 			error("Unable to set keepalive interval: %m");
-			return -1;
+			return;
 		}
 	}
 	if (slurm_conf.keepalive_probes != NO_VAL) {
@@ -162,13 +162,13 @@ extern int net_set_keep_alive(int sock)
 		if (setsockopt(sock, SOL_TCP, TCP_KEEPCNT,
 			       &opt_int, opt_len) < 0) {
 			error("Unable to set keepalive probes: %m");
-			return -1;
+			return;
 		}
 	}
 	opt_int = slurm_conf.keepalive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keepalive socket time: %m");
-		return -1;
+		return;
 	}
 #endif
 
@@ -189,8 +189,6 @@ extern int net_set_keep_alive(int sock)
 	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, &opt_len);
 	info("got keepalive_time is %d on fd %d", opt_int, sock);
 #endif
-
-	return 0;
 }
 
 extern void net_set_nodelay(int sock)
