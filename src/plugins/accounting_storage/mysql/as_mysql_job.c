@@ -1824,7 +1824,7 @@ again:
 	 * the suspend table and the step table
 	 */
 	query = xstrdup_printf(
-		"select distinct t1.job_db_inx, t1.state from \"%s_%s\" "
+		"select distinct t1.job_db_inx, t1.state, t1.time_suspended from \"%s_%s\" "
 		"as t1 where t1.time_end=0 LIMIT %u;",
 		mysql_conn->cluster_name, job_table, MAX_FLUSH_JOBS);
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
@@ -1838,6 +1838,10 @@ again:
 	while ((row = mysql_fetch_row(result))) {
 		int state = slurm_atoul(row[1]);
 		if (state == JOB_SUSPENDED) {
+			time_t time_suspended = slurm_atoull(row[2]);
+			/* To avoid underflow, use the latest time_suspended. */
+			if (event_time < time_suspended)
+				event_time = time_suspended;
 			if (suspended_char)
 				xstrfmtcat(suspended_char,
 					   ", %s", row[0]);
