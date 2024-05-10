@@ -187,7 +187,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 {
-	int sent = 0;
+	int tot_bytes_sent = 0;
 	int fd_flags;
 	struct pollfd ufds;
 	struct timeval tstart;
@@ -202,15 +202,16 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 
 	gettimeofday(&tstart, NULL);
 
-	while (sent < size) {
+	while (tot_bytes_sent < size) {
 		ssize_t bytes_sent = 0;
 		int rc;
 
 		timeleft = *timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
-			debug("%s at %d of %zu, timeout", __func__, sent, size);
+			debug("%s at %d of %zu, timeout",
+			      __func__, tot_bytes_sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
-			sent = SLURM_ERROR;
+			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
 
@@ -219,9 +220,10 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
  				continue;
 			else {
 				debug("%s at %d of %zu, poll error: %s",
-				      __func__, sent, size, strerror(errno));
+				      __func__, tot_bytes_sent, size,
+				      strerror(errno));
 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
-				sent = SLURM_ERROR;
+				tot_bytes_sent = SLURM_ERROR;
 				break;
 			}
 		}
@@ -244,7 +246,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 				      __func__, slurm_strerror(e));
 
 			slurm_seterrno(e);
-			sent = SLURM_ERROR;
+			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
@@ -257,7 +259,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 				debug2("%s: Socket no longer there: %s",
 				       __func__, slurm_strerror(so_err));
 			slurm_seterrno(so_err);
-			sent = SLURM_ERROR;
+			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
 		if ((ufds.revents & POLLOUT) != POLLOUT) {
@@ -265,18 +267,19 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			      __func__, ufds.revents);
 		}
 
-		bytes_sent = send(fd, &buf[sent], (size - sent), 0);
+		bytes_sent = send(fd, &buf[tot_bytes_sent],
+				  (size - tot_bytes_sent), 0);
 		if (bytes_sent < 0) {
  			if (errno == EINTR)
 				continue;
 			debug("%s at %d of %zu, send error: %s",
-			      __func__, sent, size, strerror(errno));
+			      __func__, tot_bytes_sent, size, strerror(errno));
  			if (errno == EAGAIN) {	/* poll() lied to us */
 				usleep(10000);
 				continue;
 			}
  			slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
-			sent = SLURM_ERROR;
+			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
 		if (bytes_sent == 0) {
@@ -285,11 +288,11 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			 * provide any output: try poll() again.
 			 */
 			log_flag(NET, "send() sent zero bytes out of %d/%zu",
-				 sent, size);
+				 tot_bytes_sent, size);
 			continue;
 		}
 
-		sent += bytes_sent;
+		tot_bytes_sent += bytes_sent;
 	}
 
 	/* Reset fd flags to prior state, preserve errno */
@@ -301,7 +304,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 	}
 
 	*timeout = *timeout - _tot_wait(&tstart);
-	return sent;
+	return tot_bytes_sent;
 
 }
 
