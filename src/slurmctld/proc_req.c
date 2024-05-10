@@ -795,7 +795,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 			xrealloc(alloc_msg->environment,
 				 sizeof(char *) * (alloc_msg->env_size + 1));
 			env_array_overwrite(&alloc_msg->environment,
-					    "SLURM_STEP_MGR",
+					    "SLURM_STEPMGR",
 					    job_ptr->batch_host);
 			alloc_msg->env_size++;
 		}

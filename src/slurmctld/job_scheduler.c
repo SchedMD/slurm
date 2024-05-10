@@ -2338,7 +2338,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		xrealloc(launch_msg_ptr->environment,
 			 sizeof(char *) * (launch_msg_ptr->envc + 1));
 		env_array_overwrite(&launch_msg_ptr->environment,
-				    "SLURM_STEP_MGR", job_ptr->batch_host);
+				    "SLURM_STEPMGR", job_ptr->batch_host);
 		launch_msg_ptr->envc++;
 	}
 

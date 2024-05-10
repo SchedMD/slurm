@@ -750,7 +750,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 re_send:
 	/* xstrdup() to be consistent with reroute and be able to free. */
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEP_MGR")))) {
+	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
 trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
