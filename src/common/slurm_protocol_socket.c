@@ -567,6 +567,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			return SLURM_ERROR;
 		}
 
+		net_set_nodelay(fd);
+
 		if (retry_cnt) {
 			if (retry_cnt == 1) {
 				debug3("Error connecting, "
