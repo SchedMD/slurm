@@ -125,12 +125,12 @@ static void _sock_bind_wild(int sockfd)
 }
 
 extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
-					  uint32_t flags, int tmout)
+					  uint32_t flags, int timeout)
 {
 	ssize_t  len;
 	uint32_t msglen;
 
-	len = slurm_recv_timeout(fd, (char *) &msglen, sizeof(msglen), tmout);
+	len = slurm_recv_timeout(fd, (char *) &msglen, sizeof(msglen), timeout);
 
 	if (len < ((ssize_t) sizeof(msglen)))
 		return SLURM_ERROR;
@@ -146,7 +146,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	if (!(*pbuf = try_xmalloc(msglen)))
 		slurm_seterrno_ret(ENOMEM);
 
-	if (slurm_recv_timeout(fd, *pbuf, msglen, tmout) != msglen) {
+	if (slurm_recv_timeout(fd, *pbuf, msglen, timeout) != msglen) {
 		xfree(*pbuf);
 		*pbuf = NULL;
 		return SLURM_ERROR;
