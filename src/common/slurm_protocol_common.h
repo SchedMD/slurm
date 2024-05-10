@@ -42,9 +42,6 @@
 
 #include "config.h"
 
-/* for sendto and recvfrom commands */
-#define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
-
 /* for listen API */
 #define SLURM_DEFAULT_LISTEN_BACKLOG 4096
 
