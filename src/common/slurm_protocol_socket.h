@@ -121,8 +121,7 @@ extern int slurm_open_stream(slurm_addr_t *slurm_address, bool retry);
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
 extern int slurm_send_timeout(int fd, char *buffer, size_t size, int timeout);
-extern int slurm_recv_timeout(int open_fd, char *buffer, size_t size,
-			      uint32_t flags, int timeout);
+extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout);
 
 /*****************************/
 /* slurm addr pack functions */

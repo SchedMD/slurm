@@ -1940,7 +1940,6 @@ size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 {
 	return slurm_recv_timeout(open_fd, buffer, size,
-	                          SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 	                          (slurm_conf.msg_timeout * 1000));
 }
 
