@@ -6835,15 +6835,15 @@ static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
 #ifndef HAVE_FRONT_END
 	static bool first_time = true;
-	static bool step_mgr_enabled = false;
+	static bool stepmgr_enabled = false;
 
 	if (first_time) {
 		first_time = false;
-		step_mgr_enabled = xstrstr(slurm_conf.slurmctld_params,
-					   "enable_stepmgr");
+		stepmgr_enabled = xstrstr(slurm_conf.slurmctld_params,
+					  "enable_stepmgr");
 	}
 
-	if ((step_mgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
+	if ((stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
 	    (job_desc->het_job_offset == NO_VAL) &&
 	    (job_ptr->start_protocol_ver >= SLURM_24_05_PROTOCOL_VERSION)) {
 		job_ptr->bit_flags |= STEPMGR_ENABLED;
