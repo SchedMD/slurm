@@ -10156,6 +10156,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
 		packstr(dump_job_ptr->resv_name, buffer);
+		packstr(dump_job_ptr->resv_ports, buffer);
 		packstr(dump_job_ptr->mcs_label, buffer);
 
 		pack32(dump_job_ptr->exit_code, buffer);
