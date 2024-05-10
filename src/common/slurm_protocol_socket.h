@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_protocol_interface.h - mid-level slurm communication definitions
+ *  slurm_protocol_socket.h - mid-level slurm communication definitions
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_PROTOCOL_INTERFACE_H
-#define _SLURM_PROTOCOL_INTERFACE_H
+#ifndef _SLURM_PROTOCOL_SOCKET_H
+#define _SLURM_PROTOCOL_SOCKET_H
 
 #include <fcntl.h>
 #include <inttypes.h>
@@ -144,4 +144,4 @@ extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer);
  */
 extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr_ptr, buf_t *buffer);
 
-#endif /* !_SLURM_PROTOCOL_INTERFACE_H */
+#endif

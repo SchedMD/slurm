@@ -74,7 +74,7 @@
 #include "src/common/ref.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"

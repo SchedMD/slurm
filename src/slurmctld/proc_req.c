@@ -66,8 +66,8 @@
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/acct_gather.h"

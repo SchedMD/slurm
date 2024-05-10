@@ -110,8 +110,8 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/xmalloc.h"
 
 #include "pmi.h"

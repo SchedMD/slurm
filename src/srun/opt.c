@@ -62,7 +62,7 @@
 #include "src/common/proc_args.h"
 #include "src/interfaces/mpi.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/interfaces/acct_gather_profile.h"

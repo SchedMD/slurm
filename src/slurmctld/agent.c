@@ -87,7 +87,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xassert.h"

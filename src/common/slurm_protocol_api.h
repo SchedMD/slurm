@@ -52,8 +52,8 @@
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_protocol_util.h"
-#include "src/common/slurm_protocol_interface.h"
 
 #define MIN_NOALLOC_JOBID ((uint32_t) 0xffff0000)
 #define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)

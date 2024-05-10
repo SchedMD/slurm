@@ -126,12 +126,12 @@ libcommon_la_SOURCES =				\
 	slurm_protocol_common.h			\
 	slurm_protocol_defs.c			\
 	slurm_protocol_defs.h			\
-	slurm_protocol_interface.h		\
 	slurm_protocol_pack.c			\
 	slurm_protocol_pack.h			\
 	slurm_protocol_util.c			\
 	slurm_protocol_util.h			\
 	slurm_protocol_socket.c			\
+	slurm_protocol_socket.h			\
 	slurm_resolv.c				\
 	slurm_resolv.h				\
 	slurm_resource_info.c			\
