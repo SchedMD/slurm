@@ -56,18 +56,14 @@
 #include <time.h>
 #include <unistd.h>
 
-/* PROJECT INCLUDES */
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
-#include "src/interfaces/hash.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -76,6 +72,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmdbd/read_config.h"
