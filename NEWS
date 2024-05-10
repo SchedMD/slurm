@@ -226,6 +226,7 @@ documents those changes that are of interest to users and administrators.
     slurmdbd specific plugins.
  -- Added PrologFlags=RunInJob to make prolog and epilog run inside the job
     extern step to include it in the job's cgroup.
+ -- Return '*' for the password field for nss_slurm instead of "x".
 
 * Changes in Slurm 23.11.7
 ==========================

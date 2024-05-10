@@ -1936,7 +1936,7 @@ static int _handle_getpw(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 
 	len = 1;
 	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, "x", len);
+	safe_write(fd, "*", len);
 
 	safe_write(fd, &step->uid, sizeof(uid_t));
 	safe_write(fd, &step->gid, sizeof(gid_t));
@@ -1973,7 +1973,7 @@ static int _send_one_struct_group(int fd, stepd_step_rec_t *step, int offset)
 
 	len = 1;
 	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, "x", len);
+	safe_write(fd, "*", len);
 
 	safe_write(fd, &step->gids[offset], sizeof(gid_t));
 
