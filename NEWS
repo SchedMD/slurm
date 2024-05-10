@@ -232,7 +232,7 @@ documents those changes that are of interest to users and administrators.
       'GET /slurm/v0.0.41/job/{job_id}' in '.jobs[].shared' field
       'POST /slurm/v0.0.41/job/submit' in '.job.shared' and '.jobs[].shared'
       'POST /slurm/v0.0.41/job/allocate' in '.job.shared' and '.jobs[].shared'
- -- sacctmgr - Added possible flags "RemoveUsersAreCoords" and "UsersAreCoords"
+ -- sacctmgr - Added possible flags "NoUsersAreCoords" and "UsersAreCoords"
     to `.accounts[].flags` for `sacctmgr show accounts --{json|yaml}` response.
  -- sacct - Add "topo" as possible value to output of 'sacct --{json|yaml}' to
     '.jobs[].shared' field.
