@@ -204,6 +204,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 	gettimeofday(&tstart, NULL);
 
 	while (sent < size) {
+		ssize_t bytes_sent = 0;
 		timeleft = *timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, sent, size);
@@ -263,8 +264,8 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			      __func__, ufds.revents);
 		}
 
-		rc = send(fd, &buf[sent], (size - sent), 0);
-		if (rc < 0) {
+		bytes_sent = send(fd, &buf[sent], (size - sent), 0);
+		if (bytes_sent < 0) {
  			if (errno == EINTR)
 				continue;
 			debug("%s at %d of %zu, send error: %s",
@@ -277,7 +278,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			sent = SLURM_ERROR;
 			break;
 		}
-		if (rc == 0) {
+		if (bytes_sent == 0) {
 			/*
 			 * If driver false reports POLLIN but then does not
 			 * provide any output: try poll() again.
@@ -287,7 +288,7 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			continue;
 		}
 
-		sent += rc;
+		sent += bytes_sent;
 	}
 
 	/* Reset fd flags to prior state, preserve errno */
