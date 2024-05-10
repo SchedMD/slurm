@@ -72,6 +72,10 @@ my $other_ld_flags = '-Wl,-rpath,@top_builddir@/src/db_api/.libs -Wl,-rpath,@lib
 $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 	if $os =~ "aix";
 
+# Define .inc files to clean up as default behavior
+# misses them when generating Makefile
+my @inc_clean_files = qw(const-c.inc const-xs.inc);
+
 WriteMakefile(
     NAME              => 'Slurmdb',
     VERSION_FROM      => 'Slurmdb.pm', # finds $VERSION
@@ -86,6 +90,8 @@ WriteMakefile(
     OBJECT            => '$(O_FILES)', # link all the C files too
     CCFLAGS           => '-g',
     dynamic_lib       => {'OTHERLDFLAGS' => $other_ld_flags},
+    #Custom cleanup behavior to clear .inc files
+    clean		=> {FILES => join(' ', @inc_clean_files)},
 );
 
 if  (eval {require ExtUtils::Constant; 1}) {
