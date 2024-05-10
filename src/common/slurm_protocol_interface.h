@@ -54,19 +54,6 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
-/*******************************\
- **  MIDDLE LAYER FUNCTIONS  **
- \*******************************/
-
-/* The must have functions are required to implement a low level plugin
- * for the slurm protocol the general purpose functions just wrap
- * standard socket calls, so if the underlying layer implements a
- * socket like interface, it can be used as a low level transport
- * plugin with slurm the slurm_recv and slurm_send functions are
- * also needed
- */
-
-
 /*****************/
 /* msg functions */
 /*****************/
