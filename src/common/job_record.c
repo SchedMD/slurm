@@ -708,6 +708,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		pack16(dump_job_ptr->alloc_resp_port, buffer);
 		pack16(dump_job_ptr->other_port, buffer);
 		packstr(dump_job_ptr->resv_ports, buffer);
+		pack16(dump_job_ptr->resv_port_cnt, buffer);
 		pack8(0, buffer); /* was power_flags */
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
 		packdouble(dump_job_ptr->billable_tres, buffer);
@@ -1893,6 +1894,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack16(&job_ptr->alloc_resp_port, buffer);
 		safe_unpack16(&job_ptr->other_port, buffer);
 		safe_unpackstr(&job_ptr->resv_ports, buffer);
+		safe_unpack16(&job_ptr->resv_port_cnt, buffer);
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
 		safe_unpackdouble(&job_ptr->billable_tres, buffer);
