@@ -257,6 +257,12 @@ documents those changes that are of interest to users and administrators.
     'scontrol show jobs --{json|yaml}' to '.jobs[].exclusive' field.
  -- slurmrestd - Add fields '.job.segment_size' and '.jobs[].segment_size' to
     'POST /slurm/v0.0.41/job/submit' and 'POST /slurm/v0.0.41/job/allocate'.
+ -- sacctmgr - Added possible flags "NoUsersAreCoords" and "UsersAreCoords"
+    to `.associations[].flags` for `sacctmgr show assocs --{json|yaml}`
+    response.
+ -- slurmrestd - Added possible flags "NoUsersAreCoords" and "UsersAreCoords" to
+    `.associations[].flags` for "GET /slurmdb/v0.0.41/associations/"
+    and "POST /slurmdb/v0.0.41/associations/" endpoints.
 
 * Changes in Slurm 23.11.7
 ==========================
