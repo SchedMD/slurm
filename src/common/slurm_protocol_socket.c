@@ -158,34 +158,6 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
-{
-	int   len;
-	uint32_t usize;
-	SigFunc *ohandler;
-	int timeout = slurm_conf.msg_timeout * 1000;
-
-	/*
-	 *  Ignore SIGPIPE so that send can return a error code if the
-	 *    other side closes the socket
-	 */
-	ohandler = xsignal(SIGPIPE, SIG_IGN);
-
-	usize = htonl(size);
-
-	if ((len = slurm_send_timeout(fd, (char *) &usize, sizeof(usize),
-				      timeout)) < 0)
-		goto done;
-
-	if ((len = slurm_send_timeout(fd, buffer, size, timeout)) < 0)
-		goto done;
-
-
-     done:
-	xsignal(SIGPIPE, ohandler);
-	return len;
-}
-
 static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
 {
 	int tot_bytes_sent = 0;
@@ -337,6 +309,33 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
 	return _writev_timeout(fd, &iov, 1, &timeout);
+}
+
+extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
+{
+	struct iovec iov[2];
+	uint32_t usize;
+	int len;
+	SigFunc *ohandler;
+	int timeout = slurm_conf.msg_timeout * 1000;
+
+	/*
+	 *  Ignore SIGPIPE so that send can return a error code if the
+	 *    other side closes the socket
+	 */
+	ohandler = xsignal(SIGPIPE, SIG_IGN);
+
+	iov[0].iov_base = &usize;
+	iov[0].iov_len = sizeof(usize);
+	iov[1].iov_base = buffer;
+	iov[1].iov_len = size;
+
+	usize = htonl(iov[1].iov_len);
+
+	len = _writev_timeout(fd, iov, 2, &timeout);
+
+	xsignal(SIGPIPE, ohandler);
+	return len;
 }
 
 extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
