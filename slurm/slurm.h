@@ -645,6 +645,7 @@ enum job_state_reason {
 	WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
 					    * (Unknown) */
 	WAIT_MAX_POWERED_NODES,            /* max_powered_nodes reached */
+	WAIT_MPI_PORTS_BUSY,		   /* MPI resv_ports busy */
 	REASON_END, /* end of table */
 };
 

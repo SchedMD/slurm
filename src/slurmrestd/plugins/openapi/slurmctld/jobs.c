@@ -71,6 +71,7 @@ static const slurm_err_t nonfatal_errors[] = {
 	ESLURM_BURST_BUFFER_WAIT,
 	ESLURM_PARTITION_DOWN,
 	ESLURM_LICENSES_UNAVAILABLE,
+	ESLURM_PORTS_BUSY,
 };
 
 static int _signal_jobs(openapi_ctxt_t *ctxt)

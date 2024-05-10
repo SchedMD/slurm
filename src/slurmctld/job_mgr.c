@@ -3759,7 +3759,8 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 			return SLURM_SUCCESS;
 	}
 	if (((*rc == ESLURM_NODES_BUSY) ||
-	     (*rc == ESLURM_RESERVATION_BUSY)) &&
+	     (*rc == ESLURM_RESERVATION_BUSY) ||
+	     (*rc == ESLURM_PORTS_BUSY)) &&
 	    (*best_rc == -1) &&
 	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
 	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
@@ -4217,6 +4218,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 		 (error_code == ESLURM_PARTITION_DOWN) ||
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE) ||
+		 (error_code == ESLURM_PORTS_BUSY) ||
 		 ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 		  (job_ptr->state_reason == FAIL_CONSTRAINTS))) {
 		/*
@@ -4241,6 +4243,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			    (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 			    (error_code == ESLURM_RESERVATION_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY) ||
+			    (error_code == ESLURM_PORTS_BUSY) ||
 			    ((error_code == ESLURM_PARTITION_DOWN) &&
 			     (job_ptr->batch_flag))) {
 				job_ptr->details->features_use = NULL;

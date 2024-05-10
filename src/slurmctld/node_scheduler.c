@@ -2812,13 +2812,9 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 				job_ptr->start_time = 0;
 				job_ptr->time_last_active = 0;
 				job_ptr->end_time = 0;
-				job_ptr->state_reason = WAIT_RESOURCES;
+				job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
 				last_job_update = now;
 				xfree(job_ptr->state_desc);
-
-				if (error_code == ESLURM_PORTS_BUSY)
-					error_code = ESLURM_NODES_BUSY;
-
 				goto cleanup;
 			}
 		}
