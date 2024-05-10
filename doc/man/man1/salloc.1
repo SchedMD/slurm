@@ -1991,6 +1991,16 @@ reservation used will replace it.
 .IP
 
 .TP
+\fB\-\-resv\-ports\fR[=\fIcount\fR]
+Reserve communication ports for this job. Users can specify the number
+of port they want to reserve. The parameter MpiParams=ports=12000\-12999
+must be specified in \fIslurm.conf\fR. If the number of reserved ports is zero
+then no ports are reserved. Used for native Cray's PMI only.
+This option can only be used if the slurmstepd step management is enabled.
+This option applies to job allocations. See \fB\-\-stepmgr\fR.
+.IP
+
+.TP
 \fB\-\-segment\fR=<\fIsegment_size\fR>
 When a block topology is used, this defines the size of the segments that
 will be used to create the job allocation.
