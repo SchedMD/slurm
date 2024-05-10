@@ -59,6 +59,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -539,7 +540,9 @@ error:
 extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
-	return accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
+	int sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
+	net_set_nodelay(sock);
+	return sock;
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
