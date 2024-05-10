@@ -4754,11 +4754,9 @@ Glob patterns (See \fBglob\fR (7)) are not supported.
 
 .TP
 \fBenable_job_state_cache\fR
-Enable slurmctld to cache all job states to allow
-`\fBsqueue\fR --only-state-only` to be able to query job states with out
-grabbing the global job read lock which can slow down scheduling.
-\fBWARNING\fR: This is considered experimental functionality and should not be
-used in production.
+Enables an independent cache of job state details within slurmctld. This allows
+processing of `\fBsqueue\fR --only-state-only` and replaced RPCs with minimal
+impact on other slurmctld operations.
 .IP
 
 .TP
