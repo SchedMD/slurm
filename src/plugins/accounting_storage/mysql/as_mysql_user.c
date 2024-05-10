@@ -1982,12 +1982,11 @@ static slurmdb_user_rec_t *_make_user_rec_with_coords(
 
 	xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
 
-	if (assoc_mgr_fill_in_user(mysql_conn, &user_tmp,
-				   ACCOUNTING_ENFORCE_ASSOCS,
-				   NULL, true) != SLURM_SUCCESS) {
-		/* New User */
-		goto end_it;
-	}
+	/* Grab the current coord_accts if user exists already */
+	(void) assoc_mgr_fill_in_user(mysql_conn, &user_tmp,
+				      ACCOUNTING_ENFORCE_ASSOCS,
+				      NULL, true);
+
 	/*
 	 * The association manager expects the dbd to do all the lifting
 	 * here, so we get a full list and then remove from it.
@@ -2002,7 +2001,7 @@ static slurmdb_user_rec_t *_make_user_rec_with_coords(
 	if (!user_rec->coord_accts)
 		user_rec->coord_accts =
 			list_create(slurmdb_destroy_coord_rec);
-end_it:
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 	return user_rec;
