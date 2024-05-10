@@ -529,7 +529,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
 
 	if (!step_signal.found && running_in_slurmctld() &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		agent_arg_t *agent_args = NULL;
 		job_step_kill_msg_t *kill_msg = NULL;
 		node_record_t *node_ptr;
@@ -4511,7 +4511,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	} else {
 		step_ptr = find_step_record(job_ptr, &step_id);
 
-		if (!step_ptr && (job_ptr->bit_flags & STEP_MGR_ENABLED))
+		if (!step_ptr && (job_ptr->bit_flags & STEPMGR_ENABLED))
 			goto step_mgr;
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
@@ -4525,7 +4525,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 
 step_mgr:
 	if (running_in_slurmctld() && !step_ptr &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		agent_arg_t *agent_args = NULL;
 		step_update_request_msg_t *agent_update_msg = NULL;
 
@@ -5177,7 +5177,7 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 	}
 
 	if (running_in_slurmctld() &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
 			error("rpc %s from non-supported client version %d for step_mgr job",
 			      rpc_num2string(msg->msg_type),
@@ -5256,7 +5256,7 @@ end_it:
 						   &switch_job);
 		job_step_resp.switch_job = switch_job;
 
-		if (job_ptr->bit_flags & STEP_MGR_ENABLED)
+		if (job_ptr->bit_flags & STEPMGR_ENABLED)
 			job_step_resp.step_mgr = job_ptr->batch_host;
 
 		if (lock_func)

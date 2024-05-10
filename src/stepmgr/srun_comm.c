@@ -177,7 +177,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		srun_node_fail_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
@@ -300,7 +300,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		srun_timeout_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
@@ -440,7 +440,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED)) {
+	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		srun_job_complete_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));

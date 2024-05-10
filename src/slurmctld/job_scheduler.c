@@ -2334,7 +2334,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		goto job_failed;
 	}
 
-	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		xrealloc(launch_msg_ptr->environment,
 			 sizeof(char *) * (launch_msg_ptr->envc + 1));
 		env_array_overwrite(&launch_msg_ptr->environment,

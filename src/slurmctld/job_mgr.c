@@ -6843,18 +6843,18 @@ static void _enable_step_mgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 					   "step_mgr_enable");
 	}
 
-	if ((step_mgr_enabled || (job_desc->bitflags & STEP_MGR_ENABLED)) &&
+	if ((step_mgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
 	    (job_desc->het_job_offset == NO_VAL) &&
 	    (job_ptr->start_protocol_ver >= SLURM_24_05_PROTOCOL_VERSION)) {
-		job_ptr->bit_flags |= STEP_MGR_ENABLED;
+		job_ptr->bit_flags |= STEPMGR_ENABLED;
 	} else {
-		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
 	}
 
-	if ((job_ptr->bit_flags & STEP_MGR_ENABLED) &&
+	if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)) {
 		error("STEP_MGR not supported without PrologFlags=contain");
-		job_ptr->bit_flags &= ~STEP_MGR_ENABLED;
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
 	}
 #endif
 }

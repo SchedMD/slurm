@@ -4359,26 +4359,26 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 
 static int arg_set_stepmgr(slurm_opt_t *opt, const char *arg)
 {
-	opt->job_flags |= STEP_MGR_ENABLED;
+	opt->job_flags |= STEPMGR_ENABLED;
 
 	return SLURM_SUCCESS;
 }
 static char *arg_get_stepmgr(slurm_opt_t *opt)
 {
-	if (opt->job_flags & STEP_MGR_ENABLED)
+	if (opt->job_flags & STEPMGR_ENABLED)
 		return xstrdup("set");
 	return xstrdup("unset");
 }
 static int arg_set_data_stepmgr(slurm_opt_t *opt, const data_t *arg,
 				data_t *errors)
 {
-	opt->job_flags |= STEP_MGR_ENABLED;
+	opt->job_flags |= STEPMGR_ENABLED;
 
 	return SLURM_SUCCESS;
 }
 static void arg_reset_stepmgr(slurm_opt_t *opt)
 {
-	opt->job_flags &= ~STEP_MGR_ENABLED;
+	opt->job_flags &= ~STEPMGR_ENABLED;
 }
 static slurm_cli_opt_t slurm_opt_stepmgr = {
 	.name = "stepmgr",

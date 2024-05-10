@@ -791,7 +791,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 					xstrdup(job_ptr->details->env_sup[i]);
 			}
 		}
-		if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+		if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 			xrealloc(alloc_msg->environment,
 				 sizeof(char *) * (alloc_msg->env_size + 1));
 			env_array_overwrite(&alloc_msg->environment,
@@ -2352,7 +2352,7 @@ fini:
 	 * querying all step_mgr's for all steps.
 	 */
 	if ((args->step_id->job_id != NO_VAL) &&
-	    (job_ptr->bit_flags & STEP_MGR_ENABLED) &&
+	    (job_ptr->bit_flags & STEPMGR_ENABLED) &&
 	    IS_JOB_RUNNING(job_ptr)) {
 		step_mgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->step_mgr_jobs)
@@ -3030,7 +3030,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		goto error;
 	}
 
-	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
 			error("rpc %s from non-supported client version %d for step_mgr job",
 			      rpc_num2string(msg->msg_type),
@@ -3452,7 +3452,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
-	if (job_ptr->bit_flags & STEP_MGR_ENABLED) {
+	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
 			error("rpc %s from non-supported client version %d for step_mgr job",
 			      rpc_num2string(msg->msg_type),
