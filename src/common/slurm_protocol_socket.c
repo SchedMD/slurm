@@ -53,6 +53,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -185,9 +186,10 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 	return len;
 }
 
-static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
+static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
 {
 	int tot_bytes_sent = 0;
+	size_t size = 0;
 	int fd_flags;
 	struct pollfd ufds;
 	struct timeval tstart;
@@ -202,7 +204,10 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 
 	gettimeofday(&tstart, NULL);
 
-	while (tot_bytes_sent < size) {
+	for (int i = 0; i < iovcnt; i++)
+		size += iov[i].iov_len;
+
+	while (true) {
 		ssize_t bytes_sent = 0;
 		int rc;
 
@@ -267,8 +272,8 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 			      __func__, ufds.revents);
 		}
 
-		bytes_sent = send(fd, &buf[tot_bytes_sent],
-				  (size - tot_bytes_sent), 0);
+		bytes_sent = writev(fd, iov, iovcnt);
+
 		if (bytes_sent < 0) {
  			if (errno == EINTR)
 				continue;
@@ -293,6 +298,22 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
 		}
 
 		tot_bytes_sent += bytes_sent;
+
+		if (bytes_sent >= size)
+			break;
+
+		/* partial write, need to adjust iovec before next call */
+		for (int i = 0; i < iovcnt; i++) {
+			if (tot_bytes_sent < iov[i].iov_len) {
+				iov[i].iov_base += tot_bytes_sent;
+				iov[i].iov_len -= tot_bytes_sent;
+				break;
+			}
+
+			tot_bytes_sent -= iov[i].iov_len;
+			iov[i].iov_base = NULL;
+			iov[i].iov_len = 0;
+		}
 	}
 
 	/* Reset fd flags to prior state, preserve errno */
@@ -314,14 +335,14 @@ static int _send_timeout(int fd, char *buf, size_t size, int *timeout)
  */
 extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
-	return _send_timeout(fd, buf, size, &timeout);
+	struct iovec iov = { .iov_base = buf, .iov_len = size };
+	return _writev_timeout(fd, &iov, 1, &timeout);
 }
 
 extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 {
+	struct iovec iov[4];
 	int len;
-	int part_len;
-	size_t size = 0;
 	uint32_t usize;
 	SigFunc *ohandler;
 	int timeout = slurm_conf.msg_timeout * 1000;
@@ -335,38 +356,19 @@ extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 	ohandler = xsignal(SIGPIPE, SIG_IGN);
 
 	/* auth portion is optional. header and body are mandatory. */
-	size += get_buf_offset(buffers->header);
-	if (buffers->auth)
-		size += get_buf_offset(buffers->auth);
-	size += get_buf_offset(buffers->body);
+	iov[0].iov_base = &usize;
+	iov[0].iov_len = sizeof(usize);
+	iov[1].iov_base = get_buf_data(buffers->header);
+	iov[1].iov_len = get_buf_offset(buffers->header);
+	iov[2].iov_base = buffers->auth ? get_buf_data(buffers->auth) : NULL;
+	iov[2].iov_len = buffers->auth ? get_buf_offset(buffers->auth) : 0;
+	iov[3].iov_base = get_buf_data(buffers->body);
+	iov[3].iov_len = get_buf_offset(buffers->body);
 
-	usize = htonl(size);
+	usize = htonl(iov[1].iov_len + iov[2].iov_len + iov[3].iov_len);
 
-	if ((len = _send_timeout(fd, (char *) &usize, sizeof(usize),
-				 &timeout)) < 0)
-		goto done;
+	len = _writev_timeout(fd, iov, 4, &timeout);
 
-	if ((part_len = _send_timeout(fd, get_buf_data(buffers->header),
-				      get_buf_offset(buffers->header),
-				      &timeout)) < 0)
-			goto done;
-	len += part_len;
-
-	if (buffers->auth) {
-		if ((part_len = _send_timeout(fd, get_buf_data(buffers->auth),
-					      get_buf_offset(buffers->auth),
-					      &timeout)) < 0)
-				goto done;
-		len += part_len;
-	}
-
-	if ((part_len = _send_timeout(fd, get_buf_data(buffers->body),
-				      get_buf_offset(buffers->body),
-				      &timeout)) < 0)
-			goto done;
-	len += part_len;
-
-done:
 	xsignal(SIGPIPE, ohandler);
 	return len;
 }
