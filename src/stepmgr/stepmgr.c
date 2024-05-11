@@ -5475,3 +5475,107 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 
 	return SLURM_SUCCESS;
 }
+
+/* Build structure with job allocation details */
+extern resource_allocation_response_msg_t *build_job_info_resp(
+	job_record_t *job_ptr)
+{
+	resource_allocation_response_msg_t *job_info_resp_msg;
+	int i, j;
+
+	job_info_resp_msg = xmalloc(sizeof(resource_allocation_response_msg_t));
+
+
+	if (!job_ptr->job_resrcs) {
+		;
+	} else if (bit_equal(job_ptr->node_bitmap,
+			     job_ptr->job_resrcs->node_bitmap)) {
+		job_info_resp_msg->num_cpu_groups =
+			job_ptr->job_resrcs->cpu_array_cnt;
+		job_info_resp_msg->cpu_count_reps =
+			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
+				sizeof(uint32_t));
+		memcpy(job_info_resp_msg->cpu_count_reps,
+		       job_ptr->job_resrcs->cpu_array_reps,
+		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
+		job_info_resp_msg->cpus_per_node  =
+			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
+				sizeof(uint16_t));
+		memcpy(job_info_resp_msg->cpus_per_node,
+		       job_ptr->job_resrcs->cpu_array_value,
+		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
+	} else {
+		/* Job has changed size, rebuild CPU count info */
+		job_info_resp_msg->num_cpu_groups = job_ptr->node_cnt;
+		job_info_resp_msg->cpu_count_reps = xcalloc(job_ptr->node_cnt,
+							    sizeof(uint32_t));
+		job_info_resp_msg->cpus_per_node = xcalloc(job_ptr->node_cnt,
+							   sizeof(uint32_t));
+		for (i = 0, j = -1; i < job_ptr->job_resrcs->nhosts; i++) {
+			if (job_ptr->job_resrcs->cpus[i] == 0)
+				continue;
+			if ((j == -1) ||
+			    (job_info_resp_msg->cpus_per_node[j] !=
+			     job_ptr->job_resrcs->cpus[i])) {
+				j++;
+				job_info_resp_msg->cpus_per_node[j] =
+					job_ptr->job_resrcs->cpus[i];
+				job_info_resp_msg->cpu_count_reps[j] = 1;
+			} else {
+				job_info_resp_msg->cpu_count_reps[j]++;
+			}
+		}
+		job_info_resp_msg->num_cpu_groups = j + 1;
+	}
+	job_info_resp_msg->account        = xstrdup(job_ptr->account);
+	job_info_resp_msg->alias_list     = xstrdup(job_ptr->alias_list);
+	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
+	job_info_resp_msg->job_id         = job_ptr->job_id;
+	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
+	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
+	job_info_resp_msg->partition      = xstrdup(job_ptr->partition);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos;
+		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		job_info_resp_msg->qos = xstrdup(qos->name);
+	}
+	job_info_resp_msg->resv_name      = xstrdup(job_ptr->resv_name);
+	if (job_ptr->details) {
+		if (job_ptr->bit_flags & JOB_MEM_SET) {
+			job_info_resp_msg->pn_min_memory =
+				job_ptr->details->pn_min_memory;
+		}
+		if (job_ptr->details->mc_ptr) {
+			job_info_resp_msg->ntasks_per_board =
+				job_ptr->details->mc_ptr->ntasks_per_board;
+			job_info_resp_msg->ntasks_per_core =
+				job_ptr->details->mc_ptr->ntasks_per_core;
+			job_info_resp_msg->ntasks_per_socket =
+				job_ptr->details->mc_ptr->ntasks_per_socket;
+		}
+	} else {
+		/* job_info_resp_msg->pn_min_memory     = 0; */
+		job_info_resp_msg->ntasks_per_board  = NO_VAL16;
+		job_info_resp_msg->ntasks_per_core   = NO_VAL16;
+		job_info_resp_msg->ntasks_per_socket = NO_VAL16;
+	}
+
+	if (job_ptr->details && job_ptr->details->env_cnt) {
+		job_info_resp_msg->env_size = job_ptr->details->env_cnt;
+		job_info_resp_msg->environment =
+			xcalloc(job_info_resp_msg->env_size + 1,
+				sizeof(char *));
+		for (i = 0; i < job_info_resp_msg->env_size; i++) {
+			job_info_resp_msg->environment[i] =
+				xstrdup(job_ptr->details->env_sup[i]);
+		}
+		job_info_resp_msg->environment[i] = NULL;
+	}
+
+	job_info_resp_msg->uid = job_ptr->user_id;
+	job_info_resp_msg->user_name = user_from_job(job_ptr);
+	job_info_resp_msg->gid = job_ptr->group_id;
+	job_info_resp_msg->group_name = group_from_job(job_ptr);
+
+	return job_info_resp_msg;
+}
