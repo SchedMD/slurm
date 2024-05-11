@@ -796,6 +796,58 @@ done:
 	return rc;
 }
 
+static void _het_job_alloc_list_del(void *x)
+{
+	resource_allocation_response_msg_t *job_info_resp_msg = x;
+	slurm_free_resource_allocation_response_msg(job_info_resp_msg);
+}
+
+static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
+{
+	int rc;
+	slurm_msg_t msg;
+	job_alloc_info_msg_t *request;
+	resource_allocation_response_msg_t *job_info_resp_msg = NULL;
+	slurm_msg_t response_msg;
+	List resp_list;
+
+	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
+					    REQUEST_HET_JOB_ALLOC_INFO, true)))
+		goto done;
+
+	request = msg.data;
+
+	if (request->job_id != job_step_ptr->job_id) {
+		error("attempting to get job information for jobid %u from a different stepmgr jobid %u: %s RPC from uid=%u",
+		      request->job_id, job_step_ptr->job_id,
+		      rpc_num2string(msg.msg_type), uid);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto resp;
+	}
+
+	slurm_mutex_lock(&stepmgr_mutex);
+
+	resp_list = list_create(_het_job_alloc_list_del);
+	job_info_resp_msg = build_job_info_resp(job_step_ptr);
+	list_append(resp_list, job_info_resp_msg);
+
+	slurm_mutex_unlock(&stepmgr_mutex);
+	if (rc)
+		goto resp;
+
+	response_init(&response_msg, &msg, RESPONSE_HET_JOB_ALLOCATION,
+		      resp_list);
+	slurm_send_node_msg(msg.conn_fd, &response_msg);
+	FREE_NULL_LIST(resp_list);
+
+resp:
+	slurm_send_rc_msg(&msg, rc);
+	slurm_free_msg_members(&msg);
+
+done:
+	return rc;
+}
+
 int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
@@ -933,6 +985,9 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_handle_job_sbcast_cred(fd, step, uid);
+		break;
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		_handle_het_job_alloc_info(fd, step, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
