@@ -314,6 +314,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "SPREAD_JOB");
 	lua_pushnumber(L, USE_MIN_NODES);
 	lua_setfield(L, -2, "USE_MIN_NODES");
+	lua_pushnumber(L, STEPMGR_ENABLED);
+	lua_setfield(L, -2, "STEPMGR_ENABLED");
 
 	lua_pushstring(L, slurm_conf.cluster_name);
 	lua_setfield(L, -2, "CLUSTER_NAME");
