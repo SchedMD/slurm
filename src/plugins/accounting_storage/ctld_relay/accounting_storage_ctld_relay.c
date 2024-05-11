@@ -110,17 +110,93 @@ extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
 				    slurm_msg_type_t msg_type);
 
+static persist_conn_t persist_conn = {
+	.flags = PERSIST_FLAG_DBD,
+	.version = SLURM_PROTOCOL_VERSION,
+};
+
+static list_t *agent_list;
+pthread_t agent_thread_id = 0;
+pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
+bool agent_shutdown = false;
+
+static void *_agent_thread(void *data)
+{
+	struct timespec ts = {0, 0};
+
+	while (!agent_shutdown) {
+		buf_t *buffer;
+
+		slurm_mutex_lock(&agent_lock);
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&agent_cond, &agent_lock, &ts);
+		slurm_mutex_unlock(&agent_lock);
+
+		while ((buffer = list_pop(agent_list))) {
+			int rc;
+			slurm_msg_t msg;
+			persist_msg_t persist_msg = {0};
+
+			set_buf_offset(buffer, 0);
+			slurm_persist_msg_unpack(&persist_conn, &persist_msg,
+						 buffer);
+
+			slurm_msg_t_init(&msg);
+			msg.msg_type = REQUEST_DBD_RELAY;
+			msg.data = &persist_msg;
+			msg.protocol_version = persist_conn.version;
+
+			while (slurm_send_recv_controller_rc_msg(&msg, &rc,
+								 NULL)) {
+				error("%s: failed to send '%s' to controller, retrying",
+				      __func__, rpc_num2string(msg.msg_type));
+				sleep(1);
+			}
+
+			slurmdbd_free_msg(&persist_msg);
+			FREE_NULL_BUFFER(buffer);
+		}
+	}
+
+	debug("shutting down ctld_relay agent thread");
+
+	return NULL;
+}
+
+static void _agent_append(buf_t *buffer)
+{
+	list_append(agent_list, buffer);
+	slurm_cond_signal(&agent_cond);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init ( void )
 {
+	agent_list = list_create(NULL);
+
+	slurm_mutex_lock(&agent_lock);
+	slurm_thread_create(&agent_thread_id, _agent_thread, NULL);
+	slurm_mutex_unlock(&agent_lock);
+
 	return SLURM_SUCCESS;
 }
 
 extern int fini ( void )
 {
+	agent_shutdown = true;
+
+	slurm_mutex_lock(&agent_lock);
+	slurm_cond_signal(&agent_cond);
+	slurm_mutex_unlock(&agent_lock);
+
+	slurm_thread_join(agent_thread_id);
+
+	FREE_NULL_LIST(agent_list);
+
 	return SLURM_SUCCESS;
 }
 
@@ -550,8 +626,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
  */
 extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
-	int rc;
-	slurm_msg_t msg;
+	buf_t *buffer;
 	persist_msg_t persist_msg = {0};
 	dbd_step_start_msg_t req = {0};
 
@@ -561,14 +636,9 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	persist_msg.msg_type = DBD_STEP_START;
 	persist_msg.data = &req;
 
-	slurm_msg_t_init(&msg);
-	msg.msg_type = REQUEST_DBD_RELAY;
-	msg.conn = db_conn;
-	msg.data = &persist_msg;
-	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+	buffer = slurm_persist_msg_pack(&persist_conn, &persist_msg);
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL))
-		return SLURM_ERROR;
+	_agent_append(buffer);
 
 	return SLURM_SUCCESS;
 }
@@ -579,8 +649,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 extern int jobacct_storage_p_step_complete(void *db_conn,
 					   step_record_t *step_ptr)
 {
-	int rc;
-	slurm_msg_t msg;
+	buf_t *buffer;
 	persist_msg_t persist_msg = {0};
 	dbd_step_comp_msg_t req = {0};
 
@@ -590,14 +659,9 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	persist_msg.msg_type = DBD_STEP_COMPLETE;
 	persist_msg.data = &req;
 
-	slurm_msg_t_init(&msg);
-	msg.msg_type = REQUEST_DBD_RELAY;
-	msg.conn = db_conn;
-	msg.data = &persist_msg;
-	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+	buffer = slurm_persist_msg_pack(&persist_conn, &persist_msg);
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL))
-		return SLURM_ERROR;
+	_agent_append(buffer);
 
 	return SLURM_SUCCESS;
 }
