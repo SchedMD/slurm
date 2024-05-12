@@ -82,8 +82,6 @@ typedef struct slurm_switch_ops {
 					    uint32_t nprocs, uint32_t rank);
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
-	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
-					    char *nodelist );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
@@ -107,7 +105,6 @@ static const char *syms[] = {
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
 	"switch_p_job_step_complete",
-	"switch_p_job_step_allocated",
 	"switch_p_job_complete",
 };
 
@@ -512,26 +509,6 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	return (*(ops[plugin_id].step_complete))(data, nodelist);
-}
-
-extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
-				       char *nodelist)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	return (*(ops[plugin_id].step_allocated))(data, nodelist);
 }
 
 extern void switch_g_job_complete(uint32_t job_id)

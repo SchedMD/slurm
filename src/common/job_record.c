@@ -1245,9 +1245,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		core_bitmap_job = NULL;
 	}
 
-	if (step_ptr->step_layout && switch_tmp)
-		switch_g_job_step_allocated(switch_tmp,
-					    step_ptr->step_layout->node_list);
 	if (jobacct) {
 		jobacctinfo_destroy(step_ptr->jobacct);
 		step_ptr->jobacct = jobacct;

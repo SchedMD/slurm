@@ -154,13 +154,6 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
  */
 extern void switch_g_job_complete(uint32_t job_id);
 
-/*
- * Restore the switch allocation information "jobinfo" for an already
- * allocated job step.
- */
-extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
-	char *nodelist);
-
 /********************************************************************\
  * JOB LAUNCH AND MANAGEMENT FUNCTIONS RELATED TO SWITCH CREDENTIAL *
 \********************************************************************/

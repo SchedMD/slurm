@@ -1089,12 +1089,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
-				       char *nodelist)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Free any job VNIs, as well as any Slingshot hardware collectives
  * multicast addresses associated with the job
