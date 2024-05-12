@@ -90,7 +90,7 @@ extern int  switch_g_restore(char *dir_name, bool recover);
  * IN job_id   - job id of the job this is for.
  * IN step_id  - step id of the job this is for.
  * RET         - slurm error code
- * NOTE: storage must be freed using g_switch_g_free_jobinfo
+ * NOTE: storage must be freed using switch_g_free_jobinfo
  */
 extern int  switch_g_alloc_jobinfo (dynamic_plugin_data_t **jobinfo,
 				    uint32_t job_id, uint32_t step_id);
@@ -101,7 +101,7 @@ extern int  switch_g_alloc_jobinfo (dynamic_plugin_data_t **jobinfo,
  *                   tasks_per_node and tids set
  * IN  step_ptr    - step_record_t for this step
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
- * NOTE: storage must be freed using g_switch_g_free_jobinfo
+ * NOTE: storage must be freed using switch_g_free_jobinfo
  */
 extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
 				  slurm_step_layout_t *step_layout,
@@ -111,7 +111,7 @@ extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
  * IN  source  - storage for a switch job credential
  * OUT dest    - pointer to NULL at beginning, will point to storage for
  *               duplicated switch job credential
- * NOTE: storage must be freed using g_switch_g_free_jobinfo
+ * NOTE: storage must be freed using switch_g_free_jobinfo
  */
 extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 				       dynamic_plugin_data_t **dest);
@@ -135,7 +135,7 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
  * IN  buffer  - buffer with switch credential read from current pointer loc
  * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
- * NOTE: returned value must be freed using g_switch_g_free_jobinfo
+ * NOTE: returned value must be freed using switch_g_free_jobinfo
  */
 extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
 				   buf_t *buffer,
