@@ -5248,8 +5248,8 @@ end_it:
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
 
 		if (step_rec->switch_job)
-			switch_g_duplicate_jobinfo(step_rec->switch_job,
-						   &switch_job);
+			switch_g_duplicate_stepinfo(step_rec->switch_job,
+						    &switch_job);
 		job_step_resp.switch_job = switch_job;
 
 		if (job_ptr->bit_flags & STEPMGR_ENABLED)

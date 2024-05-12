@@ -571,8 +571,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
-				      switch_jobinfo_t **dest)
+extern int switch_p_duplicate_stepinfo(switch_jobinfo_t *tmp,
+				       switch_jobinfo_t **dest)
 {
 	slingshot_jobinfo_t *old = (slingshot_jobinfo_t *) tmp;
 	slingshot_jobinfo_t *new = xmalloc(sizeof(*new));
