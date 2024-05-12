@@ -54,7 +54,6 @@
 #  define __switch_jobinfo_t_defined
    typedef struct switch_jobinfo   switch_jobinfo_t;
 #endif
-typedef struct slurm_switch_context slurm_switch_context_t;
 
 /*******************************************\
  * GLOBAL SWITCH STATE MANAGEMENT FUNCIONS *
