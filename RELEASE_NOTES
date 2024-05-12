@@ -46,6 +46,8 @@ HIGHLIGHTS
     the slurmstepd instead of the controller.
  -- Added PrologFlags=RunInJob to make prolog and epilog run inside the job
     extern step to include it in the job's cgroup.
+ -- Add ability to reserve MPI ports at the job level for stepmgr jobs and
+    subdivide them at the step level.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
