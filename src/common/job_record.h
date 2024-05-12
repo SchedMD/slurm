@@ -440,6 +440,7 @@ struct job_record {
 					 * the database. */
 	List step_list;			/* list of job's steps */
 	time_t suspend_time;		/* time job last suspended or resumed */
+	void *switch_jobinfo;		/* opaque blob for switch plugin */
 	char *system_comment;		/* slurmctld's arbitrary comment */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
