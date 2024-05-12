@@ -1623,20 +1623,12 @@ job_manager(stepd_step_rec_t *step)
 	}
 	debug2("After call to spank_init()");
 
-	/* Call switch_g_job_init() before becoming user */
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    step->argv && (switch_g_job_init(step) < 0)) {
-		/* error("switch_g_job_init: %m"); already logged */
-		rc = ESLURM_INTERCONNECT_FAILURE;
-		goto fail2;
-	}
-
 	/* fork necessary threads for MPI */
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (mpi_g_slurmstepd_prefork(step, &step->env) != SLURM_SUCCESS)) {
 		error("Failed mpi_g_slurmstepd_prefork");
 		rc = SLURM_ERROR;
-		goto fail3;
+		goto fail2;
 	}
 
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
@@ -1667,7 +1659,7 @@ job_manager(stepd_step_rec_t *step)
 	if ((rc = _fork_all_tasks(step, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
-		goto fail3;
+		goto fail2;
 	}
 
 	/*
@@ -1677,7 +1669,7 @@ job_manager(stepd_step_rec_t *step)
 	 * launch to happen.
 	 */
 	if ((rc != SLURM_SUCCESS) || !io_initialized)
-		goto fail3;
+		goto fail2;
 
 	io_close_task_fds(step);
 
@@ -1708,12 +1700,6 @@ job_manager(stepd_step_rec_t *step)
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
 	set_job_state(step, SLURMSTEPD_STEP_ENDING);
-
-fail3:
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (switch_g_job_fini(step->switch_job) < 0)) {
-		error("switch_g_job_fini: %m");
-	}
 
 fail2:
 	/*

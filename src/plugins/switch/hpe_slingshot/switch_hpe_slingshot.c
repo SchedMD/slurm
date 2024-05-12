@@ -976,22 +976,6 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 }
 
 /*
- * Privileged, but no jobinfo
- */
-extern int switch_p_job_init(stepd_step_rec_t *step)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * Non-privileged
- */
-extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
  * Destroy CXI Services for each of the CXI NICs on this host
  */
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
