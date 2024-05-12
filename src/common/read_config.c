@@ -124,8 +124,6 @@ static bool conf_initialized = false;
 static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
-static log_level_t lvl = LOG_LEVEL_FATAL;
-static int	local_test_config_rc = SLURM_SUCCESS;
 static list_t *config_files = NULL;
 
 inline static void _normalize_debug_level(uint16_t *level);
@@ -564,8 +562,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	};
 
 #ifndef HAVE_FRONT_END
-	log_var(lvl, "Use of FrontendName in slurm.conf without Slurm being configured/built with the --enable-front-end option");
-	local_test_config_rc = 1;
+	fatal("Use of FrontendName in slurm.conf without Slurm being configured/built with the --enable-front-end option");
 #endif
 
 	tbl = s_p_hashtbl_create(_frontend_options);
@@ -599,14 +596,10 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		(void) s_p_get_string(&n->allow_users,  "AllowUsers", tbl);
 		(void) s_p_get_string(&n->deny_groups,  "DenyGroups", tbl);
 		(void) s_p_get_string(&n->deny_users,   "DenyUsers", tbl);
-		if (n->allow_groups && n->deny_groups) {
-			log_var(lvl, "FrontEnd options AllowGroups and DenyGroups are incompatible");
-			local_test_config_rc = 1;
-		}
-		if (n->allow_users && n->deny_users) {
-			log_var(lvl, "FrontEnd options AllowUsers and DenyUsers are incompatible");
-			local_test_config_rc = 1;
-		}
+		if (n->allow_groups && n->deny_groups)
+			fatal("FrontEnd options AllowGroups and DenyGroups are incompatible");
+		if (n->allow_users && n->deny_users)
+			fatal("FrontEnd options AllowUsers and DenyUsers are incompatible");
 
 		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
 			n->addresses = xstrdup(n->frontends);
@@ -1161,8 +1154,7 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 			if (!s_p_get_array((void ***)&node_ptr, &node_count,
 					   "NodeName", conf_hashtbl) ||
 			    (node_count == 0)) {
-				log_var(lvl, "No front end nodes configured");
-				local_test_config_rc = 1;
+				fatal("No front end nodes configured");
 			}
 			strlcpy(addresses, node_ptr[0]->addresses,
 				sizeof(addresses));
@@ -2253,13 +2245,10 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	while (p) {
 		if (xstrcmp(p->alias, alias) == 0) {
 			if (front_end)
-				log_var(lvl, "Frontend not configured correctly in slurm.conf. See FrontEndName in slurm.conf man page.");
+				fatal("Frontend not configured correctly in slurm.conf. See FrontEndName in slurm.conf man page.");
 			else
-				log_var(lvl, "Duplicated NodeName %s in the config file",
-					p->alias);
-			local_test_config_rc = 1;
-
-			return;
+				fatal("Duplicated NodeName %s in the config file",
+				      p->alias);
 		}
 		p = p->next_alias;
 	}
@@ -2386,10 +2375,8 @@ static void _init_slurmd_nodehash(void)
 		nodehash_initialized = true;
 
 	if (!conf_initialized) {
-		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
-			log_var(lvl, "Unable to process slurm.conf file");
-			local_test_config_rc = 1;
-		}
+		if (_init_slurm_conf(NULL) != SLURM_SUCCESS)
+			fatal("Unable to process slurm.conf file");
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
@@ -3527,11 +3514,8 @@ extern int slurm_conf_init(const char *file_name)
 	}
 
 	config_file = xstrdup(file_name);
-	if (_establish_config_source(&config_file, &memfd) != SLURM_SUCCESS) {
-		log_var(lvl, "Could not establish a configuration source");
-		xfree(config_file);
-		return SLURM_ERROR;
-	}
+	if (_establish_config_source(&config_file, &memfd) != SLURM_SUCCESS)
+		fatal("Could not establish a configuration source");
 	debug("%s: using config_file=%s", __func__, config_file);
 
 	/*
@@ -3559,10 +3543,8 @@ extern int slurm_conf_init(const char *file_name)
 #endif
 
 	init_slurm_conf(conf_ptr);
-	if (_init_slurm_conf(config_file) != SLURM_SUCCESS) {
-		log_var(lvl, "Unable to process configuration file");
-		local_test_config_rc = 1;
-	}
+	if (_init_slurm_conf(config_file) != SLURM_SUCCESS)
+		fatal("Unable to process configuration file");
 
 	if (memfd)
 		unsetenv("SLURM_CONF");
@@ -3589,11 +3571,8 @@ static int _internal_reinit(const char *file_name)
 		_destroy_slurm_conf();
 	}
 
-	if (_init_slurm_conf(name) != SLURM_SUCCESS) {
-		log_var(lvl, "Unable to process configuration file");
-		local_test_config_rc = 1;
-	}
-
+	if (_init_slurm_conf(name) != SLURM_SUCCESS)
+		fatal("Unable to process configuration file");
 
 	return rc;
 }
@@ -6508,25 +6487,6 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	hostlist_destroy(host_list);
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * Get result of configuration file test.
- * RET SLURM_SUCCESS or error code
- */
-extern int config_test_result(void)
-{
-	return local_test_config_rc;
-}
-
-
-/*
- * Start configuration file test mode. Disables fatal errors.
- */
-extern void config_test_start(void)
-{
-	lvl = LOG_LEVEL_ERROR;
-	local_test_config_rc = 0;
 }
 
 extern void slurm_conf_add_node(node_record_t *node_ptr)
