@@ -86,8 +86,8 @@ typedef struct slurm_switch_ops {
  */
 static const char *syms[] = {
 	"plugin_id",
-	"switch_p_libstate_save",
-	"switch_p_libstate_restore",
+	"switch_p_save",
+	"switch_p_restore",
 	"switch_p_alloc_jobinfo",
 	"switch_p_build_jobinfo",
 	"switch_p_duplicate_jobinfo",

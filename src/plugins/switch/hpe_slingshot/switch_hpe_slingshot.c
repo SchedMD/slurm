@@ -136,7 +136,7 @@ extern int fini(void)
 /*
  * switch functions for global state save/restore
  */
-extern int switch_p_libstate_save(void)
+extern int switch_p_save(void)
 {
 	int state_fd;
 	uint32_t actual_job_vnis, actual_job_hwcoll;
@@ -242,7 +242,7 @@ error:
  * Restore slingshot_state from state file
  * NOTE: assumes this runs before loading the slurm.conf config
  */
-extern int switch_p_libstate_restore(bool recover)
+extern int switch_p_restore(bool recover)
 {
 	char *state_file;
 	struct stat stat_buf;
