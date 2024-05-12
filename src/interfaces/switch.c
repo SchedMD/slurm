@@ -51,6 +51,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* opaque type */
+typedef struct switch_stepinfo switch_stepinfo_t;
+
 typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );

@@ -49,12 +49,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/* opaque data structures - no peeking! */
-#ifndef __switch_jobinfo_t_defined
-#  define __switch_jobinfo_t_defined
-typedef struct switch_stepinfo switch_stepinfo_t;
-#endif
-
 /*******************************************\
  * GLOBAL SWITCH STATE MANAGEMENT FUNCIONS *
 \*******************************************/

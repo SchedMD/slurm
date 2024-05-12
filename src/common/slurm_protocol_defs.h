@@ -220,14 +220,6 @@
 extern __thread bool drop_priv;
 #endif
 
-/* These defines have to be here to avoid circular dependancy with
- * switch.h
- */
-#ifndef __switch_jobinfo_t_defined
-#  define __switch_jobinfo_t_defined
-typedef struct switch_jobstep switch_stepinfo_t;
-#endif
-
 #ifndef __job_record_t_defined
 #  define __job_record_t_defined
 typedef struct job_record job_record_t;

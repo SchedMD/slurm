@@ -48,6 +48,8 @@
 
 #include "switch_hpe_slingshot.h"
 
+typedef struct switch_stepinfo switch_stepinfo_t;
+
 /*
  * These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
