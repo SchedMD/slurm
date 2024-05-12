@@ -1085,6 +1085,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrfmtcat(out, "SELinuxContext=%s", job_ptr->selinux_context);
 	}
 
+	/****** Line (optional) ******/
+	if (job_ptr->resv_ports) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "ResvPorts=%s", job_ptr->resv_ports);
+	}
+
 	xstrcat(out, line_end);
 
 	/****** END OF JOB RECORD ******/

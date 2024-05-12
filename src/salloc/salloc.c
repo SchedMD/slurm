@@ -414,7 +414,8 @@ int main(int argc, char **argv)
 		} else if (opt.immediate &&
 			   ((errno == ETIMEDOUT) ||
 			    (errno == ESLURM_NOT_TOP_PRIORITY) ||
-			    (errno == ESLURM_NODES_BUSY))) {
+			    (errno == ESLURM_NODES_BUSY) ||
+			    (errno == ESLURM_PORTS_BUSY))) {
 			error("Unable to allocate resources: %m");
 			error_exit = immediate_exit;
 		} else {

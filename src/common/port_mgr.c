@@ -57,7 +57,9 @@ int        port_resv_max   = 0;
 static void _dump_resv_port_info(void);
 static void _make_all_resv(list_t *job_list);
 static void _make_step_resv(step_record_t *step_ptr);
-static void _rebuild_port_array(step_record_t *step_ptr);
+static int _rebuild_port_array(const char *resv_ports,
+			       uint16_t *resv_port_cnt,
+			       int **resv_port_array);
 
 static void _dump_resv_port_info(void)
 {
@@ -66,7 +68,8 @@ static void _dump_resv_port_info(void)
 	char *tmp_char;
 
 	for (i=0; i<port_resv_cnt; i++) {
-		if (bit_set_count(port_resv_table[i]) == 0)
+		if (!port_resv_table[i] ||
+		    bit_set_count(port_resv_table[i]) == 0)
 			continue;
 
 		tmp_char = bitmap2node_name(port_resv_table[i]);
@@ -76,38 +79,34 @@ static void _dump_resv_port_info(void)
 #endif
 }
 
-/* Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _rebuild_port_array(step_record_t *step_ptr)
+/* Builds the resv_port_array based upon resv_ports (a string) */
+static int _rebuild_port_array(const char *resv_ports,
+			       uint16_t *resv_port_cnt,
+			       int **resv_port_array)
 {
 	int i;
 	char *tmp_char;
 	hostlist_t *hl;
 
-	tmp_char = xstrdup_printf("[%s]", step_ptr->resv_ports);
+	tmp_char = xstrdup_printf("[%s]", resv_ports);
 	hl = hostlist_create(tmp_char);
 	xfree(tmp_char);
-	if (!hl) {
-		error("%pS has invalid reserved ports: %s",
-		      step_ptr, step_ptr->resv_ports);
-		xfree(step_ptr->resv_ports);
-		return;
-	}
+	if (!hl)
+		return SLURM_ERROR;
 
-	step_ptr->resv_port_array = xmalloc(sizeof(int) *
-					    step_ptr->resv_port_cnt);
-	step_ptr->resv_port_cnt = 0;
+	*resv_port_array = xcalloc(*resv_port_cnt, *resv_port_cnt);
+	*resv_port_cnt = 0;
 	while ((tmp_char = hostlist_shift(hl))) {
 		i = atoi(tmp_char);
 		if (i > 0)
-			step_ptr->resv_port_array[step_ptr->resv_port_cnt++]=i;
+			(*resv_port_array)[(*resv_port_cnt)++]=i;
 		free(tmp_char);
 	}
 	hostlist_destroy(hl);
-	if (step_ptr->resv_port_cnt == 0) {
-		error("Problem recovering resv_port_array for %pS: %s",
-		      step_ptr, step_ptr->resv_ports);
-		xfree(step_ptr->resv_ports);
-	}
+	if (*resv_port_cnt == 0)
+		return ESLURM_PORTS_INVALID;
+
+	return SLURM_SUCCESS;
 }
 
 /* Update the local reservation table for one job step.
@@ -121,8 +120,22 @@ static void _make_step_resv(step_record_t *step_ptr)
 	    (step_ptr->resv_ports[0] == '\0'))
 		return;
 
-	if (step_ptr->resv_port_array == NULL)
-		_rebuild_port_array(step_ptr);
+	if (step_ptr->resv_port_array == NULL) {
+		int rc;
+		if ((rc = _rebuild_port_array(step_ptr->resv_ports,
+					      &step_ptr->resv_port_cnt,
+					      &step_ptr->resv_port_array))) {
+			if (rc == ESLURM_PORTS_INVALID)
+				error("%pS has invalid reserved ports: %s",
+				      step_ptr, step_ptr->resv_ports);
+			else
+				error("Problem recovering resv_port_array for %pS: %s",
+				      step_ptr, step_ptr->resv_ports);
+
+			xfree(step_ptr->resv_ports);
+			return;
+		}
+	}
 
 	for (i=0; i<step_ptr->resv_port_cnt; i++) {
 		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
@@ -130,6 +143,45 @@ static void _make_step_resv(step_record_t *step_ptr)
 			continue;
 		j = step_ptr->resv_port_array[i] - port_resv_min;
 		bit_or(port_resv_table[j], step_ptr->step_node_bitmap);
+	}
+}
+
+/* Update the local reservation table for one stepmgr enabled job
+ * Builds the job resv_port_array based upon resv_ports (a string) */
+static void _make_job_resv(job_record_t *job_ptr)
+{
+	int i, j;
+
+	if (!IS_JOB_RUNNING(job_ptr) ||
+	    !(job_ptr->bit_flags & STEPMGR_ENABLED) ||
+	    (job_ptr->resv_port_cnt == 0) ||
+	    (job_ptr->resv_ports == NULL) ||
+	    (job_ptr->resv_ports[0] == '\0'))
+		return;
+
+	if (job_ptr->resv_port_array == NULL) {
+		int rc;
+		if ((rc = _rebuild_port_array(job_ptr->resv_ports,
+					      &job_ptr->resv_port_cnt,
+					      &job_ptr->resv_port_array))) {
+			if (rc == ESLURM_PORTS_INVALID)
+				error("%pJ has invalid reserved ports: %s",
+				      job_ptr, job_ptr->resv_ports);
+			else
+				error("Problem recovering resv_port_array for %pJ: %s",
+				      job_ptr, job_ptr->resv_ports);
+
+			xfree(job_ptr->resv_ports);
+			return;
+		}
+	}
+
+	for (i = 0; i < job_ptr->resv_port_cnt; i++) {
+		if ((job_ptr->resv_port_array[i] < port_resv_min) ||
+		    (job_ptr->resv_port_array[i] > port_resv_max))
+			continue;
+		j = job_ptr->resv_port_array[i] - port_resv_min;
+		bit_or(port_resv_table[j], job_ptr->node_bitmap);
 	}
 }
 
@@ -143,6 +195,8 @@ static void _make_all_resv(list_t *job_list)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		_make_job_resv(job_ptr);
+
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
 			if (step_ptr->state < JOB_RUNNING)
@@ -209,14 +263,78 @@ extern int reserve_port_config(char *mpi_params, list_t *job_list)
 	return SLURM_SUCCESS;
 }
 
+extern int reserve_port_stepmgr_init(job_record_t *job_ptr)
+{
+	int p_min, p_max;
+	int i, j = 0;
+	int rc;
+
+	if (job_ptr->resv_ports == NULL) {
+		if (port_resv_table) {
+			info("Clearing port reservations");
+			for (i = 0; i < port_resv_cnt; i++)
+				FREE_NULL_BITMAP(port_resv_table[i]);
+			xfree(port_resv_table);
+			port_resv_cnt = 0;
+			port_resv_min = port_resv_max = 0;
+		}
+		return SLURM_SUCCESS;
+	}
+
+	if (!job_ptr->resv_port_array &&
+	    (rc = _rebuild_port_array(job_ptr->resv_ports,
+				      &job_ptr->resv_port_cnt,
+				      &job_ptr->resv_port_array))) {
+		if (rc == ESLURM_PORTS_INVALID)
+			error("%pJ has invalid reserved ports: %s",
+				job_ptr, job_ptr->resv_ports);
+		else
+			error("Problem recovering resv_port_array for %pJ: %s",
+				job_ptr, job_ptr->resv_ports);
+
+		xfree(job_ptr->resv_ports);
+		return SLURM_ERROR;
+	}
+
+	p_min = job_ptr->resv_port_array[0];
+	p_max = job_ptr->resv_port_array[job_ptr->resv_port_cnt - 1];
+
+	if ((p_min == port_resv_min) && (p_max == port_resv_max)) {
+		_dump_resv_port_info();
+		return SLURM_SUCCESS;	/* No change */
+	}
+
+	port_resv_min = p_min;
+	port_resv_max = p_max;
+	port_resv_cnt = p_max - p_min + 1;
+	debug("Ports available for reservation %u-%u",
+	      port_resv_min, port_resv_max);
+
+	xfree(port_resv_table);
+	port_resv_table = xmalloc(sizeof(bitstr_t *) * port_resv_cnt);
+	for (i=0; i<port_resv_cnt; i++) {
+		if (job_ptr->resv_port_array[j] != i + port_resv_min)
+			continue;
+		port_resv_table[i] = bit_alloc(bit_size(job_ptr->node_bitmap));
+		j++;
+	}
+
+	_dump_resv_port_info();
+	return SLURM_SUCCESS;
+}
+
 /* Reserve ports for a job step
  * NOTE: We keep track of last port reserved and go round-robin through full
  *       set of available ports. This helps avoid re-using busy ports when
  *       restarting job steps.
  * RET SLURM_SUCCESS or an error code */
-extern int resv_port_alloc(step_record_t *step_ptr)
+static int _resv_port_alloc(uint16_t resv_port_cnt,
+			    bitstr_t *node_bitmap,
+			    char **resv_ports,
+			    int **resv_port_array,
+			    int *port_inx)
 {
-	int i, port_inx;
+	int i;
 	int *port_array = NULL;
 	char port_str[16];
 	hostlist_t *hl;
@@ -226,72 +344,140 @@ extern int resv_port_alloc(step_record_t *step_ptr)
 	if (dims == -1)
 		dims = slurmdb_setup_cluster_dims();
 
-	if (step_ptr->resv_port_cnt > port_resv_cnt) {
-		info("%pS needs %u reserved ports, but only %d exist",
-		     step_ptr, step_ptr->resv_port_cnt, port_resv_cnt);
+	if (resv_port_cnt > port_resv_cnt)
 		return ESLURM_PORTS_INVALID;
-	}
 
 	/* Identify available ports */
-	port_array = xmalloc(sizeof(int) * step_ptr->resv_port_cnt);
-	port_inx = 0;
+	port_array = xmalloc(sizeof(int) * resv_port_cnt);
+	*port_inx = 0;
 	for (i=0; i<port_resv_cnt; i++) {
 		if (++last_port_alloc >= port_resv_cnt)
 			last_port_alloc = 0;
-		if (bit_overlap_any(step_ptr->step_node_bitmap,
+		if (!port_resv_table[last_port_alloc] ||
+		    bit_overlap_any(node_bitmap,
 				    port_resv_table[last_port_alloc]))
 			continue;
-		port_array[port_inx++] = last_port_alloc;
-		if (port_inx >= step_ptr->resv_port_cnt)
+		port_array[(*port_inx)++] = last_port_alloc;
+		if (*port_inx >= resv_port_cnt)
 			break;
 	}
-	if (port_inx < step_ptr->resv_port_cnt) {
-		info("insufficient ports for %pS to reserve (%d of %u)",
-		     step_ptr, port_inx, step_ptr->resv_port_cnt);
+	if (*port_inx < resv_port_cnt) {
 		xfree(port_array);
 		return ESLURM_PORTS_BUSY;
 	}
 
 	/* Reserve selected ports */
 	hl = hostlist_create(NULL);
-	for (i=0; i<port_inx; i++) {
-		bit_or(port_resv_table[port_array[i]],
-		       step_ptr->step_node_bitmap);
+	for (i=0; i < *port_inx; i++) {
+		bit_or(port_resv_table[port_array[i]], node_bitmap);
 		port_array[i] += port_resv_min;
 		snprintf(port_str, sizeof(port_str), "%d", port_array[i]);
 		hostlist_push_host(hl, port_str);
 	}
 	hostlist_sort(hl);
 	/* get the ranged string with no brackets on it */
-	step_ptr->resv_ports = hostlist_ranged_string_xmalloc_dims(hl, dims, 0);
+	*resv_ports = hostlist_ranged_string_xmalloc_dims(hl, dims, 0);
 	hostlist_destroy(hl);
-	step_ptr->resv_port_array = port_array;
-
-	debug("reserved ports %s for %pS",
-	      step_ptr->resv_ports, step_ptr);
+	*resv_port_array = port_array;
 
 	return SLURM_SUCCESS;
 }
 
-/* Release reserved ports for a job step
- * RET SLURM_SUCCESS or an error code */
-extern void resv_port_free(step_record_t *step_ptr)
+extern int resv_port_step_alloc(step_record_t *step_ptr)
+{
+	int rc;
+	int port_inx;
+
+	rc = _resv_port_alloc(step_ptr->resv_port_cnt,
+			      step_ptr->step_node_bitmap, &step_ptr->resv_ports,
+			      &step_ptr->resv_port_array, &port_inx);
+	if (rc == ESLURM_PORTS_INVALID)
+		info("%pS needs %u reserved ports, but only %d exist",
+		     step_ptr, step_ptr->resv_port_cnt, port_resv_cnt);
+	else if (rc == ESLURM_PORTS_BUSY)
+		info("insufficient ports for %pS to reserve (%d of %u)",
+		     step_ptr, port_inx, step_ptr->resv_port_cnt);
+
+	debug("reserved ports %s for %pS", step_ptr->resv_ports, step_ptr);
+	return rc;
+}
+
+extern int resv_port_job_alloc(job_record_t *job_ptr)
+{
+	int rc;
+	int port_inx;
+
+	rc = _resv_port_alloc(job_ptr->resv_port_cnt,
+			      job_ptr->node_bitmap, &job_ptr->resv_ports,
+			      &job_ptr->resv_port_array, &port_inx);
+	if (rc == ESLURM_PORTS_INVALID)
+		info("%pJ needs %u reserved ports, but only %d exist",
+		     job_ptr, job_ptr->resv_port_cnt, port_resv_cnt);
+	else if (rc == ESLURM_PORTS_BUSY)
+		info("insufficient ports for %pJ to reserve (%d of %u)",
+		     job_ptr, port_inx, job_ptr->resv_port_cnt);
+
+	debug("reserved ports %s for %pJ", job_ptr->resv_ports, job_ptr);
+	return rc;
+}
+
+extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
+{
+
+	if (job_ptr->resv_port_cnt > port_resv_cnt) {
+		info("%pJ needs %u reserved ports, but only %d exist",
+		     job_ptr, job_ptr->resv_port_cnt, port_resv_cnt);
+		return ESLURM_PORTS_INVALID;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Release reserved ports
+ * RET SLURM_SUCCESS or an error code
+ */
+static void _resv_port_free(uint16_t resv_port_cnt,
+			    int *resv_port_array,
+			    bitstr_t *node_bitmap)
 {
 	int i, j;
 
-	if (step_ptr->resv_port_array == NULL)
+	if (resv_port_array == NULL)
 		return;
 
-	for (i=0; i<step_ptr->resv_port_cnt; i++) {
-		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
-		    (step_ptr->resv_port_array[i] > port_resv_max))
+	for (i=0; i<resv_port_cnt; i++) {
+		if ((resv_port_array[i] < port_resv_min) ||
+		    (resv_port_array[i] > port_resv_max))
 			continue;
-		j = step_ptr->resv_port_array[i] - port_resv_min;
-		bit_and_not(port_resv_table[j], step_ptr->step_node_bitmap);
+		j = resv_port_array[i] - port_resv_min;
+		if (!port_resv_table[i])
+			continue;
+		bit_and_not(port_resv_table[j], node_bitmap);
 
 	}
+}
+
+/*
+ * Release reserved ports for a job step
+ * RET SLURM_SUCCESS or an error code
+ */
+extern void resv_port_step_free(step_record_t *step_ptr)
+{
+	_resv_port_free(step_ptr->resv_port_cnt, step_ptr->resv_port_array,
+			step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
 
 	debug("freed ports %s for %pS",
 	      step_ptr->resv_ports, step_ptr);
+}
+
+extern void resv_port_job_free(job_record_t *job_ptr)
+{
+	_resv_port_free(job_ptr->resv_port_cnt,
+			job_ptr->resv_port_array,
+			job_ptr->node_bitmap);
+	xfree(job_ptr->resv_port_array);
+
+	debug("freed ports %s for %pJ",
+	      job_ptr->resv_ports, job_ptr);
 }

@@ -156,6 +156,7 @@ typedef struct {
 	char *req_context;		/* requested SELinux context */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
+	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
 	uint16_t segment_size;
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */
@@ -411,6 +412,9 @@ struct job_record {
 					 * DON'T PACK. */
 	char *resv_name;		/* reservation name */
 	slurmctld_resv_t *resv_ptr;	/* reservation structure pointer */
+	char *resv_ports;		/* MPI ports reserved for job */
+	int *resv_port_array;		/* MPI reserved port indexes */
+	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */

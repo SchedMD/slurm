@@ -3303,6 +3303,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->licenses, buffer);
 		safe_unpackstr(&job->state_desc, buffer);
 		safe_unpackstr(&job->resv_name, buffer);
+		safe_unpackstr(&job->resv_ports, buffer);
 		safe_unpackstr(&job->mcs_label, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
@@ -5982,6 +5983,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack16(job_desc_ptr->alloc_resp_port, buffer);
 		packstr(job_desc_ptr->resp_host, buffer);
 		pack16(job_desc_ptr->other_port, buffer);
+		pack16(job_desc_ptr->resv_port_cnt, buffer);
 		packstr(job_desc_ptr->network, buffer);
 		pack_time(job_desc_ptr->begin_time, buffer);
 		pack_time(job_desc_ptr->end_time, buffer);
@@ -6302,6 +6304,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack16(&job_desc_ptr->alloc_resp_port, buffer);
 		safe_unpackstr(&job_desc_ptr->resp_host, buffer);
 		safe_unpack16(&job_desc_ptr->other_port, buffer);
+		safe_unpack16(&job_desc_ptr->resv_port_cnt, buffer);
 		safe_unpackstr(&job_desc_ptr->network, buffer);
 		safe_unpack_time(&job_desc_ptr->begin_time, buffer);
 		safe_unpack_time(&job_desc_ptr->end_time, buffer);

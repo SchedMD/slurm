@@ -246,7 +246,7 @@ static int _is_openmpi_port_error(int errcode)
 {
 	if (errcode != OPEN_MPI_PORT_ERROR)
 		return 0;
-	if (opt_save && (opt_save->srun_opt->resv_port_cnt == NO_VAL))
+	if (opt_save && (opt_save->resv_port_cnt == NO_VAL))
 		return 0;
 	if (difftime(time(NULL), launch_start_time) > slurm_conf.msg_timeout)
 		return 0;
@@ -868,8 +868,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	step_req->relative = srun_opt->relative;
 
-	if (srun_opt->resv_port_cnt != NO_VAL) {
-		step_req->resv_port_cnt = srun_opt->resv_port_cnt;
+	if (opt_local->resv_port_cnt != NO_VAL) {
+		step_req->resv_port_cnt = opt_local->resv_port_cnt;
 	} else {
 		step_req->resv_port_cnt = NO_VAL16;
 	}

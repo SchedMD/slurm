@@ -645,6 +645,7 @@ enum job_state_reason {
 	WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER,/* QOS MaxTRESRunMinsPerUser exceeded
 					    * (Unknown) */
 	WAIT_MAX_POWERED_NODES,            /* max_powered_nodes reached */
+	WAIT_MPI_PORTS_BUSY,		   /* MPI resv_ports busy */
 	REASON_END, /* end of table */
 };
 
@@ -1694,6 +1695,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint16_t requeue;	/* enable or disable job requeue option */
 	char *reservation;	/* name of reservation to use */
+	uint16_t resv_port_cnt;	/* count of MPI ports reserved per node */
 	char *script;		/* the actual job script, default NONE */
 	void *script_buf;	/* job script as mmap buf */
 	slurm_hash_t script_hash; /* hash value of script NO NOT PACK */
@@ -1894,6 +1896,7 @@ typedef struct job_info {
 	time_t resize_time;	/* time of latest size change */
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *resv_name;	/* reservation name */
+	char *resv_ports;	/* Reserved MPI ports (as hostlist str) */
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */

@@ -68,6 +68,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/id_util.h"
 #include "src/common/parse_time.h"
+#include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
@@ -3758,7 +3759,8 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 			return SLURM_SUCCESS;
 	}
 	if (((*rc == ESLURM_NODES_BUSY) ||
-	     (*rc == ESLURM_RESERVATION_BUSY)) &&
+	     (*rc == ESLURM_RESERVATION_BUSY) ||
+	     (*rc == ESLURM_PORTS_BUSY)) &&
 	    (*best_rc == -1) &&
 	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
 	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
@@ -4216,6 +4218,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 		 (error_code == ESLURM_PARTITION_DOWN) ||
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE) ||
+		 (error_code == ESLURM_PORTS_BUSY) ||
 		 ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 		  (job_ptr->state_reason == FAIL_CONSTRAINTS))) {
 		/*
@@ -4240,6 +4243,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			    (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 			    (error_code == ESLURM_RESERVATION_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY) ||
+			    (error_code == ESLURM_PORTS_BUSY) ||
 			    ((error_code == ESLURM_PARTITION_DOWN) &&
 			     (job_ptr->batch_flag))) {
 				job_ptr->details->features_use = NULL;
@@ -8202,6 +8206,13 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	set_job_tres_req_str(job_ptr, false);
 	_add_job_hash(job_ptr);
 
+	job_ptr->resv_port_cnt = job_desc->resv_port_cnt;
+	if (job_desc->resv_port_cnt != NO_VAL16) {
+		error_code = resv_port_check_job_request_cnt(job_ptr);
+		if (error_code)
+			return error_code;
+	}
+
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	/* skip copy, just take ownership */
@@ -8409,6 +8420,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->orig_pn_min_memory = detail_ptr->pn_min_memory;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
+
 	detail_ptr->segment_size = job_desc->segment_size;
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
 	detail_ptr->std_in = xstrdup(job_desc->std_in);
@@ -10147,6 +10159,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
 		packstr(dump_job_ptr->resv_name, buffer);
+		packstr(dump_job_ptr->resv_ports, buffer);
 		packstr(dump_job_ptr->mcs_label, buffer);
 
 		pack32(dump_job_ptr->exit_code, buffer);
@@ -15697,6 +15710,9 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	uint32_t max_exit_code = 0;
 
 	xassert(job_ptr);
+
+	if (job_ptr->resv_ports)
+		resv_port_job_free(job_ptr);
 
 	acct_policy_remove_job_submit(job_ptr, false);
 	if (job_ptr->nodes && ((job_ptr->bit_flags & JOB_KILL_HURRY) == 0)

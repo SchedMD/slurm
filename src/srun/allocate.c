@@ -204,7 +204,8 @@ static bool _retry(void)
 		      "retrying.");
 		return true;
 	} else if (opt.immediate &&
-		   ((errno == ETIMEDOUT) || (errno == ESLURM_NODES_BUSY))) {
+		   ((errno == ETIMEDOUT) || (errno == ESLURM_NODES_BUSY) ||
+		    (errno == ESLURM_PORTS_BUSY))) {
 		error("Unable to allocate resources: %s",
 		      slurm_strerror(ESLURM_NODES_BUSY));
 		error_exit = immediate_exit;

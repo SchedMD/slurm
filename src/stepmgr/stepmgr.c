@@ -3615,7 +3615,8 @@ extern int step_create(job_record_t *job_ptr,
 			return ESLURM_INVALID_TASK_MEMORY;
 		return SLURM_ERROR;
 	}
-	if (step_specs->resv_port_cnt == NO_VAL16 && slurm_conf.mpi_params) {
+	if ((step_specs->resv_port_cnt == NO_VAL16) &&
+	    (slurm_conf.mpi_params || job_ptr->resv_ports)) {
 		step_specs->resv_port_cnt = 0;
 		/*
 		 * reserved port count set to maximum task count on
@@ -3631,7 +3632,7 @@ extern int step_create(job_record_t *job_ptr,
 	if ((step_specs->resv_port_cnt != NO_VAL16) &&
 	    (step_specs->resv_port_cnt != 0)) {
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-		i = resv_port_alloc(step_ptr);
+		i = resv_port_step_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
 			delete_step_record(job_ptr, step_ptr);
 			return i;

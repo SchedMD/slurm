@@ -294,7 +294,8 @@ int main(int argc, char **argv)
 			break;
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
 			msg = "Slurm job queue full, sleeping and retrying";
-		} else if (errno == ESLURM_NODES_BUSY) {
+		} else if ((errno == ESLURM_NODES_BUSY) ||
+			   (errno == ESLURM_PORTS_BUSY)) {
 			msg = "Job creation temporarily disabled, retrying";
 		} else if (errno == EAGAIN) {
 			msg = "Slurm temporarily unable to accept job, "
@@ -308,7 +309,8 @@ int main(int argc, char **argv)
 
 		if (retries)
 			debug("%s", msg);
-		else if (errno == ESLURM_NODES_BUSY)
+		else if ((errno == ESLURM_NODES_BUSY) ||
+			 (errno == ESLURM_PORTS_BUSY))
 			info("%s", msg); /* Not an error, powering up nodes */
 		else
 			error("%s", msg);

@@ -263,6 +263,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Added possible flags "NoUsersAreCoords" and "UsersAreCoords" to
     `.associations[].flags` for "GET /slurmdb/v0.0.41/associations/"
     and "POST /slurmdb/v0.0.41/associations/" endpoints.
+ -- Add ability to reserve MPI ports at the job level for stepmgr jobs and
+    subdivide them at the step level.
 
 * Changes in Slurm 23.11.7
 ==========================

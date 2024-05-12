@@ -56,6 +56,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/macros.h"
+#include "src/common/port_mgr.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
@@ -277,6 +278,7 @@ static void _init_stepd_stepmgr(void)
 		bit_alloc(bit_size(job_step_ptr->node_bitmap));
 	bit_set_all(stepd_stepmgr_ops.up_node_bitmap);
 	stepmgr_init(&stepd_stepmgr_ops);
+	reserve_port_stepmgr_init(job_step_ptr);
 
 	_setup_stepmgr_nodes();
 
@@ -422,6 +424,10 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
+
+	xfree(job_step_ptr->resv_ports);
+	reserve_port_stepmgr_init(job_step_ptr);
+
 	_step_cleanup(step, msg, rc);
 
 	fini_setproctitle();

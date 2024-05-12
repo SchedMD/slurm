@@ -689,6 +689,13 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if ((opt.resv_port_cnt != NO_VAL) &&
+	    !(opt.job_flags & STEPMGR_ENABLED) &&
+	    !xstrstr(slurm_conf.slurmctld_params, "enable_stepmgr")) {
+		error("Slurmstepd step management must be enabled to use --resv-ports for job allocations");
+		verified = false;
+	}
+
 	if (opt.burst_buffer && opt.burst_buffer_file) {
 		error("Cannot specify both --burst-buffer and --bbf");
 		exit(error_exit);
@@ -1216,6 +1223,7 @@ static void _help(void)
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"
 "                              --mem >= --mem-per-cpu if --mem is specified.\n"
+"      --resv-ports            reserve communication ports\n"
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n"
 "                              For the following 4 options, you are\n"

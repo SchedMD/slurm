@@ -1945,6 +1945,20 @@ skip_start:
 				   job_ptr, slurm_strerror(error_code));
 			job_ptr->state_reason = WAIT_MAX_POWERED_NODES;
 			xfree(job_ptr->state_desc);
+		} else if (error_code == ESLURM_PORTS_BUSY) {
+			/*
+			 * This can only happen if using stepd step manager.
+			 * The nodes selected for the job ran out of ports.
+			 */
+			fail_by_part = true;
+			job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
+			xfree(job_ptr->state_desc);
+			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
+				     job_ptr,
+				     job_state_string(job_ptr->job_state),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
+				     job_ptr->priority, job_ptr->partition);
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
