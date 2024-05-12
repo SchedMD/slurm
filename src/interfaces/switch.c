@@ -63,10 +63,10 @@ typedef struct slurm_switch_ops {
 	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
 					    switch_jobinfo_t **dest);
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
-	void         (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
+	void         (*pack_stepinfo)     ( switch_jobinfo_t *jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_jobinfo)    ( switch_jobinfo_t **jobinfo,
+	int          (*unpack_stepinfo)   ( switch_jobinfo_t **jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
@@ -92,8 +92,8 @@ static const char *syms[] = {
 	"switch_p_build_jobinfo",
 	"switch_p_duplicate_jobinfo",
 	"switch_p_free_jobinfo",
-	"switch_p_pack_jobinfo",
-	"switch_p_unpack_jobinfo",
+	"switch_p_pack_stepinfo",
+	"switch_p_unpack_stepinfo",
 	"switch_p_job_preinit",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
@@ -347,7 +347,7 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
 		return;
 	}
 
-	(*(ops[plugin_id].pack_jobinfo))(data, buffer, protocol_version);
+	(*(ops[plugin_id].pack_stepinfo))(data, buffer, protocol_version);
 }
 
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
@@ -387,7 +387,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 	} else
 		goto unpack_error;
 
-	if  ((*(ops[jobinfo_ptr->plugin_id].unpack_jobinfo))
+	if ((*(ops[jobinfo_ptr->plugin_id].unpack_stepinfo))
 	     ((switch_jobinfo_t **)&jobinfo_ptr->data, buffer,
 	      protocol_version))
 		goto unpack_error;

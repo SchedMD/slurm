@@ -759,8 +759,8 @@ unpack_error:
 	return false;
 }
 
-extern void switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
-				  uint16_t protocol_version)
+extern void switch_p_pack_stepinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
+				   uint16_t protocol_version)
 {
 	uint32_t pidx;
 	slingshot_jobinfo_t *jobinfo = (slingshot_jobinfo_t *)switch_job;
@@ -835,8 +835,8 @@ extern void switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 	}
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
-				   uint16_t protocol_version)
+extern int switch_p_unpack_stepinfo(switch_jobinfo_t **switch_job,
+				    buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t pidx = 0;
 	slingshot_jobinfo_t *jobinfo;
