@@ -583,8 +583,7 @@ int main(int argc, char **argv)
 				fatal("failed to initialize burst_buffer plugin");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
-			if (switch_g_restore(slurm_conf.state_save_location,
-			                     (recover ? true : false)))
+			if (switch_g_restore(recover))
 				fatal("failed to initialize switch plugin");
 		}
 
@@ -740,7 +739,7 @@ int main(int argc, char **argv)
 		/* termination of controller */
 		slurm_thread_join(slurmctld_config.thread_id_rpc);
 		slurmctld_config.thread_id_rpc = (pthread_t) 0;
-		switch_g_save(slurm_conf.state_save_location);
+		switch_g_save();
 		priority_g_fini();
 		shutdown_state_save();
 		slurm_mutex_lock(&purge_thread_lock);

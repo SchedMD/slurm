@@ -53,9 +53,8 @@
 
 typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
-	int          (*state_save)        ( char *dir_name );
-	int          (*state_restore)     ( char *dir_name, bool recover );
-
+	int          (*state_save)        ( void );
+	int          (*state_restore)     ( bool recover );
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo,
 					    uint32_t job_id, uint32_t step_id );
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
@@ -228,25 +227,24 @@ fini:
 	return rc;
 }
 
-extern int  switch_g_save(char *dir_name)
+extern int switch_g_save(void)
 {
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	return (*(ops[switch_context_default].state_save))( dir_name );
+	return (*(ops[switch_context_default].state_save))();
 }
 
-extern int  switch_g_restore(char *dir_name, bool recover)
+extern int switch_g_restore(bool recover)
 {
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	return (*(ops[switch_context_default].state_restore))
-		(dir_name, recover);
+	return (*(ops[switch_context_default].state_restore))(recover);
 }
 
 extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,

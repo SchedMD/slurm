@@ -67,19 +67,17 @@ extern int switch_g_fini(void);
 
 /* save any global switch state to a file within the specified directory
  * the actual file name used in plugin specific
- * IN dir_name - directory into which switch state is saved
  * RET         - slurm error code
  */
-extern int  switch_g_save   (char *dir_name);
+extern int switch_g_save(void);
 
 /* restore any global switch state from a file within the specified directory
  * the actual file name used in plugin specific
- * IN dir_name - directory from hich switch state is restored
  * IN recover  - "true" to restore switch state, "false" to start with
  *               a clean slate.
  * RET         - slurm error code
  */
-extern int  switch_g_restore(char *dir_name, bool recover);
+extern int switch_g_restore(bool recover);
 
 /******************************************************\
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *

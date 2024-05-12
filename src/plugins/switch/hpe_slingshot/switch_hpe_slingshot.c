@@ -136,7 +136,7 @@ extern int fini(void)
 /*
  * switch functions for global state save/restore
  */
-extern int switch_p_libstate_save(char *dir_name)
+extern int switch_p_libstate_save(void)
 {
 	int state_fd;
 	uint32_t actual_job_vnis, actual_job_hwcoll;
@@ -189,9 +189,9 @@ extern int switch_p_libstate_save(char *dir_name)
 	}
 
 	/* Get file names for the current and new state files */
-	new_state_file = xstrdup(dir_name);
+	new_state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(new_state_file, "/" SLINGSHOT_STATE_FILE_NEW);
-	state_file = xstrdup(dir_name);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
 	debug("%s: packing %u/%u job VNIs",
 	       state_file, actual_job_vnis, slingshot_state.num_job_vnis);
@@ -242,7 +242,7 @@ error:
  * Restore slingshot_state from state file
  * NOTE: assumes this runs before loading the slurm.conf config
  */
-extern int switch_p_libstate_restore(char *dir_name, bool recover)
+extern int switch_p_libstate_restore(bool recover)
 {
 	char *state_file;
 	struct stat stat_buf;
@@ -257,7 +257,7 @@ extern int switch_p_libstate_restore(char *dir_name, bool recover)
 	}
 
 	/* Get state file name */
-	state_file = xstrdup(dir_name);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
 
 	/* Return success if file doesn't exist */

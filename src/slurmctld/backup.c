@@ -305,7 +305,7 @@ void run_backup(void)
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
-	if (switch_g_restore(slurm_conf.state_save_location, true)) {
+	if (switch_g_restore(true)) {
 		error("failed to restore switch state");
 		abort();
 	}
