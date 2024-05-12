@@ -406,6 +406,16 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 	_relay_stepd_msg(&request->step_id, msg);
 }
 
+static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
+{
+	job_alloc_info_msg_t *request = msg->data;
+	slurm_step_id_t step_id;
+
+	step_id.job_id = request->job_id;
+
+	_relay_stepd_msg(&step_id, msg);
+}
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -571,6 +581,9 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_slurm_rpc_sbcast_cred(msg);
+		break;
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		_slurm_het_job_alloc_info(msg);
 		break;
 	default:
 		error("%s: invalid request msg type %d",

@@ -38,6 +38,7 @@
 #define _SLURM_STEP_MGR_H
 
 #include "src/common/front_end.h"
+#include "src/common/id_util.h"
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_step_layout.h"
@@ -233,5 +234,8 @@ extern int stepmgr_get_job_sbcast_cred_msg(
 	char *hetjob_nodelist,
 	uint16_t protocol_version,
 	job_sbcast_cred_msg_t **out_sbcast_cred_msg);
+
+extern resource_allocation_response_msg_t *build_job_info_resp(
+	job_record_t *job_ptr);
 
 #endif /* _SLURM_STEP_MGR_H */

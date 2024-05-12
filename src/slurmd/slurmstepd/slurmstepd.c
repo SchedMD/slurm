@@ -431,6 +431,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	xfree(cli);
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
+	xfree(conf->conffile);
 	xfree(conf->hostname);
 	xfree(conf->hwloc_xml);
 	xfree(conf->logfile);
@@ -438,6 +439,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
 	xfree(conf->spooldir);
+	xfree(conf->stepd_loc);
 	xfree(conf->cpu_spec_list);
 	xfree(conf);
 #endif

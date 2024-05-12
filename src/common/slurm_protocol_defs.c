@@ -2178,6 +2178,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 
 	xfree(msg->stepmgr);
 	job_record_delete(msg->job_ptr);
+	part_record_delete(msg->part_ptr);
+	FREE_NULL_LIST(msg->job_node_array);
 
 	xfree(msg);
 }
