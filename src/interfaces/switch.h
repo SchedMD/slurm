@@ -82,11 +82,6 @@ extern int  switch_g_save   (char *dir_name);
  */
 extern int  switch_g_restore(char *dir_name, bool recover);
 
-/* clear all current switch window allocation information
- * RET         - slurm error code
- */
-extern int  switch_g_clear(void);
-
 /******************************************************\
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
@@ -161,8 +156,7 @@ extern void switch_g_job_complete(uint32_t job_id);
 
 /*
  * Restore the switch allocation information "jobinfo" for an already
- * allocated job step, most likely to restore the switch information
- * after a call to switch_g_clear().
+ * allocated job step.
  */
 extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);

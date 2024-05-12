@@ -84,7 +84,6 @@ typedef struct slurm_switch_ops {
 					    char *nodelist );
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
-	int          (*state_clear)       ( void );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
@@ -109,7 +108,6 @@ static const char *syms[] = {
 	"switch_p_job_attach",
 	"switch_p_job_step_complete",
 	"switch_p_job_step_allocated",
-	"switch_p_libstate_clear",
 	"switch_p_job_complete",
 };
 
@@ -258,16 +256,6 @@ extern int  switch_g_restore(char *dir_name, bool recover)
 
 	return (*(ops[switch_context_default].state_restore))
 		(dir_name, recover);
-}
-
-extern int  switch_g_clear(void)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].state_clear))( );
 }
 
 extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,

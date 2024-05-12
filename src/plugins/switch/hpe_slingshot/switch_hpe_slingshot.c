@@ -91,8 +91,6 @@ const uint32_t plugin_id = SWITCH_PLUGIN_SLINGSHOT;
 slingshot_state_t slingshot_state;    /* VNI min/max/last/bitmap */
 slingshot_config_t slingshot_config;  /* Configuration defaults */
 
-extern int switch_p_libstate_clear(void);	/* for fini() below */
-
 /*
  * Set up slingshot_state defaults
  */
@@ -125,7 +123,8 @@ extern int init(void)
 extern int fini(void)
 {
 	if (running_in_slurmctld()) {
-		switch_p_libstate_clear();
+		FREE_NULL_BITMAP(slingshot_state.vni_table);
+		xfree(slingshot_state.job_vnis);
 		slingshot_fini_instant_on();
 		slingshot_fini_collectives();
 		slingshot_free_config();
@@ -335,18 +334,6 @@ error:
 	xfree(slingshot_state.job_vnis);
 
 	return SLURM_ERROR;
-}
-
-extern int switch_p_libstate_clear(void)
-{
-	log_flag(SWITCH, "vni_table=%p job_vnis=%p num_job_vnis=%u",
-		slingshot_state.vni_table, slingshot_state.job_vnis,
-		slingshot_state.num_job_vnis);
-
-	FREE_NULL_BITMAP(slingshot_state.vni_table);
-	xfree(slingshot_state.job_vnis);
-
-	return SLURM_SUCCESS;
 }
 
 /*
