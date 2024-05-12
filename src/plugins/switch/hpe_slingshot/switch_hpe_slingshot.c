@@ -1057,8 +1057,10 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
  * Free any job VNIs, as well as any Slingshot hardware collectives
  * multicast addresses associated with the job
  */
-extern void switch_p_job_complete(uint32_t job_id)
+extern void switch_p_job_complete(job_record_t *job_ptr)
 {
+	uint32_t job_id = job_ptr->job_id;
+
 	/* Free any job VNIs */
 	xassert(running_in_slurmctld());
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);

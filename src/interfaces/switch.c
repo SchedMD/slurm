@@ -75,7 +75,7 @@ typedef struct slurm_switch_ops {
 					    uint32_t nprocs, uint32_t rank);
 	int          (*step_complete)     ( switch_stepinfo_t *stepinfo,
 					    char *nodelist );
-	void         (*job_complete)      ( uint32_t job_id );
+	void         (*job_complete)      ( job_record_t *job_ptr );
 } slurm_switch_ops_t;
 
 /*
@@ -451,12 +451,12 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *stepinfo,
 	return (*(ops[plugin_id].step_complete))(data, nodelist);
 }
 
-extern void switch_g_job_complete(uint32_t job_id)
+extern void switch_g_job_complete(job_record_t *job_ptr)
 {
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
 		return;
 
-	(*(ops[switch_context_default].job_complete))(job_id);
+	(*(ops[switch_context_default].job_complete))(job_ptr);
 }

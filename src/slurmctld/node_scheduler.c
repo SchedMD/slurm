@@ -340,7 +340,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 
 	/* Release any job-related switch data */
-	switch_g_job_complete(job_ptr->job_id);
+	switch_g_job_complete(job_ptr);
 
 	epilog_slurmctld(job_ptr);
 
