@@ -55,25 +55,25 @@ typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );
 	int          (*state_restore)     ( bool recover );
-	int          (*build_stepinfo)    ( switch_jobinfo_t **jobinfo,
+	int          (*build_stepinfo)    ( switch_stepinfo_t **stepinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
-	int          (*duplicate_stepinfo)( switch_jobinfo_t *source,
-					    switch_jobinfo_t **dest);
-	void         (*free_stepinfo)     ( switch_jobinfo_t *jobinfo );
-	void         (*pack_stepinfo)     ( switch_jobinfo_t *jobinfo,
+	int          (*duplicate_stepinfo)( switch_stepinfo_t *source,
+					    switch_stepinfo_t **dest);
+	void         (*free_stepinfo)     ( switch_stepinfo_t *stepinfo );
+	void         (*pack_stepinfo)     ( switch_stepinfo_t *stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_stepinfo)   ( switch_jobinfo_t **jobinfo,
+	int          (*unpack_stepinfo)   ( switch_stepinfo_t **stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_postfini)      ( stepd_step_rec_t *step);
-	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
+	int          (*job_attach)        ( switch_stepinfo_t *stepinfo,
 					    char ***env, uint32_t nodeid,
 					    uint32_t procid, uint32_t nnodes,
 					    uint32_t nprocs, uint32_t rank);
-	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
+	int          (*step_complete)     ( switch_stepinfo_t *stepinfo,
 					    char *nodelist );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
@@ -132,12 +132,12 @@ static int _load_plugins(void *x, void *arg)
 
 static dynamic_plugin_data_t *_create_dynamic_plugin_data(uint32_t plugin_id)
 {
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
+	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	jobinfo_ptr->plugin_id = plugin_id;
+	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
+	stepinfo_ptr->plugin_id = plugin_id;
 
-	return jobinfo_ptr;
+	return stepinfo_ptr;
 }
 
 extern int switch_g_init(bool only_default)
@@ -244,7 +244,7 @@ extern int switch_g_restore(bool recover)
 	return (*(ops[switch_context_default].state_restore))(recover);
 }
 
-extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
+extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -256,9 +256,9 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	*jobinfo = _create_dynamic_plugin_data(plugin_id);
+	*stepinfo = _create_dynamic_plugin_data(plugin_id);
 
-	return (*(ops[plugin_id].build_stepinfo))((switch_jobinfo_t **) &data,
+	return (*(ops[plugin_id].build_stepinfo))((switch_stepinfo_t **) &data,
 						  step_layout, step_ptr);
 }
 
@@ -277,25 +277,25 @@ extern int switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
 	*dest = dest_ptr;
 
 	return (*(ops[plugin_id].duplicate_stepinfo))(
-		source->data, (switch_jobinfo_t **)&dest_ptr->data);
+		source->data, (switch_stepinfo_t **)&dest_ptr->data);
 }
 
-extern void switch_g_free_stepinfo(dynamic_plugin_data_t *jobinfo)
+extern void switch_g_free_stepinfo(dynamic_plugin_data_t *stepinfo)
 {
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
 		return;
 
-	if (jobinfo) {
-		if (jobinfo->data)
-			(*(ops[jobinfo->plugin_id].free_stepinfo))
-				(jobinfo->data);
-		xfree(jobinfo);
+	if (stepinfo) {
+		if (stepinfo->data)
+			(*(ops[stepinfo->plugin_id].free_stepinfo))
+				(stepinfo->data);
+		xfree(stepinfo);
 	}
 }
 
-extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
+extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 				   buf_t *buffer, uint16_t protocol_version)
 {
 	void *data = NULL;
@@ -310,9 +310,9 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
 		return;
 	}
 
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
+	if (stepinfo) {
+		data = stepinfo->data;
+		plugin_id = stepinfo->plugin_id;
 	} else
 		plugin_id = switch_context_default;
 
@@ -327,10 +327,10 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
 	(*(ops[plugin_id].pack_stepinfo))(data, buffer, protocol_version);
 }
 
-extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
+extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
+	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
 	xassert(switch_context_cnt >= 0);
 
@@ -339,13 +339,13 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
 			uint32_t plugin_id;
 			safe_unpack32(&plugin_id, buffer);
-			*jobinfo = NULL;
+			*stepinfo = NULL;
 		}
 		return SLURM_SUCCESS;
 	}
 
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*jobinfo = jobinfo_ptr;
+	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
+	*stepinfo = stepinfo_ptr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		int i;
@@ -353,7 +353,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 		safe_unpack32(&plugin_id, buffer);
 		for (i = 0; i < switch_context_cnt; i++) {
 			if (*(ops[i].plugin_id) == plugin_id) {
-				jobinfo_ptr->plugin_id = i;
+				stepinfo_ptr->plugin_id = i;
 				break;
 			}
 		}
@@ -364,8 +364,8 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 	} else
 		goto unpack_error;
 
-	if ((*(ops[jobinfo_ptr->plugin_id].unpack_stepinfo))
-	     ((switch_jobinfo_t **)&jobinfo_ptr->data, buffer,
+	if ((*(ops[stepinfo_ptr->plugin_id].unpack_stepinfo))
+	     ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
 	      protocol_version))
 		goto unpack_error;
 
@@ -373,18 +373,18 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 	 * Free nodeinfo_ptr if it is different from local cluster as it is not
 	 * relevant to this cluster.
 	 */
-	if ((jobinfo_ptr->plugin_id != switch_context_default) &&
+	if ((stepinfo_ptr->plugin_id != switch_context_default) &&
 	    running_in_slurmctld()) {
-		switch_g_free_stepinfo(jobinfo_ptr);
-		*jobinfo = _create_dynamic_plugin_data(switch_context_default);
+		switch_g_free_stepinfo(stepinfo_ptr);
+		*stepinfo = _create_dynamic_plugin_data(switch_context_default);
 	}
 
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	switch_g_free_stepinfo(jobinfo_ptr);
-	*jobinfo = NULL;
+	switch_g_free_stepinfo(stepinfo_ptr);
+	*stepinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
@@ -409,7 +409,7 @@ extern int switch_g_job_postfini(stepd_step_rec_t *step)
 	return (*(ops[switch_context_default].job_postfini))(step);
 }
 
-extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
+extern int switch_g_job_attach(dynamic_plugin_data_t *stepinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t gid)
 {
@@ -421,9 +421,9 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
+	if (stepinfo) {
+		data = stepinfo->data;
+		plugin_id = stepinfo->plugin_id;
 	} else
 		plugin_id = switch_context_default;
 
@@ -431,7 +431,7 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 		(data, env, nodeid, procid, nnodes, nprocs, gid);
 }
 
-extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
+extern int switch_g_job_step_complete(dynamic_plugin_data_t *stepinfo,
 				      char *nodelist)
 {
 	void *data = NULL;
@@ -442,9 +442,9 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
+	if (stepinfo) {
+		data = stepinfo->data;
+		plugin_id = stepinfo->plugin_id;
 	} else
 		plugin_id = switch_context_default;
 

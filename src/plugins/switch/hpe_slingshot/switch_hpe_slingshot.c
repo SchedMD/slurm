@@ -493,7 +493,7 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_build_stepinfo(switch_jobinfo_t **switch_job,
+extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -514,7 +514,7 @@ extern int switch_p_build_stepinfo(switch_jobinfo_t **switch_job,
 
 	job = xmalloc(sizeof(*job));
 	job->version = SLURM_PROTOCOL_VERSION;
-	*switch_job = (switch_jobinfo_t *) job;
+	*switch_job = (switch_stepinfo_t *) job;
 
 	/*
 	 * If this is a homogeneous step, or the first component in a
@@ -571,19 +571,19 @@ extern int switch_p_build_stepinfo(switch_jobinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_duplicate_stepinfo(switch_jobinfo_t *tmp,
-				       switch_jobinfo_t **dest)
+extern int switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
+				       switch_stepinfo_t **dest)
 {
 	slingshot_jobinfo_t *old = (slingshot_jobinfo_t *) tmp;
 	slingshot_jobinfo_t *new = xmalloc(sizeof(*new));
 
 	_copy_jobinfo(old, new);
 
-	*dest = (switch_jobinfo_t *)new;
+	*dest = (switch_stepinfo_t *) new;
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_free_stepinfo(switch_jobinfo_t *switch_job)
+extern void switch_p_free_stepinfo(switch_stepinfo_t *switch_job)
 {
 	slingshot_jobinfo_t *jobinfo = (slingshot_jobinfo_t *) switch_job;
 	xassert(jobinfo);
@@ -741,7 +741,7 @@ unpack_error:
 	return false;
 }
 
-extern void switch_p_pack_stepinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
+extern void switch_p_pack_stepinfo(switch_stepinfo_t *switch_job, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	uint32_t pidx;
@@ -817,7 +817,7 @@ extern void switch_p_pack_stepinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 	}
 }
 
-extern int switch_p_unpack_stepinfo(switch_jobinfo_t **switch_job,
+extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t pidx = 0;
@@ -831,7 +831,7 @@ extern int switch_p_unpack_stepinfo(switch_jobinfo_t **switch_job,
 	xassert(buffer);
 
 	jobinfo = xmalloc(sizeof(*jobinfo));
-	*switch_job = (switch_jobinfo_t *)jobinfo;
+	*switch_job = (switch_stepinfo_t *) jobinfo;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&jobinfo->version, buffer);
@@ -989,7 +989,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
  * In addition, the SLINGSHOT_VNIS variable has one or more VNIs
  * separated by colons.
  */
-extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+extern int switch_p_job_attach(switch_stepinfo_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank)
 {
@@ -1034,7 +1034,7 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
+extern int switch_p_job_step_complete(switch_stepinfo_t *jobinfo, char *nodelist)
 {
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *) jobinfo;
 

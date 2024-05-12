@@ -225,7 +225,7 @@ extern __thread bool drop_priv;
  */
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
-   typedef struct switch_jobinfo   switch_jobinfo_t;
+typedef struct switch_jobstep switch_stepinfo_t;
 #endif
 
 #ifndef __job_record_t_defined

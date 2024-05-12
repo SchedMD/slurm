@@ -73,7 +73,7 @@ typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
 /* Define switch_jobinfo_t below to avoid including extraneous slurm headers */
 #ifndef __switch_jobinfo_t_defined
 #  define  __switch_jobinfo_t_defined
-typedef struct switch_jobinfo switch_jobinfo_t;	/* opaque data type */
+typedef struct switch_stepinfo switch_stepinfo_t;	/* opaque data type */
 #endif
 
 /* Define job_resources_t below

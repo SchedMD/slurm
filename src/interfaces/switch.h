@@ -52,7 +52,7 @@
 /* opaque data structures - no peeking! */
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
-   typedef struct switch_jobinfo   switch_jobinfo_t;
+typedef struct switch_stepinfo switch_stepinfo_t;
 #endif
 
 /*******************************************\
