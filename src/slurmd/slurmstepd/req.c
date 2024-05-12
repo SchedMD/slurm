@@ -2185,6 +2185,8 @@ _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
 		safe_write(fd, &rc, sizeof(int));
 		safe_write(fd, &errnum, sizeof(int));
 
+		jobacctinfo_destroy(jobacct);
+
 		return SLURM_SUCCESS;
 	}
 
