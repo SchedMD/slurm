@@ -141,7 +141,7 @@ static bool _clear_hwcoll(uint32_t job_id)
  * enough nodes, reserve the configured per-job number of multicast addresses
  * by registering the job with the fabric manager
  */
-extern bool slingshot_setup_collectives(slingshot_jobinfo_t *job,
+extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 					uint32_t node_cnt, uint32_t job_id,
 					uint32_t step_id)
 {
@@ -237,7 +237,7 @@ out:
  * if job->hwcoll is set, add the string-ized value of every
  * field in job->hwcoll to this job step's environment
  */
-extern void slingshot_collectives_env(slingshot_jobinfo_t *job, char ***env)
+extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 {
 	slingshot_hwcoll_t *hwcoll = job->hwcoll;
 	char *job_id = NULL, *step_id = NULL;
@@ -286,7 +286,7 @@ extern void slingshot_collectives_env(slingshot_jobinfo_t *job, char ***env)
  * To release the multicast addresses associated with the job step,
  * PATCH the "jobSteps" object with a NULL value under the job step ID key.
  */
-extern void slingshot_release_collectives_job_step(slingshot_jobinfo_t *job)
+extern void slingshot_release_collectives_job_step(slingshot_stepinfo_t *job)
 {
 	slingshot_hwcoll_t *hwcoll = job->hwcoll;
 	long status = 0;

@@ -1040,7 +1040,7 @@ err:
  *   max_<NIC_resource>: maximum value for resource
  */
 static bool _parse_network_token(const char *token, bool is_job,
-				 slingshot_jobinfo_t *job,
+				 slingshot_stepinfo_t *job,
 				 bool *job_vni, bool *single_node_vni,
 				 bool *no_vni)
 {
@@ -1114,12 +1114,12 @@ static bool _parse_network_token(const char *token, bool is_job,
 }
 
 /*
- * Set up passed-in slingshot_jobinfo_t based on values in srun/sbatch/salloc
+ * Set up passed-in slingshot_stepinfo_t based on values in srun/sbatch/salloc
  * --network parameters.  Return true on successful parsing, false otherwise.
  */
 static bool _setup_network_params(const char *network_params,
 				  const char *job_network_params,
-				  slingshot_jobinfo_t *job,
+				  slingshot_stepinfo_t *job,
 				  bool *job_vni,
 				  bool *single_node_vni,
 				  bool *no_vni)
@@ -1183,13 +1183,13 @@ err:
 }
 
 /*
- * Set up slingshot_jobinfo_t struct with VNIs, and CXI limits,
+ * Set up slingshot_stepinfo_t struct with VNIs, and CXI limits,
  * based on configured limits as well as any specified with
  * the --network option
  * Return true on success, false if VNI cannot be allocated,
  * or --network parameters have syntax errors
  */
-extern bool slingshot_setup_job_step_vni(slingshot_jobinfo_t *job, int node_cnt,
+extern bool slingshot_setup_job_step_vni(slingshot_stepinfo_t *job, int node_cnt,
 					 uint32_t job_id,
 					 const char *network_params,
 					 const char *job_network_params)
@@ -1260,7 +1260,7 @@ err:
 /*
  * Free job-step VNI (if any)
  */
-extern void slingshot_free_job_step_vni(slingshot_jobinfo_t *job)
+extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job)
 {
 	/* Second VNI is a job VNI - don't free until job is complete */
 	if (job->vnis && (job->num_vnis > 0)) {

@@ -73,7 +73,7 @@ static char *_get_apinfo_file(const stepd_step_rec_t *step, char *spool)
 /*
  * Fill in the apinfo header
  */
-static void _build_header(pals_header_t *hdr, slingshot_jobinfo_t *jobinfo)
+static void _build_header(pals_header_t *hdr, slingshot_stepinfo_t *stepinfo)
 {
 	size_t offset = sizeof(pals_header_t);
 
@@ -82,12 +82,12 @@ static void _build_header(pals_header_t *hdr, slingshot_jobinfo_t *jobinfo)
 
 	hdr->comm_profile_size = sizeof(pals_comm_profile_t);
 	hdr->comm_profile_offset = offset;
-	hdr->ncomm_profiles = jobinfo->num_profiles;
+	hdr->ncomm_profiles = stepinfo->num_profiles;
 	offset += hdr->comm_profile_size * hdr->ncomm_profiles;
 
 	hdr->nic_size = sizeof(pals_hsn_nic_t);
 	hdr->nic_offset = offset;
-	hdr->nnics = jobinfo->num_nics;
+	hdr->nnics = stepinfo->num_nics;
 	offset += hdr->nic_size * hdr->nnics;
 
 	// Don't support NIC distances yet
@@ -137,7 +137,7 @@ extern bool create_slingshot_apinfo(const stepd_step_rec_t *step)
 {
 	int fd = -1;
 	pals_header_t hdr;
-	slingshot_jobinfo_t *jobinfo = step->switch_step->data;
+	slingshot_stepinfo_t *stepinfo = step->switch_step->data;
 	char *spool = NULL;
 	char *apinfo = NULL;
 
@@ -160,20 +160,20 @@ extern bool create_slingshot_apinfo(const stepd_step_rec_t *step)
 	}
 
 	/* Write header */
-	_build_header(&hdr, jobinfo);
+	_build_header(&hdr, stepinfo);
 	safe_write(fd, &hdr, sizeof(pals_header_t));
 
 	/* Write communication profiles */
-	for (int i = 0; i < jobinfo->num_profiles; i++) {
+	for (int i = 0; i < stepinfo->num_profiles; i++) {
 		pals_comm_profile_t profile;
-		_comm_profile_convert(&jobinfo->profiles[i], &profile);
+		_comm_profile_convert(&stepinfo->profiles[i], &profile);
 		safe_write(fd, &profile, sizeof(pals_comm_profile_t));
 	}
 
 	/* Write Instant On data */
-	for (int i = 0; i < jobinfo->num_nics; i++) {
+	for (int i = 0; i < stepinfo->num_nics; i++) {
 		pals_hsn_nic_t nic;
-		_hsn_nic_convert(&jobinfo->nics[i], &nic);
+		_hsn_nic_convert(&stepinfo->nics[i], &nic);
 		safe_write(fd, &nic, sizeof(pals_hsn_nic_t));
 	}
 

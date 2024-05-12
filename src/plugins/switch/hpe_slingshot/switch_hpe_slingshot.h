@@ -215,11 +215,11 @@ typedef struct {
 	uint32_t num_nodes;      /* Minimum #nodes to get multicast addrs */
 } slingshot_hwcoll_t;
 
-/* Denotes packing a null jobinfo structure */
+/* Denotes packing a null stepinfo structure */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 
 /* Jobinfo structure passed from slurmctld to slurmd */
-typedef struct slingshot_jobinfo {
+typedef struct slingshot_stepinfo {
 	uint32_t version;      /* Version of this structure */
 	uint32_t num_vnis;     /* Number of VNIs */
 	uint16_t *vnis;        /* List of VNIs allocated for this application */
@@ -232,7 +232,7 @@ typedef struct slingshot_jobinfo {
 	uint32_t num_nics;     /* Number of entries in 'nics' array */
 	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
 	slingshot_hwcoll_t *hwcoll; /* HSN HW collectives info */
-} slingshot_jobinfo_t;
+} slingshot_stepinfo_t;
 
 /* Slingshot traffic classes (bitmap) */
 #define SLINGSHOT_TC_DEDICATED_ACCESS 0x1
@@ -242,7 +242,7 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_TC_DEFAULT          (SLINGSHOT_TC_LOW_LATENCY | \
 				       SLINGSHOT_TC_BEST_EFFORT)
 
-/* Values for slingshot_jobinfo_t.flags */
+/* Values for slingshot_stepinfo_t.flags */
 /*
  * If SLINGSHOT_FLAGS_ADJUST_LIMITS is set (default), slurmd will adjust
  * resource limit reservations by subtracting system service reserved/used
@@ -283,30 +283,31 @@ extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 /* collectives.c */
 extern bool slingshot_init_collectives(void);
 extern void slingshot_fini_collectives(void);
-extern bool slingshot_setup_collectives(slingshot_jobinfo_t *job,
+extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 					uint32_t node_cnt, uint32_t job_id,
 					uint32_t step_id);
-extern void slingshot_collectives_env(slingshot_jobinfo_t *job, char ***env);
-extern void slingshot_release_collectives_job_step(slingshot_jobinfo_t *job);
+extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env);
+extern void slingshot_release_collectives_job_step(slingshot_stepinfo_t *job);
 extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
-extern bool slingshot_setup_job_step_vni(slingshot_jobinfo_t *job, int node_cnt,
+extern bool slingshot_setup_job_step_vni(
+	slingshot_stepinfo_t *job, int node_cnt,
 	uint32_t job_id, const char *network_params,
 	const char *job_network_params);
-extern void slingshot_free_job_step_vni(slingshot_jobinfo_t *job);
+extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job);
 extern void slingshot_free_job_vni(uint32_t job_id);
 /* instant_on.c */
 extern bool slingshot_init_instant_on(void);
 extern void slingshot_fini_instant_on(void);
-extern bool slingshot_fetch_instant_on(slingshot_jobinfo_t *job,
+extern bool slingshot_fetch_instant_on(slingshot_stepinfo_t *job,
 				       char *node_list, uint32_t node_cnt);
 /* setup_nic.c */
-extern bool slingshot_open_cxi_lib(slingshot_jobinfo_t *job);
-extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
+extern bool slingshot_open_cxi_lib(slingshot_stepinfo_t *job);
+extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 				      uint16_t step_cpus, uint32_t job_id);
-extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
+extern bool slingshot_destroy_services(slingshot_stepinfo_t *job,
 				       uint32_t job_id);
 extern void slingshot_free_services(void);
 

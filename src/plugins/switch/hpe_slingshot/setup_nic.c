@@ -210,7 +210,7 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 /*
  * Set up basic access to the CXI devices in the daemon
  */
-static bool _create_cxi_devs(slingshot_jobinfo_t *job)
+static bool _create_cxi_devs(slingshot_stepinfo_t *job)
 {
 	struct cxil_device_list *list;
 	int dev, rc;
@@ -287,7 +287,7 @@ static struct cxi_limits _set_desc_limits(int rsrc,
  */
 static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 				   const struct cxil_devinfo *devinfo,
-				   const slingshot_jobinfo_t *job,
+				   const slingshot_stepinfo_t *job,
 				   uint32_t uid, uint16_t step_cpus)
 {
 	int cpus;
@@ -361,7 +361,7 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
  * Open the Slingshot CXI library; set up functions and set cxi_avail
  * if successful (default is 'false')
  */
-extern bool slingshot_open_cxi_lib(slingshot_jobinfo_t *job)
+extern bool slingshot_open_cxi_lib(slingshot_stepinfo_t *job)
 {
 	if (!(cxi_handle = dlopen(HPE_SLINGSHOT_LIB,
 				  RTLD_LAZY | RTLD_GLOBAL))) {
@@ -506,7 +506,7 @@ static int _set_rdzv_get_en(int device, int val)
  * In the daemon, when the shepherd for an App terminates, free any CXI
  * Services we have allocated for it
  */
-extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
+extern bool slingshot_destroy_services(slingshot_stepinfo_t *job,
 				       uint32_t job_id)
 {
 	bool retval = true;
@@ -604,7 +604,7 @@ static void _alloc_fail_info(struct cxil_dev *dev,
 /*
  * Set up CXI services for each of the CXI NICs on this host
  */
-extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
+extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 				      uint16_t step_cpus, uint32_t job_id)
 {
 	int prof, devn;

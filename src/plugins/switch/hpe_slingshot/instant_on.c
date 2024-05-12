@@ -147,7 +147,7 @@ err:
  * and append the info for each NIC to the job->nics[nicidx] array;
  * return the index of the array to use next (or -1 on error)
  */
-static int _parse_jlope_node_json(slingshot_jobinfo_t *job,
+static int _parse_jlope_node_json(slingshot_stepinfo_t *job,
 				  int node_cnt, int nodeidx, int nicidx,
 				  json_object *macs, json_object *devs,
 				  json_object *numas)
@@ -215,7 +215,7 @@ static int _parse_jlope_node_json(slingshot_jobinfo_t *job,
  * }
  * Add the information to the job->nics array to pass to slurmd
  */
-static bool _parse_jlope_json(slingshot_jobinfo_t *job, json_object *resp,
+static bool _parse_jlope_json(slingshot_stepinfo_t *job, json_object *resp,
 			      int node_cnt)
 {
 	json_object *macs = json_object_object_get(resp, "mac");
@@ -268,7 +268,7 @@ err:
  * If configured with the jackaloped REST URL, contact jackaloped and
  * get Instant On data for the set of nodes in the job step
  */
-extern bool slingshot_fetch_instant_on(slingshot_jobinfo_t *job,
+extern bool slingshot_fetch_instant_on(slingshot_stepinfo_t *job,
 				       char *node_list, uint32_t node_cnt)
 {
 	json_object *host_array = NULL;
