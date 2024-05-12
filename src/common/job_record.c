@@ -880,8 +880,8 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	if (step_ptr->switch_job) {
 		pack8(1, buffer);
-		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
-				      SLURM_PROTOCOL_VERSION);
+		switch_g_pack_stepinfo(step_ptr->switch_job, buffer,
+				       SLURM_PROTOCOL_VERSION);
 	} else
 		pack8(0, buffer);
 
@@ -1011,8 +1011,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp &&
-		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
-					     protocol_version)))
+		    (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+					      protocol_version)))
 			goto unpack_error;
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
@@ -1088,8 +1088,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp &&
-		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
-					     protocol_version)))
+		    (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+					      protocol_version)))
 			goto unpack_error;
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,

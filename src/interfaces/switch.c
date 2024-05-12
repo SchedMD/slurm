@@ -318,8 +318,8 @@ extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
 	}
 }
 
-extern void switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
-				  uint16_t protocol_version)
+extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
+				   buf_t *buffer, uint16_t protocol_version)
 {
 	void *data = NULL;
 	uint32_t plugin_id;
@@ -350,8 +350,8 @@ extern void switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
 	(*(ops[plugin_id].pack_jobinfo))(data, buffer, protocol_version);
 }
 
-extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
-				   buf_t *buffer, uint16_t protocol_version)
+extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
+				    buf_t *buffer, uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 

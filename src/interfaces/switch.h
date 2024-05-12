@@ -119,24 +119,23 @@ extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
  */
 extern void switch_g_free_jobinfo  (dynamic_plugin_data_t *jobinfo);
 
-/* pack a switch job credential into a buffer in machine independent form
+/*
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
  * IN protocol_version - version of Slurm we are talking to.
  */
-extern void switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
-				  uint16_t protocol_version);
+extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
+				   buf_t *buffer, uint16_t protocol_version);
 
-/* unpack a switch job credential from a buffer
+/*
  * OUT jobinfo - the switch job credential read
  * IN  buffer  - buffer with switch credential read from current pointer loc
  * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
  * NOTE: returned value must be freed using switch_g_free_jobinfo
  */
-extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
-				   buf_t *buffer,
-				   uint16_t protocol_version);
+extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
+				    buf_t *buffer, uint16_t protocol_version);
 
 /*
  * Note that the job step associated with the specified nodelist
