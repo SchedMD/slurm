@@ -46,10 +46,10 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
-#include "src/common/xstring.h"
-#include "src/interfaces/gres.h"
 #include "src/common/list.h"
+#include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/gres.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
