@@ -338,6 +338,18 @@ error:
 	return SLURM_ERROR;
 }
 
+extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
+				  uint16_t protocol_version)
+{
+	return;
+}
+
+extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
+				   uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
 static void _copy_stepinfo(slingshot_stepinfo_t *old, slingshot_stepinfo_t *new)
 {
 	/* Copy static (non-malloced) fields */

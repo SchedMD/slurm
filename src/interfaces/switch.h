@@ -74,6 +74,16 @@ extern int switch_g_save(void);
 extern int switch_g_restore(bool recover);
 
 /******************************************************\
+ * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
+\******************************************************/
+
+extern void switch_g_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
+				  uint16_t protocol_version);
+
+extern int switch_g_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
+				   uint16_t protocol_version);
+
+/******************************************************\
  * STEP-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 

@@ -58,6 +58,12 @@ typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );
 	int          (*state_restore)     ( bool recover );
+	void         (*pack_jobinfo)      ( void *switch_jobinfo,
+					    buf_t *buffer,
+					    uint16_t protocol_version );
+	int          (*unpack_jobinfo)    ( void **switch_jobinfo,
+					    buf_t *buffer,
+					    uint16_t protocol_version );
 	int          (*build_stepinfo)    ( switch_stepinfo_t **stepinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
@@ -89,6 +95,8 @@ static const char *syms[] = {
 	"plugin_id",
 	"switch_p_save",
 	"switch_p_restore",
+	"switch_p_pack_jobinfo",
+	"switch_p_unpack_jobinfo",
 	"switch_p_build_stepinfo",
 	"switch_p_duplicate_stepinfo",
 	"switch_p_free_stepinfo",
@@ -245,6 +253,74 @@ extern int switch_g_restore(bool recover)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].state_restore))(recover);
+}
+
+/*
+ * These are designed so that the payload will be skipped if the plugin
+ * is unavailable.
+ */
+extern void switch_g_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
+				  uint16_t protocol_version)
+{
+	uint32_t length_position = 0, start = 0, end = 0;
+
+	length_position = get_buf_offset(buffer);
+	pack32(0, buffer);
+
+	if (!switch_context_cnt)
+		return;
+
+	start = get_buf_offset(buffer);
+	pack32(*(ops[switch_context_default].plugin_id), buffer);
+	(*(ops[switch_context_default].pack_jobinfo))(switch_jobinfo, buffer,
+						      protocol_version);
+	end = get_buf_offset(buffer);
+	set_buf_offset(buffer, length_position);
+	pack32(end - start, buffer);
+	set_buf_offset(buffer, end);
+}
+
+extern int switch_g_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
+				   uint16_t protocol_version)
+{
+	uint32_t length = 0, switch_jobinfo_end = 0;
+	uint32_t plugin_id = 0;
+
+	safe_unpack32(&length, buffer);
+
+	if (remaining_buf(buffer) < length)
+		return SLURM_ERROR;
+
+	switch_jobinfo_end = get_buf_offset(buffer) + length;
+
+	if (!length || !switch_context_cnt) {
+		debug("%s: skipping switch_jobinfo data (%u)", __func__, length);
+		set_buf_offset(buffer, switch_jobinfo_end);
+		return SLURM_SUCCESS;
+	}
+
+	safe_unpack32(&plugin_id, buffer);
+
+	if (plugin_id != *(ops[switch_context_default].plugin_id)) {
+		debug("%s: skipping switch_jobinfo data", __func__);
+		set_buf_offset(buffer, switch_jobinfo_end);
+		return SLURM_SUCCESS;
+	}
+
+	if ((*(ops[switch_context_default].unpack_jobinfo))(switch_jobinfo,
+							    buffer,
+							    protocol_version))
+		goto unpack_error;
+
+	if (get_buf_offset(buffer) != switch_jobinfo_end) {
+		error("%s: plugin did not unpack until switch_jobinfo end",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
