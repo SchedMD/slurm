@@ -42,8 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <dirent.h>
-
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
