@@ -159,26 +159,6 @@ extern void switch_g_job_complete(uint32_t job_id);
 \********************************************************************/
 
 /*
- * Notes on job related switch_g functions:
- *
- * switch_g functions are run within slurmstepd in the following way:
- * (Diagram courtesy of Jim Garlick [see qsw.c] )
- *
- *  Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
- *                                                  |
- *  switch_g_job_preinit                            |
- *  fork ------------------ switch_g_job_init       |
- *  waitpid                 setuid, chdir, etc.     |
- *                          fork N procs -----------+--- switch_g_job_attach
- *                          wait all                |    exec mpi process
- *                          switch_g_job_fini*      |
- *  switch_g_job_postfini                           |
- *                                                  |
- *
- * [ *Note: switch_g_job_fini() is run as the uid of the job owner, not root ]
- */
-
-/*
  * Prepare node for job.
  *
  * pre is run as root in the first slurmstepd process, the so called job
