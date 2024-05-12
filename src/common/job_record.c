@@ -700,7 +700,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		pack16(dump_job_ptr->warn_time, buffer);
 
 		_pack_acct_policy_limit(&dump_job_ptr->limit_set, buffer,
-					tres_cnt, SLURM_PROTOCOL_VERSION);
+					tres_cnt, protocol_version);
 
 		packstr(dump_job_ptr->state_desc, buffer);
 		packstr(dump_job_ptr->resp_host, buffer);
@@ -744,20 +744,20 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->system_comment, buffer);
 
 		select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
-					     buffer, SLURM_PROTOCOL_VERSION);
+					     buffer, protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
-				   SLURM_PROTOCOL_VERSION);
+				   protocol_version);
 
 		packstr_array(dump_job_ptr->spank_job_env,
 			      dump_job_ptr->spank_job_env_size, buffer);
 
 		(void) gres_job_state_pack(dump_job_ptr->gres_list_req, buffer,
 					   dump_job_ptr->job_id, true,
-					   SLURM_PROTOCOL_VERSION);
+					   protocol_version);
 
 		(void) gres_job_state_pack(dump_job_ptr->gres_list_alloc,
 					   buffer, dump_job_ptr->job_id,
-					   true, SLURM_PROTOCOL_VERSION);
+					   true, protocol_version);
 
 		/* Dump job details, if available */
 		detail_ptr = dump_job_ptr->details;
@@ -798,7 +798,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		if (dump_job_ptr->id) {
 			pack8(1, buffer);
 			pack_identity(dump_job_ptr->id, buffer,
-				      SLURM_PROTOCOL_VERSION);
+				      protocol_version);
 		} else {
 			pack8(0, buffer);
 		}
