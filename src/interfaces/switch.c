@@ -55,9 +55,7 @@ typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );
 	int          (*state_restore)     ( bool recover );
-	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo,
-					    uint32_t job_id, uint32_t step_id );
-	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
+	int          (*build_jobinfo)     ( switch_jobinfo_t **jobinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
 	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
@@ -88,7 +86,6 @@ static const char *syms[] = {
 	"plugin_id",
 	"switch_p_save",
 	"switch_p_restore",
-	"switch_p_alloc_jobinfo",
 	"switch_p_build_jobinfo",
 	"switch_p_duplicate_jobinfo",
 	"switch_p_free_jobinfo",
@@ -247,42 +244,22 @@ extern int switch_g_restore(bool recover)
 	return (*(ops[switch_context_default].state_restore))(recover);
 }
 
-extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,
-				   uint32_t job_id, uint32_t step_id)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	jobinfo_ptr = _create_dynamic_plugin_data(switch_context_default);
-	*jobinfo    = jobinfo_ptr;
-
-	return (*(ops[jobinfo_ptr->plugin_id].alloc_jobinfo))
-		((switch_jobinfo_t **)&jobinfo_ptr->data, job_id, step_id);
-}
-
-extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
+extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
 				  slurm_step_layout_t *step_layout,
 				  step_record_t *step_ptr)
 {
 	void *data = NULL;
-	uint32_t plugin_id;
+	uint32_t plugin_id = switch_context_default;
 
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
 		return SLURM_SUCCESS;
 
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
+	*jobinfo = _create_dynamic_plugin_data(plugin_id);
 
-	return (*(ops[plugin_id].build_jobinfo))(data, step_layout, step_ptr);
+	return (*(ops[plugin_id].build_jobinfo))((switch_jobinfo_t **) &data,
+						 step_layout, step_ptr);
 }
 
 extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,

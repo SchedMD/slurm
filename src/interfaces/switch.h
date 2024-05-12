@@ -83,16 +83,6 @@ extern int switch_g_restore(bool recover);
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 
-/* allocate storage for a switch job credential
- * OUT jobinfo - storage for a switch job credential
- * IN job_id   - job id of the job this is for.
- * IN step_id  - step id of the job this is for.
- * RET         - slurm error code
- * NOTE: storage must be freed using switch_g_free_jobinfo
- */
-extern int  switch_g_alloc_jobinfo (dynamic_plugin_data_t **jobinfo,
-				    uint32_t job_id, uint32_t step_id);
-
 /* fill a job's switch credential
  * OUT jobinfo  - storage for a switch job credential
  * IN  step_layout - the layout of the step with at least the nodes,
@@ -101,7 +91,7 @@ extern int  switch_g_alloc_jobinfo (dynamic_plugin_data_t **jobinfo,
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
  * NOTE: storage must be freed using switch_g_free_jobinfo
  */
-extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
+extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
 				  slurm_step_layout_t *step_layout,
 				  step_record_t *step_ptr);
 

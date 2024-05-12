@@ -336,22 +336,6 @@ error:
 	return SLURM_ERROR;
 }
 
-/*
- * switch functions for job step specific credential
- */
-extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
-				  uint32_t job_id, uint32_t step_id)
-{
-	slingshot_jobinfo_t *new = xcalloc(1, sizeof(*new));
-
-	xassert(switch_job);
-
-	new->version = SLURM_PROTOCOL_VERSION;
-	*switch_job = (switch_jobinfo_t *)new;
-
-	return SLURM_SUCCESS;
-}
-
 static void _copy_jobinfo(slingshot_jobinfo_t *old, slingshot_jobinfo_t *new)
 {
 	/* Copy static (non-malloced) fields */
@@ -509,11 +493,11 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
+extern int switch_p_build_jobinfo(switch_jobinfo_t **switch_job,
 				  slurm_step_layout_t *step_layout,
 				  step_record_t *step_ptr)
 {
-	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *) switch_job;
+	slingshot_jobinfo_t *job = NULL;
 	job_record_t *job_ptr;
 	uint32_t job_id;
 	uint32_t node_cnt;
@@ -528,11 +512,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		step_ptr->step_id.job_id, step_ptr->step_id.step_id,
 		job_ptr->user_id, step_ptr->network);
 
-	if (!job) {
-		debug("switch_job was NULL");
-		return SLURM_SUCCESS;
-	}
-	xassert(job->version == SLURM_PROTOCOL_VERSION);
+	job = xmalloc(sizeof(*job));
+	job->version = SLURM_PROTOCOL_VERSION;
+	*switch_job = (switch_jobinfo_t *) job;
 
 	/*
 	 * If this is a homogeneous step, or the first component in a
