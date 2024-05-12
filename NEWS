@@ -265,6 +265,10 @@ documents those changes that are of interest to users and administrators.
     and "POST /slurmdb/v0.0.41/associations/" endpoints.
  -- Add ability to reserve MPI ports at the job level for stepmgr jobs and
     subdivide them at the step level.
+ -- slurmrestd - Fix possible memory leak from failed job submissions to
+    'POST /slurm/v0.0.{39,40,41}/job/submit'.
+ -- slurmrestd - Fix possible memory leak from failed job allocation requests to
+    'POST /slurm/v0.0.{39,40,41}/job/allocate'.
 
 * Changes in Slurm 23.11.7
 ==========================
