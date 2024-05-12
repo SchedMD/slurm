@@ -496,7 +496,7 @@ static int _handle_stepmgr_relay_msg(int fd,
 {
 	int rc;
 	buf_t *buffer;
-	char *data;
+	char *data = NULL;
 	uint16_t protocol_version;
 	uint32_t client_fd;
 	uint32_t data_size;
@@ -543,6 +543,7 @@ done:
 	return rc;
 
 rwfail:
+	xfree(data);
 	return SLURM_ERROR;
 }
 
