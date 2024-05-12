@@ -67,7 +67,7 @@ typedef struct slurm_switch_ops {
 	int          (*build_stepinfo)    ( switch_stepinfo_t **stepinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
-	int          (*duplicate_stepinfo)( switch_stepinfo_t *source,
+	void         (*duplicate_stepinfo)( switch_stepinfo_t *source,
 					    switch_stepinfo_t **dest);
 	void         (*free_stepinfo)     ( switch_stepinfo_t *stepinfo );
 	void         (*pack_stepinfo)     ( switch_stepinfo_t *stepinfo,
@@ -341,8 +341,8 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
 						  step_layout, step_ptr);
 }
 
-extern int switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
-				       dynamic_plugin_data_t **dest)
+extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
+					dynamic_plugin_data_t **dest)
 {
 	dynamic_plugin_data_t *dest_ptr = NULL;
 	uint32_t plugin_id = source->plugin_id;
@@ -350,13 +350,13 @@ extern int switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
 	xassert(switch_context_cnt >= 0);
 
 	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+		return;
 
 	dest_ptr = _create_dynamic_plugin_data(plugin_id);
 	*dest = dest_ptr;
 
-	return (*(ops[plugin_id].duplicate_stepinfo))(
-		source->data, (switch_stepinfo_t **)&dest_ptr->data);
+	(*(ops[plugin_id].duplicate_stepinfo))
+		(source->data, (switch_stepinfo_t **) &dest_ptr->data);
 }
 
 extern void switch_g_free_stepinfo(dynamic_plugin_data_t *stepinfo)

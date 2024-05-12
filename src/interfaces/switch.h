@@ -107,8 +107,8 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
  *               duplicated switch job credential
  * NOTE: storage must be freed using switch_g_free_stepinfo
  */
-extern int switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
-				       dynamic_plugin_data_t **dest);
+extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
+					dynamic_plugin_data_t **dest);
 
 /*
  * free storage previously allocated for a switch step credential

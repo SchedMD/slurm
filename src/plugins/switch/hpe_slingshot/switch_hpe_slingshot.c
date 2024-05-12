@@ -585,8 +585,8 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
-				       switch_stepinfo_t **dest)
+extern void switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
+					switch_stepinfo_t **dest)
 {
 	slingshot_stepinfo_t *old = (slingshot_stepinfo_t *) tmp;
 	slingshot_stepinfo_t *new = xmalloc(sizeof(*new));
@@ -594,7 +594,6 @@ extern int switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
 	_copy_stepinfo(old, new);
 
 	*dest = (switch_stepinfo_t *) new;
-	return SLURM_SUCCESS;
 }
 
 extern void switch_p_free_stepinfo(switch_stepinfo_t *switch_job)
