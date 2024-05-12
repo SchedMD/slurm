@@ -83,7 +83,8 @@ extern int switch_g_restore(bool recover);
  * STEP-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 
-/* fill a job's switch credential
+/*
+ * create a step's switch credential
  * OUT jobinfo  - storage for a switch job credential
  * IN  step_layout - the layout of the step with at least the nodes,
  *                   tasks_per_node and tids set
@@ -91,9 +92,9 @@ extern int switch_g_restore(bool recover);
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
  * NOTE: storage must be freed using switch_g_free_stepinfo
  */
-extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
-				  slurm_step_layout_t *step_layout,
-				  step_record_t *step_ptr);
+extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
+				   slurm_step_layout_t *step_layout,
+				   step_record_t *step_ptr);
 
 /*
  * duplicate a step's switch credential

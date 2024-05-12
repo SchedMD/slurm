@@ -3215,9 +3215,9 @@ static int _switch_setup(job_record_t *job_ptr, step_record_t *step_ptr)
 		return SLURM_SUCCESS;
 
 	errno = 0;
-	if (switch_g_build_jobinfo(&step_ptr->switch_job,
-				   step_ptr->step_layout,
-				   step_ptr) < 0) {
+	if (switch_g_build_stepinfo(&step_ptr->switch_job,
+				    step_ptr->step_layout,
+				    step_ptr) < 0) {
 		if (errno == ESLURM_INTERCONNECT_BUSY)
 			return errno;
 		return ESLURM_INTERCONNECT_FAILURE;

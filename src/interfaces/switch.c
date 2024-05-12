@@ -55,7 +55,7 @@ typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );
 	int          (*state_restore)     ( bool recover );
-	int          (*build_jobinfo)     ( switch_jobinfo_t **jobinfo,
+	int          (*build_stepinfo)    ( switch_jobinfo_t **jobinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
 	int          (*duplicate_stepinfo)( switch_jobinfo_t *source,
@@ -86,7 +86,7 @@ static const char *syms[] = {
 	"plugin_id",
 	"switch_p_save",
 	"switch_p_restore",
-	"switch_p_build_jobinfo",
+	"switch_p_build_stepinfo",
 	"switch_p_duplicate_stepinfo",
 	"switch_p_free_stepinfo",
 	"switch_p_pack_stepinfo",
@@ -244,9 +244,9 @@ extern int switch_g_restore(bool recover)
 	return (*(ops[switch_context_default].state_restore))(recover);
 }
 
-extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
-				  slurm_step_layout_t *step_layout,
-				  step_record_t *step_ptr)
+extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
+				   slurm_step_layout_t *step_layout,
+				   step_record_t *step_ptr)
 {
 	void *data = NULL;
 	uint32_t plugin_id = switch_context_default;
@@ -258,8 +258,8 @@ extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
 
 	*jobinfo = _create_dynamic_plugin_data(plugin_id);
 
-	return (*(ops[plugin_id].build_jobinfo))((switch_jobinfo_t **) &data,
-						 step_layout, step_ptr);
+	return (*(ops[plugin_id].build_stepinfo))((switch_jobinfo_t **) &data,
+						  step_layout, step_ptr);
 }
 
 extern int switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,

@@ -493,9 +493,9 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_build_jobinfo(switch_jobinfo_t **switch_job,
-				  slurm_step_layout_t *step_layout,
-				  step_record_t *step_ptr)
+extern int switch_p_build_stepinfo(switch_jobinfo_t **switch_job,
+				   slurm_step_layout_t *step_layout,
+				   step_record_t *step_ptr)
 {
 	slingshot_jobinfo_t *job = NULL;
 	job_record_t *job_ptr;
@@ -504,7 +504,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t **switch_job,
 	char *node_list;
 
 	if (!step_ptr) {
-		fatal("switch_p_build_jobinfo: step_ptr NULL not supported");
+		fatal("%s: step_ptr NULL not supported", __func__);
 	}
 	job_ptr = step_ptr->job_ptr;
 	xassert(job_ptr);

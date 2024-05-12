@@ -264,10 +264,10 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 		step_req->num_tasks,
 		0);
 
-	if (switch_g_build_jobinfo(&step_resp->switch_job,
-				   step_resp->step_layout,
-				   NULL) < 0)
-		fatal("switch_g_build_jobinfo: %m");
+	if (switch_g_build_stepinfo(&step_resp->switch_job,
+				    step_resp->step_layout,
+				    NULL) < 0)
+		fatal("switch_g_build_stepinfo: %m");
 
 	step_resp->job_step_id = step_id;
 
