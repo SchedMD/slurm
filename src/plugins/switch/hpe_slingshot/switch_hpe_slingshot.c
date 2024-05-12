@@ -583,7 +583,7 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
+extern void switch_p_free_stepinfo(switch_jobinfo_t *switch_job)
 {
 	slingshot_jobinfo_t *jobinfo = (slingshot_jobinfo_t *) switch_job;
 	xassert(jobinfo);
@@ -933,7 +933,7 @@ extern int switch_p_unpack_stepinfo(switch_jobinfo_t **switch_job,
 unpack_error:
 	error("error unpacking jobinfo struct");
 error:
-	switch_p_free_jobinfo(*switch_job);
+	switch_p_free_stepinfo(*switch_job);
 	*switch_job = NULL;
 	return SLURM_ERROR;
 }

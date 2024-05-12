@@ -80,7 +80,7 @@ extern int switch_g_save(void);
 extern int switch_g_restore(bool recover);
 
 /******************************************************\
- * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
+ * STEP-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 
 /* fill a job's switch credential
@@ -89,7 +89,7 @@ extern int switch_g_restore(bool recover);
  *                   tasks_per_node and tids set
  * IN  step_ptr    - step_record_t for this step
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
- * NOTE: storage must be freed using switch_g_free_jobinfo
+ * NOTE: storage must be freed using switch_g_free_stepinfo
  */
 extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
 				  slurm_step_layout_t *step_layout,
@@ -99,15 +99,16 @@ extern int switch_g_build_jobinfo(dynamic_plugin_data_t **jobinfo,
  * IN  source  - storage for a switch job credential
  * OUT dest    - pointer to NULL at beginning, will point to storage for
  *               duplicated switch job credential
- * NOTE: storage must be freed using switch_g_free_jobinfo
+ * NOTE: storage must be freed using switch_g_free_stepinfo
  */
 extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 				       dynamic_plugin_data_t **dest);
 
-/* free storage previously allocated for a switch job credential
+/*
+ * free storage previously allocated for a switch step credential
  * IN jobinfo  - the switch job credential to be freed
  */
-extern void switch_g_free_jobinfo  (dynamic_plugin_data_t *jobinfo);
+extern void switch_g_free_stepinfo(dynamic_plugin_data_t *jobinfo);
 
 /*
  * IN jobinfo  - the switch job credential to be saved
@@ -122,7 +123,7 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
  * IN  buffer  - buffer with switch credential read from current pointer loc
  * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
- * NOTE: returned value must be freed using switch_g_free_jobinfo
+ * NOTE: returned value must be freed using switch_g_free_stepinfo
  */
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 				    buf_t *buffer, uint16_t protocol_version);

@@ -4163,7 +4163,7 @@ no_aggregate:
 			switch_g_job_step_complete(
 				step_ptr->switch_job,
 				step_ptr->step_layout->node_list);
-			switch_g_free_jobinfo (step_ptr->switch_job);
+			switch_g_free_stepinfo(step_ptr->switch_job);
 			step_ptr->switch_job = NULL;
 		}
 	}
@@ -5275,7 +5275,7 @@ end_it:
 
 		slurm_cred_destroy(slurm_cred);
 		slurm_step_layout_destroy(step_layout);
-		switch_g_free_jobinfo(switch_job);
+		switch_g_free_stepinfo(switch_job);
 	}
 
 	xfree(err_msg);

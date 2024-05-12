@@ -88,7 +88,7 @@ extern void free_step_record(void *x)
 			switch_g_job_step_complete(
 				step_ptr->switch_job,
 				step_ptr->step_layout->node_list);
-		switch_g_free_jobinfo (step_ptr->switch_job);
+		switch_g_free_stepinfo(step_ptr->switch_job);
 	}
 	resv_port_step_free(step_ptr);
 
@@ -1185,7 +1185,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->step_layout  = step_layout;
 
 	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) && switch_tmp) {
-		switch_g_free_jobinfo(switch_tmp);
+		switch_g_free_stepinfo(switch_tmp);
 		switch_tmp = NULL;
 	} else
 		step_ptr->switch_job   = switch_tmp;
@@ -1266,7 +1266,7 @@ unpack_error:
 	FREE_NULL_BITMAP(core_bitmap_job);
 	xfree(core_job);
 	if (switch_tmp)
-		switch_g_free_jobinfo(switch_tmp);
+		switch_g_free_stepinfo(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
 	select_g_select_jobinfo_free(select_jobinfo);
 	xfree(tres_alloc_str);

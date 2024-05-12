@@ -2682,7 +2682,7 @@ static int _unpack_job_step_create_response_msg(
 		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_job, buffer,
 					     protocol_version)) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_jobinfo(tmp_ptr->switch_job);
+			switch_g_free_stepinfo(tmp_ptr->switch_job);
 			goto unpack_error;
 		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
@@ -2702,7 +2702,7 @@ static int _unpack_job_step_create_response_msg(
 		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_job, buffer,
 					     protocol_version)) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_jobinfo(tmp_ptr->switch_job);
+			switch_g_free_stepinfo(tmp_ptr->switch_job);
 			goto unpack_error;
 		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
@@ -7611,7 +7611,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_job);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -7770,7 +7770,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_job);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -7915,7 +7915,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_job);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();

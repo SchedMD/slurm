@@ -60,7 +60,7 @@ typedef struct slurm_switch_ops {
 					    step_record_t *step_ptr );
 	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
 					    switch_jobinfo_t **dest);
-	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
+	void         (*free_stepinfo)     ( switch_jobinfo_t *jobinfo );
 	void         (*pack_stepinfo)     ( switch_jobinfo_t *jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
@@ -88,7 +88,7 @@ static const char *syms[] = {
 	"switch_p_restore",
 	"switch_p_build_jobinfo",
 	"switch_p_duplicate_jobinfo",
-	"switch_p_free_jobinfo",
+	"switch_p_free_stepinfo",
 	"switch_p_pack_stepinfo",
 	"switch_p_unpack_stepinfo",
 	"switch_p_job_preinit",
@@ -280,7 +280,7 @@ extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 		source->data, (switch_jobinfo_t **)&dest_ptr->data);
 }
 
-extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
+extern void switch_g_free_stepinfo(dynamic_plugin_data_t *jobinfo)
 {
 	xassert(switch_context_cnt >= 0);
 
@@ -289,7 +289,7 @@ extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
 
 	if (jobinfo) {
 		if (jobinfo->data)
-			(*(ops[jobinfo->plugin_id].free_jobinfo))
+			(*(ops[jobinfo->plugin_id].free_stepinfo))
 				(jobinfo->data);
 		xfree(jobinfo);
 	}
@@ -375,7 +375,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 	 */
 	if ((jobinfo_ptr->plugin_id != switch_context_default) &&
 	    running_in_slurmctld()) {
-		switch_g_free_jobinfo(jobinfo_ptr);
+		switch_g_free_stepinfo(jobinfo_ptr);
 		*jobinfo = _create_dynamic_plugin_data(switch_context_default);
 	}
 
@@ -383,7 +383,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	switch_g_free_jobinfo(jobinfo_ptr);
+	switch_g_free_stepinfo(jobinfo_ptr);
 	*jobinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
