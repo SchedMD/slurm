@@ -137,7 +137,7 @@ extern bool create_slingshot_apinfo(const stepd_step_rec_t *step)
 {
 	int fd = -1;
 	pals_header_t hdr;
-	slingshot_jobinfo_t *jobinfo = step->switch_job->data;
+	slingshot_jobinfo_t *jobinfo = step->switch_step->data;
 	char *spool = NULL;
 	char *apinfo = NULL;
 

@@ -610,7 +610,7 @@ typedef struct job_step_create_response_msg {
 	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
-	dynamic_plugin_data_t *switch_job;	/* switch opaque data type */
+	dynamic_plugin_data_t *switch_step;	/* switch opaque data type */
 	uint16_t use_protocol_ver;   /* Lowest protocol version running on
 				      * the slurmd's in this step.
 				      */
@@ -710,7 +710,7 @@ typedef struct launch_tasks_request_msg {
 
 	uint16_t cred_version;	/* job credential protocol_version */
 	slurm_cred_t *cred;	/* job credential            */
-	dynamic_plugin_data_t *switch_job; /* switch credential for the job */
+	dynamic_plugin_data_t *switch_step; /* switch credential for the job */
 	List options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char **spank_job_env;

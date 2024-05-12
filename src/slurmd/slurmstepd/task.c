@@ -395,7 +395,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 
 	if (!step->batch && (step->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-		if (switch_g_job_attach(step->switch_job, &step->env,
+		if (switch_g_job_attach(step->switch_step, &step->env,
 					step->nodeid, (uint32_t) local_proc_id,
 					step->nnodes, step->ntasks,
 					task->gtid + task_offset) < 0) {

@@ -597,7 +597,7 @@ typedef struct {
 					 * in the job record */
 	char *submit_line;              /* The command issued with all it's
 					 * options in a string */
-	dynamic_plugin_data_t *switch_job; /* switch context, opaque */
+	dynamic_plugin_data_t *switch_step; /* switch context, opaque */
 	uint16_t threads_per_core;	/* step threads-per-core */
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */

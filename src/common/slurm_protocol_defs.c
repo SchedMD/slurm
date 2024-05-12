@@ -2161,8 +2161,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
-	if (msg->switch_job)
-		switch_g_free_stepinfo(msg->switch_job);
+	if (msg->switch_step)
+		switch_g_free_stepinfo(msg->switch_step);
 
 	FREE_NULL_LIST(msg->options);
 
@@ -4047,8 +4047,8 @@ extern void slurm_free_job_step_create_response_msg(
 		slurm_cred_destroy(msg->cred);
 		if (msg->select_jobinfo)
 			select_g_select_jobinfo_free(msg->select_jobinfo);
-		if (msg->switch_job)
-			switch_g_free_stepinfo(msg->switch_job);
+		if (msg->switch_step)
+			switch_g_free_stepinfo(msg->switch_step);
 
 		xfree(msg);
 	}

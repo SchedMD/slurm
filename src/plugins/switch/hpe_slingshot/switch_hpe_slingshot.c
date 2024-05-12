@@ -375,9 +375,9 @@ static void _copy_jobinfo(slingshot_jobinfo_t *old, slingshot_jobinfo_t *new)
  */
 static slingshot_jobinfo_t *_get_slingshot_jobinfo(step_record_t *step_ptr)
 {
-	if (!step_ptr || !step_ptr->switch_job || !step_ptr->switch_job->data)
+	if (!step_ptr || !step_ptr->switch_step || !step_ptr->switch_step->data)
 		return NULL;
-	return (slingshot_jobinfo_t *) step_ptr->switch_job->data;
+	return (slingshot_jobinfo_t *) step_ptr->switch_step->data;
 }
 
 /*
@@ -944,7 +944,7 @@ error:
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	xassert(step);
-	slingshot_jobinfo_t *jobinfo = step->switch_job->data;
+	slingshot_jobinfo_t *jobinfo = step->switch_step->data;
 	xassert(jobinfo);
 	int step_cpus = step->node_tasks * step->cpus_per_task;
 	if (!slingshot_create_services(jobinfo, step->uid, step_cpus,
@@ -976,7 +976,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 	remove_slingshot_apinfo(step);
 
 	slingshot_jobinfo_t *jobinfo;
-	jobinfo = (slingshot_jobinfo_t *)step->switch_job->data;
+	jobinfo = (slingshot_jobinfo_t *) step->switch_step->data;
 	xassert(jobinfo);
 	if (!slingshot_destroy_services(jobinfo, step->step_id.job_id))
 		return SLURM_ERROR;

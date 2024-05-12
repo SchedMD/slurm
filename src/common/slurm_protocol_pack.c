@@ -2637,7 +2637,7 @@ static void _pack_job_step_create_response_msg(
 				       protocol_version);
 		packstr(msg->stepmgr, buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
-		switch_g_pack_stepinfo(msg->switch_job, buffer,
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
 				       protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -2648,7 +2648,7 @@ static void _pack_job_step_create_response_msg(
 		pack_slurm_step_layout(msg->step_layout, buffer,
 				       protocol_version);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
-		switch_g_pack_stepinfo(msg->switch_job, buffer,
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
 				       protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	}
@@ -2679,10 +2679,10 @@ static int _unpack_job_step_create_response_msg(
 							protocol_version)))
 			goto unpack_error;
 
-		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_job, buffer,
+		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_step, buffer,
 					     protocol_version)) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(tmp_ptr->switch_job);
+			switch_g_free_stepinfo(tmp_ptr->switch_step);
 			goto unpack_error;
 		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
@@ -2699,10 +2699,10 @@ static int _unpack_job_step_create_response_msg(
 							protocol_version)))
 			goto unpack_error;
 
-		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_job, buffer,
+		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_step, buffer,
 					     protocol_version)) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(tmp_ptr->switch_job);
+			switch_g_free_stepinfo(tmp_ptr->switch_step);
 			goto unpack_error;
 		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
@@ -7237,7 +7237,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_stepinfo(msg->switch_job, buffer,
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
 				       protocol_version);
 		job_options_pack(msg->options, buffer);
 
@@ -7354,7 +7354,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_stepinfo(msg->switch_job, buffer,
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
 				       protocol_version);
 		job_options_pack(msg->options, buffer);
 
@@ -7458,7 +7458,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_stepinfo(msg->switch_job, buffer,
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
 				       protocol_version);
 		job_options_pack(msg->options, buffer);
 		packstr(msg->alias_list, buffer);
@@ -7608,10 +7608,10 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_stepinfo(&msg->switch_step, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_step);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -7767,10 +7767,10 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_stepinfo(&msg->switch_step, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_step);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -7912,10 +7912,10 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_stepinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_stepinfo(&msg->switch_step, buffer,
 					     protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(msg->switch_job);
+			switch_g_free_stepinfo(msg->switch_step);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();

@@ -83,12 +83,12 @@ extern void free_step_record(void *x)
  * the switch_g_job_step_complete() must be called upon completion
  * and not upon record purging. Presently both events occur simultaneously.
  */
-	if (step_ptr->switch_job) {
+	if (step_ptr->switch_step) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
-				step_ptr->switch_job,
+				step_ptr->switch_step,
 				step_ptr->step_layout->node_list);
-		switch_g_free_stepinfo(step_ptr->switch_job);
+		switch_g_free_stepinfo(step_ptr->switch_step);
 	}
 	resv_port_step_free(step_ptr);
 
@@ -878,9 +878,9 @@ extern int dump_job_step_state(void *x, void *arg)
 			       SLURM_PROTOCOL_VERSION);
 	step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
 
-	if (step_ptr->switch_job) {
+	if (step_ptr->switch_step) {
 		pack8(1, buffer);
-		switch_g_pack_stepinfo(step_ptr->switch_job, buffer,
+		switch_g_pack_stepinfo(step_ptr->switch_step, buffer,
 				       SLURM_PROTOCOL_VERSION);
 	} else
 		pack8(0, buffer);
@@ -1188,7 +1188,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		switch_g_free_stepinfo(switch_tmp);
 		switch_tmp = NULL;
 	} else
-		step_ptr->switch_job   = switch_tmp;
+		step_ptr->switch_step = switch_tmp;
 
 	xfree(step_ptr->tres_alloc_str);
 	step_ptr->tres_alloc_str     = tres_alloc_str;

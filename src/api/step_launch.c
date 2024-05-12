@@ -294,7 +294,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
-	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.switch_step = ctx->step_resp->switch_step;
 	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
@@ -494,7 +494,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
-	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.switch_step = ctx->step_resp->switch_step;
 	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
