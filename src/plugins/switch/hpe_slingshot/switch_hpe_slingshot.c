@@ -759,8 +759,8 @@ unpack_error:
 	return false;
 }
 
-extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
-				 uint16_t protocol_version)
+extern void switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
+				  uint16_t protocol_version)
 {
 	uint32_t pidx;
 	slingshot_jobinfo_t *jobinfo = (slingshot_jobinfo_t *)switch_job;
@@ -773,7 +773,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		    (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
 			debug("Nothing to pack");
 			pack32(SLINGSHOT_JOBINFO_NULL_VERSION, buffer);
-			return SLURM_SUCCESS;
+			return;
 		}
 
 		pack32(protocol_version, buffer);
@@ -804,7 +804,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		    (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
 			debug("Nothing to pack");
 			pack32(SLINGSHOT_JOBINFO_NULL_VERSION, buffer);
-			return SLURM_SUCCESS;
+			return;
 		}
 
 		pack32(protocol_version, buffer);
@@ -833,8 +833,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		/* invalid protocol specified */
 		xassert(false);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,

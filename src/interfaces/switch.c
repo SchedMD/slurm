@@ -63,7 +63,7 @@ typedef struct slurm_switch_ops {
 	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
 					    switch_jobinfo_t **dest);
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
-	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
+	void         (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	int          (*unpack_jobinfo)    ( switch_jobinfo_t **jobinfo,
@@ -318,8 +318,8 @@ extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
 	}
 }
 
-extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
-				 uint16_t protocol_version)
+extern void switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
+				  uint16_t protocol_version)
 {
 	void *data = NULL;
 	uint32_t plugin_id;
@@ -330,7 +330,7 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
 		/* Remove when 23.02 is no longer supported. */
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)
 			pack32(SWITCH_PLUGIN_NONE, buffer);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	if (jobinfo) {
@@ -344,10 +344,10 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
-		return SLURM_ERROR;
+		return;
 	}
 
-	return (*(ops[plugin_id].pack_jobinfo))(data, buffer, protocol_version);
+	(*(ops[plugin_id].pack_jobinfo))(data, buffer, protocol_version);
 }
 
 extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,

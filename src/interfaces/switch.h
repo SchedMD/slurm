@@ -123,10 +123,9 @@ extern void switch_g_free_jobinfo  (dynamic_plugin_data_t *jobinfo);
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
  * IN protocol_version - version of Slurm we are talking to.
- * RET         - slurm error code
  */
-extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
-				 uint16_t protocol_version);
+extern void switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
+				  uint16_t protocol_version);
 
 /* unpack a switch job credential from a buffer
  * OUT jobinfo - the switch job credential read
