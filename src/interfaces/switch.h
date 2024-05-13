@@ -142,6 +142,11 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);
 
 /*
+ * Runs before the job prolog.
+ */
+extern void switch_g_job_start(job_record_t *job_ptr);
+
+/*
  * End of job - free any slurmctld job-specific switch data
  */
 extern void switch_g_job_complete(job_record_t *job_ptr);

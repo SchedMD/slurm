@@ -1066,6 +1066,11 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 	return SLURM_SUCCESS;
 }
 
+extern void switch_p_job_start(job_record_t *job_ptr)
+{
+	return;
+}
+
 /*
  * Free any job VNIs, as well as any Slingshot hardware collectives
  * multicast addresses associated with the job

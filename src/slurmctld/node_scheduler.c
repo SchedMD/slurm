@@ -2956,6 +2956,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 */
 	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 
+	switch_g_job_start(job_ptr);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);
