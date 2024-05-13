@@ -18,6 +18,8 @@ MAINTAINERCLEANFILES = 					\
 	slurm/slurm_version.h				\
 	stamp-h.in
 
+CONFIG_CLEAN_FILES = ""
+
 # Cleanup contribs with distclean/mrproper
 distclean-contrib:
 	@cd contribs && \
