@@ -327,7 +327,7 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
-	void *data = NULL;
+	void **data = NULL;
 	uint32_t plugin_id = switch_context_default;
 
 	xassert(switch_context_cnt >= 0);
@@ -336,8 +336,9 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
 		return SLURM_SUCCESS;
 
 	*stepinfo = _create_dynamic_plugin_data(plugin_id);
+	data = &(*stepinfo)->data;
 
-	return (*(ops[plugin_id].build_stepinfo))((switch_stepinfo_t **) &data,
+	return (*(ops[plugin_id].build_stepinfo))((switch_stepinfo_t **) data,
 						  step_layout, step_ptr);
 }
 
