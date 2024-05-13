@@ -15,8 +15,12 @@
 <li><a href="#podman-scrun">Integration with Podman</a></li>
 <li><a href="#bundle">OCI Container bundle</a></li>
 <li><a href="#ex-ompi5-pmix4">Example OpenMPI v5 + PMIx v4 container</a></li>
-<li><a href="#plugin">Container support via Plugin</a></li>
-<li><a href="#types">Container Types</a></li>
+<li><a href="#plugin">Container support via Plugin</a>
+<ul>
+<li><a href="#shifter">Shifter</a></li>
+<li><a href="#enroot1">ENROOT and Pyxis</a></li>
+<li><a href="#sarus">Sarus</a></li>
+</ul></li>
 </ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
@@ -754,116 +758,18 @@ WORKDIR /usr/local/src/openmpi-5.0.0rc9/examples
 RUN make && cp -v hello_c ring_c connectivity_c spc_example /usr/local/bin
 </pre>
 
-<h2 id="plugin">Container support via Plugin
-<a class="slurm_link" href="#plugin"></a>
-</h2>
+<h2 id="plugins">SPANK plugins<a class="slurm_link" href="#plugins"></a></h2>
 
-Slurm also allows container developers to create <a href="plugins.html">SPANK
-Plugins</a> that can be called at various points of job execution to
-support containers. Slurm is generally agnostic to SPANK based containers and
-can be made to start most, if not all, types. Any site using a plugin to start
-containers should not create or configure the "oci.conf" configuration file to
-deactivate the OCI container functionality.
-</p>
+<p>Slurm allows container developers to create <a href="plugins.html">SPANK
+Plugins</a> that can be called at various points of job execution to support
+containers. Any site using one of these plugins to start containers <b>should
+not</b> have an "oci.conf" configuration file. The "oci.conf" file activates the
+builtin container functionality which may conflict with the SPANK based plugin
+functionality.</p>
 
-<p>Some container developers have chosen a command line interface only which
-requires users to explicitly execute the container solution.</p>
-
-<p>Links to several third party container solutions are provided below:
-<ul>
-<li><a href="#charliecloud">Charliecloud</a></li>
-<li><a href="#docker">Docker</a></li>
-<li><a href="#udocker">UDOCKER</a></li>
-<li><a href="#docker-rootless">Rootless Docker</a></li>
-<li><a href="#k8s">Kubernetes Pods (k8s)</a></li>
-<li><a href="#shifter">Shifter</a></li>
-<li><a href="#singularity">Singularity</a></li>
-<li><a href="#enroot">ENROOT</a></li>
-<li><a href="#podman">Podman</a></li>
-<li><a href="#sarus">Sarus</a></li>
-</ul>
-
-Please note this list is not exhaustive as new containers types are being
-created all the time.
-</p>
-
-<hr size=4 width="100%">
-<h2 id="types">Container Types<a class="slurm_link" href="#types"></a></h2>
-<h3 id="charliecloud">Charliecloud
-<a class="slurm_link" href="#charliecloud"></a>
-</h3>
-
-<p><a href="https://github.com/hpc/charliecloud">Charliecloud</a> is user
-namespace container system sponsored by
-<a href="https://lanl.gov/">LANL</a> to provide HPC containers.
-Charliecloud supports the following:
-
-<ul>
-	<li>
-		<a href="https://hpc.github.io/charliecloud/tutorial.html?highlight=slurm">
-			Directly called by users</a>
-		via user namespace support.
-	</li>
-	<li>Direct Slurm support currently
-		<a href="https://github.com/hpc/charliecloud/tree/slurm-plugin">
-			in development</a>.
-	</li>
-	<li>Limited OCI Image support (via wrapper)</li>
-</ul>
-</p>
-
-<h3 id="docker">Docker (running as root)
-<a class="slurm_link" href="#docker"></a>
-</h3>
-
-<p><a href="https://www.docker.com/">Docker</a> currently has multiple design
-points that make it unfriendly to HPC systems.
-The issue that usually stops most sites from using Docker is the
-requirement of "only trusted users should be allowed to control your Docker
-daemon"
-<a href="https://docs.docker.com/engine/security/security/">
-[Docker Security]</a> which is not acceptable to most HPC systems.</p>
-
-<p>Sites with trusted users can add them to the docker Unix group and allow them
-control Docker directly from inside of jobs. There is currently no direct
-support for starting or stopping docker containers in Slurm.</p>
-
-<p>Sites are recommended to extract the container image from docker (procedure
-above) and then run the containers using Slurm.</p>
-
-<h3 id="udocker">UDOCKER<a class="slurm_link" href="#udocker"></a></h3>
-
-<p><a href="https://github.com/indigo-dc/udocker">UDOCKER</a> is Docker feature
-subset clone that is designed to allow execution of
-docker commands without increased user privileges.</p>
-
-<h3 id="docker-rootless">Rootless Docker
-<a class="slurm_link" href="#docker-rootless"></a>
-</h3>
-
-<p><a href="https://docs.docker.com/engine/security/rootless/">
-Rootless Docker</a> (>=v20.10) requires no extra permissions for users and
-currently (as of January 2021) has no known security issues with users gaining
-privileges. Each user will need to run an instance of the dockerd server on
-each node of the job in order to use docker. There are currently no helper
-scripts or plugins for Slurm to automate the build up or tear down the docker
-daemons.</p>
-
-<p>Sites are recommended to extract the container image from docker (procedure
-above) and then run the containers using Slurm.</p>
-
-<h3 id="k8s">Kubernetes Pods (k8s)<a class="slurm_link" href="#k8s"></a></h3>
-
-<p><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">
-Kubernetes</a> is a container orchestration system that uses PODs, which are
-generally a logical grouping of containers for singular purpose. </p>
-
-<p>There is currently no direct support for Kubernetes Pods in Slurm.  Sites
-are encouraged to extract the OCI image from Kubernetes and then run the
-containers using Slurm. Users can create jobs that start together using
-the "--dependency=" argument in <i>sbatch</i> to mirror the functionality of
-Pods. Users can also use a larger allocation and then start each pod as a
-parallel step using <i>srun</i>.</p>
+<p>The following projects are third party container solutions that have been
+designed to work with Slurm, but they have not been tested or validated by
+SchedMD.</p>
 
 <h3 id="shifter">Shifter<a class="slurm_link" href="#shifter"></a></h3>
 
@@ -889,23 +795,7 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
-<h3 id="singularity">Singularity
-<a class="slurm_link" href="#singularity"></a>
-</h3>
-
-<p><a href="https://www.sylabs.io/singularity/">Singularity</a> is hybrid
-container system that supports:
-<ul>
-	<li><a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
-			User namespace containers</a> via sandbox mode that
-		require no additional permissions.</li>
-	<li>Users directly calling singularity via setuid executable outside of
-		Slurm. User namespace mode is highly suggested over setuid mode
-		as jobs will not able to escape Slurm's cgroup control.</li>
-</ul>
-</p>
-
-<h3 id="enroot">ENROOT and Pyxis<a class="slurm_link" href="#enroot"></a></h3>
+<h3 id="enroot1">ENROOT and Pyxis<a class="slurm_link" href="#enroot1"></a></h3>
 
 <p><a href="https://github.com/NVIDIA/enroot">Enroot</a> is a user namespace
 container system sponsored by <a href="https://www.nvidia.com">NVIDIA</a>
@@ -916,22 +806,6 @@ that supports:
 	</li>
 	<li>Native support for Nvidia GPUs</li>
 	<li>Faster Docker image imports</li>
-</ul>
-</p>
-
-<h3 id="podman">Podman<a class="slurm_link" href="#podman"></a></h3>
-
-<p><a href="https://podman.io/">Podman</a> is a user namespace container system
-sponsored by
-<a href="https://developers.redhat.com/blog/2018/08/29/intro-to-podman/">
-Redhat/IBM</a> that supports:
-<ul>
-	<li>Drop in replacement of Docker.</li>
-	<li>Called directly by users. (Currently lacks direct Slurm support).</li>
-	<li>Rootless image building via
-		<a href="https://buildah.io/">buildah</a>
-	</li>
-	<li>Native OCI Image support</li>
 </ul>
 </p>
 
@@ -956,6 +830,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 30 April 2024</p>
+<p style="text-align:center;">Last modified 17 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
