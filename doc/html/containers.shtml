@@ -572,6 +572,10 @@ host networking</a></li>
 Podman</a><br>Podman must be fully operational and able to run containers
 before continuing.</li>
 <li>
+<a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
+Configure rootless Podman</a><br>Podman must be in rootless mode to be able
+to interact with Slurm via scrun.</li>
+<li>
 Configure Podman to call scrun instead of the <a
 href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
 <ul>
