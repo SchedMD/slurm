@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Avoid ignoring numerical only endpoints during startup with
     older libjson-c due to type parsing mismatching.
  -- Reject non-stepmgr job allocations requesting --resv-ports from the ctld.
+ -- slurmrestd - Add fields '.job.resv_ports' '.jobs[].resv_ports' to
+    'POST /slurm/v0.0.41/job/submit' and 'POST /slurm/v0.0.41/job/allocate'.
 
 * Changes in Slurm 24.05.0rc1
 =============================
