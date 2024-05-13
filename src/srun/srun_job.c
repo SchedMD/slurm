@@ -484,6 +484,7 @@ extern srun_job_t *job_step_create_allocation(
 	 */
 	job = _job_create_structure(ai, opt_local);
 error:
+	xfree(ai->nodelist);
    	xfree(ai);
 	return (job);
 

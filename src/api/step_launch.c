@@ -403,6 +403,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 fail1:
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
+	xfree(launch.stepmgr);
 	env_array_free(env);
 	FREE_NULL_LIST(launch.options);
 	return rc;
