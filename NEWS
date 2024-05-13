@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- Fix regresssion in rc1 causing power_save thread to spin continuously.
  -- Improve ctld_relay shutdown sequence.
+ -- Fixed 'make distclean' behavior for contribs/perlapi.
 
 * Changes in Slurm 24.05.0rc1
 =============================
