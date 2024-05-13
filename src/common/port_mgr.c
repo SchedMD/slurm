@@ -424,6 +424,13 @@ extern int resv_port_job_alloc(job_record_t *job_ptr)
 
 extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
 {
+	if (job_ptr->resv_port_cnt &&
+	    !(job_ptr->bit_flags & STEPMGR_ENABLED) &&
+	    !xstrstr(slurm_conf.slurmctld_params, "enable_stepmgr")) {
+		error("%pJ requested a reserve port count for the allocation but slurmstepd step management isn't be enabled.",
+		      job_ptr);
+		return ESLURM_PORTS_INVALID;
+	}
 
 	if (job_ptr->resv_port_cnt > port_resv_cnt) {
 		info("%pJ needs %u reserved ports, but only %d exist",
