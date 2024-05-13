@@ -42,7 +42,11 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/gres.h"
 #include "src/interfaces/switch.h"
+
+#include "src/plugins/switch/nvidia_imex/imex_device.h"
 
 #if defined(__APPLE__)
 extern list_t *job_list __attribute__((weak_import));
@@ -117,6 +121,10 @@ extern int init(void)
 {
 	if (running_in_slurmctld())
 		_setup_controller();
+	else if (running_in_slurmd())
+		return slurmd_init();
+	else if (running_in_slurmstepd())
+		return stepd_init();
 
 	return SLURM_SUCCESS;
 }
@@ -246,6 +254,13 @@ extern int switch_p_unpack_stepinfo(switch_info_t **switch_step, buf_t *buffer,
 
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
+	if (step->switch_step && step->switch_step->data) {
+		switch_info_t *switch_info = step->switch_step->data;
+
+		if (switch_info->channel != NO_VAL)
+			return setup_imex_channel(switch_info->channel);
+	}
+
 	return SLURM_SUCCESS;
 }
 

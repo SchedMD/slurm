@@ -36,4 +36,11 @@
 #ifndef _IMEX_DEVICE_H
 #define _IMEX_DEVICE_H
 
+#include <stdint.h>
+
+extern int slurmd_init(void);
+extern int stepd_init(void);
+
+extern int setup_imex_channel(uint32_t channel);
+
 #endif
