@@ -325,7 +325,7 @@ extern int load_all_node_state ( bool state_only )
 	int error_code = SLURM_SUCCESS, node_cnt = 0;
 
 	node_record_t *node_ptr;
-	time_t time_stamp, now = time(NULL);
+	time_t time_stamp;
 	buf_t *buffer;
 	char *ver_str = NULL;
 	hostset_t *hs = NULL;
@@ -766,8 +766,18 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->protocol_version =
 					SLURM_MIN_PROTOCOL_VERSION;
 
-			if (!IS_NODE_POWERED_DOWN(node_ptr))
-				node_ptr->last_busy = now;
+			if (!IS_NODE_POWERED_DOWN(node_ptr)) {
+				/*
+				 * Once 23.11 isn't supported anymore, always
+				 * use the state saved last_busy time.
+				 */
+				if (protocol_version >=
+				    SLURM_24_05_PROTOCOL_VERSION)
+					node_ptr->last_busy =
+						node_state_rec->last_busy;
+				else
+					node_ptr->last_busy = time(NULL);
+			}
 		}
 
 		purge_node_rec(node_state_rec);

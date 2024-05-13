@@ -1612,6 +1612,7 @@ extern void node_record_pack(void *in,
 		pack_time(object->resume_after, buffer);
 		pack_time(object->boot_req_time, buffer);
 		pack_time(object->power_save_req_time, buffer);
+		pack_time(object->last_busy, buffer);
 		pack_time(object->last_response, buffer);
 		pack16(object->port, buffer);
 		pack16(object->protocol_version, buffer);
@@ -1662,6 +1663,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->resume_after, buffer);
 		safe_unpack_time(&object->boot_req_time, buffer);
 		safe_unpack_time(&object->power_save_req_time, buffer);
+		safe_unpack_time(&object->last_busy, buffer);
 		safe_unpack_time(&object->last_response, buffer);
 		safe_unpack16(&object->port, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
