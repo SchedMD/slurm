@@ -889,7 +889,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;
 	req_msg.data     = &req;
 
-	if ((stepmgr_nodename = getenv("SLURM_STEPMGR"))) {
+	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
 		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
@@ -909,6 +909,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
 					    req_msg.flags);
 		}
+		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
 			return SLURM_ERROR;
