@@ -905,7 +905,7 @@ container system that supports:
 </ul>
 </p>
 
-<h3 id="enroot">ENROOT<a class="slurm_link" href="#enroot"></a></h3>
+<h3 id="enroot">ENROOT and Pyxis<a class="slurm_link" href="#enroot"></a></h3>
 
 <p><a href="https://github.com/NVIDIA/enroot">Enroot</a> is a user namespace
 container system sponsored by <a href="https://www.nvidia.com">NVIDIA</a>
