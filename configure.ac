@@ -509,6 +509,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/site_factor/example/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/hpe_slingshot/Makefile
+		 src/plugins/switch/nvidia_imex/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
