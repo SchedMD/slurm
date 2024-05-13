@@ -38,8 +38,17 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/bitstring.h"
 #include "src/common/list.h"
+#include "src/common/pack.h"
+#include "src/common/run_in_daemon.h"
 #include "src/interfaces/switch.h"
+
+#if defined(__APPLE__)
+extern list_t *job_list __attribute__((weak_import));
+#else
+list_t *job_list;
+#endif
 
  /*
  * These variables are required by the generic plugin interface.  If they
@@ -70,10 +79,45 @@ const char plugin_type[] = "switch/nvidia_imex";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = SWITCH_PLUGIN_NVIDIA_IMEX;
 
-typedef struct switch_stepinfo switch_info_t;
+#define SWITCH_INFO_MAGIC 0xFF00FF00
+
+typedef struct {
+	uint32_t magic;
+	uint32_t channel;
+} switch_info_t;
+
+static uint32_t channel_count = 2048;
+static bitstr_t *imex_channels = NULL;
+
+static switch_info_t *_create_info(uint32_t channel)
+{
+	switch_info_t *new = xmalloc(sizeof(*new));
+	new->magic = SWITCH_INFO_MAGIC;
+	new->channel = channel;
+	return new;
+}
+
+static void _setup_controller(void)
+{
+	char *tmp_str = NULL;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.switch_param,
+					"imex_channel_count="))) {
+		channel_count = atoi(tmp_str);
+		xfree(tmp_str);
+	}
+
+	log_flag(SWITCH, "managing %u channels", channel_count);
+
+	imex_channels = bit_alloc(channel_count);
+	bit_set(imex_channels, 0);
+}
 
 extern int init(void)
 {
+	if (running_in_slurmctld())
+		_setup_controller();
+
 	return SLURM_SUCCESS;
 }
 
@@ -84,42 +128,108 @@ extern int fini(void)
 
 extern int switch_p_save(void)
 {
+	/*
+	 * Skip managing our own state file, just recover the allocations
+	 * data from the job_list after restart.
+	 */
 	return SLURM_SUCCESS;
+}
+
+static int _mark_used(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	switch_info_t *switch_info = job_ptr->switch_jobinfo;
+
+	if (!switch_info)
+		return 1;
+
+	if (switch_info->channel < channel_count) {
+		debug("marking channel %u used by %pJ",
+		      switch_info->channel, job_ptr);
+		bit_set(imex_channels, switch_info->channel);
+	} else {
+		error("%s: channel %u outside of tracked range, ignoring",
+		      plugin_type, switch_info->channel);
+	}
+
+	return 1;
 }
 
 extern int switch_p_restore(bool recover)
 {
+	/*
+	 * FIXME: this is run too soon at slurmctld startup to be used here.
+	 * See switch_p_job_start() for the current workaround.
+	 */
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	return;
+	log_flag(SWITCH, "channel %u",
+		 (switch_info ? switch_info->channel : NO_VAL));
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (!switch_info) {
+			pack32(NO_VAL, buffer);
+			return;
+		}
+
+		xassert(switch_info->magic == SWITCH_INFO_MAGIC);
+		pack32(switch_info->channel, buffer);
+	}
 }
 
 extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
 				   uint16_t protocol_version)
 {
+	uint32_t channel = NO_VAL;
+
+	*switch_info = NULL;
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpack32(&channel, buffer);
+	}
+
+	if (channel != NO_VAL)
+		*switch_info = _create_info(channel);
+
+	log_flag(SWITCH, "channel %u", channel);
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: unpack error", __func__);
+	return SLURM_ERROR;
 }
 
 extern int switch_p_build_stepinfo(switch_info_t **switch_step,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
+	if (step_ptr->job_ptr && step_ptr->job_ptr->switch_jobinfo) {
+		switch_info_t *jobinfo = step_ptr->job_ptr->switch_jobinfo;
+		*switch_step = _create_info(jobinfo->channel);
+		log_flag(SWITCH, "using channel %u for %pS",
+			 jobinfo->channel, step_ptr);
+	} else {
+		log_flag(SWITCH, "no channel for %pS", step_ptr);
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_duplicate_stepinfo(switch_info_t *orig,
 					switch_info_t **dest)
 {
-	return;
+	if (orig)
+		*dest = _create_info(orig->channel);
 }
 
 extern void switch_p_free_stepinfo(switch_info_t *switch_step)
 {
-	return;
+	xfree(switch_step);
 }
 
 extern void switch_p_pack_stepinfo(switch_info_t *switch_step, buf_t *buffer,
@@ -158,10 +268,46 @@ extern int switch_p_job_step_complete(switch_info_t *stepinfo, char *nodelist)
 
 extern void switch_p_job_start(job_record_t *job_ptr)
 {
-	return;
+	static bool first_alloc = true;
+	int channel = -1;
+
+	/*
+	 * FIXME: this is hacked in here as switch_p_restore() is called
+	 * before the job_list has been repopulated. Instead, before we
+	 * allocate any new channels, scan the job_list to work out which
+	 * are already in use.
+	 */
+	if (first_alloc) {
+		list_for_each(job_list, _mark_used, NULL);
+		first_alloc = false;
+	}
+
+	channel = bit_ffc(imex_channels);
+
+	if (channel > 0) {
+		debug("allocating channel %d to %pJ", channel, job_ptr);
+		bit_set(imex_channels, channel);
+		job_ptr->switch_jobinfo = _create_info(channel);
+	} else {
+		error("%s: %s: no channel available",
+		      plugin_type, __func__);
+	}
 }
 
 extern void switch_p_job_complete(job_record_t *job_ptr)
 {
-	return;
+	switch_info_t *switch_jobinfo = job_ptr->switch_jobinfo;
+
+	if (!switch_jobinfo)
+		return;
+
+	if (switch_jobinfo->channel < channel_count) {
+		debug("marking channel %u released by %pJ",
+		      switch_jobinfo->channel, job_ptr);
+		bit_clear(imex_channels, switch_jobinfo->channel);
+		xfree(job_ptr->switch_jobinfo);
+	} else {
+		error("%s: %s: channel %u outside of tracked range, ignoring release",
+		      plugin_type, __func__, switch_jobinfo->channel);
+	}
 }
