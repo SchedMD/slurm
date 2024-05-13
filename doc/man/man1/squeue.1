@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "April 2024" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "June 2024" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -387,7 +387,7 @@ See the \fBJOB REASON CODES\fR section below for more information.
 
 .TP
 \fB%R\fR
-For pending jobs: the reason a job is waiting for execution
+For pending jobs: the reason a job has not been started by the scheduler
 is printed within parenthesis.
 For terminated jobs with failure: an explanation as to why the
 job failed is printed within parenthesis.
@@ -1518,13 +1518,13 @@ ignored; however, filtering arguments are still used.
 .IP
 
 .SH "JOB REASON CODES"
-These codes identify the reason that a job is waiting for execution.
-A job may be waiting for more than one reason, in which case only
-one of those reasons is displayed.
+These codes identify the reason that a job has not been started by the scheduler.
+There may be multiple reasons why a job cannot start yet, in which case only the
+reason that was encountered by the attempted scheduling method will be displayed.
 
 The Reasons listed below are some of the more common ones you might see.
 For a full list of Reason codes see our Resource Limits page:
-<https://slurm.schedmd.com/resource_limits.html>
+<https://slurm.schedmd.com/resource_limits.html#reasons>
 
 .TP 22
 \fBAssocGrp*Limit\fR

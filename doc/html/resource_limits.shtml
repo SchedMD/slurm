@@ -615,9 +615,11 @@ GPU resource, then those weights will not be applied to the generic GPUs.</p>
 <a class="slurm_link" href="#reasons"></a>
 </h2>
 
-<p>These reason codes can be used to identify why a job is waiting for
-execution. A job may be waiting for more than one reason, in which case
-only one of those reasons is displayed.</p>
+<p>These reason codes can be used to identify why a job has not been started by
+the scheduler. There may be multiple reasons why a job cannot start yet, in
+which case only the reason that was encountered by the attempted scheduling
+method will be displayed. Refer to the <a href="sched_config.html">
+Scheduling Configuration Guide</a> for more details.</p>
 
 <p><b>AccountingPolicy</b> &mdash; Fallback reason when others not matched.</p>
 
@@ -1275,6 +1277,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 13 March 2024</p>
+<p style="text-align: center;">Last modified 13 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
