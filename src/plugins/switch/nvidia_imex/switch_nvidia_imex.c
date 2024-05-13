@@ -125,13 +125,13 @@ extern void switch_p_free_stepinfo(switch_info_t *switch_step)
 extern void switch_p_pack_stepinfo(switch_info_t *switch_step, buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	return;
+	switch_p_pack_jobinfo(switch_step, buffer, protocol_version);
 }
 
 extern int switch_p_unpack_stepinfo(switch_info_t **switch_step, buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	return SLURM_SUCCESS;
+	return switch_p_unpack_jobinfo(switch_step, buffer, protocol_version);
 }
 
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
@@ -149,11 +149,6 @@ extern int switch_p_job_attach(switch_info_t *stepinfo, char ***env,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank)
 {
 	return SLURM_SUCCESS;
-}
-
-extern list_t *switch_p_job_devices(stepd_step_rec_t *step)
-{
-	return NULL;
 }
 
 extern int switch_p_job_step_complete(switch_info_t *stepinfo, char *nodelist)
