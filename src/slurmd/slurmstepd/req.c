@@ -833,8 +833,6 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	list_append(resp_list, job_info_resp_msg);
 
 	slurm_mutex_unlock(&stepmgr_mutex);
-	if (rc)
-		goto resp;
 
 	response_init(&response_msg, &msg, RESPONSE_HET_JOB_ALLOCATION,
 		      resp_list);
