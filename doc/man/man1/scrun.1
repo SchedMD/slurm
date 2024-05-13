@@ -1,4 +1,4 @@
-.TH scrun "1" "Slurm Commands" "July 2024" "Slurm Commands"
+.TH scrun "1" "Slurm Commands" "August 2024" "Slurm Commands"
 
 .SH "NAME"
 \fBscrun\fR \- an OCI runtime proxy for Slurm.
@@ -1099,6 +1099,10 @@ functions that may cause the container run to under \fBcrun\fR(1) or
 \fBrunc\fR(1).
 The script uses \fBrsync\fR(1) to move the container to a shared filesystem
 under the \fIscratch_path\fR variable.
+
+\fBNOTE\fR: Support for JSON in liblua must generally be installed before Slurm
+is compiled. scrun.lua's syntax and ability to load JSON support should be
+tested by directly calling the script using \fBlua\fR(1) outside of Slurm.
 
 .nf
 local json = require 'json'
