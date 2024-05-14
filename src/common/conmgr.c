@@ -717,6 +717,13 @@ extern void free_conmgr(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
+	if (!mgr.workq) {
+		log_flag(NET, "%s: Ignoring duplicate shutdown request",
+			 __func__);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
 	mgr.shutdown = true;
 	mgr.quiesced = false;
 
