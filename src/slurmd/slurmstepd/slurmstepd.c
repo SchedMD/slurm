@@ -426,8 +426,10 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	acct_gather_conf_destroy();
 	acct_storage_g_fini();
 
-	xfree(job_step_ptr->resv_ports);
-	reserve_port_stepmgr_init(job_step_ptr);
+	if (job_step_ptr) {
+		xfree(job_step_ptr->resv_ports);
+		reserve_port_stepmgr_init(job_step_ptr);
+	}
 
 	_step_cleanup(step, msg, rc);
 
