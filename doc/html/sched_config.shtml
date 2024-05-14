@@ -22,7 +22,8 @@ pending job.</P>
 scheduling plugin, which considers job run time and resources required to
 determine if lower-priority jobs would actually take resources needed by
 higher-priority jobs. This allows the backfill scheduler to assign more specific
-reasons to pending jobs, or to start jobs that were previously pending.</P>
+<a href="job_reason_codes.html">reasons</a> to pending jobs, or to start jobs
+that were previously pending.</P>
 
 <h2 id="config">Scheduling Configuration
 <a class="slurm_link" href="#config"></a>
