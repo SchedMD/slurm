@@ -1335,6 +1335,8 @@ static void _try_to_reconfig(void)
 	_reconfig = 0;
 	conmgr_quiesce(true);
 
+	save_cred_state();
+
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
 		rlim.rlim_cur = 4096;
