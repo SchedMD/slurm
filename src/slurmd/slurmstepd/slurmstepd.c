@@ -424,6 +424,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
+	acct_storage_g_fini();
 
 	xfree(job_step_ptr->resv_ports);
 	reserve_port_stepmgr_init(job_step_ptr);
