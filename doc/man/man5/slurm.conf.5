@@ -1268,6 +1268,9 @@ alphabetical order (z-a -> Z-A -> 9-0). The Epilog script(s) may be used
 to purge files, disable user login, etc.
 By default there is no epilog.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+\fB\fBNOTE\fR: It is possible to configure multiple epilog scripts by including
+this option on multiple lines.\fR
 .IP
 
 .TP
@@ -1294,6 +1297,9 @@ the discretion of the system administrator.
 Information about the job being initiated, its allocated nodes, etc. are
 passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+\fB\fBNOTE\fR: It is possible to configure multiple epilog scripts by including
+this option on multiple lines.\fR
 .IP
 
 .TP
@@ -3158,6 +3164,9 @@ node being set to a DRAIN state and the job being requeued. The job will be
 placed in a held state, unless \fBnohold_on_prolog_fail\fR is configured in
 \fBSchedulerParameters\fR.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+\fB\fBNOTE\fR: It is possible to configure multiple prolog scripts by including
+this option on multiple lines.\fR
 .IP
 
 .TP
@@ -3270,6 +3279,9 @@ exit code.
 A non\-zero exit code will result in the job being requeued (where possible)
 or killed. Note that only batch jobs can be requeued.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+\fB\fBNOTE\fR: It is possible to configure multiple prolog scripts by including
+this option on multiple lines.\fR
 .IP
 
 .TP
