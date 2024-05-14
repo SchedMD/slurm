@@ -176,6 +176,7 @@ typedef struct {
 	list_t *pending_array_task_list; /* List of array_task_filter_t */
 	uid_t auth_uid;
 	bool filter_specific_job_ids;
+	job_record_t *het_leader;
 	kill_jobs_msg_t *kill_msg;
 	time_t now;
 	list_t *other_job_list; /* list of job_record_t */
@@ -6404,11 +6405,26 @@ static bool _signal_job_matches_filter(job_record_t *job_ptr,
 	}
 
 	if (job_ptr->het_job_offset) {
-		if (!signal_args->filter_specific_job_ids) {
+		if (signal_args->het_leader &&
+		    signal_args->het_leader->job_id &&
+		    (job_ptr->het_job_id ==
+		     signal_args->het_leader->het_job_id)) {
 			/*
-			 * Specific job ids were not requested, so we will
-			 * always signal the whole het job by signalling
-			 * component 0.
+			 * Filter out HetJob non-leader component as its leader
+			 * should have already been evaluated and hasn't been
+			 * filtered out.
+			 *
+			 * The leader RPC signal handler will affect all the
+			 * components, so this avoids extra unneeded RPCs, races
+			 * and issues interpreting multiple error codes.
+			 *
+			 * This can be done assuming the walking of the loaded
+			 * jobs is guaranteed to evaluate in an order such that
+			 * HetJob leaders are evaluated before their matching
+			 * non-leaders and the whole HetJob is evaluated
+			 * contiguously. The slurmctld job_list is ordered by
+			 * job creation time (always leader first) and HetJobs
+			 * are created in a row.
 			 */
 			return false;
 		}
@@ -6435,6 +6451,12 @@ fini:
 	if (!matches_filter)
 		_handle_signal_filter_mismatch(job_ptr, signal_args,
 					       error_code, filter_err_msg);
+	else {
+		/* Track most recent het leader. */
+		if (job_ptr->het_job_id && !job_ptr->het_job_offset)
+			signal_args->het_leader = job_ptr;
+	}
+
 	xfree(filter_err_msg);
 
 	return matches_filter;
@@ -7433,6 +7455,11 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
 	else
 		list_for_each_ro(job_list, _foreach_filter_job_list,
 				 &signal_args);
+	/*
+	 * het_leader is only used during filtering; explicitly NULL it out
+	 * so it cannot accidentally be used later.
+	 */
+	signal_args.het_leader = NULL;
 	assoc_mgr_unlock(&assoc_lock);
 
 	list_for_each(signal_args.array_leader_list, _foreach_signal_job,
