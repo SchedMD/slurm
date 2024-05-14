@@ -1225,6 +1225,7 @@ static void *_power_save_thread(void *arg)
 		slurm_mutex_lock(&power_mutex);
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 1;
+		slurm_cond_timedwait(&power_cond, &power_mutex, &ts);
 		slurm_mutex_unlock(&power_mutex);
 
 		if (slurmctld_config.shutdown_time)
