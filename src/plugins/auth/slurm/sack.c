@@ -270,6 +270,7 @@ extern void init_sack_conmgr(void)
 		_prepare_run_dir("slurm");
 	}
 
+	workq_init(0);
 	conmgr_init(0, 0, callbacks);
 
 	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
@@ -311,4 +312,5 @@ extern void fini_sack_conmgr(void)
 	 */
 
 	conmgr_fini();
+	workq_fini();
 }

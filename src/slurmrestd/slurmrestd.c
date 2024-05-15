@@ -646,6 +646,7 @@ int main(int argc, char **argv)
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
+	workq_init((run_mode.listen ? thread_count : WORKQ_THREAD_COUNT_MIN));
 	conmgr_init((run_mode.listen ? thread_count : 1), max_connections,
 		    callbacks);
 
@@ -800,6 +801,7 @@ int main(int argc, char **argv)
 	tls_g_fini();
 	cred_g_fini();
 	auth_g_fini();
+	workq_fini();
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */

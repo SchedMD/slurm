@@ -525,8 +525,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
-	workq_init(thread_count);
-
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown_requested = false;
@@ -567,7 +565,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
-	workq_init(thread_count);
 	mgr.deferred_funcs = list_create(NULL);
 
 	if (pipe(mgr.event_fd))
