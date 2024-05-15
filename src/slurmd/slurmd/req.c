@@ -204,8 +204,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg);
 static void _rpc_list_pids(slurm_msg_t *msg);
 static void _rpc_daemon_status(slurm_msg_t *msg);
 static int _run_epilog(job_env_t *job_env, slurm_cred_t *cred);
-static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
-			bool remove_running);
+static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 static void _rpc_forward_data(slurm_msg_t *msg);
 static void _rpc_network_callerid(slurm_msg_t *msg);
 
@@ -1756,7 +1755,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.work_dir = req->cwd;
 		job_env.uid = msg->auth_uid;
 		job_env.gid = msg->auth_gid;
-		rc =  _run_prolog(&job_env, req->cred, true);
+		rc = _run_prolog(&job_env, req->cred);
+		_remove_job_running_prolog(job_env.jobid);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2522,7 +2522,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 
-		rc = _run_prolog(&job_env, req->cred, false);
+		rc = _run_prolog(&job_env, req->cred);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2677,7 +2677,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 	 * Run job prolog on this node
 	 	 */
 
-		rc = _run_prolog(&job_env, req->cred, true);
+		rc = _run_prolog(&job_env, req->cred);
+		_remove_job_running_prolog(job_env.jobid);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -5294,8 +5295,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 		job_env.work_dir = req->work_dir;
 		job_env.uid = req->job_uid;
 		job_env.gid = req->job_gid;
-
-		_run_epilog(&job_env, req->cred);
+		_wait_for_job_running_prolog(job_env.jobid);
+		run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
 	}
 
@@ -5534,7 +5535,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		job_env.uid = req->job_uid;
 		job_env.gid = req->job_gid;
 
-		rc = _run_epilog(&job_env, req->cred);
+		_wait_for_job_running_prolog(job_env.jobid);
+		rc = run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -5665,8 +5667,7 @@ static void *_prolog_timer(void *x)
 	return NULL;
 }
 
-static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
+static int _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	int diff_time, rc;
 	time_t start_time = time(NULL);
@@ -5702,9 +5703,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 		     job_env->jobid, diff_time);
 	}
 
-	if (remove_running)
-		_remove_job_running_prolog(job_env->jobid);
-
 	slurm_thread_join(timer_id);
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
@@ -5717,8 +5715,6 @@ static int _run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 	time_t start_time = time(NULL);
 	int error_code, diff_time;
 	bool script_lock = false;
-
-	_wait_for_job_running_prolog(job_env->jobid);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		slurm_mutex_lock(&prolog_serial_mutex);
