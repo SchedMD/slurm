@@ -68,7 +68,8 @@ static void  _add_delay(void);
 static int   _cancel_jobs(void);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
-static int  _confirmation(job_info_t *job_ptr, uint32_t step_id);
+static int  _confirmation(job_info_t *job_ptr, uint32_t step_id,
+			  uint32_t array_id);
 static void _filter_job_records(void);
 static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
@@ -678,8 +679,9 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 				continue;
 
 			if (opt.interactive &&
-			    (_confirmation(job_ptr, opt.step_id[j]) == 0)) {
-				job_ptr->job_id = 0;	/* Don't check again */
+			    (_confirmation(job_ptr, opt.step_id[j],
+					   opt.array_id[j]) == 0)) {
+				opt.job_id[j] = 0;	 /* Don't check again */
 				continue;
 			}
 
@@ -759,7 +761,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 			continue;
 
 		if (opt.interactive &&
-		    (_confirmation(job_ptr, SLURM_BATCH_SCRIPT) == 0)) {
+		    (_confirmation(job_ptr, SLURM_BATCH_SCRIPT, NO_VAL) == 0)) {
 			job_ptr->job_id = 0;
 			continue;
 		}
@@ -1040,12 +1042,12 @@ _cancel_step_id (void *ci)
 
 /* _confirmation - Confirm job cancel request interactively */
 static int
-_confirmation(job_info_t *job_ptr, uint32_t step_id)
+_confirmation(job_info_t *job_ptr, uint32_t step_id, uint32_t array_id)
 {
 	char *job_id_str, in_line[128];
 
 	while (1) {
-		job_id_str = _build_jobid_str(job_ptr, NO_VAL);
+		job_id_str = _build_jobid_str(job_ptr, array_id);
 		if (step_id == SLURM_BATCH_SCRIPT) {
 			printf("Cancel job_id=%s name=%s partition=%s [y/n]? ",
 			       job_id_str, job_ptr->name,
