@@ -150,8 +150,6 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm_version.h
-CONFIG_CLEAN_FILES = contribs/perlapi/libslurm/perl/Makefile.PL \
-	contribs/perlapi/libslurmdb/perl/Makefile.PL
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -507,6 +505,7 @@ MAINTAINERCLEANFILES = \
 	slurm/slurm_version.h				\
 	stamp-h.in
 
+CONFIG_CLEAN_FILES = ""
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
