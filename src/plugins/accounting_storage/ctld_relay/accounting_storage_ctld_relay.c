@@ -129,10 +129,8 @@ static void *_agent_thread(void *data)
 		buf_t *buffer;
 
 		slurm_mutex_lock(&agent_lock);
-		if (!agent_shutdown) {
-			ts.tv_sec = time(NULL) + 2;
-			slurm_cond_timedwait(&agent_cond, &agent_lock, &ts);
-		}
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&agent_cond, &agent_lock, &ts);
 		slurm_mutex_unlock(&agent_lock);
 
 		while ((buffer = list_pop(agent_list))) {
