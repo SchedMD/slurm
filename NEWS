@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fixed 'make distclean' behavior for contribs/perlapi.
  -- slurmrestd - Avoid ignoring numerical only endpoints during startup with
     older libjson-c due to type parsing mismatching.
+ -- Reject non-stepmgr job allocations requesting --resv-ports from the ctld.
 
 * Changes in Slurm 24.05.0rc1
 =============================
