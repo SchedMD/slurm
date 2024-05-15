@@ -5701,6 +5701,9 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 	}
 	xfree(tmp_str);
 
+	if ((rc & PROLOG_FLAG_RUN_IN_JOB) && (rc & PROLOG_FLAG_SERIAL))
+		error("PrologFlag Serial is incompatible with RunInJob");
+
 	return rc;
 }
 

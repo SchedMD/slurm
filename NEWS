@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     match the system or job specification.
  -- Add previously missing timers for Prolog and Epilog scripts when RunInJob is
     set.
+ -- Show an error when PrologFlags RunInJob and Serial are used together.
+    PrologFlags=Serial is not compatible with how RunInJob operates.
 
 * Changes in Slurm 24.05.0rc1
 =============================

@@ -369,6 +369,12 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	bool script_lock = false;
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		/*
+		 * When PROLOG_FLAG_RUN_IN_JOB is set, PROLOG_FLAG_SERIAL does
+		 * nothing because this function runs in the slurmstepd and
+		 * therefore this mutex doesn't block other jobs from running
+		 * their prolog.
+		 */
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
@@ -414,6 +420,12 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 	bool script_lock = false;
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		/*
+		 * When PROLOG_FLAG_RUN_IN_JOB is set, PROLOG_FLAG_SERIAL does
+		 * nothing because this function runs in the slurmstepd and
+		 * therefore this mutex doesn't block other jobs from running
+		 * their epilog.
+		 */
 		slurm_mutex_lock(&prolog_serial_mutex);
 		script_lock = true;
 	}
