@@ -51,6 +51,7 @@
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
 #define OPENAPI_REF_PLACEHOLDER ((void *) 0xfa0b901301120040)
 #define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated)
+#define IS_PARSER_DEPRECATED(parser) (parser->deprecated)
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
