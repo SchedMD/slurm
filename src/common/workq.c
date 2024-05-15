@@ -46,6 +46,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define THREAD_COUNT_DEFAULT 10
+
 #define WORKQ_DEFAULT                                \
 	(struct workq_s) {                           \
 		.mutex = PTHREAD_MUTEX_INITIALIZER,  \
@@ -185,7 +187,10 @@ extern void workq_init(int count)
 {
 	int rc;
 
-	xassert(count < 1024);
+	xassert(!count || ((count > 2) && (count < 1024)));
+
+	if (!count)
+		count = THREAD_COUNT_DEFAULT;
 
 	slurm_mutex_lock(&workq.mutex);
 
