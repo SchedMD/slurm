@@ -517,11 +517,8 @@ static void _atfork_child(void)
 	mgr = CONMGR_MGR_DEFAULT;
 }
 
-extern void conmgr_init(int thread_count, int max_connections,
-			conmgr_callbacks_t callbacks)
+extern void conmgr_init(int max_connections, conmgr_callbacks_t callbacks)
 {
-	if (thread_count < 1)
-		thread_count = THREAD_COUNT_DEFAULT;
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
@@ -549,12 +546,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 			mgr.callbacks.parse = callbacks.parse;
 		if (callbacks.free_parse)
 			mgr.callbacks.free_parse = callbacks.free_parse;
-
-		/*
-		 * Catch startup order issue that could cause thread count to be
-		 * too low
-		 */
-		xassert(get_workq_thread_count() >= thread_count);
 
 		slurm_mutex_unlock(&mgr.mutex);
 		return;

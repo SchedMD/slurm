@@ -271,7 +271,7 @@ extern void init_sack_conmgr(void)
 	}
 
 	workq_init(0);
-	conmgr_init(0, 0, callbacks);
+	conmgr_init(0, callbacks);
 
 	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
 		fatal("%s: socket() failed: %m", __func__);

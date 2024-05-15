@@ -647,8 +647,7 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize serializers");
 
 	workq_init((run_mode.listen ? thread_count : WORKQ_THREAD_COUNT_MIN));
-	conmgr_init((run_mode.listen ? thread_count : 1), max_connections,
-		    callbacks);
+	conmgr_init(max_connections, callbacks);
 
 	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
 			       "_on_signal_interrupt()");

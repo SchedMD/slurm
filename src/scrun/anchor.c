@@ -1425,7 +1425,7 @@ static int _anchor_child(int pipe_fd[2])
 
 	/* must init conmgr&workq after calling fork() in _daemonize() */
 	workq_init(0);
-	conmgr_init(0, 0, (conmgr_callbacks_t) { NULL, NULL } );
+	conmgr_init(0, (conmgr_callbacks_t) { NULL, NULL } );
 
 	change_status_force(CONTAINER_ST_CREATING);
 
