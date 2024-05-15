@@ -50,8 +50,8 @@ the plugin to end users.</li>
 Identifies the version of Slurm used to build this plugin and
 any attempt to load the plugin from a different version of Slurm will result
 in an error.
-The micro version is not considered for SPANK plugins.</li>
-</ul>
+The micro version is not considered for <a href="spank.html">SPANK</a> plugins.
+</li></ul>
 
 <h2 id="api">API Functions in All Plugins
 <a class="slurm_link" href="#api"></a>
