@@ -4335,7 +4335,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 extern void push_reconfig_to_slurmd(void)
 {
 #ifndef HAVE_FRONT_END
-	agent_arg_t *curr_args, *prev_args, *old_args;
+	agent_arg_t *curr_args, *prev_args, *prev2_args, *old_args;
 	node_record_t *node_ptr;
 
 	curr_args = xmalloc(sizeof(*curr_args));
@@ -4351,6 +4351,13 @@ extern void push_reconfig_to_slurmd(void)
 	prev_args->hostlist = hostlist_create(NULL);
 	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 	prev_args->msg_args = new_config_response(true);
+
+	prev2_args = xmalloc(sizeof(*prev2_args));
+	prev2_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	prev2_args->retry = 0;
+	prev2_args->hostlist = hostlist_create(NULL);
+	prev2_args->protocol_version = SLURM_TWO_BACK_PROTOCOL_VERSION;
+	prev2_args->msg_args = new_config_response(true);
 
 	old_args = xmalloc(sizeof(*old_args));
 	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
@@ -4374,6 +4381,11 @@ extern void push_reconfig_to_slurmd(void)
 			   SLURM_ONE_BACK_PROTOCOL_VERSION) {
 			hostlist_push_host(prev_args->hostlist, node_ptr->name);
 			prev_args->node_count++;
+		} else if (node_ptr->protocol_version ==
+			   SLURM_TWO_BACK_PROTOCOL_VERSION) {
+			hostlist_push_host(prev2_args->hostlist,
+					   node_ptr->name);
+			prev2_args->node_count++;
 		} else if (node_ptr->protocol_version ==
 			   SLURM_MIN_PROTOCOL_VERSION) {
 			hostlist_push_host(old_args->hostlist, node_ptr->name);
@@ -4401,6 +4413,17 @@ extern void push_reconfig_to_slurmd(void)
 		      rpc_num2string(prev_args->msg_type));
 		set_agent_arg_r_uid(prev_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(prev_args);
+	}
+
+	if (prev2_args->node_count == 0) {
+		hostlist_destroy(prev2_args->hostlist);
+		slurm_free_config_response_msg(prev2_args->msg_args);
+		xfree(prev2_args);
+	} else {
+		debug("Spawning agent msg_type=%s",
+		      rpc_num2string(prev2_args->msg_type));
+		set_agent_arg_r_uid(prev2_args, SLURM_AUTH_UID_ANY);
+		agent_queue_request(prev2_args);
 	}
 
 	if (old_args->node_count == 0) {
