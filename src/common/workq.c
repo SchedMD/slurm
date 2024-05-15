@@ -430,8 +430,3 @@ extern int workq_get_active(void)
 
 	return active;
 }
-
-extern int get_workq_thread_count(void)
-{
-	return workq.threads;
-}

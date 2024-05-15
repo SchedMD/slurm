@@ -83,9 +83,4 @@ extern int workq_add_work(work_func_t func, void *arg, const char *tag);
  */
 extern int workq_get_active(void);
 
-/*
- * Get number of threads used by workq
- */
-extern int get_workq_thread_count(void);
-
 #endif /* SLURMRESTD_WORKQ_H */
