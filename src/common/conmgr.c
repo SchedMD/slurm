@@ -228,8 +228,6 @@ struct conmgr_s {
 	bool quiesced;
 	/* at fork handler installed */
 	bool at_fork_installed;
-	/* thread pool */
-	workq_t *workq;
 	/* will inspect connections (not listeners */
 	bool inspecting;
 	/* if an event signal has already been sent */
@@ -527,6 +525,8 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
+	workq_init(thread_count);
+
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown_requested = false;
@@ -539,9 +539,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 				    __func__, slurm_strerror(rc));
 
 		mgr.at_fork_installed = true;
-	}
-
-	if (mgr.workq) {
+	} else {
 		/* already initialized */
 		mgr.max_connections = MAX(max_connections, mgr.max_connections);
 
@@ -558,7 +556,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 		 * Catch startup order issue that could cause thread count to be
 		 * too low
 		 */
-		xassert(get_workq_thread_count(mgr.workq) >= thread_count);
+		xassert(get_workq_thread_count() >= thread_count);
 
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
@@ -569,7 +567,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
-	mgr.workq = workq_init(thread_count);
+	workq_init(thread_count);
 	mgr.deferred_funcs = list_create(NULL);
 
 	if (pipe(mgr.event_fd))
@@ -676,12 +674,6 @@ extern void conmgr_fini(void)
 
 	/* tell all timers about being canceled */
 	_cancel_delayed_work();
-
-	/*
-	 * make sure WORKQ is done before making any changes encase there are
-	 * any outstanding threads running
-	 */
-	FREE_NULL_WORKQ(mgr.workq);
 
 	/* deferred_funcs should have been cleared by conmgr_run() */
 	xassert(list_is_empty(mgr.deferred_funcs));
@@ -3116,7 +3108,7 @@ static void _handle_timer(void *x)
 	FREE_NULL_LIST(elapsed);
 }
 
-/* Single point to queue internal function callback via mgr.workq. */
+/* Single point to queue internal function callback via workq. */
 static void _queue_func(bool locked, work_func_t func, void *arg,
 			const char *tag)
 {
@@ -3124,7 +3116,7 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (!mgr.quiesced) {
-		if (workq_add_work(mgr.workq, func, arg, tag))
+		if (workq_add_work(func, arg, tag))
 			fatal_abort("%s: workq_add_work() failed", __func__);
 	} else {
 		/*
@@ -3394,7 +3386,7 @@ extern int conmgr_get_thread_count(void)
 	int count;
 
 	slurm_mutex_lock(&mgr.mutex);
-	count = get_workq_thread_count(mgr.workq);
+	count = get_workq_thread_count();
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return count;

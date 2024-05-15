@@ -46,8 +46,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define WORKQ_DEFAULT                                \
+	(struct workq_s) {                           \
+		.mutex = PTHREAD_MUTEX_INITIALIZER,  \
+		.cond = PTHREAD_COND_INITIALIZER,    \
+		.shutdown = true,                    \
+	}
+
 struct workq_s {
-	int magic;
 	/* list of workq_worker_t */
 	list_t *workers;
 	/* list of workq_work_t */
@@ -65,7 +71,7 @@ struct workq_s {
 
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
-};
+} workq = WORKQ_DEFAULT;
 
 typedef struct {
 	int magic;
@@ -79,8 +85,6 @@ typedef struct {
 	int magic;
 	/* thread id of worker */
 	pthread_t tid;
-	/* workq that controls this worker */
-	workq_t *workq;
 	/* unique id for tracking */
 	int id;
 } workq_worker_t;
@@ -91,12 +95,10 @@ typedef struct {
 
 static void *_worker(void *arg);
 
-static inline void _check_magic_workq(workq_t *workq)
+static inline void _check_magic_workq(void)
 {
-	xassert(workq);
-	xassert(workq->magic == MAGIC_WORKQ);
-	xassert(workq->workers);
-	xassert(workq->active >= 0);
+	xassert(workq.workers);
+	xassert(workq.active >= 0);
 }
 
 static inline void _check_magic_worker(workq_worker_t *worker)
@@ -104,7 +106,7 @@ static inline void _check_magic_worker(workq_worker_t *worker)
 	xassert(worker);
 	xassert(worker->magic == MAGIC_WORKER);
 	xassert(worker->id > 0);
-	_check_magic_workq(worker->workq);
+	_check_magic_workq();
 }
 
 static inline void _check_magic_work(workq_work_t *work)
@@ -143,14 +145,13 @@ static void _worker_delete(void *x)
 
 	_check_magic_worker(worker);
 
-	slurm_mutex_lock(&worker->workq->mutex);
-	worker = list_remove_first(worker->workq->workers, _find_worker,
-				   worker);
+	slurm_mutex_lock(&workq.mutex);
+	worker = list_remove_first(workq.workers, _find_worker, worker);
 
-	worker->workq->total--;
+	workq.total--;
 
 	/* workq may get freed at any time after unlocking */
-	slurm_mutex_unlock(&worker->workq->mutex);
+	slurm_mutex_unlock(&workq.mutex);
 	xassert(worker == x);
 
 	_worker_free(worker);
@@ -171,135 +172,143 @@ static void _work_delete(void *x)
 	xfree(work);
 }
 
-extern workq_t *workq_init(int count)
+extern void workq_init(int count)
 {
-	workq_t *workq = xmalloc(sizeof(*workq));
-
 	xassert(count < 1024);
 
-	workq->magic = MAGIC_WORKQ;
-	workq->workers = list_create(_worker_free);
-	workq->work = list_create(_work_delete);
-	workq->threads = count;
+	slurm_mutex_lock(&workq.mutex);
 
-	slurm_mutex_init(&workq->mutex);
-	slurm_cond_init(&workq->cond, NULL);
+	if (workq.threads) {
+		slurm_mutex_unlock(&workq.mutex);
+		log_flag(WORKQ, "%s: ignoring duplicate init request with count=%d",
+			 __func__, count);
+		return;
+	}
 
-	_check_magic_workq(workq);
+	workq.workers = list_create(_worker_free);
+	workq.work = list_create(_work_delete);
+	workq.threads = count;
+
+	_check_magic_workq();
 
 	for (int i = 0; i < count; i++) {
 		workq_worker_t *worker = xmalloc(sizeof(*worker));
 		worker->magic = MAGIC_WORKER;
-		worker->workq = workq;
 		worker->id = i + 1;
 
 		slurm_thread_create(&worker->tid, _worker, worker);
 		_check_magic_worker(worker);
 
-		list_append(workq->workers, worker);
+		list_append(workq.workers, worker);
 	}
 
-	return workq;
+	workq.shutdown = false;
+
+	slurm_mutex_unlock(&workq.mutex);
 }
 
-static void _wait_workers_idle(workq_t *workq)
+static void _wait_workers_idle(void)
 {
-	if (!workq)
-		return;
+	_check_magic_workq();
 
-	_check_magic_workq(workq);
-
-	slurm_mutex_lock(&workq->mutex);
+	slurm_mutex_lock(&workq.mutex);
 	log_flag(WORKQ, "%s: checking %u workers",
-		 __func__, list_count(workq->work));
+		 __func__, list_count(workq.work));
 
-	while (workq->active)
-		slurm_cond_wait(&workq->cond, &workq->mutex);
+	while (workq.active)
+		slurm_cond_wait(&workq.cond, &workq.mutex);
 
-	slurm_mutex_unlock(&workq->mutex);
+	slurm_mutex_unlock(&workq.mutex);
 	log_flag(WORKQ, "%s: all workers are idle", __func__);
 }
 
-static void _wait_work_complete(workq_t *workq)
+static void _wait_work_complete(void)
 {
-	if (!workq)
-		return;
+	_check_magic_workq();
 
-	_check_magic_workq(workq);
-
-	slurm_mutex_lock(&workq->mutex);
-	xassert(workq->shutdown);
+	slurm_mutex_lock(&workq.mutex);
+	xassert(workq.shutdown);
 	log_flag(WORKQ, "%s: waiting for %u queued workers",
-		 __func__, list_count(workq->work));
-	slurm_mutex_unlock(&workq->mutex);
+		 __func__, list_count(workq.work));
+	slurm_mutex_unlock(&workq.mutex);
 
 	while (true) {
 		int count;
 		pthread_t tid;
 		workq_worker_t *worker;
 
-		slurm_mutex_lock(&workq->mutex);
-		if ((count = list_count(workq->workers)) == 0) {
-			slurm_mutex_unlock(&workq->mutex);
+		slurm_mutex_lock(&workq.mutex);
+		if ((count = list_count(workq.workers)) == 0) {
+			slurm_mutex_unlock(&workq.mutex);
 			log_flag(WORKQ, "%s: all workers are done", __func__);
 			break;
 		}
-		worker = list_peek(workq->workers);
+		worker = list_peek(workq.workers);
 		xassert(worker->magic == MAGIC_WORKER);
 		tid = worker->tid;
-		slurm_mutex_unlock(&workq->mutex);
+		slurm_mutex_unlock(&workq.mutex);
 
 		log_flag(WORKQ, "%s: waiting on %d workers", __func__, count);
 		slurm_thread_join(tid);
 	}
 }
 
-extern void workq_quiesce(workq_t *workq)
+extern void workq_quiesce(void)
 {
-	if (!workq)
-		return;
+	_check_magic_workq();
 
-	_check_magic_workq(workq);
-
-	slurm_mutex_lock(&workq->mutex);
+	slurm_mutex_lock(&workq.mutex);
 
 	log_flag(WORKQ, "%s: shutting down with %u queued jobs",
-		 __func__, list_count(workq->work));
+		 __func__, list_count(workq.work));
 
 	/* notify of shutdown */
-	workq->shutdown = true;
-	slurm_cond_broadcast(&workq->cond);
-	slurm_mutex_unlock(&workq->mutex);
+	workq.shutdown = true;
+	slurm_cond_broadcast(&workq.cond);
+	slurm_mutex_unlock(&workq.mutex);
 
-	_wait_work_complete(workq);
+	_wait_work_complete();
 
-	xassert(list_count(workq->workers) == 0);
-	xassert(list_count(workq->work) == 0);
+	xassert(list_count(workq.workers) == 0);
+	xassert(list_count(workq.work) == 0);
 }
 
-extern void workq_free(workq_t *workq)
+extern void workq_fini(void)
 {
-	if (!workq)
+	int threads;
+
+	slurm_mutex_lock(&workq.mutex);
+	threads = workq.threads;
+	slurm_mutex_unlock(&workq.mutex);
+
+	if (!threads)
 		return;
 
-	_check_magic_workq(workq);
+	_check_magic_workq();
 
-	_wait_workers_idle(workq);
-	workq_quiesce(workq);
+	_wait_workers_idle();
+	workq_quiesce();
 
-	FREE_NULL_LIST(workq->workers);
-	FREE_NULL_LIST(workq->work);
-	workq->magic = ~MAGIC_WORKQ;
-	xfree(workq);
+	slurm_mutex_lock(&workq.mutex);
+
+	xassert(!workq.active);
+	xassert(!workq.total);
+	xassert(workq.shutdown);
+
+	FREE_NULL_LIST(workq.workers);
+	FREE_NULL_LIST(workq.work);
+
+	workq.threads = 0;
+
+	slurm_mutex_unlock(&workq.mutex);
 }
 
-extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
-			  const char *tag)
+extern int workq_add_work(work_func_t func, void *arg, const char *tag)
 {
 	int rc = SLURM_SUCCESS;
 
 	workq_work_t *work = xmalloc(sizeof(*work));
-	_check_magic_workq(workq);
+	_check_magic_workq();
 
 	work->magic = MAGIC_WORK;
 	work->func = func;
@@ -308,15 +317,15 @@ extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
 
 	_check_magic_work(work);
 
-	slurm_mutex_lock(&workq->mutex);
+	slurm_mutex_lock(&workq.mutex);
 	/* add to work list and signal a thread */
-	if (workq->shutdown)
+	if (workq.shutdown)
 		rc = ESLURM_DISABLED;
 	else { /* workq is not shutdown */
-		list_append(workq->work, work);
-		slurm_cond_signal(&workq->cond);
+		list_append(workq.work, work);
+		slurm_cond_signal(&workq.cond);
 	}
-	slurm_mutex_unlock(&workq->mutex);
+	slurm_mutex_unlock(&workq.mutex);
 
 	if (rc)
 		_work_delete(work);
@@ -327,24 +336,23 @@ extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
 static void *_worker(void *arg)
 {
 	workq_worker_t *worker = arg;
-	workq_t *workq = worker->workq;
 	_check_magic_worker(worker);
 
-	slurm_mutex_lock(&workq->mutex);
-	worker->workq->total++;
-	slurm_mutex_unlock(&workq->mutex);
+	slurm_mutex_lock(&workq.mutex);
+	workq.total++;
+	slurm_mutex_unlock(&workq.mutex);
 
 	while (true) {
 		workq_work_t *work = NULL;
-		slurm_mutex_lock(&workq->mutex);
+		slurm_mutex_lock(&workq.mutex);
 
-		work = list_pop(workq->work);
+		work = list_pop(workq.work);
 
 		/* wait for work if nothing to do */
 		if (!work) {
-			if (workq->shutdown) {
+			if (workq.shutdown) {
 				/* give up lock as we are about to be deleted */
-				slurm_mutex_unlock(&workq->mutex);
+				slurm_mutex_unlock(&workq.mutex);
 
 				log_flag(WORKQ, "%s: [%u] shutting down",
 					 __func__, worker->id);
@@ -353,38 +361,36 @@ static void *_worker(void *arg)
 			}
 
 			log_flag(WORKQ, "%s: [%u] waiting for work. Current active workers %u/%u",
-				 __func__, worker->id, worker->workq->active,
-				 worker->workq->total);
-			slurm_cond_wait(&workq->cond, &workq->mutex);
-			slurm_mutex_unlock(&workq->mutex);
+				 __func__, worker->id, workq.active,
+				 workq.total);
+			slurm_cond_wait(&workq.cond, &workq.mutex);
+			slurm_mutex_unlock(&workq.mutex);
 			continue;
 		}
 
 		/* got work, run it! */
-		worker->workq->active++;
+		workq.active++;
 
 		log_flag(WORKQ, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
-			 __func__, worker->id, work->tag,
-			 worker->workq->active, worker->workq->total,
-			 list_count(workq->work));
+			 __func__, worker->id, work->tag, workq.active,
+			 workq.total, list_count(workq.work));
 
-		slurm_mutex_unlock(&workq->mutex);
+		slurm_mutex_unlock(&workq.mutex);
 
 		/* run work now */
 		_check_magic_work(work);
 		work->func(work->arg);
 
-		slurm_mutex_lock(&workq->mutex);
+		slurm_mutex_lock(&workq.mutex);
 
-		workq->active--;
+		workq.active--;
 
 		log_flag(WORKQ, "%s: [%u->%s] finished active_workers=%u/%u queue=%u",
-			 __func__, worker->id, work->tag,
-			 worker->workq->active, worker->workq->total,
-			 list_count(workq->work));
+			 __func__, worker->id, work->tag, workq.active,
+			 workq.total, list_count(workq.work));
 
-		slurm_cond_broadcast(&workq->cond);
-		slurm_mutex_unlock(&workq->mutex);
+		slurm_cond_broadcast(&workq.cond);
+		slurm_mutex_unlock(&workq.mutex);
 
 		_work_delete(work);
 	}
@@ -392,20 +398,20 @@ static void *_worker(void *arg)
 	return NULL;
 }
 
-extern int workq_get_active(workq_t *workq)
+extern int workq_get_active(void)
 {
 	int active;
 
-	_check_magic_workq(workq);
+	_check_magic_workq();
 
-	slurm_mutex_lock(&workq->mutex);
-	active = workq->active;
-	slurm_mutex_unlock(&workq->mutex);
+	slurm_mutex_lock(&workq.mutex);
+	active = workq.active;
+	slurm_mutex_unlock(&workq.mutex);
 
 	return active;
 }
 
-extern int get_workq_thread_count(const workq_t *workq)
+extern int get_workq_thread_count(void)
 {
-	return workq->threads;
+	return workq.threads;
 }

@@ -45,31 +45,26 @@
  */
 typedef void (*work_func_t)(void *arg);
 
-/* Opaque struct */
-typedef struct workq_s workq_t;
+/*
+ * Initialize workq members
+ * IN count - number of workers to add
+ */
+extern void workq_init(int count);
 
 /*
- * Initialize a new workq struct
- * IN count - number of workers to add
- * RET ptr to new workq struct
+ * Release workq members.
+ * Will stop all workers (eventually).
  */
-extern workq_t *workq_init(int count);
+extern void workq_fini(void);
 
 /*
  * Stop all work (eventually) and reject new requests
  * This will block until all work is complete.
  */
-extern void workq_quiesce(workq_t *workq);
-
-/*
- * Free workq struct.
- * Will stop all workers (eventually).
- */
-extern void workq_free(workq_t *workq);
+extern void workq_quiesce(void);
 
 /*
  * Add work to workq
- * IN workq - work queue to queue up work on
  * IN func - function pointer to run work
  * IN arg - arg to hand to function pointer
  * IN tag - tag used in logging this function
@@ -77,25 +72,16 @@ extern void workq_free(workq_t *workq);
  * return either.
  * RET SLURM_SUCCESS or error if workq already shutdown
  */
-extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
-			  const char *tag);
+extern int workq_add_work(work_func_t func, void *arg, const char *tag);
 
 /*
  * Grab copy of the workq active count
  */
-extern int workq_get_active(workq_t *workq);
-
-#define FREE_NULL_WORKQ(_X)             \
-	do {                            \
-		if (_X)                 \
-			workq_free(_X); \
-		_X = NULL;              \
-	} while (0)
-
+extern int workq_get_active(void);
 
 /*
  * Get number of threads used by workq
  */
-extern int get_workq_thread_count(const workq_t *workq);
+extern int get_workq_thread_count(void);
 
 #endif /* SLURMRESTD_WORKQ_H */
