@@ -50,6 +50,7 @@
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
 #define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated)
+#define IS_PARSER_DEPRECATED(parser) (parser->deprecated)
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
