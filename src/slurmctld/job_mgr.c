@@ -8206,13 +8206,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	set_job_tres_req_str(job_ptr, false);
 	_add_job_hash(job_ptr);
 
-	job_ptr->resv_port_cnt = job_desc->resv_port_cnt;
-	if (job_desc->resv_port_cnt != NO_VAL16) {
-		error_code = resv_port_check_job_request_cnt(job_ptr);
-		if (error_code)
-			return error_code;
-	}
-
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	/* skip copy, just take ownership */
@@ -8264,6 +8257,14 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->bit_flags &= ~TASKS_CHANGED;
 	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+
+	job_ptr->resv_port_cnt = job_desc->resv_port_cnt;
+	if (job_desc->resv_port_cnt != NO_VAL16) {
+		error_code = resv_port_check_job_request_cnt(job_ptr);
+		if (error_code)
+			return error_code;
+	}
+
 	job_ptr->spank_job_env = job_desc->spank_job_env;
 	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */

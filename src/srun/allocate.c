@@ -708,6 +708,16 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		return NULL;
 	}
 
+	/*
+	 * The controller rejects any non-stepmgr allocation requesting
+	 * resv-ports. To allow srun to request --resv-ports outside of stepmgr
+	 * jobs, clear resv_port_cnt when creating a non-stepmgr allocation.
+	 */
+	if ((opt_local->resv_port_cnt != NO_VAL) &&
+	    !(opt_local->job_flags & STEPMGR_ENABLED) &&
+	    !xstrstr(slurm_conf.slurmctld_params, "enable_stepmgr"))
+		j->resv_port_cnt = NO_VAL16;
+
 	xassert(srun_opt);
 
 	if (!j->name)
