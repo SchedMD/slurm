@@ -3369,17 +3369,6 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
 	return rc;
 }
 
-extern int conmgr_get_thread_count(void)
-{
-	int count;
-
-	slurm_mutex_lock(&mgr.mutex);
-	count = get_workq_thread_count();
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return count;
-}
-
 extern void conmgr_set_exit_on_error(bool exit_on_error)
 {
 	slurm_mutex_lock(&mgr.mutex);

@@ -339,11 +339,6 @@ extern void conmgr_add_delayed_work(conmgr_fd_t *con,
 				    const char *tag);
 
 /*
- * Get number of threads used by conmgr
- */
-extern int conmgr_get_thread_count(void);
-
-/*
  * Control if conmgr will exit on any error
  */
 extern void conmgr_set_exit_on_error(bool exit_on_error);
