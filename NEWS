@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regresssion in rc1 causing power_save thread to spin continuously.
  -- Improve ctld_relay shutdown sequence.
  -- Fixed 'make distclean' behavior for contribs/perlapi.
+ -- slurmrestd - Avoid ignoring numerical only endpoints during startup with
+    older libjson-c due to type parsing mismatching.
 
 * Changes in Slurm 24.05.0rc1
 =============================

@@ -2029,11 +2029,25 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	_check_magic(a);
 	_check_magic(b);
 
-	if (a->type != b->type) {
-		log_flag(DATA, "type mismatch: %s(0x%"PRIXPTR") != %s(0x%"PRIXPTR")",
-			 _type_to_string(a->type), (uintptr_t) a,
-			 _type_to_string(b->type), (uintptr_t) b);
-		return false;
+	if (data_get_type(a) != data_get_type(b)) {
+		data_t *conv = data_copy(data_new(), b);
+
+		if ((a->type == TYPE_NULL) || (b->type == TYPE_NULL) ||
+		    (data_convert_type(conv, data_get_type(a)) !=
+		     data_get_type(a))) {
+			log_flag(DATA, "type mismatch: %s(0x%"PRIXPTR") != %s(0x%"PRIXPTR")",
+				 _type_to_string(a->type), (uintptr_t) a,
+				 _type_to_string(b->type), (uintptr_t) b);
+			FREE_NULL_DATA(conv);
+			return false;
+		}
+
+		rc = data_check_match(a, conv, mask);
+		log_flag(DATA, "compare: %pD %s %pD (converted from %pD)",
+		         a, (rc ? "=" : "!="), conv, b);
+
+		FREE_NULL_DATA(conv);
+		return rc;
 	}
 
 	switch (a->type) {
