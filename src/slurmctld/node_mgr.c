@@ -4332,39 +4332,29 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * So explicitly split the pool into three groups.
  * Note: DOES NOT SUPPORT FRONTEND.
  */
+#define RELEVANT_VER 3
 extern void push_reconfig_to_slurmd(void)
 {
 #ifndef HAVE_FRONT_END
-	agent_arg_t *curr_args, *prev_args, *prev2_args, *old_args;
+	agent_arg_t *ver_args[RELEVANT_VER] = { 0 }, *curr_args;
 	node_record_t *node_ptr;
+	int ver;
 
-	curr_args = xmalloc(sizeof(*curr_args));
-	curr_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	curr_args->retry = 0;
-	curr_args->hostlist = hostlist_create(NULL);
-	curr_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	curr_args->msg_args = new_config_response(true);
+	ver_args[0] = xmalloc(sizeof(agent_arg_t));
+	ver_args[0]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[0]->protocol_version = SLURM_PROTOCOL_VERSION;
 
-	prev_args = xmalloc(sizeof(*prev_args));
-	prev_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	prev_args->retry = 0;
-	prev_args->hostlist = hostlist_create(NULL);
-	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
-	prev_args->msg_args = new_config_response(true);
+	ver_args[1] = xmalloc(sizeof(agent_arg_t));
+	ver_args[1]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[1]->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 
-	prev2_args = xmalloc(sizeof(*prev2_args));
-	prev2_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	prev2_args->retry = 0;
-	prev2_args->hostlist = hostlist_create(NULL);
-	prev2_args->protocol_version = SLURM_TWO_BACK_PROTOCOL_VERSION;
-	prev2_args->msg_args = new_config_response(true);
+	ver_args[2] = xmalloc(sizeof(agent_arg_t));
+	ver_args[2]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[2]->protocol_version = SLURM_TWO_BACK_PROTOCOL_VERSION;
 
-	old_args = xmalloc(sizeof(*old_args));
-	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	old_args->retry = 0;
-	old_args->hostlist = hostlist_create(NULL);
-	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	old_args->msg_args = new_config_response(true);
+	ver_args[3] = xmalloc(sizeof(agent_arg_t));
+	ver_args[3]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[3]->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
@@ -4374,67 +4364,35 @@ extern void push_reconfig_to_slurmd(void)
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 
-		if (node_ptr->protocol_version >= SLURM_PROTOCOL_VERSION) {
+		for (ver = 0; ver < RELEVANT_VER; ver++) {
+			curr_args = ver_args[ver];
+			if (node_ptr->protocol_version <
+			    curr_args->protocol_version)
+				continue;
+			if (!curr_args->hostlist) {
+				curr_args->hostlist = hostlist_create(NULL);
+				curr_args->msg_args = new_config_response(true);
+			}
 			hostlist_push_host(curr_args->hostlist, node_ptr->name);
 			curr_args->node_count++;
-		} else if (node_ptr->protocol_version ==
-			   SLURM_ONE_BACK_PROTOCOL_VERSION) {
-			hostlist_push_host(prev_args->hostlist, node_ptr->name);
-			prev_args->node_count++;
-		} else if (node_ptr->protocol_version ==
-			   SLURM_TWO_BACK_PROTOCOL_VERSION) {
-			hostlist_push_host(prev2_args->hostlist,
-					   node_ptr->name);
-			prev2_args->node_count++;
-		} else if (node_ptr->protocol_version ==
-			   SLURM_MIN_PROTOCOL_VERSION) {
-			hostlist_push_host(old_args->hostlist, node_ptr->name);
-			old_args->node_count++;
+			break;
 		}
 	}
 
-	if (curr_args->node_count == 0) {
-		hostlist_destroy(curr_args->hostlist);
-		slurm_free_config_response_msg(curr_args->msg_args);
-		xfree(curr_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(curr_args->msg_type));
+	for (ver = 0; ver < RELEVANT_VER; ver++) {
+		/* This movement is needed to prevent a stack smash */
+		curr_args = ver_args[ver];
+		ver_args[ver] = NULL;
+		if (!curr_args->node_count) {
+			xfree(curr_args);
+			continue;
+		}
+
+		debug("Spawning agent msg_type=%s version=%u",
+		      rpc_num2string(curr_args->msg_type),
+		      curr_args->protocol_version);
 		set_agent_arg_r_uid(curr_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(curr_args);
-	}
-
-	if (prev_args->node_count == 0) {
-		hostlist_destroy(prev_args->hostlist);
-		slurm_free_config_response_msg(prev_args->msg_args);
-		xfree(prev_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(prev_args->msg_type));
-		set_agent_arg_r_uid(prev_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(prev_args);
-	}
-
-	if (prev2_args->node_count == 0) {
-		hostlist_destroy(prev2_args->hostlist);
-		slurm_free_config_response_msg(prev2_args->msg_args);
-		xfree(prev2_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(prev2_args->msg_type));
-		set_agent_arg_r_uid(prev2_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(prev2_args);
-	}
-
-	if (old_args->node_count == 0) {
-		hostlist_destroy(old_args->hostlist);
-		slurm_free_config_response_msg(old_args->msg_args);
-		xfree(old_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(old_args->msg_type));
-		set_agent_arg_r_uid(old_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(old_args);
 	}
 #else
 	error("%s: Cannot use configless with FrontEnd mode! Sending normal reconfigure request.",
