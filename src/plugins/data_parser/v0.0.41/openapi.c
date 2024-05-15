@@ -678,8 +678,8 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 		if (!bit->hidden)
 			_add_param(data_set_dict(data_list_append(params)),
 				   bit->name, OPENAPI_FORMAT_BOOL, true,
-				   bit->description, bit->deprecated, false,
-				   args);
+				   bit->description,
+				   IS_FLAG_BIT_DEPRECATED(bit), false, args);
 	}
 }
 
