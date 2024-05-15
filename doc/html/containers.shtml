@@ -758,7 +758,8 @@ WORKDIR /usr/local/src/openmpi-5.0.0rc9/examples
 RUN make && cp -v hello_c ring_c connectivity_c spc_example /usr/local/bin
 </pre>
 
-<h2 id="plugins">SPANK plugins<a class="slurm_link" href="#plugins"></a></h2>
+<h2 id="plugin">Container support via Plugin
+<a class="slurm_link" href="#plugin"></a></h2>
 
 <p>Slurm allows container developers to create <a href="plugins.html">SPANK
 Plugins</a> that can be called at various points of job execution to support
