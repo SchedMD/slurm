@@ -4332,7 +4332,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * So explicitly split the pool into three groups.
  * Note: DOES NOT SUPPORT FRONTEND.
  */
-#define RELEVANT_VER 3
+#define RELEVANT_VER 4
 extern void push_reconfig_to_slurmd(void)
 {
 #ifndef HAVE_FRONT_END
