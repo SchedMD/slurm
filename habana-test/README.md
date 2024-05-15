@@ -2,19 +2,19 @@
 This directory contains scripts and instructions for building, installing, and testing SLURM with Intel's GAUDI accelerators. Follow the steps below to get started.
 
 ## Building the Packages
-Compile and package SLURM as a debian package. In case VERSION was provided, it sets it packages version to it, else it uses SLURM's default version.<br />
-For the compilation to include habana's code, the compilation is required to run on a machine which contains Intel GAUDI's software stack pre-installed (ensure hlml.h and libhlml.so are present on the server).
+Compile and build SLURM OS packages (deb/rpm) based on /etc/os-release. In case VERSION was provided, it sets it packages version to it, else it uses SLURM's default version.<br />
+For the compilation to include habana's code, the compilation is required to run on a machine which contains Intel GAUDI's software stack pre-installed (ensure Habana runtime, hlml.h and libhlml.so are present on the server).
 ```sh
-make build-debian-package VERSION=[MAJOR].[MINOR].[MICRO]
+make build-package VERSION=[MAJOR].[MINOR].[MICRO]-[RELEASE]
 ```
 
 ## Installing the Packages
-Install the locally created DEB packages and configure the SLURM configuration files at the following locations:
+Install the locally created package and configure the SLURM configuration files at the following locations:
 * /etc/slurm/slurm.conf
 * /etc/slurm/gres.conf
 * /etc/slurm/cgroup.conf
 ```sh
-make install-debian-package
+make install-package
 ```
 
 ## Testing
@@ -23,12 +23,14 @@ SLURM checks GAUDI accelerator availability and allocates devices by accelerator
 ### Single Card Allocation
 Request SLURM for a single GAUDI accelerator on a single node and run `hl-smi` to ensure that only one card was allocated.
 ```sh
+# User can ovveride the default test image with TEST_CONTAINER_IMAGE=<TEST IMAGE PATH>
 make test-single-card
 ```
 
 ### 8 cards allocation with ports
 Request SLURM for 8 GAUDI accelerators on a single node and perform an HCCL test.
 ```sh
+# User can ovveride the default test image with TEST_CONTAINER_IMAGE=<TEST IMAGE PATH>
 make test-8-cards
 ```
 
@@ -42,5 +44,6 @@ The second node is expected to have:
 
  The second node will be automatically installed using the `hlctl` CLI.
 ```sh
+# User can ovveride the default test image with TEST_CONTAINER_IMAGE=<TEST IMAGE PATH>
 make test-16-card SECOND_NODE=[second node name]
 ```
