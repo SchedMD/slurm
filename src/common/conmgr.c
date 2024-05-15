@@ -713,7 +713,7 @@ static void _close_all_connections(bool locked)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void free_conmgr(void)
+extern void conmgr_fini(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
 

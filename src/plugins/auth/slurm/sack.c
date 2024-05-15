@@ -310,5 +310,5 @@ extern void fini_sack_conmgr(void)
 	 * would prevent the current owner from responding.
 	 */
 
-	free_conmgr();
+	conmgr_fini();
 }

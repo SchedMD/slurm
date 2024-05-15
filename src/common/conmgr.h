@@ -177,7 +177,7 @@ typedef enum {
  */
 extern void init_conmgr(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks);
-extern void free_conmgr(void);
+extern void conmgr_fini(void);
 
 /*
  * Request kernel provide auth credentials for connection

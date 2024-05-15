@@ -712,7 +712,7 @@ int main(int argc, char **argv)
 	destroy_rest_auth();
 	destroy_operations();
 	destroy_openapi();
-	free_conmgr();
+	conmgr_fini();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {

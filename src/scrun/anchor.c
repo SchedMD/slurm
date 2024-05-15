@@ -1495,7 +1495,7 @@ static int _anchor_child(int pipe_fd[2])
 	slurm_mutex_unlock(&state.debug_lock);
 #endif
 	FREE_NULL_LIST(socket_listen);
-	free_conmgr();
+	conmgr_fini();
 
 	return rc;
 }
