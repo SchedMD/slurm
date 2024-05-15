@@ -172,8 +172,19 @@ static void _work_delete(void *x)
 	xfree(work);
 }
 
+static void _atfork_child(void)
+{
+	/*
+	 * Force workq to return to default state before it was initialized at
+	 * forking as all of the prior state is completely unusable.
+	 */
+	workq = WORKQ_DEFAULT;
+}
+
 extern void workq_init(int count)
 {
+	int rc;
+
 	xassert(count < 1024);
 
 	slurm_mutex_lock(&workq.mutex);
@@ -184,6 +195,10 @@ extern void workq_init(int count)
 			 __func__, count);
 		return;
 	}
+
+	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+		fatal_abort("%s: pthread_atfork() failed: %s",
+			    __func__, slurm_strerror(rc));
 
 	workq.workers = list_create(_worker_free);
 	workq.work = list_create(_work_delete);
