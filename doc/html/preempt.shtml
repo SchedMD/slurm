@@ -223,6 +223,12 @@ The one exception is that these ExclusiveUser jobs will be able to preempt
 This is for the same reason that "--exclusive=user" blocks preemption, but this
 partition-level setting can only be overridden by making a job fully exclusive.
 </LI>
+<LI>
+<b>MCSParameters</b>: If <a href="mcs.html">MCS</a> labels are set on jobs,
+preemption will be restricted to other jobs with the same MCS label. If this
+parameter is configured to use <code>enforced,select</code>, MCS labels will
+be set by default on jobs, causing this restriction to be universal.
+</LI>
 </UL>
 
 <P>
@@ -546,6 +552,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 19 February 2024</p>
+<p style="text-align:center;">Last modified 21 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
