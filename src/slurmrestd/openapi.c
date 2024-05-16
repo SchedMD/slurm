@@ -2380,8 +2380,14 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		; /* Do not attempt to open a connection to slurmdbd */
 	} else if (slurm_conf.accounting_storage_type &&
 		   !(ctxt.db_conn = openapi_get_db_conn(auth))) {
-		openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION), __func__,
-				   "openapi_get_db_conn() failed to open slurmdb connection");
+		if (op_path->flags & OP_BIND_REQUIRE_SLURMDBD)
+			openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION),
+					   XSTRINGIFY(openapi_get_db_conn),
+					   "Failed to open slurmdbd connection");
+		else
+			openapi_resp_warn(&ctxt,
+					  XSTRINGIFY(openapi_get_db_conn),
+					  "Failed to open connection to slurmdbd. Response fields may not be fully populated or empty.");
 	} else {
 		rc = data_parser_g_assign(ctxt.parser,
 					  DATA_PARSER_ATTR_DBCONN_PTR,
