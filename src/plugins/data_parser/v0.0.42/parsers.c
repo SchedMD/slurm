@@ -6767,6 +6767,8 @@ static const parser_t PARSER_ARRAY(INSTANCE)[] ={
 	add_parser(slurmdb_job_rec_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(slurmdb_job_rec_t, mtype, false, field, overloads, path, desc)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(slurmdb_job_rec_t, mtype, false, path, desc)
 /* should mirror the structure of slurmdb_job_rec_t  */
 static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, account, "account", NULL),
@@ -6776,7 +6778,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks", NULL),
 	add_parse(UINT32_NO_VAL, array_task_id, "array/task_id", NULL),
 	add_parse(STRING, array_task_str, "array/task", NULL),
-	add_complex_parser(slurmdb_job_rec_t, JOB_ASSOC_ID, false, "association", NULL),
+	add_cparse(JOB_ASSOC_ID, "association", NULL),
 	add_parse(STRING, blockid, "block", NULL),
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, constraints, "constraints", NULL),
@@ -6812,11 +6814,11 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(UINT32, resvid, "reservation/id", NULL),
 	add_parse(STRING, resv_name, "reservation/name", NULL),
-	add_complex_parser(slurmdb_job_rec_t, JOB_PLANNED_TIME, false, "time/planned", "Time in seconds required to start job after becoming eligible to run"),
+	add_cparse(JOB_PLANNED_TIME, "time/planned", "Time in seconds required to start job after becoming eligible to run"),
 	add_parse(STRING, script, "script", NULL),
-	add_complex_parser(slurmdb_job_rec_t, JOB_STDIN, false, "stdin_expanded", "Job stdin with expanded fields"),
-	add_complex_parser(slurmdb_job_rec_t, JOB_STDOUT, false, "stdout_expanded", "Job stdout with expanded fields"),
-	add_complex_parser(slurmdb_job_rec_t, JOB_STDERR, false, "stderr_expanded", "Job stderr with expanded fields"),
+	add_cparse(JOB_STDIN, "stdin_expanded", "Job stdin with expanded fields"),
+	add_cparse(JOB_STDOUT, "stdout_expanded", "Job stdout with expanded fields"),
+	add_cparse(JOB_STDERR, "stderr_expanded", "Job stderr with expanded fields"),
 	add_parse(STRING, std_out, "stdout", NULL),
 	add_parse(STRING, std_err, "stderr", NULL),
 	add_parse(STRING, std_in, "stdin", NULL),
@@ -6840,13 +6842,14 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, used_gres, "used_gres", NULL),
 	add_skip(user), /* dup with complex parser JOB_USER below */
 	/* parse uid or user depending on which is available */
-	add_complex_parser(slurmdb_job_rec_t, JOB_USER, false, "user", NULL),
+	add_cparse(JOB_USER, "user", NULL),
 	add_parse(UINT64, user_cpu_sec, "time/user/seconds", NULL),
 	add_parse(UINT64, user_cpu_usec, "time/user/microseconds", NULL),
 	add_parse(WCKEY_TAG, wckey, "wckey", NULL),
 	add_skip(wckeyid),
 	add_parse(STRING, work_dir, "working_directory", NULL),
 };
+#undef add_cparse
 #undef add_parse
 #undef add_skip
 #undef add_parse_overload
