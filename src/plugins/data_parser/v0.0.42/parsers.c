@@ -7010,6 +7010,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(QOS_PREEMPT_MODES)[] = {
 	add_parser(slurmdb_qos_rec_t, mtype, false, field, 0, path, desc)
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(slurmdb_qos_rec_t, mtype, true, field, 0, path, desc)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(slurmdb_qos_rec_t, mtype, false, path, desc)
 /* should mirror the structure of slurmdb_qos_rec_t */
 static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(STRING, description, "description", NULL),
@@ -7049,7 +7051,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(UINT32_NO_VAL, min_prio_thresh, "limits/min/priority_threshold", NULL),
 	add_parse(TRES_STR, min_tres_pj, "limits/min/tres/per/job", NULL),
 	add_skip(min_tres_pj_ctld), /* not packed */
-	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NULL),
+	add_cparse(QOS_PREEMPT_LIST, "preempt/list", NULL),
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode", NULL),
 	add_parse(UINT32_NO_VAL, preempt_exempt_time, "preempt/exempt_time", NULL),
 	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
@@ -7058,6 +7060,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(FLOAT64_NO_VAL, usage_thres, "usage_threshold", NULL),
 	add_skip(blocked_until), /* not packed */
 };
+#undef add_cparse
 #undef add_parse
 #undef add_parse_req
 #undef add_skip
