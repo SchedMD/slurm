@@ -1517,7 +1517,7 @@ check_pid:
 	return rc;
 }
 
-extern int spawn_anchor(void)
+static int _anchor_child(int pipe_fd[2])
 {
 	static const conmgr_events_t conmgr_events = {
 		.on_msg = _on_connection_msg,
@@ -1529,33 +1529,8 @@ extern int spawn_anchor(void)
 		.on_connection = _on_startup_con,
 		.on_finish = _on_startup_con_fin,
 	};
-	int pipe_fd[2] = { -1, -1 };
-	pid_t child;
-	int rc, spank_rc;
 	list_t *socket_listen = list_create(xfree_ptr);
-
-	check_state();
-
-	init_lua();
-
-	if ((rc = spank_init_allocator()))
-		fatal("%s: failed to initialize plugin stack: %s",
-		      __func__, slurm_strerror(rc));
-
-	if (pipe(pipe_fd))
-		fatal("pipe() failed: %m");
-	xassert(pipe_fd[0] > STDERR_FILENO);
-	xassert(pipe_fd[1] > STDERR_FILENO);
-
-	_open_pidfile();
-
-	if ((child = _daemonize(state.requested_terminal))) {
-		if (close(pipe_fd[1]))
-			fatal("%s: close pipe failed: %m", __func__);
-
-		rc = _wait_create_pid(pipe_fd[0], child);
-		goto done;
-	}
+	int rc, spank_rc;
 
 	state.pid = getpid();
 	_populate_pidfile();
@@ -1628,12 +1603,44 @@ extern int spawn_anchor(void)
 	debug4("%s: END conmgr_run()", __func__);
 	slurm_mutex_unlock(&state.debug_lock);
 #endif
+	FREE_NULL_LIST(socket_listen);
 
+	return rc;
+}
+
+extern int spawn_anchor(void)
+{
+	int pipe_fd[2] = { -1, -1 };
+	pid_t child;
+	int rc, spank_rc;
+
+	check_state();
+
+	init_lua();
+
+	if ((rc = spank_init_allocator()))
+		fatal("%s: failed to initialize plugin stack: %s",
+		      __func__, slurm_strerror(rc));
+
+	if (pipe(pipe_fd))
+		fatal("pipe() failed: %m");
+	xassert(pipe_fd[0] > STDERR_FILENO);
+	xassert(pipe_fd[1] > STDERR_FILENO);
+
+	_open_pidfile();
+
+	if ((child = _daemonize(state.requested_terminal))) {
+		if (close(pipe_fd[1]))
+			fatal("%s: close pipe failed: %m", __func__);
+
+		rc = _wait_create_pid(pipe_fd[0], child);
+		goto done;
+	} else
+		rc = _anchor_child(pipe_fd);
 
 done:
 	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));
 
-	FREE_NULL_LIST(socket_listen);
 	free_conmgr();
 
 	debug("%s: exit[%d]: %s", __func__, rc, slurm_strerror(rc));
