@@ -1604,6 +1604,7 @@ static int _anchor_child(int pipe_fd[2])
 	slurm_mutex_unlock(&state.debug_lock);
 #endif
 	FREE_NULL_LIST(socket_listen);
+	free_conmgr();
 
 	return rc;
 }
@@ -1640,9 +1641,6 @@ extern int spawn_anchor(void)
 
 done:
 	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));
-
-	free_conmgr();
-
 	debug("%s: exit[%d]: %s", __func__, rc, slurm_strerror(rc));
 
 	spank_rc = spank_fini(NULL);
