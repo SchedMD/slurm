@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmstepd - Fix crash when cleaning up on shutdown with
     --enable-memory-leak-debug.
  -- Fix segfault in switch/hpe_slingshot plugin due to initialization squence.
+ -- scrun - Fix regression in rc1 that caused scrun to crash.
 
 * Changes in Slurm 24.05.0rc1
 =============================
