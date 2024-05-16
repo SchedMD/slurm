@@ -7067,6 +7067,8 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parser_skip(slurmdb_step_rec_t, field)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_step_rec_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(slurmdb_step_rec_t, mtype, false, path, desc)
 /* should mirror the structure of slurmdb_step_rec_t */
 static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, elapsed, "time/elapsed", NULL),
@@ -7095,17 +7097,18 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, tot_cpu_usec, "time/total/microseconds", NULL),
 	add_parse(UINT64, user_cpu_sec, "time/user/seconds", NULL),
 	add_parse(UINT32, user_cpu_usec, "time/user/microseconds", NULL),
-	add_complex_parser(slurmdb_step_rec_t, STEP_NODES, false, "nodes/list", NULL),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MAX, false, "tres/requested/max", NULL),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MIN, false, "tres/requested/min", NULL),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MAX, false, "tres/consumed/max", NULL),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MIN, false, "tres/consumed/min", NULL),
+	add_cparse(STEP_NODES, "nodes/list", NULL),
+	add_cparse(STEP_TRES_REQ_MAX, "tres/requested/max", NULL),
+	add_cparse(STEP_TRES_REQ_MIN, "tres/requested/min", NULL),
+	add_cparse(STEP_TRES_USAGE_MAX, "tres/consumed/max", NULL),
+	add_cparse(STEP_TRES_USAGE_MIN, "tres/consumed/min", NULL),
 	add_parse(TRES_STR, stats.tres_usage_in_ave, "tres/requested/average", NULL),
 	add_parse(TRES_STR, stats.tres_usage_in_tot, "tres/requested/total", NULL),
 	add_parse(TRES_STR, stats.tres_usage_out_ave, "tres/consumed/average", NULL),
 	add_parse(TRES_STR, stats.tres_usage_out_tot, "tres/consumed/total", NULL),
 	add_parse(TRES_STR, tres_alloc_str, "tres/allocated", NULL),
 };
+#undef add_cparse
 #undef add_parse
 #undef add_skip
 
