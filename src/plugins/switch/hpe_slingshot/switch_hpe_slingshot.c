@@ -252,9 +252,7 @@ extern int switch_p_restore(bool recover)
 	buf_t *state_buf;
 	int i;
 
-	/* If we're not recovering state, just set up defaults */
 	if (!recover) {
-		_state_defaults();
 		return SLURM_SUCCESS;
 	}
 
