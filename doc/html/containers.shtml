@@ -206,7 +206,7 @@ Singularity v4.1.3</a> using native runtime:
 IgnoreFileConfigJson=true
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
-RunTimeRun="singularity exec --userns --sif-fuse %r %@"
+RunTimeRun="singularity exec --userns %r %@"
 RunTimeKill="kill -s SIGTERM %p"
 RunTimeDelete="kill -s SIGKILL %p"
 </pre>
@@ -831,6 +831,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 17 May 2024</p>
+<p style="text-align:center;">Last modified 21 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
