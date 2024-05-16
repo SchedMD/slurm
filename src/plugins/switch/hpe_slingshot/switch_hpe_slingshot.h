@@ -275,6 +275,7 @@ typedef struct slingshot_stepinfo {
 /* Global variables */
 extern slingshot_state_t slingshot_state;
 extern slingshot_config_t slingshot_config;
+extern bool active_outside_ctld;
 
 /* Global functions */
 /* apinfo.c */

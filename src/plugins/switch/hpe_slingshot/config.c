@@ -1262,6 +1262,10 @@ err:
  */
 extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job)
 {
+	/* slingshot_config is only initialized on the ctld and stepmgr */
+	if (!running_in_slurmctld() && !active_outside_ctld)
+		return;
+
 	/* Second VNI is a job VNI - don't free until job is complete */
 	if (job->vnis && (job->num_vnis > 0)) {
 		_free_vni(job->vnis[0]);

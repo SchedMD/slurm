@@ -90,6 +90,8 @@ const char plugin_type[] = "switch/hpe_slingshot";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = SWITCH_PLUGIN_SLINGSHOT;
 
+bool active_outside_ctld = false;
+
 slingshot_state_t slingshot_state;    /* VNI min/max/last/bitmap */
 slingshot_config_t slingshot_config;  /* Configuration defaults */
 
@@ -124,7 +126,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (running_in_slurmctld()) {
+	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
 		xfree(slingshot_state.job_vnis);
 		slingshot_fini_instant_on();
@@ -1078,7 +1080,7 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	uint32_t job_id = job_ptr->job_id;
 
 	/* Free any job VNIs */
-	xassert(running_in_slurmctld());
+	xassert(running_in_slurmctld() || active_outside_ctld);
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);
 	slingshot_free_job_vni(job_id);
 
