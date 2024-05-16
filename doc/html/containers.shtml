@@ -198,8 +198,8 @@ RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n
 </p>
 
 <h3 id="singularity_native">oci.conf example for
-<a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
-Singularity v4.0.2</a> using native runtime:
+<a href="https://docs.sylabs.io/guides/4.1/admin-guide/installation.html">
+Singularity v4.1.3</a> using native runtime:
 <a class="slurm_link" href="#singularity_native"></a></h3>
 <p>
 <pre>
