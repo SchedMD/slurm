@@ -649,7 +649,7 @@ extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload)
 
 	xassert(rk);
 
-	len = strlen(payload) + 1;
+	len = strlen(payload);
 	opaque = xmalloc(sizeof(*opaque));
 	*opaque = job_id;
 

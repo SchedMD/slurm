@@ -319,6 +319,7 @@ documents those changes that are of interest to users and administrators.
     configured to total thread count on multi-threaded hardware and no other
     topology info ("Sockets=", "CoresPerSocket", etc.) is configured.
  -- Fix the external launcher step not being allocated a VNI when requested.
+ -- jobcomp/kafka - Fix payload length when producing and sending a message.
 
 * Changes in Slurm 23.11.6
 ==========================
