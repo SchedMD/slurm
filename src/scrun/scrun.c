@@ -527,9 +527,12 @@ static int _parse_commandline(int argc, char **argv)
 	if (optind >= argc)
 		fatal("command not provided");
 
-	for (int i = 0; i < ARRAY_SIZE(commands); i++)
-		if (!xstrcasecmp(argv[optind], commands[i].command))
+	for (int i = 0; i < ARRAY_SIZE(commands); i++) {
+		if (!xstrcasecmp(argv[optind], commands[i].command)) {
 			command_requested = i;
+			break;
+		}
+	}
 
 	if (command_requested == -1)
 		fatal("unknown command: %s", argv[optind]);
