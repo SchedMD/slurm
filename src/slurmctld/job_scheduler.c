@@ -484,7 +484,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 			continue;
 		}
 		job_ptr->array_task_id = i;
-		new_job_ptr = job_array_split(job_ptr);
+		new_job_ptr = job_array_split(job_ptr, true);
 		debug("%s: Split out %pJ for burst buffer use",
 		      __func__, job_ptr);
 		job_state_set(new_job_ptr, JOB_PENDING);
@@ -539,7 +539,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 			continue;
 		}
 		job_ptr->array_task_id = i;
-		new_job_ptr = job_array_split(job_ptr);
+		new_job_ptr = job_array_split(job_ptr, true);
 		info("%s: Split out %pJ for SLURM_DEPEND_AFTER_CORRESPOND use",
 		     __func__, job_ptr);
 		job_state_set(new_job_ptr, JOB_PENDING);

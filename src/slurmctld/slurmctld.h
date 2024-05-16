@@ -944,8 +944,9 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr);
  * IN job_ptr - META job record for a job array, which is to become an
  *		individial task of the job array.
  *		Set the job's array_task_id to the task to be split out.
+ * IN list_add - add to the job_list or not.
  * RET - The new job record, which is the new META job record. */
-extern job_record_t *job_array_split(job_record_t *job_ptr);
+extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add);
 
 /* Record the start of one job array task */
 extern void job_array_start(job_record_t *job_ptr);
