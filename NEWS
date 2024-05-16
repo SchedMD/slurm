@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
  -- Reject non-stepmgr job allocations requesting --resv-ports from the ctld.
  -- slurmrestd - Add fields '.job.resv_ports' '.jobs[].resv_ports' to
     'POST /slurm/v0.0.41/job/submit' and 'POST /slurm/v0.0.41/job/allocate'.
+ -- slurmstepd - Fix crash when cleaning up on shutdown with
+    --enable-memory-leak-debug.
+ -- Fix segfault in switch/hpe_slingshot plugin due to initialization squence.
 
 * Changes in Slurm 24.05.0rc1
 =============================
