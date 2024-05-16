@@ -2343,7 +2343,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      const openapi_path_binding_t *op_path,
 				      const openapi_resp_meta_t *plugin_meta)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	openapi_ctxt_t ctxt = {
 		.id = context_id,
 		.method = method,
