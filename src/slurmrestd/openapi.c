@@ -293,7 +293,7 @@ static const openapi_path_binding_method_t openapi_methods[] = {
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt);
 
-#define OP_FLAGS (OP_BIND_HIDDEN_OAS)
+#define OP_FLAGS (OP_BIND_HIDDEN_OAS | OP_BIND_NO_SLURMDBD)
 
 /*
  * Paths to generate OpenAPI specification
