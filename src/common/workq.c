@@ -181,6 +181,20 @@ static void _atfork_child(void)
 	workq = WORKQ_DEFAULT;
 }
 
+static void _increase_thread_count(int count)
+{
+	for (int i = 0; i < count; i++) {
+		workq_worker_t *worker = xmalloc(sizeof(*worker));
+		worker->magic = MAGIC_WORKER;
+		worker->id = i + 1;
+
+		slurm_thread_create(&worker->tid, _worker, worker);
+		_check_magic_worker(worker);
+
+		list_append(workq.workers, worker);
+	}
+}
+
 extern void workq_init(int count)
 {
 	int rc;
@@ -211,16 +225,7 @@ extern void workq_init(int count)
 
 	_check_magic_workq();
 
-	for (int i = 0; i < count; i++) {
-		workq_worker_t *worker = xmalloc(sizeof(*worker));
-		worker->magic = MAGIC_WORKER;
-		worker->id = i + 1;
-
-		slurm_thread_create(&worker->tid, _worker, worker);
-		_check_magic_worker(worker);
-
-		list_append(workq.workers, worker);
-	}
+	_increase_thread_count(count);
 
 	workq.shutdown = false;
 
