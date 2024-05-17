@@ -410,6 +410,9 @@ static void _split_job_on_schedule(array_split_type_t type,
 		    (job_ptr->array_task_id != NO_VAL))
 			continue;
 
+		if (job_ptr->array_recs->task_cnt < 1)
+			continue;
+
 		array_task_id = bit_ffs(job_ptr->array_recs->task_id_bitmap);
 		if (array_task_id < 0)
 			continue;
@@ -443,9 +446,6 @@ static void _split_job_on_schedule(array_split_type_t type,
 
 		if (num_pending_job_array_tasks(job_ptr->array_job_id) >=
 		    pend_cnt_limit)
-			continue;
-
-		if (job_ptr->array_recs->task_cnt < 1)
 			continue;
 
 		if (job_ptr->array_recs->task_cnt == 1) {
