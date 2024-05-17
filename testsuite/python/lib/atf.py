@@ -3074,9 +3074,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         nonqualifying_node_count += 1
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
-            elif parameter_name == 'Features':
-                required_features = set(parameter_value.split(','))
-                node_features = set(lower_node_dict.get('features', '').split(','))
+            elif parameter_name == "Features":
+                required_features = set(parameter_value.split(","))
+                node_features = set(lower_node_dict.get("features", "").split(","))
                 if not required_features.issubset(node_features):
                     if node_qualifies:
                         node_qualifies = False
@@ -3131,9 +3131,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict["NodeName"] = (
-                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
-                )
+                new_node_dict[
+                    "NodeName"
+                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)
