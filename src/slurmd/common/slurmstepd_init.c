@@ -138,7 +138,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 {
 	/* last_update */
 	/* accounting_storage_tres */
-	/* accounting_storage_enforce */
+	pack16(slurm_conf.accounting_storage_enforce, buffer);
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */
@@ -360,7 +360,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	init_slurm_conf(&slurm_conf);
 	/* last_update */
 	/* accounting_storage_tres */
-	/* accounting_storage_enforce */
+	safe_unpack16(&slurm_conf.accounting_storage_enforce, buffer);
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */

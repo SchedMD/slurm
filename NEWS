@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix scancel request when specifying individual array tasks in combination
     with filtering options (in both regular and --interactive mode).
  -- Enable MaxStepCount in stepmgr.
+ -- Enable AccountingStorageEnforce=nojobs,nosteps in stepmgr.
 
 * Changes in Slurm 24.05.0rc1
 =============================
