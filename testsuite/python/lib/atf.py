@@ -114,6 +114,7 @@ def run_command(
     user=None,
     input=None,
     xfail=False,
+    env_vars=None,
 ):
     """Executes a command and returns a dictionary result.
 
@@ -131,6 +132,8 @@ def run_command(
            the invoking user to have unprompted sudo rights.
        input (string): The specified input is supplied to the command as stdin.
        xfail (boolean): If True, the command is expected to fail.
+       env_vars (string): A string to set environmental variables that is
+            prepended to the command when run.
 
     Returns:
         A dictionary containing the following keys:
@@ -165,6 +168,9 @@ def run_command(
     else:
         log_command_level = logging.NOTE
         log_details_level = logging.DEBUG
+
+    if env_vars is not None:
+        command = env_vars.strip() + " " + command
 
     start_time = time.time()
     invocation_message = "Running command"
@@ -335,6 +341,7 @@ def repeat_until(
     condition,
     timeout=default_polling_timeout,
     poll_interval=None,
+    xfail=False,
     fatal=False,
 ):
     """Repeats a callable until a condition is met or it times out.
@@ -351,7 +358,9 @@ def repeat_until(
         poll_interval (float): Number of seconds to wait between condition
             polls. This may be a decimal fraction. The default poll interval
             depends on the timeout used, but varies between .1 and 1 seconds.
-        fatal (boolean): If True, a timeout will result in the test failing.
+        xfail (boolean): If True, a timeout is expected.
+        fatal (boolean): If True, the test will fail if condition is not met
+            (or if condition is met with xfail).
 
     Returns:
         True if the condition is met by the timeout, False otherwise.
@@ -371,16 +380,31 @@ def repeat_until(
         else:
             poll_interval = 1
 
+    condition_met = False
     while time.time() < begin_time + timeout:
         if condition(callable()):
-            return True
+            condition_met = True
+            break
         time.sleep(poll_interval)
 
-    if fatal:
-        pytest.fail(f"Condition was not met within the {timeout} second timeout")
-    else:
-        logging.warning(f"Condition was not met within the {timeout} second timeout")
-        return False
+    if not xfail and not condition_met:
+        if fatal:
+            pytest.fail(f"Condition was not met within the {timeout} second timeout")
+        else:
+            logging.warning(
+                f"Condition was not met within the {timeout} second timeout"
+            )
+    elif xfail and condition_met:
+        if fatal:
+            pytest.fail(
+                f"Condition was met within the {timeout} second timeout and wasn't expected"
+            )
+        else:
+            logging.warning(
+                f"Condition was met within the {timeout} second timeout and wasn't expected"
+            )
+
+    return condition_met
 
 
 def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
@@ -1614,7 +1638,7 @@ def cancel_jobs(
     """Cancels a list of jobs and waits for them to complete.
 
     Args:
-        job_list (list): A list of job ids to cancel.
+        job_list (list): A list of job ids to cancel. All 0s will be ignored.
         timeout (integer): Number of seconds to wait for jobs to be done before
             timing out.
         poll_interval (float): Number of seconds to wait between job state
@@ -1633,6 +1657,8 @@ def cancel_jobs(
         False
     """
 
+    # Filter list to ignore job_ids being 0
+    job_list = [i for i in job_list if i != 0]
     job_list_string = " ".join(str(i) for i in job_list)
 
     if job_list_string == "":
@@ -3191,9 +3217,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         nonqualifying_node_count += 1
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
-            elif parameter_name == 'Features':
-                required_features = set(parameter_value.split(','))
-                node_features = set(lower_node_dict.get('features', '').split(','))
+            elif parameter_name == "Features":
+                required_features = set(parameter_value.split(","))
+                node_features = set(lower_node_dict.get("features", "").split(","))
                 if not required_features.issubset(node_features):
                     if node_qualifies:
                         node_qualifies = False
@@ -3248,9 +3274,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict["NodeName"] = (
-                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
-                )
+                new_node_dict[
+                    "NodeName"
+                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)
