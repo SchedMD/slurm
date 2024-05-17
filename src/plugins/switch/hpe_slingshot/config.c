@@ -1368,3 +1368,23 @@ extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo)
 	xfree(jobinfo->vnis);
 	xfree(jobinfo);
 }
+
+extern int slingshot_update_config(slingshot_jobinfo_t *jobinfo)
+{
+	free_vnis = 0;
+	bit_set_all(slingshot_state.vni_table);
+	for (int i = 0; i < jobinfo->num_vnis; i++) {
+		bit_clear(slingshot_state.vni_table,
+			  (jobinfo->vnis[i] - slingshot_state.vni_min));
+		free_vnis++;
+	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)	{
+		char *bit_str = bit_fmt_full(slingshot_state.vni_table);
+		log_flag(SWITCH, "%s: min/max: %hu/%hu free_vnis: %d bitstr: %s",
+			 __func__, slingshot_state.vni_min,
+			 slingshot_state.vni_max, free_vnis, bit_str);
+		xfree(bit_str);
+	}
+
+	return SLURM_SUCCESS;
+}

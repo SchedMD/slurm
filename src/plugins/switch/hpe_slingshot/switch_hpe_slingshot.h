@@ -320,5 +320,6 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 extern bool slingshot_destroy_services(slingshot_stepinfo_t *job,
 				       uint32_t job_id);
 extern void slingshot_free_services(void);
+extern int slingshot_update_config(slingshot_jobinfo_t *jobinfo);
 
 #endif

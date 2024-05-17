@@ -380,6 +380,14 @@ extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 		safe_unpackstr(&jobinfo->extra, buffer);
 	}
 
+	if (running_in_slurmstepd()) {
+		/* Update vni table with allocated vnis for stepmgr job */
+		active_outside_ctld = true;
+		_state_defaults();
+		slingshot_setup_config(slurm_conf.switch_param);
+		slingshot_update_config(jobinfo);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
