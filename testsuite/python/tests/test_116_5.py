@@ -4,7 +4,6 @@
 import atf
 import pytest
 import re
-import os
 
 node_num = 3
 
@@ -19,11 +18,9 @@ def setup():
 
 def write_host_file(matchs):
     host_file = atf.module_tmp_path / "host_file"
-    hf = open(host_file, "w")
-    for line in matchs:
-        hf.write(line[1] + "\n")
-    hf.seek(0)
-    hf.close
+    with open(host_file, "w") as hf:
+        for line in matchs:
+            hf.write(line[1] + "\n")
 
 
 def test_hostfile():
@@ -32,17 +29,20 @@ def test_hostfile():
     host_file = atf.module_tmp_path / "host_file"
     HOSTFILE_ENV = "SLURM_HOSTFILE"
 
-    output = atf.run_job_output(f"-N{node_num} -l printenv SLURMD_NODENAME")
+    output = atf.run_job_output(f"-N{node_num} -l printenv SLURMD_NODENAME", fatal=True)
     matches = re.findall(r"(\d+): (\S+)", output)
     matches += [matches.pop(0)]
     match_ordered = []
     for iter in range(len(matches)):
         match_ordered.append((str(iter), matches[iter][1]))
-    os.environ[HOSTFILE_ENV] = str(host_file)
     write_host_file(matches)
 
     # Test pass 1
-    output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
+    output = atf.run_job_output(
+        f"-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        env_vars=f"{HOSTFILE_ENV}={host_file}",
+        fatal=True,
+    )
     matches = re.findall(r"(\d+): (\S+)", output)
     for match in matches:
         assert (
@@ -59,7 +59,11 @@ def test_hostfile():
     write_host_file(matches)
 
     # Test pass 2
-    output = atf.run_job_output(f"-l --distribution=arbitrary printenv SLURMD_NODENAME")
+    output = atf.run_job_output(
+        f"-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        env_vars=f"{HOSTFILE_ENV}={host_file}",
+        fatal=True,
+    )
     matches = re.findall(r"(\d+): (\S+)", output)
     for match in matches:
         assert (
