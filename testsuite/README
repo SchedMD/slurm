@@ -460,8 +460,6 @@ test17.3   Confirm that sbatch reports a proper version number
 	   (--version option).
 test17.4   Confirm that as sbatch job executes as the appropriate user and
 	   group.
-test17.5   Confirm that sbatch stdout, and stderr options work (--output
-	   and --error option respectively, including use of %j specification)
 test17.6   Confirm that a job executes with the proper task count (--ntasks
 	   option).
 test17.8   Confirm that sbatch sets appropriate time limit (--time
@@ -482,7 +480,6 @@ test17.18  Test of job dependencies and deferred begin time (--dependency
 	   and --begin options).
 test17.19  Test of job submit to multiple partitions (--partition).
 test17.20  Test of mail options (--mail-type and --mail-user options)
-test17.21  Tests #Slurm entry functionality in a batch script
 test17.22  Test of running non-existent job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.24  Test of --partition and --verbose options.
@@ -812,6 +809,8 @@ test_105_1   /commands/sbatch/test_gpu_options.py
 test_105_2   /commands/sbatch/test_hetjob.py
 test_105_3   /commands/sbatch/test_invalid_mps_options.py
 test_105_4   /commands/sbatch/test_--usage.py
+test_105_5   Test sbatch --output and --error options work, including use of spaces, %j, and %u
+test_105_6   Test #SBATCH directives in sbatch scripts
 
 test_106_#   Testing of sbcast options.
 =======================================
