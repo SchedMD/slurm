@@ -287,4 +287,11 @@ extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
 				  const char *name, time_t *time_ptr,
 				  const char *caller);
 
+/*
+ * Generate OpenAPI specification
+ * IN/OUT dst - data_t to populate with specification
+ * RET SLURM_SUCCESS or error
+ */
+extern int generate_spec(data_t *dst);
+
 #endif /* SLURMRESTD_OPENAPI_H */

@@ -1999,11 +1999,11 @@ static int _foreach_count_path(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _op_handler_openapi(openapi_ctxt_t *ctxt)
+extern int generate_spec(data_t *dst)
 {
 	openapi_spec_t spec = {
 		.magic = MAGIC_OAS,
-		.spec = ctxt->resp,
+		.spec = dst,
 	};
 	data_t *security1, *security2, *security3;
 	char *version_at = NULL;
@@ -2173,6 +2173,11 @@ static int _op_handler_openapi(openapi_ctxt_t *ctxt)
 	 * out
 	 */
 	return SLURM_SUCCESS;
+}
+
+static int _op_handler_openapi(openapi_ctxt_t *ctxt)
+{
+	return generate_spec(ctxt->resp);
 }
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,
