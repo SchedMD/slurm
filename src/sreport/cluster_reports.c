@@ -448,7 +448,7 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("planned", object,
-					 MAX(command_len, 4)) ||
+					 MAX(command_len, 2)) ||
 			   !xstrncasecmp("reserved", object,
 					 MAX(command_len, 3))) {
 			field->type = PRINT_CLUSTER_TRES_PLAN;
