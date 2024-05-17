@@ -84,6 +84,9 @@
 
 #define OPT_LONG_MAX_CON 0x100
 #define OPT_LONG_AUTOCOMP 0x101
+#define OPT_LONG_GEN_OAS 0x102
+
+#define SLURM_CONF_DISABLED "/dev/null"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define unshare(_) (false)
@@ -115,6 +118,7 @@ static int max_connections = 124;
 /* User to become once loaded */
 static uid_t uid = 0;
 static gid_t gid = 0;
+static bool dump_spec_requested = false;
 
 static char *rest_auth = NULL;
 static plugin_handle_t *auth_plugin_handles = NULL;
@@ -365,6 +369,61 @@ static void _usage(void)
 }
 
 /*
+ * Load only required plugins to dump OpenAPI Specification to stdout
+ */
+__attribute__((noreturn))
+static void dump_spec(int argc, char **argv)
+{
+	int rc = SLURM_SUCCESS;
+	data_t *spec = data_new();
+	char *output = NULL;
+	size_t output_len = 0;
+
+	_setup_logging(argc, argv);
+
+	/* Load slurm.conf if possible and ignore if it fails */
+	if (!xstrcmp(slurm_conf_filename, SLURM_CONF_DISABLED)) {
+		/* Avoid another part of Slurm from trying to load slurm.conf */
+		setenvfs("SLURM_CONF="SLURM_CONF_DISABLED);
+	} else if (!xstrcmp(getenv("SLURM_CONF"), SLURM_CONF_DISABLED)) {
+		; /* Do not try to load slurm.conf */
+	} else if ((rc = slurm_conf_init(slurm_conf_filename))) {
+		debug("Unable to load %s: %s",
+		      slurm_conf_filename, slurm_strerror(rc));
+	}
+
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("Unable to initialize JSON serializer");
+
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL,
+						data_parser_plugins, NULL,
+						false)))
+		fatal("Unable to initialize data_parser plugins");
+
+	if ((rc = init_operations(parsers)))
+		fatal("Unable to initialize operations structures: %s",
+		      slurm_strerror(rc));
+
+	if (init_openapi(oas_specs, NULL, parsers, response_status_codes))
+		fatal("Unable to initialize OpenAPI structures");
+
+	if ((rc = generate_spec(spec)))
+		fatal("Unable to generate OpenAPI Specification: %s",
+		      slurm_strerror(rc));
+
+	if ((rc = serialize_g_data_to_string(&output, &output_len, spec,
+					     MIME_TYPE_JSON, SER_FLAGS_PRETTY)))
+		fatal("Unable to dump OpenAPI Specification: %s",
+		      slurm_strerror(rc));
+
+	fprintf(stdout, "%s", output);
+	fflush(stdout);
+
+	_exit(rc);
+}
+
+/*
  * _parse_commandline - parse and process any command line arguments
  * IN argc - number of command line arguments
  * IN argv - the command line arguments
@@ -376,6 +435,7 @@ static void _parse_commandline(int argc, char **argv)
 		{ "autocomplete", required_argument, NULL, OPT_LONG_AUTOCOMP },
 		{ "help", no_argument, NULL, 'h' },
 		{ "max-connections", required_argument, NULL, OPT_LONG_MAX_CON },
+		{ "generate-openapi-spec", no_argument, NULL, OPT_LONG_GEN_OAS },
 		{ NULL, required_argument, NULL, 'a' },
 		{ NULL, required_argument, NULL, 'd' },
 		{ NULL, required_argument, NULL, 'f' },
@@ -439,6 +499,9 @@ static void _parse_commandline(int argc, char **argv)
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
 			exit(0);
+			break;
+		case OPT_LONG_GEN_OAS:
+			dump_spec_requested = true;
 			break;
 		default:
 			_usage();
@@ -558,6 +621,9 @@ int main(int argc, char **argv)
 
 	_parse_env();
 	_parse_commandline(argc, argv);
+
+	if (dump_spec_requested)
+		dump_spec(argc, argv);
 
 	/* attempt to release all unneeded permissions */
 	_lock_down();
