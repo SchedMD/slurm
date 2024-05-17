@@ -391,6 +391,16 @@ static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 	return true;
 }
 
+static int _find_depend_after_corr(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+
+	if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND)
+		return 1;
+
+	return 0;
+}
+
 static void _split_job_on_schedule(array_split_type_t type,
 				   list_itr_t *job_iterator)
 {
@@ -418,25 +428,14 @@ static void _split_job_on_schedule(array_split_type_t type,
 			continue;
 
 		if (type == ARRAY_SPLIT_AFTER_CORR) {
-			int dep_corr = 0;
-			list_itr_t *depend_iter;
-			depend_spec_t *dep_ptr;
-
 			if (!job_ptr->details ||
 			    !job_ptr->details->depend_list ||
-			    !list_count(job_ptr->details->depend_list))
+			    !list_count(job_ptr->details->depend_list) ||
+			    !list_find_first(job_ptr->details->depend_list,
+					     _find_depend_after_corr,
+					     NULL))
 				continue;
-			depend_iter = list_iterator_create(
-				job_ptr->details->depend_list);
-			while ((dep_ptr = list_next(depend_iter))) {
-				if (dep_ptr->depend_type ==
-				    SLURM_DEPEND_AFTER_CORRESPOND) {
-					dep_corr = 1;
-					break;
-				}
-			}
-			if (!dep_corr)
-				continue;
+
 			reason_msg = "SLURM_DEPEND_AFTER_CORRESPOND";
 			pend_cnt_limit = correspond_after_task_cnt;
 		} else {
