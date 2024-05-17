@@ -471,21 +471,27 @@ static void _resv_port_free(uint16_t resv_port_cnt,
  */
 extern void resv_port_step_free(step_record_t *step_ptr)
 {
+	if (step_ptr->resv_port_array == NULL)
+		return;
+
 	_resv_port_free(step_ptr->resv_port_cnt, step_ptr->resv_port_array,
 			step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
 
-	debug("freed ports %s for %pS",
-	      step_ptr->resv_ports, step_ptr);
+	debug2("freed ports %s for %pS",
+	       step_ptr->resv_ports, step_ptr);
 }
 
 extern void resv_port_job_free(job_record_t *job_ptr)
 {
+	if (job_ptr->resv_port_array == NULL)
+		return;
+
 	_resv_port_free(job_ptr->resv_port_cnt,
 			job_ptr->resv_port_array,
 			job_ptr->node_bitmap);
 	xfree(job_ptr->resv_port_array);
 
-	debug("freed ports %s for %pJ",
-	      job_ptr->resv_ports, job_ptr);
+	debug2("freed ports %s for %pJ",
+	       job_ptr->resv_ports, job_ptr);
 }

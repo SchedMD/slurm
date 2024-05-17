@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     --enable-memory-leak-debug.
  -- Fix segfault in switch/hpe_slingshot plugin due to initialization squence.
  -- scrun - Fix regression in rc1 that caused scrun to crash.
+ -- Prevent unnecessary log statement when free'ing ports.
 
 * Changes in Slurm 24.05.0rc1
 =============================
