@@ -288,7 +288,9 @@ extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 
 	xassert(ctxt->magic == MAGIC_CTXT);
 	xassert(!*list);
-	xassert(ctxt->db_conn);
+
+	if (!ctxt->db_conn)
+		return ESLURM_DB_CONNECTION;
 
 	errno = 0;
 	l = func(ctxt->db_conn, cond);
