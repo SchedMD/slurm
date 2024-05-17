@@ -517,11 +517,18 @@ extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 
 	xassert(plugins_ptr);
 	if (!*plugins_ptr) {
+		const char *plugin_dir;
+
 		plugins = xmalloc(sizeof(*plugins));
 		plugins->magic = PLUGINS_MAGIC;
 		plugins->rack = plugrack_create(major_type);
 
-		if ((rc = plugrack_read_dir(plugins->rack, slurm_conf.plugindir))) {
+		if (slurm_conf.plugindir)
+			plugin_dir = slurm_conf.plugindir;
+		else
+			plugin_dir = default_plugin_path;
+
+		if ((rc = plugrack_read_dir(plugins->rack, plugin_dir))) {
 			error("%s: plugrack_read_dir(%s) failed: %s",
 			      __func__, slurm_conf.plugindir, slurm_strerror(rc));
 			goto cleanup;
