@@ -103,6 +103,11 @@
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 
+typedef enum {
+	ARRAY_SPLIT_BURST_BUFFER,
+	ARRAY_SPLIT_AFTER_CORR,
+} array_split_type_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
@@ -386,6 +391,90 @@ static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 	return true;
 }
 
+static void _split_job_on_schedule(array_split_type_t type,
+				   list_itr_t *job_iterator)
+{
+	char *reason_msg = NULL;
+	int pend_cnt_limit = 0;
+	job_record_t *job_ptr, *new_job_ptr;
+	int array_task_id;
+
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((type == ARRAY_SPLIT_BURST_BUFFER) &&
+		    !job_ptr->burst_buffer)
+			continue;
+
+		if (!IS_JOB_PENDING(job_ptr) ||
+		    !job_ptr->array_recs ||
+		    !job_ptr->array_recs->task_id_bitmap ||
+		    (job_ptr->array_task_id != NO_VAL))
+			continue;
+
+		array_task_id = bit_ffs(job_ptr->array_recs->task_id_bitmap);
+		if (array_task_id < 0)
+			continue;
+
+		if (type == ARRAY_SPLIT_AFTER_CORR) {
+			int dep_corr = 0;
+			list_itr_t *depend_iter;
+			depend_spec_t *dep_ptr;
+
+			if (!job_ptr->details ||
+			    !job_ptr->details->depend_list ||
+			    !list_count(job_ptr->details->depend_list))
+				continue;
+			depend_iter = list_iterator_create(
+				job_ptr->details->depend_list);
+			while ((dep_ptr = list_next(depend_iter))) {
+				if (dep_ptr->depend_type ==
+				    SLURM_DEPEND_AFTER_CORRESPOND) {
+					dep_corr = 1;
+					break;
+				}
+			}
+			if (!dep_corr)
+				continue;
+			reason_msg = "SLURM_DEPEND_AFTER_CORRESPOND";
+			pend_cnt_limit = correspond_after_task_cnt;
+		} else {
+			reason_msg = "burst buffer";
+			pend_cnt_limit = bb_array_stage_cnt;
+		}
+
+		if (num_pending_job_array_tasks(job_ptr->array_job_id) >=
+		    pend_cnt_limit)
+			continue;
+
+		if (job_ptr->array_recs->task_cnt < 1)
+			continue;
+
+		if (job_ptr->array_recs->task_cnt == 1) {
+			job_ptr->array_task_id = array_task_id;
+			(void) job_array_post_sched(job_ptr, true);
+			if (job_ptr->details &&
+			    job_ptr->details->dependency &&
+			    job_ptr->details->depend_list)
+				fed_mgr_submit_remote_dependencies(job_ptr,
+								   false,
+								   false);
+			continue;
+		}
+		job_ptr->array_task_id = array_task_id;
+		new_job_ptr = job_array_split(job_ptr, true);
+		info("%s: Split out %pJ for %s use",
+		     __func__, job_ptr, reason_msg);
+		job_state_set(new_job_ptr, JOB_PENDING);
+		new_job_ptr->start_time = (time_t) 0;
+		/*
+		 * Do NOT clear db_index here, it is handled when task_id_str
+		 * is created elsewhere.
+		 */
+
+		if (type == ARRAY_SPLIT_BURST_BUFFER)
+			(void) bb_g_job_validate2(job_ptr, NULL);
+	}
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -433,11 +522,9 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
 	list_t *job_queue = NULL;
-	list_itr_t *depend_iter, *job_iterator, *part_iterator;
-	job_record_t *job_ptr = NULL, *new_job_ptr;
+	list_itr_t *job_iterator, *part_iterator;
+	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr;
-	depend_spec_t *dep_ptr;
-	int i, pend_cnt, dep_corr;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
 	int job_part_pairs = 0;
@@ -459,96 +546,12 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	 * either.
 	 */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_PENDING(job_ptr) ||
-		    !job_ptr->burst_buffer || !job_ptr->array_recs ||
-		    !job_ptr->array_recs->task_id_bitmap ||
-		    (job_ptr->array_task_id != NO_VAL))
-			continue;
-
-		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
-			continue;
-		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
-		if (pend_cnt >= bb_array_stage_cnt)
-			continue;
-		if (job_ptr->array_recs->task_cnt < 1)
-			continue;
-		if (job_ptr->array_recs->task_cnt == 1) {
-			job_ptr->array_task_id = i;
-			(void) job_array_post_sched(job_ptr);
-			if (job_ptr->details && job_ptr->details->dependency &&
-			    job_ptr->details->depend_list)
-				fed_mgr_submit_remote_dependencies(job_ptr,
-								   false,
-								   false);
-			continue;
-		}
-		job_ptr->array_task_id = i;
-		new_job_ptr = job_array_split(job_ptr, true);
-		debug("%s: Split out %pJ for burst buffer use",
-		      __func__, job_ptr);
-		job_state_set(new_job_ptr, JOB_PENDING);
-		new_job_ptr->start_time = (time_t) 0;
-		/*
-		 * Do NOT clear db_index here, it is handled when task_id_str
-		 * is created elsewhere.
-		 */
-		(void) bb_g_job_validate2(job_ptr, NULL);
-	}
+	_split_job_on_schedule(ARRAY_SPLIT_BURST_BUFFER, job_iterator);
 
 	/* Create individual job records for job arrays with
 	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND */
 	list_iterator_reset(job_iterator);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_PENDING(job_ptr) ||
-		    !job_ptr->array_recs ||
-		    !job_ptr->array_recs->task_id_bitmap ||
-		    (job_ptr->array_task_id != NO_VAL))
-			continue;
-		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
-			continue;
-		if ((job_ptr->details == NULL) ||
-		    (job_ptr->details->depend_list == NULL) ||
-		    (list_count(job_ptr->details->depend_list) == 0))
-			continue;
-		depend_iter = list_iterator_create(
-			job_ptr->details->depend_list);
-		dep_corr = 0;
-		while ((dep_ptr = list_next(depend_iter))) {
-			if (dep_ptr->depend_type ==
-			    SLURM_DEPEND_AFTER_CORRESPOND) {
-				dep_corr = 1;
-				break;
-			}
-		}
-		if (!dep_corr)
-			continue;
-		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
-		if (pend_cnt >= correspond_after_task_cnt)
-			continue;
-		if (job_ptr->array_recs->task_cnt < 1)
-			continue;
-		if (job_ptr->array_recs->task_cnt == 1) {
-			job_ptr->array_task_id = i;
-			(void) job_array_post_sched(job_ptr, true);
-			if (job_ptr->details && job_ptr->details->dependency &&
-			    job_ptr->details->depend_list)
-				fed_mgr_submit_remote_dependencies(job_ptr,
-								   false,
-								   false);
-			continue;
-		}
-		job_ptr->array_task_id = i;
-		new_job_ptr = job_array_split(job_ptr, true);
-		info("%s: Split out %pJ for SLURM_DEPEND_AFTER_CORRESPOND use",
-		     __func__, job_ptr);
-		job_state_set(new_job_ptr, JOB_PENDING);
-		new_job_ptr->start_time = (time_t) 0;
-		/*
-		 * Do NOT clear db_index here, it is handled when task_id_str
-		 * is created elsewhere.
-		 */
-	}
+	_split_job_on_schedule(ARRAY_SPLIT_AFTER_CORR, job_iterator);
 
 	list_iterator_reset(job_iterator);
 	while ((job_ptr = list_next(job_iterator))) {
