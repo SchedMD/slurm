@@ -4,7 +4,6 @@
 import atf
 import pytest
 import pexpect
-import os
 import re
 
 suser = atf.properties["slurm-user"]
@@ -98,13 +97,16 @@ def test_user_env_variables():
     ), "Environment variables not propagated"
     child.close()
 
-    os.environ[env_var] = env_val
-    output = atf.run_job_output(f"--export=ALL {file_in}").strip()
+    output = atf.run_job_output(
+        f"--export=ALL {file_in}", env_vars=f"{env_var}={env_val}"
+    ).strip()
     assert (
         output == f"{env_var}={env_val}"
     ), "Environment variables not propagated with export=ALL"
 
-    output = atf.run_job_output(f"--export=NONE {file_in}").strip()
+    output = atf.run_job_output(
+        f"--export=NONE {file_in}", env_vars=f"{env_var}={env_val}"
+    ).strip()
     assert (
         output != f"{env_var}={env_val}"
     ), "Environment variables were propagated with export=NONE"
@@ -130,23 +132,19 @@ def test_slurm_directed_env_variables():
     slurm_overcommit = "SLURM_OVERCOMMIT"
     slurm_overcommit_val = "1"
 
-    os.environ[slurm_debug] = slurm_debug_val
-    os.environ[slurm_nnodes] = slurm_nnodes_val
-    os.environ[slurm_nprocs] = slurm_nprocs_val
-    os.environ[slurm_stdoutmode] = slurm_stdoutmode_val
-    os.environ[slurm_overcommit] = slurm_overcommit_val
-
     atf.make_bash_script(file_in, "env | grep SLURM_")
-    atf.run_job(f"{file_in}")
-    atf.wait_for_file(f"{file_out}")
+    atf.run_job(
+        file_in,
+        env_vars=f"{slurm_debug}={slurm_debug_val} {slurm_nnodes}={slurm_nnodes_val} {slurm_nprocs}={slurm_nprocs_val} {slurm_stdoutmode}={slurm_stdoutmode_val} {slurm_overcommit}={slurm_overcommit_val}",
+    )
+    atf.wait_for_file(file_out)
     atf.run_command(f"sort {file_out} > {sorted_file_out}")
 
-    f = open(sorted_file_out, "r")
-    output = f.read()
-    f.close()
+    with open(sorted_file_out) as f:
+        output = f.read()
 
     task_count = len(re.findall(rf"{slurm_nprocs}=(\d+)", output))
-    stale_count = len(re.findall(r"Stale file handle", output))
+    stale_count = len(re.findall("Stale file handle", output))
     task_count += stale_count
     assert task_count == int(
         slurm_nprocs_val
@@ -161,8 +159,8 @@ def test_slurm_directed_env_variables():
     ), f"Did not process {slurm_nnodes} environment variable max_node_val = {max_node_val}"
 
     assert (
-        re.search(f"{slurm_debug}=1", output) is not None
+        re.search(f"{slurm_debug}={slurm_debug_val}", output) is not None
     ), f"Did not process {slurm_debug} environment variable"
     assert (
-        re.search(f"{slurm_overcommit}=1", output) is not None
+        re.search(f"{slurm_overcommit}={slurm_overcommit_val}", output) is not None
     ), f"Did not process {slurm_overcommit} environment variable"

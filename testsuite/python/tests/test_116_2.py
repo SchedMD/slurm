@@ -3,7 +3,6 @@
 ############################################################################
 import atf
 import pytest
-import os
 import re
 
 
@@ -20,8 +19,7 @@ def test_account():
 
     my_acct = "MY_ACCT"
     qa_acct = "QA_ACCT"
-    os.environ["SLURM_ACCOUNT"] = "QA_ACCT"
-    job_id = atf.submit_job_sbatch(f'--account={my_acct} --wrap="sleep 5"')
+    job_id = atf.submit_job_sbatch(f'--account={my_acct} --wrap="sleep 5"', env_vars=f"SLURM_ACCOUNT={qa_acct}")
     assert job_id != 0, f"Batch submit failure"
     output = atf.run_command_output(f"scontrol show job {job_id}")
     assert re.search(
@@ -30,7 +28,7 @@ def test_account():
 
     file_in = atf.module_tmp_path / "file_in"
     atf.make_bash_script(file_in, """env | grep SLURM_ACCOUNT""")
-    result = atf.run_job(f"-v {file_in}")
+    result = atf.run_job(f"-v {file_in}", env_vars=f"SLURM_ACCOUNT={qa_acct}")
     job_id = re.search(r"jobid (\d+)", result["stderr"]).group(1)
     assert (
         re.search(f"SLURM_ACCOUNT={qa_acct}", result["stdout"]) is not None
