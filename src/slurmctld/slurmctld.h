@@ -938,7 +938,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 extern void job_array_pre_sched(job_record_t *job_ptr);
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern job_record_t *job_array_post_sched(job_record_t *job_ptr);
+extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add);
 
 /* Create an exact copy of an existing job record for a job array.
  * IN job_ptr - META job record for a job array, which is to become an

@@ -530,7 +530,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 			continue;
 		if (job_ptr->array_recs->task_cnt == 1) {
 			job_ptr->array_task_id = i;
-			(void) job_array_post_sched(job_ptr);
+			(void) job_array_post_sched(job_ptr, true);
 			if (job_ptr->details && job_ptr->details->dependency &&
 			    job_ptr->details->depend_list)
 				fed_mgr_submit_remote_dependencies(job_ptr,

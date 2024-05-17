@@ -3388,7 +3388,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 				job_ptr_pend->array_task_id = NO_VAL;
 			} else {
 				job_ptr_pend->array_task_id = i;
-				job_array_post_sched(job_ptr_pend);
+				job_array_post_sched(job_ptr_pend, true);
 			}
 		} else {
 			/* Still have tasks left to split off in the array */
@@ -18050,7 +18050,7 @@ extern void job_array_pre_sched(job_record_t *job_ptr)
 }
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern job_record_t *job_array_post_sched(job_record_t *job_ptr)
+extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add)
 {
 	job_record_t *new_job_ptr = NULL;
 
@@ -18090,7 +18090,7 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr)
 		}
 		new_job_ptr = job_ptr;
 	} else {
-		new_job_ptr = job_array_split(job_ptr, true);
+		new_job_ptr = job_array_split(job_ptr, list_add);
 		job_state_set(new_job_ptr, JOB_PENDING);
 		new_job_ptr->start_time = (time_t) 0;
 		/*
