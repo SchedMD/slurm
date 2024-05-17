@@ -215,7 +215,7 @@ struct conmgr_s {
 	/*
 	 * Is trying to shutdown?
 	 */
-	bool shutdown;
+	bool shutdown_requested;
 	/*
 	 * Is mgr currently quiesced?
 	 * Sends all new work to deferred_funcs() while true
@@ -279,7 +279,7 @@ struct conmgr_s {
 		.signal_fd = { -1, -1 },\
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
-		.shutdown = true,\
+		.shutdown_requested = true,\
 	}
 
 struct conmgr_s mgr = CONMGR_MGR_DEFAULT;
@@ -587,7 +587,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	mgr.shutdown = false;
+	mgr.shutdown_requested = false;
 
 	if (!mgr.at_fork_installed) {
 		int rc;
@@ -724,7 +724,7 @@ extern void conmgr_fini(void)
 		return;
 	}
 
-	mgr.shutdown = true;
+	mgr.shutdown_requested = true;
 	mgr.quiesced = false;
 
 	/* run all deferred work if there is any */
@@ -1354,7 +1354,7 @@ static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 
 		slurm_mutex_lock(&mgr.mutex);
 		if (mgr.exit_on_error)
-			mgr.shutdown = true;
+			mgr.shutdown_requested = true;
 
 		if (!mgr.error)
 			mgr.error = rc;
@@ -2123,7 +2123,7 @@ static void _listen(void *x)
 	slurm_mutex_lock(&mgr.mutex);
 
 	/* if shutdown has been requested: then don't listen() anymore */
-	if (mgr.shutdown) {
+	if (mgr.shutdown_requested) {
 		log_flag(NET, "%s: caught shutdown. closing %u listeners",
 			 __func__, list_count(mgr.listen_conns));
 		goto cleanup;
@@ -2343,7 +2343,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 {
 	bool work = false; /* is there any work to do? */
 
-	if (mgr.shutdown)
+	if (mgr.shutdown_requested)
 		_close_all_connections(true);
 	else if (mgr.quiesced) {
 		if (mgr.poll_active || mgr.listen_active) {
@@ -2405,7 +2405,7 @@ static void _watch(void *blocking)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.shutdown) {
+	if (mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
@@ -2476,7 +2476,7 @@ extern int conmgr_run(bool blocking)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.shutdown) {
+	if (mgr.shutdown_requested) {
 		log_flag(NET, "%s: refusing to run when conmgr is shutdown",
 			 __func__);
 
@@ -2926,7 +2926,7 @@ extern void conmgr_request_shutdown(void)
 	log_flag(NET, "%s: shutdown requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	mgr.shutdown = true;
+	mgr.shutdown_requested = true;
 	_signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 }
@@ -2936,7 +2936,7 @@ extern void conmgr_quiesce(bool wait)
 	log_flag(NET, "%s: quiesce requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (mgr.quiesced || mgr.shutdown) {
+	if (mgr.quiesced || mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
@@ -3386,7 +3386,7 @@ extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.shutdown) {
+	if (mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
