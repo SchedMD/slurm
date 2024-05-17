@@ -579,7 +579,7 @@ int main(int argc, char **argv)
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
-	init_conmgr((run_mode.listen ? thread_count : 1), max_connections,
+	conmgr_init((run_mode.listen ? thread_count : 1), max_connections,
 		    callbacks);
 
 	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,

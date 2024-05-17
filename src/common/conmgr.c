@@ -577,7 +577,7 @@ static void _atfork_child(void)
 	mgr = CONMGR_MGR_DEFAULT;
 }
 
-extern void init_conmgr(int thread_count, int max_connections,
+extern void conmgr_init(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks)
 {
 	if (thread_count < 1)
