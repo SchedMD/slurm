@@ -1644,7 +1644,7 @@ def cancel_jobs(
     """Cancels a list of jobs and waits for them to complete.
 
     Args:
-        job_list (list): A list of job ids to cancel.
+        job_list (list): A list of job ids to cancel. All 0s will be ignored.
         timeout (integer): Number of seconds to wait for jobs to be done before
             timing out.
         poll_interval (float): Number of seconds to wait between job state
@@ -1663,6 +1663,8 @@ def cancel_jobs(
         False
     """
 
+    # Filter list to ignore job_ids being 0
+    job_list = [i for i in job_list if i != 0]
     job_list_string = " ".join(str(i) for i in job_list)
 
     if job_list_string == "":
