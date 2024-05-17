@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- Improve error type logged from partial or incomplete reading from socket or
     pipe to avoid potentially logging an error from a previous syscall.
+ -- slurmrestd - Improve the handling of queries when unable to connect to
+    slurmdbd by providing responses when possible.
 
 * Changes in Slurm 24.05.0rc2
 =============================
