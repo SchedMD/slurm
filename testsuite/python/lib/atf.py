@@ -1376,6 +1376,8 @@ def require_config_parameter(
             value is sufficient. If not, the target parameter_value will be
             used (or the test will be skipped in the case of local-config mode).
         source (string): Name of the config file without the .conf prefix.
+        skip_message (string): Message to be displayed if in local-config mode
+            and parameter not present.
 
     Note:
         When requiring a complex parameter (one which may be repeated and has
@@ -2973,12 +2975,14 @@ def require_nodes(requested_node_count, requirements_list=[]):
         Cores
         RealMemory
         Gres
+        Features
 
     Returns:
         None
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
+        >>> require_nodes(2, [('CPUs', 2), ('RealMemory', 30), ('Features', 'gpu,mpi')])
     """
 
     # If using local-config and slurm is running, use live node information
@@ -3106,6 +3110,15 @@ def require_nodes(requested_node_count, requirements_list=[]):
                             if nonqualifying_node_count == 1:
                                 augmentation_dict[parameter_name] = gres_value
                 else:
+                    if node_qualifies:
+                        node_qualifies = False
+                        nonqualifying_node_count += 1
+                    if nonqualifying_node_count == 1:
+                        augmentation_dict[parameter_name] = parameter_value
+            elif parameter_name == 'Features':
+                required_features = set(parameter_value.split(','))
+                node_features = set(lower_node_dict.get('features', '').split(','))
+                if not required_features.issubset(node_features):
                     if node_qualifies:
                         node_qualifies = False
                         nonqualifying_node_count += 1
