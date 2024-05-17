@@ -59,7 +59,9 @@ extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
 	List l;
 
 	xassert(!*list);
-	xassert(args->db_conn);
+
+	if (!args->db_conn)
+		return ESLURM_DB_CONNECTION;
 
 	errno = 0;
 	l = func(args->db_conn, cond);
