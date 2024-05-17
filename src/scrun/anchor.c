@@ -1252,7 +1252,7 @@ static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		break;
 	case REQUEST_CONTAINER_DELETE:
 		rc = _delete(con, msg);
-		slurm_free_msg(msg);
+		/* msg is free'ed later */
 		break;
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
