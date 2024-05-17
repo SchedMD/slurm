@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     'PLNDDown' to match what is printed as the column title.
  -- topology/block - Always return an error when the segment size does not
     match the system or job specification.
+ -- Add previously missing timers for Prolog and Epilog scripts when RunInJob is
+    set.
 
 * Changes in Slurm 24.05.0rc1
 =============================
