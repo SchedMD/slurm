@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - fix assertion when restarting the controller.
  -- switch/hpe_slingshot - fix calcuation of free vnis when restarting the
     controller with running jobs.
+ -- Improve default job reserve MPI port allocations that use overcommit or do
+    not specify a task count for stepmgr enabled jobs.
 
 * Changes in Slurm 24.05.0rc1
 =============================
