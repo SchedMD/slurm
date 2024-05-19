@@ -230,7 +230,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* max_job_id */
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
-	/* max_step_cnt */
+	pack32(slurm_conf.max_step_cnt, buffer);
 	pack16(slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
@@ -455,7 +455,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* max_job_id */
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
-	/* max_step_cnt */
+	safe_unpack32(&slurm_conf.max_step_cnt, buffer);
 	safe_unpack16(&slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */

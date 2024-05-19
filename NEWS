@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Calculate a job's min_cpus with consideration to --cpus-per-gpu.
  -- Fix scancel request when specifying individual array tasks in combination
     with filtering options (in both regular and --interactive mode).
+ -- Enable MaxStepCount in stepmgr.
 
 * Changes in Slurm 24.05.0rc1
 =============================
