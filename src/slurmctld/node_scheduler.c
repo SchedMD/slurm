@@ -2349,53 +2349,55 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
 			       time_t now)
 {
 	int error_code = SLURM_SUCCESS;
-	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		if (slurm_conf.mpi_params &&
-		    (job_ptr->resv_port_cnt == NO_VAL16)) {
-			if (!job_ptr->job_resrcs) {
-				error("Select plugin failed to set job resources");
-				/*
-				* Do not attempt to allocate the select_bitmap nodes
-				* since select plugin failed to set job resources
-				*/
-				error_code = ESLURM_NODES_BUSY;
-				job_ptr->start_time = 0;
-				job_ptr->time_last_active = 0;
-				job_ptr->end_time = 0;
-				job_ptr->state_reason = WAIT_RESOURCES;
-				last_job_update = now;
-				xfree(job_ptr->state_desc);
-				return error_code;
-			}
 
-			*orig_resv_port_cnt = job_ptr->resv_port_cnt;
-			job_ptr->resv_port_cnt = 0;
+	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
+		return SLURM_SUCCESS;
 
+	if (slurm_conf.mpi_params &&
+	    (job_ptr->resv_port_cnt == NO_VAL16)) {
+		if (!job_ptr->job_resrcs) {
+			error("Select plugin failed to set job resources");
 			/*
-			* reserved port count set to maximum task count on
-			* any node plus one
+			* Do not attempt to allocate the select_bitmap nodes
+			* since select plugin failed to set job resources
 			*/
-			for (int i = 0; i < node_cnt; i++) {
-				job_ptr->resv_port_cnt =
-					MAX(job_ptr->resv_port_cnt,
-					    job_ptr->job_resrcs->
-					    tasks_per_node[i]);
-			}
-			job_ptr->resv_port_cnt++;
+			error_code = ESLURM_NODES_BUSY;
+			job_ptr->start_time = 0;
+			job_ptr->time_last_active = 0;
+			job_ptr->end_time = 0;
+			job_ptr->state_reason = WAIT_RESOURCES;
+			last_job_update = now;
+			xfree(job_ptr->state_desc);
+			return error_code;
 		}
-		if ((job_ptr->resv_port_cnt != NO_VAL16) &&
-		    (job_ptr->resv_port_cnt != 0)) {
-			error_code = resv_port_job_alloc(job_ptr);
-			if (error_code) {
-				job_ptr->start_time = 0;
-				job_ptr->time_last_active = 0;
-				job_ptr->end_time = 0;
-				job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
-				last_job_update = now;
-				xfree(job_ptr->state_desc);
-			}
+
+		*orig_resv_port_cnt = job_ptr->resv_port_cnt;
+		job_ptr->resv_port_cnt = 0;
+
+		/*
+		* reserved port count set to maximum task count on
+		* any node plus one
+		*/
+		for (int i = 0; i < node_cnt; i++) {
+			job_ptr->resv_port_cnt =
+				MAX(job_ptr->resv_port_cnt,
+				    job_ptr->job_resrcs->tasks_per_node[i]);
+		}
+		job_ptr->resv_port_cnt++;
+	}
+	if ((job_ptr->resv_port_cnt != NO_VAL16) &&
+	    (job_ptr->resv_port_cnt != 0)) {
+		error_code = resv_port_job_alloc(job_ptr);
+		if (error_code) {
+			job_ptr->start_time = 0;
+			job_ptr->time_last_active = 0;
+			job_ptr->end_time = 0;
+			job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
+			last_job_update = now;
+			xfree(job_ptr->state_desc);
 		}
 	}
+
 	return error_code;
 }
 
