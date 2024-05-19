@@ -142,7 +142,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */
-	/* accounting_storage_params */
+	packstr(slurm_conf.accounting_storage_params, buffer);
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
 	packstr(slurm_conf.accounting_storage_type, buffer);
@@ -364,7 +364,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */
-	/* accounting_storage_params */
+	safe_unpackstr(&slurm_conf.accounting_storage_params, buffer);
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
 	safe_unpackstr(&slurm_conf.accounting_storage_type, buffer);
