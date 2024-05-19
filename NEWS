@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
     with filtering options (in both regular and --interactive mode).
  -- Enable MaxStepCount in stepmgr.
  -- Enable AccountingStorageEnforce=nojobs,nosteps in stepmgr.
+ -- Add AccountingStorageParameters=max_step_records to limit how many steps
+    are recorded in the database for each job -- excluding batch, extern, and
+    interactive steps.
 
 * Changes in Slurm 24.05.0rc1
 =============================

@@ -68,6 +68,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
     nodes after the max is reached.
  -- Add ExclusiveTopo to a partition definition in slurm.conf.
+ -- Add AccountingStorageParameters=max_step_records to limit how many steps
+    are recorded in the database for each job -- excluding batch, extern, and
+    interactive steps.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -114,9 +114,19 @@ Only used with systems using SlurmDBD, ignored otherwise.
 
 .TP
 \fBAccountingStorageParameters\fR
-Comma\-separated list of key\-value pair parameters. Currently
-supported values include options to establish a secure connection to the
-database:
+Comma\-separated list of options.
+.IP
+.RS
+.TP 2
+\fBmax_step_records=#\fR
+The number of steps that are recorded in the database for each job -- excluding
+batch, extern, and interactive steps.
+.IP
+
+.RE
+.IP
+The following comma\-separated list of key\-value options are used to establish
+a secure connection to the database:
 .IP
 .RS
 .TP 2
