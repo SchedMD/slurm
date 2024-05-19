@@ -52,7 +52,7 @@ habana-configure:
 	fi
 	#
 	# Intel GAUDI external ports
-	wget https://raw.githubusercontent.com/HabanaAI/Setup_and_Install/main/utils/manage_network_ifs.sh && \
+	wget https://raw.githubusercontent.com/HabanaAI/Setup_and_Install/r1.14.0/utils/manage_network_ifs.sh && \
 	chmod +x ./manage_network_ifs.sh && \
 	./manage_network_ifs.sh --up
 
@@ -191,7 +191,7 @@ test-16-cards:
 	# Ensure that habana ENV is already configured on the second node
 	ssh $(SECOND_NODE) "hl-smi -Q name --format=csv"
 	ssh $(SECOND_NODE) grep habana /etc/docker/daemon.json
-	MANAGE_NETWORK_IFS=$$(ssh $(SECOND_NODE) "curl -s https://raw.githubusercontent.com/HabanaAI/Setup_and_Install/main/utils/manage_network_ifs.sh | bash -s -- --status"); \
+	MANAGE_NETWORK_IFS=$$(ssh $(SECOND_NODE) "curl -s https://raw.githubusercontent.com/HabanaAI/Setup_and_Install/r1.14.0/utils/manage_network_ifs.sh | bash -s -- --status"); \
 	if [[ "$${MANAGE_NETWORK_IFS}" =~ down ]]; then \
 		exit 1; \
 	fi
@@ -199,7 +199,7 @@ test-16-cards:
 	# Install slurm the way it was installed on the first node as a second single node cluster
 	ssh $(SECOND_NODE) "mkdir -p $(REPO_DIR)"; \
 	scp -rp $(REPO_DIR)/* $(SECOND_NODE):$(REPO_DIR); \
-	INSTALLATION_TYPE=$$(test -d $(REPO_DIR)/debian-packages && echo debian-package || echo source); \
+	INSTALLATION_TYPE=$$(test -d $(REPO_DIR)/debian-packages -o -d fedora-packages && echo package || echo source)); \
 	ssh $(SECOND_NODE) "cd $(MAKEFILE_DIR); make install-$$INSTALLATION_TYPE $(filter-out --,$(MAKEFLAGS)) IS_CONTROLLER='false'"
 	#
 	# Configure slurm as a single two node cluster

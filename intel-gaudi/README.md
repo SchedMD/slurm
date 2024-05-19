@@ -1,4 +1,4 @@
-# Intel GAUDI SLURM testing
+# Intel GAUDI SLURM
 This directory contains scripts and instructions for building, installing, and testing SLURM with Intel's GAUDI accelerators. Follow the steps below to get started.
 
 ## Building the Packages
@@ -42,7 +42,6 @@ The second node is expected to have:
 * Intel GAUDI container runtime for docker with the proper /etc/docker/daemon.json configuration
 * Intel GAUDI cards External networking ports to be up (Relevant for scale out test, so if not configured on the first node, configure it as well)
 
- The second node will be automatically installed using the `hlctl` CLI.
 ```sh
 # User can ovveride the default test image with TEST_CONTAINER_IMAGE=<TEST IMAGE PATH>
 make test-16-card SECOND_NODE=[second node name]
