@@ -636,6 +636,9 @@ _node_state_id (char *str)
 			return (i);
 	}
 
+	if ((xstrncasecmp("BLOCKED", str, len) == 0) ||
+	    (xstrncasecmp("BLOCK", str, len) == 0))
+		return NODE_STATE_BLOCKED;
 	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
 	    (xstrncasecmp("PLND", str, len) == 0))
 		return NODE_STATE_PLANNED;
@@ -671,8 +674,6 @@ _node_state_id (char *str)
 		return NODE_STATE_REBOOT_ISSUED;
 	if (_node_state_equal(NODE_STATE_CLOUD, str))
 		return NODE_STATE_CLOUD;
-	if (_node_state_equal(NODE_STATE_BLOCKED, str))
-		return NODE_STATE_BLOCKED;
 
 	return (-1);
 }
