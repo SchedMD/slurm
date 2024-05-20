@@ -447,7 +447,22 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 9;
 			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("planned", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("reserved", object,
+					 MAX(command_len, 3))) {
+			field->type = PRINT_CLUSTER_TRES_PLAN;
+			field->name = xstrdup("Planned");
+			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
+			    || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			    || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
+				field->len = 18;
+			else
+				field->len = 9;
+			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("PlannedDown", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("PLNDDown", object,
 					 MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER_TRES_PLAN_DOWN;
 			field->name = xstrdup("PLND Down");
@@ -474,19 +489,6 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 20;
 			else
 				field->len = 12;
-			field->print_routine = print_fields_str;
-		} else if (!xstrncasecmp("reserved", object,
-					 MAX(command_len, 3)) ||
-			   !xstrncasecmp("planned", object,
-					 MAX(command_len, 4))) {
-			field->type = PRINT_CLUSTER_TRES_PLAN;
-			field->name = xstrdup("Planned");
-			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
-			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
-			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
-				field->len = 18;
-			else
-				field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("TresCount", object,
 					 MAX(command_len, 5)) ||
