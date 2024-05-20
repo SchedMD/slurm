@@ -680,7 +680,7 @@ static void _queue_send_console_socket(void)
 		fatal("%s: [%s] unable to initialize console socket: %s",
 		      __func__, addr.sun_path, slurm_strerror(rc));
 
-	debug("%s: listening for console socket requests at %s",
+	debug("%s: queued up console socket %s to send pty",
 	      __func__, addr.sun_path);
 }
 
