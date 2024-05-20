@@ -82,6 +82,7 @@ const char *OCI_VERSION = "1.0.0";
 extern void update_logging(void)
 {
 	bool json = false;
+	int rc;
 
 	if (!log_file) {
 		/* do nothing */
@@ -98,7 +99,8 @@ extern void update_logging(void)
 	if (log_file && (log_opt.logfile_level <= LOG_LEVEL_QUIET))
 		log_opt.logfile_level = LOG_LEVEL_FATAL;
 
-	log_alter(log_opt, log_fac, log_file);
+	if ((rc = log_alter(log_opt, log_fac, log_file)))
+		fatal("Logging failure: %s", slurm_strerror(rc));
 
 	if (json) {
 		/* docker requires RFC3339 timestamps */
