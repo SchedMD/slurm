@@ -332,6 +332,8 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/kafka - Fix payload length when producing and sending a message.
  -- scrun - Avoid a crash if RunTimeDelete is called before the container
     finishes.
+ -- Save the slurmd's cred_state while reconfiguring to prevent the loss job
+    credentials.
 
 * Changes in Slurm 23.11.6
 ==========================
