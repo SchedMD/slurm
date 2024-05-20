@@ -3818,7 +3818,7 @@ extern char *node_state_string_compact(uint32_t inx)
 		if (res_flag)
 			return "RESV";
 		if (blocked_flag)
-			return "BLOC";
+			return "BLOCK";
 		if (planned_flag)
 			return "PLND";
 		return "IDLE";
