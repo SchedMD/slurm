@@ -221,27 +221,68 @@ static void _parse_state(int argc, char **argv)
 	state.id = xstrdup(argv[1]);
 }
 
+/*
+ * scrun  --root /tmp/docker-exec/runtime-runc/moby
+ * --log /run/containerd/io.containerd.runtime.v2.task/moby/$LONG_HEX/log.json
+ * --log-format json --systemd-cgroup kill --all $LONG_HEX 9
+ */
 static void _parse_kill(int argc, char **argv)
 {
+#define OPT_LONG_ALL 0x100
+
+	static const struct option long_options[] = {
+		{ "all", no_argument, NULL, OPT_LONG_ALL },
+		{ NULL, 0, NULL, 0 }
+	};
+	int option_index = 0;
+	int c = 0;
 	int signal;
 
-	if ((argc > 3) || (argc < 2))
-		fatal("Unexpected arguments");
+	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+		for (int i = 0; i < argc; i++)
+			debug2("kill arg[%d]=%s", i, argv[i]);
+	}
 
-	state.id = xstrdup(argv[1]);
+	while ((c = getopt_long(argc, argv, "", long_options,
+				&option_index)) != -1) {
+		switch (c) {
+		case OPT_LONG_ALL:
+			info("WARNING: ignoring --all argument");
+			break;
+		default:
+			fatal("unknown argument: %s", argv[optopt]);
+		}
+	}
 
-	if (argc != 3) {
+	if (optind < argc) {
+		state.id = xstrdup(argv[optind]);
+		optind++;
+		debug("container-id=%s", state.id);
+	} else {
+		fatal("container-id not provided");
+	}
+
+	if (optind >= argc) {
 		debug("defaulting to SIGTERM");
 		signal = SIGTERM;
 	} else {
-		if (isdigit(argv[2][0])) {
-			signal = atoi(argv[2]);
+		const char *s = argv[optind];
+
+		if (isdigit(s[0])) {
+			signal = atoi(s);
 		} else {
-			signal = sig_name2num(argv[2]);
+			signal = sig_name2num(s);
 		}
 
 		if ((signal < 1) || (signal >= SIGRTMAX))
-			fatal("Invalid requested signal: %s", argv[2]);
+			fatal("Invalid requested signal: %s", s);
+
+		optind++;
+	}
+
+	if (optind < argc) {
+		fatal("unexpected argument %d/%d: %s",
+		      optind, argc, argv[optind]);
 	}
 
 	state.requested_signal = signal;
