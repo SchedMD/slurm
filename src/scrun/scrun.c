@@ -95,6 +95,9 @@ extern void update_logging(void)
 		      __func__, log_format);
 	}
 
+	if (log_file && (log_opt.logfile_level <= LOG_LEVEL_QUIET))
+		log_opt.logfile_level = LOG_LEVEL_FATAL;
+
 	log_alter(log_opt, log_fac, log_file);
 
 	if (json) {
