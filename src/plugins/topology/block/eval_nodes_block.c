@@ -236,13 +236,17 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	}
 
 	if (details_ptr->segment_size &&
-	    !(rem_nodes % details_ptr->segment_size)) {
+	    (rem_nodes % details_ptr->segment_size)) {
+		info("%s: segment_size (%u) does not fit the job size (%d)",
+		     __func__, details_ptr->segment_size, rem_nodes);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if (details_ptr->segment_size) {
 		segment_cnt = rem_nodes / details_ptr->segment_size;
 		rem_segment_cnt = segment_cnt;
 		rem_nodes = details_ptr->segment_size;
-	} else if (details_ptr->segment_size) {
-		error("%s: ignoring segment_size:%u rem_nodes:%d", __func__,
-		      details_ptr->segment_size, rem_nodes);
 	}
 
 	bblock_per_block = ((rem_nodes + bblock_node_cnt - 1) /
