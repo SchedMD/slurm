@@ -565,7 +565,7 @@ _node_state_list (void)
 	}
 
 	xstrcat(all_states,
-		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED");
+		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PLANNED");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
 	xstrcat(all_states, ",");
@@ -586,8 +586,6 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_PLANNED));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
