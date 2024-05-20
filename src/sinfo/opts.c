@@ -565,7 +565,7 @@ _node_state_list (void)
 	}
 
 	xstrcat(all_states,
-		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PLANNED");
+		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PLANNED,BLOCKED");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
 	xstrcat(all_states, ",");
