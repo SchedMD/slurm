@@ -675,6 +675,8 @@ extern int main(int argc, char **argv)
 
 	rc = commands[command_requested].func();
 
+	debug("exiting[%d]=%s", rc, slurm_strerror(rc));
+
 #ifdef MEMORY_LEAK_DEBUG
 	destroy_state();
 	FREE_NULL_OCI_CONF(oci_conf);
