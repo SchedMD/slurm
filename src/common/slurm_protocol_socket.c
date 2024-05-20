@@ -159,14 +159,13 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
+static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 {
 	int tot_bytes_sent = 0;
 	size_t size = 0;
 	int fd_flags;
 	struct pollfd ufds;
 	struct timeval tstart;
-	int timeleft = *timeout;
 	char temp[2];
 
 	ufds.fd     = fd;
@@ -183,8 +182,8 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
 	while (true) {
 		ssize_t bytes_sent = 0;
 		int rc;
+		int timeleft = timeout - _tot_wait(&tstart);
 
-		timeleft = *timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout",
 			      __func__, tot_bytes_sent, size);
@@ -297,9 +296,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
 		slurm_seterrno(slurm_err);
 	}
 
-	*timeout = *timeout - _tot_wait(&tstart);
 	return tot_bytes_sent;
-
 }
 
 /*
@@ -309,7 +306,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int *timeout)
 extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
-	return _writev_timeout(fd, &iov, 1, &timeout);
+	return _writev_timeout(fd, &iov, 1, timeout);
 }
 
 extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
@@ -333,7 +330,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 	usize = htonl(iov[1].iov_len);
 
-	len = _writev_timeout(fd, iov, 2, &timeout);
+	len = _writev_timeout(fd, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 	return len;
@@ -367,7 +364,7 @@ extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 
 	usize = htonl(iov[1].iov_len + iov[2].iov_len + iov[3].iov_len);
 
-	len = _writev_timeout(fd, iov, 4, &timeout);
+	len = _writev_timeout(fd, iov, 4, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 	return len;
