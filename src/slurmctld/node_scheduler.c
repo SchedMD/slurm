@@ -2413,13 +2413,18 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
 		job_ptr->resv_port_cnt = 0;
 
 		/*
-		* reserved port count set to maximum task count on
-		* any node plus one
+		 * reserved port count set to maximum task count on
+		 * any node plus one, or if the job is exclusive give all
+		 * resvered ports.
 		*/
-		if (!job_ptr->details->overcommit &&
-		    (job_ptr->details->num_tasks ||
-		     job_ptr->details->ntasks_per_node ||
-		     job_ptr->details->ntasks_per_tres)) {
+		if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
+		    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
+			job_ptr->resv_port_cnt =
+				resv_port_get_resv_port_cnt() - 1;
+		} else if (!job_ptr->details->overcommit &&
+			   (job_ptr->details->num_tasks ||
+			    job_ptr->details->ntasks_per_node ||
+			    job_ptr->details->ntasks_per_tres)) {
 			for (int i = 0; i < node_cnt; i++) {
 				job_ptr->resv_port_cnt =
 					MAX(job_ptr->resv_port_cnt,
