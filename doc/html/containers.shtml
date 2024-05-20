@@ -518,7 +518,7 @@ Environment="DOCKERD_ROOTLESS_ROOTLESSKIT_NET=host"
 <pre>systemctl --user daemon-reload</pre></li>
 <li>Start rootless docker: <pre>systemctl --user start docker</pre></li>
 <li>Verify Docker is using scrun:
-<pre>export DOCKER_SECURITY="--security-opt label:disable --security-opt seccomp=unconfined  --security-opt apparmor=unconfined --net=none"
+<pre>export DOCKER_SECURITY="--security-opt label=disable --security-opt seccomp=unconfined  --security-opt apparmor=unconfined --net=none"
 docker run $DOCKER_SECURITY hello-world
 docker run $DOCKER_SECURITY alpine /bin/printenv SLURM_JOB_ID
 docker run $DOCKER_SECURITY alpine /bin/hostname
