@@ -276,13 +276,13 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 
 		/* partial write, need to adjust iovec before next call */
 		for (int i = 0; i < iovcnt; i++) {
-			if (tot_bytes_sent < iov[i].iov_len) {
-				iov[i].iov_base += tot_bytes_sent;
-				iov[i].iov_len -= tot_bytes_sent;
+			if (bytes_sent < iov[i].iov_len) {
+				iov[i].iov_base += bytes_sent;
+				iov[i].iov_len -= bytes_sent;
 				break;
 			}
 
-			tot_bytes_sent -= iov[i].iov_len;
+			bytes_sent -= iov[i].iov_len;
 			iov[i].iov_base = NULL;
 			iov[i].iov_len = 0;
 		}
