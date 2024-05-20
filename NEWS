@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Improve the handling of queries when unable to connect to
     slurmdbd by providing responses when possible.
  -- slurmrestd,sackd,scrun - Avoid rare hangs related to I/O.
+ -- scrun - Add support '--all' argument for kill subcommand.
 
 * Changes in Slurm 24.05.1
 ==========================
