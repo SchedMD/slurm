@@ -1323,7 +1323,8 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 
 	xassert(!arg);
 
-	debug4("%s: [%s] new connection", __func__, conmgr_fd_get_name(con));
+	debug4("%s: [%s] new startup connection",
+	       __func__, conmgr_fd_get_name(con));
 
 	write_lock_state();
 	xassert(!state.startup_con);
