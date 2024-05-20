@@ -3255,6 +3255,9 @@ function __slurm_comp_sbcast_flags() {
 	--exclude?(s)) _filedir -d ;;
 	-j | --jobid?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
 	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
+	-s | --size) ;;
+	-t | --timeout) ;;
+	-F | --treewidth) ;;
 	*) return 1 ;;
 	esac
 
