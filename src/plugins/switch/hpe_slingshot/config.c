@@ -47,7 +47,7 @@
 /* Set this to true if VNI table is re-sized and loses some bits */
 static bool lost_vnis = false;
 /* Number of free VNIs */
-static int free_vnis = 0;
+int free_vnis = 0;
 
 /*
  * Set up slingshot_config defaults

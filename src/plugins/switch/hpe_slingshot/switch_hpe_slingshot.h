@@ -82,6 +82,8 @@
 #define SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE \
 	"/sys/module/cxi_core/parameters/rdzv_get_en_default"
 
+extern int free_vnis; /* Number of free VNIs */
+
 /* Set of valid auth types used for REST */
 typedef enum {
 	SLINGSHOT_AUTH_NONE = 0, /* No authentication */

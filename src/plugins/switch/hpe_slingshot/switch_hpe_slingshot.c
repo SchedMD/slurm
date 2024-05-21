@@ -293,6 +293,9 @@ extern int switch_p_restore(bool recover)
 
 	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	unpack_bit_str_hex(&slingshot_state.vni_table, state_buf);
+	free_vnis = bit_size(slingshot_state.vni_table) -
+		bit_set_count(slingshot_state.vni_table);
+
 	safe_unpack32(&slingshot_state.num_job_vnis, state_buf);
 	slingshot_state.job_vnis = NULL;
 	if (slingshot_state.num_job_vnis > 0) {

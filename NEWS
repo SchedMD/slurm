@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - allocate VNIs on the controller for stepmgr jobs and
     pass to the stepmgr for steps to use.
  -- switch/hpe_slingshot - fix assertion when restarting the controller.
+ -- switch/hpe_slingshot - fix calcuation of free vnis when restarting the
+    controller with running jobs.
 
 * Changes in Slurm 24.05.0rc1
 =============================
