@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- sreport - fix parsing of 'format=Planned' to prevent it from being
     misinterpreted as 'PlannedDown'. 'PlannedDown' is now also known as
     'PLNDDown' to match what is printed as the column title.
+ -- topology/block - Always return an error when the segment size does not
+    match the system or job specification.
 
 * Changes in Slurm 24.05.0rc1
 =============================
