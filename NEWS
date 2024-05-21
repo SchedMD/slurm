@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     '.sinfo[].resource_spec.memory' fields to print the CpuSpecList and
     MemSpecLimit dumped by 'sinfo --{json|yaml}'.
  -- Increase efficency of sending logs to syslog.
+ -- Switch to new official YAML mime type "application/yaml" in compliance with
+    RFC9512 as primary mime type for YAML formatting.
 
 * Changes in Slurm 24.05.1
 ==========================
