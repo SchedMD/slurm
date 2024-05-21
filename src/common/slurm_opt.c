@@ -7101,6 +7101,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 			.cpus_per_task = &job_desc->cpus_per_task,
 			.max_nodes = &job_desc->max_nodes,
+			.min_cpus = &job_desc->min_cpus,
 			.min_nodes = &job_desc->min_nodes,
 			.ntasks_per_node = &job_desc->ntasks_per_node,
 			.ntasks_per_socket = &job_desc->ntasks_per_socket,

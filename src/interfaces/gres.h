@@ -104,6 +104,8 @@ typedef struct {
 				    gres_per_task/cpus_per_gres values */
 	uint32_t *max_nodes; /* requested maximum node count, may be reset to
 				provide consistent gres_per_node/task values */
+	uint32_t *min_cpus; /* requested minimum cpu count, may be reset to
+				provide consistent cpus/cpus_per_gres values */
 	uint32_t *min_nodes; /* requested minimum node count, may be reset to
 				provide consistent gres_per_node/task values */
 	uint16_t *ntasks_per_node; /* requested tasks_per_node count, may be

@@ -3509,6 +3509,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				.cpus_per_task =
 				&detail_ptr->orig_cpus_per_task,
 				.max_nodes = &detail_ptr->max_nodes,
+				.min_cpus = &detail_ptr->min_cpus,
 				.min_nodes = &detail_ptr->min_nodes,
 				.ntasks_per_node = &detail_ptr->ntasks_per_node,
 				.ntasks_per_socket = &mc_ptr->ntasks_per_socket,

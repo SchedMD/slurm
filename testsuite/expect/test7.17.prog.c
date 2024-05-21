@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
 	char config_dir[1000], test[1000];
 	char slurm_conf[1000];
 	uint32_t num_tasks = 1;
+	uint32_t min_cpus = 1;
 	uint32_t min_nodes = 1;
 	uint32_t max_nodes = 1;
 	uint16_t ntasks_per_node = NO_VAL16;
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
 	gres_job_state_validate_t gres_js_val = {
 		.cpus_per_task = &cpus_per_task,
 		.max_nodes = &max_nodes,
+		.min_cpus = &min_cpus,
 		.min_nodes = &min_nodes,
 		.ntasks_per_node = &ntasks_per_node,
 		.ntasks_per_socket = &ntasks_per_socket,

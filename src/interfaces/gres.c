@@ -6044,6 +6044,8 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	char *tres_per_node;
 	char *tres_per_socket;
 	char *tres_per_task;
+	uint32_t tmp_min_cpus = 0;
+	uint32_t cpus_per_gres = 0; /* At the moment its only for gpus */
 
 	xassert(gres_js_val);
 	xassert(gres_js_val->gres_list);
@@ -6111,6 +6113,14 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 			in_val = NULL;
 			gres_js->ntasks_per_gres =
 				*gres_js_val->ntasks_per_tres;
+
+			/*
+			 * In theory MAX(cpus_per_gres) shouldn't matter because
+			 * we should only allow one gres name to have
+			 * cpus_per_gres and it should be the same for all types
+			 * (e.g., gpu:k80 vs gpu:tesla) of that same gres (gpu)
+			 */
+			cpus_per_gres = MAX(cpus_per_gres, cnt);
 		}
 	}
 	if (tres_per_job) {
@@ -6308,6 +6318,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	over_list = xcalloc(size, sizeof(overlap_check_t));
 	iter = list_iterator_create(*gres_js_val->gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(iter))) {
+		gres_js = gres_state_job->gres_data;
 		if (_test_gres_cnt(gres_state_job, gres_js_val) != 0) {
 			rc = ESLURM_INVALID_GRES;
 			break;
@@ -6323,10 +6334,17 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 			break;
 		}
 
+		if (cpus_per_gres &&
+		    (gres_state_job->plugin_id == gres_get_gpu_plugin_id()))
+			tmp_min_cpus += cpus_per_gres * gres_js->total_gres;
+
 		if (_set_over_list(gres_state_job, over_list, &over_count, 1))
 			overlap_merge = true;
 	}
 	list_iterator_destroy(iter);
+
+	if  (tmp_min_cpus > *gres_js_val->min_cpus)
+		*gres_js_val->min_cpus = tmp_min_cpus;
 
 	if (have_gres_shared && (rc == SLURM_SUCCESS) && tres_freq &&
 	    strstr(tres_freq, "gpu")) {

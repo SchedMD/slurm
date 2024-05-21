@@ -3608,6 +3608,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 				.cpus_per_task =
 				&details_new->orig_cpus_per_task,
 				.max_nodes = &details_new->max_nodes,
+				.min_cpus = &details_new->min_cpus,
 				.min_nodes = &details_new->min_nodes,
 				.ntasks_per_node =
 				&details_new->ntasks_per_node,
@@ -6919,6 +6920,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 		.cpus_per_task = &job_desc->cpus_per_task,
 		.max_nodes = &job_desc->max_nodes,
+		.min_cpus = &job_desc->min_cpus,
 		.min_nodes = &job_desc->min_nodes,
 		.ntasks_per_node = &job_desc->ntasks_per_node,
 		.ntasks_per_socket = &job_desc->ntasks_per_socket,
@@ -7049,8 +7051,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	job_desc->tres_req_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
-	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
-	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 
 	_set_tot_license_req(job_desc, NULL);
 
@@ -7094,6 +7094,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_desc->min_nodes,
 		job_desc->tres_req_cnt,
 		false);
+
+	/* gres_job_state_validate() can update min_nodes and min_cpus. */
+	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
+	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 
 	/* Get GRES before mem so we can pass gres_list to job_get_tres_mem() */
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  =
@@ -12003,6 +12007,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		gres_job_state_validate_t gres_js_val = {
 			.cpus_per_task = &job_desc->cpus_per_task,
 			.max_nodes = &job_desc->max_nodes,
+			.min_cpus = &job_desc->min_cpus,
 			.min_nodes = &job_desc->min_nodes,
 			.ntasks_per_node = &job_desc->ntasks_per_node,
 			.ntasks_per_socket = &job_desc->ntasks_per_socket,
@@ -12038,6 +12043,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->mem_per_tres = xstrdup(job_ptr->mem_per_tres);
 		if (job_desc->num_tasks == NO_VAL)
 			job_desc->num_tasks = detail_ptr->num_tasks;
+		if (job_desc->min_cpus == NO_VAL)
+			job_desc->min_cpus = 0; /* min_cpus could decrease */
 		if (job_desc->min_nodes == NO_VAL)
 			job_desc->min_nodes = detail_ptr->min_nodes;
 		if (job_desc->max_nodes == NO_VAL)
@@ -12075,6 +12082,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 		if (job_desc->num_tasks == detail_ptr->num_tasks)
 			job_desc->num_tasks = NO_VAL;	/* Unchanged */
+		if ((job_desc->min_cpus == detail_ptr->min_cpus) ||
+		    (job_desc->min_cpus == 0)) /* Unchanged */
+			job_desc->min_cpus = NO_VAL;
 		if (job_desc->min_nodes == detail_ptr->min_nodes)
 			job_desc->min_nodes = NO_VAL;	/* Unchanged */
 		if (job_desc->max_nodes == detail_ptr->max_nodes)
@@ -15603,6 +15613,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 				.cpus_per_task =
 				&detail_ptr->orig_cpus_per_task,
 				.max_nodes = &detail_ptr->max_nodes,
+				.min_cpus = &detail_ptr->min_cpus,
 				.min_nodes = &detail_ptr->min_nodes,
 				.ntasks_per_node = &detail_ptr->ntasks_per_node,
 				.ntasks_per_socket = &mc_ptr->ntasks_per_socket,
@@ -18544,6 +18555,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 
 			.cpus_per_task = &detail_ptr->orig_cpus_per_task,
 			.max_nodes = &detail_ptr->max_nodes,
+			.min_cpus = &detail_ptr->min_cpus,
 			.min_nodes = &detail_ptr->min_nodes,
 			.ntasks_per_node = &detail_ptr->ntasks_per_node,
 			.ntasks_per_socket =
