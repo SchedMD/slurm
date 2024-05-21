@@ -296,6 +296,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Fix possible memory leak from failed job allocation requests to
     'POST /slurm/v0.0.{39,40,41}/job/allocate'.
 
+* Changes in Slurm 23.11.8
+==========================
+
 * Changes in Slurm 23.11.7
 ==========================
  -- slurmrestd - Correct OpenAPI specification for
