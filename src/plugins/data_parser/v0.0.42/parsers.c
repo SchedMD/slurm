@@ -7742,9 +7742,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, resv_name, "resv_name", NULL),
 	add_parse(STRING, sched_nodes, "scheduled_nodes", NULL),
 	add_parse(STRING, selinux_context, "selinux_context", NULL),
-	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
-	add_parse_deprec(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL, SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(BOOL16, shared, 2, "oversubscribe", NULL, SLURM_23_11_PROTOCOL_VERSION),
+	add_parse(JOB_SHARED, shared, "shared", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, show_flags, "show_flags", NULL),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", NULL),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", NULL),
@@ -8324,9 +8322,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, script, "script", "Job batch script. Only first component in a HetJob is populated or honored."),
 	add_skip(script_buf),
 	add_skip(script_hash),
-	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
-	add_parse_deprec(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL, SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(BOOL16, shared, 2, "oversubscribe", NULL, SLURM_23_11_PROTOCOL_VERSION),
+	add_parse(JOB_SHARED, shared, "shared", NULL),
 	add_parse(UINT32, site_factor, "site_factor", NULL),
 	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment", NULL),
 	add_skip(spank_job_env),
@@ -9323,9 +9319,6 @@ add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "sta
 	add_parser_deprec(openapi_job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
-	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submision user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_job_post_response_t),
 	add_openapi_response_errors(openapi_job_post_response_t),
 	add_openapi_response_warnings(openapi_job_post_response_t),
@@ -9338,7 +9331,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
-	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse(UINT32, resp.job_id, "job_id", "submited JobId"),
 	add_parse(STEP_ID, resp.step_id, "step_id", "submited StepID"),
 	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),

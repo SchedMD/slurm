@@ -18,6 +18,19 @@ documents those changes that are of interest to users and administrators.
  -- Increase efficency of sending logs to syslog.
  -- Switch to new official YAML mime type "application/yaml" in compliance with
     RFC9512 as primary mime type for YAML formatting.
+ -- slurmrestd - Removed deprecated fields from the following endpoints:
+	'.result' from 'POST /slurm/v0.0.42/job/submit'.
+	'.job_id', '.step_id', '.job_submit_user_msg' from 'POST /slurm/v0.0.42/job/{job_id}'.
+	'.job.exclusive', '.jobs[].exclusive' to 'POST /slurm/v0.0.42/job/submit'.
+	'.jobs[].exclusive' from 'GET /slurm/v0.0.42/job/{job_id}'.
+	'.jobs[].exclusive' from 'GET /slurm/v0.0.42/jobs'.
+	'.job.oversubscribe', '.jobs[].oversubscribe' to 'POST /slurm/v0.0.42/job/submit'.
+	'.jobs[].oversubscribe' from 'GET /slurm/v0.0.42/job/{job_id}'.
+	'.jobs[].oversubscribe' from 'GET /slurm/v0.0.42/jobs'.
+ -- scontrol - Removed deprecated fields '.jobs[].exclusive' and
+    '.jobs[].oversubscribe' from 'scontrol show jobs --{json|yaml}'.
+ -- squeue - Removed deprecated fields '.jobs[].exclusive' and
+    '.jobs[].oversubscribe' from 'squeue --{json|yaml}'.
 
 * Changes in Slurm 24.05.1
 ==========================

@@ -33,3 +33,4 @@ API CHANGES
 
 SLURMRESTD CHANGES
 ==================
+ -- Removed fields deprecated in the Slurm-23.11 release from v0.0.42 endpoints.
