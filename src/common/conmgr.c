@@ -2356,6 +2356,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 			return true;
 		}
 
+		log_flag(NET, "%s: quiesced", __func__);
 		return false;
 	}
 
