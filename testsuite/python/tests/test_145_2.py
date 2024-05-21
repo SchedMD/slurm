@@ -3,73 +3,73 @@
 ############################################################################
 import atf
 import pytest
+import re
 
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_nodes(1, [("CPUs", 1), ("Features", "f1")])
+    atf.require_nodes(1, [("CPUs", 1), ("Features", "f2")])
+    atf.require_nodes(1, [("CPUs", 1), ("Features", "f1,f2")])
     atf.require_slurm_running()
 
 
-def test_constraint_invalid_feature_1():
-    """Verify --constraint option fails for invalid feature"""
+@pytest.mark.parametrize(
+    "constraint,xfail",
+    [
+        ("invalid", True),
+        ("f1,invalid", True),
+        ("f2,invalid", True),
+        ("invalid,f1", True),
+        ("invalid,f2", True),
+        ("f1", False),
+        ("f2", False),
+        ("f1,f2", False),
+        ("f2,f1", False),
+    ],
+)
+@pytest.mark.parametrize("command", ["srun", "salloc", "sbatch"])
+def test_constraint(constraint, xfail, command):
+    """Verify --constraint option"""
 
-    requested_features = "invalid"
-    exit_code = atf.run_command_exit(
-        f"srun --constraint={requested_features} true", xfail=True
-    )
-    assert exit_code != 0, "srun ran when --constraint was invalid"
+    job = 'env|egrep -i "SLURM_NNODES|SLURM_JOB_NODELIST"'
+    if command == "sbatch":
+        result = atf.run_command(
+            f"{command} --constraint={constraint} -o job.out --wrap '{job}'",
+            xfail=xfail,
+        )
+    else:
+        result = atf.run_command(
+            f"{command} --constraint={constraint} {job}", xfail=xfail
+        )
 
+    if xfail:
+        assert result["exit_code"] != 0, "Verify tha job was NOT submitted"
+    else:
+        assert result["exit_code"] == 0, "Verify tha job was submitted"
 
-def test_constraint_invalid_feature_2():
-    """Verify --constraint option fails when one of two features invalid"""
+    stdout = result["stdout"]
+    stderr = result["stderr"]
+    if command == "sbatch" and not xfail:
+        job_id = 0
+        if match := re.search(r"Submitted \S+ job (\d+)", stdout):
+            job_id = int(match.group(1))
+            atf.properties["submitted-jobs"].append(job_id)
+            atf.wait_for_job_state(job_id, "DONE")
+            atf.wait_for_file("job.out")
+            stdout = atf.run_command_output(f"cat job.out", fatal=True)
 
-    requested_features = "valid,invalid"
-    available_features = "valid"
-    nodes = atf.get_nodes()
-    node_name = list(nodes.keys())[0]
-    atf.set_node_parameter(node_name, "Features", available_features)
-    exit_code = atf.run_command_exit(
-        f"srun --constraint={requested_features} true", xfail=True
-    )
-    assert exit_code != 0, "srun ran when only 1 --constraint was valid"
+    node = ""
+    if match := re.search(r"SLURM_JOB_NODELIST=(.*)", stdout):
+        node = match.group(1)
 
-
-def test_constraint_valid_feature_1():
-    """Verify --constraint option runs when requesting valid sole feature"""
-
-    requested_features = "spicy"
-    available_features = "spicy"
-    nodes = atf.get_nodes()
-    node_name = list(nodes.keys())[0]
-    atf.set_node_parameter(node_name, "Features", available_features)
-    exit_code = atf.run_command_exit(f"srun --constraint={requested_features} true")
-    assert exit_code == 0, "srun did not run when --constraint was valid"
-
-
-def test_constraint_valid_feature_2():
-    """Verify --constraint option runs when requesting both of 2 valid features"""
-
-    requested_features = "tart,spicy"
-    available_features = "tart,spicy"
-    nodes = atf.get_nodes()
-    node_name = list(nodes.keys())[0]
-    atf.set_node_parameter(node_name, "Features", available_features)
-    exit_code = atf.run_command_exit(f"srun --constraint={requested_features} true")
-    assert (
-        exit_code == 0
-    ), "srun did not run when --constraint was valid with multiple constraints"
-
-
-def test_constraint_valid_feature_3():
-    """Verify --constraint option runs when 1 out of 2 valid features"""
-
-    requested_features = "tart"
-    available_features = "tart,spicy"
-    nodes = atf.get_nodes()
-    node_name = list(nodes.keys())[0]
-    atf.set_node_parameter(node_name, "Features", available_features)
-    exit_code = atf.run_command_exit(f"srun --constraint={requested_features} true")
-    assert (
-        exit_code == 0
-    ), "srun did not run when --constraint was valid with one constraint on a node with multiple constraints"
+    if not xfail:
+        node_features = atf.get_node_parameter(node, "AvailableFeatures")
+        constraints = constraint.split(",")
+        for c in constraints:
+            assert c in node_features, "Verify {node} has feature {c}"
+    else:
+        assert (
+            "Invalid feature specification" in stderr
+        ), f"Verify that 'Invalid feature specification' is in stderr"
