@@ -376,6 +376,9 @@ extern int op_handler_associations(ctxt_t *ctxt)
 			       ctxt->query, ctxt->parent_path))
 			goto cleanup;
 
+		if (!assoc_cond)
+			assoc_cond = xmalloc(sizeof(*assoc_cond));
+
 		if (assoc_cond->usage_start && !assoc_cond->usage_end)
 			assoc_cond->usage_end = time(NULL);
 		else if (assoc_cond->usage_start > assoc_cond->usage_end)
