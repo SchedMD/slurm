@@ -2369,8 +2369,8 @@ submit LUA plugin instead to enforce auto\-adjustments to your specific needs.
 
 .TP
 \fBMaxMemPerNode\fR
-Maximum real memory size available per allocated node in megabytes.
-Used to avoid over\-subscribing memory and causing paging.
+Maximum real memory size available per allocated node in a job allocation in
+megabytes. Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
 resources are over\-subscribed (\fBOverSubscribe=yes\fR or
@@ -6992,8 +6992,8 @@ Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 
 .TP
 \fBMaxMemPerNode\fR
-Maximum real memory size available per allocated node in megabytes.
-Used to avoid over\-subscribing memory and causing paging.
+Maximum real memory size available per allocated node in a job allocation in
+megabytes. Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
 resources are over\-subscribed (\fBOverSubscribe=yes\fR or
