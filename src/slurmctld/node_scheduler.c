@@ -2429,14 +2429,14 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
 				job_ptr->resv_port_cnt =
 					MAX(job_ptr->resv_port_cnt,
 					    job_ptr->job_resrcs->
-					    tasks_per_node[i]);
+					    tasks_per_node[i]) * 2;
 			}
 		} else if (!job_ptr->details->overcommit) {
 			uint16_t max_node_cpus = 0;
 			for (int i = 0; i < node_cnt; i++) {
 				max_node_cpus =
 					MAX(max_node_cpus,
-					    job_ptr->job_resrcs->cpus[i]);
+					    job_ptr->job_resrcs->cpus[i] * 2);
 			}
 			job_ptr->resv_port_cnt = max_node_cpus;
 		} else if (job_ptr->details->ntasks_per_node) {
