@@ -904,7 +904,6 @@ test_116_31  /commands/srun/test_--help.py
 test_116_32  /commands/srun/test_--input--output--error.py
 test_116_33  /commands/srun/test_srun_increasing_job_sizes.py
 test_116_34  /commands/srun/test_--unbuffered.py
-test_116_35  /commands/srun/test_--constraint.py
 test_116_36  /commands/srun/test_--debugger-test.py
 test_116_37  /commands/srun/test_--task-epilog.py
 test_116_38  /commands/srun/test_--test-only.py
@@ -1036,3 +1035,4 @@ test_144_6   Test gres with no_consume flag
 test_145_#   Testing --constraint.
 ==================================
 test_145_1   Test --constraint with --ntasks-per-node
+test_145_2   Test --constraint
