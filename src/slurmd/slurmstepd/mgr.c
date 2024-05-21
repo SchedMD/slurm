@@ -1246,9 +1246,9 @@ static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
 	job_env.gid = step->gid;
 
 	if (!is_epilog)
-		rc = prep_g_prolog(&job_env, step->msg->cred);
+		rc = run_prolog(&job_env, step->msg->cred);
 	else
-		rc = prep_g_epilog(&job_env, step->msg->cred);
+		rc = run_epilog(&job_env, step->msg->cred);
 
 	if (job_env.gres_job_env) {
 		for (int i = 0; job_env.gres_job_env[i]; i++)

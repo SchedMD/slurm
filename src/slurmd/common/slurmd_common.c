@@ -36,8 +36,21 @@
 #include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/prep.h"
+
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/slurmd/slurmd.h"
+
+typedef struct {
+	uint32_t job_id;
+	uint16_t msg_timeout;
+	bool *prolog_fini;
+	pthread_cond_t *timer_cond;
+	pthread_mutex_t *timer_mutex;
+} timer_struct_t;
+
+static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Delay a message based upon the host index, total host count and RPC_TIME.
@@ -297,4 +310,136 @@ extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step)
 	if (step_cnt == 0)
 		debug2("No steps in job %u to terminate", jobid);
 	return step_cnt;
+}
+
+static void *_prolog_timer(void *x)
+{
+	int delay_time, rc = SLURM_SUCCESS;
+	struct timespec ts;
+	struct timeval now;
+	slurm_msg_t msg;
+	job_notify_msg_t notify_req;
+	char srun_msg[128];
+	timer_struct_t *timer_struct = (timer_struct_t *) x;
+
+	delay_time = MAX(2, (timer_struct->msg_timeout - 2));
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + delay_time;
+	ts.tv_nsec = now.tv_usec * 1000;
+	slurm_mutex_lock(timer_struct->timer_mutex);
+	if (!(*timer_struct->prolog_fini)) {
+		rc = pthread_cond_timedwait(timer_struct->timer_cond,
+					    timer_struct->timer_mutex, &ts);
+	}
+	slurm_mutex_unlock(timer_struct->timer_mutex);
+
+	if (rc != ETIMEDOUT)
+		return NULL;
+
+	slurm_msg_t_init(&msg);
+	snprintf(srun_msg, sizeof(srun_msg), "Prolog hung on node %s",
+		 conf->node_name);
+	memset(&notify_req, 0, sizeof(notify_req));
+	notify_req.step_id.job_id	= timer_struct->job_id;
+	notify_req.step_id.step_id = NO_VAL;
+	notify_req.step_id.step_het_comp = NO_VAL;
+	notify_req.message	= srun_msg;
+	msg.msg_type	= REQUEST_JOB_NOTIFY;
+	msg.data	= &notify_req;
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
+	return NULL;
+}
+
+/*
+ * run_prolog - executes and times the prolog script
+ * job_env IN - pointer to the job environment structure
+ * cred IN: pointer to the credential structure
+ *
+ * RET 0 or error code
+ */
+extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
+{
+	int diff_time, rc;
+	time_t start_time = time(NULL);
+	pthread_t       timer_id;
+	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+	timer_struct_t  timer_struct;
+	bool prolog_fini = false;
+	bool script_lock = false;
+
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		/*
+		 * When PROLOG_FLAG_RUN_IN_JOB is set, PROLOG_FLAG_SERIAL does
+		 * nothing because this function runs in the slurmstepd and
+		 * therefore this mutex doesn't block other jobs from running
+		 * their prolog.
+		 */
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
+
+	timer_struct.job_id      = job_env->jobid;
+	timer_struct.msg_timeout = slurm_conf.msg_timeout;
+	timer_struct.prolog_fini = &prolog_fini;
+	timer_struct.timer_cond  = &timer_cond;
+	timer_struct.timer_mutex = &timer_mutex;
+	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
+
+	rc = prep_g_prolog(job_env, cred);
+
+	slurm_mutex_lock(&timer_mutex);
+	prolog_fini = true;
+	slurm_cond_broadcast(&timer_cond);
+	slurm_mutex_unlock(&timer_mutex);
+
+	diff_time = difftime(time(NULL), start_time);
+	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
+		info("prolog for job %u ran for %d seconds",
+		     job_env->jobid, diff_time);
+	}
+
+	slurm_thread_join(timer_id);
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
+
+	return rc;
+}
+
+/*
+ * run_epilog - executes and times the epilog script
+ * job_env IN - pointer to the job environment structure
+ * cred IN: pointer to the credential structure
+ *
+ * RET 0 or error code
+ */
+extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
+{
+	time_t start_time = time(NULL);
+	int error_code, diff_time;
+	bool script_lock = false;
+
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		/*
+		 * When PROLOG_FLAG_RUN_IN_JOB is set, PROLOG_FLAG_SERIAL does
+		 * nothing because this function runs in the slurmstepd and
+		 * therefore this mutex doesn't block other jobs from running
+		 * their epilog.
+		 */
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
+
+	error_code = prep_g_epilog(job_env, cred);
+
+	diff_time = difftime(time(NULL), start_time);
+	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
+		info("epilog for job %u ran for %d seconds",
+		     job_env->jobid, diff_time);
+	}
+
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
+
+	return error_code;
 }

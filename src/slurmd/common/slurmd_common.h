@@ -66,4 +66,9 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time,
  */
 extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step);
 
+
+extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred);
+
+extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred);
+
 #endif /* _JOB_STATUS_H */
