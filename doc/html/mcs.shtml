@@ -31,6 +31,16 @@ is now less restrictive, and information is not just hidden or not to regular
 users, but now it is filtered <b>depending</b> on these configurable/requestable
 labels in coordination with the PrivateData option.
 
+<h3 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a>
+</h3>
+
+<p>Use of MCS restricts the operation of <a href="preempt.html">Preemption</a>.
+Specifically, any job that has an MCS label and requests node exclusivity
+according to that label will be prevented from preempting or being preempted by
+any job that doesn't match that label. If
+<code>MCSParameters=enforced,select</code> is set, these restrictions will
+apply to all jobs.</p>
+
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 <p>Two parameters are currently available to configure MCS: <b>MCSPlugin</b>
 and <b>MCSParameters</b>.
@@ -255,6 +265,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    CurrentWatts=0 AveWatts=0
 </pre>
 
-<p style="text-align:center;">Last modified 6 June 2022</p>
+<p style="text-align:center;">Last modified 21 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
