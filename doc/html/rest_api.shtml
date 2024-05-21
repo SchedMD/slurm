@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-23.11.6&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-23.11.7&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -2304,9 +2304,69 @@
     </div>  <!-- field-items -->
 
 
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#v0.0.40_openapi_job_state_resp">v0.0.40_openapi_job_state_resp</a>
+      
+    </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
 
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "meta" : {
+    "slurm" : {
+      "cluster" : "cluster",
+      "release" : "release",
+      "version" : {
+        "major" : "major",
+        "minor" : "minor",
+        "micro" : "micro"
+      }
+    },
+    "plugin" : {
+      "accounting_storage" : "accounting_storage",
+      "name" : "name",
+      "type" : "type",
+      "data_parser" : "data_parser"
+    },
+    "client" : {
+      "source" : "source",
+      "user" : "user",
+      "group" : "group"
+    },
+    "command" : [ "command", "command" ]
+  },
+  "jobs" : [ {
+    "job_id" : "job_id",
+    "state" : [ "PENDING", "PENDING" ]
+  }, {
+    "job_id" : "job_id",
+    "state" : [ "PENDING", "PENDING" ]
+  } ],
+  "warnings" : [ {
+    "description" : "description",
+    "source" : "source"
+  }, {
+    "description" : "description",
+    "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 1
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 1
+  } ]
+}</code></pre>
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/x-yaml</div>
+    <pre class="example"><code>Custom MIME type example not yet supported: application/x-yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
@@ -2319,10 +2379,10 @@
     <h3 class="field-label">Responses</h3>
     <h4 class="field-label">200</h4>
     job(s) state information
-        <a href="#"></a>
+        <a href="#v0.0.40_openapi_job_state_resp">v0.0.40_openapi_job_state_resp</a>
     <h4 class="field-label">default</h4>
     no jobs found
-        <a href="#"></a>
+        <a href="#v0.0.40_openapi_job_state_resp">v0.0.40_openapi_job_state_resp</a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0040GetLicenses">
@@ -14818,6 +14878,7 @@
     <li><a href="#v0.0.40_job_desc_msg"><code>v0.0.40_job_desc_msg</code> - </a></li>
     <li><a href="#v0.0.40_job_info"><code>v0.0.40_job_info</code> - </a></li>
     <li><a href="#v0.0.40_job_res"><code>v0.0.40_job_res</code> - </a></li>
+    <li><a href="#v0.0.40_job_state_resp_job"><code>v0.0.40_job_state_resp_job</code> - </a></li>
     <li><a href="#v0.0.40_job_submit_req"><code>v0.0.40_job_submit_req</code> - </a></li>
     <li><a href="#v0.0.40_job_submit_response_msg"><code>v0.0.40_job_submit_response_msg</code> - </a></li>
     <li><a href="#v0.0.40_kill_jobs_msg"><code>v0.0.40_kill_jobs_msg</code> - </a></li>
@@ -14837,6 +14898,7 @@
     <li><a href="#v0.0.40_openapi_instances_resp"><code>v0.0.40_openapi_instances_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_job_info_resp"><code>v0.0.40_openapi_job_info_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_job_post_response"><code>v0.0.40_openapi_job_post_response</code> - </a></li>
+    <li><a href="#v0.0.40_openapi_job_state_resp"><code>v0.0.40_openapi_job_state_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_job_submit_response"><code>v0.0.40_openapi_job_submit_response</code> - </a></li>
     <li><a href="#v0.0.40_openapi_kill_jobs_resp"><code>v0.0.40_openapi_kill_jobs_resp</code> - </a></li>
     <li><a href="#v0.0.40_openapi_licenses_resp"><code>v0.0.40_openapi_licenses_resp</code> - </a></li>
@@ -15570,6 +15632,16 @@
     </div>  <!-- field-items -->
   </div>
   <div class="model">
+    <h3><a name="v0.0.40_job_state_resp_job"><code>v0.0.40_job_state_resp_job</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">job_id </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> JobId </div>
+<div class="param">state </div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Job state </div>
+        <div class="param-enum-header">Enum:</div>
+        
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
     <h3><a name="v0.0.40_job_submit_req"><code>v0.0.40_job_submit_req</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
@@ -15839,6 +15911,16 @@
     </div>  <!-- field-items -->
   </div>
   <div class="model">
+    <h3><a name="v0.0.40_openapi_job_state_resp"><code>v0.0.40_openapi_job_state_resp</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_job_state_resp_job">array[v0.0.40_job_state_resp_job]</a></span> List of jobs </div>
+<div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_meta">v0.0.40_openapi_meta</a></span>  </div>
+<div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_error">array[v0.0.40_openapi_error]</a></span>  </div>
+<div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_warning">array[v0.0.40_openapi_warning]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
     <h3><a name="v0.0.40_openapi_job_submit_response"><code>v0.0.40_openapi_job_submit_response</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
@@ -16015,8 +16097,8 @@
     <h3><a name="v0.0.40_openapi_users_add_cond_resp"><code>v0.0.40_openapi_users_add_cond_resp</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">association_condition (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_users_add_cond">v0.0.40_users_add_cond</a></span>  </div>
-<div class="param">user (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_user_short">v0.0.40_user_short</a></span>  </div>
+      <div class="param">association_condition </div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_users_add_cond">v0.0.40_users_add_cond</a></span>  </div>
+<div class="param">user </div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_user_short">v0.0.40_user_short</a></span>  </div>
 <div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_meta">v0.0.40_openapi_meta</a></span>  </div>
 <div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_error">array[v0.0.40_openapi_error]</a></span>  </div>
 <div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.40_openapi_warning">array[v0.0.40_openapi_warning]</a></span>  </div>
