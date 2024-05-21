@@ -2450,6 +2450,11 @@ static void _watch(void *blocking)
 		xfree(listen_args->fds);
 		xfree(listen_args);
 	}
+
+	log_flag(NET, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
+		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
+		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
+		 list_count(mgr.listen_conns));
 }
 
 /*
