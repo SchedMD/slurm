@@ -498,9 +498,10 @@ static void _alloc_job(void)
 		const char *val;
 		const env_vars_t *e = &env_vars[i];
 
-		if ((val = getenv(e->var)))
-			slurm_process_option_or_exit(&opt, e->type, val, true,
-						     false);
+		if ((val = getenv(e->var)) &&
+		    slurm_process_option(&opt, e->type, val, true, false))
+			fatal("%s: Unable to process environment variable %s=%s",
+			      __func__, e->var, val);
 	}
 
 	/* Process spank env options */
