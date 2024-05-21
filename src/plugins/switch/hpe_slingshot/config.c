@@ -1281,3 +1281,12 @@ extern void slingshot_free_job_vni(uint32_t job_id)
 	uint16_t vni = _free_job_vni(job_id);
 	debug("free job_vni=%hu free_vnis=%d", vni, free_vnis);
 }
+
+extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo)
+{
+	if (!jobinfo)
+		return;
+
+	xfree(jobinfo->vnis);
+	xfree(jobinfo);
+}

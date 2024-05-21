@@ -341,13 +341,52 @@ error:
 extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	return;
+	slingshot_jobinfo_t *jobinfo = switch_jobinfo;
+
+	xassert(buffer);
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (!jobinfo) {
+			packbool(0, buffer);
+			return;
+		}
+
+		packbool(1, buffer);
+		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
+		packstr(jobinfo->extra, buffer);
+	}
 }
 
 extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 				   uint16_t protocol_version)
 {
+	bool tmp_bool;
+	slingshot_jobinfo_t *jobinfo;
+
+	xassert(switch_jobinfo);
+	xassert(buffer);
+
+	*switch_jobinfo = jobinfo = xmalloc(sizeof(*jobinfo));
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpackbool(&tmp_bool, buffer);
+		if (!tmp_bool) {
+			slingshot_free_jobinfo(*switch_jobinfo);
+			*switch_jobinfo = NULL;
+			return SLURM_SUCCESS;
+		}
+
+		safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
+		safe_unpackstr(&jobinfo->extra, buffer);
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("error unpacking jobinfo struct");
+	slingshot_free_jobinfo(jobinfo);
+	*switch_jobinfo = NULL;
+	return SLURM_ERROR;
 }
 
 static void _copy_stepinfo(slingshot_stepinfo_t *old, slingshot_stepinfo_t *new)

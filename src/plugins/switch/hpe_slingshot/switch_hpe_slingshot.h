@@ -218,6 +218,12 @@ typedef struct {
 /* Denotes packing a null stepinfo structure */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 
+typedef struct slingshot_jobinfo {
+	uint32_t num_vnis; /* Number of VNIs */
+	uint16_t *vnis; /* List of VNIs allocated for this job */
+	char *extra; /* storage for mid-release extras */
+} slingshot_jobinfo_t;
+
 /* Jobinfo structure passed from slurmctld to slurmd */
 typedef struct slingshot_stepinfo {
 	uint32_t version;      /* Version of this structure */
@@ -299,6 +305,7 @@ extern bool slingshot_setup_job_step_vni(
 	const char *job_network_params);
 extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job);
 extern void slingshot_free_job_vni(uint32_t job_id);
+extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo);
 /* instant_on.c */
 extern bool slingshot_init_instant_on(void);
 extern void slingshot_fini_instant_on(void);
