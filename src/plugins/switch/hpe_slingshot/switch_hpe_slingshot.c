@@ -290,6 +290,8 @@ extern int switch_p_restore(bool recover)
 	safe_unpack16(&slingshot_state.vni_min, state_buf);
 	safe_unpack16(&slingshot_state.vni_max, state_buf);
 	safe_unpack16(&slingshot_state.vni_last, state_buf);
+
+	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	unpack_bit_str_hex(&slingshot_state.vni_table, state_buf);
 	safe_unpack32(&slingshot_state.num_job_vnis, state_buf);
 	slingshot_state.job_vnis = NULL;
