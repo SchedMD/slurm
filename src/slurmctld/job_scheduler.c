@@ -3503,13 +3503,8 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 
 		if (depend_type == SLURM_DEPEND_EXPAND) {
 			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-			uint16_t sockets_per_node = NO_VAL16;
-			multi_core_data_t *mc_ptr;
+			multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 
-			if ((mc_ptr = job_ptr->details->mc_ptr)) {
-				sockets_per_node =
-					mc_ptr->sockets_per_node;
-			}
 			job_ptr->details->expanding_jobid = job_id;
 			if (select_hetero == 0) {
 				/*
@@ -3535,15 +3530,11 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				ntasks_per_node,
 				&job_ptr->details->mc_ptr->
 				ntasks_per_socket,
-				&sockets_per_node,
+				&mc_ptr->sockets_per_node,
 				&job_ptr->details->
 				orig_cpus_per_task,
 				&job_ptr->details->ntasks_per_tres,
 				&job_ptr->gres_list_req);
-			if (mc_ptr && (sockets_per_node != NO_VAL16)) {
-				mc_ptr->sockets_per_node =
-					sockets_per_node;
-			}
 			assoc_mgr_lock(&locks);
 			gres_stepmgr_set_job_tres_cnt(
 				job_ptr->gres_list_req,
