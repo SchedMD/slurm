@@ -98,7 +98,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
 
 #include "backfill.h"
@@ -3044,10 +3044,10 @@ skip_start:
 				(uint64_t)selected_node_cnt;
 
 			assoc_mgr_lock(&locks);
-			gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
-						   selected_node_cnt,
-						   tres_req_cnt,
-						   true);
+			gres_stepmgr_set_job_tres_cnt(job_ptr->gres_list_req,
+						      selected_node_cnt,
+						      tres_req_cnt,
+						      true);
 
 			tres_req_cnt[TRES_ARRAY_BILLING] =
 				assoc_mgr_tres_weighted(
@@ -3827,9 +3827,9 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 		assoc_mgr_lock(&locks);
-		gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
-					   selected_node_cnt,
-					   tres_req_cnt, true);
+		gres_stepmgr_set_job_tres_cnt(job_ptr->gres_list_req,
+					      selected_node_cnt,
+					      tres_req_cnt, true);
 
 		tres_req_cnt[TRES_ARRAY_BILLING] =
 			assoc_mgr_tres_weighted(

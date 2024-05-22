@@ -40,7 +40,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/licenses.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 
 bool select_state_initializing = true;
 
@@ -303,14 +303,14 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			if (job_ptr->details &&
 			    (job_ptr->details->whole_node &
 			     WHOLE_NODE_REQUIRED))
-				gres_ctld_job_alloc_whole_node(
+				gres_stepmgr_job_alloc_whole_node(
 					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap, new_alloc);
 			else
-				gres_ctld_job_alloc(
+				gres_stepmgr_job_alloc(
 					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
@@ -336,11 +336,11 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 	}
 
 	if (action != JOB_RES_ACTION_RESUME) {
-		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
-					    job_ptr->nodes,
-					    &job_ptr->gres_detail_cnt,
-					    &job_ptr->gres_detail_str,
-					    &job_ptr->gres_used);
+		gres_stepmgr_job_build_details(job_ptr->gres_list_alloc,
+					       job_ptr->nodes,
+					       &job_ptr->gres_detail_cnt,
+					       &job_ptr->gres_detail_str,
+					       &job_ptr->gres_used);
 	}
 
 	/* add cores */
@@ -483,10 +483,11 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			else
 				node_gres_list = node_ptr->gres_list;
 
-			gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
-					      node_gres_list,
-					      n, job_ptr->job_id,
-					      node_ptr->name, old_job, false);
+			gres_stepmgr_job_dealloc(job_ptr->gres_list_alloc,
+						 node_gres_list,
+						 n, job_ptr->job_id,
+						 node_ptr->name, old_job,
+						 false);
 			gres_node_state_log(node_gres_list, node_ptr->name);
 
 			if (node_usage[i].alloc_memory <

@@ -78,7 +78,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 
 #define NO_SHARE_LIMIT	0xfffe
 #define NODEINFO_MAGIC	0x82ad
@@ -1025,10 +1025,11 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			else
 				node_gres_list = node_ptr->gres_list;
 
-			gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
-					      node_gres_list, node_offset,
-					      job_ptr->job_id, node_ptr->name,
-					      old_job, false);
+			gres_stepmgr_job_dealloc(job_ptr->gres_list_alloc,
+						 node_gres_list, node_offset,
+						 job_ptr->job_id,
+						 node_ptr->name,
+						 old_job, false);
 			gres_node_state_log(node_gres_list, node_ptr->name);
 		}
 
@@ -1235,15 +1236,15 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 					  cpus[new_node_offset];
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-	gres_ctld_job_merge(from_job_ptr->gres_list_req,
-			    from_job_resrcs_ptr->node_bitmap,
-			    to_job_ptr->gres_list_req,
-			    to_job_resrcs_ptr->node_bitmap);
+	gres_stepmgr_job_merge(from_job_ptr->gres_list_req,
+			       from_job_resrcs_ptr->node_bitmap,
+			       to_job_ptr->gres_list_req,
+			       to_job_resrcs_ptr->node_bitmap);
 	/* copy the allocated gres */
-	gres_ctld_job_merge(from_job_ptr->gres_list_alloc,
-			    from_job_resrcs_ptr->node_bitmap,
-			    to_job_ptr->gres_list_alloc,
-			    to_job_resrcs_ptr->node_bitmap);
+	gres_stepmgr_job_merge(from_job_ptr->gres_list_alloc,
+			       from_job_resrcs_ptr->node_bitmap,
+			       to_job_ptr->gres_list_alloc,
+			       to_job_resrcs_ptr->node_bitmap);
 
 	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
@@ -1427,7 +1428,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		node_gres_list = cr_ptr->nodes[node_inx].gres_list;
 	else
 		node_gres_list = node_ptr->gres_list;
-	gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
+	gres_stepmgr_job_dealloc(job_ptr->gres_list_alloc,
 			      node_gres_list, node_offset,
 			      job_ptr->job_id, node_ptr->name, old_job, true);
 	gres_node_state_log(node_gres_list, node_ptr->name);
@@ -1508,11 +1509,12 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 				gres_list = cr_ptr->nodes[i].gres_list;
 			else
 				gres_list = node_ptr->gres_list;
-			gres_ctld_job_alloc(job_ptr->gres_list_req,
-					    &job_ptr->gres_list_alloc,
-					    gres_list, node_cnt, i, node_offset,
-					    job_ptr->job_id, node_ptr->name,
-					    NULL, new_alloc);
+			gres_stepmgr_job_alloc(job_ptr->gres_list_req,
+					       &job_ptr->gres_list_alloc,
+					       gres_list, node_cnt, i,
+					       node_offset,
+					       job_ptr->job_id, node_ptr->name,
+					       NULL, new_alloc);
 			gres_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -1540,11 +1542,11 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (alloc_all) {
-		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
-					    job_ptr->nodes,
-					    &job_ptr->gres_detail_cnt,
-					    &job_ptr->gres_detail_str,
-					    &job_ptr->gres_used);
+		gres_stepmgr_job_build_details(job_ptr->gres_list_alloc,
+					       job_ptr->nodes,
+					       &job_ptr->gres_detail_cnt,
+					       &job_ptr->gres_detail_str,
+					       &job_ptr->gres_used);
 	}
 	return rc;
 }
@@ -1776,14 +1778,15 @@ static void _init_node_cr(void)
 			}
 
 			if (bit_test(job_ptr->node_bitmap, i)) {
-				gres_ctld_job_alloc(job_ptr->gres_list_req,
-						    &job_ptr->gres_list_alloc,
-						    node_ptr->gres_list,
-						    job_resrcs_ptr->nhosts,
-						    i, node_offset,
-						    job_ptr->job_id,
-						    node_ptr->name,
-						    NULL, new_alloc);
+				gres_stepmgr_job_alloc(
+					job_ptr->gres_list_req,
+					&job_ptr->gres_list_alloc,
+					node_ptr->gres_list,
+					job_resrcs_ptr->nhosts,
+					i, node_offset,
+					job_ptr->job_id,
+					node_ptr->name,
+					NULL, new_alloc);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;
