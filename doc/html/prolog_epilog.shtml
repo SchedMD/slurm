@@ -325,8 +325,28 @@ sets an environment variable for the user task<br>
 <span class="commandline">unset name</span>
 clears an environment variable from the user task<br>
 <span class="commandline">print ...</span>
-writes to the task's standard output.<br>
-Special treatment is given to the <b>SLURM_PROLOG_CPU_MASK</b> variable when
+writes to the task's standard output.<br></p>
+
+<p>A TaskProlog script can just be a bash script. Here is a very basic example:
+<pre>
+#!/bin/bash
+
+# The TaskProlog script can be used for any preliminary work needed
+# before running a job step, and it can also be used to modify the
+# user's environment. There are two main mechanisms for that, which
+# rely on printing commands to stdout:
+
+# Make a variable available for the user
+echo "export VARIABLE_1=HelloWorld"
+
+# Unset variables for the user
+echo "unset MANPATH"
+
+# We can also print messages if needed
+echo "print This message has been printed with TaskProlog"
+</pre></p>
+
+<p>Special treatment is given to the <b>SLURM_PROLOG_CPU_MASK</b> variable when
 set in the task prolog. The variable is interpreted as a coma separated list
 of hex maps. It allows you to specify the CPU(s) that will be bound to a
 task and is applied using sched_setaffinity.
@@ -730,6 +750,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 2 February 2024</p>
+<p style="text-align:center;">Last modified 22 May 2024</p>
 
 <!--#include virtual="footer.txt"-->
