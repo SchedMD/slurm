@@ -565,7 +565,7 @@ _node_state_list (void)
 	}
 
 	xstrcat(all_states,
-		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED");
+		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PLANNED,BLOCKED");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
 	xstrcat(all_states, ",");
@@ -586,8 +586,6 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_PLANNED));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -638,6 +636,9 @@ _node_state_id (char *str)
 			return (i);
 	}
 
+	if ((xstrncasecmp("BLOCKED", str, len) == 0) ||
+	    (xstrncasecmp("BLOCK", str, len) == 0))
+		return NODE_STATE_BLOCKED;
 	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
 	    (xstrncasecmp("PLND", str, len) == 0))
 		return NODE_STATE_PLANNED;
@@ -673,8 +674,6 @@ _node_state_id (char *str)
 		return NODE_STATE_REBOOT_ISSUED;
 	if (_node_state_equal(NODE_STATE_CLOUD, str))
 		return NODE_STATE_CLOUD;
-	if (_node_state_equal(NODE_STATE_BLOCKED, str))
-		return NODE_STATE_BLOCKED;
 
 	return (-1);
 }
