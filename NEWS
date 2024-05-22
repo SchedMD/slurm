@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     PrologFlags=Serial is not compatible with how RunInJob operates.
  -- Fix memory leak on shutdown when using --enable-memory-leak-debug and
     freeing cons_tres node usage.
+ -- Rename src/stepmgr/gres_ctld.[ch] to src/stepmgr/gres_stepmgr.[ch].
 
 * Changes in Slurm 24.05.0rc1
 =============================

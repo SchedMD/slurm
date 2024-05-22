@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  gres_ctld.h - Functions for gres used only in the slurmctld
+ *  gres_stepmgr.h - Functions for gres used only in the slurmctld
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *  Derived in large part from code previously in interfaces/gres.h
@@ -39,7 +39,7 @@
 
 #include "src/interfaces/gres.h"
 
-typedef struct gres_ctld_step_test_args {
+typedef struct gres_stepmgr_step_test_args {
 	uint16_t cpus_per_task; /* IN cpus_per_task - number of CPUs required
 				 * per task */
 	int *err_code; /* OUT err_code - If an error occurred, set this to tell
@@ -64,7 +64,7 @@ typedef struct gres_ctld_step_test_args {
 	uint32_t step_id; /* ID of the step being allocated */
 	bool test_mem; /* IN test_mem - true if we should test if mem_per_gres
 			* would exceed a limit. */
-} gres_ctld_step_test_args_t;
+} gres_stepmgr_step_test_args_t;
 
 /*
  * Fill in job_gres_list with the total amount of GRES on a node.
@@ -76,7 +76,7 @@ typedef struct gres_ctld_step_test_args {
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_select_whole_node(
+extern int gres_stepmgr_job_select_whole_node(
 	List *job_gres_list, List node_gres_list,
 	uint32_t job_id, char *node_name);
 
@@ -97,7 +97,7 @@ extern int gres_ctld_job_select_whole_node(
  * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_alloc_whole_node(
+extern int gres_stepmgr_job_alloc_whole_node(
 	List job_gres_list, List *job_alloc_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
@@ -119,11 +119,12 @@ extern int gres_ctld_job_alloc_whole_node(
  * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_alloc(List job_gres_list, List *job_alloc_gres_list,
-			       List node_gres_list, int node_cnt,
-			       int node_index, int node_offset,
-			       uint32_t job_id, char *node_name,
-			       bitstr_t *core_bitmap, bool new_alloc);
+extern int gres_stepmgr_job_alloc(
+	List job_gres_list, List *job_alloc_gres_list,
+	List node_gres_list, int node_cnt,
+	int node_index, int node_offset,
+	uint32_t job_id, char *node_name,
+	bitstr_t *core_bitmap, bool new_alloc);
 
 /*
  * Deallocate resource from a job and update node and job gres information
@@ -144,9 +145,10 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_alloc_gres_list,
  * 		    that is terminating.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
-				 int node_offset, uint32_t job_id,
-				 char *node_name, bool old_job, bool resize);
+extern int gres_stepmgr_job_dealloc(
+	List job_gres_list, List node_gres_list,
+	int node_offset, uint32_t job_id,
+	char *node_name, bool old_job, bool resize);
 
 /*
  * Merge one job's gres allocation into another job's gres allocation.
@@ -158,17 +160,18 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
  *			     into job
  * IN to_job_node_bitmap - bitmap of nodes for the job being merged into
  */
-extern void gres_ctld_job_merge(List from_job_gres_list,
-				bitstr_t *from_job_node_bitmap,
-				List to_job_gres_list,
-				bitstr_t *to_job_node_bitmap);
+extern void gres_stepmgr_job_merge(
+	List from_job_gres_list,
+	bitstr_t *from_job_node_bitmap,
+	List to_job_gres_list,
+	bitstr_t *to_job_node_bitmap);
 
 /*
  * Clear any vestigial alloc job gres state. This may be needed on job requeue.
  * This only clears out the allocated portions of the gres list, it does not
  * remove the actual items from the list.
  */
-extern void gres_ctld_job_clear_alloc(List job_gres_list);
+extern void gres_stepmgr_job_clear_alloc(List job_gres_list);
 
 /* Given a job's GRES data structure, return the indecies for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
@@ -177,10 +180,11 @@ extern void gres_ctld_job_clear_alloc(List job_gres_list);
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
  */
-extern void gres_ctld_job_build_details(List job_gres_list, char *nodes,
-					uint32_t *gres_detail_cnt,
-					char ***gres_detail_str,
-					char **total_gres_str);
+extern void gres_stepmgr_job_build_details(
+	List job_gres_list, char *nodes,
+	uint32_t *gres_detail_cnt,
+	char ***gres_detail_str,
+	char **total_gres_str);
 
 /*
  * Fill in the job allocated tres_cnt based off the gres_list and node_cnt
@@ -190,10 +194,8 @@ extern void gres_ctld_job_build_details(List job_gres_list, char *nodes,
  *                requested for job that are requested in gres_list
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void gres_ctld_set_job_tres_cnt(List gres_list,
-				       uint32_t node_cnt,
-				       uint64_t *tres_cnt,
-				       bool locked);
+extern void gres_stepmgr_set_job_tres_cnt(
+	List gres_list, uint32_t node_cnt, uint64_t *tres_cnt, bool locked);
 
 /*
  * Fill in the node allocated tres_cnt based off the gres_list
@@ -202,38 +204,38 @@ extern void gres_ctld_set_job_tres_cnt(List gres_list,
  *                allocated on node
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void gres_ctld_set_node_tres_cnt(List gres_list,
-					uint64_t *tres_cnt,
-					bool locked);
+extern void gres_stepmgr_set_node_tres_cnt(
+	List gres_list, uint64_t *tres_cnt, bool locked);
 
 /*
  * Determine how many cores of a job's allocation can be allocated to a step
  *	on a specific node
- * IN args - see the definition of gres_ctld_step_test_args_t
+ * IN args - see the definition of gres_stepmgr_step_test_args_t
  * RET Count of available cpus on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
-extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args);
+extern uint64_t gres_stepmgr_step_test(gres_stepmgr_step_test_args_t *args);
 
 /*
  * If a step gres request used gres_per_step it must be tested more than just in
- * gres_ctld_step_test. This function only acts when gres_per_step is used
+ * gres_stepmgr_step_test. This function only acts when gres_per_step is used
  * IN step_gres_list  - step's requested GRES data structure
  * IN job_ptr - Job data
  * IN/OUT nodes_avail - Bitstring of nodes available for this step to use
  * IN min_nodes - minimum nodes required for this step
  */
-extern void gres_ctld_step_test_per_step(List step_gres_list,
-					 job_record_t *job_ptr,
-					 bitstr_t *nodes_avail,
-					 int min_nodes);
+extern void gres_stepmgr_step_test_per_step(
+	List step_gres_list,
+	job_record_t *job_ptr,
+	bitstr_t *nodes_avail,
+	int min_nodes);
 
 /*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_step_state_validate()
  * OUT step_gres_list_alloc - step's list of allocated gres
- * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
+ * IN job_gres_list - job's allocated gres_list built by gres_stepmgr_job_alloc()
  * IN node_offset - job's zero-origin index to the node of interest
  * IN first_step_node - true if this is node zero of the step
  *                      (do initialization)
@@ -250,29 +252,31 @@ extern void gres_ctld_step_test_per_step(List step_gres_list,
  *                          gres allocated to the step on this node
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_step_alloc(List step_gres_list,
-				List *step_gres_list_alloc,
-				List job_gres_list,
-				int node_offset, bool first_step_node,
-				uint16_t tasks_on_node, uint32_t rem_nodes,
-				uint32_t job_id, uint32_t step_id,
-				bool decr_job_alloc,
-				uint64_t *step_node_mem_alloc,
-				List node_gres_list,
-				bitstr_t *core_bitmap,
-				int *total_gres_cpu_cnt);
+extern int gres_stepmgr_step_alloc(
+	List step_gres_list,
+	List *step_gres_list_alloc,
+	List job_gres_list,
+	int node_offset, bool first_step_node,
+	uint16_t tasks_on_node, uint32_t rem_nodes,
+	uint32_t job_id, uint32_t step_id,
+	bool decr_job_alloc,
+	uint64_t *step_node_mem_alloc,
+	List node_gres_list,
+	bitstr_t *core_bitmap,
+	int *total_gres_cpu_cnt);
 
 /*
  * Deallocate resource to a step and update job and step gres information
  * IN step_gres_list_alloc - step's list of allocated gres
- * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
+ * IN job_gres_list - job's allocated gres_list built by
+ *                    gres_stepmgr_job_alloc()
  * IN job_id, step_id - ID of the step being allocated.
  * IN node_offset - job's zero-origin index to the node of interest
  * IN decr_job_alloc - whether or not to decrement the step allocation from the
  *                     job allocation.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
+extern int gres_stepmgr_step_dealloc(List step_gres_list_alloc,
 				  List job_gres_list,
 				  uint32_t job_id, uint32_t step_id,
 				  int node_offset,
@@ -285,9 +289,10 @@ extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
  * IN orig_job_node_bitmap - bitmap of nodes in the original job allocation
  * IN new_job_node_bitmap - bitmap of nodes in the new job allocation
  */
-extern void gres_ctld_step_state_rebase(List gres_list,
-					bitstr_t *orig_job_node_bitmap,
-					bitstr_t *new_job_node_bitmap);
+extern void gres_stepmgr_step_state_rebase(
+	List gres_list,
+	bitstr_t *orig_job_node_bitmap,
+	bitstr_t *new_job_node_bitmap);
 
 /*
  * Given a job's GRES data structure, return a simple tres string of gres
@@ -298,9 +303,8 @@ extern void gres_ctld_step_state_rebase(List gres_list,
  * RET - simple string containing gres this job is allocated on the node
  * requested.
  */
-extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
-					    int node_inx,
-					    bool locked);
+extern char *gres_stepmgr_gres_on_node_as_tres(
+	List job_gres_list, int node_inx, bool locked);
 
 /*
  * Translate a gres_list into a tres_str
@@ -308,7 +312,7 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
  * IN locked - if the assoc_mgr tres read locked is locked or not
  * RET char * in a simple TRES format
  */
-extern char *gres_ctld_gres_2_tres_str(
+extern char *gres_stepmgr_gres_2_tres_str(
 	List gres_list, bool locked);
 
 #endif /* _GRES_CTLD_H */

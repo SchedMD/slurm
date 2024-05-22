@@ -93,7 +93,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
@@ -3545,10 +3545,11 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 					sockets_per_node;
 			}
 			assoc_mgr_lock(&locks);
-			gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
-						   job_ptr->details->min_nodes,
-						   job_ptr->tres_req_cnt,
-						   true);
+			gres_stepmgr_set_job_tres_cnt(
+				job_ptr->gres_list_req,
+				job_ptr->details->min_nodes,
+				job_ptr->tres_req_cnt,
+				true);
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(

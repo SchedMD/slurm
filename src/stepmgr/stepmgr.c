@@ -73,7 +73,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
 
 typedef struct {
@@ -888,7 +888,7 @@ static int _mark_busy_nodes(void *x, void *arg)
 }
 
 static void _step_test_gres(job_step_create_request_msg_t *step_spec,
-			    gres_ctld_step_test_args_t *gres_test_args,
+			    gres_stepmgr_step_test_args_t *gres_test_args,
 			    job_record_t *job_ptr,
 			    uint32_t *node_usable_cpu_cnt,
 			    uint32_t *total_cpus,
@@ -903,7 +903,7 @@ static void _step_test_gres(job_step_create_request_msg_t *step_spec,
 
 	/* ignore current step allocations */
 	gres_test_args->ignore_alloc = true;
-	gres_cpus = gres_ctld_step_test(gres_test_args);
+	gres_cpus = gres_stepmgr_step_test(gres_test_args);
 	*total_cpus = MIN(*total_cpus, gres_cpus);
 
 	/*
@@ -912,7 +912,7 @@ static void _step_test_gres(job_step_create_request_msg_t *step_spec,
 	 */
 	if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
 		gres_test_args->ignore_alloc = false;
-		gres_cpus = gres_ctld_step_test(gres_test_args);
+		gres_cpus = gres_stepmgr_step_test(gres_test_args);
 	}
 	if (gres_cpus < *avail_cpus) {
 		log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
@@ -1044,7 +1044,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int gres_invalid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
-	gres_ctld_step_test_args_t gres_test_args = {
+	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = cpus_per_task,
 		.first_step_node = true,
 		.job_gres_list = job_ptr->gres_list_alloc,
@@ -1480,7 +1480,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	}
 
 	/* If gres_per_step then filter nodes_avail to nodes that fill req */
-	gres_ctld_step_test_per_step(step_gres_list, job_ptr,
+	gres_stepmgr_step_test_per_step(step_gres_list, job_ptr,
 				     nodes_avail, step_spec->min_nodes);
 
 	/*
@@ -2427,7 +2427,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		unused_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
 		bit_and_not(unused_core_bitmap,
 			    job_resrcs_ptr->core_bitmap_used);
-		rc = gres_ctld_step_alloc(step_ptr->gres_list_req,
+		rc = gres_stepmgr_step_alloc(step_ptr->gres_list_req,
 					  &step_ptr->gres_list_alloc,
 					  job_ptr->gres_list_alloc,
 					  job_node_inx, first_step_node,
@@ -2815,7 +2815,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		/*
 		 * We need to free GRES structures regardless of overlap.
 		 */
-		gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
+		gres_stepmgr_step_dealloc(step_ptr->gres_list_alloc,
 				       job_ptr->gres_list_alloc, job_ptr->job_id,
 				       step_ptr->step_id.step_id,
 				       job_node_inx,
@@ -3680,7 +3680,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	uint16_t ntasks_per_socket = 0;
 	node_record_t *node_ptr;
-	gres_ctld_step_test_args_t gres_test_args = {
+	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = step_ptr->cpus_per_task,
 		.first_step_node = true,
 		.job_gres_list = job_ptr->gres_list_alloc,
@@ -3829,7 +3829,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		else
 			gres_test_args.ignore_alloc = false;
 
-		gres_cpus = gres_ctld_step_test(&gres_test_args);
+		gres_cpus = gres_stepmgr_step_test(&gres_test_args);
 		if (usable_cpus > gres_cpus)
 			usable_cpus = gres_cpus;
 		if (usable_cpus <= 0) {
@@ -4236,7 +4236,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 			mem_count = job_ptr->job_resrcs->
 				memory_allocated[batch_inx];
 
-		tmp_tres_str = gres_ctld_gres_on_node_as_tres(
+		tmp_tres_str = gres_stepmgr_gres_on_node_as_tres(
 			job_ptr->gres_list_alloc, 0, true);
 	} else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
@@ -4248,7 +4248,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		     i++)
 			mem_count += step_ptr->memory_allocated[i];
 
-		tmp_tres_str = gres_ctld_gres_2_tres_str(
+		tmp_tres_str = gres_stepmgr_gres_2_tres_str(
 			step_ptr->gres_list_alloc, true);
 	}
 
@@ -4562,7 +4562,7 @@ static int _rebuild_bitmaps(void *x, void *arg)
 	if (step_ptr->state < JOB_RUNNING)
 		return 0;
 
-	gres_ctld_step_state_rebase(step_ptr->gres_list_alloc,
+	gres_stepmgr_step_state_rebase(step_ptr->gres_list_alloc,
 				    orig_job_node_bitmap,
 				    job_ptr->job_resrcs->node_bitmap);
 	if (!step_ptr->core_bitmap_job)

@@ -88,7 +88,7 @@
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/stepmgr.h"
 
 #define RESV_MAGIC	0x3b82
@@ -2566,10 +2566,11 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 
 		assoc_mgr_lock(&locks);
 		tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
-		gres_ctld_set_job_tres_cnt(resv_ptr->gres_list_alloc,
-					   resv_ptr->node_cnt,
-					   tres_alloc_cnt,
-					   true);
+		gres_stepmgr_set_job_tres_cnt(
+			resv_ptr->gres_list_alloc,
+			resv_ptr->node_cnt,
+			tres_alloc_cnt,
+			true);
 		resv_ptr->tres_str = assoc_mgr_make_tres_str_from_array(
 			tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
 		xfree(tres_alloc_cnt);

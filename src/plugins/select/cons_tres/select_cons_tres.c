@@ -46,7 +46,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/xstring.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 
 #include "select_cons_tres.h"
 #include "job_test.h"
@@ -612,15 +612,15 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		}
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-	gres_ctld_job_merge(from_job_ptr->gres_list_req,
-			    from_job_resrcs_ptr->node_bitmap,
-			    to_job_ptr->gres_list_req,
-			    to_job_resrcs_ptr->node_bitmap);
+	gres_stepmgr_job_merge(from_job_ptr->gres_list_req,
+			       from_job_resrcs_ptr->node_bitmap,
+			       to_job_ptr->gres_list_req,
+			       to_job_resrcs_ptr->node_bitmap);
 	/* copy the allocated gres */
-	gres_ctld_job_merge(from_job_ptr->gres_list_alloc,
-			    from_job_resrcs_ptr->node_bitmap,
-			    to_job_ptr->gres_list_alloc,
-			    to_job_resrcs_ptr->node_bitmap);
+	gres_stepmgr_job_merge(from_job_ptr->gres_list_alloc,
+			       from_job_resrcs_ptr->node_bitmap,
+			       to_job_ptr->gres_list_alloc,
+			       to_job_resrcs_ptr->node_bitmap);
 
 	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
@@ -700,9 +700,9 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_ctld_job_dealloc(job_ptr->gres_list_alloc, gres_list, n,
-				      job_ptr->job_id, node_ptr->name,
-				      old_job, true);
+		gres_stepmgr_job_dealloc(job_ptr->gres_list_alloc, gres_list, n,
+					 job_ptr->job_id, node_ptr->name,
+					 old_job, true);
 		gres_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
@@ -1043,8 +1043,9 @@ extern int select_p_select_nodeinfo_set_all(void)
 			gres_list = select_node_usage[n].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_ctld_set_node_tres_cnt(gres_list, nodeinfo->tres_alloc_cnt,
-					    false);
+		gres_stepmgr_set_node_tres_cnt(gres_list,
+					       nodeinfo->tres_alloc_cnt,
+					       false);
 
 		xfree(nodeinfo->tres_alloc_fmt_str);
 		nodeinfo->tres_alloc_fmt_str =
