@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
     set.
  -- Show an error when PrologFlags RunInJob and Serial are used together.
     PrologFlags=Serial is not compatible with how RunInJob operates.
+ -- Fix memory leak on shutdown when using --enable-memory-leak-debug and
+    freeing cons_tres node usage.
 
 * Changes in Slurm 24.05.0rc1
 =============================
