@@ -59,7 +59,7 @@ static int _for_each_pack_str(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _pack_list_of_str(List l, buf_t *buffer)
+static void _pack_list_of_str(list_t *l, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 

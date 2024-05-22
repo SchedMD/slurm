@@ -528,12 +528,11 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
  * slurmd on one node (unusual outside of development environments), you
  * will get one of the local NodeNames more-or-less at random.
  *
- * Returns a List of pointers to step_loc_t structures.
+ * Returns a list of pointers to step_loc_t structures.
  */
-extern List
-stepd_available(const char *directory, const char *nodename)
+extern list_t *stepd_available(const char *directory, const char *nodename)
 {
-	List l;
+	list_t *l = NULL;
 	DIR *dp;
 	struct dirent *ent;
 	regex_t re;

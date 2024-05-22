@@ -965,10 +965,9 @@ char *print_mail_type(const uint16_t type)
 	return buf;
 }
 
-static List
-_create_path_list(void)
+static list_t *_create_path_list(void)
 {
-	List l = list_create(xfree_ptr);
+	list_t *l = list_create(xfree_ptr);
 	char *path;
 	char *c, *lc;
 
@@ -1047,7 +1046,7 @@ static bool _accessible(const char *path, int access_mode)
 char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 		  bool test_exec)
 {
-	List         l        = NULL;
+	list_t *l = NULL;
 	list_itr_t *i = NULL;
 	char *path, *fullpath = NULL;
 

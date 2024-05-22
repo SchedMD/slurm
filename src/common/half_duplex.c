@@ -44,7 +44,7 @@
 #define BUFFER_SIZE 4096
 
 static bool _half_duplex_readable(eio_obj_t *obj);
-static int _half_duplex(eio_obj_t *obj, List objs);
+static int _half_duplex(eio_obj_t *obj, list_t *objs);
 
 struct io_operations half_duplex_ops = {
 	.readable = _half_duplex_readable,
@@ -65,7 +65,7 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _half_duplex(eio_obj_t *obj, List objs)
+static int _half_duplex(eio_obj_t *obj, list_t *objs)
 {
 	ssize_t in, out, wr = 0;
 	char buf[BUFFER_SIZE];

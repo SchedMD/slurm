@@ -99,7 +99,7 @@ typedef struct {
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
 	char **state_save_location;
-	void (*sync_license_notify) (List clus_res_list);
+	void (*sync_license_notify) (list_t *clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*update_cluster_tres) (void);
 	void (*update_license_notify) (slurmdb_res_rec_t *rec);
@@ -107,15 +107,15 @@ typedef struct {
 	void (*update_resvs) ();
 } assoc_init_args_t;
 
-extern List assoc_mgr_tres_list;
+extern list_t *assoc_mgr_tres_list;
 extern slurmdb_tres_rec_t **assoc_mgr_tres_array;
 extern char **assoc_mgr_tres_name_array;
-extern List assoc_mgr_assoc_list;
-extern List assoc_mgr_coord_list;
-extern List assoc_mgr_res_list;
-extern List assoc_mgr_qos_list;
-extern List assoc_mgr_user_list;
-extern List assoc_mgr_wckey_list;
+extern list_t *assoc_mgr_assoc_list;
+extern list_t *assoc_mgr_coord_list;
+extern list_t *assoc_mgr_res_list;
+extern list_t *assoc_mgr_qos_list;
+extern list_t *assoc_mgr_user_list;
+extern list_t *assoc_mgr_wckey_list;
 
 extern slurmdb_assoc_rec_t *assoc_mgr_root_assoc;
 
@@ -141,7 +141,7 @@ extern bool verify_assoc_unlock(assoc_mgr_lock_datatype_t datatype);
 extern int assoc_mgr_find_nondirect_coord_by_name(void *x, void *y);
 
 /* ran after a new tres_list is given */
-extern int assoc_mgr_post_tres_list(List new_list);
+extern int assoc_mgr_post_tres_list(list_t *new_list);
 
 /*
  * get info from the storage
@@ -164,7 +164,7 @@ extern int assoc_mgr_post_tres_list(List new_list);
 extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     slurmdb_assoc_rec_t *assoc,
 				     int enforce,
-				     List assoc_list);
+				     list_t *assoc_list);
 
 /*
  * get info from the storage
@@ -365,7 +365,7 @@ extern int assoc_mgr_update_object(void *x, void *arg);
  * RET: error code
  * NOTE: the items in update_list are not deleted
  */
-extern int assoc_mgr_update(List update_list, bool locked);
+extern int assoc_mgr_update(list_t *update_list, bool locked);
 
 /*
  * update associations in cache
@@ -645,7 +645,7 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
  * IN: cluster_name: Cluster we are dealing with.
  * IN: account: Account name we are interested in.
  * IN: coord_name: User name given.
- * IN: qos_list: List of all QOS we need to verify.
+ * IN: qos_list: list of all QOS we need to verify.
  * RET: true if they are or false if they are not
  */
 extern bool assoc_mgr_check_coord_qos(char *cluster_name, char *account,

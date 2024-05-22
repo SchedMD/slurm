@@ -63,7 +63,7 @@ typedef struct {
 	pthread_cond_t *notify;
 	int            *p_thr_count;
 	slurm_msg_t *orig_msg;
-	List ret_list;
+	list_t *ret_list;
 	int timeout;
 	hostlist_t *tree_hl;
 	pthread_mutex_t *tree_mutex;
@@ -113,7 +113,7 @@ static void *_forward_thread(void *arg)
 	forward_msg_t *fwd_msg = arg;
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
@@ -403,7 +403,7 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 static void *_fwd_tree_thread(void *arg)
 {
 	fwd_tree_t *fwd_tree = arg;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	char *name = NULL;
 	char *buf = NULL;
 	slurm_msg_t send_msg;
@@ -800,17 +800,17 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
  * IN: hl          - hostlist_t   - list of every node to send message to
  * IN: msg         - slurm_msg_t  - message to send.
  * IN: timeout     - int          - how long to wait in milliseconds.
- * RET List 	   - List containing the responses of the children
- *		     (if any) we forwarded the message to. List
+ * RET list_t *    - list containing the responses of the children
+ *		     (if any) we forwarded the message to. list
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
+extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 {
 	fwd_tree_t fwd_tree;
 	pthread_mutex_t tree_mutex;
 	pthread_cond_t notify;
 	int count = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int thr_count = 0;
 	int host_count = 0;
 	hostlist_t **sp_hl;
@@ -869,12 +869,12 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
  *
- * IN: ret_list       - List *   - ret_list to put ret_data_info
+ * IN: ret_list       - list_t ** - ret_list to put ret_data_info
  * IN: node_name      - char *   - node name that failed
  * IN: err            - int      - error message from attempt
  *
  */
-extern void mark_as_failed_forward(List *ret_list, char *node_name, int err)
+extern void mark_as_failed_forward(list_t **ret_list, char *node_name, int err)
 {
 	ret_data_info_t *ret_data_info = NULL;
 

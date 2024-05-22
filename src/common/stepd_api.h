@@ -195,9 +195,9 @@ extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
  * slurmd on one node (unusual outside of development environments), you
  * will get one of the local NodeNames more-or-less at random.
  *
- * Returns a List of pointers to step_loc_t structures.
+ * Returns a list of pointers to step_loc_t structures.
  */
-extern List stepd_available(const char *directory, const char *nodename);
+extern list_t *stepd_available(const char *directory, const char *nodename);
 
 /*
  * Return true if the process with process ID "pid" is found in
