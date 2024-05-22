@@ -134,7 +134,7 @@
 \*****************************************************************************/
 
 typedef struct slurmctld_config {
-	List acct_update_list;
+	list_t *acct_update_list;
 	pthread_cond_t acct_update_cond;
 	pthread_mutex_t acct_update_lock;
 	pthread_cond_t backup_finish_cond;
@@ -287,9 +287,9 @@ typedef struct node_features {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
 } node_feature_t;
 
-extern List active_feature_list;/* list of currently active node features */
-extern List avail_feature_list;	/* list of available node features */
-extern List conf_includes_list; /* list of conf_includes_map_t */
+extern list_t *active_feature_list; /* list of currently active node features */
+extern list_t *avail_feature_list;  /* list of available node features */
+extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 
 #define PACK_FANOUT_ADDRS(_X) \
 	(IS_NODE_DYNAMIC_FUTURE(_X) || \
@@ -332,7 +332,7 @@ extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
 /*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
-extern List part_list;			/* list of part_record entries */
+extern list_t *part_list;		/* list of part_record entries */
 extern time_t last_part_update;		/* time of last part_list update */
 extern part_record_t default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
@@ -373,12 +373,12 @@ typedef struct slurmctld_resv {
 				 * running on it */
 	char *features;		/* required node features		*/
 	uint64_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
-	List gres_list_alloc;	/* Allocated generic resource allocation
+	list_t *gres_list_alloc;/* Allocated generic resource allocation
 				 * detail */
 	char *groups;		/* names of linux groups permitted to use */
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
-	List license_list;	/* structure with license info		*/
+	list_t *license_list;	/* structure with license info		*/
 	char *licenses;		/* required system licenses (including those
 				 * from TRES requests */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
@@ -417,14 +417,14 @@ typedef struct {
 	bitstr_t **exc_cores;
 } resv_exc_t;
 
-extern List resv_list;		/* list of slurmctld_resv_t entries */
+extern list_t *resv_list;	/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
 /*****************************************************************************\
  *  Job lists
 \*****************************************************************************/
-extern List job_list;			/* list of job_record entries */
-extern List purge_files_list;		/* list of job ids to purge files of */
+extern list_t *job_list;		/* list of job_record entries */
+extern list_t *purge_files_list;	/* list of job ids to purge files of */
 extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 
 /*****************************************************************************\
@@ -445,7 +445,7 @@ enum select_plugindata_info {
 	SELECT_AVAIL_MEMORY, /* data-> uint64 avail mem  (CR support) */
 	SELECT_STATIC_PART,  /* data-> uint16, 1 if static partitioning
 			      * BlueGene support */
-	SELECT_CONFIG_INFO,  /* data-> List get .conf info from select
+	SELECT_CONFIG_INFO,  /* data-> list_t * get .conf info from select
 			      * plugin */
 };
 #define SELECT_TYPE_CONS_RES	1
@@ -574,7 +574,7 @@ extern void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
  * IN depend_list_src - a job's depend_lst
  * RET copy of depend_list_src, must bee freed by caller
  */
-extern List depended_list_copy(List depend_list_src);
+extern list_t *depended_list_copy(list_t *depend_list_src);
 
 /*
  * drain_nodes - drain one or more nodes,
@@ -660,7 +660,7 @@ extern void node_mgr_reset_node_stats(node_record_t *node_ptr);
  * IN feature_list_src - a job's depend_lst
  * RET copy of depend_list_src, must be freed by caller
  */
-extern List feature_list_copy(List feature_list_src);
+extern list_t *feature_list_copy(list_t *feature_list_src);
 
 typedef enum {
 	FOR_EACH_JOB_BY_ID_EACH_INVALID = 0,
@@ -804,11 +804,11 @@ extern uint32_t get_next_job_id(bool test_only);
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET List of pointers to the partitions or NULL if not found
+ * RET list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern List get_part_list(char *name, char **err_part);
+extern list_t *get_part_list(char *name, char **err_part);
 
 /*
  * init_depend_policy()
@@ -987,7 +987,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
 				 uint32_t node_cnt, part_record_t *part_ptr,
-				 List gres_list, bool user_set_mem,
+				 list_t *gres_list, bool user_set_mem,
 				 uint16_t min_sockets_per_node,
 				 uint32_t num_tasks);
 
@@ -1535,7 +1535,7 @@ extern void part_fini (void);
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller
  */
-extern List part_list_copy(List part_list_src);
+extern list_t *part_list_copy(list_t *part_list_src);
 
 /*
  * Validate a job's account against the partition's AllowAccounts or
@@ -2248,7 +2248,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
 
 /*
  * update_node_active_features - Update active features associated with nodes
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN active_features - New active features value
  * IN mode - FEATURE_MODE_IND : Print each node change indivually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
@@ -2263,7 +2263,7 @@ extern int update_node_active_features(char *node_names, char *active_features,
 /*
  * update_node_avail_features - Update available features associated with
  *	nodes, build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN avail_features - New available features value
  * IN mode - FEATURE_MODE_IND : Print each node change indivually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)

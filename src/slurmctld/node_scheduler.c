@@ -130,7 +130,7 @@ static bool _first_array_task(job_record_t *job_ptr);
 static void _log_node_set(job_record_t *job_ptr,
 			  struct node_set *node_set_ptr,
 			  int node_set_size);
-static int _match_feature(List feature_list, bitstr_t **inactive_bitmap);
+static int _match_feature(list_t *feature_list, bitstr_t **inactive_bitmap);
 static int _nodes_in_sets(bitstr_t *req_bitmap,
 			  struct node_set * node_set_ptr,
 			  int node_set_size);
@@ -139,8 +139,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    job_record_t *job_ptr, part_record_t *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only,
-			    List preemptee_candidates,
-			    List *preemptee_job_list, bool has_xand,
+			    list_t *preemptee_candidates,
+			    list_t **preemptee_job_list, bool has_xand,
 			    resv_exc_t *resv_exc_ptr, bool resv_overlap);
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 			 bool job_mc_ok, char **err_msg);
@@ -534,7 +534,7 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
  * either active or available and set the feature_list's node_bitmap_active and
  * node_bitmap_avail fields accordingly.
  */
-extern void find_feature_nodes(List feature_list, bool can_reboot)
+extern void find_feature_nodes(list_t *feature_list, bool can_reboot)
 {
 	list_itr_t *feat_iter;
 	job_feature_t  *job_feat_ptr;
@@ -584,7 +584,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
  * RET 1 if some nodes with this inactive feature, 0 no inactive feature
  * NOTE: Currently fully supports only AND/OR of features, not XAND/MOR
  */
-static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
+static int _match_feature(list_t *feature_list, bitstr_t **inactive_bitmap)
 {
 	list_itr_t *job_feat_iter;
 	job_feature_t *job_feat_ptr;
@@ -1064,7 +1064,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			     bitstr_t **select_bitmap, job_record_t *job_ptr,
 			     part_record_t *part_ptr, uint32_t min_nodes,
 			     uint32_t max_nodes, uint32_t req_nodes,
-			     bool test_only, List *preemptee_job_list,
+			     bool test_only, list_t **preemptee_job_list,
 			     bool can_reboot, bool submission)
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
@@ -1078,7 +1078,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *save_share_node_bitmap = NULL;
-	List preemptee_candidates = NULL;
+	list_t *preemptee_candidates = NULL;
 	bool old_feat_change = false;
 	bool has_xand = false;
 	bool resv_overlap = false;
@@ -1578,8 +1578,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			    bitstr_t **select_bitmap, job_record_t *job_ptr,
 			    part_record_t *part_ptr, uint32_t min_nodes,
 			    uint32_t max_nodes, uint32_t req_nodes,
-			    bool test_only, List preemptee_candidates,
-			    List *preemptee_job_list, bool has_xand,
+			    bool test_only, list_t *preemptee_candidates,
+			    list_t **preemptee_job_list, bool has_xand,
 			    resv_exc_t *resv_exc_ptr, bool resv_overlap)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code = SLURM_SUCCESS;
@@ -1596,7 +1596,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool nodes_busy = false;
 	bool licenses_unavailable = false;
 	int shared = 0, select_mode;
-	List preemptee_cand;
+	list_t *preemptee_cand = NULL;
 
 	/*
 	 * Since you could potentially have multiple features and the
@@ -2153,7 +2153,7 @@ try_sched:
 	return error_code;
 }
 
-static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
+static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
 	list_itr_t *iter;
@@ -2313,10 +2313,10 @@ static void _gres_select_explicit(
 			     ret_gres_list);
 }
 
-static List _handle_exclusive_gres(job_record_t *job_ptr,
-				   bitstr_t *select_bitmap, bool test_only)
+static list_t *_handle_exclusive_gres(job_record_t *job_ptr,
+				      bitstr_t *select_bitmap, bool test_only)
 {
-	List post_list = NULL;
+	list_t *post_list = NULL;
 	node_record_t *node_ptr;
 
 	if (test_only || !gres_get_gres_cnt())
@@ -2435,7 +2435,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	uint32_t min_nodes = 0, max_nodes = 0, req_nodes = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
-	List preemptee_job_list = NULL;
+	list_t *preemptee_job_list = NULL;
 	uint32_t selected_node_cnt = NO_VAL;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	bool can_reboot;
@@ -2444,7 +2444,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		{ .assoc = READ_LOCK, .qos = READ_LOCK };
 	assoc_mgr_lock_t job_read_locks =
 		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
-	List gres_list_pre = NULL;
+	list_t *gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
 
 	xassert(job_ptr);
@@ -2601,7 +2601,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * could run on nodes.
 	 */
 	if (select_bitmap) {
-		List gres_list_whole_node = _handle_exclusive_gres(
+		list_t *gres_list_whole_node = _handle_exclusive_gres(
 			job_ptr, select_bitmap, test_only);
 
 		selected_node_cnt = bit_set_count(select_bitmap);
@@ -3346,7 +3346,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	bitstr_t *tmp_bitmap, *work_bitmap;
 	bool have_count = false, user_update;
 	int rc = SLURM_SUCCESS;
-	List feature_list;
+	list_t *feature_list = NULL;
 	char *features;
 
 	xassert(detail_ptr);

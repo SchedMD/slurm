@@ -44,7 +44,7 @@
 #define _HAVE_POWER_SAVE_H
 
 /* Global Variables */
-extern List resume_job_list;
+extern list_t *resume_job_list;
 
 /*
  * config_power_mgr - Read power management configuration

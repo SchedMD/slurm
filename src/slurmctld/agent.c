@@ -144,7 +144,7 @@ typedef struct {
 					 * will not do nodelist if set */
 	hostlist_t *nodelist;		/* list of nodes to send to */
 	char *nodename;			/* node to send to */
-	List ret_list;
+	list_t *ret_list;
 } thd_t;
 
 typedef struct {
@@ -221,10 +221,10 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type);
 static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List defer_list = NULL;		/* agent_arg_t list for requests
+static list_t *defer_list = NULL;	/* agent_arg_t list for requests
 					 * requiring job write lock */
-static List mail_list = NULL;		/* pending e-mail requests */
-static List retry_list = NULL;		/* agent_arg_t list for retry */
+static list_t *mail_list = NULL;	/* pending e-mail requests */
+static list_t *retry_list = NULL;	/* agent_arg_t list for retry */
 
 static list_t *update_node_list = NULL;	/* node list for update */
 static pthread_mutex_t update_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -719,7 +719,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		step_id.job_id = msg->job_id;
 	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-		List het_alloc_list = *agent_ptr->msg_args_pptr;
+		list_t *het_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
 		if (!het_alloc_list || (list_count(het_alloc_list) == 0))
 			return;
@@ -938,7 +938,7 @@ static void *_thread_per_group_rpc(void *args)
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent, sack_agent;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int sig_array[2] = {SIGUSR1, 0};
@@ -1141,7 +1141,7 @@ static void *_thread_per_group_rpc(void *args)
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */
-			List het_alloc_list = task_ptr->msg_args_ptr;
+			list_t *het_alloc_list = task_ptr->msg_args_ptr;
 			resource_allocation_response_msg_t *msg_ptr;
 			if (!het_alloc_list ||
 			    (list_count(het_alloc_list) == 0))
@@ -1746,7 +1746,7 @@ static void _agent_defer(void)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&defer_mutex);
 	if (defer_list) {
-		List tmp_list = NULL;
+		list_t *tmp_list = NULL;
 		/* first try to find a new (never tried) record */
 		while ((queued_req_ptr = list_pop(defer_list))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;

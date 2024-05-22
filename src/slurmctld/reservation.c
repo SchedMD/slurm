@@ -124,8 +124,8 @@ static const char *select_node_bitmap_tags[] = {
 };
 
 time_t    last_resv_update = (time_t) 0;
-List      resv_list = (List) NULL;
-static List magnetic_resv_list = NULL;
+list_t *resv_list = NULL;
+static list_t *magnetic_resv_list = NULL;
 uint32_t  top_suffix = 0;
 
 typedef struct constraint_slot {
@@ -164,7 +164,7 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
-static List _list_dup(List license_list);
+static list_t *_list_dup(list_t *license_list);
 static buf_t *_open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version);
@@ -180,7 +180,7 @@ static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 					    resv_desc_msg_t *resv_desc_ptr,
 					    resv_select_t *resv_select_ret,
 					    int total_node_cnt,
-					    List feature_list);
+					    list_t *feature_list);
 static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
 				resv_select_t *resv_select,
 				uint32_t node_cnt);
@@ -218,7 +218,7 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  List user_assoc_list, uid_t uid);
+				  list_t *user_assoc_list, uid_t uid);
 
 static void _free_resv_select_members(resv_select_t *resv_select)
 {
@@ -407,11 +407,11 @@ static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 	}
 }
 
-static List _list_dup(List license_list)
+static list_t *_list_dup(list_t *license_list)
 {
 	list_itr_t *iter;
 	licenses_t *license_src, *license_dest;
-	List lic_list = (List) NULL;
+	list_t *lic_list = NULL;
 
 	if (!license_list)
 		return lic_list;
@@ -959,7 +959,7 @@ static bool _is_account_valid(char *account)
  * associations must be set before calling this function and while
  * handling it after a return.
  */
-static int _append_acct_to_assoc_list(List assoc_list,
+static int _append_acct_to_assoc_list(list_t *assoc_list,
 				      slurmdb_assoc_rec_t *assoc)
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
@@ -993,7 +993,8 @@ static int _append_acct_to_assoc_list(List assoc_list,
 static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
-	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
+	list_t *assoc_list_allow = NULL, *assoc_list_deny = NULL;
+	list_t *assoc_list = NULL;
 	slurmdb_assoc_rec_t assoc, *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 
@@ -2645,9 +2646,9 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
  * _license_validate2 - A variant of license_validate which considers the
  * licenses used by overlapping reservations
  */
-static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
+static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 {
-	List license_list, merged_list;
+	list_t *license_list = NULL, *merged_list = NULL;
 	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
@@ -2809,7 +2810,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
-	List license_list = (List) NULL;
+	list_t *license_list = NULL;
 	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false;
 	resv_select_t resv_select = { 0 };
@@ -3611,7 +3612,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 	if (resv_desc_ptr->licenses) {
 		bool valid = true;
-		List license_list;
+		list_t *license_list = NULL;
 		license_list = _license_validate2(resv_desc_ptr, &valid);
 		if (!valid) {
 			info("Reservation %s invalid license update (%s)",
@@ -3946,7 +3947,7 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	list_for_each(job_list, _foreach_clear_job_resv, resv_ptr);
 }
 
-static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
+static bool _match_user_assoc(char *assoc_str, list_t *assoc_list, bool deny)
 {
 	list_itr_t *itr;
 	bool found = 0;
@@ -4044,7 +4045,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	int tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
-	List assoc_list = NULL;
+	list_t *assoc_list = NULL;
 	bool check_permissions = false;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
@@ -4698,7 +4699,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
  * Validate if the user has access to this reservation.
  */
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  List user_assoc_list, uid_t uid)
+				  list_t *user_assoc_list, uid_t uid)
 {
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
@@ -4869,7 +4870,7 @@ static int _validate_job_resv_internal(job_record_t *job_ptr,
  * get_resv_list - find record for named reservation(s)
  * IN name - reservation name(s) in a comma separated char
  * OUT err_part - The first invalid reservation name.
- * RET List of pointers to the reservations or NULL if not found
+ * RET list of pointers to the reservations or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
@@ -5473,7 +5474,7 @@ static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 					    resv_desc_msg_t *resv_desc_ptr,
 					    resv_select_t *resv_select_ret,
 					    int total_node_cnt,
-					    List feature_list)
+					    list_t *feature_list)
 {
 	bitstr_t *tmp_bitmap = NULL;
 	bitstr_t *feature_bitmap;
@@ -6386,7 +6387,7 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
  * For a given license_list, return the total count of licenses of the
  * specified name
  */
-static int _license_cnt(List license_list, char *lic_name)
+static int _license_cnt(list_t *license_list, char *lic_name)
 {
 	int lic_cnt = 0;
 	list_itr_t *iter;
@@ -7694,7 +7695,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	static bool user_resv_delete = false;
 
 	slurmdb_assoc_rec_t assoc;
-	List assoc_list;
+	list_t *assoc_list = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 	bool found_it = false;
 	slurmctld_resv_t *resv_ptr;

@@ -105,7 +105,7 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
  * either active or available and set the feature_list's node_bitmap_active and
  * node_bitmap_avail fields accordingly.
  */
-extern void find_feature_nodes(List feature_list, bool can_reboot);
+extern void find_feature_nodes(list_t *feature_list, bool can_reboot);
 
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time,

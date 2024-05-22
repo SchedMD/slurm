@@ -83,25 +83,25 @@ static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static List fed_job_list        = NULL;
-static List fed_job_update_list = NULL;
+static list_t *fed_job_list = NULL;
+static list_t *fed_job_update_list = NULL;
 static pthread_t       fed_job_update_thread_id = (pthread_t) 0;
 static pthread_mutex_t fed_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_update_cond    = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t job_update_mutex   = PTHREAD_MUTEX_INITIALIZER;
 
-static List remote_dep_recv_list = NULL;
+static list_t *remote_dep_recv_list = NULL;
 static pthread_t remote_dep_thread_id = (pthread_t) 0;
 static pthread_cond_t remote_dep_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t remote_dep_recv_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static List remote_dep_job_list = NULL;
+static list_t *remote_dep_job_list = NULL;
 static pthread_t dep_job_thread_id = (pthread_t) 0;
 static pthread_mutex_t dep_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t test_dep_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t test_dep_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static List origin_dep_update_list = NULL;
+static list_t *origin_dep_update_list = NULL;
 static pthread_t origin_dep_thread_id = (pthread_t) 0;
 static pthread_cond_t origin_dep_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t origin_dep_update_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -268,9 +268,9 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
  *
  * Only get jobs that were submitted prior to sync_time
  */
-static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
+static list_t *_get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 {
-	List jobids = NULL;
+	list_t *jobids = NULL;
 	list_itr_t *job_itr;
 	job_record_t *job_ptr;
 
@@ -522,7 +522,7 @@ fini:
 
 static void _mark_self_as_drained(void)
 {
-	List ret_list;
+	list_t *ret_list = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	slurmdb_cluster_rec_t  cluster_rec;
 
@@ -550,7 +550,7 @@ static void _mark_self_as_drained(void)
 
 static void _remove_self_from_federation(void)
 {
-	List ret_list;
+	list_t *ret_list = NULL;
 	slurmdb_federation_cond_t fed_cond;
 	slurmdb_federation_rec_t  fed_rec;
 	slurmdb_cluster_rec_t     cluster_rec;
@@ -2112,7 +2112,7 @@ static int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
 static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 {
         int rc = SLURM_SUCCESS;
-	List jobids;
+	list_t *jobids = NULL;
         slurm_msg_t req_msg, job_msg;
 	sib_msg_t sib_msg = {0};
 	slurmdb_cluster_rec_t *sibling;
@@ -2375,7 +2375,7 @@ static void _handle_dep_update_origin_msgs(void)
 {
 	job_record_t *job_ptr;
 	dep_update_origin_msg_t *dep_update_msg;
-	List update_job_list = NULL;
+	list_t *update_job_list = NULL;
 	slurmctld_lock_t job_write_lock = {
 		.conf = READ_LOCK, .job = WRITE_LOCK, .fed = READ_LOCK };
 
@@ -2795,7 +2795,7 @@ extern int fed_mgr_init(void *db_conn)
 	int rc = SLURM_SUCCESS;
 	uint64_t tmp = 0;
 	slurmdb_federation_cond_t fed_cond;
-	List fed_list;
+	list_t *fed_list = NULL;
 	slurmdb_federation_rec_t *fed = NULL, *state_fed = NULL;
 	slurmdb_cluster_rec_t *state_cluster = NULL;
 
@@ -3023,7 +3023,7 @@ static void _handle_dependencies_for_modified_fed(uint64_t added_clusters,
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 {
 	uint64_t added_clusters = 0, removed_clusters = 0;
-	List feds;
+	list_t *feds = NULL;
 	slurmdb_federation_rec_t *fed   = NULL;
 	slurmdb_cluster_rec_t *cluster  = NULL;
 	slurmctld_lock_t fedr_jobw_lock = {
@@ -3179,12 +3179,12 @@ static void _dump_fed_job_list(buf_t *buffer, uint16_t protocol_version)
 	}
 }
 
-static List _load_fed_job_list(buf_t *buffer, uint16_t protocol_version)
+static list_t *_load_fed_job_list(buf_t *buffer, uint16_t protocol_version)
 {
 	int i;
 	uint32_t count;
 	fed_job_info_t *tmp_job_info = NULL;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
@@ -3308,10 +3308,11 @@ static void _dump_remote_dep_job_list(buf_t *buffer, uint16_t protocol_version)
 	}
 }
 
-static List _load_remote_dep_job_list(buf_t *buffer, uint16_t protocol_version)
+static list_t *_load_remote_dep_job_list(buf_t *buffer,
+					 uint16_t protocol_version)
 {
 	uint32_t count, i;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 	job_record_t *job_ptr = NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -3422,7 +3423,7 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 	uint16_t ver = 0;
 	int error_code = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *ret_fed = NULL;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
 
@@ -3644,7 +3645,7 @@ static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	uint64_t cluster_ids = 0;
-	List cluster_names;
+	list_t *cluster_names = NULL;
 
 	xassert(clusters);
 
@@ -4066,7 +4067,7 @@ static int _validate_cluster_features(char *spec_features,
 	uint64_t feature_sibs = 0;
 	char *feature = NULL;
 	slurmdb_cluster_rec_t *sib;
-	List req_features;
+	list_t *req_features = NULL;
 	list_itr_t *feature_itr, *sib_itr;
 
 	if (!spec_features || !fed_mgr_fed_rec) {

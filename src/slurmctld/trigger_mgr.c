@@ -72,7 +72,7 @@
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION        "PROTOCOL_VERSION"
 
-List trigger_list;
+list_t *trigger_list = NULL;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
 bitstr_t *trigger_down_front_end_bitmap = NULL;

@@ -906,7 +906,7 @@ static void _send_future_cloud_to_db()
 {
 	time_t now = time(NULL);
 	slurmdb_event_rec_t *event = NULL;
-	List event_list = NULL;
+	list_t *event_list = NULL;
 	bool check_db = !running_cache;
 	node_record_t *node_ptr;
 
@@ -1715,8 +1715,8 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 static int _init_tres(void)
 {
 	char *temp_char;
-	List char_list;
-	List add_list = NULL;
+	list_t *char_list = NULL;
+	list_t *add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
 	slurmdb_update_object_t update_object;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -2269,7 +2269,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_purge_job_time) >= purge_job_interval) {
 			/*
-			 * If backfill is running, it will have a List of
+			 * If backfill is running, it will have a list of
 			 * job_record pointers which could include this
 			 * job. Skip over in that case to prevent
 			 * _attempt_backfill() from potentially dereferencing an
@@ -3609,7 +3609,7 @@ static void *_purge_files_thread(void *no_data)
 
 	/*
 	 * pthread_cond_wait requires a lock to release and reclaim.
-	 * the List structure is already handling locking for itself,
+	 * the list structure is already handling locking for itself,
 	 * so this lock isn't actually useful, and the thread calling
 	 * pthread_cond_signal isn't required to have the lock. So
 	 * lock it once and hold it until slurmctld shuts down.
@@ -3677,7 +3677,7 @@ static void *_acct_update_thread(void *no_data)
 
 static void _get_fed_updates(void)
 {
-	List fed_list = NULL;
+	list_t *fed_list = NULL;
 	slurmdb_update_object_t update = {0};
 	slurmdb_federation_cond_t fed_cond;
 

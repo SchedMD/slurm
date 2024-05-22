@@ -169,13 +169,13 @@ typedef struct {
 
 typedef struct {
 	list_t *array_leader_list; /* list of job_record_t */
-	list_t *pending_array_task_list; /* List of array_task_filter_t */
+	list_t *pending_array_task_list; /* list of array_task_filter_t */
 	uid_t auth_uid;
 	bool filter_specific_job_ids;
 	kill_jobs_msg_t *kill_msg;
 	time_t now;
 	list_t *other_job_list; /* list of job_record_t */
-	list_t *responses; /* List of kill_jobs_resp_job_t */
+	list_t *responses; /* list of kill_jobs_resp_job_t */
 } signal_jobs_args_t;
 
 typedef struct {
@@ -198,10 +198,10 @@ typedef struct {
 } for_each_by_job_id_args_t;
 
 /* Global variables */
-List   job_list = NULL;		/* job_record list */
+list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
-List purge_files_list = NULL;	/* job files to delete */
+list_t *purge_files_list = NULL;/* job files to delete */
 list_t *purge_jobs_list = NULL;	/* job_record_t entries to free */
 
 /* Local variables */
@@ -243,7 +243,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
-static void _get_batch_job_dir_ids(List batch_dirs);
+static void _get_batch_job_dir_ids(list_t *batch_dirs);
 static bool _get_whole_hetjob(void);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 			    bool requeue);
@@ -267,7 +267,7 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
-static void _remove_defunct_batch_dirs(List batch_dirs);
+static void _remove_defunct_batch_dirs(list_t *batch_dirs);
 static void _remove_job_hash(job_record_t *job_ptr, job_hash_type_t type);
 static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 			    uint32_t rc, char *err_msg);
@@ -289,16 +289,16 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
 static int _update_job_nodes_str(job_record_t *job_ptr);
 static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
-			    List part_ptr_list,
+			    list_t *part_ptr_list,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr);
 static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			       bool cron, uid_t submit_uid,
-			       part_record_t *part_ptr, List part_list);
-static void _validate_job_files(List batch_dirs);
+			       part_record_t *part_ptr, list_t *part_list);
+static void _validate_job_files(list_t *batch_dirs);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					part_record_t *part_ptr,
-					List part_list);
+					list_t *part_list);
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      part_record_t *part_ptr);
 static int  _write_data_array_to_file(char *file_name, char **data,
@@ -355,7 +355,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name,
 	/* This job is no longer eligible, so make it so. */
 	if (job_ptr->assoc_ptr) {
 		part_record_t *tmp_part = job_ptr->part_ptr;
-		List tmp_part_list = job_ptr->part_ptr_list;
+		list_t *tmp_part_list = job_ptr->part_ptr_list;
 		slurmdb_qos_rec_t *tmp_qos = job_ptr->qos_ptr;
 
 		/*
@@ -1006,7 +1006,7 @@ static int _find_part_assoc(void *x, void *key)
 	return 0;
 }
 
-static int _check_for_part_assocs(List part_ptr_list,
+static int _check_for_part_assocs(list_t *part_ptr_list,
 				  slurmdb_assoc_rec_t *assoc_ptr)
 {
 	if (assoc_ptr && part_ptr_list &&
@@ -1325,7 +1325,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	time_t now = time(NULL);
-	List part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr;
 	int qos_error, rc;
@@ -2107,8 +2107,8 @@ static int _foreach_by_job_null_callback(void *x, void *arg)
 static void _foreach_array_bitmap(const slurm_selected_step_t *filter,
 				  for_each_by_job_id_args_t *args)
 {
-	list_t *match_job_list = list_create(NULL); /* List of job_record_t */
-	list_t *not_found_filters = NULL; /* List of slurm_selected_step_t */
+	list_t *match_job_list = list_create(NULL); /* list of job_record_t */
+	list_t *not_found_filters = NULL; /* list of slurm_selected_step_t */
 
 	/*
 	 * Call the callback once per record that has been split off.
@@ -3329,7 +3329,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	uint32_t save_job_id;
 	uint64_t save_db_index = job_ptr->db_index;
 	priority_factors_t *save_prio_factors;
-	List save_step_list;
+	list_t *save_step_list = NULL;
 	int i;
 
 	job_ptr_pend = _create_job_record(0, true);
@@ -6281,10 +6281,10 @@ fini:
 }
 
 static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
-			  List *part_pptr_list, char **err_msg)
+			  list_t **part_pptr_list, char **err_msg)
 {
 	part_record_t *part_ptr = NULL, *part_ptr_new = NULL;
-	List part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL;
 	int rc = SLURM_SUCCESS;
 
 	/* Identify partition(s) and set pointer(s) to their struct */
@@ -6404,7 +6404,7 @@ fini:
 
 static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   bitstr_t *req_bitmap, part_record_t *part_ptr,
-			   List part_ptr_list,
+			   list_t *part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
 			   slurmdb_qos_rec_t *qos_ptr)
 {
@@ -6884,11 +6884,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 {
 	int error_code = SLURM_SUCCESS, qos_error;
 	part_record_t *part_ptr = NULL;
-	List part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	job_record_t *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
-	List license_list = NULL, gres_list = NULL;
+	list_t *license_list = NULL, *gres_list = NULL;
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority, acct_reason = 0;
@@ -9258,7 +9258,7 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
  */
 static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			      bool cron, uid_t submit_uid,
-			      part_record_t *part_ptr, List part_list)
+			      part_record_t *part_ptr, list_t *part_list)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
@@ -9385,7 +9385,8 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
  * function validating the job memory specification.
  */
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
-					part_record_t *part_ptr, List part_list)
+					part_record_t *part_ptr,
+					list_t *part_list)
 {
 	list_itr_t *iter;
 	part_record_t *part;
@@ -11403,15 +11404,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	bool tres_req_cnt_set = false, valid_licenses = false;
-	List gres_list = NULL;
-	List license_list = NULL;
-	List part_ptr_list = NULL;
+	list_t *gres_list = NULL, *license_list = NULL;
+	list_t *part_ptr_list = NULL;
 	uint32_t orig_time_limit;
 	bool gres_update = false;
 	slurmdb_assoc_rec_t *new_assoc_ptr = NULL, *use_assoc_ptr = NULL;
 	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
 	slurmctld_resv_t *new_resv_ptr = NULL;
-	List new_resv_list = NULL;
+	list_t *new_resv_list = NULL;
 	uint32_t user_site_factor;
 	uint64_t mem_req;
 
@@ -12279,7 +12279,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * request, let's assume it is expected and allow the change to happen.
 	 */
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
-		List use_part_list = new_part_ptr ?
+		list_t *use_part_list = new_part_ptr ?
 			part_ptr_list : job_ptr->part_ptr_list;
 		assoc_mgr_lock(&assoc_mgr_read_lock);
 		if ((error_code = _check_for_part_assocs(
@@ -13138,7 +13138,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->features[0] != '\0') {
 			char *old_features = detail_ptr->features;
-			List old_list = detail_ptr->feature_list;
+			list_t *old_list = detail_ptr->feature_list;
 			detail_ptr->features = xstrdup(job_desc->features);
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr, false, false)) {
@@ -13190,7 +13190,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->prefer[0] != '\0') {
 			char *old_prefer = detail_ptr->prefer;
-			List old_list = detail_ptr->prefer_list;
+			list_t *old_list = detail_ptr->prefer_list;
 			detail_ptr->prefer = xstrdup(job_desc->prefer);
 			detail_ptr->prefer_list = NULL;
 			if (build_feature_list(job_ptr, true, false)) {
@@ -15094,7 +15094,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  */
 int sync_job_files(void)
 {
-	List batch_dirs;
+	list_t *batch_dirs = NULL;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -15113,7 +15113,7 @@ int sync_job_files(void)
 /* Append to the batch_dirs list the job_id's associated with
  *	every batch job directory in existence
  */
-static void _get_batch_job_dir_ids(List batch_dirs)
+static void _get_batch_job_dir_ids(list_t *batch_dirs)
 {
 	DIR *f_dir, *h_dir;
 	struct dirent *dir_ent, *hash_ent;
@@ -15194,7 +15194,7 @@ static int _test_state_dir_flag(void *x, void *arg)
  *	otherwise we flag it as FAILED and don't schedule
  * If the batch_dir entry exists for a PENDING or RUNNING batch job,
  *	remove it the list (of directories to be deleted) */
-static void _validate_job_files(List batch_dirs)
+static void _validate_job_files(list_t *batch_dirs)
 {
 	job_record_t *job_ptr;
 	list_itr_t *batch_dir_iter;
@@ -15225,7 +15225,7 @@ static void _validate_job_files(List batch_dirs)
 }
 
 /* Remove all batch_dir entries in the list */
-static void _remove_defunct_batch_dirs(List batch_dirs)
+static void _remove_defunct_batch_dirs(list_t *batch_dirs)
 {
 	list_itr_t *batch_dir_inx;
 	uint32_t *job_id_ptr;
@@ -15276,7 +15276,7 @@ static int _get_req_gres(void *x, void *arg)
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
 				 uint32_t node_cnt, part_record_t *part_ptr,
-				 List gres_list, bool user_set_mem,
+				 list_t *gres_list, bool user_set_mem,
 				 uint16_t min_sockets_per_node,
 				 uint32_t num_tasks)
 {
@@ -17029,9 +17029,9 @@ static int _top_job_prio_sort(void *x, void *y)
 	return 0;
 }
 
-static int _set_top(List top_job_list, uid_t uid)
+static int _set_top(list_t *top_job_list, uid_t uid)
 {
-	List prio_list, other_job_list;
+	list_t *prio_list, *other_job_list;
 	list_itr_t *iter;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	int rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
@@ -17189,7 +17189,7 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	List top_job_list = NULL;
+	list_t *top_job_list = NULL;
 	char *job_str_tmp = NULL, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	job_record_t *job_ptr = NULL;
 	long int long_id;

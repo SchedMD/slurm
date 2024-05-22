@@ -82,8 +82,8 @@
  */
 
 static bool _msg_readable(eio_obj_t *obj);
-static int _msg_accept(eio_obj_t *obj, List objs);
-static int _handle_close(eio_obj_t *obj, List objs);
+static int _msg_accept(eio_obj_t *obj, list_t *objs);
+static int _handle_close(eio_obj_t *obj, list_t *objs);
 
 struct io_operations msg_ops = {
 	.readable = _msg_readable,
@@ -284,7 +284,7 @@ static void _wait_for_powersave_scripts()
 
 }
 
-static int _handle_close(eio_obj_t *obj, List objs)
+static int _handle_close(eio_obj_t *obj, list_t *objs)
 {
 	debug3("Called %s", __func__);
 
@@ -1029,7 +1029,7 @@ static void *_handle_accept(void *args)
 	return NULL;
 }
 
-static int _msg_accept(eio_obj_t *obj, List objs)
+static int _msg_accept(eio_obj_t *obj, list_t *objs)
 {
 	int rc = SLURM_SUCCESS, req, buf_len = 0;
 	char *incoming_buffer = NULL;

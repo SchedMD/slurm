@@ -76,7 +76,7 @@ static void   _log_group_members(char *group_name,
 				 int uid_cnt);
 static void   _put_group_cache(char *group_name, void *group_uids, int uid_cnt);
 
-static List group_cache_list = NULL;
+static list_t *group_cache_list = NULL;
 static pthread_mutex_t group_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct group_cache_rec {
 	char *group_name;

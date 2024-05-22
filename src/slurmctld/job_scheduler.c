@@ -105,19 +105,19 @@
 
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
-static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
-				  part_record_t *part_ptr, uint32_t priority);
+static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
+			      part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, time_t now,
 				    bool check_min_time);
-static bool	_scan_depend(List dependency_list, job_record_t *job_ptr);
+static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr);
 static void *	_sched_agent(void *args);
 static void _set_schedule_exit(schedule_exit_t code);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
-static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
-				    bool can_reboot, char *debug_str,
-				    char *features, bool is_reservation);
+static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
+			       bool can_reboot, char *debug_str, char *features,
+			       bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
@@ -231,7 +231,7 @@ static int _queue_resv_list(void *x, void *key)
 	return 0;
 }
 
-static void _job_queue_append(List job_queue, job_record_t *job_ptr,
+static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
 			      part_record_t *part_ptr, uint32_t prio)
 {
 	job_queue_req_t job_queue_req = { .job_ptr = job_ptr,
@@ -429,10 +429,10 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec)
  * RET the job queue
  * NOTE: the caller must call FREE_NULL_LIST() on RET value to free memory
  */
-extern List build_job_queue(bool clear_start, bool backfill)
+extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
-	List job_queue;
+	list_t *job_queue = NULL;
 	list_itr_t *depend_iter, *job_iterator, *part_iterator;
 	job_record_t *job_ptr = NULL, *new_job_ptr;
 	part_record_t *part_ptr;
@@ -1015,7 +1015,7 @@ static void _set_schedule_exit(schedule_exit_t code)
 static int _schedule(bool full_queue)
 {
 	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
-	List job_queue = NULL;
+	list_t *job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
 	int error_code, i, j, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
@@ -2078,7 +2078,7 @@ out:
  * sort_job_queue - sort job_queue in descending priority order
  * IN/OUT job_queue - sorted job queue
  */
-extern void sort_job_queue(List job_queue)
+extern void sort_job_queue(list_t *job_queue)
 {
 	list_sort(job_queue, sort_job_queue2);
 }
@@ -2769,11 +2769,11 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  * IN depend_list_src - a job's depend_lst
  * RET copy of depend_list_src, must bee freed by caller
  */
-extern List depended_list_copy(List depend_list_src)
+extern list_t *depended_list_copy(list_t *depend_list_src)
 {
 	depend_spec_t *dep_src, *dep_dest;
 	list_itr_t *iter;
-	List depend_list_dest = NULL;
+	list_t *depend_list_dest = NULL;
 
 	if (!depend_list_src)
 		return depend_list_dest;
@@ -3311,7 +3311,7 @@ extern depend_spec_t *find_dependency(job_record_t *job_ptr,
  * Dependencies are uniquely identified by a combination of job_id and
  * depend_type.
  */
-static void _add_dependency_to_list(List depend_list,
+static void _add_dependency_to_list(list_t *depend_list,
 				    depend_spec_t *dep_ptr)
 {
 	if (!list_find_first(depend_list, _find_dependency, dep_ptr))
@@ -3417,7 +3417,7 @@ static bool _depends_on_same_job(job_record_t *job_ptr,
  * Set (*rc) to ESLURM_DEPENDENCY for invalid job id's.
  */
 static void _parse_dependency_jobid_new(job_record_t *job_ptr,
-					List new_depend_list, char *sep_ptr,
+					list_t *new_depend_list, char *sep_ptr,
 					char **sep_ptr2, char *tok,
 					uint16_t depend_type, int select_hetero,
 					int *rc)
@@ -3598,7 +3598,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
  * For an invalid job id, (*rc) will be set to ESLURM_DEPENDENCY.
  */
 static void _parse_dependency_jobid_old(job_record_t *job_ptr,
-					List new_depend_list, char **sep_ptr,
+					list_t *new_depend_list, char **sep_ptr,
 					char *tok, int *rc)
 {
 	depend_spec_t *dep_ptr;
@@ -3655,11 +3655,11 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 }
 
 extern bool update_job_dependency_list(job_record_t *job_ptr,
-				       List new_depend_list)
+				       list_t *new_depend_list)
 {
 	depend_spec_t *dep_ptr, *job_depend;
 	list_itr_t *itr;
-	List job_depend_list;
+	list_t *job_depend_list = NULL;
 	bool was_changed = false;
 
 	xassert(job_ptr);
@@ -3802,7 +3802,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	char *tok, *new_array_dep, *sep_ptr, *sep_ptr2 = NULL;
-	List new_depend_list = NULL;
+	list_t *new_depend_list = NULL;
 	depend_spec_t *dep_ptr;
 	bool or_flag = false;
 
@@ -3951,7 +3951,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 /* Return true if the job job_ptr is found in dependency_list.
  * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
-static bool _scan_depend(List dependency_list, job_record_t *job_ptr)
+static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 {
 	static int job_counter = 0;
 	bool rc = false;
@@ -4079,7 +4079,7 @@ extern int job_start_data(job_record_t *job_ptr,
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
-	List preemptee_candidates = NULL, preemptee_job_list = NULL;
+	list_t *preemptee_candidates = NULL, *preemptee_job_list = NULL;
 	bool resv_overlap = false;
 	list_itr_t *iter = NULL;
 	resv_exc_t resv_exc = { 0 };
@@ -4685,11 +4685,11 @@ extern void prolog_running_decr(job_record_t *job_ptr)
  * IN feature_list_src - a job's depend_lst
  * RET copy of feature_list_src, must be freed by caller
  */
-extern List feature_list_copy(List feature_list_src)
+extern list_t *feature_list_copy(list_t *feature_list_src)
 {
 	job_feature_t *feat_src, *feat_dest;
 	list_itr_t *iter;
-	List feature_list_dest = NULL;
+	list_t *feature_list_dest = NULL;
 
 	if (!feature_list_src)
 		return feature_list_dest;
@@ -5117,7 +5117,7 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 	return rc;
 }
 
-static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
+static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 			       bool can_reboot, char *debug_str, char *features,
 			       bool is_reservation)
 {

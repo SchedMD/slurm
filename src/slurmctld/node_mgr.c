@@ -2299,7 +2299,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 /*
  * _update_node_weight - Update weight associated with nodes
  *	build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN weight - New weight value
  * RET: SLURM_SUCCESS or error code
  */
@@ -2494,7 +2494,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
 		list_iterator_destroy(config_iterator);
-		if (avail_feature_list) {	/* List not set at startup */
+		if (avail_feature_list) {	/* list not set at startup */
 			update_feature_list(avail_feature_list, avail_features,
 					    node_bitmap);
 		}
@@ -2551,7 +2551,7 @@ extern void reset_node_instance(node_record_t *node_ptr)
 /*
  * _update_node_gres - Update generic resources associated with nodes
  *	build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN gres - New gres value
  * RET: SLURM_SUCCESS or error code
  */

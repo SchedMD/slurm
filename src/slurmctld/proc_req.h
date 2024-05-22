@@ -70,7 +70,7 @@ typedef struct {
 	pthread_cond_t cond;
 	pthread_mutex_t mutex;
 
-	List work;
+	list_t *work;
 
 	/* Queue processing statistics */
 	uint16_t queued;

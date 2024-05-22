@@ -90,7 +90,7 @@ typedef struct {
 } _foreach_pack_part_info_t;
 
 /* Global variables */
-List part_list = NULL;			/* partition list */
+list_t *part_list = NULL;		/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 part_record_t *default_part_loc = NULL;	/* default partition location */
 time_t last_part_update = (time_t) 0;	/* time of last update to partition records */
@@ -725,11 +725,11 @@ part_record_t *find_part_record(char *name)
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller
  */
-extern List part_list_copy(List part_list_src)
+extern list_t *part_list_copy(list_t *part_list_src)
 {
 	part_record_t *part_ptr;
 	list_itr_t *iter;
-	List part_list_dest = NULL;
+	list_t *part_list_dest = NULL;
 
 	if (!part_list_src)
 		return part_list_dest;
@@ -748,14 +748,14 @@ extern List part_list_copy(List part_list_src)
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET List of pointers to the partitions or NULL if not found
+ * RET list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern List get_part_list(char *name, char **err_part)
+extern list_t *get_part_list(char *name, char **err_part)
 {
 	part_record_t *part_ptr;
-	List job_part_list = NULL;
+	list_t *job_part_list = NULL;
 	char *token, *last = NULL, *tmp_name;
 
 	if (name == NULL)
@@ -1708,7 +1708,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->job_defaults_str) {
-		List new_job_def_list = NULL;
+		list_t *new_job_def_list = NULL;
 		if (part_desc->job_defaults_str[0] == '\0') {
 			FREE_NULL_LIST(part_ptr->job_defaults_list);
 		} else if (job_defaults_list(part_desc->job_defaults_str,

@@ -97,15 +97,15 @@
 #define FEATURE_MAGIC	0x34dfd8b5
 
 /* Global variables */
-List active_feature_list;	/* list of currently active features_records */
-List avail_feature_list;	/* list of available features_records */
+list_t *active_feature_list;	/* list of currently active features_records */
+list_t *avail_feature_list;	/* list of available features_records */
 bool node_features_updated = true;
 bool slurmctld_init_db = true;
 
 static void _acct_restore_active_jobs(void);
-static void _add_config_feature(List feature_list, char *feature,
+static void _add_config_feature(list_t *feature_list, char *feature,
 				bitstr_t *node_bitmap);
-static void _add_config_feature_inx(List feature_list, char *feature,
+static void _add_config_feature_inx(list_t *feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
 static void _gres_reconfig(void);
@@ -686,7 +686,7 @@ static void _handle_all_downnodes(void)
 }
 
 /*
- * Convert a comma delimited string of account names into a List containing
+ * Convert a comma delimited string of account names into a list containing
  * pointers to those associations.
  */
 extern list_t *accounts_list_build(char *accounts, bool locked)
@@ -1269,7 +1269,7 @@ void _sync_jobs_to_conf(void)
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;
-	List part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL;
 	bool job_fail = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -1835,7 +1835,7 @@ end_it:
  *	avail_feature_list
  * feature IN - name of the feature to add
  * node_bitmap IN - bitmap of nodes with named feature */
-static void _add_config_feature(List feature_list, char *feature,
+static void _add_config_feature(list_t *feature_list, char *feature,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
@@ -1867,7 +1867,7 @@ static void _add_config_feature(List feature_list, char *feature,
  *	avail_feature_list
  * feature IN - name of the feature to add
  * node_inx IN - index of the node with named feature */
-static void _add_config_feature_inx(List feature_list, char *feature,
+static void _add_config_feature_inx(list_t *feature_list, char *feature,
 				    int node_inx)
 {
 	node_feature_t *feature_ptr;
@@ -2020,11 +2020,11 @@ extern void build_feature_list_ne(void)
 
 /*
  * Update active_feature_list or avail_feature_list
- * feature_list IN - List to update: active_feature_list or avail_feature_list
+ * feature_list IN - list to update: active_feature_list or avail_feature_list
  * new_features IN - New active_features
  * node_bitmap IN - Nodes with the new active_features value
  */
-extern void update_feature_list(List feature_list, char *new_features,
+extern void update_feature_list(list_t *feature_list, char *new_features,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
@@ -2518,7 +2518,7 @@ static void _restore_job_accounting(void)
 	job_record_t *job_ptr;
 	list_itr_t *job_iterator;
 	bool valid = true;
-	List license_list;
+	list_t *license_list = NULL;
 
 	assoc_mgr_clear_used_info();
 

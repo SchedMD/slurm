@@ -65,7 +65,7 @@ static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timeslicer_thread_id = (pthread_t) 0;
-static List preempt_job_list = (List) NULL;
+static list_t *preempt_job_list = NULL;
 
 /* timeslicer flags and structures */
 enum entity_type {
@@ -148,7 +148,7 @@ struct gs_part {
 /* global variables */
 static uint32_t timeslicer_seconds = 0;
 static uint16_t gr_type = GS_NODE;
-static List gs_part_list = NULL;
+static list_t *gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1235,7 +1235,7 @@ extern void gs_reconfig(void)
 	int i;
 	list_itr_t *part_iterator;
 	struct gs_part *p_ptr, *newp_ptr;
-	List old_part_list;
+	list_t *old_part_list = NULL;
 	job_record_t *job_ptr;
 	struct gs_job *j_ptr;
 

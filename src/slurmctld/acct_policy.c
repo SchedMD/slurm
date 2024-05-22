@@ -893,7 +893,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		bool job_first = false;
 		list_itr_t *part_itr;
 		part_record_t *part_ptr;
-		List part_qos_list = NULL;
+		list_t *part_qos_list = NULL;
 
 		if (job_ptr->qos_ptr &&
 		    (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
@@ -953,7 +953,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		    job_ptr->part_ptr_list) {
 			list_itr_t *part_itr;
 			part_record_t *part_ptr;
-			List part_qos_list = list_create(NULL);
+			list_t *part_qos_list = list_create(NULL);
 
 			if (job_ptr->qos_ptr)
 				list_push(part_qos_list, job_ptr->qos_ptr);
@@ -3500,7 +3500,7 @@ static int _list_acct_policy_validate(void *x, void *arg)
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 part_record_t *part_ptr,
-				 List part_ptr_list,
+				 list_t *part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *reason,
@@ -3553,11 +3553,11 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * submit_job_list IN - list of job_record_t entries (already created)
  * RET true if valid
  */
-extern bool acct_policy_validate_het_job(List submit_job_list)
+extern bool acct_policy_validate_het_job(list_t *submit_job_list)
 {
 	assoc_mgr_lock_t locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
-	List het_job_limit_list;
+	list_t *het_job_limit_list = NULL;
 	list_itr_t *iter1, *iter2;
 	job_record_t *job_ptr1, *job_ptr2;
 	het_job_limits_t *job_limit1, *job_limit2;
@@ -5182,7 +5182,7 @@ extern void acct_policy_set_qos_order(job_record_t *job_ptr,
  * In all cases the user record is returned.
  */
 extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
-	List *acct_limit_list, char *acct)
+	list_t **acct_limit_list, char *acct)
 {
 	slurmdb_used_limits_t *used_limits;
 
@@ -5215,7 +5215,7 @@ extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
  * In all cases the user record is returned.
  */
 extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
-	List *user_limit_list, uint32_t user_id)
+	list_t **user_limit_list, uint32_t user_id)
 {
 	slurmdb_used_limits_t *used_limits;
 

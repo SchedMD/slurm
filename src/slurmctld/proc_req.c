@@ -858,7 +858,7 @@ static bool _sched_backfill(void)
  * If any job component has required nodes, those nodes must be excluded
  * from all other components to avoid scheduling deadlock
 */
-static void _exclude_het_job_nodes(List job_req_list)
+static void _exclude_het_job_nodes(list_t *job_req_list)
 {
 	job_desc_msg_t *job_desc_msg;
 	list_itr_t *iter;
@@ -935,11 +935,11 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	list_itr_t *iter;
-	List submit_job_list = NULL;
+	list_t *submit_job_list = NULL;
 	uint32_t het_job_id = 0, het_job_offset = 0;
 	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
-	List resp = NULL;
+	list_t *resp = NULL;
 	slurm_addr_t resp_addr;
 	char resp_host[INET6_ADDRSTRLEN];
 	char *het_job_id_set = NULL;
@@ -2882,7 +2882,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	job_record_t *job_ptr, *het_job;
 	list_itr_t *iter;
 	void *working_cluster_rec = NULL;
-	List resp;
+	list_t *resp = NULL;
 	DEF_TIMERS;
 	job_alloc_info_msg_t *job_info_msg = msg->data;
 	resource_allocation_response_msg_t *job_info_resp_msg;
@@ -3703,7 +3703,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
-	List submit_job_list = NULL;
+	list_t *submit_job_list = NULL;
 	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	char *het_job_id_set = NULL;
@@ -6175,7 +6175,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	slurm_msg_t sub_msg, response_msg;
 	ctld_list_msg_t *ctld_req_msg = msg->data;
 	ctld_list_msg_t ctld_resp_msg;
-	List full_resp_list = NULL;
+	list_t *full_resp_list = NULL;
 	buf_t *single_req_buf = NULL;
 	buf_t *ret_buf, *resp_buf = NULL;
 	list_itr_t *iter = NULL;
@@ -7051,7 +7051,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
 	list_itr_t *iter;
-	List job_resp_list = NULL;
+	list_t *job_resp_list = NULL;
 
 	xassert(job_ptr);
 	if (!job_ptr || !job_ptr->alloc_resp_port || !job_ptr->alloc_node ||
