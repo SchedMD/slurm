@@ -114,7 +114,7 @@ static int _handle_list_pids(int fd, stepd_step_rec_t *step);
 static int _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid);
 static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step);
 static bool _msg_socket_readable(eio_obj_t *obj);
-static int _msg_socket_accept(eio_obj_t *obj, List objs);
+static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
 
 struct io_operations msg_socket_ops = {
 	.readable = &_msg_socket_readable,
@@ -374,8 +374,7 @@ _msg_socket_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int
-_msg_socket_accept(eio_obj_t *obj, List objs)
+static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 {
 	stepd_step_rec_t *step = obj->arg;
 	int fd;
@@ -810,7 +809,7 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	job_alloc_info_msg_t *request;
 	resource_allocation_response_msg_t *job_info_resp_msg = NULL;
 	slurm_msg_t response_msg;
-	List resp_list;
+	list_t *resp_list = NULL;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_HET_JOB_ALLOC_INFO, true)))

@@ -2010,7 +2010,7 @@ static int exec_wait_kill_child (struct exec_wait_info *e)
  *  Send all children in exec_wait_list SIGKILL.
  *  Returns 0 for success or  < 0 on failure.
  */
-static int exec_wait_kill_children (List exec_wait_list)
+static int exec_wait_kill_children(list_t *exec_wait_list)
 {
 	int rc = 0;
 	int count;
@@ -2072,7 +2072,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	int i;
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
-	List exec_wait_list = NULL;
+	list_t *exec_wait_list = NULL;
 	uint32_t node_offset = 0, task_offset = 0;
 
 	if (step->het_job_node_offset != NO_VAL)

@@ -95,7 +95,7 @@ static bool _x11_socket_readable(eio_obj_t *obj)
         return true;
 }
 
-static int _x11_socket_read(eio_obj_t *obj, List objs)
+static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 {
 	eio_obj_t *e1, *e2;
 	slurm_msg_t req, resp;

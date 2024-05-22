@@ -107,9 +107,6 @@ static void _process_cmdline(int argc, char **argv);
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
 
-/*
- *  List of signals to block in this process
- */
 int slurmstepd_blocked_signals[] = {
 	SIGINT,  SIGTERM, SIGTSTP,
 	SIGQUIT, SIGPIPE, SIGUSR1,
@@ -496,7 +493,7 @@ static slurmd_conf_t *_read_slurmd_conf_lite(int fd)
 	buf_t *buffer = NULL;
 	slurmd_conf_t *confl, *local_conf = NULL;
 	int tmp_int = 0;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	/*  First check to see if we've already initialized the

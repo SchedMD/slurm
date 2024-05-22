@@ -83,8 +83,8 @@
  **********************************************************************/
 static bool _client_readable(eio_obj_t *);
 static bool _client_writable(eio_obj_t *);
-static int  _client_read(eio_obj_t *, List);
-static int  _client_write(eio_obj_t *, List);
+static int _client_read(eio_obj_t *, list_t *);
+static int _client_write(eio_obj_t *, list_t *);
 
 struct io_operations client_ops = {
 	.readable = &_client_readable,
@@ -105,7 +105,7 @@ struct client_io_info {
 	bool in_eof;
 
 	/* outgoing variables */
-	List msg_queue;
+	list_t *msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	bool out_eof;
@@ -122,7 +122,7 @@ struct client_io_info {
 
 
 static bool _local_file_writable(eio_obj_t *);
-static int  _local_file_write(eio_obj_t *, List);
+static int _local_file_write(eio_obj_t *, list_t *);
 
 struct io_operations local_file_ops = {
 	.writable = &_local_file_writable,
@@ -134,8 +134,8 @@ struct io_operations local_file_ops = {
  * Task write declarations
  **********************************************************************/
 static bool _task_writable(eio_obj_t *);
-static int  _task_write(eio_obj_t *, List);
-static int _task_write_error(eio_obj_t *obj, List objs);
+static int _task_write(eio_obj_t *, list_t *);
+static int _task_write_error(eio_obj_t *obj, list_t *objs);
 
 struct io_operations task_write_ops = {
 	.writable = &_task_writable,
@@ -148,7 +148,7 @@ struct task_write_info {
 	int              magic;
 	stepd_step_rec_t *step; /* pointer back to step data */
 
-	List msg_queue;
+	list_t *msg_queue;
 	struct io_buf *msg;
 	int32_t remaining;
 };
@@ -157,7 +157,7 @@ struct task_write_info {
  * Task read declarations
  **********************************************************************/
 static bool _task_readable(eio_obj_t *);
-static int  _task_read(eio_obj_t *, List);
+static int _task_read(eio_obj_t *, list_t *);
 
 struct io_operations task_read_ops = {
 	.readable = &_task_readable,
@@ -202,7 +202,7 @@ static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step);
 static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step);
-static void _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *step);
+static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step);
 static bool _incoming_buf_free(stepd_step_rec_t *step);
 static bool _outgoing_buf_free(stepd_step_rec_t *step);
 static int  _send_connection_okay_response(stepd_step_rec_t *step);
@@ -260,7 +260,7 @@ _client_writable(eio_obj_t *obj)
 
 	/* If this is a newly attached client its msg_queue needs
 	 * to be initialized from the outgoing_cache, and then "obj" needs
-	 * to be added to the List of clients.
+	 * to be added to the list of clients.
 	 */
 	if (client->msg_queue == NULL) {
 		list_itr_t *msgs;
@@ -290,8 +290,7 @@ _client_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int
-_client_read(eio_obj_t *obj, List objs)
+static int _client_read(eio_obj_t *obj, list_t *objs)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
 	void *buf;
@@ -427,8 +426,7 @@ _client_read(eio_obj_t *obj, List objs)
 /*
  * Write outgoing packed messages to the client socket.
  */
-static int
-_client_write(eio_obj_t *obj, List objs)
+static int _client_write(eio_obj_t *obj, list_t *objs)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
 	void *buf;
@@ -510,8 +508,7 @@ _local_file_writable(eio_obj_t *obj)
 /*
  * The slurmstepd writes I/O to a file, possibly adding a label.
  */
-static int
-_local_file_write(eio_obj_t *obj, List objs)
+static int _local_file_write(eio_obj_t *obj, list_t *objs)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
 	void *buf;
@@ -625,8 +622,7 @@ _task_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int
-_task_write_error(eio_obj_t *obj, List objs)
+static int _task_write_error(eio_obj_t *obj, list_t *objs)
 {
 	debug4("Called _task_write_error, closing fd %d", obj->fd);
 
@@ -636,8 +632,7 @@ _task_write_error(eio_obj_t *obj, List objs)
 	return SLURM_SUCCESS;
 }
 
-static int
-_task_write(eio_obj_t *obj, List objs)
+static int _task_write(eio_obj_t *obj, list_t *objs)
 {
 	struct task_write_info *in = (struct task_write_info *) obj->arg;
 	void *buf;
@@ -749,8 +744,7 @@ _task_readable(eio_obj_t *obj)
  * allows whole lines to be packed into messages if line buffering
  * is requested.
  */
-static int
-_task_read(eio_obj_t *obj, List objs)
+static int _task_read(eio_obj_t *obj, list_t *objs)
 {
 	struct task_read_info *out = (struct task_read_info *)obj->arg;
 	int len;
@@ -1195,8 +1189,7 @@ extern void io_thread_start(stepd_step_rec_t *step)
 	slurm_mutex_unlock(&step->io_mutex);
 }
 
-void
-_shrink_msg_cache(List cache, stepd_step_rec_t *step)
+static void _shrink_msg_cache(list_t *cache, stepd_step_rec_t *step)
 {
 	struct io_buf *msg;
 	int over = 0;
@@ -1340,7 +1333,7 @@ _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step)
 {
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
-		/* Put the message back on the free List */
+		/* Put the message back on the free list */
 		list_enqueue(step->free_incoming, msg);
 
 		/* Kick the event IO engine */
@@ -1355,7 +1348,7 @@ _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step)
 
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
-		/* Put the message back on the free List */
+		/* Put the message back on the free list */
 		list_enqueue(step->free_outgoing, msg);
 
 		/* Try packing messages from tasks' output cbufs */
@@ -1378,8 +1371,7 @@ _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step)
 	}
 }
 
-static void
-_free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *step)
+static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step)
 {
 	list_itr_t *msgs;
 	struct io_buf *msg;
