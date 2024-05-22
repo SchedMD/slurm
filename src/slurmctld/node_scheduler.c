@@ -87,7 +87,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
@@ -2237,8 +2237,8 @@ static void _end_null_job(job_record_t *job_ptr)
 	time_t now = time(NULL);
 
 	job_ptr->exit_code = 0;
-	gres_ctld_job_clear_alloc(job_ptr->gres_list_req);
-	gres_ctld_job_clear_alloc(job_ptr->gres_list_req_accum);
+	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req);
+	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	job_state_set(job_ptr, JOB_RUNNING);
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
@@ -2333,10 +2333,11 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 		_gres_select_explicit(job_ptr->gres_list_req, &post_list);
 
 	for (int i = 0; (node_ptr = next_node_bitmap(select_bitmap, &i)); i++) {
-		gres_ctld_job_select_whole_node(&post_list,
-						node_ptr->gres_list,
-						job_ptr->job_id,
-						node_ptr->name);
+		gres_stepmgr_job_select_whole_node(
+			&post_list,
+			node_ptr->gres_list,
+			job_ptr->job_id,
+			node_ptr->name);
 	}
 
 	return post_list;
@@ -2668,10 +2669,11 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 	assoc_mgr_lock(&job_read_locks);
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
-				   selected_node_cnt,
-				   tres_req_cnt,
-				   true);
+	gres_stepmgr_set_job_tres_cnt(
+		job_ptr->gres_list_req,
+		selected_node_cnt,
+		tres_req_cnt,
+		true);
 
 	tres_req_cnt[TRES_ARRAY_BILLING] =
 		assoc_mgr_tres_weighted(tres_req_cnt,
@@ -2818,8 +2820,8 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
-	gres_ctld_job_clear_alloc(job_ptr->gres_list_req);
-	gres_ctld_job_clear_alloc(job_ptr->gres_list_req_accum);
+	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req);
+	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	if (!job_ptr->step_list)
 		job_ptr->step_list = list_create(free_step_record);

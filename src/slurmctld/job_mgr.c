@@ -111,7 +111,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#include "src/stepmgr/gres_ctld.h"
+#include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
@@ -1534,10 +1534,11 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	assoc_mgr_unlock(&locks);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
-	gres_ctld_job_build_details(job_ptr->gres_list_alloc, job_ptr->nodes,
-				    &job_ptr->gres_detail_cnt,
-				    &job_ptr->gres_detail_str,
-				    &job_ptr->gres_used);
+	gres_stepmgr_job_build_details(
+		job_ptr->gres_list_alloc, job_ptr->nodes,
+		&job_ptr->gres_detail_cnt,
+		&job_ptr->gres_detail_str,
+		&job_ptr->gres_used);
 
 	on_job_state_change(job_ptr, job_ptr->job_state);
 	last_job_update = now;
@@ -2926,7 +2927,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 						     orig_job_node_bitmap);
 				FREE_NULL_BITMAP(orig_job_node_bitmap);
 				(void) gs_job_start(job_ptr);
-				gres_ctld_job_build_details(
+				gres_stepmgr_job_build_details(
 					job_ptr->gres_list_alloc,
 					job_ptr->nodes,
 					&job_ptr->gres_detail_cnt,
@@ -7075,10 +7076,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	gres_ctld_set_job_tres_cnt(gres_list,
-				   job_desc->min_nodes,
-				   job_desc->tres_req_cnt,
-				   false);
+	gres_stepmgr_set_job_tres_cnt(
+		gres_list,
+		job_desc->min_nodes,
+		job_desc->tres_req_cnt,
+		false);
 
 	/* Get GRES before mem so we can pass gres_list to job_get_tres_mem() */
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  =
@@ -9084,10 +9086,11 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				 true);
 
 	/* FIXME: this assumes that all nodes have equal TRES */
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
-				   node_cnt,
-				   job_ptr->tres_req_cnt,
-				   true);
+	gres_stepmgr_set_job_tres_cnt(
+		job_ptr->gres_list_req,
+		node_cnt,
+		job_ptr->tres_req_cnt,
+		true);
 
 	bb_g_job_set_tres_cnt(job_ptr,
 			      job_ptr->tres_req_cnt,
@@ -9156,10 +9159,11 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_alloc_cnt,
 				 true);
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_alloc,
-				   alloc_nodes,
-				   job_ptr->tres_alloc_cnt,
-				   true);
+	gres_stepmgr_set_job_tres_cnt(
+		job_ptr->gres_list_alloc,
+		alloc_nodes,
+		job_ptr->tres_alloc_cnt,
+		true);
 
 	bb_g_job_set_tres_cnt(job_ptr,
 			      job_ptr->tres_alloc_cnt,
@@ -11877,11 +11881,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(rem_nodes);
 			(void) gs_job_start(job_ptr);
-			gres_ctld_job_build_details(job_ptr->gres_list_alloc,
-						    job_ptr->nodes,
-						    &job_ptr->gres_detail_cnt,
-						    &job_ptr->gres_detail_str,
-						    &job_ptr->gres_used);
+			gres_stepmgr_job_build_details(
+				job_ptr->gres_list_alloc,
+				job_ptr->nodes,
+				&job_ptr->gres_detail_cnt,
+				&job_ptr->gres_detail_str,
+				&job_ptr->gres_used);
 			job_post_resize_acctg(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart
@@ -12168,7 +12173,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
 
 	if (gres_update) {
-		gres_ctld_set_job_tres_cnt(
+		gres_stepmgr_set_job_tres_cnt(
 			gres_list,
 			job_desc->tres_req_cnt[TRES_ARRAY_NODE],
 			job_desc->tres_req_cnt, false);
@@ -13564,11 +13569,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 */
 			update_accounting = false;
 		}
-		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
-					    job_ptr->nodes,
-					    &job_ptr->gres_detail_cnt,
-					    &job_ptr->gres_detail_str,
-					    &job_ptr->gres_used);
+		gres_stepmgr_job_build_details(
+			job_ptr->gres_list_alloc,
+			job_ptr->nodes,
+			&job_ptr->gres_detail_cnt,
+			&job_ptr->gres_detail_str,
+			&job_ptr->gres_used);
 
 		/*
 		 * Ensure that the num_tasks is less than
