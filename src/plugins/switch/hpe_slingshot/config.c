@@ -42,6 +42,7 @@
 #include "rest.h"
 
 #include "src/common/job_record.h"
+#include "src/common/node_conf.h"
 
 /* Set this to true if VNI table is re-sized and loses some bits */
 static bool lost_vnis = false;
@@ -1216,7 +1217,7 @@ extern bool slingshot_setup_job_vni_pool(job_record_t *job_ptr)
 	jobinfo->num_vnis = 0;
 	if (!no_vni &&
 	    ((job_ptr->node_cnt > 1) || alloc_single_node_vni)) {
-		alloc_vnis++;
+		alloc_vnis = job_ptr->node_cnt;
 		if (alloc_job_vni)
 			alloc_vnis++;
 	}
