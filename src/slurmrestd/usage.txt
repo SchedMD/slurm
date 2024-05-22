@@ -3,8 +3,10 @@ Usage: slurmrestd [OPTIONS] [host:port]...
 		List of authentication types to accept.
 	-d <data_parser plugins to load>
 		CSV list of data_parser plugins.
-	-f file
+	-f <file>
 		Use specified file for slurmctld configuration
+	-g <group id>
+		Change group id before processing client request.
 	-h, --help
 		Print this help message.
 	--max-connections <count>
