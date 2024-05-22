@@ -2044,13 +2044,10 @@ io_get_file_flags(stepd_step_rec_t *step)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND;
 	else if (step->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
-	else {
-		slurm_conf_t *conf = slurm_conf_lock();
-		if (conf->job_file_append)
-			file_flags = O_CREAT|O_WRONLY|O_APPEND;
-		else
-			file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
-		slurm_conf_unlock();
-	}
+	else if (slurm_conf.job_file_append)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND;
+	else
+		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+
 	return file_flags;
 }
