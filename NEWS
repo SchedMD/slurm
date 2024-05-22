@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.11.0rc1
 =============================
+ -- Improve error type logged from partial or incomplete reading from socket or
+    pipe to avoid potentially logging an error from a previous syscall.
 
 * Changes in Slurm 24.05.0rc2
 =============================

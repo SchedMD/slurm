@@ -1880,11 +1880,13 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 			if ((rc == 0) && (remaining == size)) {		\
 				debug("%s:%d: %s: safe_read EOF",	\
 				      __FILE__, __LINE__, __func__); \
+				errno = EIO;				\
 				goto rwfail;				\
 			} else if (rc == 0) {				\
 				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
 				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
+				errno = EIO;				\
 				goto rwfail;				\
 			} else if (rc < 0) {				\
 				if ((errno == EAGAIN) ||		\
