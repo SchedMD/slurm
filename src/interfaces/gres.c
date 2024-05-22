@@ -6183,6 +6183,9 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 				cnt *= ((*gres_js_val->num_tasks +
 					 *gres_js_val->ntasks_per_socket - 1) /
 					*gres_js_val->ntasks_per_socket);
+			} else if (*gres_js_val->sockets_per_node != NO_VAL16) {
+				/* default 1 node */
+				cnt *= *gres_js_val->sockets_per_node;
 			}
 			gres_js->total_gres =
 				MAX(gres_js->total_gres, cnt);
