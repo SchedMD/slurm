@@ -83,6 +83,18 @@ int main(int argc, char *argv[])
 	uint16_t cpus_per_task = NO_VAL16;
 	uint16_t ntasks_per_tres = NO_VAL16;
 	int core_count, sock_count;
+	gres_job_state_validate_t gres_js_val = {
+		.cpus_per_task = &cpus_per_task,
+		.max_nodes = &max_nodes,
+		.min_nodes = &min_nodes,
+		.ntasks_per_node = &ntasks_per_node,
+		.ntasks_per_socket = &ntasks_per_socket,
+		.ntasks_per_tres = &ntasks_per_tres,
+		.num_tasks = &num_tasks,
+		.sockets_per_node = &sockets_per_node,
+
+		.gres_list = &job_gres_list,
+	};
 
 	/* Setup slurm.conf and gres.conf test paths */
 	strlcpy(config_dir, argv[2], sizeof(config_dir));
@@ -142,24 +154,9 @@ int main(int argc, char *argv[])
 		      slurm_strerror(rc));
 
 	if (argc > 2)
-		tres_per_node = xstrdup(argv[1]);
+		gres_js_val.tres_per_node = xstrdup(argv[1]);
 
-	rc = gres_job_state_validate(NULL,	/* cpus_per_tres */
-				     NULL,	/* tres_freq */
-				     NULL,	/* tres_per_job */
-				     tres_per_node,
-				     NULL,	/* tres_per_socket */
-				     NULL,	/* tres_per_task */
-				     NULL,	/* mem_per_tres */
-				     &num_tasks,
-				     &min_nodes,
-				     &max_nodes,
-				     &ntasks_per_node,
-				     &ntasks_per_socket,
-				     &sockets_per_node,
-				     &cpus_per_task,
-				     &ntasks_per_tres,
-				     &job_gres_list);
+	rc = gres_job_state_validate(&gres_js_val);
 	if (rc)
 		fatal("failure: gres_job_state_validate: %s",
 		      slurm_strerror(rc));

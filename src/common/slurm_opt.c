@@ -7090,22 +7090,28 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	 */
 	if (!opt_local->clusters) {
 		List tmp_gres_list = NULL;
-		rc = gres_job_state_validate(job_desc->cpus_per_tres,
-					     job_desc->tres_freq,
-					     job_desc->tres_per_job,
-					     job_desc->tres_per_node,
-					     job_desc->tres_per_socket,
-					     job_desc->tres_per_task,
-					     job_desc->mem_per_tres,
-					     &job_desc->num_tasks,
-					     &job_desc->min_nodes,
-					     &job_desc->max_nodes,
-					     &job_desc->ntasks_per_node,
-					     &job_desc->ntasks_per_socket,
-					     &job_desc->sockets_per_node,
-					     &job_desc->cpus_per_task,
-					     &job_desc->ntasks_per_tres,
-					     &tmp_gres_list);
+		gres_job_state_validate_t gres_js_val = {
+			.cpus_per_tres = job_desc->cpus_per_tres,
+			.mem_per_tres = job_desc->mem_per_tres,
+			.tres_freq = job_desc->tres_freq,
+			.tres_per_job = job_desc->tres_per_job,
+			.tres_per_node = job_desc->tres_per_node,
+			.tres_per_socket = job_desc->tres_per_socket,
+			.tres_per_task = job_desc->tres_per_task,
+
+			.cpus_per_task = &job_desc->cpus_per_task,
+			.max_nodes = &job_desc->max_nodes,
+			.min_nodes = &job_desc->min_nodes,
+			.ntasks_per_node = &job_desc->ntasks_per_node,
+			.ntasks_per_socket = &job_desc->ntasks_per_socket,
+			.ntasks_per_tres = &job_desc->ntasks_per_tres,
+			.num_tasks = &job_desc->num_tasks,
+			.sockets_per_node = &job_desc->sockets_per_node,
+
+			.gres_list = &tmp_gres_list,
+		};
+
+		rc = gres_job_state_validate(&gres_js_val);
 		FREE_NULL_LIST(tmp_gres_list);
 	}
 

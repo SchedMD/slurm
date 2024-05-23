@@ -89,6 +89,40 @@ typedef struct {
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
 
+typedef struct {
+/* in */
+	char *cpus_per_tres;
+	char *mem_per_tres;
+	char *tres_freq;
+	char *tres_per_job;
+	char *tres_per_node;
+	char *tres_per_socket;
+	char *tres_per_task;
+/* in/out */
+	uint16_t *cpus_per_task; /* requested cpus_per_task count, may be reset
+				    to provide consistent
+				    gres_per_task/cpus_per_gres values */
+	uint32_t *max_nodes; /* requested maximum node count, may be reset to
+				provide consistent gres_per_node/task values */
+	uint32_t *min_nodes; /* requested minimum node count, may be reset to
+				provide consistent gres_per_node/task values */
+	uint16_t *ntasks_per_node; /* requested tasks_per_node count, may be
+				      reset to provide consistent
+				      gres_per_node/task values */
+	uint16_t *ntasks_per_socket; /* requested ntasks_per_socket count, may
+					be reset to provide consistent
+					gres_per_node/task values */
+	uint16_t *ntasks_per_tres; /* requested ntasks_per_tres count */
+	uint32_t *num_tasks; /* requested task count, may be reset to provide
+				consistent gres_per_node/task values */
+	uint16_t *sockets_per_node; /* requested sockets_per_node count, may be
+				       reset to provide consistent
+				       gres_per_socket/node values */
+/* out */
+	list_t **gres_list; /* OUT - List of GRES records for this job to track
+			       usage, must be a NULL list incoming. */
+} gres_job_state_validate_t;
+
 #define GRES_CONF_HAS_MULT   SLURM_BIT(0) /* MultipleFiles is configured */
 #define GRES_CONF_HAS_FILE   SLURM_BIT(1) /* File/MultipleFiles is configured */
 #define GRES_CONF_HAS_TYPE   SLURM_BIT(2) /* Type= is configured */
@@ -766,41 +800,10 @@ extern void gres_g_prep_set_env(char ***prep_env_ptr,
  * Note: This function can be used for a new request with gres_list==NULL or
  *	 used to update an existing job, in which case gres_list is a copy
  *	 of the job's original value (so we can clear fields as needed)
- * IN *tres* - job requested gres input string
- * IN/OUT num_tasks - requested task count, may be reset to provide
- *		      consistent gres_per_node/task values
- * IN/OUT min_nodes - requested minimum node count, may be reset to provide
- *		      consistent gres_per_node/task values
- * IN/OUT max_nodes - requested maximum node count, may be reset to provide
- *		      consistent gres_per_node/task values
- * IN/OUT ntasks_per_node - requested tasks_per_node count, may be reset to
- *		      provide consistent gres_per_node/task values
- * IN/OUT ntasks_per_socket - requested ntasks_per_socket count, may be reset to
- *		      provide consistent gres_per_node/task values
- * IN/OUT sockets_per_node - requested sockets_per_node count, may be reset to
- *		      provide consistent gres_per_socket/node values
- * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
- *		      provide consistent gres_per_task/cpus_per_gres values
- * IN/OUT ntasks_per_tres - requested ntasks_per_tres count
- * OUT gres_list - List of GRES records for this job to track usage
+ * IN/OUT gres_js_val - with ->*tres* set approriately to be processed into.
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_job_state_validate(char *cpus_per_tres,
-				   char *tres_freq,
-				   char *tres_per_job,
-				   char *tres_per_node,
-				   char *tres_per_socket,
-				   char *tres_per_task,
-				   char *mem_per_tres,
-				   uint32_t *num_tasks,
-				   uint32_t *min_nodes,
-				   uint32_t *max_nodes,
-				   uint16_t *ntasks_per_node,
-				   uint16_t *ntasks_per_socket,
-				   uint16_t *sockets_per_node,
-				   uint16_t *cpus_per_task,
-				   uint16_t *ntasks_per_tres,
-				   List *gres_list);
+extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val);
 
 /*
  * Determine if a job's specified GRES can be supported. This is designed to
