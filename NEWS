@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Add AccountingStorageParameters=max_step_records to limit how many steps
     are recorded in the database for each job -- excluding batch, extern, and
     interactive steps.
+ -- switch/hpe_slingshot - allocate VNIs on the controller for stepmgr jobs and
+    pass to the stepmgr for steps to use.
 
 * Changes in Slurm 24.05.0rc1
 =============================
