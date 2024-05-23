@@ -637,6 +637,10 @@ podman run alpine -e SCRUN_JOB_NUM_NODES=10 hostname
 salloc podman run --env-host=true alpine hostname
 salloc sh -c 'podman run -e SLURM_JOB_ID=$SLURM_JOB_ID alpine hostname'</pre>
 </li>
+<li>Optional: Create alias for Docker:
+	<pre>alias docker=podman</pre> or
+	<pre>alias docker='podman --config=/some/path "$@"'</pre>
+</li>
 </ol>
 
 <h3>Troubleshooting</h3>

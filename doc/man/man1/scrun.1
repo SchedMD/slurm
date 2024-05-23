@@ -1265,6 +1265,9 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		config["mounts"] = mounts
 	end
 
+	-- Force version to one compatible with older runc/crun at risk of new features silently failing
+	config["ociVersion"] = "1.0.0"
+
 	-- Merge in Job environment into container -- this is optional!
 	if (config["process"]["env"] == nil)
 	then
