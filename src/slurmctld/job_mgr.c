@@ -3595,28 +3595,38 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	if (job_ptr->gres_list_req) {
 		if (details_new->whole_node & WHOLE_NODE_REQUIRED) {
+			multi_core_data_t *mc_ptr = details_new->mc_ptr;
+			gres_job_state_validate_t gres_js_val = {
+				.cpus_per_tres = job_ptr_pend->cpus_per_tres,
+				.mem_per_tres = job_ptr_pend->mem_per_tres,
+				.tres_freq = job_ptr_pend->tres_freq,
+				.tres_per_job = job_ptr_pend->tres_per_job,
+				.tres_per_node = job_ptr_pend->tres_per_node,
+				.tres_per_socket = job_ptr->tres_per_socket,
+				.tres_per_task = job_ptr->tres_per_task,
+
+				.cpus_per_task =
+				&details_new->orig_cpus_per_task,
+				.max_nodes = &details_new->max_nodes,
+				.min_cpus = &details_new->min_cpus,
+				.min_nodes = &details_new->min_nodes,
+				.ntasks_per_node =
+				&details_new->ntasks_per_node,
+				.ntasks_per_socket = &mc_ptr->ntasks_per_socket,
+				.ntasks_per_tres =
+				&details_new->ntasks_per_tres,
+				.num_tasks = &details_new->num_tasks,
+				.sockets_per_node = &mc_ptr->sockets_per_node,
+
+				.gres_list = &job_ptr_pend->gres_list_req,
+			};
+
 			/*
 			 * We need to reset the gres_list to what was requested
 			 * instead of what was given exclusively.
 			 */
 			job_ptr_pend->gres_list_req = NULL;
-			(void)gres_job_state_validate(
-				job_ptr_pend->cpus_per_tres,
-				job_ptr_pend->tres_freq,
-				job_ptr_pend->tres_per_job,
-				job_ptr_pend->tres_per_node,
-				job_ptr_pend->tres_per_socket,
-				job_ptr_pend->tres_per_task,
-				job_ptr_pend->mem_per_tres,
-				&details_new->num_tasks,
-				&details_new->min_nodes,
-				&details_new->max_nodes,
-				&details_new->ntasks_per_node,
-				&details_new->mc_ptr->ntasks_per_socket,
-				&details_new->mc_ptr->sockets_per_node,
-				&details_new->orig_cpus_per_task,
-				&details_new->ntasks_per_tres,
-				&job_ptr_pend->gres_list_req);
+			(void)gres_job_state_validate(&gres_js_val);
 		} else
 			job_ptr_pend->gres_list_req =
 				gres_job_state_list_dup(job_ptr->gres_list_req);
@@ -6899,6 +6909,27 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		.qos = READ_LOCK,
 		.user = READ_LOCK,
 	};
+	gres_job_state_validate_t gres_js_val = {
+		.cpus_per_tres = job_desc->cpus_per_tres,
+		.mem_per_tres = job_desc->mem_per_tres,
+		.tres_freq = job_desc->tres_freq,
+		.tres_per_job = job_desc->tres_per_job,
+		.tres_per_node = job_desc->tres_per_node,
+		.tres_per_socket = job_desc->tres_per_socket,
+		.tres_per_task = job_desc->tres_per_task,
+
+		.cpus_per_task = &job_desc->cpus_per_task,
+		.max_nodes = &job_desc->max_nodes,
+		.min_cpus = &job_desc->min_cpus,
+		.min_nodes = &job_desc->min_nodes,
+		.ntasks_per_node = &job_desc->ntasks_per_node,
+		.ntasks_per_socket = &job_desc->ntasks_per_socket,
+		.ntasks_per_tres = &job_desc->ntasks_per_tres,
+		.num_tasks = &job_desc->num_tasks,
+		.sockets_per_node = &job_desc->sockets_per_node,
+
+		.gres_list = &gres_list,
+	};
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = xcalloc(slurmctld_tres_cnt,
@@ -7020,8 +7051,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	job_desc->tres_req_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
-	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
-	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 
 	_set_tot_license_req(job_desc, NULL);
 
@@ -7044,23 +7073,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((error_code = gres_job_state_validate(
-		     job_desc->cpus_per_tres,
-		     job_desc->tres_freq,
-		     job_desc->tres_per_job,
-		     job_desc->tres_per_node,
-		     job_desc->tres_per_socket,
-		     job_desc->tres_per_task,
-		     job_desc->mem_per_tres,
-		     &job_desc->num_tasks,
-		     &job_desc->min_nodes,
-		     &job_desc->max_nodes,
-		     &job_desc->ntasks_per_node,
-		     &job_desc->ntasks_per_socket,
-		     &job_desc->sockets_per_node,
-		     &job_desc->cpus_per_task,
-		     &job_desc->ntasks_per_tres,
-		     &gres_list)))
+	if ((error_code = gres_job_state_validate(&gres_js_val)))
 		goto cleanup_fail;
 
 	if (!assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) ||
@@ -7081,6 +7094,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_desc->min_nodes,
 		job_desc->tres_req_cnt,
 		false);
+
+	/* gres_job_state_validate() can update min_nodes and min_cpus. */
+	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
+	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 
 	/* Get GRES before mem so we can pass gres_list to job_get_tres_mem() */
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  =
@@ -11987,6 +12004,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		gres_update = true;
 	if (gres_update) {
 		uint16_t orig_ntasks_per_socket = NO_VAL16;
+		gres_job_state_validate_t gres_js_val = {
+			.cpus_per_task = &job_desc->cpus_per_task,
+			.max_nodes = &job_desc->max_nodes,
+			.min_cpus = &job_desc->min_cpus,
+			.min_nodes = &job_desc->min_nodes,
+			.ntasks_per_node = &job_desc->ntasks_per_node,
+			.ntasks_per_socket = &job_desc->ntasks_per_socket,
+			.ntasks_per_tres = &job_desc->ntasks_per_tres,
+			.num_tasks = &job_desc->num_tasks,
+			.sockets_per_node = &job_desc->sockets_per_node,
+
+			.gres_list = &gres_list,
+		};
+
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
 		    (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12012,6 +12043,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->mem_per_tres = xstrdup(job_ptr->mem_per_tres);
 		if (job_desc->num_tasks == NO_VAL)
 			job_desc->num_tasks = detail_ptr->num_tasks;
+		if (job_desc->min_cpus == NO_VAL)
+			job_desc->min_cpus = 0; /* min_cpus could decrease */
 		if (job_desc->min_nodes == NO_VAL)
 			job_desc->min_nodes = detail_ptr->min_nodes;
 		if (job_desc->max_nodes == NO_VAL)
@@ -12034,29 +12067,24 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (!job_desc->ntasks_per_tres)
 			job_desc->ntasks_per_tres = detail_ptr->ntasks_per_tres;
 
-		if ((error_code = gres_job_state_validate(
-			     job_desc->cpus_per_tres,
-			     job_desc->tres_freq,
-			     job_desc->tres_per_job,
-			     job_desc->tres_per_node,
-			     job_desc->tres_per_socket,
-			     job_desc->tres_per_task,
-			     job_desc->mem_per_tres,
-			     &job_desc->num_tasks,
-			     &job_desc->min_nodes,
-			     &job_desc->max_nodes,
-			     &job_desc->ntasks_per_node,
-			     &job_desc->ntasks_per_socket,
-			     &job_desc->sockets_per_node,
-			     &job_desc->cpus_per_task,
-			     &job_desc->ntasks_per_tres,
-			     &gres_list))) {
+		gres_js_val.cpus_per_tres = job_desc->cpus_per_tres;
+		gres_js_val.mem_per_tres = job_desc->mem_per_tres;
+		gres_js_val.tres_freq = job_desc->tres_freq;
+		gres_js_val.tres_per_job = job_desc->tres_per_job;
+		gres_js_val.tres_per_node = job_desc->tres_per_node;
+		gres_js_val.tres_per_socket = job_desc->tres_per_socket;
+		gres_js_val.tres_per_task = job_desc->tres_per_task;
+
+		if ((error_code = gres_job_state_validate(&gres_js_val))) {
 			sched_info("%s: invalid GRES for %pJ",
 				   __func__, job_ptr);
 			goto fini;
 		}
 		if (job_desc->num_tasks == detail_ptr->num_tasks)
 			job_desc->num_tasks = NO_VAL;	/* Unchanged */
+		if ((job_desc->min_cpus == detail_ptr->min_cpus) ||
+		    (job_desc->min_cpus == 0)) /* Unchanged */
+			job_desc->min_cpus = NO_VAL;
 		if (job_desc->min_nodes == detail_ptr->min_nodes)
 			job_desc->min_nodes = NO_VAL;	/* Unchanged */
 		if (job_desc->max_nodes == detail_ptr->max_nodes)
@@ -15571,28 +15599,37 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 		if ((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		    job_ptr->gres_list_req) {
+			job_details_t *detail_ptr = job_ptr->details;
+			multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
+			gres_job_state_validate_t gres_js_val = {
+				.cpus_per_tres = job_ptr->cpus_per_tres,
+				.mem_per_tres = job_ptr->mem_per_tres,
+				.tres_freq = job_ptr->tres_freq,
+				.tres_per_job = job_ptr->tres_per_job,
+				.tres_per_node = job_ptr->tres_per_node,
+				.tres_per_socket = job_ptr->tres_per_socket,
+				.tres_per_task = job_ptr->tres_per_task,
+
+				.cpus_per_task =
+				&detail_ptr->orig_cpus_per_task,
+				.max_nodes = &detail_ptr->max_nodes,
+				.min_cpus = &detail_ptr->min_cpus,
+				.min_nodes = &detail_ptr->min_nodes,
+				.ntasks_per_node = &detail_ptr->ntasks_per_node,
+				.ntasks_per_socket = &mc_ptr->ntasks_per_socket,
+				.ntasks_per_tres = &detail_ptr->ntasks_per_tres,
+				.num_tasks = &detail_ptr->num_tasks,
+				.sockets_per_node = &mc_ptr->sockets_per_node,
+
+				.gres_list = &job_ptr->gres_list_req,
+			};
+
 			/*
 			 * We need to reset the gres_list to what was requested
 			 * instead of what was given exclusively.
 			 */
 			FREE_NULL_LIST(job_ptr->gres_list_req);
-			(void)gres_job_state_validate(
-				job_ptr->cpus_per_tres,
-				job_ptr->tres_freq,
-				job_ptr->tres_per_job,
-				job_ptr->tres_per_node,
-				job_ptr->tres_per_socket,
-				job_ptr->tres_per_task,
-				job_ptr->mem_per_tres,
-				&job_ptr->details->num_tasks,
-				&job_ptr->details->min_nodes,
-				&job_ptr->details->max_nodes,
-				&job_ptr->details->ntasks_per_node,
-				&job_ptr->details->mc_ptr->ntasks_per_socket,
-				&job_ptr->details->mc_ptr->sockets_per_node,
-				&job_ptr->details->orig_cpus_per_task,
-				&job_ptr->details->ntasks_per_tres,
-				&job_ptr->gres_list_req);
+			(void)gres_job_state_validate(&gres_js_val);
 		}
 	}
 
@@ -18509,6 +18546,28 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	job_ptr->best_switch = true;
 
 	if (resv_desc_ptr->tres_str) {
+		gres_job_state_validate_t gres_js_val = {
+			.cpus_per_tres = NULL,
+			.mem_per_tres = NULL,
+			.tres_freq = NULL,
+			.tres_per_socket = NULL,
+			.tres_per_task = NULL,
+
+			.cpus_per_task = &detail_ptr->orig_cpus_per_task,
+			.max_nodes = &detail_ptr->max_nodes,
+			.min_cpus = &detail_ptr->min_cpus,
+			.min_nodes = &detail_ptr->min_nodes,
+			.ntasks_per_node = &detail_ptr->ntasks_per_node,
+			.ntasks_per_socket =
+			&detail_ptr->mc_ptr->ntasks_per_socket,
+			.ntasks_per_tres = &detail_ptr->ntasks_per_tres,
+			.num_tasks = &detail_ptr->num_tasks,
+			.sockets_per_node =
+			&detail_ptr->mc_ptr->sockets_per_node,
+
+			.gres_list = &job_ptr->gres_list_req,
+		};
+
 		detail_ptr->ntasks_per_node = NO_VAL16;
 		detail_ptr->mc_ptr->ntasks_per_socket = NO_VAL16;
 		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
@@ -18522,23 +18581,10 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 		else
 			job_ptr->tres_per_job = xstrdup(job_ptr->tres_req_str);
 
-		(void)gres_job_state_validate(
-			NULL,
-			NULL,
-			job_ptr->tres_per_job,
-			job_ptr->tres_per_node,
-			NULL,
-			NULL,
-			NULL,
-			&detail_ptr->num_tasks,
-			&detail_ptr->min_nodes,
-			&detail_ptr->max_nodes,
-			&detail_ptr->ntasks_per_node,
-			&detail_ptr->mc_ptr->ntasks_per_socket,
-			&detail_ptr->mc_ptr->sockets_per_node,
-			&detail_ptr->orig_cpus_per_task,
-			&detail_ptr->ntasks_per_tres,
-			&job_ptr->gres_list_req);
+		gres_js_val.tres_per_job = job_ptr->tres_per_job;
+		gres_js_val.tres_per_node = job_ptr->tres_per_node;
+
+		(void)gres_job_state_validate(&gres_js_val);
 
 		if (detail_ptr->num_tasks == NO_VAL)
 			detail_ptr->num_tasks = 0;
