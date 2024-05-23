@@ -839,7 +839,11 @@ static int _get_joules_task(uint16_t delta)
 	 */
 	if (slurm_get_node_energy(conf->node_name, context_id, delta,
 				  &sensor_cnt, &new)) {
-		error("%s: can't get info from slurmd", __func__);
+		if (errno == ESLURMD_TOO_MANY_RPCS)
+			debug("%s: energy RPC limit reached on slurmd, request dropped",
+			      __func__);
+		else
+			error("%s: can't get info from slurmd", __func__);
 		return SLURM_ERROR;
 	}
 

@@ -3329,7 +3329,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		req_cnt++;
 	} else {
 		error("%s: Too many pending requests", __func__);
-		rc = SLURM_ERROR;
+		rc = ESLURMD_TOO_MANY_RPCS;
 	}
 	slurm_mutex_unlock(&req_cnt_mutex);
 
