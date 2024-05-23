@@ -299,12 +299,14 @@ extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
+extern bool slingshot_setup_job_vni_pool(job_record_t *job_ptr);
 extern bool slingshot_setup_job_step_vni(
 	slingshot_stepinfo_t *job, int node_cnt,
 	uint32_t job_id, const char *network_params,
 	const char *job_network_params);
 extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job);
 extern void slingshot_free_job_vni(uint32_t job_id);
+extern void slingshot_free_job_vni_pool(slingshot_jobinfo_t *job);
 extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo);
 /* instant_on.c */
 extern bool slingshot_init_instant_on(void);

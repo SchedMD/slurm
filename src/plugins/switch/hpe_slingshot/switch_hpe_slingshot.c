@@ -1107,7 +1107,11 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 
 extern void switch_p_job_start(job_record_t *job_ptr)
 {
-	return;
+	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
+		return;
+
+	if (!slingshot_setup_job_vni_pool(job_ptr))
+		error("couldn't allocate vni pool for job %pJ", job_ptr);
 }
 
 /*
@@ -1122,6 +1126,10 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	xassert(running_in_slurmctld() || active_outside_ctld);
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);
 	slingshot_free_job_vni(job_id);
+
+	slingshot_free_job_vni_pool(job_ptr->switch_jobinfo);
+	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
+	job_ptr->switch_jobinfo = NULL;
 
 	/* Release any hardware collectives multicast addresses */
 	slingshot_release_collectives_job(job_id);
