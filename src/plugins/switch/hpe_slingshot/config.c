@@ -41,10 +41,13 @@
 #include "switch_hpe_slingshot.h"
 #include "rest.h"
 
+#include "src/common/job_record.h"
+#include "src/common/node_conf.h"
+
 /* Set this to true if VNI table is re-sized and loses some bits */
 static bool lost_vnis = false;
 /* Number of free VNIs */
-static int free_vnis = 0;
+int free_vnis = 0;
 
 /*
  * Set up slingshot_config defaults
@@ -1182,6 +1185,63 @@ err:
 	return false;
 }
 
+extern bool slingshot_setup_job_vni_pool(job_record_t *job_ptr)
+{
+	int alloc_vnis = 0;
+	bool alloc_job_vni, alloc_single_node_vni, no_vni;
+	slingshot_stepinfo_t stepinfo = {0};
+	slingshot_jobinfo_t *jobinfo = NULL;
+
+	if (!job_ptr->switch_jobinfo)
+		job_ptr->switch_jobinfo = xmalloc(sizeof(slingshot_jobinfo_t));
+
+	/*
+	 * If --network specified, add any depth, limits,
+	 * {job,single_node,no}_vni settings
+	 * Copy configured Slingshot limits to job, add any --network settings
+	 */
+	if (!_setup_network_params(NULL, job_ptr->network,
+				   &stepinfo, &alloc_job_vni,
+				   &alloc_single_node_vni, &no_vni))
+		goto err;
+
+	jobinfo = (slingshot_jobinfo_t *) job_ptr->switch_jobinfo;
+
+	/*
+	 * VNIs and traffic classes are not allocated if:
+	 * --network=no_vni is set, or single-node jobs,
+	 * unless 'single_node_vni=all' is set in the configuration,
+	 * or 'single_node_vni=user' is set in the configuration and
+	 *    'srun --network=single_node_vni' is used
+	 */
+	jobinfo->num_vnis = 0;
+	if (!no_vni &&
+	    ((job_ptr->node_cnt > 1) || alloc_single_node_vni)) {
+		alloc_vnis = job_ptr->node_cnt;
+		if (alloc_job_vni)
+			alloc_vnis++;
+	}
+
+	jobinfo->vnis = xcalloc(alloc_vnis, sizeof(uint16_t));
+	for (int i = 0; i < alloc_vnis; i++) {
+		if (!_alloc_vni(&jobinfo->vnis[i]))
+			goto err;
+		jobinfo->num_vnis++;
+	}
+
+	return true;
+
+err:
+	if (jobinfo) {
+		for (int i = 0; i < jobinfo->num_vnis; i++)
+			_free_vni(jobinfo->vnis[i]);
+		slingshot_free_jobinfo(jobinfo);
+	}
+	job_ptr->switch_jobinfo = NULL;
+
+	return false;
+}
+
 /*
  * Set up slingshot_stepinfo_t struct with VNIs, and CXI limits,
  * based on configured limits as well as any specified with
@@ -1258,10 +1318,32 @@ err:
 }
 
 /*
+ * Free job VNI pool (if any)
+ */
+extern void slingshot_free_job_vni_pool(slingshot_jobinfo_t *job)
+{
+	/* slingshot_config is only initialized on the ctld and stepmgr */
+	if (!running_in_slurmctld() && !active_outside_ctld)
+		return;
+
+	if (!job)
+		return;
+
+	for (int i = 0; i < job->num_vnis; i++) {
+		_free_vni(job->vnis[i]);
+		debug("free vni=%hu free_vnis=%d", job->vnis[0], free_vnis);
+	}
+}
+
+/*
  * Free job-step VNI (if any)
  */
 extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job)
 {
+	/* slingshot_config is only initialized on the ctld and stepmgr */
+	if (!running_in_slurmctld() && !active_outside_ctld)
+		return;
+
 	/* Second VNI is a job VNI - don't free until job is complete */
 	if (job->vnis && (job->num_vnis > 0)) {
 		_free_vni(job->vnis[0]);
@@ -1276,4 +1358,33 @@ extern void slingshot_free_job_vni(uint32_t job_id)
 {
 	uint16_t vni = _free_job_vni(job_id);
 	debug("free job_vni=%hu free_vnis=%d", vni, free_vnis);
+}
+
+extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo)
+{
+	if (!jobinfo)
+		return;
+
+	xfree(jobinfo->vnis);
+	xfree(jobinfo);
+}
+
+extern int slingshot_update_config(slingshot_jobinfo_t *jobinfo)
+{
+	free_vnis = 0;
+	bit_set_all(slingshot_state.vni_table);
+	for (int i = 0; i < jobinfo->num_vnis; i++) {
+		bit_clear(slingshot_state.vni_table,
+			  (jobinfo->vnis[i] - slingshot_state.vni_min));
+		free_vnis++;
+	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)	{
+		char *bit_str = bit_fmt_full(slingshot_state.vni_table);
+		log_flag(SWITCH, "%s: min/max: %hu/%hu free_vnis: %d bitstr: %s",
+			 __func__, slingshot_state.vni_min,
+			 slingshot_state.vni_max, free_vnis, bit_str);
+		xfree(bit_str);
+	}
+
+	return SLURM_SUCCESS;
 }

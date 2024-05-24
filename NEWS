@@ -35,6 +35,18 @@ documents those changes that are of interest to users and administrators.
  -- Calculate a job's min_cpus with consideration to --cpus-per-gpu.
  -- Fix scancel request when specifying individual array tasks in combination
     with filtering options (in both regular and --interactive mode).
+ -- Enable MaxStepCount in stepmgr.
+ -- Enable AccountingStorageEnforce=nojobs,nosteps in stepmgr.
+ -- Add AccountingStorageParameters=max_step_records to limit how many steps
+    are recorded in the database for each job -- excluding batch, extern, and
+    interactive steps.
+ -- switch/hpe_slingshot - allocate VNIs on the controller for stepmgr jobs and
+    pass to the stepmgr for steps to use.
+ -- switch/hpe_slingshot - fix assertion when restarting the controller.
+ -- switch/hpe_slingshot - fix calcuation of free vnis when restarting the
+    controller with running jobs.
+ -- Improve default job reserve MPI port allocations that use overcommit or do
+    not specify a task count for stepmgr enabled jobs.
 
 * Changes in Slurm 24.05.0rc1
 =============================
