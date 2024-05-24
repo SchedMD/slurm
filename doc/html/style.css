@@ -793,6 +793,27 @@ input[type="checkbox"] {
 	}
 }
 
+/* ELEMENT: Table */
+/* ---------------------------- */
+
+
+.tlist {
+	width: 100%;
+	border-collapse: collapse;
+	text-align: center;
+}
+
+
+.tlist tbody tr {
+	border: 1px solid #e8e8e8;
+	width: 100%;
+}
+
+.tlist tbody td {
+	border: 1px solid #e8e8e8;
+}
+
+
 /*******************************************************************************
  * Style Slurm page links
  ******************************************************************************/
