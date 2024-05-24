@@ -905,7 +905,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	    = 0x0020, /* =no */
-	CPU_BIND_RANK  	    = 0x0040, /* =rank */
+	/* CPU_BIND_RANK = 0x0040 was removed in 24.11 */
 	CPU_BIND_MAP	    = 0x0080, /* =map_cpu:<list of CPU IDs> */
 	CPU_BIND_MASK	    = 0x0100, /* =mask_cpu:<list of CPU masks> */
 	CPU_BIND_LDRANK     = 0x0200, /* =locality domain rank */

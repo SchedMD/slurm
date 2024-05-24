@@ -425,8 +425,6 @@ int setup_env(env_t *env, bool preserve_env)
 
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
 			str_bind2 = "none";
-		} else if (env->cpu_bind_type & CPU_BIND_RANK) {
-			str_bind2 = "rank";
 		} else if (env->cpu_bind_type & CPU_BIND_MAP) {
 			str_bind2 = "map_cpu:";
 		} else if (env->cpu_bind_type & CPU_BIND_MASK) {

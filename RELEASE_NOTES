@@ -26,6 +26,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Remove srun --cpu-bind=rank.
 
 API CHANGES
 ===========

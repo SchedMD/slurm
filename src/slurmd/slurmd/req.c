@@ -1441,14 +1441,6 @@ static bitstr_t *_build_cpu_bitmap(uint16_t cpu_bind_type, char *cpu_bind,
 
 	if (cpu_bind_type & CPU_BIND_NONE) {
 		/* Return NULL bitmap, sort all NUMA */
-	} else if ((cpu_bind_type & CPU_BIND_RANK) &&
-		   (task_cnt_on_node > 0)) {
-		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
-		if (task_cnt_on_node >= MAX_CPU_CNT)
-			task_cnt_on_node = MAX_CPU_CNT;
-		for (cpu_id = 0; cpu_id < task_cnt_on_node; cpu_id++) {
-			bit_set(cpu_bitmap, cpu_id);
-		}
 	} else if (cpu_bind_type & CPU_BIND_MAP) {
 		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
 		tmp_str = xstrdup(cpu_bind);

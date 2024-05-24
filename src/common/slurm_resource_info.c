@@ -194,8 +194,6 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "ldoms,");
 	if (cpu_bind_type & CPU_BIND_NONE)
 		strcat(str, "none,");
-	if (cpu_bind_type & CPU_BIND_RANK)
-		strcat(str, "rank,");
 	if (cpu_bind_type & CPU_BIND_MAP)
 		strcat(str, "map_cpu,");
 	if (cpu_bind_type & CPU_BIND_MASK)
@@ -318,9 +316,8 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	bool log_binding = true;
 	int rc = SLURM_SUCCESS;
 
-	bind_bits = CPU_BIND_NONE | CPU_BIND_RANK | CPU_BIND_MAP |
-		    CPU_BIND_MASK | CPU_BIND_LDRANK | CPU_BIND_LDMAP |
-		    CPU_BIND_LDMASK;
+	bind_bits = CPU_BIND_NONE | CPU_BIND_MAP | CPU_BIND_MASK |
+		    CPU_BIND_LDRANK | CPU_BIND_LDMAP | CPU_BIND_LDMASK;
 	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
 		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
 
@@ -358,7 +355,7 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_NONE);
 			xfree(*cpu_bind);
 		} else if (xstrcasecmp(tok, "rank") == 0) {
-			_clear_then_set((int *)flags, bind_bits, CPU_BIND_RANK);
+			info("Ignoring --cpu-bind=rank. Rank binding is obsolete.");
 			xfree(*cpu_bind);
 		} else if ((xstrncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (xstrncasecmp(tok, "mapcpu", 6) == 0)) {

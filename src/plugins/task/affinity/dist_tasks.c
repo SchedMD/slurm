@@ -371,7 +371,7 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 		CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
 	static uint16_t bind_mode =
 		CPU_BIND_NONE | CPU_BIND_MASK |
-		CPU_BIND_RANK | CPU_BIND_MAP |
+		CPU_BIND_MAP |
 		CPU_BIND_LDMASK | CPU_BIND_LDRANK |
 		CPU_BIND_LDMAP;
 	static int only_one_thread_per_core = -1;

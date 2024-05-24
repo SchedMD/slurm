@@ -522,13 +522,6 @@ Do not bind tasks to CPUs (default unless auto binding is applied)
 .IP
 
 .TP
-.B rank
-Automatically bind by task rank.
-The lowest numbered task on each node is bound to socket (or core or thread) zero, etc.
-Not supported unless the entire node is allocated to the job.
-.IP
-
-.TP
 .B map_cpu:<list>
 Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
 <cpu_id_for_task_0>,<cpu_id_for_task_1>,...

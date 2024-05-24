@@ -91,7 +91,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 
 int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 {
-	int nummasks, maskid, i, threads;
+	int nummasks, maskid, i;
 	char *curstr, *selstr;
 	char mstr[CPU_SET_HEX_STR_SIZE];
 	uint32_t local_id = node_tid;
@@ -104,12 +104,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 
 	if (step->cpu_bind_type & CPU_BIND_NONE) {
 		return false;
-	}
-
-	if (step->cpu_bind_type & CPU_BIND_RANK) {
-		threads = MAX(conf->threads, 1);
-		CPU_SET(node_tid % (step->cpus*threads), mask);
-		return true;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDRANK) {

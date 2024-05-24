@@ -499,9 +499,7 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 			units = "-ldoms";
 		else
 			units = "";
-		if (step->cpu_bind_type & CPU_BIND_RANK) {
-			bind_type = "RANK";
-		} else if (step->cpu_bind_type & CPU_BIND_MAP) {
+		if (step->cpu_bind_type & CPU_BIND_MAP) {
 			bind_type = "MAP ";
 		} else if (step->cpu_bind_type & CPU_BIND_MASK) {
 			bind_type = "MASK";

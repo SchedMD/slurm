@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     slurmdbd by providing responses when possible.
  -- slurmrestd,sackd,scrun - Avoid rare hangs related to I/O.
  -- scrun - Add support '--all' argument for kill subcommand.
+ -- Remove srun --cpu-bind=rank.
 
 * Changes in Slurm 24.05.1
 ==========================
