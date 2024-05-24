@@ -730,15 +730,13 @@ extern void conmgr_fini(void)
 	/* run all deferred work if there is any */
 	_requeue_deferred_funcs();
 
-	slurm_mutex_unlock(&mgr.mutex);
-
 	log_flag(NET, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
-	_close_all_connections(false);
+	_close_all_connections(true);
 
 	/* tell all timers about being canceled */
-	_cancel_delayed_work(false);
+	_cancel_delayed_work(true);
 
 	/*
 	 * make sure WORKQ is done before making any changes encase there are
@@ -774,8 +772,13 @@ extern void conmgr_fini(void)
 
 	xfree(mgr.signal_work);
 
-	slurm_mutex_destroy(&mgr.mutex);
-	slurm_cond_destroy(&mgr.cond);
+	slurm_mutex_unlock(&mgr.mutex);
+	/*
+	 * Do not destroy the mutex or cond so that this function does not
+	 * crash when it tries to lock mgr.mutex if called more than once.
+	 */
+	/* slurm_mutex_destroy(&mgr.mutex); */
+	/* slurm_cond_destroy(&mgr.cond); */
 }
 
 /*
