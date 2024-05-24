@@ -752,7 +752,9 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	if (!flag_init) {
 		flag_init = true;
 		if (running_in_slurmd()) {
-			gpu_g_get_device_count((unsigned int *)&gpus_len);
+			if (gres_get_gres_cnt())
+				gpu_g_get_device_count(
+					(unsigned int *) &gpus_len);
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(&thread_gpu_id_launcher,
