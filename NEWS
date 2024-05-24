@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix various cosmetic issues with states in sinfo.
  -- slurmrestd - Avoid crash due to associations query.
  -- Calculate a job's min_cpus with consideration to --cpus-per-gpu.
+ -- Fix scancel request when specifying individual array tasks in combination
+    with filtering options (in both regular and --interactive mode).
 
 * Changes in Slurm 24.05.0rc1
 =============================
