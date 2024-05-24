@@ -8110,11 +8110,11 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
 	add_parser(cron_entry_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
 	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags", NULL),
-	add_parse(BITSTR, minute, "minute", NULL),
-	add_parse(BITSTR, hour, "hour", NULL),
-	add_parse(BITSTR, day_of_month, "day_of_month", NULL),
-	add_parse(BITSTR, month, "month", NULL),
-	add_parse(BITSTR, day_of_week, "day_of_week", NULL),
+	add_parse(BITSTR_PTR, minute, "minute", NULL),
+	add_parse(BITSTR_PTR, hour, "hour", NULL),
+	add_parse(BITSTR_PTR, day_of_month, "day_of_month", NULL),
+	add_parse(BITSTR_PTR, month, "month", NULL),
+	add_parse(BITSTR_PTR, day_of_week, "day_of_week", NULL),
 	add_parse(STRING, cronspec, "specification", NULL),
 	add_parse(STRING, command, "command", NULL),
 	add_parse(UINT32, line_start, "line/start", NULL),
