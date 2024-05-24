@@ -2739,6 +2739,7 @@ def wait_for_job_state(
     poll_interval=None,
     fatal=False,
     quiet=False,
+    xfail=False,
 ):
     """Wait for the specified job to reach the desired state.
 
@@ -2760,6 +2761,7 @@ def wait_for_job_state(
         poll_interval (float): Time (in seconds) between job state polls.
         fatal (boolean): If True, a timeout will cause the test to fail.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        xfail (boolean): If True, state (or reason) are not expected to be reached.
 
     Returns:
         Boolean value indicating whether the job reached the desired state.
@@ -2787,9 +2789,14 @@ def wait_for_job_state(
     # We don't use repeat_until here because we support pseudo-job states and
     # we want to allow early return (e.g. for a DONE state if we want RUNNING)
 
-    message = f"Waiting for job ({job_id}) to reach state {desired_job_state}"
+    xfail_str = ""
+    if xfail:
+        xfail_str = "not "
+    message = (
+        f"Waiting for job ({job_id}) to {xfail_str}reach state {desired_job_state}"
+    )
     if desired_reason is not None:
-        message += f", and reason {desired_reason}"
+        message += f" and reason {desired_reason}"
     logging.log(log_level, message)
 
     begin_time = time.time()
@@ -2798,9 +2805,7 @@ def wait_for_job_state(
             job_id, "JobState", default="NOT_FOUND", quiet=True
         )
 
-        message = (
-            f"Job ({job_id}) is in state {job_state}, but we wanted {desired_job_state}"
-        )
+        message = f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}"
         if job_state in [
             "NOT_FOUND",
             "BOOT_FAIL",
@@ -2814,50 +2819,69 @@ def wait_for_job_state(
             "PREEMPTED",
         ]:
             if desired_job_state == "DONE" or job_state == desired_job_state:
-                message = f"Job ({job_id}) is in desired state {desired_job_state}"
+                message = f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
                 reason = get_job_parameter(
                     job_id, "Reason", default="NOT_FOUND", quiet=True
                 )
                 if desired_reason is None or reason == desired_reason:
                     if desired_reason is not None:
-                        message += f" with the desired reason {desired_reason}"
-                    logging.log(log_level, message)
+                        message += (
+                            f" with the {xfail_str}desired reason {desired_reason}"
+                        )
+                    if not xfail:
+                        logging.log(log_level, message)
+                    else:
+                        logging.warning(message)
                     return True
                 else:
                     message += (
-                        f", but with reason {reason} and we wanted {desired_reason}"
+                        f", but with reason {reason} and we waited for {desired_reason}"
                     )
 
-            if fatal:
-                pytest.fail(message)
+            if not xfail:
+                if fatal:
+                    pytest.fail(message)
+                else:
+                    logging.warning(message)
             else:
-                logging.warning(message)
-                return False
+                logging.log(log_level, message)
+            return False
         elif job_state == desired_job_state:
-            message = f"Job ({job_id}) is in desired state {desired_job_state}"
+            message = (
+                f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
+            )
             reason = get_job_parameter(
                 job_id, "Reason", default="NOT_FOUND", quiet=True
             )
             if desired_reason is None or reason == desired_reason:
                 if desired_reason is not None:
-                    message += f" with the desired reason {desired_reason}"
-                logging.log(log_level, message)
+                    message += f" with the {xfail_str}desired reason {desired_reason}"
+                if not xfail:
+                    logging.log(log_level, message)
+                else:
+                    logging.warning(message)
                 return True
             else:
-                message += f", but with reason {reason} and we wanted {desired_reason}"
+                message += (
+                    f", but with reason {reason} and we waited for {desired_reason}"
+                )
 
         logging.log(log_level, message)
         time.sleep(poll_interval)
 
     message = f"Job ({job_id}) did not reach the {desired_job_state} state"
     if desired_reason is not None:
-        message += f" or the desired reason {desired_reason}"
-    message += f" within the {timeout} second timeout"
-    if fatal:
-        pytest.fail(message)
+        message += f" or the reason {desired_reason}"
+    message += f" within the {timeout} second(s) timeout"
+    if not xfail:
+        if fatal:
+            pytest.fail(message)
+        else:
+            logging.warning(message)
     else:
-        logging.warning(message)
-        return False
+        logging.log(log_level, message)
+
+    return False
 
 
 def create_node(node_dict):
