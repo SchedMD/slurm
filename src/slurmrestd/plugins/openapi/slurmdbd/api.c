@@ -833,7 +833,7 @@ const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 extern void slurm_openapi_p_init(void)
 {
 	/* Check to see if we are running a supported accounting plugin */
-	if (!slurm_with_slurmdbd()) {
+	if (!is_spec_generation_only(false) && !slurm_with_slurmdbd()) {
 		debug("%s: refusing to load. Slurm not configured with slurmdbd",
 		      __func__);
 		return;
@@ -848,7 +848,7 @@ extern int slurm_openapi_p_get_paths(const openapi_path_binding_t **paths_ptr,
 				     const openapi_resp_meta_t **meta_ptr)
 {
 	/* Check to see if we are running a supported accounting plugin */
-	if (!slurm_with_slurmdbd()) {
+	if (!is_spec_generation_only(false) && !slurm_with_slurmdbd()) {
 		debug("%s: refusing to load. Slurm not configured with slurmdbd",
 		      __func__);
 		return ESLURM_NOT_SUPPORTED;

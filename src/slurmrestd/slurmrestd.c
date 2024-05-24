@@ -381,6 +381,8 @@ static void dump_spec(int argc, char **argv)
 
 	_setup_logging(argc, argv);
 
+	(void) is_spec_generation_only(true);
+
 	/* Load slurm.conf if possible and ignore if it fails */
 	if (!xstrcmp(slurm_conf_filename, SLURM_CONF_DISABLED)) {
 		/* Avoid another part of Slurm from trying to load slurm.conf */

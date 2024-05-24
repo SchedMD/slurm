@@ -2490,3 +2490,13 @@ extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
 
 	return rc;
 }
+
+extern bool is_spec_generation_only(bool set)
+{
+	static bool is_spec_only = false;
+
+	if (set)
+		is_spec_only = true;
+
+	return is_spec_only;
+}
