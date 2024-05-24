@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     'GET /openapi/v3' endpoint, fixing a regression in rc1.
  -- scrun - Fix setting and getting environment via SPANK plugins.
  -- sview - Fix nodes tab if a node has RestrictedCoresPerGPU configured.
+ -- slurmrestd - Add --generate-openapi-spec argument.
 
 * Changes in Slurm 24.05.0rc1
 =============================
