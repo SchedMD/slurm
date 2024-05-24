@@ -167,7 +167,7 @@ static display_data_t display_data_node[] = {
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_RES_CORES_PER_GPU,
+	{G_TYPE_INT, SORTID_RES_CORES_PER_GPU,
 	 "RestrictedCoresPerGPU", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_RESV_NAME, "ReservationName", false,
