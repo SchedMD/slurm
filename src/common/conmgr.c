@@ -2336,6 +2336,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
  */
 static void _watch(void *blocking)
 {
+	bool shutdown_requested;
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
 
@@ -2370,6 +2371,8 @@ static void _watch(void *blocking)
 	slurm_cond_broadcast(&mgr.watch_cond);
 	slurm_mutex_unlock(&mgr.watch_mutex);
 
+	/* Get the value of shutdown_requested while mutex is locked */
+	shutdown_requested = mgr.shutdown_requested;
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (poll_args) {
@@ -2387,7 +2390,7 @@ static void _watch(void *blocking)
 	}
 
 	log_flag(NET, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
-		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
+		 __func__, (shutdown_requested ? 'T' : 'F'),
 		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
 		 list_count(mgr.listen_conns));
 }
