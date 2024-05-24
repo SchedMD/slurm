@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a regression in rc1 resulting in scrun occasionally deadlocking when
     the --enable-memory-leak-debug configure option was used.
  -- topology/default - Prevent segfault in slurmctld on 'scontrol show topo'.
+ -- slurmrestd - Avoid creating or requring a connection to slurmdbd for the
+    'GET /openapi/v3' endpoint, fixing a regression in rc1.
 
 * Changes in Slurm 24.05.0rc1
 =============================

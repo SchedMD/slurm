@@ -101,6 +101,7 @@ typedef enum {
 	OP_BIND_DATA_PARSER = SLURM_BIT(2), /* populate {data_parser} in URL */
 	OP_BIND_OPENAPI_RESP_FMT = SLURM_BIT(3), /* populate errors,warnings,meta */
 	OP_BIND_HIDDEN_OAS = SLURM_BIT(4), /* Hide from OpenAPI specification */
+	OP_BIND_NO_SLURMDBD = SLURM_BIT(5), /* Do not prepare slurmdbd connection */
 	OP_BIND_INVALID_MAX = INFINITE16
 } op_bind_flags_t;
 

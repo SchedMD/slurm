@@ -293,7 +293,7 @@ static const openapi_path_binding_method_t openapi_methods[] = {
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt);
 
-#define OP_FLAGS (OP_BIND_HIDDEN_OAS)
+#define OP_FLAGS (OP_BIND_HIDDEN_OAS | OP_BIND_NO_SLURMDBD)
 
 /*
  * Paths to generate OpenAPI specification
@@ -2343,7 +2343,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      const openapi_path_binding_t *op_path,
 				      const openapi_resp_meta_t *plugin_meta)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	openapi_ctxt_t ctxt = {
 		.id = context_id,
 		.method = method,
@@ -2376,8 +2376,10 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	      __func__, context_id, get_http_method_string(method),
 	      data_parser_get_plugin(ctxt.parser));
 
-	if (slurm_conf.accounting_storage_type &&
-	    !(ctxt.db_conn = openapi_get_db_conn(auth))) {
+	if (op_path->flags & OP_BIND_NO_SLURMDBD) {
+		; /* Do not attempt to open a connection to slurmdbd */
+	} else if (slurm_conf.accounting_storage_type &&
+		   !(ctxt.db_conn = openapi_get_db_conn(auth))) {
 		openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION), __func__,
 				   "openapi_get_db_conn() failed to open slurmdb connection");
 	} else {
