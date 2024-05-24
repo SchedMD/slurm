@@ -773,8 +773,12 @@ extern void free_conmgr(void)
 	xfree(mgr.signal_work);
 
 	slurm_mutex_unlock(&mgr.mutex);
-	slurm_mutex_destroy(&mgr.mutex);
-	slurm_cond_destroy(&mgr.cond);
+	/*
+	 * Do not destroy the mutex or cond so that this function does not
+	 * crash when it tries to lock mgr.mutex if called more than once.
+	 */
+	/* slurm_mutex_destroy(&mgr.mutex); */
+	/* slurm_cond_destroy(&mgr.cond); */
 }
 
 /*
