@@ -64,6 +64,8 @@ extern void check_state(void)
 	xassert((state.pts == -1) || (state.pts >= 0));
 	xassert(state.requested_signal >= 0);
 	xassert(!state.job_env || (xsize(state.job_env) >= sizeof(NULL)));
+	xassert(!state.spank_job_env ||
+		(xsize(state.spank_job_env) >= sizeof(NULL)));
 	xassert(!state.id || xsize(state.id) >= 1);
 	xassert((state.pid_file_fd == -1) ||
 		(state.pid_file_fd > STDERR_FILENO));
@@ -181,6 +183,7 @@ extern void destroy_state(void)
 	xfree(state.anchor_socket);
 	xfree(state.spool_dir);
 	env_array_free(state.job_env);
+	env_array_free(state.spank_job_env);
 	xfree(state.config_file);
 	xfree(state.root_dir);
 	xfree(state.root_path);

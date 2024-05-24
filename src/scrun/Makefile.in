@@ -184,7 +184,7 @@ am__v_lt_1 =
 @HAVE_LUA_TRUE@am_lib_ref_la_rpath =
 am__objects_1 = alloc.$(OBJEXT) anchor.$(OBJEXT) commands.$(OBJEXT) \
 	lua.$(OBJEXT) rpc.$(OBJEXT) scrun.$(OBJEXT) srun.$(OBJEXT) \
-	state.$(OBJEXT)
+	spank.$(OBJEXT) state.$(OBJEXT)
 @HAVE_LUA_TRUE@am_scrun_OBJECTS = $(am__objects_1)
 scrun_OBJECTS = $(am_scrun_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -209,7 +209,8 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/alloc.Po ./$(DEPDIR)/anchor.Po \
 	./$(DEPDIR)/commands.Po ./$(DEPDIR)/lua.Po ./$(DEPDIR)/rpc.Po \
-	./$(DEPDIR)/scrun.Po ./$(DEPDIR)/srun.Po ./$(DEPDIR)/state.Po
+	./$(DEPDIR)/scrun.Po ./$(DEPDIR)/spank.Po ./$(DEPDIR)/srun.Po \
+	./$(DEPDIR)/state.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -518,6 +519,7 @@ SRCS = \
 	scrun.c	\
 	scrun.h \
 	srun.c \
+	spank.c \
 	state.c
 
 convenience_libs = $(LIB_SLURM)
@@ -652,6 +654,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lua.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scrun.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state.Po@am__quote@ # am--include-marker
 
@@ -789,6 +792,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lua.Po
 	-rm -f ./$(DEPDIR)/rpc.Po
 	-rm -f ./$(DEPDIR)/scrun.Po
+	-rm -f ./$(DEPDIR)/spank.Po
 	-rm -f ./$(DEPDIR)/srun.Po
 	-rm -f ./$(DEPDIR)/state.Po
 	-rm -f Makefile
@@ -842,6 +846,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lua.Po
 	-rm -f ./$(DEPDIR)/rpc.Po
 	-rm -f ./$(DEPDIR)/scrun.Po
+	-rm -f ./$(DEPDIR)/spank.Po
 	-rm -f ./$(DEPDIR)/srun.Po
 	-rm -f ./$(DEPDIR)/state.Po
 	-rm -f Makefile

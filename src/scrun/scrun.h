@@ -36,6 +36,9 @@
 #ifndef _SCRUN_H
 #define _SCRUN_H
 
+#include <pty.h>
+#include <termios.h>
+
 #include "src/common/conmgr.h"
 #include "src/common/data.h"
 #include "src/common/oci_config.h"
@@ -87,6 +90,7 @@ typedef struct {
 	char *anchor_socket; /* path to anchor msg socket */
 	char *spool_dir; /* container specific work space */
 	char **job_env; /* env to hand to srun */
+	char **spank_job_env; /* spank set env */
 	char *config_file; /* path to config.json */
 	uint32_t user_id; /* user job is running as */
 	uint32_t group_id; /* group job is running as */

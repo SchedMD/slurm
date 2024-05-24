@@ -517,6 +517,11 @@ static void _alloc_job(void)
 	read_lock_state();
 	desc->name = xstrdup(state.id);
 	desc->container_id = xstrdup(state.id);
+	if (state.spank_job_env) {
+		desc->spank_job_env =
+			env_array_copy((const char **) state.spank_job_env);
+		desc->spank_job_env_size = envcount(state.spank_job_env);
+	}
 	unlock_state();
 	if (!desc->min_nodes || (desc->min_nodes == NO_VAL))
 		desc->min_nodes = 1;
