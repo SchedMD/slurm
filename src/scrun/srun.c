@@ -96,6 +96,33 @@ static void _exec_add(data_t *data, const char *arg)
 	data_set_string(data_list_append(data), arg);
 }
 
+/*
+ * Propagate SPANK environment via SLURM_SPANK_ environment variables (same as
+ * with salloc).
+ */
+static void _set_spank_env(void)
+{
+	int count = envcount(state.spank_job_env);
+
+	for (int i = 0; i < count; i++) {
+		char *name = NULL, *eq;
+		const char *value = "";
+
+		if ((eq = xstrchr(state.spank_job_env[i], '='))) {
+			value = eq + 1;
+			*eq = '\0';
+		}
+
+		xstrfmtcat(name, "SLURM_SPANK_%s", state.spank_job_env[i]);
+		setenvf(&state.job_env, name, "%s", value);
+
+		/* revert change */
+		*eq = '=';
+
+		xfree(name);
+	}
+}
+
 extern void exec_srun_container(void)
 {
 	data_t *args, *container_args;
@@ -184,6 +211,8 @@ extern void exec_srun_container(void)
 
 		if (state.requested_terminal && !isatty(STDIN_FILENO))
 			fatal("requested_terminal=t but isatty(STDIN_FILENO)=0: %m");
+
+		_set_spank_env();
 
 		if (execve(argvl[0], argvl, state.job_env))
 			fatal("execv() failed: %m");
