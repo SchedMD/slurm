@@ -3133,8 +3133,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
             else:
-                logging.debug(f"{parameter_name} is not a supported node requirement type.")
-                logging.debug(f"{parameter_name}={parameter_value} will be added anyways!")
+                logging.debug(
+                    f"{parameter_name} is not a supported node requirement type."
+                )
+                logging.debug(
+                    f"{parameter_name}={parameter_value} will be added anyways!"
+                )
                 augmentation_dict[parameter_name] = parameter_value
                 if node_qualifies:
                     node_qualifies = False
