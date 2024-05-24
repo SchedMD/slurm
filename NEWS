@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- topology/default - Prevent segfault in slurmctld on 'scontrol show topo'.
  -- slurmrestd - Avoid creating or requring a connection to slurmdbd for the
     'GET /openapi/v3' endpoint, fixing a regression in rc1.
+ -- scrun - Fix setting and getting environment via SPANK plugins.
 
 * Changes in Slurm 24.05.0rc1
 =============================
