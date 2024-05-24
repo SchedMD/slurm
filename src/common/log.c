@@ -803,8 +803,6 @@ static char *_print_data_t(const data_t *d, char *buffer, int size)
 
 static char *_print_data_json(const data_t *d, char *buffer, int size)
 {
-	int printed;
-	size_t remain;
 	char *nbuf = NULL;
 
 	/*
@@ -813,16 +811,12 @@ static char *_print_data_json(const data_t *d, char *buffer, int size)
 	 * argument from the va_list directly. So when we call vsnprintf()
 	 * to handle the va_list this will effectively skip this argument.
 	 */
-	printed = snprintf(buffer, size, "%%.0s");
-	remain = size - printed;
-
-	if (serialize_g_data_to_string(&nbuf, &remain, d, MIME_TYPE_JSON,
+	if (serialize_g_data_to_string(&nbuf, NULL, d, MIME_TYPE_JSON,
 				       SER_FLAGS_COMPACT))
 		snprintf(buffer, size, "%%.0s(JSON serialization failed)");
 	else
-		snprintf(buffer, remain, "%s", nbuf);
+		snprintf(buffer, size, "%%.0s%s", nbuf);
 
-	xassert(remain <= size);
 	xfree(nbuf);
 
 	return buffer;
