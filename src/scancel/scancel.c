@@ -613,7 +613,9 @@ static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
 {
 	char *result = NULL;
 
-	if (job_ptr->array_task_str) {
+	if (array_id != NO_VAL && array_id != INFINITE) {
+		xstrfmtcat(result, "%u_%u", job_ptr->array_job_id, array_id);
+	} else if (job_ptr->array_task_str) {
 		xstrfmtcat(result, "%u_[%s]",
 			   job_ptr->array_job_id, job_ptr->array_task_str);
 	} else if (job_ptr->array_task_id != NO_VAL) {
@@ -700,11 +702,17 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 					&num_active_threads_cond;
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
 				cancel_info->job_id_str =
-					_build_jobid_str(job_ptr, NO_VAL);
+					_build_jobid_str(job_ptr,
+							 opt.array_id[j]);
 
 				slurm_thread_create_detached(_cancel_job_id,
 							     cancel_info);
-				job_ptr->job_id = 0;
+
+				if (opt.array_id[j] == NO_VAL ||
+				    opt.array_id[j] == INFINITE)
+					job_ptr->job_id = 0;
+				else
+					opt.job_id[j] = 0;
 			} else {
 				cancel_info->job_id = job_ptr->job_id;
 				cancel_info->step_id = opt.step_id[j];
