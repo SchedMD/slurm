@@ -313,6 +313,8 @@ static plugin_context_t *plugin_context = NULL;
 static pthread_rwlock_t plugin_context_lock = PTHREAD_RWLOCK_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
+static uint32_t max_step_records = NO_VAL;
+
 /*
  * If running with slurmdbd don't run if we don't have an index, else
  * go ahead.
@@ -333,6 +335,7 @@ extern int acct_storage_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "accounting_storage";
+	char *tmp_ptr = NULL;
 
 	slurm_rwlock_wrlock(&plugin_context_lock);
 
@@ -356,6 +359,13 @@ extern int acct_storage_g_init(void)
 		goto done;
 	}
 	plugin_inited = PLUGIN_INITED;
+
+	if ((tmp_ptr = xstrcasestr(slurm_conf.accounting_storage_params,
+				   "max_step_records="))) {
+		max_step_records = strtol(tmp_ptr + strlen("max_step_records="),
+					  NULL, 10);
+	}
+
 done:
 	slurm_rwlock_unlock(&plugin_context_lock);
 	return retval;
@@ -1171,6 +1181,10 @@ extern int jobacct_storage_g_step_start(void *db_conn, step_record_t *step_ptr)
 
 	if (slurm_conf.accounting_storage_enforce & ACCOUNTING_ENFORCE_NO_STEPS)
 		return SLURM_SUCCESS;
+	if ((max_step_records != NO_VAL) &&
+	    (step_ptr->step_id.step_id < SLURM_MAX_NORMAL_STEP_ID) &&
+	    (step_ptr->step_id.step_id >= max_step_records))
+		return SLURM_SUCCESS;
 	return (*(ops.step_start))(db_conn, step_ptr);
 }
 
@@ -1186,6 +1200,10 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 		return SLURM_SUCCESS;
 
 	if (slurm_conf.accounting_storage_enforce & ACCOUNTING_ENFORCE_NO_STEPS)
+		return SLURM_SUCCESS;
+	if ((max_step_records != NO_VAL) &&
+	    (step_ptr->step_id.step_id < SLURM_MAX_NORMAL_STEP_ID) &&
+	    (step_ptr->step_id.step_id >= max_step_records))
 		return SLURM_SUCCESS;
 	return (*(ops.step_complete))(db_conn, step_ptr);
 }

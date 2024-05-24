@@ -82,6 +82,8 @@
 #define SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE \
 	"/sys/module/cxi_core/parameters/rdzv_get_en_default"
 
+extern int free_vnis; /* Number of free VNIs */
+
 /* Set of valid auth types used for REST */
 typedef enum {
 	SLINGSHOT_AUTH_NONE = 0, /* No authentication */
@@ -218,6 +220,12 @@ typedef struct {
 /* Denotes packing a null stepinfo structure */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 
+typedef struct slingshot_jobinfo {
+	uint32_t num_vnis; /* Number of VNIs */
+	uint16_t *vnis; /* List of VNIs allocated for this job */
+	char *extra; /* storage for mid-release extras */
+} slingshot_jobinfo_t;
+
 /* Jobinfo structure passed from slurmctld to slurmd */
 typedef struct slingshot_stepinfo {
 	uint32_t version;      /* Version of this structure */
@@ -275,6 +283,7 @@ typedef struct slingshot_stepinfo {
 /* Global variables */
 extern slingshot_state_t slingshot_state;
 extern slingshot_config_t slingshot_config;
+extern bool active_outside_ctld;
 
 /* Global functions */
 /* apinfo.c */
@@ -292,12 +301,15 @@ extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
+extern bool slingshot_setup_job_vni_pool(job_record_t *job_ptr);
 extern bool slingshot_setup_job_step_vni(
 	slingshot_stepinfo_t *job, int node_cnt,
 	uint32_t job_id, const char *network_params,
 	const char *job_network_params);
 extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job);
 extern void slingshot_free_job_vni(uint32_t job_id);
+extern void slingshot_free_job_vni_pool(slingshot_jobinfo_t *job);
+extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo);
 /* instant_on.c */
 extern bool slingshot_init_instant_on(void);
 extern void slingshot_fini_instant_on(void);
@@ -310,5 +322,6 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 extern bool slingshot_destroy_services(slingshot_stepinfo_t *job,
 				       uint32_t job_id);
 extern void slingshot_free_services(void);
+extern int slingshot_update_config(slingshot_jobinfo_t *jobinfo);
 
 #endif

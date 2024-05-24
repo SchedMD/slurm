@@ -2343,59 +2343,141 @@ static list_t *_handle_exclusive_gres(job_record_t *job_ptr,
 	return post_list;
 }
 
+typedef struct {
+	uint64_t gpu_cnt;
+	int node_inx;
+} foreach_node_gpu_args_t;
+
+static int _get_node_gpu_sum(void *x, void *arg)
+{
+	foreach_node_gpu_args_t *args = arg;
+	gres_state_t *gres_job_state = x;
+	gres_job_state_t *gres_js;
+
+	if (gres_job_state->plugin_id != gres_get_gpu_plugin_id())
+		return SLURM_SUCCESS;
+	gres_js = gres_job_state->gres_data;
+	args->gpu_cnt += gres_js->gres_cnt_node_select[args->node_inx];
+
+	return SLURM_SUCCESS;
+}
+
+static uint64_t _get_max_node_gpu_cnt(bitstr_t *node_bitmap, list_t* gres_list)
+{
+	foreach_node_gpu_args_t args;
+	uint64_t max_node_gpu_cnt = 0;
+
+	xassert(node_bitmap);
+	xassert(gres_list);
+
+	for (int i = 0; (i = bit_ffs_from_bit(node_bitmap, i)) >= 0; i++) {
+		args.gpu_cnt = 0;
+		args.node_inx = i;
+		/* Get the sum of all gpu types on the node */
+		list_for_each(gres_list, _get_node_gpu_sum, &args);
+		max_node_gpu_cnt = MAX(max_node_gpu_cnt, args.gpu_cnt);
+	}
+
+	return max_node_gpu_cnt;
+}
+
 static int _get_resv_mpi_ports(job_record_t *job_ptr,
 			       uint16_t *orig_resv_port_cnt,
 			       uint32_t node_cnt,
 			       time_t now)
 {
 	int error_code = SLURM_SUCCESS;
-	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		if (slurm_conf.mpi_params &&
-		    (job_ptr->resv_port_cnt == NO_VAL16)) {
-			if (!job_ptr->job_resrcs) {
-				error("Select plugin failed to set job resources");
-				/*
-				* Do not attempt to allocate the select_bitmap nodes
-				* since select plugin failed to set job resources
-				*/
-				error_code = ESLURM_NODES_BUSY;
-				job_ptr->start_time = 0;
-				job_ptr->time_last_active = 0;
-				job_ptr->end_time = 0;
-				job_ptr->state_reason = WAIT_RESOURCES;
-				last_job_update = now;
-				xfree(job_ptr->state_desc);
-				return error_code;
-			}
 
-			*orig_resv_port_cnt = job_ptr->resv_port_cnt;
-			job_ptr->resv_port_cnt = 0;
+	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
+		return SLURM_SUCCESS;
 
+	if (slurm_conf.mpi_params &&
+	    (job_ptr->resv_port_cnt == NO_VAL16)) {
+		if (!job_ptr->job_resrcs) {
+			error("Select plugin failed to set job resources");
 			/*
-			* reserved port count set to maximum task count on
-			* any node plus one
+			* Do not attempt to allocate the select_bitmap nodes
+			* since select plugin failed to set job resources
 			*/
+			error_code = ESLURM_NODES_BUSY;
+			job_ptr->start_time = 0;
+			job_ptr->time_last_active = 0;
+			job_ptr->end_time = 0;
+			job_ptr->state_reason = WAIT_RESOURCES;
+			last_job_update = now;
+			xfree(job_ptr->state_desc);
+			return error_code;
+		}
+
+		*orig_resv_port_cnt = job_ptr->resv_port_cnt;
+		job_ptr->resv_port_cnt = 0;
+
+		/*
+		 * reserved port count set to maximum task count on
+		 * any node plus one, or if the job is exclusive give all
+		 * resvered ports.
+		*/
+		if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
+		    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
+			job_ptr->resv_port_cnt =
+				resv_port_get_resv_port_cnt() - 1;
+		} else if (!job_ptr->details->overcommit &&
+			   (job_ptr->details->num_tasks ||
+			    job_ptr->details->ntasks_per_node ||
+			    job_ptr->details->ntasks_per_tres)) {
 			for (int i = 0; i < node_cnt; i++) {
 				job_ptr->resv_port_cnt =
 					MAX(job_ptr->resv_port_cnt,
 					    job_ptr->job_resrcs->
-					    tasks_per_node[i]);
+					    tasks_per_node[i]) * 2;
 			}
-			job_ptr->resv_port_cnt++;
+		} else if (!job_ptr->details->overcommit) {
+			uint16_t max_node_cpus = 0;
+			for (int i = 0; i < node_cnt; i++) {
+				max_node_cpus =
+					MAX(max_node_cpus,
+					    job_ptr->job_resrcs->cpus[i] * 2);
+			}
+			job_ptr->resv_port_cnt = max_node_cpus;
+		} else if (job_ptr->details->ntasks_per_node) {
+			job_ptr->resv_port_cnt =
+				job_ptr->details->ntasks_per_node;
+		} else if (job_ptr->details->ntasks_per_tres &&
+			   job_ptr->gres_list_req ) {
+			uint64_t max_gpu_per_node =
+				_get_max_node_gpu_cnt(
+					job_ptr->node_bitmap,
+					job_ptr->gres_list_req);
+
+			if (max_gpu_per_node > slurm_conf.max_tasks_per_node)
+				max_gpu_per_node =
+					slurm_conf.max_tasks_per_node;
+			job_ptr->resv_port_cnt =
+				(uint16_t) max_gpu_per_node *
+				job_ptr->details->ntasks_per_tres;
+		} else if (job_ptr->details->num_tasks) {
+			job_ptr->resv_port_cnt = ROUNDUP(
+				job_ptr->details->num_tasks, node_cnt);
+		} else {
+			job_ptr->resv_port_cnt = ROUNDUP(
+				job_ptr->job_resrcs->ncpus, node_cnt);
 		}
-		if ((job_ptr->resv_port_cnt != NO_VAL16) &&
-		    (job_ptr->resv_port_cnt != 0)) {
-			error_code = resv_port_job_alloc(job_ptr);
-			if (error_code) {
-				job_ptr->start_time = 0;
-				job_ptr->time_last_active = 0;
-				job_ptr->end_time = 0;
-				job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
-				last_job_update = now;
-				xfree(job_ptr->state_desc);
-			}
+
+		job_ptr->resv_port_cnt++;
+	}
+	if ((job_ptr->resv_port_cnt != NO_VAL16) &&
+	    (job_ptr->resv_port_cnt != 0)) {
+		error_code = resv_port_job_alloc(job_ptr);
+		if (error_code) {
+			job_ptr->start_time = 0;
+			job_ptr->time_last_active = 0;
+			job_ptr->end_time = 0;
+			job_ptr->state_reason = WAIT_MPI_PORTS_BUSY;
+			last_job_update = now;
+			xfree(job_ptr->state_desc);
 		}
 	}
+
 	return error_code;
 }
 

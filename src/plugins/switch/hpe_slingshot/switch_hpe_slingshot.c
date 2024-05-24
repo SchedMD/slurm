@@ -90,6 +90,8 @@ const char plugin_type[] = "switch/hpe_slingshot";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = SWITCH_PLUGIN_SLINGSHOT;
 
+bool active_outside_ctld = false;
+
 slingshot_state_t slingshot_state;    /* VNI min/max/last/bitmap */
 slingshot_config_t slingshot_config;  /* Configuration defaults */
 
@@ -124,7 +126,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (running_in_slurmctld()) {
+	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
 		xfree(slingshot_state.job_vnis);
 		slingshot_fini_instant_on();
@@ -288,7 +290,12 @@ extern int switch_p_restore(bool recover)
 	safe_unpack16(&slingshot_state.vni_min, state_buf);
 	safe_unpack16(&slingshot_state.vni_max, state_buf);
 	safe_unpack16(&slingshot_state.vni_last, state_buf);
+
+	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	unpack_bit_str_hex(&slingshot_state.vni_table, state_buf);
+	free_vnis = bit_size(slingshot_state.vni_table) -
+		bit_set_count(slingshot_state.vni_table);
+
 	safe_unpack32(&slingshot_state.num_job_vnis, state_buf);
 	slingshot_state.job_vnis = NULL;
 	if (slingshot_state.num_job_vnis > 0) {
@@ -339,13 +346,60 @@ error:
 extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	return;
+	slingshot_jobinfo_t *jobinfo = switch_jobinfo;
+
+	xassert(buffer);
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (!jobinfo) {
+			packbool(0, buffer);
+			return;
+		}
+
+		packbool(1, buffer);
+		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
+		packstr(jobinfo->extra, buffer);
+	}
 }
 
 extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 				   uint16_t protocol_version)
 {
+	bool tmp_bool;
+	slingshot_jobinfo_t *jobinfo;
+
+	xassert(switch_jobinfo);
+	xassert(buffer);
+
+	*switch_jobinfo = jobinfo = xmalloc(sizeof(*jobinfo));
+
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		safe_unpackbool(&tmp_bool, buffer);
+		if (!tmp_bool) {
+			slingshot_free_jobinfo(*switch_jobinfo);
+			*switch_jobinfo = NULL;
+			return SLURM_SUCCESS;
+		}
+
+		safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
+		safe_unpackstr(&jobinfo->extra, buffer);
+	}
+
+	if (running_in_slurmstepd()) {
+		/* Update vni table with allocated vnis for stepmgr job */
+		active_outside_ctld = true;
+		_state_defaults();
+		slingshot_setup_config(slurm_conf.switch_param);
+		slingshot_update_config(jobinfo);
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("error unpacking jobinfo struct");
+	slingshot_free_jobinfo(jobinfo);
+	*switch_jobinfo = NULL;
+	return SLURM_ERROR;
 }
 
 static void _copy_stepinfo(slingshot_stepinfo_t *old, slingshot_stepinfo_t *new)
@@ -1066,7 +1120,11 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 
 extern void switch_p_job_start(job_record_t *job_ptr)
 {
-	return;
+	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
+		return;
+
+	if (!slingshot_setup_job_vni_pool(job_ptr))
+		error("couldn't allocate vni pool for job %pJ", job_ptr);
 }
 
 /*
@@ -1078,9 +1136,13 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	uint32_t job_id = job_ptr->job_id;
 
 	/* Free any job VNIs */
-	xassert(running_in_slurmctld());
+	xassert(running_in_slurmctld() || active_outside_ctld);
 	log_flag(SWITCH, "switch_p_job_complete(%u)", job_id);
 	slingshot_free_job_vni(job_id);
+
+	slingshot_free_job_vni_pool(job_ptr->switch_jobinfo);
+	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
+	job_ptr->switch_jobinfo = NULL;
 
 	/* Release any hardware collectives multicast addresses */
 	slingshot_release_collectives_job(job_id);

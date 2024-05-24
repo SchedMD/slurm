@@ -138,11 +138,11 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 {
 	/* last_update */
 	/* accounting_storage_tres */
-	/* accounting_storage_enforce */
+	pack16(slurm_conf.accounting_storage_enforce, buffer);
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */
-	/* accounting_storage_params */
+	packstr(slurm_conf.accounting_storage_params, buffer);
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
 	packstr(slurm_conf.accounting_storage_type, buffer);
@@ -230,7 +230,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* max_job_id */
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
-	/* max_step_cnt */
+	pack32(slurm_conf.max_step_cnt, buffer);
 	pack16(slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
@@ -360,11 +360,11 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	init_slurm_conf(&slurm_conf);
 	/* last_update */
 	/* accounting_storage_tres */
-	/* accounting_storage_enforce */
+	safe_unpack16(&slurm_conf.accounting_storage_enforce, buffer);
 	/* accounting_storage_backup_host */
 	/* accounting_storage_ext_host */
 	/* accounting_storage_host */
-	/* accounting_storage_params */
+	safe_unpackstr(&slurm_conf.accounting_storage_params, buffer);
 	/* accounting_storage_pass */
 	/* accounting_storage_port */
 	safe_unpackstr(&slurm_conf.accounting_storage_type, buffer);
@@ -455,7 +455,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* max_job_id */
 	/* max_mem_per_cpu */
 	/* max_node_cnt */
-	/* max_step_cnt */
+	safe_unpack32(&slurm_conf.max_step_cnt, buffer);
 	safe_unpack16(&slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
