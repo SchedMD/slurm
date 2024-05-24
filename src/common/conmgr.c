@@ -379,7 +379,7 @@ static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
 			       conmgr_work_status_t status, const char *tag,
 			       void *arg);
-static void _cancel_delayed_work(bool locked);
+static void _cancel_delayed_work(void);
 static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
 static void _queue_func(bool locked, work_func_t func, void *arg,
@@ -700,17 +700,12 @@ done:
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _close_all_connections(bool locked)
+/* mgr.mutex must be locked when calling this function */
+static void _close_all_connections(void)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	/* close all connections */
 	list_for_each(mgr.connections, _close_con_for_each, NULL);
 	list_for_each(mgr.listen_conns, _close_con_for_each, NULL);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_fini(void)
@@ -733,10 +728,10 @@ extern void conmgr_fini(void)
 	log_flag(NET, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
-	_close_all_connections(true);
+	_close_all_connections();
 
 	/* tell all timers about being canceled */
-	_cancel_delayed_work(true);
+	_cancel_delayed_work();
 
 	/*
 	 * make sure WORKQ is done before making any changes encase there are
@@ -2347,7 +2342,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 	bool work = false; /* is there any work to do? */
 
 	if (mgr.shutdown_requested)
-		_close_all_connections(true);
+		_close_all_connections();
 	else if (mgr.quiesced) {
 		if (mgr.poll_active || mgr.listen_active) {
 			/*
@@ -2959,11 +2954,9 @@ extern void conmgr_quiesce(bool wait)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _cancel_delayed_work(bool locked)
+/* mgr.mutex must be locked when calling this function */
+static void _cancel_delayed_work(void)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	if (mgr.delayed_work && !list_is_empty(mgr.delayed_work)) {
 		work_t *work;
 
@@ -2976,9 +2969,6 @@ static void _cancel_delayed_work(bool locked)
 			_handle_work(true, work);
 		}
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 static void _update_last_time(bool locked)
