@@ -609,7 +609,7 @@ static void _filter_job_records(void)
 	return;
 }
 
-static char *_build_jobid_str(job_info_t *job_ptr)
+static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
 {
 	char *result = NULL;
 
@@ -700,7 +700,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 					&num_active_threads_cond;
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
 				cancel_info->job_id_str =
-					_build_jobid_str(job_ptr);
+					_build_jobid_str(job_ptr, NO_VAL);
+
 				slurm_thread_create_detached(_cancel_job_id,
 							     cancel_info);
 				job_ptr->job_id = 0;
@@ -757,7 +758,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 
 		cancel_info = (job_cancel_info_t *)
 			xmalloc(sizeof(job_cancel_info_t));
-		cancel_info->job_id_str = _build_jobid_str(job_ptr);
+		cancel_info->job_id_str = _build_jobid_str(job_ptr, NO_VAL);
 		cancel_info->rc      = rc;
 		cancel_info->sig     = opt.signal;
 		cancel_info->num_active_threads = &num_active_threads;
@@ -1036,7 +1037,7 @@ _confirmation(job_info_t *job_ptr, uint32_t step_id)
 	char *job_id_str, in_line[128];
 
 	while (1) {
-		job_id_str = _build_jobid_str(job_ptr);
+		job_id_str = _build_jobid_str(job_ptr, NO_VAL);
 		if (step_id == SLURM_BATCH_SCRIPT) {
 			printf("Cancel job_id=%s name=%s partition=%s [y/n]? ",
 			       job_id_str, job_ptr->name,
