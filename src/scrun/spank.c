@@ -32,3 +32,38 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/env.h"
+#include "src/scrun/scrun.h"
+
+extern char *spank_get_job_env(const char *name)
+{
+	char *value = getenvp(state.spank_job_env, name);
+
+	debug4("%s: request spank_get_job_env(%s)=%s", __func__, name, value);
+
+	return value;
+}
+
+extern int spank_set_job_env(const char *name, const char *value, int overwrite)
+{
+	debug4("%s: request spank_set_job_env(%s, %s, overwrite=%c)",
+	       __func__, name, value, (overwrite ? 'T' : 'F'));
+
+	if (!overwrite && getenvp(state.spank_job_env, name))
+		return SLURM_SUCCESS;
+
+	if (!state.spank_job_env)
+		state.spank_job_env = env_array_create();
+
+	setenvf(&state.spank_job_env, name, "%s", value);
+	return SLURM_SUCCESS;
+}
+
+extern int spank_unset_job_env(const char *name)
+{
+	debug4("%s: request spank_unset_job_env(%s)", __func__, name);
+
+	unsetenvp(state.spank_job_env, name);
+	return SLURM_SUCCESS;
+}
