@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     not specify a task count for stepmgr enabled jobs.
  -- Fix a regression in rc1 resulting in scrun occasionally deadlocking when
     the --enable-memory-leak-debug configure option was used.
+ -- topology/default - Prevent segfault in slurmctld on 'scontrol show topo'.
 
 * Changes in Slurm 24.05.0rc1
 =============================

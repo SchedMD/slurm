@@ -267,10 +267,14 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
+	/* Always pack the plugin_id */
+	pack32(active_topo_id, buffer);
+	if (!topoinfo)
+		return SLURM_SUCCESS;
+
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;
 
-	pack32(*(ops.plugin_id), buffer);
 	return (*(ops.topoinfo_pack))(topoinfo->data, buffer, protocol_version);
 }
 
@@ -278,6 +282,7 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char **out)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	xassert(topoinfo);
 
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;

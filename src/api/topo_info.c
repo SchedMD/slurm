@@ -111,7 +111,7 @@ extern void slurm_print_topo_info_msg(
 	topo_info_response_msg_t *topo_info_msg_ptr,
 	char *node_list, int one_liner)
 {
-	char *out_str;
+	char *out_str = NULL;
 
 	topology_g_init();
 
