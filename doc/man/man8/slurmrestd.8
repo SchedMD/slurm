@@ -81,6 +81,14 @@ Read Slurm configuration from the specified file. See \fBNOTES\fR below.
 .IP
 
 .TP
+\fB\-\-generate\-openapi\-spec\fR
+Dump JSON formatted OpenAPI specification to stdout and exit immediately.
+Loads miminal plugins required. Loading of \fBslurm.conf\fR(5) can be disabled
+by passing additional arguments \fB\-f /dev/null\fR or setting
+\fBSLURM_CONF\fR=/dev/null in the environment.
+.IP
+
+.TP
 \fB\-g <group id>\fR
 Change group id (and drop supplemental groups) before processing client
 request. This should be a unique group with no write access or special

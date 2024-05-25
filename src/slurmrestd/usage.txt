@@ -7,6 +7,8 @@ Usage: slurmrestd [OPTIONS] [host:port]...
 		Use specified file for slurmctld configuration
 	-g <group id>
 		Change group id before processing client request.
+	--generate-openapi-spec
+		Dump OpenAPI specification to stdout.
 	-h, --help
 		Print this help message.
 	--max-connections <count>

@@ -288,4 +288,19 @@ extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
 				  const char *name, time_t *time_ptr,
 				  const char *caller);
 
+/*
+ * Generate OpenAPI specification
+ * IN/OUT dst - data_t to populate with specification
+ * RET SLURM_SUCCESS or error
+ */
+extern int generate_spec(data_t *dst);
+
+/*
+ * True if only generating an OAS
+ * IN set - Set to true
+ * RET true if only generating a spec file
+ * Warning: Do not call with set=true after multithreading started
+ */
+extern bool is_spec_generation_only(bool set);
+
 #endif /* SLURMRESTD_OPENAPI_H */
