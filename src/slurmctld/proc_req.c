@@ -3932,9 +3932,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 
 	if (reject_job && submit_job_list) {
 		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
-		if (first_job_ptr)
-			first_job_ptr->het_job_list = submit_job_list;
-		else
+		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	}
 
