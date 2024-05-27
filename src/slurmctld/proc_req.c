@@ -3930,6 +3930,14 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
 
+	if (reject_job && submit_job_list) {
+		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
+		if (first_job_ptr)
+			first_job_ptr->het_job_list = submit_job_list;
+		else
+			FREE_NULL_LIST(submit_job_list);
+	}
+
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 
@@ -3956,14 +3964,6 @@ send_msg:
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
 			slurm_send_rc_msg(msg, error_code);
-		if (submit_job_list) {
-			(void) list_for_each(submit_job_list, _het_job_cancel,
-					     NULL);
-			if (first_job_ptr)
-				first_job_ptr->het_job_list = submit_job_list;
-			else
-				FREE_NULL_LIST(submit_job_list);
-		}
 	} else {
 		info("%s: JobId=%u %s", __func__, het_job_id, TIME_STR);
 		/* send job_ID */
