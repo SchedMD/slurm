@@ -4645,6 +4645,9 @@ static int DUMP_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 			data_set_string_own(dst, tmp);
 	}
 
+	if (!is_complex_mode(args) && (data_get_type(dst) == DATA_TYPE_NULL))
+		data_set_string(dst, "");
+
 	return SLURM_SUCCESS;
 }
 
