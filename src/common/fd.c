@@ -656,7 +656,6 @@ extern int rmdir_recursive(const char *path, bool remove_top)
 	return rc;
 }
 
-
 extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 				 const char *con_name)
 {
