@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- scrun - Fix setting and getting environment via SPANK plugins.
  -- sview - Fix nodes tab if a node has RestrictedCoresPerGPU configured.
  -- slurmrestd - Add --generate-openapi-spec argument.
+ -- sview - Prevent segfault when retrieving slurmdbd configuration.
 
 * Changes in Slurm 24.05.0rc1
 =============================
