@@ -286,6 +286,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	time_t now = time(NULL);
 	char tmp_str[256], *user_name = NULL;
 	list_t *dbd_config_list = NULL;
+	void *db_conn = NULL;
 
 	/* first load accounting parms from slurm.conf */
 	uint16_t track_wckey = slurm_get_track_wckey();
@@ -341,7 +342,11 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	/* now load accounting parms from slurmdbd.conf */
 
 	/* second load slurmdbd.conf parms */
-	if (!(dbd_config_list = slurmdb_config_get(NULL)))
+	if (!(db_conn = slurmdb_connection_get(NULL)))
+		return;
+	dbd_config_list = slurmdb_config_get(db_conn);
+	slurmdb_connection_close(&db_conn);
+	if (!dbd_config_list)
 		return;
 
 	add_display_treestore_line_with_font(
