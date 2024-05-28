@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- sview - Fix nodes tab if a node has RestrictedCoresPerGPU configured.
  -- slurmrestd - Add --generate-openapi-spec argument.
  -- sview - Prevent segfault when retrieving slurmdbd configuration.
+ -- Avoid canceling rejected heterogeneous jobs without job write lock.
 
 * Changes in Slurm 24.05.0rc1
 =============================
