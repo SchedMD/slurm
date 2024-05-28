@@ -117,7 +117,8 @@ static void _set_spank_env(void)
 		setenvf(&state.job_env, name, "%s", value);
 
 		/* revert change */
-		*eq = '=';
+		if (eq)
+			*eq = '=';
 
 		xfree(name);
 	}
