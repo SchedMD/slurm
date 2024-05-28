@@ -200,6 +200,11 @@ struct conmgr_s {
 	 */
 	list_t *complete_conns;
 	/*
+	 * True after conmgr_init() is called, false after conmgr_fini() is
+	 * called.
+	 */
+	bool initialized;
+	/*
 	 * True if _watch() is running
 	 * Changes protected by watch_mutex
 	 */
@@ -582,6 +587,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	_add_signal_work(SIGALRM, _on_signal_alarm, NULL, "_on_signal_alarm()");
 
+	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -649,13 +655,14 @@ extern void conmgr_fini(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (!mgr.workq) {
+	if (!mgr.initialized) {
 		log_flag(NET, "%s: Ignoring duplicate shutdown request",
 			 __func__);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
+	mgr.initialized = false;
 	mgr.shutdown_requested = true;
 	mgr.quiesced = false;
 
