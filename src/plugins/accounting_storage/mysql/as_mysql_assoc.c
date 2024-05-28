@@ -2355,7 +2355,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(slurmdb_assoc_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-		uint16_t deleted = slurm_atoul(row[ASSOC_REQ_DELETED]);
 		list_append(assoc_list, assoc);
 		assoc->id = slurm_atoul(row[ASSOC_REQ_ID]);
 		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
@@ -2363,7 +2362,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		assoc->comment = xstrdup(row[ASSOC_REQ_COMMENT]);
 		assoc->flags = slurm_atoul(row[ASSOC_REQ_FLAGS]);
 
-		if (deleted)
+		if (slurm_atoul(row[ASSOC_REQ_DELETED]))
 			assoc->flags |= ASSOC_FLAG_DELETED;
 
 		assoc->lft = slurm_atoul(row[ASSOC_REQ_LFT]);
