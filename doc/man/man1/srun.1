@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "May 2024" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "June 2024" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -4557,7 +4557,7 @@ This example shows how to launch an application called "server" with one task,
 task.
 .IP
 .nf
-$ srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb server : \-n16 \-\-mem\-per\-cpu=1gb client
+$ srun \-n1 \-c8 \-\-mem\-per\-cpu=2gb server : \-n16 \-\-mem\-per\-cpu=1gb client
 .fi
 
 .TP
