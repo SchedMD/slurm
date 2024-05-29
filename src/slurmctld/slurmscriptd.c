@@ -1101,12 +1101,34 @@ static void *_slurmctld_listener_thread(void *x)
 	return NULL;
 }
 
+static void _wait_for_all_scripts(void)
+{
+	int last_pc = 0;
+	struct timespec ts = {0, 0};
+
+	/*
+	 * Wait until all script complete messages have been processed or until
+	 * the readfd is closed, in which case we know we'll never get more
+	 * messages from slurmscriptd.
+	 */
+	slurm_mutex_lock(&script_count_mutex);
+	while (slurmctld_readfd > 0) {
+		if (!script_count)
+			break;
+		if (last_pc != script_count)
+			info("waiting for %d running processes", script_count);
+		last_pc = script_count;
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&script_count_cond, &script_count_mutex,
+				     &ts);
+	}
+	slurm_mutex_unlock(&script_count_mutex);
+}
+
 static void _kill_slurmscriptd(void)
 {
 	int status;
 	int rc;
-	int last_pc = 0;
-	struct timespec ts = {0, 0};
 
 	if (slurmscriptd_pid <= 0) {
 		error("%s: slurmscriptd_pid < 0, we don't know the PID of slurmscriptd.",
@@ -1120,23 +1142,9 @@ static void _kill_slurmscriptd(void)
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
 	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
 				   NULL);
-	/*
-	 * Wait until all script complete messages have been processed or until
-	 * the readfd is closed, in which case we know we'll never get more
-	 * messages from slurmscriptd.
-	 */
-	slurm_mutex_lock(&script_count_mutex);
-	while ((rc == SLURM_SUCCESS) && (slurmctld_readfd > 0)) {
-		if (!script_count)
-			break;
-		if (last_pc != script_count)
-			info("waiting for %d running processes", script_count);
-		last_pc = script_count;
-		ts.tv_sec = time(NULL) + 2;
-		slurm_cond_timedwait(&script_count_cond, &script_count_mutex,
-				     &ts);
-	}
-	slurm_mutex_unlock(&script_count_mutex);
+
+	if (rc == SLURM_SUCCESS)
+		_wait_for_all_scripts();
 
 	if (rc != SLURM_SUCCESS) {
 		/* Shutdown signal failed. Try to reap slurmscriptd now. */
