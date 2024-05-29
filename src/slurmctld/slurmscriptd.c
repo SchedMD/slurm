@@ -1201,6 +1201,8 @@ extern void slurmscriptd_flush(void)
 {
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
 			      NULL);
+
+	_wait_for_all_scripts();
 }
 
 extern void slurmscriptd_flush_job(uint32_t job_id)
