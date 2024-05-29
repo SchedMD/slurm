@@ -451,6 +451,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	void *obj = NULL;
 	data_t *ppath = NULL;
 	const parser_t *const parser = args->parser;
+	const parser_t *const array_parser = args->array_parser;
 
 	xassert(args->magic == MAGIC_FOREACH_NT_ARRAY);
 	xassert((args->index > 0) || (args->index == -1));
@@ -469,9 +470,9 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 				    data_get_string(ppath_last), args->index);
 	}
 
-	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+	if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY)
 		obj = alloc_parser_obj(parser);
-	else if (parser->model == PARSER_MODEL_NT_ARRAY)
+	else if (array_parser->model == PARSER_MODEL_NT_ARRAY)
 		obj = args->sarray + (parser->size * args->index);
 
 	if ((rc = parse(obj, NO_VAL, parser, src, args->args, ppath))) {
@@ -483,7 +484,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+	if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
 		xassert(!args->array[args->index]);
 		args->array[args->index] = obj;
 	}
