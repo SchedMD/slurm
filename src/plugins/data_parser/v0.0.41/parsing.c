@@ -561,6 +561,8 @@ cleanup:
 		for (int i = 0; fargs.array[i]; i++)
 			free_parser_obj(parser, &fargs.array[i]);
 		xfree(fargs.array);
+	} else if (fargs.sarray) {
+		xfree(fargs.sarray);
 	}
 
 	return rc;
