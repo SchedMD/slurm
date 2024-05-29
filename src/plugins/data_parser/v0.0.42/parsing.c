@@ -535,6 +535,10 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 		fargs.sarray = xcalloc(data_get_list_length(src) + 1,
 				       fargs.parser->size);
 
+	/* verify new array actually allocated */;
+	xassert((fargs.array && (xsize(fargs.array) > 0)) ^
+		(fargs.sarray && (xsize(fargs.sarray) > 0)));
+
 	if (data_get_type(src) == DATA_TYPE_LIST) {
 		if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
 			goto cleanup;
