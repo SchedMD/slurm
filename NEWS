@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add --generate-openapi-spec argument.
  -- sview - Prevent segfault when retrieving slurmdbd configuration.
  -- Avoid canceling rejected heterogeneous jobs without job write lock.
+ -- Fix slurmctld crash when reconfiguring with a PrologSlurmctld is running.
 
 * Changes in Slurm 24.05.0rc1
 =============================
