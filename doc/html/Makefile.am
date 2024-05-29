@@ -85,6 +85,7 @@ generated_html = \
 	topology.html \
 	tres.html \
 	troubleshoot.html \
+	upgrades.html \
 	user_permissions.html \
 	wckey.html
 

@@ -1,0 +1,590 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Upgrade Guide</h1>
+
+<p>Slurm supports in-place upgrades between certain versions. This page provides
+important details about the steps necessary to perform an upgrade and the
+potential complications to prepare for.</p>
+
+<p>See also <a href="quickstart_admin.html">Quick Start Administrator Guide</a></p>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#release_cycle">Release cycle</a>
+<ul>
+<li><a href="#compatibility_window">Compatibility window</a></li>
+<li><a href="#epel_repository">EPEL Repository</a></li>
+<li><a href="#prerelease">Pre-release versions</a></li>
+</ul></li>
+<li><a href="#revert">Reverting an Upgrade</a></li>
+<li><a href="#procedure">Upgrade procedure</a>
+<ul>
+<li><a href="#preparation">Preparation</a></li>
+<li><a href="#backups">Create Backups</a></li>
+<li><a href="#slurmdbd">slurmdbd (accounting)</a>
+<ul>
+<li><a href="#db_server">Database server</a></li>
+</ul></li>
+<li><a href="#slurmctld">slurmctld (controller)</a></li>
+<li><a href="#slurmd">slurmd (compute nodes)</a></li>
+<li><a href="#other_commands">Other Slurm commands</a></li>
+<li><a href="#custom_plugins">Customized Slurm plugins</a></li>
+</ul></li>
+<li><a href="#seamless_upgrades">Seamless upgrades</a></li>
+</ul>
+
+<h2 id="release_cycle">Release cycle
+<a class="slurm_link" href="#release_cycle"></a></h2>
+
+<p>The Slurm version number contains three period-separated numbers that
+represent both the major Slurm release and maintenance release level.
+For example, Slurm 23.11.4:</p>
+
+<ul>
+<li><b>23.11</b> = major release
+<ul>
+<li>This matches the year and month of initial release (November 2023)</li>
+<li>Major releases may contain changes to RPCs (remote procedure calls),
+	state files, configuration options, and core functionality</li>
+</ul></li>
+<li><b>.4</b> = maintenance version
+<ul>
+<li>Maintenance releases may contain bug fixes and performance improvements</li>
+</ul></li>
+</ul>
+
+<p>Prior to the 24.05 release, Slurm operated on a 9-month release cycle for
+major versions. Slurm 24.05 represents the first release on the
+<a href="https://www.schedmd.com/slurm-releases-move-to-a-six-month-cycle/">
+new 6-month cycle</a>.</p>
+
+<h3 id="compatibility_window">Compatibility window
+<a class="slurm_link" href="#compatibility_window"></a></h3>
+
+<p>Upgrades from the <b>previous two major releases</b> are compatible. For
+example, slurmdbd 23.11.x is capable of accepting messages from slurmctld
+daemons and commands with a version of 23.11.x, 23.02.x or 22.05.x. It is also
+capable of updating the records in the database that were recorded by an
+instance of slurmdbd running these versions.</p>
+
+<p>The Slurm 24.11 release will introduce compatibility with three previous
+major releases to provide a similar support duration with the more frequent
+6-month release cycle:</p>
+
+<table class="tlist">
+<tbody>
+<tr>
+<td><strong>Slurm Release</strong></td>
+<td><strong>Revised End of Support</strong><br>(total length)</td>
+<td><strong>Compatible Prior Version</strong></td>
+</tr>
+<tr>
+<td>23.02</td>
+<td>November 2024 (21 months)</td>
+<td>22.05, 21.08</td>
+</tr>
+<tr>
+<td>23.11</td>
+<td>May 2025 (18 months)</td>
+<td>23.02, 22.05</td>
+</tr>
+<tr>
+<td>24.05</td>
+<td>November 2025 (18 months)</td>
+<td>23.11, 23.02</td>
+</tr>
+<tr>
+<td>24.11</td>
+<td>May 2026 (18 months)</td>
+<td>24.05, 23.11, 23.02</td>
+</tr>
+<tr>
+<td>25.05</td>
+<td>November 2026 (18 months)</td>
+<td>24.11, 24.05, 23.11</td>
+</tr>
+<tr>
+<td>25.11</td>
+<td>May 2027 (18 months)</td>
+<td>25.05, 24.11, 24.05</td>
+</tr>
+</tbody>
+</table>
+<br>
+
+<p>Upgrades from incompatible versions will fail immediately upon startup.
+It is required to perform upgrades from incompatible prior versions in steps,
+going to newer versions compatible with the current running version. It may
+take several steps to upgrade to a current release of Slurm. For example,
+instead of upgrading directly from Slurm 20.11 to 23.11, first upgrade all
+systems to Slurm 22.05 and verify functionality, then proceed to upgrade to
+23.11. This ensures that each upgrade performed is tested and can be supported
+by SchedMD. Compatibility requirements apply to running jobs and upgrading
+outside of their compatibility window will result in the jobs being killed and
+job accounting being lost.</p>
+
+<h3 id="epel_repository">EPEL Repository
+<a class="slurm_link" href="#epel_repository"></a></h3>
+
+<p>In the beginning of 2021, a version of Slurm was added to the
+EPEL repository. This version is not provided by or supported by SchedMD, and is
+not currently supported for customer use. Unfortunately, this inclusion could
+cause Slurm to be updated to a newer version outside of a planned maintenance
+period or result in conflicting packages. In order to prevent Slurm from being
+changed and broken unintentionally, we recommend you modify the EPEL Repository
+configuration to exclude all Slurm packages from automatic updates.</p>
+
+<p>Add the following under the <code>[epel]</code>
+section of /etc/yum.repos.d/epel.repo:
+<pre>exclude=slurm*</pre></p>
+
+<h3 id="prerelease">Pre-release versions
+<a class="slurm_link" href="#prerelease"></a></h3>
+
+<p>When installing pre-release versions (e.g., 24.05.0rc1 or
+<a href="https://github.com/SchedMD/slurm">master branch</a>), you should prepare
+for unexpected crashes, bugs, and loss of state information. SchedMD aims to
+use the NEWS file to indicate cases in which state information will be lost with
+pre-release versions. However, these pre-release versions receive <b>limited
+testing</b> and are not intended for production clusters. Sites are encouraged
+to actively run pre-release versions on test machines before each major release.
+</p>
+
+<h2 id="revert">Reverting an upgrade
+<a class="slurm_link" href="#revert"></a></h2>
+
+<p>Reverting an upgrade (or downgrading) is <b>not supported</b> once any of the
+Slurm daemons have been started. When starting up after an upgrade, the Slurm
+daemons (slurmctld, slurmdbd, and slurmd) will update their relevant state
+files and databases to the structure used in the new version. If you revert to
+an older version, the relevant Slurm daemon will not recognize the new state
+file or database, resulting in loss or corruption of state information or job
+accounting. The Slurm daemons will likely refuse to start unless configured to
+start with the risk of possible data loss.</p>
+
+<p>By using recovery tools, like comprehensive file backups, disk images, and
+snapshots, it may be possible to revert components to the pre-upgrade state.
+In particular, restoring the contents of <i>StateSaveLocation</i> (as defined in
+<i>slurm.conf</i>) and (if configured) the accounting database will be required
+if you wish to revert an upgrade. Reverting an upgrade will wipe out anything
+that happened after the backups were created.</p>
+
+<h2 id="procedure">Upgrade procedure
+<a class="slurm_link" href="#procedure"></a></h2>
+
+<p>The upgrades procedure can be summarized as follows. Note the specific order
+in which the daemons should be upgraded:</p>
+
+<ol>
+<li><a href="#preparation">Prepare cluster for the upgrade</a></li>
+<li><a href="#backups">Create backups</a></li>
+<li>Upgrade <a href="#slurmdbd">slurmdbd</a></li>
+<li>Upgrade <a href="#slurmctld">slurmctld</a></li>
+<li>Upgrade <a href="#slurmd">slurmd</a> (preferably with slurmctld)</li>
+<li>Upgrade <a href="#other_commands">login nodes and client commands</a></li>
+<li>Recompile/upgrade <a href="#custom_plugins">customized Slurm plugins</a></li>
+<li>Test key functionality</li>
+<li>Archive backup data</li>
+</ol>
+
+<p><b>NOTE</b>: If multiple daemons are present on the same system, they may
+need to be upgraded at the same time due to dependencies to the general
+<b>slurm</b> package. After upgrading, daemons should be started in the order
+listed above. This is <b>not</b> a recommended setup for production; sites are
+strongly advised to assign a single core Slurm daemon to each system.</p>
+
+<h3 id="preparation">Preparation
+<a class="slurm_link" href="#preparation"></a></h3>
+
+<h4>RELEASE_NOTES and NEWS</h4>
+
+<p>Review relevant release notes in the <b>RELEASE_NOTES</b> file in root of
+Slurm source directory for the target release and any major versions between
+what you're currently running and the target you are upgrading to. Pay
+particular attention to any entries in which items are <b>removed</b> or
+<b>changed</b>. These are particularly likely to require specific attention or
+changes during the upgrade. Also look for changes in optional slurm components
+that you are using. You may also notice new items added to Slurm that you wish
+to start using after the upgrade.</p>
+
+<p>Release notes for the latest major version are
+available <a href="release_notes.html">here</a>. Release notes for other
+versions can be found in the source, which can be viewed on
+<a href="https://github.com/SchedMD/slurm/blob/master/RELEASE_NOTES">GitHub</a>
+by selecting the branch or tag corresponding to the desired version. More
+detailed changes, including minor release changes, can be found in the
+<b>NEWS</b> file, but are usually not needed to prepare for upgrades.</p>
+
+<h4>Configuration Changes</h4>
+
+<p>Always prepare and test configuration changes in a test environment
+before upgrading in production. Changes outlined in the release notes will need
+to be looked up in the man pages (such as <a href="slurm.conf.html">slurm.conf
+</a>) for details and new syntax. Certain options in your configuration files
+may need to be changed as features and functionality are improved in every major
+Slurm release. Typically, new naming and syntax conventions are introduced
+several versions before the old ones are removed, so you may be able to make the
+necessary changes before starting the upgrade process.</p>
+
+<h4>Plan for downtime</h4>
+
+<p>Refer to the expected downtime guidance in the
+following sections for each relevant Slurm daemon, particularly the
+<a href="#slurmdbd">slurmdbd</a>. Notify affected users of the estimated
+downtime for the relevant services and the potential impact on their jobs.
+Whenever possible, try to plan upgrades during SchedMD's support hours.
+If you encounter an issue outside of these hours there will be a delay before
+assistance can be provided.</p>
+
+<h4>OpenAPI Changes</h4>
+
+<p>Sites using <code>--json</code> or <code>--yaml</code> arguments with any CLI
+commands or running <code>slurmrestd</code> need to check for format
+compatibility and data_parser plugin removals before upgrading. The formats for
+the values parsed and dumped as JSON and YAML are handled by the data_parser
+and openapi plugins. Changes to the formats are tracked in the
+<a href="openapi_release_notes.html">OpenAPI release notes</a>.</p>
+
+<table class="tlist">
+<tbody>
+<tr>
+<td><strong>Release Notes</strong></td>
+<td><strong>Added OpenAPI plugins</strong></td>
+<td><strong>Added Data_Parser plugin</strong></td>
+<td><strong>Removed in Release</strong></td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#20020">20.02</a></td>
+<td>v0.0.35,dbv0.0.35</td>
+<td></td>
+<td>22.05</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#20110">20.11</a></td>
+<td>v0.0.36, dbv0.0.36</td>
+<td></td>
+<td>23.02</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#21080">21.08</a></td>
+<td>v0.0.37, dbv0.0.37</td>
+<td></td>
+<td>23.11</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#22050">22.05</a></td>
+<td>v0.0.38, dbv0.0.38</td>
+<td></td>
+<td>24.05</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#23020">23.02</a></td>
+<td>v0.0.39, dbv0.0.39</td>
+<td>v0.0.39</td>
+<td>24.11</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#23110">23.11</a></td>
+<td>slurmctld, slurmdbd</td>
+<td>v0.0.40</td>
+<td>25.05</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#24050">24.05</a></td>
+<td></td>
+<td>v0.0.41</td>
+<td>25.11</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#24110">24.11</a></td>
+<td></td>
+<td>v0.0.42</td>
+<td>26.05</td>
+</tr>
+</tbody>
+</table>
+
+<p><b>NOTE</b>: The unversioned openapi/slurmctld and openapi/slurmdbd plugins
+have no planned removal release.</p>
+
+<p>Any scripts or clients making use of <code>--json</code> or
+<code>--yaml</code> arguments with any CLI commands may need to pass the
+data_parser version explicitly to avoid issues after an upgrade. The default
+data_parser used is the latest version which may not have a compatible format
+with the prior versions. Sites can use the specification generation mode to
+compare formatting differences.
+<pre>
+$CLI_COMMAND --json=v0.0.41+spec_only &gt; /tmp/v41.json;
+$CLI_COMMAND --json=v0.0.40+spec_only &gt; /tmp/v40.json;
+json_diff /tmp/v40.json /tmp/v41.json;
+</pre></p>
+
+<p>In the event of a format incompatibility, the preferred data_parser can be
+requested explicitly starting with the v0.0.40 plugins in any release before
+the plugin's removal.
+<pre>
+$CLI_COMMAND --json=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --json=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --yaml=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --yaml=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
+</pre></p>
+
+<p>Any <code>slurmrestd</code> web clients can determine the relevant plugin
+being used by looking at the URL being queried. Example URLs:
+<pre>
+http://$HOST/slurmdb/v0.0.40/jobs
+http://$HOST/slurm/v0.0.40/jobs
+</pre></p>
+
+<p>The relevant data_parser plugin in the example URLs is "v0.0.40" which
+matches the <code>data_parser/v0.0.40</code> plugin. Plugin naming follows the
+naming schema of <code>vXX.XX.XX</code> where the XX are numbers. The naming
+schema matches the internal naming schema for Slurm's packed binary RPC layer
+but is not directly related. The URLs for each given data_parser plugins will
+remain a valid query target until the plugin is removed as part of SchedMD's
+commitment to ensure release limited backwards compatibility. While it should
+be possible to continue using any client from a prior release while the plugins
+are still supported, <b>sites should always recompile any generated OpenAPI
+clients and test thoroughly before upgrading.</b></p>
+
+<h3 id="backups">Create backups
+<a class="slurm_link" href="#backups"></a></h3>
+
+<p><b>Always</b> create full backups to restore all parts of Slurm, including
+the Mysql database, before upgrading in the event the upgrade must be reverted.
+SchedMD aims to make supported upgrades a seamless process but it is possible
+for unexpected issues to arise and <b>irreversibly corrupt</b> all of the data
+kept by Slurm. If something like this happens, it will not be possible to
+recover any corrupted data and you will be reliant on backed up data.</p>
+
+<p>It is recommended to prepare recovery options (file backups, disk images,
+snapshots, database dumps) that will take you back to a known working cluster
+state. How backups are taken is specific to how the systems integrator
+designed and setup the cluster and procedures are not provided here.</p>
+
+<p>At a minimum, back up the following:
+<ul>
+<li><b>StateSaveLocation</b> as defined in
+<a href="slurm.conf.html#OPT_StateSaveLocation">slurm.conf</a>, or it can be
+queried by calling <pre>scontrol show config | grep StateSaveLocation</pre></li>
+<li><b>MySQL database</b> (if slurmdbd is configured). Usually done by calling
+<pre>
+mysqldump --databases slurm_acct_db &gt; /path/to/offline/storage/backup.sql
+</pre></li>
+<li><b>Entire slurm configuration directory</b>, as defined by
+<code>configure --sysconfdir=DIR</code> during compilation.
+This is usually located in <code>/etc/slurm/</code></li>
+</ul></p>
+
+<h3 id="slurmdbd">slurmdbd (accounting)
+<a class="slurm_link" href="#slurmdbd"></a></h3>
+
+<p>If <b>slurmdbd</b> is used in your environment, it must be at the same or
+higher major release number as the slurmctld daemon(s), and at a close enough
+version for <a href="#compatibility_window">compatibility</a>. Thus, when
+performing upgrades, it should be upgraded first. When a backup slurmdbd host
+is in use, it should be upgraded at the same time as the primary.</p>
+
+<p>Upgrades to the slurmdbd may require significant <b>downtime</b>.
+With large accounting databases, the precautionary database dump will take some
+time, and the upgraded daemon may be unresponsive for tens of minutes while it
+updates the database to the new schema. Sites are encouraged to use the
+<a href="slurmdbd.conf.html#OPT_PurgeJobAfter">purge functionality</a> if older
+accounting data is not required for normal operations. Purging old records
+before attempting to upgrade can significantly decrease outage time.</p>
+
+<p>The non-slurmdbd functionality of the cluster will continue to operate while
+the upgrade is in process, provided the activity does not fill up the slurmdbd
+Agent queue on the slurmctld node.  While slurmdbd is offline, you should
+monitor the memory usage of slurmctld, and the <b>DBD Agent queue size</b>, as
+reported by <b>sdiag</b>, to ensure it does not exceed the configured
+<b>MaxDBDMsgs</b> in <a href="slurm.conf.html#OPT_MaxDBDMsgs">slurm.conf</a>.
+Cli commands <a href="sacct.html">sacct</a> and <a href="sacctmgr.html">
+sacctmgr</a> will not work while slurmdbd is down.
+<code>slurmrestd</code> queries that include slurmdb in
+the URL path will fail while slurmdbd is down.</p>
+
+<p>It is preferred to create a backup of the database after shutting down the
+<b>slurmdbd</b> daemon, when the MySQL database is no longer changing. If you
+wish to take a backup with <b>mysqldump</b> while the slurmdbd is still
+running, you can add <code>--single-transaction</code> to the mysqldump command.
+Note that the slurmdbd will continue to execute operations that will not be
+contained in the dump, which may cause complications if you need to restore
+the database to this state.</p>
+
+<p>The suggested upgrade procedure is as follows:</p>
+
+<ol>
+<li>Shutdown the slurmdbd daemon(s) gracefully:
+<pre>sacctmgr shutdown</pre>or via systemd:
+<pre>systemctl stop slurmdbd</pre> Wait until slurmdbd is fully down before
+proceeding or there may be data loss from data that was not fully saved.
+<pre>systemctl status slurmdbd</pre>
+</li>
+<li><a href="#backups">Backup the Slurm database</a></li>
+<li>Verify that the innodb_buffer_pool_size in my.cnf is greater than the
+default. See the recommendation in the
+<a href="accounting.html#slurm-accounting-configuration-before-build">
+	accounting page</a>.</li>
+<li>Upgrade the slurmdbd daemon binaries and libraries.
+<a href="quickstart_admin.html#build_install">Install the new RPM/DEB
+	packages</a> only on the slurmdbd system. Do not upgrade the other Slurm
+	systems at this time.</li>
+<li>Start the primary slurmdbd daemon.
+	<br><b>NOTE</b>: If you typically use systemd, it is recommended to
+	initially start the daemon directly as the configured SlurmUser:
+	<br><code>sudo -u slurm slurmdbd -D</code>
+	<br>When the daemon starts up for the first time after upgrading, it
+	will take some extra time to update existing records in the database. If
+	it is started with systemd and reaches the configured timeout value, it
+	may be killed prematurely potentially causing data loss. After it
+	finishes starting up, you can use <code>Ctrl+C</code> to exit, then
+	start it normally with systemd.</li>
+<li>Start the backup slurmdbd daemon (if applicable).</li>
+<li>Validate accounting operation, such as retrieving data through
+	<code>sacct</code> or <code>sacctmgr</code>.</li>
+</ol>
+
+<h4 id="db_server"><b>Database server</b>
+<a class="slurm_link" href="#db_server"></a></h4>
+
+<p>When upgrading the database server that is used by slurmdbd (e.g., MySQL or
+MariaDB), usually no special procedures are required. It is recommended to use a
+database server that is supported by the publisher (or that was at the time when
+the chosen Slurm version was initially released). Database upgrades should be
+performed while the slurmdbd is stopped and according to the recommended
+procedure for the database used.</p>
+
+<p>When upgrading an existing accounting database to <b>MariaDB 10.2.1</b> or
+later from an older version of MariaDB or any version of MySQL, ensure you are
+running <b>slurmdbd 22.05.7</b> or later. These versions will gracefully handle
+changes to MariaDB default values that can cause problems for slurmdbd.</p>
+
+<h3 id="slurmctld">slurmctld (controller)
+<a class="slurm_link" href="#slurmctld"></a></h3>
+
+<p>It is preferred to upgrade the slurmctld system(s) at the same time as slurmd
+on the compute nodes and other Slurm commands on client machines and login nodes.
+The effects of downtime on slurmctld and slurmd daemons are largely the same,
+so upgrading them all together minimizes the total duration of these effects.
+Rolling upgrades are also possible if the slurmctld is upgraded first. When
+multiple slurmctld hosts are used, all should be upgraded simultaneously.</p>
+
+<p>Upgrading the slurmctld involves a brief period of <b>downtime</b> during
+which job submissions are not accepted, queued jobs are not scheduled, and
+information about completing jobs is held. These functions will resume once
+the upgraded controller is started.</p>
+
+<p>The recommended upgrade procedure is below, including optional steps for a
+simultaneous upgrade of slurmd systems:</p>
+
+<ol>
+<li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
+	execute <code>scontrol reconfig</code> for them to take effect.
+	<br>The new timeout should be long enough to perform the upgrade using
+	your preferred method. If the timeout is reached, nodes may be marked
+	DOWN and their jobs killed.</li>
+<li>Shutdown the slurmctld daemon(s).</li>
+<li>(opt.) Shutdown the slurmd daemons on the compute nodes.</li>
+<li>Back up the contents of the configured StateSaveLocation.</li>
+<li>Upgrade the slurmctld (and optionally slurmd) daemons.</li>
+<li>(opt.) Restart the slurmd daemons on the compute nodes.</li>
+<li>Restart the slurmctld daemon(s).</li>
+<li>Validate proper operation, such as communication with nodes and a job's
+	ability to successfully start and finish.</li>
+<li>Restore the preferred SlurmdTimeout and SlurmctldTimeout values and
+	execute <code>scontrol reconfig</code> for them to take effect.</li>
+</ol>
+
+<h3 id="slurmd">slurmd (compute nodes)
+<a class="slurm_link" href="#slurmd"></a></h3>
+
+<p>It is preferred to upgrade all slurmd nodes at the same time as the slurmctld.
+It is also possible to perform a rolling upgrade by upgrading the slurmd nodes
+later in any number of groups. Sites are encouraged to minimize the amount of
+time during which mixed versions are used in a cluster.</p>
+
+<p>Upgrades will not interrupt running jobs as long as <b>SlurmdTimeout</b>
+is not reached during the process. However, while the slurmd is down for
+upgrades, new jobs will not be started and finishing jobs will wait to
+report back to the controller until it comes back online.</p>
+
+<p>If you are upgrading the slurmd nodes separately from the controller, the
+following procedure can be followed:</p>
+
+<ol>
+<li>Increase the configured SlurmdTimeout value and execute
+	<code>scontrol reconfig</code> for it to take effect.
+	<br>The new timeout should be long enough to perform the upgrade using
+	your preferred method. If the timeout is reached, nodes may be marked
+	DOWN and their jobs killed.</li>
+<li>Shutdown the slurmd daemons on the compute nodes.</li>
+<li>Back up the contents of the configured StateSaveLocation.</li>
+<li>Upgrade the slurmd daemons.</li>
+<li>Restart the slurmd daemons.</li>
+<li>Validate proper operation, such as communication with the controller and a
+	job's ability to successfully start and finish.</li>
+<li>Repeat for any other groups of nodes that need to be upgraded.</li>
+<li>Restore the preferred SlurmdTimeout value and
+execute <code>scontrol reconfig</code> for it to take effect.</li>
+</ol>
+
+<h3 id="other_commands">Other Slurm commands
+<a class="slurm_link" href="#other_commands"></a></h3>
+
+<p>Other Slurm commands (including client commands) do not require special
+attention when upgrading, except where specifically noted in the release notes.
+You should also pay attention to any changes introduced in these additional
+components. After core Slurm components have been upgraded, upgrade additional
+components and client commands using the normal method for your system, then
+restart any affected daemons.</p>
+
+<h3 id="custom_plugins">Customized Slurm plugins
+<a class="slurm_link" href="#custom_plugins"></a></h3>
+
+<p>Slurm's main public API library (libslurm.so.X.0.0) increases its version
+number with every major release, so any application linked against it should be
+recompiled after an upgrade. This includes locally developed Slurm plugins.</p>
+
+<p>If you have built your own version of Slurm plugins, besides having to
+recompile them, they will likely need modification to support the new version
+of Slurm. It is common for plugins to add new functions and function arguments
+during major updates. See the RELEASE_NOTES file for details about these
+changes.</p>
+
+<p>Slurm's PMI-1 (libpmi.so.0.0.0) and PMI-2 (libpmi2.so.0.0.0) public API
+libraries do not change between releases and are meant to be permanently
+fixed. This means that linking against either of them will not require you
+to recompile the application after a Slurm upgrade, except in the unlikely
+event that one of them changes. It is unlikely because these libraries must
+be compatible with any other PMI-1 and PMI-2 implementations. If there was a
+change, it would be announced in the RELEASE_NOTES and would only happen on
+a major release.</p>
+
+<p>As an example, MPI stacks like OpenMPI and MVAPICH2 link against Slurm's
+PMI-1 and/or PMI-2 API, but not against our main public API. This means that at
+the time of writing this documentation, you don't need to recompile these
+stacks after a Slurm upgrade. One known exception is MPICH. When MPICH is
+compiled with Slurm support and with the Hydra Process Manager, it will use
+the Slurm API to obtain job information. This link means you will need to
+recompile the MPICH stack after an upgrade.</p>
+
+<p>One easy way to know if an application requires a recompile is to inspect all
+of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
+'libslurm.so.x.y.z' reference, then the application will likely need to be
+recompiled.</p>
+
+<h2 id="seamless_upgrades">Seamless upgrades
+<a class="slurm_link" href="#seamless_upgrades"></a></h2>
+
+<p>In environments where the Slurm build process is customized, it is possible
+to install a new version of Slurm to a unique directory and use a symbolic link
+to point the directory in your PATH to the version of Slurm you would like to
+use. This allows you to install the new version before you are in a maintenance
+period as well as easily switch between versions should you need to roll
+back for any reason. It also avoids potential problems with library conflicts
+that might arise from installing different versions to the same directory.</p>
+
+<p style="text-align:center;">Last modified 28 May 2024</p>
+
+<!--#include virtual="footer.txt"-->

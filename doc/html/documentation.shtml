@@ -35,6 +35,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <h2>Slurm Administrators</h2>
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
+<li><a href="upgrades.html">Upgrade Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
 <li><a href="reservations.html">Advanced Resource Reservation Guide</a></li>
 <li><a href="authentication.html">Authentication Plugins</a></li>
