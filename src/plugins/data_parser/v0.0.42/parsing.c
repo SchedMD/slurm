@@ -508,7 +508,7 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	foreach_nt_array_t fargs = {
 		.magic = MAGIC_FOREACH_NT_ARRAY,
 		.array_parser = parser,
-		.parser = find_parser_by_type(parser->pointer_type),
+		.parser = find_parser_by_type(parser->array_type),
 		.args = args,
 		.parent_path = parent_path,
 		.index = -1,
