@@ -479,7 +479,8 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
 			 parser->obj_type_string, (uintptr_t) obj,
 			 slurm_strerror(rc));
-		free_parser_obj(parser, obj);
+		if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+			free_parser_obj(parser, obj);
 		FREE_NULL_DATA(ppath);
 		return DATA_FOR_EACH_FAIL;
 	}
