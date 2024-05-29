@@ -132,7 +132,6 @@ const char plugin_name[] = "Trackable RESources (TRES) Selection plugin";
 const char plugin_type[] = "select/cons_tres";
 const uint32_t plugin_id      = SELECT_PLUGIN_CONS_TRES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-const uint32_t pstate_version = 7;	/* version control on saved state */
 const uint16_t nodeinfo_magic = 0x8a5d;
 
 /* Global variables */
