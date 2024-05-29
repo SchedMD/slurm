@@ -527,7 +527,7 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 				      sizeof(*fargs.array));
 	else if (parser->model == PARSER_MODEL_NT_ARRAY)
 		fargs.sarray = xcalloc(data_get_list_length(src) + 1,
-				       sizeof(fargs.parser->size));
+				       fargs.parser->size);
 
 	if (data_get_type(src) == DATA_TYPE_LIST) {
 		if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
