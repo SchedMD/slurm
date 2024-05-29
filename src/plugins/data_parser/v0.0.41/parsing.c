@@ -450,6 +450,8 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	foreach_nt_array_t *args = arg;
 	void *obj = NULL;
 	data_t *ppath = NULL;
+	const parser_t *const parser = args->parser;
+	const parser_t *const array_parser = args->array_parser;
 
 	xassert(args->magic == MAGIC_FOREACH_NT_ARRAY);
 	xassert((args->index > 0) || (args->index == -1));
@@ -468,21 +470,22 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 				    data_get_string(ppath_last), args->index);
 	}
 
-	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY)
-		obj = alloc_parser_obj(args->parser);
-	else if (args->parser->model == PARSER_MODEL_NT_ARRAY)
-		obj = args->sarray + (args->parser->size * args->index);
+	if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+		obj = alloc_parser_obj(parser);
+	else if (array_parser->model == PARSER_MODEL_NT_ARRAY)
+		obj = args->sarray + (parser->size * args->index);
 
-	if ((rc = parse(obj, NO_VAL, args->parser, src, args->args, ppath))) {
+	if ((rc = parse(obj, NO_VAL, parser, src, args->args, ppath))) {
 		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
-			 args->parser->obj_type_string, (uintptr_t) obj,
+			 parser->obj_type_string, (uintptr_t) obj,
 			 slurm_strerror(rc));
-		free_parser_obj(args->parser, obj);
+		if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+			free_parser_obj(parser, obj);
 		FREE_NULL_DATA(ppath);
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+	if (array_parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
 		xassert(!args->array[args->index]);
 		args->array[args->index] = obj;
 	}
@@ -500,7 +503,7 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	foreach_nt_array_t fargs = {
 		.magic = MAGIC_FOREACH_NT_ARRAY,
 		.array_parser = parser,
-		.parser = find_parser_by_type(parser->pointer_type),
+		.parser = find_parser_by_type(parser->array_type),
 		.args = args,
 		.parent_path = parent_path,
 		.index = -1,
@@ -525,7 +528,11 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 				      sizeof(*fargs.array));
 	else if (parser->model == PARSER_MODEL_NT_ARRAY)
 		fargs.sarray = xcalloc(data_get_list_length(src) + 1,
-				       sizeof(fargs.parser->size));
+				       fargs.parser->size);
+
+	/* verify new array actually allocated */;
+	xassert((fargs.array && (xsize(fargs.array) > 0)) ^
+		(fargs.sarray && (xsize(fargs.sarray) > 0)));
 
 	if (data_get_type(src) == DATA_TYPE_LIST) {
 		if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
@@ -554,6 +561,8 @@ cleanup:
 		for (int i = 0; fargs.array[i]; i++)
 			free_parser_obj(parser, &fargs.array[i]);
 		xfree(fargs.array);
+	} else if (fargs.sarray) {
+		xfree(fargs.sarray);
 	}
 
 	return rc;

@@ -801,6 +801,12 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->obj_openapi);
 	} else if ((parser->model == PARSER_MODEL_NT_ARRAY) ||
 		   (parser->model == PARSER_MODEL_NT_PTR_ARRAY)) {
+		if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+			const parser_t *const eparser =
+				find_parser_by_type(parser->array_type);
+			xassert(eparser->pointer_type);
+		}
+
 		xassert(!parser->pointer_type);
 		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->array_type < DATA_PARSER_TYPE_MAX);
@@ -9811,11 +9817,11 @@ static const parser_t parsers[] = {
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
-	addntp(NODE_ARRAY, NODE),
-	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO),
-	addntp(STEP_INFO_ARRAY, STEP_INFO),
-	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
-	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY),
+	addntp(NODE_ARRAY, NODE_PTR),
+	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO_PTR),
+	addntp(STEP_INFO_ARRAY, STEP_INFO_PTR),
+	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO_PTR),
+	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY_PTR),
 	addnt(JOB_RES_SOCKET_ARRAY, JOB_RES_SOCKET),
 	addnt(JOB_RES_CORE_ARRAY, JOB_RES_CORE),
 
