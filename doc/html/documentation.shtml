@@ -25,6 +25,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="multi_cluster.html">Multi-Cluster Operation</a></li>
 <li><a href="hdf5_profile_user_guide.html">Profiling Using HDF5 User Guide</a></li>
 <li><a href="job_reason_codes.html">Job Reason Codes</a></li>
+<li><a href="job_state_codes.html">Job State Codes</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li><a href="resource_binding.html">Resource Binding</a></li>
 <li>Specific Systems
@@ -137,6 +138,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 10 July 2024</p>
+<p style="text-align:center;">Last modified 22 August 2024</p>
 
 <!--#include virtual="footer.txt"-->

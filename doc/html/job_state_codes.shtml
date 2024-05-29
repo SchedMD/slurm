@@ -1,0 +1,109 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job State Codes</h1>
+
+<p>Each job in the Slurm system has a state assigned to it. How the job state is
+displayed depends on the method used to identify the state.</p>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>In the Slurm code, there are <b>base states</b> and <b>state flags</b>.
+Each job has a base state and may have additional state flags set. When using
+the REST API, both the base state and current flag(s) will be returned.</p>
+
+<p>When the <a href="squeue.html">squeue</a> and <a href="sacct.html">sacct</a>
+command report a job state, they represent it as a single state. Both will
+recognize all base states but not all state flags. If a recognized flag is
+present, it will be reported instead of the base state. Refer to the relevant
+command documentation for details.</p>
+
+<p>This page represents all job codes and flags that are represented in the
+code. The names provided are the string representations that are used in
+user-facing output. For most, the names used in the code are identical, with
+<code>JOB_</code> at the start.
+For more visibility into the job states and flags, set
+<code>DebugFlags=TraceJobs</code> and <code>SlurmctldDebug=verbose</code>
+(or higher) in <a href="slurm.conf.html">slurm.conf</a>.</p>
+
+<h2 id="states">Job states<a class="slurm_link" href="#states"></a></h2>
+
+<p>Each job known to the system will have one of the following states:</p>
+
+<table>
+<tbody>
+<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><code>PENDING</code></td><td>queued and waiting for initiation;
+	will typically have a <a href="job_reason_codes.html">reason code</a>
+	specifying why it has not yet started</td></tr>
+<tr><td><code>RUNNING</code></td><td>allocated resources and executing</td></tr>
+<tr><td><code>SUSPENDED</code></td><td>allocated resources, execution suspended;
+	commonly caused by <a href="preempt.html">preemption</a> or a direct
+	request from an authorized user</td></tr>
+<tr><td><code>COMPLETED</code></td><td>completed execution successfully;
+	finished with an <a href="job_exit_code.html">exit code</a> of zero on all nodes</td></tr>
+<tr><td><code>CANCELLED</code></td><td>cancelled by user or administrator</td></tr>
+<tr><td><code>FAILED</code></td><td>completed execution unsuccessfully;
+	non-zero <a href="job_exit_code.html">exit code</a> or other failure condition</td></tr>
+<tr><td><code>TIMEOUT</code></td><td>terminated on reaching time limit;
+	time limit may have been configured in
+	<a href="slurm.conf.html">slurm.conf</a> or at job submission</td></tr>
+<tr><td><code>NODE_FAIL</code></td><td>terminated on node failure</td></tr>
+<tr><td><code>PREEMPTED</code></td><td>terminated due to
+	<a href="preempt.html">preemption</a>; may transition to another state
+	based on the configured PreemptMode and job characteristics</td></tr>
+<tr><td><code>BOOT_FAIL</code></td><td>terminated due to node boot failure</td></tr>
+<tr><td><code>DEADLINE</code></td><td>terminated due to reaching deadline
+	specified at job submission</td></tr>
+<tr><td><code>OUT_OF_MEMORY</code></td><td>experienced out of memory error</td></tr>
+</tbody>
+</table>
+
+<h2 id="flags">Job flags<a class="slurm_link" href="#flags"></a></h2>
+
+<p>Jobs may have additional flags set:</p>
+
+<table>
+<tbody>
+<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><code>LAUNCH_FAILED</code></td><td>failed to launch on the chosen
+	node(s); includes <a href="prolog_epilog.html">prolog</a> failure and
+	other failure conditions</td></tr>
+<tr><td><code>UPDATE_DB</code></td><td>sending an update about the job to the
+	database</td></tr>
+<tr><td><code>REQUEUED</code></td><td>job is being requeued,
+	whether due to <a href="preempt.html">preemption</a> or a
+	<a href="scontrol.html#OPT_requeue">direct request</a> from an
+	authorized user</td></tr>
+<tr><td><code>REQUEUE_HOLD</code></td><td>same as <code>REQUEUED</code> but will
+	not be considered for scheduling until it is
+	<a href="scontrol.html#OPT_release">released</a></td></tr>
+<tr><td><code>SPECIAL_EXIT</code></td><td>same as <code>REQUEUE_HOLD</code> but
+	used to identify a <a href="scontrol.html#OPT_State">special situation</a>
+	that applies to this job</td></tr>
+<tr><td><code>RESIZING</code></td><td>the size of the job is changing; prevents
+	conflicting job changes from taking place</td></tr>
+<tr><td><code>CONFIGURING</code></td><td>job has been allocated nodes and is
+	waiting for them to boot or reboot</td></tr>
+<tr><td><code>COMPLETING</code></td><td>the job has finished or been cancelled
+	and is performing cleanup tasks, including the
+	<a href="prolog_epilog.html">epilog</a> script if present</td></tr>
+<tr><td><code>STOPPED</code></td><td>received SIGSTOP to suspend the job without
+	releasing resources</td></tr>
+<tr><td><code>RECONFIG_FAIL</code></td><td>node configuration for job failed</td></tr>
+<tr><td><code>POWER_UP_NODE</code></td><td>job has been allocated powered down
+	nodes and is waiting for them to boot</td></tr>
+<tr><td><code>REVOKED</code></td><td>revoked due to conditions of its sibling
+	job in a <a href="federation.html">federated</a> setup</td></tr>
+<tr><td><code>REQUEUE_FED</code></td><td>requeued due to conditions of its
+	sibling job in a <a href="federation.html">federated</a> setup</td></tr>
+<tr><td><code>RESV_DEL_HOLD</code></td><td>held due to deleted reservation</td></tr>
+<tr><td><code>SIGNALING</code></td><td>outgoing signal to job is pending</td></tr>
+<tr><td><code>STAGE_OUT</code></td><td>staging out data
+	(<a href="burst_buffer.html">burst buffer</a>)</td></tr>
+</tbody>
+</table>
+<br>
+
+<p style="text-align: center;">Last modified 22 August 2024</p>
+
+<!--#include virtual="footer.txt"-->
