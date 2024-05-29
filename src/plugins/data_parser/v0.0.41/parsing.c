@@ -450,6 +450,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	foreach_nt_array_t *args = arg;
 	void *obj = NULL;
 	data_t *ppath = NULL;
+	const parser_t *const parser = args->parser;
 
 	xassert(args->magic == MAGIC_FOREACH_NT_ARRAY);
 	xassert((args->index > 0) || (args->index == -1));
@@ -468,21 +469,21 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 				    data_get_string(ppath_last), args->index);
 	}
 
-	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY)
-		obj = alloc_parser_obj(args->parser);
-	else if (args->parser->model == PARSER_MODEL_NT_ARRAY)
-		obj = args->sarray + (args->parser->size * args->index);
+	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+		obj = alloc_parser_obj(parser);
+	else if (parser->model == PARSER_MODEL_NT_ARRAY)
+		obj = args->sarray + (parser->size * args->index);
 
-	if ((rc = parse(obj, NO_VAL, args->parser, src, args->args, ppath))) {
+	if ((rc = parse(obj, NO_VAL, parser, src, args->args, ppath))) {
 		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
-			 args->parser->obj_type_string, (uintptr_t) obj,
+			 parser->obj_type_string, (uintptr_t) obj,
 			 slurm_strerror(rc));
-		free_parser_obj(args->parser, obj);
+		free_parser_obj(parser, obj);
 		FREE_NULL_DATA(ppath);
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
 		xassert(!args->array[args->index]);
 		args->array[args->index] = obj;
 	}
