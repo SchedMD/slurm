@@ -8,8 +8,11 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Improve the handling of queries when unable to connect to
     slurmdbd by providing responses when possible.
 
-* Changes in Slurm 24.05.0rc2
-=============================
+* Changes in Slurm 24.05.1
+==========================
+
+* Changes in Slurm 24.05.0
+==========================
  -- Fix regresssion in rc1 causing power_save thread to spin continuously.
  -- Improve ctld_relay shutdown sequence.
  -- Fixed 'make distclean' behavior for contribs/perlapi.
