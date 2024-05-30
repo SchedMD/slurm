@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-24.05.0-0rc1&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-24.05.0&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -1075,7 +1075,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1101,7 +1101,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1197,7 +1197,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1215,12 +1215,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1240,7 +1240,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1261,12 +1261,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1277,7 +1277,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1293,14 +1293,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1309,12 +1309,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1332,7 +1332,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1439,7 +1439,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1449,13 +1449,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1485,7 +1485,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1511,7 +1511,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1607,7 +1607,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1625,12 +1625,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1650,7 +1650,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1671,12 +1671,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1687,7 +1687,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1703,14 +1703,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1719,12 +1719,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1742,7 +1742,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1849,7 +1849,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1859,13 +1859,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1951,7 +1951,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -1977,7 +1977,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2073,7 +2073,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2091,12 +2091,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2116,7 +2116,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2137,12 +2137,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2153,7 +2153,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2169,14 +2169,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2185,12 +2185,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2208,7 +2208,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2315,7 +2315,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2325,13 +2325,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2361,7 +2361,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2387,7 +2387,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2483,7 +2483,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2501,12 +2501,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2526,7 +2526,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2547,12 +2547,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2563,7 +2563,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2579,14 +2579,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2595,12 +2595,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2618,7 +2618,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2725,7 +2725,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2735,13 +2735,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2882,7 +2882,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -2908,7 +2908,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3004,7 +3004,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3022,12 +3022,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3047,7 +3047,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3068,12 +3068,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3084,7 +3084,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3100,14 +3100,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3116,12 +3116,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3139,7 +3139,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3246,7 +3246,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3256,13 +3256,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3292,7 +3292,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3318,7 +3318,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3414,7 +3414,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3432,12 +3432,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3457,7 +3457,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3478,12 +3478,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3494,7 +3494,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3510,14 +3510,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3526,12 +3526,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3549,7 +3549,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3656,7 +3656,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3666,13 +3666,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3758,7 +3758,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3784,7 +3784,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3880,7 +3880,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3898,12 +3898,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3923,7 +3923,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3944,12 +3944,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3960,7 +3960,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3976,14 +3976,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -3992,12 +3992,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4015,7 +4015,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4122,7 +4122,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4132,13 +4132,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4168,7 +4168,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4194,7 +4194,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4290,7 +4290,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4308,12 +4308,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4333,7 +4333,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4354,12 +4354,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4370,7 +4370,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4386,14 +4386,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4402,12 +4402,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4425,7 +4425,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4532,7 +4532,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4542,13 +4542,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4689,7 +4689,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4715,7 +4715,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4811,7 +4811,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4829,12 +4829,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4854,7 +4854,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4875,12 +4875,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4891,7 +4891,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4907,14 +4907,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4923,12 +4923,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -4946,7 +4946,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5053,7 +5053,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5063,13 +5063,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5099,7 +5099,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5125,7 +5125,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5221,7 +5221,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5239,12 +5239,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5264,7 +5264,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5285,12 +5285,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5301,7 +5301,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5317,14 +5317,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5333,12 +5333,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5356,7 +5356,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5463,7 +5463,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5473,13 +5473,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5565,7 +5565,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5591,7 +5591,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5687,7 +5687,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5705,12 +5705,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5730,7 +5730,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5751,12 +5751,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5767,7 +5767,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5783,14 +5783,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5799,12 +5799,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5822,7 +5822,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5929,7 +5929,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5939,13 +5939,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -5975,7 +5975,7 @@
     "container" : "container",
     "cluster" : "cluster",
     "time_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6001,7 +6001,7 @@
       "infinite" : true
     },
     "tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6097,7 +6097,7 @@
     "current_working_directory" : "current_working_directory",
     "standard_error" : "standard_error",
     "array_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6115,12 +6115,12 @@
       "infinite" : true
     },
     "cpu_frequency_minimum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "node_count" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6140,7 +6140,7 @@
     },
     "state_reason" : "state_reason",
     "het_job_offset" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6161,12 +6161,12 @@
     "licenses" : "licenses",
     "excluded_nodes" : "excluded_nodes",
     "array_max_tasks" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "het_job_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6177,7 +6177,7 @@
     },
     "prefer" : "prefer",
     "time_limit" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6193,14 +6193,14 @@
     },
     "batch_host" : "batch_host",
     "max_cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
     "hold" : true,
     "cpu_frequency_maximum" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6209,12 +6209,12 @@
     "state_description" : "state_description",
     "show_flags" : [ "ALL", "ALL" ],
     "array_task_id" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "minimum_tmp_disk_per_node" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6232,7 +6232,7 @@
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6339,7 +6339,7 @@
     "batch_features" : "batch_features",
     "thread_spec" : 1,
     "cpu_frequency_governor" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6349,13 +6349,13 @@
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
     "reboot" : true,
     "cpus" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -6682,7 +6682,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -6775,7 +6775,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -6919,7 +6919,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7012,7 +7012,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7211,7 +7211,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7304,7 +7304,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7448,7 +7448,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7541,7 +7541,7 @@
     "sockets" : 9,
     "energy" : {
       "current_watts" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7747,7 +7747,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -7759,7 +7759,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7769,12 +7769,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7789,7 +7789,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7820,7 +7820,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7868,7 +7868,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -7880,7 +7880,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7890,12 +7890,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7910,7 +7910,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -7941,7 +7941,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8040,7 +8040,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8052,7 +8052,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8062,12 +8062,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8082,7 +8082,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8113,7 +8113,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8161,7 +8161,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8173,7 +8173,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8183,12 +8183,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8203,7 +8203,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8234,7 +8234,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8388,7 +8388,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8400,7 +8400,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8410,12 +8410,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8430,7 +8430,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8461,7 +8461,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8509,7 +8509,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8521,7 +8521,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8531,12 +8531,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8551,7 +8551,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8582,7 +8582,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8681,7 +8681,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8693,7 +8693,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8703,12 +8703,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8723,7 +8723,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8754,7 +8754,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8802,7 +8802,7 @@
     "alternate" : "alternate",
     "select_type" : [ "CPU", "CPU" ],
     "suspend_time" : {
-      "number" : 3,
+      "number" : 6,
       "set" : true,
       "infinite" : true
     },
@@ -8814,7 +8814,7 @@
     "maximums" : {
       "shares" : 7,
       "nodes" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8824,12 +8824,12 @@
         "infinite" : true
       },
       "cpus_per_node" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
       "cpus_per_socket" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8844,7 +8844,7 @@
       },
       "memory_per_cpu" : 2,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -8875,7 +8875,7 @@
       },
       "memory_per_cpu" : 5,
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       },
@@ -9343,7 +9343,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9387,7 +9387,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9482,7 +9482,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9526,7 +9526,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9674,7 +9674,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9718,7 +9718,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9813,7 +9813,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -9857,7 +9857,7 @@
     "node_list" : "node_list",
     "purge_completed" : {
       "time" : {
-        "number" : 3,
+        "number" : 6,
         "set" : true,
         "infinite" : true
       }
@@ -11241,6 +11241,7 @@
 <div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">requeue (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span>  </div>
 <div class="param">reservation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">resv_mpi_ports (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of reserve communication ports. Can only be used if slurmstepd step manager is enabled. format: int32</div>
 <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job batch script. Only first component in a HetJob is populated or honored. </div>
 <div class="param">shared (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
