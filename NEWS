@@ -342,6 +342,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.8
 ==========================
  -- Fix slurmctld crash when reconfiguring with a PrologSlurmctld is running.
+ -- Fix slurmctld crash after a job has been resized.
 
 * Changes in Slurm 23.11.7
 ==========================
