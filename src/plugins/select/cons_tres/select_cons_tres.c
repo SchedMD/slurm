@@ -735,6 +735,10 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		} else
 			node_usage[i].alloc_memory -= job->memory_allocated[n];
 
+		if (node_usage[i].jobs)
+			list_delete_first(node_usage[i].jobs,
+					  slurm_find_ptr_in_list, job_ptr);
+
 		extract_job_resources_node(job, n);
 
 		break;
