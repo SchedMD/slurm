@@ -1504,7 +1504,21 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, buf_t *buffer,
 	*msg = tmp_ptr;
 
 	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack32(&tmp_ptr->record_count, buffer);
+		safe_unpack_time(&tmp_ptr->last_update, buffer);
+
+		safe_xcalloc(tmp_ptr->node_array, tmp_ptr->record_count,
+			     sizeof(node_info_t));
+
+		/* load individual job info */
+		for (i = 0; i < tmp_ptr->record_count; i++) {
+			if (_unpack_node_info_members(&tmp_ptr->node_array[i],
+						      buffer,
+						      protocol_version))
+				goto unpack_error;
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->record_count, buffer);
 		safe_unpack_time(&tmp_ptr->last_update, buffer);
 
