@@ -1505,19 +1505,30 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, buf_t *buffer,
 
 	/* load buffer's header (data structure version and time) */
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		bitstr_t *hidden_nodes = NULL;
+
 		safe_unpack32(&tmp_ptr->record_count, buffer);
 		safe_unpack_time(&tmp_ptr->last_update, buffer);
+		unpack_bit_str_hex(&hidden_nodes, buffer);
 
 		safe_xcalloc(tmp_ptr->node_array, tmp_ptr->record_count,
 			     sizeof(node_info_t));
 
 		/* load individual job info */
 		for (i = 0; i < tmp_ptr->record_count; i++) {
-			if (_unpack_node_info_members(&tmp_ptr->node_array[i],
-						      buffer,
-						      protocol_version))
+			if (hidden_nodes && bit_test(hidden_nodes, i)) {
+				tmp_ptr->node_array[i].select_nodeinfo =
+					select_g_select_nodeinfo_alloc();
+				tmp_ptr->node_array[i].energy =
+					acct_gather_energy_alloc(1);
+			} else if (_unpack_node_info_members(
+					   &tmp_ptr->node_array[i], buffer,
+					   protocol_version)) {
 				goto unpack_error;
+			}
 		}
+
+		FREE_NULL_BITMAP(hidden_nodes);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->record_count, buffer);
 		safe_unpack_time(&tmp_ptr->last_update, buffer);

@@ -940,9 +940,15 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	nodes_packed = 0;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		/* write header: count and time */
+		bitstr_t *hidden_nodes = bit_alloc(node_record_count);
+		uint32_t pack_bitmap_offset;
+		bool repack_hidden = false;
+
+		/* write header: count, time, hidden node bitmap */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
+		pack_bitmap_offset = get_buf_offset(buffer);
+		pack_bit_str_hex(hidden_nodes, buffer);
 
 		/* write node records */
 		for (inx = 0; inx < node_record_count; inx++) {
@@ -971,21 +977,22 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 
 			if (hidden) {
 pack_empty_SLURM_24_11_PROTOCOL_VERSION:
-				if (!inited) {
-					blank_node.config_ptr = &blank_config;
-					blank_node.select_nodeinfo =
-						select_g_select_nodeinfo_alloc();
-					inited = true;
-				}
-
-				_pack_node(&blank_node, buffer, protocol_version,
-					   show_flags);
+				bit_set(hidden_nodes, inx);
+				repack_hidden = true;
 			} else {
 				_pack_node(node_ptr, buffer, protocol_version,
 					   show_flags);
 			}
 			nodes_packed++;
 		}
+
+		if (repack_hidden) {
+			tmp_offset = get_buf_offset(buffer);
+			set_buf_offset(buffer, pack_bitmap_offset);
+			pack_bit_str_hex(hidden_nodes, buffer);
+			set_buf_offset(buffer, tmp_offset);
+		}
+		FREE_NULL_BITMAP(hidden_nodes);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
@@ -1083,6 +1090,8 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
+		/* Mirror _unpack_node_info_msg */
+		pack_bit_str_hex(NULL, buffer);
 
 		/* write node records */
 		if (node_name)
