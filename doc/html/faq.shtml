@@ -387,13 +387,12 @@ token that is not a valid option for srun is considered the command
 to execute and everything after that is treated as an option to
 the command. For example:</p>
 <blockquote>
-<p><span class="commandline">srun -N2 hostname -pdebug</span></p>
+<p><span class="commandline">srun -N2 uptime -pdebug</span></p>
 </blockquote>
-<p>srun processes "-N2" as an option to itself. "hostname" is the
-command to execute and "-pdebug" is treated as an option to the
-hostname command. This will change the name of the computer
-on which Slurm executes the command - Very bad, <b>Don't run
-this command as user root!</b></p>
+<p>srun processes "-N2" as an option to itself. "uptime" is the command to
+execute and "-pdebug" is treated as an option to the uptime command. Depending
+on the command and options provided, you may get an invalid option message or
+unexpected behavior if the options happen to be valid.</p>
 
 <p><a id="backfill"><b>Why is the Slurm backfill scheduler not starting my job?
 </b></a><br>
@@ -2387,6 +2386,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 13 June 2024</p>
+<p style="text-align:center;">Last modified 17 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
