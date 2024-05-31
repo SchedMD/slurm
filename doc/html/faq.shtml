@@ -394,6 +394,12 @@ execute and "-pdebug" is treated as an option to the uptime command. Depending
 on the command and options provided, you may get an invalid option message or
 unexpected behavior if the options happen to be valid.</p>
 
+<p>Options for srun should appear before the command to be run:</p>
+
+<blockquote>
+<p><span class="commandline">srun -N2 -pdebug uptime</span></p>
+</blockquote>
+
 <p><a id="backfill"><b>Why is the Slurm backfill scheduler not starting my job?
 </b></a><br>
 The most common problem is failing to set job time limits. If all jobs have
