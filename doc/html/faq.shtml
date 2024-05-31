@@ -14,199 +14,240 @@
 </ul>
 
 <h2>For Users</h2>
+<p><a href="#mailing_list">Is an archive available of messages posted to
+  the <i>slurm-users</i> mailing list?</a></p>
+<h3>Designing Jobs</h3>
 <ul>
-<li><a href="#comp">Why is my job/node in a COMPLETING state?</a></li>
-<li><a href="#rlimit">Why are my resource limits not propagated?</a></li>
-<li><a href="#pending">Why is my job not running?</a></li>
-<li><a href="#sharing">Why does the srun --overcommit option not permit
-  multiple jobs to run on nodes?</a></li>
-<li><a href="#purge">Why is my job killed prematurely?</a></li>
-<li><a href="#opts">Why are my srun options ignored?</a></li>
-<li><a href="#backfill">Why is the Slurm backfill scheduler not starting my
-  job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single
   script?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job
   allocation?</a></li>
-<li><a href="#user_env">How does Slurm establish the environment for my
-  job?</a></li>
-<li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
+<li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
+  What exactly is considered a CPU?</a></li>
+<li><a href="#arbitrary">How do I run specific tasks on certain nodes
+  in my allocation?</a></li>
 <li><a href="#batch_out">How can I get the task ID in the output or error file
   name for a batch job?</a></li>
+<li><a href="#user_env">How does Slurm establish the environment for my
+  job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources
   allocated to a Slurm job?</a></li>
+<li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
+</ul>
+<h3>Submitting Jobs</h3>
+<ul>
+<li><a href="#opts">Why are my srun options ignored?</a></li>
+<li><a href="#sharing">Why does the srun --overcommit option not permit
+  multiple jobs to run on nodes?</a></li>
+<li><a href="#unbuffered_cr">Why is the srun --u/--unbuffered option adding
+  a carriage return to my output?</a></li>
+<li><a href="#sbatch_srun">What is the difference between the sbatch
+  and srun commands?</a></li>
 <li><a href="#terminal">Can tasks be launched with a remote (pseudo)
   terminal?</a></li>
+<li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
+<li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
+</ul>
+<h3>Scheduling</h3>
+<ul>
+<li><a href="#pending">Why is my job not running?</a></li>
+<li><a href="#backfill">Why is the Slurm backfill scheduler not starting my
+  job?</a></li>
+</ul>
+<h3>Killed Jobs</h3>
+<ul>
+<li><a href="#purge">Why is my job killed prematurely?</a></li>
+<li><a href="#inactive">Why is my batch job that launches no job steps being
+  killed?</a></li>
 <li><a href="#force">What does &quot;srun: Force Terminated job&quot;
   indicate?</a></li>
 <li><a href="#early_exit">What does this mean: &quot;srun: First task exited
   30s ago&quot; followed by &quot;srun Job Failed&quot;?</a></li>
-<li><a href="#memlock">Why is my MPI job  failing due to the locked memory
-  (memlock) limit being too low?</a></li>
-<li><a href="#inactive">Why is my batch job that launches no job steps being
-  killed?</a></li>
-<li><a href="#arbitrary">How do I run specific tasks on certain nodes
-  in my allocation?</a></li>
+</ul>
+<h3>Managing Jobs</h3>
+<ul>
 <li><a href="#hold">How can I temporarily prevent a job from running
   (e.g. place it into a <i>hold</i> state)?</a></li>
-<li><a href="#mem_limit">Why are jobs not getting the appropriate
-  memory limit?</a></li>
-<li><a href="#mailing_list">Is an archive available of messages posted to
-  the <i>slurm-users</i> mailing list?</a></li>
 <li><a href="#job_size">Can I change my job's size after it has started
   running?</a></li>
-<li><a href="#mpi_symbols">Why is my MPICH2 or MVAPICH2 job not running with
-  Slurm? Why does the DAKOTA program not run with Slurm?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
   jobid") sometimes not display a job's estimated start time?</a></li>
-<li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
-<li><a href="#req">How can a job in a complete or failed state be requeued?</a></li>
-<li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
-  What exactly is considered a CPU?</a></li>
-<li><a href="#sbatch_srun">What is the difference between the sbatch
-  and srun commands?</a></li>
 <li><a href="#squeue_color">Can squeue output be color coded?</a></li>
-<li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
-<li><a href="#unbuffered_cr">Why is the srun --u/--unbuffered option adding
-   a carriage return to my output?</a></li>
+<li><a href="#comp">Why is my job/node in a COMPLETING state?</a></li>
+<li><a href="#req">How can a job in a complete or failed state be requeued?</a></li>
 <li><a href="#sview_colors">Why is sview not coloring/highlighting nodes
-    properly?</a></li>
+  properly?</a></li>
+<li><a href="#mpi_symbols">Why is my MPICH2 or MVAPICH2 job not running with
+  Slurm? Why does the DAKOTA program not run with Slurm?</a></li>
+</ul>
+<h3>Resource Limits</h3>
+<ul>
+<li><a href="#rlimit">Why are my resource limits not propagated?</a></li>
+<li><a href="#mem_limit">Why are jobs not getting the appropriate
+  memory limit?</a></li>
+<li><a href="#memlock">Why is my MPI job  failing due to the locked memory
+  (memlock) limit being too low?</a></li>
 </ul>
 
 <h2>For Administrators</h2>
+<h3>Test Environments</h3>
 <ul>
-<li><a href="#suspend">How is job suspend/resume useful?</a></li>
-<li><a href="#return_to_service">Why is a node shown in state DOWN when the node
-  has registered for service?</a></li>
-<li><a href="#down_node">What happens when a node crashes?</a></li>
-<li><a href="#multi_job">How can I control the execution of multiple
-  jobs per node?</a></li>
-<li><a href="#inc_plugin">When the Slurm daemon starts, it prints
-  &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
-<li><a href="#pam_exclude">How can I exclude some users from pam_slurm?</a></li>
-<li><a href="#maint_time">How can I dry up the workload for a maintenance
-  period?</a></li>
-<li><a href="#pam">How can PAM be used to control a user's limits on or
-  access to compute nodes?</a></li>
-<li><a href="#time">Why are jobs allocated nodes and then unable to initiate
-  programs on some nodes?</a></li>
-<li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
-  are not responding even if they are not in any partition?</a></li>
-<li><a href="#controller"> How should I relocate the primary or backup
-  controller?</a></li>
 <li><a href="#multi_slurm">Can multiple Slurm systems be run in
   parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can Slurm emulate a larger cluster?</a></li>
 <li><a href="#extra_procs">Can Slurm emulate nodes with more
   resources than physically exist on the node?</a></li>
-<li><a href="#credential_replayed">What does a
-  &quot;credential replayed&quot; error in the <i>SlurmdLogFile</i>
-  indicate?</a></li>
-<li><a href="#large_time">What does
-  &quot;Warning: Note very large processing time&quot;
-  in the <i>SlurmctldLogFile</i> indicate?</a></li>
-<li><a href="#limit_propagation">Is resource limit propagation
-  useful on a homogeneous cluster?</a></li>
-<li><a href="#clock">Do I need to maintain synchronized clocks
-  on the cluster?</a></li>
-<li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors
-  generated?</a></li>
-<li><a href="#cred_replay">Why are
-  &quot;Task launch failed on node ... Job credential replayed&quot;
-  errors generated?</a></li>
-<li><a href="#globus">Can Slurm be used with Globus?</a></li>
-<li><a href="#file_limit">What causes the error
-  &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
-<li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
-  to log job step information at the appropriate level?</a></li>
+</ul>
+<h3>Build and Install</h3>
+<ul>
 <li><a href="#rpm">Why aren't pam_slurm.so, auth_none.so, or other components in a
   Slurm RPM?</a></li>
+<li><a href="#debug">How can I build Slurm with debugging symbols?</a></li>
+<li><a href="#git_patch">How can a patch file be generated from a Slurm commit
+  in GitHub?</a></li>
+<li><a href="#apply_patch">How can I apply a patch to my Slurm source?</a></li>
+<li><a href="#epel">Why am I being offered an automatic update for Slurm?</a></li>
+</ul>
+<h3>Cluster Management</h3>
+<ul>
+<li><a href="#controller"> How should I relocate the primary or backup
+  controller?</a></li>
+<li><a href="#clock">Do I need to maintain synchronized clocks
+  on the cluster?</a></li>
+<li><a href="#stop_sched">How can I stop Slurm from scheduling jobs?</a></li>
+<li><a href="#maint_time">How can I dry up the workload for a maintenance
+  period?</a></li>
+<li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
+<li><a href="#db_upgrade">Is there anything exceptional to be aware of when
+  upgrading my database server?</a></li>
+<li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
+  configuration be copied from an existing cluster to the new cluster?</a></li>
+<li><a href="#state_info">How could some jobs submitted immediately before the
+  slurmctld daemon crashed be lost?</a></li>
+<li><a href="#limit_propagation">Is resource limit propagation
+  useful on a homogeneous cluster?</a></li>
+<li><a href="#enforce_limits">Why are the resource limits set in the database
+  not being enforced?</a></li>
+<li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
+<li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
+<li><a href="#mpi_perf">What might account for MPI performance being below the
+  expected level?</a></li>
+<li><a href="#delete_partition">How do I safely remove partitions?</a></li>
+<li><a href="#routing_queue">How can a routing queue be configured?</a></li>
+</ul>
+<h3>Accounting Database</h3>
+<ul>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
   regular database plugins?</a></li>
-<li><a href="#debug">How can I build Slurm with debugging symbols?</a></li>
+<li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
+<li><a href="#ha_db">How critical is configuring high availability for my
+  database?</a></li>
+<li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
+</ul>
+<h3>Compute Nodes (slurmd)</h3>
+<ul>
+<li><a href="#return_to_service">Why is a node shown in state DOWN when the node
+  has registered for service?</a></li>
+<li><a href="#down_node">What happens when a node crashes?</a></li>
+<li><a href="#multi_job">How can I control the execution of multiple
+  jobs per node?</a></li>
+<li><a href="#time">Why are jobs allocated nodes and then unable to initiate
+  programs on some nodes?</a></li>
+<li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
+  are not responding even if they are not in any partition?</a></li>
 <li><a href="#state_preserve">How can I easily preserve drained node
   information between major Slurm updates?</a></li>
+<li><a href="#health_check_example">Does anyone have an example node health check
+  script for Slurm?</a></li>
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
   execute on DOWN nodes?</a></li>
-<li><a href="#batch_lost">What is the meaning of the error
-  &quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
-  BatchStartTime after startup)&quot;?</a></li>
-<li><a href="#accept_again">What does the message
-  &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
-  indicate?</a></li>
-<li><a href="#task_prolog">How could I automatically print a job's
-  Slurm job ID to its standard output?</a></li>
-<li><a href="#orphan_procs">Why are user processes and <i>srun</i>
-  running even though the job is supposed to be completed?</a></li>
 <li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
   <i>slurmstepd</i> daemons from being killed when a node's memory
   is exhausted?</a></li>
 <li><a href="#ubuntu">I see the host of my calling node as 127.0.1.1
   instead of the correct IP address.  Why is that?</a></li>
-<li><a href="#stop_sched">How can I stop Slurm from scheduling jobs?</a></li>
-<li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
-<i>scontrol</i> command?</a></li>
+<li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
+<li><a href="#rem_nodes">What process should I follow to remove nodes from Slurm?</a></li>
+<li><a href="#reboot">Why is a compute node down with the reason set to
+  "Node unexpectedly rebooted"?</a></li>
+<li><a href="#cgroupv2">How to convert my nodes to Control Group v2?</a></li>
 <li><a href="#amazon_ec2">Can Slurm be used to run jobs on Amazon's EC2?</a></li>
-<li><a href="#core_dump">If a Slurm daemon core dumps, where can I find the
-  core file?</a></li>
-<li><a href="#backtrace">How can I get a backtrace from a core file?</a></li>
-<li><a href="#totalview">How can TotalView be configured to operate with
-  Slurm?</a></li>
-<li><a href="#git_patch">How can a patch file be generated from a Slurm commit
-  in GitHub?</a></li>
-<li><a href="#apply_patch">How can I apply a patch to my Slurm source?</a></li>
-<li><a href="#enforce_limits">Why are the resource limits set in the database
-  not being enforced?</a></li>
+</ul>
+<h3>User Management</h3>
+<ul>
+<li><a href="#pam_exclude">How can I exclude some users from pam_slurm?</a></li>
+<li><a href="#pam">How can PAM be used to control a user's limits on or
+  access to compute nodes?</a></li>
+<li><a href="#user_account">Can a user's account be changed in the database?</a></li>
+<li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
+  jobs. How do I get the new UID to take effect?</a></li>
+<li><a href="#sssd">How can I get SSSD to work with Slurm?</a></li>
+</ul>
+<h3>Jobs</h3>
+<ul>
+<li><a href="#suspend">How is job suspend/resume useful?</a></li>
+<li><a href="#squeue_script">How can I suspend, resume, hold or release all
+  of the jobs belonging to a specific user, partition, etc?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
   how can its priority value be returned to being managed by the
   priority/multifactor plugin?</a></li>
-<li><a href="#health_check_example">Does anyone have an example node health check
-script for Slurm?</a></li>
-<li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
-<li><a href="#rem_nodes">What process should I follow to remove nodes from Slurm?</a></li>
-<li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
+<li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
+  <i>scontrol</i> command?</a></li>
+<li><a href="#task_prolog">How could I automatically print a job's
+  Slurm job ID to its standard output?</a></li>
+<li><a href="#write_to_job_stdout">Is it possible to write to user stdout?</a></li>
+<li><a href="#orphan_procs">Why are user processes and <i>srun</i>
+  running even though the job is supposed to be completed?</a></li>
+<li><a href="#reqspec">How can a job which has exited with a specific exit code
+  be requeued?</a></li>
+<li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
   launch a shell on a node in the job's allocation?</a></li>
-<li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
-<li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
-<li><a href="#sssd">How can I get SSSD to work with Slurm?</a></li>
-<li><a href="#ha_db">How critical is configuring high availability for my
-  database?</a></li>
-<li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
-<li><a href="#reboot">Why is a compute node down with the reason set to
-"Node unexpectedly rebooted"?</a></li>
-<li><a href="#reqspec">How can a job which has exited with a specific exit code
-   be requeued?</a></li>
-<li><a href="#user_account">Can a user's account be changed in the database?</a></li>
-<li><a href="#mpi_perf">What might account for MPI performance being below the
-   expected level?</a></li>
-<li><a href="#state_info">How could some jobs submitted immediately before the
-   slurmctld daemon crashed be lost?</a></li>
-<li><a href="#delete_partition">How do I safely remove partitions?</a></li>
-<li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
-<li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
-    configuration be copied from an existing cluster to the new cluster?</a></li>
-<li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
-<li><a href="#db_upgrade">Is there anything exceptional to be aware of when
-    upgrading my database server?</a></li>
-<li><a href="#routing_queue">How can a routing queue be configured?</a></li>
-<li><a href="#squeue_script">How can I suspend, resume, hold or release all
-    of the jobs belonging to a specific user, partition, etc?</a></li>
-<li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
-    jobs. How do I get the new UID to take effect?</a></li>
-<li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
-    error in the database. How do I fix that?</a></li>
-<li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
-    enabled applications?</a></li>
-<li><a href="#opencl_pmix">Why is Multi-Instance GPU not working with Slurm and
-    PMIx, and complaining about GPUs being 'In use by another client'?</a></li>
 <li><a href="#tmpfs_jobcontainer">How can I set up a private /tmp and /dev/shm for
-    jobs on my machine?</a></li>
+  jobs on my machine?</a></li>
+<li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
+  enabled applications?</a></li>
+</ul>
+<h3>General Troubleshooting</h3>
+<ul>
+<li><a href="#core_dump">If a Slurm daemon core dumps, where can I find the
+  core file?</a></li>
+<li><a href="#backtrace">How can I get a backtrace from a core file?</a></li>
+</ul>
+<h3>Error Messages</h3>
+<ul>
+<li><a href="#inc_plugin">When the Slurm daemon starts, it prints
+  &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
+<li><a href="#credential_replayed">What does a &quot;credential replayed&quot;
+  error in the <i>SlurmdLogFile</i> indicate?</a></li>
+<li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors
+  generated?</a></li>
+<li><a href="#cred_replay">Why are &quot;Task launch failed on node ... Job
+  credential replayed&quot; errors generated?</a></li>
+<li><a href="#file_limit">What causes the error
+  &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
+<li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
+  to log job step information at the appropriate level?</a></li>
+<li><a href="#batch_lost">What is the meaning of the error
+  &quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
+  BatchStartTime after startup)&quot;?</a></li>
+<li><a href="#opencl_pmix">Why is Multi-Instance GPU not working with Slurm and
+  PMIx, and complaining about GPUs being 'In use by another client'?</a></li>
+<li><a href="#accept_again">What does the message
+  &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
+  indicate?</a></li>
+<li><a href="#large_time">What does &quot;Warning: Note very large processing
+  time&quot; in the <i>SlurmctldLogFile</i> indicate?</a></li>
+<li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
+  error in the database. How do I fix that?</a></li>
 <li><a href="#json_serializer">Why am I getting the following error: "Unable to
-    find plugin: serializer/json"?</a></li>
-<li><a href="#epel">Why am I being offered an automatic update for Slurm?</a></li>
-<li><a href="#cgroupv2">How to convert my nodes to Control Group v2?</a></li>
-<li><a href="#write_to_job_stdout">Is it possible to write to user stdout?</a></li>
+  find plugin: serializer/json"?</a></li>
+</ul>
+<h3>Third Party Integrations</h3>
+<ul>
+<li><a href="#globus">Can Slurm be used with Globus?</a></li>
+<li><a href="#totalview">How can TotalView be configured to operate with
+  Slurm?</a></li>
 </ul>
 
 <h2>For Management</h2>
