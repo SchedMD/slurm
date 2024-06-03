@@ -7990,6 +7990,8 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 	add_parse(UINT64, reason_time, "reason/time", NULL),
 	add_parse(STRING, resv_name, "reservation", NULL),
 	add_parse(USER_ID, reason_uid, "reason/user", NULL),
+	add_parse(STRING, cpu_spec_list, "resource_spec/cpus", NULL),
+	add_parse(UINT64, mem_spec_limit, "resource_spec/memory", NULL),
 	add_skip(version), /* already in meta */
 	add_parse(HOSTLIST, hostnames, "nodes/hostnames", NULL),
 	add_parse(HOSTLIST, node_addr, "nodes/addresses", NULL),

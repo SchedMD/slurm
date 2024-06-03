@@ -1023,6 +1023,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->max_cpus_per_node = sinfo_ptr->part_info->
 					       max_cpus_per_node;
 		sinfo_ptr->version    = node_ptr->version;
+		sinfo_ptr->cpu_spec_list = node_ptr->cpu_spec_list;
+		sinfo_ptr->mem_spec_limit = node_ptr->mem_spec_limit;
 	} else if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */

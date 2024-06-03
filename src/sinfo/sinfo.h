@@ -108,6 +108,8 @@ typedef struct {
 	char *resv_name;
 	uint32_t reason_uid;
 	char *version;
+	char *cpu_spec_list;
+	uint64_t mem_spec_limit;
 
 	hostlist_t *hostnames;
 	hostlist_t *node_addr;

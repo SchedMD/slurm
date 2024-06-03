@@ -10,6 +10,11 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd,sackd,scrun - Avoid rare hangs related to I/O.
  -- scrun - Add support '--all' argument for kill subcommand.
  -- Remove srun --cpu-bind=rank.
+ -- Add resource_spec/cpus and resource_spec/memory entry points in data_parser
+    to print the CpuSpecList and MemSpecLimit in sinfo --json.
+ -- sinfo - Add '.sinfo[].resource_spec.cpus' and
+    '.sinfo[].resource_spec.memory' fields to print the CpuSpecList and
+    MemSpecLimit dumped by 'sinfo --{json|yaml}'.
 
 * Changes in Slurm 24.05.1
 ==========================
