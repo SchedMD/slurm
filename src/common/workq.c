@@ -203,10 +203,10 @@ extern void workq_init(int count)
 		((count > WORKQ_THREAD_COUNT_MIN) &&
 		 (count < WORKQ_THREAD_COUNT_MAX)));
 
+	slurm_mutex_lock(&workq.mutex);
+
 	if (!count)
 		count = WORKQ_THREAD_COUNT_DEFAULT;
-
-	slurm_mutex_lock(&workq.mutex);
 
 	if (workq.threads) {
 		slurm_mutex_unlock(&workq.mutex);
