@@ -209,9 +209,24 @@ extern void workq_init(int count)
 		count = WORKQ_THREAD_COUNT_DEFAULT;
 
 	if (workq.threads) {
-		slurm_mutex_unlock(&workq.mutex);
-		log_flag(WORKQ, "%s: ignoring duplicate init request with count=%d",
-			 __func__, count);
+		_check_magic_workq();
+
+		if (workq.threads >= count) {
+			int threads = workq.threads;
+			slurm_mutex_unlock(&workq.mutex);
+			log_flag(WORKQ, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
+				 __func__, count, threads);
+		} else {
+			int prev = workq.threads;
+
+			/* Need to increase thread count to match count */
+			_increase_thread_count(count - workq.threads);
+			workq.threads = count;
+			slurm_mutex_unlock(&workq.mutex);
+
+			log_flag(WORKQ, "%s: increased thread count from %d to %d",
+				 __func__, prev, count);
+		}
 		return;
 	}
 
