@@ -569,7 +569,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
-	mgr.workq = new_workq(thread_count);
+	mgr.workq = workq_init(thread_count);
 	mgr.deferred_funcs = list_create(NULL);
 
 	if (pipe(mgr.event_fd))

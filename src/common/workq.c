@@ -171,7 +171,7 @@ static void _work_delete(void *x)
 	xfree(work);
 }
 
-extern workq_t *new_workq(int count)
+extern workq_t *workq_init(int count)
 {
 	workq_t *workq = xmalloc(sizeof(*workq));
 
@@ -254,7 +254,7 @@ static void _wait_work_complete(workq_t *workq)
 	}
 }
 
-extern void quiesce_workq(workq_t *workq)
+extern void workq_quiesce(workq_t *workq)
 {
 	if (!workq)
 		return;
@@ -277,7 +277,7 @@ extern void quiesce_workq(workq_t *workq)
 	xassert(list_count(workq->work) == 0);
 }
 
-extern void free_workq(workq_t *workq)
+extern void workq_free(workq_t *workq)
 {
 	if (!workq)
 		return;
@@ -285,7 +285,7 @@ extern void free_workq(workq_t *workq)
 	_check_magic_workq(workq);
 
 	_wait_workers_idle(workq);
-	quiesce_workq(workq);
+	workq_quiesce(workq);
 
 	FREE_NULL_LIST(workq->workers);
 	FREE_NULL_LIST(workq->work);

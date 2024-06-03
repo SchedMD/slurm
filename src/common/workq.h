@@ -53,19 +53,19 @@ typedef struct workq_s workq_t;
  * IN count - number of workers to add
  * RET ptr to new workq struct
  */
-extern workq_t *new_workq(int count);
+extern workq_t *workq_init(int count);
 
 /*
  * Stop all work (eventually) and reject new requests
  * This will block until all work is complete.
  */
-extern void quiesce_workq(workq_t *workq);
+extern void workq_quiesce(workq_t *workq);
 
 /*
  * Free workq struct.
  * Will stop all workers (eventually).
  */
-extern void free_workq(workq_t *workq);
+extern void workq_free(workq_t *workq);
 
 /*
  * Add work to workq
@@ -73,7 +73,7 @@ extern void free_workq(workq_t *workq);
  * IN func - function pointer to run work
  * IN arg - arg to hand to function pointer
  * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or free_workq() will never
+ * NOTE: never add a thread that will never return or workq_free() will never
  * return either.
  * RET SLURM_SUCCESS or error if workq already shutdown
  */
@@ -88,7 +88,7 @@ extern int workq_get_active(workq_t *workq);
 #define FREE_NULL_WORKQ(_X)             \
 	do {                            \
 		if (_X)                 \
-			free_workq(_X); \
+			workq_free(_X); \
 		_X = NULL;              \
 	} while (0)
 
