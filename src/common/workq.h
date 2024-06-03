@@ -38,6 +38,10 @@
 
 #include "src/common/list.h"
 
+#define WORKQ_THREAD_COUNT_DEFAULT 10
+#define WORKQ_THREAD_COUNT_MIN 2
+#define WORKQ_THREAD_COUNT_MAX 1024
+
 /*
  * Call back for generic work
  *
