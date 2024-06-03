@@ -984,7 +984,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 				goto unpack_error;
 		}
 		unpack_bit_str_hex(&vni_pids, buffer); /* Unused */
-		bit_free(vni_pids);
+		FREE_NULL_BITMAP(vni_pids);
 		safe_unpack32(&jobinfo->flags, buffer);
 
 		safe_unpack32(&jobinfo->num_nics, buffer);
