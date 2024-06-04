@@ -14,8 +14,6 @@
 </ul>
 
 <h2>For Users</h2>
-<p><a href="#mailing_list">Is an archive available of messages posted to
-  the <i>slurm-users</i> mailing list?</a></p>
 <h3>Designing Jobs</h3>
 <ul>
 <li><a href="#steps">How can I run multiple jobs from within a single
@@ -713,11 +711,6 @@ This is probably a variation on the <a href="#memlock">locked memory limit</a>
 problem described above.
 Use the same solution for the AS (Address Space), RSS (Resident Set Size),
 or other limits as needed.</p>
-
-<p><a id="mailing_list"><b>Is an archive available of messages posted to
-the <i>slurm-users</i> mailing list?</b></a><br>
-Yes, it is at <a href="http://groups.google.com/group/slurm-users">
-http://groups.google.com/group/slurm-users</a></p>
 
 <p><a id="job_size"><b>Can I change my job's size after it has started
 running?</b></a><br>
