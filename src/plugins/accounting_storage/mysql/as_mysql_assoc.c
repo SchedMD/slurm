@@ -1209,77 +1209,11 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-/* sets fields for the assoc query when there is a qos condition*/
-static void _setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
-				  char *cluster_name, char **more_fields,
-				  char **selection_target, char **qos_filter)
-{
-	int set = 0;
-	list_itr_t *itr = NULL;
-	char *object = NULL;
-
-	xstrfmtcat(*more_fields,
-		   ", group_concat(inherited_qos_list) AS i_qos, "
-		   "group_concat(inherited_delta_qos_list) AS i_delta_qos");
-
-	xstrfmtcat(*selection_target,
-		   "(select t1.*, "
-		   "t2.qos as inherited_qos_list, "
-		   "t2.delta_qos as inherited_delta_qos_list "
-		   "from \"%s_%s\" as t1 "
-		   "join \"%s_%s\" as t2 "
-		   "on t1.lineage like CONCAT(t2.lineage, '%%') "
-		   "join \"%s_%s\" as t3 "
-		   "on t1.lineage like CONCAT(t3.lineage, '%%') "
-		   "and t2.lineage not like CONCAT(t3.lineage, '_%%') "
-		   "group by t1.id_assoc, t2.id_assoc "
-		   "having t2.qos=group_concat(t3.qos separator ''))",
-		   cluster_name, assoc_table, cluster_name, assoc_table,
-		   cluster_name, assoc_table);
-
-	xstrfmtcat(*qos_filter, " group by id_assoc having ");
-
-	itr = list_iterator_create(assoc_cond->qos_list);
-	while ((object = list_next(itr))) {
-		if (set)
-			xstrcat(*qos_filter, "or ");
-		xstrfmtcat(*qos_filter,
-			   "((i_qos regexp ',%s,' or "
-			   "i_delta_qos regexp ',\\\\+%s,') and "
-			   "i_delta_qos not regexp ',-%s,(?!.*,\\\\+%s,)') ",
-			   object, object, object, object);
-		set = 1;
-	}
-	list_iterator_destroy(itr);
-}
-
-static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
-				      char *cluster_name, char *fields,
+static char *_setup_assoc_table_query(char *cluster_name, char *fields,
 				      char *filters, char *end)
 {
-	char *query;
-	char *more_fields = NULL, *selection_target = NULL, *qos_filter = NULL;
-
-	if (assoc_cond && assoc_cond->qos_list &&
-	    list_count(assoc_cond->qos_list))
-		_setup_assoc_cond_qos(assoc_cond, cluster_name, &more_fields,
-				      &selection_target, &qos_filter);
-	else {
-		xstrcat(more_fields, "");
-		xstrfmtcat(selection_target, "\"%s_%s\"", cluster_name,
-			   assoc_table);
-		xstrcat(qos_filter, "");
-	}
-
-	query = xstrdup_printf("select distinct %s%s from %s as t1 where%s%s%s",
-			       fields, more_fields, selection_target,
-			       filters, qos_filter, end);
-
-	xfree(more_fields);
-	xfree(selection_target);
-	xfree(qos_filter);
-
-	return query;
+	return xstrdup_printf("select distinct %s from \"%s_%s\" as t1 where%s%s",
+			       fields, cluster_name, assoc_table, filters, end);
 }
 
 /* When doing a select on this all the select should have a prefix of t1. */
@@ -1412,6 +1346,43 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	return set;
 }
 
+/*
+ * Use this on returned assocs from the db to validate if you have access to the
+ * QOS or not.
+ *
+ * Use the assoc_mgr to verify this assoc is viable based off of the QOS. It's
+ * faster to do it after the fact instead of a complicated join in SQL because
+ * of the hierarchy.
+ */
+static bool _assoc_id_has_qos(mysql_conn_t *mysql_conn, char *cluster,
+			      uint32_t assoc_id, bitstr_t *wanted_qos)
+{
+	if (wanted_qos) {
+		slurmdb_assoc_rec_t *assoc_ptr = NULL;
+		slurmdb_assoc_rec_t assoc_req = {
+			.cluster = cluster,
+			.id = assoc_id,
+		};
+
+		xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+
+		/*
+		 * Assoc mgr maintains the inherited qos for an assoc. Using its
+		 * version avoids an expensive sql query to get it.
+		 */
+		assoc_mgr_fill_in_assoc(mysql_conn, &assoc_req,
+					ACCOUNTING_ENFORCE_ASSOCS, &assoc_ptr,
+					true);
+		if (!assoc_ptr ||
+		    !assoc_ptr->usage ||
+		    !assoc_ptr->usage->valid_qos ||
+		    !bit_overlap(assoc_ptr->usage->valid_qos, wanted_qos))
+			return false;
+	}
+
+	return true;
+}
+
 static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 MYSQL_RES *result,
 					 slurmdb_assoc_rec_t *assoc,
@@ -1419,7 +1390,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 char *cluster_name, char *sent_vals,
 					 bool is_admin, bool same_user,
 					 List ret_list,
-					 slurmdb_assoc_cond_t *qos_assoc_cond)
+					 slurmdb_assoc_cond_t *qos_assoc_cond,
+					 bitstr_t *wanted_qos)
 {
 	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
@@ -1453,10 +1425,17 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		   so we need to keep track of the latest
 		   ones.
 		*/
-		uint32_t lft = slurm_atoul(row[MASSOC_LFT]);
-		uint32_t rgt = slurm_atoul(row[MASSOC_RGT]);
+		uint32_t lft;
+		uint32_t rgt;
+		uint32_t id = slurm_atoul(row[MASSOC_ID]);
 		char *orig_acct, *account;
 
+		if (!_assoc_id_has_qos(mysql_conn, cluster_name, id,
+				       wanted_qos))
+				continue;
+
+		lft = slurm_atoul(row[MASSOC_LFT]);
+		rgt = slurm_atoul(row[MASSOC_RGT]);
 		orig_acct = account = row[MASSOC_ACCT];
 
 		slurmdb_init_assoc_rec(&alt_assoc, 0);
@@ -1677,7 +1656,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
-		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
+		mod_assoc->id = id;
 		mod_assoc->flags = slurm_atoul(row[MASSOC_FLAGS]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 		if (moved_parent) {
@@ -2264,6 +2243,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint16_t without_parent_limits = 0;
 	uint16_t with_usage = 0;
 	uint16_t with_raw_qos = 0;
+	bitstr_t *wanted_qos = NULL;
+	assoc_mgr_lock_t assoc_locks = {
+		.assoc = READ_LOCK,
+	};
 
 	if (assoc_cond) {
 		with_raw_qos = assoc_cond->with_raw_qos;
@@ -2329,8 +2312,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		}
 	}
 	//START_TIMER;
-	query = _setup_assoc_table_query(assoc_cond, cluster_name, fields,
-					 extra, " order by lineage;");
+	query = _setup_assoc_table_query(cluster_name, fields, extra,
+					 " order by lineage;");
 	xfree(extra);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
@@ -2348,15 +2331,30 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 	}
 
+	if (assoc_cond &&
+	    assoc_cond->qos_list &&
+	    list_count(assoc_cond->qos_list)) {
+		wanted_qos = bit_alloc(g_qos_count);
+		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
+
+		assoc_mgr_lock(&assoc_locks);
+	}
+
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	delta_qos_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
-		slurmdb_assoc_rec_t *assoc =
-			xmalloc(sizeof(slurmdb_assoc_rec_t));
+		slurmdb_assoc_rec_t *assoc = NULL;
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
+		uint32_t id = slurm_atoul(row[ASSOC_REQ_ID]);
+
+		if (!_assoc_id_has_qos(mysql_conn, cluster_name, id,
+				       wanted_qos))
+			continue;
+
+		assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		list_append(assoc_list, assoc);
-		assoc->id = slurm_atoul(row[ASSOC_REQ_ID]);
+		assoc->id = id;
 		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
 
 		assoc->comment = xstrdup(row[ASSOC_REQ_COMMENT]);
@@ -2678,6 +2676,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
+
+	if (wanted_qos)
+		assoc_mgr_unlock(&assoc_locks);
+
+	FREE_NULL_BITMAP(wanted_qos);
 	xfree(parent_mtpj);
 	xfree(parent_mtpn);
 	xfree(parent_mtmpj);
@@ -4170,6 +4173,10 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	List use_cluster_list = NULL;
 	bool locked = false;
 	slurmdb_assoc_cond_t qos_assoc_cond;
+	bitstr_t *wanted_qos = NULL;
+	assoc_mgr_lock_t assoc_locks = {
+		.assoc = READ_LOCK,
+	};
 
 	if (!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -4282,11 +4289,16 @@ is_same_user:
 		locked = true;
 	}
 
+	if (assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		wanted_qos = bit_alloc(g_qos_count);
+		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
+		assoc_mgr_lock(&assoc_locks);
+	}
+
 	memset(&qos_assoc_cond, 0, sizeof(qos_assoc_cond));
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		query = _setup_assoc_table_query(assoc_cond, cluster_name,
-						 object, extra,
+		query = _setup_assoc_table_query(cluster_name, object, extra,
 						 " ORDER BY lineage FOR UPDATE;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
@@ -4304,7 +4316,8 @@ is_same_user:
 						   &user, cluster_name, vals,
 						   is_admin, same_user,
 						   ret_list,
-						   &qos_assoc_cond);
+						   &qos_assoc_cond,
+						   wanted_qos);
 		mysql_free_result(result);
 
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT)
@@ -4325,6 +4338,11 @@ is_same_user:
 		}
 	}
 	list_iterator_destroy(itr);
+
+	if (wanted_qos)
+		assoc_mgr_unlock(&assoc_locks);
+
+	FREE_NULL_BITMAP(wanted_qos);
 
 	if (ret_list && qos_assoc_cond.cluster_list) {
 		List local_assoc_list = as_mysql_get_assocs(
@@ -4391,6 +4409,10 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_assoc_cond_t add_assoc_cond = {
 		.mysql_conn = mysql_conn,
 	};
+	bitstr_t *wanted_qos = NULL;
+	assoc_mgr_lock_t assoc_locks = {
+		.assoc = READ_LOCK,
+	};
 
 	if (!assoc_cond) {
 		error("we need something to change");
@@ -4434,11 +4456,17 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		locked = true;
 	}
 
+	if (assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		wanted_qos = bit_alloc(g_qos_count);
+		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
+		assoc_mgr_lock(&assoc_locks);
+	}
+
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		query = _setup_assoc_table_query(assoc_cond, cluster_name,
-						 "t1.lineage", extra,
-						 " ORDER BY lineage;");
+		query = _setup_assoc_table_query(cluster_name,
+						 "t1.id_assoc, t1.lineage",
+						 extra, " ORDER BY lineage;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
@@ -4458,9 +4486,20 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		while ((row = mysql_fetch_row(result))) {
+			/*
+			 * Filter assoc recs by qos here rather than performing
+			 * an expensive sql query.
+			 */
+			if (wanted_qos) {
+				uint32_t id = slurm_atoul(row[0]);
+				if (!_assoc_id_has_qos(mysql_conn,
+						       cluster_name, id,
+						       wanted_qos))
+					continue;
+			}
 			xstrfmtcat(name_char,
 				   "%slineage like '%s%%'",
-				   name_char ? " || " : "", row[0]);
+				   name_char ? " || " : "", row[1]);
 		}
 		mysql_free_result(result);
 
@@ -4495,7 +4534,11 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 	}
+	if (wanted_qos)
+		assoc_mgr_unlock(&assoc_locks);
+
 	FREE_NULL_LIST(add_assoc_cond.coord_users);
+	FREE_NULL_BITMAP(wanted_qos);
 
 	list_iterator_destroy(itr);
 	if (locked) {
