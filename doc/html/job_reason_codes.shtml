@@ -1,0 +1,721 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job Reason Codes</h1>
+
+<p>These reason codes can be used to identify why a pending job has not yet been
+started by the scheduler. There may be multiple reasons why a job cannot start,
+in which case only the reason that was encountered by the attempted scheduling
+method will be displayed. Refer to the <a href="sched_config.html">
+Scheduling Configuration Guide</a> for more details.</p>
+
+<h2 id="common_reasons">Common Reasons
+<a class="slurm_link" href="#common_reasons"></a>
+</h2>
+
+<ul>
+
+<li><b>AssocGrp*</b> &mdash; The job's association has reached an aggregate
+<a href="resource_limits.html">limit</a>.</li>
+
+<li><b>AssocMax*</b> &mdash; A portion of the job request exceeds a maximum
+<a href="resource_limits.html">limit</a> (e.g., PerJob, PerNode) for the
+requested association.</li>
+
+<li><b>BeginTime</b> &mdash; The job's earliest <a href="sbatch.html#OPT_begin">
+start time</a> has not yet been reached.</li>
+
+<li><b>Dependency</b> &mdash; This job has a
+<a href="sbatch.html#OPT_dependency">dependency</a> on another job that has not
+been satisfied.</li>
+
+<li><b>Max*PerAccount</b> &mdash; A portion of the job request exceeds the
+per-Account <a href="resource_limits.html">limit</a> on the job's
+<a href="qos.html">QOS</a>.</li>
+
+<li><b>Priority</b> &mdash; One of more higher
+<a href="priority_multifactor.html">priority</a> jobs exist for the partition
+associated with the job or for the <a href="reservations.html">advanced
+reservation</a>.</li>
+
+<li><b>QOSGrp*</b> &mdash; The job's <a href="qos.html">QOS</a> has reached an
+aggregate <a href="resource_limits.html">limit</a>.</li>
+
+<li><b>QOSMax*</b> &mdash; A portion of the job request exceeds a
+maximum <a href="resource_limits.html">limit</a> (e.g., PerJob, PerNode) for
+the requested <a href="qos.html">QOS</a>.</li>
+
+<li><b>Resources</b> &mdash; The resources requested by the job are not
+available (e.g., already used by other jobs).</li>
+
+</ul>
+
+<h2 id="all_reasons">All Reasons
+<a class="slurm_link" href="#all_reasons"></a>
+</h2>
+
+<ul>
+
+<li><b>AccountingPolicy</b> &mdash; Fallback reason when others not matched.
+</li>
+
+<li><b>AccountNotAllowed</b> &mdash; Job is in an account not allowed in a
+partition.</li>
+
+<li><b>AssocGrpBB</b> &mdash; The job's association has reached its aggregate
+Burst Buffer limit.</li>
+
+<li><b>AssocGrpBBMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Burst Buffers by past,
+present and future jobs.</li>
+
+<li><b>AssocGrpBBRunMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Burst Buffers by
+currently running jobs.</li>
+
+<li><b>AssocGrpBilling</b> &mdash; The job's association has reached its
+aggregate Billing limit.</li>
+
+<li><b>AssocGrpBillingMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for the Billing value of
+a resource by past, present and future jobs.</li>
+
+<li><b>AssocGrpBillingRunMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for the Billing value of a
+resource by currently running jobs.</li>
+
+<li><b>AssocGrpCpuLimit</b> &mdash; The job's association has reached its
+aggregate CPU limit.</li>
+
+<li><b>AssocGrpCPUMinutesLimit</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for CPUs by past, present
+and future jobs.</li>
+
+<li><b>AssocGrpCPURunMinutesLimit</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for CPUs by currently
+running jobs.</li>
+
+<li><b>AssocGrpEnergy</b> &mdash; The job's association has reached its
+aggregate Energy limit.</li>
+
+<li><b>AssocGrpEnergyMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Energy by past, present
+and future jobs.</li>
+
+<li><b>AssocGrpEnergyRunMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for Energy by currently
+running jobs.</li>
+
+<li><b>AssocGrpGRES</b> &mdash; The job's association has reached its aggregate
+GRES limit.</li>
+
+<li><b>AssocGrpGRESMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for a GRES by past, present
+and future jobs.</li>
+
+<li><b>AssocGrpGRESRunMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for a GRES by currently
+running jobs.</li>
+
+<li><b>AssocGrpJobsLimit</b> &mdash; The job's association has reached the
+maximum number of allowed jobs in aggregate.</li>
+
+<li><b>AssocGrpLicense</b> &mdash; The job's association has reached its
+aggregate license limit.</li>
+
+<li><b>AssocGrpLicenseMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Licenses by past, present
+and future jobs.</li>
+
+<li><b>AssocGrpLicenseRunMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for Licenses by currently
+running jobs.</li>
+
+<li><b>AssocGrpMemLimit</b> &mdash; The job's association has reached its
+aggregate Memory limit.</li>
+
+<li><b>AssocGrpMemMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Memory by past, present
+and future jobs.</li>
+
+<li><b>AssocGrpMemRunMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Memory by currently
+running jobs.</li>
+
+<li><b>AssocGrpNodeLimit</b> &mdash; The job's association has reached its
+aggregate Node limit.</li>
+
+<li><b>AssocGrpNodeMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Nodes by past, present and
+future jobs.</li>
+
+<li><b>AssocGrpNodeRunMinutes</b> &mdash; The job's association has reached the
+maximum number of minutes allowed in aggregate for Nodes by currently running
+jobs.</li>
+
+<li><b>AssocGrpSubmitJobsLimit</b> &mdash; The job's association has reached the
+maximum number of jobs that can be running or pending in aggregate at a given
+time.</li>
+
+<li><b>AssocGrpUnknown</b> &mdash; The job's association has reached its
+aggregate limit for an unknown generic resource.</li>
+
+<li><b>AssocGrpUnknownMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for an unknown generic
+resource by past, present and future jobs.</li>
+
+<li><b>AssocGrpUnknownRunMinutes</b> &mdash; The job's association has reached
+the maximum number of minutes allowed in aggregate for an unknown generic
+resource by currently running jobs.</li>
+
+<li><b>AssocGrpWallLimit</b> &mdash; The job's association has reached its
+aggregate limit for the amount of walltime requested by running jobs.</li>
+
+<li><b>AssocMaxBBMinutesPerJob</b> &mdash; The Burst Buffer request exceeds
+the maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxBBPerJob</b> &mdash; The Burst Buffer request exceeds the
+maximum each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxBBPerNode</b> &mdash; The Burst Buffer request exceeds the
+maximum number each node in a job allocation is allowed to use for the
+requested association.</li>
+
+<li><b>AssocMaxBillingMinutesPerJob</b> &mdash; The request exceeds the
+maximum number of minutes each job is allowed to use, with Billing taken into
+account, for the requested association.</li>
+
+<li><b>AssocMaxBillingPerJob</b> &mdash; The resource request exceeds the
+maximum Billing limit each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxBillingPerNode</b> &mdash; The request exceeds the maximum
+Billing limit each node in a job allocation is allowed to use for the
+requested association.</li>
+
+<li><b>AssocMaxCpuMinutesPerJobLimit</b> &mdash; The CPU request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxCpuPerJobLimit</b> &mdash; The CPU request exceeds the maximum
+each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxCpuPerNode</b> &mdash; The request exceeds the maximum number
+of CPUs each node in a job allocation is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxEnergyMinutesPerJob</b> &mdash; The Energy request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxEnergyPerJob</b> &mdash; The Energy request exceeds the maximum
+each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxEnergyPerNode</b> &mdash; The request exceeds the maximum
+amount of Energy each node in a job allocation is allowed to use for the
+requested association.</li>
+
+<li><b>AssocMaxGRESMinutesPerJob</b> &mdash; The GRES request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxGRESPerJob</b> &mdash; The GRES request exceeds the maximum
+each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxGRESPerNode</b> &mdash; The request exceeds the maximum number
+of a GRES each node in a job allocation is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxJobsLimit</b> &mdash; The limit on the number of jobs each
+user is allowed to run at a given time has been met for the requested
+association.</li>
+
+<li><b>AssocMaxLicenseMinutesPerJob</b> &mdash; The License request exceeds
+the maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxLicensePerJob</b> &mdash; The License request exceeds the
+maximum each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxMemMinutesPerJob</b> &mdash; The Memory request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxMemPerJob</b> &mdash; The Memory request exceeds the maximum
+each job is allowed to use for the requested association.</li>
+
+<li><b>AssocMaxMemPerNode</b> &mdash; The request exceeds the maximum amount
+of Memory each node in a job allocation is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxNodeMinutesPerJob</b> &mdash; The number of nodes requested
+exceeds the maximum number of minutes each job is allowed to use for the
+requested association.</li>
+
+<li><b>AssocMaxNodePerJobLimit</b> &mdash; The number of nodes requested
+exceeds the maximum each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxSubmitJobLimit</b> &mdash; The limit on the number of jobs each
+user is allowed to have running or pending at a given time has been met for
+the requested association.</li>
+
+<li><b>AssocMaxUnknownMinutesPerJob</b> &mdash; The request of an unknown
+trackable resource exceeds the maximum number of minutes each job is allowed
+to use for the requested association.</li>
+
+<li><b>AssocMaxUnknownPerJob</b> &mdash; The request of an unknown trackable
+resource exceeds the maximum each job is allowed to use for the requested
+association.</li>
+
+<li><b>AssocMaxUnknownPerNode</b> &mdash; The request exceeds the maximum
+number of an unknown trackable resource each node in a job allocation is
+allowed to use for the requested association.</li>
+
+<li><b>AssocMaxWallDurationPerJobLimit</b> &mdash; The limit on the amount of
+wall time a job can request has been exceeded for the requested association.
+</li>
+
+<li><b>AssociationJobLimit</b> &mdash; The job's association has reached
+its maximum job count.</li>
+
+<li><b>AssociationResourceLimit</b> &mdash; The job's association has reached
+some resource limit.</li>
+
+<li><b>AssociationTimeLimit</b> &mdash; The job's association has reached its
+time limit.</li>
+
+<li><b>BadConstraints</b> &mdash; The job's constraints can not be satisfied.
+</li>
+
+<li><b>BeginTime</b> &mdash; The job's earliest start time has not yet been
+reached.</li>
+
+<li><b>BurstBufferOperation</b> &mdash; Burst Buffer operation for the job
+failed.</li>
+
+<li><b>BurstBufferResources</b> &mdash; There are insufficient resources
+in a Burst Buffer resource pool.</li>
+
+<li><b>BurstBufferStageIn</b> &mdash; The Burst Buffer plugin is in the
+process of staging the environment for the job.</li>
+
+<li><b>Cleaning</b> &mdash; The job is being requeued and still cleaning up
+from its previous execution.</li>
+
+<li><b>DeadLine</b> &mdash; This job has violated the configured Deadline.</li>
+
+<li><b>Dependency</b> &mdash; This job has a dependency on another job that
+has not been satisfied.</li>
+
+<li><b>DependencyNeverSatisfied</b> &mdash; This job has a dependency on
+another job that will never be satisfied.</li>
+
+<li><b>FedJobLock</b> &mdash; The job is waiting for the clusters in the
+federation to sync up and issue a lock.</li>
+
+<li><b>FrontEndDown</b> &mdash; No front end node is available to execute this
+job.</li>
+
+<li><b>InactiveLimit</b> &mdash; The job reached the system InactiveLimit.</li>
+
+<li><b>InvalidAccount</b> &mdash; The job's account is invalid.</li>
+
+<li><b>InvalidQOS</b> &mdash; The job's QOS is invalid.</li>
+
+<li><b>JobArrayTaskLimit</b> &mdash; The job array's limit on the number of
+simultaneously running tasks has been reached.</li>
+
+<li><b>JobHeldAdmin</b> &mdash; The job is held by a system administrator.</li>
+
+<li><b>JobHeldUser</b> &mdash; The job is held by the user.</li>
+
+<li><b>JobHoldMaxRequeue</b> &mdash; Job has been requeued enough times to
+reach the MAX_BATCH_REQUEUE limit.</li>
+
+<li><b>JobLaunchFailure</b> &mdash; The job could not be launched. This may
+be due to a file system problem, invalid program name, etc.</li>
+
+<li><b>Licenses</b> &mdash; The job is waiting for a license.</li>
+
+<li><b>MaxBBPerAccount</b> &mdash; The job's Burst Buffer request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxBillingPerAccount</b> &mdash; The job's Billing request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxCpuPerAccount</b> &mdash; The job's CPU request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxEnergyPerAccount</b> &mdash; The job's Energy request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxGRESPerAccount</b> &mdash; The job's GRES request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxJobsPerAccount</b> &mdash; This job exceeds the per-Account limit
+on the number of jobs for the job's QOS.</li>
+
+<li><b>MaxLicensePerAccount</b> &mdash; The job's License request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxMemoryPerAccount</b> &mdash; The job's Memory request exceeds the
+per-Account limit on the job's QOS.</li>
+
+<li><b>MaxMemPerLimit</b> &mdash; The job violates the limit on the maximum
+amount of Memory per-CPU or per-Node.</li>
+
+<li><b>MaxNodePerAccount</b> &mdash; The number of nodes requested by the job
+exceeds the per-Account limit on the number of nodes for the job's QOS.</li>
+
+<li><b>MaxSubmitJobsPerAccount</b> &mdash; This job exceeds the per-Account
+limit on the number of jobs in a pending or running state for the job's QOS.
+</li>
+
+<li><b>MaxUnknownPerAccount</b> &mdash; The jobs request of an unknown GRES
+exceeds the per-Account limit on the job's QOS.</li>
+
+<li><b>NodeDown</b> &mdash; A node required by the job is down.</li>
+
+<li><b>NonZeroExitCode</b> &mdash; The job terminated with a non-zero exit
+code.</li>
+
+<li><b>None</b> &mdash; The job hasn't had a reason assigned to it yet.</li>
+
+<li><b>OutOfMemory</b> &mdash; The job failed with an Out Of Memory error.
+</li>
+
+<li><b>PartitionConfig</b> &mdash; Fallback reason when the job violates
+some limit on the partition.</li>
+
+<li><b>PartitionDown</b> &mdash; The partition required by this job is in
+a DOWN state.</li>
+
+<li><b>PartitionInactive</b> &mdash; The partition required by this job is
+in an Inactive state and not able to start jobs.</li>
+
+<li><b>PartitionNodeLimit</b> &mdash; The number of nodes required by this
+job is outside of its partition's current limits. Can also indicate that
+required nodes are DOWN or DRAINED.</li>
+
+<li><b>PartitionTimeLimit</b> &mdash; The job's time limit exceeds its
+partition's current time limit.</li>
+
+<li><b>Priority</b> &mdash; One of more higher priority jobs exist for the
+partition associated with the job or for the advanced reservation.</li>
+
+<li><b>Prolog</b> &mdash; The job's PrologSlurmctld program is still running.
+</li>
+
+<li><b>QOSGrpBB</b> &mdash; The job's QOS has reached its aggregate
+Burst Buffer limit.</li>
+
+<li><b>QOSGrpBBMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Burst Buffers by past,
+present and future jobs.</li>
+
+<li><b>QOSGrpBBRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Burst Buffers by
+currently running jobs.</li>
+
+<li><b>QOSGrpBilling</b> &mdash; The job's QOS has reached its aggregate
+Billing limit.</li>
+
+<li><b>QOSGrpBillingMinutes</b> &mdash; The job's QOS has reached
+the maximum number of minutes allowed in aggregate for the Billing value of
+a resource by past, present and future jobs.</li>
+
+<li><b>QOSGrpBillingRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for the Billing value of a
+resource by currently running jobs.</li>
+
+<li><b>QOSGrpCpuLimit</b> &mdash; The job's QOS has reached its aggregate
+CPU limit.</li>
+
+<li><b>QOSGrpCPUMinutesLimit</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for CPUs by past, present
+and future jobs.</li>
+
+<li><b>QOSGrpCPURunMinutesLimit</b> &mdash; The job's QOS has reached
+the maximum number of minutes allowed in aggregate for CPUs by currently
+running jobs.</li>
+
+<li><b>QOSGrpEnergy</b> &mdash; The job's QOS has reached its aggregate
+Energy limit.</li>
+
+<li><b>QOSGrpEnergyMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Energy by past, present
+and future jobs.</li>
+
+<li><b>QOSGrpEnergyRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Energy by currently
+running jobs.</li>
+
+<li><b>QOSGrpGRES</b> &mdash; The job's QOS has reached its aggregate GRES
+limit.</li>
+
+<li><b>QOSGrpGRESMinutes</b> &mdash; The job's QOS has reached the maximum
+number of minutes allowed in aggregate for a GRES by past, present and
+future jobs.</li>
+
+<li><b>QOSGrpGRESRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for a GRES by currently
+running jobs.</li>
+
+<li><b>QOSGrpJobsLimit</b> &mdash; The job's QOS has reached the maximum
+number of allowed jobs in aggregate.</li>
+
+<li><b>QOSGrpLicense</b> &mdash; The job's QOS has reached its aggregate
+license limit.</li>
+
+<li><b>QOSGrpLicenseMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Licenses by past, present
+and future jobs.</li>
+
+<li><b>QOSGrpLicenseRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Licenses by currently
+running jobs.</li>
+
+<li><b>QOSGrpMemLimit</b> &mdash; The job's QOS has reached its aggregate
+Memory limit.</li>
+
+<li><b>QOSGrpMemoryMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Memory by past, present
+and future jobs.</li>
+
+<li><b>QOSGrpMemoryRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for Memory by currently
+running jobs.</li>
+
+<li><b>QOSGrpNodeLimit</b> &mdash; The job's QOS has reached its
+aggregate Node limit.</li>
+
+<li><b>QOSGrpNodeMinutes</b> &mdash; The job's QOS has reached the maximum
+number of minutes allowed in aggregate for Nodes by past, present and
+future jobs.</li>
+
+<li><b>QOSGrpNodeRunMinutes</b> &mdash; The job's QOS has reached the maximum
+number of minutes allowed in aggregate for Nodes by currently running jobs.</li>
+
+<li><b>QOSGrpSubmitJobsLimit</b> &mdash; The job's QOS has reached the maximum
+number of jobs that can be running or pending in aggregate at a given time.</li>
+
+<li><b>QOSGrpUnknown</b> &mdash; The job's QOS has reached its aggregate limit
+for an unknown generic resource.</li>
+
+<li><b>QOSGrpUnknownMinutes</b> &mdash; The job's QOS has reached the maximum
+number of minutes allowed in aggregate for an unknown generic resource by
+past, present and future jobs.</li>
+
+<li><b>QOSGrpUnknownRunMinutes</b> &mdash; The job's QOS has reached the
+maximum number of minutes allowed in aggregate for an unknown generic
+resource by currently running jobs.</li>
+
+<li><b>QOSGrpWallLimit</b> &mdash; The job's QOS has reached its aggregate
+limit for the amount of walltime requested by running jobs.</li>
+
+<li><b>QOSJobLimit</b> &mdash; The job's QOS has reached its maximum job
+count.</li>
+
+<li><b>QOSMaxBBMinutesPerJob</b> &mdash; The Burst Buffer request exceeds
+the maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxBBPerJob</b> &mdash; The Burst Buffer request exceeds the
+maximum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxBBPerNode</b> &mdash; The Burst Buffer request exceeds the
+maximum number each node in a job allocation is allowed to use for the
+requested QOS.</li>
+
+<li><b>QOSMaxBBPerUser</b> &mdash; The Burst Buffer request exceeds the
+maximum number each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxBillingMinutesPerJob</b> &mdash; The request exceeds the
+maximum number of minutes each job is allowed to use, with Billing taken into
+account, for the requested QOS.</li>
+
+<li><b>QOSMaxBillingPerJob</b> &mdash; The resource request exceeds the
+maximum Billing limit each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxBillingPerNode</b> &mdash; The request exceeds the maximum
+Billing limit each node in a job allocation is allowed to use for the
+requested QOS.</li>
+
+<li><b>QOSMaxBillingPerUser</b> &mdash; The request exceeds the maximum
+Billing limit each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxCpuMinutesPerJobLimit</b> &mdash; The CPU request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxCpuPerJobLimit</b> &mdash; The CPU request exceeds the maximum
+each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxCpuPerNode</b> &mdash; The request exceeds the maximum number
+of CPUs each node in a job allocation is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxCpuPerUserLimit</b> &mdash; The CPU request exceeds the maximum
+each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxEnergyMinutesPerJob</b> &mdash; The Energy request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxEnergyPerJob</b> &mdash; The Energy request exceeds the maximum
+each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxEnergyPerNode</b> &mdash; The request exceeds the maximum
+amount of Energy each node in a job allocation is allowed to use for the
+requested QOS.</li>
+
+<li><b>QOSMaxEnergyPerUser</b> &mdash; The request exceeds the maximum
+amount of Energy each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxGRESMinutesPerJob</b> &mdash; The GRES request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxGRESPerJob</b> &mdash; The GRES request exceeds the maximum
+each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxGRESPerNode</b> &mdash; The request exceeds the maximum number
+of a GRES each node in a job allocation is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxGRESPerUser</b> &mdash; The request exceeds the maximum number
+of a GRES each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxJobsPerUserLimit</b> &mdash; The limit on the number of jobs a
+user is allowed to run at a given time has been met for the requested
+QOS.</li>
+
+<li><b>QOSMaxLicenseMinutesPerJob</b> &mdash; The License request exceeds
+the maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxLicensePerJob</b> &mdash; The License request exceeds the
+maximum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxLicensePerUser</b> &mdash; The License request exceeds the
+maximum each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxMemoryMinutesPerJob</b> &mdash; The Memory request exceeds the
+maximum number of minutes each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxMemoryPerJob</b> &mdash; The Memory request exceeds the maximum
+each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxMemoryPerNode</b> &mdash; The request exceeds the maximum amount
+of Memory each node in a job allocation is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxMemoryPerUser</b> &mdash; The request exceeds the maximum amount
+of Memory each user is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxNodeMinutesPerJob</b> &mdash; The number of nodes requested
+exceeds the maximum number of minutes each job is allowed to use for the
+requested QOS.</li>
+
+<li><b>QOSMaxNodePerJobLimit</b> &mdash; The number of nodes requested
+exceeds the maximum each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxNodePerUserLimit</b> &mdash; The number of nodes requested
+exceeds the maximum each user is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxSubmitJobPerUserLimit</b> &mdash; The limit on the number of
+jobs each user is allowed to have running or pending at a given time has
+been met for the requested QOS.</li>
+
+<li><b>QOSMaxUnknownMinutesPerJob</b> &mdash; The request of an unknown
+trackable resource exceeds the maximum number of minutes each job is allowed
+to use for the requested QOS.</li>
+
+<li><b>QOSMaxUnknownPerJob</b> &mdash; The request of an unknown trackable
+resource exceeds the maximum each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMaxUnknownPerNode</b> &mdash; The request exceeds the maximum
+number of an unknown trackable resource each node in a job allocation is
+allowed to use for the requested QOS.</li>
+
+<li><b>QOSMaxUnknownPerUser</b> &mdash; The request exceeds the maximum
+number of an unknown trackable resource each user is allowed to use for
+the requested QOS.</li>
+
+<li><b>QOSMaxWallDurationPerJobLimit</b> &mdash; The limit on the amount of
+wall time a job can request has been exceeded for the requested QOS.</li>
+
+<li><b>QOSMinBB</b> &mdash; The Burst Buffer request does not meet the
+minimum each job is required to request for the requested QOS.</li>
+
+<li><b>QOSMinBilling</b> &mdash; The resource request does not meet the
+minimum Billing limit each job is allowed to use for the requested
+QOS.</li>
+
+<li><b>QOSMinCpuNotSatisfied</b> &mdash; The CPU request does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinEnergy</b> &mdash; The Energy request does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinGRES</b> &mdash; The GRES request does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinLicense</b> &mdash; The License request does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinMemory</b> &mdash; The Memory request does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinNode</b> &mdash; The number of nodes requested does not meet the
+minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSMinUnknown</b> &mdash; The request of an unknown trackable resource
+does not meet the minimum each job is allowed to use for the requested QOS.</li>
+
+<li><b>QOSNotAllowed</b> &mdash; The job requests a QOS is not allowed by
+the requested association or partition.</li>
+
+<li><b>QOSResourceLimit</b> &mdash; The job's QOS has reached some resource
+limit.</li>
+
+<li><b>QOSTimeLimit</b> &mdash; The job's QOS has reached its time limit.</li>
+
+<li><b>QOSUsageThreshold</b> &mdash; Required QOS threshold has been
+breached.</li>
+
+<li><b>ReqNodeNotAvail</b> &mdash; Some node specifically required by the job
+is not currently available. The node may currently be in use, reserved for
+another job, in an advanced reservation, DOWN, DRAINED, or not responding.
+Nodes which are DOWN, DRAINED, or not responding will be identified as part
+of the job's "reason" field as "UnavailableNodes". Such nodes will typically
+require the intervention of a system administrator to make available.</li>
+
+<li><b>Reservation</b> &mdash; The job is waiting its advanced reservation to
+become available.</li>
+
+<li><b>ReservationDeleted</b> &mdash; The job requested a reservation that is
+no longer on the system.</li>
+
+<li><b>Resources</b> &mdash; The resources requested by the job are not
+available (e.g., already used by other jobs).</li>
+
+<li><b>SchedDefer</b> &mdash; The job requests an immediate allocation but
+<b>SchedulerParameters=defer</b> is configured in the slurm.conf.</li>
+
+<li><b>SystemFailure</b> &mdash; Failure of the Slurm system, a file system,
+the network, etc.</li>
+
+<li><b>TimeLimit</b> &mdash; The job exhausted its time limit.</li>
+
+</ul>
+
+<p style="text-align: center;">Last modified 04 June 2024</li>
+
+<!--#include virtual="footer.txt"-->

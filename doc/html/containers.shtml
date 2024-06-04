@@ -128,8 +128,8 @@ RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j
 </pre>
 </p>
 
-<h3 id="runc_run">oci.conf example for runc using run (suggested):
-<a class="slurm_link" href="#runc_run"></a></h3>
+<h3 id="runc_run">oci.conf example for runc using run (recommended over using
+create/start):<a class="slurm_link" href="#runc_run"></a></h3>
 <p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -155,8 +155,8 @@ RunTimeStart="crun --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 </pre>
 </p>
 
-<h3 id="crun_run">oci.conf example for crun using run (suggested):
-<a class="slurm_link" href="#crun_run"></a></h3>
+<h3 id="crun_run">oci.conf example for crun using run (recommended over using
+create/start):<a class="slurm_link" href="#crun_run"></a></h3>
 <p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -184,8 +184,8 @@ RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ del
 </p>
 
 <h3 id="nvidia_run">
-oci.conf example for nvidia-container-runtime using run (suggested):
-<a class="slurm_link" href="#nvidia_run"></a></h3>
+oci.conf example for nvidia-container-runtime using run (recommended over using
+create/start):<a class="slurm_link" href="#nvidia_run"></a></h3>
 <p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -835,6 +835,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 21 May 2024</p>
+<p style="text-align:center;">Last modified 04 June 2024</p>
 
 <!--#include virtual="footer.txt"-->
