@@ -125,6 +125,13 @@ proc process_result {function context expected_rc reports drains fails job_id_as
 	set short_function [string replace $function 0 [expr {[string length "slurm_spank_"]-1}]]
 
 	set rc 0
+
+	# TODO: Temporary debug traces to for rare failures.
+	#       Remove once ticket 19090 is fixed.
+	log_debug "Expected RC: ${reports}"
+	log_debug "Output: ${output}"
+	log_debug "Regexp string: error: spank: required plugin \\S+: $short_function\\\(\\\) failed with rc=(-?\\d+)"
+
 	set reported [regexp "error: spank: required plugin \\S+: $short_function\\\(\\\) failed with rc=(-?\\d+)" $output wholematch rc]
 	subtest {$rc == $reports} \
 		[concat "SPANK API failure report expected rc:$reports == rc:$rc" ]
