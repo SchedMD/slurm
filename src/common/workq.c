@@ -197,7 +197,7 @@ static void _increase_thread_count(int count)
 
 extern void workq_init(int count)
 {
-	int rc;
+	static bool at_fork_installed = false;
 
 	if (!count) {
 		count = WORKQ_THREAD_COUNT_DEFAULT;
@@ -235,9 +235,25 @@ extern void workq_init(int count)
 		return;
 	}
 
-	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-		fatal_abort("%s: pthread_atfork() failed: %s",
-			    __func__, slurm_strerror(rc));
+	if (!at_fork_installed) {
+		int rc;
+
+		/*
+		 * at_fork_installed == true here will only happen with the
+		 * following sequence of calls:
+		 *
+		 * workq_init(), workq_fini(), workq_init().
+		 *
+		 * If this ever happens, avoid installing multiple atfork
+		 * handlers.
+		 */
+
+		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+			fatal_abort("%s: pthread_atfork() failed: %s",
+				    __func__, slurm_strerror(rc));
+
+		at_fork_installed = true;
+	}
 
 	xassert(!workq.workers);
 	workq.workers = list_create(_worker_free);
