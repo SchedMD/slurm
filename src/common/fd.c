@@ -62,6 +62,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Set minimum MSS matching TCP MSDS from RFC#879 */
+#define MSS_MIN_BYTES 556
+
 /*
  * Helper macro to log_flag(NET, ...) against a given connection
  * IN fd - file descriptor relavent for logging
@@ -717,17 +720,22 @@ extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 extern int fd_get_maxmss(int fd, const char *con_name)
 {
 	int mss = NO_VAL;
+	socklen_t tmp_socklen = { 0 };
 
-#if defined(TCP_MAXSEG)
-	if (getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &mss,
-		       (&(socklen_t) {sizeof(mss)})))
+	if (getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &mss, &tmp_socklen))
 		log_net(fd, con_name,
 			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG) failed: %m",
 			fd);
 	else
 		log_net(fd, con_name,
 			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG)=%d", fd, mss);
-#endif /* defined(TCP_MAXSEG) */
+
+	if ((mss < MSS_MIN_BYTES) || (mss > MAX_MSG_SIZE)) {
+		log_net(fd, con_name,
+			"Rejecting invalid response from getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG)=%d",
+			fd, mss);
+		mss = NO_VAL;
+	}
 
 	return mss;
 }
