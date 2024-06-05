@@ -154,6 +154,13 @@ int main(int argc, char **argv)
 	_become_slurm_user();
 
 	/*
+	 * This must happen before we spawn any threads
+	* which are not designed to handle them
+	*/
+	if (xsignal_block(dbd_sigarray) < 0)
+		error("Unable to block signals");
+
+	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
 	 * acct_storage_g_init() could take a long time to finish if running
 	 * for the first time after an upgrade.
@@ -178,9 +185,6 @@ int main(int argc, char **argv)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
-
-	if (xsignal_block(dbd_sigarray) < 0)
-		error("Unable to block signals");
 
 	/* Create attached thread for signal handling */
 	slurm_thread_create(&signal_handler_thread, _signal_handler, NULL);
