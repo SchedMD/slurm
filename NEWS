@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.05.1
 ==========================
+ -- Fix slurmctld and slurmdbd potentially stopping instead of performing a
+    logrotate when recieving SIGUSR2 when using auth/slurm.
 
 * Changes in Slurm 24.05.0
 ==========================
