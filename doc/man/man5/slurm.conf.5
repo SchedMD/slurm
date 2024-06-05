@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -234,8 +234,8 @@ Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBAccountingStoreFlags\fR
-Comma separated list used to tell the slurmctld to store extra fields that may
-be more heavy weight than the normal job information.
+Comma separated list used to modify which fields the slurmctld send to the
+accounting database.
 .IP
 .RS
 .TP
@@ -263,6 +263,12 @@ Storage database.
 .TP
 \fBjob_script\fR
 Include the job's batch script in the job start message sent to the Accounting Storage database.
+.IP
+
+.TP
+\fBno_stdio\fR
+Exclude the stdio paths when recording data into the database on a job start.
+StdOut, StdErr and StdIn fields for a job will be empty.
 .RE
 .IP
 

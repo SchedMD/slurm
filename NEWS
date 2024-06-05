@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     AllowGroups with large /etc/group files.
  -- Prevent an assertion in debugging builds when triggering log rotation
     in a backup slurmctld.
+ -- Add AccountingStoreFlags=no_stdio which allows to not record the stdio
+    paths of the job when set.
 
 * Changes in Slurm 24.05.0
 ==========================
