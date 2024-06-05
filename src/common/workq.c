@@ -234,7 +234,9 @@ extern void workq_init(int count)
 		fatal_abort("%s: pthread_atfork() failed: %s",
 			    __func__, slurm_strerror(rc));
 
+	xassert(!workq.workers);
 	workq.workers = list_create(_worker_free);
+	xassert(!workq.work);
 	workq.work = list_create(_work_delete);
 	workq.threads = count;
 
