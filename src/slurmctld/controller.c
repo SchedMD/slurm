@@ -395,6 +395,13 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
+	/*
+	 * This must happen before we spawn any threads
+	* which are not designed to handle them
+	*/
+	if (xsignal_block(controller_sigarray) < 0)
+		error("Unable to block signals");
+
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
 	if (hash_g_init() != SLURM_SUCCESS)
@@ -452,12 +459,6 @@ int main(int argc, char **argv)
 	test_core_limit();
 	_test_thread_limit();
 
-	/*
-	 * This must happen before we spawn any threads
-	 * which are not designed to handle them
-	 */
-	if (xsignal_block(controller_sigarray) < 0)
-		error("Unable to block signals");
 
 	/*
 	 * This creates a thread to listen to slurmscriptd, so this needs to
