@@ -606,29 +606,13 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 	alias_count    = hostlist_count(alias_list);
 	hostname_count = hostlist_count(hostname_list);
 	port_count     = hostlist_count(port_list);
-#ifdef HAVE_FRONT_END
+
+	if ((address_count != alias_count) && (address_count != 1))
+		fatal("NodeAddr count must equal that of NodeName records or  there must be no more than one");
+	if ((bcast_count != alias_count) && (bcast_count > 1))
+		fatal("BcastAddr count must equal that of NodeName records or there must be no more than one");
 	if ((hostname_count != alias_count) && (hostname_count != 1))
-		fatal("NodeHostname count must equal that of NodeName records of there must be no more than one");
-
-	if ((address_count != alias_count) && (address_count != 1))
-		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
-#else
-#ifdef MULTIPLE_SLURMD
-	if ((address_count != alias_count) && (address_count != 1))
-		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
-	if (bcast_count && (bcast_count != alias_count) && (bcast_count != 1))
-		fatal("BcastAddr count must equal that of NodeName records, or there must be no more than one");
-#else
-	if (address_count < alias_count)
-		fatal("At least as many NodeAddr are required as NodeName");
-
-	if (bcast_count && (bcast_count < alias_count))
-		fatal("At least as many BcastAddr are required as NodeName");
-
-	if (hostname_count < alias_count)
-		fatal("At least as many NodeHostname are required as NodeName");
-#endif	/* MULTIPLE_SLURMD */
-#endif	/* HAVE_FRONT_END */
+		fatal("NodeHostname count must equal that of NodeName records or there must be no more than one");
 	if ((port_count != alias_count) && (port_count > 1))
 		fatal("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
 		      port_count, alias_count);
