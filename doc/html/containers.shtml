@@ -602,12 +602,13 @@ userns = "host"
 [engine]
 cgroup_manager = "systemd"
 runtime = "slurm"
-runtime_supports_nocgroups = [ "slurm" ]
-runtime_supports_json = [ "slurm" ]
 remote = false
 
 [engine.runtimes]
-slurm = [ "/usr/local/bin/scrun" ]</pre>
+slurm = [
+	"/usr/local/bin/scrun",
+	"/usr/bin/scrun"
+]</pre>
 Correct path to scrun as if installation prefix was configured.</li>
 <li>The "cgroup_manager" field will need to be swapped to "cgroupfs" on systems
 not running systemd.</li>
