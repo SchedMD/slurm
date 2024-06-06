@@ -571,14 +571,20 @@ host networking</a></li>
 
 <h3>Setup procedure</h3>
 <ol>
-<li>
-<a href="https://podman.io/docs/installation"> Install and configure
-Podman</a><br>Podman must be fully operational and able to run containers
-before continuing.</li>
-<li>
-<a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
-Configure rootless Podman</a><br>Podman must be in rootless mode to be able
-to interact with Slurm via scrun.</li>
+<li><a href="https://podman.io/docs/installation">Install Podman</li>
+<li><a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
+Configure rootless Podman</a></li>
+<li>Verify rootless podman is configured
+	<pre>$ podman info --format '{{.Host.Security.Rootless}}'
+true</pre></li>
+<li>Verify rootless Podman is fully functional before adding Slurm support:
+<ul>
+	<li>The value printed by the following commands should be the same:
+	<pre>$ id
+$ podman run --userns keep-id alpine id</pre>
+	<pre>$ sudo id
+$ podman run --userns nomap alpine id</pre></li>
+</ul></li>
 <li>
 Configure Podman to call scrun instead of the <a
 href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
@@ -853,6 +859,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 04 June 2024</p>
+<p style="text-align:center;">Last modified 04 September 2024</p>
 
 <!--#include virtual="footer.txt"-->
