@@ -482,11 +482,20 @@ static int _get_joules_task(uint16_t delta)
 
 	xassert(context_id != -1);
 
+	/* If there are no gres then there is no energy to get, just return. */
+	if (!gres_get_gres_cnt())
+		return SLURM_SUCCESS;
+
 	if (slurm_get_node_energy(conf->node_name, context_id, delta, &gpu_cnt,
 				  &energies)) {
 		error("%s: can't get info from slurmd", __func__);
 		return SLURM_ERROR;
 	}
+
+	/* If there are no gpus then there is no energy to get, just return. */
+	if (!gpu_cnt)
+		return SLURM_SUCCESS;
+
 	if (stepd_first) {
 		gpus_len = gpu_cnt;
 		gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
