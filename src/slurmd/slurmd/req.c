@@ -3358,24 +3358,25 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 					      ENERGY_DATA_SENSOR_CNT,
 					      &sensor_cnt);
 
+		memset(&acct_msg, 0, sizeof(acct_msg));
 		if (!sensor_cnt) {
 			error("Can't get energy data. No power sensors are available. Try later.");
-			goto fini;
+		} else {
+			/*
+			 * If we polled later than delta seconds then force a
+			 * new poll.
+			 */
+			if ((now - last_poll) > req->delta)
+				data_type = ENERGY_DATA_JOULES_TASK;
+
+			acct_msg.sensor_cnt = sensor_cnt;
+			acct_msg.energy =
+				acct_gather_energy_alloc(acct_msg.sensor_cnt);
+
+			acct_gather_energy_g_get_data(req->context_id,
+						      data_type,
+						      acct_msg.energy);
 		}
-
-		/* If we polled later than delta seconds then force a
-		   new poll.
-		*/
-		if ((now - last_poll) > req->delta)
-			data_type = ENERGY_DATA_JOULES_TASK;
-
-		memset(&acct_msg, 0, sizeof(acct_msg));
-		acct_msg.sensor_cnt = sensor_cnt;
-		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
-
-		acct_gather_energy_g_get_data(req->context_id,
-					      data_type,
-					      acct_msg.energy);
 
 		slurm_msg_t_copy(&resp_msg, msg);
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;
@@ -3386,7 +3387,6 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
 
-fini:
 	slurm_mutex_lock(&req_cnt_mutex);
 	req_cnt--;
 	slurm_mutex_unlock(&req_cnt_mutex);
