@@ -448,9 +448,13 @@ next_segment:
 			int llblock_per_block = (bblock_per_block /
 						 bblock_per_llblock);
 			int offset = i * llblock_per_block;
+			int tmp_max_llblock;
+			llblock_per_block = MIN(llblock_per_block,
+						llblock_cnt - offset);
 			qsort(&nodes_on_llblock[offset], llblock_per_block,
 			      sizeof(int), _cmp_bblock);
-			for (j = 0; j < max_llblock; j++)
+			tmp_max_llblock = MIN(max_llblock, llblock_per_block);
+			for (j = 0; j < tmp_max_llblock; j++)
 				avail_bnc += nodes_on_llblock[offset + j];
 		}
 		/*
