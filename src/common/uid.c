@@ -290,30 +290,9 @@ static int _getgrnam_r (const char *name, struct group *grp, char *buf,
 	return (rc);
 }
 
-static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
-		size_t bufsiz, struct group **result)
-{
-	DEF_TIMERS;
-	int rc;
-
-	START_TIMER;
-
-	while (1) {
-		rc = getgrgid_r (gid, grp, buf, bufsiz, result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			*result = NULL;
-		break;
-	}
-
-	END_TIMER2(__func__);
-
-	return rc;
-}
-
 int gid_from_string(const char *name, gid_t *gidp)
 {
+	DEF_TIMERS;
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
 	long l;
@@ -345,8 +324,18 @@ int gid_from_string(const char *name, gid_t *gidp)
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if ((_getgrgid_r (l, &grp, buffer, PW_BUF_SIZE, &result) != 0)
-	    || result == NULL)
+	START_TIMER;
+	while (true) {
+		int rc = getgrgid_r(l, &grp, buffer, PW_BUF_SIZE, &result);
+		if (rc == EINTR) {
+			continue;
+		} else if (rc)
+			result = NULL;
+		break;
+	}
+	END_TIMER2("getgrgid_r");
+
+	if (!result)
 		return -1;
 
 	*gidp = (gid_t) l;
@@ -369,12 +358,22 @@ extern char *gid_to_string(gid_t gid)
  */
 char *gid_to_string_or_null(gid_t gid)
 {
+	DEF_TIMERS;
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE];
-	int rc;
 
-	rc = _getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
-	if (rc == 0 && result)
+	START_TIMER;
+	while (true) {
+		int rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
+		if (rc == EINTR) {
+			continue;
+		} else if (rc)
+			result = NULL;
+		break;
+	}
+	END_TIMER2("getgrgid_r");
+
+	if (result)
 		return xstrdup(result->gr_name);
 
 	return NULL;
