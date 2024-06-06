@@ -7,6 +7,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld crash after a job has been resized.
  -- Fix slurmctld and slurmdbd potentially stopping instead of performing a
     logrotate when recieving SIGUSR2 when using auth/slurm.
+ -- Fix not having a disabled value for keepalive CommunicationParameters in
+    slurm.conf when these parameters are not set. This can log an error when
+    setting a socket, for example during slurmdbd registration with ctld.
 
 * Changes in Slurm 23.11.7
 ==========================
