@@ -360,12 +360,20 @@ char *gid_to_string_or_null(gid_t gid)
 {
 	DEF_TIMERS;
 	struct group grp, *result;
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
+	char *name = NULL;
 
 	START_TIMER;
 	while (true) {
-		int rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
+		int rc = getgrgid_r(gid, &grp, curr_buf, bufsize, &result);
 		if (rc == EINTR) {
+			continue;
+		} else if (rc == ERANGE) {
+			bufsize *= 2;
+			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
 		} else if (rc)
 			result = NULL;
@@ -374,7 +382,9 @@ char *gid_to_string_or_null(gid_t gid)
 	END_TIMER2("getgrgid_r");
 
 	if (result)
-		return xstrdup(result->gr_name);
+		name = xstrdup(result->gr_name);
 
-	return NULL;
+	xfree(buf_malloc);
+
+	return name;
 }
