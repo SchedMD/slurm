@@ -976,7 +976,7 @@ extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
 				goto unpack_error;
 		}
 		unpack_bit_str_hex(&vni_pids, buffer); /* Unused */
-		bit_free(vni_pids);
+		FREE_NULL_BITMAP(vni_pids);
 		safe_unpack32(&stepinfo->flags, buffer);
 
 		safe_unpack32(&stepinfo->num_nics, buffer);
