@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld and slurmdbd potentially stopping instead of performing a
     logrotate when recieving SIGUSR2 when using auth/slurm.
  -- switch/hpe_slingshot - Fix slurmctld crash when upgrading from 23.02.
+ -- Fix "Could not find group" errors from validate_group() when using
+    AllowGroups with large /etc/group files.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -345,6 +347,8 @@ documents those changes that are of interest to users and administrators.
     slurm.conf when these parameters are not set. This can log an error when
     setting a socket, for example during slurmdbd registration with ctld.
  -- switch/hpe_slingshot - Fix slurmctld crash when upgrading from 23.02.
+ -- Fix "Could not find group" errors from validate_group() when using
+    AllowGroups with large /etc/group files.
 
 * Changes in Slurm 23.11.7
 ==========================
