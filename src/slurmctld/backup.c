@@ -371,7 +371,9 @@ static void *_background_signal_hand(void *no_data)
 			break;
 		case SIGUSR2:
 			info("Logrotate signal (SIGUSR2) received");
+			lock_slurmctld(config_write_lock);
 			update_logging();
+			unlock_slurmctld(config_write_lock);
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);

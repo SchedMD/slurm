@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Fix slurmctld crash when upgrading from 23.02.
  -- Fix "Could not find group" errors from validate_group() when using
     AllowGroups with large /etc/group files.
+ -- Prevent an assertion in debugging builds when triggering log rotation
+    in a backup slurmctld.
 
 * Changes in Slurm 24.05.0
 ==========================
