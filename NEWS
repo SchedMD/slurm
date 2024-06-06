@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.41/job/{job_id}'
       'POST /slurm/v0.0.41/job/submit'
       'POST /slurm/v0.0.41/job/allocate'
+ -- mpi/pmi2 - Fix communication issue leading to task launch failure with
+    "invalid kvs seq from node".
 
 * Changes in Slurm 24.05.0
 ==========================

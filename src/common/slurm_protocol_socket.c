@@ -333,7 +333,11 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 	len = _writev_timeout(fd, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
-	return len;
+
+	/* Returned size should not include the 4-byte length header. */
+	if (len < 0)
+		return SLURM_ERROR;
+	return size;
 }
 
 extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
