@@ -2875,6 +2875,7 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_ECORE		SLURM_BIT(13) /* SlurmdParameters=allow_ecores */
 #define CONF_FLAG_SHR		SLURM_BIT(14) /* SlurmdParameters=shutdown_on_reboot */
 #define CONF_FLAG_CONTAIN_SPANK SLURM_BIT(15) /* SlurmdParameters=contain_spank */
+#define CONF_FLAG_NO_STDIO	SLURM_BIT(16) /* AccountingStoreFlags=no_stdio */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1

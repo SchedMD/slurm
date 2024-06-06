@@ -4669,6 +4669,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->conf_flags |= CONF_FLAG_SJX;
 		if (xstrcasestr(temp_str, "job_script"))
 			conf->conf_flags |= CONF_FLAG_SJS;
+		if (xstrcasestr(temp_str, "no_stdio"))
+			conf->conf_flags |= CONF_FLAG_NO_STDIO;
 		xfree(temp_str);
 	}
 
