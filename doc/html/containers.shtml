@@ -598,6 +598,7 @@ no_hosts = true
 pidns = "host"
 utsns = "host"
 userns = "host"
+log_driver = "journald"
 
 [engine]
 cgroup_manager = "systemd"
