@@ -582,9 +582,17 @@ to interact with Slurm via scrun.</li>
 <li>
 Configure Podman to call scrun instead of the <a
 href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
+See <a href="https://github.com/containers/common/blob/main/docs/containers.conf.5.md">
+upstream documentation</a> for details on configuration locations and loading
+order for containers.conf.
 <ul>
-<li>To configure for all users: <pre>/etc/containers/containers.conf</pre></li>
-<li>To configure per user: <pre>~/.config/containers/containers.conf</pre></li>
+<li>To configure for all users:
+<code>/etc/containers/containers.conf</code></li>
+<li>To configure per user:
+<code>$XDG_CONFIG_HOME/containers/containers.conf</code>
+or
+<code>~/.config/containers/containers.conf</code>
+(if <code>$XDG_CONFIG_HOME</code> is not defined).</li>
 </ul>
 Set the following configuration parameters to configure Podman's containers.conf:
 <pre>[containers]
@@ -620,7 +628,7 @@ massive performance penalty. Using a shared filesystem will avoid moving these
 files around.<br>
 <ul>
 <li>To configure for all users: <pre>/etc/containers/storage.conf</pre></li>
-<li>To configure per user: <pre>~/.config/containers/storage.conf</pre></li>
+<li>To configure per user: <pre>$XDG_CONFIG_HOME/containers/storage.conf</pre></li>
 </ul>
 Possible configuration additions to storage.conf to use a shared filesystem with
 <a href="https://docs.podman.io/en/latest/markdown/podman.1.html#storage-driver-value">
