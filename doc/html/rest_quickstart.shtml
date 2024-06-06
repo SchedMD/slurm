@@ -104,8 +104,13 @@ This section assumes you have either installed slurmrestd using DEB/RPM packages
 or built it manually such that the files are in the same places.
 
 <ol>
-<li>Select a local user account to use to run the slurmrestd
-(<b>not</b> root or SlurmUser to prevent privilege escalation)</li>
+<li>Create a local service account to run slurmrestd. To prevent privilege
+  escalation, the user account should be:
+  <ul>
+    <li>Not root or SlurmUser</li>
+    <li>Not used by real users or for any other functions</li>
+    <li>Not granted any special permissions</li>
+  </ul></li>
 <li>Configure slurmrestd service to use this user and associated group.
 This can be accomplished in either of two ways:
 <ul>
