@@ -586,7 +586,7 @@ href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
 <li>To configure for all users: <pre>/etc/containers/containers.conf</pre></li>
 <li>To configure per user: <pre>~/.config/containers/containers.conf</pre></li>
 </ul>
-Set the following configuration parameters to configure Podman:
+Set the following configuration parameters to configure Podman's containers.conf:
 <pre>[containers]
 apparmor_profile = "unconfined"
 cgroupns = "host"
