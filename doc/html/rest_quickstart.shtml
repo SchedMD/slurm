@@ -110,21 +110,22 @@ or built it manually such that the files are in the same places.
     <li>Not root or SlurmUser</li>
     <li>Not used by real users or for any other functions</li>
     <li>Not granted any special permissions</li>
-  </ul></li>
+  </ul>
+  <pre>sudo useradd -M -r -s /usr/sbin/nologin -U slurmrestd</pre></li>
 <li>Configure slurmrestd service to use this user and associated group.
 This can be accomplished in either of two ways:
 <ul>
 <li>Edit <code>/etc/default/slurmrestd</code>
 or <code>/etc/sysconfig/slurmrestd</code>
-<br>Add <code>-u USERNAME</code> and <code>-g GROUPNAME</code>
+<br>Add <code>-u slurmrestd</code> and <code>-g slurmrestd</code>
 to <code>SLURMRESTD_OPTIONS</code></li>
 <li>Run <code>systemctl edit slurmrestd</code> to edit overrides for the
 service.
 <br>Add content like this to the prescribed location in the overrides file:
 <pre>
 [Service]
-User=USERNAME
-Group=GROUPNAME
+User=slurmrestd
+Group=slurmrestd
 </pre></li>
 </ul>
 </li>
