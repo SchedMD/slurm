@@ -294,7 +294,11 @@ int gid_from_string(const char *name, gid_t *gidp)
 {
 	DEF_TIMERS;
 	struct group grp, *result;
-	char buffer[PW_BUF_SIZE], *p = NULL;
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	char *curr_buf = buf_stack;
+	size_t bufsize = PW_BUF_SIZE;
+	char *p = NULL;
 	long l;
 
 	if (!name)
@@ -303,7 +307,7 @@ int gid_from_string(const char *name, gid_t *gidp)
 	/*
 	 *  Check for valid group name first.
 	 */
-	if ((_getgrnam_r (name, &grp, buffer, PW_BUF_SIZE, &result) == 0)
+	if ((_getgrnam_r(name, &grp, buf_stack, bufsize, &result) == 0)
 	    && result != NULL) {
 		*gidp = result->gr_gid;
 		return 0;
@@ -326,8 +330,12 @@ int gid_from_string(const char *name, gid_t *gidp)
 	 */
 	START_TIMER;
 	while (true) {
-		int rc = getgrgid_r(l, &grp, buffer, PW_BUF_SIZE, &result);
+		int rc = getgrgid_r(l, &grp, curr_buf, bufsize, &result);
 		if (rc == EINTR) {
+			continue;
+		} else if (rc == ERANGE) {
+			bufsize *= 2;
+			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
 		} else if (rc)
 			result = NULL;
@@ -335,6 +343,11 @@ int gid_from_string(const char *name, gid_t *gidp)
 	}
 	END_TIMER2("getgrgid_r");
 
+	xfree(buf_malloc);
+	/*
+	 * Warning - result is now a pointer to invalid memory.
+	 * Do not dereference it, but checking that it is non-NULL is safe.
+	 */
 	if (!result)
 		return -1;
 
