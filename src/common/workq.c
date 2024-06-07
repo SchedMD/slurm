@@ -95,13 +95,13 @@ typedef struct {
 
 static void *_worker(void *arg);
 
-static inline void _check_magic_workq(void)
+static void _check_magic_workq(void)
 {
 	xassert(workq.workers);
 	xassert(workq.active >= 0);
 }
 
-static inline void _check_magic_worker(workq_worker_t *worker)
+static void _check_magic_worker(workq_worker_t *worker)
 {
 	xassert(worker);
 	xassert(worker->magic == MAGIC_WORKER);
@@ -109,7 +109,7 @@ static inline void _check_magic_worker(workq_worker_t *worker)
 	_check_magic_workq();
 }
 
-static inline void _check_magic_work(workq_work_t *work)
+static void _check_magic_work(workq_work_t *work)
 {
 	xassert(work);
 	xassert(work->magic == MAGIC_WORK);
