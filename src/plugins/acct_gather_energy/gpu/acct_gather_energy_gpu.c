@@ -765,8 +765,9 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(&thread_gpu_id_launcher,
 						    _thread_launcher, NULL);
+				log_flag(ENERGY, "%s thread launched",
+					 plugin_name);
 			}
-			log_flag(ENERGY, "%s thread launched", plugin_name);
 		} else
 			_get_joules_task(0);
 
