@@ -360,6 +360,13 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Fix slurmctld crash when upgrading from 23.02.
  -- Fix "Could not find group" errors from validate_group() when using
     AllowGroups with large /etc/group files.
+ -- slurmrestd - Prevent a slurmrestd segfault when parsing the crontab field,
+    which was never usable. Now it explicitly ignores the value and emits a
+    warning if it is used for the following endpoints:
+      'POST /slurm/v0.0.39/job/{job_id}'
+      'POST /slurm/v0.0.39/job/submit'
+      'POST /slurm/v0.0.40/job/{job_id}'
+      'POST /slurm/v0.0.40/job/submit'
 
 * Changes in Slurm 23.11.7
 ==========================
