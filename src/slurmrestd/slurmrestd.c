@@ -641,6 +641,7 @@ int main(int argc, char **argv)
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
+	/* This checks if slurmrestd is running in inetd mode */
 	workq_init((run_mode.listen ? thread_count : WORKQ_THREAD_COUNT_MIN));
 	conmgr_init(max_connections, callbacks);
 
