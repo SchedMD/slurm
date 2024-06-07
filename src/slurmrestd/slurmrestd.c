@@ -638,11 +638,6 @@ int main(int argc, char **argv)
 
 	slurm_init(slurm_conf_filename);
 
-	if (thread_count < 2)
-		fatal("Request at least 2 threads for processing");
-	if (thread_count > 1024)
-		fatal("Excessive thread count");
-
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 

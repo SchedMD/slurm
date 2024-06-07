@@ -199,9 +199,14 @@ extern void workq_init(int count)
 {
 	int rc;
 
-	xassert(!count ||
-		((count > WORKQ_THREAD_COUNT_MIN) &&
-		 (count < WORKQ_THREAD_COUNT_MAX)));
+	if (!count) {
+		count = WORKQ_THREAD_COUNT_DEFAULT;
+	} else if ((count < WORKQ_THREAD_COUNT_MIN) ||
+		   (count > WORKQ_THREAD_COUNT_MAX)) {
+		fatal("%s: Invalid thread count=%d; thread count must be between %d and %d",
+		      __func__, count, WORKQ_THREAD_COUNT_MIN,
+		      WORKQ_THREAD_COUNT_MAX);
+	}
 
 	slurm_mutex_lock(&workq.mutex);
 
