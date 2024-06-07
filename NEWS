@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.41/job/allocate'
  -- mpi/pmi2 - Fix communication issue leading to task launch failure with
     "invalid kvs seq from node".
+ -- Fix getting user environment when using sbatch with "--get-user-env" or
+    "--export=" when there is a user profile script that reads /proc.
  -- Do not log the following errors when AcctGatherEnergyType plugins are used
     but a node does not have or cannot find sensors:
     "error: _get_joules_task: can't get info from slurmd"
