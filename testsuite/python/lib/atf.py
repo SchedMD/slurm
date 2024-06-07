@@ -958,7 +958,7 @@ def restore_config_file(config="slurm"):
         )
 
 
-def get_config(live=True, source="slurm", quiet=False):
+def get_config(live=True, source="slurm", quiet=False, delimiter="="):
     """Returns the Slurm configuration as a dictionary.
 
     Args:
@@ -972,6 +972,7 @@ def get_config(live=True, source="slurm", quiet=False):
             If live is False, source should be the name of the config file
             without the .conf prefix (e.g. slurmdbd).
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        delimiter (string): The delimiter between the parameter name and the value.
 
     Returns:
         A dictionary comprised of the parameter names and their values.
@@ -1000,7 +1001,7 @@ def get_config(live=True, source="slurm", quiet=False):
         output = run_command_output(f"{command} show config", fatal=True, quiet=quiet)
 
         for line in output.splitlines():
-            if match := re.search(rf"^\s*(\S+)\s*=\s*(.*)$", line):
+            if match := re.search(rf"^\s*(\S+)\s*{re.escape(delimiter)}\s*(.*)$", line):
                 slurm_dict[match.group(1)] = match.group(2).rstrip()
     else:
         config = source
@@ -1012,7 +1013,7 @@ def get_config(live=True, source="slurm", quiet=False):
             f"cat {config_file}", user=properties["slurm-user"], quiet=quiet
         )
         for line in output.splitlines():
-            if match := re.search(rf"^\s*(\S+)\s*=\s*(.*)$", line):
+            if match := re.search(rf"^\s*(\S+)\s*{re.escape(delimiter)}\s*(.*)$", line):
                 parameter_name, parameter_value = (
                     match.group(1),
                     match.group(2).rstrip(),
@@ -1029,7 +1030,7 @@ def get_config(live=True, source="slurm", quiet=False):
                     instance_name, subparameters = parameter_value.split(" ", 1)
                     subparameters_dict = {}
                     for subparameter_name, subparameter_value in re.findall(
-                        r" *([^= ]+) *= *([^ ]+)", subparameters
+                        rf" *([^= ]+) *{re.escape(delimiter)} *([^ ]+)", subparameters
                     ):
                         # Reformat the value if necessary
                         if is_integer(subparameter_value):
@@ -1126,7 +1127,11 @@ def config_parameter_includes(name, value, **get_config_kwargs):
 
 
 def set_config_parameter(
-    parameter_name, parameter_value, source="slurm", restart=False
+    parameter_name,
+    parameter_value,
+    source="slurm",
+    restart=False,
+    delimiter="=",
 ):
     """Sets the value of the specified configuration parameter.
 
@@ -1144,6 +1149,7 @@ def set_config_parameter(
         source (string): Name of the config file without the .conf prefix.
         restart (boolean): If True and slurm is running, slurm will be
             restarted rather than reconfigured.
+        delimiter (string): The delimiter between the parameter name and the value.
 
     Note:
         When setting a complex parameter (one which may be repeated and has
@@ -1154,7 +1160,8 @@ def set_config_parameter(
         None
 
     Example:
-        >>> set_config_parameter('ClusterName', 'cluster1')
+        >>> set_config_parameter("ClusterName", "cluster1")
+        >>> set_config_parameter("required", "/tmp/spank_plugin.so", source="plugstack", delimiter=" ")
     """
 
     if not properties["auto-config"]:
@@ -1176,19 +1183,19 @@ def set_config_parameter(
         f"cat {config_file}", user=properties["slurm-user"], quiet=True
     )
     for line in output.splitlines():
-        if not re.search(rf"(?i)^\s*{parameter_name}\s*=", line):
-            lines.append(f"{line}\n")
+        if not re.search(rf"(?i)^\s*{parameter_name}\s*{re.escape(delimiter)}", line):
+            lines.append(line)
     if isinstance(parameter_value, dict):
         for instance_name in parameter_value:
-            line = f"{parameter_name}={instance_name}"
+            line = f"{parameter_name}{delimiter}{instance_name}"
             for subparameter_name, subparameter_value in parameter_value[
                 instance_name
             ].items():
-                line += f" {subparameter_name}={subparameter_value}"
-            lines.append(f"{line}\n")
+                line += f" {subparameter_name}{delimiter}{subparameter_value}"
+            lines.append(line)
     elif parameter_value != None:
-        lines.append(f"{parameter_name}={parameter_value}\n")
-    input = "".join(lines)
+        lines.append(f"{parameter_name}{delimiter}{parameter_value}")
+    input = "\n".join(lines)
     run_command(
         f"cat > {config_file}",
         input=input,
@@ -1389,7 +1396,12 @@ def require_whereami(is_cray=False):
 
 
 def require_config_parameter(
-    parameter_name, parameter_value, condition=None, source="slurm", skip_message=None
+    parameter_name,
+    parameter_value,
+    condition=None,
+    source="slurm",
+    skip_message=None,
+    delimiter="=",
 ):
     """Ensures that a configuration parameter has the required value.
 
@@ -1406,6 +1418,7 @@ def require_config_parameter(
         source (string): Name of the config file without the .conf prefix.
         skip_message (string): Message to be displayed if in local-config mode
             and parameter not present.
+        delimiter (string): The delimiter between the parameter name and the value.
 
     Note:
         When requiring a complex parameter (one which may be repeated and has
@@ -1439,7 +1452,7 @@ def require_config_parameter(
         parameter_value = parameter_value.casefold()
 
     observed_value = get_config_parameter(
-        parameter_name, live=False, source=source, quiet=True
+        parameter_name, live=False, source=source, quiet=True, delimiter=delimiter
     )
 
     condition_satisfied = False
@@ -1453,7 +1466,9 @@ def require_config_parameter(
 
     if not condition_satisfied:
         if properties["auto-config"]:
-            set_config_parameter(parameter_name, parameter_value, source=source)
+            set_config_parameter(
+                parameter_name, parameter_value, source=source, delimiter=delimiter
+            )
         else:
             if skip_message is None:
                 skip_message = f"This test requires the {parameter_name} parameter to be {parameter_value} (but it is {observed_value})"
@@ -3296,9 +3311,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict[
-                    "NodeName"
-                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                new_node_dict["NodeName"] = (
+                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                )
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)
