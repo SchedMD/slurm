@@ -377,6 +377,8 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.39/job/submit'
       'POST /slurm/v0.0.40/job/{job_id}'
       'POST /slurm/v0.0.40/job/submit'
+ -- Fix getting user environment when using sbatch with "--get-user-env" or
+    "--export=" when there is a user profile script that reads /proc.
 
 * Changes in Slurm 23.11.7
 ==========================
