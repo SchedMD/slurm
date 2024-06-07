@@ -4068,6 +4068,27 @@ static int DUMP_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(JOB_DESC_MSG_CRON_ENTRY)(const parser_t *const parser,
+					       void *obj, data_t *src,
+					       args_t *args,
+					       data_t *parent_path)
+{
+	char *path = NULL;
+	on_warn(PARSING, parser->type, args,
+		set_source_path(&path, parent_path), __func__,
+		"crontab submissions are not supported");
+	xfree(path);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_CRON_ENTRY)(const parser_t *const parser,
+					      void *obj, data_t *dst,
+					      args_t *args)
+{
+	cron_entry_t **cron_entry = obj;
+	return DUMP(CRON_ENTRY_PTR, *cron_entry, dst, args);
+}
+
 static int PARSE_FUNC(JOB_DESC_MSG_ENV)(const parser_t *const parser, void *obj,
 					data_t *src, args_t *args,
 					data_t *parent_path)
@@ -5971,11 +5992,11 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
 	add_parser(cron_entry_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
 	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags", NULL),
-	add_parse(BITSTR, minute, "minute", NULL),
-	add_parse(BITSTR, hour, "hour", NULL),
-	add_parse(BITSTR, day_of_month, "day_of_month", NULL),
-	add_parse(BITSTR, month, "month", NULL),
-	add_parse(BITSTR, day_of_week, "day_of_week", NULL),
+	add_parse(BITSTR_PTR, minute, "minute", NULL),
+	add_parse(BITSTR_PTR, hour, "hour", NULL),
+	add_parse(BITSTR_PTR, day_of_month, "day_of_month", NULL),
+	add_parse(BITSTR_PTR, month, "month", NULL),
+	add_parse(BITSTR_PTR, day_of_week, "day_of_week", NULL),
 	add_parse(STRING, cronspec, "specification", NULL),
 	add_parse(STRING, command, "command", NULL),
 	add_parse(UINT32, line_start, "line/start", NULL),
@@ -6064,7 +6085,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(cpu_freq_max),
 	add_skip(cpu_freq_gov),
 	add_parse(STRING, cpus_per_tres, "cpus_per_tres", NULL),
-	add_parse(CRON_ENTRY_PTR, crontab_entry, "crontab", NULL),
+	add_parse(JOB_DESC_MSG_CRON_ENTRY, crontab_entry, "crontab", NULL),
 	add_parse(UINT64, deadline, "deadline", NULL),
 	add_parse(UINT32, delay_boot, "delay_boot", NULL),
 	add_parse(STRING, dependency, "dependency", NULL),
@@ -6491,6 +6512,7 @@ static const parser_t parsers[] = {
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addps(HOLD, uint32_t, NEED_NONE, BOOL, "Job held"),
+	addpsp(JOB_DESC_MSG_CRON_ENTRY, CRON_ENTRY_PTR, cron_entry_t *, NEED_NONE, "crontab entry"),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -6560,6 +6582,7 @@ static const parser_t parsers[] = {
 	addpp(NODES_PTR, node_info_msg_t *, NODES),
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG),
 	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA),
+	addpp(BITSTR_PTR, bitstr_t *, BITSTR),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
