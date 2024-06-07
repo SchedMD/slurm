@@ -1044,3 +1044,7 @@ test_145_2   Test --constraint
 test_146_#   Testing partitions.
 ================================
 test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
+
+test_147_#   Testing SPANK.
+===========================
+test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
