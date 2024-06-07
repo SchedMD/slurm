@@ -513,6 +513,11 @@ extern uint32_t gres_build_id(char *name);
 extern char *gres_name_filter(char *orig_gres, char *nodes);
 
 /*
+ * Return how many gres Names are on the system.
+ */
+extern int gres_get_gres_cnt(void);
+
+/*
  **************************************************************************
  *                 PLUGIN CALLS FOR SLURMD DAEMON                         *
  **************************************************************************
@@ -578,11 +583,6 @@ extern int gres_node_config_pack(buf_t *buffer);
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
 extern void gres_init_node_config(char *orig_config, List *gres_list);
-
-/*
- * Return how many gres Names are on the system.
- */
-extern int gres_get_gres_cnt(void);
 
 /* Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
