@@ -1140,7 +1140,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	switch (data_get_type(src)) {
 	case DATA_TYPE_STRING:
 	{
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		/* treat "" same as null */
 		if (!str || !str[0])
@@ -1788,7 +1788,8 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 {
 	job_desc_msg_t *job = obj;
 	uint32_t dist_tmp, plane_tmp;
-	char *dist_str;
+	const char *dist_str;
+	char *new_dist_str = NULL;
 
 	if (data_get_type(src) == DATA_TYPE_NULL) {
 		if (job->plane_size == NO_VAL16)
@@ -1840,13 +1841,14 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 					   "Could not set SLURM_DISTRIBUTION in environment");
 	}
 
-	set_distribution(dist_tmp, &dist_str);
-	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "%s", dist_str))
+	set_distribution(dist_tmp, &new_dist_str);
+	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "%s",
+		    new_dist_str))
 		return parse_error(parser, args, parent_path, SLURM_ERROR,
 				   "Could not set SLURM_DISTRIBUTION in environment");
 	job->env_size = envcount(job->environment);
 
-	xfree(dist_str);
+	xfree(new_dist_str);
 	return SLURM_SUCCESS;
 }
 
@@ -2037,7 +2039,7 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		if (!str || !str[0]) {
 			*uid_ptr = SLURM_AUTH_NOBODY;
@@ -2101,7 +2103,7 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_STRING:
 	{
 		int rc;
-		char *str = data_get_string(src);
+		const char *str = data_get_string(src);
 
 		if (!str || !str[0]) {
 			*gid_ptr = SLURM_AUTH_NOBODY;
@@ -4335,7 +4337,7 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
-		char *host_list_str = data_get_string(src);
+		const char *host_list_str = data_get_string(src);
 
 		if (!host_list_str || !host_list_str[0]) {
 			/* empty list -> no hostlist */

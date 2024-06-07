@@ -206,14 +206,14 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				      &qos_id);
 	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
 		   DATA_TYPE_STRING) {
-		char *qos_name = data_get_string(src);
+		const char *qos_name = data_get_string(src);
 
 		if (!qos_name || !qos_name[0])
 			return SLURM_SUCCESS;
 
 		qos = list_find_first(args->qos_list,
 				      slurmdb_find_qos_in_list_by_name,
-				      qos_name);
+				      (void *) qos_name);
 	} else {
 		rc = ESLURM_REST_FAIL_PARSING;
 		if (ignore_failure)
