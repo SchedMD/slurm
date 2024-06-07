@@ -383,10 +383,10 @@ extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller)
 			   (uintptr_t) ctxt->db_conn);
 }
 
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller)
+extern const char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+					  const char *caller)
 {
-	char *str = NULL;
+	const char *str = NULL;
 	data_t *dbuf;
 
 	xassert(ctxt->magic == MAGIC_CTXT);

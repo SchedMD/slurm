@@ -200,8 +200,8 @@ extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller);
  * IN ctxt - connection context
  * RET string or NULL on error
  */
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller);
+extern const char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+					  const char *caller);
 
 #define get_query_key_list(path, ctxt, parent_path) \
 	get_query_key_list_funcname(path, ctxt, parent_path, __func__)

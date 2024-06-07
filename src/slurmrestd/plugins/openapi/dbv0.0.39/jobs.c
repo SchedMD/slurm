@@ -205,7 +205,7 @@ static data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	if (slurm_addto_char_list(list, data_get_string(data)) < 1)
+	if (slurm_addto_char_list(list, (void *) data_get_string(data)) < 1)
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
@@ -229,7 +229,7 @@ static int _parse_csv_list(data_t *src, const char *key, List *list,
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, key,
 				  "format must be a string");
 
-	if (add_to(*list, data_get_string(src)) < 1)
+	if (add_to(*list, (void *) data_get_string(src)) < 1)
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, key,
 				  "Unable to parse CSV list");
 
@@ -292,7 +292,7 @@ static data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	if (slurm_addto_step_list(list, data_get_string(data)) < 1)
+	if (slurm_addto_step_list(list, (void *) data_get_string(data)) < 1)
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
@@ -389,8 +389,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 			return DATA_FOR_EACH_FAIL;
 		}
 
-		args->job_cond->used_nodes = xstrdup(
-			data_get_string_const(data));
+		args->job_cond->used_nodes = xstrdup(data_get_string(data));
 
 		return DATA_FOR_EACH_CONT;
 	}
@@ -419,7 +418,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 		}
 
 		slurm_addto_step_list(args->job_cond->step_list,
-				      data_get_string(data));
+				      (void *) data_get_string(data));
 
 		if (!list_count(args->job_cond->step_list)) {
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, key,
@@ -583,7 +582,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
 			   data_t *resp, void *auth, data_parser_t *parser)
 {
-	char *jobid;
+	const char *jobid;
 	slurmdb_job_cond_t job_cond = {
 		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 		.db_flags = SLURMDB_JOB_FLAG_NOTSET,
@@ -599,7 +598,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   get_http_method_string(method));
 	} else if ((jobid = get_str_param("job_id", ctxt))) {
 		job_cond.step_list = list_create(slurm_destroy_selected_step);
-		slurm_addto_step_list(job_cond.step_list, jobid);
+		slurm_addto_step_list(job_cond.step_list, (void *) jobid);
 
 		_dump_jobs(ctxt, &job_cond);
 	}

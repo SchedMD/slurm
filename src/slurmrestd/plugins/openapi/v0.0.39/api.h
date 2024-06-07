@@ -104,8 +104,8 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
  * IN ctxt - connection context
  * RET string or NULL on error
  */
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller);
+extern const char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+					  const char *caller);
 
 extern int get_date_param(data_t *query, const char *param, time_t *time);
 

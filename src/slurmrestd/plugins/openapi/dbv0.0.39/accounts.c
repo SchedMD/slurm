@@ -372,7 +372,7 @@ static int _foreach_delete_acct(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _delete_account(ctxt_t *ctxt, char *account)
+static void _delete_account(ctxt_t *ctxt, const char *account)
 {
 	data_t *dremoved;
 	List removed = NULL;
@@ -384,7 +384,7 @@ static void _delete_account(ctxt_t *ctxt, char *account)
 		.assoc_cond = &assoc_cond,
 	};
 
-	list_append(assoc_cond.acct_list, account);
+	list_append(assoc_cond.acct_list, (void *) account);
 
 	if (db_query_list(ctxt, &removed, slurmdb_accounts_remove, &acct_cond))
 		goto cleanup;
@@ -405,7 +405,7 @@ extern int op_handler_account(const char *context_id,
 			      data_t *query, int tag, data_t *resp, void *auth,
 			      data_parser_t *parser)
 {
-	char *acct;
+	const char *acct;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
@@ -425,7 +425,7 @@ extern int op_handler_account(const char *context_id,
 
 		/* Change search conditions based on parameters */
 		if (!_parse_other_params(ctxt, &acct_cond)) {
-			list_append(assoc_cond.acct_list, acct);
+			list_append(assoc_cond.acct_list, (void *) acct);
 
 			_dump_accounts(ctxt, &acct_cond);
 		}

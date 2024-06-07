@@ -91,7 +91,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 	return DATA_FOR_EACH_FAIL;
 }
 
-static void _dump_qos(ctxt_t *ctxt, list_t *qos_list, char *qos_name)
+static void _dump_qos(ctxt_t *ctxt, list_t *qos_list, const char *qos_name)
 {
 	slurmdb_qos_rec_t *qos;
 	list_itr_t *iter = list_iterator_create(qos_list);
@@ -254,7 +254,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 			  data_t *parameters, data_t *query, int tag,
 			  data_t *resp, void *auth, data_parser_t *parser)
 {
-	char *qos_name = NULL;
+	const char *qos_name = NULL;
 	slurmdb_qos_cond_t qos_cond = { 0 };
 	List qos_list = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
@@ -286,7 +286,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 
 		if (qos_name) {
 			qos_cond.name_list = list_create(NULL);
-			list_append(qos_cond.name_list, qos_name);
+			list_append(qos_cond.name_list, (void *) qos_name);
 		} else {
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, "qos_name",
 				   "QOS name must be given for single QOS query");

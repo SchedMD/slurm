@@ -390,7 +390,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 {
 	int rc;
 	slurm_selected_step_t job_id;
-	char *job_id_str;
+	const char *job_id_str;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
