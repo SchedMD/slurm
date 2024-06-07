@@ -737,8 +737,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    s_p_get_string(&cpu_bind, "CpuBind", dflt)) {
 			if (xlate_cpu_bind_str(cpu_bind, &n->cpu_bind) !=
 			    SLURM_SUCCESS) {
-				error("NodeNames=%s CpuBind=\'%s\' is invalid, ignored",
-				      n->nodenames, cpu_bind);
+				error_in_daemon("NodeNames=%s CpuBind=\'%s\' is invalid, ignored",
+						n->nodenames, cpu_bind);
 				n->cpu_bind = 0;
 			}
 			xfree(cpu_bind);
@@ -825,44 +825,45 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		s_p_hashtbl_destroy(tbl);
 
 		if (n->cores == 0) {	/* make sure cores is non-zero */
-			error("NodeNames=%s CoresPerSocket=0 is invalid, "
-			      "reset to 1", n->nodenames);
+			error_in_daemon("NodeNames=%s CoresPerSocket=0 is invalid, reset to 1",
+					n->nodenames);
 			n->cores = 1;
 		}
 		if (n->cpus == 0) {	/* make sure cpus is non-zero */
-			error("NodeNames=%s CPUs=0 is invalid, "
-			      "reset to 1", n->nodenames);
+			error_in_daemon("NodeNames=%s CPUs=0 is invalid, reset to 1",
+					n->nodenames);
 			n->cpus = 1;
 		}
 		if (n->threads == 0) {	/* make sure threads is non-zero */
-			error("NodeNames=%s ThreadsPerCore=0 is invalid, "
-			      "reset to 1", n->nodenames);
+			error_in_daemon("NodeNames=%s ThreadsPerCore=0 is invalid, reset to 1",
+					n->nodenames);
 			n->threads = 1;
 		}
 
 		if (sockets_per_board == 0) {
 			/* make sure sockets_per_boards is non-zero */
-			error("NodeNames=%s SocketsPerBoards=0 is invalid, "
-			      "reset to 1", n->nodenames);
+			error_in_daemon("NodeNames=%s SocketsPerBoards=0 is invalid, reset to 1",
+					n->nodenames);
 			sockets_per_board = 1;
 		}
 
 		if (n->tot_sockets == 0) {
 			/* make sure tot_sockets is non-zero */
-			error("NodeNames=%s Sockets=0 is invalid, reset to 1", n->nodenames);
+			error_in_daemon("NodeNames=%s Sockets=0 is invalid, reset to 1",
+					n->nodenames);
 			n->tot_sockets = 1;
 		}
 
 		if (!no_sockets_per_board && !no_sockets) {
-			error("NodeNames=%s Sockets=# and SocketsPerBoard=# is invalid , using SocketsPerBoard",
-			      n->nodenames);
+			error_in_daemon("NodeNames=%s Sockets=# and SocketsPerBoard=# is invalid , using SocketsPerBoard",
+					n->nodenames);
 			no_sockets = true;
 		}
 
 		if (n->boards == 0) {
 			/* make sure boards is non-zero */
-			error("NodeNames=%s Boards=0 is invalid, reset to 1",
-			      n->nodenames);
+			error_in_daemon("NodeNames=%s Boards=0 is invalid, reset to 1",
+					n->nodenames);
 			n->boards = 1;
 		}
 
@@ -894,10 +895,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (n->tot_sockets < n->boards) {
-			error("NodeNames=%s Sockets(%d) < Boards(%d) resetting Boards=1",
-			      n->nodenames,
-			      n->tot_sockets,
-			      n->boards);
+			error_in_daemon("NodeNames=%s Sockets(%d) < Boards(%d) resetting Boards=1",
+					n->nodenames,
+					n->tot_sockets,
+					n->boards);
 			n->boards = 1;
 		}
 
@@ -905,38 +906,36 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if ((n->cpus != n->tot_sockets) &&
 		    (n->cpus != n->tot_sockets * n->cores) &&
 		    (n->cpus != n->tot_sockets * n->cores * n->threads)) {
-			error("NodeNames=%s CPUs=%d match no Sockets, Sockets*CoresPerSocket or Sockets*CoresPerSocket*ThreadsPerCore. Resetting CPUs.",
-			      n->nodenames, n->cpus);
+			error_in_daemon("NodeNames=%s CPUs=%d match no Sockets, Sockets*CoresPerSocket or Sockets*CoresPerSocket*ThreadsPerCore. Resetting CPUs.",
+					n->nodenames, n->cpus);
 			n->cpus = n->tot_sockets * n->cores * n->threads;
 		}
 
 		if (n->core_spec_cnt >= (n->tot_sockets * n->cores)) {
-			error("NodeNames=%s CoreSpecCount=%u is invalid, "
-			      "reset to 1", n->nodenames, n->core_spec_cnt);
+			error_in_daemon("NodeNames=%s CoreSpecCount=%u is invalid, reset to 1",
+					n->nodenames, n->core_spec_cnt);
 			n->core_spec_cnt = 1;
 		}
 
 		if (n->cpu_spec_list) {
 			bitstr_t *cpu_spec_bitmap = bit_alloc(n->cpus);
 			if (bit_unfmt(cpu_spec_bitmap, n->cpu_spec_list)) {
-				error("NodeNames=%s CpuSpecList=%s - unable to convert it to bitmap of size CPUs=%d. Ignoring CpuSpecList.",
-				      n->nodenames, n->cpu_spec_list, n->cpus);
+				error_in_daemon("NodeNames=%s CpuSpecList=%s - unable to convert it to bitmap of size CPUs=%d. Ignoring CpuSpecList.",
+						n->nodenames, n->cpu_spec_list, n->cpus);
 				xfree(n->cpu_spec_list);
 			}
 			FREE_NULL_BITMAP(cpu_spec_bitmap);
 		}
 
 		if ((n->core_spec_cnt > 0) && n->cpu_spec_list) {
-			error("NodeNames=%s CoreSpecCount=%u is invalid "
-			      "with CPUSpecList, reset to 0",
-			      n->nodenames, n->core_spec_cnt);
+			error_in_daemon("NodeNames=%s CoreSpecCount=%u is invalid with CPUSpecList, reset to 0",
+					n->nodenames, n->core_spec_cnt);
 			n->core_spec_cnt = 0;
 		}
 
 		if (n->mem_spec_limit >= n->real_memory) {
-			error("NodeNames=%s MemSpecLimit=%"
-			      ""PRIu64" is invalid, reset to 0",
-			      n->nodenames, n->mem_spec_limit);
+			error_in_daemon("NodeNames=%s MemSpecLimit=%"PRIu64" is invalid, reset to 0",
+					n->nodenames, n->mem_spec_limit);
 			n->mem_spec_limit = 0;
 		}
 
