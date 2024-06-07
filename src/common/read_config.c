@@ -139,6 +139,7 @@ typedef struct names_ll_s {
 	slurm_addr_t bcast_addr;
 	bool addr_initialized;
 	bool bcast_addr_initialized;
+	bool is_cloud;
 	bool is_dynamic;
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
@@ -199,7 +200,7 @@ static uint16_t *_parse_srun_ports(const char *);
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
 			      bool front_end, slurm_addr_t *addr,
-			      bool initialized, bool dynamic);
+			      bool initialized, bool dynamic, bool cloud);
 
 static s_p_options_t slurm_conf_stepd_options[] = {
 	{.key = "NodeName",
@@ -2200,7 +2201,7 @@ static int _get_hash_idx(const char *name)
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
 			      bool front_end, slurm_addr_t *addr,
-			      bool initialized, bool dynamic)
+			      bool initialized, bool dynamic, bool cloud)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -2244,6 +2245,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	new->bcast_address = xstrdup(bcast_address);
 	new->port	= port;
 	new->addr_initialized = initialized;
+	new->is_cloud = cloud;
 	new->is_dynamic = dynamic;
 
 	if (addr)
@@ -2307,7 +2309,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 		address = hostlist_shift(address_list);
 		_push_to_hashtbls(hostname, hostname, address, NULL,
 				  front_end_ptr->port, true, NULL, false,
-				  false);
+				  false, false);
 		free(hostname);
 		free(address);
 	}
@@ -2324,7 +2326,7 @@ static int _check_callback(char *alias, char *hostname, char *address,
 			   slurm_conf_node_t *node_ptr,
 			   config_record_t *config_ptr)
 {
-	bool dynamic_addr = false;
+	bool dynamic_addr = false, cloud_node = false;
 	static bool cloud_dns = false;
 	static time_t last_update = 0;
 
@@ -2341,8 +2343,12 @@ static int _check_callback(char *alias, char *hostname, char *address,
 	     (state_val & NODE_STATE_FUTURE)))
 		dynamic_addr = true;
 
+	if (!running_in_slurmctld() &&
+	    (state_val & NODE_STATE_CLOUD))
+		cloud_node = true;
+
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
-			  false, NULL, false, dynamic_addr);
+			  false, NULL, false, dynamic_addr, cloud_node);
 	return SLURM_SUCCESS;
 }
 
@@ -2746,7 +2752,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	}
 	if (!p) {
 		_push_to_hashtbls(node_name, node_hostname, node_addr,
-				  NULL, 0, false, NULL, false, false);
+				  NULL, 0, false, NULL, false, false, false);
 	}
 	slurm_conf_unlock();
 
@@ -2804,7 +2810,8 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 			slurm_conf_unlock();
 			return SLURM_ERROR;
 		}
-		p->addr_initialized = true;
+		if (!p->is_cloud)
+			p->addr_initialized = true;
 	}
 
 	*address = p->addr;
@@ -6460,7 +6467,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	while ((hostname = hostlist_shift(host_list))) {
 		_internal_conf_remove_node(hostname);
 		_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
-				  false, &node_addrs[i++], true, true);
+				  false, &node_addrs[i++], true, true, false);
 		free(hostname);
 	}
 	slurm_conf_unlock();
@@ -6496,7 +6503,7 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 
 	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
 			  node_ptr->comm_name, node_ptr->bcast_address,
-			  node_ptr->port, false, NULL, false, false);
+			  node_ptr->port, false, NULL, false, false, false);
 	slurm_conf_unlock();
 }
 
