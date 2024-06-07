@@ -65,28 +65,6 @@ static pthread_mutex_t uid_lock = PTHREAD_MUTEX_INITIALIZER;
 static uid_cache_entry_t *uid_cache = NULL;
 static int uid_cache_used = 0;
 
-static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
-		size_t bufsiz, struct passwd **result)
-{
-	DEF_TIMERS;
-	int rc;
-
-	START_TIMER;
-
-	while (1) {
-		rc = getpwnam_r(name, pwd, buf, bufsiz, result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			*result = NULL;
-		break;
-	}
-
-	END_TIMER2(__func__);
-
-	return (rc);
-}
-
 extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 			     size_t bufsiz, struct passwd **result)
 {
@@ -111,7 +89,8 @@ extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 
 int uid_from_string(const char *name, uid_t *uidp)
 {
-	struct passwd pwd, *result;
+	DEF_TIMERS;
+	struct passwd pwd, *result = NULL;
 	char buffer[PW_BUF_SIZE], *p = NULL;
 	long l;
 
@@ -121,8 +100,18 @@ int uid_from_string(const char *name, uid_t *uidp)
 	/*
 	 *  Check to see if name is a valid username first.
 	 */
-	if ((_getpwnam_r (name, &pwd, buffer, PW_BUF_SIZE, &result) == 0)
-	    && result != NULL) {
+	START_TIMER;
+	while (true) {
+		int rc = getpwnam_r(name, &pwd, buffer, PW_BUF_SIZE, &result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			result = NULL;
+		break;
+	}
+	END_TIMER2("getpwnam_r");
+
+	if (result) {
 		*uidp = result->pw_uid;
 		return 0;
 	}
