@@ -3706,7 +3706,7 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
-		char *host_list_str = data_get_string(src);
+		const char *host_list_str = data_get_string(src);
 
 		if (!host_list_str || !host_list_str[0]) {
 			/* empty list -> no hostlist */
