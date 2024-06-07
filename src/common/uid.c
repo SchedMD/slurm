@@ -282,9 +282,13 @@ int gid_from_string(const char *name, gid_t *gidp)
 	START_TIMER;
 	while (true) {
 		int rc = getgrnam_r(name, &grp, curr_buf, bufsize, &result);
-		if (rc == EINTR)
+		if (rc == EINTR) {
 			continue;
-		if (rc != 0)
+		} else if (rc == ERANGE) {
+			bufsize *= 2;
+			curr_buf = xrealloc(buf_malloc, bufsize);
+			continue;
+		} else if (rc)
 			result = NULL;
 		break;
 	}
@@ -292,6 +296,7 @@ int gid_from_string(const char *name, gid_t *gidp)
 
 	if (result) {
 		*gidp = result->gr_gid;
+		xfree(buf_malloc);
 		return 0;
 	}
 
@@ -299,13 +304,12 @@ int gid_from_string(const char *name, gid_t *gidp)
 	 *  If group name was not valid, perhaps it is a  valid GID.
 	 */
 	errno = 0;
-	l = strtol (name, &p, 10);
-	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX)))
-	   || (name == p)
-	   || (*p != '\0')
-	   || (l < 0)
-	   || (l > INT_MAX))
+	l = strtol(name, &p, 10);
+	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
+	    (name == p) || (*p != '\0') || (l < 0) || (l > INT_MAX)) {
+		xfree(buf_malloc);
 		return -1;
+	}
 
 	/*
 	 *  Now ensure the supplied uid is in the user database
