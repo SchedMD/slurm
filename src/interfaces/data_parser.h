@@ -467,6 +467,7 @@ typedef enum {
 	DATA_PARSER_JOB_DESC_MSG, /* job_desc_msg_t */
 	DATA_PARSER_JOB_DESC_MSG_ARGV, /* job_desc_msg_t->argv+argc */
 	DATA_PARSER_JOB_DESC_MSG_CPU_FREQ, /* job_desc_msg_t->cpu_freq* */
+	DATA_PARSER_JOB_DESC_MSG_CRON_ENTRY, /* cron_entry_t * */
 	DATA_PARSER_JOB_DESC_MSG_ENV, /* job_desc_msg_t->env* */
 	DATA_PARSER_JOB_DESC_MSG_NODES, /* job_desc_msg_t->min/max_cpus */
 	DATA_PARSER_JOB_DESC_MSG_SPANK_ENV, /* job_desc_msg_t->spank_env* */
@@ -565,7 +566,6 @@ typedef enum {
 	DATA_PARSER_KILL_JOBS_RESP_JOB_PTR, /* kill_jobs_resp_job_t* */
 	DATA_PARSER_OPENAPI_KILL_JOBS_RESP, /* openapi_kill_jobs_resp_t */
 	DATA_PARSER_OPENAPI_KILL_JOBS_RESP_PTR, /* openapi_kill_jobs_resp_t* */
-	DATA_PARSER_JOB_DESC_MSG_CRON_ENTRY, /* cron_entry_t * */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
