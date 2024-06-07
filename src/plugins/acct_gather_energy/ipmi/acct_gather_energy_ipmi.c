@@ -1027,8 +1027,8 @@ static int _get_joules_task(uint16_t delta)
 			+ new->base_consumed_energy;
 		memcpy(old, new, sizeof(acct_gather_energy_t));
 
-		log_flag(ENERGY, "%s: consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
-			 __func__, new->consumed_energy,
+		log_flag(ENERGY, "consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
+			 new->consumed_energy,
 			 new->base_consumed_energy, new->current_watts);
 	}
 
