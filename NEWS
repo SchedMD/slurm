@@ -381,6 +381,12 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.40/job/submit'
  -- Fix getting user environment when using sbatch with "--get-user-env" or
     "--export=" when there is a user profile script that reads /proc.
+ -- Do not log the following errors when AcctGatherEnergyType plugins are used
+    but a node does not have or cannot find sensors:
+    "error: _get_joules_task: can't get info from slurmd"
+    "error: slurm_get_node_energy: Zero Bytes were transmitted or received"
+    However, the following error will continue to be logged:
+    "error: Can't get energy data. No power sensors are available. Try later"
 
 * Changes in Slurm 23.11.7
 ==========================
