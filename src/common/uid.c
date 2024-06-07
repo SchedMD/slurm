@@ -262,32 +262,10 @@ gid_from_uid (uid_t uid)
 	return gid;
 }
 
-static int _getgrnam_r (const char *name, struct group *grp, char *buf,
-		size_t bufsiz, struct group **result)
-{
-	DEF_TIMERS;
-	int rc;
-
-	START_TIMER;
-
-	while (1) {
-		rc = getgrnam_r (name, grp, buf, bufsiz, result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			*result = NULL;
-		break;
-	}
-
-	END_TIMER2(__func__);
-
-	return (rc);
-}
-
 int gid_from_string(const char *name, gid_t *gidp)
 {
 	DEF_TIMERS;
-	struct group grp, *result;
+	struct group grp, *result = NULL;
 	char buf_stack[PW_BUF_SIZE];
 	char *buf_malloc = NULL;
 	char *curr_buf = buf_stack;
@@ -301,8 +279,18 @@ int gid_from_string(const char *name, gid_t *gidp)
 	/*
 	 *  Check for valid group name first.
 	 */
-	if ((_getgrnam_r(name, &grp, buf_stack, bufsize, &result) == 0)
-	    && result != NULL) {
+	START_TIMER;
+	while (true) {
+		int rc = getgrnam_r(name, &grp, curr_buf, bufsize, &result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			result = NULL;
+		break;
+	}
+	END_TIMER2("getgrnam_r");
+
+	if (result) {
 		*gidp = result->gr_gid;
 		return 0;
 	}
