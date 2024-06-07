@@ -786,6 +786,9 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
+	if (opt.network)
+		setenvf(NULL, "SLURM_NETWORK", "%s", opt.network);
+
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
