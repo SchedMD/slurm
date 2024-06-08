@@ -91,7 +91,11 @@ int uid_from_string(const char *name, uid_t *uidp)
 {
 	DEF_TIMERS;
 	struct passwd pwd, *result = NULL;
-	char buffer[PW_BUF_SIZE], *p = NULL;
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
+	char *p = NULL;
 	long l;
 
 	if (!name)
@@ -102,10 +106,14 @@ int uid_from_string(const char *name, uid_t *uidp)
 	 */
 	START_TIMER;
 	while (true) {
-		int rc = getpwnam_r(name, &pwd, buffer, PW_BUF_SIZE, &result);
-		if (rc == EINTR)
+		int rc = getpwnam_r(name, &pwd, curr_buf, bufsize, &result);
+		if (rc == EINTR) {
 			continue;
-		if (rc != 0)
+		} else if (rc == ERANGE) {
+			bufsize *= 2;
+			curr_buf = xrealloc(buf_malloc, bufsize);
+			continue;
+		} else if (rc)
 			result = NULL;
 		break;
 	}
@@ -113,8 +121,13 @@ int uid_from_string(const char *name, uid_t *uidp)
 
 	if (result) {
 		*uidp = result->pw_uid;
+		xfree(buf_malloc);
 		return 0;
 	}
+
+	xfree(buf_malloc);
+	curr_buf = buf_stack;
+	bufsize = PW_BUF_SIZE;
 
 	/*
 	 *  If username was not valid, check for a valid UID.
@@ -131,7 +144,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if ((slurm_getpwuid_r(l, &pwd, buffer, PW_BUF_SIZE, &result) != 0) ||
+	if ((slurm_getpwuid_r(l, &pwd, curr_buf, bufsize, &result) != 0) ||
 	    (result == NULL))
 		return -1;
 
