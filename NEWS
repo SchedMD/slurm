@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     However, the following error will continue to be logged:
     "error: Can't get energy data. No power sensors are available. Try later"
  -- sbatch, srun - Set SLURM_NETWORK environment variable if --network is set.
+ -- Fix cloud nodes not being able to forward to nodes that restarted with new
+    IP addresses.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -397,6 +399,8 @@ documents those changes that are of interest to users and administrators.
     "error: slurm_get_node_energy: Zero Bytes were transmitted or received"
     However, the following error will continue to be logged:
     "error: Can't get energy data. No power sensors are available. Try later"
+ -- Fix cloud nodes not being able to forward to nodes that restarted with new
+    IP addresses.
 
 * Changes in Slurm 23.11.7
 ==========================
