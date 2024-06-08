@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.40/job/submit'
  -- Fix getting user environment when using sbatch with "--get-user-env" or
     "--export=" when there is a user profile script that reads /proc.
+ -- Prevent slurmd from crashing if acct_gather_energy/gpu is configured but
+    GresTypes is not configured.
  -- Do not log the following errors when AcctGatherEnergyType plugins are used
     but a node does not have or cannot find sensors:
     "error: _get_joules_task: can't get info from slurmd"
