@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- sbatch, srun - Set SLURM_NETWORK environment variable if --network is set.
  -- Fix cloud nodes not being able to forward to nodes that restarted with new
     IP addresses.
+ -- Fix cwd not being set correctly when running a SPANK plugin with a
+    spank_user_init() hook and the new "contain_spank" option set.
 
 * Changes in Slurm 24.05.0
 ==========================

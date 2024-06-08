@@ -2074,6 +2074,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	jobacct_id_t jobacct_id;
 	list_t *exec_wait_list = NULL;
 	uint32_t node_offset = 0, task_offset = 0;
+	char saved_cwd[PATH_MAX];
 
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
@@ -2084,6 +2085,11 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	START_TIMER;
 
 	xassert(step != NULL);
+
+	if (!getcwd(saved_cwd, sizeof(saved_cwd))) {
+		error ("Unable to get current working directory: %m");
+		strlcpy(saved_cwd, "/tmp", sizeof(saved_cwd));
+	}
 
 	if (task_g_pre_setuid(step)) {
 		error("Failed to invoke task plugins: one of task_p_pre_setuid functions returned error");
@@ -2316,7 +2322,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		/* Don't bother erroring out here */
 	}
 
-	if (chdir(sprivs.saved_cwd) < 0) {
+	if (chdir(saved_cwd) < 0) {
 		error ("Unable to return to working directory");
 	}
 
@@ -2410,7 +2416,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	return rc;
 
 fail4:
-	if (chdir (sprivs.saved_cwd) < 0) {
+	if (chdir(saved_cwd) < 0) {
 		error ("Unable to return to working directory");
 	}
 fail3:
