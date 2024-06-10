@@ -3384,6 +3384,10 @@ static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 	};
 
 	mgr.signal_work_count++;
+
+	/* Call sigaction() if needed */
+	if (mgr.watching)
+		_register_signal_handler(signal);
 }
 
 extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
