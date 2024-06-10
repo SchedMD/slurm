@@ -675,11 +675,15 @@ extern void free_conmgr(void)
 	/* tell all timers about being canceled */
 	_cancel_delayed_work(true);
 
+	slurm_mutex_unlock(&mgr.mutex);
+
 	/*
 	 * make sure WORKQ is done before making any changes encase there are
 	 * any outstanding threads running
 	 */
 	FREE_NULL_WORKQ(mgr.workq);
+
+	slurm_mutex_lock(&mgr.mutex);
 
 	/* deferred_funcs should have been cleared by conmgr_run() */
 	xassert(list_is_empty(mgr.deferred_funcs));
