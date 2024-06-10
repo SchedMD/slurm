@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
     IP addresses.
  -- Fix cwd not being set correctly when running a SPANK plugin with a
     spank_user_init() hook and the new "contain_spank" option set.
+ -- slurmctld - Avoid deadlock during shutdown when auth/slurm is active.
 
 * Changes in Slurm 24.05.0
 ==========================
