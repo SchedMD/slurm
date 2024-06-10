@@ -495,6 +495,11 @@ static void _register_signal_handler(int signal)
 		fatal("%s: unable to catch %s: %m",
 		      __func__, strsignal(signal));
 
+	log_flag(NET, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
+		 __func__, sig_num2name(signal), signal,
+		 (uintptr_t) handler->prior.sa_handler,
+		 (uintptr_t) handler->new.sa_handler);
+
 	mgr.signal_handler_count++;
 }
 
@@ -520,6 +525,12 @@ static void _fini_signal_handler(void)
 		if (sigaction(handler->signal, &handler->prior, &handler->new))
 			fatal("%s: unable to restore %s: %m",
 			      __func__, strsignal(handler->signal));
+
+		log_flag(NET, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
+			 __func__, sig_num2name(handler->signal),
+			 handler->signal,
+			 (uintptr_t) handler->new.sa_handler,
+			 (uintptr_t) handler->prior.sa_handler);
 
 		/*
 		 * Check what sigaction() swapped out from the current signal
