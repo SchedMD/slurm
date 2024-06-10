@@ -2388,7 +2388,6 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 
 	log_flag(NET, "%s: cleaning up", __func__);
 	_signal_change(true);
-	_fini_signal_handler();
 
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);
@@ -2427,6 +2426,8 @@ static void _watch(void *blocking)
 	_init_signal_handler();
 
 	while (_watch_loop(&listen_args, &poll_args));
+
+	_fini_signal_handler();
 
 	xassert(mgr.watching);
 	mgr.watching = false;
