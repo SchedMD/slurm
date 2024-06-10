@@ -277,7 +277,7 @@ struct conmgr_s {
 	pthread_cond_t watch_cond;
 };
 
-#define CONMGR_MGR_DEFAULT \
+#define CONMGR_DEFAULT \
 	(struct conmgr_s) {\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.cond = PTHREAD_COND_INITIALIZER,\
@@ -291,7 +291,7 @@ struct conmgr_s {
 		.shutdown_requested = true,\
 	}
 
-struct conmgr_s mgr = CONMGR_MGR_DEFAULT;
+struct conmgr_s mgr = CONMGR_DEFAULT;
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
@@ -456,7 +456,7 @@ static void _signal_handler(int signo)
 	 * 	signal dispositions.
 	 *
 	 * Signal handler registration survives fork() but mgr will get reset to
-	 * CONMGR_MGR_DEFAULT. Gracefully ignore signals when mgr.signal_fd is
+	 * CONMGR_DEFAULT. Gracefully ignore signals when mgr.signal_fd is
 	 * -1 to avoid trying to write a non-existant file descriptor.
 	 */
 	if (mgr.signal_fd[1] < 0)
@@ -532,7 +532,7 @@ static void _atfork_child(void)
 	 * Force conmgr to return to default state before it was initialized at
 	 * forking as all of the prior state is completely unusable.
 	 */
-	mgr = CONMGR_MGR_DEFAULT;
+	mgr = CONMGR_DEFAULT;
 }
 
 extern void conmgr_init(int max_connections, conmgr_callbacks_t callbacks)
