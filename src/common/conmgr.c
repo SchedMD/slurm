@@ -450,6 +450,18 @@ static void _connection_fd_delete(void *x)
 
 static void _signal_handler(int signo)
 {
+	/*
+	 * Per the sigaction man page:
+	 * 	A child created via fork(2) inherits a copy of its parent's
+	 * 	signal dispositions.
+	 *
+	 * Signal handler registration survives fork() but mgr will get reset to
+	 * CONMGR_MGR_DEFAULT. Gracefully ignore signals when mgr.signal_fd is
+	 * -1 to avoid trying to write a non-existant file descriptor.
+	 */
+	if (mgr.signal_fd[1] < 0)
+		return;
+
 try_again:
 	if (write(mgr.signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
