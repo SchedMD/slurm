@@ -1501,9 +1501,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 							     account,
 							     user->name,
 							     assoc->qos_list)) {
+				/*
+				 * The assoc READ_LOCK is locked in the caller.
+				 * This is only locking the qos READ_LOCK.
+				 */
 				assoc_mgr_lock_t locks = {
-					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-					NO_LOCK, NO_LOCK, NO_LOCK };
+					.qos = READ_LOCK,
+				};
 				char *requested_qos;
 
 				assoc_mgr_lock(&locks);
