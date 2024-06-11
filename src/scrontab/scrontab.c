@@ -339,6 +339,9 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 	job->script = script;
 
 	job->environment = env_array_create();
+	set_prio_process_env();
+	env_array_overwrite(&job->environment, "SLURM_PRIO_PROCESS",
+			    getenv("SLURM_PRIO_PROCESS"));
 	env_array_overwrite(&job->environment, "SLURM_GET_USER_ENV", "1");
 	job->env_size = envcount(job->environment);
 

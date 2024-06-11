@@ -74,7 +74,6 @@ static void *_get_script_buffer(const char *filename, int *size);
 static int   _job_wait(uint32_t job_id);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
-static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static void  _set_spank_env(void);
 static void  _set_submit_dir_env(void);
@@ -195,7 +194,7 @@ int main(int argc, char **argv)
 		if (sbopt.export_file != NULL)
 			env_unset_environment();
 
-		_set_prio_process_env();
+		set_prio_process_env();
 		_set_spank_env();
 		_set_submit_dir_env();
 		_set_umask_env();
@@ -547,34 +546,6 @@ static int _set_umask_env(void)
 	}
 	debug ("propagating UMASK=%s", mask_char);
 	return SLURM_SUCCESS;
-}
-
-/*
- * _set_prio_process_env
- *
- * Set the internal SLURM_PRIO_PROCESS environment variable to support
- * the propagation of the users nice value and the "PropagatePrioProcess"
- * config keyword.
- */
-static void  _set_prio_process_env(void)
-{
-	int retval;
-
-	errno = 0; /* needed to detect a real failure since prio can be -1 */
-
-	if ((retval = getpriority (PRIO_PROCESS, 0)) == -1)  {
-		if (errno) {
-			error ("getpriority(PRIO_PROCESS): %m");
-			return;
-		}
-	}
-
-	if (setenvf (NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
-		error ("unable to set SLURM_PRIO_PROCESS in environment");
-		return;
-	}
-
-	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
 /*
