@@ -8566,7 +8566,8 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	 * Here we are seeing we we are setting something explicit. If we are
 	 * set it. If we are changing tasks we need what was already on the job.
 	 */
-	if (job_desc->licenses && job_desc->licenses[0])
+	if (job_desc->licenses && (job_desc->licenses[0] ||
+				   (job_desc->bitflags & RESET_LIC_JOB)))
 		xstrfmtcatat(lic_req, &lic_req_pos, "%s", job_desc->licenses);
 	else if (tres_per_task &&
 		 !(job_desc->bitflags & RESET_LIC_JOB) &&
