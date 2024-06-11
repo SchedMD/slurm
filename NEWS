@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
     spank_user_init() hook and the new "contain_spank" option set.
  -- slurmctld - Avoid deadlock during shutdown when auth/slurm is active.
  -- Fix segfault in slurmctld with topology/block.
+ -- sacct - Fix printing of job group for job steps.
 
 * Changes in Slurm 24.05.0
 ==========================
