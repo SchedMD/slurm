@@ -2486,19 +2486,19 @@ def get_steps(step_id=None, **run_command_kwargs):
             # Reformat the value if necessary
             if is_integer(param_value):
                 param_value = int(param_value)
-            elif is_float(param_value):
+            elif is_float(param_value) and param_name != "StepId":
                 param_value = float(param_value)
             elif param_value == "(null)":
                 param_value = None
 
-            # Add it to the temporary job dictionary
+            # Add it to the temporary step dictionary
             step_dict[param_name] = param_value
 
-        # Add the job dictionary to the jobs dictionary
+        # Add the step dictionary to the steps dictionary
         if step_dict:
             steps_dict[str(step_dict["StepId"])] = step_dict
 
-            # Clear the job dictionary for use by the next job
+            # Clear the step dictionary for use by the next step
             step_dict = {}
 
     return steps_dict

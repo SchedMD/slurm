@@ -52,11 +52,15 @@ wait""",
 
     def count_steps_started():
         nonlocal steps_started
-        output = atf.run_command_output(
-            f"squeue --steps --state=RUNNING --format=%i --noheader --job {job_id}",
-            fatal=True,
-        )
-        steps_started = len(re.findall(rf"{job_id}\.\d+", output))
+        steps = atf.get_steps(job_id)
+        fsteps = {
+            k: v
+            for k, v in steps.items()
+            if steps[k].get("State", "") == "RUNNING"
+            and ".batch" not in k
+            and ".extern" not in k
+        }
+        steps_started = len(fsteps)
         return steps_started
 
     assert atf.repeat_until(
