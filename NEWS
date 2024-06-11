@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
     to be rejected.
  -- accounting_storage/mysql - Fix problem where listing or modifying an
     association when specifying a qos list could hang or take a very long time.
+ -- gpu/nvml - Fix gpuutil/gpumem only tracking last GPU in step. Now,
+    gpuutil/gpumem will record sums of all GPUS in the step.
 
 * Changes in Slurm 24.05.0
 ==========================
