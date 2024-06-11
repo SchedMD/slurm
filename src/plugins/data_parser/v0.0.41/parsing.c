@@ -228,6 +228,12 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 				_set_flag_bit_equal(parser, dst, bit, matched,
 						    path, src);
 			args->set |= bit->mask;
+		} else if (bit->type == FLAG_BIT_TYPE_REMOVED) {
+			if (matched)
+				on_warn(PARSING, parser->type, args->args, path,
+					__func__,
+					"Ignoring deprecated flag: %s",
+					bit->name);
 		} else
 			fatal_abort("%s: invalid bit_flag_t", __func__);
 
@@ -605,6 +611,10 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 			_set_flag_bit_equal(parser, dst, bit, matched, path,
 					    src);
 		*set |= bit->mask;
+	} else if (bit->type == FLAG_BIT_TYPE_REMOVED) {
+		if (matched && !is_fast_mode(args))
+			on_warn(PARSING, parser->type, args, path, __func__,
+				"Ignoring deprecated flag: %s", bit->name);
 	} else {
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 	}
@@ -1151,6 +1161,8 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 		found = _match_flag_bit(parser, src, bit, *used_equal_bits);
 	else if (bit->type == FLAG_BIT_TYPE_EQUAL)
 		found = _match_flag_equal(parser, src, bit, used_equal_bits);
+	else if (bit->type == FLAG_BIT_TYPE_REMOVED)
+		found = false;
 	else
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 
@@ -1192,6 +1204,8 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 			type = "bit";
 		else if (bit->type == FLAG_BIT_TYPE_EQUAL)
 			type = "bit-equals";
+		else if (bit->type == FLAG_BIT_TYPE_REMOVED)
+			type = "removed";
 		else
 			type = "INVALID";
 
