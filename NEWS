@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- sacct - Fix printing of job group for job steps.
  -- scrun - Log when an invalid environment variable causes the job submission
     to be rejected.
+ -- accounting_storage/mysql - Fix problem where listing or modifying an
+    association when specifying a qos list could hang or take a very long time.
 
 * Changes in Slurm 24.05.0
 ==========================

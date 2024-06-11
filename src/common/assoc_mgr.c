@@ -937,6 +937,22 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 		}
 	}
 
+	/*
+	 * Get the qos bitmap here for the assoc
+	 * On the DBD we want this for all the associations, else we only want
+	 * this for users.
+	 */
+	if ((g_qos_count > 0) && (slurmdbd_conf || assoc->user)) {
+		if (!assoc->usage->valid_qos ||
+		    (bit_size(assoc->usage->valid_qos) != g_qos_count)) {
+			FREE_NULL_BITMAP(assoc->usage->valid_qos);
+			assoc->usage->valid_qos = bit_alloc(g_qos_count);
+		} else
+			bit_clear_all(assoc->usage->valid_qos);
+		set_qos_bitstr_from_list(assoc->usage->valid_qos,
+					 assoc->qos_list);
+	}
+
 	if (assoc->user) {
 		uid_t pw_uid;
 
@@ -950,18 +966,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 		}
 		_set_user_default_acct(assoc, NULL);
 
-		/* get the qos bitmap here */
-		if (g_qos_count > 0) {
-			if (!assoc->usage->valid_qos
-			    || (bit_size(assoc->usage->valid_qos)
-				!= g_qos_count)) {
-				FREE_NULL_BITMAP(assoc->usage->valid_qos);
-				assoc->usage->valid_qos =
-					bit_alloc(g_qos_count);
-			} else
-				bit_clear_all(assoc->usage->valid_qos);
-			set_qos_bitstr_from_list(assoc->usage->valid_qos,
-						 assoc->qos_list);
+		if (assoc->usage->valid_qos) {
 			if (((int32_t)assoc->def_qos_id > 0)
 			    && !bit_test(assoc->usage->valid_qos,
 					 assoc->def_qos_id)) {
