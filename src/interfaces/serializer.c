@@ -82,7 +82,7 @@ typedef struct {
 
 /* list of all of the known mime types */
 static List mime_types_list = NULL;
-static char **mime_array = NULL;
+static const char **mime_array = NULL;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -216,44 +216,9 @@ static int _register_mime_types(List mime_types_list, size_t plugin_index,
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_add_mime_type(void *x, void *arg)
-{
-	const plugin_mime_type_t *pmt = x;
-	mime_type_array_args_t *args = arg;
-
-	xassert(args->magic == MIME_ARRAY_MAGIC);
-	xassert(!mime_array[args->index]);
-
-	mime_array[args->index] = xstrdup(pmt->mime_type);
-	args->index++;
-
-	return SLURM_SUCCESS;
-}
-
 extern const char **get_mime_type_array(void)
 {
-	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
-	slurm_mutex_lock(&lock);
-
-	if (mime_array) {
-		slurm_mutex_unlock(&lock);
-		return (const char **) mime_array;
-	} else {
-		mime_type_array_args_t args = {
-			.magic = MIME_ARRAY_MAGIC,
-		};
-
-		xrecalloc(mime_array, (list_count(mime_types_list) + 1),
-			  sizeof(*mime_array));
-
-		list_for_each_ro(mime_types_list, _foreach_add_mime_type,
-				 &args);
-		xassert(args.index == list_count(mime_types_list));
-
-		slurm_mutex_unlock(&lock);
-		return (const char **) mime_array;
-	}
+	return mime_array;
 }
 
 extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
@@ -273,6 +238,8 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 	if (!mime_types_list)
 		mime_types_list = list_create(xfree_ptr);
 
+	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
+
 	for (size_t i = 0; plugins && (i < plugins->count); i++) {
 		const char **mime_types;
 
@@ -283,6 +250,9 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 		if (!mime_types)
 			fatal_abort("%s: unable to load %s from plugin",
 				    __func__, SERIALIZER_MIME_TYPES_SYM);
+
+		/* First mime_type is always considered primary */
+		mime_array[i] = mime_types[0];
 
 		_register_mime_types(mime_types_list, i, mime_types);
 	}
@@ -297,11 +267,7 @@ extern void serializer_g_fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);
-	if (mime_array) {
-		for (int i = 0; mime_array[i]; i++)
-			xfree(mime_array[i]);
-		xfree(mime_array);
-	}
+	xfree(mime_array);
 	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);
 	slurm_mutex_unlock(&init_mutex);

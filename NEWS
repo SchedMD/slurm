@@ -53,6 +53,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix dynamic IP address fanout forwarding when using auth/slurm.
  -- Restrict listening sockets in the mpi/pmix plugin and sattach to the
     SrunPortRange.
+ -- slurmrestd - Limit mime types returned from query to 'GET /openapi/v3' to
+    only return one mime type per serializer plugin to fix issues with OpenAPI
+    client generators that are unable to handle multiple mime type aliases.
 
 * Changes in Slurm 24.05.0
 ==========================
