@@ -941,17 +941,17 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_GROUP:
+			tmp_char = NULL;
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->gid;
+				tmp_char = gid_to_string(job->gid);
 				break;
 			case JOBCOMP:
-				tmp_uint32 = job_comp->gid;
+				tmp_char = gid_to_string(job_comp->gid);
 				break;
 			default:
 				break;
 			}
-			tmp_char = gid_to_string(tmp_uint32);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));

@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     spank_user_init() hook and the new "contain_spank" option set.
  -- slurmctld - Avoid deadlock during shutdown when auth/slurm is active.
  -- Fix segfault in slurmctld with topology/block.
+ -- sacct - Fix printing of job group for job steps.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -410,6 +411,7 @@ documents those changes that are of interest to users and administrators.
     "error: Can't get energy data. No power sensors are available. Try later"
  -- Fix cloud nodes not being able to forward to nodes that restarted with new
     IP addresses.
+ -- sacct - Fix printing of job group for job steps.
 
 * Changes in Slurm 23.11.7
 ==========================
