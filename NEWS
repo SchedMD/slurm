@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cloud nodes not being able to forward to nodes that restarted with new
     IP addresses.
  -- sacct - Fix printing of job group for job steps.
+ -- Fix error in scrontab jobs when using slurm.conf:PropagatePrioProcess=1.
 
 * Changes in Slurm 23.11.7
 ==========================
