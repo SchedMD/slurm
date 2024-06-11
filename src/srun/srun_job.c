@@ -141,7 +141,6 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 			   int het_job_offset);
 static void _set_ntasks(allocation_info_t *ai, slurm_opt_t *opt_local);
-static void _set_prio_process_env(void);
 static int  _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
 static int  _set_umask_env(void);
@@ -760,7 +759,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 	}
 
 	(void) _set_rlimit_env();
-	_set_prio_process_env();
+	set_prio_process_env();
 	(void) _set_umask_env();
 	_set_submit_dir_env();
 
@@ -2072,34 +2071,6 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 		}
 		xfree(key);
 	}
-}
-
-/*
- * _set_prio_process_env
- *
- * Set the internal SLURM_PRIO_PROCESS environment variable to support
- * the propagation of the users nice value and the "PropagatePrioProcess"
- * config keyword.
- */
-static void  _set_prio_process_env(void)
-{
-	int retval;
-
-	errno = 0; /* needed to detect a real failure since prio can be -1 */
-
-	if ((retval = getpriority (PRIO_PROCESS, 0)) == -1)  {
-		if (errno) {
-			error ("getpriority(PRIO_PROCESS): %m");
-			return;
-		}
-	}
-
-	if (setenvf (NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
-		error ("unable to set SLURM_PRIO_PROCESS in environment");
-		return;
-	}
-
-	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
 /* Set SLURM_RLIMIT_* environment variables with current resource

@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
     association when specifying a qos list could hang or take a very long time.
  -- gpu/nvml - Fix gpuutil/gpumem only tracking last GPU in step. Now,
     gpuutil/gpumem will record sums of all GPUS in the step.
+ -- Fix error in scrontab jobs when using slurm.conf:PropagatePrioProcess=1.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -424,6 +425,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cloud nodes not being able to forward to nodes that restarted with new
     IP addresses.
  -- sacct - Fix printing of job group for job steps.
+ -- Fix error in scrontab jobs when using slurm.conf:PropagatePrioProcess=1.
 
 * Changes in Slurm 23.11.7
 ==========================
