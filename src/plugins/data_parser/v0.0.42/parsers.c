@@ -472,6 +472,17 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 	xassert(bit->type > FLAG_BIT_TYPE_INVALID);
 	xassert(bit->type < FLAG_BIT_TYPE_MAX);
 	xassert(bit->name && bit->name[0]);
+
+	if (bit->type == FLAG_BIT_TYPE_REMOVED) {
+		xassert(!bit->mask_size);
+		xassert(!bit->mask_name);
+		xassert(!bit->value);
+		xassert(!bit->flag_name);
+		xassert(!bit->flag_size);
+		xassert(bit->deprecated);
+		return;
+	}
+
 	/* mask must be set */
 	xassert(bit->mask);
 	xassert(bit->flag_size <= sizeof(bit->value));
@@ -6530,6 +6541,13 @@ static int DUMP_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 	.flag_size = sizeof(flag_value),                              \
 	.hidden = hidden_flag,                                        \
 	.description = desc_str,                                      \
+}
+#define add_flag_removed(flag_string, deprec)                         \
+{                                                                     \
+	.magic = MAGIC_FLAG_BIT,                                      \
+	.type = FLAG_BIT_TYPE_REMOVED,                                \
+	.name = flag_string,                                          \
+	.deprecated = deprec,                                         \
 }
 
 #define add_parse(mtype, field, path, desc) \
