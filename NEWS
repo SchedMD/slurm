@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Avoid deadlock during shutdown when auth/slurm is active.
  -- Fix segfault in slurmctld with topology/block.
  -- sacct - Fix printing of job group for job steps.
+ -- scrun - Log when an invalid environment variable causes the job submission
+    to be rejected.
 
 * Changes in Slurm 24.05.0
 ==========================
