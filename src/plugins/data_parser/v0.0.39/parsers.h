@@ -55,6 +55,7 @@ typedef enum {
 	FLAG_BIT_TYPE_INVALID = 0, /* aka not initialized */
 	FLAG_BIT_TYPE_EQUAL, /* entire masked value must match for flag */
 	FLAG_BIT_TYPE_BIT, /* only need bit(s) to match */
+	FLAG_BIT_TYPE_REMOVED, /* flag removed but needs to still parse correct */
 	FLAG_BIT_TYPE_MAX /* place holder */
 } flag_bit_type_t;
 
