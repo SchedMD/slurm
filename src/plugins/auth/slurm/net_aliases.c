@@ -59,15 +59,15 @@
 // fixme - do something with expiration?
 extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases)
 {
-	data_t *data = NULL, *data_net = NULL, *data_addrs;
+	data_t *data = NULL, *data_net = NULL, *data_addrs = NULL;
 	char *json = NULL;
+	uint16_t port;
 
 	data = data_set_dict(data_new());
 
+	/* V1 */
 	data_net = data_set_dict(data_key_set(data, "net"));
-
 	data_set_string(data_key_set(data_net, "nodes"), aliases->node_list);
-
 	data_addrs = data_set_dict(data_key_set(data_net, "addrs"));
 
 	for (int i = 0; i < aliases->node_cnt; i++) {
@@ -78,16 +78,16 @@ extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases)
 				(struct sockaddr_in6 *) &aliases->node_addrs[i];
 			inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf,
 				  INET6_ADDRSTRLEN);
-			data_set_int(data_key_set(data_addrs, addrbuf),
-				     in6->sin6_port);
+			port = in6->sin6_port;
 		} else {
 			struct sockaddr_in *in =
 				(struct sockaddr_in *) &aliases->node_addrs[i];
 			inet_ntop(AF_INET, &in->sin_addr, addrbuf,
 				  INET_ADDRSTRLEN);
-			data_set_int(data_key_set(data_addrs, addrbuf),
-				     in->sin_port);
+			port = in->sin_port;
 		}
+		/* V1 */
+		data_set_int(data_key_set(data_addrs, addrbuf), port);
 	}
 
 	serialize_g_data_to_string(&json, NULL, data, MIME_TYPE_JSON,
@@ -97,8 +97,8 @@ extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases)
 	return json;
 }
 
-data_for_each_cmd_t _for_each_addr(const char *key, const data_t *data,
-				   void *arg)
+data_for_each_cmd_t _for_each_dict_addr(const char *key, const data_t *data,
+					void *arg)
 {
 	slurm_node_alias_addrs_t *aliases = arg;
 	slurm_addr_t *addr = &aliases->node_addrs[aliases->node_cnt];
@@ -122,7 +122,7 @@ data_for_each_cmd_t _for_each_addr(const char *key, const data_t *data,
 	return DATA_FOR_EACH_CONT;
 }
 
-extern slurm_node_alias_addrs_t *extract_net_aliases(char *json)
+static slurm_node_alias_addrs_t *_extract_net_aliases_v1(char *json)
 {
 	data_t *data = NULL, *data_addrs = NULL;
 	slurm_node_alias_addrs_t *aliases;
@@ -142,7 +142,8 @@ extern slurm_node_alias_addrs_t *extract_net_aliases(char *json)
 	node_count = data_get_dict_length(data_addrs);
 	aliases->node_addrs = xcalloc(node_count, sizeof(slurm_addr_t));
 
-	if (data_dict_for_each_const(data_addrs, _for_each_addr, aliases) < 0) {
+	if (data_dict_for_each_const(data_addrs,
+				     _for_each_dict_addr, aliases) < 0) {
 		error("%s: data_dict_for_each_const failed", __func__);
 		FREE_NULL_DATA(data);
 		slurm_free_node_alias_addrs(aliases);
@@ -151,4 +152,28 @@ extern slurm_node_alias_addrs_t *extract_net_aliases(char *json)
 
 	FREE_NULL_DATA(data);
 	return aliases;
+}
+
+extern slurm_node_alias_addrs_t *extract_net_aliases(jwt_t *jwt)
+{
+	slurm_node_alias_addrs_t *addrs = NULL;
+	char *json_net = NULL;
+
+	if ((json_net = jwt_get_grants_json(jwt, "net"))) {
+		if (!(addrs = _extract_net_aliases_v1(json_net))) {
+			error("%s: extract_net_aliases_v1() failed", __func__);
+			goto unpack_error;
+		}
+	} else {
+		error("%s: jwt_get_grants_json() failure for net cred", __func__);
+		goto unpack_error;
+	}
+
+	free(json_net);
+	return addrs;
+
+unpack_error:
+	if (json_net)
+		free(json_net);
+	return NULL;
 }
