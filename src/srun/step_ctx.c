@@ -241,13 +241,20 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 	job_step_create_response_msg_t *step_resp = NULL;
 	int sock = -1;
 	uint16_t port = 0;
+	uint16_t *ports;
+	int rc;
 
 	xassert(step_req);
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
-	if (net_stream_listen(&sock, &port) < 0) {
+	ports = slurm_get_srun_port_range();
+	if (ports)
+		rc = net_stream_listen_ports(&sock, &port, ports, false);
+	else
+		rc = net_stream_listen(&sock, &port);
+	if (rc < 0) {
 		error("unable to initialize step context socket: %m");
 		return NULL;
 	}

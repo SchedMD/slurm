@@ -326,7 +326,13 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
 	/* srun_epilog */
-	/* srun_port_range */
+	if (slurm_conf.srun_port_range) {
+		pack16(slurm_conf.srun_port_range[0], buffer);
+		pack16(slurm_conf.srun_port_range[1], buffer);
+	} else {
+		pack16(0, buffer);
+		pack16(0, buffer);
+	}
 	/* srun_prolog */
 	/* state_save_location */
 	/* suspend_exc_nodes */
@@ -357,6 +363,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 
 extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 {
+	uint16_t srun_port_min = 0, srun_port_max = 0;
+
 	init_slurm_conf(&slurm_conf);
 	/* last_update */
 	/* accounting_storage_tres */
@@ -552,7 +560,13 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
 	/* srun_epilog */
-	/* srun_port_range */
+	safe_unpack16(&srun_port_min, buffer);
+	safe_unpack16(&srun_port_max, buffer);
+	if (srun_port_max) {
+		slurm_conf.srun_port_range = xcalloc(2, sizeof(uint16_t));
+		slurm_conf.srun_port_range[0] = srun_port_min;
+		slurm_conf.srun_port_range[1] = srun_port_max;
+	}
 	/* srun_prolog */
 	/* state_save_location */
 	/* suspend_exc_nodes */
