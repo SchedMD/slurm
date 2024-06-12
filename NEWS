@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- sinfo - Add '.sinfo[].resource_spec.cpus' and
     '.sinfo[].resource_spec.memory' fields to print the CpuSpecList and
     MemSpecLimit dumped by 'sinfo --{json|yaml}'.
+ -- Increase efficency of sending logs to syslog.
 
 * Changes in Slurm 24.05.1
 ==========================

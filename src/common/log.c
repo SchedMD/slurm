@@ -144,7 +144,7 @@ char *slurm_prog_name = NULL;
 static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
 static log_t            *log = NULL;
 static log_t            *sched_log = NULL;
-
+static bool syslog_open = false;
 static volatile log_level_t highest_log_level = LOG_LEVEL_END;
 static volatile log_level_t highest_sched_log_level = LOG_LEVEL_QUIET;
 
@@ -345,8 +345,16 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->fbuf = cbuf_create(128, 8192);
 	}
 
-	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
+	if (syslog_open) {
+		closelog();
+		syslog_open = false;
+	}
+
+	if (log->opt.syslog_level > LOG_LEVEL_QUIET) {
 		log->facility = fac;
+		openlog(log->argv0, LOG_PID, log->facility);
+		syslog_open = true;
+	}
 
 	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
 		int mode = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
@@ -527,6 +535,10 @@ void log_fini(void)
 		cbuf_destroy(log->fbuf);
 	if (log->logfp)
 		fclose(log->logfp);
+	if (syslog_open) {
+		closelog();
+		syslog_open = false;
+	}
 	xfree(log);
 	xfree(slurm_prog_name);
 	slurm_mutex_unlock(&log_lock);
@@ -1420,9 +1432,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		/* Avoid changing errno if syslog fails */
 		int orig_errno = slurm_get_errno();
 		xlogfmtcat(&msgbuf, "%s%s%s", log->prefix, pfx, buf);
-		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
-		closelog();
 		slurm_seterrno(orig_errno);
 
 		xfree(msgbuf);
