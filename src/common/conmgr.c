@@ -183,7 +183,7 @@ typedef struct {
 /*
  * Global instance of conmgr
  */
-struct conmgr_s {
+typedef struct {
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -275,10 +275,10 @@ struct conmgr_s {
 	/* use mutex to wait for watch to finish */
 	pthread_mutex_t watch_mutex;
 	pthread_cond_t watch_cond;
-};
+} conmgr_t;
 
 #define CONMGR_DEFAULT \
-	(struct conmgr_s) {\
+	(conmgr_t) {\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.cond = PTHREAD_COND_INITIALIZER,\
 		.watch_mutex = PTHREAD_MUTEX_INITIALIZER,\
@@ -291,7 +291,7 @@ struct conmgr_s {
 		.shutdown_requested = true,\
 	}
 
-struct conmgr_s mgr = CONMGR_DEFAULT;
+conmgr_t mgr = CONMGR_DEFAULT;
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
