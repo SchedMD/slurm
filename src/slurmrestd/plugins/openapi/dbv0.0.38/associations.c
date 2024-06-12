@@ -225,9 +225,11 @@ static void _diff_tres(char **dst, char *mod)
 	/* find all removed or tres with updated counts */
 	itr = list_iterator_create(dst_list);
 	while ((tres = list_next(itr))) {
-		slurmdb_tres_rec_t *m  =
-			list_find_first(mod_list, slurmdb_find_tres_in_list,
-					&tres->id);
+		slurmdb_tres_rec_t *m = NULL;
+
+		if (mod_list)
+			m = list_find_first(mod_list, slurmdb_find_tres_in_list,
+					    &tres->id);
 
 		if (!m) {
 			/* mark TRES for removal in slurmdbd */
@@ -239,19 +241,24 @@ static void _diff_tres(char **dst, char *mod)
 	list_iterator_destroy(itr);
 
 	/* add any new tres */
-	itr = list_iterator_create(mod_list);
-	while ((tres = list_next(itr))) {
-		slurmdb_tres_rec_t *d  =
-			list_find_first(dst_list, slurmdb_find_tres_in_list,
-					&tres->id);
+	if (mod_list) {
+		itr = list_iterator_create(mod_list);
+		while ((tres = list_next(itr))) {
+			slurmdb_tres_rec_t *d = NULL;
+			if (dst_list)
+				d = list_find_first(dst_list,
+						    slurmdb_find_tres_in_list,
+						    &tres->id);
 
-		if (!d) {
-			list_append(dst_list, slurmdb_copy_tres_rec(tres));
-		} else {
-			xassert(tres->count == d->count);
+			if (!d) {
+				list_append(dst_list,
+					    slurmdb_copy_tres_rec(tres));
+			} else {
+				xassert(tres->count == d->count);
+			}
 		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 
 	*dst = slurmdb_make_tres_string(dst_list, TRES_STR_FLAG_SIMPLE);
 
