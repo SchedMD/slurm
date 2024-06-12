@@ -1205,7 +1205,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		if (max_nodes < n)
 			n = max_nodes;
 		start = bit_fls_from_bit(details_ptr->job_size_bitmap, n);
-		if (start < 0 || start < orig_min_nodes)
+		if (start < 1 || start < orig_min_nodes)
 			return SLURM_ERROR;
 		max_nodes = start;
 		min_nodes = max_nodes;
