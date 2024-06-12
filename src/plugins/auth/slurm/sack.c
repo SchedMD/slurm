@@ -47,9 +47,9 @@
 #include "src/common/conmgr.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/sack_api.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
