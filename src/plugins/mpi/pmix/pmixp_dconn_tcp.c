@@ -56,6 +56,9 @@ static void _tcp_regio(eio_handle_t *h);
 int pmixp_dconn_tcp_prepare(pmixp_dconn_handlers_t *handlers,
 			    char **ep_data, size_t *ep_len)
 {
+	uint16_t *ports;
+	int rc;
+
 	memset(handlers, 0, sizeof(*handlers));
 	handlers->init = _tcp_init;
 	handlers->fini = _tcp_fini;
@@ -65,7 +68,14 @@ int pmixp_dconn_tcp_prepare(pmixp_dconn_handlers_t *handlers,
 	handlers->regio = _tcp_regio;
 
 	/* Create TCP socket for slurmd communication */
-	if (0 > net_stream_listen(&_server_fd, &_server_port)) {
+	ports = slurm_get_srun_port_range();
+	if (ports)
+		rc = net_stream_listen_ports(&_server_fd, &_server_port, ports,
+					     false);
+	else
+		rc = net_stream_listen(&_server_fd, &_server_port);
+
+	if (0 > rc) {
 		PMIXP_ERROR("net_stream_listen");
 		return SLURM_ERROR;
 	}
