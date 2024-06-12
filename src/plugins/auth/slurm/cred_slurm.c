@@ -170,7 +170,6 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 	slurm_node_alias_addrs_t *addrs = NULL;
 	jwt_t *jwt = NULL;
 	const char *context = NULL;
-	char *json_net = NULL;
 
 	if (!(jwt = decode_jwt(net_cred, running_in_slurmd(), getuid()))) {
 		error("%s: decode_jwt() failed", __func__);
@@ -188,10 +187,7 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
-	if (!(json_net = jwt_get_grants_json(jwt, "net"))) {
-		error("%s: jwt_get_grants_json() failure for net", __func__);
-		goto unpack_error;
-	} else if (!(addrs = extract_net_aliases(json_net))) {
+	if (!(addrs = extract_net_aliases(jwt))) {
 		error("%s: extract_net_aliases() failed", __func__);
 		goto unpack_error;
 	}
@@ -199,13 +195,10 @@ extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
 	/* decode_jwt() already validated this previously */
 	addrs->expiration = jwt_get_grant_int(jwt, "exp");
 
-	free(json_net);
 	jwt_free(jwt);
 	return addrs;
 
 unpack_error:
-	if (json_net)
-		free(json_net);
 	jwt_free(jwt);
 	return NULL;
 }

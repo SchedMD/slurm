@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - Fix printing of job group for job steps.
  -- Fix error in scrontab jobs when using slurm.conf:PropagatePrioProcess=1.
  -- Fix slurmctld crash on a batch job submission with "--nodes 0,...".
+ -- Fix dynamic IP address fanout forwarding when using auth/slurm.
 
 * Changes in Slurm 23.11.7
 ==========================
