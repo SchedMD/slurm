@@ -166,8 +166,6 @@ static void _check_data_list_node_magic(const data_list_node_t *dn)
 	xassert(dn->magic == DATA_LIST_NODE_MAGIC);
 	/* make sure not linking to self */
 	xassert(dn->next != dn);
-	/* key can be NULL for list, but not NULL length string */
-	xassert(!dn->key || dn->key[0]);
 }
 
 static void _check_data_list_magic(const data_list_t *dl)
@@ -883,8 +881,7 @@ extern data_t *data_key_set(data_t *data, const char *key)
 		return NULL;
 
 	xassert(data->type == TYPE_DICT);
-	xassert(key && key[0]);
-	if (!key || !key[0] || data->type != TYPE_DICT)
+	if (!key || (data->type != TYPE_DICT))
 		return NULL;
 
 	if ((d = data_key_get(data, key))) {
