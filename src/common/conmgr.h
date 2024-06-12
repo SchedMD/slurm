@@ -41,7 +41,6 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/workq.h"
 
 /*
  * connection manager will do the follow:
