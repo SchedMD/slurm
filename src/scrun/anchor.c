@@ -66,6 +66,7 @@
 #include "src/common/setproctitle.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
