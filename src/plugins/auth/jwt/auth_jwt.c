@@ -145,7 +145,8 @@ static void _check_key_permissions(const char *path, int bad_perms)
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
-	const char *alg, *kid, *n, *e, *key;
+	const char *alg, *kid, *n, *e;
+	char *key = NULL;
 
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
@@ -164,7 +165,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	debug3("key for kid %s mod %s exp %s is\n%s", kid, n, e, key);
 
 	data_set_int(data_key_set(d, "slurm-pem-len"), strlen(key));
-	data_set_string(data_key_set(d, "slurm-pem"), key);
+	data_set_string_own(data_key_set(d, "slurm-pem"), key);
 
 	return DATA_FOR_EACH_CONT;
 }
