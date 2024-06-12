@@ -684,6 +684,8 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 
 		if (e)
 			e->description = str;
+		else
+			xfree(str);
 	}
 
 	if (error_code) {
