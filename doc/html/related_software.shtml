@@ -203,9 +203,10 @@ sudo make install</pre>
 
 <li><a id="yaml" href="https://github.com/yaml/libyaml">
     <b>YAML Parser</b></a>
-	<p><a href="rest.html">slurmrestd</a> requires <b>libyaml (&gt;= v0.2.5)</b>
-	to support YAML. Instructions for the build are as follows:</p>
-	<pre>
+	<p><a href="rest.html">slurmrestd</a> and commands that recognize a
+	<code>--yaml</code> flag will be able to parse YAML if <b>libyaml
+	(&gt;= v0.2.5)</b> is present. Instructions for the build are as follows:
+	</p><pre>
 git clone --depth 1 --single-branch -b 0.2.5 https://github.com/yaml/libyaml libyaml
 cd libyaml
 ./bootstrap
