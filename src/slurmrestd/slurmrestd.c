@@ -64,6 +64,7 @@
 #include "src/common/ref.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/common/workq.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
