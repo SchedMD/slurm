@@ -517,9 +517,17 @@ static void _fini_signal_handler(void)
 		signal_handler_t *handler = &mgr.signal_handlers[i];
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
 
-		if (sigaction(handler->signal, &handler->prior, NULL))
+		if (sigaction(handler->signal, &handler->prior, &handler->new))
 			fatal("%s: unable to restore %s: %m",
 			      __func__, strsignal(handler->signal));
+
+		/*
+		 * Check what sigaction() swapped out from the current signal
+		 * handler to catch when something else has replaced the signal
+		 * handler. This assert exists to help us catch any code that
+		 * changes the signal handlers outside of conmgr.
+		 */
+		xassert(handler->new.sa_handler == _signal_handler);
 	}
 
 	xfree(mgr.signal_handlers);
