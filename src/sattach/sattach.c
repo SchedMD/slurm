@@ -452,8 +452,9 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 {
 	int sock = -1;
 	uint16_t port;
+	uint16_t *ports;
 	eio_obj_t *obj;
-	int i;
+	int i, rc;
 	message_thread_state_t *mts;
 
 	debug("Entering _msg_thr_create()");
@@ -466,7 +467,13 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 	mts->num_resp_port = _estimate_nports(num_nodes, 48);
 	mts->resp_port = xmalloc(sizeof(uint16_t) * mts->num_resp_port);
 	for (i = 0; i < mts->num_resp_port; i++) {
-		if (net_stream_listen(&sock, &port) < 0) {
+		ports = slurm_get_srun_port_range();
+		if (ports)
+			rc = net_stream_listen_ports(&sock, &port, ports,
+						     false);
+		else
+			rc = net_stream_listen(&sock, &port);
+		if (rc < 0) {
 			error("unable to initialize step launch"
 			      " listening socket: %m");
 			goto fail;
