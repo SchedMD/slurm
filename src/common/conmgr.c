@@ -526,6 +526,14 @@ static void _fini_signal_handler(void)
 			fatal("%s: unable to restore %s: %m",
 			      __func__, strsignal(handler->signal));
 
+		/*
+		 * Check what sigaction() swapped out from the current signal
+		 * handler to catch when something else has replaced signal
+		 * handler. This is assert exists to help us catch any code that
+		 * changes the signal handlers outside of conmgr.
+		 */
+		xassert(handler->new.sa_handler == _signal_handler);
+
 		log_flag(NET, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
 			 __func__, sig_num2name(handler->signal),
 			 handler->signal,
