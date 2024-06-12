@@ -732,6 +732,8 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 
 		if (ctxt)
 			w->description = str;
+		else
+			xfree(str);
 	}
 
 	if (source && ctxt)
