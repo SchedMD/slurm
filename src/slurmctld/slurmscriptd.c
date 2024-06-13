@@ -321,11 +321,12 @@ static bool _msg_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _write_msg(int fd, int req, buf_t *buffer)
+static int _write_msg(int fd, int req, buf_t *buffer, bool lock)
 {
 	int len = 0;
 
-	slurm_mutex_lock(&write_mutex);
+	if (lock)
+		slurm_mutex_lock(&write_mutex);
 	safe_write(fd, &req, sizeof(int));
 	if (buffer) {
 		len = get_buf_offset(buffer);
@@ -333,7 +334,8 @@ static int _write_msg(int fd, int req, buf_t *buffer)
 		safe_write(fd, get_buf_data(buffer), len);
 	} else /* Write 0 length so the receiver knows not to read anymore */
 		safe_write(fd, &len, sizeof(int));
-	slurm_mutex_unlock(&write_mutex);
+	if (lock)
+		slurm_mutex_unlock(&write_mutex);
 
 	return SLURM_SUCCESS;
 
@@ -341,7 +343,8 @@ rwfail:
 	if (running_in_slurmctld())
 		error("%s: read/write op failed, restart slurmctld now: %m",
 		      __func__);
-	slurm_mutex_unlock(&write_mutex);
+	if (lock)
+		slurm_mutex_unlock(&write_mutex);
 	return SLURM_ERROR;
 }
 
@@ -382,7 +385,7 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 	}
 	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT)
 		_incr_script_cnt();
-	rc = _write_msg(slurmctld_writefd, msg.msg_type, buffer);
+	rc = _write_msg(slurmctld_writefd, msg.msg_type, buffer, true);
 
 	if ((rc == SLURM_SUCCESS) && wait) {
 		_wait_for_script_resp(script_resp, &rc, resp_msg, signalled);
@@ -441,7 +444,7 @@ static int _respond_to_slurmctld(char *key, uint32_t job_id, char *resp_msg,
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
-	_write_msg(slurmscriptd_writefd, msg.msg_type, buffer);
+	_write_msg(slurmscriptd_writefd, msg.msg_type, buffer, true);
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
