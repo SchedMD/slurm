@@ -225,7 +225,7 @@ While Slurm has a global development community incorporating leading edge
 technology, <a href="https://www.schedmd.com">SchedMD</a> personnel have developed
 most of the code and can provide competitively priced commercial support.
 SchedMD works with various organizations to provide a range of support
-options ranging from remote level-3 support to 24x7 on-site personnel.
+options.
 Customers switching from commercial workload mangers to Slurm typically
 report higher scalability, better performance and lower costs.</p>
 
@@ -2387,6 +2387,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 27 March 2024</p>
+<p style="text-align:center;">Last modified 13 June 2024</p>
 
 <!--#include virtual="footer.txt"-->
