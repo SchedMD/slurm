@@ -1211,6 +1211,11 @@ extern void slurmscriptd_flush(void)
 	_wait_for_all_scripts();
 }
 
+extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
+{
+	exit(0);
+}
+
 extern void slurmscriptd_flush_job(uint32_t job_id)
 {
 	flush_job_msg_t *msg = xmalloc(sizeof(*msg));

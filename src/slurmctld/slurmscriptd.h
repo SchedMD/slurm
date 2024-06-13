@@ -53,6 +53,12 @@ extern void slurmscriptd_flush(void);
 extern void slurmscriptd_flush_job(uint32_t job_id);
 
 /*
+ * Run a burst_buffer.lua script specified by command line arguments and
+ * environment variables. This function calls exit() instead of returning.
+ */
+extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv);
+
+/*
  * slurmscriptd_run_bb_lua
  * Tell slurmscriptd to run a specific function in the script in the
  * burst_buffer/lua plugin

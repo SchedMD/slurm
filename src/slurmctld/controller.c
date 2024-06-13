@@ -2760,6 +2760,13 @@ static void _parse_commandline(int argc, char **argv)
 	};
 
 	if (run_command_is_launcher(argc, argv)) {
+		char *ctx = getenv("SLURM_SCRIPT_CONTEXT");
+
+		if (!xstrcmp(ctx, "burst_buffer.lua")) {
+			slurmscriptd_handle_bb_lua_mode(argc, argv);
+			_exit(127);
+		}
+
 		run_command_launcher(argc, argv);
 		_exit(127); /* Should not get here */
 	}
