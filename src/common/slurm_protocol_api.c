@@ -2175,7 +2175,6 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout)
 {
-	int rc = -1;
 	slurm_msg_t_init(resp);
 
 	/* If we are using a persistent connection make sure it is the one we
@@ -2187,15 +2186,18 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 		resp->conn = req->conn;
 	}
 
-	if (slurm_send_node_msg(fd, req) >= 0) {
-		/* no need to adjust and timeouts here since we are not
-		   forwarding or expecting anything other than 1 message
-		   and the regular timeout will be altered in
-		   slurm_receive_msg if it is 0 */
-		rc = slurm_receive_msg(fd, resp, timeout);
-	}
+	if (slurm_send_node_msg(fd, req) < 0)
+		return -1;
 
-	return rc;
+	/*
+	 * No need to adjust the timeout here since we are not forwarding or
+	 * expecting anything other than one message. The default timeout will
+	 * be used if it is set to 0.
+	 */
+	if (slurm_receive_msg(fd, resp, timeout))
+		return -1;
+
+	return 0;
 }
 
 /*
