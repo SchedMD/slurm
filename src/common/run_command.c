@@ -288,6 +288,15 @@ extern char *run_command(run_command_args_t *args)
 		fd_close(&pfd_to_child[0]);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
+		/*
+		 * Close the write pipe to the child immediately after it is
+		 * used, before calling run_command_poll_child(). This means
+		 * that the pipe will be closed before waiting for the child
+		 * to finish. If an error happened during the write, when the
+		 * child tries to read the required data from the pipe, the
+		 * pipe will be closed and the child can exit.
+		 */
+		fd_close(&pfd_to_child[1]);
 		resp = run_command_poll_child(cpid,
 					      args->max_wait,
 					      args->orphan_on_shutdown,
@@ -297,7 +306,6 @@ extern char *run_command(run_command_args_t *args)
 					      args->tid,
 					      args->status,
 					      args->timed_out);
-		fd_close(&pfd_to_child[1]);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
