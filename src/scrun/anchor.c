@@ -1493,6 +1493,8 @@ static void _on_startup_con_fin(void *arg)
 	xassert(state.startup_con);
 	state.startup_con = NULL;
 	unlock_state();
+
+	_try_start();
 }
 
 static int _wait_create_pid(int fd, pid_t child)
