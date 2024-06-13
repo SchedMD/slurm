@@ -387,6 +387,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.9
 ==========================
+ -- Fix many commands possibly reporting an "Unexpected Message Received" when
+    in reality the connection timed out.
 
 * Changes in Slurm 23.11.8
 ==========================
