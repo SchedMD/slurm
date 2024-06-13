@@ -38,6 +38,9 @@
 
 #include "src/common/track_script.h"
 
+#define RUN_COMMAND_LAUNCHER_MODE "slurm_script_launcher"
+#define RUN_COMMAND_LAUNCHER_ARGC 3
+
 typedef struct {
 	void (*cb)(int write_fd, void *cb_arg);
 	void *cb_arg;

@@ -61,6 +61,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/hash.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -501,6 +502,84 @@ static void _change_proc_name(int argc, char **argv, char *proc_name)
 	log_set_prefix(&log_prefix);
 }
 
+static void _send_bb_script_msg(int write_fd, void *cb_arg)
+{
+	run_script_msg_t *script_msg = cb_arg;
+	buf_t *buffer = init_buf(0);
+	bb_script_info_msg_t bb_msg = {
+		.authalttypes = slurm_conf.authalttypes,
+		.authinfo = slurm_conf.authinfo,
+		.authalt_params = slurm_conf.authalt_params,
+		.authtype = slurm_conf.authtype,
+		.cluster_name = slurm_conf.cluster_name,
+		.extra_buf = script_msg->extra_buf,
+		.extra_buf_size = script_msg->extra_buf_size,
+		.function = script_msg->script_name,
+		.job_id = script_msg->job_id,
+		.slurmctld_debug = slurm_conf.slurmctld_debug,
+		.slurmctld_logfile = slurm_conf.slurmctld_logfile,
+		.log_fmt = slurm_conf.log_fmt,
+		.plugindir = slurm_conf.plugindir,
+		.slurm_user_name = slurm_conf.slurm_user_name,
+		.slurm_user_id = slurm_conf.slurm_user_id,
+	};
+	slurmscriptd_msg_t msg = {
+		.msg_data = &bb_msg,
+		.msg_type = SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO,
+	};
+
+	/*
+	 * Send bb_script_info_msg_t. The write_mutex controls writing on
+	 * slurmctld_writefd or slurmscriptd_writefd. We are writing to a pipe
+	 * to a running script, so we do not need to lock write_mutex.
+	 */
+	slurmscriptd_pack_msg(&msg, buffer);
+	if (_write_msg(write_fd, SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO, buffer,
+		       false) != SLURM_SUCCESS) {
+		error("%s: Failed writing data to script: burst_buffer.lua:%s, JobId=%u",
+		      __func__, script_msg->script_name, script_msg->job_id);
+		goto fini;
+	}
+
+fini:
+	FREE_NULL_BUFFER(buffer);
+}
+
+static int _recv_bb_script_msg(bb_script_info_msg_t **msg_pptr)
+{
+	int rc = SLURM_SUCCESS, req = 0, len = 0;
+	int fd = STDIN_FILENO;
+	char *data = NULL;
+	buf_t *buffer = NULL;
+	slurmscriptd_msg_t scriptd_msg = { 0 };
+
+	safe_read(fd, &req, sizeof(req));
+	scriptd_msg.msg_type = req;
+	if (scriptd_msg.msg_type != SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO) {
+		fatal("%s: Invalid msg_type=%u",
+		      __func__, scriptd_msg.msg_type);
+	}
+
+	safe_read(fd, &len, sizeof(len));
+	if (!len)
+		fatal("%s: Invalid message length == 0", __func__);
+
+	data = xmalloc(len);
+	safe_read(fd, data, len);
+
+	/* Unpack bb_script_info_msg_t */
+	buffer = create_buf(data, len);
+	rc = slurmscriptd_unpack_msg(&scriptd_msg, buffer);
+	*msg_pptr = scriptd_msg.msg_data;
+	FREE_NULL_BUFFER(buffer);
+
+	return rc;
+
+rwfail:
+	error("%s Failed", __func__);
+	return SLURM_ERROR;
+}
+
 /*
  * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
@@ -626,121 +705,6 @@ static int _handle_flush_job(slurmscriptd_msg_t *recv_msg)
 	return SLURM_SUCCESS;
 }
 
-static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
-				 uint32_t argc, char **argv,
-				 job_info_msg_t *job_info)
-{
-	int exit_code;
-	char *resp = NULL;
-
-	setpgid(0, 0);
-
-	exit_code = bb_g_run_script(script_func, job_id, argc, argv, job_info,
-				    &resp);
-	if (resp)
-		safe_write(fd, resp, strlen(resp));
-
-rwfail:
-	_exit(exit_code);
-}
-
-
-/*
- * Run the burst buffer script in a fork()'d process so that if the script
- * runs for longer than the timeout, or if the script is cancelled, we can
- * SIGTERM/SIGKILL the process. This is based on the code in run_command(),
- * but instead of calling exec() in the child, we call a burst buffer plugin
- * API to run the script.
- *
- * Set the response of the script in resp_msg.
- * Return the exit code of the script.
- */
-static int _run_bb_script(run_script_msg_t *script_msg,
-			  char **resp_msg,
-			  bool *track_script_signalled)
-{
-	int pfd[2] = {-1, -1};
-	int status = 0;
-	uint32_t job_id = script_msg->job_id, timeout = script_msg->timeout;
-	uint32_t argc = script_msg->argc;
-	char **argv = script_msg->argv;
-	char *script_func = script_msg->script_name;
-	pid_t cpid;
-	job_info_msg_t *job_info = NULL;
-
-	xassert(resp_msg);
-	xassert(track_script_signalled);
-
-	*track_script_signalled = false;
-
-	if (script_msg->extra_buf_size) {
-		buf_t *extra_buf;
-		slurm_msg_t *extra_msg = xmalloc(sizeof *extra_msg);
-
-		slurm_msg_t_init(extra_msg);
-		extra_msg->protocol_version = SLURM_PROTOCOL_VERSION;
-		extra_msg->msg_type = RESPONSE_JOB_INFO;
-		extra_buf = create_buf(script_msg->extra_buf,
-				       script_msg->extra_buf_size);
-		unpack_msg(extra_msg, extra_buf);
-		job_info = extra_msg->data;
-		extra_msg->data = NULL;
-
-		/*
-		 * create_buf() does not duplicate the data, just points to it.
-		 * So just NULL it out here. It will get free'd later.
-		 */
-		extra_buf->head = NULL;
-		FREE_NULL_BUFFER(extra_buf);
-		slurm_free_msg(extra_msg);
-	}
-
-	if (pipe(pfd) != 0) {
-		*resp_msg = xstrdup_printf("pipe(): %m");
-		error("%s: Error running %s for JobId=%u: %s",
-		      __func__, script_func, job_id, *resp_msg);
-		return 127;
-	}
-
-
-	cpid = fork();
-	if (cpid < 0) { /* fork() failed */
-		*resp_msg = xstrdup_printf("fork(): %m");
-		error("%s: Error running %s for JobId=%u: %s",
-		      __func__, script_func, job_id, *resp_msg);
-		close(pfd[0]);
-		close(pfd[1]);
-		return 127;
-	} else if (cpid == 0) { /* child - run the script */
-		close(pfd[0]); /* Close the read fd, we're only writing */
-		_run_bb_script_child(pfd[1], script_func, job_id, argc, argv,
-				     job_info);
-	} else { /* parent */
-		close(pfd[1]); /* Close the write fd, we're only reading */
-		track_script_rec_add(job_id, cpid, pthread_self());
-		*resp_msg = run_command_poll_child(cpid,
-						   timeout * 1000,
-						   false,
-						   pfd[0],
-						   script_msg->script_path,
-						   script_msg->script_name,
-						   pthread_self(),
-						   &status,
-						   NULL);
-		close(pfd[0]);
-
-		/* If we were killed by track_script, let the caller know. */
-		*track_script_signalled =
-			track_script_killed(pthread_self(), status, true);
-
-		track_script_remove(pthread_self());
-	}
-
-	slurm_free_job_info_msg(job_info);
-
-	return status;
-}
-
 static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
@@ -782,9 +746,20 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		status = _run_bb_script(script_msg,
-					&resp_msg,
-					&signalled);
+		/* Set SLURM_SCRIPT_CONTEXT in env for slurmctld */
+		env_array_append(&run_command_args.env, "SLURM_SCRIPT_CONTEXT",
+				 "burst_buffer.lua");
+
+		/* burst_buffer.lua is not exec'd, it is run directly from C */
+		run_command_args.ignore_path_exec_check = true;
+
+		/* Send needed script info and configs to slurmctld */
+		run_command_args.write_to_child = true;
+		run_command_args.cb = _send_bb_script_msg;
+		run_command_args.cb_arg = script_msg;
+
+		status = _run_script(&run_command_args, script_msg,
+				     &resp_msg, &signalled);
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
@@ -1206,6 +1181,65 @@ static run_script_msg_t *_init_run_script_msg(char **env,
 	return run_script_msg;
 }
 
+static job_info_msg_t *_unpack_bb_job_info(bb_script_info_msg_t *bb_msg)
+{
+	buf_t *extra_buf;
+	slurm_msg_t *extra_msg;
+	job_info_msg_t *job_info;
+
+	if (!bb_msg->extra_buf_size)
+		return NULL;
+
+	extra_msg = xmalloc(sizeof *extra_msg);
+	slurm_msg_t_init(extra_msg);
+	extra_msg->protocol_version = SLURM_PROTOCOL_VERSION;
+	extra_msg->msg_type = RESPONSE_JOB_INFO;
+	extra_buf = create_buf(bb_msg->extra_buf, bb_msg->extra_buf_size);
+	unpack_msg(extra_msg, extra_buf);
+	job_info = extra_msg->data;
+	extra_msg->data = NULL;
+
+	/* create_buf() does not duplicate the data, it just points to it. */
+	extra_buf->head = NULL;
+	FREE_NULL_BUFFER(extra_buf);
+	slurm_free_msg(extra_msg);
+
+	return job_info;
+}
+
+static void _init_bb_script_config(char **function, uint32_t *job_id,
+				   job_info_msg_t **job_info)
+{
+	bb_script_info_msg_t *bb_msg = NULL;
+
+	if (_recv_bb_script_msg(&bb_msg) != SLURM_SUCCESS)
+		fatal("Failed to receive burst buffer script msg");
+
+	*function = bb_msg->function;
+	*job_id = bb_msg->job_id;
+	*job_info = _unpack_bb_job_info(bb_msg);
+	if (!function || !function[0])
+		fatal_abort("%s: Invalid NULL function", __func__);
+
+	slurm_conf.authalttypes = bb_msg->authalttypes;
+	slurm_conf.authinfo = bb_msg->authinfo;
+	slurm_conf.authalt_params = bb_msg->authalt_params;
+	slurm_conf.authtype = bb_msg->authtype;
+	slurm_conf.cluster_name = bb_msg->cluster_name;
+	slurm_conf.slurmctld_debug = bb_msg->slurmctld_debug;
+	slurm_conf.slurmctld_logfile = bb_msg->slurmctld_logfile;
+	slurm_conf.log_fmt = bb_msg->log_fmt;
+	slurm_conf.plugindir = bb_msg->plugindir;
+	slurm_conf.slurm_user_name = bb_msg->slurm_user_name;
+	slurm_conf.slurm_user_id = bb_msg->slurm_user_id;
+
+	/*
+	 * We copied the pointers in bb_msg, so only free bb_msg, not its
+	 * contents.
+	 */
+	xfree(bb_msg);
+}
+
 extern void slurmscriptd_flush(void)
 {
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
@@ -1216,7 +1250,82 @@ extern void slurmscriptd_flush(void)
 
 extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 {
-	exit(0);
+	int exit_code = 127;
+	char *function = NULL;
+	uint32_t job_id = 0;
+	char *proc_name = "burst_buffer.lua";
+	char *resp = NULL;
+	char **script_argv = NULL;
+	int script_argc = 0;
+	/* The lock is required for update_logging() */
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+	/*
+	 * Only log errors until we read the config and update to the configured
+	 * level.
+	 */
+	log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
+	job_info_msg_t *job_info = NULL;
+
+	setpgid(0, 0);
+	closeall(3); /* Do this before initializing logging */
+	/* coverity[leaked_handle] */
+
+	/* Logging will go to stdout/stderr until we call update_logging(). */
+	log_init(proc_name, log_opts, LOG_DAEMON, NULL);
+
+	/*
+	 * Change our process name and make it so running_in_slurmctld() and
+	 * run_in_daemon() return false.
+	 */
+	if (argc < RUN_COMMAND_LAUNCHER_ARGC) {
+		fatal("%s: Unexpected argc=%d, it should be >= %d",
+		      __func__, argc, RUN_COMMAND_LAUNCHER_ARGC);
+	}
+
+	script_argc = argc - RUN_COMMAND_LAUNCHER_ARGC;
+	/* _change_proc_name overwrites argv. Copy the args that we need. */
+	script_argv = slurm_char_array_copy(script_argc,
+					    &argv[RUN_COMMAND_LAUNCHER_ARGC]);
+	_change_proc_name(argc, argv, proc_name);
+
+	/* Minimal config setup: */
+	init_slurm_conf(&slurm_conf);
+	_init_bb_script_config(&function, &job_id, &job_info);
+
+	/*
+	 * Initialize plugins.
+	 * Lua plugins may call slurm_sprint_job_info() which calls
+	 * slurm_load_jobs() which makes an RPC to slurmctld, and that uses
+	 * the auth and hash plugins.
+	 */
+	if (auth_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize auth plugin");
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
+	slurm_conf.bb_type = "burst_buffer/lua";
+	if (bb_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize burst_buffer plugin");
+
+	/*
+	 * update_logging() makes logs go to the slurmctld log file.
+	 * Call update_logging() after initializing plugins to avoid seeing some
+	 * extra debug logs about loading plugins.
+	 */
+	lock_slurmctld(config_write_lock);
+	update_logging();
+	unlock_slurmctld(config_write_lock);
+
+	/* Run the script */
+	exit_code = bb_g_run_script(function, job_id, script_argc, script_argv,
+				    job_info, &resp);
+	if (resp)
+		safe_write(STDOUT_FILENO, resp, strlen(resp));
+
+	/* Ignore memory leaks because we are calling exit() */
+rwfail:
+	exit(exit_code);
 }
 
 extern void slurmscriptd_flush_job(uint32_t job_id)
@@ -1299,7 +1408,8 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   buf_t *job_buf, char **resp,
 				   bool *track_script_signalled)
 {
-	int status, rc;
+	int status, rc = SLURM_ERROR;
+	uint32_t extra_buf_size = job_buf ? job_buf->processed : 0;
 	run_script_msg_t run_script_msg;
 
 	memset(&run_script_msg, 0, sizeof(run_script_msg));
@@ -1307,12 +1417,11 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 	/* Init run_script_msg */
 	run_script_msg.argc = argc;
 	run_script_msg.argv = argv;
-	run_script_msg.env = NULL;
 	run_script_msg.extra_buf = job_buf ? job_buf->head : NULL;
-	run_script_msg.extra_buf_size = job_buf ? job_buf->processed : 0;
+	run_script_msg.extra_buf_size = extra_buf_size;
 	run_script_msg.job_id = job_id;
 	run_script_msg.script_name = function; /* Shallow copy, do not free */
-	run_script_msg.script_path = NULL;
+	run_script_msg.script_path = "burst_buffer.lua";
 	run_script_msg.script_type = SLURMSCRIPTD_BB_LUA;
 	run_script_msg.timeout = timeout;
 
@@ -1321,7 +1430,6 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				       &run_script_msg, true, resp,
 				       track_script_signalled);
 
-	/* Cleanup */
 	if (WIFEXITED(status))
 		rc = WEXITSTATUS(status);
 	else

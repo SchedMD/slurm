@@ -64,8 +64,6 @@ static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define RUN_COMMAND_LAUNCHER_MODE "slurm_script_launcher"
-#define RUN_COMMAND_LAUNCHER_ARGC 3
 #define MAX_POLL_WAIT 500
 #define _DEBUG 0
 
