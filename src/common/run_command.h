@@ -45,6 +45,7 @@ typedef struct {
 	void (*cb)(int write_fd, void *cb_arg);
 	void *cb_arg;
 	char **env;
+	bool ignore_path_exec_check;
 	uint32_t job_id;
 	int max_wait;
 	bool orphan_on_shutdown;

@@ -290,19 +290,21 @@ extern char *run_command(run_command_args_t *args)
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (args->script_path[0] != '/') {
-		error("%s: %s is not fully qualified pathname (%s)",
-		      __func__, args->script_type, args->script_path);
-		*(args->status) = 127;
-		resp = xstrdup("Run command failed - configuration error");
-		return resp;
-	}
-	if (access(args->script_path, R_OK | X_OK) < 0) {
-		error("%s: %s can not be executed (%s) %m",
-		      __func__, args->script_type, args->script_path);
-		*(args->status) = 127;
-		resp = xstrdup("Run command failed - configuration error");
-		return resp;
+	if (!args->ignore_path_exec_check) {
+		if (args->script_path[0] != '/') {
+			error("%s: %s is not a fully qualified pathname (%s)",
+			      __func__, args->script_type, args->script_path);
+			*(args->status) = 127;
+			resp = xstrdup("Run command failed - configuration error");
+			return resp;
+		}
+		if (access(args->script_path, R_OK | X_OK) < 0) {
+			error("%s: %s can not be executed (%s) %m",
+			      __func__, args->script_type, args->script_path);
+			*(args->status) = 127;
+			resp = xstrdup("Run command failed - configuration error");
+			return resp;
+		}
 	}
 	if ((pipe(pfd) != 0) ||
 	    (args->write_to_child && (pipe(pfd_to_child) != 0))) {
