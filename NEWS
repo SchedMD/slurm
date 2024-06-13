@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Limit mime types returned from query to 'GET /openapi/v3' to
     only return one mime type per serializer plugin to fix issues with OpenAPI
     client generators that are unable to handle multiple mime type aliases.
+ -- Fix many commands possibly reporting an "Unexpected Message Received" when
+    in reality the connection timed out.
 
 * Changes in Slurm 24.05.0
 ==========================
