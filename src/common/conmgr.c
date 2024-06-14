@@ -1843,7 +1843,7 @@ static void _handle_signals(void *ptr)
 	slurm_mutex_unlock(&mgr.mutex);
 	xassert(fd >= 0);
 
-	do {
+	while (true) {
 		int readable = 0;
 		int rc;
 
@@ -1882,7 +1882,8 @@ static void _handle_signals(void *ptr)
 		/* wake up _watch_loop() */
 		slurm_cond_broadcast(&mgr.cond);
 		slurm_mutex_unlock(&mgr.mutex);
-	} while (false);
+		break;
+	}
 }
 
 static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
