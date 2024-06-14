@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
     client generators that are unable to handle multiple mime type aliases.
  -- Fix many commands possibly reporting an "Unexpected Message Received" when
     in reality the connection timed out.
+ -- Prevent slurmctld from starting if there is not a json serializer present
+    and the extra_constraints feature is enabled.
 
 * Changes in Slurm 24.05.0
 ==========================

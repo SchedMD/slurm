@@ -62,6 +62,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
+#include "src/common/extra_constraints.h"
 #include "src/common/fd.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
@@ -541,6 +542,10 @@ int main(int argc, char **argv)
 		fatal("failed to initialize node_features plugin");
 	if (mpi_g_daemon_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize MPI plugins.");
+	/* Fatal if we use extra_constraints without json serializer */
+	if (extra_constraints_enabled() &&
+	    serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("Extra constraints feature requires a json serializer.");
 	if (serializer_g_init(NULL, NULL))
 		fatal("Failed to initialize serialization plugins.");
 	if (switch_g_init(true) != SLURM_SUCCESS)
