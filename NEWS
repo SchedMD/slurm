@@ -31,6 +31,10 @@ documents those changes that are of interest to users and administrators.
     '.jobs[].oversubscribe' from 'scontrol show jobs --{json|yaml}'.
  -- squeue - Removed deprecated fields '.jobs[].exclusive' and
     '.jobs[].oversubscribe' from 'squeue --{json|yaml}'.
+ -- Improve the way to run external commands and fork processes to avoid
+    non-async-signal safe calls between a fork and an exec. We fork ourselves
+    now and executes the commands in a safe environment. This includes spank
+    prolog/epilog executions.
 
 * Changes in Slurm 24.05.1
 ==========================
