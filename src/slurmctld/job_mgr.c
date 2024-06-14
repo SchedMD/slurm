@@ -245,6 +245,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static void _get_batch_job_dir_ids(list_t *batch_dirs);
 static bool _get_whole_hetjob(void);
+static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 			    bool requeue);
 static int  _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
@@ -11391,6 +11392,40 @@ extern void sync_job_priorities(void)
 }
 
 /*
+ * _higher_precedence - determine if job_ptr should be considered before
+ *	job_ptr2 when scheduling jobs at submission time.
+ *	This compares priority, submit time, and job id (in this order).
+ *
+ * IN job_ptr - pointer to first job
+ * IN job_ptr2 - pointer to second job
+ * RET true if job_ptr has higher scheduling precedence over job_ptr2
+ */
+static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2)
+{
+	xassert(job_ptr);
+	xassert(job_ptr2);
+
+	/* Compare priority */
+	if (job_ptr->priority > job_ptr2->priority)
+		return true;
+	if (job_ptr2->priority > job_ptr->priority)
+		return false;
+
+	/* Compare submit time */
+	if (job_ptr->details->submit_time && job_ptr2->details->submit_time) {
+		if (job_ptr->details->submit_time <
+		    job_ptr2->details->submit_time)
+			return true;
+		if (job_ptr2->details->submit_time <
+		    job_ptr->details->submit_time)
+			return false;
+	}
+
+	/* Compare job id */
+	return job_ptr->job_id < job_ptr2->job_id;
+}
+
+/*
  * _top_priority - determine if any other job has a higher priority than the
  *	specified job
  * IN job_ptr - pointer to selected job
@@ -11444,7 +11479,7 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			      job_ptr2->resv_ptr->max_start_delay) &&
 			     (job_ptr->warn_flags & KILL_JOB_RESV))) {
 				/* same reservation */
-				if (job_ptr2->priority <= job_ptr->priority)
+				if (_higher_precedence(job_ptr, job_ptr2))
 					continue;
 				top = false;
 				break;
@@ -11460,7 +11495,7 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 
 			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
 				/* same partition */
-				if (job_ptr2->priority <= job_ptr->priority)
+				if (_higher_precedence(job_ptr, job_ptr2))
 					continue;
 				top = false;
 				break;
@@ -11472,7 +11507,7 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			     job_ptr ->part_ptr->priority_tier) ||
 			    ((job_ptr2->part_ptr->priority_tier ==
 			      job_ptr ->part_ptr->priority_tier) &&
-			     (job_ptr2->priority >  job_ptr->priority))) {
+			     !(_higher_precedence(job_ptr, job_ptr2)))) {
 				top = false;
 				break;
 			}
