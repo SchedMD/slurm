@@ -76,9 +76,10 @@ do { \
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) { \
 		char *log_name = NULL; \
 		if (!con_name) \
-			con_name = log_name = fd_resolve_path(fd); \
+			log_name = fd_resolve_path(fd); \
 		log_flag(NET, "%s: [%s] " fmt, \
-			 __func__, con_name, ##__VA_ARGS__); \
+			 __func__, con_name ? con_name : log_name, \
+			 ##__VA_ARGS__); \
 		xfree(log_name); \
 	} \
 } while (false)
