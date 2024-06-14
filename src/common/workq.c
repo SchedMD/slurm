@@ -106,7 +106,6 @@ static void _check_magic_worker(workq_worker_t *worker)
 	xassert(worker);
 	xassert(worker->magic == MAGIC_WORKER);
 	xassert(worker->id > 0);
-	_check_magic_workq();
 }
 
 static void _check_magic_work(workq_work_t *work)
@@ -269,9 +268,8 @@ extern void workq_init(int count)
 
 static void _wait_workers_idle(void)
 {
-	_check_magic_workq();
-
 	slurm_mutex_lock(&workq.mutex);
+	_check_magic_workq();
 	log_flag(WORKQ, "%s: checking %u workers",
 		 __func__, list_count(workq.work));
 
@@ -284,10 +282,9 @@ static void _wait_workers_idle(void)
 
 static void _wait_work_complete(void)
 {
-	_check_magic_workq();
-
 	slurm_mutex_lock(&workq.mutex);
 	xassert(workq.shutdown);
+	_check_magic_workq();
 	log_flag(WORKQ, "%s: waiting for %u queued workers",
 		 __func__, list_count(workq.work));
 	slurm_mutex_unlock(&workq.mutex);
@@ -315,9 +312,8 @@ static void _wait_work_complete(void)
 
 extern void workq_quiesce(void)
 {
-	_check_magic_workq();
-
 	slurm_mutex_lock(&workq.mutex);
+	_check_magic_workq();
 
 	log_flag(WORKQ, "%s: shutting down with %u queued jobs",
 		 __func__, list_count(workq.work));
@@ -344,8 +340,6 @@ extern void workq_fini(void)
 	if (!threads)
 		return;
 
-	_check_magic_workq();
-
 	_wait_workers_idle();
 	workq_quiesce();
 
@@ -368,7 +362,6 @@ extern int workq_add_work(work_func_t func, void *arg, const char *tag)
 	int rc = SLURM_SUCCESS;
 
 	workq_work_t *work = xmalloc(sizeof(*work));
-	_check_magic_workq();
 
 	work->magic = MAGIC_WORK;
 	work->func = func;
@@ -378,6 +371,7 @@ extern int workq_add_work(work_func_t func, void *arg, const char *tag)
 	_check_magic_work(work);
 
 	slurm_mutex_lock(&workq.mutex);
+	_check_magic_workq();
 	/* add to work list and signal a thread */
 	if (workq.shutdown)
 		rc = ESLURM_DISABLED;
@@ -462,9 +456,8 @@ extern int workq_get_active(void)
 {
 	int active;
 
-	_check_magic_workq();
-
 	slurm_mutex_lock(&workq.mutex);
+	_check_magic_workq();
 	active = workq.active;
 	slurm_mutex_unlock(&workq.mutex);
 
