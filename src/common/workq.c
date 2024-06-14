@@ -210,9 +210,6 @@ extern void workq_init(int count)
 
 	slurm_mutex_lock(&workq.mutex);
 
-	if (!count)
-		count = WORKQ_THREAD_COUNT_DEFAULT;
-
 	if (workq.threads) {
 		_check_magic_workq();
 
