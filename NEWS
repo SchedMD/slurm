@@ -91,6 +91,10 @@ documents those changes that are of interest to users and administrators.
     in reality the connection timed out.
  -- Prevent slurmctld from starting if there is not a json serializer present
     and the extra_constraints feature is enabled.
+ -- Fix heterogeneous job components not being signaled with scancel --ctld and
+    'DELETE slurm/v0.0.40/jobs' if the job ids are not explicitly given,
+    the heterogeneous job components match the given filters, and the
+    heterogeneous job leader does not match the given filters.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -424,6 +428,10 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix many commands possibly reporting an "Unexpected Message Received" when
     in reality the connection timed out.
+ -- Fix heterogeneous job components not being signaled with scancel --ctld and
+    'DELETE slurm/v0.0.40/jobs' if the job ids are not explicitly given,
+    the heterogeneous job components match the given filters, and the
+    heterogeneous job leader does not match the given filters.
 
 * Changes in Slurm 23.11.8
 ==========================
