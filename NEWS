@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
       'associations/max/tres/minutes/per/job'
       'associations/max/tres/minutes/total'
  -- Fix power_save operation after recovering from a failed reconfigure.
+ -- scrun - Delay shutdown until after start requested. This caused scrun
+    to never start or shutdown and hung forever when using --tty.
 
 * Changes in Slurm 23.11.8
 ==========================
