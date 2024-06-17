@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
       'GET /slurmdb/v0.0.41/instances'
       'POST /slurm/v0.0.40/job/{job_id}'
       'POST /slurm/v0.0.41/job/{job_id}'
+ -- Fix IPMI energy gathering when no IPMIPowerSensors are specified in
+    acct_gather.conf. This situation resulted in an accounted energy of 0
+    for job steps.
 
 * Changes in Slurm 24.05.1
 ==========================

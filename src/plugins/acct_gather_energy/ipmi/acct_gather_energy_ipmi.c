@@ -1042,33 +1042,41 @@ static int _get_joules_task(uint16_t delta)
 	return SLURM_SUCCESS;
 }
 
-static void _get_node_energy(acct_gather_energy_t *energy)
+static void _sum_energy(acct_gather_energy_t *energy, acct_gather_energy_t *e)
+{
+	energy->base_consumed_energy += e->base_consumed_energy;
+	energy->ave_watts += e->ave_watts;
+	energy->consumed_energy += e->consumed_energy;
+	energy->current_watts += e->current_watts;
+	energy->previous_consumed_energy += e->previous_consumed_energy;
+
+	/* node poll_time is computed as the oldest poll_time of the sensors */
+	if (energy->poll_time == 0 || energy->poll_time > e->poll_time)
+		energy->poll_time = e->poll_time;
+}
+
+static void _get_node_energy(acct_gather_energy_t *energy, uint16_t sensor_cnt)
 {
 	uint16_t i, j, id;
-	acct_gather_energy_t *e;
 
 	/* find the "Node" description */
 	for (i = 0; i < descriptions_len; ++i)
 		if (xstrcmp(descriptions[i].label, NODE_DESC) == 0)
 			break;
 	/* not found, init is not finished or there is no watt sensors */
-	if (i >= descriptions_len)
+	if ((i >= descriptions_len) &&
+	    ((descriptions_len > 0) || (!sensor_cnt)))
 		return;
 
 	/* sum the energy of all sensors described for "Node" */
 	memset(energy, 0, sizeof(acct_gather_energy_t));
-	for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
-		id = descriptions[i].sensor_idxs[j];
-		e = &sensors[id].energy;
-		energy->base_consumed_energy += e->base_consumed_energy;
-		energy->ave_watts += e->ave_watts;
-		energy->consumed_energy += e->consumed_energy;
-		energy->current_watts += e->current_watts;
-		energy->previous_consumed_energy += e->previous_consumed_energy;
-		/* node poll_time is computed as the oldest poll_time of
-		   the sensors */
-		if (energy->poll_time == 0 || energy->poll_time > e->poll_time)
-			energy->poll_time = e->poll_time;
+	if (descriptions_len > 0) {
+		for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
+			id = descriptions[i].sensor_idxs[j];
+			_sum_energy(energy, &sensors[id].energy);
+		}
+	} else {
+		_sum_energy(energy, &sensors[0].energy);
 	}
 }
 
@@ -1168,12 +1176,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 			slurm_mutex_lock(&ipmi_mutex);
 			_get_joules_task(10);
 		}
-		_get_node_energy(energy);
+		_get_node_energy(energy, sensors_len);
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_NODE_ENERGY:
 		slurm_mutex_lock(&ipmi_mutex);
-		_get_node_energy(energy);
+		_get_node_energy(energy, sensors_len);
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_LAST_POLL:
