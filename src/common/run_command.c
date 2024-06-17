@@ -61,6 +61,7 @@
 #include "src/common/xstring.h"
 
 static char *script_launcher = NULL;
+static int script_launcher_fd = -1;
 static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -133,7 +134,15 @@ extern void run_command_init(char *binary)
 	if (!binary)
 		return;
 
+	fd_close(&script_launcher_fd);
 	script_launcher = NULL;
+
+#if defined(__linux__)
+	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
+		script_launcher = xstrdup(binary);
+		return;
+	}
+#endif /* !__linux__ */
 
 	if (access(binary, R_OK | X_OK) < 0)
 		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
