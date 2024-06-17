@@ -792,8 +792,6 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 			}
 		}
 		if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-			xrealloc(alloc_msg->environment,
-				 sizeof(char *) * (alloc_msg->env_size + 1));
 			env_array_overwrite(&alloc_msg->environment,
 					    "SLURM_STEPMGR",
 					    job_ptr->batch_host);
