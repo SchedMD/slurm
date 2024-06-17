@@ -1348,12 +1348,20 @@ static void * _try_to_reconfig(void * arg)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
+	char *tmp_ptr = NULL;
+	int reconfigure_timeout = slurm_conf.prolog_epilog_timeout;
 
 	_reconfig = 0;
 
-	if (_wait_for_all_threads(slurm_conf.prolog_epilog_timeout)) {
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmd_params,
+				   "reconfigure_timeout=")))
+		reconfigure_timeout = atoi(tmp_ptr + 20);
+	if (reconfigure_timeout == -1)
+		reconfigure_timeout = NO_VAL16;
+
+	if (_wait_for_all_threads(reconfigure_timeout)) {
 		error("Failed to reconfigure within %d s - draining node",
-		      slurm_conf.prolog_epilog_timeout);
+		      reconfigure_timeout);
 		send_registration_msg(SLURM_SUCCESS,
 				      SLURMD_REG_FLAG_RECONFIG_TIMEOUT);
 		reconfiguring = false;
