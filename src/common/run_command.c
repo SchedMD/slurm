@@ -127,7 +127,7 @@ extern void run_command_add_to_script(char **script_body, char *new_str)
 }
 
 /* used to initialize run_command module */
-extern void run_command_init(char *binary)
+extern void run_command_init(int argc, char **argv, char *binary)
 {
 	command_shutdown = 0;
 
@@ -135,6 +135,10 @@ extern void run_command_init(char *binary)
 	if (!binary && !script_launcher)
 		binary = "/proc/self/exe";
 #endif /* !__linux__ */
+
+	/* Use argv[0] as fallback with absolute path */
+	if (!binary && (argc > 0) && (argv[0][0] == '/'))
+		binary = argv[0];
 
 	if (!binary)
 		return;

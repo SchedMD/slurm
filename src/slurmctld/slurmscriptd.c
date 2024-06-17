@@ -1068,7 +1068,7 @@ static void _setup_eio(int fd)
 
 static void _slurmscriptd_mainloop(char *binary_path)
 {
-	run_command_init(binary_path);
+	run_command_init(0, NULL, binary_path);
 	_setup_eio(slurmscriptd_readfd);
 
 	debug("%s: started", __func__);

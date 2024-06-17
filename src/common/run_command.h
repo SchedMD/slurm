@@ -80,10 +80,13 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
  * If run_command_shutdown() was previously called, this function must be
  * called to re-initialize this module and allow commands to run.
  *
+ * IN argc - number of command line arguments
+ * IN argv - the command line arguments or NULL to use the current running
+ *      binary
  * IN binary - path to executable binary to use as the script launcher or NULL
- *	to use the current running binary
+ *	to use the current running binary or resolve using argc/argv
  */
-extern void run_command_init(char *binary);
+extern void run_command_init(int argc, char **argv, char *binary);
 
 /*
  * Used to terminate any outstanding commands. Any future commands will be

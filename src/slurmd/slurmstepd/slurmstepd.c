@@ -315,7 +315,7 @@ main (int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
-	run_command_init(conf->stepd_loc);
+	run_command_init(argc, argv, conf->stepd_loc);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
