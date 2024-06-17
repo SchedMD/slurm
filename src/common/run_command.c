@@ -69,9 +69,9 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define MAX_POLL_WAIT 500
 
 /* Function prototypes */
-static void _run_command_child_exec(const char *path, char **argv, char **env);
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env);
 static void _run_command_child_pre_exec(void);
-
 
 extern void run_command_add_to_script(char **script_body, char *new_str)
 {
@@ -219,11 +219,11 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 	dup2(write_fd, STDOUT_FILENO);
 
 	if (launcher_argv)
-		_run_command_child_exec(script_launcher, launcher_argv,
-					args->env);
+		_run_command_child_exec(script_launcher_fd, script_launcher,
+					launcher_argv, args->env);
 
 	_run_command_child_pre_exec();
-	_run_command_child_exec(args->script_path, args->script_argv,
+	_run_command_child_exec(-1, args->script_path, args->script_argv,
 				args->env);
 }
 
@@ -279,14 +279,18 @@ static char **_setup_launcher_argv(run_command_args_t *args)
 /*
  * Wrapper for execv/execve. This should never return.
  */
-static void _run_command_child_exec(const char *path, char **argv, char **env)
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env)
 {
 	extern char **environ;
 
 	if (!env || !env[0])
 		env = environ;
 
-	execve(path, argv, env);
+	if (fd >= 0)
+		fexecve(fd, argv, env);
+	else
+		execve(path, argv, env);
 	error("%s: execv(%s): %m", __func__, path);
 	_exit(127);
 }
@@ -321,7 +325,7 @@ extern void run_command_launcher(int argc, char **argv)
 
 	xassert(script_path);
 	_run_command_child_pre_exec();
-	_run_command_child_exec(script_path, script_argv, NULL);
+	_run_command_child_exec(-1, script_path, script_argv, NULL);
 	_exit(127);
 }
 
