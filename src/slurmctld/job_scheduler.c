@@ -2349,8 +2349,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	}
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		xrealloc(launch_msg_ptr->environment,
-			 sizeof(char *) * (launch_msg_ptr->envc + 1));
 		env_array_overwrite(&launch_msg_ptr->environment,
 				    "SLURM_STEPMGR", job_ptr->batch_host);
 		launch_msg_ptr->envc++;
@@ -2479,9 +2477,6 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 		return;
 	}
 
-	/* "environment" needs NULL terminator */
-	xrealloc(launch_msg_ptr->environment,
-		 sizeof(char *) * (launch_msg_ptr->envc + 1));
 	iter = list_iterator_create(het_job_leader->het_job_list);
 	while ((het_job = list_next(iter))) {
 		uint16_t cpus_per_task = 1;
