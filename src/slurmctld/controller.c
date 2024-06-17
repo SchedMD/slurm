@@ -555,7 +555,6 @@ int main(int argc, char **argv)
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst buffer plugin");
 			run_backup();
-			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
 		} else {
 			if (acct_storage_g_init() != SLURM_SUCCESS)
