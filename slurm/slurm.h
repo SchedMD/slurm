@@ -2428,8 +2428,7 @@ typedef struct job_alloc_info_msg {
 	{ NULL, NO_VAL, NO_VAL, { NO_VAL, NO_VAL, NO_VAL } }
 
 typedef struct {
-	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap().
-				 * NOT PACKED */
+	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap(). */
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
 	slurm_step_id_t step_id;
