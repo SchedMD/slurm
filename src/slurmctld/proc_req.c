@@ -795,7 +795,8 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 			env_array_overwrite(&alloc_msg->environment,
 					    "SLURM_STEPMGR",
 					    job_ptr->batch_host);
-			alloc_msg->env_size++;
+			alloc_msg->env_size =
+				PTR_ARRAY_SIZE(alloc_msg->environment) - 1;
 		}
 	} else {
 		/* alloc_msg->pn_min_memory = 0; */
