@@ -400,12 +400,17 @@ extern char *fd_resolve_path(int fd)
 
 #if defined(__linux__)
 	char ret[PATH_MAX + 1];
+	ssize_t bytes;
 
 	path = xstrdup_printf("/proc/self/fd/%u", fd);
 	memset(ret, 0, (PATH_MAX + 1));
+	bytes = readlink(path, ret, PATH_MAX);
 
-	if (readlink(path, ret, PATH_MAX) < 0)
+	if (bytes < 0)
 		debug("%s: readlink(%s) failed: %m", __func__,  path);
+	else if (bytes >= PATH_MAX)
+		debug("%s: rejecting readlink(%s) for possble truncation",
+		      __func__, path);
 	else
 		resolved = xstrdup(ret);
 #endif
