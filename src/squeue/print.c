@@ -210,6 +210,28 @@ extern void print_steps_array(job_step_info_t *steps, int size, list_t *format)
 	}
 }
 
+extern void squeue_filter_jobs_for_json(job_info_msg_t *job_info)
+{
+	int new_array_size = 0;
+	job_info_t *tmp_jobs = xcalloc(job_info->record_count,
+				       sizeof(job_info_t));
+
+	for (int i = 0; i < job_info->record_count; i++) {
+		if (!(_filter_job(&job_info->job_array[i])) &&
+		    !(_filter_job_part(job_info->job_array[i].partition))) {
+			tmp_jobs[new_array_size] = job_info->job_array[i];
+			new_array_size++;
+		} else {
+			slurm_free_job_info_members(&job_info->job_array[i]);
+		}
+	}
+
+	xrecalloc(tmp_jobs, new_array_size, sizeof(job_info_t));
+	xfree(job_info->job_array);
+	job_info->job_array = tmp_jobs;
+	job_info->record_count = new_array_size;
+}
+
 /* Combine a job array's task "reason" into the master job array record
  * reason as needed */
 static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)

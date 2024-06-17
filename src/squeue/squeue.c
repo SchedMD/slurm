@@ -359,6 +359,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 
 	if (params.mimetype) {
 		int rc;
+		squeue_filter_jobs_for_json(new_job_ptr);
 		openapi_resp_job_info_msg_t resp = {
 			.jobs = new_job_ptr,
 			.last_backfill = new_job_ptr->last_backfill,
