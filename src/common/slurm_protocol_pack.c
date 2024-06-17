@@ -13763,7 +13763,11 @@ extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
 {
 	slurm_selected_step_t *step = in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack_step_id(&step->step_id, buffer, protocol_version);
+		pack32(step->array_task_id, buffer);
+		pack32(step->het_job_offset, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&step->step_id, buffer, protocol_version);
 		pack32(step->array_task_id, buffer);
 		pack32(step->het_job_offset, buffer);
@@ -13779,7 +13783,13 @@ extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
 
 	step_ptr->array_task_id = NO_VAL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&step_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&step_ptr->array_task_id, buffer);
+		safe_unpack32(&step_ptr->het_job_offset, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&step_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
