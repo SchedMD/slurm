@@ -264,10 +264,12 @@ static char **_setup_launcher_argv(run_command_args_t *args)
  */
 static void _run_command_child_exec(const char *path, char **argv, char **env)
 {
-	if (!env)
-		execv(path, argv);
-	else
-		execve(path, argv, env);
+	extern char **environ;
+
+	if (!env || !env[0])
+		env = environ;
+
+	execve(path, argv, env);
 	error("%s: execv(%s): %m", __func__, path);
 	_exit(127);
 }
