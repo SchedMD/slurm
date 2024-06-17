@@ -817,6 +817,13 @@ int main(int argc, char **argv)
 			break;
 
 		recover = 2;
+
+		/*
+		 * We need to re-initialize run_command after
+		 * run_command_shutdown() was called. Pass NULL since we do
+		 * not want to change the script launcher location.
+		 */
+		run_command_init(NULL);
 	}
 
 	slurmscriptd_fini();
