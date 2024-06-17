@@ -225,7 +225,7 @@ static void      _update_nice(void);
 static void      _usage(void);
 static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
-static void      _wait_for_all_threads(int secs);
+static int _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
 
 /**************************************************************************\
@@ -414,7 +414,7 @@ main (int argc, char **argv)
 		      conf->pidfile);
 
 	/* Wait for prolog/epilog scripts to finish or timeout */
-	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
+	(void)_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
 	/*
 	 * run_command_shutdown() will kill any scripts started with
 	 * run_command() including the prolog and epilog.
@@ -547,8 +547,7 @@ static void _increment_thd_count(void)
 }
 
 /* secs IN - wait up to this number of seconds for all threads to complete */
-static void
-_wait_for_all_threads(int secs)
+static int _wait_for_all_threads(int secs)
 {
 	struct timespec ts;
 	int rc;
@@ -570,7 +569,7 @@ _wait_for_all_threads(int secs)
 			if (rc == ETIMEDOUT) {
 				error("Timeout waiting for completion of %d threads",
 				      active_threads);
-				return;
+				return SLURM_ERROR;
 			}
 		}
 	}
@@ -580,6 +579,7 @@ _wait_for_all_threads(int secs)
 	 * another slurmd immediatelly (reconfigure).
 	 */
 	verbose("all threads complete");
+	return SLURM_SUCCESS;
 }
 
 static void _handle_connection(int fd, slurm_addr_t *cli)
