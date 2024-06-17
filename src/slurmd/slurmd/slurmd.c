@@ -220,7 +220,7 @@ static int       _set_topo_info(void);
 static int       _set_work_dir(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void _try_to_reconfig(void);
+static void * _try_to_reconfig(void * arg);
 static void      _update_nice(void);
 static void      _usage(void);
 static void      _usr_handler(int);
@@ -490,7 +490,7 @@ static void _msg_engine(void)
 			START_TIMER;
 			verbose("got reconfigure request");
 			/* Wait for RPCs to finish */
-			_try_to_reconfig();
+			slurm_thread_create_detached(_try_to_reconfig, NULL);
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
@@ -568,14 +568,15 @@ _wait_for_all_threads(int secs)
 			if (rc == ETIMEDOUT) {
 				error("Timeout waiting for completion of %d threads",
 				      active_threads);
-				slurm_cond_signal(&active_cond);
-				slurm_mutex_unlock(&active_mutex);
 				return;
 			}
 		}
 	}
-	slurm_cond_signal(&active_cond);
-	slurm_mutex_unlock(&active_mutex);
+	/*
+	 * We deliberatelly keep active_mutex locked. If we are in
+	 * _wait_for_all_threads the slurmd is going to exit or execv
+	 * another slurmd immediatelly (reconfigure).
+	 */
 	verbose("all threads complete");
 }
 
@@ -1323,7 +1324,7 @@ rwfail:
 	return;
 }
 
-static void _try_to_reconfig(void)
+static void * _try_to_reconfig(void * arg)
 {
 	extern char **environ;
 	struct rlimit rlim;
@@ -1336,7 +1337,7 @@ static void _try_to_reconfig(void)
 	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
 
 	if (_shutdown)
-		return;
+		return NULL;
 
 	conmgr_quiesce(true);
 
@@ -1364,14 +1365,14 @@ static void _try_to_reconfig(void)
 
 	if (pipe(to_parent) < 0) {
 		error("%s: pipe() failed: %m", __func__);
-		return;
+		return NULL;
 	}
 
 	setenvf(&child_env, "SLURMD_RECONF_PARENT_FD", "%d", to_parent[1]);
 
 	if ((pid = fork()) < 0) {
 		error("%s: fork() failed, cannot reconfigure.", __func__);
-		return;
+		return NULL;
 	} else if (pid > 0) {
 		pid_t grandchild_pid;
 		int rc;
@@ -1402,7 +1403,7 @@ rwfail:
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
 		conmgr_run(false);
-		return;
+		return NULL;
 	}
 
 start_child:
