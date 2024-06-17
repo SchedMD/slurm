@@ -76,15 +76,19 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
 
 /*
  * Used to initialize this run_command module.
- * Needed in cases of high-availability when the backup controllers are
- * returning to function and must recover from a previously issued shutdown.
+ *
+ * If run_command_shutdown() was previously called, this function must be
+ * called to re-initialize this module and allow commands to run.
  *
  * IN binary - (optional) path to this executable's binary to use as the script
  *             launcher.
  */
 extern void run_command_init(char *binary);
 
-/* used to terminate any outstanding commands */
+/*
+ * Used to terminate any outstanding commands. Any future commands will be
+ * immediately terminated until run_command_init() is called again.
+ */
 extern void run_command_shutdown(void);
 
 /* Return count of child processes */
