@@ -486,14 +486,10 @@ static void _msg_engine(void)
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
 		if (_reconfig) {
-			int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
 			DEF_TIMERS;
 			START_TIMER;
 			verbose("got reconfigure request");
 			/* Wait for RPCs to finish */
-			_wait_for_all_threads(rpc_wait);
-			if (_shutdown)
-				break;
 			_try_to_reconfig();
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
 				   5000000);
@@ -1334,8 +1330,15 @@ static void _try_to_reconfig(void)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
+	int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
 
 	_reconfig = 0;
+
+	_wait_for_all_threads(rpc_wait);
+
+	if (_shutdown)
+		return;
+
 	conmgr_quiesce(true);
 
 	save_cred_state();
