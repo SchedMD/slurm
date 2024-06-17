@@ -780,6 +780,8 @@ extern int send_registration_msg(uint32_t status, uint16_t flags)
 		msg->flags |= SLURMD_REG_FLAG_CONFIGLESS;
 	if (flags & SLURMD_REG_FLAG_RECONFIG)
 		msg->flags |= SLURMD_REG_FLAG_RECONFIG;
+	if (flags & SLURMD_REG_FLAG_RECONFIG_TIMEOUT)
+		msg->flags |= SLURMD_REG_FLAG_RECONFIG_TIMEOUT;
 
 	_fill_registration_msg(msg);
 	msg->status = status;
@@ -1349,7 +1351,15 @@ static void * _try_to_reconfig(void * arg)
 
 	_reconfig = 0;
 
-	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
+	if (_wait_for_all_threads(slurm_conf.prolog_epilog_timeout)) {
+		error("Failed to reconfigure within %d s - draining node",
+		      slurm_conf.prolog_epilog_timeout);
+		send_registration_msg(SLURM_SUCCESS,
+				      SLURMD_REG_FLAG_RECONFIG_TIMEOUT);
+		reconfiguring = false;
+		slurm_mutex_unlock(&active_mutex);
+		return NULL;
+	}
 
 	if (_shutdown)
 		return NULL;
