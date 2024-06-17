@@ -110,6 +110,8 @@ typedef enum {
 
 typedef struct {
 	list_t *job_list;
+	int pend_cnt_limit;
+	char *reason_msg;
 	array_split_type_t type;
 } split_job_t;
 
@@ -406,51 +408,22 @@ static int _find_depend_after_corr(void *x, void *arg)
 	return 0;
 }
 
-static int _split_job_on_schedule(void *x, void *arg)
+static job_record_t *_split_job_on_schedule_recurse(
+	job_record_t *job_ptr, split_job_t *split_job)
 {
-	job_record_t *job_ptr = x;
-	split_job_t *split_job = arg;
-	char *reason_msg = NULL;
-	int pend_cnt_limit = 0;
 	job_record_t *new_job_ptr;
 	int array_task_id;
 
-	if ((split_job->type == ARRAY_SPLIT_BURST_BUFFER) &&
-	    !job_ptr->burst_buffer)
-		return 0;
-
-	if (!IS_JOB_PENDING(job_ptr) ||
-	    !job_ptr->array_recs ||
-	    !job_ptr->array_recs->task_id_bitmap ||
-	    (job_ptr->array_task_id != NO_VAL))
-		return 0;
+	if (num_pending_job_array_tasks(job_ptr->array_job_id) >=
+	    split_job->pend_cnt_limit)
+		return job_ptr;
 
 	if (job_ptr->array_recs->task_cnt < 1)
-		return 0;
+		return job_ptr;
 
 	array_task_id = bit_ffs(job_ptr->array_recs->task_id_bitmap);
 	if (array_task_id < 0)
-		return 0;
-
-	if (split_job->type == ARRAY_SPLIT_AFTER_CORR) {
-		if (!job_ptr->details ||
-		    !job_ptr->details->depend_list ||
-		    !list_count(job_ptr->details->depend_list) ||
-		    !list_find_first(job_ptr->details->depend_list,
-				     _find_depend_after_corr,
-				     NULL))
-			return 0;
-
-		reason_msg = "SLURM_DEPEND_AFTER_CORRESPOND";
-		pend_cnt_limit = correspond_after_task_cnt;
-	} else {
-		reason_msg = "burst buffer";
-		pend_cnt_limit = bb_array_stage_cnt;
-	}
-
-	if (num_pending_job_array_tasks(job_ptr->array_job_id) >=
-	    pend_cnt_limit)
-		return 0;
+		return job_ptr;
 
 	if (job_ptr->array_recs->task_cnt == 1) {
 		job_ptr->array_task_id = array_task_id;
@@ -466,12 +439,13 @@ static int _split_job_on_schedule(void *x, void *arg)
 			fed_mgr_submit_remote_dependencies(job_ptr,
 							   false,
 							   false);
-		return 0;
+		return new_job_ptr;
 	}
+
 	job_ptr->array_task_id = array_task_id;
 	new_job_ptr = job_array_split(job_ptr, false);
-	info("%s: Split out %pJ for %s use",
-	     __func__, job_ptr, reason_msg);
+	debug("%s: Split out %pJ for %s use",
+	      __func__, job_ptr, split_job->reason_msg);
 	job_state_set(new_job_ptr, JOB_PENDING);
 	new_job_ptr->start_time = (time_t) 0;
 
@@ -485,7 +459,52 @@ static int _split_job_on_schedule(void *x, void *arg)
 	 */
 
 	if (split_job->type == ARRAY_SPLIT_BURST_BUFFER)
-		(void) bb_g_job_validate2(job_ptr, NULL);
+		(void) bb_g_job_validate2(new_job_ptr, NULL);
+
+	/*
+	 * See if we need to spawn off any more since the new_job_ptr now has
+	 * ->array_recs.
+	 */
+	return _split_job_on_schedule_recurse(new_job_ptr, split_job);
+}
+
+static int _split_job_on_schedule(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	split_job_t *split_job = arg;
+
+	if (!IS_JOB_PENDING(job_ptr) ||
+	    !job_ptr->array_recs ||
+	    !job_ptr->array_recs->task_id_bitmap ||
+	    (job_ptr->array_task_id != NO_VAL))
+		return 0;
+	/*
+	 * Create individual job records for job arrays that need burst buffer
+	 * staging
+	 */
+	if (job_ptr->burst_buffer) {
+		split_job->pend_cnt_limit = bb_array_stage_cnt;
+		split_job->reason_msg = "burst buffer";
+		split_job->type = ARRAY_SPLIT_BURST_BUFFER;
+		job_ptr = _split_job_on_schedule_recurse(job_ptr, split_job);
+	}
+
+	/*
+	 * Create individual job records for job arrays with
+	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND
+	 */
+	if (job_ptr->details &&
+	    job_ptr->details->depend_list &&
+	    list_count(job_ptr->details->depend_list) &&
+	    list_find_first(job_ptr->details->depend_list,
+			    _find_depend_after_corr,
+			    NULL)) {
+		split_job->pend_cnt_limit = correspond_after_task_cnt;
+		split_job->reason_msg = "SLURM_DEPEND_AFTER_CORRESPOND";
+		split_job->type = ARRAY_SPLIT_AFTER_CORR;
+		/* If another thing is added after this set job_ptr as above */
+		(void) _split_job_on_schedule_recurse(job_ptr, split_job);
+	}
 
 	return 0;
 }
@@ -556,16 +575,6 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	(void) slurm_delta_tv(&start_tv);
 	job_queue = list_create(xfree_ptr);
 
-	/*
-	 * Create individual job records for job arrays that need burst buffer
-	 * staging
-	 */
-	split_job.type = ARRAY_SPLIT_BURST_BUFFER;
-	(void) list_for_each(job_list, _split_job_on_schedule, &split_job);
-
-	/* Create individual job records for job arrays with
-	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND */
-	split_job.type = ARRAY_SPLIT_AFTER_CORR;
 	(void) list_for_each(job_list, _split_job_on_schedule, &split_job);
 
 	if (split_job.job_list) {
