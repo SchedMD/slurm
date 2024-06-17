@@ -255,6 +255,13 @@ void run_backup(void)
 	 */
 	lock_slurmctld(config_write_lock);
 	job_fini();
+
+	/*
+	 * The backup is now done shutting down, reset shutdown_time before
+	 * re-initializing.
+	 */
+	slurmctld_config.shutdown_time = (time_t) 0;
+
 	init_job_conf();
 	unlock_slurmctld(config_write_lock);
 
@@ -275,7 +282,6 @@ void run_backup(void)
 		error("failed to restore switch state");
 		abort();
 	}
-	slurmctld_config.shutdown_time = (time_t) 0;
 	if (read_slurm_conf(2, false)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();
