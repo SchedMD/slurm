@@ -40,6 +40,11 @@ documents those changes that are of interest to users and administrators.
  -- Remove a TOCTOU where multiple steps requesting an energy reading at the
     same time could cause too frequent accesses to the drivers.
  -- Limit SwitchName to HOST_NAME_MAX chars length.
+ -- For scancel --ctld and the following rest api endpoints:
+      'DELETE /slurm/v0.0.40/jobs'
+      'DELETE /slurm/v0.0.41/jobs'
+      'DELETE /slurm/v0.0.42/jobs'
+    Support array expressions in the responses to the client.
 
 * Changes in Slurm 24.05.1
 ==========================
