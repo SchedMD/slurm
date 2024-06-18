@@ -4376,6 +4376,10 @@ static void _add_signal_job_resp(signal_jobs_args_t *signal_args,
 		job_resp->error_msg = xstrdup(slurm_strerror(error_code));
 	job_resp->id = xmalloc(sizeof(*job_resp->id));
 	memcpy(job_resp->id, id, sizeof(*id));
+	/* Full copy job_resp->id->array_bitmap */
+	if (id->array_bitmap)
+		job_resp->id->array_bitmap = bit_copy(id->array_bitmap);
+
 	job_resp->real_job_id = real_job_id;
 	job_resp->sibling_name = sibling_name;
 
@@ -4864,18 +4868,30 @@ static int _foreach_signal_job_array_tasks(void *x, void *arg)
 	int error_code = SLURM_SUCCESS;
 
 	/*
-	 * _signal_pending_job_array_tasks()
-	 * Tasks that were split out are already being handled, so we do not
-	 * need to handle those.
+	 * Signal the pending array tasks in the array job. The tasks that
+	 * have already been split out are not part of the meta job's array
+	 * bitmap and are handled elsewhere.
+	 *
+	 * _signal_pending_job_array_tasks() removes the pending tasks from
+	 * array_bitmap. For the response to the client, we want to the pending
+	 * tasks that were signalled. To get that, operate on a copy of
+	 * array_bitmap which will be returned with the running tasks. Then
+	 * remove the running tasks from the original bitmap (bit_and_not).
 	 */
 	i_last = bit_fls(atf->filter_id->array_bitmap);
-	if (i_last >= 0)
+	if (i_last >= 0) {
+		bitstr_t *array_bitmap_running =
+			bit_copy(atf->filter_id->array_bitmap);
+
 		_signal_pending_job_array_tasks(atf->job_ptr,
-						&atf->filter_id->array_bitmap,
+						&array_bitmap_running,
 						kill_msg->signal,
 						signal_args->auth_uid,
 						i_last, signal_args->now,
 						&error_code);
+		bit_and_not(atf->filter_id->array_bitmap, array_bitmap_running);
+		FREE_NULL_BITMAP(array_bitmap_running);
+	}
 
 	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE))
 		_add_signal_job_resp(signal_args, NULL, error_code, NULL,
