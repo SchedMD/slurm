@@ -143,6 +143,12 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&s->switches, "Switches", tbl);
 	s_p_hashtbl_destroy(tbl);
 
+	if (strlen(s->switch_name) > HOST_NAME_MAX) {
+		error("SwitchName (%s) must be shorter than %d chars",
+		      s->switch_name, HOST_NAME_MAX);
+		_destroy_switches(s);
+		return -1;
+	}
 	if (s->nodes && s->switches) {
 		error("switch %s has both child switches and nodes",
 		      s->switch_name);

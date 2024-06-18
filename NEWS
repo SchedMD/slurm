@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     and the partition has heterogeneous nodes.
  -- Remove a TOCTOU where multiple steps requesting an energy reading at the
     same time could cause too frequent accesses to the drivers.
+ -- Limit SwitchName to HOST_NAME_MAX chars length.
 
 * Changes in Slurm 24.05.1
 ==========================
