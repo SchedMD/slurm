@@ -2656,6 +2656,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool newly_up = false;
 	bool already_registered = false;
+	node_record_t *node_ptr = NULL;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg = msg->data;
 	slurmctld_lock_t job_write_lock = {
 		.conf = READ_LOCK,
@@ -2744,11 +2745,22 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
 							  msg->protocol_version,
-							  &newly_up);
+							  &newly_up, &node_ptr);
 #else
 		validate_jobs_on_node(msg);
-		error_code = validate_node_specs(msg, &newly_up);
+		error_code = validate_node_specs(msg, &newly_up, &node_ptr);
 #endif
+		/*
+		 * This should be improved to validate if it's a reconfigure
+		 * registration message, however, it's only possible for newer
+		 * slurmd. For backward compatibility we have to assume that
+		 * every registration message is after reconfigure.
+		 */
+		if (!error_code && node_ptr) {
+			bit_clear(reconfig_node_bitmap, node_ptr->index);
+		}
+
+
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2(__func__);
