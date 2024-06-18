@@ -2759,8 +2759,7 @@ static void _parse_commandline(int argc, char **argv)
 		{NULL, 0, 0, 0}
 	};
 
-	if (argc >= RUN_COMMAND_LAUNCHER_ARGC &&
-	    !xstrcmp(argv[1], RUN_COMMAND_LAUNCHER_MODE)) {
+	if (run_command_is_launcher(argc, argv)) {
 		run_command_launcher(argc, argv);
 		_exit(127); /* Should not get here */
 	}

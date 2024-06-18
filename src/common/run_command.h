@@ -38,9 +38,6 @@
 
 #include "src/common/track_script.h"
 
-#define RUN_COMMAND_LAUNCHER_MODE "slurm_script_launcher"
-#define RUN_COMMAND_LAUNCHER_ARGC 3
-
 typedef struct {
 	void (*cb)(int write_fd, void *cb_arg);
 	void *cb_arg;
@@ -90,6 +87,11 @@ extern void run_command_init(char *binary);
  * immediately terminated until run_command_init() is called again.
  */
 extern void run_command_shutdown(void);
+
+/*
+ * Return true if the caller is in RUN_COMMAND_LAUNCHER_MODE
+ */
+extern bool run_command_is_launcher(int argc, char **argv);
 
 /* Return count of child processes */
 extern int run_command_count(void);

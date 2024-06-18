@@ -680,8 +680,7 @@ static void _process_cmdline(int argc, char **argv)
 			exit(1);
 		exit(0);
 	}
-	if (argc >= RUN_COMMAND_LAUNCHER_ARGC &&
-	    !xstrcmp(argv[1], RUN_COMMAND_LAUNCHER_MODE)) {
+	if (run_command_is_launcher(argc, argv)) {
 		run_command_launcher(argc, argv);
 		_exit(127); /* Should not get here */
 	}

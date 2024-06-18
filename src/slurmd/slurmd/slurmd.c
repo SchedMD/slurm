@@ -1659,8 +1659,7 @@ _process_cmdline(int ac, char **av)
 		{NULL,			0,                 0, 0}
 	};
 
-	if (ac >= RUN_COMMAND_LAUNCHER_ARGC &&
-	    !xstrcmp(av[1], RUN_COMMAND_LAUNCHER_MODE)) {
+	if (run_command_is_launcher(ac, av)) {
 		run_command_launcher(ac, av);
 		_exit(127); /* Should not get here */
 	}
