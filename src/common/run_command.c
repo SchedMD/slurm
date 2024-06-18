@@ -131,6 +131,11 @@ extern void run_command_init(char *binary)
 {
 	command_shutdown = 0;
 
+#if defined(__linux__)
+	if (!binary && !script_launcher)
+		binary = "/proc/self/exe";
+#endif /* !__linux__ */
+
 	if (!binary)
 		return;
 

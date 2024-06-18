@@ -80,8 +80,8 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
  * If run_command_shutdown() was previously called, this function must be
  * called to re-initialize this module and allow commands to run.
  *
- * IN binary - (optional) path to this executable's binary to use as the script
- *             launcher.
+ * IN binary - path to executable binary to use as the script launcher or NULL
+ *	to use the current running binary
  */
 extern void run_command_init(char *binary);
 
