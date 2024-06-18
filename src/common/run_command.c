@@ -53,6 +53,7 @@
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/run_command.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
@@ -65,7 +66,6 @@ static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
-#define _DEBUG 0
 
 /* Function prototypes */
 static void _run_command_child_exec(const char *path, char **argv, char **env);
@@ -212,15 +212,16 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 
 static void _log_str_array(char *prefix, char **array)
 {
-#if _DEBUG
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		return;
+
 	if (!array)
 		return;
 
-	info("%s: START", prefix);
+	log_flag(SCRIPT, "%s: START", prefix);
 	for (int i = 0; array[i]; i++)
-		info("%s[%d]=%s", prefix, i, array[i]);
-	info("%s: END", prefix);
-#endif
+		log_flag(SCRIPT, "%s[%d]=%s", prefix, i, array[i]);
+	log_flag(SCRIPT, "%s: END", prefix);
 }
 
 static char **_setup_launcher_argv(run_command_args_t *args)
@@ -411,10 +412,8 @@ extern char *run_command(run_command_args_t *args)
 		xfree(args->script_argv);
 	}
 
-#if _DEBUG
-	info("%s:script=%s, resp:\n%s",
-	     __func__, args->script_path, resp);
-#endif
+	log_flag(SCRIPT, "%s:script=%s, resp:\n%s",
+		 __func__, args->script_path, resp);
 
 	/* Array contents were not malloc'd, do not free */
 	xfree(launcher_argv);
