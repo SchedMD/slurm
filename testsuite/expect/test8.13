@@ -66,7 +66,7 @@ proc set_user_resv_delete {} {
 			run_command -fail -nolog "$bin_echo SlurmctldParameters=user_resv_delete >> $config_file"
 		} else {
 			# SlurmctldParameters present so add it to end of the list
-			run_command -fail -nolog "$bin_sed -i s/$params.*$/&,user_resv_delete/ $config_file"
+			run_command -fail -nolog "$bin_sed -i s/$params/$params,user_resv_delete/ $config_file"
 		}
 		reconfigure -fail
 
