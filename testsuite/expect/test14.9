@@ -70,7 +70,7 @@ run_command -fail -user $testsuite_user "$srun --jobid $job_id $bin_rm -f $bcast
 
 # Attempt to broadcast the file
 set sbcast_output [run_command_output -user $testsuite_user -subtest "$sbcast --jobid $job_id $sbcast $bcast_file"]
-subtest {![regexp -line {error:.*Invalid user id} $sbcast_output]} "sbcast should NOT generate an error"
+subtest {![regexp -line {error:.*Invalid} $sbcast_output]} "sbcast should NOT generate an error"
 
 # Verify the file was broadcasted
 set ls_output [run_command_output -user $testsuite_user -subtest "$srun --jobid $job_id ls $bcast_file"]
@@ -96,7 +96,7 @@ run_command -fail "$srun --jobid $job_id $bin_rm -f $bcast_file"
 
 # Attempt to broadcast the file as a different (and unauthorized) user
 set sbcast_output [run_command_output -user $testsuite_user -subtest -xfail "$sbcast --jobid $job_id $sbcast $bcast_file"]
-subtest [regexp -line {error:.*Invalid user id} $sbcast_output] "sbcast should generate an error"
+subtest [regexp -line {error:.*Invalid} $sbcast_output] "sbcast should generate an error"
 
 # Verify the file was not broadcast
 set ls_output [run_command_output -subtest -xfail "$srun --jobid $job_id ls $bcast_file"]
