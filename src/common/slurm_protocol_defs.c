@@ -1134,6 +1134,15 @@ extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst)
 		goto cleanup;
 	}
 
+	if (id->array_bitmap && (bit_ffs(id->array_bitmap) != -1)) {
+		char *bitmap_str = bit_fmt_full(id->array_bitmap);
+
+		xstrfmtcatat(str, &pos, "_[%s]", bitmap_str);
+		xfree(bitmap_str);
+		*dst = str;
+		return SLURM_SUCCESS;
+	}
+
 	if (id->array_task_id != NO_VAL)
 		xstrfmtcatat(str, &pos, "_%u", id->array_task_id);
 
