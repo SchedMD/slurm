@@ -688,6 +688,8 @@ typedef foreach_job_by_id_control_t (*JobROForEachFunc)(
 					void *arg);
 /*
  * Function prototype for operating on a job id that is not found
+ * This is called just once for an array expression with a bitmap of array
+ * tasks that were not found.
  * Returns control requested for processing
  */
 typedef foreach_job_by_id_control_t
