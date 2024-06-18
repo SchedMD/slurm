@@ -143,7 +143,7 @@ static char **
 _extend_env(char ***envp)
 {
 	char **ep;
-	size_t newcnt = (xsize (*envp) / sizeof (char *)) + 1;
+	size_t newcnt = PTR_ARRAY_SIZE(*envp) + 1;
 
 	*envp = xrealloc (*envp, newcnt * sizeof (char *));
 
