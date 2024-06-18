@@ -133,6 +133,8 @@ extern void run_command_init(char *binary)
 	if (!binary)
 		return;
 
+	script_launcher = NULL;
+
 	if (access(binary, R_OK | X_OK) < 0)
 		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
 		      __func__, binary);
