@@ -69,6 +69,11 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define MAX_POLL_WAIT 500
 #define _DEBUG 0
 
+/* Function prototypes */
+static void _run_command_child_exec(const char *path, char **argv, char **env);
+static void _run_command_child_pre_exec(void);
+
+
 extern void run_command_add_to_script(char **script_body, char *new_str)
 {
 	char *orig_script = *script_body;
@@ -199,11 +204,12 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 	dup2(write_fd, STDOUT_FILENO);
 
 	if (launcher_argv)
-		run_command_child_exec(script_launcher, launcher_argv,
-				       args->env);
+		_run_command_child_exec(script_launcher, launcher_argv,
+					args->env);
 
-	run_command_child_pre_exec();
-	run_command_child_exec(args->script_path, args->script_argv, args->env);
+	_run_command_child_pre_exec();
+	_run_command_child_exec(args->script_path, args->script_argv,
+				args->env);
 }
 
 static void _log_str_array(char *prefix, char **array)
@@ -254,7 +260,10 @@ static char **_setup_launcher_argv(run_command_args_t *args)
 	return launcher_argv;
 }
 
-extern void run_command_child_exec(const char *path, char **argv, char **env)
+/*
+ * Wrapper for execv/execve. This should never return.
+ */
+static void _run_command_child_exec(const char *path, char **argv, char **env)
 {
 	if (!env)
 		execv(path, argv);
@@ -264,7 +273,11 @@ extern void run_command_child_exec(const char *path, char **argv, char **env)
 	_exit(127);
 }
 
-extern void run_command_child_pre_exec(void)
+/*
+ * Called in the child before exec. Do setup like closing unneeded files and
+ * setting uid/gid.
+ */
+static void _run_command_child_pre_exec(void)
 {
 	closeall(3);
 	/* coverity[leaked_handle] */
@@ -289,8 +302,8 @@ extern void run_command_launcher(int argc, char **argv)
 	char **script_argv = &argv[RUN_COMMAND_LAUNCHER_ARGC];
 
 	xassert(script_path);
-	run_command_child_pre_exec();
-	run_command_child_exec(script_path, script_argv, NULL);
+	_run_command_child_pre_exec();
+	_run_command_child_exec(script_path, script_argv, NULL);
 	_exit(127);
 }
 
