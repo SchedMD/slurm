@@ -48,14 +48,15 @@ See also:
 <h2 id="prereq">Prerequisites
 <a class="slurm_link" href="#prereq"></a></h2>
 <p>The following development libraries are required at compile time
-in order for slurmrestd to be compiled:</p>
+in order for slurmrestd to be compiled (minimum versions are on the related
+software page linked below):</p>
 <ul>
-	<li><a href="download.html#httpparser">HTTP Parser</a> (&gt;= v2.6.0)
+	<li><a href="related_software.html#httpparser">HTTP Parser</a>
 	</li>
-	<li><a href="download.html#yaml">LibYAML</a> (optional, &gt;= v0.2.5)
+	<li><a href="related_software.html#yaml">LibYAML</a> (optional)
 	</li>
-	<li><a href="download.html#json">JSON-C</a> (&gt;= v1.12.0)</li>
-	<li><a href="download.html#jwt">JWT Authentication</a>
+	<li><a href="related_software.html#json">JSON-C</a></li>
+	<li><a href="related_software.html#jwt">JWT Authentication</a>
     (optional, used in this guide)</li>
 </ul>
 
