@@ -2750,13 +2750,11 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		validate_jobs_on_node(msg);
 		error_code = validate_node_specs(msg, &newly_up, &node_ptr);
 #endif
-		/*
-		 * This should be improved to validate if it's a reconfigure
-		 * registration message, however, it's only possible for newer
-		 * slurmd. For backward compatibility we have to assume that
-		 * every registration message is after reconfigure.
-		 */
-		if (!error_code && node_ptr) {
+
+		if (!error_code && node_ptr &&
+		    IS_NODE_RECONFIG_REQUESTED(node_ptr) &&
+		    ((msg->protocol_version <= SLURM_24_05_PROTOCOL_VERSION) ||
+		     (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RECONFIG))) {
 			bit_clear(reconfig_node_bitmap, node_ptr->index);
 			node_ptr->node_state &=
 				(~NODE_STATE_RECONFIG_REQUESTED);
