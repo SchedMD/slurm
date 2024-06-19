@@ -2460,13 +2460,18 @@ def get_steps(step_id=None, **run_command_kwargs):
     """
 
     steps_dict = {}
+    step_dict = {}
 
     command = "scontrol -d -o show steps"
     if step_id is not None:
         command += f" {step_id}"
-    output = run_command_output(command, fatal=True, **run_command_kwargs)
+    result = run_command(command, **run_command_kwargs)
 
-    step_dict = {}
+    if result["exit_code"]:
+        logging.debug(f"scontrol command failed, no steps returned")
+        return step_dict
+
+    output = result["stdout"]
     for line in output.splitlines():
         if line == "":
             continue
@@ -2605,7 +2610,7 @@ def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
         'primary'
     """
 
-    steps_dict = get_steps(quiet=quiet)
+    steps_dict = get_steps(step_id, quiet=quiet)
 
     if step_id not in steps_dict:
         logging.debug(f"Step ({step_id}) was not found in the step list")
