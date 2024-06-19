@@ -38,6 +38,7 @@
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
 #include <inttypes.h> /* for uint16_t, uint32_t definitions */
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -148,7 +149,27 @@ extern int run_command_init(int argc, char **argv, char *binary)
 
 #if defined(__linux__)
 	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
-		script_launcher = xstrdup(binary);
+		char buf[PATH_MAX];
+		ssize_t bytes = readlink(binary, buf, sizeof(buf));
+
+		/*
+		 * Because we are using script_launcher_fd to exec,
+		 * script_launcher is just used for logging and thus we do not
+		 * need script_launcher to be the full path. So, it is okay
+		 * if readlink truncates the result; in that case, just use
+		 * the truncated string.
+		 */
+		if (bytes > 0) {
+			if (bytes >= sizeof(buf))
+				bytes = sizeof(buf) - 1;
+
+			buf[bytes] = '\0';
+
+			script_launcher = xstrdup(buf);
+		} else {
+			script_launcher = xstrdup(binary);
+		}
+
 		return SLURM_SUCCESS;
 	}
 #endif /* !__linux__ */
