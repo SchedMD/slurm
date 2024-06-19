@@ -157,7 +157,7 @@ extern void run_command_init(int argc, char **argv, char *binary)
 		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
 		      __func__, binary);
 	else
-		script_launcher = binary;
+		script_launcher = xstrdup(binary);
 }
 
 /* used to terminate any outstanding commands */
