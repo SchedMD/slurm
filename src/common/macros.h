@@ -100,9 +100,8 @@
 		int err = pthread_cond_init(cond, cont_attr);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_cond_init(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_cond_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -164,9 +163,8 @@
 		int err = pthread_mutex_init(mutex, NULL);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_init(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -175,9 +173,8 @@
 		int err = pthread_mutex_destroy(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_destroy(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_destroy(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -186,9 +183,8 @@
 		int err = pthread_mutex_lock(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_lock(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_lock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -197,9 +193,8 @@
 		int err = pthread_mutex_unlock(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_unlock(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_unlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -208,8 +203,8 @@
 		int err = pthread_rwlock_init(rwlock, NULL);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_init(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -218,8 +213,8 @@
 		int err = pthread_rwlock_destroy(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_destroy(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_destroy(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -228,8 +223,8 @@
 		int err = pthread_rwlock_rdlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_rdlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_rdlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -238,8 +233,8 @@
 		int err = pthread_rwlock_wrlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_wrlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_wrlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -248,8 +243,8 @@
 		int err = pthread_rwlock_unlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_unlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_unlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
