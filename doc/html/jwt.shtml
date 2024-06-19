@@ -105,6 +105,28 @@ only verified against RSA 256 bit keys provided via <b>e</b> and
 <b>n</b> fields.
 </p>
 
+<h3 id="user_mapping">User Mapping
+<a class="slurm_link" href="#user_mapping"></a></h3>
+
+<p>Depending on the service used to generate tokens, you may run into issues
+mapping the token to a username. Slurm defaults to using the <code>sun</code>
+(Slurm UserName) field. If the service uses a different field, you will need to
+correct this for it to work with Slurm.</p>
+
+<p><b>Option 1</b>: Change Slurm to use a different field. This can be
+customized using <a href="slurm.conf.html#OPT_userclaimfield=">
+AuthAltParameters=userclaimfield</a>. For example, using the default field
+for <a href="https://www.keycloak.org/">KeyCloak</a>:
+<pre>
+AuthAltParameters=jwks=/local/path/to/jwks.json,userclaimfield=preferred_username
+</pre>
+</p>
+
+<p><b>Option 2</b>: Change the identity service to use a different field. In
+KeyCloak 25.0, for example, you should find this option under <b>Clients ->
+Client details -> Dedicated scopes -> Mapper details</b>. Change the username
+mapping to use the <code>sun</code> field.</p>
+
 <h2 id="compatibility">Compatibility
 <a class="slurm_link" href="#compatibility"></a>
 </h2>
@@ -201,6 +223,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 11 January 2024</p>
+<p style="text-align:center;">Last modified 17 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
