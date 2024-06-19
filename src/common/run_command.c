@@ -127,7 +127,7 @@ extern void run_command_add_to_script(char **script_body, char *new_str)
 }
 
 /* used to initialize run_command module */
-extern void run_command_init(int argc, char **argv, char *binary)
+extern int run_command_init(int argc, char **argv, char *binary)
 {
 	command_shutdown = 0;
 
@@ -141,7 +141,7 @@ extern void run_command_init(int argc, char **argv, char *binary)
 		binary = argv[0];
 
 	if (!binary)
-		return;
+		return SLURM_ERROR;
 
 	fd_close(&script_launcher_fd);
 	xfree(script_launcher);
@@ -149,15 +149,18 @@ extern void run_command_init(int argc, char **argv, char *binary)
 #if defined(__linux__)
 	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
 		script_launcher = xstrdup(binary);
-		return;
+		return SLURM_SUCCESS;
 	}
 #endif /* !__linux__ */
 
-	if (access(binary, R_OK | X_OK) < 0)
+	if (access(binary, R_OK | X_OK)) {
 		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
 		      __func__, binary);
-	else
+		return SLURM_ERROR;
+	} else {
 		script_launcher = xstrdup(binary);
+		return SLURM_SUCCESS;
+	}
 }
 
 /* used to terminate any outstanding commands */

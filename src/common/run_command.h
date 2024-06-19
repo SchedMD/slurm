@@ -85,8 +85,10 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
  *      binary
  * IN binary - path to executable binary to use as the script launcher or NULL
  *	to use the current running binary or resolve using argc/argv
+ * RET SLURM_SUCCESS if launcher resolved or SLURM_ERROR if launcher not
+ *      resolved/set
  */
-extern void run_command_init(int argc, char **argv, char *binary);
+extern int run_command_init(int argc, char **argv, char *binary);
 
 /*
  * Used to terminate any outstanding commands. Any future commands will be
