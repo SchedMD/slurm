@@ -694,7 +694,6 @@ static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 extern void delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
-	struct stat sbuf;
 	int hash = job_id % 10;
 	DIR *f_dir;
 	struct dirent *dir_ent;
@@ -702,10 +701,6 @@ extern void delete_job_desc_files(uint32_t job_id)
 	dir_name = xstrdup_printf("%s/hash.%d/job.%u",
 	                          slurm_conf.state_save_location,
 	                          hash, job_id);
-	if (stat(dir_name, &sbuf)) {
-		xfree(dir_name);
-		return;
-	}
 
 	f_dir = opendir(dir_name);
 	if (f_dir) {
@@ -719,6 +714,9 @@ extern void delete_job_desc_files(uint32_t job_id)
 			xfree(file_name);
 		}
 		closedir(f_dir);
+	} else if (errno == ENOENT) {
+		xfree(dir_name);
+		return;
 	} else {
 		error("opendir(%s): %m", dir_name);
 	}
