@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
     prolog/epilog executions.
  -- Improve MaxMemPerCPU enforcement when exclusive jobs request per node memory
     and the partition has heterogeneous nodes.
+ -- Remove a TOCTOU where multiple steps requesting an energy reading at the
+    same time could cause too frequent accesses to the drivers.
 
 * Changes in Slurm 24.05.1
 ==========================

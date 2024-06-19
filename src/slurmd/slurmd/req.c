@@ -3514,6 +3514,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 	static bool first_msg = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_mutex_t last_poll_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation, acct_gather_update RPC from uid %u",
@@ -3559,9 +3560,6 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		}
 
 		acct_gather_energy_g_get_data(req->context_id,
-					      ENERGY_DATA_LAST_POLL,
-					      &last_poll);
-		acct_gather_energy_g_get_data(req->context_id,
 					      ENERGY_DATA_SENSOR_CNT,
 					      &sensor_cnt);
 
@@ -3569,12 +3567,18 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		if (!sensor_cnt) {
 			error("Can't get energy data. No power sensors are available. Try later.");
 		} else {
+			slurm_mutex_lock(&last_poll_mutex);
+			acct_gather_energy_g_get_data(req->context_id,
+						      ENERGY_DATA_LAST_POLL,
+						      &last_poll);
 			/*
 			 * If we polled later than delta seconds then force a
 			 * new poll.
 			 */
 			if ((now - last_poll) > req->delta)
 				data_type = ENERGY_DATA_JOULES_TASK;
+			else
+				slurm_mutex_unlock(&last_poll_mutex);
 
 			acct_msg.sensor_cnt = sensor_cnt;
 			acct_msg.energy =
@@ -3583,6 +3587,8 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 			acct_gather_energy_g_get_data(req->context_id,
 						      data_type,
 						      acct_msg.energy);
+			if (data_type == ENERGY_DATA_JOULES_TASK)
+				slurm_mutex_unlock(&last_poll_mutex);
 		}
 
 		slurm_msg_t_copy(&resp_msg, msg);
