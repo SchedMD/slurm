@@ -37,6 +37,7 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
+#include <inttypes.h> /* for uint16_t, uint32_t definitions */
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -44,20 +45,19 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
 #ifndef POLLRDHUP
 #define POLLRDHUP POLLHUP
 #endif
 
 #include "src/common/fd.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/run_command.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/run_command.h"
 
 static char *script_launcher = NULL;
 static int command_shutdown = 0;
