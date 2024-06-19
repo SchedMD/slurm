@@ -105,13 +105,13 @@
 		}							\
 	} while (0)
 
-#define slurm_cond_signal(cond)					\
+#define slurm_cond_signal(cond)						\
 	do {								\
 		int err = pthread_cond_signal(cond);			\
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_signal(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -121,7 +121,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_broadcast(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -131,7 +131,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_wait(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -153,7 +153,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_destroy(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -178,7 +178,7 @@
 		}							\
 	} while (0)
 
-#define slurm_mutex_lock(mutex)					\
+#define slurm_mutex_lock(mutex)						\
 	do {								\
 		int err = pthread_mutex_lock(mutex);			\
 		if (err) {						\
@@ -270,7 +270,7 @@
 			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\
 		}							\
-	 } while (0)
+	} while (0)
 #else
 #  define slurm_attr_init(attr)						\
 	do {								\
@@ -293,7 +293,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("pthread_attr_destroy failed, "		\
-				"possible memory leak!: %m");		\
+			      "possible memory leak!: %m");		\
 		}							\
 	} while (0)
 
