@@ -2387,11 +2387,15 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
 			       time_t now)
 {
 	int error_code = SLURM_SUCCESS;
+	bool resv_ports_present = false;
 
 	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
 		return SLURM_SUCCESS;
 
-	if (slurm_conf.mpi_params &&
+	if (slurm_conf.mpi_params && xstrstr(slurm_conf.mpi_params, "ports="))
+		resv_ports_present = true;
+
+	if (resv_ports_present &&
 	    (job_ptr->resv_port_cnt == NO_VAL16)) {
 		if (!job_ptr->job_resrcs) {
 			error("Select plugin failed to set job resources");
