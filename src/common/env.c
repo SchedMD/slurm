@@ -2407,8 +2407,14 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 static void _set_ext_launcher_hydra(char ***dest, char *b_env, char *extra)
 {
 	char *bootstrap = getenv(b_env);
+	bool disabled_slurm_hydra_bootstrap = false;
 
-	if (!bootstrap || !xstrcmp(bootstrap, "slurm")) {
+	if (slurm_conf.mpi_params &&
+	    xstrstr(slurm_conf.mpi_params,"disable_slurm_hydra_bootstrap"))
+		disabled_slurm_hydra_bootstrap = true;
+
+	if ((!bootstrap && !disabled_slurm_hydra_bootstrap) ||
+	    !xstrcmp(bootstrap, "slurm")) {
 		env_array_append(dest, b_env, "slurm");
 		env_array_append(dest, extra, "--external-launcher");
 	}

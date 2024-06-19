@@ -345,7 +345,10 @@ $ mpirun -np &lt;num_procs&gt; user_app.bin
 <p>Note that by default Slurm will inject two environment variables to ensure
 mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
 With these, Hydra will also pass the argument '--external-launcher' to srun in
-order to not consider these hydra processes as regular steps.</p>
+order to not consider these hydra processes as regular steps. This automatic
+variable injection mechanism can be disabled by setting
+"MpiParams=disable_slurm_hydra_bootstrap" in slurm.conf, with the exception
+of the cases where "slurm" is already explicitly set as a bootstrap.</p>
 
 <p>It is possible to run Intel MPI using a different bootstrap mechanism. To do
 so, explicitly set the following environment variable prior to submitting the
@@ -404,7 +407,10 @@ PMI-1, PMI-2 and PMIx (starting with MPICH v4).
 <p>Note that by default Slurm will inject two environment variables to ensure
 mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
 With these, Hydra will also pass the argument '--external-launcher' to srun in
-order to not consider these hydra processes as regular steps.</p>
+order to not consider these hydra processes as regular steps. This automatic
+variable injection mechanism can be disabled by setting
+"MpiParams=disable_slurm_hydra_bootstrap" in slurm.conf, with the exception
+of the cases where "slurm" is already explicitly set as a bootstrap.</p>
 
 <p>It is possible to run MPICH using a different bootstrap mechanism. To do
 so, explicitly set the following environment variable prior to submitting the
@@ -563,7 +569,10 @@ internal PMI implementation.</p>
 <p>Note that by default Slurm will inject two environment variables to ensure
 mpirun or mpiexec will use the Slurm bootstrap mechanism (srun) to launch Hydra.
 With these, Hydra will also pass the argument '--external-launcher' to srun in
-order to not consider these hydra processes as regular steps.</p>
+order to not consider these hydra processes as regular steps. This automatic
+variable injection mechanism can be disabled by setting
+"MpiParams=disable_slurm_hydra_bootstrap" in slurm.conf, with the exception
+of the cases where "slurm" is already explicitly set as a bootstrap.</p>
 
 <p>It is possible to run MVAPICH2 using a different bootstrap mechanism. To do
 so, explicitly set the following environment variable prior to submitting the
@@ -677,6 +686,6 @@ using the same <b>PMI_CONTROL_PORT</b>.</p>
 <p>This plugin does not support MPMD/heterogeneous jobs and it requires
 <i>libpals >= 0.2.8</i>.</p>
 
-<p style="text-align:center;">Last modified 17 January 2024</p>
+<p style="text-align:center;">Last modified 21 June 2024</p>
 
 <!--#include virtual="footer.txt"-->
