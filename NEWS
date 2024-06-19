@@ -102,6 +102,8 @@ documents those changes that are of interest to users and administrators.
     the heterogeneous job components match the given filters, and the
     heterogeneous job leader does not match the given filters.
  -- Fix regression from 23.02 impeding job licenses from being cleared.
+ -- Move error to debug which made _get_joules_task error to be logged to the
+    user when too many rpcs were queued in slurmd for gathering energy.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -440,6 +442,8 @@ documents those changes that are of interest to users and administrators.
     the heterogeneous job components match the given filters, and the
     heterogeneous job leader does not match the given filters.
  -- Fix regression from 23.02 impeding job licenses from being cleared.
+ -- Move error to debug which made _get_joules_task error to be logged to the
+    user when too many rpcs were queued in slurmd for gathering energy.
 
 * Changes in Slurm 23.11.8
 ==========================
