@@ -533,8 +533,6 @@ int main(int argc, char **argv)
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
 
-	agent_init();
-
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());
 
@@ -545,6 +543,8 @@ int main(int argc, char **argv)
 		slurmctld_config.resume_backup = false;
 		control_time = 0;
 		reconfig = false;
+
+		agent_init();
 
 		/* start in primary or backup mode */
 		if (!slurmctld_primary && !backup_has_control) {

@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     to never start or shutdown and hung forever when using --tty.
  -- Fix backup slurmctld potentially not running the agent when taking over as
     the primary controller.
+ -- Fix primary controller not running the agent when a reconfigure of the
+    slurmctld fails.
 
 * Changes in Slurm 23.11.8
 ==========================
