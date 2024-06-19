@@ -468,7 +468,9 @@ int main(int argc, char **argv)
 	 * signals.
 	 */
 	slurmscriptd_init(argc, argv, binary);
-	run_command_init(argc, argv, binary);
+	if ((run_command_init(argc, argv, binary) != SLURM_SUCCESS) &&
+	    binary[0])
+		fatal("%s: Unable to reliably execute %s", __func__, binary);
 
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {
