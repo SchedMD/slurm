@@ -826,7 +826,7 @@ int main(int argc, char **argv)
 		 * run_command_shutdown() was called. Pass NULL since we do
 		 * not want to change the script launcher location.
 		 */
-		run_command_init(0, NULL, NULL);
+		(void) run_command_init(0, NULL, NULL);
 	}
 
 	slurmscriptd_fini();
