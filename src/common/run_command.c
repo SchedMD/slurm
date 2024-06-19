@@ -144,7 +144,7 @@ extern void run_command_init(int argc, char **argv, char *binary)
 		return;
 
 	fd_close(&script_launcher_fd);
-	script_launcher = NULL;
+	xfree(script_launcher);
 
 #if defined(__linux__)
 	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
