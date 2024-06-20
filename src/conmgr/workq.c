@@ -179,8 +179,6 @@ extern void workq_init(int count)
 	_check_magic_workq();
 
 	_increase_thread_count(count);
-
-	mgr.workq.shutdown = false;
 }
 
 /* Note: caller must hold conmgr lock */
@@ -198,7 +196,7 @@ static void _wait_workers_idle(void)
 
 static void _wait_work_complete()
 {
-	xassert(mgr.workq.shutdown);
+	xassert(mgr.shutdown_requested);
 	_check_magic_workq();
 	log_flag(CONMGR, "%s: waiting for %u queued workers",
 		 __func__, list_count(mgr.workq.work));
@@ -233,8 +231,8 @@ static void _quiesce(void)
 	log_flag(CONMGR, "%s: shutting down with %u queued jobs",
 		 __func__, list_count(mgr.workq.work));
 
-	/* notify of shutdown */
-	mgr.workq.shutdown = true;
+	/* notify workers of shutdown */
+	xassert(mgr.shutdown_requested);
 	slurm_cond_broadcast(&mgr.cond);
 
 	_wait_work_complete();
@@ -257,7 +255,7 @@ extern void workq_fini(void)
 
 	xassert(!mgr.workq.active);
 	xassert(!mgr.workq.total);
-	xassert(mgr.workq.shutdown);
+	xassert(mgr.shutdown_requested);
 
 	FREE_NULL_LIST(mgr.workq.workers);
 	FREE_NULL_LIST(mgr.workq.work);
@@ -283,7 +281,7 @@ extern int workq_add_work(bool locked, work_func_t func, void *arg,
 		slurm_mutex_lock(&mgr.mutex);
 	_check_magic_workq();
 	/* add to work list and signal a thread */
-	if (mgr.workq.shutdown)
+	if (mgr.shutdown_requested)
 		rc = ESLURM_DISABLED;
 	else { /* workq is not shutdown */
 		list_append(mgr.workq.work, work);
@@ -315,7 +313,7 @@ static void *_worker(void *arg)
 
 		/* wait for work if nothing to do */
 		if (!work) {
-			if (mgr.workq.shutdown) {
+			if (mgr.shutdown_requested) {
 				/* give up lock as we are about to be deleted */
 				slurm_mutex_unlock(&mgr.mutex);
 

@@ -295,9 +295,6 @@ typedef struct {
 		int active;
 		int total;
 
-		/* workq is actively shutting down */
-		bool shutdown;
-
 		/* number of threads */
 		int threads;
 	} workq;
@@ -315,9 +312,6 @@ typedef struct {
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
-		.workq = { \
-			.shutdown = true, \
-		}, \
 	}
 
 extern conmgr_t mgr;
