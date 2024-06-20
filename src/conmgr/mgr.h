@@ -188,35 +188,6 @@ typedef struct {
 	int id;
 } workq_worker_t;
 
-#define WORKQ_DEFAULT                                \
-	(workq_t) {                                  \
-		.mutex = PTHREAD_MUTEX_INITIALIZER,  \
-		.cond = PTHREAD_COND_INITIALIZER,    \
-		.shutdown = true,                    \
-	}
-
-typedef struct {
-	/* list of workq_worker_t */
-	list_t *workers;
-	/* list of workq_work_t */
-	list_t *work;
-
-	/* track simple stats for logging */
-	int active;
-	int total;
-
-	/* manger is actively shutting down */
-	bool shutdown;
-
-	/* number of threads */
-	int threads;
-
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
-} workq_t;
-
-extern workq_t workq;
-
 /*
  * Global instance of conmgr
  */
@@ -312,6 +283,27 @@ typedef struct {
 	/* use mutex to wait for watch to finish */
 	pthread_mutex_t watch_mutex;
 	pthread_cond_t watch_cond;
+
+	/* work and workers queue */
+	struct {
+		/* list of workq_worker_t */
+		list_t *workers;
+		/* list of workq_work_t */
+		list_t *work;
+
+		/* track simple stats for logging */
+		int active;
+		int total;
+
+		/* workq is actively shutting down */
+		bool shutdown;
+
+		/* number of threads */
+		int threads;
+
+		pthread_mutex_t mutex;
+		pthread_cond_t cond;
+	} workq;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
@@ -326,6 +318,11 @@ typedef struct {
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
+		.workq = { \
+			.shutdown = true, \
+			.mutex = PTHREAD_MUTEX_INITIALIZER,\
+			.cond = PTHREAD_COND_INITIALIZER,\
+		}, \
 	}
 
 extern conmgr_t mgr;
