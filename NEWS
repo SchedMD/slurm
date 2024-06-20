@@ -93,6 +93,8 @@ documents those changes that are of interest to users and administrators.
     the primary controller.
  -- Fix primary controller not running the agent when a reconfigure of the
     slurmctld fails.
+ -- slurmd - fix premature timeout waiting for REQUEST_LAUNCH_PROLOG with large
+    array jobs causing node to drain.
 
 * Changes in Slurm 24.05.0
 ==========================
