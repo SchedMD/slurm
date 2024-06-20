@@ -380,4 +380,18 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
  */
 extern void wrap_work(work_t *work);
 
+/*
+ * Initialize workq members
+ * IN count - number of workers to add
+ * Note: Caller must hold conmgr lock
+ */
+extern void workq_init(int count);
+
+/*
+ * Release workq members.
+ * Will stop all workers (eventually).
+ * Note: Caller must hold conmgr lock
+ */
+extern void workq_fini(void);
+
 #endif /* _CONMGR_MGR_H */

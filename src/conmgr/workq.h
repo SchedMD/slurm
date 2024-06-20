@@ -36,18 +36,4 @@
 #ifndef SLURMRESTD_WORKQ_H
 #define SLURMRESTD_WORKQ_H
 
-/*
- * Initialize workq members
- * IN count - number of workers to add
- * Note: Caller must hold conmgr lock
- */
-extern void workq_init(int count);
-
-/*
- * Release workq members.
- * Will stop all workers (eventually).
- * Note: Caller must hold conmgr lock
- */
-extern void workq_fini(void);
-
 #endif /* SLURMRESTD_WORKQ_H */
