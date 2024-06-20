@@ -124,42 +124,22 @@ static void _wrap_work(void *x)
 	xfree(work);
 }
 
+/* mgr must be locked */
 /* Single point to queue internal function callback via workq. */
-extern void queue_func(bool locked, work_func_t func, void *arg,
-		       const char *tag)
+static void _handle_work_run(work_t *work)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	if (!mgr.quiesced) {
-		if (workq_add_work(true, func, arg, tag))
+		if (workq_add_work(true, _wrap_work, work, work->tag))
 			fatal_abort("%s: workq_add_work() failed", __func__);
 	} else {
 		/*
-		 * Defer all funcs until conmgr_run() as adding new connections
-		 * will call queue_func() including on_connection() callback
-		 * which is very surprising before conmgr is running and can
-		 * cause locking conflicts.
+		 * Defer all work until conmgr_run() starts as adding new
+		 * connections will call add_work() including on_connection()
+		 * callback which is very surprising before conmgr is running
+		 * and can cause locking conflicts.
 		 */
-		deferred_func_t *df = xmalloc(sizeof(*df));
-		*df = (deferred_func_t) {
-			.magic = MAGIC_DEFERRED_FUNC,
-			.func = func,
-			.arg = arg,
-			.tag = tag,
-		};
-
-		list_append(mgr.deferred_funcs, df);
+		list_append(mgr.deferred_funcs, work);
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-}
-
-/* mgr must be locked */
-static void _handle_work_run(work_t *work)
-{
-	queue_func(true, _wrap_work, work, work->tag);
 }
 
 /* mgr must be locked */
@@ -281,15 +261,13 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
 
 extern void requeue_deferred_funcs(void)
 {
-	deferred_func_t *df;
+	work_t *work;
 
 	if (mgr.quiesced)
 		return;
 
-	while ((df = list_pop(mgr.deferred_funcs))) {
-		queue_func(true, df->func, df->arg, df->tag);
-		xassert(df->magic == MAGIC_DEFERRED_FUNC);
-		df->magic = ~MAGIC_DEFERRED_FUNC;
-		xfree(df);
+	while ((work = list_pop(mgr.deferred_funcs))) {
+		xassert(work->magic == MAGIC_WORK);
+		_handle_work_run(work);
 	}
 }

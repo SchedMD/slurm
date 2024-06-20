@@ -168,14 +168,6 @@ typedef struct {
 } signal_work_t;
 
 typedef struct {
-#define MAGIC_DEFERRED_FUNC 0xA230403A
-	int magic; /* MAGIC_DEFERRED_FUNC */
-	work_func_t func;
-	void *arg;
-	const char *tag;
-} deferred_func_t;
-
-typedef struct {
 #define MAGIC_WORKQ_WORK 0xD23AB412
 	int magic; /* MAGIC_WORKQ_WORK */
 	work_func_t func;
@@ -268,7 +260,7 @@ typedef struct {
 	struct timespec last_time;
 	/* monotonic timer */
 	timer_t timer;
-	/* list of deferred_func_t */
+	/* list of work_t* */
 	list_t *deferred_funcs;
 
 	/* list of all registered signal handlers */
@@ -323,8 +315,6 @@ extern conmgr_t mgr;
 
 extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
 		     conmgr_work_type_t type, void *arg, const char *tag);
-extern void queue_func(bool locked, work_func_t func, void *arg,
-		       const char *tag);
 /*
  * Notify conmgr something happened
  * IN locked - mgr.locked is held by caller
@@ -334,7 +324,9 @@ extern void init_signal_handler(void);
 extern void fini_signal_handler(void);
 extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 			    const char *tag);
-extern void handle_signals(void *ptr);
+extern void handle_signals(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
+			   void *arg);
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
@@ -346,9 +338,10 @@ extern void update_last_time(bool locked);
 
 /*
  * Poll all connections and handle any events
- * IN blocking - non-zero if blocking
+ * IN arg - cast to bool blocking - non-zero if blocking
  */
-extern void watch(void *blocking);
+extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
+		  conmgr_work_status_t status, const char *tag, void *arg);
 
 /*
  * Wait for _watch() to finish

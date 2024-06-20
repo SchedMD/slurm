@@ -400,7 +400,10 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 /*
  * Inspect all connection states and apply actions required
  */
-static void _inspect_connections(void *x)
+
+static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
+				 conmgr_work_status_t status, const char *tag,
+				 void *arg)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -580,14 +583,16 @@ static void _init_poll_fds(poll_args_t *args, struct pollfd **fds_ptr_p,
  * Poll all processing connections sockets and
  * signal_fd and event_fd.
  */
-static void _poll_connections(void *x)
+static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
+			      conmgr_work_status_t status, const char *tag,
+			      void *arg)
 {
-	poll_args_t *args = x;
+	poll_args_t *args = arg;
 	struct pollfd *fds_ptr = NULL;
-	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
+	xassert(!con);
 	xassert(args->magic == MAGIC_POLL_ARGS);
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -684,14 +689,16 @@ done:
 /*
  * Poll all listening sockets
  */
-static void _listen(void *x)
+
+static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
+		    conmgr_work_status_t status, const char *tag, void *arg)
 {
-	poll_args_t *args = x;
+	poll_args_t *args = arg;
 	struct pollfd *fds_ptr = NULL;
-	conmgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
+	xassert(!con);
 	xassert(args->magic == MAGIC_POLL_ARGS);
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -777,9 +784,12 @@ extern void wait_for_watch(void)
 	slurm_mutex_unlock(&mgr.watch_mutex);
 }
 
-static void _connection_fd_delete(void *x)
+static void _connection_fd_delete(conmgr_fd_t *wrong_con,
+				  conmgr_work_type_t type,
+				  conmgr_work_status_t status, const char *tag,
+				  void *arg)
 {
-	conmgr_fd_t *con = x;
+	conmgr_fd_t *con = arg;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -816,9 +826,16 @@ static void _handle_complete_conns(void)
 		 * conmgr that references the connection.
 		 */
 
-		while ((con = list_pop(mgr.complete_conns)))
-			queue_func(true, _connection_fd_delete, con,
-				   XSTRINGIFY(_connection_fd_delete));
+		while ((con = list_pop(mgr.complete_conns))) {
+			/*
+			 * Not adding work against connection since this is just
+			 * to delete the connection and cleanup and it should
+			 * not queue into the connection work queue itself
+			 */
+			add_work(true, NULL, _connection_fd_delete,
+				 CONMGR_WORK_TYPE_FIFO, con,
+				 XSTRINGIFY(_connection_fd_delete));
+		}
 	}
 }
 
@@ -842,8 +859,8 @@ static void _handle_listen_conns(poll_args_t **listen_args_p, int conn_count)
 			log_flag(CONMGR, "%s: queuing up listen",
 				 __func__);
 			mgr.listen_active = true;
-			queue_func(true, _listen, *listen_args_p,
-				   XSTRINGIFY(_listen));
+			add_work(true, NULL, _listen, CONMGR_WORK_TYPE_FIFO,
+				 *listen_args_p, XSTRINGIFY(_listen));
 		}
 	} else
 		log_flag(CONMGR, "%s: listeners active already", __func__);
@@ -858,16 +875,17 @@ static void _handle_new_conns(poll_args_t **poll_args_p)
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
-		queue_func(true, _inspect_connections, NULL,
-			   XSTRINGIFY(_inspect_connections));
+		add_work(true, NULL, _inspect_connections,
+			 CONMGR_WORK_TYPE_FIFO, NULL,
+			 XSTRINGIFY(_inspect_connections));
 	}
 
 	if (!mgr.poll_active) {
 		/* request a listen thread to run */
 		log_flag(CONMGR, "%s: queuing up poll", __func__);
 		mgr.poll_active = true;
-		queue_func(true, _poll_connections, *poll_args_p,
-			   XSTRINGIFY(_poll_connections));
+		add_work(true, NULL, _poll_connections, CONMGR_WORK_TYPE_FIFO,
+			 *poll_args_p, XSTRINGIFY(_poll_connections));
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 }
@@ -953,8 +971,10 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 		if (mgr.signaled) {
 			if (!mgr.read_signals_active) {
 				mgr.read_signals_active = true;
-				queue_func(true, handle_signals, NULL,
-					   XSTRINGIFY(handle_signals));
+
+				add_work(true, NULL, handle_signals,
+					 CONMGR_WORK_TYPE_FIFO, NULL,
+					 XSTRINGIFY(handle_signals));
 			}
 			work = true;
 		}
@@ -986,8 +1006,10 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 	return false;
 }
 
-extern void watch(void *blocking)
+extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
+		  conmgr_work_status_t status, const char *tag, void *arg)
 {
+	bool blocking = (bool) arg;
 	bool shutdown_requested;
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;

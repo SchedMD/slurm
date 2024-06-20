@@ -279,7 +279,9 @@ extern void free_delayed_work(void)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-static void _handle_timer(void *x)
+static void _handle_timer(conmgr_fd_t *con, conmgr_work_type_t type,
+			  conmgr_work_status_t status, const char *tag,
+			  void *arg)
 {
 	int count, total;
 	work_t *work;
@@ -314,6 +316,7 @@ extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 			    void *arg)
 {
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
-	queue_func(false, _handle_timer, NULL, XSTRINGIFY(_handle_timer));
+	add_work(false, NULL, _handle_timer, CONMGR_WORK_TYPE_FIFO, NULL,
+		 XSTRINGIFY(_handle_timer));
 	signal_change(false);
 }

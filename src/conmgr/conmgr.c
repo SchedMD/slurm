@@ -203,11 +203,13 @@ extern int conmgr_run(bool blocking)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (blocking) {
-		watch((void *) 1);
+		watch(NULL, CONMGR_WORK_TYPE_FIFO, CONMGR_WORK_STATUS_RUN,
+		      XSTRINGIFY(watch), (void *) 1);
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching)
-			queue_func(true, watch, NULL, XSTRINGIFY(watch));
+			add_work(true, NULL, watch, CONMGR_WORK_TYPE_FIFO, NULL,
+				 XSTRINGIFY(watch));
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 

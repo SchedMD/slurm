@@ -271,12 +271,14 @@ rwfail:
 	fatal_abort("%s: Unexpected safe_read(%d) failure: %m", __func__, fd);
 }
 
-extern void handle_signals(void *ptr)
+extern void handle_signals(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
+			   void *arg)
 {
 	int sig, count = 0, fd = -1;
 	static const char *con_name = "mgr.signal_fd[0]";
 
-	xassert(ptr == NULL);
+	xassert(!arg);
 
 	slurm_mutex_lock(&mgr.mutex);
 	fd = mgr.signal_fd[0];
