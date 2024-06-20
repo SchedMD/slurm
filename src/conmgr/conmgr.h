@@ -284,6 +284,8 @@ extern int conmgr_create_sockets(conmgr_con_type_t type, list_t *hostports,
  * Run connection manager main loop for until all processing is done
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
+ * WARNING: Do not call with blocking=true from side of conmgr work or
+ *	conmgr_run() will never return
  */
 extern int conmgr_run(bool blocking);
 

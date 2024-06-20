@@ -181,6 +181,10 @@ extern void conmgr_fini(void)
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
+	watch_request_t *wreq = xmalloc(sizeof(*wreq));
+
+	wreq->magic = MAGIC_WATCH_REQUEST;
+	wreq->blocking = blocking;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -199,12 +203,14 @@ extern int conmgr_run(bool blocking)
 
 	if (blocking) {
 		watch(NULL, CONMGR_WORK_TYPE_FIFO, CONMGR_WORK_STATUS_RUN,
-		      XSTRINGIFY(watch), (void *) 1);
+		      XSTRINGIFY(watch), wreq);
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
-		if (!mgr.watching)
-			add_work(true, NULL, watch, CONMGR_WORK_TYPE_FIFO, NULL,
+		if (!mgr.watching) {
+			wreq->running_on_worker = true;
+			add_work(true, NULL, watch, CONMGR_WORK_TYPE_FIFO, wreq,
 				 XSTRINGIFY(watch));
+		}
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 

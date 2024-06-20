@@ -175,6 +175,13 @@ typedef struct {
 	int id;
 } worker_t;
 
+typedef struct {
+#define MAGIC_WATCH_REQUEST 0xD204f412
+	int magic; /* MAGIC_WATCH_REQUEST */
+	bool running_on_worker; /* true if request issues via work */
+	bool blocking; /* true to block if another thread already watching */
+} watch_request_t;
+
 /*
  * Global instance of conmgr
  */
@@ -206,6 +213,10 @@ typedef struct {
 	 * Changes protected by watch_mutex
 	 */
 	bool watching;
+	/*
+	 * Number of watch() instances running on a worker thread (as work)
+	 */
+	int watch_on_worker;
 	/*
 	 * True if there is a thread for listen queued or running
 	 */

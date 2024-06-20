@@ -1006,28 +1006,57 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 	return false;
 }
 
+/* caller must hold conmgr.mutex */
+static void _release_watch_request(watch_request_t **wreq_ptr)
+{
+	watch_request_t *wreq = *wreq_ptr;
+
+	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
+
+	if (wreq->running_on_worker)
+		mgr.watch_on_worker--;
+
+	xassert(mgr.watch_on_worker >= 0);
+	xassert(mgr.watch_on_worker <= mgr.workers.active);
+
+	wreq->magic = ~MAGIC_WATCH_REQUEST;
+	xfree(wreq);
+	*wreq_ptr = NULL;
+}
+
 extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 		  conmgr_work_status_t status, const char *tag, void *arg)
 {
-	bool blocking = (bool) arg;
+	watch_request_t *wreq = arg;
 	bool shutdown_requested;
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
 
+	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
+
 	slurm_mutex_lock(&mgr.mutex);
 
+	if (wreq->running_on_worker) {
+		mgr.watch_on_worker++;
+		xassert(mgr.watch_on_worker > 0);
+		xassert(mgr.watch_on_worker <= mgr.workers.active);
+	}
+
 	if (mgr.shutdown_requested) {
+		_release_watch_request(&wreq);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
 	if (mgr.watching) {
-		if (blocking) {
-			wait_for_watch();
-		} else {
-			slurm_mutex_unlock(&mgr.mutex);
-		}
+		slurm_mutex_unlock(&mgr.mutex);
 
+		if (wreq->blocking)
+			wait_for_watch();
+
+		slurm_mutex_lock(&mgr.mutex);
+		_release_watch_request(&wreq);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
@@ -1049,6 +1078,8 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	/* Get the value of shutdown_requested while mutex is locked */
 	shutdown_requested = mgr.shutdown_requested;
+
+	_release_watch_request(&wreq);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (poll_args) {
