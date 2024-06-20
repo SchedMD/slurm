@@ -349,4 +349,6 @@ extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 			       conmgr_work_status_t status, const char *tag,
 			       void *arg);
 
+extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
+
 #endif /* _CONMGR_MGR_H */
