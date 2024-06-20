@@ -99,7 +99,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
-	mgr.deferred_funcs = list_create(NULL);
+	mgr.deferred_work = list_create(NULL);
 
 	if (pipe(mgr.event_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
@@ -137,7 +137,7 @@ extern void conmgr_fini(void)
 	mgr.quiesced = false;
 
 	/* run all deferred work if there is any */
-	requeue_deferred_funcs();
+	requeue_deferred_work();
 
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
@@ -147,9 +147,9 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work();
 
-	/* deferred_funcs should have been cleared by conmgr_run() */
-	xassert(list_is_empty(mgr.deferred_funcs));
-	FREE_NULL_LIST(mgr.deferred_funcs);
+	/* deferred_work should have been cleared by conmgr_run() */
+	xassert(list_is_empty(mgr.deferred_work));
+	FREE_NULL_LIST(mgr.deferred_work);
 
 	/*
 	 * At this point, there should be no threads running.
@@ -199,7 +199,7 @@ extern int conmgr_run(bool blocking)
 
 	xassert(!mgr.error || !mgr.exit_on_error);
 	mgr.quiesced = false;
-	requeue_deferred_funcs();
+	requeue_deferred_work();
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (blocking) {
