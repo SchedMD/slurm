@@ -4728,6 +4728,28 @@ fini:
 	return matches_filter;
 }
 
+/*
+ * Figure out if the job (job_ptr) matches the specified filters:
+ * - filter_id describes a job or set of jobs if it is an array expression.
+ * - signal_args->kill_msg has filters requested by the client.
+ *
+ * If the job does not match the specified filters in signal_args, then
+ * _signal_job_matches_filter() adds a response message for the job and we
+ * return.
+ *
+ * If the job matches the specified filters, but the user is not authorized to
+ * signal the job, add a response message and return.
+ *
+ * If the job matches the specified filters and the user is authorized to signal
+ * the job, place the job into the appropriate list of jobs which will later be
+ * signaled. The lists are in signal_args.
+ * - pending_array_task_list: A meta record with pending array tasks that are
+ *   requested to be signaled, or a single pending array task that has not yet
+ *   been split from the meta record.
+ * - array_leader_list - A meta record for an array where that entire array has
+ *   been requested to be signaled.
+ * - other_job_list - All other jobs to be signaled.
+ */
 static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 				      slurm_selected_step_t *filter_id,
 				      signal_jobs_args_t *signal_args)
