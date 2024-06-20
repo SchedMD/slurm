@@ -100,6 +100,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.deferred_work = list_create(NULL);
+	mgr.work = list_create(NULL);
 
 	if (pipe(mgr.event_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
@@ -180,6 +181,10 @@ extern void conmgr_fini(void)
 	/* slurm_cond_destroy(&mgr.cond); */
 
 	workq_fini();
+
+	/* work should have been cleared by workq_fini() */
+	xassert(list_is_empty(mgr.work));
+	FREE_NULL_LIST(mgr.work);
 }
 
 extern int conmgr_run(bool blocking)

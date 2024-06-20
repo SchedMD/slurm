@@ -124,9 +124,9 @@ extern void wrap_work(work_t *work)
 }
 
 /*
- * Add work to workq
+ * Add work to mgr.work
  * Single point to enqueue internal function callbacks
- * NOTE: _handle_work_run() can add new entries to mgr.workq.work
+ * NOTE: _handle_work_run() can add new entries to mgr.work
  *
  * IN locked - true if conmgr is already locked by caller
  * IN work - pointer to work to run
@@ -148,7 +148,7 @@ static void _handle_work_run(work_t *work)
 		 */
 		list_append(mgr.deferred_work, work);
 	} else {
-		list_append(mgr.workq.work, work);
+		list_append(mgr.work, work);
 		slurm_cond_signal(&mgr.cond);
 	}
 }
@@ -275,5 +275,5 @@ extern void requeue_deferred_work(void)
 	if (mgr.quiesced)
 		return;
 
-	(void) list_transfer(mgr.workq.work, mgr.deferred_work);
+	(void) list_transfer(mgr.work, mgr.deferred_work);
 }

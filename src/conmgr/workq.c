@@ -146,8 +146,6 @@ extern void workq_init(int count)
 
 	xassert(!mgr.workq.workers);
 	mgr.workq.workers = list_create(_worker_free);
-	xassert(!mgr.workq.work);
-	mgr.workq.work = list_create(NULL);
 	mgr.workq.threads = count;
 
 	_check_magic_workq();
@@ -160,7 +158,7 @@ static void _wait_workers_idle(void)
 {
 	_check_magic_workq();
 	log_flag(CONMGR, "%s: checking %u workers",
-		 __func__, list_count(mgr.workq.work));
+		 __func__, list_count(mgr.work));
 
 	while (mgr.workq.active)
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
@@ -173,7 +171,7 @@ static void _wait_work_complete()
 	xassert(mgr.shutdown_requested);
 	_check_magic_workq();
 	log_flag(CONMGR, "%s: waiting for %u queued workers",
-		 __func__, list_count(mgr.workq.work));
+		 __func__, list_count(mgr.work));
 
 	while (true) {
 		int count;
@@ -203,7 +201,7 @@ static void _quiesce(void)
 	_check_magic_workq();
 
 	log_flag(CONMGR, "%s: shutting down with %u queued jobs",
-		 __func__, list_count(mgr.workq.work));
+		 __func__, list_count(mgr.work));
 
 	/* notify workers of shutdown */
 	xassert(mgr.shutdown_requested);
@@ -212,7 +210,7 @@ static void _quiesce(void)
 	_wait_work_complete();
 
 	xassert(list_count(mgr.workq.workers) == 0);
-	xassert(list_count(mgr.workq.work) == 0);
+	xassert(list_count(mgr.work) == 0);
 }
 
 extern void workq_fini(void)
@@ -232,7 +230,6 @@ extern void workq_fini(void)
 	xassert(mgr.shutdown_requested);
 
 	FREE_NULL_LIST(mgr.workq.workers);
-	FREE_NULL_LIST(mgr.workq.work);
 
 	mgr.workq.threads = 0;
 }
@@ -251,7 +248,7 @@ static void *_worker(void *arg)
 
 		slurm_mutex_lock(&mgr.mutex);
 
-		work = list_pop(mgr.workq.work);
+		work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
 		if (!work) {
@@ -280,7 +277,7 @@ static void *_worker(void *arg)
 
 		log_flag(CONMGR, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
 			 __func__, worker->id, work->tag, mgr.workq.active,
-			 mgr.workq.total, list_count(mgr.workq.work));
+			 mgr.workq.total, list_count(mgr.work));
 
 		slurm_mutex_unlock(&mgr.mutex);
 
@@ -294,7 +291,7 @@ static void *_worker(void *arg)
 
 		log_flag(CONMGR, "%s: [%u] finished active_workers=%u/%u queue=%u",
 			 __func__, worker->id, mgr.workq.active,
-			 mgr.workq.total, list_count(mgr.workq.work));
+			 mgr.workq.total, list_count(mgr.work));
 
 		slurm_cond_broadcast(&mgr.cond);
 		slurm_mutex_unlock(&mgr.mutex);

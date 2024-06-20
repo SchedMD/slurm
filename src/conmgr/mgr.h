@@ -253,6 +253,8 @@ typedef struct {
 	timer_t timer;
 	/* list of work_t* */
 	list_t *deferred_work;
+	/* list of work_t* */
+	list_t *work;
 
 	/* list of all registered signal handlers */
 	signal_handler_t *signal_handlers;
@@ -276,8 +278,6 @@ typedef struct {
 	struct {
 		/* list of workq_worker_t */
 		list_t *workers;
-		/* list of work_t* */
-		list_t *work;
 
 		/* track simple stats for logging */
 		int active;
