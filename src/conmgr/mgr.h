@@ -50,6 +50,9 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/workq.h"
 
+/* Default buffer to 1 page */
+#define BUFFER_START_SIZE 4096
+
 typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
