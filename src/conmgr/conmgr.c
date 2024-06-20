@@ -42,7 +42,6 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/workq.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
 
@@ -63,11 +62,11 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
-	workq_init(thread_count);
-
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown_requested = false;
+
+	workers_init(thread_count);
 
 	if (!mgr.at_fork_installed) {
 		int rc;
@@ -172,9 +171,9 @@ extern void conmgr_fini(void)
 	/* slurm_mutex_destroy(&mgr.mutex); */
 	/* slurm_cond_destroy(&mgr.cond); */
 
-	workq_fini();
+	workers_fini();
 
-	/* work should have been cleared by workq_fini() */
+	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
 	FREE_NULL_LIST(mgr.work);
 }

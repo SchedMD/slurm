@@ -19,8 +19,7 @@ libconmgr_la_SOURCES = \
 	signals.c \
 	watch.c \
 	work.c \
-	workq.c \
-	workq.h
+	workers.c
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 

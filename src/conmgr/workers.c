@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  workq.c - definitions for work queue manager
+ *  workers.c - definitions for worker thread handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -41,18 +41,17 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/workq.h"
 #include "src/conmgr/mgr.h"
 
 static void *_worker(void *arg);
 
-static void _check_magic_workq(void)
+static void _check_magic_workers(void)
 {
-	xassert(mgr.workq.workers);
-	xassert(mgr.workq.active >= 0);
+	xassert(mgr.workers.workers);
+	xassert(mgr.workers.active >= 0);
 }
 
-static void _check_magic_worker(workq_worker_t *worker)
+static void _check_magic_worker(worker_t *worker)
 {
 	xassert(worker);
 	xassert(worker->magic == MAGIC_WORKER);
@@ -65,7 +64,7 @@ static int _find_worker(void *x, void *arg)
 }
 static void _worker_free(void *x)
 {
-	workq_worker_t *worker = x;
+	worker_t *worker = x;
 
 	if (!worker)
 		return;
@@ -80,7 +79,7 @@ static void _worker_free(void *x)
 
 static void _worker_delete(void *x)
 {
-	workq_worker_t *worker = x;
+	worker_t *worker = x;
 
 	if (!worker)
 		return;
@@ -88,11 +87,10 @@ static void _worker_delete(void *x)
 	_check_magic_worker(worker);
 
 	slurm_mutex_lock(&mgr.mutex);
-	worker = list_remove_first(mgr.workq.workers, _find_worker, worker);
+	worker = list_remove_first(mgr.workers.workers, _find_worker, worker);
 
-	mgr.workq.total--;
+	mgr.workers.total--;
 
-	/* workq may get freed at any time after unlocking */
 	slurm_mutex_unlock(&mgr.mutex);
 	xassert(worker == x);
 
@@ -102,18 +100,18 @@ static void _worker_delete(void *x)
 static void _increase_thread_count(int count)
 {
 	for (int i = 0; i < count; i++) {
-		workq_worker_t *worker = xmalloc(sizeof(*worker));
+		worker_t *worker = xmalloc(sizeof(*worker));
 		worker->magic = MAGIC_WORKER;
 		worker->id = i + 1;
 
 		slurm_thread_create(&worker->tid, _worker, worker);
 		_check_magic_worker(worker);
 
-		list_append(mgr.workq.workers, worker);
+		list_append(mgr.workers.workers, worker);
 	}
 }
 
-extern void workq_init(int count)
+extern void workers_init(int count)
 {
 	if (!count) {
 		count = CONMGR_THREAD_COUNT_DEFAULT;
@@ -124,19 +122,19 @@ extern void workq_init(int count)
 		      CONMGR_THREAD_COUNT_MAX);
 	}
 
-	if (mgr.workq.threads) {
-		_check_magic_workq();
+	if (mgr.workers.threads) {
+		_check_magic_workers();
 
-		if (mgr.workq.threads >= count) {
-			int threads = mgr.workq.threads;
+		if (mgr.workers.threads >= count) {
+			int threads = mgr.workers.threads;
 			log_flag(CONMGR, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
 				 __func__, count, threads);
 		} else {
-			int prev = mgr.workq.threads;
+			int prev = mgr.workers.threads;
 
 			/* Need to increase thread count to match count */
-			_increase_thread_count(count - mgr.workq.threads);
-			mgr.workq.threads = count;
+			_increase_thread_count(count - mgr.workers.threads);
+			mgr.workers.threads = count;
 
 			log_flag(CONMGR, "%s: increased thread count from %d to %d",
 				 __func__, prev, count);
@@ -144,11 +142,11 @@ extern void workq_init(int count)
 		return;
 	}
 
-	xassert(!mgr.workq.workers);
-	mgr.workq.workers = list_create(_worker_free);
-	mgr.workq.threads = count;
+	xassert(!mgr.workers.workers);
+	mgr.workers.workers = list_create(_worker_free);
+	mgr.workers.threads = count;
 
-	_check_magic_workq();
+	_check_magic_workers();
 
 	_increase_thread_count(count);
 }
@@ -156,11 +154,11 @@ extern void workq_init(int count)
 /* Note: caller must hold conmgr lock */
 static void _wait_workers_idle(void)
 {
-	_check_magic_workq();
+	_check_magic_workers();
 	log_flag(CONMGR, "%s: checking %u workers",
 		 __func__, list_count(mgr.work));
 
-	while (mgr.workq.active)
+	while (mgr.workers.active)
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 
 	log_flag(CONMGR, "%s: all workers are idle", __func__);
@@ -169,20 +167,20 @@ static void _wait_workers_idle(void)
 static void _wait_work_complete()
 {
 	xassert(mgr.shutdown_requested);
-	_check_magic_workq();
+	_check_magic_workers();
 	log_flag(CONMGR, "%s: waiting for %u queued workers",
 		 __func__, list_count(mgr.work));
 
 	while (true) {
 		int count;
 		pthread_t tid;
-		workq_worker_t *worker;
+		worker_t *worker;
 
-		if ((count = list_count(mgr.workq.workers)) == 0) {
+		if ((count = list_count(mgr.workers.workers)) == 0) {
 			log_flag(CONMGR, "%s: all workers are done", __func__);
 			break;
 		}
-		worker = list_peek(mgr.workq.workers);
+		worker = list_peek(mgr.workers.workers);
 		xassert(worker->magic == MAGIC_WORKER);
 		tid = worker->tid;
 
@@ -198,7 +196,7 @@ static void _wait_work_complete()
  */
 static void _quiesce(void)
 {
-	_check_magic_workq();
+	_check_magic_workers();
 
 	log_flag(CONMGR, "%s: shutting down with %u queued jobs",
 		 __func__, list_count(mgr.work));
@@ -209,15 +207,15 @@ static void _quiesce(void)
 
 	_wait_work_complete();
 
-	xassert(list_count(mgr.workq.workers) == 0);
+	xassert(list_count(mgr.workers.workers) == 0);
 	xassert(list_count(mgr.work) == 0);
 }
 
-extern void workq_fini(void)
+extern void workers_fini(void)
 {
 	int threads;
 
-	threads = mgr.workq.threads;
+	threads = mgr.workers.threads;
 
 	if (!threads)
 		return;
@@ -225,22 +223,22 @@ extern void workq_fini(void)
 	_wait_workers_idle();
 	_quiesce();
 
-	xassert(!mgr.workq.active);
-	xassert(!mgr.workq.total);
+	xassert(!mgr.workers.active);
+	xassert(!mgr.workers.total);
 	xassert(mgr.shutdown_requested);
 
-	FREE_NULL_LIST(mgr.workq.workers);
+	FREE_NULL_LIST(mgr.workers.workers);
 
-	mgr.workq.threads = 0;
+	mgr.workers.threads = 0;
 }
 
 static void *_worker(void *arg)
 {
-	workq_worker_t *worker = arg;
+	worker_t *worker = arg;
 	_check_magic_worker(worker);
 
 	slurm_mutex_lock(&mgr.mutex);
-	mgr.workq.total++;
+	mgr.workers.total++;
 	slurm_mutex_unlock(&mgr.mutex);
 
 	while (true) {
@@ -263,8 +261,8 @@ static void *_worker(void *arg)
 			}
 
 			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
-				 __func__, worker->id, mgr.workq.active,
-				 mgr.workq.total);
+				 __func__, worker->id, mgr.workers.active,
+				 mgr.workers.total);
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 			slurm_mutex_unlock(&mgr.mutex);
 			continue;
@@ -273,11 +271,11 @@ static void *_worker(void *arg)
 		xassert(work->magic == MAGIC_WORK);
 
 		/* got work, run it! */
-		mgr.workq.active++;
+		mgr.workers.active++;
 
 		log_flag(CONMGR, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
-			 __func__, worker->id, work->tag, mgr.workq.active,
-			 mgr.workq.total, list_count(mgr.work));
+			 __func__, worker->id, work->tag, mgr.workers.active,
+			 mgr.workers.total, list_count(mgr.work));
 
 		slurm_mutex_unlock(&mgr.mutex);
 
@@ -287,11 +285,11 @@ static void *_worker(void *arg)
 
 		slurm_mutex_lock(&mgr.mutex);
 
-		mgr.workq.active--;
+		mgr.workers.active--;
 
 		log_flag(CONMGR, "%s: [%u] finished active_workers=%u/%u queue=%u",
-			 __func__, worker->id, mgr.workq.active,
-			 mgr.workq.total, list_count(mgr.work));
+			 __func__, worker->id, mgr.workers.active,
+			 mgr.workers.total, list_count(mgr.work));
 
 		slurm_cond_broadcast(&mgr.cond);
 		slurm_mutex_unlock(&mgr.mutex);

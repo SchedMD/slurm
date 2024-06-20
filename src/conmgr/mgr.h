@@ -53,7 +53,6 @@
 #include "src/common/pack.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/workq.h"
 
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
@@ -174,7 +173,7 @@ typedef struct {
 	pthread_t tid;
 	/* unique id for tracking */
 	int id;
-} workq_worker_t;
+} worker_t;
 
 /*
  * Global instance of conmgr
@@ -272,9 +271,8 @@ typedef struct {
 	pthread_mutex_t watch_mutex;
 	pthread_cond_t watch_cond;
 
-	/* work and workers queue */
 	struct {
-		/* list of workq_worker_t */
+		/* list of worker_t */
 		list_t *workers;
 
 		/* track simple stats for logging */
@@ -283,7 +281,7 @@ typedef struct {
 
 		/* number of threads */
 		int threads;
-	} workq;
+	} workers;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
@@ -381,17 +379,17 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 extern void wrap_work(work_t *work);
 
 /*
- * Initialize workq members
+ * Initialize worker threads
  * IN count - number of workers to add
  * Note: Caller must hold conmgr lock
  */
-extern void workq_init(int count);
+extern void workers_init(int count);
 
 /*
- * Release workq members.
+ * Release worker threads
  * Will stop all workers (eventually).
  * Note: Caller must hold conmgr lock
  */
-extern void workq_fini(void);
+extern void workers_fini(void);
 
 #endif /* _CONMGR_MGR_H */

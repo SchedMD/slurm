@@ -177,7 +177,6 @@ typedef enum {
 
 /*
  * Initialise global connection manager
- * workq_init() must be called prior to calling conmgr_init().
  * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
  * IN callbacks - struct containing function pointers
