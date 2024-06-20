@@ -756,6 +756,9 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 				     * (done later in this
 				     * function). */
 
+	if (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS)
+		tls_mode = TLS_CONN_SERVER;
+
 	if (rc != SLURM_SUCCESS) {
 		comment = xstrdup_printf("Failed to unpack %s message",
 					 slurmdbd_msg_type_2_str(
@@ -764,15 +767,27 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
+
+		/*
+		 * Need the tls_conn to send back the error message.
+		 * There is a chance that the persist_msg->msg_type might not
+		 * have been unpacked, in which case tls_mode could be
+		 * TLS_CONN_NULL when it should be TLS_CONN_SERVER.
+		 */
+		if (!persist_conn->tls_conn) {
+			persist_conn->tls_conn =
+				tls_g_create_conn(persist_conn->fd, tls_mode);
+			if (!persist_conn->tls_conn)
+				error("CONN:%u tls_g_create_conn() failed",
+				      persist_conn->fd);
+		}
+
 		return rc;
 	}
 
 	if ((persist_msg->msg_type == REQUEST_PERSIST_INIT) ||
 	    (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS))
 		init_msg = true;
-
-	if (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS)
-		tls_mode = TLS_CONN_SERVER;
 
 	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
