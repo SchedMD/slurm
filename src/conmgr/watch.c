@@ -34,12 +34,14 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE
+#include <limits.h>
 #include <poll.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 
 #include "src/common/fd.h"
 #include "src/common/read_config.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
@@ -482,13 +484,25 @@ static int _find_by_fd(void *x, void *key)
 static void _poll(poll_args_t *args, list_t *fds, on_poll_event_t on_poll,
 		  const char *tag)
 {
+	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
 	conmgr_fd_t *con;
 	int signal_fd, event_fd;
 
 again:
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+		START_TIMER;
+
 	rc = poll(args->fds, args->nfds, -1);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		/* we want the time but not to warn about a time limit */
+		END_TIMER3(NULL, 0);
+		log_flag(CONMGR, "%s: [%s] poll(%d)=%d ran for %s",
+			 __func__, tag, args->nfds, rc, TIME_STR);
+	}
+
 	if (rc == -1) {
 		bool exit_on_error;
 
