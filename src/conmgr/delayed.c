@@ -279,13 +279,15 @@ extern void free_delayed_work(void)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-static void _handle_timer(conmgr_fd_t *con, conmgr_work_type_t type,
-			  conmgr_work_status_t status, const char *tag,
-			  void *arg)
+extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
+			    conmgr_work_status_t status, const char *tag,
+			    void *arg)
 {
 	int count, total;
 	work_t *work;
 	list_t *elapsed = list_create(xfree_ptr);
+
+	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 	update_last_time(true);
@@ -309,14 +311,6 @@ static void _handle_timer(conmgr_fd_t *con, conmgr_work_type_t type,
 		 __func__, count, total);
 
 	FREE_NULL_LIST(elapsed);
-}
 
-extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
-			    conmgr_work_status_t status, const char *tag,
-			    void *arg)
-{
-	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
-	add_work(false, NULL, _handle_timer, CONMGR_WORK_TYPE_FIFO, NULL,
-		 XSTRINGIFY(_handle_timer));
 	signal_change(false, __func__);
 }
