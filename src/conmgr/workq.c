@@ -237,28 +237,6 @@ extern void workq_fini(void)
 	mgr.workq.threads = 0;
 }
 
-extern int workq_add_work(bool locked, work_t *work)
-{
-	int rc = SLURM_SUCCESS;
-
-	xassert(work->magic == MAGIC_WORK);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-	_check_magic_workq();
-	/* add to work list and signal a thread */
-	if (mgr.shutdown_requested)
-		rc = ESLURM_DISABLED;
-	else { /* workq is not shutdown */
-		list_append(mgr.workq.work, work);
-		slurm_cond_signal(&mgr.cond);
-	}
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
-}
-
 static void *_worker(void *arg)
 {
 	workq_worker_t *worker = arg;

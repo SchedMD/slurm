@@ -384,16 +384,6 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 extern void requeue_deferred_funcs(void);
 
 /*
- * Add work to workq
- * IN locked - true if conmgr is already locked by caller
- * IN work - pointer to work to run
- * NOTE: never add a thread that will never return or workq_free() will never
- * return either.
- * RET SLURM_SUCCESS or error if workq already shutdown
- */
-extern int workq_add_work(bool locked, work_t *work);
-
-/*
  * Wrap work requested to notify mgr when that work is complete
  */
 extern void wrap_work(work_t *work);

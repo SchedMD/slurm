@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/list.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
@@ -122,11 +123,22 @@ extern void wrap_work(work_t *work)
 	xfree(work);
 }
 
-/* mgr must be locked */
-/* Single point to queue internal function callback via workq. */
+/*
+ * Add work to workq
+ * Single point to enqueue internal function callbacks
+ *
+ * IN locked - true if conmgr is already locked by caller
+ * IN work - pointer to work to run
+ * NOTE: never add a thread that will never return or conmgr_fini() will never
+ *	return either.
+ * NOTE: conmgr mutex must be held by caller
+ */
 static void _handle_work_run(work_t *work)
 {
-	if (mgr.quiesced || workq_add_work(true, work)) {
+	xassert(work->magic == MAGIC_WORK);
+
+	/* add to work list and signal a thread */
+	if (mgr.quiesced || mgr.shutdown_requested) {
 		/*
 		 * Defer all work until conmgr_run() starts as adding new
 		 * connections will call add_work() including on_connection()
@@ -134,6 +146,9 @@ static void _handle_work_run(work_t *work)
 		 * and can cause locking conflicts.
 		 */
 		list_append(mgr.deferred_funcs, work);
+	} else {
+		list_append(mgr.workq.work, work);
+		slurm_cond_signal(&mgr.cond);
 	}
 }
 
