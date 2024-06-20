@@ -303,4 +303,50 @@ extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 extern void handle_work(bool locked, work_t *work);
 extern void update_last_time(bool locked);
 
+/*
+ * Poll all connections and handle any events
+ * IN blocking - non-zero if blocking
+ */
+extern void watch(void *blocking);
+
+/*
+ * Wait for _watch() to finish
+ *
+ * WARNING: caller must hold mgr.mutex
+ * WARNING: mgr.mutex will be released by this call
+ */
+extern void wait_for_watch(void);
+
+/*
+ * Stop reading from connection but write out the remaining buffer and finish
+ * any queued work
+ */
+extern void close_con(bool locked, conmgr_fd_t *con);
+
+extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
+			 conmgr_work_status_t status, const char *tag,
+			 void *arg);
+
+extern void handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
+			conmgr_work_status_t status, const char *tag,
+			void *arg);
+
+extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
+			 conmgr_work_status_t status, const char *tag,
+			 void *arg);
+
+extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
+				   conmgr_fd_t *source, int input_fd,
+				   int output_fd,
+				   const conmgr_events_t events,
+				   const slurm_addr_t *addr,
+				   socklen_t addrlen, bool is_listen,
+				   const char *unix_socket_path, void *arg);
+
+extern void close_all_connections(void);
+
+extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
+			       conmgr_work_status_t status, const char *tag,
+			       void *arg);
+
 #endif /* _CONMGR_MGR_H */
