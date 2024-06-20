@@ -44,6 +44,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
+#include "src/conmgr/conmgr.h"
 #include "src/conmgr/workq.h"
 
 #define WORKQ_DEFAULT                                \
@@ -199,12 +200,12 @@ extern void workq_init(int count)
 	static bool at_fork_installed = false;
 
 	if (!count) {
-		count = WORKQ_THREAD_COUNT_DEFAULT;
-	} else if ((count < WORKQ_THREAD_COUNT_MIN) ||
-		   (count > WORKQ_THREAD_COUNT_MAX)) {
+		count = CONMGR_THREAD_COUNT_DEFAULT;
+	} else if ((count < CONMGR_THREAD_COUNT_MIN) ||
+		   (count > CONMGR_THREAD_COUNT_MAX)) {
 		fatal("%s: Invalid thread count=%d; thread count must be between %d and %d",
-		      __func__, count, WORKQ_THREAD_COUNT_MIN,
-		      WORKQ_THREAD_COUNT_MAX);
+		      __func__, count, CONMGR_THREAD_COUNT_MIN,
+		      CONMGR_THREAD_COUNT_MAX);
 	}
 
 	slurm_mutex_lock(&workq.mutex);

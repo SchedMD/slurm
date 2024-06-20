@@ -67,7 +67,6 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/workq.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
@@ -644,8 +643,8 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize serializers");
 
 	/* This checks if slurmrestd is running in inetd mode */
-	workq_init((run_mode.listen ? thread_count : WORKQ_THREAD_COUNT_MIN));
-	conmgr_init(max_connections, callbacks);
+	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
+		    max_connections, callbacks);
 
 	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
 			       "_on_signal_interrupt()");
@@ -798,7 +797,6 @@ int main(int argc, char **argv)
 	tls_g_fini();
 	cred_g_fini();
 	auth_g_fini();
-	workq_fini();
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */

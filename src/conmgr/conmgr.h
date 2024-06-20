@@ -42,6 +42,10 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
+#define CONMGR_THREAD_COUNT_DEFAULT 10
+#define CONMGR_THREAD_COUNT_MIN 2
+#define CONMGR_THREAD_COUNT_MAX 1024
+
 /*
  * connection manager will do the follow:
  * 	maintain a list of active connections by
@@ -171,10 +175,12 @@ typedef enum {
 /*
  * Initialise global connection manager
  * workq_init() must be called prior to calling conmgr_init().
+ * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
  * IN callbacks - struct containing function pointers
  */
-extern void conmgr_init(int max_connections, conmgr_callbacks_t callbacks);
+extern void conmgr_init(int thread_count, int max_connections,
+			conmgr_callbacks_t callbacks);
 extern void conmgr_fini(void);
 
 /*

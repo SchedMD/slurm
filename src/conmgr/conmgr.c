@@ -563,10 +563,13 @@ static void _atfork_child(void)
 	mgr = CONMGR_DEFAULT;
 }
 
-extern void conmgr_init(int max_connections, conmgr_callbacks_t callbacks)
+extern void conmgr_init(int thread_count, int max_connections,
+			conmgr_callbacks_t callbacks)
 {
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
+
+	workq_init(thread_count);
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -744,6 +747,8 @@ extern void conmgr_fini(void)
 	 */
 	/* slurm_mutex_destroy(&mgr.mutex); */
 	/* slurm_cond_destroy(&mgr.cond); */
+
+	workq_fini();
 }
 
 /*

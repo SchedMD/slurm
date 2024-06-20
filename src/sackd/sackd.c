@@ -51,7 +51,6 @@
 #include "src/common/xsystemd.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/workq.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
@@ -429,8 +428,7 @@ extern int main(int argc, char **argv)
 		if (xdaemon())
 			error("daemon(): %m");
 
-	workq_init(0);
-	conmgr_init(0, callbacks);
+	conmgr_init(0, 0, callbacks);
 
 	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
 	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
