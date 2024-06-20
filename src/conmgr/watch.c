@@ -836,13 +836,14 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_listen_conns(int conn_count)
+static void _handle_listen_conns(void)
 {
 	/* run any queued work */
 	list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 			    _handle_connection, NULL);
 
 	if (!mgr.listen_active) {
+		int conn_count = list_count(mgr.listen_conns);
 		xassert(conn_count >= 0);
 
 		/* only try to listen if number connections is below limit */
@@ -899,7 +900,7 @@ static void _handle_events(bool *work)
 
 	/* start listen thread if needed */
 	if (!list_is_empty(mgr.listen_conns)) {
-		_handle_listen_conns(count);
+		_handle_listen_conns();
 		*work = true;
 	}
 
