@@ -56,12 +56,6 @@ extern void workq_init(int count);
 extern void workq_fini(void);
 
 /*
- * Stop all work (eventually) and reject new requests
- * This will block until all work is complete.
- */
-extern void workq_quiesce(void);
-
-/*
  * Add work to workq
  * IN func - function pointer to run work
  * IN arg - arg to hand to function pointer

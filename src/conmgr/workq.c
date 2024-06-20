@@ -234,7 +234,11 @@ static void _wait_work_complete(void)
 	}
 }
 
-extern void workq_quiesce(void)
+/*
+ * Stop all work (eventually) and reject new requests
+ * This will block until all work is complete.
+ */
+static void _quiesce(void)
 {
 	slurm_mutex_lock(&mgr.workq.mutex);
 	_check_magic_workq();
@@ -265,7 +269,7 @@ extern void workq_fini(void)
 		return;
 
 	_wait_workers_idle();
-	workq_quiesce();
+	_quiesce();
 
 	slurm_mutex_lock(&mgr.workq.mutex);
 
