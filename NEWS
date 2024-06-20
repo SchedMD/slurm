@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix power_save operation after recovering from a failed reconfigure.
  -- slurmctld - Skip removing the pidfile when running under systemd. In that
     situation it is never created in the first place.
+ -- Fix issue where altering the flags on a Slurm account (UsersAreCoords)
+    several limits on the account's association would be set to 0 in
+    Slurm's internal cache.
 
 * Changes in Slurm 24.05.0
 ==========================
