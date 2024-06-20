@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
     and all array tasks have been split into separate job records. Previously
     this task was not canceled.
  -- Fix power_save operation after recovering from a failed reconfigure.
+ -- slurmctld - Skip removing the pidfile when running under systemd. In that
+    situation it is never created in the first place.
 
 * Changes in Slurm 24.05.0
 ==========================

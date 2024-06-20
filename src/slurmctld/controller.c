@@ -829,7 +829,7 @@ int main(int argc, char **argv)
 	 *   changed to SlurmUser) SlurmUser may not be able to
 	 *   remove it, so this is not necessarily an error.
 	 */
-	if (unlink(slurm_conf.slurmctld_pidfile) < 0) {
+	if (!under_systemd && (unlink(slurm_conf.slurmctld_pidfile) < 0)) {
 		verbose("Unable to remove pidfile '%s': %m",
 			slurm_conf.slurmctld_pidfile);
 	}
