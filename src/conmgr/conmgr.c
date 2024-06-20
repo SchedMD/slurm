@@ -33,35 +33,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
-
-#include "config.h"
-
-#include <limits.h>
-#include <netdb.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "slurm/slurm.h"
-
 #include "src/common/fd.h"
-#include "src/common/forward.h"
-#include "src/common/http.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_common.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_pack.h"
-#include "src/common/strlcpy.h"
-#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
