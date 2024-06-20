@@ -444,6 +444,15 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression from 23.02 impeding job licenses from being cleared.
  -- Move error to debug which made _get_joules_task error to be logged to the
     user when too many rpcs were queued in slurmd for gathering energy.
+ -- slurmrestd - Prevent a slurmrestd segfault when modifying an association
+    without specifying max TRES limits in the request if those TRES
+    limits are currently defined in the association. This affects the following
+    fields of endpoint 'POST /slurmdb/v0.0.38/associations/':
+      'associations/max/tres/per/job'
+      'associations/max/tres/per/node'
+      'associations/max/tres/total'
+      'associations/max/tres/minutes/per/job'
+      'associations/max/tres/minutes/total'
 
 * Changes in Slurm 23.11.8
 ==========================
