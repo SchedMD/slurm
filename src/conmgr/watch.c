@@ -853,7 +853,8 @@ static void _handle_listen_conns(void)
 		else if (!conn_count) {
 			log_flag(CONMGR, "%s: skipping listen() due to no listening connections",
 				 __func__);
-		} else { /* request a listen thread to run */
+		} else {
+			/* request a listen thread to run */
 			log_flag(CONMGR, "%s: queuing up listen for %d connections",
 				 __func__, conn_count);
 			mgr.listen_active = true;
