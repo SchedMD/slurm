@@ -126,16 +126,6 @@ static void _work_delete(void *x)
 	xfree(work);
 }
 
-static void _atfork_child(void)
-{
-	/*
-	 * Force workq to return to default state before it was initialized at
-	 * forking as all of the prior state is completely unusable.
-	 */
-	// FIXME: remove atfork
-	// workq = WORKQ_DEFAULT;
-}
-
 static void _increase_thread_count(int count)
 {
 	for (int i = 0; i < count; i++) {
@@ -152,8 +142,6 @@ static void _increase_thread_count(int count)
 
 extern void workq_init(int count)
 {
-	static bool at_fork_installed = false;
-
 	if (!count) {
 		count = CONMGR_THREAD_COUNT_DEFAULT;
 	} else if ((count < CONMGR_THREAD_COUNT_MIN) ||
@@ -185,26 +173,6 @@ extern void workq_init(int count)
 				 __func__, prev, count);
 		}
 		return;
-	}
-
-	if (!at_fork_installed) {
-		int rc;
-
-		/*
-		 * at_fork_installed == true here will only happen with the
-		 * following sequence of calls:
-		 *
-		 * workq_init(), workq_fini(), workq_init().
-		 *
-		 * If this ever happens, avoid installing multiple atfork
-		 * handlers.
-		 */
-
-		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-			fatal_abort("%s: pthread_atfork() failed: %s",
-				    __func__, slurm_strerror(rc));
-
-		at_fork_installed = true;
 	}
 
 	xassert(!mgr.workq.workers);
