@@ -40,7 +40,6 @@
 #include <limits.h>
 #include <netdb.h>
 #include <poll.h>
-#include <signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -60,9 +59,9 @@
 #include "src/common/forward.h"
 #include "src/common/http.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
-#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
@@ -153,8 +152,6 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 				conmgr_work_status_t status, const char *tag,
 				void *arg);
-static void _add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
-		      conmgr_work_type_t type, void *arg, const char *tag);
 static void _wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 			  conmgr_work_status_t status, const char *tag,
 			  void *arg);
@@ -164,10 +161,6 @@ static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
 static void _cancel_delayed_work(void);
 static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
-static void _queue_func(bool locked, work_func_t func, void *arg,
-			const char *tag);
-static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
-			     const char *tag);
 static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 			     conmgr_work_status_t status, const char *tag,
 			     void *arg);
@@ -219,111 +212,6 @@ static void _connection_fd_delete(void *x)
 
 	con->magic = ~MAGIC_CON_MGR_FD;
 	xfree(con);
-}
-
-static void _signal_handler(int signo)
-{
-	/*
-	 * Per the sigaction man page:
-	 * 	A child created via fork(2) inherits a copy of its parent's
-	 * 	signal dispositions.
-	 *
-	 * Signal handler registration survives fork() but mgr will get reset to
-	 * CONMGR_DEFAULT. Gracefully ignore signals when mgr.signal_fd is
-	 * -1 to avoid trying to write a non-existant file descriptor.
-	 */
-	if (mgr.signal_fd[1] < 0)
-		return;
-
-try_again:
-	if (write(mgr.signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-			goto try_again;
-
-		log_reinit();
-		fatal("%s: unable to signal connection manager: %m", __func__);
-	}
-}
-
-static void _register_signal_handler(int signal)
-{
-	signal_handler_t *handler;
-
-	for (int i = 0; i < mgr.signal_handler_count; i++) {
-		xassert(mgr.signal_handlers[i].magic == MAGIC_SIGNAL_HANDLER);
-
-		if (mgr.signal_handlers[i].signal == signal)
-			return;
-	}
-
-	xrecalloc(mgr.signal_handlers, (mgr.signal_handler_count + 1),
-		  sizeof(*mgr.signal_handlers));
-
-	handler = &mgr.signal_handlers[mgr.signal_handler_count];
-	handler->magic = MAGIC_SIGNAL_HANDLER;
-	handler->signal = signal;
-	handler->new.sa_handler = _signal_handler;
-
-	if (sigaction(signal, &handler->new, &handler->prior))
-		fatal("%s: unable to catch %s: %m",
-		      __func__, strsignal(signal));
-
-	log_flag(NET, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
-		 __func__, sig_num2name(signal), signal,
-		 (uintptr_t) handler->prior.sa_handler,
-		 (uintptr_t) handler->new.sa_handler);
-
-	mgr.signal_handler_count++;
-}
-
-static void _init_signal_handler(void)
-{
-	if (mgr.signal_handlers)
-		return;
-
-	for (int i = 0; i < mgr.signal_work_count; i++) {
-		signal_work_t *work = &mgr.signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
-
-		_register_signal_handler(work->signal);
-	}
-}
-
-static void _fini_signal_handler(void)
-{
-	for (int i = 0; i < mgr.signal_handler_count; i++) {
-		signal_handler_t *handler = &mgr.signal_handlers[i];
-		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
-
-		if (sigaction(handler->signal, &handler->prior, &handler->new))
-			fatal("%s: unable to restore %s: %m",
-			      __func__, strsignal(handler->signal));
-
-		/*
-		 * Check what sigaction() swapped out from the current signal
-		 * handler to catch when something else has replaced signal
-		 * handler. This is assert exists to help us catch any code that
-		 * changes the signal handlers outside of conmgr.
-		 */
-		xassert(handler->new.sa_handler == _signal_handler);
-
-		log_flag(NET, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
-			 __func__, sig_num2name(handler->signal),
-			 handler->signal,
-			 (uintptr_t) handler->new.sa_handler,
-			 (uintptr_t) handler->prior.sa_handler);
-
-		/*
-		 * Check what sigaction() swapped out from the current signal
-		 * handler to catch when something else has replaced the signal
-		 * handler. This assert exists to help us catch any code that
-		 * changes the signal handlers outside of conmgr.
-		 */
-		xassert(handler->new.sa_handler == _signal_handler);
-	}
-
-	xfree(mgr.signal_handlers);
-	mgr.signal_handler_count = 0;
 }
 
 static void _atfork_child(void)
@@ -392,62 +280,11 @@ extern void conmgr_init(int thread_count, int max_connections,
 	fd_set_blocking(mgr.signal_fd[0]);
 	fd_set_blocking(mgr.signal_fd[1]);
 
-	_add_signal_work(SIGALRM, _on_signal_alarm, NULL, "_on_signal_alarm()");
+	add_signal_work(SIGALRM, _on_signal_alarm, NULL,
+			XSTRINGIFY(_on_signal_alarm));
 
 	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
-}
-
-/*
- * Notify connection manager that there has been a change event
- */
-static void _signal_change(bool locked)
-{
-	DEF_TIMERS;
-	char buf[] = "1";
-	int rc;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-	if (mgr.event_signaled) {
-		mgr.event_signaled++;
-		log_flag(NET, "%s: sent %d times",
-			 __func__, mgr.event_signaled);
-		goto done;
-	} else {
-		log_flag(NET, "%s: sending", __func__);
-		mgr.event_signaled = 1;
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-try_again:
-	START_TIMER;
-	/* send 1 byte of trash */
-	rc = write(mgr.event_fd[1], buf, 1);
-	END_TIMER2("write to event_fd");
-	if (rc != 1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(NET, "%s: trying again: %m", __func__);
-			goto try_again;
-		}
-
-		fatal("%s: unable to signal connection manager: %m", __func__);
-	}
-
-	log_flag(NET, "%s: sent in %s", __func__, TIME_STR);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-done:
-	/* wake up _watch() */
-	slurm_cond_broadcast(&mgr.cond);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* mgr.mutex must be locked when calling this function */
@@ -568,7 +405,7 @@ static void _close_con(bool locked, conmgr_fd_t *con)
 	/* forget the now invalid FD */
 	con->input_fd = -1;
 
-	_signal_change(true);
+	signal_change(true);
 cleanup:
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -771,7 +608,7 @@ static void _wrap_work(void *x)
 		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
-	_signal_change(false);
+	signal_change(false);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
@@ -1210,8 +1047,8 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_add_work(false, con, _wrap_on_connection,
-		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
+	add_work(false, con, _wrap_on_connection,
+		 CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
 
 	return SLURM_SUCCESS;
 }
@@ -1230,7 +1067,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_signal_change(false);
+	signal_change(false);
 
 	return SLURM_SUCCESS;
 }
@@ -1250,7 +1087,7 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_signal_change(false);
+	signal_change(false);
 
 	return SLURM_SUCCESS;
 }
@@ -1385,9 +1222,9 @@ static int _handle_connection(void *x, void *arg)
 		if (con->can_write) {
 			log_flag(NET, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
-			_add_work(true, con, _handle_write,
-				  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-				  "_handle_write");
+			add_work(true, con, _handle_write,
+				 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+				 XSTRINGIFY(_handle_write));
 		} else {
 			/* must wait until poll allows write of this socket */
 			log_flag(NET, "%s: [%s] waiting for %u writes",
@@ -1409,9 +1246,9 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
-		_add_work(true, con, _handle_read,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			  "_handle_read");
+		add_work(true, con, _handle_read,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			 XSTRINGIFY(_handle_read));
 		return 0;
 	}
 
@@ -1420,9 +1257,9 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
 
-		_add_work(true, con, _wrap_on_data,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			  "_wrap_on_data");
+		add_work(true, con, _wrap_on_data,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			 XSTRINGIFY(_wrap_on_data));
 		return 0;
 	}
 
@@ -1472,9 +1309,9 @@ static int _handle_connection(void *x, void *arg)
 		con->wait_on_finish = true;
 
 		/* notify caller of closing */
-		_add_work(true, con, _on_finish_wrapper,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
-			  "on_finish");
+		add_work(true, con, _on_finish_wrapper,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
+			 XSTRINGIFY(_on_finish_wrapper));
 
 		return 0;
 	}
@@ -1564,9 +1401,9 @@ static void _handle_listen_event(int fd, conmgr_fd_t *con, short revents)
 	} else if (revents & POLLIN) {
 		log_flag(NET, "%s: [%s] listen has incoming connection",
 			 __func__, con->name);
-		_add_work(true, con, _listen_accept,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			  "_listen_accept");
+		add_work(true, con, _listen_accept,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			 XSTRINGIFY(_listen_accept));
 		return;
 	} else /* should never happen */
 		log_flag(NET, "%s: [%s] listen unexpected revents: 0x%04x",
@@ -1590,126 +1427,13 @@ static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
 	}
 }
 
-static int _read_signal(int fd, const char *con_name)
-{
-	int sig, rc, readable;
-
-	if ((rc = fd_get_readable_bytes(fd, &readable, con_name)) ||
-	    !readable) {
-		log_flag(NET, "%s: [%s] no pending bytes to read()",
-			 __func__, con_name);
-		return -1;
-	}
-
-	/*
-	 * According to pipe(7), writes less than PIPE_BUF in size must be
-	 * atomic. Posix.1 requries PIPE_BUF to be at least 512 bytes.
-	 * Therefore, a write() of 4 bytes to a pipe is always atomic in Linux.
-	 */
-	xassert(readable >= sizeof(sig));
-
-	safe_read(fd, &sig, sizeof(sig));
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
-		char *str = sig_num2name(sig);
-		log_flag(NET, "%s: [%s] got signal: %s(%d)",
-			 __func__, con_name, str, sig);
-		xfree(str);
-	}
-
-	return sig;
-rwfail:
-	/* safe_read() should never pass these errors along */
-	xassert(errno != EAGAIN);
-	xassert(errno != EWOULDBLOCK);
-
-	/* this should never happen! */
-	fatal_abort("%s: Unexpected safe_read(%d) failure: %m", __func__, fd);
-}
-
-static void _on_signal(int signal)
-{
-	bool matched = false;
-
-	for (int i = 0; i < mgr.signal_work_count; i++) {
-		signal_work_t *work = &mgr.signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
-
-		if (work->signal != signal)
-			continue;
-
-		matched = true;
-		_add_work(true, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
-			  work->arg, work->tag);
-	}
-
-	if (!matched)
-		warning("%s: caught and ignoring signal %s",
-			__func__, strsignal(signal));
-}
-
-static void _handle_signals(void *ptr)
-{
-	int sig, count = 0, fd = -1;
-	static const char *con_name = "mgr.signal_fd[0]";
-
-	xassert(ptr == NULL);
-
-	slurm_mutex_lock(&mgr.mutex);
-	fd = mgr.signal_fd[0];
-	slurm_mutex_unlock(&mgr.mutex);
-	xassert(fd >= 0);
-
-	while (true) {
-		int readable = 0;
-		int rc;
-
-		while ((sig = _read_signal(fd, con_name)) > 0) {
-			count++;
-			_on_signal(sig);
-		}
-
-		log_flag(NET, "%s: caught %d signals", __func__, count);
-
-		slurm_mutex_lock(&mgr.mutex);
-
-		xassert(mgr.signaled);
-		xassert(mgr.read_signals_active);
-		xassert(fd == mgr.signal_fd[0]);
-
-		/*
-		 * Catch if another signal has been caught while the existing
-		 * backlog of signals in the pipe were being processed.
-		 */
-		rc = fd_get_readable_bytes(mgr.signal_fd[0], &readable,
-					   con_name);
-
-		if (!rc && (readable > 0)) {
-			slurm_mutex_unlock(&mgr.mutex);
-			/* reset signal counter */
-			count = 0;
-			/* try again as there was a signal sent */
-			continue;
-		}
-
-		/* Remove signal flags as all signals have read */
-		mgr.signaled = false;
-		mgr.read_signals_active = false;
-
-		/* wake up _watch_loop() */
-		slurm_cond_broadcast(&mgr.cond);
-		slurm_mutex_unlock(&mgr.mutex);
-		break;
-	}
-}
-
 static void _on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 			     conmgr_work_status_t status, const char *tag,
 			     void *arg)
 {
 	log_flag(NET, "%s: caught SIGALRM", __func__);
-	_queue_func(false, _handle_timer, NULL, "_handle_timer");
-	_signal_change(false);
+	queue_func(false, _handle_timer, NULL, XSTRINGIFY(_handle_timer));
+	signal_change(false);
 }
 
 /*
@@ -1781,7 +1505,7 @@ again:
 			 * signal that something might have happened and to
 			 * restart listening
 			 * */
-			_signal_change(true);
+			signal_change(true);
 			slurm_mutex_unlock(&mgr.mutex);
 		} else
 			/* FD probably got closed between poll start and now */
@@ -2001,7 +1725,7 @@ static void _listen(void *x)
 	slurm_mutex_lock(&mgr.mutex);
 cleanup:
 	mgr.listen_active = false;
-	_signal_change(true);
+	signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -2031,7 +1755,7 @@ static void _handle_complete_conns(void)
 		 *
 		 * Send signal to break out of any active poll()s.
 		 */
-		_signal_change(true);
+		signal_change(true);
 	} else {
 		conmgr_fd_t *con;
 
@@ -2042,8 +1766,8 @@ static void _handle_complete_conns(void)
 		 */
 
 		while ((con = list_pop(mgr.complete_conns)))
-			_queue_func(true, _connection_fd_delete, con,
-				    "_connection_fd_delete");
+			queue_func(true, _connection_fd_delete, con,
+				   XSTRINGIFY(_connection_fd_delete));
 	}
 }
 
@@ -2067,8 +1791,8 @@ static void _handle_listen_conns(poll_args_t **listen_args_p, int conn_count)
 			log_flag(NET, "%s: queuing up listen",
 				 __func__);
 			mgr.listen_active = true;
-			_queue_func(true, _listen, *listen_args_p,
-				    "_listen");
+			queue_func(true, _listen, *listen_args_p,
+				   XSTRINGIFY(_listen));
 		}
 	} else
 		log_flag(NET, "%s: listeners active already", __func__);
@@ -2083,16 +1807,16 @@ static void _handle_new_conns(poll_args_t **poll_args_p)
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
-		_queue_func(true, _inspect_connections, NULL,
-			    "_inspect_connections");
+		queue_func(true, _inspect_connections, NULL,
+			   XSTRINGIFY(_inspect_connections));
 	}
 
 	if (!mgr.poll_active) {
 		/* request a listen thread to run */
 		log_flag(NET, "%s: queuing up poll", __func__);
 		mgr.poll_active = true;
-		_queue_func(true, _poll_connections, *poll_args_p,
-			    "_poll_connections");
+		queue_func(true, _poll_connections, *poll_args_p,
+			   XSTRINGIFY(_poll_connections));
 	} else
 		log_flag(NET, "%s: poll active already", __func__);
 }
@@ -2164,7 +1888,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 			 * poll() hasn't returned yet so signal it to
 			 * stop again and wait for the thread to return
 			 */
-			_signal_change(true);
+			signal_change(true);
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 			return true;
 		}
@@ -2178,8 +1902,8 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 		if (mgr.signaled) {
 			if (!mgr.read_signals_active) {
 				mgr.read_signals_active = true;
-				_queue_func(true, _handle_signals, NULL,
-					    "conmgr::_handle_signals()");
+				queue_func(true, handle_signals, NULL,
+					   XSTRINGIFY(handle_signals));
 			}
 			work = true;
 		}
@@ -2192,7 +1916,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 		 * poll() hasn't returned yet so signal it to stop again
 		 * and wait for the thread to return
 		 */
-		_signal_change(true);
+		signal_change(true);
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		return true;
 	}
@@ -2204,7 +1928,7 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 	}
 
 	log_flag(NET, "%s: cleaning up", __func__);
-	_signal_change(true);
+	signal_change(true);
 
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);
@@ -2240,11 +1964,11 @@ static void _watch(void *blocking)
 
 	mgr.watching = true;
 
-	_init_signal_handler();
+	init_signal_handler();
 
 	while (_watch_loop(&listen_args, &poll_args));
 
-	_fini_signal_handler();
+	fini_signal_handler();
 
 	xassert(mgr.watching);
 	mgr.watching = false;
@@ -2290,7 +2014,7 @@ static void _requeue_deferred_funcs(void)
 		return;
 
 	while ((df = list_pop(mgr.deferred_funcs))) {
-		_queue_func(true, df->func, df->arg, df->tag);
+		queue_func(true, df->func, df->arg, df->tag);
 		xassert(df->magic == MAGIC_DEFERRED_FUNC);
 		df->magic = ~MAGIC_DEFERRED_FUNC;
 		xfree(df);
@@ -2322,7 +2046,7 @@ extern int conmgr_run(bool blocking)
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching)
-			_queue_func(true, _watch, NULL, "conmgr::_watch()");
+			queue_func(true, _watch, NULL, XSTRINGIFY(_watch));
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
@@ -2412,9 +2136,9 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	xassert(child->magic == MAGIC_CON_MGR_FD);
 
-	_add_work(false, child, _wrap_on_connection,
-		  CONMGR_WORK_TYPE_CONNECTION_FIFO, child,
-		  "_wrap_on_connection");
+	add_work(false, child, _wrap_on_connection,
+		 CONMGR_WORK_TYPE_CONNECTION_FIFO, child,
+		 XSTRINGIFY(_wrap_on_connection));
 }
 
 extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
@@ -2436,7 +2160,7 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 		     "%s: queuing up write", __func__);
 
 	list_append(con->out, buf);
-	_signal_change(false);
+	signal_change(false);
 	return SLURM_SUCCESS;
 }
 
@@ -2533,8 +2257,9 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 		 * several variables guarenteed to not change while work is
 		 * active.
 		 */
-		_add_work(true, con, _deferred_close_fd,
-			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
+		add_work(true, con, _deferred_close_fd,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL,
+			 XSTRINGIFY(_deferred_close_fd));
 	} else {
 		_close_con(true, con);
 	}
@@ -2754,7 +2479,7 @@ extern void conmgr_request_shutdown(void)
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
-	_signal_change(true);
+	signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -2769,7 +2494,7 @@ extern void conmgr_quiesce(bool wait)
 	}
 
 	mgr.quiesced = true;
-	_signal_change(true);
+	signal_change(true);
 
 	if (wait)
 		_wait_for_watch();
@@ -2983,7 +2708,7 @@ static void _handle_timer(void *x)
 	}
 
 	if (count > 0)
-		_signal_change(true);
+		signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: checked all timers and triggered %d/%d delayed work",
@@ -2993,8 +2718,8 @@ static void _handle_timer(void *x)
 }
 
 /* Single point to queue internal function callback via workq. */
-static void _queue_func(bool locked, work_func_t func, void *arg,
-			const char *tag)
+extern void queue_func(bool locked, work_func_t func, void *arg,
+		       const char *tag)
 {
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
@@ -3005,7 +2730,7 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 	} else {
 		/*
 		 * Defer all funcs until conmgr_run() as adding new connections
-		 * will call _queue_func() including on_connection() callback
+		 * will call queue_func() including on_connection() callback
 		 * which is very surprising before conmgr is running and can
 		 * cause locking conflicts.
 		 */
@@ -3027,7 +2752,7 @@ static void _queue_func(bool locked, work_func_t func, void *arg,
 /* mgr must be locked */
 static void _handle_work_run(work_t *work)
 {
-	_queue_func(true, _wrap_work, work, work->tag);
+	queue_func(true, _wrap_work, work, work->tag);
 }
 
 /* mgr must be locked */
@@ -3117,14 +2842,14 @@ static void _handle_work(bool locked, work_t *work)
 			    __func__, work->status);
 	}
 
-	_signal_change(true);
+	signal_change(true);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
-		      conmgr_work_type_t type, void *arg, const char *tag)
+extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
+		     conmgr_work_type_t type, void *arg, const char *tag)
 {
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
@@ -3144,7 +2869,7 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
 			    conmgr_work_type_t type, void *arg,
 			    const char *tag)
 {
-	_add_work(false, con, func, type, arg, tag);
+	add_work(false, con, func, type, arg, tag);
 }
 
 extern void conmgr_add_delayed_work(conmgr_fd_t *con,
@@ -3184,44 +2909,6 @@ extern void conmgr_add_delayed_work(conmgr_fd_t *con,
 		 (uintptr_t) work->func);
 
 	_handle_work(false, work);
-}
-
-static void _add_signal_work(int signal, conmgr_work_func_t func, void *arg,
-			     const char *tag)
-{
-	xrecalloc(mgr.signal_work, (mgr.signal_work_count + 1),
-		  sizeof(*mgr.signal_work));
-
-	mgr.signal_work[mgr.signal_work_count] = (signal_work_t){
-		.magic = MAGIC_SIGNAL_WORK,
-		.signal = signal,
-		.func = func,
-		.arg = arg,
-		.tag = tag,
-	};
-
-	mgr.signal_work_count++;
-
-	/* Call sigaction() if needed */
-	if (mgr.watching)
-		_register_signal_handler(signal);
-}
-
-extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
-				   void *arg, const char *tag)
-{
-	slurm_mutex_lock(&mgr.mutex);
-
-	if (mgr.shutdown_requested) {
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	if (mgr.watching)
-		fatal_abort("signal work must be added before conmgr is run");
-
-	_add_signal_work(signal, func, arg, tag);
-	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,

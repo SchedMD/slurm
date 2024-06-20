@@ -280,4 +280,19 @@ typedef struct {
 
 extern conmgr_t mgr;
 
+extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
+		     conmgr_work_type_t type, void *arg, const char *tag);
+extern void queue_func(bool locked, work_func_t func, void *arg,
+		       const char *tag);
+/*
+ * Notify conmgr something happened
+ * IN locked - mgr.locked is held by caller
+ */
+extern void signal_change(bool locked);
+extern void init_signal_handler(void);
+extern void fini_signal_handler(void);
+extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
+			    const char *tag);
+extern void handle_signals(void *ptr);
+
 #endif /* _CONMGR_MGR_H */
