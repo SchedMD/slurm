@@ -1652,14 +1652,19 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		; /* Do not attempt to open a connection to slurmdbd */
 	} else if (slurm_conf.accounting_storage_type &&
 		   !(ctxt.db_conn = openapi_get_db_conn(auth))) {
+		char *auth_error_msg = "";
+		if (errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR)
+			auth_error_msg = ", authentication error";
 		if (op_path->flags & OP_BIND_REQUIRE_SLURMDBD)
 			openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION),
 					   XSTRINGIFY(openapi_get_db_conn),
-					   "Failed to open slurmdbd connection");
+					   "Failed to open slurmdbd connection%s",
+					   auth_error_msg);
 		else
 			openapi_resp_warn(&ctxt,
 					  XSTRINGIFY(openapi_get_db_conn),
-					  "Failed to open connection to slurmdbd. Response fields may not be fully populated or empty.");
+					  "Failed to open connection to slurmdbd%s. Response fields may not be fully populated or empty.",
+					  auth_error_msg);
 	} else {
 		rc = data_parser_g_assign(ctxt.parser,
 					  DATA_PARSER_ATTR_DBCONN_PTR,

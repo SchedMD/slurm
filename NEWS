@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
  -- Always lay out steps cyclically on nodes in an allocation.
  -- squeue - add priority by partition ('.jobs[].priority_by_partition') to
     JSON and YAML output.
+ -- slurmrestd - Add clarification to "failed to open slurmdbd connection" error
+    if the error was the result of an authentication failure.
 
 * Changes in Slurm 24.05.2
 ==========================
