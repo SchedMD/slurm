@@ -225,7 +225,7 @@ typedef struct {
 	bool shutdown_requested;
 	/*
 	 * Is mgr currently quiesced?
-	 * Sends all new work to deferred_work while true
+	 * Defers all new work to while true
 	 */
 	bool quiesced;
 	/* at fork handler installed */
@@ -251,8 +251,6 @@ typedef struct {
 	struct timespec last_time;
 	/* monotonic timer */
 	timer_t timer;
-	/* list of work_t* */
-	list_t *deferred_work;
 	/* list of work_t* */
 	list_t *work;
 
@@ -376,12 +374,6 @@ extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 
 extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
 extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
-
-/*
- * Re-queue all deferred work
- * WARNING: caller must hold mgr.mutex
- */
-extern void requeue_deferred_work(void);
 
 /*
  * Wrap work requested to notify mgr when that work is complete

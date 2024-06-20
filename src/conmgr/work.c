@@ -138,19 +138,11 @@ static void _handle_work_run(work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
 
-	/* add to work list and signal a thread */
-	if (mgr.quiesced || mgr.shutdown_requested) {
-		/*
-		 * Defer all work until conmgr_run() starts as adding new
-		 * connections will call add_work() including on_connection()
-		 * callback which is very surprising before conmgr is running
-		 * and can cause locking conflicts.
-		 */
-		list_append(mgr.deferred_work, work);
-	} else {
-		list_append(mgr.work, work);
+	/* add to work list and signal a thread if watch is active */
+	list_append(mgr.work, work);
+
+	if (!mgr.quiesced && !mgr.shutdown_requested)
 		slurm_cond_signal(&mgr.cond);
-	}
 }
 
 /* mgr must be locked */
@@ -268,12 +260,4 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
 			    const char *tag)
 {
 	add_work(false, con, func, type, arg, tag);
-}
-
-extern void requeue_deferred_work(void)
-{
-	if (mgr.quiesced)
-		return;
-
-	(void) list_transfer(mgr.work, mgr.deferred_work);
 }
