@@ -88,7 +88,7 @@ static void _wrap_work(void *x)
 	work_t *work = x;
 	conmgr_fd_t *con = work->con;
 
-	log_flag(NET, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
+	log_flag(CONMGR, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
 		 (con ? "] " : ""), (uintptr_t) work, work->tag,
 		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
@@ -111,7 +111,7 @@ static void _wrap_work(void *x)
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
 	}
 
-	log_flag(NET, "%s: %s%s%sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
+	log_flag(CONMGR, "%s: %s%s%sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
 		 (con ? "] " : ""), (uintptr_t) work, work->tag,
 		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
@@ -186,7 +186,7 @@ static void _handle_work_pending(work_t *work)
 		if (!con)
 			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
 				    __func__);
-		log_flag(NET, "%s: [%s] work_active=%c queuing \"%s\" pending work: %u total",
+		log_flag(CONMGR, "%s: [%s] work_active=%c queuing \"%s\" pending work: %u total",
 			 __func__, con->name, (con->work_active ? 'T' : 'F'),
 			 work->tag, list_count(con->work));
 		list_append(con->work, work);
@@ -215,13 +215,13 @@ extern void handle_work(bool locked, work_t *work)
 	conmgr_fd_t *con = work->con;
 
 	if (con)
-		log_flag(NET, "%s: [%s] work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: [%s] work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, con->name, (uintptr_t) work,
 			conmgr_work_status_string(work->status),
 			conmgr_work_type_string(work->type),
 			work->tag, (uintptr_t) work->func);
 	else
-		log_flag(NET, "%s: work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, (uintptr_t) work,
 			conmgr_work_status_string(work->status),
 			conmgr_work_type_string(work->type),

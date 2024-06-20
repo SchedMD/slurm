@@ -126,7 +126,7 @@ extern void conmgr_fini(void)
 	slurm_mutex_lock(&mgr.mutex);
 
 	if (!mgr.initialized) {
-		log_flag(NET, "%s: Ignoring duplicate shutdown request",
+		log_flag(CONMGR, "%s: Ignoring duplicate shutdown request",
 			 __func__);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
@@ -139,7 +139,7 @@ extern void conmgr_fini(void)
 	/* run all deferred work if there is any */
 	requeue_deferred_funcs();
 
-	log_flag(NET, "%s: connection manager shutting down", __func__);
+	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
 	close_all_connections();
@@ -189,7 +189,7 @@ extern int conmgr_run(bool blocking)
 	slurm_mutex_lock(&mgr.mutex);
 
 	if (mgr.shutdown_requested) {
-		log_flag(NET, "%s: refusing to run when conmgr is shutdown",
+		log_flag(CONMGR, "%s: refusing to run when conmgr is shutdown",
 			 __func__);
 
 		rc = mgr.error;
@@ -220,7 +220,7 @@ extern int conmgr_run(bool blocking)
 
 extern void conmgr_request_shutdown(void)
 {
-	log_flag(NET, "%s: shutdown requested", __func__);
+	log_flag(CONMGR, "%s: shutdown requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
@@ -230,7 +230,7 @@ extern void conmgr_request_shutdown(void)
 
 extern void conmgr_quiesce(bool wait)
 {
-	log_flag(NET, "%s: quiesce requested", __func__);
+	log_flag(CONMGR, "%s: quiesce requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 	if (mgr.quiesced || mgr.shutdown_requested) {

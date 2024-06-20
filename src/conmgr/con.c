@@ -89,12 +89,12 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->read_eof) {
-		log_flag(NET, "%s: [%s] ignoring duplicate close request",
+		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
 		goto cleanup;
 	}
 
-	log_flag(NET, "%s: [%s] closing input", __func__, con->name);
+	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
 	if (con->is_listen && con->unix_socket &&
@@ -107,17 +107,17 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	if (con->is_listen) {
 		if (close(con->input_fd) == -1)
-			log_flag(NET, "%s: [%s] unable to close listen fd %d: %m",
+			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
 				 __func__, con->name, con->output_fd);
 		con->output_fd = -1;
 	} else if (con->input_fd != con->output_fd) {
 		/* different input FD, we can close it now */
 		if (close(con->input_fd) == -1)
-			log_flag(NET, "%s: [%s] unable to close input fd %d: %m",
+			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
 				 __func__, con->name, con->output_fd);
 	} else if (con->is_socket && shutdown(con->input_fd, SHUT_RD) == -1) {
 		/* shutdown input on sockets */
-		log_flag(NET, "%s: [%s] unable to shutdown read: %m",
+		log_flag(CONMGR, "%s: [%s] unable to shutdown read: %m",
 			 __func__, con->name);
 	}
 
@@ -147,7 +147,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 	/* verify FD is valid and still open */
 	if (fstat(input_fd, &fbuf) == -1) {
-		log_flag(NET, "%s: invalid fd: %m", __func__);
+		log_flag(CONMGR, "%s: invalid fd: %m", __func__);
 		return NULL;
 	}
 
@@ -267,7 +267,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	if (!con->is_listen && con->is_socket)
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
 
-	log_flag(NET, "%s: [%s] new connection input_fd=%u output_fd=%u",
+	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
 		 __func__, con->name, input_fd, output_fd);
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -294,13 +294,13 @@ extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 			       void *arg)
 {
 	if (con->events.on_connection) {
-		log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
 			 (uintptr_t) con->events.on_connection);
 
 		arg = con->events.on_connection(con, con->new_arg);
 
-		log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
 			 (uintptr_t) con->events.on_connection,
 			 (uintptr_t) arg);

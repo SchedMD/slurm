@@ -163,7 +163,7 @@ static int _foreach_add_writev_iov(void *x, void *arg)
 	iov->iov_base = ((void *) get_buf_data(out)) + get_buf_offset(out);
 	iov->iov_len = remaining_buf(out);
 
-	log_flag(NET, "%s: [%s] queued writev[%d] %u/%u bytes to outgoing fd %u",
+	log_flag(CONMGR, "%s: [%s] queued writev[%d] %u/%u bytes to outgoing fd %u",
 		 __func__, args->con->name, args->index, remaining_buf(out),
 		 size_buf(out), args->con->output_fd);
 
@@ -198,7 +198,7 @@ static int _foreach_writev_flush_bytes(void *x, void *arg)
 		args->index++;
 		return 1;
 	} else {
-		log_flag(NET, "%s: [%s] partial write[%d] of %zd/%u bytes to outgoing fd %u",
+		log_flag(CONMGR, "%s: [%s] partial write[%d] of %zd/%u bytes to outgoing fd %u",
 			 __func__, args->con->name, args->index,
 			 args->wrote, size_buf(out), args->con->output_fd);
 		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
@@ -270,7 +270,7 @@ extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (!(out_count = list_count(con->out)))
-		log_flag(NET, "%s: [%s] skipping attempt with zero writes",
+		log_flag(CONMGR, "%s: [%s] skipping attempt with zero writes",
 			 __func__, con->name);
 	else
 		_handle_writev(con, out_count);
@@ -291,7 +291,7 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 	/* override buffer size to only read upto previous offset */
 	con->in->size = avail;
 
-	log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 		 __func__, con->name, (uintptr_t) con->events.on_data,
 		 (uintptr_t) con->arg);
 
@@ -302,7 +302,7 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 	else
 		fatal("%s: invalid type", __func__);
 
-	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
+	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
 		 __func__, con->name, (uintptr_t) con->events.on_data,
 		 (uintptr_t) con->arg, slurm_strerror(rc));
 
@@ -322,7 +322,7 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 		 * processing data failed so drop any
 		 * pending data on the floor
 		 */
-		log_flag(NET, "%s: [%s] on_data callback failed. Purging the remaining %d bytes of pending input.",
+		log_flag(CONMGR, "%s: [%s] on_data callback failed. Purging the remaining %d bytes of pending input.",
 			 __func__, con->name, get_buf_offset(con->in));
 		set_buf_offset(con->in, 0);
 
@@ -345,7 +345,7 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 			set_buf_offset(con->in, remaining_buf(con->in));
 		} else {
 			/* need more data for parser to read */
-			log_flag(NET, "%s: [%s] parser refused to read data. Waiting for more data.",
+			log_flag(CONMGR, "%s: [%s] parser refused to read data. Waiting for more data.",
 				 __func__, con->name);
 			con->on_data_tried = true;
 		}

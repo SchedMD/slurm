@@ -52,7 +52,7 @@ extern void cancel_delayed_work(void)
 	if (mgr.delayed_work && !list_is_empty(mgr.delayed_work)) {
 		work_t *work;
 
-		log_flag(NET, "%s: cancelling %d delayed work",
+		log_flag(CONMGR, "%s: cancelling %d delayed work",
 			 __func__, list_count(mgr.delayed_work));
 
 		/* run everything immediately but with cancelled status */
@@ -125,7 +125,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 			remain_nsec = NO_VAL64;
 		}
 
-		log_flag(NET, "%s: evaluating delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: evaluating delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
 			 __func__, remain_sec,
 			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
 			 work->tag, (uintptr_t) work->func);
@@ -184,13 +184,13 @@ extern void update_timer(bool locked)
 				remain_nsec = NO_VAL64;
 			}
 
-			log_flag(NET, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
+			log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
 				 __func__, remain_sec,
 				 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
 				 work->tag, (uintptr_t) work->func);
 		}
 	} else {
-		log_flag(NET, "%s: disabling conmgr timer", __func__);
+		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
 	}
 
 	if ((rc = timer_settime(mgr.timer, TIMER_ABSTIME, &spec, NULL))) {
@@ -223,7 +223,7 @@ static int _match_work_elapsed(void *x, void *key)
 		trigger = false;
 	}
 
-	log_flag(NET, "%s: %s %s@0x%"PRIxPTR" ETA in %"PRId64"s %"PRId64"ns",
+	log_flag(CONMGR, "%s: %s %s@0x%"PRIxPTR" ETA in %"PRId64"s %"PRId64"ns",
 		 __func__, (trigger ? "triggering" : "deferring"),
 		 work->tag, (uintptr_t) work->func,
 		 remain_sec, (remain_nsec == NO_VAL64 ? 0 : remain_nsec));
@@ -262,7 +262,7 @@ extern void conmgr_add_delayed_work(conmgr_fd_t *con, conmgr_work_func_t func,
 	else
 		work->type = CONMGR_WORK_TYPE_TIME_DELAY_FIFO;
 
-	log_flag(NET, "%s: adding %lds %ldns delayed work %s@0x%"PRIxPTR,
+	log_flag(CONMGR, "%s: adding %lds %ldns delayed work %s@0x%"PRIxPTR,
 		 __func__, seconds, nanoseconds, work->tag,
 		 (uintptr_t) work->func);
 
@@ -303,7 +303,7 @@ static void _handle_timer(void *x)
 		signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 
-	log_flag(NET, "%s: checked all timers and triggered %d/%d delayed work",
+	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
 		 __func__, count, total);
 
 	FREE_NULL_LIST(elapsed);
@@ -313,7 +313,7 @@ extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 			    conmgr_work_status_t status, const char *tag,
 			    void *arg)
 {
-	log_flag(NET, "%s: caught SIGALRM", __func__);
+	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
 	queue_func(false, _handle_timer, NULL, XSTRINGIFY(_handle_timer));
 	signal_change(false);
 }

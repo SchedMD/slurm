@@ -124,11 +124,11 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	if (!rc && msg) {
 		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
 			 __func__, con->name, rpc_num2string(msg->msg_type));
-		log_flag(NET, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name, (uintptr_t) con->events.on_msg,
 			 (uintptr_t) con->arg);
 		rc = con->events.on_msg(con, msg, con->arg);
-		log_flag(NET, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
+		log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
 			 __func__, con->name, (uintptr_t) con->events.on_msg,
 			 (uintptr_t) con->arg, slurm_strerror(rc));
 	}

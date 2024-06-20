@@ -93,7 +93,7 @@ static void _register_signal_handler(int signal)
 		fatal("%s: unable to catch %s: %m",
 		      __func__, strsignal(signal));
 
-	log_flag(NET, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
+	log_flag(CONMGR, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
 		 __func__, sig_num2name(signal), signal,
 		 (uintptr_t) handler->prior.sa_handler,
 		 (uintptr_t) handler->new.sa_handler);
@@ -132,7 +132,7 @@ extern void fini_signal_handler(void)
 		 */
 		xassert(handler->new.sa_handler == _signal_handler);
 
-		log_flag(NET, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
 			 __func__, sig_num2name(handler->signal),
 			 handler->signal,
 			 (uintptr_t) handler->new.sa_handler,
@@ -165,11 +165,11 @@ extern void signal_change(bool locked)
 
 	if (mgr.event_signaled) {
 		mgr.event_signaled++;
-		log_flag(NET, "%s: sent %d times",
+		log_flag(CONMGR, "%s: sent %d times",
 			 __func__, mgr.event_signaled);
 		goto done;
 	} else {
-		log_flag(NET, "%s: sending", __func__);
+		log_flag(CONMGR, "%s: sending", __func__);
 		mgr.event_signaled = 1;
 	}
 
@@ -183,14 +183,14 @@ try_again:
 	END_TIMER2("write to event_fd");
 	if (rc != 1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(NET, "%s: trying again: %m", __func__);
+			log_flag(CONMGR, "%s: trying again: %m", __func__);
 			goto try_again;
 		}
 
 		fatal("%s: unable to signal connection manager: %m", __func__);
 	}
 
-	log_flag(NET, "%s: sent in %s", __func__, TIME_STR);
+	log_flag(CONMGR, "%s: sent in %s", __func__, TIME_STR);
 
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
@@ -230,7 +230,7 @@ static int _read_signal(int fd, const char *con_name)
 
 	if ((rc = fd_get_readable_bytes(fd, &readable, con_name)) ||
 	    !readable) {
-		log_flag(NET, "%s: [%s] no pending bytes to read()",
+		log_flag(CONMGR, "%s: [%s] no pending bytes to read()",
 			 __func__, con_name);
 		return -1;
 	}
@@ -246,7 +246,7 @@ static int _read_signal(int fd, const char *con_name)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		char *str = sig_num2name(sig);
-		log_flag(NET, "%s: [%s] got signal: %s(%d)",
+		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
 			 __func__, con_name, str, sig);
 		xfree(str);
 	}
@@ -282,7 +282,7 @@ extern void handle_signals(void *ptr)
 			_on_signal(sig);
 		}
 
-		log_flag(NET, "%s: caught %d signals", __func__, count);
+		log_flag(CONMGR, "%s: caught %d signals", __func__, count);
 
 		slurm_mutex_lock(&mgr.mutex);
 
