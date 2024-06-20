@@ -158,7 +158,7 @@ PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
 am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo io.lo rpc.lo \
-	signals.lo watch.lo workq.lo
+	signals.lo watch.lo work.lo workq.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -188,7 +188,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
 	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/watch.Plo \
-	./$(DEPDIR)/workq.Plo
+	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workq.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -499,6 +499,7 @@ libconmgr_la_SOURCES = \
 	rpc.c \
 	signals.c \
 	watch.c \
+	work.c \
 	workq.c \
 	workq.h
 
@@ -577,6 +578,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/watch.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/work.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -711,6 +713,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
+	-rm -f ./$(DEPDIR)/work.Plo
 	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -764,6 +767,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
+	-rm -f ./$(DEPDIR)/work.Plo
 	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
