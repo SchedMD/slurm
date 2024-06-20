@@ -130,7 +130,7 @@ static void _worker_free(void *x)
 
 	_check_magic_worker(worker);
 
-	log_flag(WORKQ, "%s: [%u] free worker", __func__, worker->id);
+	log_flag(CONMGR, "%s: [%u] free worker", __func__, worker->id);
 
 	worker->magic = ~MAGIC_WORKER;
 	xfree(worker);
@@ -166,7 +166,7 @@ static void _work_delete(void *x)
 
 	_check_magic_work(work);
 
-	log_flag(WORKQ, "%s: free work", __func__);
+	log_flag(CONMGR, "%s: free work", __func__);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
@@ -216,7 +216,7 @@ extern void workq_init(int count)
 		if (workq.threads >= count) {
 			int threads = workq.threads;
 			slurm_mutex_unlock(&workq.mutex);
-			log_flag(WORKQ, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
+			log_flag(CONMGR, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
 				 __func__, count, threads);
 		} else {
 			int prev = workq.threads;
@@ -226,7 +226,7 @@ extern void workq_init(int count)
 			workq.threads = count;
 			slurm_mutex_unlock(&workq.mutex);
 
-			log_flag(WORKQ, "%s: increased thread count from %d to %d",
+			log_flag(CONMGR, "%s: increased thread count from %d to %d",
 				 __func__, prev, count);
 		}
 		return;
@@ -271,14 +271,14 @@ static void _wait_workers_idle(void)
 {
 	slurm_mutex_lock(&workq.mutex);
 	_check_magic_workq();
-	log_flag(WORKQ, "%s: checking %u workers",
+	log_flag(CONMGR, "%s: checking %u workers",
 		 __func__, list_count(workq.work));
 
 	while (workq.active)
 		slurm_cond_wait(&workq.cond, &workq.mutex);
 
 	slurm_mutex_unlock(&workq.mutex);
-	log_flag(WORKQ, "%s: all workers are idle", __func__);
+	log_flag(CONMGR, "%s: all workers are idle", __func__);
 }
 
 static void _wait_work_complete(void)
@@ -286,7 +286,7 @@ static void _wait_work_complete(void)
 	slurm_mutex_lock(&workq.mutex);
 	xassert(workq.shutdown);
 	_check_magic_workq();
-	log_flag(WORKQ, "%s: waiting for %u queued workers",
+	log_flag(CONMGR, "%s: waiting for %u queued workers",
 		 __func__, list_count(workq.work));
 	slurm_mutex_unlock(&workq.mutex);
 
@@ -298,7 +298,7 @@ static void _wait_work_complete(void)
 		slurm_mutex_lock(&workq.mutex);
 		if ((count = list_count(workq.workers)) == 0) {
 			slurm_mutex_unlock(&workq.mutex);
-			log_flag(WORKQ, "%s: all workers are done", __func__);
+			log_flag(CONMGR, "%s: all workers are done", __func__);
 			break;
 		}
 		worker = list_peek(workq.workers);
@@ -306,7 +306,7 @@ static void _wait_work_complete(void)
 		tid = worker->tid;
 		slurm_mutex_unlock(&workq.mutex);
 
-		log_flag(WORKQ, "%s: waiting on %d workers", __func__, count);
+		log_flag(CONMGR, "%s: waiting on %d workers", __func__, count);
 		slurm_thread_join(tid);
 	}
 }
@@ -316,7 +316,7 @@ extern void workq_quiesce(void)
 	slurm_mutex_lock(&workq.mutex);
 	_check_magic_workq();
 
-	log_flag(WORKQ, "%s: shutting down with %u queued jobs",
+	log_flag(CONMGR, "%s: shutting down with %u queued jobs",
 		 __func__, list_count(workq.work));
 
 	/* notify of shutdown */
@@ -409,13 +409,13 @@ static void *_worker(void *arg)
 				/* give up lock as we are about to be deleted */
 				slurm_mutex_unlock(&workq.mutex);
 
-				log_flag(WORKQ, "%s: [%u] shutting down",
+				log_flag(CONMGR, "%s: [%u] shutting down",
 					 __func__, worker->id);
 				_worker_delete(worker);
 				break;
 			}
 
-			log_flag(WORKQ, "%s: [%u] waiting for work. Current active workers %u/%u",
+			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
 				 __func__, worker->id, workq.active,
 				 workq.total);
 			slurm_cond_wait(&workq.cond, &workq.mutex);
@@ -426,7 +426,7 @@ static void *_worker(void *arg)
 		/* got work, run it! */
 		workq.active++;
 
-		log_flag(WORKQ, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
+		log_flag(CONMGR, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
 			 __func__, worker->id, work->tag, workq.active,
 			 workq.total, list_count(workq.work));
 
@@ -440,7 +440,7 @@ static void *_worker(void *arg)
 
 		workq.active--;
 
-		log_flag(WORKQ, "%s: [%u->%s] finished active_workers=%u/%u queue=%u",
+		log_flag(CONMGR, "%s: [%u->%s] finished active_workers=%u/%u queue=%u",
 			 __func__, worker->id, work->tag, workq.active,
 			 workq.total, list_count(workq.work));
 
