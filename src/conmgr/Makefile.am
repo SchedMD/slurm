@@ -14,6 +14,7 @@ libconmgr_la_SOURCES = \
 	delayed.c \
 	mgr.h \
 	signals.c \
+	watch.c \
 	workq.c \
 	workq.h
 
