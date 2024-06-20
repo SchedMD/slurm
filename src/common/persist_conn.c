@@ -644,6 +644,8 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      __func__);
 			}
 			fd_close(&persist_conn->fd);
+			if (!errno)
+				errno = SLURM_ERROR;
 			goto end_it;
 		}
 		memset(&msg, 0, sizeof(persist_msg_t));
