@@ -851,13 +851,18 @@ static void _handle_listen_conns(poll_args_t **listen_args_p, int conn_count)
 			    _handle_connection, NULL);
 
 	if (!mgr.listen_active) {
+		xassert(conn_count >= 0);
+
 		/* only try to listen if number connections is below limit */
 		if (conn_count >= mgr.max_connections)
 			log_flag(CONMGR, "%s: deferring accepting new connections until count is below max: %u/%u",
 				 __func__, conn_count, mgr.max_connections);
-		else { /* request a listen thread to run */
-			log_flag(CONMGR, "%s: queuing up listen",
+		else if (!conn_count) {
+			log_flag(CONMGR, "%s: skipping listen() due to no listening connections",
 				 __func__);
+		} else { /* request a listen thread to run */
+			log_flag(CONMGR, "%s: queuing up listen for %d connections",
+				 __func__, conn_count);
 			mgr.listen_active = true;
 			add_work(true, NULL, _listen, CONMGR_WORK_TYPE_FIFO,
 				 *listen_args_p, XSTRINGIFY(_listen));
