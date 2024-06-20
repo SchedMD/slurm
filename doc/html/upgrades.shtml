@@ -17,6 +17,7 @@ potential complications to prepare for.</p>
 <li><a href="#prerelease">Pre-release versions</a></li>
 </ul></li>
 <li><a href="#revert">Reverting an Upgrade</a></li>
+<li><a href="#minor_upgrades">Minor upgrades</a></li>
 <li><a href="#procedure">Upgrade procedure</a>
 <ul>
 <li><a href="#preparation">Preparation</a></li>
@@ -168,6 +169,16 @@ In particular, restoring the contents of <i>StateSaveLocation</i> (as defined in
 <i>slurm.conf</i>) and (if configured) the accounting database will be required
 if you wish to revert an upgrade. Reverting an upgrade will wipe out anything
 that happened after the backups were created.</p>
+
+<h2 id="minor_upgrades">Minor upgrades
+<a class="slurm_link" href="#minor_upgrades"></a></h2>
+
+<p>When upgrading to a newer minor maintenance release (as
+<a href="#release_cycle">defined above</a>), we recommend following the same
+upgrade procedure as with major releases. You will find that the process takes
+less time, and is more accommodating of mixed versions and in-place
+downgrades. However, you should always have current backups to solidify your
+recovery options.</p>
 
 <h2 id="procedure">Upgrade procedure
 <a class="slurm_link" href="#procedure"></a></h2>
