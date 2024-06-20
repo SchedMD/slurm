@@ -16,8 +16,6 @@ libcommon_la_SOURCES =				\
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
-	conmgr.c				\
-	conmgr.h				\
 	core_array.c				\
 	core_array.h				\
 	cpu_frequency.c				\

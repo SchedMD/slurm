@@ -60,7 +60,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/fd.h"
@@ -84,6 +83,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_profile.h"

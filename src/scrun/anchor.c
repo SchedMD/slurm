@@ -54,7 +54,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -70,6 +69,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
 

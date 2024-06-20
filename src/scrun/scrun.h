@@ -39,7 +39,8 @@
 #include <pty.h>
 #include <termios.h>
 
-#include "src/common/conmgr.h"
+#include "src/conmgr/conmgr.h"
+
 #include "src/common/data.h"
 #include "src/common/oci_config.h"
 

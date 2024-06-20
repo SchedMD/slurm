@@ -54,7 +54,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/conmgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -67,6 +66,8 @@
 #include "src/common/workq.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"

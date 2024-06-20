@@ -37,7 +37,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/conmgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/net.h"
@@ -49,6 +48,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
 

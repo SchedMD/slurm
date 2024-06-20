@@ -68,7 +68,6 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
-#include "src/common/conmgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -96,6 +95,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
