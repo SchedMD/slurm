@@ -44,7 +44,6 @@
 #include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 
 #define WORKQ_DEFAULT                                \
 	(struct workq_s) {                           \
