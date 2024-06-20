@@ -33,6 +33,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * Note: Only src/conmgr/(*).c should include this header. Everything else should
+ * only include src/conmgr/conmgr.h for the exported functions and structs.
+ */
+
 #ifndef _CONMGR_MGR_H
 #define _CONMGR_MGR_H
 
