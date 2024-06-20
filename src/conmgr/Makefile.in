@@ -157,8 +157,8 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = conmgr.lo delayed.lo io.lo rpc.lo signals.lo \
-	watch.lo workq.lo
+am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo io.lo rpc.lo \
+	signals.lo watch.lo workq.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -185,9 +185,10 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/conmgr.Plo ./$(DEPDIR)/delayed.Plo \
-	./$(DEPDIR)/io.Plo ./$(DEPDIR)/rpc.Plo ./$(DEPDIR)/signals.Plo \
-	./$(DEPDIR)/watch.Plo ./$(DEPDIR)/workq.Plo
+am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
+	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/rpc.Plo \
+	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/watch.Plo \
+	./$(DEPDIR)/workq.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -489,6 +490,7 @@ CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libconmgr.la
 libconmgr_la_SOURCES = \
+	con.c \
 	conmgr.c \
 	conmgr.h \
 	delayed.c \
@@ -568,6 +570,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/con.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/delayed.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@ # am--include-marker
@@ -701,7 +704,8 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/conmgr.Plo
+		-rm -f ./$(DEPDIR)/con.Plo
+	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
@@ -753,7 +757,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/conmgr.Plo
+		-rm -f ./$(DEPDIR)/con.Plo
+	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo

@@ -9,6 +9,7 @@ noinst_PROGRAMS = libconmgr.o
 noinst_LTLIBRARIES = libconmgr.la
 
 libconmgr_la_SOURCES = \
+	con.c \
 	conmgr.c \
 	conmgr.h \
 	delayed.c \
