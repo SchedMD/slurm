@@ -4754,6 +4754,7 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 				      slurm_selected_step_t *filter_id,
 				      signal_jobs_args_t *signal_args)
 {
+	bool is_pending_meta_record_with_tasks;
 	uid_t auth_uid = signal_args->auth_uid;
 
 	if (!_signal_job_matches_filter(job_ptr, signal_args))
@@ -4778,9 +4779,13 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 		return;
 	}
 
+	is_pending_meta_record_with_tasks = (IS_JOB_PENDING(job_ptr) &&
+					     job_ptr->array_recs &&
+					     job_ptr->array_recs->task_cnt);
+
 	if (filter_id && !filter_id->array_bitmap &&
 	    (filter_id->array_task_id != NO_VAL) &&
-	    IS_JOB_PENDING(job_ptr) && job_ptr->array_recs) {
+	    is_pending_meta_record_with_tasks) {
 		/*
 		 * A pending job array task that has not been split from the
 		 * meta array record.
@@ -4798,7 +4803,7 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 
 		list_append(signal_args->pending_array_task_list, atf);
 	} else if (filter_id && filter_id->array_bitmap &&
-		   IS_JOB_PENDING(job_ptr) && job_ptr->array_recs) {
+		   is_pending_meta_record_with_tasks) {
 		/* A job array expression with pending array tasks */
 		array_task_filter_t *atf = xmalloc(sizeof(*atf));
 
