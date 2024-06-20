@@ -46,53 +46,9 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/workq.h"
+#include "src/conmgr/mgr.h"
 
-#define WORKQ_DEFAULT                                \
-	(struct workq_s) {                           \
-		.mutex = PTHREAD_MUTEX_INITIALIZER,  \
-		.cond = PTHREAD_COND_INITIALIZER,    \
-		.shutdown = true,                    \
-	}
-
-struct workq_s {
-	/* list of workq_worker_t */
-	list_t *workers;
-	/* list of workq_work_t */
-	list_t *work;
-
-	/* track simple stats for logging */
-	int active;
-	int total;
-
-	/* manger is actively shutting down */
-	bool shutdown;
-
-	/* number of threads */
-	int threads;
-
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
-} workq = WORKQ_DEFAULT;
-
-typedef struct {
-	int magic;
-	work_func_t func;
-	void *arg;
-	/* tag for logging */
-	const char *tag;
-} workq_work_t;
-
-typedef struct {
-	int magic;
-	/* thread id of worker */
-	pthread_t tid;
-	/* unique id for tracking */
-	int id;
-} workq_worker_t;
-
-#define MAGIC_WORKQ 0xD23424EF
-#define MAGIC_WORKER 0xD2342412
-#define MAGIC_WORK 0xD23AB412
+workq_t workq = WORKQ_DEFAULT;
 
 static void *_worker(void *arg);
 
@@ -112,7 +68,7 @@ static void _check_magic_worker(workq_worker_t *worker)
 static void _check_magic_work(workq_work_t *work)
 {
 	xassert(work);
-	xassert(work->magic == MAGIC_WORK);
+	xassert(work->magic == MAGIC_WORKQ_WORK);
 	xassert(work->func);
 }
 
@@ -168,7 +124,7 @@ static void _work_delete(void *x)
 
 	log_flag(CONMGR, "%s: free work", __func__);
 
-	work->magic = ~MAGIC_WORK;
+	work->magic = ~MAGIC_WORKQ_WORK;
 	xfree(work);
 }
 
@@ -364,7 +320,7 @@ extern int workq_add_work(work_func_t func, void *arg, const char *tag)
 
 	workq_work_t *work = xmalloc(sizeof(*work));
 
-	work->magic = MAGIC_WORK;
+	work->magic = MAGIC_WORKQ_WORK;
 	work->func = func;
 	work->arg = arg;
 	work->tag = tag;

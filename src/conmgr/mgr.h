@@ -170,6 +170,53 @@ typedef struct {
 	const char *tag;
 } deferred_func_t;
 
+typedef struct {
+#define MAGIC_WORKQ_WORK 0xD23AB412
+	int magic; /* MAGIC_WORKQ_WORK */
+	work_func_t func;
+	void *arg;
+	/* tag for logging */
+	const char *tag;
+} workq_work_t;
+
+typedef struct {
+#define MAGIC_WORKER 0xD2342412
+	int magic; /* MAGIC_WORKER */
+	/* thread id of worker */
+	pthread_t tid;
+	/* unique id for tracking */
+	int id;
+} workq_worker_t;
+
+#define WORKQ_DEFAULT                                \
+	(workq_t) {                                  \
+		.mutex = PTHREAD_MUTEX_INITIALIZER,  \
+		.cond = PTHREAD_COND_INITIALIZER,    \
+		.shutdown = true,                    \
+	}
+
+typedef struct {
+	/* list of workq_worker_t */
+	list_t *workers;
+	/* list of workq_work_t */
+	list_t *work;
+
+	/* track simple stats for logging */
+	int active;
+	int total;
+
+	/* manger is actively shutting down */
+	bool shutdown;
+
+	/* number of threads */
+	int threads;
+
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+} workq_t;
+
+extern workq_t workq;
+
 /*
  * Global instance of conmgr
  */
