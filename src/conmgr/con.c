@@ -275,6 +275,9 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		list_append(mgr.listen_conns, con);
 	else
 		list_append(mgr.connections, con);
+
+	/* break out of poll() to add new connections */
+	signal_change(true);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return con;
