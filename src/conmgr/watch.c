@@ -992,6 +992,24 @@ static bool _watch_loop(poll_args_t **listen_args_p, poll_args_t **poll_args_p)
 		return true;
 	}
 
+	if (!work) {
+		const int non_watch_workers =
+			(mgr.workers.active - mgr.watch_on_worker);
+
+		/*
+		 * Avoid watch() ending if there are any other active workers or
+		 * any queued work.
+		 */
+
+		if ((non_watch_workers > 0) || !list_is_empty(mgr.work)) {
+			/* Need to wait for all work to complete */
+			work = true;
+			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
+				 __func__, non_watch_workers,
+				 list_count(mgr.work));
+		}
+	}
+
 	if (work) {
 		/* wait until something happens */
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
