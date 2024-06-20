@@ -72,10 +72,4 @@ extern void workq_fini(void);
 extern int workq_add_work(bool locked, work_func_t func, void *arg,
 			  const char *tag);
 
-/*
- * Grab copy of the workq active count
- * IN locked - true if conmgr is already locked by caller
- */
-extern int workq_get_active(bool locked);
-
 #endif /* SLURMRESTD_WORKQ_H */

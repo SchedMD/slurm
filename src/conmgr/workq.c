@@ -362,17 +362,3 @@ static void *_worker(void *arg)
 
 	return NULL;
 }
-
-extern int workq_get_active(bool locked)
-{
-	int active;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-	_check_magic_workq();
-	active = mgr.workq.active;
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-	return active;
-}
