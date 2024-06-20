@@ -294,5 +294,13 @@ extern void fini_signal_handler(void);
 extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
 			    const char *tag);
 extern void handle_signals(void *ptr);
+extern void cancel_delayed_work(void);
+extern void free_delayed_work(void);
+extern void update_timer(bool locked);
+extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
+			    conmgr_work_status_t status, const char *tag,
+			    void *arg);
+extern void handle_work(bool locked, work_t *work);
+extern void update_last_time(bool locked);
 
 #endif /* _CONMGR_MGR_H */
