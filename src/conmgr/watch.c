@@ -542,7 +542,7 @@ again:
 			 * signal that something might have happened and to
 			 * restart listening
 			 * */
-			signal_change(true);
+			signal_change(true, __func__);
 			slurm_mutex_unlock(&mgr.mutex);
 		} else
 			/* FD probably got closed between poll start and now */
@@ -766,7 +766,7 @@ static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
 cleanup:
 	xfree(listen_args.fds);
 	mgr.listen_active = false;
-	signal_change(true);
+	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -813,7 +813,7 @@ static void _handle_complete_conns(void)
 		 *
 		 * Send signal to break out of any active poll()s.
 		 */
-		signal_change(true);
+		signal_change(true, __func__);
 	} else {
 		conmgr_fd_t *con;
 
@@ -949,7 +949,7 @@ static bool _watch_loop(void)
 			 * poll() hasn't returned yet so signal it to
 			 * stop again and wait for the thread to return
 			 */
-			signal_change(true);
+			signal_change(true, __func__);
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 			return true;
 		}
@@ -979,7 +979,7 @@ static bool _watch_loop(void)
 		 * poll() hasn't returned yet so signal it to stop again
 		 * and wait for the thread to return
 		 */
-		signal_change(true);
+		signal_change(true, __func__);
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		return true;
 	}
@@ -1009,7 +1009,7 @@ static bool _watch_loop(void)
 	}
 
 	log_flag(CONMGR, "%s: cleaning up", __func__);
-	signal_change(true);
+	signal_change(true, __func__);
 
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);

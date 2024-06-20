@@ -231,7 +231,7 @@ extern void conmgr_request_shutdown(void)
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
-	signal_change(true);
+	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -246,7 +246,7 @@ extern void conmgr_quiesce(bool wait)
 	}
 
 	mgr.quiesced = true;
-	signal_change(true);
+	signal_change(true, __func__);
 
 	if (wait)
 		wait_for_watch();

@@ -317,7 +317,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
  * Notify conmgr something happened
  * IN locked - mgr.locked is held by caller
  */
-extern void signal_change(bool locked);
+extern void signal_change(bool locked, const char *caller);
 extern void init_signal_handler(void);
 extern void fini_signal_handler(void);
 extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,

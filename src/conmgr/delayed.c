@@ -302,7 +302,7 @@ static void _handle_timer(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 
 	if (count > 0)
-		signal_change(true);
+		signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
@@ -318,5 +318,5 @@ extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
 	add_work(false, NULL, _handle_timer, CONMGR_WORK_TYPE_FIFO, NULL,
 		 XSTRINGIFY(_handle_timer));
-	signal_change(false);
+	signal_change(false, __func__);
 }

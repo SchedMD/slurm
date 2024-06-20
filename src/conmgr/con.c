@@ -124,7 +124,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* forget the now invalid FD */
 	con->input_fd = -1;
 
-	signal_change(true);
+	signal_change(true, __func__);
 cleanup:
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -277,7 +277,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		list_append(mgr.connections, con);
 
 	/* break out of poll() to add new connections */
-	signal_change(true);
+	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return con;
@@ -358,7 +358,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	signal_change(false);
+	signal_change(false, __func__);
 
 	return SLURM_SUCCESS;
 }
@@ -378,7 +378,7 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	signal_change(false);
+	signal_change(false, __func__);
 
 	return SLURM_SUCCESS;
 }

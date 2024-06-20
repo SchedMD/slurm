@@ -164,7 +164,7 @@ extern void fini_signal_handler(void)
 /*
  * Notify connection manager that there has been a change event
  */
-extern void signal_change(bool locked)
+extern void signal_change(bool locked, const char *caller)
 {
 	DEF_TIMERS;
 	char buf[] = "1";
@@ -173,14 +173,16 @@ extern void signal_change(bool locked)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.event_signaled) {
-		mgr.event_signaled++;
-		log_flag(CONMGR, "%s: sent %d times",
-			 __func__, mgr.event_signaled);
+	mgr.event_signaled++;
+	log_flag(CONMGR, "%s: %s() triggered change event (%d events total)",
+		 __func__, caller, mgr.event_signaled);
+
+	if (mgr.event_signaled <= 1) {
+		/*
+		 * skipping send byte to event_fd to break out of poll() as it
+		 * was already done.
+		 */
 		goto done;
-	} else {
-		log_flag(CONMGR, "%s: sending", __func__);
-		mgr.event_signaled = 1;
 	}
 
 	if (!locked)

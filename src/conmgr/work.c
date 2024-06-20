@@ -117,7 +117,7 @@ extern void wrap_work(work_t *work)
 		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
-	signal_change(false);
+	signal_change(false, __func__);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
@@ -232,7 +232,7 @@ extern void handle_work(bool locked, work_t *work)
 			    __func__, work->status);
 	}
 
-	signal_change(true);
+	signal_change(true, __func__);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
