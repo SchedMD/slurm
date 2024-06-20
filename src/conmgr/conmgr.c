@@ -88,7 +88,6 @@
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
 #define MAX_CONNECTIONS_DEFAULT 150
-#define THREAD_COUNT_DEFAULT 10
 #define DEFAULT_READ_BYTES 512
 
 /*
