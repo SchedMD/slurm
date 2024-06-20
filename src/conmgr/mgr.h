@@ -168,15 +168,6 @@ typedef struct {
 } signal_work_t;
 
 typedef struct {
-#define MAGIC_WORKQ_WORK 0xD23AB412
-	int magic; /* MAGIC_WORKQ_WORK */
-	work_func_t func;
-	void *arg;
-	/* tag for logging */
-	const char *tag;
-} workq_work_t;
-
-typedef struct {
 #define MAGIC_WORKER 0xD2342412
 	int magic; /* MAGIC_WORKER */
 	/* thread id of worker */
@@ -285,7 +276,7 @@ typedef struct {
 	struct {
 		/* list of workq_worker_t */
 		list_t *workers;
-		/* list of workq_work_t */
+		/* list of work_t* */
 		list_t *work;
 
 		/* track simple stats for logging */
@@ -391,5 +382,20 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
  * WARNING: caller must hold mgr.mutex
  */
 extern void requeue_deferred_funcs(void);
+
+/*
+ * Add work to workq
+ * IN locked - true if conmgr is already locked by caller
+ * IN work - pointer to work to run
+ * NOTE: never add a thread that will never return or workq_free() will never
+ * return either.
+ * RET SLURM_SUCCESS or error if workq already shutdown
+ */
+extern int workq_add_work(bool locked, work_t *work);
+
+/*
+ * Wrap work requested to notify mgr when that work is complete
+ */
+extern void wrap_work(work_t *work);
 
 #endif /* _CONMGR_MGR_H */

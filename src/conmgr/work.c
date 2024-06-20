@@ -80,13 +80,11 @@ extern const char *conmgr_work_type_string(conmgr_work_type_t type)
 	fatal_abort("%s: invalid work type 0x%x", __func__, type);
 }
 
-/*
- * Wrap work requested to notify mgr when that work is complete
- */
-static void _wrap_work(void *x)
+extern void wrap_work(work_t *work)
 {
-	work_t *work = x;
 	conmgr_fd_t *con = work->con;
+
+	xassert(work->magic == MAGIC_WORK);
 
 	log_flag(CONMGR, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
@@ -128,10 +126,7 @@ static void _wrap_work(void *x)
 /* Single point to queue internal function callback via workq. */
 static void _handle_work_run(work_t *work)
 {
-	if (!mgr.quiesced) {
-		if (workq_add_work(true, _wrap_work, work, work->tag))
-			fatal_abort("%s: workq_add_work() failed", __func__);
-	} else {
+	if (mgr.quiesced || workq_add_work(true, work)) {
 		/*
 		 * Defer all work until conmgr_run() starts as adding new
 		 * connections will call add_work() including on_connection()

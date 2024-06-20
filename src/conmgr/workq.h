@@ -36,15 +36,6 @@
 #ifndef SLURMRESTD_WORKQ_H
 #define SLURMRESTD_WORKQ_H
 
-#include <stdbool.h>
-
-/*
- * Call back for generic work
- *
- * IN arg pointer to data for function
- */
-typedef void (*work_func_t)(void *arg);
-
 /*
  * Initialize workq members
  * IN count - number of workers to add
@@ -58,18 +49,5 @@ extern void workq_init(int count);
  * Note: Caller must hold conmgr lock
  */
 extern void workq_fini(void);
-
-/*
- * Add work to workq
- * IN locked - true if conmgr is already locked by caller
- * IN func - function pointer to run work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or workq_free() will never
- * return either.
- * RET SLURM_SUCCESS or error if workq already shutdown
- */
-extern int workq_add_work(bool locked, work_func_t func, void *arg,
-			  const char *tag);
 
 #endif /* SLURMRESTD_WORKQ_H */

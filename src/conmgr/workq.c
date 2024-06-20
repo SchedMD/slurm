@@ -63,13 +63,6 @@ static void _check_magic_worker(workq_worker_t *worker)
 	xassert(worker->id > 0);
 }
 
-static void _check_magic_work(workq_work_t *work)
-{
-	xassert(work);
-	xassert(work->magic == MAGIC_WORKQ_WORK);
-	xassert(work->func);
-}
-
 static int _find_worker(void *x, void *arg)
 {
 	return (x == arg);
@@ -108,21 +101,6 @@ static void _worker_delete(void *x)
 	xassert(worker == x);
 
 	_worker_free(worker);
-}
-
-static void _work_delete(void *x)
-{
-	workq_work_t *work = x;
-
-	if (!work)
-		return;
-
-	_check_magic_work(work);
-
-	log_flag(CONMGR, "%s: free work", __func__);
-
-	work->magic = ~MAGIC_WORKQ_WORK;
-	xfree(work);
 }
 
 static void _increase_thread_count(int count)
@@ -173,7 +151,7 @@ extern void workq_init(int count)
 	xassert(!mgr.workq.workers);
 	mgr.workq.workers = list_create(_worker_free);
 	xassert(!mgr.workq.work);
-	mgr.workq.work = list_create(_work_delete);
+	mgr.workq.work = list_create(NULL);
 	mgr.workq.threads = count;
 
 	_check_magic_workq();
@@ -263,19 +241,11 @@ extern void workq_fini(void)
 	mgr.workq.threads = 0;
 }
 
-extern int workq_add_work(bool locked, work_func_t func, void *arg,
-			  const char *tag)
+extern int workq_add_work(bool locked, work_t *work)
 {
 	int rc = SLURM_SUCCESS;
 
-	workq_work_t *work = xmalloc(sizeof(*work));
-
-	work->magic = MAGIC_WORKQ_WORK;
-	work->func = func;
-	work->arg = arg;
-	work->tag = tag;
-
-	_check_magic_work(work);
+	xassert(work->magic == MAGIC_WORK);
 
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
@@ -290,9 +260,6 @@ extern int workq_add_work(bool locked, work_func_t func, void *arg,
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
 
-	if (rc)
-		_work_delete(work);
-
 	return rc;
 }
 
@@ -306,7 +273,8 @@ static void *_worker(void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	while (true) {
-		workq_work_t *work = NULL;
+		work_t *work = NULL;
+
 		slurm_mutex_lock(&mgr.mutex);
 
 		work = list_pop(mgr.workq.work);
@@ -331,6 +299,8 @@ static void *_worker(void *arg)
 			continue;
 		}
 
+		xassert(work->magic == MAGIC_WORK);
+
 		/* got work, run it! */
 		mgr.workq.active++;
 
@@ -340,22 +310,20 @@ static void *_worker(void *arg)
 
 		slurm_mutex_unlock(&mgr.mutex);
 
-		/* run work now */
-		_check_magic_work(work);
-		work->func(work->arg);
+		/* run work via wrap_work() which will xfree(work) */
+		wrap_work(work);
+		work = NULL;
 
 		slurm_mutex_lock(&mgr.mutex);
 
 		mgr.workq.active--;
 
-		log_flag(CONMGR, "%s: [%u->%s] finished active_workers=%u/%u queue=%u",
-			 __func__, worker->id, work->tag, mgr.workq.active,
+		log_flag(CONMGR, "%s: [%u] finished active_workers=%u/%u queue=%u",
+			 __func__, worker->id, mgr.workq.active,
 			 mgr.workq.total, list_count(mgr.workq.work));
 
 		slurm_cond_broadcast(&mgr.cond);
 		slurm_mutex_unlock(&mgr.mutex);
-
-		_work_delete(work);
 	}
 
 	return NULL;
