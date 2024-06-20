@@ -157,7 +157,7 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = conmgr.lo
+am_libconmgr_la_OBJECTS = conmgr.lo workq.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -184,7 +184,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/conmgr.Plo
+am__depfiles_remade = ./$(DEPDIR)/conmgr.Plo ./$(DEPDIR)/workq.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -487,7 +487,9 @@ AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libconmgr.la
 libconmgr_la_SOURCES = \
 	conmgr.c \
-	conmgr.h
+	conmgr.h \
+	workq.c \
+	workq.h
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
@@ -558,6 +560,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -685,6 +688,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/conmgr.Plo
+	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -731,6 +735,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/conmgr.Plo
+	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

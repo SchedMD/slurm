@@ -179,9 +179,9 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
 	stepd_api.lo strlcpy.lo strnatcmp.lo timers.lo track_script.lo \
 	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
-	working_cluster.lo workq.lo write_labelled_message.lo \
-	x11_util.lo xassert.lo xahash.lo xhash.lo xmalloc.lo xregex.lo \
-	xsystemd.lo xsignal.lo xstring.lo
+	working_cluster.lo write_labelled_message.lo x11_util.lo \
+	xassert.lo xahash.lo xhash.lo xmalloc.lo xregex.lo xsystemd.lo \
+	xsignal.lo xstring.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -252,7 +252,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
 	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
 	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
-	./$(DEPDIR)/working_cluster.Plo ./$(DEPDIR)/workq.Plo \
+	./$(DEPDIR)/working_cluster.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xhash.Plo \
@@ -723,8 +723,6 @@ libcommon_la_SOURCES = \
 	util-net.h				\
 	working_cluster.c			\
 	working_cluster.h			\
-	workq.c					\
-	workq.h					\
 	write_labelled_message.c		\
 	write_labelled_message.h		\
 	x11_util.c				\
@@ -895,7 +893,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util-net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_util.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash.Plo@am__quote@ # am--include-marker
@@ -1111,7 +1108,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/uid.Plo
 	-rm -f ./$(DEPDIR)/util-net.Plo
 	-rm -f ./$(DEPDIR)/working_cluster.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xahash.Plo
@@ -1247,7 +1243,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/uid.Plo
 	-rm -f ./$(DEPDIR)/util-net.Plo
 	-rm -f ./$(DEPDIR)/working_cluster.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xahash.Plo

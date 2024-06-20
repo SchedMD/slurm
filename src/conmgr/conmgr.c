@@ -71,12 +71,12 @@
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/util-net.h"
-#include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/workq.h"
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
 #define MAGIC_WORK 0xD231444A

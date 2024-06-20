@@ -10,7 +10,9 @@ noinst_LTLIBRARIES = libconmgr.la
 
 libconmgr_la_SOURCES = \
 	conmgr.c \
-	conmgr.h
+	conmgr.h \
+	workq.c \
+	workq.h
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
