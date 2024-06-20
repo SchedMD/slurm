@@ -12,6 +12,7 @@ libconmgr_la_SOURCES = \
 	conmgr.c \
 	conmgr.h \
 	mgr.h \
+	signals.c \
 	workq.c \
 	workq.h
 

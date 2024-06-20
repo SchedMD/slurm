@@ -157,7 +157,7 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = conmgr.lo workq.lo
+am_libconmgr_la_OBJECTS = conmgr.lo signals.lo workq.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -184,7 +184,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/conmgr.Plo ./$(DEPDIR)/workq.Plo
+am__depfiles_remade = ./$(DEPDIR)/conmgr.Plo ./$(DEPDIR)/signals.Plo \
+	./$(DEPDIR)/workq.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -489,6 +490,7 @@ libconmgr_la_SOURCES = \
 	conmgr.c \
 	conmgr.h \
 	mgr.h \
+	signals.c \
 	workq.c \
 	workq.h
 
@@ -561,6 +563,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -689,6 +692,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/conmgr.Plo
+	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -736,6 +740,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/conmgr.Plo
+	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
