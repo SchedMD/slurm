@@ -117,8 +117,6 @@ extern void wrap_work(work_t *work)
 		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
-	signal_change(false, __func__);
-
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
 }
