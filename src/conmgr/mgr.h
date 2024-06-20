@@ -300,9 +300,6 @@ typedef struct {
 
 		/* number of threads */
 		int threads;
-
-		pthread_mutex_t mutex;
-		pthread_cond_t cond;
 	} workq;
 } conmgr_t;
 
@@ -320,8 +317,6 @@ typedef struct {
 		.shutdown_requested = true,\
 		.workq = { \
 			.shutdown = true, \
-			.mutex = PTHREAD_MUTEX_INITIALIZER,\
-			.cond = PTHREAD_COND_INITIALIZER,\
 		}, \
 	}
 

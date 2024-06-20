@@ -132,7 +132,7 @@ extern void queue_func(bool locked, work_func_t func, void *arg,
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (!mgr.quiesced) {
-		if (workq_add_work(func, arg, tag))
+		if (workq_add_work(true, func, arg, tag))
 			fatal_abort("%s: workq_add_work() failed", __func__);
 	} else {
 		/*
