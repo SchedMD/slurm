@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
     Fix canceling the final array task in a job array when the task is pending
     and all array tasks have been split into separate job records. Previously
     this task was not canceled.
+ -- Fix power_save operation after recovering from a failed reconfigure.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -422,6 +423,7 @@ documents those changes that are of interest to users and administrators.
       'associations/max/tres/total'
       'associations/max/tres/minutes/per/job'
       'associations/max/tres/minutes/total'
+ -- Fix power_save operation after recovering from a failed reconfigure.
 
 * Changes in Slurm 23.11.8
 ==========================
