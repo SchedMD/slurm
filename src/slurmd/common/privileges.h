@@ -46,7 +46,7 @@ struct priv_state {
 };
 
 extern int drop_privileges(stepd_step_rec_t *step, bool do_setuid,
-			   struct priv_state *state, bool get_list);
-extern int reclaim_privileges(struct priv_state *state);
+			   struct priv_state *ps, bool get_list);
+extern int reclaim_privileges(struct priv_state *ps);
 
 #endif
