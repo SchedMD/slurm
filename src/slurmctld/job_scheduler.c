@@ -2348,15 +2348,16 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		goto job_failed;
 	}
 
+	_split_env(launch_msg_ptr);
+
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		xrealloc(launch_msg_ptr->environment,
-			 sizeof(char *) * (launch_msg_ptr->envc + 1));
 		env_array_overwrite(&launch_msg_ptr->environment,
 				    "SLURM_STEPMGR", job_ptr->batch_host);
-		launch_msg_ptr->envc++;
+		/* Update envc if env was added to */
+		launch_msg_ptr->envc =
+			PTR_ARRAY_SIZE(launch_msg_ptr->environment) - 1;
 	}
 
-	_split_env(launch_msg_ptr);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(
@@ -2479,9 +2480,6 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 		return;
 	}
 
-	/* "environment" needs NULL terminator */
-	xrealloc(launch_msg_ptr->environment,
-		 sizeof(char *) * (launch_msg_ptr->envc + 1));
 	iter = list_iterator_create(het_job_leader->het_job_list);
 	while ((het_job = list_next(iter))) {
 		uint16_t cpus_per_task = 1;

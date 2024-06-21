@@ -8075,7 +8075,7 @@ static int _read_data_array_from_file(int fd, char *file_name, char ***data,
 	}
 
 	/* We have all the data, now let's compute the pointers */
-	array_ptr = xcalloc((rec_cnt + job_ptr->details->env_cnt),
+	array_ptr = xcalloc((rec_cnt + job_ptr->details->env_cnt) + 1,
 			    sizeof(char *));
 	for (i = 0, pos = 0; i < rec_cnt; i++) {
 		array_ptr[i] = &buffer[pos];

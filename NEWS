@@ -120,6 +120,7 @@ documents those changes that are of interest to users and administrators.
     Slurm's internal cache.
  -- Fix memory leak in the controller when relaying stepmgr step accounting to
     the dbd.
+ -- Fix segfault when submitting stepmgr jobs within an existing allocation.
 
 * Changes in Slurm 24.05.0
 ==========================

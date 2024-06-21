@@ -377,8 +377,11 @@
 #define FUZZY_EPSILON 0.00001
 #define fuzzy_equal(v1, v2) ((((v1)-(v2)) > -FUZZY_EPSILON) && (((v1)-(v2)) < FUZZY_EPSILON))
 
-/* Number of elements in an array */
+/* Number of elements in a static array */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+/* Number of elements in an allocated array */
+#define PTR_ARRAY_SIZE(x) (xsize(x) / sizeof((x)[0]))
 
 #define SWAP(x, y)		\
 do {				\
