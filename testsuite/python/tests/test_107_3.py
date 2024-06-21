@@ -24,9 +24,9 @@ wckey = f"{test_name}_wckey1"
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    # Test needs to run a 3 het job with 2 components and 4 jobs in 3 nodes and 9 parallel tasks of an arrary
-    # We need 9 nodes to be able to run with select_linear, and 7+ CPUs per node
-    atf.require_nodes(9, [("CPUs", 8), ("RealMemory", 100)])
+    # Test needs to run a 2 het job with 3 components, 2 jobs, 2 arrays of 3 jobs, and 2 arrays with 2 jobs.
+    # We need 18 nodes to be able to run with select_linear, and 7+ CPUs per node
+    atf.require_nodes(18, [("CPUs", 8), ("RealMemory", 100)])
     atf.require_accounting(True)
     atf.require_config_parameter("TrackWcKey", "yes")
     atf.require_config_parameter("TrackWcKey", "yes", source="slurmdbd")
@@ -63,9 +63,9 @@ def setup():
 # Cancel all jobs before and after the test
 @pytest.fixture(scope="function", autouse=True)
 def cancel_jobs():
-    atf.cancel_all_jobs(quiet=True)
+    atf.cancel_all_jobs()
     yield
-    atf.cancel_all_jobs(quiet=True)
+    atf.cancel_all_jobs()
 
 
 #
@@ -82,6 +82,7 @@ def setup_partitions():
 
     yield
 
+    atf.cancel_all_jobs()
     for part in partitions:
         atf.run_command(
             f"scontrol delete partitionname={part}",
@@ -105,6 +106,7 @@ def setup_qos():
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i mod user {user_name} set qos-={qos1},{qos2}",
         user=atf.properties["slurm-user"],
@@ -127,6 +129,7 @@ def setup_reservations():
 
     yield
 
+    atf.cancel_all_jobs()
     for resv in reservations:
         atf.run_command(
             f"scontrol delete reservationname={resv}",
@@ -144,6 +147,7 @@ def setup_wckeys():
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i del user {user_name} wckey={wckey}",
         user=atf.properties["slurm-user"],
@@ -231,158 +235,162 @@ def run_scancel(opt, opt_filter, job_list):
     atf.run_command(f"scancel --ctld --{opt}={opt_filter} {jobs_str}")
 
 
+# Parameters of test_filter and test_filter_hetjob
+parameters = [
+    # Test --account
+    (None, "account", acct1, "account", acct1, acct2, "RUNNING", "RUNNING"),
+    # Test --jobname
+    (None, "jobname", name1, "job-name", name1, name2, "RUNNING", "RUNNING"),
+    # Test --nodelist with single node (only works for running)
+    (
+        None,
+        "nodelist",
+        nodes[0],
+        "nodelist",
+        nodes[0],
+        nodes[1],
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test multi-node nodelist (scancel --nodelist only works for running)
+    (
+        None,
+        "nodelist",
+        nodes[0],
+        "nodelist",
+        f"{nodes[0]},{nodes[1]}",
+        f"{nodes[1]},{nodes[2]}",
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test qos
+    ("setup_qos", "qos", qos1, "qos", qos1, qos2, "RUNNING", "RUNNING"),
+    # Test --wckey
+    # TODO: This wckey testing is very simple. We should also test with DefaultWckey.
+    ("setup_wckeys", "wckey", wckey, "wckey", wckey, "", "RUNNING", "RUNNING"),
+    # Test --reservation with a single reservation for pending jobs
+    (
+        "setup_reservations",
+        "reservation",
+        reservations[0],
+        "reservation",
+        reservations[0],
+        reservations[1],
+        "PENDING",
+        "PENDING",
+    ),
+    # Test --reservation with a single reservation for running jobs
+    (
+        "setup_reservations",
+        "reservation",
+        reservations[0],
+        "reservation",
+        reservations[0],
+        reservations[1],
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test --reservation with multiple reservations for pending jobs
+    (
+        "setup_reservations",
+        "reservation",
+        reservations[0],
+        "reservation",
+        reservations[0] + "," + reservations[1],
+        reservations[1] + "," + reservations[2],
+        "PENDING",
+        "PENDING",
+    ),
+    # Test --reservation with multiple reservation for running jobs
+    # Needs an exclusive job in reservation[1] to ensure that job runs into [0]
+    (
+        "setup_reservations_used",
+        "reservation",
+        reservations[0],
+        "reservation",
+        reservations[0] + "," + reservations[1],
+        reservations[2],
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test --partition with a single partition for pending jobs
+    (
+        "setup_partitions",
+        "partition",
+        partitions[0],
+        "partition",
+        partitions[0],
+        partitions[1],
+        "PENDING",
+        "PENDING",
+    ),
+    # Test --partition with a single partition for running jobs
+    (
+        "setup_partitions",
+        "partition",
+        partitions[0],
+        "partition",
+        partitions[0],
+        partitions[1],
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test --partition with multiple partitions for pending jobs
+    (
+        "setup_partitions",
+        "partition",
+        partitions[0],
+        "partition",
+        partitions[0] + "," + partitions[1],
+        partitions[1] + "," + partitions[2],
+        "PENDING",
+        "PENDING",
+    ),
+    # Test --partition with multiple partitions for running jobs
+    # Needs partition[2] down to ensure that matching jobs run in [0] and
+    # mismatching in [1].
+    (
+        "setup_partition2_down",
+        "partition",
+        partitions[0],
+        "partition",
+        partitions[0] + "," + partitions[2],
+        partitions[1] + "," + partitions[2],
+        "RUNNING",
+        "RUNNING",
+    ),
+    # Test --state for pending in partition[2] and running in partition[0]
+    # Needs partition[2] down to ensure that matching jobs run in [0] and
+    # mismatching in [1].
+    (
+        "setup_partition2_down",
+        "state",
+        "PENDING",
+        "partition",
+        partitions[2],
+        partitions[0],
+        "PENDING",
+        "RUNNING",
+    ),
+    # Test --state for running in partition[0] and pending in partition[2]
+    # Needs partition[2] down to ensure that matching jobs run in [0] and
+    # mismatching in [1].
+    (
+        "setup_partition2_down",
+        "state",
+        "RUNNING",
+        "partition",
+        partitions[0],
+        partitions[2],
+        "RUNNING",
+        "PENDING",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     "fixture,scancel_opt,scancel_val,sbatch_opt,sbatch_match_val,sbatch_mismatch_val,match_job_state,mismatch_job_state",
-    [
-        # Test --account
-        (None, "account", acct1, "account", acct1, acct2, "RUNNING", "RUNNING"),
-        # Test --jobname
-        (None, "jobname", name1, "job-name", name1, name2, "RUNNING", "RUNNING"),
-        # Test --nodelist with single node (only works for running)
-        (
-            None,
-            "nodelist",
-            nodes[0],
-            "nodelist",
-            nodes[0],
-            nodes[1],
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test multi-node nodelist (scancel --nodelist only works for running)
-        (
-            None,
-            "nodelist",
-            nodes[0],
-            "nodelist",
-            f"{nodes[0]},{nodes[1]}",
-            f"{nodes[1]},{nodes[2]}",
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test qos
-        ("setup_qos", "qos", qos1, "qos", qos1, qos2, "RUNNING", "RUNNING"),
-        # Test --wckey
-        # TODO: This wckey testing is very simple. We should also test with DefaultWckey.
-        ("setup_wckeys", "wckey", wckey, "wckey", wckey, "", "RUNNING", "RUNNING"),
-        # Test --reservation with a single reservation for pending jobs
-        (
-            "setup_reservations",
-            "reservation",
-            reservations[0],
-            "reservation",
-            reservations[0],
-            reservations[1],
-            "PENDING",
-            "PENDING",
-        ),
-        # Test --reservation with a single reservation for running jobs
-        (
-            "setup_reservations",
-            "reservation",
-            reservations[0],
-            "reservation",
-            reservations[0],
-            reservations[1],
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test --reservation with multiple reservations for pending jobs
-        (
-            "setup_reservations",
-            "reservation",
-            reservations[0],
-            "reservation",
-            reservations[0] + "," + reservations[1],
-            reservations[1] + "," + reservations[2],
-            "PENDING",
-            "PENDING",
-        ),
-        # Test --reservation with multiple reservation for running jobs
-        # Needs an exclusive job in reservation[1] to ensure that job runs into [0]
-        (
-            "setup_reservations_used",
-            "reservation",
-            reservations[0],
-            "reservation",
-            reservations[0] + "," + reservations[1],
-            reservations[2],
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test --partition with a single partition for pending jobs
-        (
-            "setup_partitions",
-            "partition",
-            partitions[0],
-            "partition",
-            partitions[0],
-            partitions[1],
-            "PENDING",
-            "PENDING",
-        ),
-        # Test --partition with a single partition for running jobs
-        (
-            "setup_partitions",
-            "partition",
-            partitions[0],
-            "partition",
-            partitions[0],
-            partitions[1],
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test --partition with multiple partitions for pending jobs
-        (
-            "setup_partitions",
-            "partition",
-            partitions[0],
-            "partition",
-            partitions[0] + "," + partitions[1],
-            partitions[1] + "," + partitions[2],
-            "PENDING",
-            "PENDING",
-        ),
-        # Test --partition with multiple partitions for running jobs
-        # Needs partition[2] down to ensure that matching jobs run in [0] and
-        # mismatching in [1].
-        (
-            "setup_partition2_down",
-            "partition",
-            partitions[0],
-            "partition",
-            partitions[0] + "," + partitions[2],
-            partitions[1] + "," + partitions[2],
-            "RUNNING",
-            "RUNNING",
-        ),
-        # Test --state for pending in partition[2] and running in partition[0]
-        # Needs partition[2] down to ensure that matching jobs run in [0] and
-        # mismatching in [1].
-        (
-            "setup_partition2_down",
-            "state",
-            "PENDING",
-            "partition",
-            partitions[2],
-            partitions[0],
-            "PENDING",
-            "RUNNING",
-        ),
-        # Test --state for running in partition[0] and pending in partition[2]
-        # Needs partition[2] down to ensure that matching jobs run in [0] and
-        # mismatching in [1].
-        (
-            "setup_partition2_down",
-            "state",
-            "RUNNING",
-            "partition",
-            partitions[0],
-            partitions[2],
-            "RUNNING",
-            "PENDING",
-        ),
-    ],
+    parameters,
 )
 def test_filter(
     request,
@@ -411,9 +419,52 @@ def test_filter(
 
     # Submit jobs
     submit_job(matching_jobs, sbatch_opt, sbatch_match_val, match_job_state)
-    submit_job(matching_jobs, sbatch_opt, sbatch_match_val, match_job_state)
     submit_job(mismatching_jobs, sbatch_opt, sbatch_mismatch_val, mismatch_job_state)
-    submit_job(mismatching_jobs, sbatch_opt, sbatch_mismatch_val, mismatch_job_state)
+
+    # Waiting for jobs
+    wait_for_jobs(matching_jobs, match_job_state, 60)
+    wait_for_jobs(mismatching_jobs, mismatch_job_state, 60)
+
+    # Just to show jobs in the logs
+    atf.run_command_output(
+        f"echo ''; squeue --Format=JobId,Account,Name,Nodelist,Partition,Qos,Reservation,State,UserName,WCKey"
+    )
+
+    # Cancel jobs with --scancel_opt=scancel:val
+    run_scancel(scancel_opt, scancel_val, [])
+
+    # Wait for jobs matching the signal filter to finish
+    # And verify that jobs not matching the signal filter are still in their expected state
+    wait_for_jobs(matching_jobs, "CANCELLED", 10)
+    wait_for_jobs(mismatching_jobs, mismatch_job_state, 60)
+
+
+@pytest.mark.parametrize(
+    "fixture,scancel_opt,scancel_val,sbatch_opt,sbatch_match_val,sbatch_mismatch_val,match_job_state,mismatch_job_state",
+    parameters,
+)
+def test_filter_hetjobs(
+    request,
+    fixture,
+    scancel_opt,
+    scancel_val,
+    sbatch_opt,
+    sbatch_match_val,
+    sbatch_mismatch_val,
+    match_job_state,
+    mismatch_job_state,
+):
+    # Custom fixture may be necessary
+    if fixture is not None:
+        request.getfixturevalue(fixture)
+
+    matching_hetjobs = []
+    mismatching_hetjobs = []
+    het_jobs = []
+
+    logging.info(
+        f"Test scancel --ctld --{scancel_opt}={scancel_val}, sbatch --{sbatch_opt}, job match:{sbatch_match_val}, job mismatch:{sbatch_mismatch_val} for hetjobs"
+    )
 
     # Submit hetjobs
     # There are two special cases to avoid:
@@ -439,10 +490,6 @@ def test_filter(
             het_jobs, sbatch_opt, sbatch_match_val, sbatch_mismatch_val, match_job_state
         )
 
-    # Waiting for jobs
-    wait_for_jobs(matching_jobs, match_job_state, 60)
-    wait_for_jobs(mismatching_jobs, mismatch_job_state, 60)
-
     # Waiting for hetjobs
     if scancel_opt != "nodelist":
         wait_for_jobs(matching_hetjobs, match_job_state, 60)
@@ -459,11 +506,6 @@ def test_filter(
     # Cancel jobs with --scancel_opt=scancel:val
     run_scancel(scancel_opt, scancel_val, [])
 
-    # Wait for jobs matching the signal filter to finish
-    # And verify that jobs not matching the signal filter are still in their expected state
-    wait_for_jobs(matching_jobs, "CANCELLED", 10)
-    wait_for_jobs(mismatching_jobs, mismatch_job_state, 60)
-
     # Same for hetjobs
     if scancel_opt != "nodelist":
         wait_for_jobs(matching_hetjobs, "CANCELLED", 10)
@@ -471,9 +513,6 @@ def test_filter(
     if scancel_opt != "state":
         wait_for_jobs([het_jobs[1]], "CANCELLED", 10)
         wait_for_jobs([het_jobs[0]], mismatch_job_state, 60)
-
-    # Cancel remaining jobs before running the next test.
-    atf.cancel_all_jobs(fatal=True, quiet=True)
 
 
 def test_signal_job_ids():
