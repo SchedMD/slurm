@@ -180,9 +180,11 @@ typedef enum {
  * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
  * IN callbacks - struct containing function pointers
+ * WARNING: Never queue as work for conmgr or call from work run by conmgr.
  */
 extern void conmgr_init(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks);
+/* WARNING: Never queue as work for conmgr or call from work run by conmgr. */
 extern void conmgr_fini(void);
 
 /*
