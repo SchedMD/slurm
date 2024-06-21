@@ -1133,6 +1133,14 @@ extern void config_power_mgr(void)
 	slurm_mutex_unlock(&power_mutex);
 }
 
+extern void config_power_mgr_fini(void)
+{
+	slurm_mutex_lock(&power_mutex);
+	power_save_config = false;
+	_clear_power_config();
+	slurm_mutex_unlock(&power_mutex);
+}
+
 extern void power_save_init(void)
 {
 	slurm_mutex_lock(&power_mutex);
@@ -1247,9 +1255,8 @@ static void *_power_save_thread(void *arg)
 		}
 	}
 
-fini:	_clear_power_config();
+fini:
 	slurm_mutex_lock(&power_mutex);
-	power_save_enabled = false;
 	power_save_started = false;
 	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);

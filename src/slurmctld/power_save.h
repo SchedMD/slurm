@@ -50,6 +50,7 @@ extern list_t *resume_job_list;
  * config_power_mgr - Read power management configuration
  */
 extern void config_power_mgr(void);
+extern void config_power_mgr_fini(void);
 
 extern void power_save_init(void);
 extern void power_save_fini(void);
