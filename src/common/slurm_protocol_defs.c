@@ -5331,8 +5331,8 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
-		xassert(false);
 		error("don't know the rc for type %u returning %u", type, rc);
+		xassert(false);
 		break;
 	}
 	return rc;
