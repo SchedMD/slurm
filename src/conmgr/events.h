@@ -33,7 +33,93 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * Named event based signaling and waiting
+ */
+
 #ifndef _CONMGR_EVENTS_H
 #define _CONMGR_EVENTS_H
+
+#include <pthread.h>
+#include <stdbool.h>
+
+#include "src/common/macros.h"
+
+/*
+ * WARNING: Only use functions below to access/edit struct members
+ */
+typedef struct {
+	const char *name; /* stringified event name */
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	int pending; /* reliable signals pending */
+	int waiting; /* # threads waiting for signal */
+} event_signal_t;
+
+#define EVENT_INITIALIZER(event_name) \
+	{ \
+		.mutex = PTHREAD_MUTEX_INITIALIZER, \
+		.cond = PTHREAD_COND_INITIALIZER, \
+		.pending = 0, \
+		.waiting = 0, \
+		.name = event_name, \
+	}
+
+#define EVENT_FREE_MEMBERS(event) \
+do { \
+	slurm_cond_destroy(&((event)->cond)); \
+	slurm_mutex_destroy(&((event)->mutex)); \
+} while (false)
+
+/*
+ * Wait (aka block) for a signal for a given event
+ * NOTE: call EVENT_WAIT() instead
+ * IN event - event ptr to wait for signal
+ * IN caller - __func__ from caller
+ */
+extern void event_wait_now(event_signal_t *event, const char *caller);
+
+/*
+ * Wait (aka block) for a signal for a given event
+ * Note: A thread currently blocked under EVENT_WAIT() is referred to as a
+ *	waiter.
+ * IN event- ptr to event to wait on
+ */
+#define EVENT_WAIT(event) event_wait_now(event, __func__)
+
+/*
+ * Send signal to a given event
+ * NOTE: call EVENT_SIGNAL() or EVENT_BROADCAST() instead
+ * IN reliable - ensure signal is received if nothing is waiting yet
+ * IN singular - only send signal once. if another reliable signal has been
+ *	sent, then ignore signal request.
+ * IN broadcast - send signal to all waiters at once
+ * IN event - ptr to event to signal
+ * IN caller - __func__ from caller
+ */
+extern void event_signal_now(bool reliable, bool singular, bool broadcast,
+			     event_signal_t *event, const char *caller);
+
+/*
+ * Send signal to one currently waiting thread or drop signal if there are no
+ * currently waiting threads.
+ */
+#define EVENT_SIGNAL(event) \
+	event_signal_now(false, false, false, event, __func__)
+/* Send signal to one waiter even if EVENT_WAIT() called later */
+#define EVENT_SIGNAL_RELIABLE(event) \
+	event_signal_now(true, false, false, event, __func__)
+/*
+ * Send signal to one waiter even if EVENT_WAIT() called later but drop signal
+ * if there is already another reliable signal pending a waiter.
+ */
+#define EVENT_SIGNAL_RELIABLE_SINGULAR(event) \
+	event_signal_now(true, true, false, event, __func__)
+/*
+ * Send signal to all currently waiting threads or drop signal if there are no
+ * currently waiting threads.
+ */
+#define EVENT_BROADCAST(event) \
+	event_signal_now(false, false, true, event, __func__)
 
 #endif /* _CONMGR_EVENTS_H */

@@ -33,4 +33,154 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
+
+#include "src/common/macros.h"
+#include "src/common/read_config.h"
+#include "src/common/timers.h"
+#include "src/common/xassert.h"
+
 #include "src/conmgr/events.h"
+
+static void _wait_pending(event_signal_t *event, const char *caller)
+{
+	log_flag(CONMGR, "%s->%s: [EVENT:%s] wait skipped due to %d pending reliable signals",
+		 caller, __func__, event->name, event->pending);
+
+	xassert(event->pending > 0);
+	xassert(!event->waiting);
+
+	event->pending--;
+
+	xassert(event->pending >= 0);
+}
+
+static void _wait(event_signal_t *event, const char *caller)
+{
+	DEF_TIMERS;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		START_TIMER;
+
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] BEGIN wait with %d other waiters",
+			 caller, __func__, event->name, event->waiting);
+	}
+
+	event->waiting++;
+
+	xassert(event->waiting > 0);
+
+	slurm_cond_wait(&event->cond, &event->mutex);
+
+	event->waiting--;
+
+	xassert(event->waiting >= 0);
+	xassert(!event->pending);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		/* we want the time but not to warn about a time limit */
+		END_TIMER3(NULL, 0);
+
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
+			 caller, __func__, event->name, TIME_STR,
+			 event->waiting);
+	}
+}
+
+extern void event_wait_now(event_signal_t *event, const char *caller)
+{
+	slurm_mutex_lock(&event->mutex);
+
+	xassert(event->waiting >= 0);
+
+	if (event->pending)
+		_wait_pending(event, caller);
+	else
+		_wait(event, caller);
+
+	slurm_mutex_unlock(&event->mutex);
+}
+
+static void _broadcast(event_signal_t *event, const char *caller)
+{
+	if (!event->waiting) {
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] broadcast skipped due to 0 waiters with %d pending signals",
+			 caller, __func__, event->name, event->pending);
+		return;
+	}
+
+	/* cant have pending signals when there are waiters */
+	xassert(!event->pending);
+
+	log_flag(CONMGR, "%s->%s: [EVENT:%s] broadcasting to all %d waiters",
+		 caller, __func__, event->name, event->pending);
+
+	slurm_cond_broadcast(&event->cond);
+}
+
+static void _signal_waiting(event_signal_t *event, const char *caller)
+{
+	/* cant have pending signals when there are waiters */
+	xassert(!event->pending);
+
+	log_flag(CONMGR, "%s->%s: [EVENT:%s] sending signal to 1/%d waiters",
+		 caller, __func__, event->name, event->waiting);
+
+	slurm_cond_signal(&event->cond);
+}
+
+static void _signal_no_waiting(bool reliable, bool singular,
+			       event_signal_t *event, const char *caller)
+{
+	xassert(event->pending >= 0);
+
+	if (!reliable) {
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping unreliable signal to 0 waiters with %d pending reliable signals pending",
+			 caller, __func__, event->name, event->pending);
+		return;
+	}
+
+	if (!singular) {
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueueing reliable singular signal to 0 waiters with %d pending reliable signals pending",
+			 caller, __func__, event->name, event->pending);
+		event->pending++;
+	}
+
+	if (event->pending) {
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping reliable singular signal to 0 waiters with %d pending reliable signals pending",
+			 caller, __func__, event->name, event->pending);
+	} else {
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueuing reliable singular signal to 0 waiters with 0 pending reliable signals pending",
+			 caller, __func__, event->name);
+		event->pending++;
+	}
+}
+
+extern void event_signal_now(bool reliable, bool singular, bool broadcast,
+			     event_signal_t *event, const char *caller)
+{
+	slurm_mutex_lock(&event->mutex);
+
+	xassert(event->waiting >= 0);
+
+	if (broadcast) {
+		/*
+		 * broadcast cant be reliable as we don't track which threads
+		 * have gotten the signal or not
+		 */
+		xassert(!reliable);
+		/* only reliable signals can be singular */
+		xassert(!singular);
+
+		_broadcast(event, caller);
+
+	} else if (!event->waiting) {
+		/* signal only with no waiters */
+		_signal_no_waiting(reliable, singular, event, caller);
+	} else {
+		/* signal only with waiters */
+		_signal_waiting(event, caller);
+	}
+
+	slurm_mutex_unlock(&event->mutex);
+}
