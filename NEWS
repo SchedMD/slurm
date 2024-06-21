@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
     for the following variables: I_MPI_HYDRA_BOOTSTRAP,
     I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS, HYDRA_BOOTSTRAP,
     HYDRA_LAUNCHER_EXTRA_ARGS.
+ -- scrun - Delay shutdown until after start requested. This caused scrun
+    to never start or shutdown and hung forever when using --tty.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -437,6 +439,8 @@ documents those changes that are of interest to users and administrators.
       'associations/max/tres/minutes/per/job'
       'associations/max/tres/minutes/total'
  -- Fix power_save operation after recovering from a failed reconfigure.
+ -- scrun - Delay shutdown until after start requested. This caused scrun
+    to never start or shutdown and hung forever when using --tty.
 
 * Changes in Slurm 23.11.8
 ==========================

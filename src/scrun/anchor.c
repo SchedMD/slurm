@@ -329,7 +329,8 @@ static void _check_if_stopped(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	if (state.status >= CONTAINER_ST_STOPPED) {
 		/* do nothing */
-	} else if (state.job_completed && state.staged_out) {
+	} else if (state.job_completed && state.staged_out &&
+		   (state.status >= CONTAINER_ST_STARTING)) {
 		/* something else may have got past stopped */
 		if (state.status == CONTAINER_ST_STOPPING)
 			stopped = true;
@@ -1469,6 +1470,8 @@ static void _on_startup_con_fin(void *arg)
 	xassert(state.startup_con);
 	state.startup_con = NULL;
 	unlock_state();
+
+	_try_start();
 }
 
 static int _wait_create_pid(int fd, pid_t child)
