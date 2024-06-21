@@ -3743,7 +3743,7 @@ function __scontrol_setdebugflags() {
 		"switch"
 		"tracejobs"
 		"triggers"
-		"workqueue"
+		"conmgr"
 	)
 	local _debug_flags=()
 	local parameters=(

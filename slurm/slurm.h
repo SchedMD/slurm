@@ -2770,7 +2770,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_GRES		SLURM_BIT(6) /* Generic Resource info */
 #define DEBUG_FLAG_MPI		SLURM_BIT(7) /* MPI debug */
 #define DEBUG_FLAG_DATA 	SLURM_BIT(8) /* data_t logging */
-#define DEBUG_FLAG_WORKQ 	SLURM_BIT(9) /* Work Queue */
+#define DEBUG_FLAG_CONMGR 	SLURM_BIT(9) /* conmgr logging */
 #define DEBUG_FLAG_NET		SLURM_BIT(10) /* Network logging */
 #define DEBUG_FLAG_PRIO 	SLURM_BIT(11) /* debug for priority
 						    * plugin */

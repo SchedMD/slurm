@@ -211,7 +211,8 @@ libslurmfull_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_CFLAGS) $(CFLAGS) $(libslurmfull_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.la
+	$(top_builddir)/src/interfaces/libcommon_interfaces.la \
+	$(top_builddir)/src/conmgr/libconmgr.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
@@ -715,6 +716,7 @@ common_dir = $(top_builddir)/src/common
 slurmapi_add = \
 	$(common_dir)/libcommon.la	\
 	$(top_builddir)/src/interfaces/libcommon_interfaces.la \
+	$(top_builddir)/src/conmgr/libconmgr.la \
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)

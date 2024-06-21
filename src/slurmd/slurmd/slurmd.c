@@ -68,7 +68,6 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
-#include "src/common/conmgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -96,6 +95,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
@@ -373,7 +374,11 @@ main (int argc, char **argv)
 	if (select_g_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize select plugins.");
 	file_bcast_init();
-	run_command_init(conf->binary);
+	if ((run_command_init(argc, argv, conf->binary) != SLURM_SUCCESS) &&
+	    conf->binary[0])
+		fatal("%s: Unable to reliably execute %s",
+		      __func__, conf->binary);
+
 	plugins_registered = true;
 
 	_create_msg_socket();

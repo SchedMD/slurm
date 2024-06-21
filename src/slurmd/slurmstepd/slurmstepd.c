@@ -315,7 +315,10 @@ main (int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
-	run_command_init(conf->stepd_loc);
+	if ((run_command_init(argc, argv, conf->stepd_loc) != SLURM_SUCCESS) &&
+	    conf->stepd_loc && conf->stepd_loc[0])
+		fatal("%s: Unable to reliably execute %s",
+		      __func__, conf->stepd_loc);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */

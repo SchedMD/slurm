@@ -37,6 +37,8 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
+#include <inttypes.h> /* for uint16_t, uint32_t definitions */
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -44,33 +46,33 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
 #ifndef POLLRDHUP
 #define POLLRDHUP POLLHUP
 #endif
 
 #include "src/common/fd.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/run_command.h"
 
 static char *script_launcher = NULL;
+static int script_launcher_fd = -1;
 static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
-#define _DEBUG 0
 
 /* Function prototypes */
-static void _run_command_child_exec(const char *path, char **argv, char **env);
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env);
 static void _run_command_child_pre_exec(void);
-
 
 extern void run_command_add_to_script(char **script_body, char *new_str)
 {
@@ -126,17 +128,60 @@ extern void run_command_add_to_script(char **script_body, char *new_str)
 }
 
 /* used to initialize run_command module */
-extern void run_command_init(char *binary)
+extern int run_command_init(int argc, char **argv, char *binary)
 {
-	if (binary) {
-		if (access(binary, R_OK | X_OK) < 0)
-			error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
-			      __func__, binary);
-		else
-			script_launcher = binary;
-	}
-
 	command_shutdown = 0;
+
+#if defined(__linux__)
+	if (!binary && !script_launcher)
+		binary = "/proc/self/exe";
+#endif /* !__linux__ */
+
+	/* Use argv[0] as fallback with absolute path */
+	if (!binary && (argc > 0) && (argv[0][0] == '/'))
+		binary = argv[0];
+
+	if (!binary)
+		return SLURM_ERROR;
+
+	fd_close(&script_launcher_fd);
+	xfree(script_launcher);
+
+#if defined(__linux__)
+	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
+		char buf[PATH_MAX];
+		ssize_t bytes = readlink(binary, buf, sizeof(buf));
+
+		/*
+		 * Because we are using script_launcher_fd to exec,
+		 * script_launcher is just used for logging and thus we do not
+		 * need script_launcher to be the full path. So, it is okay
+		 * if readlink truncates the result; in that case, just use
+		 * the truncated string.
+		 */
+		if (bytes > 0) {
+			if (bytes >= sizeof(buf))
+				bytes = sizeof(buf) - 1;
+
+			buf[bytes] = '\0';
+
+			script_launcher = xstrdup(buf);
+		} else {
+			script_launcher = xstrdup(binary);
+		}
+
+		return SLURM_SUCCESS;
+	}
+#endif /* !__linux__ */
+
+	if (access(binary, R_OK | X_OK)) {
+		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
+		      __func__, binary);
+		return SLURM_ERROR;
+	} else {
+		script_launcher = xstrdup(binary);
+		return SLURM_SUCCESS;
+	}
 }
 
 /* used to terminate any outstanding commands */
@@ -202,25 +247,26 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 	dup2(write_fd, STDOUT_FILENO);
 
 	if (launcher_argv)
-		_run_command_child_exec(script_launcher, launcher_argv,
-					args->env);
+		_run_command_child_exec(script_launcher_fd, script_launcher,
+					launcher_argv, args->env);
 
 	_run_command_child_pre_exec();
-	_run_command_child_exec(args->script_path, args->script_argv,
+	_run_command_child_exec(-1, args->script_path, args->script_argv,
 				args->env);
 }
 
 static void _log_str_array(char *prefix, char **array)
 {
-#if _DEBUG
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		return;
+
 	if (!array)
 		return;
 
-	info("%s: START", prefix);
+	log_flag(SCRIPT, "%s: START", prefix);
 	for (int i = 0; array[i]; i++)
-		info("%s[%d]=%s", prefix, i, array[i]);
-	info("%s: END", prefix);
-#endif
+		log_flag(SCRIPT, "%s[%d]=%s", prefix, i, array[i]);
+	log_flag(SCRIPT, "%s: END", prefix);
 }
 
 static char **_setup_launcher_argv(run_command_args_t *args)
@@ -261,10 +307,16 @@ static char **_setup_launcher_argv(run_command_args_t *args)
 /*
  * Wrapper for execv/execve. This should never return.
  */
-static void _run_command_child_exec(const char *path, char **argv, char **env)
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env)
 {
-	if (!env)
-		execv(path, argv);
+	extern char **environ;
+
+	if (!env || !env[0])
+		env = environ;
+
+	if (fd >= 0)
+		fexecve(fd, argv, env);
 	else
 		execve(path, argv, env);
 	error("%s: execv(%s): %m", __func__, path);
@@ -301,7 +353,7 @@ extern void run_command_launcher(int argc, char **argv)
 
 	xassert(script_path);
 	_run_command_child_pre_exec();
-	_run_command_child_exec(script_path, script_argv, NULL);
+	_run_command_child_exec(-1, script_path, script_argv, NULL);
 	_exit(127);
 }
 
@@ -411,10 +463,8 @@ extern char *run_command(run_command_args_t *args)
 		xfree(args->script_argv);
 	}
 
-#if _DEBUG
-	info("%s:script=%s, resp:\n%s",
-	     __func__, args->script_path, resp);
-#endif
+	log_flag(SCRIPT, "%s:script=%s, resp:\n%s",
+		 __func__, args->script_path, resp);
 
 	/* Array contents were not malloc'd, do not free */
 	xfree(launcher_argv);

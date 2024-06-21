@@ -54,7 +54,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -66,10 +65,11 @@
 #include "src/common/setproctitle.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
-#include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
 
@@ -1427,9 +1427,8 @@ static int _anchor_child(int pipe_fd[2])
 	state.pid = getpid();
 	_populate_pidfile();
 
-	/* must init conmgr&workq after calling fork() in _daemonize() */
-	workq_init(0);
-	conmgr_init(0, (conmgr_callbacks_t) { NULL, NULL } );
+	/* must init conmgr after calling fork() in _daemonize() */
+	conmgr_init(0, 0, (conmgr_callbacks_t) { NULL, NULL } );
 
 	change_status_force(CONTAINER_ST_CREATING);
 
@@ -1542,7 +1541,6 @@ done:
 
 	spank_rc = spank_fini(NULL);
 	destroy_lua();
-	workq_fini();
 
 	return rc ? rc : spank_rc;
 }

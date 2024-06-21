@@ -80,10 +80,15 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
  * If run_command_shutdown() was previously called, this function must be
  * called to re-initialize this module and allow commands to run.
  *
- * IN binary - (optional) path to this executable's binary to use as the script
- *             launcher.
+ * IN argc - number of command line arguments
+ * IN argv - the command line arguments or NULL to use the current running
+ *      binary
+ * IN binary - path to executable binary to use as the script launcher or NULL
+ *	to use the current running binary or resolve using argc/argv
+ * RET SLURM_SUCCESS if launcher resolved or SLURM_ERROR if launcher not
+ *      resolved/set
  */
-extern void run_command_init(char *binary);
+extern int run_command_init(int argc, char **argv, char *binary);
 
 /*
  * Used to terminate any outstanding commands. Any future commands will be

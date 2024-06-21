@@ -60,7 +60,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/common/conmgr.h"
 #include "src/common/daemonize.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/fd.h"
@@ -84,6 +83,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_profile.h"
@@ -467,7 +468,9 @@ int main(int argc, char **argv)
 	 * signals.
 	 */
 	slurmscriptd_init(argc, argv, binary);
-	run_command_init(binary);
+	if ((run_command_init(argc, argv, binary) != SLURM_SUCCESS) &&
+	    binary[0])
+		fatal("%s: Unable to reliably execute %s", __func__, binary);
 
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {
@@ -825,7 +828,7 @@ int main(int argc, char **argv)
 		 * run_command_shutdown() was called. Pass NULL since we do
 		 * not want to change the script launcher location.
 		 */
-		run_command_init(NULL);
+		(void) run_command_init(0, NULL, NULL);
 	}
 
 	slurmscriptd_fini();

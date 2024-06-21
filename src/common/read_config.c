@@ -6005,10 +6005,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Triggers");
 	}
-	if (debug_flags & DEBUG_FLAG_WORKQ) {
+	if (debug_flags & DEBUG_FLAG_CONMGR) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "WorkQueue");
+		xstrcat(rc, "ConMgr");
 	}
 
 	return rc;
@@ -6155,9 +6155,10 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 		else if ((xstrcasecmp(tok, "Power") == 0) ||
 			 (xstrcasecmp(tok, "PowerSave") == 0))
 			(*flags_out) |= DEBUG_FLAG_POWER;
-		else if (xstrcasecmp(tok, "WorkQueue") == 0 ||
-			 xstrcasecmp(tok, "WorkQ") == 0)
-			(*flags_out) |= DEBUG_FLAG_WORKQ;
+		else if (!xstrcasecmp(tok, "WorkQueue") ||
+			 !xstrcasecmp(tok, "WorkQ") ||
+			 !xstrcasecmp(tok, "ConMgr"))
+			(*flags_out) |= DEBUG_FLAG_CONMGR;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			(*flags_out) = 0;
