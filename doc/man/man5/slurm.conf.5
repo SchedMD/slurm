@@ -2478,9 +2478,26 @@ More information about MPI use is available here
 
 .TP
 \fBMpiParams\fR
-MPI parameters.
-Used to identify ports used by native Cray's PMI. The format to identify a
-range of communication ports is "ports=12000\-12999".
+MPI-related parameters. Multiple parameters may be comma separated. Currently
+supported parameters include:
+.IP
+.RS
+
+.TP
+\fBports=#\-#\fR
+Identifies a range of communication ports used by native Cray's PMI.
+.IP
+
+.TP
+\fBdisable_slurm_hydra_bootstrap\fR
+Disable environment variable injection in allocations for the following
+variables: I_MPI_HYDRA_BOOTSTRAP, I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS,
+HYDRA_BOOTSTRAP, HYDRA_LAUNCHER_EXTRA_ARGS.
+
+Manually setting I_MPI_HYDRA_BOOTSTRAP or HYDRA_BOOTSTRAP to 'slurm' in the
+allocation will skip this parameter and injection of extra args will be
+performed as usual.
+.RE
 .IP
 
 .TP
