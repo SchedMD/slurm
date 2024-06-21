@@ -390,6 +390,12 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 extern void wrap_work(work_t *work);
 
 /*
+ * Wait until all work and workers have completed their work (and exited)
+ * Note: Caller must hold conmgr lock
+ */
+extern void workers_wait_complete(void);
+
+/*
  * Initialize worker threads
  * IN count - number of workers to add
  * Note: Caller must hold conmgr lock

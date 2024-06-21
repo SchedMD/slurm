@@ -151,81 +151,13 @@ extern void workers_init(int count)
 	_increase_thread_count(count);
 }
 
-/* Note: caller must hold conmgr lock */
-static void _wait_workers_idle(void)
-{
-	_check_magic_workers();
-	log_flag(CONMGR, "%s: checking %u workers",
-		 __func__, list_count(mgr.work));
-
-	while (mgr.workers.active)
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
-
-	log_flag(CONMGR, "%s: all workers are idle", __func__);
-}
-
-static void _wait_work_complete()
-{
-	xassert(mgr.shutdown_requested);
-	_check_magic_workers();
-	log_flag(CONMGR, "%s: waiting for %u queued workers",
-		 __func__, list_count(mgr.work));
-
-	while (true) {
-		int count;
-		pthread_t tid;
-		worker_t *worker;
-
-		if ((count = list_count(mgr.workers.workers)) == 0) {
-			log_flag(CONMGR, "%s: all workers are done", __func__);
-			break;
-		}
-		worker = list_peek(mgr.workers.workers);
-		xassert(worker->magic == MAGIC_WORKER);
-		tid = worker->tid;
-
-		log_flag(CONMGR, "%s: waiting on %d workers", __func__, count);
-		slurm_thread_join(tid);
-	}
-}
-
-/*
- * Stop all work (eventually) and reject new requests
- * This will block until all work is complete.
- * Note: calling thread must hold conmgr lock
- */
-static void _quiesce(void)
-{
-	_check_magic_workers();
-
-	log_flag(CONMGR, "%s: shutting down with %u queued jobs",
-		 __func__, list_count(mgr.work));
-
-	/* notify workers of shutdown */
-	xassert(mgr.shutdown_requested);
-	slurm_cond_broadcast(&mgr.cond);
-
-	_wait_work_complete();
-
-	xassert(list_count(mgr.workers.workers) == 0);
-	xassert(list_count(mgr.work) == 0);
-}
-
 extern void workers_fini(void)
 {
-	int threads;
+	/* all workers should have already exited by now */
 
-	threads = mgr.workers.threads;
-
-	if (!threads)
-		return;
-
-	_wait_workers_idle();
-	_quiesce();
-
+	xassert(mgr.shutdown_requested);
 	xassert(!mgr.workers.active);
 	xassert(!mgr.workers.total);
-	xassert(mgr.shutdown_requested);
 
 	FREE_NULL_LIST(mgr.workers.workers);
 
@@ -296,4 +228,16 @@ static void *_worker(void *arg)
 	}
 
 	return NULL;
+}
+
+extern void workers_wait_complete(void)
+{
+	xassert(mgr.shutdown_requested);
+
+	while (mgr.workers.active > 0) {
+		log_flag(CONMGR, "%s: waiting for work=%u workers=%u/%u",
+			 __func__, list_count(mgr.work), mgr.workers.active,
+			 mgr.workers.total);
+		slurm_cond_wait(&mgr.cond, &mgr.mutex);
+	}
 }

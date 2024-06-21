@@ -143,6 +143,9 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work();
 
+	/* wait until all workers are done */
+	workers_wait_complete();
+
 	/*
 	 * At this point, there should be no threads running.
 	 * It should be safe to shutdown the mgr.
@@ -163,7 +166,12 @@ extern void conmgr_fini(void)
 
 	xfree(mgr.signal_work);
 
-	slurm_mutex_unlock(&mgr.mutex);
+	workers_fini();
+
+	/* work should have been cleared by workers_fini() */
+	xassert(list_is_empty(mgr.work));
+	FREE_NULL_LIST(mgr.work);
+
 	/*
 	 * Do not destroy the mutex or cond so that this function does not
 	 * crash when it tries to lock mgr.mutex if called more than once.
@@ -171,11 +179,7 @@ extern void conmgr_fini(void)
 	/* slurm_mutex_destroy(&mgr.mutex); */
 	/* slurm_cond_destroy(&mgr.cond); */
 
-	workers_fini();
-
-	/* work should have been cleared by workers_fini() */
-	xassert(list_is_empty(mgr.work));
-	FREE_NULL_LIST(mgr.work);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int conmgr_run(bool blocking)
