@@ -142,6 +142,7 @@ static int _foreach_flag_coord_acct(void *x, void *arg)
 	     (flag_coord_acct->flags & ASSOC_FLAG_USER_COORD))) {
 		slurmdb_assoc_rec_t *mod_assoc =
 			xmalloc(sizeof(slurmdb_assoc_rec_t));
+		slurmdb_init_assoc_rec(mod_assoc, 0);
 		mod_assoc->id = assoc_ptr->id;
 		mod_assoc->cluster = xstrdup(assoc_ptr->cluster);
 		mod_assoc->flags = assoc_ptr->flags;
