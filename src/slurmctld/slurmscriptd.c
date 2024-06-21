@@ -1218,12 +1218,12 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 
 	if (_recv_bb_script_msg(&bb_msg) != SLURM_SUCCESS)
 		fatal("Failed to receive burst buffer script msg");
+	if (!bb_msg->function || !bb_msg->function[0])
+		fatal_abort("%s: Invalid NULL function", __func__);
 
 	*function = bb_msg->function;
 	*job_id = bb_msg->job_id;
 	*job_info = _unpack_bb_job_info(bb_msg);
-	if (!function || !function[0])
-		fatal_abort("%s: Invalid NULL function", __func__);
 
 	slurm_conf.authalttypes = bb_msg->authalttypes;
 	slurm_conf.authinfo = bb_msg->authinfo;
