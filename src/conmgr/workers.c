@@ -202,6 +202,12 @@ static void *_worker(void *arg)
 
 		xassert(work->magic == MAGIC_WORK);
 
+		if (mgr.shutdown_requested) {
+			log_flag(CONMGR, "%s: [%u->%s] setting work status as cancelled after shutdown requested",
+				 __func__, worker->id, work->tag);
+			work->status = CONMGR_WORK_STATUS_CANCELLED;
+		}
+
 		/* got work, run it! */
 		mgr.workers.active++;
 
