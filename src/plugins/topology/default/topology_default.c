@@ -151,3 +151,8 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 {
 	return SLURM_SUCCESS;
 }
+
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
+{
+	return 0;
+}

@@ -192,4 +192,9 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
  */
 extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
 
+/* Return fragmentation score of given bitmap
+ * IN node_mask - aviabled nodes
+ * RET: fragmentation
+ */
+extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
 #endif

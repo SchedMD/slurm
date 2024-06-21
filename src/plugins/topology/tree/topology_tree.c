@@ -679,3 +679,8 @@ unpack_error:
 	*topoinfo_pptr = NULL;
 	return SLURM_ERROR;
 }
+
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
+{
+	return 0;
+}
