@@ -5246,6 +5246,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_DBD_RELAY:
 		slurmdbd_free_msg(data);
+		xfree(data);
 		break;
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);

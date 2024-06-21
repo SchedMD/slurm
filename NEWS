@@ -118,6 +118,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where altering the flags on a Slurm account (UsersAreCoords)
     several limits on the account's association would be set to 0 in
     Slurm's internal cache.
+ -- Fix memory leak in the controller when relaying stepmgr step accounting to
+    the dbd.
 
 * Changes in Slurm 24.05.0
 ==========================
