@@ -152,10 +152,13 @@ extern const char *conmgr_work_type_string(conmgr_work_type_t type);
 
 /*
  * Prototype for all conmgr callbacks
- * IN con - ptr to relavent connection (or NULL)
- * IN type - work type
+ * IN con - ptr to relevant connection (or NULL)
+ * IN type - how function was scheduled to run
  * IN status - work status
- * IN tag - logging tag for work
+ *	Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know when
+ *	a shutdown has been triggered and to just cleanup instead of doing the
+ *	work.
+ * IN tag - logging tag for work - XSTRINGIFY() of function name is suggested
  * IN arg - arbitrary pointer
  */
 typedef void (*conmgr_work_func_t)(conmgr_fd_t *con, conmgr_work_type_t type,
