@@ -240,7 +240,8 @@ libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
 libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.o
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o \
+	$(top_builddir)/src/conmgr/libconmgr.o
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -752,7 +753,8 @@ libslurm_pmi_la_LDFLAGS = \
 libslurm_o_SOURCES = 
 libslurm_o_LDADD = \
 	$(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.o
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o \
+	$(top_builddir)/src/conmgr/libconmgr.o
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)

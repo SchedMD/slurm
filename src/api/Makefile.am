@@ -172,7 +172,8 @@ libslurm_o_SOURCES =
 
 libslurm_o_LDADD =				\
 	$(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.o
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o \
+	$(top_builddir)/src/conmgr/libconmgr.o
 
 libslurm.o$(EXEEXT): $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
