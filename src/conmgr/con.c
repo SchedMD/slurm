@@ -691,3 +691,29 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 	xassert(con->work_active);
 	return status;
 }
+
+/*
+ * Find by matching fd to connection
+ */
+static int _find_by_fd(void *x, void *key)
+{
+	conmgr_fd_t *con = x;
+	int fd = *(int *)key;
+	return (con->input_fd == fd) || (con->output_fd == fd);
+}
+
+extern conmgr_fd_t *con_find_by_fd(int fd)
+{
+	conmgr_fd_t *con;
+
+	if ((con = list_find_first(mgr.connections, _find_by_fd, &fd)))
+		return con;
+
+	if ((con = list_find_first(mgr.listen_conns, _find_by_fd, &fd)))
+		return con;
+
+	/* mgr.complete_conns don't have input_fd or output_fd */
+
+	return NULL;
+}
+

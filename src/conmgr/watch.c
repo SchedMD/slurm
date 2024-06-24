@@ -467,22 +467,11 @@ static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
 }
 
 /*
- * Find by matching fd to connection
- */
-static int _find_by_fd(void *x, void *key)
-{
-	conmgr_fd_t *con = x;
-	int fd = *(int *)key;
-	return (con->input_fd == fd) || (con->output_fd == fd);
-}
-
-/*
  * Handle poll and events
  *
  * NOTE: mgr mutex must not be locked but will be locked upon return
  */
-static void _poll(poll_args_t *args, list_t *fds, on_poll_event_t on_poll,
-		  const char *tag)
+static void _poll(poll_args_t *args, on_poll_event_t on_poll, const char *tag)
 {
 	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
@@ -541,8 +530,7 @@ again:
 			_handle_event_pipe(fds_ptr, tag, "CAUGHT_SIGNAL");
 		} else if (fds_ptr->fd == event_fd)
 			_handle_event_pipe(fds_ptr, tag, "CHANGE_EVENT");
-		else if ((con = list_find_first(fds, _find_by_fd,
-						&fds_ptr->fd))) {
+		else if ((con = con_find_by_fd(fds_ptr->fd))) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 				char *flags = poll_revents_to_str(
 					fds_ptr->revents);
@@ -684,7 +672,7 @@ static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 	log_flag(CONMGR, "%s: polling %u file descriptors for %u connections",
 		 __func__, poll_args.nfds, count);
 
-	_poll(&poll_args, mgr.connections, _handle_poll_event, __func__);
+	_poll(&poll_args, _handle_poll_event, __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 done:
@@ -774,7 +762,7 @@ static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
 		 __func__, listen_args.nfds, (count + 2));
 
 	/* _poll() will lock mgr.mutex */
-	_poll(&listen_args, mgr.listen_conns, _handle_listen_event, __func__);
+	_poll(&listen_args, _handle_listen_event, __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
 cleanup:

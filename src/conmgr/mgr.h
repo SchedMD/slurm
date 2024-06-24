@@ -384,6 +384,14 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
 extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 
 /*
+ * Find connection by a given file descriptor
+ * NOTE: Caller must hold mgr.mutex lock
+ * IN fd - file descriptor to use to search
+ * RET ptr or NULL if not found
+ */
+extern conmgr_fd_t *con_find_by_fd(int fd);
+
+/*
  * Wrap work requested to notify mgr when that work is complete
  */
 extern void wrap_work(work_t *work);
