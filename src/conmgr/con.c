@@ -717,3 +717,40 @@ extern conmgr_fd_t *con_find_by_fd(int fd)
 	return NULL;
 }
 
+extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	if (con->is_socket) {
+		/* Ask kernel for socket error */
+		int rc = SLURM_ERROR, err = SLURM_ERROR;
+
+		if ((rc = fd_get_socket_error(fd, &err)))
+			error("%s: [%s] error while getting socket error: %s",
+			      __func__, con->name, slurm_strerror(rc));
+		else if (err)
+			error("%s: [%s] socket error encountered while polling: %s",
+			      __func__, con->name, slurm_strerror(err));
+	}
+
+	if (close(fd))
+		log_flag(CONMGR, "%s: [%s] input_fd=%d output_fd=%d calling close(%d) failed: %m",
+			 __func__, con->name, con->input_fd, con->output_fd,
+			 fd);
+
+	if (con->input_fd == fd)
+		con->input_fd = -1;
+	if (con->output_fd == fd)
+		con->output_fd = -1;
+
+	/*
+	 * Socket must not continue to be considered valid to avoid a
+	 * infinite calls to poll() which will immediately fail. Close
+	 * the relavent file descriptor and remove from connection.
+	 */
+	close_con(true, con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}

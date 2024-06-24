@@ -354,6 +354,17 @@ extern void wait_for_watch(void);
  */
 extern void close_con(bool locked, conmgr_fd_t *con);
 
+/*
+ * Close connection due to poll error
+ *
+ * Note: Removal of fd from poll() will already be handled before calling this
+ * IN locked - if mgr.mutex is already locked or not
+ * IN con - connection that owns fd that had error
+ * IN fd - file descriptor that had an error (probably from poll)
+ * IN rc - error if known
+ */
+extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd);
+
 extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 			 conmgr_work_status_t status, const char *tag,
 			 void *arg);
