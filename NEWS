@@ -141,6 +141,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - fix premature timeout waiting for REQUEST_LAUNCH_PROLOG with large
     array jobs causing node to drain.
  -- jobcomp/{elasticsearch,kafka} - Avoid sending fields with invalid date/time.
+ -- jobcomp/elasticsearch - Fix slurmctld memory leak from curl usage
+ -- acct_gather_profile/influxdb - Fix slurmstepd memory leak from curl usage
 
 * Changes in Slurm 24.05.0
 ==========================

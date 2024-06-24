@@ -227,11 +227,7 @@ static int _send_data(const char *data)
 	DEF_TIMERS;
 	START_TIMER;
 
-	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		error("%s %s: curl_global_init: %m", plugin_type, __func__);
-		rc = SLURM_ERROR;
-		goto cleanup_global_init;
-	} else if ((curl_handle = curl_easy_init()) == NULL) {
+	if ((curl_handle = curl_easy_init()) == NULL) {
 		error("%s %s: curl_easy_init: %m", plugin_type, __func__);
 		rc = SLURM_ERROR;
 		goto cleanup_easy_init;
@@ -301,8 +297,6 @@ cleanup:
 	xfree(url);
 cleanup_easy_init:
 	curl_easy_cleanup(curl_handle);
-cleanup_global_init:
-	curl_global_cleanup();
 
 	END_TIMER;
 	log_flag(PROFILE, "%s %s: took %s to send data",
@@ -330,6 +324,11 @@ extern int init(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
+	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
+		error("%s %s: curl_global_init: %m", plugin_type, __func__);
+		return SLURM_ERROR;
+	}
+
 	datastr = xmalloc(BUF_SIZE);
 	return SLURM_SUCCESS;
 }
@@ -337,6 +336,8 @@ extern int init(void)
 extern int fini(void)
 {
 	debug3("%s %s called", plugin_type, __func__);
+
+	curl_global_cleanup();
 
 	_free_tables();
 	xfree(datastr);
