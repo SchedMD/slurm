@@ -15,6 +15,8 @@ libconmgr_la_SOURCES = \
 	delayed.c \
 	io.c \
 	mgr.h \
+	poll.c \
+	poll.h \
 	rpc.c \
 	signals.c \
 	signals.h \
