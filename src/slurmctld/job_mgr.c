@@ -202,7 +202,6 @@ typedef struct {
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
-List purge_files_list = NULL;	/* job files to delete */
 list_t *purge_jobs_list = NULL;	/* job_record_t entries to free */
 
 /* Local variables */
