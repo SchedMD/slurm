@@ -210,7 +210,6 @@ typedef struct {
 	bool initialized;
 	/*
 	 * True if _watch() is running
-	 * Changes protected by watch_mutex
 	 */
 	bool watching;
 	/*
