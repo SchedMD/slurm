@@ -1444,6 +1444,8 @@ static void *_service_connection(void *arg)
 		slurm_addr_t cli_addr;
 		(void) slurm_get_peer_addr(fd, &cli_addr);
 		error("slurm_receive_msg [%pA]: %m", &cli_addr);
+		if (errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR)
+			slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		/* close the new socket */
 		close(fd);
 		goto cleanup;

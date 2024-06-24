@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     JSON and YAML output.
  -- slurmrestd - Add clarification to "failed to open slurmdbd connection" error
     if the error was the result of an authentication failure.
+ -- Make it so slurmctld responds to RPCs that have authenticaiton errors with
+    the SLURM_PROTOCOL_AUTHENTICATION_ERROR error code.
 
 * Changes in Slurm 24.05.2
 ==========================
