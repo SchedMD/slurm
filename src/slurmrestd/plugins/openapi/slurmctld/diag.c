@@ -57,9 +57,12 @@ extern int op_handler_diag(openapi_ctxt_t *ctxt)
 			.command_id = STAT_COMMAND_GET,
 		};
 
-		if ((rc = slurm_get_statistics(&stats, &req)))
+		if ((rc = slurm_get_statistics(&stats, &req))) {
+			if (errno)
+				rc = errno;
 			resp_error(ctxt, rc, __func__,
 				   "slurm_get_statistics() failed to get slurmctld statistics");
+		}
 		else
 			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_DIAG_RESP, stats,
 						 ctxt);
@@ -100,9 +103,12 @@ extern int op_handler_licenses(openapi_ctxt_t *ctxt)
 		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
-	else if ((rc = slurm_load_licenses(0, &msg, 0)))
+	else if ((rc = slurm_load_licenses(0, &msg, 0))) {
+		if (errno)
+			rc = errno;
 		resp_error(ctxt, rc, __func__,
 			   "slurm_load_licenses() was unable to load licenses");
+	}
 
 	if (msg) {
 		resp.licenses = msg;

@@ -66,6 +66,17 @@ documents those changes that are of interest to users and administrators.
     if the error was the result of an authentication failure.
  -- Make it so slurmctld responds to RPCs that have authenticaiton errors with
     the SLURM_PROTOCOL_AUTHENTICATION_ERROR error code.
+ -- openapi/slurmctld - Display the correct error code instead of
+    "Unspecified error" if querying the following endpoints fails:
+      'GET /slurm/v0.0.40/diag/'
+      'GET /slurm/v0.0.41/diag/'
+      'GET /slurm/v0.0.42/diag/'
+      'GET /slurm/v0.0.40/licenses/'
+      'GET /slurm/v0.0.41/licenses/'
+      'GET /slurm/v0.0.42/licenses/'
+      'GET /slurm/v0.0.40/reconfigure'
+      'GET /slurm/v0.0.41/reconfigure'
+      'GET /slurm/v0.0.42/reconfigure'
 
 * Changes in Slurm 24.05.2
 ==========================
