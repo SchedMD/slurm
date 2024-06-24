@@ -80,7 +80,7 @@ def test_node_state(node_names, teardown_jobs):
     assert (
         len(
             re.findall(
-                "alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
+                r"alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
             )
         )
         == 2
@@ -94,7 +94,7 @@ def test_node_state(node_names, teardown_jobs):
     assert (
         len(
             re.findall(
-                "alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
+                r"alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
             )
         )
         == 1
@@ -102,7 +102,7 @@ def test_node_state(node_names, teardown_jobs):
     assert (
         len(
             re.findall(
-                "mix", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
+                r"mix", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t")
             )
         )
         == 1

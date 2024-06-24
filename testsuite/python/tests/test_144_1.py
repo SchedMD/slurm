@@ -30,7 +30,7 @@ def test_explicit_gres_requested():
         fatal=True,
     )
     assert (
-        re.search("GresUsed=r1:1,r2:1", with_gres_output) is not None
+        re.search(r"GresUsed=r1:1,r2:1", with_gres_output) is not None
     ), "Allocation should give all of non-explicit gres (r1:1) and only requested explicit gres (r2:1)"
 
 
@@ -42,5 +42,5 @@ def test_explicit_gres_not_requested():
         "salloc -wnode1 --exclusive scontrol show node node1 -d", timeout=2, fatal=True
     )
     assert (
-        re.search("GresUsed=r1:1,r2:0", without_gres_output) is not None
+        re.search(r"GresUsed=r1:1,r2:0", without_gres_output) is not None
     ), "Allocation should give all of non-explicit gres (r1:1) and none of the not requested explicit gres (r2:0)"

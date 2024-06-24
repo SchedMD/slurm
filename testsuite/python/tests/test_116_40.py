@@ -144,7 +144,7 @@ def test_slurm_directed_env_variables():
         output = f.read()
 
     task_count = len(re.findall(rf"{slurm_nprocs}=(\d+)", output))
-    stale_count = len(re.findall("Stale file handle", output))
+    stale_count = len(re.findall(r"Stale file handle", output))
     task_count += stale_count
     assert task_count == int(
         slurm_nprocs_val
@@ -159,8 +159,8 @@ def test_slurm_directed_env_variables():
     ), f"Did not process {slurm_nnodes} environment variable max_node_val = {max_node_val}"
 
     assert (
-        re.search(f"{slurm_debug}={slurm_debug_val}", output) is not None
+        re.search(rf"{slurm_debug}={slurm_debug_val}", output) is not None
     ), f"Did not process {slurm_debug} environment variable"
     assert (
-        re.search(f"{slurm_overcommit}={slurm_overcommit_val}", output) is not None
+        re.search(rf"{slurm_overcommit}={slurm_overcommit_val}", output) is not None
     ), f"Did not process {slurm_overcommit} environment variable"

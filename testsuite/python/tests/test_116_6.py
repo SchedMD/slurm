@@ -21,10 +21,10 @@ def test_running_non_existent_job():
     output_error = atf.run_command_error(
         "srun -t1 /bad/bad/bad", timeout=120, xfail=True
     )
-    no_file = re.findall("No such file", output_error)
-    unable_to_run = re.findall("Unable to run executable", output_error)
-    time_limit = re.findall("time limit exceeded", output_error)
-    terminated = re.findall("Terminated", output_error)
+    no_file = re.findall(r"No such file", output_error)
+    unable_to_run = re.findall(r"Unable to run executable", output_error)
+    time_limit = re.findall(r"time limit exceeded", output_error)
+    terminated = re.findall(r"Terminated", output_error)
 
     assert len(time_limit) <= 0, "srun time limit exceeded"
     assert len(terminated) <= 0, "srun did not terminate properly"

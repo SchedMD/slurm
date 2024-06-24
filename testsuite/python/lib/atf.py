@@ -2760,7 +2760,7 @@ def wait_for_step(job_id, step_id, **repeat_until_kwargs):
     step_str = f"{job_id}.{step_id}"
     return repeat_until(
         lambda: run_command_output(f"scontrol -o show step {step_str}"),
-        lambda out: re.search(f"StepId={step_str}", out) is not None,
+        lambda out: re.search(rf"StepId={step_str}", out) is not None,
         **repeat_until_kwargs,
     )
 
@@ -2789,7 +2789,7 @@ def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     step_str = f"{job_id}.{step_id}"
     return repeat_until(
         lambda: run_command_output(f"sacct -j {job_id} -o jobid"),
-        lambda out: re.search(f"{step_str}", out) is not None,
+        lambda out: re.search(rf"{step_str}", out) is not None,
         **repeat_until_kwargs,
     )
 
