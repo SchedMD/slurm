@@ -63,6 +63,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
@@ -284,13 +285,33 @@ void run_backup(void)
 	slurm_thread_join(slurmctld_config.thread_id_rpc);
 
 	/*
+	 * Expressly shutdown the agent. The agent can in whole or in part
+	 * shutdown once slutmctld_config.shutdown_time is set. Remove any
+	 * doubt about its state here.
+	 */
+	agent_fini();
+
+	/*
 	 * The job list needs to be freed before we run
 	 * ctld_assoc_mgr_init, it should be empty here in the first place.
 	 */
 	lock_slurmctld(config_write_lock);
 	job_fini();
+
+	/*
+	 * The backup is now done shutting down, reset shutdown_time before
+	 * re-initializing.
+	 */
+	slurmctld_config.shutdown_time = (time_t) 0;
+
 	init_job_conf();
 	unlock_slurmctld(config_write_lock);
+
+	/*
+	 * Init the agent here so it comes up at roughly the same place as a
+	 * normal startup.
+	 */
+	agent_init();
 
 	/* Calls assoc_mgr_init() */
 	ctld_assoc_mgr_init();
@@ -309,7 +330,6 @@ void run_backup(void)
 		error("failed to restore switch state");
 		abort();
 	}
-	slurmctld_config.shutdown_time = (time_t) 0;
 	if (read_slurm_conf(2)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();

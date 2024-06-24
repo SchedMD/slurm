@@ -89,6 +89,10 @@ documents those changes that are of interest to users and administrators.
     HYDRA_LAUNCHER_EXTRA_ARGS.
  -- scrun - Delay shutdown until after start requested. This caused scrun
     to never start or shutdown and hung forever when using --tty.
+ -- Fix backup slurmctld potentially not running the agent when taking over as
+    the primary controller.
+ -- Fix primary controller not running the agent when a reconfigure of the
+    slurmctld fails.
 
 * Changes in Slurm 24.05.0
 ==========================
@@ -441,6 +445,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix power_save operation after recovering from a failed reconfigure.
  -- scrun - Delay shutdown until after start requested. This caused scrun
     to never start or shutdown and hung forever when using --tty.
+ -- Fix backup slurmctld potentially not running the agent when taking over as
+    the primary controller.
+ -- Fix primary controller not running the agent when a reconfigure of the
+    slurmctld fails.
 
 * Changes in Slurm 23.11.8
 ==========================
