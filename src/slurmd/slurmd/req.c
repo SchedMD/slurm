@@ -5830,7 +5830,7 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 {
 	struct timespec ts = {0, 0};
 	struct timeval now;
-	int retry_cnt = 0;
+	struct timeval timeout;
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) || !(*first_job_run))
 		return SLURM_SUCCESS;
@@ -5842,8 +5842,9 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 	 * conf->prolog_running_cond.
 	 */
 	debug("Waiting for job %d's prolog launch request", job_id);
+	gettimeofday(&timeout, NULL);
+	timeout.tv_sec += slurm_conf.msg_timeout * 2;
 	while (*first_job_run) {
-		retry_cnt++;
 		/*
 		 * This race should only happen for at most a second as
 		 * we are only waiting for the other rpc to get here.
@@ -5852,15 +5853,14 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 		 * direct retry from slurmctld will happen after
 		 * MessageTimeout.
 		 */
-		if (retry_cnt > (slurm_conf.msg_timeout * 2)) {
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec + 1;
+		ts.tv_nsec = now.tv_usec * 1000;
+		if (now.tv_sec > timeout.tv_sec) {
 			error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
 			      job_id, slurm_conf.msg_timeout * 2);
 			return ESLURMD_PROLOG_FAILED;
 		}
-
-		gettimeofday(&now, NULL);
-		ts.tv_sec = now.tv_sec + 1;
-		ts.tv_nsec = now.tv_usec * 1000;
 
 		slurm_cond_timedwait(&conf->prolog_running_cond,
 				     &prolog_mutex, &ts);
