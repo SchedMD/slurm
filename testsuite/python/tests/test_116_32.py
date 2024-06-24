@@ -16,7 +16,7 @@ def test_input_output_error(tmp_path):
     """Verify srun -input,--output, and --error options work"""
 
     CONTENT = "sleep aaa\nexit 0"
-    sleep_err_message = "sleep: invalid time interval ‘aaa’"
+    sleep_err_message = r"sleep: invalid time interval ‘aaa’"
     echo_output = "test --output"
     file_in = tmp_path / "file_in.input"
     file_out = tmp_path / "file_out.output"
@@ -35,4 +35,4 @@ def test_input_output_error(tmp_path):
     stderr = atf.run_command_error(f"srun --error=none -t1 sleep aaa", xfail=True)
     assert re.search(sleep_err_message, stderr) is None
     stdout = atf.run_command_output(f"srun --output=none -t1 id")
-    assert re.search("uid=", stdout) is None
+    assert re.search(r"uid=", stdout) is None

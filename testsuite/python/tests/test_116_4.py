@@ -15,7 +15,7 @@ def setup():
 def test_task_signal_abort_message():
     """Test of task signal abort message"""
 
-    error_msg = "Segmentation fault"
+    error_msg = r"Segmentation fault"
     file_in = atf.module_tmp_path / "file_in"
     atf.make_bash_script(file_in, "kill -11 $$")
     run_error = atf.run_command_error(f"srun {file_in}", xfail=True)

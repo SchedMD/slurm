@@ -111,7 +111,7 @@ def main(argv=None):
 
     # Read the current working directory and build a sorted list
     # of the available tests.
-    test_re = re.compile("test(\d+)\.(\d+)$")
+    test_re = re.compile(r"test(\d+)\.(\d+)$")
     for filename in os.listdir("."):
         match = test_re.match(filename)
         if match:
@@ -349,9 +349,9 @@ def test_parser(option, opt_str, value, parser):
 
     # Split the user's option string into a series of tuples that represent
     # each test, and add each tuple to the destination array.
-    splitter = re.compile("[,\s]+")
+    splitter = re.compile(r"[,\s]+")
     val = splitter.split(value)
-    test_re = re.compile("(test)?((\d+)|\*)\.((\d+)|\*)$")
+    test_re = re.compile(r"(test)?((\d+)|\*)\.((\d+)|\*)$")
     for v in val:
         m = test_re.match(v)
         if not m:

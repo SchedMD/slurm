@@ -149,7 +149,7 @@ def test_add_second_federation():
         f"sacctmgr show federation format=federation%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation", output)
+    assert first_match(r"Federation", output)
     assert next_match(rf"(?m)^ +{federation1}")
     assert next_match(rf"(?m)^ +{federation2}")
 
@@ -157,7 +157,7 @@ def test_add_second_federation():
         f"sacctmgr show federation {federation1} format=federation%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation", output)
+    assert first_match(r"Federation", output)
     assert next_match(rf"(?m)^ +{federation1}")
     assert not next_match(rf"(?m)^ +{federation2}")
 
@@ -655,7 +655,7 @@ def test_modify_federation_change_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +{cluster1} +ACTIVE")
     assert next_match(rf"(?m)^ +{federation1} +{cluster2} +ACTIVE")
 
@@ -677,7 +677,7 @@ def test_modify_federation_change_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +{cluster1} +ACTIVE")
     assert next_match(rf"(?m)^ +{federation1} +{cluster3} +ACTIVE")
 
@@ -694,7 +694,7 @@ def test_modify_federation_change_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +{cluster1} +ACTIVE")
     assert next_match(rf"(?m)^ +{federation1} +{cluster2} +ACTIVE")
     assert next_match(rf"(?m)^ +{federation1} +{cluster3} +ACTIVE")
@@ -713,7 +713,7 @@ def test_modify_federation_change_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +{cluster3} +ACTIVE")
 
     results = atf.run_command(
@@ -733,7 +733,7 @@ def test_modify_federation_change_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +$")
 
 
@@ -781,7 +781,7 @@ def test_modify_federation_clear_clusters():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20,fedstate%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster +FedState", output)
+    assert first_match(r"Federation +Cluster +FedState", output)
     assert next_match(rf"(?m)^ +{federation1} +$")
 
     # Verify clusters fed_id=0, federation="", fed_state=NA after being removed from federation
@@ -909,7 +909,7 @@ def test_modify_max_clusters_federation():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster", output)
+    assert first_match(r"Federation +Cluster", output)
     for cluster in cluster_list:
         assert re.search(rf"(?m)^ +{federation1} +{cluster} *$", output) is not None
 
@@ -927,7 +927,7 @@ def test_delete_cluster():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster", output)
+    assert first_match(r"Federation +Cluster", output)
     assert re.search(rf"(?m)^ +{federation1} +{cluster1} *$", output) is None
 
 
@@ -946,7 +946,7 @@ def test_delete_federation():
         f"sacctmgr show federation {federation1} format=federation%20,cluster%20",
         user=atf.properties["slurm-user"],
     )
-    assert first_match("Federation +Cluster", output)
+    assert first_match(r"Federation +Cluster", output)
     assert re.search(rf"(?m)^ +{federation1} +$", output) is None
 
     output = atf.run_command_output(

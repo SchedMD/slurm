@@ -37,11 +37,11 @@ sleep 20
     )
     task_count -= 1
     assert (
-        re.search("First task exited", run_error) is not None
+        re.search(r"First task exited", run_error) is not None
     ), "First task did not exit"
     assert (
-        re.search("tasks 0,2-9: running", run_error) is not None
+        re.search(r"tasks 0,2-9: running", run_error) is not None
     ), "Other tasks not running"
     assert (
-        re.search("tasks 0,2-9: Killed", run_error) is not None
+        re.search(r"tasks 0,2-9: Killed", run_error) is not None
     ), "Other tasks not killed"

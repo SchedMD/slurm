@@ -60,7 +60,7 @@ def test_srun_ports_out_of_range(nodes):
         result["exit_code"] != 0
     ), f"srun with -N{nodes} should fail because it needs more than {port_range} ports"
 
-    regex = f"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
+    regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
     assert (
         re.search(regex, result["stderr"]) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"
@@ -80,7 +80,7 @@ def test_out_of_srun_ports():
         result["exit_code"] != 0
     ), f"srun should fail because running job shoulb be using the whole SrunPortRange"
 
-    regex = f"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
+    regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
     assert (
         re.search(regex, result["stderr"]) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"

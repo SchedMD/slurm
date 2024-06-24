@@ -54,7 +54,7 @@ def test_switches():
     ), "Expected command to time out when asking for 2 nodes 1 switch apart"
     assert (
         re.search(
-            "srun: job [0-9]+ queued and waiting for resources",
+            r"srun: job [0-9]+ queued and waiting for resources",
             str(negative_output["stderr"]),
         )
         is not None
