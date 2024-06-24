@@ -190,7 +190,7 @@ def test_file_io_options(
 
             errors = atf.run_command_output(f'cat "{err_result}"', fatal=True)
             assert (
-                len(re.findall("invalid time interval", errors)) == 1
+                len(re.findall(r"invalid time interval", errors)) == 1
             ), "Couldn't find error in error file from invalid sleep command ('sleep aaa')"
     else:
         if out_result:

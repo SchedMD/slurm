@@ -27,13 +27,13 @@ def test_no_consume():
         "srun --gres=r1 scontrol show node -d"
     ).split("NodeName")[-1]
     assert (
-        re.search("GresUsed=.*r1:0", no_consume_output) is not None
+        re.search(r"GresUsed=.*r1:0", no_consume_output) is not None
     ), "Expect no_consume resources to not be consumed"
     consume_output = atf.run_command_output(
         "srun --gres=r2 scontrol show node -d"
     ).split("NodeName")[-1]
     assert (
-        re.search("GresUsed=.*r2:1", consume_output) is not None
+        re.search(r"GresUsed=.*r2:1", consume_output) is not None
     ), "Expect consumable resource to be consumed"
 
 
@@ -46,8 +46,8 @@ def test_no_consume_parallel():
     atf.wait_for_job_state(job_id_2, "RUNNING")
     squeue = atf.run_command_output("squeue")
     assert (
-        re.search(f"{job_id_1}( +[^ ]+)( +[^ ]+)( +[^ ]+) +R", squeue) is not None
+        re.search(rf"{job_id_1}( +[^ ]+)( +[^ ]+)( +[^ ]+) +R", squeue) is not None
     ), "Expect first job to be running"
     assert (
-        re.search(f"{job_id_2}( +[^ ]+)( +[^ ]+)( +[^ ]+) +R", squeue) is not None
+        re.search(rf"{job_id_2}( +[^ ]+)( +[^ ]+)( +[^ ]+) +R", squeue) is not None
     ), "Expect second job to be running"

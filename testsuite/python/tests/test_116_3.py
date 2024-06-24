@@ -28,16 +28,16 @@ def test_multi_prog():
     os.chmod(file_in, 0o777)
     output = atf.run_job_output(f"-n4 -O -l --multi-prog {file_in}")
     assert (
-        re.search("0: task:0:offset:0", output) is not None
+        re.search(r"0: task:0:offset:0", output) is not None
     ), "Label 0 did not have correct task or offset"
     assert (
-        re.search("1: task:1:offset:0", output) is not None
+        re.search(r"1: task:1:offset:0", output) is not None
     ), "Label 1 did not have correct task or offset"
     assert (
-        re.search("2: task:2:offset:1", output) is not None
+        re.search(r"2: task:2:offset:1", output) is not None
     ), "Label 2 did not have correct task or offset"
     assert (
-        re.search("3: task:3:offset:1", output) is not None
+        re.search(r"3: task:3:offset:1", output) is not None
     ), "Label 3 did not have correct task or offset"
 
     # Submit a slurm job that will execute different executables and check debug info
@@ -59,7 +59,7 @@ def test_multi_prog():
         f"--debugger-test -v -n5 -O -l --multi-prog {file_in}", xfail=True
     )
     assert re.search(
-        f"Configuration file {file_in} invalid", error_output
+        rf"Configuration file {file_in} invalid", error_output
     ), "Did not note lack of a executable for task 5"
 
     content = r"""1-2   hostname
@@ -69,8 +69,8 @@ task:%t:offset:%o bbbb"""
         f.write(content)
     output = atf.run_job_output(f"-n4 --overcommit -l -t1 --multi-prog {file_in}")
     assert re.search(
-        "0: aaaa task:0:offset:0 bbbb", output
+        r"0: aaaa task:0:offset:0 bbbb", output
     ), "MPMD line continuation first assert"
     assert re.search(
-        "3: aaaa task:3:offset:1 bbbb", output
+        r"3: aaaa task:3:offset:1 bbbb", output
     ), "MPMD line continuation second assert"

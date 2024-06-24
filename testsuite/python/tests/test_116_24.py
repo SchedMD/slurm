@@ -15,7 +15,7 @@ def setup():
 def test_kill_on_bad_exit():
     """Test of srun's --kill-on-bad-exit option."""
 
-    error_text = "SHOULD_NOT_BE_HERE"
+    error_text = r"SHOULD_NOT_BE_HERE"
     python_script = atf.module_tmp_path / "python_script.py"
     py_file = open(python_script, "w")
     num_tasks = 10

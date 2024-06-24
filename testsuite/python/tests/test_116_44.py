@@ -50,9 +50,9 @@ echo DISPLAY==${DISPLAY}X""",
     output = atf.run_job_output(
         f"-N{node_count} -n{num_tasks} -O --task-prolog={task_prolog} --task-epilog={task_epilog} {file_in}"
     )
-    match_header = re.findall("HEADER", output)
-    match_test = re.findall("TEST==prolog_qa", output)
-    match_display = re.findall("DISPLAY==X", output)
+    match_header = re.findall(r"HEADER", output)
+    match_test = re.findall(r"TEST==prolog_qa", output)
+    match_display = re.findall(r"DISPLAY==X", output)
     assert (
         len(match_header) == num_tasks
     ), "Prolog exported env var failure HEADER count != number of tasks"

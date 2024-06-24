@@ -32,15 +32,15 @@ def test_input_output_taskid():
     child_out = str(child.before)
     match = re.search(r"jobid (\d+)", child_out)
     job_id = match.group(1)
-    step_id = f"StepId={job_id}.0"
+    step_id = rf"StepId={job_id}.0"
     assert (
         re.search(step_id, child_out) is not None
     ), f"Step ({step_id}) not found in verbose output"
     assert re.search(
-        f"{step_id} task {task_id}: running", child_out
+        rf"{step_id} task {task_id}: running", child_out
     ), f"Task ({task_id}) failed to run"
     assert re.search(
-        f"{step_id} tasks 0-{task_id - 1},{task_id + 1}-{task_num - 1}: exited",
+        rf"{step_id} tasks 0-{task_id - 1},{task_id + 1}-{task_num - 1}: exited",
         child_out,
     ), f"Other tasks failed to exit"
 
