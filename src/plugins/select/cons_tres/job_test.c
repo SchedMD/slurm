@@ -788,14 +788,14 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 bool sharing_only, part_record_t *my_part_ptr,
-			 bool qos_preemptor, list_t *jobs)
+			 bool use_extra_row, list_t *jobs)
 {
 	uint32_t r;
 	uint16_t num_rows;
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		num_rows = p_ptr->num_rows;
-		if (preempt_by_qos && !qos_preemptor)
+		if (preempt_by_qos && !use_extra_row)
 			num_rows--;	/* Don't use extra row */
 		if (sharing_only &&
 		    ((num_rows < 2) || (p_ptr->part_ptr == my_part_ptr)))
@@ -994,7 +994,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      uint16_t cr_type,
 			      node_use_record_t *node_usage,
 			      enum node_cr_state job_node_req,
-			      resv_exc_t *resv_exc_ptr, bool qos_preemptor)
+			      resv_exc_t *resv_exc_ptr, bool use_extra_row)
 {
 	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
@@ -1100,7 +1100,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			 * in sharing partitions
 			 */
 			if (_is_node_busy(cr_part_ptr, i, true,
-					  job_ptr->part_ptr, qos_preemptor,
+					  job_ptr->part_ptr, use_extra_row,
 					  node_usage[i].jobs)) {
 				log_flag(SELECT_TYPE, "node %s is running job that shares resouces in other partition",
 					 node_ptr->name);
@@ -1112,7 +1112,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (job_node_req == NODE_CR_RESERVED) {
 				if (_is_node_busy(cr_part_ptr, i, false,
 						  job_ptr->part_ptr,
-						  qos_preemptor,
+						  use_extra_row,
 						  node_usage[i].jobs)) {
 					log_flag(SELECT_TYPE, "node %s is running other jobs, cannot run --exclusive job here",
 						 node_ptr->name);
@@ -1125,7 +1125,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				 */
 				if (_is_node_busy(cr_part_ptr, i, true,
 						  job_ptr->part_ptr,
-						  qos_preemptor,
+						  use_extra_row,
 						  node_usage[i].jobs)) {
 					log_flag(SELECT_TYPE, "node %s is running job that shares resources in other partition",
 						 node_ptr->name);
@@ -1169,7 +1169,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     part_res_record_t *cr_part_ptr,
 		     node_use_record_t *node_usage, list_t *license_list,
 		     resv_exc_t *resv_exc_ptr, bool prefer_alloc_nodes,
-		     bool qos_preemptor, bool preempt_mode)
+		     bool use_extra_row, bool preempt_mode)
 {
 	int error_code = SLURM_SUCCESS, select_rc = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, **part_core_map = NULL;
@@ -1210,7 +1210,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (!test_only) {
 		error_code = _verify_node_state(
 			cr_part_ptr, job_ptr, node_bitmap, cr_type,
-			node_usage, job_node_req, resv_exc_ptr, qos_preemptor);
+			node_usage, job_node_req, resv_exc_ptr, use_extra_row);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
@@ -1670,7 +1670,7 @@ skip_test0:
 	if ((jp_ptr->num_rows > 1) && !preempt_by_qos)
 		part_data_sort_res(jp_ptr);	/* Preserve row order for QOS */
 	c = jp_ptr->num_rows;
-	if (preempt_by_qos && !qos_preemptor)
+	if (preempt_by_qos && !use_extra_row)
 		c--;				/* Do not use extra row */
 	if (preempt_by_qos && (job_node_req != NODE_CR_AVAILABLE))
 		c = 1;
