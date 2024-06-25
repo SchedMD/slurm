@@ -606,6 +606,26 @@ static int _foreach_part_prios_same(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_wait_front_end(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	time_t now = *(time_t *)arg;
+
+	if (!IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	if ((job_ptr->state_reason != WAIT_NO_REASON) &&
+	    (job_ptr->state_reason != WAIT_RESOURCES) &&
+	    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
+		return 0;
+
+	job_ptr->state_reason = WAIT_FRONT_END;
+	xfree(job_ptr->state_desc);
+	last_job_update = now;
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -1394,20 +1414,7 @@ static int _schedule(bool full_queue)
 	last_job_sched_start = now;
 	START_TIMER;
 	if (!avail_front_end(NULL)) {
-		list_itr_t *job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = list_next(job_iterator))) {
-			if (!IS_JOB_PENDING(job_ptr))
-				continue;
-			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
-			    (job_ptr->state_reason != WAIT_RESOURCES) &&
-			    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
-				continue;
-			job_ptr->state_reason = WAIT_FRONT_END;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-		}
-		list_iterator_destroy(job_iterator);
-
+		(void) list_for_each(job_list, _foreach_wait_front_end, &now);
 		unlock_slurmctld(job_write_lock);
 		sched_debug("schedule() returning, no front end nodes are available");
 		goto out;
