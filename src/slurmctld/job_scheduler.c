@@ -115,6 +115,15 @@ typedef struct {
 	array_split_type_t type;
 } split_job_t;
 
+typedef struct {
+	bool backfill;
+	int job_part_pairs;
+	job_record_t *job_ptr;
+	list_t *job_queue;
+	time_t now;
+	int part_inx;
+} build_job_queue_for_part_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
@@ -516,6 +525,37 @@ static int _transfer_job_list(void *x, void *arg)
 	return 0;
 }
 
+static int _build_job_queue_for_part(void *x, void *arg)
+{
+	build_job_queue_for_part_t *setup_job = arg;
+	job_record_t *job_ptr = setup_job->job_ptr;
+
+	job_ptr->part_ptr = x;
+
+	/*
+	 * priority_array index matches part_ptr_list
+	 * position: increment inx
+	 */
+	setup_job->part_inx++;
+
+	if (!_job_runnable_test2(job_ptr, setup_job->now, setup_job->backfill))
+		return 0;
+
+	setup_job->job_part_pairs++;
+	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
+		_job_queue_append(setup_job->job_queue, job_ptr,
+				  job_ptr->part_ptr,
+				  job_ptr->part_prio->
+				  priority_array[setup_job->part_inx]);
+	} else {
+		_job_queue_append(setup_job->job_queue, job_ptr,
+				  job_ptr->part_ptr,
+				  job_ptr->priority);
+	}
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -563,9 +603,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
 	list_t *job_queue = NULL;
-	list_itr_t *job_iterator, *part_iterator;
+	list_itr_t *job_iterator;
 	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
 	int job_part_pairs = 0;
@@ -634,38 +673,21 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 			continue;
 
 		if (job_ptr->part_ptr_list) {
-			int inx = -1;
-			part_iterator = list_iterator_create(
-				job_ptr->part_ptr_list);
-			while ((part_ptr = list_next(part_iterator))) {
-				job_ptr->part_ptr = part_ptr;
+			build_job_queue_for_part_t setup_job = {
+				.backfill = backfill,
+				.job_ptr = job_ptr,
+				.job_queue = job_queue,
+				.part_inx = -1,
+				.now = time(NULL),
+			};
 
-				/* priority_array index matches part_ptr_list
-				 * position: increment inx */
-				inx++;
-
-				if (!_job_runnable_test2(
-					    job_ptr, now, backfill))
-					continue;
-
-				job_part_pairs++;
-				if (job_ptr->part_prio &&
-				    job_ptr->part_prio->priority_array) {
-					_job_queue_append(job_queue, job_ptr,
-							  part_ptr,
-							  job_ptr->
-							  part_prio->
-							  priority_array[inx]);
-				} else {
-					_job_queue_append(job_queue, job_ptr,
-							  part_ptr,
-							  job_ptr->priority);
-				}
-			}
-			list_iterator_destroy(part_iterator);
+			(void) list_for_each(job_ptr->part_ptr_list,
+					     _build_job_queue_for_part,
+					     &setup_job);
 		} else {
 			if (job_ptr->part_ptr == NULL) {
-				part_ptr = find_part_record(job_ptr->partition);
+				part_record_t *part_ptr =
+					find_part_record(job_ptr->partition);
 				if (part_ptr == NULL) {
 					error("Could not find partition %s for %pJ",
 					      job_ptr->partition, job_ptr);
