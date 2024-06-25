@@ -130,6 +130,11 @@ typedef struct {
 	time_t recent;
 } job_is_comp_t;
 
+typedef struct {
+	uint32_t prio;
+	bool set;
+} part_prios_same_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
@@ -586,6 +591,21 @@ static int _foreach_job_is_completing(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_part_prios_same(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	part_prios_same_t *part_prios_same = arg;
+
+	if (!part_prios_same->set) {
+		part_prios_same->prio = part_ptr->priority_tier;
+		part_prios_same->set = true;
+	} else if (part_prios_same->prio != part_ptr->priority_tier) {
+		return -1;
+	}
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -846,25 +866,13 @@ static void _do_diag_stats(long delta_t)
 /* Return true of all partitions have the same priority, otherwise false. */
 static bool _all_partition_priorities_same(void)
 {
-	part_record_t *part_ptr;
-	list_itr_t *iter;
-	bool part_priority_set = false;
-	uint32_t part_priority = 0;
-	bool result = true;
+	part_prios_same_t part_prios_same = { 0 };
 
-	iter = list_iterator_create(part_list);
-	while ((part_ptr = list_next(iter))) {
-		if (!part_priority_set) {
-			part_priority = part_ptr->priority_tier;
-			part_priority_set = true;
-		} else if (part_priority != part_ptr->priority_tier) {
-			result = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
+	if (list_for_each(part_list, _foreach_part_prios_same,
+			  &part_prios_same) == -1)
+		return false;
 
-	return result;
+	return true;
 }
 
 /*
