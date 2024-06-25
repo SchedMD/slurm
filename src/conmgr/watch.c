@@ -336,6 +336,13 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 			unix_path = con->unix_socket;
 	}
 
+	if (status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
+				 __func__, con->name, &addr);
+		fd_close(&fd);
+		return;
+	}
+
 	/* hand over FD for normal processing */
 	if (!(child = add_connection(con->type, con, fd, fd, con->events,
 				      &addr, addrlen, false, unix_path,
