@@ -112,6 +112,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
+	con->can_read = false;
 
 	if (con->is_listen) {
 		if (close(con->input_fd) == -1)
