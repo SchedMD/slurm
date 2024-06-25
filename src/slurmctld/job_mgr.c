@@ -2111,6 +2111,7 @@ static void _foreach_array_bitmap(const slurm_selected_step_t *filter,
 	if (not_found_tasks && (bit_ffs(not_found_tasks->array_bitmap) != -1)) {
 		tmp_control = args->null_callback(not_found_tasks,
 						  args->callback_arg);
+		xfree(not_found_tasks);
 	}
 
 	if (list_count(match_job_list))
