@@ -645,10 +645,8 @@ static int _foreach_part_reduce_frag(void *x, void *arg)
 			*(part_reduce_frag->failed_part_cnt)++].part_ptr =
 			part_ptr;
 		if (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG) {
-			if (part_reduce_frag->cg_part_str)
-				xstrcat(part_reduce_frag->cg_part_str,
-					",");
-			xstrfmtcat(part_reduce_frag->cg_part_str, "%s",
+			xstrfmtcat(part_reduce_frag->cg_part_str, "%s%s",
+				   part_reduce_frag->cg_part_str ? "," : "",
 				   part_ptr->name);
 		}
 	}
