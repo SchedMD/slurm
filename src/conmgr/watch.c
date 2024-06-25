@@ -46,6 +46,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/signals.h"
 
 typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
 
@@ -449,7 +450,7 @@ static void _poll(poll_args_t *args, on_poll_event_t on_poll, const char *tag)
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
 	conmgr_fd_t *con;
-	int signal_fd, event_fd;
+	int event_fd;
 
 again:
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
@@ -487,7 +488,6 @@ again:
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
-	signal_fd = mgr.signal_fd[0];
 	event_fd = mgr.event_fd[0];
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -497,10 +497,7 @@ again:
 		if (!fds_ptr->revents)
 			continue;
 
-		if (fds_ptr->fd == signal_fd) {
-			mgr.signaled = true;
-			_handle_event_pipe(fds_ptr, tag, "CAUGHT_SIGNAL");
-		} else if (fds_ptr->fd == event_fd)
+		if (fds_ptr->fd == event_fd)
 			_handle_event_pipe(fds_ptr, tag, "CHANGE_EVENT");
 		else if ((con = con_find_by_fd(fds_ptr->fd))) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
@@ -530,16 +527,10 @@ static void _init_poll_fds(poll_args_t *args, struct pollfd **fds_ptr_p,
 {
 	struct pollfd *fds_ptr = NULL;
 
-	xrecalloc(args->fds, ((conn_count * 2) + 2), sizeof(*args->fds));
+	xrecalloc(args->fds, ((conn_count * 2) + 1), sizeof(*args->fds));
 
 	args->nfds = 0;
 	fds_ptr = args->fds;
-
-	/* Add signal fd */
-	fds_ptr->fd = mgr.signal_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
 
 	/* Add event fd */
 	fds_ptr->fd = mgr.event_fd[0];
@@ -552,7 +543,7 @@ static void _init_poll_fds(poll_args_t *args, struct pollfd **fds_ptr_p,
 
 /*
  * Poll all processing connections sockets and
- * signal_fd and event_fd.
+ * and event_fd.
  */
 static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 			      conmgr_work_status_t status, const char *tag,
@@ -570,11 +561,6 @@ static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 	/* grab counts once */
 	if (!(count = list_count(mgr.connections))) {
 		log_flag(CONMGR, "%s: no connections to poll()", __func__);
-		goto done;
-	}
-
-	if (mgr.signaled) {
-		log_flag(CONMGR, "%s: skipping poll() due to signal", __func__);
 		goto done;
 	}
 
@@ -633,7 +619,7 @@ static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 	list_iterator_destroy(itr);
 
-	if (poll_args.nfds == 2) {
+	if (poll_args.nfds == 1) {
 		log_flag(CONMGR, "%s: skipping poll() due to no open file descriptors for %d connections",
 			 __func__, count);
 		goto done;
@@ -680,12 +666,6 @@ static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
 		goto cleanup;
 	}
 
-	if (mgr.signaled) {
-		log_flag(CONMGR, "%s: skipping poll() to pending signal",
-			 __func__);
-		goto cleanup;
-	}
-
 	if (mgr.quiesced) {
 		log_flag(CONMGR, "%s: skipping poll() while quiesced",
 			 __func__);
@@ -722,7 +702,7 @@ static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 	list_iterator_destroy(itr);
 
-	if (listen_args.nfds == 2) {
+	if (listen_args.nfds == 1) {
 		log_flag(CONMGR, "%s: deferring listen due to all sockets are queued to call accept or closed",
 			 __func__);
 		goto cleanup;
@@ -886,38 +866,14 @@ static void _handle_events(bool *work)
 	}
 }
 
-static void _read_event_fd(void)
-{
-	int event_read;
-	char buf[100]; /* buffer for event_read */
-
-	/*
-	 * Only clear signal and event pipes once both polls
-	 * are done.
-	 */
-	event_read = read(mgr.event_fd[0], buf, sizeof(buf));
-	if (event_read > 0) {
-		log_flag(CONMGR, "%s: detected %u events from event fd",
-			 __func__, event_read);
-		mgr.event_signaled = 0;
-	} else if (!event_read || (errno == EWOULDBLOCK) ||
-		   (errno == EAGAIN))
-		log_flag(CONMGR, "%s: nothing to read from event fd", __func__);
-	else if (errno == EINTR)
-		log_flag(CONMGR, "%s: try again on read of event fd: %m",
-			 __func__);
-	else
-		fatal("%s: unable to read from event fd: %m",
-		      __func__);
-}
-
 static bool _watch_loop(void)
 {
 	bool work = false; /* is there any work to do? */
 
-	if (mgr.shutdown_requested)
+	if (mgr.shutdown_requested) {
 		close_all_connections();
-	else if (mgr.quiesced) {
+		signal_mgr_stop();
+	} else if (mgr.quiesced) {
 		if (mgr.poll_active || mgr.listen_active) {
 			/*
 			 * poll() hasn't returned yet so signal it to
@@ -930,20 +886,6 @@ static bool _watch_loop(void)
 
 		log_flag(CONMGR, "%s: quiesced", __func__);
 		return false;
-	}
-
-	if (!mgr.poll_active && !mgr.listen_active) {
-		_read_event_fd();
-		if (mgr.signaled) {
-			if (!mgr.read_signals_active) {
-				mgr.read_signals_active = true;
-
-				add_work(true, NULL, handle_signals,
-					 CONMGR_WORK_TYPE_FIFO, NULL,
-					 XSTRINGIFY(handle_signals));
-			}
-			work = true;
-		}
 	}
 
 	_handle_events(&work);
@@ -1044,11 +986,9 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	mgr.watching = true;
 
-	init_signal_handler();
+	signal_mgr_start(true);
 
 	while (_watch_loop());
-
-	fini_signal_handler();
 
 	xassert(mgr.watching);
 	mgr.watching = false;

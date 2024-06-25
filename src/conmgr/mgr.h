@@ -150,23 +150,6 @@ struct conmgr_fd_s {
 };
 
 typedef struct {
-#define MAGIC_SIGNAL_HANDLER 0xC20A444A
-	int magic; /* MAGIC_SIGNAL_HANDLER */
-	struct sigaction prior;
-	struct sigaction new;
-	int signal;
-} signal_handler_t;
-
-typedef struct {
-#define MAGIC_SIGNAL_WORK 0xA201444A
-	int magic; /* MAGIC_SIGNAL_WORK */
-	int signal;
-	conmgr_work_func_t func;
-	void *arg;
-	const char *tag;
-} signal_work_t;
-
-typedef struct {
 #define MAGIC_WORKER 0xD2342412
 	int magic; /* MAGIC_WORKER */
 	/* thread id of worker */
@@ -225,10 +208,6 @@ typedef struct {
 	 */
 	bool poll_active;
 	/*
-	 * True if there is a thread reading signal_fd[0]
-	 */
-	bool read_signals_active;
-	/*
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
@@ -245,11 +224,7 @@ typedef struct {
 	int event_signaled;
 	/* Event PIPE used to break out of poll */
 	int event_fd[2];
-	/* Signal PIPE to catch POSIX signals */
-	int signal_fd[2];
 
-	/* track when there is a pending signal to read */
-	bool signaled;
 	/* Caller requests finish on error */
 	bool exit_on_error;
 	/* First observed error */
@@ -262,13 +237,6 @@ typedef struct {
 	timer_t timer;
 	/* list of work_t* */
 	list_t *work;
-
-	/* list of all registered signal handlers */
-	signal_handler_t *signal_handlers;
-	int signal_handler_count;
-	/* list of all registered signal work */
-	signal_work_t *signal_work;
-	int signal_work_count;
 
 	/* functions to handle host/port parsing */
 	conmgr_callbacks_t callbacks;
@@ -302,7 +270,6 @@ typedef struct {
 		.watch_cond = PTHREAD_COND_INITIALIZER,\
 		.max_connections = -1,\
 		.event_fd = { -1, -1 },\
-		.signal_fd = { -1, -1 },\
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
@@ -317,13 +284,6 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
  * IN locked - mgr.locked is held by caller
  */
 extern void signal_change(bool locked, const char *caller);
-extern void init_signal_handler(void);
-extern void fini_signal_handler(void);
-extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
-			    const char *tag);
-extern void handle_signals(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg);
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);

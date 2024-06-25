@@ -42,6 +42,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/signals.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
 
@@ -106,15 +107,8 @@ extern void conmgr_init(int thread_count, int max_connections,
 	fd_set_nonblocking(mgr.event_fd[0]);
 	fd_set_blocking(mgr.event_fd[1]);
 
-	if (pipe(mgr.signal_fd))
-		fatal("%s: unable to open unnamed pipe: %m", __func__);
-
-	/* block for writes only */
-	fd_set_blocking(mgr.signal_fd[0]);
-	fd_set_blocking(mgr.signal_fd[1]);
-
-	add_signal_work(SIGALRM, on_signal_alarm, NULL,
-			XSTRINGIFY(on_signal_alarm));
+	conmgr_add_signal_work(SIGALRM, on_signal_alarm, NULL,
+			       XSTRINGIFY(on_signal_alarm));
 
 	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
@@ -159,12 +153,6 @@ extern void conmgr_fini(void)
 	if (((mgr.event_fd[0] >= 0) && close(mgr.event_fd[0])) ||
 	    ((mgr.event_fd[1] >= 0) && close(mgr.event_fd[1])))
 		error("%s: unable to close event_fd: %m", __func__);
-
-	if (((mgr.signal_fd[0] >= 0) && close(mgr.signal_fd[0])) ||
-	    ((mgr.signal_fd[1] >= 0) && close(mgr.signal_fd[1])))
-		error("%s: unable to close signal_fd: %m", __func__);
-
-	xfree(mgr.signal_work);
 
 	workers_fini();
 

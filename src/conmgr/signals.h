@@ -36,4 +36,11 @@
 #ifndef _CONMGR_SIGNALS_H
 #define _CONMGR_SIGNALS_H
 
+#include <stdbool.h>
+
+/* start the signal manager thread (as work) */
+extern void signal_mgr_start(bool locked);
+/* signal the signal manager thread to stop */
+extern void signal_mgr_stop(void);
+
 #endif /* _CONMGR_SIGNALS_H */
