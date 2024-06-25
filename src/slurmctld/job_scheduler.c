@@ -587,6 +587,12 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		FREE_NULL_LIST(split_job.job_list);
 	}
 
+	/*
+	 * This cannot be a list_for_each This calls _job_runnable_test1() ->
+	 * job_independent() -> test_job_dependency() which needs to call
+	 * list_find_first() on the job_list making it impossible to also have
+	 * this a list_find_first() on job_list.
+	 */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_PENDING(job_ptr)) {
