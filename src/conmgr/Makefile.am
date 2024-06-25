@@ -17,6 +17,7 @@ libconmgr_la_SOURCES = \
 	mgr.h \
 	rpc.c \
 	signals.c \
+	signals.h \
 	watch.c \
 	work.c \
 	workers.c
