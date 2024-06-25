@@ -144,6 +144,7 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/elasticsearch - Fix slurmctld memory leak from curl usage
  -- acct_gather_profile/influxdb - Fix slurmstepd memory leak from curl usage
  -- Fix 24.05.0 regression not deleting job hash dirs after MinJobAge.
+ -- Fix filtering arguments being ignored when using squeue --json.
 
 * Changes in Slurm 24.05.0
 ==========================

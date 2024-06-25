@@ -75,6 +75,8 @@ long job_time_used(job_info_t * job_ptr);
 extern void print_jobs_array(job_info_t *jobs, int size, list_t *format);
 extern void print_steps_array(job_step_info_t *steps, int size, list_t *format);
 
+extern void squeue_filter_jobs_for_json(job_info_msg_t *job_info);
+
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
