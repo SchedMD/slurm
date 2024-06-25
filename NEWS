@@ -143,6 +143,7 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/{elasticsearch,kafka} - Avoid sending fields with invalid date/time.
  -- jobcomp/elasticsearch - Fix slurmctld memory leak from curl usage
  -- acct_gather_profile/influxdb - Fix slurmstepd memory leak from curl usage
+ -- Fix 24.05.0 regression not deleting job hash dirs after MinJobAge.
 
 * Changes in Slurm 24.05.0
 ==========================

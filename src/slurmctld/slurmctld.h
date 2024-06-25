@@ -424,7 +424,6 @@ extern time_t last_resv_update;	/* time of last resv_list update */
  *  Job lists
 \*****************************************************************************/
 extern list_t *job_list;		/* list of job_record entries */
-extern list_t *purge_files_list;	/* list of job ids to purge files of */
 extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 
 /*****************************************************************************\

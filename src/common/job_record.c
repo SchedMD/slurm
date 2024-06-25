@@ -46,6 +46,8 @@
 
 #define DETAILS_FLAG 0xdddd
 
+list_t *purge_files_list = NULL; /* list of job ids to purge files of */
+
 typedef struct {
 	int node_index;
 	int node_count;
@@ -149,6 +151,17 @@ static void _delete_job_details(job_record_t *job_entry)
 		return;
 
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
+
+	/*
+	 * Queue up job to have the batch script and environment deleted.
+	 * This is handled by a separate thread to limit the amount of
+	 * time purge_old_job needs to spend holding locks.
+	 */
+	if (IS_JOB_FINISHED(job_entry) && purge_files_list) {
+		uint32_t *job_id = xmalloc(sizeof(uint32_t));
+		*job_id = job_entry->job_id;
+		list_enqueue(purge_files_list, job_id);
+	}
 
 	xfree(job_entry->details->acctg_freq);
 	for (i=0; i<job_entry->details->argc; i++)

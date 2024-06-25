@@ -46,6 +46,7 @@ typedef struct slurmctld_resv slurmctld_resv_t;
 #endif
 
 extern time_t last_job_update;	/* time of last update to job records */
+extern list_t *purge_files_list; /* list of job ids to purge files of */
 
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
