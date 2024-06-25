@@ -135,6 +135,18 @@ typedef struct {
 	bool set;
 } part_prios_same_t;
 
+typedef struct {
+	part_record_t *part_ptr;
+	bool cleared;
+} _failed_part_t;
+
+typedef struct {
+	char *cg_part_str;
+	bitstr_t *eff_cg_bitmap;
+	_failed_part_t *failed_parts;
+	int *failed_part_cnt;
+} part_reduce_frag_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
@@ -168,11 +180,6 @@ static int sched_min_interval = 2;
 
 static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
-
-typedef struct {
-	part_record_t *part_ptr;
-	bool cleared;
-} _failed_part_t;
 
 static int _find_singleton_job (void *x, void *key)
 {
@@ -622,6 +629,29 @@ static int _foreach_wait_front_end(void *x, void *arg)
 	job_ptr->state_reason = WAIT_FRONT_END;
 	xfree(job_ptr->state_desc);
 	last_job_update = now;
+
+	return 0;
+}
+
+static int _foreach_part_reduce_frag(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	part_reduce_frag_t *part_reduce_frag = arg;
+
+	if (bit_overlap_any(part_reduce_frag->eff_cg_bitmap,
+			    part_ptr->node_bitmap) &&
+	    (part_ptr->state_up & PARTITION_SCHED)) {
+		part_reduce_frag->failed_parts[
+			*(part_reduce_frag->failed_part_cnt)++].part_ptr =
+			part_ptr;
+		if (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG) {
+			if (part_reduce_frag->cg_part_str)
+				xstrcat(part_reduce_frag->cg_part_str,
+					",");
+			xstrfmtcat(part_reduce_frag->cg_part_str, "%s",
+				   part_ptr->name);
+		}
+	}
 
 	return 0;
 }
@@ -1436,32 +1466,18 @@ static int _schedule(bool full_queue)
 	if (reduce_completing_frag) {
 		bitstr_t *eff_cg_bitmap = bit_alloc(node_record_count);
 		if (job_is_completing(eff_cg_bitmap)) {
-			list_itr_t *part_iterator;
-			part_record_t *part_ptr = NULL;
-			char *cg_part_str = NULL;
-
-			part_iterator = list_iterator_create(part_list);
-			while ((part_ptr = list_next(part_iterator))) {
-				if (bit_overlap_any(eff_cg_bitmap,
-						    part_ptr->node_bitmap) &&
-				    (part_ptr->state_up & PARTITION_SCHED)) {
-					failed_parts[failed_part_cnt++].part_ptr =
-						part_ptr;
-					if (slurm_conf.slurmctld_debug >=
-					    LOG_LEVEL_DEBUG) {
-						if (cg_part_str)
-							xstrcat(cg_part_str,
-								",");
-						xstrfmtcat(cg_part_str, "%s",
-							   part_ptr->name);
-					}
-				}
-			}
-			list_iterator_destroy(part_iterator);
-			if (cg_part_str) {
+			part_reduce_frag_t part_reduce_frag = {
+				.eff_cg_bitmap = eff_cg_bitmap,
+				.failed_parts = failed_parts,
+				.failed_part_cnt = &failed_part_cnt,
+			};
+			(void) list_for_each(part_list,
+					     _foreach_part_reduce_frag,
+					     &part_reduce_frag);
+			if (part_reduce_frag.cg_part_str) {
 				sched_debug("some job is still completing, skipping partitions '%s'",
-					    cg_part_str);
-				xfree(cg_part_str);
+					    part_reduce_frag.cg_part_str);
+				xfree(part_reduce_frag.cg_part_str);
 			}
 		}
 		FREE_NULL_BITMAP(eff_cg_bitmap);
