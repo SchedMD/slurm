@@ -124,6 +124,12 @@ typedef struct {
 	int part_inx;
 } build_job_queue_for_part_t;
 
+typedef struct {
+	bool completing;
+	bitstr_t *eff_cg_bitmap;
+	time_t recent;
+} job_is_comp_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
@@ -556,6 +562,30 @@ static int _build_job_queue_for_part(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_job_is_completing(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	job_is_comp_t *job_is_comp = arg;
+
+	if (IS_JOB_COMPLETING(job_ptr) &&
+	    (job_ptr->end_time >= job_is_comp->recent)) {
+		job_is_comp->completing = true;
+
+		/*
+		 * Can return after finding first completing job so long
+		 * as a map of nodes in partitions affected by
+		 * completing jobs is not required.
+		 */
+		if (!job_is_comp->eff_cg_bitmap)
+			return -1;
+		else if (job_ptr->part_ptr)
+			bit_or(job_is_comp->eff_cg_bitmap,
+			       job_ptr->part_ptr->node_bitmap);
+	}
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -724,33 +754,19 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
  */
 extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 {
-	bool completing = false;
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr = NULL;
-	time_t recent;
+	job_is_comp_t job_is_comp = {
+		.eff_cg_bitmap = eff_cg_bitmap,
+	};
 
 	if ((job_list == NULL) || (slurm_conf.complete_wait == 0))
-		return completing;
+		return false;
 
-	recent = time(NULL) - slurm_conf.complete_wait;
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (IS_JOB_COMPLETING(job_ptr) &&
-		    (job_ptr->end_time >= recent)) {
-			completing = true;
-			/* can return after finding first completing job so long
-			 * as a map of nodes in partitions affected by
-			 * completing jobs is not required */
-			if (!eff_cg_bitmap)
-				break;
-			else if (job_ptr->part_ptr)
-				bit_or(eff_cg_bitmap,
-				       job_ptr->part_ptr->node_bitmap);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	job_is_comp.recent = time(NULL) - slurm_conf.complete_wait;
 
-	return completing;
+	(void) list_for_each(job_list, _foreach_job_is_completing,
+			     &job_is_comp);
+
+	return job_is_comp.completing;
 }
 
 /*
