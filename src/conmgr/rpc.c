@@ -122,7 +122,7 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 
 	FREE_NULL_BUFFER(rpc);
 
-	if (!rc && msg) {
+	if (!rc) {
 		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
 			 __func__, con->name, rpc_num2string(msg->msg_type));
 		log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
