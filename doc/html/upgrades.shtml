@@ -10,31 +10,31 @@ potential complications to prepare for.</p>
 
 <h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
-<li><a href="#release_cycle">Release cycle</a>
+<li><a href="#release_cycle">Release Cycle</a>
 <ul>
-<li><a href="#compatibility_window">Compatibility window</a></li>
+<li><a href="#compatibility_window">Compatibility Window</a></li>
 <li><a href="#epel_repository">EPEL Repository</a></li>
-<li><a href="#prerelease">Pre-release versions</a></li>
+<li><a href="#prerelease">Pre-Release Versions</a></li>
 </ul></li>
 <li><a href="#revert">Reverting an Upgrade</a></li>
-<li><a href="#minor_upgrades">Minor upgrades</a></li>
-<li><a href="#procedure">Upgrade procedure</a>
+<li><a href="#minor_upgrades">Minor Upgrades</a></li>
+<li><a href="#procedure">Upgrade Procedure</a>
 <ul>
 <li><a href="#preparation">Preparation</a></li>
 <li><a href="#backups">Create Backups</a></li>
-<li><a href="#slurmdbd">slurmdbd (accounting)</a>
+<li><a href="#slurmdbd">slurmdbd (Accounting)</a>
 <ul>
-<li><a href="#db_server">Database server</a></li>
+<li><a href="#db_server">Database Server</a></li>
 </ul></li>
-<li><a href="#slurmctld">slurmctld (controller)</a></li>
-<li><a href="#slurmd">slurmd (compute nodes)</a></li>
-<li><a href="#other_commands">Other Slurm commands</a></li>
-<li><a href="#custom_plugins">Customized Slurm plugins</a></li>
+<li><a href="#slurmctld">slurmctld (Controller)</a></li>
+<li><a href="#slurmd">slurmd (Compute Nodes)</a></li>
+<li><a href="#other_commands">Other Slurm Commands</a></li>
+<li><a href="#custom_plugins">Customized Slurm Plugins</a></li>
 </ul></li>
-<li><a href="#seamless_upgrades">Seamless upgrades</a></li>
+<li><a href="#seamless_upgrades">Seamless Upgrades</a></li>
 </ul>
 
-<h2 id="release_cycle">Release cycle
+<h2 id="release_cycle">Release Cycle
 <a class="slurm_link" href="#release_cycle"></a></h2>
 
 <p>The Slurm version number contains three period-separated numbers that
@@ -59,7 +59,7 @@ major versions. Slurm 24.05 represents the first release on the
 <a href="https://www.schedmd.com/slurm-releases-move-to-a-six-month-cycle/">
 new 6-month cycle</a>.</p>
 
-<h3 id="compatibility_window">Compatibility window
+<h3 id="compatibility_window">Compatibility Window
 <a class="slurm_link" href="#compatibility_window"></a></h3>
 
 <p>Upgrades from the <b>previous two major releases</b> are compatible. For
@@ -139,7 +139,7 @@ configuration to exclude all Slurm packages from automatic updates.</p>
 section of /etc/yum.repos.d/epel.repo:
 <pre>exclude=slurm*</pre></p>
 
-<h3 id="prerelease">Pre-release versions
+<h3 id="prerelease">Pre-Release Versions
 <a class="slurm_link" href="#prerelease"></a></h3>
 
 <p>When installing pre-release versions (e.g., 24.05.0rc1 or
@@ -151,7 +151,7 @@ testing</b> and are not intended for production clusters. Sites are encouraged
 to actively run pre-release versions on test machines before each major release.
 </p>
 
-<h2 id="revert">Reverting an upgrade
+<h2 id="revert">Reverting an Upgrade
 <a class="slurm_link" href="#revert"></a></h2>
 
 <p>Reverting an upgrade (or downgrading) is <b>not supported</b> once any of the
@@ -170,7 +170,7 @@ In particular, restoring the contents of <i>StateSaveLocation</i> (as defined in
 if you wish to revert an upgrade. Reverting an upgrade will wipe out anything
 that happened after the backups were created.</p>
 
-<h2 id="minor_upgrades">Minor upgrades
+<h2 id="minor_upgrades">Minor Upgrades
 <a class="slurm_link" href="#minor_upgrades"></a></h2>
 
 <p>When upgrading to a newer minor maintenance release (as
@@ -180,7 +180,7 @@ less time, and is more accommodating of mixed versions and in-place
 downgrades. However, you should always have current backups to solidify your
 recovery options.</p>
 
-<h2 id="procedure">Upgrade procedure
+<h2 id="procedure">Upgrade Procedure
 <a class="slurm_link" href="#procedure"></a></h2>
 
 <p>The upgrades procedure can be summarized as follows. Note the specific order
@@ -239,7 +239,7 @@ Slurm release. Typically, new naming and syntax conventions are introduced
 several versions before the old ones are removed, so you may be able to make the
 necessary changes before starting the upgrade process.</p>
 
-<h4 id="downtime">Plan for downtime
+<h4 id="downtime">Plan for Downtime
 <a class="slurm_link" href="#downtime"></a></h4>
 
 <p>Refer to the expected downtime guidance in the
@@ -362,7 +362,7 @@ be possible to continue using any client from a prior release while the plugins
 are still supported, <b>sites should always recompile any generated OpenAPI
 clients and test thoroughly before upgrading.</b></p>
 
-<h3 id="backups">Create backups
+<h3 id="backups">Create Backups
 <a class="slurm_link" href="#backups"></a></h3>
 
 <p><b>Always</b> create full backups to restore all parts of Slurm, including
@@ -409,7 +409,7 @@ Archiving or Purging</a> accounting data</li>
 </li>
 </ul></p>
 
-<h3 id="slurmdbd">slurmdbd (accounting)
+<h3 id="slurmdbd">slurmdbd (Accounting)
 <a class="slurm_link" href="#slurmdbd"></a></h3>
 
 <p>If <b>slurmdbd</b> is used in your environment, it must be at the same or
@@ -478,7 +478,7 @@ default. See the recommendation in the
 	<code>sacct</code> or <code>sacctmgr</code>.</li>
 </ol>
 
-<h4 id="db_server"><b>Database server</b>
+<h4 id="db_server"><b>Database Server</b>
 <a class="slurm_link" href="#db_server"></a></h4>
 
 <p>When upgrading the database server that is used by slurmdbd (e.g., MySQL or
@@ -493,7 +493,7 @@ later from an older version of MariaDB or any version of MySQL, ensure you are
 running <b>slurmdbd 22.05.7</b> or later. These versions will gracefully handle
 changes to MariaDB default values that can cause problems for slurmdbd.</p>
 
-<h3 id="slurmctld">slurmctld (controller)
+<h3 id="slurmctld">slurmctld (Controller)
 <a class="slurm_link" href="#slurmctld"></a></h3>
 
 <p>It is preferred to upgrade the slurmctld system(s) at the same time as slurmd
@@ -529,7 +529,7 @@ simultaneous upgrade of slurmd systems:</p>
 	execute <code>scontrol reconfig</code> for them to take effect.</li>
 </ol>
 
-<h3 id="slurmd">slurmd (compute nodes)
+<h3 id="slurmd">slurmd (Compute Nodes)
 <a class="slurm_link" href="#slurmd"></a></h3>
 
 <p>It is preferred to upgrade all slurmd nodes at the same time as the slurmctld.
@@ -562,7 +562,7 @@ following procedure can be followed:</p>
 execute <code>scontrol reconfig</code> for it to take effect.</li>
 </ol>
 
-<h3 id="other_commands">Other Slurm commands
+<h3 id="other_commands">Other Slurm Commands
 <a class="slurm_link" href="#other_commands"></a></h3>
 
 <p>Other Slurm commands (including client commands) do not require special
@@ -572,7 +572,7 @@ components. After core Slurm components have been upgraded, upgrade additional
 components and client commands using the normal method for your system, then
 restart any affected daemons.</p>
 
-<h3 id="custom_plugins">Customized Slurm plugins
+<h3 id="custom_plugins">Customized Slurm Plugins
 <a class="slurm_link" href="#custom_plugins"></a></h3>
 
 <p>Slurm's main public API library (libslurm.so.X.0.0) increases its version
@@ -607,7 +607,7 @@ of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
 'libslurm.so.x.y.z' reference, then the application will likely need to be
 recompiled.</p>
 
-<h2 id="seamless_upgrades">Seamless upgrades
+<h2 id="seamless_upgrades">Seamless Upgrades
 <a class="slurm_link" href="#seamless_upgrades"></a></h2>
 
 <p>In environments where the Slurm build process is customized, it is possible
@@ -618,6 +618,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 28 May 2024</p>
+<p style="text-align:center;">Last modified 18 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
