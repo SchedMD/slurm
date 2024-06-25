@@ -53,6 +53,7 @@
 #include "src/common/pack.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/poll.h"
 
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
@@ -115,6 +116,12 @@ struct conmgr_fd_s {
 	bool can_read;
 	/* has this connection received read EOF */
 	bool read_eof;
+	/*
+	 * Current active polling (if any).
+	 * Only set by con_set_polling()
+	 */
+	pollctl_fd_type_t polling_input_fd;
+	pollctl_fd_type_t polling_output_fd;
 	/* has this connection called on_connection */
 	bool is_connected;
 	/* incoming msg length - CON_TYPE_RPC only */
@@ -200,10 +207,6 @@ typedef struct {
 	 */
 	int watch_on_worker;
 	/*
-	 * True if there is a thread for listen queued or running
-	 */
-	bool listen_active;
-	/*
 	 * True if there is a thread for poll queued or running
 	 */
 	bool poll_active;
@@ -220,10 +223,6 @@ typedef struct {
 	bool at_fork_installed;
 	/* will inspect connections (not listeners */
 	bool inspecting;
-	/* if an event signal has already been sent */
-	int event_signaled;
-	/* Event PIPE used to break out of poll */
-	int event_fd[2];
 
 	/* Caller requests finish on error */
 	bool exit_on_error;
@@ -269,7 +268,6 @@ typedef struct {
 		.watch_mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.watch_cond = PTHREAD_COND_INITIALIZER,\
 		.max_connections = -1,\
-		.event_fd = { -1, -1 },\
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
@@ -324,6 +322,16 @@ extern void close_con(bool locked, conmgr_fd_t *con);
  * IN rc - error if known
  */
 extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd);
+
+/*
+ * Set connection polling state
+ * IN locked - true if caller hold mgr.mutex lock
+ * IN type - Set type of polling for connection or PCTL_TYPE_INVALID to disable
+ *	polling this connection
+ * IN caller - __func__ from caller
+ */
+extern void con_set_polling(bool locked, conmgr_fd_t *con,
+			    pollctl_fd_type_t type, const char *caller);
 
 extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 			 conmgr_work_status_t status, const char *tag,

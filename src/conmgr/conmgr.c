@@ -101,11 +101,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.callbacks = callbacks;
 	mgr.work = list_create(NULL);
 
-	if (pipe(mgr.event_fd))
-		fatal("%s: unable to open unnamed pipe: %m", __func__);
-
-	fd_set_nonblocking(mgr.event_fd[0]);
-	fd_set_blocking(mgr.event_fd[1]);
+	pollctl_init(mgr.max_connections);
 
 	conmgr_add_signal_work(SIGALRM, on_signal_alarm, NULL,
 			       XSTRINGIFY(on_signal_alarm));
@@ -150,15 +146,13 @@ extern void conmgr_fini(void)
 
 	free_delayed_work();
 
-	if (((mgr.event_fd[0] >= 0) && close(mgr.event_fd[0])) ||
-	    ((mgr.event_fd[1] >= 0) && close(mgr.event_fd[1])))
-		error("%s: unable to close event_fd: %m", __func__);
-
 	workers_fini();
 
 	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
 	FREE_NULL_LIST(mgr.work);
+
+	pollctl_fini();
 
 	/*
 	 * Do not destroy the mutex or cond so that this function does not

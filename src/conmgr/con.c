@@ -44,6 +44,8 @@
 #include <sys/ucred.h>
 #endif
 
+#include "slurm/slurm.h"
+
 #include "src/common/fd.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
@@ -53,6 +55,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/poll.h"
 
 typedef struct {
 	conmgr_events_t events;
@@ -94,6 +97,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		goto cleanup;
 	}
 
+
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
@@ -101,6 +105,9 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	    (unlink(con->unix_socket) == -1))
 		error("%s: unable to unlink %s: %m",
 		      __func__, con->unix_socket);
+
+	/* stop polling to input fd to allow handle_connection() to reapply */
+	con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
 
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
@@ -180,6 +187,8 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
+		.polling_input_fd = PCTL_TYPE_INVALID,
+		.polling_output_fd = PCTL_TYPE_INVALID,
 	};
 
 	if (!is_listen) {
@@ -276,7 +285,8 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	else
 		list_append(mgr.connections, con);
 
-	/* break out of poll() to add new connections */
+	/* interrupt poll () and wake up watch() to examine new connection */
+	pollctl_interrupt(__func__);
 	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -750,6 +760,155 @@ extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd)
 	 * the relavent file descriptor and remove from connection.
 	 */
 	close_con(true, con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
+static void _set_fd_polling(int fd, pollctl_fd_type_t old,
+			    pollctl_fd_type_t new, const char *con_name,
+			    const char *caller)
+{
+	if (old == new)
+		return;
+
+	if (new == PCTL_TYPE_INVALID) {
+		if (old != PCTL_TYPE_INVALID)
+			pollctl_unlink_fd(fd, con_name, caller);
+		return;
+	}
+
+	if (old != PCTL_TYPE_INVALID)
+		pollctl_relink_fd(fd, new, con_name, caller);
+	else
+		pollctl_link_fd(fd, new, con_name, caller);
+}
+
+extern void con_set_polling(bool locked, conmgr_fd_t *con,
+			    pollctl_fd_type_t type, const char *caller)
+{
+	int has_in, has_out, in, out, is_same;
+	pollctl_fd_type_t in_type, out_type;
+
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	xassert(type >= PCTL_TYPE_INVALID);
+	xassert(type < PCTL_TYPE_INVALID_MAX);
+	xassert(con->polling_input_fd >= PCTL_TYPE_INVALID);
+	xassert(con->polling_input_fd < PCTL_TYPE_INVALID_MAX);
+	xassert(con->polling_output_fd >= PCTL_TYPE_INVALID);
+	xassert(con->polling_output_fd < PCTL_TYPE_INVALID_MAX);
+
+	in = con->input_fd;
+	has_in = (in >= 0);
+	out = con->output_fd;
+	has_out = (out >= 0);
+	is_same = (con->input_fd == con->output_fd);
+
+	xassert(has_in || has_out);
+
+	/* Map type to type per in/out */
+	switch (type) {
+	case PCTL_TYPE_INVALID:
+		in_type = PCTL_TYPE_INVALID;
+		out_type = PCTL_TYPE_INVALID;
+		break;
+	case PCTL_TYPE_READ_ONLY:
+		in_type = PCTL_TYPE_READ_ONLY;
+		out_type = PCTL_TYPE_INVALID;
+		break;
+	case PCTL_TYPE_READ_WRITE:
+		if (is_same) {
+			in_type = PCTL_TYPE_READ_WRITE;
+			out_type = PCTL_TYPE_INVALID;
+		} else {
+			in_type = PCTL_TYPE_READ_ONLY;
+			out_type = PCTL_TYPE_WRITE_ONLY;
+		}
+		break;
+	case PCTL_TYPE_WRITE_ONLY:
+		if (is_same) {
+			in_type = PCTL_TYPE_WRITE_ONLY;
+			out_type = PCTL_TYPE_INVALID;
+		} else {
+			in_type = PCTL_TYPE_INVALID;
+			out_type = PCTL_TYPE_WRITE_ONLY;
+		}
+		break;
+	case PCTL_TYPE_LISTEN:
+		xassert(con->is_listen);
+		in_type = PCTL_TYPE_LISTEN;
+		out_type = PCTL_TYPE_INVALID;
+		break;
+	case PCTL_TYPE_INVALID_MAX:
+		fatal_abort("should never execute");
+	}
+
+	if (!has_in)
+		in_type = PCTL_TYPE_INVALID;
+	if (!has_out)
+		out_type = PCTL_TYPE_INVALID;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *log = NULL, *at = NULL;
+		const char *op = "maintain";
+
+		if (has_in) {
+			const char *old, *new;
+
+			old = pollctl_type_to_string(con->polling_input_fd);
+			new = pollctl_type_to_string(in_type);
+
+			xstrfmtcatat(log, &at, " in[%d]:%s", in, old);
+
+			if (in_type != con->polling_input_fd) {
+				xstrfmtcatat(log, &at, "->%s", new);
+				op = "changing";
+			}
+		}
+
+		if (has_out) {
+			const char *old, *new;
+
+			old = pollctl_type_to_string(con->polling_output_fd);
+			new = pollctl_type_to_string(out_type);
+
+			xstrfmtcatat(log, &at, " out[%d]:%s", out, old);
+
+			if (out_type != con->polling_output_fd) {
+				xstrfmtcatat(log, &at, "->%s", new);
+				op = "changing";
+			}
+		}
+
+		log_flag(CONMGR, "%s->%s: [%s] %s polling:%s%s",
+			 caller, __func__, con->name, op,
+			 pollctl_type_to_string(type), (log ? log : ""));
+
+		xfree(log);
+	}
+
+	if (is_same) {
+		/* same never link output_fd */
+		xassert(out_type == PCTL_TYPE_INVALID);
+		xassert(con->polling_output_fd == PCTL_TYPE_INVALID);
+
+		_set_fd_polling(in, con->polling_input_fd, in_type, con->name,
+				caller);
+		con->polling_input_fd = in_type;
+	} else {
+		if (has_in) {
+			_set_fd_polling(in, con->polling_input_fd, in_type,
+					con->name, caller);
+			con->polling_input_fd = in_type;
+		}
+		if (has_out) {
+			_set_fd_polling(out, con->polling_output_fd, out_type,
+					con->name, caller);
+			con->polling_output_fd = out_type;
+		}
+	}
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);

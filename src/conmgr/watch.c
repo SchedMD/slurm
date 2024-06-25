@@ -35,11 +35,11 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
-#include <sys/poll.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 
 #include "src/common/fd.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -48,48 +48,9 @@
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/signals.h"
 
-typedef void (*on_poll_event_t)(int fd, conmgr_fd_t *con, short revents);
-
-/* simple struct to keep track of fds */
-typedef struct {
-	struct pollfd *fds;
-	int nfds;
-} poll_args_t;
-
-static void _handle_poll_event_error(int fd, conmgr_fd_t *con, short revents)
-{
-	if (revents & POLLNVAL) {
-		error("%s: [%s] %sconnection invalid",
-		      __func__, (con->is_listen ? "listening " : ""),
-		      con->name);
-	}
-
-	con_close_on_poll_error(true, con, fd);
-}
-
-/*
- * Event on a processing socket.
- * mgr must be locked.
- */
-static void _handle_poll_event(int fd, conmgr_fd_t *con, short revents)
-{
-	con->can_read = false;
-	con->can_write = false;
-
-	if ((revents & POLLNVAL) || (revents & POLLERR)) {
-		_handle_poll_event_error(fd, con, revents);
-		return;
-	}
-
-	if (fd == con->input_fd)
-		con->can_read = revents & POLLIN || revents & POLLHUP;
-	if (fd == con->output_fd)
-		con->can_write = revents & POLLOUT;
-
-	log_flag(CONMGR, "%s: [%s] fd=%u can_read=%s can_write=%s",
-		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
-		 (con->can_write ? "T" : "F"));
-}
+static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
+			   conmgr_work_status_t status, const char *tag,
+			   void *arg);
 
 static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
 			       conmgr_work_status_t status, const char *tag,
@@ -153,7 +114,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* handle out going data */
-	if (!con->is_listen && con->output_fd != -1 &&
+	if (!con->is_listen && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
 		if (con->can_write) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
@@ -162,6 +123,13 @@ static int _handle_connection(void *x, void *arg)
 				 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 				 XSTRINGIFY(handle_write));
 		} else {
+			/*
+			 * Only monitor for when connection is ready for writes
+			 * as there is no point reading until the write is
+			 * complete since it will be ignored.
+			 */
+			con_set_polling(true, con, PCTL_TYPE_WRITE_ONLY, __func__);
+
 			/* must wait until poll allows write of this socket */
 			log_flag(CONMGR, "%s: [%s] waiting for %u writes",
 				 __func__, con->name, list_count(con->out));
@@ -169,11 +137,26 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if ((count = list_count(con->write_complete_work))) {
+	if (!con->is_listen && (count = list_count(con->write_complete_work))) {
 		log_flag(CONMGR, "%s: [%s] queuing pending write complete work: %u total",
 			 __func__, con->name, count);
 
 		list_transfer(con->work, con->write_complete_work);
+		return 0;
+	}
+
+	/* check if there is new connection waiting   */
+	if (con->is_listen && !con->read_eof && con->can_read) {
+		log_flag(CONMGR, "%s: [%s] listener has incoming connection",
+			 __func__, con->name);
+
+		/* disable polling until _listen_accept() completes */
+		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+		con->can_read = false;
+
+		add_work(true, con, _listen_accept,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			 XSTRINGIFY(_listen_accept));
 		return 0;
 	}
 
@@ -200,15 +183,20 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	if (!con->read_eof) {
+		xassert(con->input_fd != -1);
+
 		/* must wait until poll allows read from this socket */
-		if (con->is_listen)
+		if (con->is_listen) {
+			con_set_polling(true, con, PCTL_TYPE_LISTEN, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
-		else
+		} else {
+			con_set_polling(true, con, PCTL_TYPE_READ_WRITE, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting to read pending_read=%u pending_writes=%u work_active=%c",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
 				 (con->work_active ? 'T' : 'F'));
+		}
 		return 0;
 	}
 
@@ -219,6 +207,9 @@ static int _handle_connection(void *x, void *arg)
 	if (con->input_fd != -1) {
 		log_flag(CONMGR, "%s: [%s] closing incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
+
+		/* stop polling */
+		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
 
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
@@ -238,7 +229,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (!con->is_listen && con->arg) {
+	if (con->arg) {
 		log_flag(CONMGR, "%s: [%s] queuing up on_finish",
 			 __func__, con->name);
 
@@ -273,6 +264,8 @@ static int _handle_connection(void *x, void *arg)
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	if (con->output_fd != -1) {
+		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+
 		if (close(con->output_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",
 				 __func__, con->name, con->output_fd);
@@ -379,7 +372,9 @@ static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 				 void *arg)
 {
 	slurm_mutex_lock(&mgr.mutex);
-
+	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
+				_handle_connection, NULL))
+		slurm_cond_broadcast(&mgr.cond);
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_handle_connection, NULL))
 		slurm_cond_broadcast(&mgr.cond);
@@ -388,340 +383,108 @@ static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-/*
- * Event on a listen only socket
- * mgr must be locked.
- */
-static void _handle_listen_event(int fd, conmgr_fd_t *con, short revents)
+/* caller (or thread) must hold mgr.mutex lock */
+static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 {
-	if (revents & POLLHUP) {
-		/* how can a listening socket hang up? */
-		error("%s: [%s] listen received POLLHUP", __func__, con->name);
-	} else if (revents & POLLNVAL) {
-		error("%s: [%s] listen connection invalid",
-		      __func__, con->name);
-	} else if (revents & POLLERR) {
-		int err = SLURM_ERROR;
-		int rc;
-		if ((rc = fd_get_socket_error(con->input_fd, &err))) {
-			error("%s: [%s] listen poll error: %s fd_get_socket_error failed:",
-			      __func__, con->name, slurm_strerror(rc));
+	conmgr_fd_t *con = NULL;
+
+	xassert(fd >= 0);
+
+	if (!(con = con_find_by_fd(fd))) {
+		/* close_con() was called during poll() was running */
+		log_flag(CONMGR, "%s: Ignoring events for unknown fd:%d",
+			 __func__, fd);
+		return SLURM_SUCCESS;
+	}
+
+	con->can_read = false;
+	con->can_write = false;
+
+	if (pollctl_events_has_error(events)) {
+		con_close_on_poll_error(true, con, fd);
+		/* connection errored but not handling of the connection */
+		return SLURM_SUCCESS;
+	}
+
+	if (con->is_listen) {
+		/* Special handling for listening sockets */
+		if (pollctl_events_has_hangup(events)) {
+			log_flag(CONMGR, "%s: [%s] listener HANGUP",
+				 __func__, con->name);
+			con->read_eof = true;
+		} else if (pollctl_events_can_read(events)) {
+			con->can_read = true;
 		} else {
-			error("%s: [%s] listen poll error: %s",
-			      __func__, con->name, slurm_strerror(err));
-		}
-	} else if (revents & POLLIN) {
-		log_flag(CONMGR, "%s: [%s] listen has incoming connection",
-			 __func__, con->name);
-		add_work(true, con, _listen_accept,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			 XSTRINGIFY(_listen_accept));
-		return;
-	} else /* should never happen */
-		log_flag(CONMGR, "%s: [%s] listen unexpected revents: 0x%04x",
-			 __func__, con->name, revents);
-
-	close_con(true, con);
-}
-
-static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
-			       const char *name)
-{
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
-		char *flags = poll_revents_to_str(fds_ptr->revents);
-
-		log_flag(CONMGR, "%s: [%s] signal pipe %s flags:%s",
-			 __func__, tag, name, flags);
-
-		/* _watch() will actually read the input */
-
-		xfree(flags);
-	}
-}
-
-/*
- * Handle poll and events
- *
- * NOTE: mgr mutex must not be locked but will be locked upon return
- */
-static void _poll(poll_args_t *args, on_poll_event_t on_poll, const char *tag)
-{
-	DEF_TIMERS;
-	int rc = SLURM_SUCCESS;
-	struct pollfd *fds_ptr = NULL;
-	conmgr_fd_t *con;
-	int event_fd;
-
-again:
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
-		START_TIMER;
-
-	rc = poll(args->fds, args->nfds, -1);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		/* we want the time but not to warn about a time limit */
-		END_TIMER3(NULL, 0);
-		log_flag(CONMGR, "%s: [%s] poll(%d)=%d ran for %s",
-			 __func__, tag, args->nfds, rc, TIME_STR);
-	}
-
-	if (rc == -1) {
-		bool exit_on_error;
-
-		slurm_mutex_lock(&mgr.mutex);
-		exit_on_error = mgr.exit_on_error;
-		slurm_mutex_unlock(&mgr.mutex);
-
-		if ((errno == EINTR) && !exit_on_error) {
-			log_flag(CONMGR, "%s: [%s] poll interrupted. Trying again.",
-				 __func__, tag);
-			goto again;
+			fatal_abort("should never happen");
 		}
 
-		fatal("%s: [%s] unable to poll listening sockets: %m",
-		      __func__, tag);
+		log_flag(CONMGR, "%s: [%s] listener fd=%u can_read=%s read_eof=%s",
+			 __func__, con->name, fd, (con->can_read ? "T" : "F"),
+			 (con->read_eof ? "T" : "F"));
+
+		return SLURM_SUCCESS;
 	}
 
-	if (rc == 0) {
-		log_flag(CONMGR, "%s: [%s] poll timed out", __func__, tag);
-		return;
+	if (fd == con->input_fd) {
+		con->can_read = pollctl_events_can_read(events);
+
+		if (!con->read_eof)
+			con->read_eof = pollctl_events_has_hangup(events);
 	}
+	if (fd == con->output_fd)
+		con->can_write = pollctl_events_can_write(events);
 
-	slurm_mutex_lock(&mgr.mutex);
-	event_fd = mgr.event_fd[0];
-	slurm_mutex_unlock(&mgr.mutex);
+	log_flag(CONMGR, "%s: [%s] fd=%u can_read=%s can_write=%s read_eof=%s",
+		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
+		 (con->can_write ? "T" : "F"), (con->read_eof ? "T" : "F"));
 
-	fds_ptr = args->fds;
-	for (int i = 0; i < args->nfds; i++, fds_ptr++) {
-
-		if (!fds_ptr->revents)
-			continue;
-
-		if (fds_ptr->fd == event_fd)
-			_handle_event_pipe(fds_ptr, tag, "CHANGE_EVENT");
-		else if ((con = con_find_by_fd(fds_ptr->fd))) {
-			if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
-				char *flags = poll_revents_to_str(
-					fds_ptr->revents);
-				log_flag(CONMGR, "%s: [%s->%s] poll event detect flags:%s",
-					 __func__, tag, con->name, flags);
-				xfree(flags);
-			}
-			slurm_mutex_lock(&mgr.mutex);
-			on_poll(fds_ptr->fd, con, fds_ptr->revents);
-			/*
-			 * signal that something might have happened and to
-			 * restart listening
-			 * */
-			signal_change(true, __func__);
-			slurm_mutex_unlock(&mgr.mutex);
-		} else
-			/* FD probably got closed between poll start and now */
-			log_flag(CONMGR, "%s: [%s] unable to find connection for fd=%u",
-				 __func__, tag, fds_ptr->fd);
-	}
+	return SLURM_SUCCESS;
 }
 
-static void _init_poll_fds(poll_args_t *args, struct pollfd **fds_ptr_p,
-			   int conn_count)
-{
-	struct pollfd *fds_ptr = NULL;
-
-	xrecalloc(args->fds, ((conn_count * 2) + 1), sizeof(*args->fds));
-
-	args->nfds = 0;
-	fds_ptr = args->fds;
-
-	/* Add event fd */
-	fds_ptr->fd = mgr.event_fd[0];
-	fds_ptr->events = POLLIN;
-	fds_ptr++;
-	args->nfds++;
-
-	*fds_ptr_p = fds_ptr;
-}
-
-/*
- * Poll all processing connections sockets and
- * and event_fd.
- */
+/* Poll all connections */
 static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 			      conmgr_work_status_t status, const char *tag,
 			      void *arg)
 {
-	static poll_args_t poll_args = {0};
-	struct pollfd *fds_ptr = NULL;
-	int count;
-	list_itr_t *itr;
+	int rc;
 
 	xassert(!con);
 
 	slurm_mutex_lock(&mgr.mutex);
-
-	/* grab counts once */
-	if (!(count = list_count(mgr.connections))) {
-		log_flag(CONMGR, "%s: no connections to poll()", __func__);
-		goto done;
-	}
+	xassert(mgr.poll_active);
 
 	if (mgr.quiesced) {
 		log_flag(CONMGR, "%s: skipping poll() while quiesced",
 			 __func__);
 		goto done;
-	}
-
-	_init_poll_fds(&poll_args, &fds_ptr, count);
-
-	/*
-	 * populate sockets with !work_active
-	 */
-	itr = list_iterator_create(mgr.connections);
-	while ((con = list_next(itr))) {
-		if (con->work_active)
-			continue;
-
-		log_flag(CONMGR, "%s: [%s] poll read_eof=%s input=%u outputs=%u work_active=%c",
-			 __func__, con->name, (con->read_eof ? "T" : "F"),
-			 get_buf_offset(con->in), list_count(con->out),
-			 (con->work_active ? 'T' : 'F'));
-
-		if (con->input_fd == con->output_fd) {
-			/* if fd is same, only poll it */
-			fds_ptr->fd = con->input_fd;
-			fds_ptr->events = 0;
-
-			if (con->input_fd != -1)
-				fds_ptr->events |= POLLIN;
-			if (!list_is_empty(con->out))
-				fds_ptr->events |= POLLOUT;
-
-			fds_ptr++;
-			poll_args.nfds++;
-		} else {
-			/*
-			 * Account for fd being different
-			 * for input and output.
-			 */
-			if (con->input_fd != -1) {
-				fds_ptr->fd = con->input_fd;
-				fds_ptr->events = POLLIN;
-				fds_ptr++;
-				poll_args.nfds++;
-			}
-
-			if (!list_is_empty(con->out)) {
-				fds_ptr->fd = con->output_fd;
-				fds_ptr->events = POLLOUT;
-				fds_ptr++;
-				poll_args.nfds++;
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-
-	if (poll_args.nfds == 1) {
-		log_flag(CONMGR, "%s: skipping poll() due to no open file descriptors for %d connections",
-			 __func__, count);
+	} else if (list_is_empty(mgr.connections) &&
+		   list_is_empty(mgr.listen_conns)) {
+		log_flag(CONMGR, "%s: skipping poll() with 0 connections",
+			 __func__);
 		goto done;
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	log_flag(CONMGR, "%s: polling %u file descriptors for %u connections",
-		 __func__, poll_args.nfds, count);
-
-	_poll(&poll_args, _handle_poll_event, __func__);
+	if ((rc = pollctl_poll(__func__)))
+		fatal_abort("%s: should never fail: pollctl_poll()=%s",
+			    __func__, slurm_strerror(rc));
 
 	slurm_mutex_lock(&mgr.mutex);
+
+	if ((rc = pollctl_for_each_event(_handle_poll_event, NULL,
+					 XSTRINGIFY(_handle_poll_event),
+					 __func__)))
+		fatal_abort("%s: should never fail: pollctl_for_each_event()=%s",
+			    __func__, slurm_strerror(rc));
+
 done:
-	xfree(poll_args.fds);
+	xassert(mgr.poll_active);
 	mgr.poll_active = false;
-	/* notify _watch it can run but don't send signal to event PIPE*/
-	slurm_cond_broadcast(&mgr.cond);
+	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: poll done", __func__);
-}
-
-/*
- * Poll all listening sockets
- */
-
-static void _listen(conmgr_fd_t *con, conmgr_work_type_t type,
-		    conmgr_work_status_t status, const char *tag, void *arg)
-{
-	static poll_args_t listen_args = {0};
-	struct pollfd *fds_ptr = NULL;
-	int count;
-	list_itr_t *itr;
-
-	xassert(!con);
-
-	slurm_mutex_lock(&mgr.mutex);
-
-	/* if shutdown has been requested: then don't listen() anymore */
-	if (mgr.shutdown_requested) {
-		log_flag(CONMGR, "%s: caught shutdown. closing %u listeners",
-			 __func__, list_count(mgr.listen_conns));
-		goto cleanup;
-	}
-
-	if (mgr.quiesced) {
-		log_flag(CONMGR, "%s: skipping poll() while quiesced",
-			 __func__);
-		goto cleanup;
-	}
-
-	/* grab counts once */
-	count = list_count(mgr.listen_conns);
-
-	log_flag(CONMGR, "%s: listeners=%u", __func__, count);
-
-	if (count == 0) {
-		/* nothing to do here */
-		log_flag(CONMGR, "%s: no listeners found", __func__);
-		goto cleanup;
-	}
-
-	_init_poll_fds(&listen_args, &fds_ptr, count);
-
-	/* populate listening sockets */
-	itr = list_iterator_create(mgr.listen_conns);
-	while ((con = list_next(itr))) {
-		/* already accept queued or listener already closed */
-		if (con->work_active || con->read_eof)
-			continue;
-
-		fds_ptr->fd = con->input_fd;
-		fds_ptr->events = POLLIN;
-
-		log_flag(CONMGR, "%s: [%s] listening", __func__, con->name);
-
-		fds_ptr++;
-		listen_args.nfds++;
-	}
-	list_iterator_destroy(itr);
-
-	if (listen_args.nfds == 1) {
-		log_flag(CONMGR, "%s: deferring listen due to all sockets are queued to call accept or closed",
-			 __func__);
-		goto cleanup;
-	}
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	log_flag(CONMGR, "%s: polling %u/%u file descriptors",
-		 __func__, listen_args.nfds, (count + 2));
-
-	/* _poll() will lock mgr.mutex */
-	_poll(&listen_args, _handle_listen_event, __func__);
-
-	slurm_mutex_lock(&mgr.mutex);
-cleanup:
-	xfree(listen_args.fds);
-	mgr.listen_active = false;
-	signal_change(true, __func__);
-	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void wait_for_watch(void)
@@ -760,7 +523,7 @@ static void _connection_fd_delete(conmgr_fd_t *wrong_con,
 
 static void _handle_complete_conns(void)
 {
-	if (mgr.listen_active || mgr.poll_active) {
+	if (mgr.poll_active) {
 		/*
 		 * Must wait for all poll() calls to complete or
 		 * there may be a use after free of a connection.
@@ -790,35 +553,6 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_listen_conns(void)
-{
-	/* run any queued work */
-	list_transfer_match(mgr.listen_conns, mgr.complete_conns,
-			    _handle_connection, NULL);
-
-	if (!mgr.listen_active) {
-		int conn_count = list_count(mgr.listen_conns);
-		xassert(conn_count >= 0);
-
-		/* only try to listen if number connections is below limit */
-		if (conn_count >= mgr.max_connections)
-			log_flag(CONMGR, "%s: deferring accepting new connections until count is below max: %u/%u",
-				 __func__, conn_count, mgr.max_connections);
-		else if (!conn_count) {
-			log_flag(CONMGR, "%s: skipping listen() due to no listening connections",
-				 __func__);
-		} else {
-			/* request a listen thread to run */
-			log_flag(CONMGR, "%s: queuing up listen for %d connections",
-				 __func__, conn_count);
-			mgr.listen_active = true;
-			add_work(true, NULL, _listen, CONMGR_WORK_TYPE_FIFO,
-				 NULL, XSTRINGIFY(_listen));
-		}
-	} else
-		log_flag(CONMGR, "%s: listeners active already", __func__);
-}
-
 static void _handle_new_conns(void)
 {
 	if (!mgr.inspecting) {
@@ -840,24 +574,15 @@ static void _handle_new_conns(void)
 
 static void _handle_events(bool *work)
 {
-	int count;
-
 	/* grab counts once */
-	count = list_count(mgr.connections);
+	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
 
 	log_flag(CONMGR, "%s: starting connections=%u listen_conns=%u",
-		 __func__, count, list_count(mgr.listen_conns));
-
-	*work = false;
+		 __func__, list_count(mgr.connections),
+		 list_count(mgr.listen_conns));
 
 	if (!list_is_empty(mgr.complete_conns))
 		_handle_complete_conns();
-
-	/* start listen thread if needed */
-	if (!list_is_empty(mgr.listen_conns)) {
-		_handle_listen_conns();
-		*work = true;
-	}
 
 	/* start poll thread if needed */
 	if (count) {
@@ -874,12 +599,12 @@ static bool _watch_loop(void)
 		close_all_connections();
 		signal_mgr_stop();
 	} else if (mgr.quiesced) {
-		if (mgr.poll_active || mgr.listen_active) {
+		if (mgr.poll_active) {
 			/*
 			 * poll() hasn't returned yet so signal it to
 			 * stop again and wait for the thread to return
 			 */
-			signal_change(true, __func__);
+			pollctl_interrupt(__func__);
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 			return true;
 		}
@@ -890,12 +615,13 @@ static bool _watch_loop(void)
 
 	_handle_events(&work);
 
-	if (!work && (mgr.poll_active || mgr.listen_active)) {
+	if (!work && mgr.poll_active) {
 		/*
 		 * poll() hasn't returned yet so signal it to stop again
 		 * and wait for the thread to return
 		 */
 		signal_change(true, __func__);
+		pollctl_interrupt(__func__);
 		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		return true;
 	}
@@ -928,7 +654,6 @@ static bool _watch_loop(void)
 	signal_change(true, __func__);
 
 	xassert(!mgr.poll_active);
-	xassert(!mgr.listen_active);
 	return false;
 }
 
@@ -1015,48 +740,11 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
  */
 extern void signal_change(bool locked, const char *caller)
 {
-	DEF_TIMERS;
-	char buf[] = "1";
-	int rc;
-
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	mgr.event_signaled++;
-	log_flag(CONMGR, "%s: %s() triggered change event (%d events total)",
-		 __func__, caller, mgr.event_signaled);
+	log_flag(CONMGR, "%s: %s() triggered change event", __func__, caller);
 
-	if (mgr.event_signaled <= 1) {
-		/*
-		 * skipping send byte to event_fd to break out of poll() as it
-		 * was already done.
-		 */
-		goto done;
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-try_again:
-	START_TIMER;
-	/* send 1 byte of trash */
-	rc = write(mgr.event_fd[1], buf, 1);
-	END_TIMER2("write to event_fd");
-	if (rc != 1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(CONMGR, "%s: trying again: %m", __func__);
-			goto try_again;
-		}
-
-		fatal("%s: unable to signal connection manager: %m", __func__);
-	}
-
-	log_flag(CONMGR, "%s: sent in %s", __func__, TIME_STR);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-done:
 	/* wake up _watch() */
 	slurm_cond_broadcast(&mgr.cond);
 
