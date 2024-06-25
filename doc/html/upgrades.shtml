@@ -385,7 +385,25 @@ queried by calling <pre>scontrol show config | grep StateSaveLocation</pre></li>
 <li><b>MySQL database</b> (if slurmdbd is configured). Usually done by calling
 <pre>
 mysqldump --databases slurm_acct_db &gt; /path/to/offline/storage/backup.sql
-</pre></li>
+</pre>
+This assumes that <b>slurmdbd</b> is not running while the dump is running.
+<br>If you wish to back it up while <b>slurmdbd</b> is running, you may use the
+<code>--single-transaction</code> flag with the <b>following limitations</b>:
+<ol>
+<li>Database operations may be slower while the dump is running</li>
+<li>Restoring this dump will restore the database at the time the dump was
+<b>started</b>, losing any changes made during or after the dump</li>
+<li>Certain cluster operations may lead to an incorrect or failed dump:
+<ul>
+<li>Creating a new database</li>
+<li>Upgrading an existing database</li>
+<li>Adding or Removing a cluster in the slurmdbd</li>
+<li><a href="https://slurm.schedmd.com/accounting.html#slurmdbd-archive-purge">
+Archiving or Purging</a> accounting data</li>
+</ul>
+</li>
+</ol>
+</li>
 <li><b>Entire slurm configuration directory</b>, as defined by
 <code>configure --sysconfdir=DIR</code> during compilation.
 This is usually located in <code>/etc/slurm/</code></li>
