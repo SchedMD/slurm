@@ -50,6 +50,7 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	int rc = SLURM_ERROR;
 	uint32_t need;
 	slurm_msg_t *msg = NULL;
+	buf_t *rpc = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -84,42 +85,42 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 		return rc;
 	}
 
-	if (size_buf(con->in) >= need) {
-		/* there is enough data to unpack now */
-		buf_t *rpc = create_shadow_buf((get_buf_data(con->in) +
-						sizeof(con->msglen)),
-					       con->msglen);
-
-		msg = xmalloc(sizeof(*msg));
-		slurm_msg_t_init(msg);
-
-		log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
-			     "%s: [%s] unpacking RPC", __func__, con->name);
-
-		if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
-			rc = errno;
-			error("%s: [%s] slurm_unpack_received_msg() failed: %s",
-			      __func__, con->name, slurm_strerror(rc));
-			slurm_free_msg(msg);
-			msg = NULL;
-		} else {
-			log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
-				 __func__, con->name, need,
-				 rpc_num2string(msg->msg_type));
-		}
-
-		/* notify conmgr we processed some data */
-		set_buf_offset(con->in, need);
-
-		/* reset message length to start all over again */
-		con->msglen = 0;
-
-		FREE_NULL_BUFFER(rpc);
-	} else {
+	if (size_buf(con->in) < need) {
 		log_flag(NET, "%s: [%s] waiting for message length %u/%u for RPC message",
 			 __func__, con->name, size_buf(con->in), need);
 		return SLURM_SUCCESS;
 	}
+
+	/* there is enough data to unpack now */
+	rpc = create_shadow_buf((get_buf_data(con->in) +
+				 sizeof(con->msglen)),
+				con->msglen);
+
+	msg = xmalloc(sizeof(*msg));
+	slurm_msg_t_init(msg);
+
+	log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
+		     "%s: [%s] unpacking RPC", __func__, con->name);
+
+	if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
+		rc = errno;
+		error("%s: [%s] slurm_unpack_received_msg() failed: %s",
+		      __func__, con->name, slurm_strerror(rc));
+		slurm_free_msg(msg);
+		msg = NULL;
+	} else {
+		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
+			 __func__, con->name, need,
+			 rpc_num2string(msg->msg_type));
+	}
+
+	/* notify conmgr we processed some data */
+	set_buf_offset(con->in, need);
+
+	/* reset message length to start all over again */
+	con->msglen = 0;
+
+	FREE_NULL_BUFFER(rpc);
 
 	if (!rc && msg) {
 		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
