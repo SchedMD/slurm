@@ -680,7 +680,8 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 		xassert(mgr.watch_on_worker <= mgr.workers.active);
 	}
 
-	if (mgr.shutdown_requested) {
+	if (mgr.shutdown_requested ||
+	    (status == CONMGR_WORK_STATUS_CANCELLED)) {
 		_release_watch_request(&wreq);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
