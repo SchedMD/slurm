@@ -91,7 +91,9 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if (con->read_eof) {
+	if (con->input_fd < 0) {
+		xassert(con->read_eof);
+		xassert(!con->can_read);
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
 		goto cleanup;
