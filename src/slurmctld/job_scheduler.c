@@ -783,6 +783,13 @@ extern void set_job_elig_time(void)
 	time_t now = time(NULL);
 
 	lock_slurmctld(job_write_lock);
+
+	/*
+	 * This cannot be a list_for_each. This calls _job_runnable_test1() ->
+	 * job_independent() -> test_job_dependency() which needs to call
+	 * list_find_first() on the job_list making it impossible to also have
+	 * this a list_find_first() on job_list.
+	 */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
