@@ -382,6 +382,9 @@ designed and setup the cluster and procedures are not provided here.</p>
 <li><b>StateSaveLocation</b> as defined in
 <a href="slurm.conf.html#OPT_StateSaveLocation">slurm.conf</a>, or it can be
 queried by calling <pre>scontrol show config | grep StateSaveLocation</pre></li>
+<li><b>Entire slurm configuration directory</b>, as defined by
+<code>configure --sysconfdir=DIR</code> during compilation.
+This is usually located in <code>/etc/slurm/</code></li>
 <li><b>MySQL database</b> (if slurmdbd is configured). Usually done by calling
 <pre>
 mysqldump --databases slurm_acct_db &gt; /path/to/offline/storage/backup.sql
@@ -404,9 +407,6 @@ Archiving or Purging</a> accounting data</li>
 </li>
 </ol>
 </li>
-<li><b>Entire slurm configuration directory</b>, as defined by
-<code>configure --sysconfdir=DIR</code> during compilation.
-This is usually located in <code>/etc/slurm/</code></li>
 </ul></p>
 
 <h3 id="slurmdbd">slurmdbd (accounting)
