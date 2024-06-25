@@ -13,6 +13,8 @@ libconmgr_la_SOURCES = \
 	conmgr.c \
 	conmgr.h \
 	delayed.c \
+	events.c \
+	events.h \
 	io.c \
 	mgr.h \
 	poll.c \
