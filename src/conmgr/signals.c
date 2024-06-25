@@ -93,10 +93,15 @@ static void _register_signal_handler(int signal)
 		fatal("%s: unable to catch %s: %m",
 		      __func__, strsignal(signal));
 
-	log_flag(CONMGR, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
-		 __func__, sig_num2name(signal), signal,
-		 (uintptr_t) handler->prior.sa_handler,
-		 (uintptr_t) handler->new.sa_handler);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *signame = sig_num2name(handler->signal);
+
+		log_flag(CONMGR, "%s: installed signal %s[%d] handler: Prior=0x%"PRIxPTR" is now replaced with New=0x%"PRIxPTR,
+			 __func__, signame, signal,
+			 (uintptr_t) handler->prior.sa_handler,
+			 (uintptr_t) handler->new.sa_handler);
+		xfree(signame);
+	}
 
 	mgr.signal_handler_count++;
 }
@@ -132,11 +137,16 @@ extern void fini_signal_handler(void)
 		 */
 		xassert(handler->new.sa_handler == _signal_handler);
 
-		log_flag(CONMGR, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
-			 __func__, sig_num2name(handler->signal),
-			 handler->signal,
-			 (uintptr_t) handler->new.sa_handler,
-			 (uintptr_t) handler->prior.sa_handler);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *signame = sig_num2name(handler->signal);
+
+			log_flag(CONMGR, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
+				 __func__, signame,
+				 handler->signal,
+				 (uintptr_t) handler->new.sa_handler,
+				 (uintptr_t) handler->prior.sa_handler);
+			xfree(signame);
+		}
 
 		/*
 		 * Check what sigaction() swapped out from the current signal
