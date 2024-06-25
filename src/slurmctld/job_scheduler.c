@@ -142,6 +142,7 @@ typedef struct {
 
 typedef struct {
 	char *cg_part_str;
+	char *cg_part_str_pos;
 	bitstr_t *eff_cg_bitmap;
 	_failed_part_t *failed_parts;
 	int *failed_part_cnt;
@@ -645,9 +646,11 @@ static int _foreach_part_reduce_frag(void *x, void *arg)
 			*(part_reduce_frag->failed_part_cnt)++].part_ptr =
 			part_ptr;
 		if (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG) {
-			xstrfmtcat(part_reduce_frag->cg_part_str, "%s%s",
-				   part_reduce_frag->cg_part_str ? "," : "",
-				   part_ptr->name);
+			xstrfmtcatat(part_reduce_frag->cg_part_str,
+				     &part_reduce_frag->cg_part_str_pos,
+				     "%s%s",
+				     part_reduce_frag->cg_part_str ? "," : "",
+				     part_ptr->name);
 		}
 	}
 
