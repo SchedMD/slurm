@@ -207,20 +207,9 @@ static int _handle_connection(void *x, void *arg)
 	if (con->input_fd != -1) {
 		log_flag(CONMGR, "%s: [%s] closing incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
-
-		/* stop polling */
-		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
-
-		if (close(con->input_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
-				 __func__, con->name, con->input_fd);
-
-		/* if there is only 1 fd: forget it too */
-		if (con->input_fd == con->output_fd)
-			con->output_fd = -1;
-
-		/* forget invalid fd */
-		con->input_fd = -1;
+		xassert(con->read_eof);
+		close_con(true, con);
+		return 0;
 	}
 
 	if (con->wait_on_finish) {

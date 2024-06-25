@@ -97,7 +97,6 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		goto cleanup;
 	}
 
-
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
@@ -743,16 +742,6 @@ extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd)
 			error("%s: [%s] socket error encountered while polling: %s",
 			      __func__, con->name, slurm_strerror(err));
 	}
-
-	if (close(fd))
-		log_flag(CONMGR, "%s: [%s] input_fd=%d output_fd=%d calling close(%d) failed: %m",
-			 __func__, con->name, con->input_fd, con->output_fd,
-			 fd);
-
-	if (con->input_fd == fd)
-		con->input_fd = -1;
-	if (con->output_fd == fd)
-		con->output_fd = -1;
 
 	/*
 	 * Socket must not continue to be considered valid to avoid a
