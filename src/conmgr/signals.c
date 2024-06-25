@@ -161,60 +161,6 @@ extern void fini_signal_handler(void)
 	mgr.signal_handler_count = 0;
 }
 
-/*
- * Notify connection manager that there has been a change event
- */
-extern void signal_change(bool locked, const char *caller)
-{
-	DEF_TIMERS;
-	char buf[] = "1";
-	int rc;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-	mgr.event_signaled++;
-	log_flag(CONMGR, "%s: %s() triggered change event (%d events total)",
-		 __func__, caller, mgr.event_signaled);
-
-	if (mgr.event_signaled <= 1) {
-		/*
-		 * skipping send byte to event_fd to break out of poll() as it
-		 * was already done.
-		 */
-		goto done;
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-try_again:
-	START_TIMER;
-	/* send 1 byte of trash */
-	rc = write(mgr.event_fd[1], buf, 1);
-	END_TIMER2("write to event_fd");
-	if (rc != 1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(CONMGR, "%s: trying again: %m", __func__);
-			goto try_again;
-		}
-
-		fatal("%s: unable to signal connection manager: %m", __func__);
-	}
-
-	log_flag(CONMGR, "%s: sent in %s", __func__, TIME_STR);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-done:
-	/* wake up _watch() */
-	slurm_cond_broadcast(&mgr.cond);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-}
-
 static void _on_signal(int signal)
 {
 	bool matched = false;
