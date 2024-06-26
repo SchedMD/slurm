@@ -275,29 +275,35 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	struct stat out_stat = { 0 };
 	conmgr_fd_t *con = NULL;
 	bool set_keep_alive, is_socket;
+	const bool has_in = (input_fd >= 0);
+	const bool has_out = (output_fd >= 0);
+	const bool is_same = (input_fd == output_fd);
 
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
 		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
 	/* verify FD is valid and still open */
-	if ((input_fd >= 0) && fstat(input_fd, &in_stat)) {
+	if (has_in && fstat(input_fd, &in_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
 		return NULL;
 	}
-	if ((output_fd >= 0) && fstat(output_fd, &out_stat)) {
+	if (has_out && fstat(output_fd, &out_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
 		return NULL;
 	}
 
-	is_socket = (S_ISSOCK(in_stat.st_mode) || S_ISSOCK(out_stat.st_mode));
+	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
+		    (has_out && S_ISSOCK(out_stat.st_mode));
 
 	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
 
 	/* all connections are non-blocking */
-	if (set_keep_alive)
-		net_set_keep_alive(input_fd);
-	fd_set_nonblocking(input_fd);
-	if (input_fd != output_fd) {
+	if (has_in) {
+		if (set_keep_alive)
+			net_set_keep_alive(input_fd);
+		fd_set_nonblocking(input_fd);
+	}
+	if (!is_same && has_out) {
 		fd_set_nonblocking(output_fd);
 
 		if (set_keep_alive)
@@ -349,7 +355,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 	_set_connection_name(con, &in_stat, &out_stat);
 
-	if (!con->is_listen && con->is_socket)
+	if (has_out && !con->is_listen && con->is_socket)
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
 
 	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
