@@ -53,6 +53,7 @@
 #include "src/common/pack.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/events.h"
 #include "src/conmgr/poll.h"
 
 /* Default buffer to 1 page */
@@ -241,12 +242,6 @@ typedef struct {
 	conmgr_callbacks_t callbacks;
 
 	pthread_mutex_t mutex;
-	/* called after events or changes to wake up _watch */
-	pthread_cond_t cond;
-
-	/* use mutex to wait for watch to finish */
-	pthread_mutex_t watch_mutex;
-	pthread_cond_t watch_cond;
 
 	struct {
 		/* list of worker_t */
@@ -259,29 +254,30 @@ typedef struct {
 		/* number of threads */
 		int threads;
 	} workers;
+
+	event_signal_t watch_sleep;
+	event_signal_t watch_return;
+	event_signal_t worker_sleep;
+	event_signal_t worker_return;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
 	(conmgr_t) {\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
-		.cond = PTHREAD_COND_INITIALIZER,\
-		.watch_mutex = PTHREAD_MUTEX_INITIALIZER,\
-		.watch_cond = PTHREAD_COND_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
+		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
+		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
+		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \
+		.worker_return = EVENT_INITIALIZER("WORKER_RETURN"), \
 	}
 
 extern conmgr_t mgr;
 
 extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
 		     conmgr_work_type_t type, void *arg, const char *tag);
-/*
- * Notify conmgr something happened
- * IN locked - mgr.locked is held by caller
- */
-extern void signal_change(bool locked, const char *caller);
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
@@ -301,8 +297,7 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 /*
  * Wait for _watch() to finish
  *
- * WARNING: caller must hold mgr.mutex
- * WARNING: mgr.mutex will be released by this call
+ * WARNING: caller must NOT hold mgr.mutex
  */
 extern void wait_for_watch(void);
 
@@ -373,7 +368,8 @@ extern void wrap_work(work_t *work);
 
 /*
  * Wait until all work and workers have completed their work (and exited)
- * Note: Caller must hold conmgr lock
+ * Note: Caller must NOT hold conmgr lock
+ * Note: mgr.shutdown_requested must be true
  */
 extern void workers_wait_complete(void);
 

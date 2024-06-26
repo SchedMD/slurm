@@ -376,7 +376,7 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 		     "%s: queuing up write", __func__);
 
 	list_append(con->out, buf);
-	signal_change(false, __func__);
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 	return SLURM_SUCCESS;
 }
 

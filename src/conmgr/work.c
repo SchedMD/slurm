@@ -38,6 +38,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
 static struct {
@@ -139,8 +140,8 @@ static void _handle_work_run(work_t *work)
 	/* add to work list and signal a thread if watch is active */
 	list_append(mgr.work, work);
 
-	if (!mgr.quiesced && !mgr.shutdown_requested)
-		slurm_cond_signal(&mgr.cond);
+	if (!mgr.quiesced)
+		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_sleep);
 }
 
 /* mgr must be locked */
@@ -189,6 +190,10 @@ static void _handle_work_pending(work_t *work)
 	case CONMGR_WORK_TYPE_MAX:
 		fatal("%s: invalid type", __func__);
 	}
+
+	/* trigger watch() if there is a connection involved */
+	if (con)
+		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
 extern void handle_work(bool locked, work_t *work)
@@ -229,8 +234,6 @@ extern void handle_work(bool locked, work_t *work)
 		fatal_abort("%s: invalid work status 0x%x",
 			    __func__, work->status);
 	}
-
-	signal_change(true, __func__);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);

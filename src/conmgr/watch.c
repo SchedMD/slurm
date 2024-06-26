@@ -45,6 +45,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/signals.h"
 
@@ -191,7 +192,8 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		} else {
-			con_set_polling(true, con, PCTL_TYPE_READ_WRITE, __func__);
+			con_set_polling(true, con, PCTL_TYPE_READ_ONLY,
+					__func__);
 			log_flag(CONMGR, "%s: [%s] waiting to read pending_read=%u pending_writes=%u work_active=%c",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
@@ -363,16 +365,21 @@ static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 				 conmgr_work_status_t status, const char *tag,
 				 void *arg)
 {
+	bool send_signal = false;
+
 	slurm_mutex_lock(&mgr.mutex);
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				_handle_connection, NULL))
-		slurm_cond_broadcast(&mgr.cond);
+		send_signal = true;
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_handle_connection, NULL))
-		slurm_cond_broadcast(&mgr.cond);
+		send_signal = true;
 	mgr.inspecting = false;
 
 	slurm_mutex_unlock(&mgr.mutex);
+
+	if (send_signal)
+		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
 /* caller (or thread) must hold mgr.mutex lock */
@@ -473,21 +480,23 @@ static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 done:
 	xassert(mgr.poll_active);
 	mgr.poll_active = false;
-	signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
+
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 
 	log_flag(CONMGR, "%s: poll done", __func__);
 }
 
 extern void wait_for_watch(void)
 {
-	if (!mgr.watching)
-		return;
+	bool watching;
 
-	slurm_mutex_lock(&mgr.watch_mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	watching = mgr.watching;
 	slurm_mutex_unlock(&mgr.mutex);
-	slurm_cond_wait(&mgr.watch_cond, &mgr.watch_mutex);
-	slurm_mutex_unlock(&mgr.watch_mutex);
+
+	if (watching)
+		EVENT_WAIT(&mgr.watch_return);
 }
 
 static void _connection_fd_delete(conmgr_fd_t *wrong_con,
@@ -515,33 +524,23 @@ static void _connection_fd_delete(conmgr_fd_t *wrong_con,
 
 static void _handle_complete_conns(void)
 {
-	if (mgr.poll_active) {
-		/*
-		 * Must wait for all poll() calls to complete or
-		 * there may be a use after free of a connection.
-		 *
-		 * Send signal to break out of any active poll()s.
-		 */
-		signal_change(true, __func__);
-	} else {
-		conmgr_fd_t *con;
+	conmgr_fd_t *con;
 
-		/*
-		 * Memory cleanup of connections can be done entirely
-		 * independently as there should be nothing left in
-		 * conmgr that references the connection.
-		 */
+	/*
+	 * Memory cleanup of connections can be done entirely
+	 * independently as there should be nothing left in
+	 * conmgr that references the connection.
+	 */
 
-		while ((con = list_pop(mgr.complete_conns))) {
-			/*
-			 * Not adding work against connection since this is just
-			 * to delete the connection and cleanup and it should
-			 * not queue into the connection work queue itself
-			 */
-			add_work(true, NULL, _connection_fd_delete,
-				 CONMGR_WORK_TYPE_FIFO, con,
-				 XSTRINGIFY(_connection_fd_delete));
-		}
+	while ((con = list_pop(mgr.complete_conns))) {
+		/*
+		 * Not adding work against connection since this is just
+		 * to delete the connection and cleanup and it should
+		 * not queue into the connection work queue itself
+		 */
+		add_work(true, NULL, _connection_fd_delete,
+			 CONMGR_WORK_TYPE_FIFO, con,
+			 XSTRINGIFY(_connection_fd_delete));
 	}
 }
 
@@ -591,32 +590,14 @@ static bool _watch_loop(void)
 		signal_mgr_stop(true);
 		close_all_connections();
 	} else if (mgr.quiesced) {
-		if (mgr.poll_active) {
-			/*
-			 * poll() hasn't returned yet so signal it to
-			 * stop again and wait for the thread to return
-			 */
-			pollctl_interrupt(__func__);
-			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		if (mgr.poll_active)
 			return true;
-		}
 
 		log_flag(CONMGR, "%s: quiesced", __func__);
 		return false;
 	}
 
 	_handle_events(&work);
-
-	if (!work && mgr.poll_active) {
-		/*
-		 * poll() hasn't returned yet so signal it to stop again
-		 * and wait for the thread to return
-		 */
-		signal_change(true, __func__);
-		pollctl_interrupt(__func__);
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
-		return true;
-	}
 
 	if (!work) {
 		const int non_watch_workers =
@@ -628,22 +609,20 @@ static bool _watch_loop(void)
 		 */
 
 		if ((non_watch_workers > 0) || !list_is_empty(mgr.work)) {
-			/* Need to wait for all work to complete */
-			work = true;
+			/* Need to wait for all work/workers to complete */
 			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
 				 __func__, non_watch_workers,
 				 list_count(mgr.work));
+			return true;
 		}
 	}
 
 	if (work) {
 		/* wait until something happens */
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		return true;
 	}
 
 	log_flag(CONMGR, "%s: cleaning up", __func__);
-	signal_change(true, __func__);
 
 	xassert(!mgr.poll_active);
 	return false;
@@ -707,15 +686,25 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 	add_work(true, NULL, signal_mgr_start, CONMGR_WORK_TYPE_FIFO, NULL,
 		 XSTRINGIFY(signal_mgr_start));
 
-	while (_watch_loop());
+	while (_watch_loop()) {
+		if ((mgr.quiesced || mgr.shutdown_requested) &&
+		    mgr.poll_active) {
+			/*
+			 * poll() hasn't returned yet but we want to
+			 * shutdown. Send interrupt before sleeping or
+			 * watch() may end up sleeping forever.
+			 */
+			pollctl_interrupt(__func__);
+		}
+
+		/* release lock while waiting for signal */
+		slurm_mutex_unlock(&mgr.mutex);
+		EVENT_WAIT(&mgr.watch_sleep);
+		slurm_mutex_lock(&mgr.mutex);
+	}
 
 	xassert(mgr.watching);
 	mgr.watching = false;
-
-	/* wake all waiting threads */
-	slurm_mutex_lock(&mgr.watch_mutex);
-	slurm_cond_broadcast(&mgr.watch_cond);
-	slurm_mutex_unlock(&mgr.watch_mutex);
 
 	/* Get the value of shutdown_requested while mutex is locked */
 	shutdown_requested = mgr.shutdown_requested;
@@ -727,21 +716,6 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 		 __func__, (shutdown_requested ? 'T' : 'F'),
 		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
 		 list_count(mgr.listen_conns));
-}
 
-/*
- * Notify connection manager that there has been a change event
- */
-extern void signal_change(bool locked, const char *caller)
-{
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-	log_flag(CONMGR, "%s: %s() triggered change event", __func__, caller);
-
-	/* wake up _watch() */
-	slurm_cond_broadcast(&mgr.cond);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
+	EVENT_BROADCAST(&mgr.watch_return);
 }

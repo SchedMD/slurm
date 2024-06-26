@@ -303,14 +303,10 @@ extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
 		handle_work(true, work);
 	}
 
-	if (count > 0)
-		signal_change(true, __func__);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
 		 __func__, count, total);
 
 	FREE_NULL_LIST(elapsed);
-
-	signal_change(false, __func__);
 }

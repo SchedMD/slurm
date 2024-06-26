@@ -137,7 +137,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* forget the now invalid FD */
 	con->input_fd = -1;
 
-	signal_change(true, __func__);
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 cleanup:
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -295,10 +295,11 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 			 XSTRINGIFY(_wrap_on_connection));
 	}
 
+	slurm_mutex_unlock(&mgr.mutex);
+
 	/* interrupt poll () and wake up watch() to examine new connection */
 	pollctl_interrupt(__func__);
-	signal_change(true, __func__);
-	slurm_mutex_unlock(&mgr.mutex);
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 
 	return con;
 }
@@ -310,6 +311,8 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con)
 	slurm_mutex_lock(&mgr.mutex);
 	con->work_active = false;
 	slurm_mutex_unlock(&mgr.mutex);
+
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
 static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
@@ -340,6 +343,8 @@ static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
 	con->arg = arg;
 	con->is_connected = true;
 	slurm_mutex_unlock(&mgr.mutex);
+
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
@@ -374,8 +379,6 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	signal_change(false, __func__);
-
 	return SLURM_SUCCESS;
 }
 
@@ -393,8 +396,6 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	signal_change(false, __func__);
 
 	return SLURM_SUCCESS;
 }

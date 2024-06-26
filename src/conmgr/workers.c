@@ -41,6 +41,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
 static void *_worker(void *arg);
@@ -174,10 +175,12 @@ static void *_worker(void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	while (true) {
+		bool mgr_shutdown_requested = false;
 		work_t *work = NULL;
 
 		slurm_mutex_lock(&mgr.mutex);
 
+		mgr_shutdown_requested = mgr.shutdown_requested;
 		work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
@@ -195,14 +198,14 @@ static void *_worker(void *arg)
 			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
 				 __func__, worker->id, mgr.workers.active,
 				 mgr.workers.total);
-			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 			slurm_mutex_unlock(&mgr.mutex);
+			EVENT_WAIT(&mgr.worker_sleep);
 			continue;
 		}
 
 		xassert(work->magic == MAGIC_WORK);
 
-		if (mgr.shutdown_requested) {
+		if (mgr_shutdown_requested) {
 			log_flag(CONMGR, "%s: [%u->%s] setting work status as cancelled after shutdown requested",
 				 __func__, worker->id, work->tag);
 			work->status = CONMGR_WORK_STATUS_CANCELLED;
@@ -229,21 +232,35 @@ static void *_worker(void *arg)
 			 __func__, worker->id, mgr.workers.active,
 			 mgr.workers.total, list_count(mgr.work));
 
-		slurm_cond_broadcast(&mgr.cond);
 		slurm_mutex_unlock(&mgr.mutex);
+
+		/* wake up watch for all ending work on shutdown */
+		if (mgr_shutdown_requested)
+			EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 	}
 
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_return);
 	return NULL;
 }
 
 extern void workers_wait_complete(void)
 {
-	xassert(mgr.shutdown_requested);
+	int active = 0;
 
-	while (mgr.workers.active > 0) {
+	do {
+		slurm_mutex_lock(&mgr.mutex);
+		xassert(mgr.shutdown_requested);
+		active = mgr.workers.active;
+
 		log_flag(CONMGR, "%s: waiting for work=%u workers=%u/%u",
 			 __func__, list_count(mgr.work), mgr.workers.active,
 			 mgr.workers.total);
-		slurm_cond_wait(&mgr.cond, &mgr.mutex);
-	}
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		if (active > 0) {
+			EVENT_BROADCAST(&mgr.worker_sleep);
+			EVENT_WAIT(&mgr.worker_return);
+		}
+	} while (active);
 }
