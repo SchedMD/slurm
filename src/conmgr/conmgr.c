@@ -136,7 +136,7 @@ extern void conmgr_fini(void)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	/* wait until all workers are done */
-	workers_wait_complete();
+	workers_shutdown();
 
 	slurm_mutex_lock(&mgr.mutex);
 

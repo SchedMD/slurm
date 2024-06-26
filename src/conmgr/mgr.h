@@ -251,6 +251,12 @@ typedef struct {
 		int active;
 		int total;
 
+		/*
+		 * track shutdown of workers after other work is done or there
+		 * may be no workers to do the work
+		 */
+		bool shutdown_requested;
+
 		/* number of threads */
 		int threads;
 	} workers;
@@ -367,11 +373,11 @@ extern conmgr_fd_t *con_find_by_fd(int fd);
 extern void wrap_work(work_t *work);
 
 /*
- * Wait until all work and workers have completed their work (and exited)
+ * Notify all worker thread to shutdown.
+ * Wait until all work and workers have completed their work (and exited).
  * Note: Caller must NOT hold conmgr lock
- * Note: mgr.shutdown_requested must be true
  */
-extern void workers_wait_complete(void);
+extern void workers_shutdown(void);
 
 /*
  * Initialize worker threads

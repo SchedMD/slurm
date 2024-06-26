@@ -156,7 +156,7 @@ extern void workers_fini(void)
 {
 	/* all workers should have already exited by now */
 
-	xassert(mgr.shutdown_requested);
+	xassert(mgr.workers.shutdown_requested);
 	xassert(!mgr.workers.active);
 	xassert(!mgr.workers.total);
 
@@ -185,7 +185,7 @@ static void *_worker(void *arg)
 
 		/* wait for work if nothing to do */
 		if (!work) {
-			if (mgr.shutdown_requested) {
+			if (mgr.workers.shutdown_requested) {
 				/* give up lock as we are about to be deleted */
 				slurm_mutex_unlock(&mgr.mutex);
 
@@ -243,14 +243,18 @@ static void *_worker(void *arg)
 	return NULL;
 }
 
-extern void workers_wait_complete(void)
+extern void workers_shutdown(void)
 {
-	int active = 0;
+	int total = 0;
+
+	slurm_mutex_lock(&mgr.mutex);
+	mgr.workers.shutdown_requested = true;
+	slurm_mutex_unlock(&mgr.mutex);
 
 	do {
 		slurm_mutex_lock(&mgr.mutex);
-		xassert(mgr.shutdown_requested);
-		active = mgr.workers.active;
+		xassert(mgr.workers.shutdown_requested);
+		total = mgr.workers.total;
 
 		log_flag(CONMGR, "%s: waiting for work=%u workers=%u/%u",
 			 __func__, list_count(mgr.work), mgr.workers.active,
@@ -258,9 +262,9 @@ extern void workers_wait_complete(void)
 
 		slurm_mutex_unlock(&mgr.mutex);
 
-		if (active > 0) {
+		if (total > 0) {
 			EVENT_BROADCAST(&mgr.worker_sleep);
 			EVENT_WAIT(&mgr.worker_return);
 		}
-	} while (active);
+	} while (total);
 }
