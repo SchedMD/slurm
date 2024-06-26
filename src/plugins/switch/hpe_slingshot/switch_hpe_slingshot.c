@@ -1155,3 +1155,8 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	/* Release any hardware collectives multicast addresses */
 	slingshot_release_collectives_job(job_id);
 }
+
+extern int switch_p_fs_init(stepd_step_rec_t *step)
+{
+	return SLURM_SUCCESS;
+}

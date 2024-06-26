@@ -147,6 +147,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix filtering arguments being ignored when using squeue --json.
  -- switch/nvidia_imex - Move setup call after spank_init() to allow namespace
     manipulation within the SPANK plugin.
+ -- switch/nvidia_imex - Skip plugin operation if nvidia-caps-imex-channels
+    device is not present rather than preventing slurmd from starting.
+ -- switch/nvidia_imex - Skip plugin operation if job_container/tmpfs
+    is configured due to incompatibility.
+ -- switch/nvidia_imex - Remove any pre-existing channels when slurmd starts.
 
 * Changes in Slurm 24.05.0
 ==========================

@@ -259,11 +259,17 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
+	if (xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) {
+		error("%s: %s: skipping due incompatibility with job_container/tmpfs",
+		      plugin_type, __func__);
+		return SLURM_SUCCESS;
+	}
+
 	if (step->switch_step && step->switch_step->data) {
 		switch_info_t *switch_info = step->switch_step->data;
 
 		if (switch_info->channel != NO_VAL)
-			return setup_imex_channel(switch_info->channel);
+			return setup_imex_channel(switch_info->channel, true);
 	}
 
 	return SLURM_SUCCESS;
@@ -330,4 +336,9 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 		error("%s: %s: channel %u outside of tracked range, ignoring release",
 		      plugin_type, __func__, switch_jobinfo->channel);
 	}
+}
+
+extern int switch_p_fs_init(stepd_step_rec_t *step)
+{
+	return SLURM_SUCCESS;
 }

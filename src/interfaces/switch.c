@@ -87,6 +87,7 @@ typedef struct slurm_switch_ops {
 					    char *nodelist );
 	void         (*job_start)         ( job_record_t *job_ptr );
 	void         (*job_complete)      ( job_record_t *job_ptr );
+	int          (*fs_init)           ( stepd_step_rec_t *step );
 } slurm_switch_ops_t;
 
 /*
@@ -111,6 +112,7 @@ static const char *syms[] = {
 	"switch_p_job_step_complete",
 	"switch_p_job_start",
 	"switch_p_job_complete",
+	"switch_p_fs_init",
 };
 
 static slurm_switch_ops_t  *ops            = NULL;
@@ -563,4 +565,14 @@ extern void switch_g_job_complete(job_record_t *job_ptr)
 		return;
 
 	(*(ops[switch_context_default].job_complete))(job_ptr);
+}
+
+extern int switch_g_fs_init(stepd_step_rec_t *step)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return SLURM_SUCCESS;
+
+	return (*(ops[switch_context_default].fs_init))(step);
 }

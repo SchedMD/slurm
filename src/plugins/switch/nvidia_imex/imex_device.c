@@ -44,6 +44,7 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -87,10 +88,12 @@ static int _find_major(void)
 	free(line);
 	fclose(fp);
 
-	info("nvidia-caps-imex-channels major: %d", device_major);
-
 	if (device_major == -1)
-		return SLURM_ERROR;
+		warning("%s: nvidia-caps-imex-channels major device not found, plugin disabled",
+			plugin_type);
+	else
+		info("nvidia-caps-imex-channels major: %d", device_major);
+
 	return SLURM_SUCCESS;
 }
 
@@ -105,6 +108,8 @@ static int _make_devdir(void)
 	}
 	umask(mask);
 
+	(void) rmdir_recursive(IMEX_DEV_DIR, false);
+
 	return SLURM_SUCCESS;
 }
 
@@ -112,6 +117,9 @@ extern int slurmd_init(void)
 {
 	if (_find_major() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+
+	if (device_major == -1)
+		return SLURM_SUCCESS;
 
 	if (_make_devdir() != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -127,14 +135,19 @@ extern int stepd_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int setup_imex_channel(uint32_t channel)
+extern int setup_imex_channel(uint32_t channel, bool create_ns)
 {
 	int rc = SLURM_SUCCESS;
 	mode_t mask;
 	dev_t dev = makedev(device_major, channel);
 	char *path = NULL;
 
-	if (unshare(CLONE_NEWNS) < 0) {
+	if (device_major == -1) {
+		debug("skipping setup for channel %u", channel);
+		return SLURM_SUCCESS;
+	}
+
+	if (create_ns && unshare(CLONE_NEWNS) < 0) {
 		error("%s: unshare() failed: %m", __func__);
 		return SLURM_ERROR;
 	}
