@@ -422,7 +422,7 @@ extern char *fd_resolve_path(int fd)
 
 extern char *fd_resolve_peer(int fd)
 {
-	slurm_addr_t addr;
+	slurm_addr_t addr = {0};
 	socklen_t size = sizeof(addr);
 	int err = errno;
 	char *peer;
