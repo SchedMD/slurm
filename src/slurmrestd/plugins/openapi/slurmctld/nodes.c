@@ -75,6 +75,28 @@ cleanup:
 	FREE_NULL_DATA(ppath);
 }
 
+static void _update_nodes(ctxt_t *ctxt)
+{
+	int rc;
+	data_t *ppath = data_set_list(data_new());
+	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
+
+	slurm_init_update_node_msg(node_msg);
+
+	if ((rc = DATA_PARSE(ctxt->parser, UPDATE_NODE_MSG, *node_msg,
+			     ctxt->query, ppath)))
+		goto cleanup;
+
+	if (!rc && slurm_update_node(node_msg))
+		resp_error(ctxt, errno, __func__,
+			   "Failure to update node %s", node_msg->node_names);
+
+cleanup:
+	slurm_free_update_node_msg(node_msg);
+	FREE_NULL_DATA(ppath);
+}
+
+
 static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
 	openapi_nodes_query_t query = {0};
@@ -139,6 +161,8 @@ extern int op_handler_nodes(openapi_ctxt_t *ctxt)
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, NULL);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		_update_nodes(ctxt);
 	} else {
 		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				"Unsupported HTTP method requested: %s",

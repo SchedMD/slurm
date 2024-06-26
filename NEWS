@@ -49,6 +49,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Removed all v0.0.39 endpoints.
  -- select/linear - Reject jobs asking for GRES per job|socket|task or
     cpus|mem per GRES.
+ -- Add /nodes POST endpoint to REST API, supports multiple node update whereas
+    previously only single nodes could be updated through /node/<nodename>
+    endpoint:
+      'POST /slurm/v0.0.42/nodes'
 
 * Changes in Slurm 24.05.2
 ==========================

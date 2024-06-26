@@ -336,6 +336,19 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.query = DATA_PARSER_OPENAPI_NODES_QUERY,
 			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "batch update node(s)",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "batch node update request result",
+				},
+				.body = {
+					.type = DATA_PARSER_UPDATE_NODE_MSG,
+					.description = "Nodelist update description",
+				}
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
