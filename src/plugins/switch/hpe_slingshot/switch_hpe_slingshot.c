@@ -1021,6 +1021,14 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 }
 
 /*
+ * Privileged.
+ */
+extern int switch_p_job_init(stepd_step_rec_t *step)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
  * Destroy CXI Services for each of the CXI NICs on this host
  */
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
