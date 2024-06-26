@@ -192,12 +192,16 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		} else {
-			con_set_polling(true, con, PCTL_TYPE_READ_ONLY,
-					__func__);
-			log_flag(CONMGR, "%s: [%s] waiting to read pending_read=%u pending_writes=%u work_active=%c",
+			con_set_polling(true, con, PCTL_TYPE_READ_ONLY, __func__);
+			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work_active=%c can_read=%c can_write=%c on_data_tried=%c work=%d write_complete_work=%d",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
-				 (con->work_active ? 'T' : 'F'));
+				 (con->work_active ? 'T' : 'F'),
+				 (con->can_read ? 'T' : 'F'),
+				 (con->can_write ? 'T' : 'F'),
+				 (con->on_data_tried ? 'T' : 'F'),
+				 list_count(con->work),
+				 list_count(con->write_complete_work));
 		}
 		return 0;
 	}
