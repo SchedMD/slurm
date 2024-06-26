@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
     Support array expressions in the responses to the client.
  -- salloc - Always output node names to the user when an allocation is granted.
  -- slurmrestd - Removed all v0.0.39 endpoints.
+ -- select/linear - Reject jobs asking for GRES per job|socket|task or
+    cpus|mem per GRES.
 
 * Changes in Slurm 24.05.2
 ==========================

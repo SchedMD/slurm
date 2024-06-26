@@ -6074,6 +6074,11 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 		}
 	}
 
+	if (running_in_slurmctld() &&
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES) &&
+	    (cpus_per_tres || tres_per_job || tres_per_socket || mem_per_tres))
+		return ESLURM_UNSUPPORTED_GRES;
+
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
 	    !gres_js_val->ntasks_per_tres)
