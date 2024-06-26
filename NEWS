@@ -106,6 +106,7 @@ documents those changes that are of interest to users and administrators.
     device is not present rather than preventing slurmd from starting.
  -- switch/nvidia_imex - Skip plugin operation if job_container/tmpfs
     is configured due to incompatibility.
+ -- switch/nvidia_imex - Remove any pre-existing channels when slurmd starts.
 
 * Changes in Slurm 24.05.0
 ==========================

@@ -44,6 +44,7 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -106,6 +107,8 @@ static int _make_devdir(void)
 		return SLURM_ERROR;
 	}
 	umask(mask);
+
+	(void) rmdir_recursive(IMEX_DEV_DIR, false);
 
 	return SLURM_SUCCESS;
 }
