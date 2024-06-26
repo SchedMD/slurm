@@ -368,12 +368,15 @@ static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
 	bool send_signal = false;
 
 	slurm_mutex_lock(&mgr.mutex);
+	xassert(mgr.inspecting);
+
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				_handle_connection, NULL))
 		send_signal = true;
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_handle_connection, NULL))
 		send_signal = true;
+
 	mgr.inspecting = false;
 
 	slurm_mutex_unlock(&mgr.mutex);
