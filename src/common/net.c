@@ -323,6 +323,9 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 		const struct sockaddr_un *addr_un =
 			(const struct sockaddr_un *) addr;
 
+		xassert(addr_un->sun_path[sizeof(addr_un->sun_path) - 1] ==
+			'\0');
+
 		/* path may not be set */
 		if (addr_un->sun_path[0])
 			return xstrdup_printf("unix:%s", addr_un->sun_path);
