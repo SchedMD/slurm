@@ -259,6 +259,12 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
+	if (xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) {
+		error("%s: %s: skipping due incompatibility with job_container/tmpfs",
+		      plugin_type, __func__);
+		return SLURM_SUCCESS;
+	}
+
 	if (step->switch_step && step->switch_step->data) {
 		switch_info_t *switch_info = step->switch_step->data;
 
