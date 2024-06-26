@@ -151,9 +151,7 @@ static void _handle_work_pending(work_t *work)
 
 	switch (work->type) {
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
-		if (!work->con)
-			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO requires a connection",
-				    __func__);
+		xassert(con);
 		/* fall through */
 	case CONMGR_WORK_TYPE_TIME_DELAY_FIFO:
 	{
@@ -165,9 +163,7 @@ static void _handle_work_pending(work_t *work)
 	}
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	{
-		if (!con)
-			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
-				    __func__);
+		xassert(con);
 		log_flag(CONMGR, "%s: [%s] work_active=%c queuing \"%s\" pending work: %u total",
 			 __func__, con->name, (con->work_active ? 'T' : 'F'),
 			 work->tag, list_count(con->work));
@@ -175,9 +171,7 @@ static void _handle_work_pending(work_t *work)
 		break;
 	}
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
-		if (!con)
-			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
-				    __func__);
+		xassert(con);
 		list_append(con->write_complete_work, work);
 		break;
 	case CONMGR_WORK_TYPE_FIFO:
