@@ -33,11 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
-#include <dirent.h>
 #include <signal.h>
-#include <sys/epoll.h>
-#include <sys/socket.h>
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
@@ -47,8 +43,6 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-
-#define MAX_EPOLL_EVENTS 4
 
 typedef struct {
 #define MAGIC_SIGNAL_HANDLER 0xC20A444A
@@ -78,10 +72,9 @@ static int signal_handler_count = 0;
 static signal_work_t *signal_work = NULL;
 static int signal_work_count = 0;
 
-/* interrupt handler will send signal to this fd */
-static int signal_fd_send = -1;
-/* _signal_mgr() will monitor this fd for signals */
-static int signal_fd_receive = -1;
+/* interrupt handler (_signal_handler()) will send signal to this fd */
+static int signal_fd = -1;
+static conmgr_fd_t *signal_con = NULL;
 
 static void _signal_handler(int signo)
 {
@@ -94,11 +87,20 @@ static void _signal_handler(int signo)
 	 * thread will be lost. Gracefully ignore signals when signal_fd_send is
 	 * -1 to avoid trying to write a non-existent file descriptor.
 	 */
-	if (signal_fd_send < 0)
+	if (signal_fd < 0)
 		return;
 
 try_again:
-	if (write(signal_fd_send, &signo, sizeof(signo)) != sizeof(signo)) {
+	if (write(signal_fd, &signo, sizeof(signo)) != sizeof(signo)) {
+		if (errno == SIGPIPE) {
+			/*
+			 * write() after conmgr shutdown before reading that
+			 * signal_fd was set to -1. Ignoring this race condition
+			 * entirely.
+			 */
+			return;
+		}
+
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			goto try_again;
 
@@ -206,6 +208,15 @@ static void _on_signal(int signal)
 {
 	bool matched = false;
 
+	slurm_rwlock_rdlock(&lock);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *str = sig_num2name(signal);
+		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
+			 __func__, signal_con->name, str, signal);
+		xfree(str);
+	}
+
 	for (int i = 0; i < signal_work_count; i++) {
 		signal_work_t *work = &signal_work[i];
 		xassert(work->magic == MAGIC_SIGNAL_WORK);
@@ -214,63 +225,15 @@ static void _on_signal(int signal)
 			continue;
 
 		matched = true;
-		add_work(true, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
-			  work->arg, work->tag);
+		add_work(false, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
+			 work->arg, work->tag);
 	}
+
+	slurm_rwlock_unlock(&lock);
 
 	if (!matched)
 		warning("%s: caught and ignoring signal %s",
 			__func__, strsignal(signal));
-}
-
-static int _read_signal(int fd, const char *con_name)
-{
-	int sig, rc, readable;
-
-	if ((rc = fd_get_readable_bytes(fd, &readable, con_name)) ||
-	    !readable) {
-		log_flag(CONMGR, "%s: [%s] no pending bytes to read()",
-			 __func__, con_name);
-		return -1;
-	}
-
-	/*
-	 * According to pipe(7), writes less than PIPE_BUF in size must be
-	 * atomic. Posix.1 requries PIPE_BUF to be at least 512 bytes.
-	 * Therefore, a write() of 4 bytes to a pipe is always atomic in Linux.
-	 */
-	xassert(readable >= sizeof(sig));
-
-	safe_read(fd, &sig, sizeof(sig));
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
-		char *str = sig_num2name(sig);
-		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
-			 __func__, con_name, str, sig);
-		xfree(str);
-	}
-
-	return sig;
-rwfail:
-	/* safe_read() should never pass these errors along */
-	xassert(errno != EAGAIN);
-	xassert(errno != EWOULDBLOCK);
-
-	/* this should never happen! */
-	fatal_abort("%s: Unexpected safe_read(%d) failure: %m", __func__, fd);
-}
-
-static void _on_signal_readable(int fd)
-{
-	static const char *con_name = "signal_fd_send";
-	int sig = 0, count = 0;
-
-	while ((sig = _read_signal(fd, con_name)) > 0) {
-		count++;
-		_on_signal(sig);
-	}
-
-	log_flag(CONMGR, "%s: caught %d signals", __func__, count);
 }
 
 extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
@@ -290,143 +253,107 @@ extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
 
 	signal_work_count++;
 
-	/* register new signal handler since mgr thread already running */
-	if (signal_fd_send >= 0)
+	/*
+	 * Directly register new signal handler since connection already started
+	 * and init_signal_handler() already ran
+	 */
+	if (signal_con)
 		_register_signal_handler(signal);
 
 	slurm_rwlock_unlock(&lock);
 }
 
-static void _signal_mgr(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag, void *arg)
+static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
-	/*
-	 * socket_pair() used to relay signals. Socket provides an easy way to
-	 * break out of epoll via shutdown() without another pipe or possibly
-	 * losing a signal.
-	 */
-	int send = -1;
-	int receive = 1;
-	struct epoll_event events[MAX_EPOLL_EVENTS];
-	int epoll = -1;
-	bool shutdown = false;
-
-	if (status == CONMGR_WORK_STATUS_CANCELLED)
-		return;
-
-	/*
-	 * locks cant be used in signal context but this should atleast flush
-	 * any memory barriers
-	 */
 	slurm_rwlock_wrlock(&lock);
 
 	_init_signal_handler();
 
-	if (signal_fd_send != -1)
-		fatal_abort("there can be only 1 thread of this function");
-
-	{
-		int fd[2] = { -1, -1 };
-
-		if (socketpair(AF_UNIX, SOCK_DGRAM, 0, fd))
-			fatal_abort("%s: socketpair() failed: %m", __func__);
-
-		fd_set_blocking(fd[0]);
-		signal_fd_receive = receive = fd[0];
-		fd_set_blocking(fd[1]);
-		signal_fd_send = send = fd[1];
-	}
-
 	slurm_rwlock_unlock(&lock);
 
-	if ((epoll = epoll_create1(EPOLL_CLOEXEC)) < 0)
-		fatal_abort("epoll_create1() failed: %m");
+	return &signal_fd;
+}
 
-	{
-		struct epoll_event ev = {
-			.events = (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR),
-			.data.fd = receive,
-		};
+static int _on_data(conmgr_fd_t *con, void *arg)
+{
+	const void *data = NULL;
+	size_t bytes = 0, read = 0;
+	int signo;
 
-		if (epoll_ctl(epoll, EPOLL_CTL_ADD, ev.data.fd, &ev))
-			fatal_abort("epoll_ctl() failed: %m");
+	xassert(arg == &signal_fd);
+
+	conmgr_fd_get_in_buffer(con, &data, &bytes);
+
+	while ((read + sizeof(signo)) <= bytes) {
+		signo = *(int *) (data + read);
+
+		_on_signal(signo);
+
+		read += sizeof(signo);
 	}
 
-	while (!shutdown) {
-		int nfds = epoll_wait(epoll, events, ARRAY_SIZE(events), -1);
+	conmgr_fd_mark_consumed_in_buffer(con, read);
 
-		if (nfds < 0) {
-			if (errno != EINTR)
-				fatal_abort(
-					"should never happen: epoll_wait()=%m");
-			nfds = 0;
-		}
+	return SLURM_SUCCESS;
+}
 
-		/* should only ever have 1 or 0 events here */
-		xassert(nfds == 1 || !nfds);
-
-		for (int i = 0; i < nfds; i++) {
-			xassert(events[i].data.fd == receive);
-
-			if (events[i].data.fd != receive)
-				continue;
-
-			if (events[i].events & EPOLLERR)
-				fatal_abort("should never happen");
-
-			if (events[i].events & (EPOLLHUP|EPOLLRDHUP)) {
-				shutdown = true;
-
-				log_flag(CONMGR, "%s: HANGUP received. Shutting down gracefully.",
-					 __func__);
-			}
-
-			if (events[i].events & EPOLLIN)
-				_on_signal_readable(receive);
-		}
-	}
+static void _on_finish(void *arg)
+{
+	xassert(arg == &signal_fd);
 
 	slurm_rwlock_wrlock(&lock);
+
 	_fini_signal_handler();
 
-	xassert(signal_fd_send == send);
-	xassert((signal_fd_receive == receive) || (signal_fd_receive == -1));
-	signal_fd_send = -1;
-	signal_fd_receive = -1;
-	slurm_rwlock_unlock(&lock);
+	xassert(signal_fd != -1);
+	fd_close(&signal_fd);
 
-	fd_close(&send);
-	fd_close(&receive);
-	fd_close(&epoll);
+	xassert(signal_con);
+	signal_con = NULL;
+
+	slurm_rwlock_unlock(&lock);
 }
 
-extern void signal_mgr_start(bool locked)
+extern void signal_mgr_start(conmgr_fd_t *con, conmgr_work_type_t type,
+			     conmgr_work_status_t status, const char *tag,
+			     void *arg)
 {
-	bool start;
+	static const conmgr_events_t events = {
+		.on_connection = _on_connection,
+		.on_data = _on_data,
+		.on_finish = _on_finish,
+	};
+	int fd[2] = { -1, -1 };
+
+	if (status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	if (pipe(fd))
+		fatal_abort("%s: pipe() failed: %m", __func__);
 
 	slurm_rwlock_wrlock(&lock);
-	start = (signal_fd_send < 0);
+
+	xassert(signal_fd == -1);
+	xassert(!signal_con);
+
+	fd_set_blocking(fd[1]);
+	signal_fd = fd[1];
+
 	slurm_rwlock_unlock(&lock);
 
-	if (start)
-		add_work(locked, NULL, _signal_mgr, CONMGR_WORK_TYPE_FIFO, NULL,
-			 XSTRINGIFY(_signal_mgr));
+	signal_con = add_connection(CON_TYPE_RAW, NULL, fd[0], -1, events, NULL,
+				    0, false, NULL, NULL);
+	add_work(false, signal_con, wrap_on_connection,
+		 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+		 XSTRINGIFY(wrap_on_connection));
 }
 
-extern void signal_mgr_stop(void)
+extern void signal_mgr_stop(bool locked)
 {
-	/* Not signal safe but should still work enough to fail gracefully */
 	slurm_rwlock_rdlock(&lock);
-	if (signal_fd_receive >= 0) {
-		int rc;
 
-		if ((rc = shutdown(signal_fd_receive, SHUT_RDWR)))
-			rc = errno;
+	if (signal_con)
+		close_con(locked, signal_con);
 
-		log_flag(CONMGR, "%s: shutdown(signal_fd_receive=%d)=%s",
-			 __func__, signal_fd_receive, slurm_strerror(rc));
-
-		signal_fd_receive = -1;
-	}
 	slurm_rwlock_unlock(&lock);
 }

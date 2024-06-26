@@ -592,8 +592,8 @@ static bool _watch_loop(void)
 	bool work = false; /* is there any work to do? */
 
 	if (mgr.shutdown_requested) {
+		signal_mgr_stop(true);
 		close_all_connections();
-		signal_mgr_stop();
 	} else if (mgr.quiesced) {
 		if (mgr.poll_active) {
 			/*
@@ -708,7 +708,8 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	mgr.watching = true;
 
-	signal_mgr_start(true);
+	add_work(true, NULL, signal_mgr_start, CONMGR_WORK_TYPE_FIFO, NULL,
+		 XSTRINGIFY(signal_mgr_start));
 
 	while (_watch_loop());
 

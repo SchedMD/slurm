@@ -43,7 +43,7 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #define CONMGR_THREAD_COUNT_DEFAULT 10
-#define CONMGR_THREAD_COUNT_MIN 3
+#define CONMGR_THREAD_COUNT_MIN 2
 #define CONMGR_THREAD_COUNT_MAX 1024
 
 /*
