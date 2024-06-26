@@ -100,6 +100,8 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_profile/influxdb - Fix slurmstepd memory leak from curl usage
  -- Fix 24.05.0 regression not deleting job hash dirs after MinJobAge.
  -- Fix filtering arguments being ignored when using squeue --json.
+ -- switch/nvidia_imex - Move setup call after spank_init() to allow namespace
+    manipulation within the SPANK plugin.
 
 * Changes in Slurm 24.05.0
 ==========================

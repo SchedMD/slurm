@@ -254,6 +254,11 @@ extern int switch_p_unpack_stepinfo(switch_info_t **switch_step, buf_t *buffer,
 
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_init(stepd_step_rec_t *step)
+{
 	if (step->switch_step && step->switch_step->data) {
 		switch_info_t *switch_info = step->switch_step->data;
 

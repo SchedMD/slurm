@@ -77,6 +77,7 @@ typedef struct slurm_switch_ops {
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
+	int          (*job_init)          ( stepd_step_rec_t *step );
 	int          (*job_postfini)      ( stepd_step_rec_t *step);
 	int          (*job_attach)        ( switch_stepinfo_t *stepinfo,
 					    char ***env, uint32_t nodeid,
@@ -104,6 +105,7 @@ static const char *syms[] = {
 	"switch_p_pack_stepinfo",
 	"switch_p_unpack_stepinfo",
 	"switch_p_job_preinit",
+	"switch_p_job_init",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
 	"switch_p_job_step_complete",
@@ -479,6 +481,16 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].job_preinit))(step);
+}
+
+extern int switch_g_job_init(stepd_step_rec_t *step)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return SLURM_SUCCESS;
+
+	return (*(ops[switch_context_default].job_init))(step);
 }
 
 extern int switch_g_job_postfini(stepd_step_rec_t *step)
