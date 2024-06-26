@@ -87,10 +87,12 @@ static int _find_major(void)
 	free(line);
 	fclose(fp);
 
-	info("nvidia-caps-imex-channels major: %d", device_major);
-
 	if (device_major == -1)
-		return SLURM_ERROR;
+		warning("%s: nvidia-caps-imex-channels major device not found, plugin disabled",
+			plugin_type);
+	else
+		info("nvidia-caps-imex-channels major: %d", device_major);
+
 	return SLURM_SUCCESS;
 }
 
@@ -113,6 +115,9 @@ extern int slurmd_init(void)
 	if (_find_major() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	if (device_major == -1)
+		return SLURM_SUCCESS;
+
 	if (_make_devdir() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -133,6 +138,11 @@ extern int setup_imex_channel(uint32_t channel)
 	mode_t mask;
 	dev_t dev = makedev(device_major, channel);
 	char *path = NULL;
+
+	if (device_major == -1) {
+		debug("skipping setup for channel %u", channel);
+		return SLURM_SUCCESS;
+	}
 
 	if (unshare(CLONE_NEWNS) < 0) {
 		error("%s: unshare() failed: %m", __func__);
