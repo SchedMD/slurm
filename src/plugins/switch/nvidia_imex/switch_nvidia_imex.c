@@ -331,3 +331,8 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 		      plugin_type, __func__, switch_jobinfo->channel);
 	}
 }
+
+extern int switch_p_fs_init(stepd_step_rec_t *step)
+{
+	return SLURM_SUCCESS;
+}
