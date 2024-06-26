@@ -5502,7 +5502,7 @@ The default value is 30 seconds.
 \fBSwitchParameters\fR
 Optional parameters for the switch plugin.
 
-On HPE Slingshot systems configured with SwitchType=switch/hpe_slingshot,
+On HPE Slingshot systems configured with \fBSwitchType=switch/hpe_slingshot\fR,
 the following parameters are supported
 (separate multiple parameters with a comma):
 .IP
@@ -5651,13 +5651,19 @@ Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 \fBSwitchType\fR
 Identifies the type of switch or interconnect used for application
 communications.
-Acceptable values include "switch/hpe_slingshot" for HPE Slingshot systems.
 The default value is no special plugin requiring special processing for job
 launch or termination (Ethernet, and InfiniBand).
 All Slurm daemons, commands and running jobs must be restarted or reconfigured
 for a change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
+Acceptable values include:
+.IP
+.RS
+.TP 15
+\fBswitch/hpe_slingshot\fR
+For HPE Slingshot systems.
+.RE
 .IP
 
 .TP
