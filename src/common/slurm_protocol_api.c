@@ -1979,7 +1979,7 @@ void slurm_get_ip_str(slurm_addr_t *addr, char *ip, unsigned int buf_len)
  */
 int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
-	slurm_addr_t name;
+	slurm_addr_t name = {0};
 	socklen_t namelen = (socklen_t) sizeof(name);
 
 	if (getpeername((int) fd, (struct sockaddr *) &name, &namelen))
