@@ -263,7 +263,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 		switch_info_t *switch_info = step->switch_step->data;
 
 		if (switch_info->channel != NO_VAL)
-			return setup_imex_channel(switch_info->channel);
+			return setup_imex_channel(switch_info->channel, true);
 	}
 
 	return SLURM_SUCCESS;

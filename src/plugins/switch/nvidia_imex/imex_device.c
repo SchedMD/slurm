@@ -132,7 +132,7 @@ extern int stepd_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int setup_imex_channel(uint32_t channel)
+extern int setup_imex_channel(uint32_t channel, bool create_ns)
 {
 	int rc = SLURM_SUCCESS;
 	mode_t mask;
@@ -144,7 +144,7 @@ extern int setup_imex_channel(uint32_t channel)
 		return SLURM_SUCCESS;
 	}
 
-	if (unshare(CLONE_NEWNS) < 0) {
+	if (create_ns && unshare(CLONE_NEWNS) < 0) {
 		error("%s: unshare() failed: %m", __func__);
 		return SLURM_ERROR;
 	}
