@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     more than 10 threads try to get energy at the same time. This prevented
     the possibility to get energy from slurmd by any step until slurmd was
     restarted, so losing energy accounting metrics in the node.
+ -- accounting_storage/mysql - Fix issue where new user with wckey did not
+    have a default wckey sent to the slurmctld.
 
 * Changes in Slurm 24.05.1
 ==========================
