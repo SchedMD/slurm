@@ -353,10 +353,6 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 
 	xassert(child->magic == MAGIC_CON_MGR_FD);
-
-	add_work(false, child, wrap_on_connection,
-		 CONMGR_WORK_TYPE_CONNECTION_FIFO, child,
-		 XSTRINGIFY(wrap_on_connection));
 }
 
 /*

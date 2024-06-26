@@ -63,6 +63,10 @@ typedef struct {
 	conmgr_con_type_t type;
 } socket_listen_init_t;
 
+static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
+				conmgr_work_status_t status, const char *tag,
+				void *arg);
+
 /*
  * Close all connections (for_each)
  * NOTE: must hold mgr.mutex
@@ -284,8 +288,12 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen)
 		list_append(mgr.listen_conns, con);
-	else
+	else {
 		list_append(mgr.connections, con);
+		add_work(true, con, _wrap_on_connection,
+			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			 XSTRINGIFY(_wrap_on_connection));
+	}
 
 	/* interrupt poll () and wake up watch() to examine new connection */
 	pollctl_interrupt(__func__);
@@ -304,9 +312,9 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
+static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
+				conmgr_work_status_t status, const char *tag,
+				void *arg)
 {
 	if (con->events.on_connection) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
@@ -348,10 +356,6 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	add_work(false, con, wrap_on_connection,
-		 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-		 XSTRINGIFY(wrap_on_connection));
 
 	return SLURM_SUCCESS;
 }

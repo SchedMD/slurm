@@ -355,10 +355,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 extern void close_all_connections(void);
 
-extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg);
-
 extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
 extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 

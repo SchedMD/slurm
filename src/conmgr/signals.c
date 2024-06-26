@@ -343,9 +343,6 @@ extern void signal_mgr_start(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	signal_con = add_connection(CON_TYPE_RAW, NULL, fd[0], -1, events, NULL,
 				    0, false, NULL, NULL);
-	add_work(false, signal_con, wrap_on_connection,
-		 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-		 XSTRINGIFY(wrap_on_connection));
 }
 
 extern void signal_mgr_stop(bool locked)
