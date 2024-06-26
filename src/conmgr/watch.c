@@ -697,6 +697,19 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 			pollctl_interrupt(__func__);
 		}
 
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d ",
+				 __func__, mgr.workers.active,
+				 mgr.workers.total, list_count(mgr.work),
+				 list_count(mgr.delayed_work),
+				 list_count(mgr.connections),
+				 list_count(mgr.listen_conns),
+				 list_count(mgr.complete_conns),
+				 (mgr.poll_active ? 'T' : 'F'),
+				 (mgr.inspecting ? 'T' : 'F'),
+				 (mgr.shutdown_requested ? 'T' : 'F'),
+				 (mgr.quiesced ? 'T' : 'F'),
+				 mgr.watch_on_worker);
+
 		/* release lock while waiting for signal */
 		slurm_mutex_unlock(&mgr.mutex);
 		EVENT_WAIT(&mgr.watch_sleep);
