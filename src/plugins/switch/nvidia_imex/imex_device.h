@@ -38,6 +38,8 @@
 
 #include <stdint.h>
 
+extern const char plugin_type[];
+
 extern int slurmd_init(void);
 extern int stepd_init(void);
 
