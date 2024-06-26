@@ -34,21 +34,28 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #include <sys/param.h>
 #include <sys/ucred.h>
 #endif
 
+#if defined(__linux__)
+#include <sys/sysmacros.h>
+#endif /* __linux__ */
+
 #include "slurm/slurm.h"
 
 #include "src/common/fd.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -143,6 +150,119 @@ cleanup:
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
+static char *_resolve_tty_name(int fd)
+{
+	char buf[PATH_MAX] = {0};
+
+	if (ttyname_r(fd, buf, (sizeof(buf) - 1))) {
+		log_flag(CONMGR, "%s: unable to resolve tty at fd:%d: %m",
+			 __func__, fd);
+		return NULL;
+	}
+
+	return xstrdup(buf);
+}
+
+static char *_resolve_fd(int fd, struct stat *stat_ptr)
+{
+	char *name = NULL;
+
+	if (S_ISSOCK(stat_ptr->st_mode)) {
+		slurm_addr_t addr = {0};
+
+		if (!slurm_get_stream_addr(fd, &addr) &&
+		    (addr.ss_family != AF_UNSPEC) &&
+		    (name = sockaddr_to_string(&addr, sizeof(addr))))
+			return name;
+	}
+
+	if ((name = fd_resolve_path(fd)))
+		return name;
+
+	if (S_ISFIFO(stat_ptr->st_mode))
+		return xstrdup_printf("pipe");
+
+	if (S_ISCHR(stat_ptr->st_mode)) {
+		if (isatty(fd) && (name = _resolve_tty_name(fd)))
+			return name;
+
+#if defined(__linux__)
+		return xstrdup_printf("device:%u.%u", major(stat_ptr->st_dev),
+				      minor(stat_ptr->st_dev));
+#else /* !__linux__ */
+		return xstrdup_printf("device:0x%x", stat_ptr->st_dev);
+#endif /* !__linux__ */
+	}
+
+#if defined(__linux__)
+	if (S_ISBLK(stat_ptr->st_mode))
+		return xstrdup_printf("block:%u.%u", major(stat_ptr->st_dev),
+				      minor(stat_ptr->st_dev));
+#endif /* __linux__ */
+
+	return NULL;
+}
+
+/* set connection name if one was not resolved already */
+static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
+				 struct stat *out_stat)
+{
+	xassert(con);
+	xassert(!con->name);
+
+	char *in_str = NULL, *out_str = NULL;
+	const bool has_in = (con->input_fd >= 0);
+	const bool has_out = (con->output_fd >= 0);
+	bool is_same = (con->input_fd == con->output_fd);
+
+	if (!has_in && !has_out) {
+		con->name = xstrdup("INVALID");
+		return;
+	}
+
+	/* grab socket peer if possible */
+	if (con->is_socket && has_out)
+		out_str = fd_resolve_peer(con->output_fd);
+
+	if (has_out && !out_str)
+		out_str = _resolve_fd(con->output_fd, out_stat);
+	if (has_in)
+		in_str = _resolve_fd(con->input_fd, in_stat);
+
+	/* avoid "->" syntax if same on both sides */
+	if (in_str && out_str && !xstrcmp(in_str, out_str)) {
+		is_same = true;
+		xfree(out_str);
+	}
+
+	if (is_same) {
+		xassert(has_in && has_out);
+
+		if (in_str && out_str)
+			xstrfmtcat(con->name, "%s->%s(fd:%d)", in_str, out_str,
+				   con->output_fd);
+		else if (in_str)
+			xstrfmtcat(con->name, "%s(fd:%d)", in_str,
+				   con->input_fd);
+		else if (out_str)
+			xstrfmtcat(con->name, "%s(fd:%d)", out_str,
+				   con->output_fd);
+		else
+			xassert(false);
+	} else if (has_in && has_out) {
+		xstrfmtcat(con->name, "%s(fd:%d)->%s(fd:%d)", in_str,
+			   con->input_fd, out_str, con->output_fd);
+	} else if (has_in && !has_out) {
+		xstrfmtcat(con->name, "%s(fd:%d)->()", in_str, con->input_fd);
+	} else if (!has_in && has_out) {
+		xstrfmtcat(con->name, "()->%s(fd:%d)", out_str, con->output_fd);
+	} else {
+		xassert(false);
+	}
+
+	xassert(con->name && con->name[0]);
+}
+
 extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 				   conmgr_fd_t *source, int input_fd,
 				   int output_fd,
@@ -151,21 +271,27 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 				   socklen_t addrlen, bool is_listen,
 				   const char *unix_socket_path, void *arg)
 {
-	struct stat fbuf = { 0 };
+	struct stat in_stat = { 0 };
+	struct stat out_stat = { 0 };
 	conmgr_fd_t *con = NULL;
-	bool set_keep_alive;
+	bool set_keep_alive, is_socket;
 
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
 		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
 	/* verify FD is valid and still open */
-	if (fstat(input_fd, &fbuf) == -1) {
-		log_flag(CONMGR, "%s: invalid fd: %m", __func__);
+	if ((input_fd >= 0) && fstat(input_fd, &in_stat)) {
+		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
+		return NULL;
+	}
+	if ((output_fd >= 0) && fstat(output_fd, &out_stat)) {
+		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
 		return NULL;
 	}
 
-	set_keep_alive =
-		!unix_socket_path && S_ISSOCK(fbuf.st_mode) && !is_listen;
+	is_socket = (S_ISSOCK(in_stat.st_mode) || S_ISSOCK(out_stat.st_mode));
+
+	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
 
 	/* all connections are non-blocking */
 	if (set_keep_alive)
@@ -179,14 +305,14 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	}
 
 	con = xmalloc(sizeof(*con));
-	*con = (conmgr_fd_t) {
+	*con = (conmgr_fd_t){
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
 		.output_fd = output_fd,
 		.events = events,
 		/* save socket type to avoid calling fstat() again */
-		.is_socket = (addr && S_ISSOCK(fbuf.st_mode)),
+		.is_socket = is_socket,
 		.mss = NO_VAL,
 		.is_listen = is_listen,
 		.work = list_create(NULL),
@@ -208,22 +334,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		xassert(con->is_socket);
 		xassert(addr->ss_family == AF_LOCAL);
 		con->unix_socket = xstrdup(unix_socket_path);
-
-		/* try to resolve client directly if possible */
-		con->name = sockaddr_to_string(addr, addrlen);
-
-		if (!con->name) {
-			char *outfd = fd_resolve_path(output_fd);
-
-			if (!outfd)
-				/* out of options to query */
-				outfd = xstrdup_printf("fd:%u", output_fd);
-
-			xstrfmtcat(con->name, "%s->%s (fd %u)",
-				   source->unix_socket, outfd, output_fd);
-
-			xfree(outfd);
-		}
 	}
 
 #ifndef NDEBUG
@@ -234,50 +344,10 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	if (source && source->unix_socket && !con->unix_socket)
 		con->unix_socket = xstrdup(source->unix_socket);
 
-	if (con->name) {
-		/* do nothing - connection already named */
-	} else if (addr) {
-		xassert(con->is_socket);
-
+	if (is_socket && (addrlen > 0) && addr)
 		memcpy(&con->address, addr, addrlen);
 
-		con->name = sockaddr_to_string(addr, addrlen);
-
-		if (!con->name && source && source->unix_socket) {
-			/*
-			 * if this is a unix socket, we at the very least know
-			 * the source address
-			 */
-			char *outfd = fd_resolve_path(output_fd);
-
-			if (!outfd)
-				/* out of options to query */
-				outfd = xstrdup_printf("fd:%u", output_fd);
-
-			xstrfmtcat(con->name, "%s->%s (fd %u)",
-				   source->unix_socket, outfd, output_fd);
-
-			xfree(outfd);
-		}
-	} else if (input_fd == output_fd &&
-		   !(con->name = fd_resolve_path(input_fd)))
-		xstrfmtcat(con->name, "fd:%u", input_fd);
-
-	if (!con->name) {
-		/* different input than output */
-		char *infd = fd_resolve_path(input_fd);
-		char *outfd = fd_resolve_path(output_fd);
-
-		if (!infd)
-			infd = xstrdup_printf("fd:%u", input_fd);
-		if (!outfd)
-			outfd = xstrdup_printf("fd:%u", output_fd);
-
-		xstrfmtcat(con->name, "%s->%s", infd, outfd);
-
-		xfree(infd);
-		xfree(outfd);
-	}
+	_set_connection_name(con, &in_stat, &out_stat);
 
 	if (!con->is_listen && con->is_socket)
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
