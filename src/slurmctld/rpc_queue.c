@@ -48,6 +48,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/serializer.h"
+
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
@@ -185,8 +187,94 @@ static void *_rpc_queue_worker(void *arg)
 	return NULL;
 }
 
+static data_t *_load_config(void)
+{
+	char *file = get_extra_conf_path("rpc_queue.yaml");
+	buf_t *buf = create_mmap_buf(file);
+	data_t *conf = NULL;
+
+	if (!buf) {
+		debug("%s: could not load %s, ignoring", __func__, file);
+		xfree(file);
+		return NULL;
+	}
+
+	if (serialize_g_string_to_data(&conf, buf->head, buf->size,
+				       MIME_TYPE_YAML))
+		fatal("Failed to decode %s", file);
+
+	FREE_NULL_BUFFER(buf);
+	xfree(file);
+	return conf;
+}
+
+static bool _find_msg_name(const data_t *data, void *needle)
+{
+	const data_t *type = NULL;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return false;
+
+	type = data_key_get_const(data, "type");
+
+	if (data_get_type(type) != DATA_TYPE_STRING)
+		return false;
+
+	return !xstrcasecmp(data_get_string(type), needle);
+}
+
+static void _apply_config(data_t *conf, slurmctld_rpc_t *q)
+{
+	data_t *rpc_queue = NULL, *settings = NULL, *field = NULL;
+	int64_t int64_tmp;
+
+	if (!conf || !q)
+		return;
+
+	rpc_queue = data_key_get(conf, "rpc_queue");
+	if (data_get_type(rpc_queue) != DATA_TYPE_LIST)
+		return;
+
+	if (!(settings = data_list_find_first(rpc_queue, _find_msg_name,
+					      (void *) q->msg_name)))
+		return;
+
+	if ((field = data_key_get(settings, "disabled"))) {
+		bool disabled = false;
+		if (!data_get_bool_converted(field, &disabled)) {
+			q->queue_enabled = false;
+			return;
+		}
+	}
+
+	if ((field = data_key_get(settings, "hard_drop")))
+		(void) data_get_bool_converted(field, &q->hard_drop);
+
+	if ((field = data_key_get(settings, "max_per_cycle")))
+		if (!data_get_int_converted(field, &int64_tmp))
+			q->max_per_cycle = int64_tmp;
+
+	if ((field = data_key_get(settings, "max_usec_per_cycle")))
+		if (!data_get_int_converted(field, &int64_tmp))
+			q->max_usec_per_cycle = int64_tmp;
+
+	if ((field = data_key_get(settings, "max_queued")))
+		if (!data_get_int_converted(field, &int64_tmp))
+			q->max_queued = int64_tmp;
+
+	if ((field = data_key_get(settings, "yield_sleep")))
+		if (!data_get_int_converted(field, &int64_tmp))
+			q->yield_sleep = int64_tmp;
+
+	if ((field = data_key_get(settings, "interval")))
+		if (!data_get_int_converted(field, &int64_tmp))
+			q->interval = int64_tmp;
+}
+
 extern void rpc_queue_init(void)
 {
+	data_t *conf = NULL;
+
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_rpc_queue")) {
 		enabled = false;
 		return;
@@ -194,11 +282,22 @@ extern void rpc_queue_init(void)
 
 	error("enabled experimental rpc queuing system");
 
+	conf = _load_config();
+
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
 		if (!q->queue_enabled)
 			continue;
 
 		q->msg_name = rpc_num2string(q->msg_type);
+
+		_apply_config(conf, q);
+
+		/* config may have disabled this queue, check again */
+		if (!q->queue_enabled) {
+			verbose("disabled rpc_queue for %s", q->msg_name);
+			continue;
+		}
+
 		q->work = list_create(NULL);
 		slurm_cond_init(&q->cond, NULL);
 		slurm_mutex_init(&q->mutex);
@@ -210,6 +309,8 @@ extern void rpc_queue_init(void)
 			q->interval);
 		slurm_thread_create(&q->thread, _rpc_queue_worker, q);
 	}
+
+	FREE_NULL_DATA(conf);
 }
 
 extern void rpc_queue_shutdown(void)
