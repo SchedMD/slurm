@@ -51,6 +51,7 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/poll.h"
+#include "src/conmgr/events.h"
 
 /*
  * Size event count for 1 input and 1 output per connection and
@@ -107,6 +108,8 @@ static const struct {
 #define PCTL_INITIALIZER \
 { \
 	.mutex = PTHREAD_MUTEX_INITIALIZER, \
+	.poll_return = EVENT_INITIALIZER("POLL_RETURN"), \
+	.interrupt_return = EVENT_INITIALIZER("INTERRUPT_RETURN"), \
 	.epoll = -1, \
 	.interrupt =  { \
 		.send = -1, \
@@ -119,6 +122,11 @@ static struct {
 
 	/* Is currently initialized */
 	bool initialized;
+
+	/* event to wait on pollctl_for_each_event() to return */
+	event_signal_t poll_return;
+	/* event to wait on pollctl_interrupt() to return */
+	event_signal_t interrupt_return;
 
 	/* True if actively polling() */
 	bool polling;
@@ -283,6 +291,8 @@ extern void pollctl_init(const int max_connections)
 
 extern void pollctl_fini(void)
 {
+	event_signal_t *poll_return = NULL, *interrupt_return = NULL;
+
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
@@ -291,6 +301,20 @@ extern void pollctl_fini(void)
 		return;
 	}
 
+	if (pctl.interrupt.sending)
+		interrupt_return = &pctl.interrupt_return;
+	if (pctl.polling)
+		poll_return = &pctl.poll_return;
+
+	slurm_mutex_unlock(&pctl.mutex);
+
+	if (interrupt_return)
+		EVENT_WAIT(interrupt_return);
+
+	if (poll_return)
+		EVENT_WAIT(poll_return);
+
+	slurm_mutex_lock(&pctl.mutex);
 	/* should not free() when there is an active poll() thread */
 	xassert(!pctl.polling);
 	/*
@@ -307,6 +331,8 @@ extern void pollctl_fini(void)
 	fd_close(&pctl.epoll);
 
 	xfree(pctl.events);
+	EVENT_FREE_MEMBERS(&pctl.poll_return);
+	EVENT_FREE_MEMBERS(&pctl.interrupt_return);
 
 	pctl.initialized = false;
 #endif /* MEMORY_LEAK_DEBUG */
@@ -507,6 +533,7 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
 {
 	int nfds = -1, rc = SLURM_SUCCESS, intr_fd = -1;
 	struct epoll_event *events = NULL;
+	event_signal_t *poll_return = NULL;
 
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -547,8 +574,11 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
 	xassert(pctl.polling);
 	pctl.polling = false;
 	pctl.events_triggered = 0;
+	poll_return = &pctl.poll_return;
 
 	slurm_mutex_unlock(&pctl.mutex);
+
+	EVENT_BROADCAST(poll_return);
 
 	return rc;
 }
@@ -578,6 +608,7 @@ rwfail:
 
 extern void pollctl_interrupt(const char *caller)
 {
+	event_signal_t *interrupt_return = NULL;
 	int rc, fd = -1;
 
 	slurm_mutex_lock(&pctl.mutex);
@@ -593,6 +624,7 @@ extern void pollctl_interrupt(const char *caller)
 			fd = pctl.interrupt.send;
 			xassert(!pctl.interrupt.sending);
 			pctl.interrupt.sending = true;
+			interrupt_return = &pctl.interrupt_return;
 
 			log_flag(CONMGR, "%s->%s: [POLL] sending interrupt requests=%d",
 				 caller, __func__,
@@ -627,6 +659,8 @@ extern void pollctl_interrupt(const char *caller)
 	pctl.interrupt.sending = false;
 
 	slurm_mutex_unlock(&pctl.mutex);
+
+	EVENT_BROADCAST(interrupt_return);
 }
 
 extern bool pollctl_events_can_read(pollctl_events_t events)
