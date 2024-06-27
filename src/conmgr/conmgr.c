@@ -76,6 +76,9 @@ extern void conmgr_init(int thread_count, int max_connections,
 			fatal_abort("%s: pthread_atfork() failed: %s",
 				    __func__, slurm_strerror(rc));
 
+		conmgr_add_signal_work(SIGALRM, on_signal_alarm, NULL,
+				       XSTRINGIFY(on_signal_alarm));
+
 		mgr.one_time_initialized = true;
 	} else {
 		/* already initialized */
@@ -102,9 +105,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.work = list_create(NULL);
 
 	pollctl_init(mgr.max_connections);
-
-	conmgr_add_signal_work(SIGALRM, on_signal_alarm, NULL,
-			       XSTRINGIFY(on_signal_alarm));
 
 	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
