@@ -199,6 +199,8 @@ typedef struct {
 	 * called.
 	 */
 	bool initialized;
+	/* One time per process tasks initialized */
+	bool one_time_initialized;
 	/*
 	 * True if _watch() is running
 	 */
@@ -220,8 +222,6 @@ typedef struct {
 	 * Defers all new work to while true
 	 */
 	bool quiesced;
-	/* at fork handler installed */
-	bool at_fork_installed;
 	/* will inspect connections (not listeners */
 	bool inspecting;
 

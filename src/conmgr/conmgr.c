@@ -69,14 +69,14 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	workers_init(thread_count);
 
-	if (!mgr.at_fork_installed) {
+	if (!mgr.one_time_initialized) {
 		int rc;
 
 		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
 			fatal_abort("%s: pthread_atfork() failed: %s",
 				    __func__, slurm_strerror(rc));
 
-		mgr.at_fork_installed = true;
+		mgr.one_time_initialized = true;
 	} else {
 		/* already initialized */
 		mgr.max_connections = MAX(max_connections, mgr.max_connections);
