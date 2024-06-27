@@ -46,6 +46,9 @@ documents those changes that are of interest to users and administrators.
       'DELETE /slurm/v0.0.42/jobs'
     Support array expressions in the responses to the client.
 
+* Changes in Slurm 24.05.2
+==========================
+
 * Changes in Slurm 24.05.1
 ==========================
  -- Fix slurmctld and slurmdbd potentially stopping instead of performing a
