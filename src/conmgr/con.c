@@ -129,7 +129,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
 				 __func__, con->name, con->output_fd);
-		con->output_fd = -1;
+		xassert(con->output_fd <= 0);
 	} else if (con->input_fd != con->output_fd) {
 		/* different input FD, we can close it now */
 		if (close(con->input_fd) == -1)
@@ -362,9 +362,10 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		 __func__, con->name, input_fd, output_fd);
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (is_listen)
+	if (is_listen) {
+		xassert(con->output_fd <= 0);
 		list_append(mgr.listen_conns, con);
-	else {
+	} else {
 		list_append(mgr.connections, con);
 		add_work(true, con, _wrap_on_connection,
 			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
@@ -448,7 +449,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 {
 	conmgr_fd_t *con;
 
-	con = add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
+	con = add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
 			     NULL, arg);
 	if (!con)
 		return SLURM_ERROR;
@@ -466,7 +467,7 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 {
 	conmgr_fd_t *con;
 
-	con = add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
+	con = add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
 			     path, arg);
 	if (!con)
 		return SLURM_ERROR;
