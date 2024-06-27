@@ -33,16 +33,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/fd.h"
 #include "src/common/log.h"
-#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/signals.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
 
