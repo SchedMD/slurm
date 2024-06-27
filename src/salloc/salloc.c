@@ -1109,8 +1109,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 	}
 	if (is_ready) {
-		if (i > 1)
-     			info("Nodes %s are ready for job", alloc->node_list);
+		info("Nodes %s are ready for job", alloc->node_list);
 	} else if (!allocation_interrupted) {
 		if (job_killed || allocation_revoked) {
 			error("Job allocation %u has been revoked",

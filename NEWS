@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
       'DELETE /slurm/v0.0.41/jobs'
       'DELETE /slurm/v0.0.42/jobs'
     Support array expressions in the responses to the client.
+ -- salloc - Always output node names to the user when an allocation is granted.
 
 * Changes in Slurm 24.05.2
 ==========================
