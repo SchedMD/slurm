@@ -1496,7 +1496,9 @@ static int _bf_reserve_running(void *x, void *arg)
 	if (!job_ptr || !IS_JOB_RUNNING(job_ptr) || !job_ptr->job_resrcs)
 		return SLURM_SUCCESS;
 
-	whole = (job_ptr->job_resrcs->whole_node & WHOLE_NODE_REQUIRED);
+	whole = (job_ptr->job_resrcs->whole_node & WHOLE_NODE_REQUIRED) ||
+		(IS_JOB_WHOLE_TOPO(job_ptr));
+
 	licenses = (job_ptr->license_list);
 
 	if (!whole && !licenses)
@@ -1531,6 +1533,9 @@ static int _bf_reserve_running(void *x, void *arg)
 		tmp_bitmap = bit_copy(job_ptr->node_bitmap);
 	}
 
+	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		topology_g_whole_topo(tmp_bitmap);
+	}
 	bit_not(tmp_bitmap);
 
 	/*
