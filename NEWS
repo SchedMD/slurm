@@ -107,6 +107,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/nvidia_imex - Skip plugin operation if job_container/tmpfs
     is configured due to incompatibility.
  -- switch/nvidia_imex - Remove any pre-existing channels when slurmd starts.
+ -- rpc_queue - Add support for an optional rpc_queue.yaml configuration file.
 
 * Changes in Slurm 24.05.0
 ==========================
