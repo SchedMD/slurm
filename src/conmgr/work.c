@@ -36,6 +36,7 @@
 #include "src/common/list.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
@@ -85,13 +86,17 @@ extern const char *conmgr_work_type_string(conmgr_work_type_t type)
 extern void wrap_work(work_t *work)
 {
 	conmgr_fd_t *con = work->con;
+	char *con_name = NULL;
 
 	xassert(work->magic == MAGIC_WORK);
 
-	log_flag(CONMGR, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
-		 __func__, (con ? "[" : ""), (con ? con->name : ""),
-		 (con ? "] " : ""), (uintptr_t) work, work->tag,
-		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) && con)
+		xstrfmtcat(con_name, "[%s] ", con->name);
+
+	log_flag(CONMGR, "%s: %sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
+		 __func__, (con_name ? con_name : ""), (uintptr_t) work,
+		 work->tag, (uintptr_t) work->func,
+		 conmgr_work_type_string(work->type),
 		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
@@ -106,20 +111,23 @@ extern void wrap_work(work_t *work)
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
 		wrap_con_work(work, con);
+		/* ptr may disappear once work_active=false and mutex released */
+		con = NULL;
 		break;
 	default:
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
 	}
 
-	log_flag(CONMGR, "%s: %s%s%sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
-		 __func__, (con ? "[" : ""), (con ? con->name : ""),
-		 (con ? "] " : ""), (uintptr_t) work, work->tag,
-		 (uintptr_t) work->func, conmgr_work_type_string(work->type),
+	log_flag(CONMGR, "%s: %sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
+		 __func__, (con_name ? con_name : ""), (uintptr_t) work,
+		 work->tag, (uintptr_t) work->func,
+		 conmgr_work_type_string(work->type),
 		 conmgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
+	xfree(con_name);
 }
 
 /*
