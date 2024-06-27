@@ -29,6 +29,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix primary controller not running the agent when a reconfigure of the
     slurmctld fails.
  -- jobcomp/{elasticsearch,kafka} - Avoid sending fields with invalid date/time.
+ -- Fix energy gathering rpc counter underflow in _rpc_acct_gather_energy when
+    more than 10 threads try to get energy at the same time. This prevented
+    the possibility to get energy from slurmd by any step until slurmd was
+    restarted, so losing energy accounting metrics in the node.
 
 * Changes in Slurm 23.11.8
 ==========================

@@ -3307,6 +3307,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 	static bool first_msg = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+	bool req_added = false;
 
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation, acct_gather_update RPC from uid %u",
@@ -3327,6 +3328,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 	slurm_mutex_lock(&req_cnt_mutex);
 	if (req_cnt < 10) {
 		req_cnt++;
+		req_added = true;
 	} else {
 		error("%s: Too many pending requests", __func__);
 		rc = ESLURMD_TOO_MANY_RPCS;
@@ -3348,7 +3350,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 			rc = SLURM_PROTOCOL_VERSION_ERROR;
 			if (slurm_send_rc_msg(msg, rc) < 0)
 				error("Error responding to energy request: %m");
-			return;
+			goto end;
 		}
 
 		acct_gather_energy_g_get_data(req->context_id,
@@ -3386,10 +3388,12 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
-
-	slurm_mutex_lock(&req_cnt_mutex);
-	req_cnt--;
-	slurm_mutex_unlock(&req_cnt_mutex);
+end:
+	if (req_added) {
+		slurm_mutex_lock(&req_cnt_mutex);
+		req_cnt--;
+		slurm_mutex_unlock(&req_cnt_mutex);
+	}
 }
 
 static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
