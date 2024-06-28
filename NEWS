@@ -77,6 +77,8 @@ documents those changes that are of interest to users and administrators.
       'GET /slurm/v0.0.40/reconfigure'
       'GET /slurm/v0.0.41/reconfigure'
       'GET /slurm/v0.0.42/reconfigure'
+ -- Fix how used cpus are tracked in a job allocation to allow the max number of
+    concurrent steps to run at a time if threads per core is greater than 1.
 
 * Changes in Slurm 24.05.3
 ==========================

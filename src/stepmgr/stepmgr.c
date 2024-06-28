@@ -2638,8 +2638,18 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		 * Don't count this step against the allocation if
 		 * --overlap=force
 		 */
-		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
-			job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
+		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
+			cpus_alloc = ROUNDUP(cpus_alloc, vpus);
+			cpus_alloc *= vpus;
+			if ((job_resrcs_ptr->cr_type & CR_CPU) && (vpus > 1) &&
+			    (job_resrcs_ptr->cpus_used[job_node_inx] +
+			     cpus_alloc) > job_resrcs_ptr->cpus[job_node_inx])
+				job_resrcs_ptr->cpus_used[job_node_inx] =
+					job_resrcs_ptr->cpus[job_node_inx];
+			else
+				job_resrcs_ptr->cpus_used[job_node_inx] +=
+					cpus_alloc;
+		}
 
 		if (!step_ptr->pn_min_memory && !gres_step_node_mem_alloc) {
 			/* If we aren't requesting memory get it from the job */
@@ -2862,6 +2872,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
+		uint16_t vpus = node_ptr->tpc;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -2909,7 +2920,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		} else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-			uint16_t vpus = node_ptr->tpc;
 
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
@@ -2928,7 +2938,34 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			 * more decisions on allocation cores.
 			 */
 		}
-		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
+
+		cpus_alloc = ROUNDUP(cpus_alloc, vpus);
+		cpus_alloc *= vpus;
+
+		if ((job_resrcs_ptr->cr_type & CR_CPU) && (node_ptr->tpc > 1)) {
+			int core_alloc = ROUNDUP(cpus_alloc, vpus);
+			int used_cores =
+				ROUNDUP(job_resrcs_ptr->cpus_used[job_node_inx],
+					vpus);
+
+			/* If CR_CPU is used with a thread cound > 1 the cpus
+			 * recorded being allocated to a job don't have to be a
+			 * multiple of threads per core. Make sure to dealloc
+			 * full cores and not partial cores.
+			 */
+
+			if (used_cores >= core_alloc) {
+				used_cores -= core_alloc;
+				job_resrcs_ptr->cpus_used[job_node_inx] =
+					MIN(used_cores * vpus,
+					    job_resrcs_ptr->cpus[job_node_inx]);
+			} else {
+				error("%s: CPU underflow for %pS (%u<%u on job node %d)",
+					__func__, step_ptr, used_cores * vpus,
+					core_alloc * vpus, job_node_inx);
+				job_resrcs_ptr->cpus_used[job_node_inx] = 0;
+			}
+		} else if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
 			error("%s: CPU underflow for %pS (%u<%u on job node %d)",
