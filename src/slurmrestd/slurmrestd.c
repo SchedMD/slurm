@@ -139,7 +139,7 @@ extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
 
 /* SIGPIPE handler - mostly a no-op */
-static void _sigpipe_handler(int signum)
+static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	debug5("%s: received SIGPIPE", __func__);
 }
@@ -604,7 +604,6 @@ static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
-	struct sigaction sigpipe_handler = { .sa_handler = _sigpipe_handler };
 	socket_listen = list_create(xfree_ptr);
 	conmgr_events_t conmgr_events = {
 		.on_data = parse_http,
@@ -615,9 +614,6 @@ int main(int argc, char **argv)
 		.parse = parse_host_port,
 		.free_parse = free_parse_host_port,
 	};
-
-	if (sigaction(SIGPIPE, &sigpipe_handler, NULL) == -1)
-		fatal("%s: unable to control SIGPIPE: %m", __func__);
 
 	_parse_env();
 	_parse_commandline(argc, argv);
@@ -645,6 +641,7 @@ int main(int argc, char **argv)
 		    max_connections, callbacks);
 
 	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
+	conmgr_add_work_signal(SIGPIPE, _sigpipe_handler, NULL);
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
