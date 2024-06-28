@@ -297,7 +297,8 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			       uint32_t start_time, uint32_t end_reserve);
 static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
-		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr);
+		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr,
+		       will_run_data_t *will_run);
 static int  _yield_locks(int64_t usec);
 static void _bf_map_key_id(void *item, const char **key, uint32_t *key_len);
 static void _bf_map_free(void *item);
@@ -444,7 +445,8 @@ static int _clear_qos_blocked_times(void *x, void *arg)
  */
 static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
-		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr)
+		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr,
+		       will_run_data_t *will_run)
 {
 	bitstr_t *low_bitmap = NULL, *tmp_bitmap = NULL;
 	int rc = SLURM_SUCCESS;
@@ -2889,7 +2891,7 @@ TRY_LATER:
 
 		if (active_bitmap) {
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
-				       max_nodes, req_nodes, &resv_exc);
+				       max_nodes, req_nodes, &resv_exc, NULL);
 			if (j == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
@@ -2971,7 +2973,7 @@ TRY_LATER:
 			/* Either active_bitmap was NULL or not usable by the
 			 * job. Test using avail_bitmap instead */
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
-				       max_nodes, req_nodes, &resv_exc);
+				       max_nodes, req_nodes, &resv_exc, NULL);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
