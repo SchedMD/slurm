@@ -36,6 +36,8 @@
 #ifndef _MSG_TYPE_H
 #define _MSG_TYPE_H
 
+#include <stdint.h>
+
 /*
  * Slurm message types.
  *
