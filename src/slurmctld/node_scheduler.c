@@ -1643,7 +1643,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					      select_mode,
 					      preemptee_candidates,
 					      preemptee_job_list,
-					      resv_exc_ptr);
+					      resv_exc_ptr,
+					      NULL);
 
 		if (pick_code == SLURM_SUCCESS) {
 			*select_bitmap = avail_bitmap;
@@ -1926,7 +1927,8 @@ try_sched:
 						      select_mode,
 						      preemptee_cand,
 						      preemptee_job_list,
-						      resv_exc_ptr);
+						      resv_exc_ptr,
+						      NULL);
 			if (job_ptr->details->pn_min_memory) {
 				if (job_ptr->details->pn_min_memory <
 				    smallest_min_mem)
@@ -1981,7 +1983,8 @@ try_sched:
 						      select_mode,
 						      preemptee_candidates,
 						      preemptee_job_list,
-						      resv_exc_ptr);
+						      resv_exc_ptr,
+						      NULL);
 
 			if (job_ptr->details->pn_min_memory) {
 				if (job_ptr->details->pn_min_memory <
@@ -2028,7 +2031,8 @@ try_sched:
 						req_nodes,
 						SELECT_MODE_TEST_ONLY,
 						preemptee_candidates, NULL,
-						resv_exc_ptr);
+						resv_exc_ptr,
+						NULL);
 
 				if (job_ptr->details->pn_min_memory) {
 					if (job_ptr->details->pn_min_memory <
@@ -2061,7 +2065,8 @@ try_sched:
 						req_nodes,
 						SELECT_MODE_TEST_ONLY,
 						preemptee_candidates, NULL,
-						resv_exc_ptr);
+						resv_exc_ptr,
+						NULL);
 
 				if (job_ptr->details->pn_min_memory) {
 					if (job_ptr->details->pn_min_memory <

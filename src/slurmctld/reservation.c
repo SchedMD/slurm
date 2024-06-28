@@ -353,7 +353,8 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->details->max_nodes,
 		job_ptr->details->min_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
-		&resv_exc);
+		&resv_exc,
+		NULL);
 
 	free_core_array(&resv_exc.exc_cores);
 

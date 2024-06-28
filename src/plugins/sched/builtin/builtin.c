@@ -203,7 +203,8 @@ static void _compute_start_times(void)
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       NULL, NULL,
-				       &resv_exc);
+				       &resv_exc,
+				       NULL);
 		if (rc == SLURM_SUCCESS) {
 			last_job_update = now;
 			if (job_ptr->time_limit == INFINITE)

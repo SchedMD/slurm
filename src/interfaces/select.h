@@ -327,6 +327,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
+ * IN will_run_ptr - Pointer to data specific to WILL_RUN mode
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -334,7 +335,8 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t req_nodes, uint16_t mode,
 			     list_t *preemptee_candidates,
 			     list_t **preemptee_job_list,
-			     resv_exc_t *resv_exc_ptr);
+			     resv_exc_t *resv_exc_ptr,
+			     will_run_data_t *will_run_ptr);
 
 /*
  * Note initiation of job is about to begin. Called immediately

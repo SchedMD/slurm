@@ -499,7 +499,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       SELECT_MODE_WILL_RUN,
 						       preemptee_candidates,
 						       NULL,
-						       resv_exc_ptr);
+						       resv_exc_ptr,
+						       NULL);
 				if (rc == SLURM_SUCCESS) {
 					if ((high_start == 0) ||
 					    (high_start < job_ptr->start_time))
@@ -538,7 +539,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       NULL,
-					       resv_exc_ptr);
+					       resv_exc_ptr,
+					       NULL);
 
 			if (low_bitmap) {
 				bit_or(low_bitmap, *avail_bitmap);
@@ -598,7 +600,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       SELECT_MODE_WILL_RUN,
 						       preemptee_candidates,
 						       NULL,
-						       resv_exc_ptr);
+						       resv_exc_ptr,
+						       NULL);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((low_start == 0) ||
 				     (low_start > job_ptr->start_time))) {
@@ -639,7 +642,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       NULL,
-					       resv_exc_ptr);
+					       resv_exc_ptr,
+					       NULL);
 		}
 	} else {
 		/* Try to schedule the job. First on dedicated nodes
@@ -664,7 +668,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 				       SELECT_MODE_WILL_RUN,
 				       preemptee_candidates,
 				       NULL,
-				       resv_exc_ptr);
+				       resv_exc_ptr,
+				       NULL);
 
 		job_ptr->details->share_res = orig_shared;
 
@@ -677,7 +682,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       NULL,
-					       resv_exc_ptr);
+					       resv_exc_ptr,
+					       NULL);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
