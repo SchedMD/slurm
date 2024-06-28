@@ -62,6 +62,11 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t tpc;		/* Threads/cpus per core */
 } avail_res_t;
 
+typedef struct will_run_data {
+	time_t start;
+	time_t end;
+} will_run_data_t;
+
 /* Convert a node coordinate character into its equivalent number:
  * '0' = 0; '9' = 9; 'A' = 10; etc. */
 extern int select_char2coord(char coord);
