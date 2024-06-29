@@ -164,6 +164,7 @@ static void _init_signal_handler(void)
 /* caller must hold write lock */
 static void _fini_signal_handler(void)
 {
+#ifndef NDEBUG
 	for (int i = 0; i < signal_handler_count; i++) {
 		signal_handler_t *handler = &signal_handlers[i];
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
@@ -202,6 +203,7 @@ static void _fini_signal_handler(void)
 
 	xfree(signal_handlers);
 	signal_handler_count = 0;
+#endif /* !NDEBUG */
 }
 
 static void _on_signal(int signal)
