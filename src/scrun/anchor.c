@@ -141,10 +141,9 @@ static int _queue_delete_request(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return SLURM_SUCCESS;
 }
 
-static void _on_pty_reply_sent(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
+static void _on_pty_reply_sent(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int fd;
 
 	read_lock_state();
@@ -223,8 +222,7 @@ static void _daemonize_logs()
 	update_logging();
 }
 
-static void _tear_down(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag, void *arg)
+static void _tear_down(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool need_kill = false, need_stop = false;
 	int rc = SLURM_SUCCESS;
@@ -285,9 +283,7 @@ static int _send_delete_confirmation(void *x, void *arg)
 }
 
 /* stopping job is async: this is the final say if the job has stopped */
-static void _check_if_stopped(conmgr_fd_t *con, conmgr_work_type_t type,
-			      conmgr_work_status_t status, const char *tag,
-			      void *arg)
+static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int ptm = -1;
 	bool stopped = false;
@@ -378,9 +374,7 @@ static void _check_if_stopped(conmgr_fd_t *con, conmgr_work_type_t type,
 	conmgr_request_shutdown();
 }
 
-static void _finish_job(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag,
-			void *arg)
+static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int jobid, rc;
 	bool existing_allocation;
@@ -428,8 +422,7 @@ done:
 			 __func__);
 }
 
-static void _stage_out(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag, void *arg)
+static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
 	bool staged_in;
@@ -517,9 +510,7 @@ extern void stop_anchor(int status)
 	debug2("%s: end", __func__);
 }
 
-static void _catch_sigchld(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg)
+static void _catch_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	pid_t pid;
 	pid_t srun_pid;
@@ -1095,9 +1086,7 @@ rwfail:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-extern void on_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			  conmgr_work_status_t status, const char *tag,
-			  void *arg)
+extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool queue_try_start = false;
 	int rc;

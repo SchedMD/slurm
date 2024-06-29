@@ -49,14 +49,12 @@
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/signals.h"
 
-static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg);
+static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
-static void _on_finish_wrapper(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
+static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	if (con->events.on_finish)
 		con->events.on_finish(arg);
 
@@ -277,10 +275,9 @@ static int _handle_connection(void *x, void *arg)
 /*
  * listen socket is ready to accept
  */
-static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg)
+static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int fd;
@@ -342,7 +339,7 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
 			unix_path = con->unix_socket;
 	}
 
-	if (status == CONMGR_WORK_STATUS_CANCELLED) {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
 				 __func__, con->name, &addr);
 		fd_close(&fd);
@@ -365,9 +362,7 @@ static void _listen_accept(conmgr_fd_t *con, conmgr_work_type_t type,
  * Inspect all connection states and apply actions required
  */
 
-static void _inspect_connections(conmgr_fd_t *con, conmgr_work_type_t type,
-				 conmgr_work_status_t status, const char *tag,
-				 void *arg)
+static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool send_signal = false;
 
@@ -448,10 +443,9 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 }
 
 /* Poll all connections */
-static void _poll_connections(conmgr_fd_t *con, conmgr_work_type_t type,
-			      conmgr_work_status_t status, const char *tag,
-			      void *arg)
+static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc;
 
 	xassert(!con);
@@ -506,10 +500,7 @@ extern void wait_for_watch(void)
 		EVENT_WAIT(&mgr.watch_return);
 }
 
-static void _connection_fd_delete(conmgr_fd_t *wrong_con,
-				  conmgr_work_type_t type,
-				  conmgr_work_status_t status, const char *tag,
-				  void *arg)
+static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = arg;
 
@@ -653,8 +644,7 @@ static void _release_watch_request(watch_request_t **wreq_ptr)
 	*wreq_ptr = NULL;
 }
 
-extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
-		  conmgr_work_status_t status, const char *tag, void *arg)
+extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	watch_request_t *wreq = arg;
 	bool shutdown_requested;
@@ -670,7 +660,7 @@ extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
 	}
 
 	if (mgr.shutdown_requested ||
-	    (status == CONMGR_WORK_STATUS_CANCELLED)) {
+	    (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)) {
 		_release_watch_request(&wreq);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;

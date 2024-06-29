@@ -104,7 +104,7 @@ extern void wrap_work(work_t *work)
 	case CONMGR_WORK_TYPE_FIFO:
 	case CONMGR_WORK_TYPE_TIME_DELAY_FIFO:
 		xassert(!con);
-		work->func(NULL, work->type, work->status, work->tag,
+		work->func((conmgr_callback_args_t) { .status = work->status },
 			   work->arg);
 		break;
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:

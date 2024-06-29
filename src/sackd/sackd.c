@@ -276,34 +276,26 @@ static void _listen_for_reconf(void)
 		      __func__, listen_fd, slurm_strerror(rc));
 }
 
-static void _on_sigint(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag,
-		       void *arg)
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGINT. Shutting down.");
 	reconfig = false;
 	conmgr_request_shutdown();
 }
 
-static void _on_sighup(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag,
-		       void *arg)
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGHUP. Reconfiguring.");
 	reconfig = true;
 	conmgr_quiesce(false);
 }
 
-static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
-		        conmgr_work_status_t status, const char *tag,
-		        void *arg)
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGUSR2. Ignoring.");
 }
 
-static void _on_sigpipe(conmgr_fd_t *con, conmgr_work_type_t type,
-		        conmgr_work_status_t status, const char *tag,
-		        void *arg)
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGPIPE. Ignoring.");
 }

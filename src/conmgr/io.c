@@ -89,9 +89,9 @@ static int _get_fd_readable(conmgr_fd_t *con)
 	return readable;
 }
 
-extern void handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag, void *arg)
+extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	ssize_t read_c;
 	int rc, readable;
 
@@ -261,10 +261,9 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 		xfree(args.iov);
 }
 
-extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg)
+extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int out_count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -276,10 +275,9 @@ extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 		_handle_writev(con, out_count);
 }
 
-extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg)
+extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int avail = get_buf_offset(con->in);
 	int size = size_buf(con->in);
 	int rc;

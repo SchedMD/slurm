@@ -399,9 +399,7 @@ static void _pending_callback(uint32_t job_id)
 }
 
 /* check allocation has all nodes ready */
-extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			     conmgr_work_status_t status, const char *tag,
-			     void *arg)
+extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	/* there must be only 1 thread that will call this at any one time */
 	static long delay = 1;
@@ -426,9 +424,9 @@ extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 		return;
 	}
 
-	if (status != CONMGR_WORK_STATUS_RUN) {
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN) {
 		debug("%s: bailing due to callback status %s",
-		      __func__, conmgr_work_status_string(status));
+		      __func__, conmgr_work_status_string(conmgr_args.status));
 		stop_anchor(ESLURM_ALREADY_DONE);
 		return;
 	}
@@ -597,9 +595,7 @@ static void _alloc_job(void)
 	slurm_free_resource_allocation_response_msg(alloc);
 }
 
-extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg)
+extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
 	job_info_msg_t *jobs = NULL;

@@ -595,9 +595,7 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	fprintf(stderr, "%s\n", full_type);
 }
 
-static void _on_signal_interrupt(conmgr_fd_t *con, conmgr_work_type_t type,
-				 conmgr_work_status_t status, const char *tag,
-				 void *arg)
+static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("%s: caught SIGINT. Shutting down.", __func__);
 	conmgr_request_shutdown();

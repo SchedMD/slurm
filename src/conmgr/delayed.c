@@ -279,9 +279,7 @@ extern void free_delayed_work(void)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
-			    conmgr_work_status_t status, const char *tag,
-			    void *arg)
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int count, total;
 	work_t *work;

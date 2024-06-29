@@ -40,9 +40,7 @@
 #include "src/conmgr/conmgr.h"
 
 /* start the signal manager */
-extern void signal_mgr_start(conmgr_fd_t *con, conmgr_work_type_t type,
-			     conmgr_work_status_t status, const char *tag,
-			     void *arg);
+extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 
 /* signal the signal manager to stop */
 extern void signal_mgr_stop(bool locked);

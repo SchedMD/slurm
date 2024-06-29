@@ -150,20 +150,25 @@ typedef enum {
 
 extern const char *conmgr_work_type_string(conmgr_work_type_t type);
 
+typedef struct {
+	/* ptr to relevant connection (or NULL) */
+	conmgr_fd_t *con;
+	/*
+	 * Work status
+	 * Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know
+	 *	when a shutdown has been triggered and to just cleanup instead
+	 *	of doing the work.
+	 */
+	conmgr_work_status_t status;
+} conmgr_callback_args_t;
+
 /*
  * Prototype for all conmgr callbacks
- * IN con - ptr to relevant connection (or NULL)
- * IN type - how function was scheduled to run
- * IN status - work status
- *	Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know when
- *	a shutdown has been triggered and to just cleanup instead of doing the
- *	work.
- * IN tag - logging tag for work - XSTRINGIFY() of function name is suggested
- * IN arg - arbitrary pointer
+ * IN conmgr_args - Args relaying conmgr callback state
+ * IN func_arg - arbitrary pointer passed directly
  */
-typedef void (*conmgr_work_func_t)(conmgr_fd_t *con, conmgr_work_type_t type,
-				   conmgr_work_status_t status,
-				   const char *tag, void *arg);
+typedef void (*conmgr_work_func_t)(conmgr_callback_args_t conmgr_args,
+				   void *arg);
 
 /*
  * conmgr can handle RPC or raw connections

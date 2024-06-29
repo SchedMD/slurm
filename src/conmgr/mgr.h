@@ -287,9 +287,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
-extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
-			    conmgr_work_status_t status, const char *tag,
-			    void *arg);
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 extern void handle_work(bool locked, work_t *work);
 extern void update_last_time(bool locked);
 
@@ -297,8 +295,7 @@ extern void update_last_time(bool locked);
  * Poll all connections and handle any events
  * IN arg - cast to bool blocking - non-zero if blocking
  */
-extern void watch(conmgr_fd_t *con, conmgr_work_type_t type,
-		  conmgr_work_status_t status, const char *tag, void *arg);
+extern void watch(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Wait for _watch() to finish
@@ -334,17 +331,11 @@ extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd);
 extern void con_set_polling(bool locked, conmgr_fd_t *con,
 			    pollctl_fd_type_t type, const char *caller);
 
-extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg);
+extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
-extern void handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag,
-			void *arg);
+extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
-extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg);
+extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 
 extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 				   conmgr_fd_t *source, int input_fd,

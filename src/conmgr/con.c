@@ -70,9 +70,7 @@ typedef struct {
 	conmgr_con_type_t type;
 } socket_listen_init_t;
 
-static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
-				conmgr_work_status_t status, const char *tag,
-				void *arg);
+static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Close all connections (for_each)
@@ -383,7 +381,10 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 extern void wrap_con_work(work_t *work, conmgr_fd_t *con)
 {
-	work->func(work->con, work->type, work->status, work->tag, work->arg);
+	work->func((conmgr_callback_args_t) {
+			.con = work->con,
+			.status = work->status,
+		   }, work->arg);
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->work_active = false;
@@ -392,10 +393,10 @@ extern void wrap_con_work(work_t *work, conmgr_fd_t *con)
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
-static void _wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
-				conmgr_work_status_t status, const char *tag,
-				void *arg)
+static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	if (con->events.on_connection) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
@@ -477,10 +478,10 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 	return SLURM_SUCCESS;
 }
 
-static void _deferred_close_fd(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
+static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	slurm_mutex_lock(&mgr.mutex);
 	if (con->work_active) {
 		slurm_mutex_unlock(&mgr.mutex);

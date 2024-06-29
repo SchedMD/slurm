@@ -316,9 +316,7 @@ static void _on_finish(void *arg)
 	slurm_rwlock_unlock(&lock);
 }
 
-extern void signal_mgr_start(conmgr_fd_t *con, conmgr_work_type_t type,
-			     conmgr_work_status_t status, const char *tag,
-			     void *arg)
+extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const conmgr_events_t events = {
 		.on_connection = _on_connection,
@@ -327,7 +325,7 @@ extern void signal_mgr_start(conmgr_fd_t *con, conmgr_work_type_t type,
 	};
 	int fd[2] = { -1, -1 };
 
-	if (status == CONMGR_WORK_STATUS_CANCELLED)
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
 	if (pipe(fd))

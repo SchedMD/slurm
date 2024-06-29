@@ -188,8 +188,7 @@ extern int conmgr_run(bool blocking)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (blocking) {
-		watch(NULL, CONMGR_WORK_TYPE_FIFO, CONMGR_WORK_STATUS_RUN,
-		      XSTRINGIFY(watch), wreq);
+		watch((conmgr_callback_args_t) {0}, wreq);
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching) {
