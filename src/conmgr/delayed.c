@@ -231,6 +231,37 @@ static int _match_work_elapsed(void *x, void *key)
 	return trigger ? 1 : 0;
 }
 
+extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
+	time_t delay_seconds,
+	long delay_nanoseconds)
+{
+	struct timespec last_time = {0};
+	int rc = SLURM_ERROR;
+
+	/*
+	 * Renormalize ns into seconds to only have partial seconds in
+	 * nanoseconds. Nanoseconds won't matter with a larger number of
+	 * seconds.
+	 */
+	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
+	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
+
+	if ((rc = clock_gettime(CLOCK_MONOTONIC, &last_time))) {
+		if (rc == -1)
+			rc = errno;
+		fatal("%s: clock_gettime() failed: %s",
+		      __func__, slurm_strerror(rc));
+	}
+
+	/* catch integer overflows */
+	xassert((delay_seconds + last_time.tv_sec) >= last_time.tv_sec);
+
+	return (conmgr_work_time_begin_t) {
+		.seconds = (delay_seconds + last_time.tv_sec),
+		.nanoseconds = delay_nanoseconds,
+	};
+}
+
 extern void conmgr_add_delayed_work(conmgr_fd_t *con, conmgr_work_func_t func,
 				    time_t seconds, long nanoseconds, void *arg,
 				    const char *tag)

@@ -151,6 +151,23 @@ typedef enum {
 extern const char *conmgr_work_type_string(conmgr_work_type_t type);
 
 typedef struct {
+	/* UNIX timestamp when to work can begin */
+	time_t seconds;
+	/* Additional Nanoseconds after seconds to delay */
+	long nanoseconds;
+} conmgr_work_time_begin_t;
+
+/*
+ * Calculate the absolute start time from delayed time
+ * IN delay_seconds - Number of seconds to delay from current time
+ * IN delay_nanoseconds - Number of additional nanoseconds to delay from
+ *	delay_seconds
+ */
+extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
+	time_t delay_seconds,
+	long delay_nanoseconds);
+
+typedef struct {
 	/* ptr to relevant connection (or NULL) */
 	conmgr_fd_t *con;
 	/*
