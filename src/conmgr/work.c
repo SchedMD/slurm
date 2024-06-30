@@ -114,7 +114,8 @@ extern void wrap_work(work_t *work)
 		/* ptr may disappear once work_active=false and mutex released */
 		con = NULL;
 		break;
-	default:
+	case CONMGR_WORK_TYPE_INVALID:
+	case CONMGR_WORK_TYPE_MAX:
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
 	}
 
