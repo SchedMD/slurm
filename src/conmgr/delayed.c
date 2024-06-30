@@ -112,7 +112,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		int64_t remain_sec, remain_nsec;
 
 		remain_sec = work->begin.seconds - mgr.last_time.tv_sec;
@@ -158,7 +158,7 @@ extern void update_timer(bool locked)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		/* get updated clock for logging but not needed otherwise */
 		update_last_time(true);
 	}
@@ -171,7 +171,7 @@ extern void update_timer(bool locked)
 		spec.it_value.tv_sec = work->begin.seconds;
 		spec.it_value.tv_nsec = work->begin.nanoseconds;
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			int64_t remain_sec, remain_nsec;
 
 			remain_sec = work->begin.seconds - mgr.last_time.tv_sec;
