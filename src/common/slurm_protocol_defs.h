@@ -192,8 +192,13 @@
 #define INFO_LINE(fmt, ...) \
 	info("%s (%s:%d) "fmt, __func__, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
-#define YEAR_MINUTES (365 * 24 * 60)
-#define YEAR_SECONDS (365 * 24 * 60 * 60)
+#define MINUTE_SECONDS 60
+#define HOUR_MINUTES 60
+#define HOUR_SECONDS (HOUR_MINUTES * MINUTE_SECONDS)
+#define DAY_HOURS 24
+#define YEAR_DAYS 365
+#define YEAR_MINUTES (YEAR_DAYS * DAY_HOURS * HOUR_MINUTES)
+#define YEAR_SECONDS (YEAR_DAYS * DAY_HOURS * HOUR_SECONDS)
 
 /* Read as 'how many X are in a Y' */
 #define MSEC_IN_SEC 1000
