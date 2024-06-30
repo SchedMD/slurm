@@ -52,15 +52,6 @@ typedef struct {
 	int signal;
 } signal_handler_t;
 
-typedef struct {
-#define MAGIC_SIGNAL_WORK 0xA201444A
-	int magic; /* MAGIC_SIGNAL_WORK */
-	int signal;
-	conmgr_work_func_t func;
-	void *arg;
-	const char *tag;
-} signal_work_t;
-
 /* protects all of the static variables here */
 pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
@@ -69,7 +60,7 @@ static signal_handler_t *signal_handlers = NULL;
 static int signal_handler_count = 0;
 
 /* list of all registered signal work */
-static signal_work_t *signal_work = NULL;
+static work_t **signal_work = NULL;
 static int signal_work_count = 0;
 
 /* interrupt handler (_signal_handler()) will send signal to this fd */
@@ -154,10 +145,10 @@ static void _init_signal_handler(void)
 		return;
 
 	for (int i = 0; i < signal_work_count; i++) {
-		signal_work_t *work = &signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
+		work_t *work = signal_work[i];
+		xassert(work->magic == MAGIC_WORK);
 
-		_register_signal_handler(work->signal);
+		_register_signal_handler(work->control.on_signal_number);
 	}
 }
 
@@ -220,15 +211,16 @@ static void _on_signal(int signal)
 	}
 
 	for (int i = 0; i < signal_work_count; i++) {
-		signal_work_t *work = &signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
+		work_t *work = signal_work[i];
 
-		if (work->signal != signal)
+		xassert(work->magic == MAGIC_WORK);
+
+		if (work->control.on_signal_number != signal)
 			continue;
 
 		matched = true;
-		add_work(false, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
-			 work->arg, work->tag);
+		add_work(false, NULL, work->callback, work->control,
+			 ~CONMGR_WORK_DEP_SIGNAL, __func__);
 	}
 
 	slurm_rwlock_unlock(&lock);
@@ -238,21 +230,17 @@ static void _on_signal(int signal)
 			__func__, strsignal(signal));
 }
 
-extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
-				   void *arg, const char *tag)
+extern void add_work_signal(work_t *work)
 {
+	xassert(!work->con);
+	xassert(work->control.depend_type & CONMGR_WORK_DEP_SIGNAL);
+	xassert(work->control.on_signal_number > 0);
+
 	slurm_rwlock_wrlock(&lock);
 
 	xrecalloc(signal_work, (signal_work_count + 1), sizeof(*signal_work));
 
-	signal_work[signal_work_count] = (signal_work_t){
-		.magic = MAGIC_SIGNAL_WORK,
-		.signal = signal,
-		.func = func,
-		.arg = arg,
-		.tag = tag,
-	};
-
+	signal_work[signal_work_count] = work;
 	signal_work_count++;
 
 	/*
@@ -260,7 +248,7 @@ extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
 	 * and init_signal_handler() already ran
 	 */
 	if (signal_con)
-		_register_signal_handler(signal);
+		_register_signal_handler(work->control.on_signal_number);
 
 	slurm_rwlock_unlock(&lock);
 }

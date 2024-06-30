@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -73,8 +74,14 @@ extern void conmgr_init(int thread_count, int max_connections,
 			fatal_abort("%s: pthread_atfork() failed: %s",
 				    __func__, slurm_strerror(rc));
 
-		conmgr_add_signal_work(SIGALRM, on_signal_alarm, NULL,
-				       XSTRINGIFY(on_signal_alarm));
+		add_work(true, NULL, (conmgr_callback_t) {
+				.func = on_signal_alarm,
+				.func_name = XSTRINGIFY(on_signal_alarm),
+			 }, (conmgr_work_control_t) {
+				.depend_type = CONMGR_WORK_DEP_SIGNAL,
+				.on_signal_number = SIGALRM,
+				.schedule_type = CONMGR_WORK_SCHED_FIFO,
+			 }, 0, __func__);
 
 		mgr.one_time_initialized = true;
 	} else {
@@ -193,8 +200,7 @@ extern int conmgr_run(bool blocking)
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching) {
 			wreq->running_on_worker = true;
-			add_work(true, NULL, watch, CONMGR_WORK_TYPE_FIFO, wreq,
-				 XSTRINGIFY(watch));
+			add_work_fifo(true, watch, wreq);
 		}
 		slurm_mutex_unlock(&mgr.mutex);
 	}

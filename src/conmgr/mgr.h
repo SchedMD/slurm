@@ -62,17 +62,10 @@
 typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
-	conmgr_fd_t *con;
-	conmgr_work_func_t func;
-	void *arg;
-	const char *tag;
 	conmgr_work_status_t status;
-	conmgr_work_type_t type;
-	struct {
-		/* absolute time when to work can begin */
-		time_t seconds;
-		long nanoseconds; /* offset from seconds */
-	} begin;
+	conmgr_fd_t *con;
+	conmgr_callback_t callback;
+	conmgr_work_control_t control;
 } work_t;
 
 /*
@@ -282,12 +275,46 @@ typedef struct {
 
 extern conmgr_t mgr;
 
-extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
-		     conmgr_work_type_t type, void *arg, const char *tag);
+/*
+ * Create new work to run
+ * IN locked - true if calling thread has mgr.mutex already locked
+ * IN callback - callback function details
+ * IN control - controls on when work is run
+ * IN depend_mask - Apply mask against control.depend_type.
+ * 	Mask is intended for work that generates new work (such as signal work)
+ * 	to make it relatively clean to remove a now fullfilled dependency.
+ * 	Ignored if depend_mask=0.
+ * IN caller - __func__ from caller
+ */
+extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
+		     conmgr_work_control_t control,
+		     conmgr_work_depend_t depend_mask, const char *caller);
+
+#define add_work_fifo(locked, _func, func_arg) \
+	add_work(locked, NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, 0, __func__)
+
+#define add_work_con_fifo(locked, con, _func, func_arg) \
+	add_work(locked, con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, 0, __func__)
+
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
+extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
 extern void update_last_time(bool locked);
 
@@ -348,7 +375,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 extern void close_all_connections(void);
 
 extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
-extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 
 /*
  * Find connection by a given file descriptor

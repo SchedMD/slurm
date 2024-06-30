@@ -449,8 +449,7 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 			      __func__, state.jobid, delay);
 			unlock_state();
 		}
-		conmgr_add_delayed_work(NULL, check_allocation, delay, 0, NULL,
-					"check_allocation");
+		conmgr_add_work_delayed_fifo(check_allocation, NULL, delay, 0);
 	} else if ((rc == READY_JOB_FATAL) || !(rc & READY_JOB_STATE)) {
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -473,8 +472,7 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 			stop_anchor(rc);
 		} else {
 			/* we have a job now. see if creating is done */
-			conmgr_add_work(NULL, on_allocation,
-					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+			conmgr_add_work_fifo(on_allocation, NULL);
 		}
 	}
 }
@@ -679,10 +677,8 @@ extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 		if ((rc = _stage_in()))
 			stop_anchor(rc);
 		else
-			conmgr_add_work(NULL, on_allocation,
-					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+			conmgr_add_work_fifo(on_allocation, NULL);
 	} else {
-		conmgr_add_delayed_work(NULL, check_allocation, 0, 1, NULL,
-					 "check_allocation");
+		conmgr_add_work_delayed_fifo(check_allocation, NULL, 0, 1);
 	}
 }

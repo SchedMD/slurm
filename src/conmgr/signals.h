@@ -38,11 +38,20 @@
 
 #include <stdbool.h>
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
 
 /* start the signal manager */
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 
 /* signal the signal manager to stop */
 extern void signal_mgr_stop(bool locked);
+
+/*
+ * Add signal work to signal manager
+ * IN work - work with depend=CONMGR_WORK_DEP_SIGNAL.
+ * 	Takes ownership of work.
+ * 	Work ptr is never released.
+ */
+extern void add_work_signal(work_t *work);
 
 #endif /* _CONMGR_SIGNALS_H */

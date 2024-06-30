@@ -39,6 +39,7 @@
 #include <netdb.h>
 
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
@@ -139,16 +140,28 @@ typedef enum {
 extern const char *conmgr_work_status_string(conmgr_work_status_t status);
 
 typedef enum {
-	CONMGR_WORK_TYPE_INVALID = 0,
-	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
-	CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, /* call once all connection writes complete then FIFO */
-	CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO, /* call once time delay completes then FIFO */
-	CONMGR_WORK_TYPE_FIFO, /* non-connection work ordered by FIFO */
-	CONMGR_WORK_TYPE_TIME_DELAY_FIFO, /* call once time delay completes then FIFO */
-	CONMGR_WORK_TYPE_MAX /* place holder */
-} conmgr_work_type_t;
+	CONMGR_WORK_SCHED_INVALID = 0,
+	/* work scheduled by FIFO */
+	CONMGR_WORK_SCHED_FIFO = SLURM_BIT(0),
+} conmgr_work_sched_t;
 
-extern const char *conmgr_work_type_string(conmgr_work_type_t type);
+/* RET caller must xfree() */
+extern char *conmgr_work_sched_string(conmgr_work_sched_t type);
+
+typedef enum {
+	CONMGR_WORK_DEP_INVALID = 0,
+	/* specify work has no dependencies */
+	CONMGR_WORK_DEP_NONE = SLURM_BIT(1), 
+	/* call once all connection writes complete */
+	CONMGR_WORK_DEP_CON_WRITE_COMPLETE = SLURM_BIT(2),
+	/* call once time delay completes */
+	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
+	/* call every time signal is received */
+	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4), 
+} conmgr_work_depend_t;
+
+/* RET caller must xfree() */
+extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
 
 typedef struct {
 	/* UNIX timestamp when to work can begin */
@@ -186,6 +199,26 @@ typedef struct {
  */
 typedef void (*conmgr_work_func_t)(conmgr_callback_args_t conmgr_args,
 				   void *arg);
+
+typedef struct {
+	conmgr_work_func_t func;
+	void *arg;
+	const char *func_name;
+} conmgr_callback_t;
+
+typedef struct {
+	/* Bitflags to control how work is priority scheduled */
+	conmgr_work_sched_t schedule_type;
+
+	/* Bitflags to activate work Dependencies */
+	conmgr_work_depend_t depend_type;
+
+	/* set if (depend_type & CONMGR_WORK_DEP_TIME_DELAY) */
+	conmgr_work_time_begin_t time_begin;
+
+	/* set if (depend_type & CONMGR_WORK_DEP_SIGNAL) */
+	int on_signal_number;
+} conmgr_work_control_t;
 
 /*
  * conmgr can handle RPC or raw connections
@@ -328,48 +361,140 @@ extern void conmgr_request_shutdown(void);
 extern void conmgr_quiesce(bool wait);
 
 /*
+ * Add work to run
+ * IN con - connection to run work or NULL
+ * IN callback - callback function details
+ * IN control - work controls to determine when work is run
+ * IN caller - __func__ from caller for logging
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
+			    conmgr_work_control_t control, const char *caller);
+
+/*
+ * Add work to run
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_fifo(_func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add work to run for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_fifo(con, _func, func_arg) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add work to run when all pendings writes are complete for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_write_complete_fifo(con, _func, func_arg) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = \
+				CONMGR_WORK_DEP_CON_WRITE_COMPLETE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add time delayed work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_delayed_fifo(_func, func_arg, delay_seconds, \
+				     delay_nanoseconds) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_TIME_DELAY, \
+			.time_begin = \
+				conmgr_calc_work_time_delay(delay_seconds, \
+							    delay_nanoseconds),\
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add time delayed work for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_delayed_fifo(con, _func, func_arg, delay_seconds, \
+					 delay_nanoseconds) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_TIME_DELAY, \
+			.time_begin = \
+				conmgr_calc_work_time_delay(delay_seconds, \
+							    delay_nanoseconds),\
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
  * Add work to call on signal received
  * IN signal - Signal number to watch
  * IN func - function pointer to run work
  * 	Will be run after signal is received and not in signal handler itself.
  * IN type - type of work
  * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
  * NOTE: never add a thread that will never return or conmgr_run() will never
  * return either.
  */
-extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
-				   void *arg, const char *tag);
-
-/*
- * Add work for connection manager
- * NOTE: only call from within an conmgr_events_t callback
- * IN con - connection to assign work or NULL for non-connection related work
- * IN func - function pointer to run work
- * IN type - type of work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or conmgr_run() will never
- * return either.
- */
-extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
-			    conmgr_work_type_t type, void *arg,
-			    const char *tag);
-
-/*
- * Add time delayed work for connection manager
- * IN con - connection to assign work or NULL for non-connection related work
- * IN func - function pointer to run work
- * IN type - type of work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or conmgr_run() will never
- * return either.
- */
-extern void conmgr_add_delayed_work(conmgr_fd_t *con,
-				    conmgr_work_func_t func, time_t seconds,
-				    long nanoseconds, void *arg,
-				    const char *tag);
+#define conmgr_add_work_signal(signal_number, _func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_SIGNAL, \
+			.on_signal_number = signal_number, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
 
 /*
  * Control if conmgr will exit on any error

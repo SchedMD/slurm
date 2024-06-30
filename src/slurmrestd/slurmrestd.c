@@ -644,8 +644,7 @@ int main(int argc, char **argv)
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
 		    max_connections, callbacks);
 
-	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
-			       "_on_signal_interrupt()");
+	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);

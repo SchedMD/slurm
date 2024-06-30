@@ -175,9 +175,7 @@ static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	debug("%s: [%s] requested pty", __func__, conmgr_fd_get_name(con));
 
-	conmgr_add_work(con, _on_pty_reply_sent,
-			 CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, NULL,
-			 __func__);
+	conmgr_add_work_con_write_complete_fifo(con, _on_pty_reply_sent, NULL);
 
 	return rc;
 }
@@ -418,8 +416,7 @@ done:
 	state.job_completed = true;
 	unlock_state();
 
-	conmgr_add_work(NULL, _check_if_stopped, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_check_if_stopped, NULL);
 }
 
 static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
@@ -456,8 +453,7 @@ static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
 	state.staged_out = true;
 	unlock_state();
 
-	conmgr_add_work(NULL, _finish_job, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_finish_job, NULL);
 }
 
 /* cleanup anchor and shutdown */
@@ -504,8 +500,7 @@ extern void stop_anchor(int status)
 	}
 	unlock_state();
 
-	conmgr_add_work(NULL, _stage_out, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_stage_out, NULL);
 
 	debug2("%s: end", __func__);
 }
@@ -896,8 +891,7 @@ static int _delete(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	rc = _queue_delete_request(con, req_msg);
 
-	conmgr_add_work(NULL, _tear_down, CONMGR_WORK_TYPE_FIFO, NULL,
-			__func__);
+	conmgr_add_work_fifo(_tear_down, NULL);
 
 	return rc;
 }
@@ -1331,8 +1325,7 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 	unlock_state();
 
 	if (queue) {
-		conmgr_add_work(NULL, on_allocation, CONMGR_WORK_TYPE_FIFO,
-				NULL, __func__);
+		conmgr_add_work_fifo(on_allocation, NULL);
 	}
 
 	return &state;
@@ -1452,16 +1445,14 @@ static int _anchor_child(int pipe_fd[2])
 		      __func__, slurm_strerror(rc));
 	debug("%s: listening on unix:%s", __func__, state.anchor_socket);
 
-	conmgr_add_signal_work(SIGCHLD, _catch_sigchld, &state,
-			       "_catch_sigchld");
+	conmgr_add_work_signal(SIGCHLD, _catch_sigchld, &state);
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
 				    conmgr_startup_events, NULL, 0, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
-	conmgr_add_work(NULL, get_allocation, CONMGR_WORK_TYPE_FIFO, NULL,
-			__func__);
+	conmgr_add_work_fifo(get_allocation, NULL);
 
 	if ((spank_rc = spank_init_post_opt())) {
 		fatal("%s: plugin stack post-option processing failed: %s",

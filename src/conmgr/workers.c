@@ -207,16 +207,18 @@ static void *_worker(void *arg)
 
 		if (mgr_shutdown_requested) {
 			log_flag(CONMGR, "%s: [%u->%s] setting work status as cancelled after shutdown requested",
-				 __func__, worker->id, work->tag);
+				 __func__, worker->id,
+				 work->callback.func_name);
 			work->status = CONMGR_WORK_STATUS_CANCELLED;
 		}
 
 		/* got work, run it! */
 		mgr.workers.active++;
 
-		log_flag(CONMGR, "%s: [%u->%s] running active_workers=%u/%u queue=%u",
-			 __func__, worker->id, work->tag, mgr.workers.active,
-			 mgr.workers.total, list_count(mgr.work));
+		log_flag(CONMGR, "%s: [%u] %s() running active_workers=%u/%u queue=%u",
+			 __func__, worker->id, work->callback.func_name,
+			 mgr.workers.active, mgr.workers.total,
+			 list_count(mgr.work));
 
 		slurm_mutex_unlock(&mgr.mutex);
 

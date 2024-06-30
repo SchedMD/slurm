@@ -95,12 +95,6 @@ static int _handle_connection(void *x, void *arg)
 		work->status = CONMGR_WORK_STATUS_RUN;
 		con->work_active = true; /* unset by _wrap_con_work() */
 
-		log_flag(CONMGR, "%s: [%s] queuing work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
-			 __func__, con->name, (uintptr_t) work,
-			conmgr_work_status_string(work->status),
-			conmgr_work_type_string(work->type),
-			work->tag, (uintptr_t) work->func);
-
 		handle_work(true, work);
 		return 0;
 	}
@@ -118,9 +112,7 @@ static int _handle_connection(void *x, void *arg)
 		if (con->can_write) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
-			add_work(true, con, handle_write,
-				 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-				 XSTRINGIFY(handle_write));
+			add_work_con_fifo(true, con, handle_write, con);
 		} else {
 			/*
 			 * Only monitor for when connection is ready for writes
@@ -153,9 +145,7 @@ static int _handle_connection(void *x, void *arg)
 		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
 		con->can_read = false;
 
-		add_work(true, con, _listen_accept,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			 XSTRINGIFY(_listen_accept));
+		add_work_con_fifo(true, con, _listen_accept, con);
 		return 0;
 	}
 
@@ -164,9 +154,7 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
-		add_work(true, con, handle_read,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			 XSTRINGIFY(handle_read));
+		add_work_con_fifo(true, con, handle_read, con);
 		return 0;
 	}
 
@@ -174,10 +162,7 @@ static int _handle_connection(void *x, void *arg)
 	if (!con->is_listen && get_buf_offset(con->in) && !con->on_data_tried) {
 		log_flag(CONMGR, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
-
-		add_work(true, con, wrap_on_data,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			 XSTRINGIFY(wrap_on_data));
+		add_work_con_fifo(true, con, wrap_on_data, con);
 		return 0;
 	}
 
@@ -229,10 +214,7 @@ static int _handle_connection(void *x, void *arg)
 		con->wait_on_finish = true;
 
 		/* notify caller of closing */
-		add_work(true, con, _on_finish_wrapper,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
-			 XSTRINGIFY(_on_finish_wrapper));
-
+		add_work_con_fifo(true, con, _on_finish_wrapper, con->arg);
 		return 0;
 	}
 
@@ -536,9 +518,7 @@ static void _handle_complete_conns(void)
 		 * to delete the connection and cleanup and it should
 		 * not queue into the connection work queue itself
 		 */
-		add_work(true, NULL, _connection_fd_delete,
-			 CONMGR_WORK_TYPE_FIFO, con,
-			 XSTRINGIFY(_connection_fd_delete));
+		add_work_fifo(true, _connection_fd_delete, con);
 	}
 }
 
@@ -546,17 +526,15 @@ static void _handle_new_conns(void)
 {
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
-		add_work(true, NULL, _inspect_connections,
-			 CONMGR_WORK_TYPE_FIFO, NULL,
-			 XSTRINGIFY(_inspect_connections));
+		add_work_fifo(true, _inspect_connections, NULL);
 	}
 
 	if (!mgr.poll_active) {
 		/* request a listen thread to run */
 		log_flag(CONMGR, "%s: queuing up poll", __func__);
 		mgr.poll_active = true;
-		add_work(true, NULL, _poll_connections, CONMGR_WORK_TYPE_FIFO,
-			 NULL, XSTRINGIFY(_poll_connections));
+
+		add_work_fifo(true, _poll_connections, NULL);
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 }
@@ -680,8 +658,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 
 	mgr.watching = true;
 
-	add_work(true, NULL, signal_mgr_start, CONMGR_WORK_TYPE_FIFO, NULL,
-		 XSTRINGIFY(signal_mgr_start));
+	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
 		if ((mgr.quiesced || mgr.shutdown_requested) &&

@@ -422,10 +422,10 @@ extern int main(int argc, char **argv)
 
 	conmgr_init(0, 0, callbacks);
 
-	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
-	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
-	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
-	conmgr_add_signal_work(SIGPIPE, _on_sigpipe, NULL, "on_sigpipe()");
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 
 	_establish_config_source();
 	slurm_conf_init(conf_file);

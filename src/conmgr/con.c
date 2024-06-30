@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/fd.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_socket.h"
@@ -365,9 +366,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		list_append(mgr.listen_conns, con);
 	} else {
 		list_append(mgr.connections, con);
-		add_work(true, con, _wrap_on_connection,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
-			 XSTRINGIFY(_wrap_on_connection));
+		add_work_con_fifo(true, con, _wrap_on_connection, con);
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
@@ -377,20 +376,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 
 	return con;
-}
-
-extern void wrap_con_work(work_t *work, conmgr_fd_t *con)
-{
-	work->func((conmgr_callback_args_t) {
-			.con = work->con,
-			.status = work->status,
-		   }, work->arg);
-
-	slurm_mutex_lock(&mgr.mutex);
-	con->work_active = false;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 }
 
 static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
@@ -504,9 +489,7 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 		 * several variables guarenteed to not change while work is
 		 * active.
 		 */
-		add_work(true, con, _deferred_close_fd,
-			 CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL,
-			 XSTRINGIFY(_deferred_close_fd));
+		add_work_con_fifo(true, con, _deferred_close_fd, con);
 	} else {
 		close_con(true, con);
 	}
