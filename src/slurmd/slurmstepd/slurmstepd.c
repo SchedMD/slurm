@@ -60,7 +60,6 @@
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
@@ -109,12 +108,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
-
-int slurmstepd_blocked_signals[] = {
-	SIGINT,  SIGTERM, SIGTSTP,
-	SIGQUIT, SIGPIPE, SIGUSR1,
-	SIGUSR2, SIGALRM, SIGHUP, 0
-};
 
 /* global variable */
 slurmd_conf_t * conf;
@@ -304,7 +297,52 @@ static void _init_stepd_stepmgr(void)
 			    NULL);
 }
 
-extern int main (int argc, char **argv)
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGINT. Ignoring.");
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTERM. Ignoring.");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGQUIT. Ignoring.");
+}
+
+static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTSTP. Ignoring");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGHUP. Ignoring");
+}
+
+static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR1. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR2. Ignoring.");
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
+static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGTTIN. Ignoring.");
+}
+
+extern int main(int argc, char **argv)
 {
 	run_args_t args = {
 		.magic = RUN_ARGS_MAGIC,
@@ -316,6 +354,16 @@ extern int main (int argc, char **argv)
 	_process_cmdline(argc, argv);
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
 	conmgr_add_work_fifo(_run, &args);
 
@@ -339,7 +387,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
 
-	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = argv;
 	conf->argc = argc;
