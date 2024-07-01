@@ -36,11 +36,9 @@
 #ifndef SLURMRESTD_OPERATIONS_H
 #define SLURMRESTD_OPERATIONS_H
 
-#include "src/common/data.h"
 #include "src/interfaces/serializer.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
-#include "src/slurmrestd/rest_auth.h"
 
 extern serializer_flags_t yaml_flags;
 extern serializer_flags_t json_flags;
