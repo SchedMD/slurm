@@ -54,28 +54,6 @@ extern void destroy_operations(void);
 
 /*
  * Bind callback handler for a given URL pattern.
- * Will query OpenAPI spec for description of path including variables
- *	Note that variables in the path are only partially support:
- *	supported: /users/{id}
- *	supported: /cars/{carId}/drivers/{driverId}
- *	not supported: /report.{format}
- *		complex variables in a single directory are not supported
- *		as we would need to make a regex to match them out or somehow
- *		otherwise force a match which would be slow
- *		there can only be 1 variable with no extra spaces as we
- *		only check the data type of the dir entry
- *
- *
- * IN path - url path to match
- * IN callback - handler function for callback
- * IN tag - arbitrary tag passed to handler when path matched
- * RET SLURM_SUCCESS or error
- */
-extern int bind_operation_handler(const char *path, openapi_handler_t callback,
-				  int tag);
-
-/*
- * Bind callback handler for a given URL pattern.
  * Same rules as bind_operation_handler() but handles populating response and
  * tracking warnings and errors.
  *
