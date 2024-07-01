@@ -2468,34 +2468,6 @@ extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
 	return str;
 }
 
-extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
-				  const char *name, time_t *time_ptr,
-				  const char *caller)
-{
-	int rc;
-	time_t t;
-	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
-
-	if (!dbuf)
-		return ESLURM_REST_EMPTY_RESULT;
-
-	rc = DATA_PARSE(ctxt->parser, TIMESTAMP, t, dbuf, ctxt->parent_path);
-
-	if (!rc) {
-		*time_ptr = t;
-	} else if (required) {
-		openapi_resp_error(ctxt, ESLURM_DATA_CONV_FAILED,
-				   caller, "Rejecting invalid required timestamp parameter \"%s\"",
-				   name);
-	} else {
-		openapi_resp_warn(ctxt, caller,
-				  "Ignoring invalid timestamp parameter \"%s\"",
-				  name);
-	}
-
-	return rc;
-}
-
 extern bool is_spec_generation_only(bool set)
 {
 	static bool is_spec_only = false;

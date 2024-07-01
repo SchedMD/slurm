@@ -273,20 +273,6 @@ extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
  */
 extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
 					 const char *name, const char *caller);
-/*
- * Retrieve OpenAPI UNIX timestamp parameter
- * IN ctxt - connection context
- * IN required - error if parameter not found
- * IN name - Path to parameter in query
- * IN time_ptr - ptr to time_t to populate on successful parsing
- * 	A time=0 may be an error and return SLURM_SUCCESS due to
- * 	parse_time() being ambiguous.
- * IN caller - should be __func__
- * RET SLURM_SUCCESS or (ESLURM_REST_EMPTY_RESULT if not found) or error
- */
-extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
-				  const char *name, time_t *time_ptr,
-				  const char *caller);
 
 /*
  * Generate OpenAPI specification
