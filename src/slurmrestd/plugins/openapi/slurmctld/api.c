@@ -460,11 +460,6 @@ const openapi_path_binding_t openapi_paths[] = {
 	{0}
 };
 
-extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
-{
-	return NULL;
-}
-
 extern void slurm_openapi_p_init(void)
 {
 }

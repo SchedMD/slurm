@@ -87,15 +87,6 @@ typedef int (*openapi_handler_t)(
 );
 
 typedef enum {
-	OAS_FLAG_NONE = 0,
-	OAS_FLAG_MANGLE_OPID = SLURM_BIT(0), /* mangle operationid */
-	OAS_FLAG_SET_OPID = SLURM_BIT(1), /* set every operationid */
-	/* Apply data_parser_g_specify() by all parsers and cleanup templates */
-	OAS_FLAG_SET_DATA_PARSER_SPEC = SLURM_BIT(2),
-	OAS_FLAG_MAX = SLURM_BIT(63) /* place holder */
-} openapi_spec_flags_t;
-
-typedef enum {
 	OP_BIND_INVALID = 0,
 	OP_BIND_NONE = SLURM_BIT(1),
 	OP_BIND_DATA_PARSER = SLURM_BIT(2), /* populate {data_parser} in URL */
@@ -132,16 +123,6 @@ typedef struct {
 } openapi_path_binding_t;
 
 /*
- * Register a given unique tag against a path.
- *
- * IN path - path to assign to given tag
- * RET -1 on error or >0 tag value for path.
- *
- * Can safely be called multiple times for same path.
- */
-extern int register_path_tag(const char *path);
-
-/*
  * Register a given unique tag against a path binding.
  *
  * IN in_path - string path to assign to given tag or
@@ -160,13 +141,6 @@ extern int register_path_binding(const char *in_path,
 				 const openapi_path_binding_t *op_path,
 				 const openapi_resp_meta_t *meta,
 				 data_parser_t *parser, int *tag_ptr);
-
-/*
- * Unregister a given unique tag against a path.
- *
- * IN tag - path tag to remove
- */
-extern void unregister_path_tag(int tag);
 
 /*
  * Find tag assigned to given path
