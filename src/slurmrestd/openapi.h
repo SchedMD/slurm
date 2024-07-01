@@ -70,22 +70,6 @@ typedef struct {
  */
 typedef int (*openapi_ctxt_handler_t)(openapi_ctxt_t *ctxt);
 
-/*
- * Callback from openapi caller.
- * we are not passing any http information to make this generic.
- * RET SLURM_SUCCESS or error to kill the connection
- */
-typedef int (*openapi_handler_t)(
-	const char *context_id, /* context id of client */
-	http_request_method_t method, /* request method */
-	data_t *parameters, /* openapi parameters */
-	data_t *query, /* query sent by client */
-	int tag, /* tag associated with path */
-	data_t *resp, /* data to populate with response */
-	void *auth, /* authentication context */
-	data_parser_t *parser /* assigned data_parser or NULL */
-);
-
 typedef enum {
 	OP_BIND_INVALID = 0,
 	OP_BIND_NONE = SLURM_BIT(1),

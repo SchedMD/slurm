@@ -62,8 +62,6 @@ typedef struct {
 	int magic; /* PATH_MAGIC */
 	/* unique tag per path */
 	int tag;
-	/* handler's callback to call on match */
-	openapi_handler_t callback;
 	/* handler's ctxt callback to call on match */
 	const openapi_path_binding_t *op_path;
 	/* meta info from plugin */
@@ -89,9 +87,7 @@ static void _check_path_magic(const path_t *path)
 {
 	xassert(path->magic == PATH_MAGIC);
 	xassert(path->tag >= 0);
-	xassert(path->callback || path->op_path->callback);
-	xassert(!!path->callback !=
-		(path->op_path && !!path->op_path->callback));
+	xassert(path->op_path->callback);
 }
 
 static void _free_path(void *x)
@@ -497,8 +493,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 }
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
-			 data_t *query, openapi_handler_t callback,
-			 const openapi_path_binding_t *op_path,
+			 data_t *query, const openapi_path_binding_t *op_path,
 			 int callback_tag, const char *write_mime,
 			 data_parser_t *parser, const openapi_resp_meta_t *meta,
 			 const char *plugin)
@@ -508,25 +503,15 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	char *body = NULL;
 	http_status_code_t e;
 
-	if (callback) {
-		xassert(!op_path);
-		debug3("%s: [%s] BEGIN: calling handler: 0x%"PRIXPTR"[%d] for path: %s",
-		       __func__, _name(args), (uintptr_t) callback,
-		       callback_tag, args->path);
+	xassert(op_path);
+	debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
+	       __func__, _name(args), (uintptr_t) op_path->callback,
+	       callback_tag, args->path);
 
-		rc = callback(_name(args), args->method, params, query,
-			      callback_tag, resp, args->context->auth, parser);
-	} else {
-		xassert(op_path);
-		debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
-		       __func__, _name(args), (uintptr_t) op_path->callback,
-		       callback_tag, args->path);
-
-		rc = wrap_openapi_ctxt_callback(_name(args), args->method,
-						params, query, callback_tag,
-						resp, args->context->auth,
-						parser, op_path, meta);
-	}
+	rc = wrap_openapi_ctxt_callback(_name(args), args->method, params,
+					query, callback_tag, resp,
+					args->context->auth, parser, op_path,
+					meta);
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
@@ -601,8 +586,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	}
 
 	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
-	       __func__, _name(args), (uintptr_t) callback, callback_tag,
-	       args->path, rc, slurm_strerror(rc), e,
+	       __func__, _name(args), (uintptr_t) op_path->callback,
+	       callback_tag, args->path, rc, slurm_strerror(rc), e,
 	       get_http_status_code_string(e));
 
 	xfree(body);
@@ -618,7 +603,6 @@ extern int operations_router(on_http_request_args_t *args)
 	data_t *params = NULL;
 	int path_tag;
 	path_t *path = NULL;
-	openapi_handler_t callback = NULL;
 	int callback_tag;
 	const char *read_mime = NULL, *write_mime = NULL, *plugin = NULL;
 	data_parser_t *parser = NULL;
@@ -651,14 +635,14 @@ extern int operations_router(on_http_request_args_t *args)
 	_check_path_magic(path);
 
 	/* clone over the callback info to release lock */
-	callback = path->callback;
 	callback_tag = path->callback_tag;
 	parser = path->parser;
 	slurm_rwlock_unlock(&paths_lock);
 
 	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
-	       __func__, _name(args), (uintptr_t) callback, callback_tag,
-	       args->path, (parser ? data_parser_get_plugin(parser) : ""));
+	       __func__, _name(args), (uintptr_t) path->op_path->callback,
+	       callback_tag, args->path,
+	       (parser ? data_parser_get_plugin(parser) : ""));
 
 	if ((rc = _resolve_mime(args, &read_mime, &write_mime, &plugin)))
 		goto cleanup;
@@ -666,9 +650,8 @@ extern int operations_router(on_http_request_args_t *args)
 	if ((rc = _get_query(args, &query, read_mime)))
 		goto cleanup;
 
-	rc = _call_handler(args, params, query, callback, path->op_path,
-			   callback_tag, write_mime, parser, path->meta,
-			   plugin);
+	rc = _call_handler(args, params, query, path->op_path, callback_tag,
+			   write_mime, parser, path->meta, plugin);
 
 cleanup:
 	FREE_NULL_DATA(query);
