@@ -305,38 +305,9 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	return rc;
 }
 
-static int _rm_path_callback(void *x, void *ptr)
-{
-	path_t *path = (path_t *)x;
-	bool mc = (path->callback == ptr);
-	bool mctxt = (path->op_path ? (path->op_path->callback == ptr) : false);
-
-	_check_path_magic(path);
-
-	if (!mc && !mctxt)
-		return 0;
-
-	debug5("%s: removing tag %d for callback=0x%"PRIxPTR,
-	       __func__, path->tag, (uintptr_t) ptr);
-	unregister_path_tag(path->tag);
-
-	return 1;
-}
-
 extern int unbind_operation_handler(openapi_handler_t callback)
 {
 	return ESLURM_NOT_SUPPORTED;
-}
-
-extern int unbind_operation_ctxt_handler(openapi_ctxt_handler_t callback)
-{
-	slurm_rwlock_wrlock(&paths_lock);
-
-	if (paths)
-		list_delete_all(paths, _rm_path_callback, callback);
-
-	slurm_rwlock_unlock(&paths_lock);
-	return SLURM_ERROR;
 }
 
 static int _operations_router_reject(const on_http_request_args_t *args,
