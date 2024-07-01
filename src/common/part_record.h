@@ -89,6 +89,8 @@ typedef struct part_record {
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t num_sched_jobs; /* number of jobs scheduled on a scheduling
+				  * iteration, internal use only, NO NOT PACK */
 	uint32_t min_nodes;	/* per job */
 	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	char *name;		/* name of the partition */

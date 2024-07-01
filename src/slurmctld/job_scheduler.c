@@ -1164,7 +1164,7 @@ static int _schedule(bool full_queue)
 	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	list_t *job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, i, j, part_cnt, time_limit, pend_time;
+	int error_code, i, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
@@ -1172,8 +1172,7 @@ static int _schedule(bool full_queue)
 	_failed_part_t *failed_parts = NULL;
 	slurmctld_resv_t **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
-	part_record_t **sched_part_ptr = NULL;
-	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
+	int bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -1386,8 +1385,10 @@ static int _schedule(bool full_queue)
 				 * Exit without setting sched_update.  This gets
 				 * verbose, but makes this setting easy to
 				 * happen.
+				 *
+				 * No memory is allocated above this.
 				 */
-				goto out;
+				return 0;
 			} else if (sched_interval < 0) {
 				error("Invalid sched_interval: %d",
 				      sched_interval);
@@ -1486,12 +1487,9 @@ static int _schedule(bool full_queue)
 
 	if (max_jobs_per_part) {
 		list_itr_t *part_iterator;
-		sched_part_ptr  = xcalloc(part_cnt, sizeof(part_record_t *));
-		sched_part_jobs = xmalloc(sizeof(int) * part_cnt);
 		part_iterator = list_iterator_create(part_list);
-		i = 0;
 		while ((part_ptr = list_next(part_iterator))) {
-			sched_part_ptr[i++] = part_ptr;
+			part_ptr->num_sched_jobs = 0;
 		}
 		list_iterator_destroy(part_iterator);
 	}
@@ -1666,29 +1664,19 @@ next_task:
 			if (!job_array_start_test(job_ptr))
 				continue;
 		}
-		if (max_jobs_per_part) {
-			bool skip_job = false;
-			for (j = 0; j < part_cnt; j++) {
-				if (sched_part_ptr[j] != job_ptr->part_ptr)
-					continue;
-				if (sched_part_jobs[j]++ >=
-				    max_jobs_per_part)
-					skip_job = true;
-				break;
+		if (job_ptr->part_ptr->num_sched_jobs < max_jobs_per_part) {
+			job_ptr->part_ptr->num_sched_jobs++;
+			if (job_ptr->state_reason == WAIT_NO_REASON) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_PRIORITY;
+				last_job_update = now;
 			}
-			if (skip_job) {
-				if (job_ptr->state_reason == WAIT_NO_REASON) {
-					xfree(job_ptr->state_desc);
-					job_ptr->state_reason = WAIT_PRIORITY;
-					last_job_update = now;
-				}
-				if (job_ptr->part_ptr == skip_part_ptr)
-					continue;
-				sched_debug2("reached partition %s job limit",
-					     job_ptr->part_ptr->name);
-				skip_part_ptr = job_ptr->part_ptr;
+			if (job_ptr->part_ptr == skip_part_ptr)
 				continue;
-			}
+			sched_debug2("reached partition %s job limit",
+				     job_ptr->part_ptr->name);
+			skip_part_ptr = job_ptr->part_ptr;
+			continue;
 		}
 		if (!full_queue && (job_depth++ > def_job_limit)) {
 			sched_debug("already tested %u jobs, breaking out",
@@ -2176,8 +2164,6 @@ fail_this_part:	if (fail_by_part) {
 	} else if (job_queue) {
 		FREE_NULL_LIST(job_queue);
 	}
-	xfree(sched_part_ptr);
-	xfree(sched_part_jobs);
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if ((slurmctld_config.server_thread_count >= 150) &&
 	    (defer_rpc_cnt == 0)) {
