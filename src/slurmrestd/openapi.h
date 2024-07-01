@@ -253,17 +253,6 @@ extern void openapi_resp_warn(openapi_ctxt_t *ctxt, const char *source,
 	__attribute__((format(printf, 3, 4)));
 
 /*
- * Retrieve OpenAPI parameter
- * IN ctxt - connection context
- * IN required - error if parameter not found or valid
- * IN path - Path to parameter in query
- * IN caller - should be __func__
- * RET data_t ptr or NULL (on error or if not found)
- */
-extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
-				 const char *name, const char *caller);
-
-/*
  * Generate OpenAPI specification
  * IN/OUT dst - data_t to populate with specification
  * RET SLURM_SUCCESS or error

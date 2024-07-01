@@ -2418,21 +2418,6 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	return rc;
 }
 
-extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
-				 const char *name, const char *caller)
-{
-	data_t *dbuf = NULL;
-
-	if ((!ctxt->parameters ||
-	     !(dbuf = data_key_get(ctxt->parameters, name))) &&
-	    required) {
-		openapi_resp_error(ctxt, ESLURM_DATA_PATH_NOT_FOUND, caller,
-				   "Required parameter \"%s\" not found", name);
-	}
-
-	return dbuf;
-}
-
 extern bool is_spec_generation_only(bool set)
 {
 	static bool is_spec_only = false;
