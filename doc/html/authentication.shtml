@@ -54,11 +54,18 @@ The daemons need to be stopped before updating the slurm.conf so that client
 commands do not use a mechanism other than what the running daemons are
 expecting.</li>
 
-<li>Update your slurm.conf and slurmdbd.conf to use MUNGE authentication:
+<li>Update your slurm.conf and slurmdbd.conf to use MUNGE authentication.
+<ul>
+<li>slurm.conf:
 <pre>
 AuthType = auth/munge
 CredType = cred/munge
-</pre>
+</pre></li>
+<li>slurmdbd.conf:
+<pre>
+AuthType = auth/munge
+</pre></li>
+</ul>
 </li>
 
 <li>Start the Slurm daemons back up with the appropriate method for your
@@ -96,11 +103,18 @@ chmod 600 /etc/slurm/slurm.key
 on the machines running slurmctld, slurmdbd, slurmd and sackd.</li>
 
 <li>Update your slurm.conf and slurmdbd.conf to use the Slurm authentication
-type:
+type.
+<ul>
+<li>slurm.conf:
 <pre>
 AuthType = auth/slurm
 CredType = cred/slurm
-</pre>
+</pre></li>
+<li>slurmdbd.conf:
+<pre>
+AuthType = auth/slurm
+</pre></li>
+</ul>
 </li>
 
 <li>Start the daemons back up with the appropriate method for your cluster.</li>
@@ -193,6 +207,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 01 May 2024</p>
+<p style="text-align:center;">Last modified 02 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
