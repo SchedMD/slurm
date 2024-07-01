@@ -55,11 +55,11 @@ static data_parser_t **parsers; /* symlink to parser array */
 serializer_flags_t yaml_flags = SER_FLAGS_PRETTY;
 serializer_flags_t json_flags = SER_FLAGS_PRETTY;
 
-#define MAGIC 0xDFFEAAAE
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
 
 typedef struct {
-	int magic;
+#define PATH_MAGIC 0xDFFEA1AE
+	int magic; /* PATH_MAGIC */
 	/* unique tag per path */
 	int tag;
 	/* handler's callback to call on match */
@@ -87,7 +87,7 @@ static const char *_name(const on_http_request_args_t *args)
 
 static void _check_path_magic(const path_t *path)
 {
-	xassert(path->magic == MAGIC);
+	xassert(path->magic == PATH_MAGIC);
 	xassert(path->tag >= 0);
 	xassert(path->callback || path->op_path->callback);
 	xassert(!!path->callback !=
@@ -103,7 +103,7 @@ static void _free_path(void *x)
 
 	_check_path_magic(path);
 
-	path->magic = ~MAGIC;
+	path->magic = ~PATH_MAGIC;
 	xfree(path);
 }
 
@@ -172,7 +172,7 @@ static int _add_binded_path(const char *path_str,
 	print_path_tag_methods(tag);
 
 	path = xmalloc(sizeof(*path));
-	path->magic = MAGIC;
+	path->magic = PATH_MAGIC;
 	path->tag = tag;
 	path->parser = parser;
 	path->op_path = op_path;
