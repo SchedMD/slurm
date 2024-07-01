@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix IPMI energy gathering when no IPMIPowerSensors are specified in
     acct_gather.conf. This situation resulted in an accounted energy of 0
     for job steps.
+ -- Fix a minor memory leak in slurmctld when updating a job dependency.
 
 * Changes in Slurm 24.05.1
 ==========================

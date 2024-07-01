@@ -13728,6 +13728,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				 * dependency locally, so we still need to
 				 * do these things.
 				 */
+				xfree(job_ptr->details->orig_dependency);
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
 				sched_info("%s: setting dependency to %s for %pJ",
