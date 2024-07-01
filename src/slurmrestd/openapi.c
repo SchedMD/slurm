@@ -2433,41 +2433,6 @@ extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
 	return dbuf;
 }
 
-extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
-					 const char *name, const char *caller)
-{
-	const char *str = NULL;
-	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
-
-	if (!dbuf)
-		return NULL;
-
-	if (data_convert_type(dbuf, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		if (required)
-			openapi_resp_error(ctxt, ESLURM_DATA_CONV_FAILED,
-					   caller,
-					   "Rejecting required parameter \"%s\" provided with format %s which was unable to be converted to string.",
-					   name, data_get_type_string(dbuf));
-		else
-			openapi_resp_warn(ctxt, caller,
-					  "Ignoring parameter \"%s\" provided with format %s which was unable to be converted to string.",
-					  name, data_get_type_string(dbuf));
-	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
-		if (required)
-			openapi_resp_error(ctxt, ESLURM_DATA_PARSE_NOTHING,
-					   caller, "Rejecting empty required parameter \"%s\"",
-					   name);
-		else
-			openapi_resp_warn(ctxt, caller,
-					  "Ignoring empty parameter \"%s\"",
-					  name);
-
-		str = NULL;
-	}
-
-	return str;
-}
-
 extern bool is_spec_generation_only(bool set)
 {
 	static bool is_spec_only = false;
