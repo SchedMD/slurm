@@ -296,7 +296,9 @@ extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 	update_timer(true);
 
 	while ((work = list_pop(elapsed))) {
-		work->status = CONMGR_WORK_STATUS_RUN;
+		if (!work_clear_time_delay(work))
+			fatal_abort("should never happen");
+
 		handle_work(true, work);
 	}
 
@@ -306,4 +308,22 @@ extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, count, total);
 
 	FREE_NULL_LIST(elapsed);
+}
+
+extern bool work_clear_time_delay(work_t *work)
+{
+	xassert(work->magic == MAGIC_WORK);
+
+	if (work->status != CONMGR_WORK_STATUS_PENDING)
+		return false;
+
+	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
+		return false;
+
+#ifndef NDEBUG
+	work->control.time_begin = (conmgr_work_time_begin_t) {0};
+#endif /* !NDEBUG */
+	work_mask_depend(work, ~CONMGR_WORK_DEP_TIME_DELAY);
+
+	return true;
 }

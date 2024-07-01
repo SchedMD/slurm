@@ -310,6 +310,15 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, 0, __func__)
 
+/*
+ * Clear time delay dependency from work
+ * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
+ * NOTE: caller must call update_timer() after to cause work to requeue
+ * NOTE: caller must hold mgr.mutex lock
+ * RET True if time delay removed
+ */
+extern bool work_clear_time_delay(work_t *work);
+
 extern void cancel_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
