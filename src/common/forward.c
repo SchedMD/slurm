@@ -51,6 +51,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/topology.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
@@ -637,8 +638,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
  */
 extern void forward_init(forward_t *forward)
 {
-	memset(forward, 0, sizeof(forward_t));
-	forward->init = FORWARD_INIT;
+	*forward = (forward_t) FORWARD_INITIALIZER;
 }
 
 /*

@@ -238,6 +238,11 @@ typedef struct forward {
 	uint16_t   tree_width;  /* what the treewidth should be */
 } forward_t;
 
+#define FORWARD_INITIALIZER \
+	{ \
+		.init = FORWARD_INIT, \
+	}
+
 /*core api protocol message structures */
 typedef struct slurm_protocol_header {
 	uint16_t version;
