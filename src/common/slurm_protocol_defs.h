@@ -331,6 +331,24 @@ typedef struct slurm_msg {
 	List ret_list;
 } slurm_msg_t;
 
+#ifndef NDEBUG
+/* drop_priv_flag set by slurm_conf_init() in read_config.c */
+#define SLURM_MSG_FLAGS_INITIALIZER drop_priv_flag
+#else /* NDEBUG */
+#define SLURM_MSG_FLAGS_INITIALIZER SLURM_PROTOCOL_NO_FLAGS
+#endif /* NDEBUG */
+
+#define SLURM_MSG_INITIALIZER \
+	{ \
+		.auth_uid = SLURM_AUTH_NOBODY, \
+		.auth_gid = SLURM_AUTH_NOBODY, \
+		.conn_fd = -1, \
+		.msg_type = NO_VAL16, \
+		.protocol_version = NO_VAL16, \
+		.flags = SLURM_MSG_FLAGS_INITIALIZER, \
+		.forward = FORWARD_INITIALIZER, \
+	}
+
 typedef struct ret_data_info {
 	uint16_t type; /* really a slurm_msg_type_t but needs to be
 			* this way for packing purposes.  message type */
