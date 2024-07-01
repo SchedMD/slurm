@@ -430,7 +430,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
-		 src/plugins/data_parser/v0.0.39/Makefile
 		 src/plugins/data_parser/v0.0.40/Makefile
 		 src/plugins/data_parser/v0.0.41/Makefile
 		 src/plugins/data_parser/v0.0.42/Makefile
@@ -549,10 +548,8 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmrestd/plugins/auth/jwt/Makefile
 		 src/slurmrestd/plugins/auth/local/Makefile
 		 src/slurmrestd/plugins/openapi/Makefile
-		 src/slurmrestd/plugins/openapi/dbv0.0.39/Makefile
 		 src/slurmrestd/plugins/openapi/slurmctld/Makefile
 		 src/slurmrestd/plugins/openapi/slurmdbd/Makefile
-		 src/slurmrestd/plugins/openapi/v0.0.39/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/sreport/Makefile
