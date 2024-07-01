@@ -860,7 +860,7 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		return SLURM_ERROR;
 	} else if (pid > 0) {
 		int rc = SLURM_SUCCESS;
-#if (SLURMSTEPD_MEMCHECK == 0)
+#if (SLURMSTEPD_MEMCHECK != 1)
 		int i;
 		time_t start_time = time(NULL);
 #endif
@@ -881,9 +881,11 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 			goto done;
 		}
 
-		/* If running under valgrind/memcheck, this pipe doesn't work
-		 * correctly so just skip it. */
-#if (SLURMSTEPD_MEMCHECK == 0)
+		/*
+		 * If running under memcheck, this pipe doesn't work correctly
+		 * so just skip it.
+		 */
+#if (SLURMSTEPD_MEMCHECK != 1)
 		i = read(to_slurmd[0], &rc, sizeof(int));
 		if (i < 0) {
 			error("%s: Can not read return code from slurmstepd "

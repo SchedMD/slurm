@@ -692,9 +692,11 @@ static void _process_cmdline(int argc, char **argv)
 static void
 _send_ok_to_slurmd(int sock)
 {
-	/* If running under valgrind/memcheck, this pipe doesn't work correctly
-	 * so just skip it. */
-#if (SLURMSTEPD_MEMCHECK == 0)
+	/*
+	 * If running under memcheck, this pipe doesn't work correctly so just
+	 * skip it.
+	 */
+#if (SLURMSTEPD_MEMCHECK != 1)
 	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
 	return;
@@ -705,9 +707,11 @@ rwfail:
 
 static void _send_fail_to_slurmd(int sock, int rc)
 {
-	/* If running under valgrind/memcheck, this pipe doesn't work correctly
-	 * so just skip it. */
-#if (SLURMSTEPD_MEMCHECK == 0)
+	/*
+	 * If running under memcheck, this pipe doesn't work correctly so just
+	 * skip it.
+	 */
+#if (SLURMSTEPD_MEMCHECK != 1)
 	safe_write(sock, &rc, sizeof(int));
 	return;
 rwfail:
@@ -718,9 +722,11 @@ rwfail:
 static void
 _got_ack_from_slurmd(int sock)
 {
-	/* If running under valgrind/memcheck, this pipe doesn't work correctly
-	 * so just skip it. */
-#if (SLURMSTEPD_MEMCHECK == 0)
+	/*
+	 * If running under memcheck, this pipe doesn't work correctly so just
+	 * skip it.
+	 */
+#if (SLURMSTEPD_MEMCHECK != 1)
 	int ok;
 	safe_read(sock, &ok, sizeof(int));
 	return;
