@@ -87,13 +87,6 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 			       const openapi_resp_meta_t *meta);
 
 /*
- * Unbind a given callback handler from all paths
- * IN path path to remove
- * RET SLURM_SUCCESS or error
- */
-extern int unbind_operation_handler(openapi_handler_t callback);
-
-/*
  * Parses incoming requests and calls handlers.
  * expected to be called as on_http_request_t() by http.c.
  * RET SLURM_SUCCESS or error
