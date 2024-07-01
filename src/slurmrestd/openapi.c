@@ -959,15 +959,11 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		const openapi_path_binding_t *paths;
 		const openapi_resp_meta_t *meta;
 
-		rc = funcs->get_paths(&paths, &meta);
-
-		if (rc && (rc != ESLURM_NOT_SUPPORTED))
+		if ((rc = funcs->get_paths(&paths, &meta)))
 			fatal("Failure loading plugin path bindings: %s",
 			      slurm_strerror(rc));
 
-		if (rc == ESLURM_NOT_SUPPORTED)
-			rc = SLURM_SUCCESS;
-		else if ((rc = _bind_paths(paths, meta)))
+		if ((rc = _bind_paths(paths, meta)))
 			fatal("Unable to bind openapi specification paths: %s",
 			      slurm_strerror(rc));
 	}
