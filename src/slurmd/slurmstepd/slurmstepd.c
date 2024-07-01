@@ -63,6 +63,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/auth.h"
@@ -103,6 +105,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
 static void _process_cmdline(int argc, char **argv);
+static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
@@ -123,6 +126,14 @@ list_t *job_node_array = NULL;
 time_t last_job_update = 0;
 bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
+
+typedef struct {
+#define RUN_ARGS_MAGIC 0x0ee01aab
+	int magic; /* RUN_ARGS_MAGIC */
+	int rc;
+	int argc;
+	char **argv;
+} run_args_t;
 
 static int _foreach_ret_data_info(void *x, void *arg)
 {
@@ -293,16 +304,40 @@ static void _init_stepd_stepmgr(void)
 			    NULL);
 }
 
-int
-main (int argc, char **argv)
+extern int main (int argc, char **argv)
+{
+	run_args_t args = {
+		.magic = RUN_ARGS_MAGIC,
+		.rc = SLURM_SUCCESS,
+		.argc = argc,
+		.argv = argv,
+	};
+
+	_process_cmdline(argc, argv);
+
+	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_fifo(_run, &args);
+
+	conmgr_run(true);
+
+	conmgr_fini();
+
+	return args.rc;
+}
+
+static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
+	run_args_t *args = arg;
+	int argc = args->argc;
+	char **argv = args->argv;
 	slurm_addr_t *cli;
 	slurm_msg_t *msg;
 	stepd_step_rec_t *step;
 	int rc = 0;
 
-	_process_cmdline(argc, argv);
+	xassert(args->magic == RUN_ARGS_MAGIC);
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
@@ -364,9 +399,10 @@ main (int argc, char **argv)
 	 * and blocks until the step is complete */
 	rc = job_manager(step);
 
-	return stepd_cleanup(msg, step, cli, rc, false);
+	args->rc = stepd_cleanup(msg, step, cli, rc, false);
+	return;
 ending:
-	return stepd_cleanup(msg, step, cli, rc, true);
+	args->rc = stepd_cleanup(msg, step, cli, rc, true);
 }
 
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
@@ -464,6 +500,9 @@ done:
 	} else {
 		info("done with step");
 	}
+
+	conmgr_request_shutdown();
+
 	return rc;
 }
 
