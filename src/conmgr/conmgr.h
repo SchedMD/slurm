@@ -326,6 +326,14 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
 extern void conmgr_queue_close_fd(conmgr_fd_t *con);
 
 /*
+ * Change connection mode
+ * IN con - conmgr connection ptr
+ * IN type - change connection to new type
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
+
+/*
  * create sockets based on requested SOCKET_LISTEN
  * to accepted connections.
  * IN type connection type for fd

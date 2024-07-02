@@ -281,6 +281,58 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	xassert(con->name && con->name[0]);
 }
 
+static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
+{
+#ifndef NDEBUG
+	if (type == CON_TYPE_RAW) {
+		/* must have on_data() defined */
+		xassert(con->events.on_data);
+	} else if (type == CON_TYPE_RPC) {
+		/* must have on_msg() defined */
+		xassert(con->events.on_msg);
+	} else {
+		fatal_abort("invalid type");
+	}
+#endif /* !NDEBUG */
+}
+
+/* caller must hold mgr.mutex lock */
+static int _fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	_check_con_type(con, type);
+
+	if (con->type == type) {
+		log_flag(CONMGR, "%s: [%s] ignoring unchanged type: %s",
+			 __func__, con->name, conmgr_con_type_string(type));
+		return SLURM_SUCCESS;
+	}
+
+	log_flag(CONMGR, "%s: [%s] changing type: %s->%s pending_reads=%u pending_writes=%u",
+		 __func__, con->name, conmgr_con_type_string(con->type),
+		 conmgr_con_type_string(type), get_buf_offset(con->in),
+		 list_count(con->out));
+
+	con->type = type;
+
+	/* wake up watch() to send along any pending data */
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
+{
+	int rc;
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _fd_change_mode(con, type);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
 extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 				   conmgr_fd_t *source, int input_fd,
 				   int output_fd,
@@ -296,9 +348,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	const bool has_in = (input_fd >= 0);
 	const bool has_out = (output_fd >= 0);
 	const bool is_same = (input_fd == output_fd);
-
-	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
-		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
 	/* verify FD is valid and still open */
 	if (has_in && fstat(input_fd, &in_stat)) {
@@ -375,6 +424,8 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 	if (has_out && !con->is_listen && con->is_socket)
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
+
+	_check_con_type(con, type);
 
 	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
 		 __func__, con->name, input_fd, output_fd);
