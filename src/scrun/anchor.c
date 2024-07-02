@@ -629,7 +629,7 @@ static int _on_cs_data(conmgr_fd_t *con, void *arg)
 	return EINVAL;
 }
 
-static void _on_cs_finish(void *arg)
+static void _on_cs_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1143,7 +1143,7 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static void _on_connection_finish(void *arg)
+static void _on_connection_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1331,11 +1331,12 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static void _on_startup_con_fin(void *arg)
+static void _on_startup_con_fin(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 
 	write_lock_state();
+	xassert(state.startup_con == con);
 	debug4("%s: [%s] create command parent notified of start",
 	       __func__, conmgr_fd_get_name(state.startup_con));
 	xassert(state.startup_con);

@@ -341,9 +341,9 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	return rc;
 }
 
-static void _on_finish(void *arg)
+static void _on_finish(conmgr_fd_t *con, void *arg)
 {
-	conmgr_fd_t *con = arg;
+	xassert(con == arg);
 
 	if (get_log_level() > LOG_LEVEL_DEBUG) {
 		read_lock_state();

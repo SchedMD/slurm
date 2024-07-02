@@ -287,7 +287,7 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _on_finish(void *arg)
+static void _on_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &signal_fd);
 
@@ -298,6 +298,7 @@ static void _on_finish(void *arg)
 	xassert(signal_fd != -1);
 	fd_close(&signal_fd);
 
+	xassert(con == signal_con);
 	xassert(signal_con);
 	signal_con = NULL;
 

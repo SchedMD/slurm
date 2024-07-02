@@ -943,7 +943,7 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 	return context;
 }
 
-extern void on_http_connection_finish(void *ctxt)
+extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
 

@@ -56,7 +56,7 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	if (con->events.on_finish)
-		con->events.on_finish(arg);
+		con->events.on_finish(con, arg);
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->wait_on_finish = false;

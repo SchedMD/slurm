@@ -101,12 +101,14 @@ typedef struct {
 
 	/*
 	 * Call back when connection ended.
-	 * Called once per connection.
+	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
-	 * 	must free arg as required.
+	 * IN con - connection handler
+	 * IN arg - ptr to be handed return of on_connection().
+	 * 	Ownership of arg pointer returned to caller as it will not be
+	 * 	used anymore.
 	 */
-	void (*on_finish)(void *arg);
+	void (*on_finish)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
 typedef struct {
