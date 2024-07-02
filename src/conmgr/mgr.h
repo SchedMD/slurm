@@ -416,4 +416,13 @@ extern void workers_init(int count);
  */
 extern void workers_fini(void);
 
+/*
+ * Change con->type
+ * NOTE: caller must hold mgr.mutex lock
+ * IN con - connection to change
+ * IN type - type to change to
+ * RET SLURM_SUCESS or error
+ */
+extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
+
 #endif /* _CONMGR_MGR_H */

@@ -296,8 +296,7 @@ static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
 #endif /* !NDEBUG */
 }
 
-/* caller must hold mgr.mutex lock */
-static int _fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
+extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -316,9 +315,6 @@ static int _fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 
 	con->type = type;
 
-	/* wake up watch() to send along any pending data */
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
-
 	return SLURM_SUCCESS;
 }
 
@@ -327,8 +323,11 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	int rc;
 
 	slurm_mutex_lock(&mgr.mutex);
-	rc = _fd_change_mode(con, type);
+	rc = fd_change_mode(con, type);
 	slurm_mutex_unlock(&mgr.mutex);
+
+	/* wake up watch() to send along any pending data */
+	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 
 	return rc;
 }
