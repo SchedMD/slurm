@@ -31,7 +31,8 @@ source ./globals
 set file_in1    "$test_dir/input"
 set test_acct   "${test_name}_acct"
 set timeout     $max_job_delay
-set job_id3     0
+set job_id     0
+set user_name   [get_my_user_name]
 
 set ac          AveCPU
 set ap          AvePages
@@ -68,114 +69,46 @@ if {[get_admin_level] ne "Administrator"} {
 }
 
 proc cleanup {} {
-	global job_id3 sacctmgr test_acct
+	global job_id sacctmgr test_acct
 
-	cancel_job $job_id3
+	cancel_job $job_id
 	run_command "$sacctmgr -i delete account $test_acct"
-}
-
-#
-# Identify the user and his current default account
-#
-set acct_name ""
-set user_name [get_my_user_name]
-
-spawn $sacctmgr show user $user_name
-expect {
-	-re "$user_name *($re_word_str)" {
-		set acct_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
 }
 
 #
 # Use sacctmgr to add an account
 #
-set aamatches 0
-spawn $sacctmgr -i add account $test_acct
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		log_warn "Vestigial account $test_acct found"
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$aamatches != 1} {
+set output [run_command -fail "$sacctmgr -i add account $test_acct"]
+if [regexp "Nothing" $output] {
 	fail "sacctmgr had a problem adding account"
 }
 
 #
 # Add self to this new account
 #
-spawn $sacctmgr -i create user name=$user_name account=$test_acct
-expect {
-	 timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-log_user 0
-set real_memory 0
-spawn $scontrol show node
-expect {
-	-re "RealMemory=($number) " {
-		set real_memory $expect_out(1,string)
-#		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$real_memory < 100} {
-	set job_mem_opt  "--comment=no_mem_limit"
-	set step_mem_opt "-t1"
-} else {
-	set job_mem_opt  "--mem=100"
-	set step_mem_opt "--mem=20"
-}
+run_command -fail "$sacctmgr -i create user name=$user_name account=$test_acct"
 
 #
 # Build input script file1
 #
 make_bash_script $file_in1 "
-  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60 &
-  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60 &
-  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60
+  $srun --mem=20 --gres=craynetwork:0 --overlap sleep 60 &
+  $srun --mem=20 --gres=craynetwork:0 --overlap sleep 60 &
+  $srun --mem=20 --gres=craynetwork:0 --overlap sleep 60
 "
 #
-# Spawn a job via srun using this account
-# NOTE: --mem option here and in scripts above to permit running more than one
-#       step per job if DefMemPerCPU or DefMemPerNode is configured.
+# Submit a job using this account
+# NOTE: --mem option here and in scripts above to permit running more than one step
 #
-set job_id3 [submit_job -fail "-N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct --output=/dev/null $file_in1"]
-if {[get_job_param $job_id3 "Account"] != $test_acct} {
-	fail "srun failed to use specified account"
+set job_id [submit_job -fail "-N1 -t1 -v --mem=100 --gres=craynetwork:0 --account=$test_acct --output=/dev/null $file_in1"]
+if {[get_job_param $job_id "Account"] != $test_acct} {
+	fail "sbatch failed to use specified account"
 }
 
 #
 # Wait for job to start running, then status it
 #
-wait_for_job -fail $job_id3 "RUNNING"
+wait_for_job -fail $job_id "RUNNING"
 sleep 5
 ################################################################
 #
@@ -189,193 +122,44 @@ sleep 5
 #
 ################################################################
 
-proc sstat_job { soption job_id step_id } {
-	global sstat number
+proc sstat_job {soption job_id step_id} {
+	global sstat number eol
 	set debug       0
 	set matches     0
 	set not_support 0
 	log_debug "Testing sstat -$soption option"
 
 	if { $soption == "-allsteps" || $soption == "a" } {
-		spawn $sstat -$soption -p -j $job_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "(?n)^$job_id\\.($number)" {
-				if {$debug} {log_debug "Match $expect_out(1,string)"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^$job_id\\.batch" {
-				if {$debug} {log_debug "Match batch"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
+		set output [run_command_output -fail "$sstat -$soption -p -j $job_id"]
+		incr matches [regexp -all "(?n)^$job_id\\.($number)" $output]
+		incr matches [regexp -all "(?n)^$job_id\\.batch" $output]
 		return $matches
 	}
 
 	if { $soption == "-noheader" || $soption == "n" } {
-		spawn $sstat -$soption -p -j $job_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|	\
-				AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
-				MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
-				MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
-				if {$debug} {log_debug "Match4"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^$job_id" {
-				if {$debug} {log_debug "Match5"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
+		set re_header "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|MaxPages|MaxPagesNode|MaxPagesTask|AvePages|MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks"
+		set output [run_command_output -fail "$sstat -$soption -p -j $job_id"]
+		incr matches [regexp -all "(?n)^$job_id" $output]
+		incr matches [regexp -all $re_header $output]
 		return $matches
 	}
 
-	if { $soption == "-parsable" || $soption == "p" } {
-		spawn $sstat -$soption -j $job_id.$step_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {log_debug "Match6"}
-				incr matches
-				exp_continue
-			}
-			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {log_debug "Match7"}
-				incr matches
-				exp_continue
-			}
-			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" {
-				if {$debug} {log_debug "Match8"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^$job_id\\.$step_id\\|" {
-				if {$debug} {log_debug "Match9"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
-		return $matches
-	}
-
-	if { $soption == "-parsable2" || $soption == "P" } {
-		spawn $sstat -$soption -j $job_id.$step_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-				if {$debug} {log_debug "Match10"}
-				incr matches
-				exp_continue
-			}
-			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-				if {$debug} {log_debug "Match11"}
-				incr matches
-				exp_continue
-			}
-			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks" {
-				if {$debug} {log_debug "Match12"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^$job_id\\.$step_id\\|" {
-				if {$debug} {log_debug "Match13"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
+	if { $soption == "-parsable" || $soption == "p" || $soption == "-parsable2" || $soption == "P" } {
+		set output [run_command_output -fail "$sstat -$soption -j $job_id.$step_id"]
+		incr matches [regexp -all "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" $output]
+		incr matches [regexp -all "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" $output]
+		incr matches [regexp -all "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" $output]
+		incr matches [regexp -all "\\|$eol" $output]
+		incr matches [regexp -all "(?n)^$job_id\\.$step_id\\|" $output]
 		return $matches
 	}
 
 	if { $soption == "-verbose" || $soption == "v" } {
-		spawn $sstat -$soption -p -j $job_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
-				if {$debug} {log_debug "Match14"}
-				incr matches
-				exp_continue
-			}
-			-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {log_debug "Match15"}
-				incr matches
-				exp_continue
-			}
-			-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
-				if {$debug} {log_debug "Match16"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^$job_id" {
-				if {$debug} {log_debug "Match17"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
+		set output [run_command_output -fail "$sstat -$soption -p -j $job_id"]
+		incr matches [regexp -all "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" $output]
+		incr matches [regexp -all "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" $output]
+		incr matches [regexp -all "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" $output]
+		incr matches [regexp -all "(?n)^$job_id" $output]
 		return $matches
 	}
 }
@@ -392,7 +176,7 @@ proc sstat_job { soption job_id step_id } {
 #
 ################################################################
 
-proc sstat_vargs { soption vargs job_id} {
+proc sstat_vargs {soption vargs job_id} {
 	global sstat number
 	set debug	0
 	set matches     0
@@ -400,88 +184,49 @@ proc sstat_vargs { soption vargs job_id} {
 	log_debug "sstat -$soption $vargs -p -j $job_id"
 
 	if { $soption == "o" || $soption == "-format" } {
-		spawn $sstat -$soption $vargs -p -j $job_id
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "AveCPU.AvePages.AveRSS.AveVMSize" {
-				if {$debug} {log_debug "Match18"}
-				incr matches
-				exp_continue
-			}
-			-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
-				if {$debug} {log_debug "Match19"}
-				incr matches
-				exp_continue
-			}
-			-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
-				if {$debug} {log_debug "Match20"}
-				incr matches
-				exp_continue
-			}
-			-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
-				if {$debug} {log_debug "Match21"}
-				incr matches
-				exp_continue
-			}
-			-re "MinCPUTask.NTasks" {
-				if {$debug} {log_debug "Match22"}
-				incr matches
-				exp_continue
-			}
-			-re "(?n)^(?:\[^\\|\]*\\|){4}$job_id\\.($number)\\|" {
-				if {$debug} {log_debug "Match23"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sstat not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		if {$not_support != 0} {
-			skip "Can not test without accounting enabled"
-		}
+		set output [run_command_output -fail "$sstat -$soption $vargs -p -j $job_id"]
+		incr matches [regexp -all "AveCPU.AvePages.AveRSS.AveVMSize" $output]
+		incr matches [regexp -all "JobID.MaxPages.MaxPagesNode.MaxPagesTask" $output]
+		incr matches [regexp -all "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" $output]
+		incr matches [regexp -all "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" $output]
+		incr matches [regexp -all "MinCPUTask.NTasks" $output]
+		incr matches [regexp -all "(?n)^(?:\[^\\|\]*\\|){4}$job_id\\.($number)\\|" $output]
 		return $matches
 	}
 }
 ################################################################
-set matches [sstat_job a $job_id3 ""]
+set matches [sstat_job a $job_id ""]
 subtest {$matches == 4} "Verify sstat -a option" "$matches != 4"
 
-set matches [sstat_job -allsteps $job_id3 ""]
+set matches [sstat_job -allsteps $job_id ""]
 subtest {$matches == 4} "Verify sstat --allsteps option" "$matches != 4"
 
-set matches [sstat_job n $job_id3 ""]
+set matches [sstat_job n $job_id ""]
 subtest {$matches == 1} "Verify sstat -n option" "$matches != 1"
 
-set matches [sstat_job -noheader $job_id3 ""]
+set matches [sstat_job -noheader $job_id ""]
 subtest {$matches == 1} "Verify sstat --noheader option" "$matches != 1"
 
-set matches [sstat_job p $job_id3 0]
-subtest {$matches == 4} "Verify sstat -p option" "$matches != 4"
+set matches [sstat_job p $job_id 0]
+subtest {$matches == 6} "Verify sstat -p option" "$matches != 6"
 
-set matches [sstat_job -parsable $job_id3 0]
-subtest {$matches == 4} "Verify sstat --parsable option" "$matches != 4"
+set matches [sstat_job -parsable $job_id 0]
+subtest {$matches == 6} "Verify sstat --parsable option" "$matches != 6"
 
-set matches [sstat_job P $job_id3 0]
+set matches [sstat_job P $job_id 0]
 subtest {$matches == 4} "Verify sstat -P option" "$matches != 4"
 
-set matches [sstat_job -parsable2 $job_id3 0]
+set matches [sstat_job -parsable2 $job_id 0]
 subtest {$matches == 4} "Verify sstat --parsable2 option" "$matches != 4"
 
-set matches [sstat_job v $job_id3 0]
+set matches [sstat_job v $job_id 0]
 subtest {$matches == 4} "Verify sstat -v option" "$matches != 4"
 
-set matches [sstat_job -verbose $job_id3 0]
+set matches [sstat_job -verbose $job_id 0]
 subtest {$matches == 4} "Verify sstat --verbose option" "$matches != 4"
 
-set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
+set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
 subtest {$matches == 6} "Verify sstat -o option" "$matches != 6"
 
-set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
+set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
 subtest {$matches == 6} "Verify sstat --format option" "$matches != 6"
