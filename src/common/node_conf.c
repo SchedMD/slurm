@@ -527,7 +527,7 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 	port_count     = hostlist_count(port_list);
 
 	if ((address_count != alias_count) && (address_count != 1))
-		fatal("NodeAddr count must equal that of NodeName records or  there must be no more than one");
+		fatal("NodeAddr count must equal that of NodeName records or there must be no more than one");
 	if ((bcast_count != alias_count) && (bcast_count > 1))
 		fatal("BcastAddr count must equal that of NodeName records or there must be no more than one");
 	if ((hostname_count != alias_count) && (hostname_count != 1))
