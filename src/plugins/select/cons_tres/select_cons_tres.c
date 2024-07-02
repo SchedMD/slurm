@@ -411,7 +411,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	rc = job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 		      req_nodes, mode, preemptee_candidates,
-		      preemptee_job_list, resv_exc_ptr);
+		      preemptee_job_list, resv_exc_ptr, will_run_ptr);
 	return rc;
 }
 
