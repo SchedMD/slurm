@@ -38,6 +38,7 @@
 #include <sys/uio.h>
 
 #include "src/common/fd.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
@@ -415,7 +416,10 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 				    buf_t **buffer_ptr)
 {
-	buf_t *buf;
+	const void *data = (get_buf_data(con->in) + get_buf_offset(con->in));
+	const size_t bytes = (size_buf(con->in) - get_buf_offset(con->in));
+	buf_t *buf = NULL;
+	int rc;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
@@ -425,42 +429,27 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	if (!buffer_ptr)
 		return EINVAL;
 
-	if (*buffer_ptr) {
-		int rc;
+	/*
+	 * Create buffer if needed and size it size of the data to copy or the
+	 * minimal buffer size to avoid multiple recalloc()s in the future.
+	 */
+	if (!*buffer_ptr &&
+	    !(*buffer_ptr = init_buf(MAX(bytes, BUFFER_START_SIZE))))
+		return ENOMEM;
 
-		buf = *buffer_ptr;
+	buf = *buffer_ptr;
 
-		if (!swap_buf_data(buf, con->in))
-			return SLURM_SUCCESS;
+	/* grow buffer to size to hold incoming data (if needed) */
+	if ((rc = try_grow_buf_remaining(buf, bytes)))
+		return rc;
 
-		if ((rc = try_grow_buf_remaining(buf, get_buf_offset(con->in))))
-			return rc;
+	/* Append data to existing buffer */
+	memcpy((get_buf_data(buf) + get_buf_offset(buf)), data, bytes);
+	set_buf_offset(buf, (get_buf_offset(buf) + bytes));
 
-		memcpy(get_buf_data(buf) + get_buf_offset(buf),
-		       get_buf_data(con->in), get_buf_offset(con->in));
-		set_buf_offset(con->in,
-			       (get_buf_offset(buf) + get_buf_offset(con->in)));
-		set_buf_offset(con->in, 0);
-		return SLURM_SUCCESS;
-	} else {
-		if (!(buf = create_buf(get_buf_data(con->in),
-				       size_buf(con->in))))
-			return EINVAL;
-
-		if (!(con->in->head = try_xmalloc(BUFFER_START_SIZE))) {
-			error("%s: [%s] Unable to allocate replacement input buffer",
-			      __func__, con->name);
-			FREE_NULL_BUFFER(buf);
-			return ENOMEM;
-		}
-
-		*buffer_ptr = buf;
-
-		set_buf_offset(con->in, 0);
-		con->in->size = BUFFER_START_SIZE;
-
-		return SLURM_SUCCESS;
-	}
+	/* mark connection input buffer as fully consumed */
+	set_buf_offset(con->in, size_buf(con->in));
+	return SLURM_SUCCESS;
 }
 
 extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
