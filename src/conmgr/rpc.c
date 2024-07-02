@@ -51,34 +51,32 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	uint32_t need;
 	slurm_msg_t *msg = NULL;
 	buf_t *rpc = NULL;
+	uint32_t msglen;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	/* based on slurm_msg_recvfrom_timeout() */
-	if (!con->msglen) {
-		log_flag(NET, "%s: [%s] got %d bytes pending for RPC connection",
-			 __func__, con->name, size_buf(con->in));
+	log_flag(NET, "%s: [%s] got %d bytes pending for RPC connection",
+		 __func__, con->name, size_buf(con->in));
 
-		xassert(sizeof(con->msglen) == sizeof(uint32_t));
-		if (size_buf(con->in) >= sizeof(con->msglen)) {
-			con->msglen = ntohl(
-				*(uint32_t *) get_buf_data(con->in));
-			log_flag(NET, "%s: [%s] got message length %u for RPC connection with %d bytes pending",
-				 __func__, con->name, con->msglen, size_buf(con->in));
-		} else {
-			log_flag(NET, "%s: [%s] waiting for message length for RPC connection",
-				 __func__, con->name);
-			return SLURM_SUCCESS;
-		}
-
-		if (con->msglen > MAX_MSG_SIZE) {
-			log_flag(NET, "%s: [%s] rejecting RPC message length: %u",
-				 __func__, con->name, con->msglen);
-			return SLURM_PROTOCOL_INSANE_MSG_LENGTH;
-		}
+	xassert(sizeof(msglen) == sizeof(uint32_t));
+	if (size_buf(con->in) >= sizeof(msglen)) {
+		msglen = ntohl(*(uint32_t *) get_buf_data(con->in));
+		log_flag(NET, "%s: [%s] got message length %u for RPC connection with %d bytes pending",
+			 __func__, con->name, msglen, size_buf(con->in));
+	} else {
+		log_flag(NET, "%s: [%s] waiting for message length for RPC connection",
+			 __func__, con->name);
+		return SLURM_SUCCESS;
 	}
 
-	need = sizeof(con->msglen) + con->msglen;
+	if (msglen > MAX_MSG_SIZE) {
+		log_flag(NET, "%s: [%s] rejecting RPC message length: %u",
+			 __func__, con->name, msglen);
+		return SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+	}
+
+	need = sizeof(msglen) + msglen;
 	if ((rc = try_grow_buf_remaining(con->in, need))) {
 		log_flag(NET, "%s: [%s] unable to increase buffer %u bytes for RPC message: %s",
 			 __func__, con->name, need, slurm_strerror(rc));
@@ -92,10 +90,8 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	}
 
 	/* there is enough data to unpack now */
-	rpc = create_shadow_buf((get_buf_data(con->in) +
-				 sizeof(con->msglen)),
-				con->msglen);
-
+	rpc = create_shadow_buf((get_buf_data(con->in) + sizeof(msglen)),
+				msglen);
 	msg = xmalloc(sizeof(*msg));
 	slurm_msg_t_init(msg);
 
@@ -116,9 +112,6 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 
 	/* notify conmgr we processed some data */
 	set_buf_offset(con->in, need);
-
-	/* reset message length to start all over again */
-	con->msglen = 0;
 
 	FREE_NULL_BUFFER(rpc);
 

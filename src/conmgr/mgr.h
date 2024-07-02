@@ -118,8 +118,6 @@ struct conmgr_fd_s {
 	pollctl_fd_type_t polling_output_fd;
 	/* has this connection called on_connection */
 	bool is_connected;
-	/* incoming msg length - CON_TYPE_RPC only */
-	uint32_t msglen;
 	/*
 	 * has pending work:
 	 * there must only be 1 thread at a time working on this connection
@@ -134,7 +132,6 @@ struct conmgr_fd_s {
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	on_data_tried
-	 *	msglen
 	 *
 	 */
 	bool work_active;
