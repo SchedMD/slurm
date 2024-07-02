@@ -65,6 +65,16 @@
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/poll.h"
 
+#define T(type) { type, XSTRINGIFY(type) }
+static const struct {
+	conmgr_con_type_t type;
+	const char *string;
+} con_types[] = {
+	T(CON_TYPE_RAW),
+	T(CON_TYPE_RPC),
+};
+#undef T
+
 typedef struct {
 	conmgr_events_t events;
 	void *arg;
@@ -72,6 +82,15 @@ typedef struct {
 } socket_listen_init_t;
 
 static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
+
+extern const char *conmgr_con_type_string(conmgr_con_type_t type)
+{
+	for (int i = 0; i < ARRAY_SIZE(con_types); i++)
+		if (con_types[i].type == type)
+			return con_types[i].string;
+
+	fatal_abort("invalid type");
+}
 
 /*
  * Close all connections (for_each)

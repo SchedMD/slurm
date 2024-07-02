@@ -229,6 +229,7 @@ typedef enum {
 	CON_TYPE_RPC, /* handle data Slurm RPCs to/from */
 	CON_TYPE_MAX /* place holder - do not use */
 } conmgr_con_type_t;
+extern const char *conmgr_con_type_string(conmgr_con_type_t type);
 
 /*
  * Initialise global connection manager
