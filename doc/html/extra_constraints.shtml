@@ -310,6 +310,52 @@ but 0.00000001 is considered equal to 0 and thus the request
 <code>c&gt;=0.00000001</code> is fulfilled.
 </p>
 
-<p style="text-align: center;">Last modified 20 November 2023</p>
+<p>
+A practical example might be to have a script that looks at the load average
+of each node and updates the extra attribute for each node with the current
+value. This would allow users to restrict their jobs to nodes whose load
+average is below a certain threshold.
+</p>
+
+<p>
+In this simple example, the three nodes in a cluster are being monitored and
+the extra attribute is being populated with their load average.
+<pre>
+$ scontrol show nodes node[01-03] | grep -E 'NodeName|Extra'
+NodeName=node01 Arch=x86_64 CoresPerSocket=6
+   Extra={ "load": 0.99 }
+NodeName=node02 Arch=x86_64 CoresPerSocket=6
+   Extra={ "load": 0.75 }
+NodeName=node03 Arch=x86_64 CoresPerSocket=6
+   Extra={ "load": 0.45 }
+</pre>
+</p>
+
+<p>
+A job can request to run on a machine with less than half of the CPU time
+being utilized.
+<pre>
+$ sbatch -n12 --extra "load&lt;0.5" --wrap='srun sleep 10'
+Submitted batch job 11206
+
+$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+             11206     debug     wrap      ben  R       0:03      1 node03
+</pre>
+</p>
+
+<p>
+A job can also request to run on a node between a range of acceptable load values.
+<pre>
+$ sbatch -n12 --extra "(load&lt;0.9&amp;load&gt;0.5)" --wrap='srun sleep 10'
+Submitted batch job 11207
+
+$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+             11207     debug     wrap      ben  R       0:01      1 node02
+</pre>
+</p>
+
+<p style="text-align: center;">Last modified 02 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
