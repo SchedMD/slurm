@@ -284,6 +284,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	int rc;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con == conmgr_args.con);
 
 	/* override buffer offset to allow reading */
 	set_buf_offset(con->in, 0);
