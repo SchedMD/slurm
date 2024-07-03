@@ -30,6 +30,14 @@ documents those changes that are of interest to users and administrators.
     to be included. Affected endpoints:
       'GET /openapi/v3'
       'GET /openapi/'
+ -- scontrol,squeue - Fix regression that caused incorrect values for
+    multisocket nodes at '.jobs[].job_resources.nodes.allocation' for
+    'scontrol show jobs --(json|yaml)' and 'squeue --(json|yaml)'.
+ -- slurmrestd - Fix regression that caused incorrect values for
+    multisocket nodes at '.jobs[].job_resources.nodes.allocation' to be dumped
+    with endpoints:
+      'GET /slurm/v0.0.41/job/{job_id}'
+      'GET /slurm/v0.0.41/jobs'
 
 * Changes in Slurm 24.05.1
 ==========================
