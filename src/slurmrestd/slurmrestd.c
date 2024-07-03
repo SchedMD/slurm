@@ -749,8 +749,9 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_sockets(CON_TYPE_RAW, socket_listen,
-					  conmgr_events, operations_router))
+		if (conmgr_create_listen_sockets(CON_TYPE_RAW, socket_listen,
+						 conmgr_events,
+						 operations_router))
 			fatal("Unable to create sockets");
 
 		umask(mask);

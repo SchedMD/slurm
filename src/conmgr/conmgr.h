@@ -336,17 +336,17 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con);
 extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 
 /*
- * create sockets based on requested SOCKET_LISTEN
- * to accepted connections.
- * IN type connection type for fd
- * IN  hostports list_t* of cstrings to listen on.
+ * Create listening sockets from list of host:port pairs
+ * IN type - connection type for new sockets
+ * IN hostports - list_t* of cstrings to listen on:
  *	format: host:port
- * IN events function callback on events
- * IN arg ptr handed to on_connection callback
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_create_sockets(conmgr_con_type_t type, list_t *hostports,
-				 conmgr_events_t events, void *arg);
+extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					list_t *hostports,
+					conmgr_events_t events, void *arg);
 
 /*
  * Run connection manager main loop for until all processing is done

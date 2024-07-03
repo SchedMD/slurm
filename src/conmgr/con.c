@@ -753,8 +753,9 @@ static int _create_socket(void *x, void *arg)
 	return rc;
 }
 
-extern int conmgr_create_sockets(conmgr_con_type_t type, list_t *hostports,
-				 conmgr_events_t events, void *arg)
+extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					list_t *hostports,
+					conmgr_events_t events, void *arg)
 {
 	int rc;
 	socket_listen_init_t *init = xmalloc(sizeof(*init));
