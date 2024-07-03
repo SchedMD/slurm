@@ -2063,7 +2063,8 @@ The default value is "ALL".
 .TP
 \fBAllowAccounts\fR=<\fIname\fR>
 Identify the Accounts which may use this partition.
-Multiple Accounts may be specified in a comma separated list.
+Multiple Accounts may be specified in a comma separated list. This list is also
+hierarchical, meaning subaccounts are included automatically.
 To permit all Accounts to use the partition specify "AllowAccounts=ALL".
 .IP
 
@@ -2126,7 +2127,8 @@ The memory size is specified in megabytes.
 .TP
 \fBDenyAccounts\fR=<\fIname\fR>
 Identify the Accounts which should be denied access to this partition.
-Multiple Accounts may be specified in a comma separated list.
+Multiple Accounts may be specified in a comma separated list. This list is also
+hierarchical, meaning subaccounts are included automatically.
 .IP
 
 .TP
@@ -2416,8 +2418,8 @@ For create, if you do not want to give a reservation name, use
 \fBAccounts\fR=<\fIaccount list\fR>
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
-A user in any of the accounts may use the reserved nodes.
-A new reservation must specify Users or Groups and/or Accounts.
+A user in any of the specified accounts or subaccounts may use the reserved
+nodes. A new reservation must specify Users or Groups and/or Accounts.
 If both Users/Groups and Accounts are specified, a job must match both in order
 to use the reservation.
 Accounts can also be denied access to reservations by preceding all of the
