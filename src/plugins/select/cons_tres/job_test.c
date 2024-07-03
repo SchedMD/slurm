@@ -2251,11 +2251,14 @@ static int _build_cr_job_list(void *x, void *arg)
 		if (mode == PREEMPT_MODE_OFF)
 			return 0;
 		if (mode == PREEMPT_MODE_SUSPEND) {
-			action = 2;	/* remove cores, keep memory */
+			/* remove cores, keep memory */
+			action = JOB_RES_ACTION_RESUME;
 			if (preempt_by_qos)
 				*args->qos_preemptor = true;
-		} else
-			action = 0;	/* remove cores and memory */
+		} else {
+			/* remove cores and memory */
+			action = JOB_RES_ACTION_NORMAL;
+		}
 		/* Remove preemptable job now */
 		_job_res_rm_job(args->future_part, args->future_usage,
 				args->future_license_list, tmp_job_ptr, action,
