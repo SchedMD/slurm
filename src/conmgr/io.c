@@ -38,6 +38,7 @@
 #include <sys/uio.h>
 
 #include "src/common/fd.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -282,6 +283,8 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	int avail = get_buf_offset(con->in);
 	int size = size_buf(con->in);
 	int rc;
+	int (*callback)(conmgr_fd_t *con, void *arg) = NULL;
+	const char *callback_string = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con == conmgr_args.con);
@@ -291,20 +294,25 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	/* override buffer size to only read upto previous offset */
 	con->in->size = avail;
 
-	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name, (uintptr_t) con->events.on_data,
-		 (uintptr_t) con->arg);
-
-	if (con->type == CON_TYPE_RAW)
-		rc = con->events.on_data(con, con->arg);
-	else if (con->type == CON_TYPE_RPC)
-		rc = on_rpc_connection_data(con, con->arg);
-	else
+	if (con->type == CON_TYPE_RAW) {
+		callback = con->events.on_data;
+		callback_string = XSTRINGIFY(con->events.on_data);
+	} else if (con->type == CON_TYPE_RPC) {
+		callback = on_rpc_connection_data;
+		callback_string = XSTRINGIFY(on_rpc_connection_data);
+	} else {
 		fatal("%s: invalid type", __func__);
+	}
 
-	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
-		 __func__, con->name, (uintptr_t) con->events.on_data,
-		 (uintptr_t) con->arg, slurm_strerror(rc));
+	log_flag(CONMGR, "%s: [%s] BEGIN func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR,
+		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 (uintptr_t) callback);
+
+	rc = callback(con, con->arg);
+
+	log_flag(CONMGR, "%s: [%s] END func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR"=[%d]%s",
+		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 (uintptr_t) callback, rc, slurm_strerror(rc));
 
 	if (rc) {
 		error("%s: [%s] on_data returned rc: %s",
