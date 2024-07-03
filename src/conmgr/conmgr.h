@@ -37,6 +37,7 @@
 #define _CONMGR_H
 
 #include <netdb.h>
+#include <sys/socket.h>
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -346,6 +347,19 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  */
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
+					conmgr_events_t events, void *arg);
+
+/*
+ * Instruct conmgr to create new socket and connect to addr
+ * IN type - connection for new socket
+ * IN addr - destination address to connect() socket
+ * IN addrlen - sizeof(*addr)
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					slurm_addr_t *addr, socklen_t addrlen,
 					conmgr_events_t events, void *arg);
 
 /*

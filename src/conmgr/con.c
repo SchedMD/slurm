@@ -780,6 +780,77 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 	return rc;
 }
 
+extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					slurm_addr_t *addr, socklen_t addrlen,
+					conmgr_events_t events, void *arg)
+{
+	conmgr_fd_t *con = NULL;
+	int fd = -1, rc = SLURM_ERROR;
+	//socklen_t bindlen = 0;
+
+	if (addr->ss_family == AF_UNIX) {
+		fd = socket(addr->ss_family, (SOCK_STREAM | SOCK_CLOEXEC), 0);
+		//bindlen = sizeof(struct sockaddr_un);
+	} else if ((addr->ss_family == AF_INET) ||
+		   (addr->ss_family == AF_INET6)) {
+		fd = socket(addr->ss_family, (SOCK_STREAM | SOCK_CLOEXEC),
+			    IPPROTO_TCP);
+		//bindlen = addrlen;
+	} else {
+		return EAFNOSUPPORT;
+	}
+
+	if (fd < 0) {
+		rc = errno;
+		log_flag(NET, "%s: [%pA] socket() failed: %s",
+			 __func__, addr, slurm_strerror(rc));
+		return rc;
+	}
+
+	/* Set socket as non-blocking to avoid connect() blocking */
+	fd_set_nonblocking(fd);
+
+	log_flag(CONMGR, "%s: [%pA(fd:%d)] attempting to connect() new socket",
+		 __func__, addr, fd);
+
+again:
+	if ((rc = connect(fd, (const struct sockaddr *) addr, addrlen))) {
+		rc = errno;
+
+		if (rc == EINTR) {
+
+			slurm_mutex_lock(&mgr.mutex);
+			xassert(mgr.initialized);
+			if (mgr.shutdown_requested)
+
+			slurm_mutex_unlock(&mgr.mutex);
+
+
+			log_flag(CONMGR, "%s: [%pA(fd:%d)] connect() interrupted. Retrying.",
+				 __func__, addr, fd);
+			goto again;
+		}
+
+		if ((rc != EINPROGRESS) && (rc != EAGAIN) &&
+		    (rc != EWOULDBLOCK)) {
+			log_flag(NET, "%s: [%pA(fd:%d)] connect() failed: %s",
+				 __func__, addr, fd, slurm_strerror(rc));
+			fd_close(&fd);
+			return rc;
+		}
+
+		/* delayed connect() completion is expected */
+	}
+
+	if (!(con = add_connection(type, NULL, fd, fd, events, addr, addrlen,
+				   false, NULL, arg)))
+		return SLURM_ERROR;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	return SLURM_SUCCESS;
+}
+
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
 				     uid_t *cred_uid, gid_t *cred_gid,
 				     pid_t *cred_pid)
