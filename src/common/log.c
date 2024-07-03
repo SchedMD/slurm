@@ -65,6 +65,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -742,6 +743,17 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 		inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
 		port = ntohs(in->sin_port);
 		snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
+	} else if (addr_ptr->ss_family == AF_UNIX) {
+		struct sockaddr_un *un = (struct sockaddr_un *) addr_ptr;
+		snprintf(buf, buf_size, "%%.0sunix:%s", un->sun_path);
+	} else if (addr_ptr->ss_family == AF_UNSPEC) {
+		/*
+		 * AF_UNSPEC is place holder for unspecified which may be
+		 * nothing or used as a wild card depending on the API call.
+		 */
+		snprintf(buf, buf_size, "%%.0sAF_UNSPEC");
+	} else {
+		snprintf(buf, buf_size, "%%.0sINVALID");
 	}
 
 	return buf;
