@@ -332,6 +332,10 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if (get_buf_offset(con->in) < size_buf(con->in)) {
 		if (get_buf_offset(con->in) > 0) {
+			log_flag(CONMGR, "%s: [%s] partial read %u/%u bytes.",
+				 __func__, con->name, get_buf_offset(con->in),
+				 size_buf(con->in));
+
 			/*
 			 * not all data read, need to shift it to start of
 			 * buffer and fix offset
