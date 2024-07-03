@@ -718,10 +718,6 @@ static void _set_idbuf(char *idbuf, size_t size)
  */
 static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 {
-	struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
-	char addrbuf[INET6_ADDRSTRLEN];
-	uint16_t port = 0;
-
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
 	 * This is to handle the fact that we can't remove the addr_ptr
@@ -732,16 +728,21 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 		return "%.0sNULL";
 
 	if (addr_ptr->ss_family == AF_INET6) {
+		char addrbuf[INET6_ADDRSTRLEN];
+		uint16_t port = 0;
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr_ptr;
 		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
 		port = ntohs(in6->sin6_port);
 		snprintf(buf, buf_size, "[%%.0s%s]:%d", addrbuf, port);
 		return buf;
+	} else if (addr_ptr->ss_family == AF_INET) {
+		char addrbuf[INET_ADDRSTRLEN];
+		struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
+		uint16_t port = 0;
+		inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
+		port = ntohs(in->sin_port);
+		snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
 	}
-
-	inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
-	port = ntohs(in->sin_port);
-	snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
 
 	return buf;
 }
