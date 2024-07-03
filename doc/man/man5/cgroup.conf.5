@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "July 2024" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -66,10 +66,13 @@ to \fBIgnoreSystemd\fR but only in the case that a dbus call does not succeed.
 
 .TP
 \fBEnableControllers\fR=\fI<yes|no>\fR
-Only for cgroup/v2 and generally for development and testing. It gets the
-available controllers from the root (\fBCgroupMountPoint\fR, by default
-/sys/fs/cgroup/) and makes them available in all levels of the cgroup tree until
-it reaches Slurm's cgroup leaf.
+Only for cgroup/v2 and generally for development, testing, when running on old
+kernels and/or old systemd versions (e.g. RHEL8, systemd < 244) where not all
+the controllers are enabled in the cgroup tree. With this parameter, slurmd gets
+the available controllers from root's cgroup.controllers file
+(\fBCgroupMountPoint\fR, by default /sys/fs/cgroup/cgroup.controllers) and makes
+them available in all levels of the cgroup tree until it reaches Slurm's cgroup
+leaf.
 .IP
 
 .SH "TASK/CGROUP PLUGIN"
