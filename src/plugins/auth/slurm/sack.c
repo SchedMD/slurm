@@ -46,6 +46,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/sack_api.h"
 #include "src/common/slurm_protocol_api.h"
@@ -252,24 +253,23 @@ extern void init_sack_conmgr(void)
 		.on_data = _on_connection_data,
 	};
 	int fd;
-	struct sockaddr_un addr = {
-		.sun_family = AF_UNIX,
-		.sun_path = "/run/slurm/sack.socket",
-	};
+	slurm_addr_t addr = {0};
 	int rc;
 	mode_t mask;
 
 	if (running_in_slurmctld()) {
 		_prepare_run_dir("slurmctld");
-		(void) strlcpy(addr.sun_path, "/run/slurmctld/sack.socket",
-			       sizeof(addr.sun_path));
+		addr = sockaddr_from_unix_path("/run/slurmctld/sack.socket");
 	} else if (running_in_slurmdbd()) {
 		_prepare_run_dir("slurmdbd");
-		(void) strlcpy(addr.sun_path, "/run/slurmdbd/sack.socket",
-			       sizeof(addr.sun_path));
+		addr = sockaddr_from_unix_path("/run/slurmdbd/sack.socket");
 	} else {
 		_prepare_run_dir("slurm");
+		addr = sockaddr_from_unix_path("/run/slurm/sack.socket");
 	}
+
+	if (addr.ss_family != AF_UNIX)
+		fatal("%s: Unexpected invalid socket address", __func__);
 
 	conmgr_init(0, 0, callbacks);
 
@@ -278,22 +278,22 @@ extern void init_sack_conmgr(void)
 
 	/* set value of socket path */
 	mask = umask(0);
+	/* bind() will EINVAL if socklen=sizeof(addr) */
 	if ((rc = bind(fd, (const struct sockaddr *) &addr,
-		       sizeof(addr))))
-		fatal("%s: [%s] Unable to bind UNIX socket: %m",
-		      __func__, addr.sun_path);
+		       sizeof(struct sockaddr_un))))
+		fatal("%s: [%pA] Unable to bind UNIX socket: %m",
+		      __func__, &addr);
 	umask(mask);
 
 	fd_set_oob(fd, 0);
 
 	if ((rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
-		fatal("%s: [%s] unable to listen(): %m",
-		      __func__, addr.sun_path);
+		fatal("%s: [%pA] unable to listen(): %m",
+		      __func__, &addr);
 
 	if ((rc = conmgr_process_fd_unix_listen(CON_TYPE_RAW, fd, events,
 						(const slurm_addr_t *) &addr,
-						sizeof(addr), addr.sun_path,
-						NULL)))
+						sizeof(addr), NULL, NULL)))
 		fatal("%s: conmgr refused fd %d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
