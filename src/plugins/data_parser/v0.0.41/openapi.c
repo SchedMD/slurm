@@ -244,9 +244,10 @@ static void _add_field(data_t *obj, data_t *required,
 	}
 }
 
-static void _add_param_flag_enum(data_t *param, const parser_t *parser)
+static void _add_param_flag_enum(data_t *parent, data_t *param,
+				 const parser_t *parser)
 {
-	data_t *fenums = data_set_list(data_key_set(param, "enum"));
+	data_t *fenums = data_set_list(data_key_set(parent, "enum"));
 	data_set_string(data_key_set(param, "type"),
 		openapi_type_format_to_type_string(OPENAPI_FORMAT_STRING));
 
@@ -307,7 +308,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			_set_ref(props, parser,
 				 find_parser_by_type(parser->list_type), sargs);
 		} else if (parser->flag_bit_array) {
-			_add_param_flag_enum(props, parser);
+			_add_param_flag_enum(obj, props, parser);
 		} else if (parser->fields) {
 			data_t *required =
 				data_set_list(data_key_set(obj, "required"));
@@ -721,7 +722,7 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 		fp = find_parser_by_type(fp->type);
 
 	if (fp->flag_bit_array)
-		_add_param_flag_enum(schema, fp);
+		_add_param_flag_enum(schema, schema, fp);
 }
 
 static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
