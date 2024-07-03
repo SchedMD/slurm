@@ -639,7 +639,7 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
-static int _create_socket(void *x, void *arg)
+static int _setup_listen_socket(void *x, void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
 	const char *hostport = (const char *)x;
@@ -763,7 +763,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 	init->arg = arg;
 	init->type = type;
 
-	if (list_for_each(hostports, _create_socket, init) > 0)
+	if (list_for_each(hostports, _setup_listen_socket, init) > 0)
 		rc = SLURM_SUCCESS;
 	else
 		rc = SLURM_ERROR;
