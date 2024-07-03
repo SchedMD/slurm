@@ -1568,6 +1568,7 @@ next_part:
 			} else {
 				if (!_job_runnable_test2(job_ptr, now, false))
 					continue;
+				part_ptr = job_ptr->part_ptr;
 			}
 			use_prefer = false;
 		} else {
