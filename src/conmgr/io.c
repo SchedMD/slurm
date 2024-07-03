@@ -353,6 +353,9 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 				 __func__, con->name, size_buf(con->in));
 
 			con->on_data_tried = true;
+
+			/* revert offset change */
+			set_buf_offset(con->in, avail);
 		}
 	} else
 		/* buffer completely read: reset it */
