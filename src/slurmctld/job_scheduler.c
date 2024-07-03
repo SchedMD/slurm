@@ -657,6 +657,15 @@ static int _foreach_part_reduce_frag(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_setup_part_sched(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	part_ptr->num_sched_jobs = 0;
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -1486,12 +1495,8 @@ static int _schedule(bool full_queue)
 	}
 
 	if (max_jobs_per_part) {
-		list_itr_t *part_iterator;
-		part_iterator = list_iterator_create(part_list);
-		while ((part_ptr = list_next(part_iterator))) {
-			part_ptr->num_sched_jobs = 0;
-		}
-		list_iterator_destroy(part_iterator);
+		(void) list_for_each(part_list,
+				     _foreach_setup_part_sched, NULL);
 	}
 
 	sched_debug("Running job scheduler %s.", full_queue ? "for full queue":"for default depth");
