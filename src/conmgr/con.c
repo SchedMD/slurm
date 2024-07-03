@@ -656,23 +656,29 @@ static int _setup_listen_socket(void *x, void *arg)
 
 	/* check for name local sockets */
 	if (unixsock) {
+		slurm_addr_t addr = {0};
 		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-		struct sockaddr_un addr = {
-			.sun_family = AF_UNIX,
-		};
 
 		unixsock += sizeof(UNIX_PREFIX) - 1;
 		if (unixsock[0] == '\0')
 			fatal("%s: [%s] Invalid UNIX socket",
 			      __func__, hostport);
 
+		addr = sockaddr_from_unix_path(unixsock);
+
+		if (addr.ss_family != AF_UNIX)
+			fatal("%s: [%s] Invalid Unix socket path: %s",
+			      __func__, hostport, unixsock);
+
+		log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
+			 __func__, &addr);
+
 		if (unlink(unixsock) && (errno != ENOENT))
 			error("Error unlink(%s): %m", unixsock);
 
-		/* set value of socket path */
-		strlcpy(addr.sun_path, unixsock, sizeof(addr.sun_path));
+		/* bind() will EINVAL if socklen=sizeof(addr) */
 		if ((rc = bind(fd, (const struct sockaddr *) &addr,
-			       sizeof(addr))))
+			       sizeof(struct sockaddr_un))))
 			fatal("%s: [%s] Unable to bind UNIX socket: %m",
 			      __func__, hostport);
 
@@ -684,8 +690,9 @@ static int _setup_listen_socket(void *x, void *arg)
 			      __func__, hostport);
 
 		return conmgr_process_fd_unix_listen(init->type, fd,
-			init->events, (const slurm_addr_t *) &addr,
-			sizeof(addr), unixsock, init->arg);
+						     init->events, &addr,
+						     sizeof(addr), unixsock,
+						     init->arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(hostport)))
