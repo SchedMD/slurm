@@ -79,4 +79,13 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen);
  */
 extern char *addrinfo_to_string(const struct addrinfo *addr);
 
+/*
+ * Initialize socket address for named unix socket
+ * IN path - path for unix socket
+ * RET socket address which caller must check ss_family:
+ *	slurm_addr_t.ss_family=AF_UNIX if path is valid
+ *	slurm_addr_t.ss_family=AF_UNSPEC if path is not valid
+ */
+extern slurm_addr_t sockaddr_from_unix_path(const char *path);
+
 #endif /* !_NET_H */
