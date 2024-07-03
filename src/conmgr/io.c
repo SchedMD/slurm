@@ -345,8 +345,9 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 			set_buf_offset(con->in, remaining_buf(con->in));
 		} else {
 			/* need more data for parser to read */
-			log_flag(CONMGR, "%s: [%s] parser refused to read data. Waiting for more data.",
-				 __func__, con->name);
+			log_flag(CONMGR, "%s: [%s] parser refused to read %u bytes. Waiting for more data.",
+				 __func__, con->name, size_buf(con->in));
+
 			con->on_data_tried = true;
 		}
 	} else
