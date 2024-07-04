@@ -2482,6 +2482,12 @@ typedef struct job_defaults {
 
 #define PART_FLAG_EXCLUSIVE_TOPO SLURM_BIT(16)/* Set if Topo allocated exclusively */
 #define PART_FLAG_EXC_TOPO_CLR SLURM_BIT(17) /* Clear EXCLUSIVE_TOPO flag */
+#define PART_FLAG_SCHED_FAILED SLURM_BIT(18) /* Partition failed to schedule
+					      * job */
+#define PART_FLAG_SCHED_CLEARED SLURM_BIT(19) /* Partition's nodes have been
+					       * cleared from available after
+					       * failed to schedule job */
+
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating

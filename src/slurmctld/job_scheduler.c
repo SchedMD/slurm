@@ -136,16 +136,9 @@ typedef struct {
 } part_prios_same_t;
 
 typedef struct {
-	part_record_t *part_ptr;
-	bool cleared;
-} _failed_part_t;
-
-typedef struct {
 	char *cg_part_str;
 	char *cg_part_str_pos;
 	bitstr_t *eff_cg_bitmap;
-	_failed_part_t *failed_parts;
-	int *failed_part_cnt;
 } part_reduce_frag_t;
 
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
@@ -642,9 +635,7 @@ static int _foreach_part_reduce_frag(void *x, void *arg)
 	if (bit_overlap_any(part_reduce_frag->eff_cg_bitmap,
 			    part_ptr->node_bitmap) &&
 	    (part_ptr->state_up & PARTITION_SCHED)) {
-		part_reduce_frag->failed_parts[
-			*(part_reduce_frag->failed_part_cnt)++].part_ptr =
-			part_ptr;
+		part_ptr->flags |= PART_FLAG_SCHED_FAILED;
 		if (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG) {
 			xstrfmtcatat(part_reduce_frag->cg_part_str,
 				     &part_reduce_frag->cg_part_str_pos,
@@ -662,6 +653,8 @@ static int _foreach_setup_part_sched(void *x, void *arg)
 	part_record_t *part_ptr = x;
 
 	part_ptr->num_sched_jobs = 0;
+	part_ptr->flags &= ~PART_FLAG_SCHED_FAILED;
+	part_ptr->flags &= ~PART_FLAG_SCHED_CLEARED;
 
 	return 0;
 }
@@ -895,22 +888,6 @@ extern void set_job_elig_time(void)
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
-}
-
-/* Test of part_ptr can still run jobs or if its nodes have
- * already been reserved by higher priority jobs (those in
- * the failed_parts array) */
-static int _failed_partition(part_record_t *part_ptr,
-			     _failed_part_t *failed_parts,
-			     int failed_part_cnt)
-{
-	int i;
-
-	for (i = 0; i < failed_part_cnt; i++) {
-		if (failed_parts[i].part_ptr == part_ptr)
-			return i;
-	}
-	return -1;
 }
 
 static void _do_diag_stats(long delta_t)
@@ -1172,13 +1149,12 @@ static int _schedule(bool full_queue)
 {
 	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	list_t *job_queue = NULL;
-	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, i, part_cnt, time_limit, pend_time;
+	int failed_resv_cnt = 0, job_cnt = 0;
+	int error_code, i, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr, *skip_part_ptr = NULL;
-	_failed_part_t *failed_parts = NULL;
 	slurmctld_resv_t **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	int bb_wait_cnt = 0;
@@ -1467,8 +1443,8 @@ static int _schedule(bool full_queue)
 		goto out;
 	}
 
-	part_cnt = list_count(part_list);
-	failed_parts = xcalloc(part_cnt, sizeof(*failed_parts));
+	(void) list_for_each(part_list, _foreach_setup_part_sched, NULL);
+
 	failed_resv = xcalloc(MAX_FAILED_RESV, sizeof(slurmctld_resv_t *));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
@@ -1479,8 +1455,6 @@ static int _schedule(bool full_queue)
 		if (job_is_completing(eff_cg_bitmap)) {
 			part_reduce_frag_t part_reduce_frag = {
 				.eff_cg_bitmap = eff_cg_bitmap,
-				.failed_parts = failed_parts,
-				.failed_part_cnt = &failed_part_cnt,
 			};
 			(void) list_for_each(part_list,
 					     _foreach_part_reduce_frag,
@@ -1492,11 +1466,6 @@ static int _schedule(bool full_queue)
 			}
 		}
 		FREE_NULL_BITMAP(eff_cg_bitmap);
-	}
-
-	if (max_jobs_per_part) {
-		(void) list_for_each(part_list,
-				     _foreach_setup_part_sched, NULL);
 	}
 
 	sched_debug("Running job scheduler %s.", full_queue ? "for full queue":"for default depth");
@@ -1736,19 +1705,18 @@ next_task:
 					     job_ptr->resv_name);
 				continue;
 			}
-		} else if ((i = _failed_partition(job_ptr->part_ptr,
-						  failed_parts,
-						  failed_part_cnt)) >= 0) {
-
-			if (!failed_parts[i].cleared) {
+		} else if (job_ptr->part_ptr->flags & PART_FLAG_SCHED_FAILED) {
+			if (!(job_ptr->part_ptr->flags &
+			      PART_FLAG_SCHED_CLEARED)) {
 				bit_and_not(avail_node_bitmap,
 					    part_ptr->node_bitmap);
-				failed_parts[i].cleared = true;
+				job_ptr->part_ptr->flags |=
+					PART_FLAG_SCHED_CLEARED;
 			}
 
 			if ((job_ptr->state_reason == WAIT_NO_REASON) ||
 			    (job_ptr->state_reason == WAIT_RESOURCES)) {
-				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
+				sched_debug("%pJ unable to schedule in Partition=%s (per PART_FLAG_SCHED_FAILED). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
 					    job_ptr,
 					    job_ptr->part_ptr->name,
 					    job_state_reason_string(
@@ -1762,7 +1730,7 @@ next_task:
 				/*
 				 * Log job can not run even though we are not
 				 * overriding the reason */
-				sched_debug2("%pJ. unable to schedule in Partition=%s (per _failed_partition()). Retaining previous scheduling Reason=%s. Desc=%s. Priority=%u.",
+				sched_debug2("%pJ. unable to schedule in Partition=%s (per PART_FLAG_SCHED_FAILED). Retaining previous scheduling Reason=%s. Desc=%s. Priority=%u.",
 					     job_ptr,
 					     job_ptr->part_ptr->name,
 					     job_state_reason_string(
@@ -2132,12 +2100,9 @@ skip_start:
 
 fail_this_part:	if (fail_by_part) {
 			/* Search for duplicates */
-			for (i = 0; i < failed_part_cnt; i++) {
-				if (failed_parts[i].part_ptr ==
-				    job_ptr->part_ptr) {
-					fail_by_part = false;
-					break;
-				}
+			if (job_ptr->part_ptr->flags & PART_FLAG_SCHED_FAILED) {
+				fail_by_part = false;
+				break;
 			}
 		}
 		if (fail_by_part) {
@@ -2145,9 +2110,8 @@ fail_this_part:	if (fail_by_part) {
 			 * Do not schedule more jobs in this partition or on
 			 * nodes in this partition
 			 */
-			failed_parts[failed_part_cnt].cleared = true;
-			failed_parts[failed_part_cnt++].part_ptr =
-				job_ptr->part_ptr;
+			job_ptr->part_ptr->flags |= PART_FLAG_SCHED_FAILED;
+			job_ptr->part_ptr->flags |= PART_FLAG_SCHED_CLEARED;
 			bit_and_not(avail_node_bitmap,
 				    job_ptr->part_ptr->node_bitmap);
 		}
@@ -2160,7 +2124,6 @@ fail_this_part:	if (fail_by_part) {
 		job_resv_clear_magnetic_flag(job_ptr);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
-	xfree(failed_parts);
 	xfree(failed_resv);
 	if (fifo_sched) {
 		if (job_iterator)
