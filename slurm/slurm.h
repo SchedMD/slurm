@@ -2677,6 +2677,8 @@ typedef struct will_run_response_msg {
 #define RESERVE_FLAG_USER_DEL	   SLURM_BIT(39) /* Allow users in the ACL to
 						    delete this reservation */
 #define RESERVE_FLAG_NO_USER_DEL   SLURM_BIT(40) /* Clear USER_DEL flag */
+#define RESERVE_FLAG_SCHED_FAILED SLURM_BIT(41) /* Reservation failed to
+						 * schedule job */
 
 #define RESERVE_REOCCURRING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
 				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \

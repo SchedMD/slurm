@@ -101,7 +101,6 @@
 #  define CORRESPOND_ARRAY_TASK_CNT 10
 #endif
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
-#define MAX_FAILED_RESV 10
 
 typedef enum {
 	ARRAY_SPLIT_BURST_BUFFER,
@@ -659,6 +658,15 @@ static int _foreach_setup_part_sched(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_setup_resv_sched(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+
+	resv_ptr->flags &= ~RESERVE_FLAG_SCHED_FAILED;
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -1149,13 +1157,12 @@ static int _schedule(bool full_queue)
 {
 	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	list_t *job_queue = NULL;
-	int failed_resv_cnt = 0, job_cnt = 0;
+	int job_cnt = 0;
 	int error_code, i, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr, *skip_part_ptr = NULL;
-	slurmctld_resv_t **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	int bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
@@ -1444,8 +1451,8 @@ static int _schedule(bool full_queue)
 	}
 
 	(void) list_for_each(part_list, _foreach_setup_part_sched, NULL);
+	(void) list_for_each(resv_list, _foreach_setup_resv_sched, NULL);
 
-	failed_resv = xcalloc(MAX_FAILED_RESV, sizeof(slurmctld_resv_t *));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
 
@@ -1689,11 +1696,10 @@ next_task:
 			    job_ptr->resv_ptr->max_start_delay)
 				wait_on_resv = true;
 
-			for (i = 0; i < failed_resv_cnt; i++) {
-				if (failed_resv[i] == job_ptr->resv_ptr) {
-					found_resv = true;
-					break;
-				}
+			if (job_ptr->resv_ptr->flags &
+			    RESERVE_FLAG_SCHED_FAILED) {
+				found_resv = true;
+				break;
 			}
 			if (found_resv) {
 				job_ptr->state_reason = WAIT_PRIORITY;
@@ -2072,10 +2078,7 @@ skip_start:
 			/* do not schedule more jobs in this reservation, but
 			 * other jobs in this partition can be scheduled. */
 			fail_by_part = false;
-			if (failed_resv_cnt < MAX_FAILED_RESV) {
-				failed_resv[failed_resv_cnt++] =
-					job_ptr->resv_ptr;
-			}
+			job_ptr->resv_ptr->flags |= RESERVE_FLAG_SCHED_FAILED;
 		}
 		if (fail_by_part && bf_min_age_reserve) {
 			/* Consider other jobs in this partition if job has been
@@ -2124,7 +2127,6 @@ fail_this_part:	if (fail_by_part) {
 		job_resv_clear_magnetic_flag(job_ptr);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
-	xfree(failed_resv);
 	if (fifo_sched) {
 		if (job_iterator)
 			list_iterator_destroy(job_iterator);
