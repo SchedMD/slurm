@@ -33,6 +33,11 @@ documents those changes that are of interest to users and administrators.
     more than 10 threads try to get energy at the same time. This prevented
     the possibility to get energy from slurmd by any step until slurmd was
     restarted, so losing energy accounting metrics in the node.
+ -- slurmrestd - Fix memory leak for dbv0.0.39 jobs query which occurred if the
+    query parameters specified account, association, cluster, constraints,
+    format, groups, job_name, partition, qos, reason, reservation, state, users,
+    or wckey. This affects the following endpoints:
+      'GET /slurmdb/v0.0.39/jobs'
 
 * Changes in Slurm 23.11.8
 ==========================

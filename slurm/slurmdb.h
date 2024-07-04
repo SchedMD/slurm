@@ -1920,6 +1920,7 @@ extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
 extern void slurmdb_destroy_instance_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
+extern void slurmdb_destroy_job_cond_members(slurmdb_job_cond_t *job_cond);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
 extern void slurmdb_destroy_res_cond(void *object);

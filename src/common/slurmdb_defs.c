@@ -1236,28 +1236,35 @@ extern void slurmdb_destroy_instance_cond(void *object)
 	}
 }
 
+extern void slurmdb_destroy_job_cond_members(slurmdb_job_cond_t *job_cond)
+{
+	if (!job_cond)
+		return;
+	FREE_NULL_LIST(job_cond->acct_list);
+	FREE_NULL_LIST(job_cond->associd_list);
+	FREE_NULL_LIST(job_cond->cluster_list);
+	FREE_NULL_LIST(job_cond->constraint_list);
+	FREE_NULL_LIST(job_cond->groupid_list);
+	FREE_NULL_LIST(job_cond->jobname_list);
+	FREE_NULL_LIST(job_cond->partition_list);
+	FREE_NULL_LIST(job_cond->qos_list);
+	FREE_NULL_LIST(job_cond->reason_list);
+	FREE_NULL_LIST(job_cond->resv_list);
+	FREE_NULL_LIST(job_cond->resvid_list);
+	FREE_NULL_LIST(job_cond->step_list);
+	FREE_NULL_LIST(job_cond->state_list);
+	xfree(job_cond->used_nodes);
+	FREE_NULL_LIST(job_cond->userid_list);
+	FREE_NULL_LIST(job_cond->wckey_list);
+}
+
 extern void slurmdb_destroy_job_cond(void *object)
 {
 	slurmdb_job_cond_t *job_cond =
 		(slurmdb_job_cond_t *)object;
 
 	if (job_cond) {
-		FREE_NULL_LIST(job_cond->acct_list);
-		FREE_NULL_LIST(job_cond->associd_list);
-		FREE_NULL_LIST(job_cond->cluster_list);
-		FREE_NULL_LIST(job_cond->constraint_list);
-		FREE_NULL_LIST(job_cond->groupid_list);
-		FREE_NULL_LIST(job_cond->jobname_list);
-		FREE_NULL_LIST(job_cond->partition_list);
-		FREE_NULL_LIST(job_cond->qos_list);
-		FREE_NULL_LIST(job_cond->reason_list);
-		FREE_NULL_LIST(job_cond->resv_list);
-		FREE_NULL_LIST(job_cond->resvid_list);
-		FREE_NULL_LIST(job_cond->step_list);
-		FREE_NULL_LIST(job_cond->state_list);
-		xfree(job_cond->used_nodes);
-		FREE_NULL_LIST(job_cond->userid_list);
-		FREE_NULL_LIST(job_cond->wckey_list);
+		slurmdb_destroy_job_cond_members(job_cond);
 		xfree(job_cond);
 	}
 }
