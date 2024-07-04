@@ -4114,8 +4114,9 @@ static int _dump_node_res(data_t *dst, job_resources_t *j,
 	node.sockets = xcalloc((j->sockets_per_node[sock_inx] + 1),
 			       sizeof(*node.sockets));
 	for (uint32_t i = 0; i < j->sockets_per_node[sock_inx]; i++)
-		node.sockets[i].cores = xcalloc((j->cores_per_socket[i] + 1),
-						sizeof(*node.sockets[i].cores));
+		node.sockets[i].cores =
+			xcalloc((j->cores_per_socket[sock_inx] + 1),
+				sizeof(*node.sockets[i].cores));
 
 	for (uint32_t i = 0; i < bit_reps; i++) {
 		uint32_t socket_inx = i / j->cores_per_socket[sock_inx];
