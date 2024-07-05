@@ -82,6 +82,14 @@ typedef struct {
  * Return the packed size of an IO header in bytes;
  */
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer);
+/*
+ * Pack io_hdr_t into buffer
+ * IN hdr - struct to pack
+ * IN buffer - destination buffer to populate
+ * RET SLURM_SUCCESS or
+ * 	EAGAIN if buffer does not container entire packet
+ * 	or error
+ */
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer);
 int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 

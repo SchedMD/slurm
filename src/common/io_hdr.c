@@ -61,8 +61,11 @@ int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 {
 	uint16_t type;
 
-	if (size_buf(buffer) < IO_HDR_PACKET_BYTES)
-		goto unpack_error;
+	if (size_buf(buffer) < IO_HDR_PACKET_BYTES) {
+		debug3("%s: Unable to pack with only %u/%u bytes present in buffer",
+		       __func__, IO_HDR_PACKET_BYTES, size_buf(buffer));
+		return EAGAIN;
+	}
 
 	/* If this function changes, IO_HDR_PACKET_BYTES must change. */
 	safe_unpack16(&type, buffer);
