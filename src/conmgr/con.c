@@ -81,8 +81,6 @@ typedef struct {
 	conmgr_con_type_t type;
 } socket_listen_init_t;
 
-static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
-
 extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(con_types); i++)
@@ -435,7 +433,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		list_append(mgr.listen_conns, con);
 	} else {
 		list_append(mgr.connections, con);
-		add_work_con_fifo(true, con, _wrap_on_connection, con);
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
@@ -447,33 +444,32 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	return con;
 }
 
-static void _wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
+extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->events.on_connection) {
-		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection);
+	xassert(con->events.on_connection);
 
-		arg = con->events.on_connection(con, con->new_arg);
+	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events.on_connection);
 
-		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection,
-			 (uintptr_t) arg);
+	arg = con->events.on_connection(con, con->new_arg);
 
-		if (!arg) {
-			error("%s: [%s] closing connection due to NULL return from on_connection",
-			      __func__, con->name);
-			close_con(false, con);
-			return;
-		}
+	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events.on_connection,
+		 (uintptr_t) arg);
+
+	if (!arg) {
+		error("%s: [%s] closing connection due to NULL return from on_connection",
+		      __func__, con->name);
+		close_con(false, con);
+		return;
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->arg = arg;
-	con->is_connected = true;
 	slurm_mutex_unlock(&mgr.mutex);
 
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);

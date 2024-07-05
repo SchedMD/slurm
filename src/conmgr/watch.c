@@ -47,6 +47,7 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/poll.h"
 #include "src/conmgr/signals.h"
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
@@ -85,7 +86,65 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	/* always do work first */
+	if (con->is_connected || con->read_eof) {
+		/* continue on to follow other checks */
+	} else if (con->is_listen) {
+		/*
+		 * Listening connections don't need to do anything to be
+		 * connected
+		 */
+		con_set_polling(true, con, PCTL_TYPE_LISTEN, __func__);
+		con->is_connected = true;
+		return 0;
+	} else if (!con->is_socket || con->can_read || con->can_write) {
+		/*
+		 * Only sockets need special handling to know when they are
+		 * connected. Enqueue on_connect callback if defined.
+		 */
+		con->is_connected = true;
+
+		if (con->events.on_connection) {
+			/* disable polling until on_connect() is done */
+			con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+			add_work_con_fifo(true, con, wrap_on_connection, con);
+
+			log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
+				 __func__, con->name);
+			return 0;
+		} else {
+			/*
+			 * Only watch for incoming data as there can't be any
+			 * outgoing data yet
+			 */
+			xassert(list_is_empty(con->out));
+
+			/*
+			 * Continue on to follow other checks as nothing special
+			 * needs to be done
+			 */
+		}
+	} else {
+		xassert(!con->can_read && !con->can_write);
+
+		/*
+		 * Need to wait for connection to establish or fail.
+		 *
+		 * From man 2 connect:
+		 *
+		 * It is possible to select(2) or poll(2) for completion by
+		 * selecting the socket for writing. After select(2) indicates
+		 * writability, use getsockopt(2) to read the SO_ERROR option at
+		 * level SOL_SOCKET to determine whether connect() completed
+		 * success‐ fully (SO_ERROR is zero) or unsuccessfully
+		 */
+		con_set_polling(true, con, PCTL_TYPE_READ_WRITE, __func__);
+
+		log_flag(CONMGR, "%s: [%s] waiting for connection to establish",
+			 __func__, con->name);
+		return 0;
+	}
+
+	/* always do work first once connected */
 	if ((count = list_count(con->work))) {
 		work_t *work = list_pop(con->work);
 
@@ -96,13 +155,6 @@ static int _handle_connection(void *x, void *arg)
 		con->work_active = true; /* unset by _wrap_con_work() */
 
 		handle_work(true, work);
-		return 0;
-	}
-
-	/* make sure the connection has finished on_connection */
-	if (!con->is_listen && !con->is_connected && (con->input_fd != -1)) {
-		log_flag(CONMGR, "%s: [%s] waiting for on_connection to complete",
-			 __func__, con->name);
 		return 0;
 	}
 

@@ -110,13 +110,14 @@ struct conmgr_fd_s {
 	bool can_read;
 	/* has this connection received read EOF */
 	bool read_eof;
+
 	/*
 	 * Current active polling (if any).
 	 * Only set by con_set_polling()
 	 */
 	pollctl_fd_type_t polling_input_fd;
 	pollctl_fd_type_t polling_output_fd;
-	/* has this connection called on_connection */
+	/* has this connection been established and enqueued on_connection() */
 	bool is_connected;
 	/*
 	 * has pending work:
@@ -424,5 +425,10 @@ extern void workers_fini(void);
  * RET SLURM_SUCESS or error
  */
 extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
+
+/*
+ * Wraps on_connection() callback
+ */
+extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 
 #endif /* _CONMGR_MGR_H */

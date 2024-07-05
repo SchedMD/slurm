@@ -616,7 +616,7 @@ typedef struct {
 	bool is_listen;
 	/* has this connection received read EOF */
 	bool read_eof;
-	/* has this connection called on_connection */
+	/* has this connection been fully established with remote */
 	bool is_connected;
 } conmgr_fd_status_t;
 
