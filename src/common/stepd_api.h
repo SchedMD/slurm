@@ -45,7 +45,6 @@
 #include "slurm/slurm.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/io_hdr.h"
 
 #define GETHOST_NOT_MATCH_PID SLURM_BIT(0)
 #define GETHOST_IPV4 SLURM_BIT(1)
