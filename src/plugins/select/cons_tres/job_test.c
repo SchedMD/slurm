@@ -2204,6 +2204,20 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 	return 0;
 }
 
+static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
+				     bitstr_t *node_bitmap,
+				     bitstr_t **efctv_bitmap)
+{
+	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		if (!(*efctv_bitmap)) {
+			*efctv_bitmap = bit_copy(node_bitmap);
+			topology_g_whole_topo(*efctv_bitmap);
+		}
+		return *efctv_bitmap;
+	} else
+		return node_bitmap;
+}
+
 static int _build_cr_job_list(void *x, void *arg)
 {
 	int action;
@@ -2300,20 +2314,6 @@ static void _set_sched_weight(bitstr_t *node_bitmap)
 		    IS_NODE_POWERING_DOWN(node_ptr))
 			node_ptr->sched_weight |= 0x2000000000000;
 	}
-}
-
-static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
-				     bitstr_t *node_bitmap,
-				     bitstr_t **efctv_bitmap)
-{
-	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-		if (!(*efctv_bitmap)) {
-			*efctv_bitmap = bit_copy(node_bitmap);
-			topology_g_whole_topo(*efctv_bitmap);
-		}
-		return *efctv_bitmap;
-	} else
-		return node_bitmap;
 }
 
 /*
