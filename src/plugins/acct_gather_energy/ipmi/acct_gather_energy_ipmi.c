@@ -741,12 +741,13 @@ static int _thread_update_node_energy(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 			else
 				xstrfmtcat(log_str, "%u", sensors[i].id);
 
-			info("ipmi-thread: sensor %s current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+			info("ipmi-thread: sensor %s current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u, slurmd start time: %ld",
 			     log_str,
 			     sensors[i].energy.current_watts,
 			     sensors[i].energy.consumed_energy,
 			     sensors[i].energy.base_consumed_energy,
-			     sensors[i].energy.ave_watts);
+			     sensors[i].energy.ave_watts,
+			     sensors[i].energy.slurmd_start_time);
 
 			xfree(log_str);
 		}
