@@ -50,12 +50,6 @@
 #define STDIO_MAX_FREE_BUF 1024
 #define STDIO_MAX_MSG_CACHE 128
 
-struct io_buf {
-	int ref_count;
-	uint32_t length;
-	void *data;
-};
-
 /* For each task's ofname and efname, are all the names NULL,
    one null and the others "/dev/null", all non-null and unique,
    or all non-null and identical. */

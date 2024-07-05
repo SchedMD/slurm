@@ -78,6 +78,12 @@
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+};
+
 static struct io_buf *_alloc_io_buf(void);
 static void _free_io_buf(struct io_buf *buf);
 
