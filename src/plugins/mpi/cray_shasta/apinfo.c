@@ -41,6 +41,7 @@
 #include <sys/mman.h>
 
 #include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
 
 #include "apinfo.h"
 
