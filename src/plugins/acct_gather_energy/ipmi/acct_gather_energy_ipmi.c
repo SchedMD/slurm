@@ -699,6 +699,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt,
 		e->current_watts = last_update_watt;
 	}
 	e->poll_time = time(NULL);
+	e->slurmd_start_time = slurmd_start_time;
 }
 
 /*
@@ -1079,6 +1080,9 @@ static void _get_node_energy(acct_gather_energy_t *energy, uint16_t sensor_cnt)
 	} else {
 		_sum_energy(energy, &sensors[0].energy);
 	}
+
+	/* This value gives information about if slurmd has been restarted. */
+	energy->slurmd_start_time = slurmd_start_time;
 }
 
 /*
