@@ -239,6 +239,7 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, buf_t *buffer,
 			pack32(0, buffer);
 			pack64(0, buffer);
 			pack_time(0, buffer);
+			pack_time(0, buffer);
 			return;
 		}
 
@@ -248,6 +249,7 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, buf_t *buffer,
 		pack32(energy->current_watts, buffer);
 		pack64(energy->previous_consumed_energy, buffer);
 		pack_time(energy->poll_time, buffer);
+		pack_time(energy->slurmd_start_time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!energy) {
 			pack64(0, buffer);
@@ -288,6 +290,7 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy,
 		safe_unpack32(&energy_ptr->current_watts, buffer);
 		safe_unpack64(&energy_ptr->previous_consumed_energy, buffer);
 		safe_unpack_time(&energy_ptr->poll_time, buffer);
+		safe_unpack_time(&energy_ptr->slurmd_start_time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&energy_ptr->base_consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->ave_watts, buffer);
