@@ -58,7 +58,6 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/list.h"
 #include "src/common/eio.h"
 #include "src/common/env.h"
-#include "src/common/io_hdr.h"
 #include "src/common/stepd_api.h"
 
 #define STEP_CONTAINER_MAGIC 0xa0b9b2ba
