@@ -72,10 +72,6 @@ typedef enum {
 	SLURMD_UNKNOWN
 } slurmd_filename_pattern_t;
 
-
-struct io_buf *alloc_io_buf(void);
-void free_io_buf(struct io_buf *buf);
-
 /*
  * Create a TCP connection back the initial client (e.g. srun).
  *

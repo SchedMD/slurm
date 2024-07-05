@@ -78,6 +78,9 @@
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
+static struct io_buf *_alloc_io_buf(void);
+static void _free_io_buf(struct io_buf *buf);
+
 /**********************************************************************
  * IO client socket declarations
  **********************************************************************/
@@ -1736,7 +1739,7 @@ _send_eof_msg(struct task_read_info *out)
 		   a poll returns POLLHUP on the incoming task pipe,
 		   put there are no outgoing message buffers available,
 		   the slurmstepd will start spinning. */
-		msg = alloc_io_buf();
+		msg = _alloc_io_buf();
 	}
 
 	header.type = out->type;
@@ -1771,7 +1774,7 @@ _send_eof_msg(struct task_read_info *out)
 	}
 	list_iterator_destroy(clients);
 	if (msg->ref_count == 0)
-		free_io_buf(msg);
+		_free_io_buf(msg);
 
 	debug4("Leaving  _send_eof_msg");
 }
@@ -1853,8 +1856,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	return msg;
 }
 
-struct io_buf *
-alloc_io_buf(void)
+static struct io_buf *_alloc_io_buf(void)
 {
 	struct io_buf *buf = xmalloc(sizeof(*buf));
 
@@ -1867,8 +1869,7 @@ alloc_io_buf(void)
 	return buf;
 }
 
-void
-free_io_buf(struct io_buf *buf)
+static void _free_io_buf(struct io_buf *buf)
 {
 	if (buf) {
 		if (buf->data)
@@ -1886,7 +1887,7 @@ _incoming_buf_free(stepd_step_rec_t *step)
 	if (list_count(step->free_incoming) > 0) {
 		return true;
 	} else if (step->incoming_count < STDIO_MAX_FREE_BUF) {
-		buf = alloc_io_buf();
+		buf = _alloc_io_buf();
 		list_enqueue(step->free_incoming, buf);
 		step->incoming_count++;
 		return true;
@@ -1903,7 +1904,7 @@ _outgoing_buf_free(stepd_step_rec_t *step)
 	if (list_count(step->free_outgoing) > 0) {
 		return true;
 	} else if (step->outgoing_count < STDIO_MAX_FREE_BUF) {
-		buf = alloc_io_buf();
+		buf = _alloc_io_buf();
 		list_enqueue(step->free_outgoing, buf);
 		step->outgoing_count++;
 		return true;
