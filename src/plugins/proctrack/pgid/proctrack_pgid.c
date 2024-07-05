@@ -62,6 +62,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
