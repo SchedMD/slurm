@@ -57,8 +57,10 @@ static int g_io_init_msg_packed_size =
 
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 {
+	uint16_t type = hdr->type;
+
 	/* If this function changes, io_hdr_packed_size must change. */
-	pack16(hdr->type, buffer);
+	pack16(type, buffer);
 	pack16(hdr->gtaskid, buffer);
 	pack16(hdr->ltaskid, buffer);
 	pack32(hdr->length, buffer);
@@ -66,8 +68,16 @@ void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 {
+	uint16_t type;
+
 	/* If this function changes, io_hdr_packed_size must change. */
-	safe_unpack16(&hdr->type, buffer);
+	safe_unpack16(&type, buffer);
+	hdr->type = type;
+
+	if ((hdr->type <= SLURM_IO_INVALID) ||
+	    (hdr->type >= SLURM_IO_INVALID_MAX))
+		goto unpack_error;
+
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
 	safe_unpack32(&hdr->length, buffer);

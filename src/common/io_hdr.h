@@ -46,11 +46,15 @@
 #define MAX_MSG_LEN 1024
 #define SLURM_IO_KEY_SIZE 8
 
-#define SLURM_IO_STDIN 0
-#define SLURM_IO_STDOUT 1
-#define SLURM_IO_STDERR 2
-#define SLURM_IO_ALLSTDIN 3
-#define SLURM_IO_CONNECTION_TEST 4
+typedef enum {
+	SLURM_IO_INVALID = -1,
+	SLURM_IO_STDIN = 0,
+	SLURM_IO_STDOUT = 1,
+	SLURM_IO_STDERR = 2,
+	SLURM_IO_ALLSTDIN = 3,
+	SLURM_IO_CONNECTION_TEST = 4,
+	SLURM_IO_INVALID_MAX
+} io_hdr_type_t;
 
 typedef struct {
 	uint16_t      version;
@@ -62,7 +66,7 @@ typedef struct {
 
 
 typedef struct {
-	uint16_t      type;
+	io_hdr_type_t type;
 	uint16_t      gtaskid;
 	uint16_t      ltaskid;
 	uint32_t      length;
