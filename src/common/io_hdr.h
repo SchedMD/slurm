@@ -36,6 +36,35 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * srun I/O socket connection sequences:
+ *
+ * Connection Initialization:
+ *
+ * srun via io_initial_client_connect():
+ *	slurmstepd sends: (packed via io_init_msg_pack())
+ *	     uint32_t: length of packet
+ *	     packed io_init_msg_t
+ *	srun recieves via io_init_msg_read_from_fd()
+ *	srun validates via io_init_msg_validate()
+ *
+ * sattach via io_client_connect():
+ *
+ *
+ * Same message format sent bidirectionally after initialization:
+ *	packed io_hdr_t via io_hdr_pack()
+ *	io_hdr_t.length bytes of payload
+ *
+ *	srun only sends types:
+ *		SLURM_IO_CONNECTION_TEST
+ *		SLURM_IO_STDIN
+ *		SLURM_IO_ALLSTDIN
+ *
+ *	slurmstepd honors task_read_info.type to determine where messages sent.
+ *
+ * Connection ends with io_hdr_t.length=0 packet with no payload
+ */
+
 #ifndef _HAVE_IO_HDR_H
 #define _HAVE_IO_HDR_H
 
