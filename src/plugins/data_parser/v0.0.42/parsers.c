@@ -153,6 +153,11 @@ typedef struct {
 	char *type;
 } slurmdb_tres_nct_rec_t;
 
+typedef struct {
+	char *part;
+	uint32_t prio;
+} PART_PRIO_t;
+
 typedef enum {
 	TRES_EXPLODE_COUNT = 1,
 	TRES_EXPLODE_NODE,
@@ -4204,6 +4209,34 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(PRIORITY_BY_PARTITION)
+
+static int DUMP_FUNC(PRIORITY_BY_PARTITION)(const parser_t *const parser,
+					    void *obj, data_t *dst,
+					    args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	int rc = 0, count = 0;
+	PART_PRIO_t part_prio;
+	char *tmp_token = NULL, *saveptr = NULL;
+	xassert(job);
+
+	data_set_list(dst);
+
+	if (!job->priority_array)
+		return SLURM_SUCCESS;
+
+	tmp_token = strtok_r(job->priority_array_parts, ",", &saveptr);
+	while (tmp_token && !rc) {
+		part_prio.part = tmp_token;
+		part_prio.prio = job->priority_array[count];
+		rc = DUMP(PART_PRIO, part_prio, data_list_append(dst), args);
+		count++;
+		tmp_token = strtok_r(NULL, ",", &saveptr);
+	}
+	return rc;
+}
+
 PARSE_DISABLED(JOB_INFO_MSG)
 
 static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
@@ -7533,6 +7566,14 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(PART_PRIO_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(PART_PRIO)[] = {
+	add_parse(STRING, part, "partition", NULL),
+	add_parse(UINT32, prio, "priority", NULL),
+};
+#undef add_parse
+
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(KILL_INV_DEP, "KILL_INVALID_DEPENDENCY"),
 	add_flag_bit(NO_KILL_INV_DEP, "NO_KILL_INVALID_DEPENDENCY"),
@@ -7731,6 +7772,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, pre_sus_time, "pre_sus_time", NULL),
 	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
 	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
+	add_cparse(PRIORITY_BY_PARTITION, "priority_by_partition", NULL),
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", NULL),
 	add_parse(QOS_NAME, qos, "qos", NULL),
 	add_parse(BOOL, reboot, "reboot", NULL),
@@ -9817,6 +9859,7 @@ static const parser_t parsers[] = {
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
 	addpc(NODE_SELECT_TRES_USED, node_info_t, NEED_NONE, STRING, NULL),
 	addpc(NODE_SELECT_TRES_WEIGHTED, node_info_t, NEED_NONE, DOUBLE, NULL),
+	addpca(PRIORITY_BY_PARTITION, PART_PRIO, slurm_job_info_t, NEED_NONE, NULL),
 	addpca(NODES, NODE, node_info_msg_t, NEED_NONE, NULL),
 	addpca(JOB_INFO_GRES_DETAIL, STRING, slurm_job_info_t, NEED_NONE, NULL),
 	addpca(JOB_RES_NODES, JOB_RES_NODE, JOB_RES_NODE_t, NEED_NONE, "Job resources for a node"),
@@ -9984,6 +10027,7 @@ static const parser_t parsers[] = {
 	addpap(STATS_MSG_RPC_USER, STATS_MSG_RPC_USER_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_QUEUE, STATS_MSG_RPC_QUEUE_t, NULL, NULL),
 	addpap(STATS_MSG_RPC_DUMP, STATS_MSG_RPC_DUMP_t, NULL, NULL),
+	addpap(PART_PRIO, PART_PRIO_t, NULL, NULL),
 	addpap(JOB_STATE_RESP_JOB, job_state_response_job_t, NULL, NULL),
 	addpap(OPENAPI_JOB_STATE_QUERY, openapi_job_state_query_t, NULL, NULL),
 	addpap(KILL_JOBS_MSG, kill_jobs_msg_t, NEW_FUNC(KILL_JOBS_MSG), NULL),

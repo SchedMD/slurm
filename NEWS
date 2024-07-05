@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - Avoid a fatal condition when the db server is
     not reachable.
  -- Always lay out steps cyclically on nodes in an allocation.
+ -- squeue - add priority by partition ('.jobs[].priority_by_partition') to
+    JSON and YAML output.
 
 * Changes in Slurm 24.05.2
 ==========================
