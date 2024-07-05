@@ -50,7 +50,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/group_cache.h"
 #include "src/common/identity.h"
-#include "src/common/io_hdr.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
