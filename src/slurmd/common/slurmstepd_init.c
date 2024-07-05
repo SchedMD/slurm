@@ -38,6 +38,7 @@
 
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /* Assume that the slurmd and slurmstepd are the same version level when slurmd
