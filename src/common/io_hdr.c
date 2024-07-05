@@ -193,8 +193,6 @@ static int io_init_msg_pack(io_init_msg_t *hdr, buf_t *buffer)
 
 static int io_init_msg_unpack(io_init_msg_t *hdr, buf_t *buffer)
 {
-	/* If this function changes, IO_HDR_PACKET_BYTES must change. */
-
 	safe_unpack16(&hdr->version, buffer);
 	if (hdr->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&hdr->nodeid, buffer);
@@ -216,7 +214,7 @@ int
 io_init_msg_write_to_fd(int fd, io_init_msg_t *msg)
 {
 	int rc = SLURM_ERROR;
-	buf_t *buf = init_buf(IO_HDR_PACKET_BYTES);
+	buf_t *buf = init_buf(0);
 
 	xassert(msg);
 
