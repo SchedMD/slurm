@@ -43,13 +43,6 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/*
- * The message cache uses up free message buffers, so STDIO_MAX_MSG_CACHE
- * must be a number smaller than STDIO_MAX_FREE_BUF.
- */
-#define STDIO_MAX_FREE_BUF 1024
-#define STDIO_MAX_MSG_CACHE 128
-
 /* For each task's ofname and efname, are all the names NULL,
    one null and the others "/dev/null", all non-null and unique,
    or all non-null and identical. */
