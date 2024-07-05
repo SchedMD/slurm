@@ -711,7 +711,7 @@ static int _file_read(eio_obj_t *obj, List objs)
 	ptr = msg->data + IO_HDR_PACKET_BYTES;
 
 again:
-	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
+	if ((len = read(obj->fd, ptr, SLURM_IO_MAX_MSG_LEN)) < 0) {
 		if (errno == EINTR)
 			goto again;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -971,7 +971,7 @@ _alloc_io_buf(void)
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
-	buf->data = xmalloc(MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
+	buf->data = xmalloc(SLURM_IO_MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
 
 	return buf;
 }

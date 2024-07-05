@@ -320,9 +320,9 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_SUCCESS;
 		}
 		debug5("client->header.length = %u", client->header.length);
-		if (client->header.length > MAX_MSG_LEN)
+		if (client->header.length > SLURM_IO_MAX_MSG_LEN)
 			error("Message length of %u exceeds maximum of %u",
-			      client->header.length, MAX_MSG_LEN);
+			      client->header.length, SLURM_IO_MAX_MSG_LEN);
 		client->in_remaining = client->header.length;
 		client->in_msg->length = client->header.length;
 	}
@@ -707,7 +707,8 @@ _create_task_out_eio(int fd, uint16_t type,
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
 	out->step = step;
-	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*4);
+	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN,
+			       (SLURM_IO_MAX_MSG_LEN * 4));
 	out->eof = false;
 	out->eof_msg_sent = false;
 	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)
@@ -1800,10 +1801,10 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	ptr = msg->data + IO_HDR_PACKET_BYTES;
 
 	if (buffered_stdio) {
-		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
-		if (avail >= MAX_MSG_LEN)
+		avail = cbuf_peek_line(cbuf, ptr, SLURM_IO_MAX_MSG_LEN, 1);
+		if (avail >= SLURM_IO_MAX_MSG_LEN)
 			must_truncate = true;
-		else if (avail == 0 && cbuf_used(cbuf) >= MAX_MSG_LEN)
+		else if (avail == 0 && cbuf_used(cbuf) >= SLURM_IO_MAX_MSG_LEN)
 			must_truncate = true;
 	}
 
@@ -1818,9 +1819,9 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	 * Hence the "|| out->eof".
 	 */
 	if (must_truncate || !buffered_stdio || out->eof) {
-		n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
+		n = cbuf_read(cbuf, ptr, SLURM_IO_MAX_MSG_LEN);
 	} else {
-		n = cbuf_read_line(cbuf, ptr, MAX_MSG_LEN, -1);
+		n = cbuf_read_line(cbuf, ptr, SLURM_IO_MAX_MSG_LEN, -1);
 		if (n == 0) {
 			debug5("  partial line in buffer, ignoring");
 			debug4("Leaving  _task_build_message");
@@ -1861,7 +1862,7 @@ alloc_io_buf(void)
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
-	buf->data = xmalloc(MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
+	buf->data = xmalloc(SLURM_IO_MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
 
 	return buf;
 }

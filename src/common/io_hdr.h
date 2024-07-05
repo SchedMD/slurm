@@ -72,7 +72,7 @@
 
 #include "src/common/pack.h"
 
-#define MAX_MSG_LEN 1024
+#define SLURM_IO_MAX_MSG_LEN 1024
 
 typedef enum {
 	SLURM_IO_INVALID = -1,
