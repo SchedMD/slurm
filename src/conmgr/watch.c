@@ -103,6 +103,10 @@ static int _handle_connection(void *x, void *arg)
 		 */
 		con->is_connected = true;
 
+		/* Query outbound MSS now kernel should know the answer */
+		if (con->is_socket && (con->output_fd != -1))
+			con->mss = fd_get_maxmss(con->output_fd, con->name);
+
 		if (con->events.on_connection) {
 			/* disable polling until on_connect() is done */
 			con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);

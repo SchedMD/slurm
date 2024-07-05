@@ -419,9 +419,6 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 
 	_set_connection_name(con, &in_stat, &out_stat);
 
-	if (has_out && !con->is_listen && con->is_socket)
-		con->mss = fd_get_maxmss(con->output_fd, con->name);
-
 	_check_con_type(con, type);
 
 	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
