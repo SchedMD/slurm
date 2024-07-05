@@ -35,6 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/xmalloc.h"
 
 #include "pmi.h"
 #include "setup.h"
