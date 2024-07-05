@@ -157,7 +157,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
-	char job_rec[1024];
+	char *job_rec = NULL;
 	char start_str[32], end_str[32], lim_str[32];
 	char *usr_str = NULL, *grp_str = NULL;
 	char *resv_name, *tres, *account, *qos, *wckey, *cluster;
@@ -302,15 +302,15 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		tmp_int = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
 
-	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
-		 (unsigned long) job_ptr->job_id, usr_str,
-		 (unsigned long) job_ptr->user_id, grp_str,
-		 (unsigned long) job_ptr->group_id, job_ptr->name,
-		 state_string, job_ptr->partition, lim_str, start_str,
-		 end_str, job_ptr->nodes, job_ptr->node_cnt,
-		 job_ptr->total_cpus, work_dir, resv_name, tres, account, qos,
-		 wckey, cluster, submit_time, eligible_time, array_id, het_id,
-		 derived_ec_str, exit_code_str);
+	xstrfmtcat(job_rec, JOB_FORMAT,
+		   (unsigned long) job_ptr->job_id, usr_str,
+		   (unsigned long) job_ptr->user_id, grp_str,
+		   (unsigned long) job_ptr->group_id, job_ptr->name,
+		   state_string, job_ptr->partition, lim_str, start_str,
+		   end_str, job_ptr->nodes, job_ptr->node_cnt,
+		   job_ptr->total_cpus, work_dir, resv_name, tres, account, qos,
+		   wckey, cluster, submit_time, eligible_time, array_id, het_id,
+		   derived_ec_str, exit_code_str);
 	tot_size = strlen(job_rec);
 
 	while (offset < tot_size) {
@@ -326,6 +326,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		}
 		offset += wrote;
 	}
+	xfree(job_rec);
 	xfree(usr_str);
 	xfree(grp_str);
 	xfree(derived_ec_str);
