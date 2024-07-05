@@ -526,8 +526,8 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 		if (client->out_msg == NULL) {
 			return SLURM_SUCCESS;
 		}
-		client->out_remaining = client->out_msg->length -
-					io_hdr_packed_size();
+		client->out_remaining =
+			(client->out_msg->length - IO_HDR_PACKET_BYTES);
 	}
 
 	/*
@@ -1260,13 +1260,13 @@ _build_connection_okay_message(stepd_step_rec_t *step)
 	header.gtaskid = 0;  /* Unused */
 	header.length = 0;
 
-	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
 	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
 		return msg;	/* Fix for CLANG false positive error */
 	}
 	io_hdr_pack(&header, packbuf);
-	msg->length = io_hdr_packed_size();
+	msg->length = IO_HDR_PACKET_BYTES;
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free packbuf, but not the memory to which it points */
@@ -1743,14 +1743,14 @@ _send_eof_msg(struct task_read_info *out)
 	header.gtaskid = out->gtaskid;
 	header.length = 0; /* eof */
 
-	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
 	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
 		return;	/* Fix for CLANG false positive error */
 	}
 
 	io_hdr_pack(&header, packbuf);
-	msg->length = io_hdr_packed_size() + header.length;
+	msg->length = IO_HDR_PACKET_BYTES + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free packbuf, but not the memory to which it points */
@@ -1797,7 +1797,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 		return NULL;
 	}
 
-	ptr = msg->data + io_hdr_packed_size();
+	ptr = msg->data + IO_HDR_PACKET_BYTES;
 
 	if (buffered_stdio) {
 		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
@@ -1835,13 +1835,13 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	header.length = n;
 
 	debug4("%s: header.length = %d", __func__, n);
-	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
 	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
 		return msg;	/* Fix for CLANG false positive error */
 	}
 	io_hdr_pack(&header, packbuf);
-	msg->length = io_hdr_packed_size() + header.length;
+	msg->length = IO_HDR_PACKET_BYTES + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free packbuf, but not the memory to which it points */
@@ -1861,7 +1861,7 @@ alloc_io_buf(void)
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
+	buf->data = xmalloc(MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
 
 	return buf;
 }

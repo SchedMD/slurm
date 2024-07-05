@@ -72,12 +72,16 @@ typedef struct {
 	uint32_t      length;
 } io_hdr_t;
 
-extern int g_io_hdr_size;
+/*
+ * IO Header is always written/read with the exact same number of bytes
+ * Changing this count will break older srun clients as this packet is
+ * unversioned.
+ */
+#define IO_HDR_PACKET_BYTES 10
 
 /*
  * Return the packed size of an IO header in bytes;
  */
-#define io_hdr_packed_size() g_io_hdr_size
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer);
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer);
 int io_hdr_read_fd(int fd, io_hdr_t *hdr);

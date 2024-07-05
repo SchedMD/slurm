@@ -708,7 +708,7 @@ static int _file_read(eio_obj_t *obj, List objs)
 	}
 	slurm_mutex_unlock(&info->cio->ioservers_lock);
 
-	ptr = msg->data + io_hdr_packed_size();
+	ptr = msg->data + IO_HDR_PACKET_BYTES;
 
 again:
 	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
@@ -738,9 +738,9 @@ again:
 	 */
 	header = info->header;
 	header.length = len;
-	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
 	io_hdr_pack(&header, packbuf);
-	msg->length = io_hdr_packed_size() + header.length;
+	msg->length = IO_HDR_PACKET_BYTES + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 	/* free the packbuf structure, but not the memory to which it points */
 	packbuf->head = NULL;
@@ -971,7 +971,7 @@ _alloc_io_buf(void)
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
+	buf->data = xmalloc(MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
 
 	return buf;
 }
@@ -1307,11 +1307,11 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	if (_incoming_buf_free(cio)) {
 		msg = list_dequeue(cio->free_incoming);
 
-		msg->length = io_hdr_packed_size();
+		msg->length = IO_HDR_PACKET_BYTES;
 		msg->ref_count = 1;
 		msg->header = header;
 
-		packbuf = create_buf(msg->data, io_hdr_packed_size());
+		packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
 		io_hdr_pack(&header, packbuf);
 		/* free the packbuf, but not the memory to which it points */
 		packbuf->head = NULL;
