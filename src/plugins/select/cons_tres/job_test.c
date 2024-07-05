@@ -62,6 +62,8 @@ typedef struct {
 	list_t *future_license_list;
 	bitstr_t *orig_map;
 	bool *qos_preemptor;
+	time_t start;
+	bitstr_t **tmp_bitmap_pptr;
 } cr_job_list_args_t;
 
 typedef struct {
@@ -2257,7 +2259,19 @@ static int _build_cr_job_list(void *x, void *arg)
 			return 0;
 		}
 	}
-	if (!_is_preemptable(job_ptr_preempt, args->preemptee_candidates)) {
+	if (job_ptr_preempt->end_time < args->start) {
+		bitstr_t *efctv_bitmap_ptr;
+		efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr,
+						       args->orig_map,
+						       args->tmp_bitmap_pptr);
+		if (bit_overlap_any(efctv_bitmap_ptr,
+				    tmp_job_ptr->node_bitmap)) {
+			job_res_rm_job(args->future_part, args->future_usage,
+				       args->future_license_list, tmp_job_ptr,
+				       JOB_RES_ACTION_NORMAL, efctv_bitmap_ptr);
+		}
+	} else if (!_is_preemptable(job_ptr_preempt,
+				    args->preemptee_candidates)) {
 		/* Queue job for later removal from data structures */
 		list_append(args->cr_job_list, tmp_job_ptr);
 	} else if (tmp_job_ptr == job_ptr_preempt) {
@@ -2341,6 +2355,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool qos_preemptor = false;
+	bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 	cr_job_list_args_t args;
 
 	orig_map = bit_copy(node_bitmap);
@@ -2396,6 +2411,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.future_license_list = future_license_list,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
+		.start = will_run_ptr ? will_run_ptr->start : 0,
+		.tmp_bitmap_pptr = &efctv_bitmap,
 	};
 	list_for_each(job_list, _build_cr_job_list, &args);
 
@@ -2426,7 +2443,6 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		int time_window = 30;
 		time_t end_time = 0;
 		bool more_jobs = true;
-		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		DEF_TIMERS;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		START_TIMER;
@@ -2541,8 +2557,8 @@ timer_check:
 		}
 
 		list_iterator_destroy(job_iterator);
-		FREE_NULL_BITMAP(efctv_bitmap);
 	}
+	FREE_NULL_BITMAP(efctv_bitmap);
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
