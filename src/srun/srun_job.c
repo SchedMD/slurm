@@ -58,7 +58,6 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
-#include "src/common/io_hdr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
