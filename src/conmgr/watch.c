@@ -109,7 +109,7 @@ static int _handle_connection(void *x, void *arg)
 
 		if (con->events.on_connection) {
 			/* disable polling until on_connect() is done */
-			con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+			con_set_polling(true, con, PCTL_TYPE_CONNECTED, __func__);
 			add_work_con_fifo(true, con, wrap_on_connection, con);
 
 			log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
@@ -198,7 +198,7 @@ static int _handle_connection(void *x, void *arg)
 			 __func__, con->name);
 
 		/* disable polling until _listen_accept() completes */
-		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+		con_set_polling(true, con, PCTL_TYPE_CONNECTED, __func__);
 		con->can_read = false;
 
 		add_work_con_fifo(true, con, _listen_accept, con);
@@ -295,7 +295,7 @@ static int _handle_connection(void *x, void *arg)
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	if (con->output_fd != -1) {
-		con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+		con_set_polling(true, con, PCTL_TYPE_NONE, __func__);
 
 		if (close(con->output_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",

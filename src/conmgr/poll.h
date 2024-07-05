@@ -65,6 +65,8 @@ extern void pollctl_fini(void);
 
 typedef enum {
 	PCTL_TYPE_INVALID = 0,
+	PCTL_TYPE_NONE, /* Stop polling connection */
+	PCTL_TYPE_CONNECTED, /* only watch for connection to hangup/close */
 	PCTL_TYPE_READ_ONLY,
 	PCTL_TYPE_READ_WRITE,
 	PCTL_TYPE_WRITE_ONLY,

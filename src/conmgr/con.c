@@ -134,8 +134,11 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		error("%s: unable to unlink %s: %m",
 		      __func__, con->unix_socket);
 
-	/* stop polling to input fd to allow handle_connection() to reapply */
-	con_set_polling(true, con, PCTL_TYPE_INVALID, __func__);
+	/*
+	 * Stop polling read/write to input fd to allow handle_connection() to
+	 * select what needs to be monitored
+	 */
+	con_set_polling(true, con, PCTL_TYPE_NONE, __func__);
 
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
@@ -389,8 +392,8 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
-		.polling_input_fd = PCTL_TYPE_INVALID,
-		.polling_output_fd = PCTL_TYPE_INVALID,
+		.polling_input_fd = PCTL_TYPE_NONE,
+		.polling_output_fd = PCTL_TYPE_NONE,
 	};
 
 	if (!is_listen) {
@@ -971,13 +974,13 @@ static void _set_fd_polling(int fd, pollctl_fd_type_t old,
 	if (old == new)
 		return;
 
-	if (new == PCTL_TYPE_INVALID) {
-		if (old != PCTL_TYPE_INVALID)
+	if (new == PCTL_TYPE_NONE) {
+		if (old != PCTL_TYPE_NONE)
 			pollctl_unlink_fd(fd, con_name, caller);
 		return;
 	}
 
-	if (old != PCTL_TYPE_INVALID)
+	if (old != PCTL_TYPE_NONE)
 		pollctl_relink_fd(fd, new, con_name, caller);
 	else
 		pollctl_link_fd(fd, new, con_name, caller);
@@ -992,11 +995,11 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	xassert(type >= PCTL_TYPE_INVALID);
+	xassert(type > PCTL_TYPE_INVALID);
 	xassert(type < PCTL_TYPE_INVALID_MAX);
-	xassert(con->polling_input_fd >= PCTL_TYPE_INVALID);
+	xassert(con->polling_input_fd > PCTL_TYPE_INVALID);
 	xassert(con->polling_input_fd < PCTL_TYPE_INVALID_MAX);
-	xassert(con->polling_output_fd >= PCTL_TYPE_INVALID);
+	xassert(con->polling_output_fd > PCTL_TYPE_INVALID);
 	xassert(con->polling_output_fd < PCTL_TYPE_INVALID_MAX);
 
 	in = con->input_fd;
@@ -1009,18 +1012,27 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 
 	/* Map type to type per in/out */
 	switch (type) {
-	case PCTL_TYPE_INVALID:
-		in_type = PCTL_TYPE_INVALID;
-		out_type = PCTL_TYPE_INVALID;
+	case PCTL_TYPE_NONE:
+		in_type = PCTL_TYPE_NONE;
+		out_type = PCTL_TYPE_NONE;
+		break;
+	case PCTL_TYPE_CONNECTED:
+		if (is_same) {
+			in_type = PCTL_TYPE_CONNECTED;
+			out_type = PCTL_TYPE_NONE;
+		} else {
+			in_type = PCTL_TYPE_CONNECTED;
+			out_type = PCTL_TYPE_CONNECTED;
+		}
 		break;
 	case PCTL_TYPE_READ_ONLY:
 		in_type = PCTL_TYPE_READ_ONLY;
-		out_type = PCTL_TYPE_INVALID;
+		out_type = PCTL_TYPE_NONE;
 		break;
 	case PCTL_TYPE_READ_WRITE:
 		if (is_same) {
 			in_type = PCTL_TYPE_READ_WRITE;
-			out_type = PCTL_TYPE_INVALID;
+			out_type = PCTL_TYPE_NONE;
 		} else {
 			in_type = PCTL_TYPE_READ_ONLY;
 			out_type = PCTL_TYPE_WRITE_ONLY;
@@ -1029,25 +1041,26 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 	case PCTL_TYPE_WRITE_ONLY:
 		if (is_same) {
 			in_type = PCTL_TYPE_WRITE_ONLY;
-			out_type = PCTL_TYPE_INVALID;
+			out_type = PCTL_TYPE_NONE;
 		} else {
-			in_type = PCTL_TYPE_INVALID;
+			in_type = PCTL_TYPE_NONE;
 			out_type = PCTL_TYPE_WRITE_ONLY;
 		}
 		break;
 	case PCTL_TYPE_LISTEN:
 		xassert(con->is_listen);
 		in_type = PCTL_TYPE_LISTEN;
-		out_type = PCTL_TYPE_INVALID;
+		out_type = PCTL_TYPE_NONE;
 		break;
+	case PCTL_TYPE_INVALID:
 	case PCTL_TYPE_INVALID_MAX:
 		fatal_abort("should never execute");
 	}
 
 	if (!has_in)
-		in_type = PCTL_TYPE_INVALID;
+		in_type = PCTL_TYPE_NONE;
 	if (!has_out)
-		out_type = PCTL_TYPE_INVALID;
+		out_type = PCTL_TYPE_NONE;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *log = NULL, *at = NULL;
@@ -1090,8 +1103,8 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 
 	if (is_same) {
 		/* same never link output_fd */
-		xassert(out_type == PCTL_TYPE_INVALID);
-		xassert(con->polling_output_fd == PCTL_TYPE_INVALID);
+		xassert(out_type == PCTL_TYPE_NONE);
+		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 
 		_set_fd_polling(in, con->polling_input_fd, in_type, con->name,
 				caller);
