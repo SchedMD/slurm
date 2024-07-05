@@ -41,10 +41,7 @@
 
 #include <inttypes.h>
 
-#include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */
 #include "src/common/pack.h"
-#include "src/common/cbuf.h"
-#include "src/common/xmalloc.h"
 
 #define MAX_MSG_LEN 1024
 #define SLURM_IO_KEY_SIZE 8
