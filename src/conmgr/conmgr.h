@@ -340,7 +340,9 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * Create listening sockets from list of host:port pairs
  * IN type - connection type for new sockets
  * IN hostports - list_t* of cstrings to listen on:
- *	format: host:port
+ *	formats:
+ *		host:port
+ *		unix:/path/to/socket
  * IN events - function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
