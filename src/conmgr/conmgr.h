@@ -337,6 +337,21 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con);
 extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 
 /*
+ * Create listening socket
+ * IN type - connection type for new sockets
+ * IN listen_on - cstrings to listen on:
+ *	formats:
+ *		host:port
+ *		unix:/path/to/socket
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+					const char *listen_on,
+					conmgr_events_t events, void *arg);
+
+/*
  * Create listening sockets from list of host:port pairs
  * IN type - connection type for new sockets
  * IN hostports - list_t* of cstrings to listen on:

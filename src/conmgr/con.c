@@ -638,18 +638,16 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
-static int _setup_listen_socket(void *x, void *arg)
+extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+					const char *listen_on,
+					conmgr_events_t events, void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
-	const char *hostport = (const char *)x;
-	const char *unixsock = xstrstr(hostport, UNIX_PREFIX);
-	socket_listen_init_t *init = arg;
+	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
 	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
 	conmgr_callbacks_t callbacks;
-
-	xassert(init->magic == MAGIC_LISTEN_INIT);
 
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
@@ -663,13 +661,13 @@ static int _setup_listen_socket(void *x, void *arg)
 		unixsock += sizeof(UNIX_PREFIX) - 1;
 		if (unixsock[0] == '\0')
 			fatal("%s: [%s] Invalid UNIX socket",
-			      __func__, hostport);
+			      __func__, listen_on);
 
 		addr = sockaddr_from_unix_path(unixsock);
 
 		if (addr.ss_family != AF_UNIX)
 			fatal("%s: [%s] Invalid Unix socket path: %s",
-			      __func__, hostport, unixsock);
+			      __func__, listen_on, unixsock);
 
 		log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
 			 __func__, &addr);
@@ -681,29 +679,27 @@ static int _setup_listen_socket(void *x, void *arg)
 		if ((rc = bind(fd, (const struct sockaddr *) &addr,
 			       sizeof(struct sockaddr_un))))
 			fatal("%s: [%s] Unable to bind UNIX socket: %m",
-			      __func__, hostport);
+			      __func__, listen_on);
 
 		fd_set_oob(fd, 0);
 
 		rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 		if (rc < 0)
 			fatal("%s: [%s] unable to listen(): %m",
-			      __func__, hostport);
+			      __func__, listen_on);
 
-		init->rc = conmgr_process_fd_unix_listen(init->type, fd,
-							 init->events, &addr,
-							 sizeof(addr), unixsock,
-							 init->arg);
-		return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
+		return conmgr_process_fd_unix_listen(type, fd, events, &addr,
+						     sizeof(addr), unixsock,
+						     arg);
 	} else {
 		/* split up host and port */
-		if (!(parsed_hp = callbacks.parse(hostport)))
-			fatal("%s: Unable to parse %s", __func__, hostport);
+		if (!(parsed_hp = callbacks.parse(listen_on)))
+			fatal("%s: Unable to parse %s", __func__, listen_on);
 
 		/* resolve out the host and port if provided */
 		if (!(addrlist = xgetaddrinfo(parsed_hp->host,
 					      parsed_hp->port)))
-			fatal("Unable to listen on %s", hostport);
+			fatal("Unable to listen on %s", listen_on);
 	}
 
 	/*
@@ -751,15 +747,27 @@ static int _setup_listen_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = conmgr_process_fd_listen(fd, init->type, init->events,
-			(const slurm_addr_t *)addr->ai_addr, addr->ai_addrlen,
-			init->arg);
+		rc = conmgr_process_fd_listen(fd, type, events,
+			(const slurm_addr_t *) addr->ai_addr, addr->ai_addrlen,
+			arg);
 	}
 
 	freeaddrinfo(addrlist);
 	callbacks.free_parse(parsed_hp);
 
-	init->rc = rc;
+	return rc;
+}
+
+static int _setup_listen_socket(void *x, void *arg)
+{
+	const char *hostport = (const char *)x;
+	socket_listen_init_t *init = arg;
+
+	xassert(init->magic == MAGIC_LISTEN_INIT);
+
+	init->rc = conmgr_create_listen_socket(init->type, hostport,
+					       init->events, init->arg);
+
 	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }
 
