@@ -76,9 +76,12 @@ static const struct {
 #undef T
 
 typedef struct {
+#define MAGIC_LISTEN_INIT 0xe9abb8e0
+	int magic; /* MAGIC_LISTEN_INIT */
 	conmgr_events_t events;
 	void *arg;
 	conmgr_con_type_t type;
+	int rc;
 } socket_listen_init_t;
 
 extern const char *conmgr_con_type_string(conmgr_con_type_t type)
@@ -646,6 +649,8 @@ static int _setup_listen_socket(void *x, void *arg)
 	parsed_host_port_t *parsed_hp;
 	conmgr_callbacks_t callbacks;
 
+	xassert(init->magic == MAGIC_LISTEN_INIT);
+
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
 	slurm_mutex_unlock(&mgr.mutex);
@@ -685,10 +690,11 @@ static int _setup_listen_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, hostport);
 
-		return conmgr_process_fd_unix_listen(init->type, fd,
-						     init->events, &addr,
-						     sizeof(addr), unixsock,
-						     init->arg);
+		init->rc = conmgr_process_fd_unix_listen(init->type, fd,
+							 init->events, &addr,
+							 sizeof(addr), unixsock,
+							 init->arg);
+		return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(hostport)))
@@ -753,27 +759,23 @@ static int _setup_listen_socket(void *x, void *arg)
 	freeaddrinfo(addrlist);
 	callbacks.free_parse(parsed_hp);
 
-	return rc;
+	init->rc = rc;
+	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }
 
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
 					conmgr_events_t events, void *arg)
 {
-	int rc;
-	socket_listen_init_t *init = xmalloc(sizeof(*init));
-	init->events = events;
-	init->arg = arg;
-	init->type = type;
+	socket_listen_init_t init = {
+		.magic = MAGIC_LISTEN_INIT,
+		.events = events,
+		.arg = arg,
+		.type = type,
+	};
 
-	if (list_for_each(hostports, _setup_listen_socket, init) > 0)
-		rc = SLURM_SUCCESS;
-	else
-		rc = SLURM_ERROR;
-
-	xfree(init);
-
-	return rc;
+	(void) list_for_each(hostports, _setup_listen_socket, &init);
+	return init.rc;
 }
 
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
