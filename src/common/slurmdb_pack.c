@@ -1193,7 +1193,21 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_accounting_rec_t *object = (slurmdb_accounting_rec_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack64(0, buffer);
+			slurmdb_pack_tres_rec(NULL, protocol_version, buffer);
+			pack32(0, buffer);
+			pack_time(0, buffer);
+			return;
+		}
+
+		pack64(object->alloc_secs, buffer);
+		slurmdb_pack_tres_rec(&object->tres_rec,
+				      protocol_version, buffer);
+		pack32(object->id, buffer);
+		pack_time(object->period_start, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			slurmdb_pack_tres_rec(NULL, protocol_version, buffer);
@@ -1222,7 +1236,15 @@ extern int slurmdb_unpack_accounting_rec(void **object,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		if (slurmdb_unpack_tres_rec_noalloc(
+			    &object_ptr->tres_rec, protocol_version, buffer) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		if (slurmdb_unpack_tres_rec_noalloc(
 			    &object_ptr->tres_rec, protocol_version, buffer)
