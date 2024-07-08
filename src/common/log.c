@@ -735,7 +735,6 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
 		port = ntohs(in6->sin6_port);
 		snprintf(buf, buf_size, "[%%.0s%s]:%d", addrbuf, port);
-		return buf;
 	} else if (addr_ptr->ss_family == AF_INET) {
 		char addrbuf[INET_ADDRSTRLEN];
 		struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
