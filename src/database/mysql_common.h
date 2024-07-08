@@ -51,6 +51,7 @@
 
 #include <mysql.h>
 #include <mysqld_error.h>
+#include <errmsg.h>
 
 typedef enum {
 	SLURM_MYSQL_PLUGIN_NOTSET,

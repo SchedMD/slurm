@@ -336,7 +336,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	char *nodes = NULL, *jname = NULL;
 	char *partition = NULL;
 	char *query = NULL;
-	int reinit = 0;
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	uint32_t job_state;
@@ -731,17 +730,14 @@ no_rollup_change:
 				   job_ptr->licenses);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-	try_again:
+
 		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
 			      mysql_conn, query))) {
-			if (!reinit) {
-				error("%s: It looks like the storage has gone away trying to reconnect",
-				      __func__);
-				/* reconnect */
-				check_connection(mysql_conn);
-				reinit = 1;
-				goto try_again;
-			} else
+			rc = errno;
+			if ((rc == CR_SERVER_GONE_ERROR) ||
+			    (rc == CR_SERVER_LOST))
+				rc = ESLURM_DB_CONNECTION;
+			else
 				rc = SLURM_ERROR;
 		}
 	} else {
