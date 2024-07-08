@@ -964,6 +964,7 @@ typedef struct {
 } slurmdb_qos_usage_t;
 
 typedef struct {
+	time_t blocked_until; /* internal use only, DON'T PACK  */
 	char *description;
 	uint32_t id;
 	uint32_t flags; /* flags for various things to enforce or
@@ -1096,7 +1097,6 @@ typedef struct {
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
 			       pending and new jobs */
-	time_t blocked_until; /* internal use only, DON'T PACK  */
 } slurmdb_qos_rec_t;
 
 typedef struct {
