@@ -49,28 +49,6 @@
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
 
-static int _for_each_pack_str(void *x, void *arg)
-{
-	char *str = (char *) x;
-	buf_t *buffer = (buf_t *) arg;
-
-	packstr(str, buffer);
-
-	return SLURM_SUCCESS;
-}
-
-static void _pack_list_of_str(list_t *l, buf_t *buffer)
-{
-	uint32_t count = NO_VAL;
-
-	if (l)
-		count = list_count(l);
-
-	pack32(count, buffer);
-	if (count && (count != NO_VAL))
-		list_for_each(l, _for_each_pack_str, buffer);
-}
-
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, buf_t *buffer)
 {
@@ -617,7 +595,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
-		_pack_list_of_str(object->fed.feature_list, buffer);
+		slurm_pack_list(object->fed.feature_list,
+				packstr_func,
+				buffer, protocol_version);
 
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
@@ -679,7 +659,10 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
-		_pack_list_of_str(object->fed.feature_list, buffer);
+		slurm_pack_list(object->fed.feature_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
@@ -743,7 +726,10 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
-		_pack_list_of_str(object->fed.feature_list, buffer);
+		slurm_pack_list(object->fed.feature_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
@@ -1205,7 +1191,10 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->partition, buffer);
 		pack32(object->priority, buffer);
 
-		_pack_list_of_str(object->qos_list, buffer);
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->uid, buffer);
 
@@ -1302,7 +1291,10 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->partition, buffer);
 		pack32(object->priority, buffer);
 
-		_pack_list_of_str(object->qos_list, buffer);
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->uid, buffer);
 
@@ -1400,7 +1392,10 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->partition, buffer);
 		pack32(object->priority, buffer);
 
-		_pack_list_of_str(object->qos_list, buffer);
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
@@ -1984,7 +1979,10 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 
 		pack_bit_str_hex(object->preempt_bitstr, buffer);
 
-		_pack_list_of_str(object->preempt_list, buffer);
+		slurm_pack_list(object->preempt_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->preempt_mode, buffer);
 		pack32(object->preempt_exempt_time, buffer);
@@ -2074,7 +2072,10 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 
 		pack_bit_str_hex(object->preempt_bitstr, buffer);
 
-		_pack_list_of_str(object->preempt_list, buffer);
+		slurm_pack_list(object->preempt_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->preempt_mode, buffer);
 		pack32(object->preempt_exempt_time, buffer);
@@ -2843,10 +2844,22 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
 		}
 
 		pack64(object->count, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
-		_pack_list_of_str(object->type_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->type_list,
+				packstr_func,
+				buffer, protocol_version);
+
 		pack16(object->with_deleted, buffer);
 	}
 }
@@ -2989,8 +3002,14 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version,
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
-		_pack_list_of_str(object->def_acct_list, buffer);
-		_pack_list_of_str(object->def_wckey_list, buffer);
+		slurm_pack_list(object->def_acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->def_wckey_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_assocs, buffer);
 		pack16(object->with_coords, buffer);
@@ -3058,11 +3077,17 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
-		_pack_list_of_str(object->description_list, buffer);
+		slurm_pack_list(object->description_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->flags, buffer);
 
-		_pack_list_of_str(object->organization_list, buffer);
+		slurm_pack_list(object->organization_list,
+				packstr_func,
+				buffer, protocol_version);
+
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			slurmdb_pack_assoc_cond(NULL, protocol_version,
@@ -3077,8 +3102,14 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
-		_pack_list_of_str(object->description_list, buffer);
-		_pack_list_of_str(object->organization_list, buffer);
+		slurm_pack_list(object->description_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->organization_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		if (object->flags & SLURMDB_ACCT_FLAG_WASSOC)
 			pack16(1, buffer);
@@ -3180,13 +3211,25 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 
 		pack16(object->classification, buffer);
 
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->federation_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->federation_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->flags, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->rpc_version_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->rpc_version_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
@@ -3211,14 +3254,26 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 
 		pack16(object->classification, buffer);
 
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->federation_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->federation_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->flags, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
 		pack32(NO_VAL, buffer);
-		_pack_list_of_str(object->rpc_version_list, buffer);
+		slurm_pack_list(object->rpc_version_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
@@ -3355,9 +3410,18 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->federation_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->federation_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_deleted, buffer);
 	}
@@ -3559,22 +3623,49 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->acct_list, buffer);
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->def_qos_id_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
+		slurm_pack_list(object->acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->def_qos_id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->only_defs, buffer);
 
-		_pack_list_of_str(object->partition_list, buffer);
-		_pack_list_of_str(object->parent_acct_list, buffer);
-		_pack_list_of_str(object->qos_list, buffer);
+		slurm_pack_list(object->partition_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->parent_acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
 
-		_pack_list_of_str(object->user_list, buffer);
+		slurm_pack_list(object->user_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
@@ -3695,23 +3786,36 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 	xassert(object);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		_pack_list_of_str(object->cluster_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->cond_flags, buffer);
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
 		pack16(object->event_type, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
 
 		packstr(object->node_list, buffer);
 
 		pack_time(object->period_end, buffer);
 		pack_time(object->period_start, buffer);
 
-		_pack_list_of_str(object->reason_list, buffer);
-		_pack_list_of_str(object->reason_uid_list, buffer);
-		_pack_list_of_str(object->state_list, buffer);
+		slurm_pack_list(object->reason_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->reason_uid_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->state_list,
+				packstr_func,
+				buffer, protocol_version);
 	}
 }
 
@@ -3908,10 +4012,22 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->acct_list, buffer);
-		_pack_list_of_str(object->associd_list, buffer);
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->constraint_list, buffer);
+		slurm_pack_list(object->acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->associd_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->constraint_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
@@ -3919,23 +4035,50 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		pack32((uint32_t)object->exitcode, buffer);
 		pack32(object->flags, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->groupid_list, buffer);
-		_pack_list_of_str(object->jobname_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->groupid_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->jobname_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->nodes_max, buffer);
 		pack32(object->nodes_min, buffer);
 
-		_pack_list_of_str(object->partition_list, buffer);
-		_pack_list_of_str(object->qos_list, buffer);
-		_pack_list_of_str(object->reason_list, buffer);
-		_pack_list_of_str(object->resv_list, buffer);
-		_pack_list_of_str(object->resvid_list, buffer);
+		slurm_pack_list(object->partition_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->reason_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->resv_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->resvid_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		slurm_pack_list(object->step_list, slurm_pack_selected_step,
 				buffer, protocol_version);
 
-		_pack_list_of_str(object->state_list, buffer);
+		slurm_pack_list(object->state_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->timelimit_max, buffer);
 		pack32(object->timelimit_min, buffer);
@@ -3944,8 +4087,14 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		packstr(object->used_nodes, buffer);
 
-		_pack_list_of_str(object->userid_list, buffer);
-		_pack_list_of_str(object->wckey_list, buffer);
+		slurm_pack_list(object->userid_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->wckey_list,
+				packstr_func,
+				buffer, protocol_version);
+
 	}
 }
 
@@ -4688,10 +4837,21 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->description_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
+		slurm_pack_list(object->description_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
 
 		pack16(object->preempt_mode, buffer);
 		pack16(object->with_deleted, buffer);
@@ -4706,10 +4866,22 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->description_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
+		slurm_pack_list(object->description_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->preempt_mode, buffer);
 		pack16(object->with_deleted, buffer);
@@ -4821,13 +4993,25 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->cluster_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack64(object->flags, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		packstr(object->nodes, buffer);
 		pack_time(object->time_end, buffer);
@@ -5011,18 +5195,45 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->description_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->description_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack32(object->flags, buffer);
 
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->manager_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
-		_pack_list_of_str(object->allowed_list, buffer);
-		_pack_list_of_str(object->server_list, buffer);
-		_pack_list_of_str(object->type_list, buffer);
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->manager_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->allowed_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->server_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->type_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_deleted, buffer);
 		pack16(object->with_clusters, buffer);
@@ -5142,19 +5353,46 @@ extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->acct_list, buffer);
-		_pack_list_of_str(object->action_list, buffer);
-		_pack_list_of_str(object->actor_list, buffer);
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->info_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
+		slurm_pack_list(object->acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->action_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->actor_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->info_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack_time(object->time_end, buffer);
 		pack_time(object->time_start, buffer);
 
-		_pack_list_of_str(object->user_list, buffer);
+		slurm_pack_list(object->user_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_assoc_info, buffer);
 	}
@@ -5272,17 +5510,32 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		_pack_list_of_str(object->cluster_list, buffer);
-		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->id_list, buffer);
-		_pack_list_of_str(object->name_list, buffer);
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->only_defs, buffer);
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
 
-		_pack_list_of_str(object->user_list, buffer);
+		slurm_pack_list(object->user_list,
+				packstr_func,
+				buffer, protocol_version);
+
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
