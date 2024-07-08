@@ -178,6 +178,9 @@ extern int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp,
 				     buf_t *buffer);
 extern int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp,
 				     buf_t *buffer);
+extern int safe_unpackstr_func(void **object,
+			       uint16_t protocol_version,
+			       buf_t *buffer);
 
 extern void packstr_array(char **valp, uint32_t size_val, buf_t *buffer);
 extern int unpackstr_array(char ***valp, uint32_t* size_val, buf_t *buffer);
