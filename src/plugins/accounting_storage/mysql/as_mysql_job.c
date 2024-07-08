@@ -1230,15 +1230,13 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			*/
 			char *comment = job_ptr->comment;
 			job_ptr->comment = NULL;
-			/* If we get an error with this just fall
-			 * through to avoid an infinite loop
-			 */
-			if (as_mysql_job_start(
-				    mysql_conn, job_ptr) == SLURM_ERROR) {
+
+			if ((rc = as_mysql_job_start(
+				     mysql_conn, job_ptr)) != SLURM_SUCCESS) {
 				job_ptr->comment = comment;
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
-				return SLURM_SUCCESS;
+				return rc;
 			}
 			job_ptr->comment = comment;
 		}
@@ -1400,14 +1398,13 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		      _get_db_index(mysql_conn,
 				    submit_time,
 				    step_ptr->job_ptr->job_id))) {
-			/* If we get an error with this just fall
-			 * through to avoid an infinite loop
-			 */
-			if (as_mysql_job_start(mysql_conn, step_ptr->job_ptr)
-			    == SLURM_ERROR) {
+
+			if ((rc = as_mysql_job_start(
+				     mysql_conn,
+				     step_ptr->job_ptr)) != SLURM_SUCCESS) {
 				error("couldn't add job %u at step start",
 				      step_ptr->job_ptr->job_id);
-				return SLURM_SUCCESS;
+				return rc;
 			}
 		}
 	}
@@ -1549,15 +1546,13 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		      _get_db_index(mysql_conn,
 				    submit_time,
 				    step_ptr->job_ptr->job_id))) {
-			/* If we get an error with this just fall
-			 * through to avoid an infinite loop
-			 */
-			if (as_mysql_job_start(mysql_conn, step_ptr->job_ptr)
-			    == SLURM_ERROR) {
+			if ((rc = as_mysql_job_start(
+				     mysql_conn,
+				     step_ptr->job_ptr)) != SLURM_SUCCESS) {
 				error("couldn't add job %u "
 				      "at step completion",
 				      step_ptr->job_ptr->job_id);
-				return SLURM_SUCCESS;
+				return rc;
 			}
 		}
 	}
@@ -1769,14 +1764,12 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 		      _get_db_index(mysql_conn,
 				    submit_time,
 				    job_ptr->job_id))) {
-			/* If we get an error with this just fall
-			 * through to avoid an infinite loop
-			 */
-			if (as_mysql_job_start(
-				    mysql_conn, job_ptr) == SLURM_ERROR) {
+			if ((rc = as_mysql_job_start(
+				     mysql_conn,
+				     job_ptr)) != SLURM_SUCCESS) {
 				error("couldn't suspend job %u",
 				      job_ptr->job_id);
-				return SLURM_SUCCESS;
+				return rc;
 			}
 		}
 	}
