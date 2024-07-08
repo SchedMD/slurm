@@ -2252,7 +2252,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	if (!job_ptr->step_list)
 		job_ptr->step_list = list_create(free_step_record);
 
-	(void) job_array_post_sched(job_ptr);
+	(void) job_array_post_sched(job_ptr, true);
 	(void) bb_g_job_begin(job_ptr);
 	job_array_start(job_ptr);
 	rebuild_job_part_list(job_ptr);
@@ -2937,7 +2937,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	job_end_time_reset(job_ptr);
 
-	(void) job_array_post_sched(job_ptr);
+	(void) job_array_post_sched(job_ptr, true);
 	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error_code = ESLURM_INVALID_BURST_BUFFER_REQUEST;

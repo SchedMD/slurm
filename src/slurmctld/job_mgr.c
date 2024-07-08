@@ -3314,7 +3314,7 @@ extern void rehash_jobs(void)
  *		individial task of the job array.
  *		Set the job's array_task_id to the task to be split out.
  * RET - The new job record, which is the new META job record. */
-extern job_record_t *job_array_split(job_record_t *job_ptr)
+extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 {
 	job_record_t *job_ptr_pend = NULL;
 	job_details_t *job_details, *details_new, *save_details;
@@ -3324,7 +3324,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	list_t *save_step_list = NULL;
 	int i;
 
-	job_ptr_pend = _create_job_record(0, true);
+	job_ptr_pend = _create_job_record(0, list_add);
 
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 	job_ptr_pend->job_id = job_ptr->job_id;
@@ -3388,7 +3388,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 				job_ptr_pend->array_task_id = NO_VAL;
 			} else {
 				job_ptr_pend->array_task_id = i;
-				job_array_post_sched(job_ptr_pend);
+				job_array_post_sched(job_ptr_pend, true);
 			}
 		} else {
 			/* Still have tasks left to split off in the array */
@@ -14421,7 +14421,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				if (!bit_test(tmp_bitmap, i))
 					continue;
 				job_ptr->array_task_id = i;
-				new_job_ptr = job_array_split(job_ptr);
+				new_job_ptr = job_array_split(job_ptr, true);
 
 				/*
 				 * The array_recs structure is moved to the
@@ -18050,7 +18050,7 @@ extern void job_array_pre_sched(job_record_t *job_ptr)
 }
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern job_record_t *job_array_post_sched(job_record_t *job_ptr)
+extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add)
 {
 	job_record_t *new_job_ptr = NULL;
 
@@ -18090,7 +18090,7 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr)
 		}
 		new_job_ptr = job_ptr;
 	} else {
-		new_job_ptr = job_array_split(job_ptr);
+		new_job_ptr = job_array_split(job_ptr, list_add);
 		job_state_set(new_job_ptr, JOB_PENDING);
 		new_job_ptr->start_time = (time_t) 0;
 		/*

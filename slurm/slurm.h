@@ -2482,6 +2482,12 @@ typedef struct job_defaults {
 
 #define PART_FLAG_EXCLUSIVE_TOPO SLURM_BIT(16)/* Set if Topo allocated exclusively */
 #define PART_FLAG_EXC_TOPO_CLR SLURM_BIT(17) /* Clear EXCLUSIVE_TOPO flag */
+#define PART_FLAG_SCHED_FAILED SLURM_BIT(18) /* Partition failed to schedule
+					      * job */
+#define PART_FLAG_SCHED_CLEARED SLURM_BIT(19) /* Partition's nodes have been
+					       * cleared from available after
+					       * failed to schedule job */
+
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating
@@ -2671,6 +2677,8 @@ typedef struct will_run_response_msg {
 #define RESERVE_FLAG_USER_DEL	   SLURM_BIT(39) /* Allow users in the ACL to
 						    delete this reservation */
 #define RESERVE_FLAG_NO_USER_DEL   SLURM_BIT(40) /* Clear USER_DEL flag */
+#define RESERVE_FLAG_SCHED_FAILED SLURM_BIT(41) /* Reservation failed to
+						 * schedule job */
 
 #define RESERVE_REOCCURRING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
 				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \

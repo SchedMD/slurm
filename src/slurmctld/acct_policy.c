@@ -4764,7 +4764,7 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 		old_job_ptr = job_ptr;
 
 		job_array_pre_sched(job_ptr);
-		job_ptr = job_array_post_sched(job_ptr);
+		job_ptr = job_array_post_sched(job_ptr, true);
 
 		details_ptr = old_job_ptr->details;
 		if (!details_ptr) {
