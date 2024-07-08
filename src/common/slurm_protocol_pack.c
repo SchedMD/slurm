@@ -2278,6 +2278,10 @@ extern int slurm_unpack_list(List *recv_list,
 	xassert(recv_list);
 
 	safe_unpack32(&count, buffer);
+
+	if (count > NO_VAL)
+		return SLURM_ERROR;
+
 	if (count != NO_VAL) {
 		int i;
 		void *object = NULL;
