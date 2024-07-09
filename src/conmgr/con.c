@@ -84,6 +84,14 @@ typedef struct {
 	int rc;
 } socket_listen_init_t;
 
+typedef struct {
+#define MAGIC_RECEIVE_FD 0xeba8bae0
+	int magic; /* MAGIC_RECEIVE_FD */
+	conmgr_con_type_t type;
+	conmgr_events_t events;
+	void *arg;
+} receive_fd_args_t;
+
 extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(con_types); i++)
@@ -528,6 +536,93 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	return SLURM_SUCCESS;
+}
+
+static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	receive_fd_args_t *args = arg;
+	conmgr_fd_t *src = conmgr_args.con;
+	int fd = -1;
+
+	xassert(args->magic == MAGIC_RECEIVE_FD);
+	xassert(src->magic == MAGIC_CON_MGR_FD);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "%s: [%s] Canceled receive new file descriptor",
+			 __func__, src->name);
+	} else if (src->read_eof) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
+			 __func__, src->name, src->input_fd);
+	} else if (src->input_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on invalid input_fd=%d",
+			 __func__, src->name, src->input_fd);
+	} else if ((fd = receive_fd_over_pipe(src->input_fd)) < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on input_fd=%d",
+			 __func__, src->name, src->input_fd);
+		/*
+		 * Close source as receive_fd_over_pipe() failed and connection
+		 * is now in an unknown state
+		 */
+		close_con(false, src);
+	} else if (!(con = add_connection(args->type, NULL, fd, fd,
+					  args->events, NULL, 0, false, NULL,
+					  args->arg))) {
+		/*
+		 * Error already logged by add_connection() and there is no
+		 * reason to assume that failing is due to the state of src.
+		 */
+	} else {
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+	}
+
+	args->magic = ~MAGIC_RECEIVE_FD;
+	xfree(args);
+}
+
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+				   const conmgr_events_t events, void *arg)
+{
+	int rc = SLURM_ERROR;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(src->magic == MAGIC_CON_MGR_FD);
+	xassert(type > CON_TYPE_INVALID);
+	xassert(type < CON_TYPE_MAX);
+
+	/* Reject obviously invalid states immediately */
+
+	if (!src->is_socket) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on non-socket",
+			 __func__, src->name);
+		rc = EAFNOSUPPORT;
+	} else if (src->read_eof) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
+			 __func__, src->name, src->input_fd);
+		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	} else if (src->input_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on invalid input_fd=%d",
+			 __func__, src->name, src->input_fd);
+		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	} else {
+		receive_fd_args_t *args = xmalloc_nz(sizeof(*args));
+		*args = (receive_fd_args_t) {
+			.magic = MAGIC_RECEIVE_FD,
+			.type = type,
+			.events = events,
+			.arg = arg,
+		};
+		add_work(true, src, (conmgr_callback_t) {
+				.func = _receive_fd,
+				.func_name = XSTRINGIFY(_receive_fd),
+				.arg = args,
+			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		rc = SLURM_SUCCESS;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
 }
 
 static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)

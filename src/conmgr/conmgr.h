@@ -302,6 +302,17 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 					 void *arg);
 
 /*
+ * Queue up work to receive new connection (file descriptor via socket)
+ * IN src - source connection to receive file descriptor
+ * IN type connection type for fd
+ * IN events call backs on events of fd
+ * IN arg ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+				   const conmgr_events_t events, void *arg);
+
+/*
  * Write binary data to connection (from callback).
  * NOTE: type=CON_TYPE_RAW only
  * IN con connection manager connection struct
