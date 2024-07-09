@@ -220,7 +220,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			data_t *fenums;
 			set_openapi_props(props, OPENAPI_FORMAT_STRING,
 					  "flags");
-			fenums = data_set_list(data_key_set(obj, "enum"));
+			fenums = data_set_list(data_key_set(props, "enum"));
 
 			for (int i = 0; i < parser->flag_bit_array_count; i++)
 				data_set_string(data_list_append(fenums),
