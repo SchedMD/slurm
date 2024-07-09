@@ -78,11 +78,6 @@ documents those changes that are of interest to users and administrators.
     acct_gather.conf. This situation resulted in an accounted energy of 0
     for job steps.
  -- Fix a minor memory leak in slurmctld when updating a job dependency.
- -- slurmrestd - Modified generation of OpenAPI specification to fix generated
-    reference documentation via openapi-generator-cli to make flags (AKA "enum"s)
-    to be included. Affected endpoints:
-      'GET /openapi/v3'
-      'GET /openapi/'
  -- scontrol,squeue - Fix regression that caused incorrect values for
     multisocket nodes at '.jobs[].job_resources.nodes.allocation' for
     'scontrol show jobs --(json|yaml)' and 'squeue --(json|yaml)'.
