@@ -92,6 +92,12 @@ typedef struct {
 	void *arg;
 } receive_fd_args_t;
 
+typedef struct {
+#define MAGIC_SEND_FD 0xfbf8e2e0
+	int magic; /* MAGIC_SEND_FD */
+	int fd; /* fd to send over con */
+} send_fd_args_t;
+
 extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(con_types); i++)
@@ -615,6 +621,73 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 		add_work(true, src, (conmgr_callback_t) {
 				.func = _receive_fd,
 				.func_name = XSTRINGIFY(_receive_fd),
+				.arg = args,
+			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		rc = SLURM_SUCCESS;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+static void _send_fd(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	send_fd_args_t *args = arg;
+	conmgr_fd_t *con = conmgr_args.con;
+	int fd = args->fd;
+
+	xassert(args->magic == MAGIC_SEND_FD);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "%s: [%s] Canceled sending file descriptor %d.",
+			 __func__, con->name, fd);
+	} else if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
+	} else {
+		send_fd_over_pipe(con->output_fd, fd);
+		log_flag(CONMGR, "%s: [%s] Sent file descriptor %d over output_fd=%d",
+				 __func__, con->name, fd, con->output_fd);
+	}
+
+	/* always close the file descriptor in this process to avoid leaking */
+	fd_close(&fd);
+
+	args->magic = ~MAGIC_SEND_FD;
+	xfree(args);
+}
+
+extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
+{
+	int rc = SLURM_ERROR;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (fd < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to send invalid file descriptor %d",
+			 __func__, con->name, fd);
+		rc = EINVAL;
+	} else if (!con->is_socket) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over non-socket",
+			 __func__, con->name, fd);
+		rc = EAFNOSUPPORT;
+	} else if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
+		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	} else {
+		send_fd_args_t *args = xmalloc_nz(sizeof(*args));
+		*args = (send_fd_args_t) {
+			.magic = MAGIC_SEND_FD,
+			.fd = fd,
+		};
+		add_work(true, con, (conmgr_callback_t) {
+				.func = _send_fd,
+				.func_name = XSTRINGIFY(_send_fd),
 				.arg = args,
 			 }, (conmgr_work_control_t) {0}, 0, __func__);
 		rc = SLURM_SUCCESS;
