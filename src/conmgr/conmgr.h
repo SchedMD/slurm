@@ -658,4 +658,10 @@ typedef struct {
 
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
 
+/*
+ * Check if conmgr is enabled in this process
+ * RET true if conmgr is enabled or running in this process
+ */
+extern bool conmgr_enabled(void);
+
 #endif /* _CONMGR_H */

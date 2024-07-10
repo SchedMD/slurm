@@ -267,3 +267,21 @@ extern int conmgr_get_error(void)
 
 	return rc;
 }
+
+extern bool conmgr_enabled(void)
+{
+	static bool init = false;
+	static bool enabled = false;
+
+	if (init)
+		return enabled;
+
+	slurm_mutex_lock(&mgr.mutex);
+	enabled = (mgr.one_time_initialized || mgr.initialized);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	log_flag(CONMGR, "%s: enabled=%c", __func__, (enabled ? 'T' : 'F'));
+
+	init = true;
+	return enabled;
+}
