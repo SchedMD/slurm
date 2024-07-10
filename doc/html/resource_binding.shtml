@@ -19,45 +19,53 @@ or boards.
 See the slurm.conf and srun man pages for more information about how these
 options work.
 This document focuses on how default binding configuration can be configured.
-Default binding can be configured on a per-node, per-partition or global basis.
-The highest priority will be that specified using the srun --cpu-bind option.
-The next highest priority binding will be the node-specific binding if any
-node in the job allocation has some CpuBind configuration parameter and all other
-nodes in the job allocation either have the same or no CpuBind configuration
-parameter.
-The next highest priority binding will be the partition-specific CpuBind
-configuration parameter (if any).
-The lowest priority binding will be that specified by the TaskPluginParam
+</p>
+
+<p>Default binding can be configured on a per-node, per-partition or global
+basis. The highest priority will be that specified using the srun
+<a href="srun.html#OPT_cpu-bind"><b>--cpu-bind</b></a> option.
+The next highest priority binding will be the node-specific binding, if any
+node in the job allocation has some <a href="slurm.conf.html#OPT_CpuBind">
+<b>CpuBind</b></a> configuration parameter and all other nodes in the job
+allocation either have the same or no </b>CpuBind</b> configuration parameter.
+The next highest priority binding will be the partition-specific
+<a href="slurm.conf.html#OPT_CpuBind_1"><b>CpuBind</b></a> configuration
+parameter (if any).
+The lowest priority binding will be that specified by the
+<a href="slurm.conf.html#OPT_TaskPluginParam"><b>TaskPluginParam</b></a>
 configuration parameter.</p>
 
+<p>Summary of the order of enforcement:
 <ol>
 <li>Srun --cpu-bind option</li>
 <li>Node CpuBind configuration parameter (if all nodes match)</li>
 <li>Partition CpuBind configuration parameter</li>
 <li>TaskPluginParam configuration parameter</li>
 </ol>
+</p>
 
 <h2 id="srun">Srun --cpu-bind option<a class="slurm_link" href="#srun"></a></h2>
 
-<p>The srun --cpu-bind option will always be used to control task binding.
-If the --cpu-bind option only includes "verbose" rather than identifying
-the entities to be bound to, then the verbose option will be used together
-with the default entity based upon Slurm configuration parameters as described
-below.</p>
+<p>The srun <a href="srun.html#OPT_cpu-bind">--cpu-bind</a> option will always
+be used to control task binding. If the --cpu-bind option only includes
+"verbose" rather than identifying the entities to be bound to, then the verbose
+option will be used together with the default entity based upon Slurm
+configuration parameters as described below.</p>
 
 <h2 id="node">Node CpuBind Configuration
 <a class="slurm_link" href="#node"></a>
 </h2>
 
 <p>The next possible source of the resource binding information is the node's
-configured CpuBind value, but only if every node has the same CpuBind value
-(or no configured CpuBind value).
+configured <a href="slurm.conf.html#OPT_CpuBind">CpuBind</a> value, but only
+if every node has the same CpuBind value (or no configured CpuBind value).
 The node's CpuBind value is configured in the slurm.conf file.
 Its value may be viewed or modified using the scontrol command.
-To clear a node's CpuBind value use the command:</p>
+To clear a node's CpuBind value use the command:
 <pre>
-scontrol update NodeName=... CpuBind=off
+scontrol update NodeName=node01 CpuBind=off
 </pre>
+</p>
 
 <p>If a node_features plugin is configured, typically to support booting Intel
 KNL nodes into different NUMA and/or MCDRAM modes, the plugin can be configured
@@ -66,11 +74,9 @@ This is accomplished by specifying the NumaCpuBind parameter in the knl.conf
 configuration file with pairs of NUMA modes and CpuBind options.
 As soon as the node is booted into a new NUMA mode, the node's CpuBind option
 is automatically modified.
-For example, the following line in the knl.conf file</p>
-<pre>
-NumaCpuBind=a2a=core;snc2=thread
-</pre>
-<p>will set a node's CpuBind field to "core" when booted into "a2a" (all to all)
+For example, a line like the following in the knl.conf file
+(<code>NumaCpuBind=a2a=core;snc2=thread</code>),
+will set a node's CpuBind field to "core" when booted into "a2a" (all to all)
 NUMA mode and to "thread" when booted into "snc2 NUMA mode.
 Any NUMA mode not specified in the NumaCpuBind configuration file will result
 in no change to the node's CpuBind field.</p>
@@ -80,17 +86,23 @@ in no change to the node's CpuBind field.</p>
 </h2>
 
 <p>The next possible source of the resource binding information is the
-partition's configured CpuBind value.
-The partition's CpuBind value is configured in the slurm.conf file.
-Its value may be viewed or modified using the scontrol command.</p>
+partition's configured <a href="slurm.conf.html#OPT_CpuBind_1">CpuBind</a>
+value. The partition's CpuBind value is configured in the slurm.conf file.
+Its value may be viewed or modified using the scontrol command, similar to how
+a node's CpuBind value is changed:
+<pre>
+scontrol update PartitionName=debug CpuBind=cores
+</pre>
+</p>
 
 <h2 id="TaskPluginParam">TaskPluginParam Configuration
 <a class="slurm_link" href="#TaskPluginParam"></a>
 </h2>
 
 <p>The last possible source of the resource binding information is the
-TaskPluginParam configuration parameter from the slurm.conf file.</p>
+<a href="slurm.conf.html#OPT_TaskPluginParam">TaskPluginParam</a>
+configuration parameter from the slurm.conf file.</p>
 
-<p style="text-align:center;">Last modified 24 June 2020</p>
+<p style="text-align:center;">Last modified 10 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
