@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     previously only single nodes could be updated through /node/<nodename>
     endpoint:
       'POST /slurm/v0.0.42/nodes'
+ -- Do not allow changing or setting PreemptMode=GANG to a partition as this is
+    a cluster-wide option.
 
 * Changes in Slurm 24.05.2
 ==========================
