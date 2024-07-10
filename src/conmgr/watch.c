@@ -416,10 +416,9 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 
 	mgr.inspecting = false;
 
-	slurm_mutex_unlock(&mgr.mutex);
-
 	if (send_signal)
 		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* caller (or thread) must hold mgr.mutex lock */
@@ -519,23 +518,17 @@ static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 done:
 	xassert(mgr.poll_active);
 	mgr.poll_active = false;
-	slurm_mutex_unlock(&mgr.mutex);
 
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: poll done", __func__);
 }
 
 extern void wait_for_watch(void)
 {
-	bool watching;
-
-	slurm_mutex_lock(&mgr.mutex);
-	watching = mgr.watching;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	if (watching)
-		EVENT_WAIT(&mgr.watch_return);
+	if (mgr.watching)
+		EVENT_WAIT(&mgr.watch_return, &mgr.mutex);
 }
 
 static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
@@ -701,12 +694,9 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	if (mgr.watching) {
-		slurm_mutex_unlock(&mgr.mutex);
-
 		if (wreq->blocking)
 			wait_for_watch();
 
-		slurm_mutex_lock(&mgr.mutex);
 		_release_watch_request(&wreq);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
@@ -740,10 +730,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 				 (mgr.quiesced ? 'T' : 'F'),
 				 mgr.watch_on_worker);
 
-		/* release lock while waiting for signal */
-		slurm_mutex_unlock(&mgr.mutex);
-		EVENT_WAIT(&mgr.watch_sleep);
-		slurm_mutex_lock(&mgr.mutex);
+		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
 	}
 
 	xassert(mgr.watching);
@@ -753,7 +740,6 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 	shutdown_requested = mgr.shutdown_requested;
 
 	_release_watch_request(&wreq);
-	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
 		 __func__, (shutdown_requested ? 'T' : 'F'),
@@ -761,4 +747,5 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 		 list_count(mgr.listen_conns));
 
 	EVENT_BROADCAST(&mgr.watch_return);
+	slurm_mutex_unlock(&mgr.mutex);
 }

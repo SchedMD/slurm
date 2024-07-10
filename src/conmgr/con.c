@@ -328,10 +328,10 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 
 	slurm_mutex_lock(&mgr.mutex);
 	rc = fd_change_mode(con, type);
-	slurm_mutex_unlock(&mgr.mutex);
 
 	/* wake up watch() to send along any pending data */
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
 }
@@ -438,11 +438,10 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 		list_append(mgr.connections, con);
 	}
 
-	slurm_mutex_unlock(&mgr.mutex);
-
 	/* interrupt poll () and wake up watch() to examine new connection */
 	pollctl_interrupt(__func__);
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return con;
 }
@@ -473,9 +472,9 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->arg = arg;
-	slurm_mutex_unlock(&mgr.mutex);
 
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,

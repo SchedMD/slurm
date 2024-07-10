@@ -141,6 +141,8 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
 /*
  * Send interrupt (via pipe()) to poll()
  * Note: Ignored if poll() is not running
+ * WARNING: This is called while holding mgr.mutex. Do not wait in this
+ * function.
  * IN caller - __func__ from caller
  */
 extern void pollctl_interrupt(const char *caller);

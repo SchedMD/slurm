@@ -137,12 +137,8 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work();
 
-	slurm_mutex_unlock(&mgr.mutex);
-
 	/* wait until all workers are done */
 	workers_shutdown();
-
-	slurm_mutex_lock(&mgr.mutex);
 
 	/*
 	 * At this point, there should be no threads running.
@@ -218,9 +214,9 @@ extern void conmgr_request_shutdown(void)
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
-	slurm_mutex_unlock(&mgr.mutex);
 
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_quiesce(bool wait)
@@ -234,12 +230,12 @@ extern void conmgr_quiesce(bool wait)
 	}
 
 	mgr.quiesced = true;
-	slurm_mutex_unlock(&mgr.mutex);
 
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 
 	if (wait)
 		wait_for_watch();
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_set_exit_on_error(bool exit_on_error)

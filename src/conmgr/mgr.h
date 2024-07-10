@@ -334,7 +334,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg);
 /*
  * Wait for _watch() to finish
  *
- * WARNING: caller must NOT hold mgr.mutex
+ * WARNING: caller MUST hold mgr.mutex
  */
 extern void wait_for_watch(void);
 
@@ -399,7 +399,7 @@ extern void wrap_work(work_t *work);
 /*
  * Notify all worker thread to shutdown.
  * Wait until all work and workers have completed their work (and exited).
- * Note: Caller must NOT hold conmgr lock
+ * Note: Caller MUST hold conmgr lock
  */
 extern void workers_shutdown(void);
 

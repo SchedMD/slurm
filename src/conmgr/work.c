@@ -214,9 +214,9 @@ extern void wrap_work(work_t *work)
 		slurm_mutex_lock(&mgr.mutex);
 		con->work_active = false;
 		/* con may be xfree()ed any time once lock is released */
-		slurm_mutex_unlock(&mgr.mutex);
 
 		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 
 	work->magic = ~MAGIC_WORK;

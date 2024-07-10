@@ -55,7 +55,8 @@ static void _wait_pending(event_signal_t *event, const char *caller)
 	xassert(event->pending >= 0);
 }
 
-static void _wait(event_signal_t *event, const char *caller)
+static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
+		  const char *caller)
 {
 	DEF_TIMERS;
 
@@ -70,7 +71,7 @@ static void _wait(event_signal_t *event, const char *caller)
 
 	xassert(event->waiting > 0);
 
-	slurm_cond_wait(&event->cond, &event->mutex);
+	slurm_cond_wait(&event->cond, mutex);
 
 	event->waiting--;
 
@@ -87,18 +88,15 @@ static void _wait(event_signal_t *event, const char *caller)
 	}
 }
 
-extern void event_wait_now(event_signal_t *event, const char *caller)
+extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
+			   const char *caller)
 {
-	slurm_mutex_lock(&event->mutex);
-
 	xassert(event->waiting >= 0);
 
 	if (event->pending)
 		_wait_pending(event, caller);
 	else
-		_wait(event, caller);
-
-	slurm_mutex_unlock(&event->mutex);
+		_wait(event, mutex, caller);
 }
 
 static void _broadcast(event_signal_t *event, const char *caller)
@@ -159,8 +157,6 @@ static void _signal_no_waiting(bool reliable, bool singular,
 extern void event_signal_now(bool reliable, bool singular, bool broadcast,
 			     event_signal_t *event, const char *caller)
 {
-	slurm_mutex_lock(&event->mutex);
-
 	xassert(event->waiting >= 0);
 
 	if (broadcast) {
@@ -181,6 +177,4 @@ extern void event_signal_now(bool reliable, bool singular, bool broadcast,
 		/* signal only with waiters */
 		_signal_waiting(event, caller);
 	}
-
-	slurm_mutex_unlock(&event->mutex);
 }

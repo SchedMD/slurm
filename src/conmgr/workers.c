@@ -78,6 +78,7 @@ static void _worker_free(void *x)
 	xfree(worker);
 }
 
+/* caller must own mgr.mutex lock */
 static void _worker_delete(void *x)
 {
 	worker_t *worker = x;
@@ -87,12 +88,10 @@ static void _worker_delete(void *x)
 
 	_check_magic_worker(worker);
 
-	slurm_mutex_lock(&mgr.mutex);
 	worker = list_remove_first(mgr.workers.workers, _find_worker, worker);
 
 	mgr.workers.total--;
 
-	slurm_mutex_unlock(&mgr.mutex);
 	xassert(worker == x);
 
 	_worker_free(worker);
@@ -198,8 +197,8 @@ static void *_worker(void *arg)
 			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
 				 __func__, worker->id, mgr.workers.active,
 				 mgr.workers.total);
+			EVENT_WAIT(&mgr.worker_sleep, &mgr.mutex);
 			slurm_mutex_unlock(&mgr.mutex);
-			EVENT_WAIT(&mgr.worker_sleep);
 			continue;
 		}
 
@@ -234,14 +233,15 @@ static void *_worker(void *arg)
 			 __func__, worker->id, mgr.workers.active,
 			 mgr.workers.total, list_count(mgr.work));
 
-		slurm_mutex_unlock(&mgr.mutex);
-
 		/* wake up watch for all ending work on shutdown */
 		if (mgr_shutdown_requested)
 			EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 
+	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_return);
+	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
 }
 
@@ -249,12 +249,9 @@ extern void workers_shutdown(void)
 {
 	int total = 0;
 
-	slurm_mutex_lock(&mgr.mutex);
 	mgr.workers.shutdown_requested = true;
-	slurm_mutex_unlock(&mgr.mutex);
 
 	do {
-		slurm_mutex_lock(&mgr.mutex);
 		xassert(mgr.workers.shutdown_requested);
 		total = mgr.workers.total;
 
@@ -262,11 +259,9 @@ extern void workers_shutdown(void)
 			 __func__, list_count(mgr.work), mgr.workers.active,
 			 mgr.workers.total);
 
-		slurm_mutex_unlock(&mgr.mutex);
-
 		if (total > 0) {
 			EVENT_BROADCAST(&mgr.worker_sleep);
-			EVENT_WAIT(&mgr.worker_return);
+			EVENT_WAIT(&mgr.worker_return, &mgr.mutex);
 		}
 	} while (total);
 }

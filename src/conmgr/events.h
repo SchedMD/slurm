@@ -50,7 +50,6 @@
  */
 typedef struct {
 	const char *name; /* stringified event name */
-	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 	int pending; /* reliable signals pending */
 	int waiting; /* # threads waiting for signal */
@@ -58,7 +57,6 @@ typedef struct {
 
 #define EVENT_INITIALIZER(event_name) \
 	{ \
-		.mutex = PTHREAD_MUTEX_INITIALIZER, \
 		.cond = PTHREAD_COND_INITIALIZER, \
 		.pending = 0, \
 		.waiting = 0, \
@@ -68,28 +66,35 @@ typedef struct {
 #define EVENT_FREE_MEMBERS(event) \
 do { \
 	slurm_cond_destroy(&((event)->cond)); \
-	slurm_mutex_destroy(&((event)->mutex)); \
 } while (false)
 
 /*
  * Wait (aka block) for a signal for a given event
  * NOTE: call EVENT_WAIT() instead
+ * WARNING: The mutex controlling event->cond should be locked before calling
+ * this function. This mutex is used in pthread_cond_wait().
  * IN event - event ptr to wait for signal
  * IN caller - __func__ from caller
  */
-extern void event_wait_now(event_signal_t *event, const char *caller);
+extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
+			   const char *caller);
 
 /*
  * Wait (aka block) for a signal for a given event
  * Note: A thread currently blocked under EVENT_WAIT() is referred to as a
  *	waiter.
+ * WARNING: The mutex controlling event->cond should be locked before calling
+ * this. This mutex is used in pthread_cond_wait().
  * IN event- ptr to event to wait on
+ * IN mutex - the mutex controlling event->cond
  */
-#define EVENT_WAIT(event) event_wait_now(event, __func__)
+#define EVENT_WAIT(event, mutex) event_wait_now(event, mutex, __func__)
 
 /*
  * Send signal to a given event
  * NOTE: call EVENT_SIGNAL() or EVENT_BROADCAST() instead
+ * WARNING: The mutex controlling event->cond should be locked before calling
+ * this function.
  * IN reliable - ensure signal is received if nothing is waiting yet
  * IN singular - only send signal once. if another reliable signal has been
  *	sent, then ignore signal request.

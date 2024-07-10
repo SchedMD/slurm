@@ -310,15 +310,12 @@ extern void pollctl_fini(void)
 	if (pctl.polling)
 		poll_return = &pctl.poll_return;
 
-	slurm_mutex_unlock(&pctl.mutex);
-
 	if (interrupt_return)
-		EVENT_WAIT(interrupt_return);
+		EVENT_WAIT(interrupt_return, &pctl.mutex);
 
 	if (poll_return)
-		EVENT_WAIT(poll_return);
+		EVENT_WAIT(poll_return, &pctl.mutex);
 
-	slurm_mutex_lock(&pctl.mutex);
 	/* should not free() when there is an active poll() thread */
 	xassert(!pctl.polling);
 	/*
@@ -580,9 +577,8 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
 	pctl.events_triggered = 0;
 	poll_return = &pctl.poll_return;
 
-	slurm_mutex_unlock(&pctl.mutex);
-
 	EVENT_BROADCAST(poll_return);
+	slurm_mutex_unlock(&pctl.mutex);
 
 	return rc;
 }
@@ -662,9 +658,8 @@ extern void pollctl_interrupt(const char *caller)
 	xassert(pctl.interrupt.sending);
 	pctl.interrupt.sending = false;
 
-	slurm_mutex_unlock(&pctl.mutex);
-
 	EVENT_BROADCAST(interrupt_return);
+	slurm_mutex_unlock(&pctl.mutex);
 }
 
 extern bool pollctl_events_can_read(pollctl_events_t events)
