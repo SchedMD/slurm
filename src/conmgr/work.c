@@ -228,7 +228,6 @@ extern void wrap_work(work_t *work)
  * Single point to enqueue internal function callbacks
  * NOTE: _handle_work_run() can add new entries to mgr.work
  *
- * IN locked - true if conmgr is already locked by caller
  * IN work - pointer to work to run
  * NOTE: never add a thread that will never return or conmgr_fini() will never
  *	return either.
