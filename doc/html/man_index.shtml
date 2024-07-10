@@ -7,7 +7,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 
 <p>Refer to <a href="slurm.html">this page</a> for an overview of Slurm.</p>
 
-<h2>Commands</h2>
+<h2 id="commands">Commands
+<a class="slurm_link" href="#commands"></a></h2>
 <table border="1">
 <tr><td><a href="sacct.html">sacct</a></td><td>Displays accounting data for all jobs and job steps in the Slurm job accounting log or Slurm database.</td></tr>
 <tr><td><a href="sacctmgr.html">sacctmgr</a></td><td>Used to view and modify Slurm account information.</td></tr>
@@ -32,7 +33,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sview.html">sview</a></td><td>Graphical user interface to view and modify Slurm state.</td></tr>
 </table>
 
-<h2>Configuration Files</h2>
+<h2 id="configuration_files">Configuration Files
+<a class="slurm_link" href="#configuration_files"></a></h2>
 <table border="1">
 <tr><td><a href="acct_gather.conf.html">acct_gather.conf</a></td><td>Slurm configuration file for the acct_gather plugins.</td></tr>
 <tr><td><a href="burst_buffer.conf.html">burst_buffer.conf</a></td><td>Slurm burst buffer configuration.</td></tr>
@@ -49,7 +51,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology.</td></tr>
 </table>
 
-<h2>Daemons and Other</h2>
+<h2 id="daemons">Daemons and Other
+<a class="slurm_link" href="#daemons"></a></h2>
 <table border="1">
 <tr><td><a href="sackd.html">sackd</a></td><td>Slurm Auth and Cred Kiosk Daemon.</td></tr>
 <tr><td><a href="slurmctld.html">slurmctld</a></td><td>The central management daemon of Slurm.</td></tr>
