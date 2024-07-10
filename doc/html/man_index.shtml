@@ -5,6 +5,8 @@
 <p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
 Documentation for other versions of Slurm is distributed with the code</b></p>
 
+<p>Refer to <a href="slurm.html">this page</a> for an overview of Slurm.</p>
+
 <h2>Commands</h2>
 <table border="1">
 <tr><td><a href="sacct.html">sacct</a></td><td>Displays accounting data for all jobs and job steps in the Slurm job accounting log or Slurm database.</td></tr>
@@ -20,7 +22,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sdiag.html">sdiag</a></td><td>Scheduling diagnostic tool.</td></tr>
 <tr><td><a href="sh5util.html">sh5util</a></td><td>Merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="sinfo.html">sinfo</a></td><td>View information about Slurm nodes and partitions.</td></tr>
-<tr><td><a href="slurm.html">slurm</a></td><td>Slurm system overview.</td></tr>
 <tr><td><a href="sprio.html">sprio</a></td><td>View the factors that comprise a job's scheduling priority.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>View information about jobs located in the Slurm scheduling queue.</td></tr>
 <tr><td><a href="sreport.html">sreport</a></td><td>Generate reports from the slurm accounting data.</td></tr>
@@ -40,7 +41,9 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="helpers.conf.html">helpers.conf</a></td><td>Slurm configuration file for the node_features/helpers plugin.</td></tr>
 <tr><td><a href="job_container.conf.html">job_container.conf</a></td><td>Slurm configuration file for configuring the tmpfs job container plugin.</td></tr>
 <tr><td><a href="knl.conf.html">knl.conf</a></td><td>Slurm configuration file for Intel Knights Landing management.</td></tr>
+<tr><td><a href="mpi.conf.html">mpi.conf</a></td><td>Slurm configuration file to allow the configuration of MPI plugins.</td></tr>
 <tr><td><a href="oci.conf.html">oci.conf</a></td><td>Slurm configuration file for OCI Containers.</td></tr>
+<tr><td><a href="spank.html#SECTION_CONFIGURATION">plugstack.conf</a></td><td>Slurm configuration file for SPANK plug-in stack.</td></tr>
 <tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file.</td></tr>
 <tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file.</td></tr>
 <tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology.</td></tr>
@@ -48,6 +51,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 
 <h2>Daemons and Other</h2>
 <table border="1">
+<tr><td><a href="sackd.html">sackd</a></td><td>Slurm Auth and Cred Kiosk Daemon.</td></tr>
 <tr><td><a href="slurmctld.html">slurmctld</a></td><td>The central management daemon of Slurm.</td></tr>
 <tr><td><a href="slurmd.html">slurmd</a></td><td>The compute node daemon for Slurm.</td></tr>
 <tr><td><a href="slurmdbd.html">slurmdbd</a></td><td>Slurm Database Daemon.</td></tr>
@@ -56,6 +60,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control.</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 21 Februrary 2023</p>
+<p style="text-align:center;">Last modified 10 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
