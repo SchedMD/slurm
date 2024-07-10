@@ -247,21 +247,18 @@ static void *_worker(void *arg)
 
 extern void workers_shutdown(void)
 {
-	int total = 0;
-
 	mgr.workers.shutdown_requested = true;
 
 	do {
 		xassert(mgr.workers.shutdown_requested);
-		total = mgr.workers.total;
 
 		log_flag(CONMGR, "%s: waiting for work=%u workers=%u/%u",
 			 __func__, list_count(mgr.work), mgr.workers.active,
 			 mgr.workers.total);
 
-		if (total > 0) {
+		if (mgr.workers.total > 0) {
 			EVENT_BROADCAST(&mgr.worker_sleep);
 			EVENT_WAIT(&mgr.worker_return, &mgr.mutex);
 		}
-	} while (total);
+	} while (mgr.workers.total);
 }
