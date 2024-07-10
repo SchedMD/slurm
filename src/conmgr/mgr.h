@@ -318,6 +318,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 extern bool work_clear_time_delay(work_t *work);
 
 extern void cancel_delayed_work(void);
+extern void init_delayed_work(void);
 extern void free_delayed_work(void);
 extern void update_timer(bool locked);
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);

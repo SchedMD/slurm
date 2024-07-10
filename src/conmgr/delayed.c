@@ -70,28 +70,6 @@ extern void update_last_time(bool locked)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if (!mgr.delayed_work) {
-		struct sigevent sevp = {
-			.sigev_notify = SIGEV_SIGNAL,
-			.sigev_signo = SIGALRM,
-			.sigev_value.sival_ptr = &mgr.timer,
-		};
-
-		mgr.delayed_work = list_create(xfree_ptr);
-
-again:
-		if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr.timer))) {
-			if ((rc == -1) && errno)
-				rc = errno;
-
-			if (rc == EAGAIN)
-				goto again;
-			else if (rc)
-				fatal("%s: timer_create() failed: %s",
-				      __func__, slurm_strerror(rc));
-		}
-	}
-
 	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr.last_time))) {
 		if (rc == -1)
 			rc = errno;
@@ -266,6 +244,30 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 		.seconds = (delay_seconds + last_time.tv_sec),
 		.nanoseconds = delay_nanoseconds,
 	};
+}
+
+extern void init_delayed_work(void)
+{
+	int rc;
+	struct sigevent sevp = {
+		.sigev_notify = SIGEV_SIGNAL,
+		.sigev_signo = SIGALRM,
+		.sigev_value.sival_ptr = &mgr.timer,
+	};
+
+	mgr.delayed_work = list_create(xfree_ptr);
+
+again:
+	if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr.timer))) {
+		if ((rc == -1) && errno)
+			rc = errno;
+
+		if (rc == EAGAIN)
+			goto again;
+		else if (rc)
+			fatal("%s: timer_create() failed: %s",
+			      __func__, slurm_strerror(rc));
+	}
 }
 
 extern void free_delayed_work(void)

@@ -107,6 +107,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.work = list_create(NULL);
+	init_delayed_work();
 
 	pollctl_init(mgr.max_connections);
 
