@@ -295,8 +295,6 @@ extern void pollctl_init(const int max_connections)
 
 extern void pollctl_fini(void)
 {
-	event_signal_t *poll_return = NULL, *interrupt_return = NULL;
-
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
@@ -305,24 +303,11 @@ extern void pollctl_fini(void)
 		return;
 	}
 
-	if (pctl.interrupt.sending)
-		interrupt_return = &pctl.interrupt_return;
-	if (pctl.polling)
-		poll_return = &pctl.poll_return;
+	while (pctl.interrupt.sending)
+		EVENT_WAIT(&pctl.interrupt_return, &pctl.mutex);
 
-	if (interrupt_return)
-		EVENT_WAIT(interrupt_return, &pctl.mutex);
-
-	if (poll_return)
-		EVENT_WAIT(poll_return, &pctl.mutex);
-
-	/* should not free() when there is an active poll() thread */
-	xassert(!pctl.polling);
-	/*
-	 * Should not be free()ing when currently sending a interrupt byte as
-	 * this will call a use after free
-	 */
-	xassert(!pctl.interrupt.sending);
+	while (pctl.polling)
+		EVENT_WAIT(&pctl.poll_return, &pctl.mutex);
 
 #ifdef MEMORY_LEAK_DEBUG
 	_unlink_fd(pctl.interrupt.receive, INTERRUPT_CON_NAME, __func__);

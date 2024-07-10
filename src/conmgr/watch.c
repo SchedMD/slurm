@@ -527,7 +527,7 @@ done:
 
 extern void wait_for_watch(void)
 {
-	if (mgr.watching)
+	while (mgr.watching && !mgr.shutdown_requested)
 		EVENT_WAIT(&mgr.watch_return, &mgr.mutex);
 }
 
