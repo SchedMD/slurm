@@ -171,13 +171,14 @@ static void *_worker(void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.workers.total++;
-	slurm_mutex_unlock(&mgr.mutex);
-
+	/*
+	 * mgr.mutex should be locked at the beginning of this loop. It should
+	 * also be locked when exiting the loop. It may be unlocked and
+	 * relocked during the loop.
+	 */
 	while (true) {
 		bool mgr_shutdown_requested = false;
 		work_t *work = NULL;
-
-		slurm_mutex_lock(&mgr.mutex);
 
 		mgr_shutdown_requested = mgr.shutdown_requested;
 		work = list_pop(mgr.work);
@@ -185,9 +186,6 @@ static void *_worker(void *arg)
 		/* wait for work if nothing to do */
 		if (!work) {
 			if (mgr.workers.shutdown_requested) {
-				/* give up lock as we are about to be deleted */
-				slurm_mutex_unlock(&mgr.mutex);
-
 				log_flag(CONMGR, "%s: [%u] shutting down",
 					 __func__, worker->id);
 				_worker_delete(worker);
@@ -198,7 +196,6 @@ static void *_worker(void *arg)
 				 __func__, worker->id, mgr.workers.active,
 				 mgr.workers.total);
 			EVENT_WAIT(&mgr.worker_sleep, &mgr.mutex);
-			slurm_mutex_unlock(&mgr.mutex);
 			continue;
 		}
 
@@ -219,12 +216,14 @@ static void *_worker(void *arg)
 			 mgr.workers.active, mgr.workers.total,
 			 list_count(mgr.work));
 
+		/* Unlock mutex before running work */
 		slurm_mutex_unlock(&mgr.mutex);
 
 		/* run work via wrap_work() which will xfree(work) */
 		wrap_work(work);
 		work = NULL;
 
+		/* Lock mutex after running work */
 		slurm_mutex_lock(&mgr.mutex);
 
 		mgr.workers.active--;
@@ -236,10 +235,8 @@ static void *_worker(void *arg)
 		/* wake up watch for all ending work on shutdown */
 		if (mgr_shutdown_requested)
 			EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
-		slurm_mutex_unlock(&mgr.mutex);
 	}
 
-	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_return);
 	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
