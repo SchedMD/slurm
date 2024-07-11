@@ -18558,6 +18558,8 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 
 		detail_ptr->num_tasks = detail_ptr->min_cpus =
 			resv_desc_ptr->core_cnt;
+		if (detail_ptr->min_cpus == NO_VAL)
+			detail_ptr->min_cpus = detail_ptr->min_nodes;
 	} else {
 		detail_ptr->num_tasks = detail_ptr->min_cpus =
 			detail_ptr->min_nodes;
