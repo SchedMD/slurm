@@ -1179,7 +1179,7 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 			    pollctl_fd_type_t type, const char *caller)
 {
 	int has_in, has_out, in, out, is_same;
-	pollctl_fd_type_t in_type, out_type;
+	pollctl_fd_type_t in_type = PCTL_TYPE_NONE, out_type = PCTL_TYPE_NONE;
 
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
@@ -1199,16 +1199,16 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 
 	xassert(has_in || has_out);
 
-	/* Map type to type per in/out */
+	/*
+	 * Map type to type per in/out. The in/out types are initialized to
+	 * PCTL_TYPE_NONE above.
+	 */
 	switch (type) {
 	case PCTL_TYPE_NONE:
-		in_type = PCTL_TYPE_NONE;
-		out_type = PCTL_TYPE_NONE;
 		break;
 	case PCTL_TYPE_CONNECTED:
 		if (is_same) {
 			in_type = PCTL_TYPE_CONNECTED;
-			out_type = PCTL_TYPE_NONE;
 		} else {
 			in_type = PCTL_TYPE_CONNECTED;
 			out_type = PCTL_TYPE_CONNECTED;
@@ -1216,12 +1216,10 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 		break;
 	case PCTL_TYPE_READ_ONLY:
 		in_type = PCTL_TYPE_READ_ONLY;
-		out_type = PCTL_TYPE_NONE;
 		break;
 	case PCTL_TYPE_READ_WRITE:
 		if (is_same) {
 			in_type = PCTL_TYPE_READ_WRITE;
-			out_type = PCTL_TYPE_NONE;
 		} else {
 			in_type = PCTL_TYPE_READ_ONLY;
 			out_type = PCTL_TYPE_WRITE_ONLY;
@@ -1230,26 +1228,18 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 	case PCTL_TYPE_WRITE_ONLY:
 		if (is_same) {
 			in_type = PCTL_TYPE_WRITE_ONLY;
-			out_type = PCTL_TYPE_NONE;
 		} else {
-			in_type = PCTL_TYPE_NONE;
 			out_type = PCTL_TYPE_WRITE_ONLY;
 		}
 		break;
 	case PCTL_TYPE_LISTEN:
 		xassert(con->is_listen);
 		in_type = PCTL_TYPE_LISTEN;
-		out_type = PCTL_TYPE_NONE;
 		break;
 	case PCTL_TYPE_INVALID:
 	case PCTL_TYPE_INVALID_MAX:
 		fatal_abort("should never execute");
 	}
-
-	if (!has_in)
-		in_type = PCTL_TYPE_NONE;
-	if (!has_out)
-		out_type = PCTL_TYPE_NONE;
 
 	_log_set_polling(con, has_in, has_out, type, in_type, out_type, caller);
 
