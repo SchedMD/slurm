@@ -294,22 +294,25 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 	}
 
 	tres_sub_str = slurm_get_tres_sub_string(
-		resv_desc_ptr->tres_str, "cpu", NO_VAL,
-		false, false);
-	if (tres_sub_str) {
-		if (resv_desc_ptr->core_cnt != NO_VAL)
-			return ESLURM_INVALID_CPU_COUNT;
-		resv_desc_ptr->core_cnt = atoi(tres_sub_str + 1);
-		xfree(tres_sub_str);
-	}
-
-	tres_sub_str = slurm_get_tres_sub_string(
 		resv_desc_ptr->tres_str, "node", NO_VAL,
 		false, false);
 	if (tres_sub_str) {
 		if (resv_desc_ptr->node_cnt != NO_VAL)
 			return ESLURM_INVALID_NODE_COUNT;
 		resv_desc_ptr->node_cnt = atoi(tres_sub_str + 1);
+		xfree(tres_sub_str);
+	}
+
+	tres_sub_str = slurm_get_tres_sub_string(
+		resv_desc_ptr->tres_str, "cpu", NO_VAL,
+		false, false);
+	if (tres_sub_str) {
+		if (resv_desc_ptr->core_cnt != NO_VAL)
+			return ESLURM_INVALID_CPU_COUNT;
+		resv_desc_ptr->core_cnt = atoi(tres_sub_str + 1);
+		if ((resv_desc_ptr->flags & RESERVE_TRES_PER_NODE) &&
+		    (resv_desc_ptr->node_cnt != NO_VAL))
+			resv_desc_ptr->core_cnt *= resv_desc_ptr->node_cnt;
 		xfree(tres_sub_str);
 	}
 
