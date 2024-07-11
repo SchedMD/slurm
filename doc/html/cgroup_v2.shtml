@@ -522,11 +522,11 @@ mode for creating the cgroup directories without creating a systemd "scope".
 This is only if a call to dbus returned an error, as it would be with
 <b>IgnoreSystemd</b>.
 </li>
-<li><b>EnableControllers=[yes|no]</b>: When set slurmd will check all the
-available controllers in <i>/sys/fs/cgroup</i> and will enable them recursively
-until it reaches the slurmd level. This will imply that the manually created
-slurmstepd directories will also have these controllers set. See
-<a href="#manual_startup">manual startup</a> above for more info.
+<li><b>EnableControllers=[yes|no]</b>: When set, slurmd will check all the
+available controllers in <i>/sys/fs/cgroup/cgroup.controllers</i> and will
+enable them recursively in the cgroup.subtree_control file until it reaches
+the slurmd level. This is generally required in RHEL8/Rocky8, some containers,
+or with systemd &lt; 244.
 </li>
 <li><b>CgroupMountPoint=/path/to/mount/point</b>: In most cases with cgroup v2,
 this parameter should not be used because <i>/sys/fs/cgroup</i> will be the only
@@ -615,6 +615,21 @@ RSS value provided by procfs. Nevertheless it is the same value that the kernel
 uses in its OOM killer logic.
 </p>
 
-<p style="text-align:center;">Last modified 22 April 2024</p>
+<p>RHEL8 / Rocky8: According to its release notes, support for cgroups v2
+started as a technology preview in RHEL8.0 and the features were backported to
+the 4.18 kernel. In RHEL8.2 the notes say cgroups v2 was fully supported, but
+they emit a warning that not all features are implemented. We recommend
+contacting Red Hat for the status of their support for cgroups v2, which should
+be tracked in their ticket: BZ#1401552. This release also comes with systemd
+239, which does not support the cpuset interface.
+</p>
+
+<p>Systemd &lt; 244: Prior to this version, systemd did not support the cpuset
+controller, and in old kernels the cpu controller is not enabled by default.
+The cpu controller can be enabled in system.conf by setting
+<code>DefaultCpuAccounting=yes</code>. For the cpuset controller, you need to
+set <code>EnableControllers=yes</code> in cgroup.conf.
+</p>
+<p style="text-align:center;">Last modified 10 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
