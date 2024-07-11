@@ -18569,7 +18569,13 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->cpus_per_task = 1;
 	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
 	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
-	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
+	if ((resv_desc_ptr->flags & RESERVE_TRES_PER_NODE) &&
+	    (resv_desc_ptr->core_cnt != NO_VAL) &&
+	    (resv_desc_ptr->node_cnt != NO_VAL)) {
+		detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus =
+			resv_desc_ptr->core_cnt / resv_desc_ptr->node_cnt;
+	} else
+		detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
 	detail_ptr->features = xstrdup(resv_desc_ptr->features);
 
 	if (build_feature_list(job_ptr, false, true)) {
