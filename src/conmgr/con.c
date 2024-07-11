@@ -98,6 +98,12 @@ typedef struct {
 	int fd; /* fd to send over con */
 } send_fd_args_t;
 
+static void _validate_pctl_type(pollctl_fd_type_t type)
+{
+	xassert(type > PCTL_TYPE_INVALID);
+	xassert(type < PCTL_TYPE_INVALID_MAX);
+}
+
 extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(con_types); i++)
@@ -1184,12 +1190,9 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	xassert(type > PCTL_TYPE_INVALID);
-	xassert(type < PCTL_TYPE_INVALID_MAX);
-	xassert(con->polling_input_fd > PCTL_TYPE_INVALID);
-	xassert(con->polling_input_fd < PCTL_TYPE_INVALID_MAX);
-	xassert(con->polling_output_fd > PCTL_TYPE_INVALID);
-	xassert(con->polling_output_fd < PCTL_TYPE_INVALID_MAX);
+	_validate_pctl_type(type);
+	_validate_pctl_type(con->polling_input_fd);
+	_validate_pctl_type(con->polling_output_fd);
 
 	in = con->input_fd;
 	has_in = (in >= 0);
