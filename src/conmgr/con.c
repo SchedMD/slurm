@@ -161,7 +161,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	 * Stop polling read/write to input fd to allow handle_connection() to
 	 * select what needs to be monitored
 	 */
-	con_set_polling(true, con, PCTL_TYPE_NONE, __func__);
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
@@ -1089,11 +1089,8 @@ extern conmgr_fd_t *con_find_by_fd(int fd)
 	return NULL;
 }
 
-extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd)
+extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	if (con->is_socket) {
 		/* Ask kernel for socket error */
 		int rc = SLURM_ERROR, err = SLURM_ERROR;
@@ -1112,9 +1109,6 @@ extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd)
 	 * the relavent file descriptor and remove from connection.
 	 */
 	close_con(true, con);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 static void _set_fd_polling(int fd, pollctl_fd_type_t old,
@@ -1181,14 +1175,11 @@ static void _log_set_polling(conmgr_fd_t *con, bool has_in, bool has_out,
 	xfree(log);
 }
 
-extern void con_set_polling(bool locked, conmgr_fd_t *con,
-			    pollctl_fd_type_t type, const char *caller)
+extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
+			    const char *caller)
 {
 	int has_in, has_out, in, out, is_same;
 	pollctl_fd_type_t in_type = PCTL_TYPE_NONE, out_type = PCTL_TYPE_NONE;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
 
 	_validate_pctl_type(type);
 	_validate_pctl_type(con->polling_input_fd);
@@ -1266,7 +1257,4 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 			con->polling_output_fd = out_type;
 		}
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }

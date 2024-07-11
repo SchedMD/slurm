@@ -269,7 +269,7 @@ static void _handle_work_pending(work_t *work)
 		_log_work(work, __func__, "Enqueueing delayed work. delayed_work:%u",
 			  list_count(mgr.delayed_work));
 		list_append(mgr.delayed_work, work);
-		update_timer(true);
+		update_timer();
 		return;
 	}
 

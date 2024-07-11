@@ -338,12 +338,12 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-extern void signal_mgr_stop(bool locked)
+extern void signal_mgr_stop(void)
 {
 	slurm_rwlock_rdlock(&lock);
 
 	if (signal_con)
-		close_con(locked, signal_con);
+		close_con(true, signal_con);
 
 	slurm_rwlock_unlock(&lock);
 }

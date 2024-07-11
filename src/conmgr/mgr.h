@@ -320,11 +320,13 @@ extern bool work_clear_time_delay(work_t *work);
 extern void cancel_delayed_work(void);
 extern void init_delayed_work(void);
 extern void free_delayed_work(void);
-extern void update_timer(bool locked);
+/* update_timer - Caller must lock mgr.mutex */
+extern void update_timer(void);
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
-extern void update_last_time(bool locked);
+/* update_last_time - Caller must lock mgr.mutex */
+extern void update_last_time(void);
 
 /*
  * Poll all connections and handle any events
@@ -349,22 +351,22 @@ extern void close_con(bool locked, conmgr_fd_t *con);
  * Close connection due to poll error
  *
  * Note: Removal of fd from poll() will already be handled before calling this
- * IN locked - if mgr.mutex is already locked or not
+ * Note: Caller must lock mgr.mutex
  * IN con - connection that owns fd that had error
  * IN fd - file descriptor that had an error (probably from poll)
  * IN rc - error if known
  */
-extern void con_close_on_poll_error(bool locked, conmgr_fd_t *con, int fd);
+extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 
 /*
  * Set connection polling state
- * IN locked - true if caller hold mgr.mutex lock
+ * NOTE: Caller must hold mgr.mutex lock.
  * IN type - Set type of polling for connection or PCTL_TYPE_INVALID to disable
  *	polling this connection
  * IN caller - __func__ from caller
  */
-extern void con_set_polling(bool locked, conmgr_fd_t *con,
-			    pollctl_fd_type_t type, const char *caller);
+extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
+			    const char *caller);
 
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 

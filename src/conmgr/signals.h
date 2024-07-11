@@ -43,8 +43,11 @@
 /* start the signal manager */
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 
-/* signal the signal manager to stop */
-extern void signal_mgr_stop(bool locked);
+/*
+ * signal the signal manager to stop
+ * Note: Caller must lock mgr.mutex
+ */
+extern void signal_mgr_stop(void);
 
 /*
  * Add signal work to signal manager

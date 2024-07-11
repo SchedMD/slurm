@@ -93,7 +93,7 @@ static int _handle_connection(void *x, void *arg)
 		 * Listening connections don't need to do anything to be
 		 * connected
 		 */
-		con_set_polling(true, con, PCTL_TYPE_LISTEN, __func__);
+		con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
 		con->is_connected = true;
 		return 0;
 	} else if (!con->is_socket || con->can_read || con->can_write) {
@@ -109,7 +109,7 @@ static int _handle_connection(void *x, void *arg)
 
 		if (con->events.on_connection) {
 			/* disable polling until on_connect() is done */
-			con_set_polling(true, con, PCTL_TYPE_CONNECTED, __func__);
+			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 			add_work_con_fifo(true, con, wrap_on_connection, con);
 
 			log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
@@ -141,7 +141,7 @@ static int _handle_connection(void *x, void *arg)
 		 * level SOL_SOCKET to determine whether connect() completed
 		 * success‐ fully (SO_ERROR is zero) or unsuccessfully
 		 */
-		con_set_polling(true, con, PCTL_TYPE_READ_WRITE, __func__);
+		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
 		log_flag(CONMGR, "%s: [%s] waiting for connection to establish",
 			 __func__, con->name);
@@ -175,7 +175,7 @@ static int _handle_connection(void *x, void *arg)
 			 * as there is no point reading until the write is
 			 * complete since it will be ignored.
 			 */
-			con_set_polling(true, con, PCTL_TYPE_WRITE_ONLY, __func__);
+			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
 			/* must wait until poll allows write of this socket */
 			log_flag(CONMGR, "%s: [%s] waiting for %u writes",
@@ -198,7 +198,7 @@ static int _handle_connection(void *x, void *arg)
 			 __func__, con->name);
 
 		/* disable polling until _listen_accept() completes */
-		con_set_polling(true, con, PCTL_TYPE_CONNECTED, __func__);
+		con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 		con->can_read = false;
 
 		add_work_con_fifo(true, con, _listen_accept, con);
@@ -227,11 +227,11 @@ static int _handle_connection(void *x, void *arg)
 
 		/* must wait until poll allows read from this socket */
 		if (con->is_listen) {
-			con_set_polling(true, con, PCTL_TYPE_LISTEN, __func__);
+			con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		} else {
-			con_set_polling(true, con, PCTL_TYPE_READ_ONLY, __func__);
+			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work_active=%c can_read=%c can_write=%c on_data_tried=%c work=%d write_complete_work=%d",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
@@ -295,7 +295,7 @@ static int _handle_connection(void *x, void *arg)
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	if (con->output_fd != -1) {
-		con_set_polling(true, con, PCTL_TYPE_NONE, __func__);
+		con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 		if (close(con->output_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",
@@ -436,7 +436,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 	con->can_write = false;
 
 	if (pollctl_events_has_error(events)) {
-		con_close_on_poll_error(true, con, fd);
+		con_close_on_poll_error(con, fd);
 		/* connection errored but not handling of the connection */
 		return SLURM_SUCCESS;
 	}
@@ -609,7 +609,7 @@ static bool _watch_loop(void)
 	bool work = false; /* is there any work to do? */
 
 	if (mgr.shutdown_requested) {
-		signal_mgr_stop(true);
+		signal_mgr_stop();
 		close_all_connections();
 	} else if (mgr.quiesced) {
 		if (mgr.poll_active)

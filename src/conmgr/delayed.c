@@ -63,12 +63,9 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-extern void update_last_time(bool locked)
+extern void update_last_time(void)
 {
 	int rc;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
 
 	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr.last_time))) {
 		if (rc == -1)
@@ -77,9 +74,6 @@ extern void update_last_time(bool locked)
 		fatal("%s: clock_gettime() failed: %s",
 		      __func__, slurm_strerror(rc));
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 static int _foreach_delayed_work(void *x, void *arg)
@@ -128,7 +122,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern void update_timer(bool locked)
+extern void update_timer(void)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
@@ -137,12 +131,9 @@ extern void update_timer(bool locked)
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
 	};
 
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		/* get updated clock for logging but not needed otherwise */
-		update_last_time(true);
+		update_last_time();
 	}
 
 	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
@@ -180,9 +171,6 @@ extern void update_timer(bool locked)
 		if ((rc == -1) && errno)
 			rc = errno;
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* check begin times to see if the work delay has elapsed */
@@ -289,13 +277,13 @@ extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	update_last_time(true);
+	update_last_time();
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
 				    _match_work_elapsed, NULL);
 
-	update_timer(true);
+	update_timer();
 
 	while ((work = list_pop(elapsed))) {
 		if (!work_clear_time_delay(work))
