@@ -1163,6 +1163,51 @@ static void _set_fd_polling(int fd, pollctl_fd_type_t old,
 		pollctl_link_fd(fd, new, con_name, caller);
 }
 
+static void _log_set_polling(conmgr_fd_t *con, bool has_in, bool has_out,
+			     pollctl_fd_type_t type, pollctl_fd_type_t in_type,
+			     pollctl_fd_type_t out_type, const char *caller)
+{
+	char *log = NULL, *at = NULL;
+	const char *op = "maintain";
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_CONMGR))
+		return;
+
+	if (has_in) {
+		const char *old, *new;
+
+		old = pollctl_type_to_string(con->polling_input_fd);
+		new = pollctl_type_to_string(in_type);
+
+		xstrfmtcatat(log, &at, " in[%d]:%s", con->input_fd, old);
+
+		if (in_type != con->polling_input_fd) {
+			xstrfmtcatat(log, &at, "->%s", new);
+			op = "changing";
+		}
+	}
+
+	if (has_out) {
+		const char *old, *new;
+
+		old = pollctl_type_to_string(con->polling_output_fd);
+		new = pollctl_type_to_string(out_type);
+
+		xstrfmtcatat(log, &at, " out[%d]:%s", con->output_fd, old);
+
+		if (out_type != con->polling_output_fd) {
+			xstrfmtcatat(log, &at, "->%s", new);
+			op = "changing";
+		}
+	}
+
+	log_flag(CONMGR, "%s->%s: [%s] %s polling:%s%s",
+		 caller, XSTRINGIFY(con_set_polling), con->name, op,
+		 pollctl_type_to_string(type), (log ? log : ""));
+
+	xfree(log);
+}
+
 extern void con_set_polling(bool locked, conmgr_fd_t *con,
 			    pollctl_fd_type_t type, const char *caller)
 {
@@ -1239,44 +1284,7 @@ extern void con_set_polling(bool locked, conmgr_fd_t *con,
 	if (!has_out)
 		out_type = PCTL_TYPE_NONE;
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *log = NULL, *at = NULL;
-		const char *op = "maintain";
-
-		if (has_in) {
-			const char *old, *new;
-
-			old = pollctl_type_to_string(con->polling_input_fd);
-			new = pollctl_type_to_string(in_type);
-
-			xstrfmtcatat(log, &at, " in[%d]:%s", in, old);
-
-			if (in_type != con->polling_input_fd) {
-				xstrfmtcatat(log, &at, "->%s", new);
-				op = "changing";
-			}
-		}
-
-		if (has_out) {
-			const char *old, *new;
-
-			old = pollctl_type_to_string(con->polling_output_fd);
-			new = pollctl_type_to_string(out_type);
-
-			xstrfmtcatat(log, &at, " out[%d]:%s", out, old);
-
-			if (out_type != con->polling_output_fd) {
-				xstrfmtcatat(log, &at, "->%s", new);
-				op = "changing";
-			}
-		}
-
-		log_flag(CONMGR, "%s->%s: [%s] %s polling:%s%s",
-			 caller, __func__, con->name, op,
-			 pollctl_type_to_string(type), (log ? log : ""));
-
-		xfree(log);
-	}
+	_log_set_polling(con, has_in, has_out, type, in_type, out_type, caller);
 
 	if (is_same) {
 		/* same never link output_fd */
