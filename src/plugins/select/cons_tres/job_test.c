@@ -2312,14 +2312,14 @@ static int _build_cr_job_list(void *x, void *arg)
  * 0x0000000000200 - Rebooting nodes
  * 0x2000000000000 - Node powered down
  */
-static void _set_sched_weight(bitstr_t *node_bitmap)
+static void _set_sched_weight(bitstr_t *node_bitmap, bool future)
 {
 	node_record_t *node_ptr;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		node_ptr->sched_weight = node_ptr->weight;
 		node_ptr->sched_weight = node_ptr->sched_weight << 16;
-		if (IS_NODE_COMPLETING(node_ptr))
+		if (!future && IS_NODE_COMPLETING(node_ptr))
 			node_ptr->sched_weight |= 0x100;
 		if (IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr))
@@ -2558,7 +2558,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	orig_map = bit_copy(node_bitmap);
 
-	_set_sched_weight(node_bitmap);
+	_set_sched_weight(node_bitmap, false);
 
 	if (will_run_ptr && will_run_ptr->start > now)
 		goto test_future;
