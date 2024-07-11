@@ -372,13 +372,13 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 
-extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
-				   conmgr_fd_t *source, int input_fd,
-				   int output_fd,
-				   const conmgr_events_t events,
-				   const slurm_addr_t *addr,
-				   socklen_t addrlen, bool is_listen,
-				   const char *unix_socket_path, void *arg);
+extern int add_connection(conmgr_con_type_t type,
+			  conmgr_fd_t *source, int input_fd,
+			  int output_fd,
+			  const conmgr_events_t events,
+			  const slurm_addr_t *addr,
+			  socklen_t addrlen, bool is_listen,
+			  const char *unix_socket_path, void *arg);
 
 extern void close_all_connections(void);
 

@@ -350,13 +350,13 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	return rc;
 }
 
-extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
-				   conmgr_fd_t *source, int input_fd,
-				   int output_fd,
-				   const conmgr_events_t events,
-				   const slurm_addr_t *addr,
-				   socklen_t addrlen, bool is_listen,
-				   const char *unix_socket_path, void *arg)
+extern int add_connection(conmgr_con_type_t type,
+			  conmgr_fd_t *source, int input_fd,
+			  int output_fd,
+			  const conmgr_events_t events,
+			  const slurm_addr_t *addr,
+			  socklen_t addrlen, bool is_listen,
+			  const char *unix_socket_path, void *arg)
 {
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
@@ -369,11 +369,11 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	/* verify FD is valid and still open */
 	if (has_in && fstat(input_fd, &in_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
-		return NULL;
+		return SLURM_ERROR;
 	}
 	if (has_out && fstat(output_fd, &out_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
@@ -457,7 +457,7 @@ extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
 	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 
-	return con;
+	return SLURM_SUCCESS;
 }
 
 extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
@@ -496,17 +496,8 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg)
 {
-	conmgr_fd_t *con;
-
-	con = add_connection(type, NULL, input_fd, output_fd, events, addr,
-			     addrlen, false, NULL, arg);
-
-	if (!con)
-		return SLURM_ERROR;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	return SLURM_SUCCESS;
+	return add_connection(type, NULL, input_fd, output_fd, events, addr,
+			      addrlen, false, NULL, arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
@@ -514,16 +505,8 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    const slurm_addr_t *addr,
 				    socklen_t addrlen, void *arg)
 {
-	conmgr_fd_t *con;
-
-	con = add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			     NULL, arg);
-	if (!con)
-		return SLURM_ERROR;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	return SLURM_SUCCESS;
+	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
+			      NULL, arg);
 }
 
 extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
@@ -532,16 +515,8 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 					  socklen_t addrlen, const char *path,
 					  void *arg)
 {
-	conmgr_fd_t *con;
-
-	con = add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			     path, arg);
-	if (!con)
-		return SLURM_ERROR;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	return SLURM_SUCCESS;
+	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
+			      path, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -570,15 +545,13 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 * is now in an unknown state
 		 */
 		close_con(false, src);
-	} else if (!(con = add_connection(args->type, NULL, fd, fd,
-					  args->events, NULL, 0, false, NULL,
-					  args->arg))) {
+	} else if (add_connection(args->type, NULL, fd, fd,
+				  args->events, NULL, 0, false, NULL,
+				  args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
 		 * reason to assume that failing is due to the state of src.
 		 */
-	} else {
-		xassert(con->magic == MAGIC_CON_MGR_FD);
 	}
 
 	args->magic = ~MAGIC_RECEIVE_FD;
@@ -957,7 +930,6 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					slurm_addr_t *addr, socklen_t addrlen,
 					conmgr_events_t events, void *arg)
 {
-	conmgr_fd_t *con = NULL;
 	int fd = -1, rc = SLURM_ERROR;
 	//socklen_t bindlen = 0;
 
@@ -1015,13 +987,8 @@ again:
 		/* delayed connect() completion is expected */
 	}
 
-	if (!(con = add_connection(type, NULL, fd, fd, events, addr, addrlen,
-				   false, NULL, arg)))
-		return SLURM_ERROR;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	return SLURM_SUCCESS;
+	return add_connection(type, NULL, fd, fd, events, addr, addrlen,
+			      false, NULL, arg);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,

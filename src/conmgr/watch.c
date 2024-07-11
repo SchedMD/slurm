@@ -319,7 +319,6 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int fd;
-	conmgr_fd_t *child = NULL;
 	const char *unix_path = NULL;
 
 	if (con->input_fd == -1) {
@@ -385,15 +384,13 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if (!(child = add_connection(con->type, con, fd, fd, con->events,
-				      &addr, addrlen, false, unix_path,
-				      con->new_arg))) {
+	if (add_connection(con->type, con, fd, fd, con->events,
+			   &addr, addrlen, false, unix_path,
+			   con->new_arg) != SLURM_SUCCESS) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection",
 			 __func__, fd);
 		return;
 	}
-
-	xassert(child->magic == MAGIC_CON_MGR_FD);
 }
 
 /*
