@@ -2330,58 +2330,30 @@ static void _set_sched_weight(bitstr_t *node_bitmap)
 	}
 }
 
-/*
- * Determine where and when the job at job_ptr can begin execution by updating
- * a scratch cr_record structure to reflect each job terminating at the
- * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by Slurm's sched/backfill plugin.
- */
-static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_req,
-			  list_t *preemptee_candidates,
-			  list_t **preemptee_job_list,
-			  resv_exc_t *resv_exc_ptr,
-			  will_run_data_t *will_run_ptr)
+static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
+			    uint32_t min_nodes, uint32_t max_nodes,
+			    uint32_t req_nodes, uint16_t job_node_req,
+			    list_t *preemptee_candidates,
+			    list_t **preemptee_job_list,
+			    resv_exc_t *resv_exc_ptr,
+			    will_run_data_t *will_run_ptr,
+			    bitstr_t *orig_map)
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *future_license_list;
-	job_record_t *tmp_job_ptr;
 	list_t *cr_job_list;
-	list_itr_t *job_iterator, *preemptee_iterator;
-	bitstr_t *orig_map;
+	list_itr_t *job_iterator;
 	int rc = SLURM_ERROR;
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool qos_preemptor = false;
 	bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 	cr_job_list_args_t args;
-
-	orig_map = bit_copy(node_bitmap);
-
-	_set_sched_weight(node_bitmap);
-
-	/* Try to run with currently available nodes */
-	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
-		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage,
-		       cluster_license_list, resv_exc_ptr, false, false,
-		       false);
-	if (rc == SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(orig_map);
-		job_ptr->start_time = now;
-		return SLURM_SUCCESS;
-	}
-
-	/* Don't try preempting for licenses if not enabled */
-	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
-		preemptee_candidates = NULL;
-
-	if (!preemptee_candidates && (job_ptr->bit_flags & TEST_NOW_ONLY)) {
-		FREE_NULL_BITMAP(orig_map);
-		return SLURM_ERROR;
-	}
+	int time_window = 30;
+	time_t end_time = 0;
+	bool more_jobs = true;
+	DEF_TIMERS;
 
 	/*
 	 * Job is still pending. Simulate termination of jobs one at a time
@@ -2417,7 +2389,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	list_for_each(job_list, _build_cr_job_list, &args);
 
 	/* Test with all preemptable jobs gone */
-	if (preemptee_candidates) {
+	if (preemptee_candidates || args.start) {
 		bit_or(node_bitmap, orig_map);
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -2431,6 +2403,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			 * initiate preemption.
 			 */
 			job_ptr->start_time = now;
+			goto cleanup;
 		}
 	}
 
@@ -2438,130 +2411,200 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * Remove the running jobs from exp_node_cr and try scheduling the
 	 * pending job after each one (or a few jobs that end close in time).
 	 */
-	if ((rc != SLURM_SUCCESS) &&
-	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
-		int time_window = 30;
-		time_t end_time = 0;
-		bool more_jobs = true;
-		DEF_TIMERS;
-		list_sort(cr_job_list, _cr_job_list_sort);
-		START_TIMER;
-		job_iterator = list_iterator_create(cr_job_list);
-		while (more_jobs) {
-			job_record_t *last_job_ptr = NULL;
-			job_record_t *next_job_ptr = NULL;
-			int overlap, rm_job_cnt = 0;
+	list_sort(cr_job_list, _cr_job_list_sort);
 
-			bit_or(node_bitmap, orig_map);
-			while (true) {
-				tmp_job_ptr = list_next(job_iterator);
-				if (!tmp_job_ptr) {
-					more_jobs = false;
-					break;
-				}
-				efctv_bitmap_ptr = _select_topo_bitmap(
-							tmp_job_ptr,
-							node_bitmap,
-							&efctv_bitmap);
-				if (slurm_conf.debug_flags &
-				    DEBUG_FLAG_SELECT_TYPE) {
-					overlap = bit_overlap(efctv_bitmap_ptr,
-							      tmp_job_ptr->
-							      node_bitmap);
-					info("%pJ: overlap=%d", tmp_job_ptr,
-					      overlap);
-				} else
-					overlap = bit_overlap_any(
-							efctv_bitmap_ptr,
-							tmp_job_ptr->
-							node_bitmap);
-				if (overlap == 0)  /* job has no usable nodes */
-					continue;  /* skip it */
-				if (!end_time) {
-					time_t delta = 0;
+	START_TIMER;
+	job_iterator = list_iterator_create(cr_job_list);
+	while (more_jobs) {
+		job_record_t *last_job_ptr = NULL;
+		job_record_t *next_job_ptr = NULL;
+		int overlap, rm_job_cnt = 0;
 
-					/*
-					 * align all time windows on a
-					 * time_window barrier from the original
-					 * first job evaluated, this prevents
-					 * data in the running set from skewing
-					 * changing the results between
-					 * scheduling evaluations
-					 */
-					delta = tmp_job_ptr->end_time %
-								time_window;
-					end_time = tmp_job_ptr->end_time +
-							(time_window - delta);
-				}
-				last_job_ptr = tmp_job_ptr;
-				(void) job_res_rm_job(
-					future_part, future_usage,
-					future_license_list, tmp_job_ptr, 0,
-					orig_map);
-				next_job_ptr = list_peek_next(job_iterator);
-				if (!next_job_ptr) {
-					more_jobs = false;
-					break;
-				} else if (next_job_ptr->end_time >
-					   (end_time + time_window)) {
-					break;
-				}
-				if (rm_job_cnt++ > 200)
-					goto timer_check;
-			}
-			if (!last_job_ptr)	/* Should never happen */
-				break;
+		bit_or(node_bitmap, orig_map);
+		while (true) {
+			job_record_t *tmp_job_ptr = list_next(job_iterator);
 
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, tmp_cr_type,
-				       job_node_req, future_part, future_usage,
-				       future_license_list, resv_exc_ptr,
-				       backfill_busy_nodes, qos_preemptor,
-				       true);
-			if (rc == SLURM_SUCCESS) {
-				if (last_job_ptr->end_time <= now) {
-					job_ptr->start_time =
-						_guess_job_end(last_job_ptr,
-							       now);
-				} else {
-					job_ptr->start_time =
-						last_job_ptr->end_time;
-				}
+			if (!tmp_job_ptr ||
+			    (will_run_ptr && will_run_ptr->end &&
+			     tmp_job_ptr->end_time > will_run_ptr->end)) {
+				more_jobs = false;
 				break;
 			}
+			efctv_bitmap_ptr = _select_topo_bitmap(
+						tmp_job_ptr,
+						node_bitmap,
+						&efctv_bitmap);
+			if (slurm_conf.debug_flags &
+			    DEBUG_FLAG_SELECT_TYPE) {
+				overlap = bit_overlap(efctv_bitmap_ptr,
+						      tmp_job_ptr->
+						      node_bitmap);
+				info("%pJ: overlap=%d", tmp_job_ptr,
+				      overlap);
+			} else
+				overlap = bit_overlap_any(
+						efctv_bitmap_ptr,
+						tmp_job_ptr->
+						node_bitmap);
+			if (overlap == 0)  /* job has no usable nodes */
+				continue;  /* skip it */
+			if (!end_time) {
+				time_t delta = 0;
 
-			do {
-				if (bf_window_scale)
-					time_window += bf_window_scale;
-				else
-					time_window *= 2;
-			} while (next_job_ptr && next_job_ptr->end_time >
-				 (end_time + time_window));
+				/*
+				 * align all time windows on a
+				 * time_window barrier from the original
+				 * first job evaluated, this prevents
+				 * data in the running set from skewing
+				 * changing the results between
+				 * scheduling evaluations
+				 */
+				delta = tmp_job_ptr->end_time %
+							time_window;
+				end_time = tmp_job_ptr->end_time +
+						(time_window - delta);
+			}
+			last_job_ptr = tmp_job_ptr;
+			(void) job_res_rm_job(
+				future_part, future_usage,
+				future_license_list, tmp_job_ptr, 0,
+				efctv_bitmap_ptr);
+			next_job_ptr = list_peek_next(job_iterator);
+			if (!next_job_ptr) {
+				more_jobs = false;
+				break;
+			} else if (next_job_ptr->end_time >
+				   (end_time + time_window)) {
+				break;
+			}
+			if (rm_job_cnt++ > 200)
+				goto timer_check;
+		}
+		if (!last_job_ptr)	/* Should never happen */
+			break;
+
+		rc = _job_test(job_ptr, node_bitmap, min_nodes,
+			       max_nodes, req_nodes,
+			       SELECT_MODE_WILL_RUN, tmp_cr_type,
+			       job_node_req, future_part, future_usage,
+			       future_license_list, resv_exc_ptr,
+			       backfill_busy_nodes, qos_preemptor,
+			       true);
+		if (rc == SLURM_SUCCESS) {
+			if (last_job_ptr->end_time <= now) {
+				job_ptr->start_time =
+					_guess_job_end(last_job_ptr,
+						       now);
+			} else {
+				job_ptr->start_time =
+					last_job_ptr->end_time;
+			}
+			break;
+		}
+		do {
+			if (bf_window_scale)
+				time_window += bf_window_scale;
+			else
+				time_window *= 2;
+		} while (next_job_ptr && next_job_ptr->end_time >
+			 (end_time + time_window));
 timer_check:
-			END_TIMER;
-			if (DELTA_TIMER >= 2000000)
-				break;	/* Quit after 2 seconds wall time */
-		}
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
-		    ((job_ptr->bit_flags & BACKFILL_TEST) &&
-		     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
-			/*
-			 * When time_window gets large it could result in
-			 * delaying jobs regardless of priority. Setting
-			 * bf_window_linear could help mitigate this.
-			 */
-			verbose("%pJ considered resources from running jobs ending within %d seconds of %s",
-				job_ptr, time_window, slurm_ctime2(&end_time));
-		}
-
-		list_iterator_destroy(job_iterator);
+		END_TIMER;
+		if (DELTA_TIMER >= 2000000)
+			break;	/* Quit after 2 seconds wall time */
 	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
+	    ((job_ptr->bit_flags & BACKFILL_TEST) &&
+	     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
+		/*
+		 * When time_window gets large it could result in
+		 * delaying jobs regardless of priority. Setting
+		 * bf_window_linear could help mitigate this.
+		 */
+		verbose("%pJ considered resources from running jobs ending within %d seconds of %s",
+			job_ptr, time_window, slurm_ctime2(&end_time));
+	}
+
+	list_iterator_destroy(job_iterator);
+cleanup:
 	FREE_NULL_BITMAP(efctv_bitmap);
+	FREE_NULL_LIST(cr_job_list);
+	part_data_destroy_res(future_part);
+	node_data_destroy(future_usage);
+	FREE_NULL_LIST(future_license_list);
+
+	return rc;
+}
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
+static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes, uint16_t job_node_req,
+			  list_t *preemptee_candidates,
+			  list_t **preemptee_job_list,
+			  resv_exc_t *resv_exc_ptr,
+			  will_run_data_t *will_run_ptr)
+{
+	list_itr_t *preemptee_iterator;
+	int rc = SLURM_ERROR;
+	time_t now = time(NULL);
+	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
+	bitstr_t *orig_map;
+
+	orig_map = bit_copy(node_bitmap);
+
+	_set_sched_weight(node_bitmap);
+
+	if (will_run_ptr && will_run_ptr->start > now)
+		goto test_future;
+
+	/* Try to run with currently available nodes */
+	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
+		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
+		       select_part_record, select_node_usage,
+		       cluster_license_list, resv_exc_ptr, false, false,
+		       false);
+	if (rc == SLURM_SUCCESS) {
+		job_ptr->start_time = now;
+		FREE_NULL_BITMAP(orig_map);
+		return SLURM_SUCCESS;
+	}
+
+	/* Don't try preempting for licenses if not enabled */
+	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
+		preemptee_candidates = NULL;
+
+	if (!preemptee_candidates && (job_ptr->bit_flags & TEST_NOW_ONLY)) {
+		FREE_NULL_BITMAP(orig_map);
+		return SLURM_ERROR;
+	}
+
+test_future:
+	/*
+	 * Remove the running jobs from exp_node_cr and try scheduling the
+	 * pending job after each one (or a few jobs that end close in time).
+	 */
+	if ((rc != SLURM_SUCCESS) &&
+	    (((job_ptr->bit_flags & TEST_NOW_ONLY) == 0) ||
+	     preemptee_candidates)) {
+		rc = _future_run_test(job_ptr, node_bitmap,
+				      min_nodes, max_nodes,
+				      req_nodes, job_node_req,
+				      preemptee_candidates,
+				      preemptee_job_list,
+				      resv_exc_ptr,
+				      will_run_ptr,
+				      orig_map);
+	}
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
+		job_record_t *tmp_job_ptr;
 		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		/*
 		 * Build list of preemptee jobs whose resources are
@@ -2585,12 +2628,7 @@ timer_check:
 		FREE_NULL_BITMAP(efctv_bitmap);
 	}
 
-	FREE_NULL_LIST(cr_job_list);
-	part_data_destroy_res(future_part);
-	node_data_destroy(future_usage);
 	FREE_NULL_BITMAP(orig_map);
-	FREE_NULL_LIST(future_license_list);
-
 	return rc;
 }
 
