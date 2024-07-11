@@ -43,7 +43,17 @@ atf_base_dir = str(pathlib.Path(__file__).resolve().parent)
 # Change directory to the base of the ATF repo
 os.chdir(atf_base_dir)
 
-command = "pytest-3"
-args = [command, "-s", f"-r{report_options}", "-v", "-p", "no:cacheprovider"]
+command = "pytest"
+# --disable-warnings is very useful for tests using pydantic,
+# logging.warning in tests are still shown
+args = [
+    command,
+    "-s",
+    f"-r{report_options}",
+    "-v",
+    "-p",
+    "no:cacheprovider",
+    "--disable-warnings",
+]
 args.extend(sys.argv[1:])
 os.execvp(command, args)
