@@ -160,6 +160,13 @@ typedef struct connection {
 	slurm_addr_t *cli_addr;
 } conn_t;
 
+typedef struct {
+#define RUN_ARGS_MAGIC 0xaeb00fab
+	int magic; /* RUN_ARGS_MAGIC */
+	int argc;
+	char **argv;
+} run_args_t;
+
 /*
  * Global data for resource specialization
  */
@@ -232,6 +239,7 @@ static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
 static void _attempt_reconfig(void);
+static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -267,12 +275,14 @@ static void _attempt_reconfig(void);
 int
 main (int argc, char **argv)
 {
-	int pidfd = -1;
-	int blocked_signals[] = {SIGPIPE, 0};
-	char *oom_value;
 	uint32_t curr_uid = 0;
-	char time_stamp[256];
+	int blocked_signals[] = {SIGPIPE, 0};
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
+	run_args_t args = {
+		.magic = RUN_ARGS_MAGIC,
+		.argc = argc,
+		.argv = argv,
+	};
 
 	if (getenv("SLURMD_RECONF"))
 		original = false;
@@ -338,6 +348,30 @@ main (int argc, char **argv)
 	test_core_limit();
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
+
+	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_fifo(_run, &args);
+
+	while (!_shutdown)
+		conmgr_run(true);
+
+	conmgr_fini();
+	log_fini();
+
+	return SLURM_SUCCESS;
+}
+
+static void _run(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	run_args_t *args = arg;
+	int argc = args->argc;
+	char **argv = args->argv;
+	int pidfd = -1;
+	char *oom_value;
+	char time_stamp[256];
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
 
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
 		int i = atoi(oom_value);
@@ -447,8 +481,6 @@ main (int argc, char **argv)
 		(void) close(pidfd);	/* Ignore errors */
 
 	info("Slurmd shutdown completing");
-	log_fini();
-       	return 0;
 }
 
 /*
