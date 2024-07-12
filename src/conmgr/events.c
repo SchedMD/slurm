@@ -47,7 +47,6 @@ static void _wait_pending(event_signal_t *event, const char *caller)
 	log_flag(CONMGR, "%s->%s: [EVENT:%s] wait skipped due to %d pending reliable signals",
 		 caller, __func__, event->name, event->pending);
 
-	xassert(event->pending > 0);
 	xassert(!event->waiting);
 
 	event->pending--;
@@ -91,8 +90,6 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
 			   const char *caller)
 {
-	xassert(event->waiting >= 0);
-
 	if (event->pending)
 		_wait_pending(event, caller);
 	else
@@ -144,8 +141,6 @@ static void _signal_no_waiting(event_signal_t *event, const char *caller)
 extern void event_signal_now(bool broadcast, event_signal_t *event,
 			     const char *caller)
 {
-	xassert(event->waiting >= 0);
-
 	if (broadcast) {
 		_broadcast(event, caller);
 	} else if (!event->waiting) {
