@@ -944,7 +944,7 @@ static void _become_slurm_user(void)
 		    (setgroups(0, NULL) != 0)) {
 			fatal("Failed to drop supplementary groups, "
 			      "setgroups: %m");
-		} else if ((slurm_conf.slurm_user_id != getuid()) &&
+		} else if ((slurm_conf.slurm_user_id != 0) &&
 		           initgroups(slurm_conf.slurm_user_name,
 		                      slurm_user_gid)) {
 			fatal("Failed to set supplementary groups, "
