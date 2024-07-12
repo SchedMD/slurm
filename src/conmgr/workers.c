@@ -86,15 +86,9 @@ static void _worker_delete(void *x)
 	if (!worker)
 		return;
 
-	_check_magic_worker(worker);
-
-	worker = list_remove_first(mgr.workers.workers, _find_worker, worker);
-
+	/* list_delete_first calls _worker_free() */
+	list_delete_first(mgr.workers.workers, _find_worker, worker);
 	mgr.workers.total--;
-
-	xassert(worker == x);
-
-	_worker_free(worker);
 }
 
 static void _increase_thread_count(int count)
