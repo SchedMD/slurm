@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
     a cluster-wide option.
  -- Add "%b" as a file name pattern for the array task id modulo 10.
  -- Skip packing empty nodes when they are hidden during REQUEST_NODE_INFO RPC.
+ -- accounting_storage/mysql - Avoid a fatal condition when the db server is
+    not reachable.
 
 * Changes in Slurm 24.05.2
 ==========================
