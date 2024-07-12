@@ -1730,8 +1730,14 @@ fail2:
 	step_terminate_monitor_stop();
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		/* This sends a SIGKILL to the pgid */
-		if (switch_g_job_postfini(step) < 0)
-			error("switch_g_job_postfini: %m");
+		if (switch_g_job_postfini(step) < 0) {
+                        error("switch_g_job_postfini: %m");
+			/*
+			 * Drain the node since resources might still be kept.
+			 * (E.g, cxi_service for switch/hpe_slingshot.)
+			 */
+			stepd_drain_node("switch_g_job_postfini failed");
+		}
 	}
 
 	/*

@@ -91,6 +91,7 @@ documents those changes that are of interest to users and administrators.
       'GET /slurm/v0.0.41/jobs'
  -- jobcomp/filetxt - Fix truncation of job record lines > 1024 characters.
  -- Fixed regression that prevented compilation on FreeBSD hosts.
+ -- switch/hpe_slingshot - Drain node on failure to delete CXI services.
 
 * Changes in Slurm 24.05.1
 ==========================
