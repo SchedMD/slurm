@@ -278,19 +278,8 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	}
 
 	if (is_same) {
-		xassert(has_in && has_out);
-
-		if (in_str && out_str)
-			xstrfmtcat(con->name, "%s->%s(fd:%d)", in_str, out_str,
-				   con->output_fd);
-		else if (in_str)
-			xstrfmtcat(con->name, "%s(fd:%d)", in_str,
-				   con->input_fd);
-		else if (out_str)
-			xstrfmtcat(con->name, "%s(fd:%d)", out_str,
-				   con->output_fd);
-		else
-			xassert(false);
+		xstrfmtcat(con->name, "%s(fd:%d)", in_str,
+			   con->input_fd);
 	} else if (has_in && has_out) {
 		xstrfmtcat(con->name, "%s(fd:%d)->%s(fd:%d)", in_str,
 			   con->input_fd, out_str, con->output_fd);
@@ -301,8 +290,6 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	} else {
 		xassert(false);
 	}
-
-	xassert(con->name && con->name[0]);
 }
 
 static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
