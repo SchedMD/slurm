@@ -491,8 +491,8 @@ extern void stop_anchor(int status)
 		      __func__);
 
 		/* send the pid now since due to failure */
-		if ((rc = conmgr_queue_write_fd(state.startup_con, &state.pid,
-						sizeof(state.pid))))
+		if ((rc = conmgr_queue_write_data(state.startup_con, &state.pid,
+						  sizeof(state.pid))))
 			fatal("%s: unable to send pid: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -1121,7 +1121,8 @@ extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* notify command_create() that container is now CREATED */
 	xassert(state.startup_con);
-	if ((rc = conmgr_queue_write_fd(state.startup_con, &pid, sizeof(pid))))
+	if ((rc = conmgr_queue_write_data(state.startup_con, &pid,
+					  sizeof(pid))))
 		fatal("%s: unable to send pid: %s",
 		      __func__, slurm_strerror(rc));
 

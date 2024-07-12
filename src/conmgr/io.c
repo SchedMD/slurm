@@ -373,8 +373,8 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = size;
 }
 
-extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
-				 const size_t bytes)
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes)
 {
 	buf_t *buf;
 
@@ -485,8 +485,8 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 	xassert(size_buf(output) <= xsize(get_buf_data(output)));
 	xassert(get_buf_offset(output) <= size_buf(output));
 
-	rc = conmgr_queue_write_fd(con, get_buf_data(output),
-				   get_buf_offset(output));
+	rc = conmgr_queue_write_data(con, get_buf_data(output),
+				     get_buf_offset(output));
 
 	if (!rc)
 		set_buf_offset(output, 0);

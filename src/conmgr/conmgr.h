@@ -328,8 +328,8 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd);
  * IN bytes number of bytes in buffer to write
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
-				 const size_t bytes);
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes);
 
 /*
  * Write packed msg to connection (from callback).

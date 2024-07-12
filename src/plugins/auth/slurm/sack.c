@@ -176,7 +176,7 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 	}
 
 	rc = htonl(verify_internal(cred, uid));
-	conmgr_queue_write_fd(con, &rc, sizeof(uint32_t));
+	conmgr_queue_write_data(con, &rc, sizeof(uint32_t));
 
 	FREE_NULL_CRED(cred);
 	return SLURM_SUCCESS;

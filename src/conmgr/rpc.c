@@ -163,20 +163,20 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 
 	//TODO: handing over the buffers would be better than copying
 
-	if ((rc = conmgr_queue_write_fd(con, &msglen, sizeof(msglen))))
+	if ((rc = conmgr_queue_write_data(con, &msglen, sizeof(msglen))))
 		goto cleanup;
 
-	if ((rc = conmgr_queue_write_fd(con, get_buf_data(buffers.header),
-					get_buf_offset(buffers.header))))
+	if ((rc = conmgr_queue_write_data(con, get_buf_data(buffers.header),
+					  get_buf_offset(buffers.header))))
 		goto cleanup;
 
 	if (buffers.auth &&
-	    (rc = conmgr_queue_write_fd(con, get_buf_data(buffers.auth),
-					get_buf_offset(buffers.auth))))
+	    (rc = conmgr_queue_write_data(con, get_buf_data(buffers.auth),
+					  get_buf_offset(buffers.auth))))
 		goto cleanup;
 
-	rc = conmgr_queue_write_fd(con, get_buf_data(buffers.body),
-				   get_buf_offset(buffers.body));
+	rc = conmgr_queue_write_data(con, get_buf_data(buffers.body),
+				     get_buf_offset(buffers.body));
 cleanup:
 	if (!rc) {
 		log_flag(PROTOCOL, "%s: [%s] sending RPC %s",
