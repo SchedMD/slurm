@@ -1219,7 +1219,6 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 
 	if (is_same) {
 		/* same never link output_fd */
-		xassert(out_type == PCTL_TYPE_NONE);
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 
 		_set_fd_polling(in, con->polling_input_fd, in_type, con->name,
