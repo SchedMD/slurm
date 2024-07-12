@@ -95,36 +95,23 @@ extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
  * NOTE: call EVENT_SIGNAL() or EVENT_BROADCAST() instead
  * WARNING: The mutex controlling event->cond should be locked before calling
  * this function.
- * IN reliable - ensure signal is received if nothing is waiting yet
- * IN singular - only send signal once. if another reliable signal has been
- *	sent, then ignore signal request.
  * IN broadcast - send signal to all waiters at once
  * IN event - ptr to event to signal
  * IN caller - __func__ from caller
  */
-extern void event_signal_now(bool reliable, bool singular, bool broadcast,
-			     event_signal_t *event, const char *caller);
-
-/*
- * Send signal to one currently waiting thread or drop signal if there are no
- * currently waiting threads.
- */
-#define EVENT_SIGNAL(event) \
-	event_signal_now(false, false, false, event, __func__)
-/* Send signal to one waiter even if EVENT_WAIT() called later */
-#define EVENT_SIGNAL_RELIABLE(event) \
-	event_signal_now(true, false, false, event, __func__)
+extern void event_signal_now(bool broadcast, event_signal_t *event,
+			     const char *caller);
 /*
  * Send signal to one waiter even if EVENT_WAIT() called later but drop signal
  * if there is already another reliable signal pending a waiter.
  */
 #define EVENT_SIGNAL_RELIABLE_SINGULAR(event) \
-	event_signal_now(true, true, false, event, __func__)
+	event_signal_now(false, event, __func__)
 /*
  * Send signal to all currently waiting threads or drop signal if there are no
  * currently waiting threads.
  */
 #define EVENT_BROADCAST(event) \
-	event_signal_now(false, false, true, event, __func__)
+	event_signal_now(true, event, __func__)
 
 #endif /* _CONMGR_EVENTS_H */

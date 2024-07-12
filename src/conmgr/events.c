@@ -127,52 +127,30 @@ static void _signal_waiting(event_signal_t *event, const char *caller)
 	slurm_cond_signal(&event->cond);
 }
 
-static void _signal_no_waiting(bool reliable, bool singular,
-			       event_signal_t *event, const char *caller)
+static void _signal_no_waiting(event_signal_t *event, const char *caller)
 {
 	xassert(event->pending >= 0);
 
-	if (!reliable) {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping unreliable signal to 0 waiters with %d pending reliable signals pending",
-			 caller, __func__, event->name, event->pending);
-		return;
-	}
-
-	if (!singular) {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueueing reliable singular signal to 0 waiters with %d pending reliable signals pending",
-			 caller, __func__, event->name, event->pending);
-		event->pending++;
-	}
-
 	if (event->pending) {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping reliable singular signal to 0 waiters with %d pending reliable signals pending",
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping signal to 0 waiters with %d signals pending",
 			 caller, __func__, event->name, event->pending);
 	} else {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueuing reliable singular signal to 0 waiters with 0 pending reliable signals pending",
+		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueuing signal to 0 waiters with 0 signals pending",
 			 caller, __func__, event->name);
 		event->pending++;
 	}
 }
 
-extern void event_signal_now(bool reliable, bool singular, bool broadcast,
-			     event_signal_t *event, const char *caller)
+extern void event_signal_now(bool broadcast, event_signal_t *event,
+			     const char *caller)
 {
 	xassert(event->waiting >= 0);
 
 	if (broadcast) {
-		/*
-		 * broadcast cant be reliable as we don't track which threads
-		 * have gotten the signal or not
-		 */
-		xassert(!reliable);
-		/* only reliable signals can be singular */
-		xassert(!singular);
-
 		_broadcast(event, caller);
-
 	} else if (!event->waiting) {
 		/* signal only with no waiters */
-		_signal_no_waiting(reliable, singular, event, caller);
+		_signal_no_waiting(event, caller);
 	} else {
 		/* signal only with waiters */
 		_signal_waiting(event, caller);
