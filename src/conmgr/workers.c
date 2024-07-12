@@ -241,8 +241,6 @@ extern void workers_shutdown(void)
 	mgr.workers.shutdown_requested = true;
 
 	do {
-		xassert(mgr.workers.shutdown_requested);
-
 		log_flag(CONMGR, "%s: waiting for work=%u workers=%u/%u",
 			 __func__, list_count(mgr.work), mgr.workers.active,
 			 mgr.workers.total);
