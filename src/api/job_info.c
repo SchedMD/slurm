@@ -189,6 +189,12 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 						   job_ptr->array_task_id);
 					q = p + 1;
 					break;
+				case 'b': /* Array task ID modulo 10 */
+					xmemcat(tmp2, q, p - offset);
+					xstrfmtcat(tmp2, "%0*u", wid,
+						   job_ptr->array_task_id % 10);
+					q = p + 1;
+					break;
 				case 'j': /* Job ID */
 					xmemcat(tmp2, q, p - offset);
 					xstrfmtcat(tmp2, "%0*u", wid,

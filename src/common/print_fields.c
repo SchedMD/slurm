@@ -459,6 +459,7 @@ static bool _is_wildcard(char *ptr)
 	switch (*ptr) {
 	case 'A': /* Array job ID */
 	case 'a': /* Array task ID */
+	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
 	case 'N': /* Short hostname */
@@ -487,6 +488,10 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 	case 'a': /* Array task ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding,
 			     job->array_task_id);
+		break;
+	case 'b': /* Array task ID modulo 10 */
+		xstrfmtcatat(*expanded, pos, "%0*u", padding,
+			     job->array_task_id % 10);
 		break;
 	case 'N': /* Short hostname */
 		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);

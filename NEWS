@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
       'POST /slurm/v0.0.42/nodes'
  -- Do not allow changing or setting PreemptMode=GANG to a partition as this is
     a cluster-wide option.
+ -- Add "%b" as a file name pattern for the array task id modulo 10.
 
 * Changes in Slurm 24.05.2
 ==========================

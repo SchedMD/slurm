@@ -159,6 +159,18 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 				tmp_perc = NULL;
 				q = ++p;
 				break;
+			case 'b':  /* '%b' => array task id modulo 10  */
+				tmp_env = getenv("SLURM_ARRAY_TASK_ID");
+				if (tmp_env)
+					array_task_id = strtoul(tmp_env, &end,
+								10);
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%0*u", wid,
+					   array_task_id % 10);
+				xfree(tmp_perc);
+				tmp_perc = NULL;
+				q = ++p;
+				break;
 			case 'A':  /* '%A' => array master job id */
 				tmp_env = getenv("SLURM_ARRAY_JOB_ID");
 				if (tmp_env)

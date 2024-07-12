@@ -351,6 +351,10 @@ char *_handle_replacement(job_record_t *job_ptr)
 				xstrfmtcat(replaced, "%u",
 					   job_ptr->array_task_id);
 				break;
+			case 'b':	/* '%b' => array task id modulo 10 */
+				xstrfmtcat(replaced, "%u",
+					   job_ptr->array_task_id % 10);
+				break;
 			case 'd':	/* '%d' => workdir */
 				xstrcat(replaced, job_ptr->details->work_dir);
 				break;
