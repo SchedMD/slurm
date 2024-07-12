@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "May 2024" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "July 2024" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -3192,12 +3192,6 @@ Only set if the \fB\-\-gpus\-per\-socket\fR option is specified.
 .IP
 
 .TP
-\fBSLURM_GPUS_PER_TASK\fR
-Requested GPU count per allocated task.
-Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
-.IP
-
-.TP
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node. Zero origin and comma separated.
 It is read internally by pmi if Slurm was built with pmi support. Leaving
@@ -3459,9 +3453,9 @@ hardware component type.
 
 .TP
 \fBSLURM_TRES_PER_TASK\fR
-Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR is
-specified, it is also set in \fBSLURM_TRES_PER_TASK\fR as if it were specified
-in \fB\-\-tres\-per\-task\fR.
+Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR or
+\fB\-\-gpus\-per\-task\fR is specified, it is also set in
+\fBSLURM_TRES_PER_TASK\fR as if it were specified in \fB\-\-tres\-per\-task\fR.
 .IP
 
 .TP

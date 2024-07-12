@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "May 2024" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "July 2024" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2719,12 +2719,6 @@ Only set if the \fB\-\-gpus\-per\-socket\fR option is specified.
 .IP
 
 .TP
-\fBSLURM_GPUS_PER_TASK\fR
-Requested GPU count per allocated task.
-Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
-.IP
-
-.TP
 \fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.
 .IP
@@ -2944,9 +2938,9 @@ job allocation.
 
 .TP
 \fBSLURM_TRES_PER_TASK\fR
-Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR is
-specified, it is also set in \fBSLURM_TRES_PER_TASK\fR as if it were specified
-in \fB\-\-tres\-per\-task\fR.
+Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR or
+\fB\-\-gpus\-per\-task\fR is specified, it is also set in
+\fBSLURM_TRES_PER_TASK\fR as if it were specified in \fB\-\-tres\-per\-task\fR.
 .IP
 
 .SH "SIGNALS"
