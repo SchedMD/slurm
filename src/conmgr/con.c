@@ -457,8 +457,6 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	xassert(con->events.on_connection);
-
 	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 		 __func__, con->name,
 		 (uintptr_t) con->events.on_connection);
