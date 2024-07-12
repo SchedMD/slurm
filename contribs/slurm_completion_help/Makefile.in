@@ -16,6 +16,7 @@
 
 #
 # Makefile for slurm completion help scripts
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -170,6 +171,35 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  test -z "$$files" \
+    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
+  }
+am__installdirs = "$(DESTDIR)$(bashcompdir)"
+DATA = $(bashcomp_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -426,6 +456,29 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+bashcomp_DATA = slurm_completion.sh
+bashcompdir = /usr/share/bash-completion/completions
+bashcompbin := \
+	sacct \
+	sacctmgr \
+	salloc \
+	sattach \
+	sbatch \
+	sbcast \
+	scancel \
+	scontrol \
+	scrontab \
+	sdiag \
+	sinfo \
+	slurmrestd \
+	sprio \
+	squeue \
+	sreport \
+	srun \
+	sshare \
+	sstat \
+	strigger
+
 all: all-am
 
 .SUFFIXES:
@@ -472,8 +525,11 @@ cscope cscopelist:
 
 check-am: all-am
 check: check-am
-all-am: Makefile
+all-am: Makefile $(DATA)
 installdirs:
+	for dir in "$(DESTDIR)$(bashcompdir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -504,8 +560,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-am
-
 clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
@@ -524,7 +578,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-bashcompDATA
 
 install-dvi: install-dvi-am
 
@@ -568,24 +622,41 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-bashcompDATA
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	cscopelist-am ctags-am distclean distclean-generic \
 	distclean-libtool dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags-am uninstall uninstall-am
+	install-am install-bashcompDATA install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags-am uninstall uninstall-am uninstall-bashcompDATA
 
 .PRECIOUS: Makefile
 
+
+install-bashcompDATA: $(bashcomp_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(DESTDIR)$(bashcompdir)" || $(mkdir_p) "$(DESTDIR)$(bashcompdir)"
+	install -v -m 644 "$(top_srcdir)/contribs/slurm_completion_help/$(bashcomp_DATA)" "$(DESTDIR)$(bashcompdir)/$(bashcomp_DATA)" || true
+	@list='$(bashcompbin)'; for p in $$list; do \
+	  ln -vsf "$(DESTDIR)$(bashcompdir)/$(bashcomp_DATA)" "$(DESTDIR)$(bashcompdir)/$$p" || true; \
+	  done
+
+uninstall-bashcompDATA:
+	@$(NORMAL_UNINSTALL)
+	rm -vf "$(DESTDIR)$(bashcompdir)/$(bashcomp_DATA)" || true
+	@list='$(bashcompbin)'; for p in $$list; do \
+	  rm -vf "$(DESTDIR)$(bashcompdir)/$$p" || true; \
+	done
+
+clean:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
