@@ -234,10 +234,10 @@ static void *_worker(void *arg)
 
 		/* wake up watch for all ending work on shutdown */
 		if (mgr_shutdown_requested)
-			EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+			EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_return);
+	EVENT_SIGNAL(&mgr.worker_return);
 	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
 }

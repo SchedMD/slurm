@@ -215,7 +215,7 @@ extern void wrap_work(work_t *work)
 		con->work_active = false;
 		/* con may be xfree()ed any time once lock is released */
 
-		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+		EVENT_SIGNAL(&mgr.watch_sleep);
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
@@ -244,7 +244,7 @@ static void _handle_work_run(work_t *work)
 	list_append(mgr.work, work);
 
 	if (!mgr.quiesced)
-		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.worker_sleep);
+		EVENT_SIGNAL(&mgr.worker_sleep);
 }
 
 /*
@@ -293,7 +293,7 @@ static void _handle_work_pending(work_t *work)
 		list_append(con->work, work);
 
 		/* trigger watch() if there is a connection involved */
-		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+		EVENT_SIGNAL(&mgr.watch_sleep);
 		return;
 	}
 

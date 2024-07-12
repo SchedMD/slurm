@@ -216,7 +216,7 @@ extern void conmgr_request_shutdown(void)
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -232,7 +232,7 @@ extern void conmgr_quiesce(bool wait)
 
 	mgr.quiesced = true;
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 
 	if (wait)
 		wait_for_watch();

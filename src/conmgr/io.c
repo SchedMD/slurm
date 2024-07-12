@@ -393,7 +393,7 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 
 	list_append(con->out, buf);
 	slurm_mutex_lock(&mgr.mutex);
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 	return SLURM_SUCCESS;
 }

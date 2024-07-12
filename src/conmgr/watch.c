@@ -414,7 +414,7 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	mgr.inspecting = false;
 
 	if (send_signal)
-		EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+		EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -516,7 +516,7 @@ done:
 	xassert(mgr.poll_active);
 	mgr.poll_active = false;
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: poll done", __func__);

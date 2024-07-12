@@ -186,7 +186,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* forget the now invalid FD */
 	con->input_fd = -1;
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 cleanup:
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -350,7 +350,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	rc = fd_change_mode(con, type);
 
 	/* wake up watch() to send along any pending data */
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
@@ -460,7 +460,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	/* interrupt poll () and wake up watch() to examine new connection */
 	pollctl_interrupt(__func__);
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return SLURM_SUCCESS;
@@ -493,7 +493,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	con->arg = arg;
 
-	EVENT_SIGNAL_RELIABLE_SINGULAR(&mgr.watch_sleep);
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
