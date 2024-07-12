@@ -76,8 +76,6 @@ static const struct {
 #undef T
 
 typedef struct {
-#define MAGIC_LISTEN_INIT 0xe9abb8e0
-	int magic; /* MAGIC_LISTEN_INIT */
 	conmgr_events_t events;
 	void *arg;
 	conmgr_con_type_t type;
@@ -894,8 +892,6 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	xassert(init->magic == MAGIC_LISTEN_INIT);
-
 	init->rc = conmgr_create_listen_socket(init->type, hostport,
 					       init->events, init->arg);
 
@@ -907,7 +903,6 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					conmgr_events_t events, void *arg)
 {
 	socket_listen_init_t init = {
-		.magic = MAGIC_LISTEN_INIT,
 		.events = events,
 		.arg = arg,
 		.type = type,
