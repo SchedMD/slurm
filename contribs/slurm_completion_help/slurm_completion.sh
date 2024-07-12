@@ -3142,6 +3142,7 @@ function __slurm_comp_sacctmgr_flags() {
 }
 
 # sacctmgr completion handler
+# https://slurm.schedmd.com/sacctmgr.html
 function _sacctmgr() {
 	local cur prev words cword split
 	__slurm_compinit "$1" || return
