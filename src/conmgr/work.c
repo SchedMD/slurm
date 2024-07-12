@@ -180,7 +180,7 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 		 caller, __func__, (con_name ? con_name : ""), (uintptr_t) work,
 		 status,
 		 (callback ? callback : ""),
-		 sched, depend, 
+		 sched, depend,
 		 (signal ? signal : ""),
 		 (delay ? delay : ""),
 		 (fmtstr ? " -> " : ""),

@@ -154,13 +154,13 @@ extern char *conmgr_work_sched_string(conmgr_work_sched_t type);
 typedef enum {
 	CONMGR_WORK_DEP_INVALID = 0,
 	/* specify work has no dependencies */
-	CONMGR_WORK_DEP_NONE = SLURM_BIT(1), 
+	CONMGR_WORK_DEP_NONE = SLURM_BIT(1),
 	/* call once all connection writes complete */
 	CONMGR_WORK_DEP_CON_WRITE_COMPLETE = SLURM_BIT(2),
 	/* call once time delay completes */
 	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
 	/* call every time signal is received */
-	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4), 
+	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4),
 } conmgr_work_depend_t;
 
 /* RET caller must xfree() */
