@@ -66,4 +66,9 @@ extern pid_t read_pidfile(const char *pidfilename, int *pidfilefd);
  */
 extern void test_core_limit(void);
 
+/*
+ * Setup process to run as SlurmUser.
+ */
+extern void become_slurm_user(void);
+
 #endif /* !_HAVE_DAEMONIZE_H */

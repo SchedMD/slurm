@@ -105,7 +105,6 @@ static bool reset_lft_rgt = 0;
 static List lft_rgt_list = NULL;
 
 /* Local functions */
-static void  _become_slurm_user(void);
 static void  _commit_handler_cancel(void);
 static void *_commit_handler(void *no_data);
 static void  _daemonize(void);
@@ -152,7 +151,7 @@ int main(int argc, char **argv)
 	 * able to write a core dump.
 	 */
 	_init_pidfile();
-	_become_slurm_user();
+	become_slurm_user();
 
 	/*
 	 * This must happen before we spawn any threads
@@ -924,46 +923,6 @@ static void *_signal_handler(void *no_data)
 		}
 	}
 
-}
-
-static void _become_slurm_user(void)
-{
-	gid_t slurm_user_gid;
-
-	/* Determine SlurmUser gid */
-	slurm_user_gid = gid_from_uid(slurm_conf.slurm_user_id);
-	if (slurm_user_gid == (gid_t) -1) {
-		fatal("Failed to determine gid of SlurmUser(%u)",
-		      slurm_conf.slurm_user_id);
-	}
-
-	/* Initialize supplementary groups ID list for SlurmUser */
-	if (getuid() == 0) {
-		/* root does not need supplementary groups */
-		if ((slurm_conf.slurm_user_id == 0) &&
-		    (setgroups(0, NULL) != 0)) {
-			fatal("Failed to drop supplementary groups, "
-			      "setgroups: %m");
-		} else if ((slurm_conf.slurm_user_id != 0) &&
-		           initgroups(slurm_conf.slurm_user_name,
-		                      slurm_user_gid)) {
-			fatal("Failed to set supplementary groups, "
-			      "initgroups: %m");
-		}
-	}
-
-	/* Set GID to GID of SlurmUser */
-	if ((slurm_user_gid != getegid()) &&
-	    (setgid(slurm_user_gid))) {
-		fatal("Failed to set GID to %u", slurm_user_gid);
-	}
-
-	/* Set UID to UID of SlurmUser */
-	if ((slurm_conf.slurm_user_id != getuid()) &&
-	    (setuid(slurm_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%u): %m",
-		      slurm_conf.slurm_user_id);
-	}
 }
 
 static void _restart_self(int argc, char **argv)
