@@ -3490,8 +3490,6 @@ static void _become_slurm_user(void)
 			fatal("Failed to set supplementary groups, "
 			      "initgroups: %m");
 		}
-	} else {
-		info("Not running as root. Can't drop supplementary groups");
 	}
 
 	/* Set GID to GID of SlurmUser */
