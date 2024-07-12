@@ -10,7 +10,8 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <p>Also see <a href="tutorials.html">Tutorials</a> and
 <a href="publications.html">Publications and Presentations</a>.</p>
 
-<h2>Slurm Users</h2>
+<h2 id="users">Slurm Users
+<a class="slurm_link" href="#users"></a></h2>
 <ul>
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
 <li><a href="pdfs/summary.pdf">Command/option Summary (two pages)</a></li>
@@ -33,7 +34,8 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<h2>Slurm Administrators</h2>
+<h2 id="administrators">Slurm Administrators
+<a class="slurm_link" href="#administrators"></a></h2>
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="upgrades.html">Upgrade Guide</a></li>
@@ -109,7 +111,8 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<h2>Slurm Developers</h2>
+<h2 id="developers">Slurm Developers
+<a class="slurm_link" href="#developers"></a></h2>
 <ul>
 <li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
@@ -133,6 +136,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 04 June 2024</p>
+<p style="text-align:center;">Last modified 10 July 2024</p>
 
 <!--#include virtual="footer.txt"-->

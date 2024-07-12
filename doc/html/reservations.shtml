@@ -28,7 +28,8 @@ reservation created.</p>
 <p>Reservations can be created, updated, or destroyed only by user root
 or the configured <i>SlurmUser</i> using the <i>scontrol</i> command.
 The <i>scontrol</i> and <i>sview</i> commands can be used
-to view reservations.
+to view reservations. Additionally, root and the configured <i>SlurmUser</i>
+have access to all reservations, even if they would normally not have access.
 The man pages for the various commands contain details.</p>
 
 <h2 id="creation">Reservation Creation
@@ -529,7 +530,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 10 October 2022</p>
+<p style="text-align: center;">Last modified 10 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
 

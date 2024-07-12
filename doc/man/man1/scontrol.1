@@ -2434,6 +2434,8 @@ using the update command and adding a '+' or '\-' sign before the '=' sign.
 If accounts are denied access to a reservation (account name preceded by a '\-'),
 then all other accounts are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed accounts.
+Root and the SlurmUser are given access to all reservations, regardless of the
+accounts set here.
 .IP
 
 .TP
@@ -2766,6 +2768,8 @@ to use the reservation.
 Unlike users groups do not allow denied access to reservations.
 You can add or remove individual groups from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
+Root and the SlurmUser are given access to all reservations, regardless of the
+groups set here.
 \fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
 want to switch between the 2 you must update the reservation with a group=''
 or user='' and fill in the opposite with the appropriate setting.
@@ -2793,6 +2797,8 @@ using the update command and adding a '+' or '\-' sign before the '=' sign.
 If users are denied access to a reservation (user name preceded by a '\-'),
 then all other users are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed users.
+Root and the SlurmUser are given access to all reservations, regardless of the
+users set here.
 \fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
 want to switch between the 2 you must update the reservation with a group=''
 or user='' and fill in the opposite with the appropriate setting.
