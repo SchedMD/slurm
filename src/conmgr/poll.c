@@ -451,7 +451,6 @@ extern int pollctl_poll(const char *caller)
 
 	slurm_mutex_unlock(&pctl.mutex);
 
-	xassert(epoll >= 0);
 	xassert(events);
 	xassert(events_count > 0);
 
