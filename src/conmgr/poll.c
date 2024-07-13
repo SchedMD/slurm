@@ -199,9 +199,6 @@ static char *_epoll_events_to_string(uint32_t events)
 
 static uint32_t _fd_type_to_events(pollctl_fd_type_t type)
 {
-	xassert(type > PCTL_TYPE_INVALID);
-	xassert(type < PCTL_TYPE_INVALID_MAX);
-
 	for (int i = 0; i < ARRAY_SIZE(fd_types); i++)
 		if (fd_types[i].type == type)
 			return fd_types[i].events;
@@ -211,9 +208,6 @@ static uint32_t _fd_type_to_events(pollctl_fd_type_t type)
 
 static const char *_fd_type_to_type_string(pollctl_fd_type_t type)
 {
-	xassert(type > PCTL_TYPE_INVALID);
-	xassert(type < PCTL_TYPE_INVALID_MAX);
-
 	for (int i = 0; i < ARRAY_SIZE(fd_types); i++)
 		if (fd_types[i].type == type)
 			return fd_types[i].type_string;
@@ -223,9 +217,6 @@ static const char *_fd_type_to_type_string(pollctl_fd_type_t type)
 
 static const char *_fd_type_to_events_string(pollctl_fd_type_t type)
 {
-	xassert(type > PCTL_TYPE_INVALID);
-	xassert(type < PCTL_TYPE_INVALID_MAX);
-
 	for (int i = 0; i < ARRAY_SIZE(fd_types); i++)
 		if (fd_types[i].type == type)
 			return fd_types[i].events_string;
