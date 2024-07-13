@@ -86,6 +86,7 @@ BuildRequires:  pkgconfig
 %endif
 
 Requires: munge
+Requires: bash-completion
 
 %{?systemd_requires}
 BuildRequires: systemd
@@ -452,6 +453,25 @@ rm -f %{buildroot}/%{_perlarchlibdir}/perllocal.pod
 rm -f %{buildroot}/%{_perldir}/perllocal.pod
 rm -f %{buildroot}/%{_perldir}/auto/Slurmdb/.packlist
 rm -f %{buildroot}/%{_perldir}/auto/Slurmdb/Slurmdb.bs
+rm -f %{buildroot}/usr/share/bash-completion/completions/sacct
+rm -f %{buildroot}/usr/share/bash-completion/completions/sacctmgr
+rm -f %{buildroot}/usr/share/bash-completion/completions/salloc
+rm -f %{buildroot}/usr/share/bash-completion/completions/sattach
+rm -f %{buildroot}/usr/share/bash-completion/completions/sbatch
+rm -f %{buildroot}/usr/share/bash-completion/completions/sbcast
+rm -f %{buildroot}/usr/share/bash-completion/completions/scancel
+rm -f %{buildroot}/usr/share/bash-completion/completions/scontrol
+rm -f %{buildroot}/usr/share/bash-completion/completions/scrontab
+rm -f %{buildroot}/usr/share/bash-completion/completions/sdiag
+rm -f %{buildroot}/usr/share/bash-completion/completions/sinfo
+rm -f %{buildroot}/usr/share/bash-completion/completions/slurmrestd
+rm -f %{buildroot}/usr/share/bash-completion/completions/sprio
+rm -f %{buildroot}/usr/share/bash-completion/completions/squeue
+rm -f %{buildroot}/usr/share/bash-completion/completions/sreport
+rm -f %{buildroot}/usr/share/bash-completion/completions/srun
+rm -f %{buildroot}/usr/share/bash-completion/completions/sshare
+rm -f %{buildroot}/usr/share/bash-completion/completions/sstat
+rm -f %{buildroot}/usr/share/bash-completion/completions/strigger
 
 # Build man pages that are generated directly by the tools
 rm -f %{buildroot}/%{_mandir}/man1/sjobexitmod.1
@@ -470,6 +490,8 @@ test -f %{buildroot}/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f %{buildroot}/%{_sbindir}/capmc_resume		&&
   echo %{_sbindir}/capmc_resume				>> $LIST
+test -f %{buildroot}/usr/share/bash-completion/completions/slurm_completion.sh	&&
+  echo /usr/share/bash-completion/completions/slurm_completion.sh	>> $LIST
 
 test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
   echo /opt/modulefiles/slurm/%{version}-%{rel} >> $LIST
@@ -522,6 +544,7 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
+/usr/share/bash-completion/completions/slurm_completion.sh
 #############################################################################
 
 %files example-configs
@@ -643,11 +666,51 @@ rm -rf %{buildroot}
 
 %post
 /sbin/ldconfig
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sacct}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sacctmgr}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,salloc}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sattach}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sbatch}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sbcast}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,scancel}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,scontrol}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,scrontab}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sdiag}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sinfo}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,slurmrestd}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sprio}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,squeue}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sreport}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,srun}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sshare}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,sstat}
+ln -sf /usr/share/bash-completion/completions/{slurm_completion.sh,strigger}
 
 %preun
 
 %postun
 /sbin/ldconfig
+if [ $1 -eq 0 ]; then
+	rm -f /usr/share/bash-completion/completions/sacct
+	rm -f /usr/share/bash-completion/completions/sacctmgr
+	rm -f /usr/share/bash-completion/completions/salloc
+	rm -f /usr/share/bash-completion/completions/sattach
+	rm -f /usr/share/bash-completion/completions/sbatch
+	rm -f /usr/share/bash-completion/completions/sbcast
+	rm -f /usr/share/bash-completion/completions/scancel
+	rm -f /usr/share/bash-completion/completions/scontrol
+	rm -f /usr/share/bash-completion/completions/scrontab
+	rm -f /usr/share/bash-completion/completions/sdiag
+	rm -f /usr/share/bash-completion/completions/sinfo
+	rm -f /usr/share/bash-completion/completions/slurmrestd
+	rm -f /usr/share/bash-completion/completions/sprio
+	rm -f /usr/share/bash-completion/completions/squeue
+	rm -f /usr/share/bash-completion/completions/sreport
+	rm -f /usr/share/bash-completion/completions/srun
+	rm -f /usr/share/bash-completion/completions/sshare
+	rm -f /usr/share/bash-completion/completions/sstat
+	rm -f /usr/share/bash-completion/completions/strigger
+fi
 
 %post sackd
 %systemd_post sackd.service
