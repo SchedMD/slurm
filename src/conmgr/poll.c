@@ -469,7 +469,6 @@ extern int pollctl_poll(const char *caller)
 	slurm_mutex_lock(&pctl.mutex);
 
 	xassert(pctl.polling);
-	xassert(!pctl.events_triggered);
 	xassert(nfds <= pctl.events_count);
 
 	log_flag(CONMGR, "%s->%s: [POLL] END: epoll_wait() with events for %d/%d file descriptors",
