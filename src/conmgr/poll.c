@@ -251,7 +251,6 @@ extern void pollctl_init(const int max_connections)
 		return;
 	}
 
-	xassert(max_connections > 0);
 	pctl.events_count = MAX_POLL_EVENTS(max_connections);
 
 	{
