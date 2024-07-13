@@ -167,9 +167,6 @@ extern void _unlink_fd(int fd, const char *con_name, const char *caller);
 
 extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
 {
-	xassert(type > PCTL_TYPE_INVALID);
-	xassert(type < PCTL_TYPE_INVALID_MAX);
-
 	for (int i = 0; i < ARRAY_SIZE(fd_types); i++)
 		if (fd_types[i].type == type)
 			return fd_types[i].type_string;
