@@ -18,10 +18,6 @@ Under Linux or MacOS, simply copy the file in the directory
 
 or whatever shell other than ``sh`` you prefer.
 
-For system wide use with bash put the file in
-
-    /etc/bash_completion.d/
-
 The syntax file is then read and applied on a Shell script after the usual syntax file has been processed.
 
 ### Known issues
@@ -40,13 +36,14 @@ The Bash completion script offers <TAB> completion for Slurm commands.
 
 ### Instalation
 
-Source the [`slurm_completion.sh`](./__slurm_completion.sh) script. It is
+Source the [slurm_completion.sh][slurm-completion] script. It is
 recommended to automate this by adding a bash sourcing line to your
-`.bashrc` or `.profile`.
+`.bashrc` or `.profile`. Alternatively, add it to `/etc/profile.d/`
+to automatically source it for login shells.
 
 Additionally, there are a number of environment variables that can be set to
 alter/customize completion behavior. They are documented in
-[`slurm_completion.sh`](./__slurm_completion.sh).
+[slurm_completion.sh][slurm-completion].
 
 ```sh
 # .bashrc
@@ -154,3 +151,6 @@ down               idle               power_down_force
 drain              noresp             power_up           
 fail               power_down         resume             
 ```
+
+<!-- Links -->
+[slurm-completion]: ./slurm_completion.sh
