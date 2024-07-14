@@ -41,6 +41,7 @@
 #define _GNU_SOURCE
 
 #include <fcntl.h>
+#include <grp.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -50,7 +51,9 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
+#include "src/common/read_config.h"
 
 /*
  * Double-fork and go into background.
@@ -229,4 +232,44 @@ test_core_limit(void)
 	}
 #endif
 	return;
+}
+
+extern void become_slurm_user(void)
+{
+	gid_t slurm_user_gid;
+
+	/* Determine SlurmUser gid */
+	slurm_user_gid = gid_from_uid(slurm_conf.slurm_user_id);
+	if (slurm_user_gid == (gid_t) -1) {
+		fatal("Failed to determine gid of SlurmUser(%u)",
+		      slurm_conf.slurm_user_id);
+	}
+
+	/* Initialize supplementary groups ID list for SlurmUser */
+	if (getuid() == 0) {
+		/* root does not need supplementary groups */
+		if ((slurm_conf.slurm_user_id == 0) &&
+		    (setgroups(0, NULL) != 0)) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		} else if ((slurm_conf.slurm_user_id != 0) &&
+		           initgroups(slurm_conf.slurm_user_name,
+		                      slurm_user_gid)) {
+			fatal("Failed to set supplementary groups, "
+			      "initgroups: %m");
+		}
+	}
+
+	/* Set GID to GID of SlurmUser */
+	if ((slurm_user_gid != getegid()) &&
+	    (setgid(slurm_user_gid))) {
+		fatal("Failed to set GID to %u", slurm_user_gid);
+	}
+
+	/* Set UID to UID of SlurmUser */
+	if ((slurm_conf.slurm_user_id != getuid()) &&
+	    (setuid(slurm_conf.slurm_user_id))) {
+		fatal("Can not set uid to SlurmUser(%u): %m",
+		      slurm_conf.slurm_user_id);
+	}
 }

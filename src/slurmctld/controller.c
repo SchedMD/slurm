@@ -260,7 +260,6 @@ static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
-static void         _become_slurm_user(void);
 static void _close_ports(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
@@ -419,10 +418,10 @@ int main(int argc, char **argv)
 		 * able to write a core dump.
 		 */
 		_init_pidfile();
-		_become_slurm_user();
+		become_slurm_user();
 	}
 
-	/* open ports must happen after _become_slurm_user() */
+	/* open ports must happen after become_slurm_user() */
 	 _open_ports();
 
 	/*
@@ -3464,48 +3463,6 @@ end_it:
 	_get_fed_updates();
 
 	return NULL;
-}
-
-static void _become_slurm_user(void)
-{
-	gid_t slurm_user_gid;
-
-	/* Determine SlurmUser gid */
-	slurm_user_gid = gid_from_uid(slurm_conf.slurm_user_id);
-	if (slurm_user_gid == (gid_t) -1) {
-		fatal("Failed to determine gid of SlurmUser(%u)",
-		      slurm_conf.slurm_user_id);
-	}
-
-	/* Initialize supplementary groups ID list for SlurmUser */
-	if (getuid() == 0) {
-		/* root does not need supplementary groups */
-		if ((slurm_conf.slurm_user_id == 0) &&
-		    (setgroups(0, NULL) != 0)) {
-			fatal("Failed to drop supplementary groups, "
-			      "setgroups: %m");
-		} else if ((slurm_conf.slurm_user_id != 0) &&
-		           initgroups(slurm_conf.slurm_user_name,
-		                      slurm_user_gid)) {
-			fatal("Failed to set supplementary groups, "
-			      "initgroups: %m");
-		}
-	} else {
-		info("Not running as root. Can't drop supplementary groups");
-	}
-
-	/* Set GID to GID of SlurmUser */
-	if ((slurm_user_gid != getegid()) &&
-	    (setgid(slurm_user_gid))) {
-		fatal("Failed to set GID to %u", slurm_user_gid);
-	}
-
-	/* Set UID to UID of SlurmUser */
-	if ((slurm_conf.slurm_user_id != getuid()) &&
-	    (setuid(slurm_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%u): %m",
-		      slurm_conf.slurm_user_id);
-	}
 }
 
 /*
