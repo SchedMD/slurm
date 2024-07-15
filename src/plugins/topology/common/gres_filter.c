@@ -39,9 +39,10 @@ static uint16_t *avail_cores_per_sock = NULL;
 
 static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 					bool use_total_gres,
+					bool one_task_sharing,
 					gres_node_state_t *gres_ns)
 {
-	int task_limit = 0, cnt;
+	int task_limit = 0, cnt, task_cnt;
 	for (int i = 0; i < gres_ns->topo_cnt; i++)
 	{
 		if (gres_js->type_id &&
@@ -53,11 +54,15 @@ static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 		if (!use_total_gres)
 			cnt -= gres_ns->topo_gres_cnt_alloc[i];
 
-		if ((slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
-			task_limit += cnt / gres_js->gres_per_task;
+		if (one_task_sharing)
+			task_cnt = (cnt >= gres_js->gres_per_task) ? 1 : 0;
 		else
-			task_limit = MAX(task_limit,
-					 (cnt / gres_js->gres_per_task));
+			task_cnt = cnt / gres_js->gres_per_task;
+
+		if ((slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
+			task_limit += task_cnt;
+		else
+			task_limit = MAX(task_limit, task_cnt);
 	}
 	return task_limit;
 }
@@ -602,6 +607,8 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 				    sock_gres->gres_state_job->config_flags))
 				max_tasks = _shared_gres_task_limit(
 					gres_js, sock_gres->use_total_gres,
+					(job_ptr->bit_flags &
+					 GRES_ONE_TASK_PER_SHARING),
 					sock_gres->gres_state_node->gres_data);
 			else
 				max_tasks = cnt_avail_total /
