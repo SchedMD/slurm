@@ -560,7 +560,8 @@ static int _set_shared_node_bits(int node_inx, int job_node_inx,
 		      job_id, node_inx);
 		rc = ESLURM_INVALID_GRES;
 	} else if (gres_needed) {
-		error("Not enough shared gres available to satisfy gres per node request");
+		error("Not enough shared gres available to satisfy gres per node request for job %u on node %d",
+		      job_id, node_inx);
 		rc = ESLURM_INVALID_GRES;
 	}
 
@@ -605,7 +606,8 @@ static int _set_shared_task_bits(int node_inx,
 			_get_task_cnt_node(tasks_per_socket,
 					   sock_gres->sock_cnt);
 		if (no_task_sharing)
-			error("one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring.");
+			error("one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ to be set. Ignoring flag for job %u on node %d",
+			      job_id, node_inx);
 
 		_pick_shared_gres(&gres_needed, tasks_per_socket, sock_gres,
 				  node_inx, use_busy_dev, true, false,
@@ -613,7 +615,8 @@ static int _set_shared_task_bits(int node_inx,
 				  res_gres_per_sock, sock_with_res_cnt,
 				  &satisfy_res_gres);
 		if (gres_needed) {
-			error("Not enough shared gres available on one sharing gres to satisfy gres per task request");
+			error("Not enough shared gres available on one sharing gres to satisfy gres per task request for job %u on node %d",
+			      job_id, node_inx);
 			rc = ESLURM_INVALID_GRES;
 		}
 	} else {
@@ -628,7 +631,8 @@ static int _set_shared_task_bits(int node_inx,
 
 				if ((tasks_per_socket[s] *
 				     gres_js->gres_per_task) < sock_res_gres) {
-					error("Requested too few gres to satisfy allocated restricted cores");
+					error("Requested too few gres to satisfy allocated restricted cores for job %u on node %d",
+					      job_id, node_inx);
 					rc = ESLURM_INVALID_GRES;
 					break;
 				}
@@ -656,7 +660,8 @@ static int _set_shared_task_bits(int node_inx,
 					      job_id, node_inx);
 					rc = ESLURM_INVALID_GRES;
 				} else if (gres_needed) {
-					error("Not enough shared gres available to satisfy gres per task request");
+					error("Not enough shared gres available to satisfy gres per task request for job %u on node %d",
+					      job_id, node_inx);
 					rc = ESLURM_INVALID_GRES;
 					break;
 				}
