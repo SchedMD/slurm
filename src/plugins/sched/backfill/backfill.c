@@ -2059,6 +2059,7 @@ static void _attempt_backfill(void)
 	bool state_changed_break = false, nodes_planned = false;
 	bitstr_t *next_bitmap = NULL, *current_bitmap = NULL;
 	resv_exc_t resv_exc = { 0 };
+	will_run_data_t will_run_data = { 0 };
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
 		.qos = READ_LOCK,
@@ -2890,8 +2891,11 @@ TRY_LATER:
 		job_ptr->bit_flags |= job_no_reserve;	/* 0 or TEST_NOW_ONLY */
 
 		if (active_bitmap) {
+			will_run_data.start = start_res;
+			will_run_data.end = later_start;
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
-				       max_nodes, req_nodes, &resv_exc, NULL);
+				       max_nodes, req_nodes, &resv_exc,
+				       &will_run_data);
 			if (j == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
@@ -2972,8 +2976,11 @@ TRY_LATER:
 		if (test_fini != 1) {
 			/* Either active_bitmap was NULL or not usable by the
 			 * job. Test using avail_bitmap instead */
+			will_run_data.start = start_res;
+			will_run_data.end = later_start;
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
-				       max_nodes, req_nodes, &resv_exc, NULL);
+				       max_nodes, req_nodes, &resv_exc,
+				       &will_run_data);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
