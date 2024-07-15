@@ -1,4 +1,4 @@
-.TH scrun "1" "Slurm Commands" "January 2024" "Slurm Commands"
+.TH scrun "1" "Slurm Commands" "July 2024" "Slurm Commands"
 
 .SH "NAME"
 \fBscrun\fR \- an OCI runtime proxy for Slurm.
@@ -898,6 +898,13 @@ This is only set if \fB\-\-threads\-per\-core\fR or
 value specified by \fB\-\-threads\-per\-core\fR or
 \fBSCRUN_THREADS_PER_CORE\fR. This is used by subsequent srun calls within the
 job allocation.
+.IP
+
+.TP
+\fBSLURM_TRES_PER_TASK\fR
+Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR or
+\fB\-\-gpus\-per\-task\fR is specified, it is also set in
+\fBSLURM_TRES_PER_TASK\fR as if it were specified in \fB\-\-tres\-per\-task\fR.
 .IP
 
 .SH "SCRUN.LUA"

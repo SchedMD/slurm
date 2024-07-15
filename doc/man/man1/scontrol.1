@@ -2311,16 +2311,6 @@ Possible values are "OFF", "CANCEL", "REQUEUE" and "SUSPEND".
 .IP
 
 .TP
-\fBPriority\fR=<\fIcount\fR>
-Jobs submitted to a higher priority partition will be dispatched
-before pending jobs in lower priority partitions and if possible
-they will preempt running jobs from lower priority partitions.
-Note that a partition's priority takes precedence over a job's
-priority.
-The value may not exceed 65533.
-.IP
-
-.TP
 \fBPriorityJobFactor\fR=<\fIcount\fR>
 Partition factor used by priority/multifactor plugin in calculating
 job priority. The value may not exceed 65533. Also see PriorityTier.
@@ -3003,12 +2993,18 @@ restriction has been defined in the slurm.conf file.
 $ scontrol
 scontrol: show part debug
 PartitionName=debug
-   AllocNodes=ALL AllowGroups=ALL Default=YES
-   DefaultTime=NONE DisableRootJobs=NO Hidden=NO
-   MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=1
+   AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL
+   AllocNodes=ALL Default=YES QoS=N/A
+   DefaultTime=NONE DisableRootJobs=NO ExclusiveUser=NO ExclusiveTopo=NO GraceTime=0 Hidden=NO
+   MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED MaxCPUsPerSocket=UNLIMITED
+   NodeSets=ALL
    Nodes=snowflake[0\-48]
-   Priority=1 RootOnly=NO OverSubscribe=YES:4
-   State=UP TotalCPUs=694 TotalNodes=49
+   PriorityJobFactor=100 PriorityTier=100 RootOnly=NO ReqResv=NO OverSubscribe=NO
+   OverTimeLimit=NONE PreemptMode=REQUEUE
+   State=UP TotalCPUs=588 TotalNodes=49 SelectTypeParameters=NONE
+   JobDefaults=(null)
+   DefMemPerNode=UNLIMITED MaxMemPerNode=UNLIMITED
+   TRES=cpu=588,mem=1204224M,node=49,billing=49
 scontrol: update PartitionName=debug MaxTime=60:00 MaxNodes=4
 scontrol: show job 71701
 JobId=71701 Name=hostname
