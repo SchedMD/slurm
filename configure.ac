@@ -367,6 +367,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/seff/Makefile
 		 contribs/sgather/Makefile
 		 contribs/sjobexit/Makefile
+		 contribs/slurm_completion_help/Makefile
 		 contribs/torque/Makefile
 		 doc/Makefile
 		 doc/html/Makefile
