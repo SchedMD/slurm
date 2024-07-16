@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  workq.h - declarations for work queue manager
+ *  signals.h - Internal declarations for signals handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,48 +33,28 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_WORKQ_H
-#define SLURMRESTD_WORKQ_H
+#ifndef _CONMGR_SIGNALS_H
+#define _CONMGR_SIGNALS_H
+
+#include <stdbool.h>
+#include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
+
+/* start the signal manager */
+extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
- * Call back for generic work
- *
- * IN arg pointer to data for function
+ * signal the signal manager to stop
+ * Note: Caller must lock mgr.mutex
  */
-typedef void (*work_func_t)(void *arg);
+extern void signal_mgr_stop(void);
 
 /*
- * Initialize workq members
- * IN count - number of workers to add
+ * Add signal work to signal manager
+ * IN work - work with depend=CONMGR_WORK_DEP_SIGNAL.
+ * 	Takes ownership of work.
+ * 	Work ptr is never released.
  */
-extern void workq_init(int count);
+extern void add_work_signal(work_t *work);
 
-/*
- * Release workq members.
- * Will stop all workers (eventually).
- */
-extern void workq_fini(void);
-
-/*
- * Stop all work (eventually) and reject new requests
- * This will block until all work is complete.
- */
-extern void workq_quiesce(void);
-
-/*
- * Add work to workq
- * IN func - function pointer to run work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or workq_free() will never
- * return either.
- * RET SLURM_SUCCESS or error if workq already shutdown
- */
-extern int workq_add_work(work_func_t func, void *arg, const char *tag);
-
-/*
- * Grab copy of the workq active count
- */
-extern int workq_get_active(void);
-
-#endif /* SLURMRESTD_WORKQ_H */
+#endif /* _CONMGR_SIGNALS_H */

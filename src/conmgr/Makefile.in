@@ -157,8 +157,8 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo io.lo rpc.lo \
-	signals.lo watch.lo work.lo workq.lo
+am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo events.lo io.lo \
+	poll.lo rpc.lo signals.lo watch.lo work.lo workers.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -186,9 +186,10 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
-	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/rpc.Plo \
+	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/events.Plo \
+	./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/watch.Plo \
-	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workq.Plo
+	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workers.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -494,14 +495,18 @@ libconmgr_la_SOURCES = \
 	conmgr.c \
 	conmgr.h \
 	delayed.c \
+	events.c \
+	events.h \
 	io.c \
 	mgr.h \
+	poll.c \
+	poll.h \
 	rpc.c \
 	signals.c \
+	signals.h \
 	watch.c \
 	work.c \
-	workq.c \
-	workq.h
+	workers.c
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
@@ -574,12 +579,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/con.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/delayed.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/events.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/poll.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/watch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/work.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workers.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -709,12 +716,14 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/con.Plo
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
+	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
+	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
 	-rm -f ./$(DEPDIR)/work.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
+	-rm -f ./$(DEPDIR)/workers.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -763,12 +772,14 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/con.Plo
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
+	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
+	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
 	-rm -f ./$(DEPDIR)/work.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
+	-rm -f ./$(DEPDIR)/workers.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

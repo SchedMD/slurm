@@ -595,9 +595,7 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	fprintf(stderr, "%s\n", full_type);
 }
 
-static void _on_signal_interrupt(conmgr_fd_t *con, conmgr_work_type_t type,
-				 conmgr_work_status_t status, const char *tag,
-				 void *arg)
+static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("%s: caught SIGINT. Shutting down.", __func__);
 	conmgr_request_shutdown();
@@ -646,8 +644,7 @@ int main(int argc, char **argv)
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
 		    max_connections, callbacks);
 
-	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
-			       "_on_signal_interrupt()");
+	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
@@ -752,8 +749,9 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_sockets(CON_TYPE_RAW, socket_listen,
-					  conmgr_events, operations_router))
+		if (conmgr_create_listen_sockets(CON_TYPE_RAW, socket_listen,
+						 conmgr_events,
+						 operations_router))
 			fatal("Unable to create sockets");
 
 		umask(mask);

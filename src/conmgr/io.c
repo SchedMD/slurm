@@ -38,6 +38,8 @@
 #include <sys/uio.h>
 
 #include "src/common/fd.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
@@ -89,9 +91,9 @@ static int _get_fd_readable(conmgr_fd_t *con)
 	return readable;
 }
 
-extern void handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag, void *arg)
+extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	ssize_t read_c;
 	int rc, readable;
 
@@ -261,10 +263,9 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 		xfree(args.iov);
 }
 
-extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg)
+extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int out_count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -276,13 +277,14 @@ extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
 		_handle_writev(con, out_count);
 }
 
-extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg)
+extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int avail = get_buf_offset(con->in);
 	int size = size_buf(con->in);
 	int rc;
+	int (*callback)(conmgr_fd_t *con, void *arg) = NULL;
+	const char *callback_string = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -291,20 +293,25 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 	/* override buffer size to only read upto previous offset */
 	con->in->size = avail;
 
-	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name, (uintptr_t) con->events.on_data,
-		 (uintptr_t) con->arg);
-
-	if (con->type == CON_TYPE_RAW)
-		rc = con->events.on_data(con, con->arg);
-	else if (con->type == CON_TYPE_RPC)
-		rc = on_rpc_connection_data(con, con->arg);
-	else
+	if (con->type == CON_TYPE_RAW) {
+		callback = con->events.on_data;
+		callback_string = XSTRINGIFY(con->events.on_data);
+	} else if (con->type == CON_TYPE_RPC) {
+		callback = on_rpc_connection_data;
+		callback_string = XSTRINGIFY(on_rpc_connection_data);
+	} else {
 		fatal("%s: invalid type", __func__);
+	}
 
-	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
-		 __func__, con->name, (uintptr_t) con->events.on_data,
-		 (uintptr_t) con->arg, slurm_strerror(rc));
+	log_flag(CONMGR, "%s: [%s] BEGIN func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR,
+		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 (uintptr_t) callback);
+
+	rc = callback(con, con->arg);
+
+	log_flag(CONMGR, "%s: [%s] END func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR"=[%d]%s",
+		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 (uintptr_t) callback, rc, slurm_strerror(rc));
 
 	if (rc) {
 		error("%s: [%s] on_data returned rc: %s",
@@ -332,6 +339,10 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	if (get_buf_offset(con->in) < size_buf(con->in)) {
 		if (get_buf_offset(con->in) > 0) {
+			log_flag(CONMGR, "%s: [%s] partial read %u/%u bytes.",
+				 __func__, con->name, get_buf_offset(con->in),
+				 size_buf(con->in));
+
 			/*
 			 * not all data read, need to shift it to start of
 			 * buffer and fix offset
@@ -345,9 +356,13 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 			set_buf_offset(con->in, remaining_buf(con->in));
 		} else {
 			/* need more data for parser to read */
-			log_flag(CONMGR, "%s: [%s] parser refused to read data. Waiting for more data.",
-				 __func__, con->name);
+			log_flag(CONMGR, "%s: [%s] parser refused to read %u bytes. Waiting for more data.",
+				 __func__, con->name, size_buf(con->in));
+
 			con->on_data_tried = true;
+
+			/* revert offset change */
+			set_buf_offset(con->in, avail);
 		}
 	} else
 		/* buffer completely read: reset it */
@@ -357,8 +372,8 @@ extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
 	con->in->size = size;
 }
 
-extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
-				 const size_t bytes)
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes)
 {
 	buf_t *buf;
 
@@ -376,7 +391,9 @@ extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
 		     "%s: queuing up write", __func__);
 
 	list_append(con->out, buf);
-	signal_change(false);
+	slurm_mutex_lock(&mgr.mutex);
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 	return SLURM_SUCCESS;
 }
 
@@ -417,7 +434,10 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 				    buf_t **buffer_ptr)
 {
-	buf_t *buf;
+	const void *data = (get_buf_data(con->in) + get_buf_offset(con->in));
+	const size_t bytes = (size_buf(con->in) - get_buf_offset(con->in));
+	buf_t *buf = NULL;
+	int rc;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
@@ -427,42 +447,27 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	if (!buffer_ptr)
 		return EINVAL;
 
-	if (*buffer_ptr) {
-		int rc;
+	/*
+	 * Create buffer if needed and size it size of the data to copy or the
+	 * minimal buffer size to avoid multiple recalloc()s in the future.
+	 */
+	if (!*buffer_ptr &&
+	    !(*buffer_ptr = init_buf(MAX(bytes, BUFFER_START_SIZE))))
+		return ENOMEM;
 
-		buf = *buffer_ptr;
+	buf = *buffer_ptr;
 
-		if (!swap_buf_data(buf, con->in))
-			return SLURM_SUCCESS;
+	/* grow buffer to size to hold incoming data (if needed) */
+	if ((rc = try_grow_buf_remaining(buf, bytes)))
+		return rc;
 
-		if ((rc = try_grow_buf_remaining(buf, get_buf_offset(con->in))))
-			return rc;
+	/* Append data to existing buffer */
+	memcpy((get_buf_data(buf) + get_buf_offset(buf)), data, bytes);
+	set_buf_offset(buf, (get_buf_offset(buf) + bytes));
 
-		memcpy(get_buf_data(buf) + get_buf_offset(buf),
-		       get_buf_data(con->in), get_buf_offset(con->in));
-		set_buf_offset(con->in,
-			       (get_buf_offset(buf) + get_buf_offset(con->in)));
-		set_buf_offset(con->in, 0);
-		return SLURM_SUCCESS;
-	} else {
-		if (!(buf = create_buf(get_buf_data(con->in),
-				       size_buf(con->in))))
-			return EINVAL;
-
-		if (!(con->in->head = try_xmalloc(BUFFER_START_SIZE))) {
-			error("%s: [%s] Unable to allocate replacement input buffer",
-			      __func__, con->name);
-			FREE_NULL_BUFFER(buf);
-			return ENOMEM;
-		}
-
-		*buffer_ptr = buf;
-
-		set_buf_offset(con->in, 0);
-		con->in->size = BUFFER_START_SIZE;
-
-		return SLURM_SUCCESS;
-	}
+	/* mark connection input buffer as fully consumed */
+	set_buf_offset(con->in, size_buf(con->in));
+	return SLURM_SUCCESS;
 }
 
 extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
@@ -479,8 +484,8 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 	xassert(size_buf(output) <= xsize(get_buf_data(output)));
 	xassert(get_buf_offset(output) <= size_buf(output));
 
-	rc = conmgr_queue_write_fd(con, get_buf_data(output),
-				   get_buf_offset(output));
+	rc = conmgr_queue_write_data(con, get_buf_data(output),
+				     get_buf_offset(output));
 
 	if (!rc)
 		set_buf_offset(output, 0);

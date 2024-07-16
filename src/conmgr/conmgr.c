@@ -33,7 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
@@ -42,7 +41,6 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/workq.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
 
@@ -63,20 +61,29 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
-	workq_init(thread_count);
-
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown_requested = false;
 
-	if (!mgr.at_fork_installed) {
+	workers_init(thread_count);
+
+	if (!mgr.one_time_initialized) {
 		int rc;
 
 		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
 			fatal_abort("%s: pthread_atfork() failed: %s",
 				    __func__, slurm_strerror(rc));
 
-		mgr.at_fork_installed = true;
+		add_work(true, NULL, (conmgr_callback_t) {
+				.func = on_signal_alarm,
+				.func_name = XSTRINGIFY(on_signal_alarm),
+			 }, (conmgr_work_control_t) {
+				.depend_type = CONMGR_WORK_DEP_SIGNAL,
+				.on_signal_number = SIGALRM,
+				.schedule_type = CONMGR_WORK_SCHED_FIFO,
+			 }, 0, __func__);
+
+		mgr.one_time_initialized = true;
 	} else {
 		/* already initialized */
 		mgr.max_connections = MAX(max_connections, mgr.max_connections);
@@ -99,23 +106,10 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
-	mgr.deferred_funcs = list_create(NULL);
+	mgr.work = list_create(NULL);
+	init_delayed_work();
 
-	if (pipe(mgr.event_fd))
-		fatal("%s: unable to open unnamed pipe: %m", __func__);
-
-	fd_set_nonblocking(mgr.event_fd[0]);
-	fd_set_blocking(mgr.event_fd[1]);
-
-	if (pipe(mgr.signal_fd))
-		fatal("%s: unable to open unnamed pipe: %m", __func__);
-
-	/* block for writes only */
-	fd_set_blocking(mgr.signal_fd[0]);
-	fd_set_blocking(mgr.signal_fd[1]);
-
-	add_signal_work(SIGALRM, on_signal_alarm, NULL,
-			XSTRINGIFY(on_signal_alarm));
+	pollctl_init(mgr.max_connections);
 
 	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
@@ -136,9 +130,6 @@ extern void conmgr_fini(void)
 	mgr.shutdown_requested = true;
 	mgr.quiesced = false;
 
-	/* run all deferred work if there is any */
-	requeue_deferred_funcs();
-
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
@@ -147,9 +138,8 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work();
 
-	/* deferred_funcs should have been cleared by conmgr_run() */
-	xassert(list_is_empty(mgr.deferred_funcs));
-	FREE_NULL_LIST(mgr.deferred_funcs);
+	/* wait until all workers are done */
+	workers_shutdown();
 
 	/*
 	 * At this point, there should be no threads running.
@@ -161,30 +151,30 @@ extern void conmgr_fini(void)
 
 	free_delayed_work();
 
-	if (((mgr.event_fd[0] >= 0) && close(mgr.event_fd[0])) ||
-	    ((mgr.event_fd[1] >= 0) && close(mgr.event_fd[1])))
-		error("%s: unable to close event_fd: %m", __func__);
+	workers_fini();
 
-	if (((mgr.signal_fd[0] >= 0) && close(mgr.signal_fd[0])) ||
-	    ((mgr.signal_fd[1] >= 0) && close(mgr.signal_fd[1])))
-		error("%s: unable to close signal_fd: %m", __func__);
+	/* work should have been cleared by workers_fini() */
+	xassert(list_is_empty(mgr.work));
+	FREE_NULL_LIST(mgr.work);
 
-	xfree(mgr.signal_work);
+	pollctl_fini();
 
-	slurm_mutex_unlock(&mgr.mutex);
 	/*
 	 * Do not destroy the mutex or cond so that this function does not
 	 * crash when it tries to lock mgr.mutex if called more than once.
 	 */
 	/* slurm_mutex_destroy(&mgr.mutex); */
-	/* slurm_cond_destroy(&mgr.cond); */
 
-	workq_fini();
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
+	watch_request_t *wreq = xmalloc(sizeof(*wreq));
+
+	wreq->magic = MAGIC_WATCH_REQUEST;
+	wreq->blocking = blocking;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -199,15 +189,16 @@ extern int conmgr_run(bool blocking)
 
 	xassert(!mgr.error || !mgr.exit_on_error);
 	mgr.quiesced = false;
-	requeue_deferred_funcs();
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (blocking) {
-		watch((void *) 1);
+		watch((conmgr_callback_args_t) {0}, wreq);
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
-		if (!mgr.watching)
-			queue_func(true, watch, NULL, XSTRINGIFY(watch));
+		if (!mgr.watching) {
+			wreq->running_on_worker = true;
+			add_work_fifo(true, watch, wreq);
+		}
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
@@ -224,7 +215,8 @@ extern void conmgr_request_shutdown(void)
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.shutdown_requested = true;
-	signal_change(true);
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -239,12 +231,12 @@ extern void conmgr_quiesce(bool wait)
 	}
 
 	mgr.quiesced = true;
-	signal_change(true);
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
 
 	if (wait)
 		wait_for_watch();
-	else
-		slurm_mutex_unlock(&mgr.mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_set_exit_on_error(bool exit_on_error)

@@ -33,18 +33,39 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include <signal.h>
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+
+typedef struct {
+#define MAGIC_SIGNAL_HANDLER 0xC20A444A
+	int magic; /* MAGIC_SIGNAL_HANDLER */
+	struct sigaction prior;
+	struct sigaction new;
+	int signal;
+} signal_handler_t;
+
+/* protects all of the static variables here */
+pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
+
+/* list of all registered signal handlers */
+static signal_handler_t *signal_handlers = NULL;
+static int signal_handler_count = 0;
+
+/* list of all registered signal work */
+static work_t **signal_work = NULL;
+static int signal_work_count = 0;
+
+/* interrupt handler (_signal_handler()) will send signal to this fd */
+static int signal_fd = -1;
+static conmgr_fd_t *signal_con = NULL;
 
 static void _signal_handler(int signo)
 {
@@ -53,38 +74,49 @@ static void _signal_handler(int signo)
 	 * 	A child created via fork(2) inherits a copy of its parent's
 	 * 	signal dispositions.
 	 *
-	 * Signal handler registration survives fork() but mgr will get reset to
-	 * CONMGR_DEFAULT. Gracefully ignore signals when mgr.signal_fd is
-	 * -1 to avoid trying to write a non-existant file descriptor.
+	 * Signal handler registration survives fork() but the signal_mgr()
+	 * thread will be lost. Gracefully ignore signals when signal_fd_send is
+	 * -1 to avoid trying to write a non-existent file descriptor.
 	 */
-	if (mgr.signal_fd[1] < 0)
+	if (signal_fd < 0)
 		return;
 
 try_again:
-	if (write(mgr.signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
+	if (write(signal_fd, &signo, sizeof(signo)) != sizeof(signo)) {
+		if (errno == SIGPIPE) {
+			/*
+			 * write() after conmgr shutdown before reading that
+			 * signal_fd was set to -1. Ignoring this race condition
+			 * entirely.
+			 */
+			return;
+		}
+
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			goto try_again;
 
-		log_reinit();
-		fatal("%s: unable to signal connection manager: %m", __func__);
+		/* TODO: replace with signal_safe_fatal() */
+		fatal_abort("%s: unable to signal connection manager: %m",
+			    __func__);
 	}
 }
 
+/* caller must hold write lock */
 static void _register_signal_handler(int signal)
 {
 	signal_handler_t *handler;
 
-	for (int i = 0; i < mgr.signal_handler_count; i++) {
-		xassert(mgr.signal_handlers[i].magic == MAGIC_SIGNAL_HANDLER);
+	for (int i = 0; i < signal_handler_count; i++) {
+		xassert(signal_handlers[i].magic == MAGIC_SIGNAL_HANDLER);
 
-		if (mgr.signal_handlers[i].signal == signal)
+		if (signal_handlers[i].signal == signal)
 			return;
 	}
 
-	xrecalloc(mgr.signal_handlers, (mgr.signal_handler_count + 1),
-		  sizeof(*mgr.signal_handlers));
+	xrecalloc(signal_handlers, (signal_handler_count + 1),
+		  sizeof(*signal_handlers));
 
-	handler = &mgr.signal_handlers[mgr.signal_handler_count];
+	handler = &signal_handlers[signal_handler_count];
 	handler->magic = MAGIC_SIGNAL_HANDLER;
 	handler->signal = signal;
 	handler->new.sa_handler = _signal_handler;
@@ -103,26 +135,29 @@ static void _register_signal_handler(int signal)
 		xfree(signame);
 	}
 
-	mgr.signal_handler_count++;
+	signal_handler_count++;
 }
 
-extern void init_signal_handler(void)
+/* caller must hold write lock */
+static void _init_signal_handler(void)
 {
-	if (mgr.signal_handlers)
+	if (signal_handlers)
 		return;
 
-	for (int i = 0; i < mgr.signal_work_count; i++) {
-		signal_work_t *work = &mgr.signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
+	for (int i = 0; i < signal_work_count; i++) {
+		work_t *work = signal_work[i];
+		xassert(work->magic == MAGIC_WORK);
 
-		_register_signal_handler(work->signal);
+		_register_signal_handler(work->control.on_signal_number);
 	}
 }
 
-extern void fini_signal_handler(void)
+/* caller must hold write lock */
+static void _fini_signal_handler(void)
 {
-	for (int i = 0; i < mgr.signal_handler_count; i++) {
-		signal_handler_t *handler = &mgr.signal_handlers[i];
+#ifndef NDEBUG
+	for (int i = 0; i < signal_handler_count; i++) {
+		signal_handler_t *handler = &signal_handlers[i];
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
 
 		if (sigaction(handler->signal, &handler->prior, &handler->new))
@@ -157,209 +192,158 @@ extern void fini_signal_handler(void)
 		xassert(handler->new.sa_handler == _signal_handler);
 	}
 
-	xfree(mgr.signal_handlers);
-	mgr.signal_handler_count = 0;
-}
-
-/*
- * Notify connection manager that there has been a change event
- */
-extern void signal_change(bool locked)
-{
-	DEF_TIMERS;
-	char buf[] = "1";
-	int rc;
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-	if (mgr.event_signaled) {
-		mgr.event_signaled++;
-		log_flag(CONMGR, "%s: sent %d times",
-			 __func__, mgr.event_signaled);
-		goto done;
-	} else {
-		log_flag(CONMGR, "%s: sending", __func__);
-		mgr.event_signaled = 1;
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-
-try_again:
-	START_TIMER;
-	/* send 1 byte of trash */
-	rc = write(mgr.event_fd[1], buf, 1);
-	END_TIMER2("write to event_fd");
-	if (rc != 1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(CONMGR, "%s: trying again: %m", __func__);
-			goto try_again;
-		}
-
-		fatal("%s: unable to signal connection manager: %m", __func__);
-	}
-
-	log_flag(CONMGR, "%s: sent in %s", __func__, TIME_STR);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
-done:
-	/* wake up _watch() */
-	slurm_cond_broadcast(&mgr.cond);
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
+	xfree(signal_handlers);
+	signal_handler_count = 0;
+#endif /* !NDEBUG */
 }
 
 static void _on_signal(int signal)
 {
 	bool matched = false;
 
-	for (int i = 0; i < mgr.signal_work_count; i++) {
-		signal_work_t *work = &mgr.signal_work[i];
-		xassert(work->magic == MAGIC_SIGNAL_WORK);
+	slurm_rwlock_rdlock(&lock);
 
-		if (work->signal != signal)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *str = sig_num2name(signal);
+		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
+			 __func__, signal_con->name, str, signal);
+		xfree(str);
+	}
+
+	for (int i = 0; i < signal_work_count; i++) {
+		work_t *work = signal_work[i];
+
+		xassert(work->magic == MAGIC_WORK);
+
+		if (work->control.on_signal_number != signal)
 			continue;
 
 		matched = true;
-		add_work(true, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
-			  work->arg, work->tag);
+		add_work(false, NULL, work->callback, work->control,
+			 ~CONMGR_WORK_DEP_SIGNAL, __func__);
 	}
+
+	slurm_rwlock_unlock(&lock);
 
 	if (!matched)
 		warning("%s: caught and ignoring signal %s",
 			__func__, strsignal(signal));
 }
 
-static int _read_signal(int fd, const char *con_name)
+extern void add_work_signal(work_t *work)
 {
-	int sig, rc, readable;
+	xassert(!work->con);
+	xassert(work->control.depend_type & CONMGR_WORK_DEP_SIGNAL);
+	xassert(work->control.on_signal_number > 0);
 
-	if ((rc = fd_get_readable_bytes(fd, &readable, con_name)) ||
-	    !readable) {
-		log_flag(CONMGR, "%s: [%s] no pending bytes to read()",
-			 __func__, con_name);
-		return -1;
-	}
+	slurm_rwlock_wrlock(&lock);
+
+	xrecalloc(signal_work, (signal_work_count + 1), sizeof(*signal_work));
+
+	signal_work[signal_work_count] = work;
+	signal_work_count++;
 
 	/*
-	 * According to pipe(7), writes less than PIPE_BUF in size must be
-	 * atomic. Posix.1 requries PIPE_BUF to be at least 512 bytes.
-	 * Therefore, a write() of 4 bytes to a pipe is always atomic in Linux.
+	 * Directly register new signal handler since connection already started
+	 * and init_signal_handler() already ran
 	 */
-	xassert(readable >= sizeof(sig));
+	if (signal_con)
+		_register_signal_handler(work->control.on_signal_number);
 
-	safe_read(fd, &sig, sizeof(sig));
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
-		char *str = sig_num2name(sig);
-		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
-			 __func__, con_name, str, sig);
-		xfree(str);
-	}
-
-	return sig;
-rwfail:
-	/* safe_read() should never pass these errors along */
-	xassert(errno != EAGAIN);
-	xassert(errno != EWOULDBLOCK);
-
-	/* this should never happen! */
-	fatal_abort("%s: Unexpected safe_read(%d) failure: %m", __func__, fd);
+	slurm_rwlock_unlock(&lock);
 }
 
-extern void handle_signals(void *ptr)
+static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
-	int sig, count = 0, fd = -1;
-	static const char *con_name = "mgr.signal_fd[0]";
+	slurm_rwlock_wrlock(&lock);
 
-	xassert(ptr == NULL);
+	_init_signal_handler();
+	signal_con = con;
 
-	slurm_mutex_lock(&mgr.mutex);
-	fd = mgr.signal_fd[0];
-	slurm_mutex_unlock(&mgr.mutex);
-	xassert(fd >= 0);
+	slurm_rwlock_unlock(&lock);
 
-	while (true) {
-		int readable = 0;
-		int rc;
-
-		while ((sig = _read_signal(fd, con_name)) > 0) {
-			count++;
-			_on_signal(sig);
-		}
-
-		log_flag(CONMGR, "%s: caught %d signals", __func__, count);
-
-		slurm_mutex_lock(&mgr.mutex);
-
-		xassert(mgr.signaled);
-		xassert(mgr.read_signals_active);
-		xassert(fd == mgr.signal_fd[0]);
-
-		/*
-		 * Catch if another signal has been caught while the existing
-		 * backlog of signals in the pipe were being processed.
-		 */
-		rc = fd_get_readable_bytes(mgr.signal_fd[0], &readable,
-					   con_name);
-
-		if (!rc && (readable > 0)) {
-			slurm_mutex_unlock(&mgr.mutex);
-			/* reset signal counter */
-			count = 0;
-			/* try again as there was a signal sent */
-			continue;
-		}
-
-		/* Remove signal flags as all signals have read */
-		mgr.signaled = false;
-		mgr.read_signals_active = false;
-
-		/* wake up _watch_loop() */
-		slurm_cond_broadcast(&mgr.cond);
-		slurm_mutex_unlock(&mgr.mutex);
-		break;
-	}
+	return &signal_fd;
 }
 
-extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
-			    const char *tag)
+static int _on_data(conmgr_fd_t *con, void *arg)
 {
-	xrecalloc(mgr.signal_work, (mgr.signal_work_count + 1),
-		  sizeof(*mgr.signal_work));
+	const void *data = NULL;
+	size_t bytes = 0, read = 0;
+	int signo;
 
-	mgr.signal_work[mgr.signal_work_count] = (signal_work_t){
-		.magic = MAGIC_SIGNAL_WORK,
-		.signal = signal,
-		.func = func,
-		.arg = arg,
-		.tag = tag,
+	xassert(arg == &signal_fd);
+
+	conmgr_fd_get_in_buffer(con, &data, &bytes);
+
+	while ((read + sizeof(signo)) <= bytes) {
+		signo = *(int *) (data + read);
+
+		_on_signal(signo);
+
+		read += sizeof(signo);
+	}
+
+	conmgr_fd_mark_consumed_in_buffer(con, read);
+
+	return SLURM_SUCCESS;
+}
+
+static void _on_finish(conmgr_fd_t *con, void *arg)
+{
+	xassert(arg == &signal_fd);
+
+	slurm_rwlock_wrlock(&lock);
+
+	_fini_signal_handler();
+
+	xassert(signal_fd != -1);
+	fd_close(&signal_fd);
+
+	xassert(con == signal_con);
+	xassert(signal_con);
+	signal_con = NULL;
+
+	slurm_rwlock_unlock(&lock);
+}
+
+extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	static const conmgr_events_t events = {
+		.on_connection = _on_connection,
+		.on_data = _on_data,
+		.on_finish = _on_finish,
 	};
+	int fd[2] = { -1, -1 };
 
-	mgr.signal_work_count++;
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
 
-	/* Call sigaction() if needed */
-	if (mgr.watching)
-		_register_signal_handler(signal);
+	if (pipe(fd))
+		fatal_abort("%s: pipe() failed: %m", __func__);
+
+	slurm_rwlock_wrlock(&lock);
+
+	xassert(signal_fd == -1);
+	xassert(!signal_con);
+
+	fd_set_blocking(fd[1]);
+	signal_fd = fd[1];
+
+	slurm_rwlock_unlock(&lock);
+
+	if (add_connection(CON_TYPE_RAW, NULL, fd[0], -1, events, NULL,
+			   0, false, NULL, NULL) != SLURM_SUCCESS) {
+		fatal_abort("%s: [fd:%d] unable to a register new connection",
+			    __func__, fd[0]);
+	}
 }
 
-extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
-				   void *arg, const char *tag)
+extern void signal_mgr_stop(void)
 {
-	slurm_mutex_lock(&mgr.mutex);
+	slurm_rwlock_rdlock(&lock);
 
-	if (mgr.shutdown_requested) {
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
+	if (signal_con)
+		close_con(true, signal_con);
 
-	if (mgr.watching)
-		fatal_abort("signal work must be added before conmgr is run");
-
-	add_signal_work(signal, func, arg, tag);
-	slurm_mutex_unlock(&mgr.mutex);
+	slurm_rwlock_unlock(&lock);
 }

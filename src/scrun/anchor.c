@@ -141,10 +141,9 @@ static int _queue_delete_request(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return SLURM_SUCCESS;
 }
 
-static void _on_pty_reply_sent(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg)
+static void _on_pty_reply_sent(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int fd;
 
 	read_lock_state();
@@ -176,9 +175,7 @@ static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	debug("%s: [%s] requested pty", __func__, conmgr_fd_get_name(con));
 
-	conmgr_add_work(con, _on_pty_reply_sent,
-			 CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, NULL,
-			 __func__);
+	conmgr_add_work_con_write_complete_fifo(con, _on_pty_reply_sent, NULL);
 
 	return rc;
 }
@@ -223,8 +220,7 @@ static void _daemonize_logs()
 	update_logging();
 }
 
-static void _tear_down(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag, void *arg)
+static void _tear_down(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool need_kill = false, need_stop = false;
 	int rc = SLURM_SUCCESS;
@@ -285,9 +281,7 @@ static int _send_delete_confirmation(void *x, void *arg)
 }
 
 /* stopping job is async: this is the final say if the job has stopped */
-static void _check_if_stopped(conmgr_fd_t *con, conmgr_work_type_t type,
-			      conmgr_work_status_t status, const char *tag,
-			      void *arg)
+static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int ptm = -1;
 	bool stopped = false;
@@ -378,9 +372,7 @@ static void _check_if_stopped(conmgr_fd_t *con, conmgr_work_type_t type,
 	conmgr_request_shutdown();
 }
 
-static void _finish_job(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag,
-			void *arg)
+static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int jobid, rc;
 	bool existing_allocation;
@@ -424,12 +416,10 @@ done:
 	state.job_completed = true;
 	unlock_state();
 
-	conmgr_add_work(NULL, _check_if_stopped, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_check_if_stopped, NULL);
 }
 
-static void _stage_out(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag, void *arg)
+static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
 	bool staged_in;
@@ -463,8 +453,7 @@ static void _stage_out(conmgr_fd_t *con, conmgr_work_type_t type,
 	state.staged_out = true;
 	unlock_state();
 
-	conmgr_add_work(NULL, _finish_job, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_finish_job, NULL);
 }
 
 /* cleanup anchor and shutdown */
@@ -502,8 +491,8 @@ extern void stop_anchor(int status)
 		      __func__);
 
 		/* send the pid now since due to failure */
-		if ((rc = conmgr_queue_write_fd(state.startup_con, &state.pid,
-						sizeof(state.pid))))
+		if ((rc = conmgr_queue_write_data(state.startup_con, &state.pid,
+						  sizeof(state.pid))))
 			fatal("%s: unable to send pid: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -511,15 +500,12 @@ extern void stop_anchor(int status)
 	}
 	unlock_state();
 
-	conmgr_add_work(NULL, _stage_out, CONMGR_WORK_TYPE_FIFO, NULL,
-			 __func__);
+	conmgr_add_work_fifo(_stage_out, NULL);
 
 	debug2("%s: end", __func__);
 }
 
-static void _catch_sigchld(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg)
+static void _catch_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	pid_t pid;
 	pid_t srun_pid;
@@ -643,7 +629,7 @@ static int _on_cs_data(conmgr_fd_t *con, void *arg)
 	return EINVAL;
 }
 
-static void _on_cs_finish(void *arg)
+static void _on_cs_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -905,8 +891,7 @@ static int _delete(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	rc = _queue_delete_request(con, req_msg);
 
-	conmgr_add_work(NULL, _tear_down, CONMGR_WORK_TYPE_FIFO, NULL,
-			__func__);
+	conmgr_add_work_fifo(_tear_down, NULL);
 
 	return rc;
 }
@@ -1095,9 +1080,7 @@ rwfail:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-extern void on_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			  conmgr_work_status_t status, const char *tag,
-			  void *arg)
+extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool queue_try_start = false;
 	int rc;
@@ -1138,7 +1121,8 @@ extern void on_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 
 	/* notify command_create() that container is now CREATED */
 	xassert(state.startup_con);
-	if ((rc = conmgr_queue_write_fd(state.startup_con, &pid, sizeof(pid))))
+	if ((rc = conmgr_queue_write_data(state.startup_con, &pid,
+					  sizeof(pid))))
 		fatal("%s: unable to send pid: %s",
 		      __func__, slurm_strerror(rc));
 
@@ -1160,7 +1144,7 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static void _on_connection_finish(void *arg)
+static void _on_connection_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1342,18 +1326,18 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 	unlock_state();
 
 	if (queue) {
-		conmgr_add_work(NULL, on_allocation, CONMGR_WORK_TYPE_FIFO,
-				NULL, __func__);
+		conmgr_add_work_fifo(on_allocation, NULL);
 	}
 
 	return &state;
 }
 
-static void _on_startup_con_fin(void *arg)
+static void _on_startup_con_fin(conmgr_fd_t *con, void *arg)
 {
 	xassert(arg == &state);
 
 	write_lock_state();
+	xassert(state.startup_con == con);
 	debug4("%s: [%s] create command parent notified of start",
 	       __func__, conmgr_fd_get_name(state.startup_con));
 	xassert(state.startup_con);
@@ -1457,22 +1441,20 @@ static int _anchor_child(int pipe_fd[2])
 	/* TODO: only 1 unix socket for now */
 	list_append(socket_listen,
 		    xstrdup_printf("unix:%s", state.anchor_socket));
-	if ((rc = conmgr_create_sockets(CON_TYPE_RPC, socket_listen,
-					conmgr_events, NULL)))
+	if ((rc = conmgr_create_listen_sockets(CON_TYPE_RPC, socket_listen,
+					       conmgr_events, NULL)))
 		fatal("%s: unable to initialize listeners: %s",
 		      __func__, slurm_strerror(rc));
 	debug("%s: listening on unix:%s", __func__, state.anchor_socket);
 
-	conmgr_add_signal_work(SIGCHLD, _catch_sigchld, &state,
-			       "_catch_sigchld");
+	conmgr_add_work_signal(SIGCHLD, _catch_sigchld, &state);
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
 				    conmgr_startup_events, NULL, 0, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
-	conmgr_add_work(NULL, get_allocation, CONMGR_WORK_TYPE_FIFO, NULL,
-			__func__);
+	conmgr_add_work_fifo(get_allocation, NULL);
 
 	if ((spank_rc = spank_init_post_opt())) {
 		fatal("%s: plugin stack post-option processing failed: %s",

@@ -341,9 +341,9 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	return rc;
 }
 
-static void _on_finish(void *arg)
+static void _on_finish(conmgr_fd_t *con, void *arg)
 {
-	conmgr_fd_t *con = arg;
+	xassert(con == arg);
 
 	if (get_log_level() > LOG_LEVEL_DEBUG) {
 		read_lock_state();
@@ -399,9 +399,7 @@ static void _pending_callback(uint32_t job_id)
 }
 
 /* check allocation has all nodes ready */
-extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			     conmgr_work_status_t status, const char *tag,
-			     void *arg)
+extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	/* there must be only 1 thread that will call this at any one time */
 	static long delay = 1;
@@ -426,9 +424,9 @@ extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 		return;
 	}
 
-	if (status != CONMGR_WORK_STATUS_RUN) {
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN) {
 		debug("%s: bailing due to callback status %s",
-		      __func__, conmgr_work_status_string(status));
+		      __func__, conmgr_work_status_string(conmgr_args.status));
 		stop_anchor(ESLURM_ALREADY_DONE);
 		return;
 	}
@@ -451,8 +449,7 @@ extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 			      __func__, state.jobid, delay);
 			unlock_state();
 		}
-		conmgr_add_delayed_work(NULL, check_allocation, delay, 0, NULL,
-					"check_allocation");
+		conmgr_add_work_delayed_fifo(check_allocation, NULL, delay, 0);
 	} else if ((rc == READY_JOB_FATAL) || !(rc & READY_JOB_STATE)) {
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -475,8 +472,7 @@ extern void check_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 			stop_anchor(rc);
 		} else {
 			/* we have a job now. see if creating is done */
-			conmgr_add_work(NULL, on_allocation,
-					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+			conmgr_add_work_fifo(on_allocation, NULL);
 		}
 	}
 }
@@ -597,9 +593,7 @@ static void _alloc_job(void)
 	slurm_free_resource_allocation_response_msg(alloc);
 }
 
-extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
-			   conmgr_work_status_t status, const char *tag,
-			   void *arg)
+extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
 	job_info_msg_t *jobs = NULL;
@@ -683,10 +677,8 @@ extern void get_allocation(conmgr_fd_t *con, conmgr_work_type_t type,
 		if ((rc = _stage_in()))
 			stop_anchor(rc);
 		else
-			conmgr_add_work(NULL, on_allocation,
-					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+			conmgr_add_work_fifo(on_allocation, NULL);
 	} else {
-		conmgr_add_delayed_work(NULL, check_allocation, 0, 1, NULL,
-					 "check_allocation");
+		conmgr_add_work_delayed_fifo(check_allocation, NULL, 0, 1);
 	}
 }

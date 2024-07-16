@@ -33,6 +33,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * Note: Only src/conmgr/(*).c should include this header. Everything else should
+ * only include src/conmgr/conmgr.h for the exported functions and structs.
+ */
+
 #ifndef _CONMGR_MGR_H
 #define _CONMGR_MGR_H
 
@@ -48,7 +53,8 @@
 #include "src/common/pack.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/workq.h"
+#include "src/conmgr/events.h"
+#include "src/conmgr/poll.h"
 
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
@@ -56,17 +62,10 @@
 typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
-	conmgr_fd_t *con;
-	conmgr_work_func_t func;
-	void *arg;
-	const char *tag;
 	conmgr_work_status_t status;
-	conmgr_work_type_t type;
-	struct {
-		/* absolute time when to work can begin */
-		time_t seconds;
-		long nanoseconds; /* offset from seconds */
-	} begin;
+	conmgr_fd_t *con;
+	conmgr_callback_t callback;
+	conmgr_work_control_t control;
 } work_t;
 
 /*
@@ -111,10 +110,15 @@ struct conmgr_fd_s {
 	bool can_read;
 	/* has this connection received read EOF */
 	bool read_eof;
-	/* has this connection called on_connection */
+
+	/*
+	 * Current active polling (if any).
+	 * Only set by con_set_polling()
+	 */
+	pollctl_fd_type_t polling_input_fd;
+	pollctl_fd_type_t polling_output_fd;
+	/* has this connection been established and enqueued on_connection() */
 	bool is_connected;
-	/* incoming msg length - CON_TYPE_RPC only */
-	uint32_t msglen;
 	/*
 	 * has pending work:
 	 * there must only be 1 thread at a time working on this connection
@@ -129,7 +133,6 @@ struct conmgr_fd_s {
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	on_data_tried
-	 *	msglen
 	 *
 	 */
 	bool work_active;
@@ -146,29 +149,20 @@ struct conmgr_fd_s {
 };
 
 typedef struct {
-#define MAGIC_SIGNAL_HANDLER 0xC20A444A
-	int magic; /* MAGIC_SIGNAL_HANDLER */
-	struct sigaction prior;
-	struct sigaction new;
-	int signal;
-} signal_handler_t;
+#define MAGIC_WORKER 0xD2342412
+	int magic; /* MAGIC_WORKER */
+	/* thread id of worker */
+	pthread_t tid;
+	/* unique id for tracking */
+	int id;
+} worker_t;
 
 typedef struct {
-#define MAGIC_SIGNAL_WORK 0xA201444A
-	int magic; /* MAGIC_SIGNAL_WORK */
-	int signal;
-	conmgr_work_func_t func;
-	void *arg;
-	const char *tag;
-} signal_work_t;
-
-typedef struct {
-#define MAGIC_DEFERRED_FUNC 0xA230403A
-	int magic; /* MAGIC_DEFERRED_FUNC */
-	work_func_t func;
-	void *arg;
-	const char *tag;
-} deferred_func_t;
+#define MAGIC_WATCH_REQUEST 0xD204f412
+	int magic; /* MAGIC_WATCH_REQUEST */
+	bool running_on_worker; /* true if request issues via work */
+	bool blocking; /* true to block if another thread already watching */
+} watch_request_t;
 
 /*
  * Global instance of conmgr
@@ -196,45 +190,32 @@ typedef struct {
 	 * called.
 	 */
 	bool initialized;
+	/* One time per process tasks initialized */
+	bool one_time_initialized;
 	/*
 	 * True if _watch() is running
-	 * Changes protected by watch_mutex
 	 */
 	bool watching;
 	/*
-	 * True if there is a thread for listen queued or running
+	 * Number of watch() instances running on a worker thread (as work)
 	 */
-	bool listen_active;
+	int watch_on_worker;
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
 	bool poll_active;
-	/*
-	 * True if there is a thread reading signal_fd[0]
-	 */
-	bool read_signals_active;
 	/*
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
 	/*
 	 * Is mgr currently quiesced?
-	 * Sends all new work to deferred_funcs() while true
+	 * Defers all new work to while true
 	 */
 	bool quiesced;
-	/* at fork handler installed */
-	bool at_fork_installed;
 	/* will inspect connections (not listeners */
 	bool inspecting;
-	/* if an event signal has already been sent */
-	int event_signaled;
-	/* Event PIPE used to break out of poll */
-	int event_fd[2];
-	/* Signal PIPE to catch POSIX signals */
-	int signal_fd[2];
 
-	/* track when there is a pending signal to read */
-	bool signaled;
 	/* Caller requests finish on error */
 	bool exit_on_error;
 	/* First observed error */
@@ -245,78 +226,118 @@ typedef struct {
 	struct timespec last_time;
 	/* monotonic timer */
 	timer_t timer;
-	/* list of deferred_func_t */
-	list_t *deferred_funcs;
-
-	/* list of all registered signal handlers */
-	signal_handler_t *signal_handlers;
-	int signal_handler_count;
-	/* list of all registered signal work */
-	signal_work_t *signal_work;
-	int signal_work_count;
+	/* list of work_t* */
+	list_t *work;
 
 	/* functions to handle host/port parsing */
 	conmgr_callbacks_t callbacks;
 
 	pthread_mutex_t mutex;
-	/* called after events or changes to wake up _watch */
-	pthread_cond_t cond;
 
-	/* use mutex to wait for watch to finish */
-	pthread_mutex_t watch_mutex;
-	pthread_cond_t watch_cond;
+	struct {
+		/* list of worker_t */
+		list_t *workers;
+
+		/* track simple stats for logging */
+		int active;
+		int total;
+
+		/*
+		 * track shutdown of workers after other work is done or there
+		 * may be no workers to do the work
+		 */
+		bool shutdown_requested;
+
+		/* number of threads */
+		int threads;
+	} workers;
+
+	event_signal_t watch_sleep;
+	event_signal_t watch_return;
+	event_signal_t worker_sleep;
+	event_signal_t worker_return;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
 	(conmgr_t) {\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
-		.cond = PTHREAD_COND_INITIALIZER,\
-		.watch_mutex = PTHREAD_MUTEX_INITIALIZER,\
-		.watch_cond = PTHREAD_COND_INITIALIZER,\
 		.max_connections = -1,\
-		.event_fd = { -1, -1 },\
-		.signal_fd = { -1, -1 },\
 		.error = SLURM_SUCCESS,\
 		.quiesced = true,\
 		.shutdown_requested = true,\
+		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
+		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
+		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \
+		.worker_return = EVENT_INITIALIZER("WORKER_RETURN"), \
 	}
 
 extern conmgr_t mgr;
 
-extern void add_work(bool locked, conmgr_fd_t *con, conmgr_work_func_t func,
-		     conmgr_work_type_t type, void *arg, const char *tag);
-extern void queue_func(bool locked, work_func_t func, void *arg,
-		       const char *tag);
 /*
- * Notify conmgr something happened
- * IN locked - mgr.locked is held by caller
+ * Create new work to run
+ * IN locked - true if calling thread has mgr.mutex already locked
+ * IN callback - callback function details
+ * IN control - controls on when work is run
+ * IN depend_mask - Apply mask against control.depend_type.
+ * 	Mask is intended for work that generates new work (such as signal work)
+ * 	to make it relatively clean to remove a now fullfilled dependency.
+ * 	Ignored if depend_mask=0.
+ * IN caller - __func__ from caller
  */
-extern void signal_change(bool locked);
-extern void init_signal_handler(void);
-extern void fini_signal_handler(void);
-extern void add_signal_work(int signal, conmgr_work_func_t func, void *arg,
-			    const char *tag);
-extern void handle_signals(void *ptr);
+extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
+		     conmgr_work_control_t control,
+		     conmgr_work_depend_t depend_mask, const char *caller);
+
+#define add_work_fifo(locked, _func, func_arg) \
+	add_work(locked, NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, 0, __func__)
+
+#define add_work_con_fifo(locked, con, _func, func_arg) \
+	add_work(locked, con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, 0, __func__)
+
+/*
+ * Clear time delay dependency from work
+ * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
+ * NOTE: caller must call update_timer() after to cause work to requeue
+ * NOTE: caller must hold mgr.mutex lock
+ * RET True if time delay removed
+ */
+extern bool work_clear_time_delay(work_t *work);
+
 extern void cancel_delayed_work(void);
+extern void init_delayed_work(void);
 extern void free_delayed_work(void);
-extern void update_timer(bool locked);
-extern void on_signal_alarm(conmgr_fd_t *con, conmgr_work_type_t type,
-			    conmgr_work_status_t status, const char *tag,
-			    void *arg);
+/* update_timer - Caller must lock mgr.mutex */
+extern void update_timer(void);
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
+extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
-extern void update_last_time(bool locked);
+/* update_last_time - Caller must lock mgr.mutex */
+extern void update_last_time(void);
 
 /*
  * Poll all connections and handle any events
- * IN blocking - non-zero if blocking
+ * IN arg - cast to bool blocking - non-zero if blocking
  */
-extern void watch(void *blocking);
+extern void watch(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Wait for _watch() to finish
  *
- * WARNING: caller must hold mgr.mutex
- * WARNING: mgr.mutex will be released by this call
+ * WARNING: caller MUST hold mgr.mutex
  */
 extern void wait_for_watch(void);
 
@@ -326,39 +347,91 @@ extern void wait_for_watch(void);
  */
 extern void close_con(bool locked, conmgr_fd_t *con);
 
-extern void handle_write(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg);
+/*
+ * Close connection due to poll error
+ *
+ * Note: Removal of fd from poll() will already be handled before calling this
+ * Note: Caller must lock mgr.mutex
+ * IN con - connection that owns fd that had error
+ * IN fd - file descriptor that had an error (probably from poll)
+ * IN rc - error if known
+ */
+extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 
-extern void handle_read(conmgr_fd_t *con, conmgr_work_type_t type,
-			conmgr_work_status_t status, const char *tag,
-			void *arg);
+/*
+ * Set connection polling state
+ * NOTE: Caller must hold mgr.mutex lock.
+ * IN type - Set type of polling for connection or PCTL_TYPE_INVALID to disable
+ *	polling this connection
+ * IN caller - __func__ from caller
+ */
+extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
+			    const char *caller);
 
-extern void wrap_on_data(conmgr_fd_t *con, conmgr_work_type_t type,
-			 conmgr_work_status_t status, const char *tag,
-			 void *arg);
+extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
-extern conmgr_fd_t *add_connection(conmgr_con_type_t type,
-				   conmgr_fd_t *source, int input_fd,
-				   int output_fd,
-				   const conmgr_events_t events,
-				   const slurm_addr_t *addr,
-				   socklen_t addrlen, bool is_listen,
-				   const char *unix_socket_path, void *arg);
+extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
+
+extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
+
+extern int add_connection(conmgr_con_type_t type,
+			  conmgr_fd_t *source, int input_fd,
+			  int output_fd,
+			  const conmgr_events_t events,
+			  const slurm_addr_t *addr,
+			  socklen_t addrlen, bool is_listen,
+			  const char *unix_socket_path, void *arg);
 
 extern void close_all_connections(void);
 
-extern void wrap_on_connection(conmgr_fd_t *con, conmgr_work_type_t type,
-			       conmgr_work_status_t status, const char *tag,
-			       void *arg);
-
 extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
-extern void wrap_con_work(work_t *work, conmgr_fd_t *con);
 
 /*
- * Re-queue all deferred functions
- * WARNING: caller must hold mgr.mutex
+ * Find connection by a given file descriptor
+ * NOTE: Caller must hold mgr.mutex lock
+ * IN fd - file descriptor to use to search
+ * RET ptr or NULL if not found
  */
-extern void requeue_deferred_funcs(void);
+extern conmgr_fd_t *con_find_by_fd(int fd);
+
+/*
+ * Wrap work requested to notify mgr when that work is complete
+ */
+extern void wrap_work(work_t *work);
+
+/*
+ * Notify all worker thread to shutdown.
+ * Wait until all work and workers have completed their work (and exited).
+ * Note: Caller MUST hold conmgr lock
+ */
+extern void workers_shutdown(void);
+
+/*
+ * Initialize worker threads
+ * IN count - number of workers to add
+ * Note: Caller must hold conmgr lock
+ */
+extern void workers_init(int count);
+
+/*
+ * Release worker threads
+ * Will stop all workers (eventually).
+ * Note: Caller must hold conmgr lock
+ */
+extern void workers_fini(void);
+
+/*
+ * Change con->type
+ * NOTE: caller must hold mgr.mutex lock
+ * IN con - connection to change
+ * IN type - type to change to
+ * RET SLURM_SUCESS or error
+ */
+extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
+
+/*
+ * Wraps on_connection() callback
+ */
+extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 
 #endif /* _CONMGR_MGR_H */

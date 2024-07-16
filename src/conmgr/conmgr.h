@@ -37,8 +37,10 @@
 #define _CONMGR_H
 
 #include <netdb.h>
+#include <sys/socket.h>
 
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
@@ -100,12 +102,14 @@ typedef struct {
 
 	/*
 	 * Call back when connection ended.
-	 * Called once per connection.
+	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
-	 * 	must free arg as required.
+	 * IN con - connection handler
+	 * IN arg - ptr to be handed return of on_connection().
+	 * 	Ownership of arg pointer returned to caller as it will not be
+	 * 	used anymore.
 	 */
-	void (*on_finish)(void *arg);
+	void (*on_finish)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
 typedef struct {
@@ -139,28 +143,85 @@ typedef enum {
 extern const char *conmgr_work_status_string(conmgr_work_status_t status);
 
 typedef enum {
-	CONMGR_WORK_TYPE_INVALID = 0,
-	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
-	CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, /* call once all connection writes complete then FIFO */
-	CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO, /* call once time delay completes then FIFO */
-	CONMGR_WORK_TYPE_FIFO, /* non-connection work ordered by FIFO */
-	CONMGR_WORK_TYPE_TIME_DELAY_FIFO, /* call once time delay completes then FIFO */
-	CONMGR_WORK_TYPE_MAX /* place holder */
-} conmgr_work_type_t;
+	CONMGR_WORK_SCHED_INVALID = 0,
+	/* work scheduled by FIFO */
+	CONMGR_WORK_SCHED_FIFO = SLURM_BIT(0),
+} conmgr_work_sched_t;
 
-extern const char *conmgr_work_type_string(conmgr_work_type_t type);
+/* RET caller must xfree() */
+extern char *conmgr_work_sched_string(conmgr_work_sched_t type);
+
+typedef enum {
+	CONMGR_WORK_DEP_INVALID = 0,
+	/* specify work has no dependencies */
+	CONMGR_WORK_DEP_NONE = SLURM_BIT(1),
+	/* call once all connection writes complete */
+	CONMGR_WORK_DEP_CON_WRITE_COMPLETE = SLURM_BIT(2),
+	/* call once time delay completes */
+	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
+	/* call every time signal is received */
+	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4),
+} conmgr_work_depend_t;
+
+/* RET caller must xfree() */
+extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
+
+typedef struct {
+	/* UNIX timestamp when to work can begin */
+	time_t seconds;
+	/* Additional Nanoseconds after seconds to delay */
+	long nanoseconds;
+} conmgr_work_time_begin_t;
+
+/*
+ * Calculate the absolute start time from delayed time
+ * IN delay_seconds - Number of seconds to delay from current time
+ * IN delay_nanoseconds - Number of additional nanoseconds to delay from
+ *	delay_seconds
+ */
+extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
+	time_t delay_seconds,
+	long delay_nanoseconds);
+
+typedef struct {
+	/* ptr to relevant connection (or NULL) */
+	conmgr_fd_t *con;
+	/*
+	 * Work status
+	 * Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know
+	 *	when a shutdown has been triggered and to just cleanup instead
+	 *	of doing the work.
+	 */
+	conmgr_work_status_t status;
+} conmgr_callback_args_t;
 
 /*
  * Prototype for all conmgr callbacks
- * IN con - ptr to relavent connection (or NULL)
- * IN type - work type
- * IN status - work status
- * IN tag - logging tag for work
- * IN arg - arbitrary pointer
+ * IN conmgr_args - Args relaying conmgr callback state
+ * IN func_arg - arbitrary pointer passed directly
  */
-typedef void (*conmgr_work_func_t)(conmgr_fd_t *con, conmgr_work_type_t type,
-				   conmgr_work_status_t status,
-				   const char *tag, void *arg);
+typedef void (*conmgr_work_func_t)(conmgr_callback_args_t conmgr_args,
+				   void *arg);
+
+typedef struct {
+	conmgr_work_func_t func;
+	void *arg;
+	const char *func_name;
+} conmgr_callback_t;
+
+typedef struct {
+	/* Bitflags to control how work is priority scheduled */
+	conmgr_work_sched_t schedule_type;
+
+	/* Bitflags to activate work Dependencies */
+	conmgr_work_depend_t depend_type;
+
+	/* set if (depend_type & CONMGR_WORK_DEP_TIME_DELAY) */
+	conmgr_work_time_begin_t time_begin;
+
+	/* set if (depend_type & CONMGR_WORK_DEP_SIGNAL) */
+	int on_signal_number;
+} conmgr_work_control_t;
 
 /*
  * conmgr can handle RPC or raw connections
@@ -171,16 +232,18 @@ typedef enum {
 	CON_TYPE_RPC, /* handle data Slurm RPCs to/from */
 	CON_TYPE_MAX /* place holder - do not use */
 } conmgr_con_type_t;
+extern const char *conmgr_con_type_string(conmgr_con_type_t type);
 
 /*
  * Initialise global connection manager
- * workq_init() must be called prior to calling conmgr_init().
  * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
  * IN callbacks - struct containing function pointers
+ * WARNING: Never queue as work for conmgr or call from work run by conmgr.
  */
 extern void conmgr_init(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks);
+/* WARNING: Never queue as work for conmgr or call from work run by conmgr. */
 extern void conmgr_fini(void);
 
 /*
@@ -239,6 +302,25 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
 					 void *arg);
 
 /*
+ * Queue up work to receive new connection (file descriptor via socket)
+ * IN src - source connection to receive file descriptor
+ * IN type connection type for fd
+ * IN events call backs on events of fd
+ * IN arg ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+				   const conmgr_events_t events, void *arg);
+
+/*
+ * Queue send file descriptor over connection
+ * IN con - connection to send file descriptor over
+ * IN fd - file descriptor to send (must not be managed by conmgr)
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd);
+
+/*
  * Write binary data to connection (from callback).
  * NOTE: type=CON_TYPE_RAW only
  * IN con connection manager connection struct
@@ -246,8 +328,8 @@ extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
  * IN bytes number of bytes in buffer to write
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_queue_write_fd(conmgr_fd_t *con, const void *buffer,
-				 const size_t bytes);
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes);
 
 /*
  * Write packed msg to connection (from callback).
@@ -266,22 +348,62 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
 extern void conmgr_queue_close_fd(conmgr_fd_t *con);
 
 /*
- * create sockets based on requested SOCKET_LISTEN
- * to accepted connections.
- * IN type connection type for fd
- * IN  hostports list_t* of cstrings to listen on.
- *	format: host:port
- * IN events function callback on events
- * IN arg ptr handed to on_connection callback
+ * Change connection mode
+ * IN con - conmgr connection ptr
+ * IN type - change connection to new type
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_create_sockets(conmgr_con_type_t type, list_t *hostports,
-				 conmgr_events_t events, void *arg);
+extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
+
+/*
+ * Create listening socket
+ * IN type - connection type for new sockets
+ * IN listen_on - cstrings to listen on:
+ *	formats:
+ *		host:port
+ *		unix:/path/to/socket
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+					const char *listen_on,
+					conmgr_events_t events, void *arg);
+
+/*
+ * Create listening sockets from list of host:port pairs
+ * IN type - connection type for new sockets
+ * IN hostports - list_t* of cstrings to listen on:
+ *	formats:
+ *		host:port
+ *		unix:/path/to/socket
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					list_t *hostports,
+					conmgr_events_t events, void *arg);
+
+/*
+ * Instruct conmgr to create new socket and connect to addr
+ * IN type - connection for new socket
+ * IN addr - destination address to connect() socket
+ * IN addrlen - sizeof(*addr)
+ * IN events - function callback on events
+ * IN arg - arbitrary ptr handed to on_connection callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					slurm_addr_t *addr, socklen_t addrlen,
+					conmgr_events_t events, void *arg);
 
 /*
  * Run connection manager main loop for until all processing is done
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
+ * WARNING: Do not call with blocking=true from side of conmgr work or
+ *	conmgr_run() will never return
  */
 extern int conmgr_run(bool blocking);
 
@@ -300,48 +422,140 @@ extern void conmgr_request_shutdown(void);
 extern void conmgr_quiesce(bool wait);
 
 /*
+ * Add work to run
+ * IN con - connection to run work or NULL
+ * IN callback - callback function details
+ * IN control - work controls to determine when work is run
+ * IN caller - __func__ from caller for logging
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
+			    conmgr_work_control_t control, const char *caller);
+
+/*
+ * Add work to run
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_fifo(_func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add work to run for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_fifo(con, _func, func_arg) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_NONE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add work to run when all pendings writes are complete for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_write_complete_fifo(con, _func, func_arg) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = \
+				CONMGR_WORK_DEP_CON_WRITE_COMPLETE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add time delayed work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_delayed_fifo(_func, func_arg, delay_seconds, \
+				     delay_nanoseconds) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_TIME_DELAY, \
+			.time_begin = \
+				conmgr_calc_work_time_delay(delay_seconds, \
+							    delay_nanoseconds),\
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add time delayed work for connection
+ * IN con - connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * IN delay_second - number of seconds to delay running work
+ * IN delay_nanosecond - number of nanoseconds to delay running work
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_add_work_con_delayed_fifo(con, _func, func_arg, delay_seconds, \
+					 delay_nanoseconds) \
+	conmgr_add_work(con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_TIME_DELAY, \
+			.time_begin = \
+				conmgr_calc_work_time_delay(delay_seconds, \
+							    delay_nanoseconds),\
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
  * Add work to call on signal received
  * IN signal - Signal number to watch
  * IN func - function pointer to run work
  * 	Will be run after signal is received and not in signal handler itself.
  * IN type - type of work
  * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
  * NOTE: never add a thread that will never return or conmgr_run() will never
  * return either.
  */
-extern void conmgr_add_signal_work(int signal, conmgr_work_func_t func,
-				   void *arg, const char *tag);
-
-/*
- * Add work for connection manager
- * NOTE: only call from within an conmgr_events_t callback
- * IN con - connection to assign work or NULL for non-connection related work
- * IN func - function pointer to run work
- * IN type - type of work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or conmgr_run() will never
- * return either.
- */
-extern void conmgr_add_work(conmgr_fd_t *con, conmgr_work_func_t func,
-			    conmgr_work_type_t type, void *arg,
-			    const char *tag);
-
-/*
- * Add time delayed work for connection manager
- * IN con - connection to assign work or NULL for non-connection related work
- * IN func - function pointer to run work
- * IN type - type of work
- * IN arg - arg to hand to function pointer
- * IN tag - tag used in logging this function
- * NOTE: never add a thread that will never return or conmgr_run() will never
- * return either.
- */
-extern void conmgr_add_delayed_work(conmgr_fd_t *con,
-				    conmgr_work_func_t func, time_t seconds,
-				    long nanoseconds, void *arg,
-				    const char *tag);
+#define conmgr_add_work_signal(signal_number, _func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_SIGNAL, \
+			.on_signal_number = signal_number, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
 
 /*
  * Control if conmgr will exit on any error
@@ -438,7 +652,7 @@ typedef struct {
 	bool is_listen;
 	/* has this connection received read EOF */
 	bool read_eof;
-	/* has this connection called on_connection */
+	/* has this connection been fully established with remote */
 	bool is_connected;
 } conmgr_fd_status_t;
 
