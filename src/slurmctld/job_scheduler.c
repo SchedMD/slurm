@@ -55,6 +55,7 @@
 #endif
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/group_cache.h"
 #include "src/common/job_features.h"
@@ -2457,6 +2458,63 @@ static job_record_t *_het_job_ready(job_record_t *job_ptr)
 	return het_job_leader;
 }
 
+static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
+{
+	if (job->name)
+		env_array_append(&launch->environment, "SLURM_JOB_NAME",
+				 job->name);
+
+	if (job->details->open_mode) {
+		/* Propagate mode to spawned job using environment variable */
+		if (job->details->open_mode == OPEN_MODE_APPEND)
+			env_array_overwrite(&launch->environment,
+					    "SLURM_OPEN_MODE", "a");
+		else
+			env_array_overwrite(&launch->environment,
+					    "SLURM_OPEN_MODE", "t");
+	}
+
+	if (job->details->dependency)
+		env_array_overwrite(&launch->environment,
+				    "SLURM_JOB_DEPENDENCY",
+				    job->details->dependency);
+
+	/* intentionally skipping SLURM_EXPORT_ENV */
+
+	if (job->profile) {
+		char tmp[128];
+		acct_gather_profile_to_string_r(job->profile, tmp);
+		env_array_overwrite(&launch->environment, "SLURM_PROFILE", tmp);
+	}
+
+	if (job->details->acctg_freq)
+		env_array_overwrite(&launch->environment, "SLURM_ACCTG_FREQ",
+				    job->details->acctg_freq);
+
+#ifdef HAVE_NATIVE_CRAY
+	if (job->network)
+		env_array_overwrite(&launch->environment, "SLURM_NETWORK",
+				    job->network);
+#endif
+
+	if (job->details->cpu_freq_min || job->details->cpu_freq_max ||
+	    job->details->cpu_freq_gov) {
+		char *tmp = cpu_freq_to_cmdline(job->details->cpu_freq_min,
+						job->details->cpu_freq_max,
+						job->details->cpu_freq_gov);
+
+		if (tmp)
+			env_array_overwrite(&launch->environment,
+					    "SLURM_CPU_FREQ_REQ", tmp);
+
+		xfree(tmp);
+	}
+
+	/* update size of env in case it changed */
+	if (launch->environment)
+		launch->envc = PTR_ARRAY_SIZE(launch->environment) - 1;
+}
+
 /*
  * Set some hetjob environment variables. This will include information
  * about multiple job components (i.e. different slurmctld job records).
@@ -2685,6 +2743,8 @@ extern void launch_job(job_record_t *job_ptr)
 		return;
 	if (launch_job_ptr->het_job_id)
 		_set_het_job_env(launch_job_ptr, launch_msg_ptr);
+
+	_set_job_env(launch_job_ptr, launch_msg_ptr);
 
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
