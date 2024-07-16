@@ -55,6 +55,7 @@
 #include <grp.h>
 #include <pthread.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -92,7 +93,6 @@
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
@@ -210,7 +210,6 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _handle_connection(int fd, slurm_addr_t *client);
-static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
@@ -234,7 +233,6 @@ static int       _slurmd_fini(void);
 static void _try_to_reconfig(void);
 static void      _update_nice(void);
 static void      _usage(void);
-static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
@@ -272,11 +270,59 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg);
  *    controller use).
 \**************************************************************************/
 
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGINT. Shutting down.");
+	slurmd_shutdown(SIGINT);
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTERM. Shutting down.");
+	slurmd_shutdown(SIGTERM);
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGQUIT. Ignoring");
+}
+
+static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTSTP. Ignoring");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGHUP. Triggering reconfigure.");
+	_reconfig = 1;
+}
+
+static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR1. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR2. Triggering logging update.");
+	_update_log = 1;
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
+static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGTTIN. Ignoring.");
+}
+
 int
 main (int argc, char **argv)
 {
 	uint32_t curr_uid = 0;
-	int blocked_signals[] = {SIGPIPE, 0};
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	run_args_t args = {
 		.magic = RUN_ARGS_MAGIC,
@@ -330,12 +376,6 @@ main (int argc, char **argv)
 		      slurmd_user, slurm_conf.slurm_user_id, curr_user);
 	}
 
-	xsignal(SIGTERM, slurmd_shutdown);
-	xsignal(SIGINT,  slurmd_shutdown);
-	xsignal(SIGHUP,  _hup_handler);
-	xsignal(SIGUSR2, _usr_handler);
-	xsignal_block(blocked_signals);
-
 	debug3("slurmd initialization successful");
 
 	/*
@@ -350,6 +390,16 @@ main (int argc, char **argv)
 	debug3("finished daemonize");
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
 	conmgr_add_work_fifo(_run, &args);
 
@@ -2494,22 +2544,7 @@ extern void slurmd_shutdown(int signum)
 		_shutdown = 1;
 		if (msg_pthread && (pthread_self() != msg_pthread))
 			pthread_kill(msg_pthread, SIGTERM);
-	}
-}
-
-static void
-_hup_handler(int signum)
-{
-	if (signum == SIGHUP) {
-		_reconfig = 1;
-	}
-}
-
-static void
-_usr_handler(int signum)
-{
-	if (signum == SIGUSR2) {
-		_update_log = 1;
+		conmgr_request_shutdown();
 	}
 }
 
