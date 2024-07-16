@@ -288,6 +288,9 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	} else {
 		xassert(false);
 	}
+
+	xfree(out_str);
+	xfree(in_str);
 }
 
 static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
