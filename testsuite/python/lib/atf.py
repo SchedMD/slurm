@@ -20,6 +20,9 @@ import sys
 import time
 import traceback
 
+# slurmrestd
+import requests
+
 
 ##############################################################################
 # ATF module functions
@@ -594,6 +597,10 @@ def start_slurm(clean=False, quiet=False):
     # Start slurmctld
     start_slurmctld(clean, quiet)
 
+    # Start slurmrestd if required
+    if "slurmrestd_version" in properties:
+        start_slurmrestd()
+
     # Build list of slurmds
     slurmd_list = []
     output = run_command_output(
@@ -760,6 +767,14 @@ def stop_slurm(fatal=True, quiet=False):
     else:
         return True
 
+    # Stop slurmrestd if was started
+    if "slurmrestd" in properties:
+        properties["slurmrestd"].send_signal(signal.SIGINT)
+        try:
+            properties["slurmrestd"].wait(timeout=60)
+        except:
+            properties["slurmrestd"].kill()
+
 
 def restart_slurmctld(clean=False, quiet=False):
     """Restarts the Slurm controller daemon (slurmctld).
@@ -836,6 +851,102 @@ def require_slurm_running():
 
     # As a side effect, build up initial nodes dictionary
     nodes = get_nodes(quiet=True)
+
+
+def request_slurmrestd(request):
+    """Returns the slurmrestd response of a given request.
+    It needs slurmrestd to be running (see require_slurmrestd())
+    """
+    return requests.get(
+        f"{properties['slurmrestd_url']}/{request}",
+        headers=properties["slurmrestd-headers"],
+    )
+
+
+def require_openapi_generator(version="7.3.0"):
+    """Generates an OpenAPI client using OpenAPI-Generator, or skips if not available (even in auto-config).
+    It needs slurmrestd to be running (see require_slurmrestd()).
+    It also sets the necessary OPENAPI_GENERATOR_VERSION and JAVA_OPTS
+    environment variables.
+    Args:
+        version (string): the required version.
+
+    Returns:
+        None
+    """
+
+    # Require specific testing version
+    os.environ["OPENAPI_GENERATOR_VERSION"] = version
+
+    # Work around: https://github.com/OpenAPITools/openapi-generator/issues/13684
+    os.environ[
+        "JAVA_OPTS"
+    ] = "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+
+    ogc_version = run_command_output("openapi-generator-cli version")
+    if ogc_version.strip().split("\n")[-1] != version:
+        pytest.skip(
+            "test requires openapi-generator-cli version {version}",
+            allow_module_level=True,
+        )
+
+    # allow pointing to an existing OpenAPI generated client
+    if "SLURM_TESTSUITE_OPENAPI_CLIENT" in os.environ:
+        pyapi_path = f"{os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT']}/pyapi/"
+        spec_path = f"{os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT']}/openapi.json"
+    else:
+        pyapi_path = f"{module_tmp_path}/pyapi/"
+        spec_path = f"{module_tmp_path}/openapi.json"
+
+        r = requests.get(
+            f"{properties['slurmrestd_url']}/openapi/v3",
+            headers=properties["slurmrestd-headers"],
+        )
+        if r.status_code != 200:
+            fail(f"Error requesting openapi specs from slurmrestd: {r}")
+
+        with open(spec_path, "w") as f:
+            f.write(r.text)
+            f.close()
+        run_command(
+            f"openapi-generator-cli generate -i '{spec_path}' -g python-pydantic-v1 --strict-spec=true -o '{pyapi_path}'",
+            fatal=True,
+            timeout=60,
+        )
+
+    sys.path.insert(0, pyapi_path)
+
+    import openapi_client
+
+    properties["openapi_config"] = openapi_client.Configuration()
+    properties["openapi_config"].host = properties["slurmrestd_url"]
+    properties["openapi_config"].access_token = properties["slurmrestd-headers"][
+        "X-SLURM-USER-TOKEN"
+    ]
+
+
+def openapi_slurm():
+    """
+    Returns a SlurmApi client from OpenAPI.
+    It needs require_openapi_generator() to be run first.
+    """
+    import openapi_client
+
+    return openapi_client.SlurmApi(
+        openapi_client.ApiClient(properties["openapi_config"])
+    )
+
+
+def openapi_slurmdb():
+    """
+    Returns a SlurmdbApi client from OpenAPI.
+    It needs require_openapi_generator() to be run first.
+    """
+    import openapi_client
+
+    return openapi_client.SlurmdbApi(
+        openapi_client.ApiClient(properties["openapi_config"])
+    )
 
 
 def backup_config_file(config="slurm"):
@@ -1632,6 +1743,99 @@ def require_accounting(modify=False):
                 "This test requires accounting to be configured",
                 allow_module_level=True,
             )
+
+
+def require_slurmrestd(version="v0.0.40"):
+    if properties["auto-config"]:
+        properties["slurmrestd_version"] = version
+    elif "SLURM_TESTSUITE_SLURMRESTD_URL" in os.environ:
+        properties["slurmrestd_url"] = os.environ["SLURM_TESTSUITE_SLURMRESTD_URL"]
+
+        # Check version is the expected one
+        r = atf.request_slurmrestd("openapi/v3")
+        if r.status_code != 200:
+            pytest.skip(
+                f"Unable to obtain openapi specs from {SLURM_TESTSUITE_SLURMRESTD_URL}: {r}",
+                allow_module_level=True,
+            )
+
+        spec = r.json()
+        if (
+            f"/slurm/{version}/jobs/" not in spec["paths"].keys()
+            or f"/slurmdb/{version}/jobs/" not in spec["paths"].keys()
+        ):
+            pytest.skip(
+                f"Slurmrestd in {SLURM_TESTSUITE_SLURMRESTD_URL} not using the required version {version}",
+                allow_module_level=True,
+            )
+    else:
+        pytest.skip(
+            "This test requires to start slurmrestd or SLURM_TESTSUITE_SLURMRESTD_URL",
+            allow_module_level=True,
+        )
+
+
+def start_slurmrestd():
+    os.environ["SLURM_JWT"] = "daemon"
+    port = None
+
+    while not port:
+        port = get_open_port()
+        logging.debug(f"trying restd on port {port}")
+        properties["slurmrestd"] = subprocess.Popen(
+            [
+                "slurmrestd",
+                "-a",
+                "jwt",
+                "-s",
+                "slurmctld,slurmdbd",
+                "-d",
+                properties["slurmrestd_version"],
+                f"localhost:{port}",
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        s = None
+
+        for i in range(100):
+            if properties["slurmrestd"].poll():
+                break
+
+            try:
+                s = socket.create_connection(("localhost", port))
+                break
+            except Exception as e:
+                logging.debug(f"Unable to connect to port {port}: {e}")
+            time.sleep(1)
+
+        if s:
+            s.close()
+            break
+
+        logging.debug(f"slurmrestd accepting on port {port} but is still running")
+        properties["slurmrestd"].kill()
+        properties["slurmrestd"].wait()
+        port = None
+
+    del os.environ["SLURM_JWT"]
+
+    properties["slurmrestd_url"] = f"http://localhost:{port}/"
+
+    # Create the headers with the token to connect later
+    token = (
+        run_command_output("scontrol token lifespan=600", fatal=True)
+        .replace("SLURM_JWT=", "")
+        .replace("\n", "")
+    )
+    if token == "":
+        fatal("unable to get auth/jwt token")
+
+    properties["slurmrestd-headers"] = {
+        "X-SLURM-USER-NAME": get_user_name(),
+        "X-SLURM-USER-TOKEN": token,
+    }
 
 
 def get_user_name():
