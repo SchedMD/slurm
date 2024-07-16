@@ -56,7 +56,6 @@
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
