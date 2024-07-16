@@ -787,6 +787,9 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		slurm_addr_t addr = {0};
 		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 
+		if (fd < 0)
+			fatal("%s: socket() failed: %m", __func__);
+
 		unixsock += sizeof(UNIX_PREFIX) - 1;
 		if (unixsock[0] == '\0')
 			fatal("%s: [%s] Invalid UNIX socket",
