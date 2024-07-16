@@ -152,6 +152,7 @@ static void _init_signal_handler(void)
 	}
 }
 
+/* mgr.mutex should be locked */
 static void _on_signal(int signal)
 {
 	bool matched = false;
@@ -174,7 +175,7 @@ static void _on_signal(int signal)
 			continue;
 
 		matched = true;
-		add_work(false, NULL, work->callback, work->control,
+		add_work(true, NULL, work->callback, work->control,
 			 ~CONMGR_WORK_DEP_SIGNAL, __func__);
 	}
 
@@ -230,6 +231,7 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 
 	conmgr_fd_get_in_buffer(con, &data, &bytes);
 
+	slurm_mutex_lock(&mgr.mutex);
 	while ((read + sizeof(signo)) <= bytes) {
 		signo = *(int *) (data + read);
 
@@ -237,6 +239,7 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 
 		read += sizeof(signo);
 	}
+	slurm_mutex_unlock(&mgr.mutex);
 
 	conmgr_fd_mark_consumed_in_buffer(con, read);
 
