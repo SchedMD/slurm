@@ -67,7 +67,7 @@ static uid_t job_uid;
 static bool local_xauthority = false;
 static char hostname[HOST_NAME_MAX] = {0};
 
-static eio_handle_t *eio_handle;
+static eio_handle_t *eio_handle = NULL;
 
 /* Target salloc/srun host/port */
 static slurm_addr_t alloc_node;
