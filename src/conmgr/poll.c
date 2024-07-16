@@ -588,6 +588,7 @@ extern void pollctl_interrupt(const char *caller)
 	} else {
 		pctl.interrupt.requested++;
 
+		/* Check for duplicate requests. */
 		if (pctl.interrupt.requested == 1) {
 			fd = pctl.interrupt.send;
 			xassert(!pctl.interrupt.sending);
