@@ -1017,6 +1017,8 @@ _cpu_freq_setup_data(stepd_step_rec_t *step, int cpx)
 	/* If no --cpu-freq, use default governor from conf file. */
 	if (step->cpu_freq_gov == NO_VAL)
 		step->cpu_freq_gov = slurm_conf.cpu_freq_def;
+	if (step->cpu_freq_gov == NO_VAL)
+		return;
 
 	/* Get current state */
 	if (_cpu_freq_current_state(cpx) == SLURM_ERROR)

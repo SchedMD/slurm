@@ -95,6 +95,8 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/filetxt - Fix truncation of job record lines > 1024 characters.
  -- Fixed regression that prevented compilation on FreeBSD hosts.
  -- switch/hpe_slingshot - Drain node on failure to delete CXI services.
+ -- Fix a performance regression from 23.11.0 in cpu frequency handling when no
+    CpuFreqDef is defined.
 
 * Changes in Slurm 24.05.1
 ==========================
