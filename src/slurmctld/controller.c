@@ -242,16 +242,6 @@ static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
 
-/*
- * Static list of signals to block in this process
- * *Must be zero-terminated*
- */
-static int controller_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
-};
-
 typedef struct primary_thread_arg {
 	pid_t cpid;
 	char *prog_type;
@@ -284,7 +274,6 @@ static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
-static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 static int _try_to_reconfig(void);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
@@ -342,6 +331,102 @@ static void _attempt_reconfig(void)
 	}
 
 	recover = 2;
+}
+
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGINT received");
+	slurmctld_shutdown();
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGTERM received");
+	slurmctld_shutdown();
+}
+
+static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGCHLD. Ignoring");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGQUIT. Ignoring");
+}
+
+static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTSTP. Ignoring");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Reconfigure signal (SIGHUP) received");
+	reconfig = true;
+	slurmctld_shutdown();
+}
+
+static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR1. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	static const slurmctld_lock_t conf_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	info("Logrotate signal (SIGUSR2) received");
+
+	lock_slurmctld(conf_write_lock);
+	update_logging();
+	slurmscriptd_update_log_level(slurm_conf.slurmctld_debug, true);
+	unlock_slurmctld(conf_write_lock);
+
+	if (jobcomp_g_set_location())
+		error("%s: JobComp set location operation failed on SIGUSR2",
+		      __func__);
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
+static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGTTIN. Ignoring.");
+}
+
+static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGXCPU. Ignoring.");
+}
+
+static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("SIGABRT received");
+	slurmctld_shutdown();
+	dump_core = true;
+}
+
+static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
+				      void *arg)
+{
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGCHLD, _on_sigchld, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
+	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
+	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
 }
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -445,12 +530,7 @@ int main(int argc, char **argv)
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
-	/*
-	 * This must happen before we spawn any threads
-	* which are not designed to handle them
-	*/
-	if (xsignal_block(controller_sigarray) < 0)
-		error("Unable to block signals");
+	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -741,12 +821,6 @@ int main(int argc, char **argv)
 		 */
 		slurm_thread_create(&slurmctld_config.thread_id_rpc,
 				    _slurmctld_rpc_mgr, NULL);
-
-		/*
-		 * create attached thread for signal handling
-		 */
-		slurm_thread_create(&slurmctld_config.thread_id_sig,
-				    _slurmctld_signal_hand, NULL);
 
 		/*
 		 * create attached thread for state save
@@ -1252,68 +1326,6 @@ extern void queue_job_scheduler(void)
 	slurm_mutex_lock(&sched_cnt_mutex);
 	job_sched_cnt++;
 	slurm_mutex_unlock(&sched_cnt_mutex);
-}
-
-/* _slurmctld_signal_hand - Process daemon-wide signals */
-static void *_slurmctld_signal_hand(void *no_data)
-{
-	int sig;
-	int i, rc;
-	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
-	sigset_t set;
-	slurmctld_lock_t conf_write_lock = { .conf = WRITE_LOCK };
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "sigmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "sigmgr");
-	}
-#endif
-
-	/* Make sure no required signals are ignored (possibly inherited) */
-	for (i = 0; sig_array[i]; i++)
-		xsignal_default(sig_array[i]);
-
-	sigfillset(&set);
-	xsignal_set_mask(&set);
-	xsignal_sigset_create(sig_array, &set);
-
-	while (1) {
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGINT:	/* kill -2  or <CTRL-C> */
-		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_shutdown();
-			return NULL;	/* Normal termination */
-			break;
-		case SIGHUP:	/* kill -1 */
-			info("Reconfigure signal (SIGHUP) received");
-			reconfig = true;
-			slurmctld_shutdown();
-			return NULL;
-			break;
-		case SIGABRT:	/* abort */
-			info("SIGABRT received");
-			slurmctld_shutdown();
-			dump_core = true;
-			return NULL;
-		case SIGUSR2:
-			info("Logrotate signal (SIGUSR2) received");
-			lock_slurmctld(conf_write_lock);
-			update_logging();
-			slurmscriptd_update_log_level(
-				slurm_conf.slurmctld_debug, true);
-			unlock_slurmctld(conf_write_lock);
-			if (jobcomp_g_set_location() != SLURM_SUCCESS)
-				error("%s: JobComp set location operation failed on SIGUSR2",
-				      __func__);
-			break;
-		default:
-			error("Invalid signal (%d) received", sig);
-		}
-	}
 }
 
 static void _sig_handler(int signal)
