@@ -57,6 +57,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/priority.h"
@@ -76,7 +78,6 @@
 
 static int          _background_process_msg(slurm_msg_t * msg);
 static void *       _background_rpc_mgr(void *no_data);
-static void *       _background_signal_hand(void *no_data);
 static void         _backup_reconfig(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
@@ -105,15 +106,21 @@ static int		shutdown_rc = SLURM_SUCCESS;
 static int		shutdown_thread_cnt = 0;
 static int		shutdown_timeout = 0;
 
-/*
- * Static list of signals to block in this process
- * *Must be zero-terminated*
- */
-static int backup_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
-};
+extern void backup_on_sighup(void)
+{
+	/* Locks: Write configuration, job, node, and partition */
+	slurmctld_lock_t config_write_lock = {
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	/*
+	 * XXX - need to shut down the scheduler
+	 * plugin, re-read the configuration, and then
+	 * restart the (possibly new) plugin.
+	 */
+	lock_slurmctld(config_write_lock);
+	_backup_reconfig();
+	unlock_slurmctld(config_write_lock);
+}
 
 /*
  * run_backup - this is the backup controller, it should run in standby
@@ -140,20 +147,11 @@ void run_backup(void)
 	slurm_cond_broadcast(&slurmctld_config.backup_finish_cond);
 	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
 
-	if (xsignal_block(backup_sigarray) < 0)
-		error("Unable to block signals");
-
 	/*
 	 * create attached thread to process RPCs
 	 */
 	slurm_thread_create(&slurmctld_config.thread_id_rpc,
 			    _background_rpc_mgr, NULL);
-
-	/*
-	 * create attached thread for signal handling
-	 */
-	slurm_thread_create(&slurmctld_config.thread_id_sig,
-			    _background_signal_hand, NULL);
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
@@ -344,60 +342,6 @@ void run_backup(void)
 	}
 	select_g_select_nodeinfo_set_all();
 	unlock_slurmctld(config_write_lock);
-}
-
-/*
- * _background_signal_hand - Process daemon-wide signals for the
- *	backup controller
- */
-static void *_background_signal_hand(void *no_data)
-{
-	int sig, rc;
-	sigset_t set;
-	/* Locks: Write configuration, job, node, and partition */
-	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-
-	while (slurmctld_config.shutdown_time == 0) {
-		xsignal_sigset_create(backup_sigarray, &set);
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGINT:	/* kill -2  or <CTRL-C> */
-		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_shutdown();
-			return NULL;	/* Normal termination */
-			break;
-		case SIGHUP:    /* kill -1 */
-			info("Reconfigure signal (SIGHUP) received");
-			/*
-			 * XXX - need to shut down the scheduler
-			 * plugin, re-read the configuration, and then
-			 * restart the (possibly new) plugin.
-			 */
-			lock_slurmctld(config_write_lock);
-			_backup_reconfig();
-			unlock_slurmctld(config_write_lock);
-			break;
-		case SIGABRT:   /* abort */
-			info("SIGABRT received");
-			slurmctld_shutdown();
-			dump_core = true;
-			return NULL;    /* Normal termination */
-			break;
-		case SIGUSR2:
-			info("Logrotate signal (SIGUSR2) received");
-			lock_slurmctld(config_write_lock);
-			update_logging();
-			unlock_slurmctld(config_write_lock);
-			break;
-		default:
-			error("Invalid signal (%d) received", sig);
-		}
-	}
-	return NULL;
 }
 
 static void _sig_handler(int signal)

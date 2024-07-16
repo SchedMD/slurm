@@ -510,6 +510,9 @@ extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked);
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void);
 
+/* Handle SIGHUP while in backup mode */
+extern void backup_on_sighup(void);
+
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 extern void batch_requeue_fini(job_record_t *job_ptr);

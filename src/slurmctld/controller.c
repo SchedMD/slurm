@@ -362,6 +362,12 @@ static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Reconfigure signal (SIGHUP) received");
+
+	if (!slurmctld_primary) {
+		backup_on_sighup();
+		return;
+	}
+
 	reconfig = true;
 	slurmctld_shutdown();
 }
@@ -381,10 +387,11 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 
 	lock_slurmctld(conf_write_lock);
 	update_logging();
-	slurmscriptd_update_log_level(slurm_conf.slurmctld_debug, true);
+	if (slurmctld_primary)
+		slurmscriptd_update_log_level(slurm_conf.slurmctld_debug, true);
 	unlock_slurmctld(conf_write_lock);
 
-	if (jobcomp_g_set_location())
+	if (slurmctld_primary && jobcomp_g_set_location())
 		error("%s: JobComp set location operation failed on SIGUSR2",
 		      __func__);
 }
