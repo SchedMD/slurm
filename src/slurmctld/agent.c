@@ -89,7 +89,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/uid.h"
-#include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -207,7 +206,6 @@ static void _queue_update_node(char *node_name);
 static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
-static void _sig_handler(int dummy);
 static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
@@ -968,7 +966,6 @@ static void *_thread_per_group_rpc(void *args)
 	list_t *ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
-	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -981,8 +978,6 @@ static void *_thread_per_group_rpc(void *args)
 	uint32_t job_id;
 
 	xassert(args != NULL);
-	xsignal(SIGUSR1, _sig_handler);
-	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
 			(msg_type == REQUEST_KILL_PREEMPTED)	||
 			(msg_type == REQUEST_TERMINATE_JOB) );
@@ -1314,14 +1309,6 @@ cleanup:
 	slurm_cond_signal(thread_cond_ptr);
 	slurm_mutex_unlock(thread_mutex_ptr);
 	return NULL;
-}
-
-/*
- * Signal handler.  We are really interested in interrupting hung communictions
- * and causing them to return EINTR. Multiple interrupts might be required.
- */
-static void _sig_handler(int dummy)
-{
 }
 
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
