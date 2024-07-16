@@ -955,13 +955,19 @@ again:
 		rc = errno;
 
 		if (rc == EINTR) {
+			bool shutdown;
 
 			slurm_mutex_lock(&mgr.mutex);
 			xassert(mgr.initialized);
-			if (mgr.shutdown_requested)
-
+			shutdown = mgr.shutdown_requested;
 			slurm_mutex_unlock(&mgr.mutex);
 
+			if (shutdown) {
+				log_flag(CONMGR, "%s: [%pA(fd:%d)] connect() interrupted during shutdown. Closing connection.",
+					 __func__, addr, fd);
+				fd_close(&fd);
+				return SLURM_SUCCESS;
+			}
 
 			log_flag(CONMGR, "%s: [%pA(fd:%d)] connect() interrupted. Retrying.",
 				 __func__, addr, fd);
