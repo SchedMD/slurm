@@ -173,7 +173,8 @@ extern int shutdown_x11_forward(stepd_step_rec_t *step)
 	int rc = SLURM_SUCCESS;
 
 	debug("x11 forwarding shutdown in progress");
-	eio_signal_shutdown(eio_handle);
+	if (eio_handle)
+		eio_signal_shutdown(eio_handle);
 
 	if (step->x11_xauthority) {
 		if (local_xauthority) {
