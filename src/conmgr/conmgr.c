@@ -171,10 +171,7 @@ extern void conmgr_fini(void)
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
-	watch_request_t *wreq = xmalloc(sizeof(*wreq));
-
-	wreq->magic = MAGIC_WATCH_REQUEST;
-	wreq->blocking = blocking;
+	watch_request_t *wreq = NULL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -190,6 +187,10 @@ extern int conmgr_run(bool blocking)
 	xassert(!mgr.error || !mgr.exit_on_error);
 	mgr.quiesced = false;
 	slurm_mutex_unlock(&mgr.mutex);
+
+	wreq = xmalloc(sizeof(*wreq));
+	wreq->magic = MAGIC_WATCH_REQUEST;
+	wreq->blocking = blocking;
 
 	if (blocking) {
 		watch((conmgr_callback_args_t) {0}, wreq);
