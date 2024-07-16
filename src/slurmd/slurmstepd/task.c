@@ -73,7 +73,6 @@
 #include "src/common/spank.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
