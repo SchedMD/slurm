@@ -171,10 +171,8 @@ static void *_worker(void *arg)
 	 * relocked during the loop.
 	 */
 	while (true) {
-		bool mgr_shutdown_requested = false;
 		work_t *work = NULL;
 
-		mgr_shutdown_requested = mgr.shutdown_requested;
 		work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
@@ -195,7 +193,7 @@ static void *_worker(void *arg)
 
 		xassert(work->magic == MAGIC_WORK);
 
-		if (mgr_shutdown_requested) {
+		if (mgr.shutdown_requested) {
 			log_flag(CONMGR, "%s: [%u->%s] setting work status as cancelled after shutdown requested",
 				 __func__, worker->id,
 				 work->callback.func_name);
@@ -227,7 +225,7 @@ static void *_worker(void *arg)
 			 mgr.workers.total, list_count(mgr.work));
 
 		/* wake up watch for all ending work on shutdown */
-		if (mgr_shutdown_requested)
+		if (mgr.shutdown_requested)
 			EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
