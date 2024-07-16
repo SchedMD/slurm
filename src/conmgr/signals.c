@@ -152,51 +152,6 @@ static void _init_signal_handler(void)
 	}
 }
 
-/* caller must hold write lock */
-static void _fini_signal_handler(void)
-{
-#ifndef NDEBUG
-	for (int i = 0; i < signal_handler_count; i++) {
-		signal_handler_t *handler = &signal_handlers[i];
-		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
-
-		if (sigaction(handler->signal, &handler->prior, &handler->new))
-			fatal("%s: unable to restore %s: %m",
-			      __func__, strsignal(handler->signal));
-
-		/*
-		 * Check what sigaction() swapped out from the current signal
-		 * handler to catch when something else has replaced signal
-		 * handler. This is assert exists to help us catch any code that
-		 * changes the signal handlers outside of conmgr.
-		 */
-		xassert(handler->new.sa_handler == _signal_handler);
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *signame = sig_num2name(handler->signal);
-
-			log_flag(CONMGR, "%s: reverted signal %s[%d] handler: New=0x%"PRIxPTR" is now replaced with Prior=0x%"PRIxPTR,
-				 __func__, signame,
-				 handler->signal,
-				 (uintptr_t) handler->new.sa_handler,
-				 (uintptr_t) handler->prior.sa_handler);
-			xfree(signame);
-		}
-
-		/*
-		 * Check what sigaction() swapped out from the current signal
-		 * handler to catch when something else has replaced the signal
-		 * handler. This assert exists to help us catch any code that
-		 * changes the signal handlers outside of conmgr.
-		 */
-		xassert(handler->new.sa_handler == _signal_handler);
-	}
-
-	xfree(signal_handlers);
-	signal_handler_count = 0;
-#endif /* !NDEBUG */
-}
-
 static void _on_signal(int signal)
 {
 	bool matched = false;
@@ -293,8 +248,6 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	xassert(arg == &signal_fd);
 
 	slurm_rwlock_wrlock(&lock);
-
-	_fini_signal_handler();
 
 	xassert(signal_fd != -1);
 	fd_close(&signal_fd);
