@@ -237,7 +237,7 @@ the packages:</p>
 
 <ul>
 <li>Install basic Debian package build requirements:<br>
-<code>apt-get install build-essential fakeroot devscripts</code>
+<code>apt-get install build-essential fakeroot devscripts equivs</code>
 </li>
 <li>Unpack the distributed tarball:<br>
 <code>tar -xaf slurm*tar.bz2</code>
@@ -791,6 +791,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 24 May 2024</p>
+<p style="text-align:center;">Last modified 16 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
