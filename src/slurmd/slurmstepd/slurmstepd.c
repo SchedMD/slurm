@@ -299,17 +299,20 @@ static void _init_stepd_stepmgr(void)
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGINT. Ignoring.");
+	info("Caught SIGINT. Shutting down.");
+	conmgr_request_shutdown();
 }
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGTERM. Ignoring.");
+	info("Caught SIGTERM. Shutting down.");
+	conmgr_request_shutdown();
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGQUIT. Ignoring.");
+	info("Caught SIGQUIT. Shutting down.");
+	conmgr_request_shutdown();
 }
 
 static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
