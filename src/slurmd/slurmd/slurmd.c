@@ -273,13 +273,13 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGINT. Shutting down.");
-	slurmd_shutdown(SIGINT);
+	slurmd_shutdown();
 }
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGTERM. Shutting down.");
-	slurmd_shutdown(SIGTERM);
+	slurmd_shutdown();
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
@@ -2539,14 +2539,12 @@ _slurmd_fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void slurmd_shutdown(int signum)
+extern void slurmd_shutdown(void)
 {
-	if (signum == SIGTERM || signum == SIGINT) {
-		_shutdown = 1;
-		if (msg_pthread && (pthread_self() != msg_pthread))
-			pthread_kill(msg_pthread, SIGTERM);
-		conmgr_request_shutdown();
-	}
+	_shutdown = 1;
+	if (msg_pthread && (pthread_self() != msg_pthread))
+		pthread_kill(msg_pthread, SIGTERM);
+	conmgr_request_shutdown();
 }
 
 static void _usage(void)

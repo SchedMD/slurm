@@ -3085,7 +3085,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * least offline this node until someone intervenes.
 			 */
 			if (cfg->conf_flags & CONF_FLAG_SHR) {
-				slurmd_shutdown(SIGTERM);
+				slurmd_shutdown();
 			}
 			slurm_conf_unlock();
 		} else {
