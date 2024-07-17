@@ -351,7 +351,8 @@ static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGQUIT. Ignoring");
+	info("Terminate signal SIGQUIT received");
+	slurmctld_shutdown();
 }
 
 static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
