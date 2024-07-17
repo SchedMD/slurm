@@ -70,7 +70,6 @@
 #include "src/common/read_config.h"
 #include "src/common/write_labelled_message.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/common/fname.h"
@@ -1478,17 +1477,7 @@ static void *
 _io_thr(void *arg)
 {
 	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
-	sigset_t set;
 	int rc;
-
-	/* A SIGHUP signal signals a reattach to the mgr thread.  We need
-	 * to block SIGHUP from being delivered to this thread so the mgr
-	 * thread will see the signal.
-	 */
-	sigemptyset(&set);
-	sigaddset(&set, SIGHUP);
-	sigaddset(&set, SIGPIPE);
-	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
 	rc = eio_handle_mainloop(step->eio);
