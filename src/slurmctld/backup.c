@@ -54,7 +54,6 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
