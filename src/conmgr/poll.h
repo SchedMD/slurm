@@ -82,9 +82,10 @@ extern const char *pollctl_type_to_string(pollctl_fd_type_t type);
  * IN type - type of file descriptor
  * IN con_name - connection name for logging
  * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
  */
-extern void pollctl_link_fd(int fd, pollctl_fd_type_t type,
-			    const char *con_name, const char *caller);
+extern int pollctl_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+			   const char *caller);
 
 /*
  * Update existing connection type of monitoring via poll()
