@@ -215,9 +215,10 @@ extern void conmgr_request_shutdown(void)
 	log_flag(CONMGR, "%s: shutdown requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	mgr.shutdown_requested = true;
-
-	EVENT_SIGNAL(&mgr.watch_sleep);
+	if (mgr.initialized) {
+		mgr.shutdown_requested = true;
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
