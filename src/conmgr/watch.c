@@ -570,23 +570,6 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_new_conns(void)
-{
-	if (!mgr.inspecting) {
-		mgr.inspecting = true;
-		add_work_fifo(true, _inspect_connections, NULL);
-	}
-
-	if (!mgr.poll_active) {
-		/* request a listen thread to run */
-		log_flag(CONMGR, "%s: queuing up poll", __func__);
-		mgr.poll_active = true;
-
-		add_work_fifo(true, _poll_connections, NULL);
-	} else
-		log_flag(CONMGR, "%s: poll active already", __func__);
-}
-
 static void _handle_events(bool *work)
 {
 	/* grab counts once */
@@ -602,8 +585,21 @@ static void _handle_events(bool *work)
 	if (!count)
 		return;
 
+	if (!mgr.inspecting) {
+		mgr.inspecting = true;
+		add_work_fifo(true, _inspect_connections, NULL);
+	}
+
 	/* start poll thread if needed */
-	_handle_new_conns();
+	if (!mgr.poll_active) {
+		/* request a listen thread to run */
+		log_flag(CONMGR, "%s: queuing up poll", __func__);
+		mgr.poll_active = true;
+
+		add_work_fifo(true, _poll_connections, NULL);
+	} else
+		log_flag(CONMGR, "%s: poll active already", __func__);
+
 	*work = true;
 }
 
