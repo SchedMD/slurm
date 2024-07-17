@@ -206,7 +206,9 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* read as much data as possible before processing */
-	if (!con->is_listen && !con->read_eof && con->can_read) {
+	if (!con->is_listen && !con->read_eof &&
+	    (con->can_read ||
+	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
