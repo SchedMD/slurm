@@ -479,10 +479,9 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 /* Poll all connections */
 static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	int rc;
 
-	xassert(!con);
+	xassert(!conmgr_args.con);
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.poll_active);
