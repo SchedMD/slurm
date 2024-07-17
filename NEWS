@@ -97,6 +97,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Drain node on failure to delete CXI services.
  -- Fix a performance regression from 23.11.0 in cpu frequency handling when no
     CpuFreqDef is defined.
+ -- Fix one-task-per-sharing not working across multiple nodes.
 
 * Changes in Slurm 24.05.1
 ==========================
