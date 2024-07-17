@@ -1103,23 +1103,25 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 	close_con(true, con);
 }
 
-static void _set_fd_polling(int fd, pollctl_fd_type_t old,
-			    pollctl_fd_type_t new, const char *con_name,
-			    const char *caller)
+static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
+			   const char *con_name, const char *caller)
 {
 	if (old == new)
-		return;
+		return new;
 
 	if (new == PCTL_TYPE_NONE) {
 		if (old != PCTL_TYPE_NONE)
 			pollctl_unlink_fd(fd, con_name, caller);
-		return;
+		return new;
 	}
 
-	if (old != PCTL_TYPE_NONE)
+	if (old != PCTL_TYPE_NONE) {
 		pollctl_relink_fd(fd, new, con_name, caller);
-	else
+		return new;
+	} else {
 		pollctl_link_fd(fd, new, con_name, caller);
+		return new;
+	}
 }
 
 static void _log_set_polling(conmgr_fd_t *con, bool has_in, bool has_out,
@@ -1235,19 +1237,17 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		/* same never link output_fd */
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 
-		_set_fd_polling(in, con->polling_input_fd, in_type, con->name,
-				caller);
-		con->polling_input_fd = in_type;
-	} else {
-		if (has_in) {
+		con->polling_input_fd =
 			_set_fd_polling(in, con->polling_input_fd, in_type,
 					con->name, caller);
-			con->polling_input_fd = in_type;
-		}
-		if (has_out) {
-			_set_fd_polling(out, con->polling_output_fd, out_type,
-					con->name, caller);
-			con->polling_output_fd = out_type;
-		}
+	} else {
+		if (has_in)
+			con->polling_input_fd =
+				_set_fd_polling(in, con->polling_input_fd,
+						in_type, con->name, caller);
+		if (has_out)
+			con->polling_output_fd =
+				_set_fd_polling(out, con->polling_output_fd,
+						out_type, con->name, caller);
 	}
 }
