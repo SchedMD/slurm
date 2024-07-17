@@ -387,13 +387,18 @@ token that is not a valid option for srun is considered the command
 to execute and everything after that is treated as an option to
 the command. For example:</p>
 <blockquote>
-<p><span class="commandline">srun -N2 hostname -pdebug</span></p>
+<p><span class="commandline">srun -N2 uptime -pdebug</span></p>
 </blockquote>
-<p>srun processes "-N2" as an option to itself. "hostname" is the
-command to execute and "-pdebug" is treated as an option to the
-hostname command. This will change the name of the computer
-on which Slurm executes the command - Very bad, <b>Don't run
-this command as user root!</b></p>
+<p>srun processes "-N2" as an option to itself. "uptime" is the command to
+execute and "-pdebug" is treated as an option to the uptime command. Depending
+on the command and options provided, you may get an invalid option message or
+unexpected behavior if the options happen to be valid.</p>
+
+<p>Options for srun should appear before the command to be run:</p>
+
+<blockquote>
+<p><span class="commandline">srun -N2 -pdebug uptime</span></p>
+</blockquote>
 
 <p><a id="backfill"><b>Why is the Slurm backfill scheduler not starting my job?
 </b></a><br>
@@ -1845,8 +1850,7 @@ Yes, just set "use_interactive_step" as part of the LaunchParameters
 configuration option in slurm.conf.</p>
 
 <p><a id="upgrade"><b>What should I be aware of when upgrading Slurm?</b></a><br>
-See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
-section for details.</p>
+Refer to the <a href="upgrades.html">Upgrade Guide</a> for details.</p>
 
 <p><a id="torque"><b>How easy is it to switch from PBS or Torque to Slurm?</b></a><br>
 A lot of users don't even notice the difference.
@@ -2076,20 +2080,8 @@ followed by an optional comma separated list of cluster names to operate on.</p>
 
 <p><a id="db_upgrade"><b>Is there anything exceptional to be aware of when
 upgrading my database server?</b></a><br>
-Generally, no. However if you are using MariaDB and have been using an older
-version or are upgrading from MySQL, additional steps will need to be taken.</p>
-
-<p>From the MariaDB documentation:</p>
-
-<p><i>Before MariaDB 10.2.1, BLOB and TEXT columns could not be assigned a
-DEFAULT value. This restriction was lifted in MariaDB 10.2.1.</i></p>
-
-<p>Therefore, if a site begins using MariaDB 10.2.1 or later and is using an
-existing Slurm database from an earlier version of MariaDB or any version
-of MySQL, some text/blob default values will need to be altered to avoid
-failures from subsequent queries from slurmdbd that set affected fields to
-DEFAULT. Make sure you are using slurmdbd 22.05.7 or later, as these versions
-will automatically correct the default values at startup.</p>
+Generally, no. Special cases are noted in the <a href="upgrades.html#db_server">
+Database server</a> section of the Upgrade Guide.</p>
 
 <p><a id="routing_queue"><b>How can a routing queue be configured?</b></a><br>
 A job submit plugin is designed to have access to a job request from a user,
@@ -2387,6 +2379,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 13 June 2024</p>
+<p style="text-align:center;">Last modified 17 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
