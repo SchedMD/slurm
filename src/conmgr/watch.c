@@ -165,7 +165,8 @@ static int _handle_connection(void *x, void *arg)
 	/* handle out going data */
 	if (!con->is_listen && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
-		if (con->can_write) {
+		if (con->can_write ||
+		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
 			add_work_con_fifo(true, con, handle_write, con);
