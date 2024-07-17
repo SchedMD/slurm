@@ -98,38 +98,45 @@ Adjust SLURMRESTD_DEBUG to the desired level of output (as described on the
 <h3 id="systemd">Running with systemd
 <a class="slurm_link" href="#systemd"></a></h3>
 
-Slurm ships with a <b>slurmrestd</b> service for systemd,
+<p>Slurm ships with a <b>slurmrestd</b> service unit for systemd,
 however, it might require some additional setup to run properly.
 This section assumes you have either installed slurmrestd using DEB/RPM packages
 or built it manually such that the files are in the same places.
-
+<br><b>Note</b> the versions associated with certain steps in the instructions
+below; these steps should be ignored on other versions.</p>
 <ol>
-<li>Select a local user account to use to run the slurmrestd
-(<b>not</b> root or SlurmUser to prevent privilege escalation)</li>
+<li>Create a local service account to run slurmrestd. To prevent privilege
+  escalation, the user account should be:
+  <ul>
+    <li>Not root or SlurmUser</li>
+    <li>Not used by real users or for any other functions</li>
+    <li>Not granted any special permissions</li>
+  </ul>
+  <pre>sudo useradd -M -r -s /usr/sbin/nologin -U slurmrestd</pre></li>
 <li>Configure slurmrestd service to use this user and associated group.
 This can be accomplished in either of two ways:
 <ul>
 <li>Edit <code>/etc/default/slurmrestd</code>
 or <code>/etc/sysconfig/slurmrestd</code>
-<br>Add <code>-u USERNAME</code> and <code>-g GROUPNAME</code>
+<br>Add <code>-u slurmrestd</code> and <code>-g slurmrestd</code>
 to <code>SLURMRESTD_OPTIONS</code></li>
 <li>Run <code>systemctl edit slurmrestd</code> to edit overrides for the
 service.
 <br>Add content like this to the prescribed location in the overrides file:
 <pre>
 [Service]
-User=USERNAME
-Group=GROUPNAME
+User=slurmrestd
+Group=slurmrestd
 </pre></li>
 </ul>
 </li>
-<li>(Slurm 24.05 and newer) Optional: Customize the socket for slurmrestd.
-By default it will listen only on TCP port 6820. You may change this behavior
-by changing <code>SLURMRESTD_LISTEN</code>
+<li>(Slurm <b>24.05</b> and newer) Optional: Customize the socket for
+slurmrestd. By default it will listen only on TCP port 6820. You may change
+this behavior by changing <code>SLURMRESTD_LISTEN</code>
 (see <a href="#customization">Customizing slurmrestd.service</a>).</li>
-<li>(Slurm 23.11 and earlier) Configure the socket for slurmrestd. This may be
-accomplished by creating/changing permissions on the parent directory and/or
-changing the path to the socket in the service file.
+<li>(Slurm <b>23.11</b> and earlier) Configure the socket for slurmrestd. This
+may be accomplished by creating/changing permissions on the parent directory
+and/or changing the path to the socket in the service file.
 <ul>
 <li><b>Permissions</b>: The user running the service must have write+execute
 permissions on the directory that will contain the UNIX socket</li>
@@ -332,6 +339,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 20 May 2024</p>
+<p style="text-align:center;">Last modified 17 July 2024</p>
 
 <!--#include virtual="footer.txt"-->

@@ -14,8 +14,8 @@
 <li><a href="#slurm-accounting-configuration-after-build">Slurm Accounting Configuration After Build</a></li>
 <li><a href="#slurmdbd-configuration">SlurmDBD Configuration</a>
 <ul>
-<li><a href="#slurmdbd-archive-purge">  SlurmDBD Archive and Purge</a></li>
-</ul>
+<li><a href="#slurmdbd-archive-purge">SlurmDBD Archive and Purge</a></li>
+</ul></li>
 <li><a href="#mysql-configuration">MySQL Configuration</a></li>
 <li><a href="#archive">Archive Server</a></li>
 <li><a href="#tools">Tools</a></li>
@@ -720,18 +720,35 @@ records that prevent the archive file from loading correctly.</p>
 
 <h2 id="tools">Tools<a class="slurm_link" href="#tools"></a></h2>
 
-<p>There are a few tools available to work with accounting data,
+<p>Slurm includes a few tools to let you work with accounting data;
 <b>sacct</b>, <b>sacctmgr</b>, and <b>sreport</b>.
-These tools all get or set data through the SlurmDBD daemon.
+These tools all get or set data through the SlurmDBD daemon.</p>
 <ul>
-<li><b>sacct</b> is used to generate accounting report for both
+<li><b>sacct</b> is used to retrieve details, stored in the database, about
 running and completed jobs.</li>
-<li><b>sacctmgr</b> is used to manage associations in the database:
-add or remove clusters, add or remove users, etc.</li>
+<li><b>sacctmgr</b> is used to manage entities in the database. These include
+clusters, accounts, user associations, QOSs, etc.</li>
 <li><b>sreport</b> is used to generate various reports on usage collected over a
 given time period.</li>
 </ul>
 <p>See the man pages for each command for more information.</p>
+
+<p>While sreport provides the ability to quickly generate reports with some
+of the most commonly requested information, sites frequently want additional
+control over how the information is displayed. There are some third-party tools
+that can assist in generating dashboards with graphs of relevant information
+about your cluster. These are not maintained or supported by SchedMD, but these
+utilities have been useful for some sites:</p>
+<ul>
+<li><a href="https://grafana.com/grafana/dashboards/4323-slurm-dashboard/">
+Grafana</a>: Allows creation of dashboards with various graphs using data
+collected by Prometheus or InfluxDB.</li>
+<li><a href="https://github.com/kcl-nmssys/slurm-influxdb">InfluxDB</a>:
+Includes an exporter tool that collects performance metrics from Slurm.</li>
+<li><a href="https://github.com/vpenso/prometheus-slurm-exporter">Prometheus
+</a>: Includes an exporter tool that collects performance metrics from
+Slurm.</li>
+</ul>
 
 <h2 id="database-configuration">Database Configuration
 <a class="slurm_link" href="#database-configuration"></a>
@@ -949,7 +966,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 13 March 2024</p>
+<p style="text-align:center;">Last modified 17 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
 
