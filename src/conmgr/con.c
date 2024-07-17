@@ -1242,6 +1242,11 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		fatal_abort("should never execute");
 	}
 
+	if (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)
+		out_type = PCTL_TYPE_UNSUPPORTED;
+	if (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED)
+		in_type = PCTL_TYPE_UNSUPPORTED;
+
 	_log_set_polling(con, has_in, has_out, type, in_type, out_type, caller);
 
 	if (is_same) {
