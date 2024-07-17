@@ -599,11 +599,12 @@ static void _handle_events(bool *work)
 	if (!list_is_empty(mgr.complete_conns))
 		_handle_complete_conns();
 
+	if (!count)
+		return;
+
 	/* start poll thread if needed */
-	if (count) {
-		_handle_new_conns();
-		*work = true;
-	}
+	_handle_new_conns();
+	*work = true;
 }
 
 static bool _watch_loop(void)
