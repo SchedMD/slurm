@@ -14,7 +14,7 @@ environment).</p>
 <h2 id="prerequisites">Prerequisites
 <a class="slurm_link" href="#prerequisites"></a>
 </h2>
-<p>JWT requires <a href="download.html#jwt">libjwt</a>.
+<p>JWT requires <a href="related_software.html#jwt">libjwt</a>.
 Both the library and the development headers must be available when Slurm is
 compiled.</p>
 
@@ -22,8 +22,8 @@ compiled.</p>
 <a class="slurm_link" href="#setup"></a>
 </h2>
 <ol>
-<li><a href="download.html#jwt">
-    Configure and build Slurm for JWT support</a></li>
+<li><a href="related_software.html#jwt">
+    Configure and build Slurm with JWT support</a></li>
 <li>Add JWT key to controller in StateSaveLocation.
 Here is an example with the JWT key in /var/spool/slurm/statesave/:
 <pre>
