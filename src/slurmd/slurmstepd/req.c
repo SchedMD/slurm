@@ -501,7 +501,7 @@ static int _handle_stepmgr_relay_msg(int fd,
 	uint32_t data_size;
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	client_fd = receive_fd_over_pipe(fd);
+	client_fd = receive_fd_over_socket(fd);
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data = xmalloc(data_size);
 	safe_read(fd, data, data_size);
@@ -1494,12 +1494,12 @@ static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step)
 
 	/*
 	 * We need to send the ns_fd as an int first to let the receiver know if
-	 * we have a valid fd or not as recv_fd_over_pipe() will always try to
-	 * set up the fd no matter if it is valid or not.
+	 * we have a valid fd or not as receive_fd_over_socket() will always
+	 * try to set up the fd no matter if it is valid or not.
 	 */
 	safe_write(fd, &ns_fd, sizeof(ns_fd));
 	if (ns_fd > 0)
-		send_fd_over_pipe(fd, ns_fd);
+		send_fd_over_socket(fd, ns_fd);
 
 	debug("sent fd: %d", ns_fd);
 	debug("leaving %s", __func__);

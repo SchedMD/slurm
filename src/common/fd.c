@@ -93,8 +93,8 @@ strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
-strong_alias(send_fd_over_pipe, slurm_send_fd_over_pipe);
-strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
+strong_alias(send_fd_over_socket, slurm_send_fd_over_socket);
+strong_alias(receive_fd_over_socket, slurm_receive_fd_over_socket);
 strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 
 static int fd_get_lock(int fd, int cmd, int type);
@@ -474,7 +474,7 @@ extern char *poll_revents_to_str(const short revents)
 }
 
 /* pass an open file descriptor back to the requesting process */
-extern void send_fd_over_pipe(int socket, int fd)
+extern void send_fd_over_socket(int socket, int fd)
 {
 	struct msghdr msg = { 0 };
 	struct cmsghdr *cmsg;
@@ -504,7 +504,7 @@ extern void send_fd_over_pipe(int socket, int fd)
 }
 
 /* receive an open file descriptor over unix socket */
-extern int receive_fd_over_pipe(int socket)
+extern int receive_fd_over_socket(int socket)
 {
 	struct msghdr msg = {0};
 	struct cmsghdr *cmsg;

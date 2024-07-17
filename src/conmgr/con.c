@@ -529,12 +529,12 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	} else if (src->input_fd < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on invalid input_fd=%d",
 			 __func__, src->name, src->input_fd);
-	} else if ((fd = receive_fd_over_pipe(src->input_fd)) < 0) {
+	} else if ((fd = receive_fd_over_socket(src->input_fd)) < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on input_fd=%d",
 			 __func__, src->name, src->input_fd);
 		/*
-		 * Close source as receive_fd_over_pipe() failed and connection
-		 * is now in an unknown state
+		 * Close source as receive_fd_over_socket() failed and
+		 * connection is now in an unknown state
 		 */
 		close_con(false, src);
 	} else if (add_connection(args->type, NULL, fd, fd,
@@ -612,7 +612,7 @@ static void _send_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
 			 __func__, con->name, fd, con->output_fd);
 	} else {
-		send_fd_over_pipe(con->output_fd, fd);
+		send_fd_over_socket(con->output_fd, fd);
 		log_flag(CONMGR, "%s: [%s] Sent file descriptor %d over output_fd=%d",
 				 __func__, con->name, fd, con->output_fd);
 	}

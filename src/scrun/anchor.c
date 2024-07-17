@@ -153,7 +153,7 @@ static void _on_pty_reply_sent(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("%s: [%s] sending fd:%u", __func__, conmgr_fd_get_name(con), fd);
 
 	/* this is a blocking operation */
-	send_fd_over_pipe(conmgr_fd_get_output_fd(con), fd);
+	send_fd_over_socket(conmgr_fd_get_output_fd(con), fd);
 }
 
 static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
@@ -604,7 +604,7 @@ static void *_on_cs_connection(conmgr_fd_t *con, void *arg)
 	/* hand over pty to console_socket */
 	/* WARNING: blocking call */
 	errno = 0;
-	send_fd_over_pipe(conmgr_fd_get_output_fd(con), tty);
+	send_fd_over_socket(conmgr_fd_get_output_fd(con), tty);
 	debug2("%s: [%s] sent fd:%d rc:%m",
 	       __func__, conmgr_fd_get_name(con), tty);
 

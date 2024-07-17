@@ -157,10 +157,10 @@ extern void fd_set_oob(int fd, int value);
 extern char *poll_revents_to_str(const short revents);
 
 /*
- * Pass an open fd back over a pipe.
+ * Pass an open fd back over a socket.
  */
-extern void send_fd_over_pipe(int socket, int fd);
-extern int receive_fd_over_pipe(int socket);
+extern void send_fd_over_socket(int socket, int fd);
+extern int receive_fd_over_socket(int socket);
 
 /*
  * Make full directory path.
