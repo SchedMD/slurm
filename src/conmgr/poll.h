@@ -65,6 +65,11 @@ extern void pollctl_fini(void);
 
 typedef enum {
 	PCTL_TYPE_INVALID = 0,
+	/*
+	 * Not possible to poll this file descriptor type.
+	 * Files and directories can not be epoll()ed.
+	 */
+	PCTL_TYPE_UNSUPPORTED,
 	PCTL_TYPE_NONE, /* Stop polling connection */
 	PCTL_TYPE_CONNECTED, /* only watch for connection to hangup/close */
 	PCTL_TYPE_READ_ONLY,

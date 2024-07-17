@@ -1190,6 +1190,8 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	 * PCTL_TYPE_NONE above.
 	 */
 	switch (type) {
+	case PCTL_TYPE_UNSUPPORTED:
+		fatal_abort("should never happen");
 	case PCTL_TYPE_NONE:
 		break;
 	case PCTL_TYPE_CONNECTED:

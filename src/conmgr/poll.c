@@ -78,6 +78,7 @@ static const struct {
 	const char *events_string;
 } fd_types[] = {
 	T(PCTL_TYPE_INVALID, 0),
+	T(PCTL_TYPE_UNSUPPORTED, 0),
 	T(PCTL_TYPE_NONE, 0),
 	T(PCTL_TYPE_CONNECTED, (EPOLLHUP | EPOLLERR | EPOLLET)),
 	T(PCTL_TYPE_READ_ONLY, (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR |
