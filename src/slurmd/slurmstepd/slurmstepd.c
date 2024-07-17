@@ -121,8 +121,10 @@ bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
 
 typedef struct {
+	slurm_addr_t *cli;
 #define RUN_ARGS_MAGIC 0x0ee01aab
 	int magic; /* RUN_ARGS_MAGIC */
+	slurm_msg_t *msg;
 	int rc;
 	int argc;
 	char **argv;
@@ -347,6 +349,7 @@ static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern int main(int argc, char **argv)
 {
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	run_args_t args = {
 		.magic = RUN_ARGS_MAGIC,
 		.rc = SLURM_SUCCESS,
@@ -355,6 +358,16 @@ extern int main(int argc, char **argv)
 	};
 
 	_process_cmdline(argc, argv);
+
+	conf = xmalloc(sizeof(*conf));
+	conf->argv = argv;
+	conf->argc = argc;
+	init_setproctitle(argc, argv);
+
+	log_init(argv[0], lopts, LOG_DAEMON, NULL);
+
+	/* Receive job parameters from the slurmd */
+	_init_from_slurmd(STDIN_FILENO, argv, &args.cli, &args.msg);
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
@@ -379,26 +392,15 @@ extern int main(int argc, char **argv)
 
 static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	run_args_t *args = arg;
 	int argc = args->argc;
 	char **argv = args->argv;
-	slurm_addr_t *cli;
-	slurm_msg_t *msg;
+	slurm_addr_t *cli = args->cli;
+	slurm_msg_t *msg = args->msg;
 	stepd_step_rec_t *step;
 	int rc = 0;
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
-
-	conf = xmalloc(sizeof(*conf));
-	conf->argv = argv;
-	conf->argc = argc;
-	init_setproctitle(argc, argv);
-
-	log_init(argv[0], lopts, LOG_DAEMON, NULL);
-
-	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
 	if ((run_command_init(argc, argv, conf->stepd_loc) != SLURM_SUCCESS) &&
 	    conf->stepd_loc && conf->stepd_loc[0])
