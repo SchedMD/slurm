@@ -393,6 +393,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
+		.read_eof = !has_in,
 		.output_fd = output_fd,
 		.events = events,
 		/* save socket type to avoid calling fstat() again */
