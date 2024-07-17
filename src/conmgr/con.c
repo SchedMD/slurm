@@ -288,6 +288,9 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	} else {
 		xassert(false);
 	}
+
+	xfree(out_str);
+	xfree(in_str);
 }
 
 static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
@@ -787,6 +790,9 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		slurm_addr_t addr = {0};
 		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 
+		if (fd < 0)
+			fatal("%s: socket() failed: %m", __func__);
+
 		unixsock += sizeof(UNIX_PREFIX) - 1;
 		if (unixsock[0] == '\0')
 			fatal("%s: [%s] Invalid UNIX socket",
@@ -949,13 +955,19 @@ again:
 		rc = errno;
 
 		if (rc == EINTR) {
+			bool shutdown;
 
 			slurm_mutex_lock(&mgr.mutex);
 			xassert(mgr.initialized);
-			if (mgr.shutdown_requested)
-
+			shutdown = mgr.shutdown_requested;
 			slurm_mutex_unlock(&mgr.mutex);
 
+			if (shutdown) {
+				log_flag(CONMGR, "%s: [%pA(fd:%d)] connect() interrupted during shutdown. Closing connection.",
+					 __func__, addr, fd);
+				fd_close(&fd);
+				return SLURM_SUCCESS;
+			}
 
 			log_flag(CONMGR, "%s: [%pA(fd:%d)] connect() interrupted. Retrying.",
 				 __func__, addr, fd);
