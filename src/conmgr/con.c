@@ -1107,6 +1107,9 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
 			   const char *con_name, const char *caller)
 {
+	if (old == PCTL_TYPE_UNSUPPORTED)
+		return PCTL_TYPE_UNSUPPORTED;
+
 	if (old == new)
 		return new;
 
@@ -1120,8 +1123,15 @@ static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
 		pollctl_relink_fd(fd, new, con_name, caller);
 		return new;
 	} else {
-		pollctl_link_fd(fd, new, con_name, caller);
-		return new;
+		int rc = pollctl_link_fd(fd, new, con_name, caller);
+
+		if (!rc)
+			return new;
+		else if (rc == EPERM)
+			return PCTL_TYPE_UNSUPPORTED;
+		else
+			fatal("%s->%s: [%s] Unable to start polling: %s",
+			      caller, __func__, con_name, slurm_strerror(rc));
 	}
 }
 
