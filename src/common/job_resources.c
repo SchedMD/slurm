@@ -501,6 +501,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 
 		pack32(job_resrcs_ptr->nhosts, buffer);
 		pack32(job_resrcs_ptr->ncpus, buffer);
+		pack32(job_resrcs_ptr->next_step_node_inx, buffer);
 		pack32(job_resrcs_ptr->node_req, buffer);
 		packstr(job_resrcs_ptr->nodes, buffer);
 		pack8(job_resrcs_ptr->whole_node, buffer);
@@ -754,6 +755,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		job_resrcs = xmalloc(sizeof(struct job_resources));
 		job_resrcs->nhosts = empty;
 		safe_unpack32(&job_resrcs->ncpus, buffer);
+		safe_unpack32(&job_resrcs->next_step_node_inx, buffer);
 		safe_unpack32(&job_resrcs->node_req, buffer);
 		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
 		safe_unpack8(&job_resrcs->whole_node, buffer);
