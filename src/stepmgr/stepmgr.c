@@ -754,30 +754,39 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 /* Set cur_inx to the next round-robin node index */
 static int _next_node_inx(int *cur_inx, int *check_cnt, int len, int node_cnt,
 			  bitstr_t *nodes_bitmap, bitstr_t **picked_node_bitmap,
-			  int start_int)
+			  int start_inx)
 {
+	bool wrapped = false;
 	xassert(cur_inx);
 	xassert(check_cnt);
 	xassert(nodes_bitmap);
 	xassert(picked_node_bitmap);
 
-	if (*check_cnt == 0)
-		*cur_inx = start_int;
-	else
+	if (*check_cnt == 0) {
+		*cur_inx = start_inx;
+	} else {
 		*cur_inx = (*cur_inx + 1) % len;
+		wrapped = *cur_inx <= start_inx;
+		if (*cur_inx == start_inx)
+			return SLURM_ERROR; /* Normal break case */
+	}
 
 	if (*check_cnt >= node_cnt)
 		return SLURM_ERROR; /* Normal break case */
 
-	(*check_cnt)++;
 	*cur_inx = bit_ffs_from_bit(nodes_bitmap, *cur_inx);
+
+	if (wrapped && (*cur_inx >= start_inx))
+		return SLURM_ERROR; /* Normal break case */
 
 	if (*cur_inx < 0) {
 		/* This should never happen */
+		xassert(false);
 		FREE_NULL_BITMAP(*picked_node_bitmap);
 		return SLURM_ERROR;
 	}
 
+	(*check_cnt)++;
 	return SLURM_SUCCESS;
 }
 

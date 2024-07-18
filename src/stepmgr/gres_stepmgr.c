@@ -3347,6 +3347,50 @@ extern char *gres_stepmgr_gres_2_tres_str(List gres_list, bool locked)
 }
 
 /*
+ * Increment indexes to next round-robin index
+ * IN/OUT cur_inx - bitmap index
+ * IN/OUT node_inx - job node index
+ */
+static int _gres_next_node_inx(int *cur_inx, int *node_inx, int len,
+			       int node_cnt, bitstr_t *nodes_bitmap,
+			       int start_inx)
+{
+	bool wrapped = false;
+	xassert(cur_inx);
+	xassert(node_inx);
+	xassert(nodes_bitmap);
+
+	if (!len)
+		return SLURM_ERROR;
+
+	if (*node_inx == -1) {
+		if (start_inx)
+			*node_inx += bit_set_count_range(nodes_bitmap, 0,
+							 start_inx);
+		*cur_inx = start_inx;
+
+	} else {
+		*cur_inx = (*cur_inx + 1) % len;
+		wrapped = *cur_inx <= start_inx;
+		if (*cur_inx == start_inx)
+			return SLURM_ERROR; /* Normal break case */
+	}
+
+	*cur_inx = bit_ffs_from_bit(nodes_bitmap, *cur_inx);
+
+	if (wrapped && (*cur_inx >= start_inx))
+		return SLURM_ERROR; /* Normal break case */
+
+	if (*cur_inx < 0) {
+		xassert(false);
+		return SLURM_ERROR; /* This should never happen */
+	}
+
+	*node_inx = (*node_inx + 1) % node_cnt;
+	return SLURM_SUCCESS;
+}
+
+/*
  * If a step gres request used gres_per_step it must be tested more than just in
  * gres_stepmgr_step_test. This function only acts when gres_per_step is used
  * IN step_gres_list  - step's requested GRES data structure
@@ -3365,7 +3409,7 @@ extern void gres_stepmgr_step_test_per_step(
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
 	bitstr_t *node_bitmap = job_ptr->job_resrcs->node_bitmap;
-	int i_first, i_last;
+	int i_first, bit_len;
 
 	if (!step_gres_list)
 		return;
@@ -3373,12 +3417,10 @@ extern void gres_stepmgr_step_test_per_step(
 		return;
 
 	(void) gres_init();
-
-	i_first = bit_ffs(node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = -2;
+	i_first = job_ptr->job_resrcs->next_step_node_inx;
+	bit_len = bit_fls(node_bitmap) + 1;
+	if (i_first >= bit_len)
+		i_first = 0;
 
 	tmp_step_id.job_id = job_ptr->job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
@@ -3422,10 +3464,11 @@ extern void gres_stepmgr_step_test_per_step(
 		 */
 		while (limit >= 0) {
 			int next_smallest = -1;
-			for (int i = i_first, node_inx = -1; i <= i_last; i++) {
-				if (!bit_test(node_bitmap, i))
-					continue;
-				node_inx++;
+			int i, node_inx = -1;
+			while (_gres_next_node_inx(&i, &node_inx, bit_len,
+						   job_ptr->job_resrcs->nhosts,
+						   node_bitmap, i_first) ==
+			       SLURM_SUCCESS) {
 				if (!bit_test(nodes_avail, i) ||
 				    bit_test(nodes_picked, i))
 					continue;
