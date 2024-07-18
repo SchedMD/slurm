@@ -18609,7 +18609,6 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 			.gres_list = &job_ptr->gres_list_req,
 		};
 
-		detail_ptr->ntasks_per_node = NO_VAL16;
 		detail_ptr->mc_ptr->ntasks_per_socket = NO_VAL16;
 		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
 		detail_ptr->orig_cpus_per_task = NO_VAL16;
@@ -18631,8 +18630,12 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 			detail_ptr->num_tasks = 0;
 		if (detail_ptr->min_cpus == NO_VAL)
 			detail_ptr->min_cpus = 1;
-		if (detail_ptr->ntasks_per_node == NO_VAL16)
+
+		if (resv_desc_ptr->flags & RESERVE_TRES_PER_NODE)
+			detail_ptr->ntasks_per_node = detail_ptr->pn_min_cpus;
+		else if (detail_ptr->ntasks_per_node == NO_VAL16)
 			detail_ptr->ntasks_per_node = 0;
+
 		if (detail_ptr->mc_ptr->ntasks_per_socket == NO_VAL16)
 			detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
 		if (job_ptr->gres_list_req)
