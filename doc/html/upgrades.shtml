@@ -196,7 +196,8 @@ strongly advised to assign a single core Slurm daemon to each system.</p>
 <h3 id="preparation">Preparation
 <a class="slurm_link" href="#preparation"></a></h3>
 
-<h4>RELEASE_NOTES and NEWS</h4>
+<h4 id="release_notes">RELEASE_NOTES and NEWS
+<a class="slurm_link" href="#release_notes"></a></h4>
 
 <p>Review relevant release notes in the <b>RELEASE_NOTES</b> file in root of
 Slurm source directory for the target release and any major versions between
@@ -215,7 +216,8 @@ by selecting the branch or tag corresponding to the desired version. More
 detailed changes, including minor release changes, can be found in the
 <b>NEWS</b> file, but are usually not needed to prepare for upgrades.</p>
 
-<h4>Configuration Changes</h4>
+<h4 id="config_changes">Configuration Changes
+<a class="slurm_link" href="#config_changes"></a></h4>
 
 <p>Always prepare and test configuration changes in a test environment
 before upgrading in production. Changes outlined in the release notes will need
@@ -226,7 +228,8 @@ Slurm release. Typically, new naming and syntax conventions are introduced
 several versions before the old ones are removed, so you may be able to make the
 necessary changes before starting the upgrade process.</p>
 
-<h4>Plan for downtime</h4>
+<h4 id="downtime">Plan for downtime
+<a class="slurm_link" href="#downtime"></a></h4>
 
 <p>Refer to the expected downtime guidance in the
 following sections for each relevant Slurm daemon, particularly the
@@ -236,7 +239,8 @@ Whenever possible, try to plan upgrades during SchedMD's support hours.
 If you encounter an issue outside of these hours there will be a delay before
 assistance can be provided.</p>
 
-<h4>OpenAPI Changes</h4>
+<h4 id="openapi_changes">OpenAPI Changes
+<a class="slurm_link" href="#openapi_changes"></a></h4>
 
 <p>Sites using <code>--json</code> or <code>--yaml</code> arguments with any CLI
 commands or running <code>slurmrestd</code> need to check for format
