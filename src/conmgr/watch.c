@@ -86,7 +86,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (con->is_connected || con->read_eof) {
+	if (con->is_connected) {
 		/* continue on to follow other checks */
 	} else if (con->is_listen) {
 		/*
