@@ -3051,6 +3051,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			goto bad_parse;
 		}
 		total_node_cnt = bit_set_count(resv_select.node_bitmap);
+		if ((resv_desc_ptr->node_cnt == NO_VAL) ||
+		    (resv_desc_ptr->node_cnt < total_node_cnt)) {
+			resv_desc_ptr->node_cnt = total_node_cnt;
+			if ((resv_desc_ptr->flags & RESERVE_TRES_PER_NODE) &&
+			    (resv_desc_ptr->core_cnt != NO_VAL))
+				resv_desc_ptr->core_cnt *=
+					resv_desc_ptr->node_cnt;
+		}
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    (resv_desc_ptr->core_cnt == NO_VAL)) {
 			uint64_t flags = resv_desc_ptr->flags;
