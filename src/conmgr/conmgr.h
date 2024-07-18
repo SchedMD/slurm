@@ -399,7 +399,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_events_t events, void *arg);
 
 /*
- * Run connection manager main loop for until all processing is done
+ * Run connection manager main loop for until quiesced or shutdown or failure
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
  * WARNING: Do not call with blocking=true from side of conmgr work or
