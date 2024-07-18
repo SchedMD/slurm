@@ -225,7 +225,7 @@ static void *_worker(void *arg)
 			 mgr.workers.total, list_count(mgr.work));
 
 		/* wake up watch for all ending work on shutdown */
-		if (mgr.shutdown_requested)
+		if (mgr.shutdown_requested || mgr.waiting_on_work)
 			EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
