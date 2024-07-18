@@ -215,6 +215,8 @@ typedef struct {
 	bool quiesced;
 	/* will inspect connections (not listeners */
 	bool inspecting;
+	/* True if watch() is only waiting on work to complete */
+	bool waiting_on_work;
 
 	/* Caller requests finish on error */
 	bool exit_on_error;

@@ -634,6 +634,7 @@ static bool _watch_loop(void)
 			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
 				 __func__, non_watch_workers,
 				 list_count(mgr.work));
+			mgr.waiting_on_work = true;
 			return true;
 		}
 	}
@@ -713,7 +714,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d ",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -724,9 +725,11 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 				 (mgr.inspecting ? 'T' : 'F'),
 				 (mgr.shutdown_requested ? 'T' : 'F'),
 				 (mgr.quiesced ? 'T' : 'F'),
-				 mgr.watch_on_worker);
+				 mgr.watch_on_worker,
+				 (mgr.waiting_on_work ? 'T' : 'F'));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
+		mgr.waiting_on_work = false;
 	}
 
 	xassert(mgr.watching);
