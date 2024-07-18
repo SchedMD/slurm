@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
     SLURM_NETWORK and SLURM_CPU_FREQ_REQ to match sbatch.
  -- Add missing bash-completions dependency to slurm-smd-client debian package.
  -- Fix bash-completions installation in debian pacakges.
+ -- Fix GRES environment variable indices being incorrect when only using a
+    subset of all GPUs on a node and the --gres-flags=allow-task-sharing option
 
 * Changes in Slurm 24.05.1
 ==========================

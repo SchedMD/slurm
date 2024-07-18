@@ -10093,7 +10093,7 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		if (get_devices)
 			return SLURM_SUCCESS;
 		/*
-		* Overwrite device index setting to use the global node GRES
+		* Overwrite device index setting to use the global node/job GRES
 		* index, rather than the index local to the task. This ensures
 		* that the GRES environment variable is set correctly on the
 		* task when multiple devices are constrained to the task, and
@@ -10101,6 +10101,16 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		*/
 		use_local_index = false;
 		dev_index_mode_set = true;
+
+		/*
+		 * Consolidate allocated gres bitstring so that we get the GRES
+		 * device index of the GRES within the context of the job, and
+		 * not within the context of the whole node, unless specifically
+		 * required with the GRES_CONF_GLOBAL_INDEX flag.
+		 */
+		if (!(gres_context[context_inx].config_flags &
+		      GRES_CONF_GLOBAL_INDEX))
+			bit_consolidate(gres_bit_alloc);
 	}
 
 	if (gres_context[context_inx].config_flags & GRES_CONF_GLOBAL_INDEX) {
