@@ -259,9 +259,11 @@ extern void pollctl_init(const int max_connections)
 			fatal("%s: unable to open unnamed pipe: %m", __func__);
 
 		fd_set_nonblocking(fd[0]);
+		fd_set_close_on_exec(fd[0]);
 		pctl.interrupt.receive = fd[0];
 
 		fd_set_blocking(fd[1]);
+		fd_set_close_on_exec(fd[1]);
 		pctl.interrupt.send = fd[1];
 	}
 
