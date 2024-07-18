@@ -55,6 +55,7 @@
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/util-net.h"
@@ -164,6 +165,10 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
 	con->can_read = false;
+
+	/* drop any unprocessed input buffer */
+	if (con->in)
+		set_buf_offset(con->in, 0);
 
 	if (con->is_listen) {
 		if (close(con->input_fd) == -1)
