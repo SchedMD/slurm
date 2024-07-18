@@ -4746,7 +4746,8 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	bit_set(up_node_bitmap, node_ptr->index);
 
 	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr) ||
-	    IS_NODE_NO_RESPOND(node_ptr))
+	    IS_NODE_NO_RESPOND(node_ptr) ||
+	    IS_NODE_RECONFIG_REQUESTED(node_ptr))
 		bit_clear(avail_node_bitmap, node_ptr->index);
 	else
 		make_node_avail(node_ptr);
@@ -4774,7 +4775,8 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
-		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
+		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
+		     !IS_NODE_RECONFIG_REQUESTED(node_ptr))
 			make_node_avail(node_ptr);
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
