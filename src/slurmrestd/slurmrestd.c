@@ -601,6 +601,13 @@ static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_request_shutdown();
 }
 
+
+static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
+{
+	on_http_connection_finish(con, ctxt);
+	conmgr_request_shutdown();
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
@@ -609,6 +616,11 @@ int main(int argc, char **argv)
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
+	};
+	static const conmgr_events_t inet_events = {
+		.on_data = parse_http,
+		.on_connection = _setup_http_context,
+		.on_finish = _inet_on_finish,
 	};
 	static const conmgr_callbacks_t callbacks = {
 		.parse = parse_host_port,
@@ -736,8 +748,8 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, conmgr_events, NULL,
-					    0, operations_router)))
+					    STDOUT_FILENO, inet_events, NULL, 0,
+					    operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
