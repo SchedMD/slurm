@@ -466,7 +466,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 	if (fd == con->input_fd) {
 		con->can_read = pollctl_events_can_read(events);
 
-		if (!con->read_eof)
+		/* Avoid setting read_eof if can_read=true */
+		if (!con->can_read && !con->read_eof)
 			con->read_eof = pollctl_events_has_hangup(events);
 	}
 	if (fd == con->output_fd)
