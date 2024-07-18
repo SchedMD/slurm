@@ -575,9 +575,9 @@ static void _handle_events(bool *work)
 	/* grab counts once */
 	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
 
-	log_flag(CONMGR, "%s: starting connections=%u listen_conns=%u",
+	log_flag(CONMGR, "%s: connections=%u listen_conns=%u complete_conns=%u",
 		 __func__, list_count(mgr.connections),
-		 list_count(mgr.listen_conns));
+		 list_count(mgr.listen_conns), list_count(mgr.complete_conns));
 
 	if (!list_is_empty(mgr.complete_conns))
 		_handle_complete_conns();
