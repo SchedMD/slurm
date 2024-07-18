@@ -374,6 +374,21 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 
+/*
+ * Add new connection from file descriptor(s)
+ *
+ * IN type - Initial connection type
+ * IN source - connection that created this fd (listeners only)
+ * IN input_fd - file descriptor for incoming data (or -1)
+ * IN output_fd - file descriptor for outgoing data (or -1)
+ * IN events - callbacks for this connections
+ * IN addr - address for this connection or NULL
+ * IN addrlen - number of bytes in *addr or 0 if addr==NULL
+ * IN is_listen - True if this is a listening socket
+ * IN unix_socket_path - Named Unix Socket path in filesystem or NULL
+ * IN arg - arbitrary pointer to hand to events
+ * RET SLURM_SUCCESS or errror
+ */
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
