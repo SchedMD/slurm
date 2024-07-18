@@ -1622,7 +1622,7 @@ def require_accounting(modify=False):
         if modify:
             backup_accounting_database()
     else:
-        if modify:
+        if modify and not properties["allow-slurmdbd-modify"]:
             require_auto_config("wants to modify the accounting database")
         elif (
             get_config_parameter("AccountingStorageType", live=False, quiet=True)
@@ -3911,6 +3911,10 @@ if "slurminstalldir" in testsuite_config:
     properties["slurm-prefix"] = testsuite_config["slurminstalldir"]
 if "slurmconfigdir" in testsuite_config:
     properties["slurm-config-dir"] = testsuite_config["slurmconfigdir"]
+if "allow-slurmdbd-modify" in testsuite_config:
+    properties["allow-slurmdbd-modify"] = bool(testsuite_config["slurmconfigdir"])
+else:
+    properties["allow-slurmdbd-modify"] = False
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
