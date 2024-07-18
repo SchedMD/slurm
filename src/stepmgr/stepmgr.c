@@ -751,6 +751,36 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	list_delete_all(job_ptr->step_list, _wake_steps, &args);
 }
 
+/* Set cur_inx to the next round-robin node index */
+static int _next_node_inx(int *cur_inx, int *check_cnt, int len, int node_cnt,
+			  bitstr_t *nodes_bitmap, bitstr_t **picked_node_bitmap,
+			  int start_int)
+{
+	xassert(cur_inx);
+	xassert(check_cnt);
+	xassert(nodes_bitmap);
+	xassert(picked_node_bitmap);
+
+	if (*check_cnt == 0)
+		*cur_inx = start_int;
+	else
+		*cur_inx = (*cur_inx + 1) % len;
+
+	if (*check_cnt >= node_cnt)
+		return SLURM_ERROR; /* Normal break case */
+
+	(*check_cnt)++;
+	*cur_inx = bit_ffs_from_bit(nodes_bitmap, *cur_inx);
+
+	if (*cur_inx < 0) {
+		/* This should never happen */
+		FREE_NULL_BITMAP(*picked_node_bitmap);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
  * then select nodes with a sufficient CPU count.
  * IN job_ptr - job to contain step allocation
@@ -768,22 +798,39 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	int cpu_target;	/* Target number of CPUs per allocated node */
 	int rem_nodes, rem_cpus, save_rem_nodes, save_rem_cpus;
 	int i;
+	int start_inx, bit_len, check_cnt;
 
 	xassert(node_cnt > 0);
 	xassert(nodes_bitmap);
 	xassert(usable_cpu_cnt);
+
+	picked_node_bitmap = bit_alloc(node_record_count);
+	start_inx = job_ptr->job_resrcs->next_step_node_inx;
+	bit_len = bit_fls(nodes_bitmap) + 1;
+	if (start_inx >= bit_len)
+		start_inx = 0;
+
 	cpu_target = (cpu_cnt + node_cnt - 1) / node_cnt;
 	if (cpu_target > 1024)
 		info("%s: high cpu_target (%d)", __func__, cpu_target);
-	if ((cpu_cnt <= node_cnt) || (cpu_target > 1024))
-		return bit_pick_cnt(nodes_bitmap, node_cnt);
+	if ((cpu_cnt <= node_cnt) || (cpu_target > 1024)) {
+		check_cnt = 0;
+		while (_next_node_inx(&i, &check_cnt, bit_len, node_cnt,
+				      nodes_bitmap, &picked_node_bitmap,
+				      start_inx) == SLURM_SUCCESS)
+			bit_set(picked_node_bitmap, i);
+
+		return picked_node_bitmap;
+	}
 
 	/* Need to satisfy both a node count and a cpu count */
-	picked_node_bitmap = bit_alloc(node_record_count);
 	usable_cpu_array = xcalloc(cpu_target, sizeof(int));
 	rem_nodes = node_cnt;
 	rem_cpus  = cpu_cnt;
-	for (i = 0; next_node_bitmap(nodes_bitmap, &i); i++) {
+	check_cnt = 0;
+	while (_next_node_inx(&i, &check_cnt, bit_len, bit_len, nodes_bitmap,
+			      &picked_node_bitmap, start_inx) ==
+	       SLURM_SUCCESS) {
 		if (usable_cpu_cnt[i] < cpu_target) {
 			usable_cpu_array[usable_cpu_cnt[i]]++;
 			continue;
@@ -801,6 +848,11 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			return NULL;
 		}
+	}
+
+	if (!picked_node_bitmap) {
+		xfree(usable_cpu_array);
+		return NULL;
 	}
 
 	/* Need more resources. Determine what CPU counts per node to use */
@@ -826,7 +878,10 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	rem_cpus  = save_rem_cpus;
 
 	/* Pick nodes with CPU counts below original target */
-	for (i = 0; next_node_bitmap(nodes_bitmap, &i); i++) {
+	check_cnt = 0;
+	while (_next_node_inx(&i, &check_cnt, bit_len, bit_len, nodes_bitmap,
+			      &picked_node_bitmap, start_inx) ==
+	       SLURM_SUCCESS) {
 		if (usable_cpu_cnt[i] >= cpu_target)
 			continue;	/* already picked */
 		if (usable_cpu_array[usable_cpu_cnt[i]] == 0)
@@ -1081,8 +1136,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	 */
 	if ((nodes_picked = select_g_step_pick_nodes(job_ptr, select_jobinfo,
 						     node_count,
-						     &select_nodes_avail)))
+						     &select_nodes_avail))) {
+		job_resrcs_ptr->next_step_node_inx = bit_fls(nodes_picked) + 1;
 		return nodes_picked;
+	}
 
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
@@ -1376,6 +1433,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			}
 		}
 
+		job_resrcs_ptr->next_step_node_inx = 0;
 		xfree(usable_cpu_cnt);
 		FREE_NULL_BITMAP(select_nodes_avail);
 		return nodes_avail;
@@ -1799,6 +1857,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
+	job_resrcs_ptr->next_step_node_inx = bit_fls(nodes_picked) + 1;
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(select_nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);

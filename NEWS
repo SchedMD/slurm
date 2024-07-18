@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- Skip packing empty nodes when they are hidden during REQUEST_NODE_INFO RPC.
  -- accounting_storage/mysql - Avoid a fatal condition when the db server is
     not reachable.
+ -- Always lay out steps cyclically on nodes in an allocation.
 
 * Changes in Slurm 24.05.2
 ==========================
