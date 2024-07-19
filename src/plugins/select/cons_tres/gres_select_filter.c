@@ -1402,7 +1402,12 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-		cpus_per_core = node_ptr->tpc;
+		if (tres_mc_ptr->threads_per_core)
+			cpus_per_core = MIN(node_ptr->tpc,
+					    tres_mc_ptr->threads_per_core);
+		else
+			cpus_per_core = node_ptr->tpc;
+
 		for (s = 0; s < sock_cnt; s++) {
 			int tasks_per_socket = 0, tpc, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
