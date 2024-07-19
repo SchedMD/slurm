@@ -188,7 +188,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
 
     <p><b>NOTE</b>: The <b>SLURM_RESUME_FILE</b> will only exist and be
     usable if Slurm was compiled with the <a href=
-    "download.html#json">JSON-C</a> serializer library.</p>
+    "related_software.html#json">JSON-C</a> serializer library.</p>
   </dd>
 
   <dt id="ResumeRate"><b>ResumeRate</b><a class="slurm_link" href=

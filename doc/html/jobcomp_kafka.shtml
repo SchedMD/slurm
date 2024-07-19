@@ -17,7 +17,8 @@ consumes its API, thus the library development files are another prerequisite.
 <ul>
 	<li><a href="https://github.com/confluentinc/librdkafka">librdkafka</a>
 		 development files</li>
-	<li><a href="download.html#json">libjson-c</a> development files</li>
+	<li><a href="related_software.html#json">libjson-c</a> development
+		 files</li>
 </ul>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>

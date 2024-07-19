@@ -2278,8 +2278,8 @@ both). Configure can be made to explicitly request these libraries:
 Most distributions include packages to make installation relatively easy.
 Please make sure to install the 'dev' or 'devel' packages along with the
 library packages. We also provide explicit instructions on how to install from
-source: <a href="download.html#yaml">libyaml</a> and <a
-href="download.html#jwt">libjwt</a>.
+source: <a href="related_software.html#yaml">libyaml</a> and
+<a href="related_software.html#jwt">libjwt</a>.
 </p>
 
 <p><a id="epel"><b>Why am I being offered an automatic update for Slurm?</b></a>

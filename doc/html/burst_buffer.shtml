@@ -133,7 +133,8 @@ for more information.</li>
 <li>The JSON-C library must be installed in order to build Slurm's
 <code>burst_buffer/datawarp</code> and <code>burst_buffer/lua</code> plugins,
 which must parse JSON format data. See Slurm's
-<a href="download.html#json">JSON installation information</a> for details.</li>
+<a href="related_software.html#json">JSON installation information</a> for
+details.</li>
 </ul>
 
 <h3 id="datawarp_config">Datawarp
