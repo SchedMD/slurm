@@ -108,9 +108,12 @@ static int		shutdown_timeout = 0;
 
 extern void backup_on_sighup(void)
 {
-	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+	};
 
 	/*
 	 * XXX - need to shut down the scheduler
