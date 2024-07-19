@@ -399,6 +399,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_msg_t *msg = args->msg;
 	stepd_step_rec_t *step;
 	int rc = 0;
+	bool only_mem = true;
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
 
@@ -451,10 +452,9 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	 * and blocks until the step is complete */
 	rc = job_manager(step);
 
-	args->rc = stepd_cleanup(msg, step, cli, rc, false);
-	return;
+	only_mem = false;
 ending:
-	args->rc = stepd_cleanup(msg, step, cli, rc, true);
+	args->rc = stepd_cleanup(msg, step, cli, rc, only_mem);
 }
 
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
