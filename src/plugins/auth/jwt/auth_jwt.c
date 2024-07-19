@@ -570,7 +570,6 @@ extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
 extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_token_t *cred = NULL;
-	uint32_t uint32_tmp;
 
 	if (!buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -581,8 +580,8 @@ extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	cred->verified = false;		/* just to be explicit */
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&cred->token, &uint32_tmp, buf);
-		safe_unpackstr_xmalloc(&cred->username, &uint32_tmp, buf);
+		safe_unpackstr(&cred->token, buf);
+		safe_unpackstr(&cred->username, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);

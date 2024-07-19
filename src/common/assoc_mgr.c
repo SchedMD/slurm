@@ -6099,12 +6099,11 @@ extern int load_assoc_usage(void)
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
-		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
 		/*
@@ -6214,13 +6213,12 @@ extern int load_qos_usage(void)
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
 		uint32_t grp_used_wall = 0;
-		uint32_t tmp32;
 		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
 
 		safe_unpack32(&qos_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
-		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
 		while ((qos = list_next(itr)))

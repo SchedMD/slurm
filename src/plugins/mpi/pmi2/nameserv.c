@@ -181,7 +181,7 @@ name_lookup_up(char *name)
 	FREE_NULL_BUFFER(buf);
 
 	if (rc == SLURM_SUCCESS)
-		safe_unpackstr_xmalloc(&port, (uint32_t *)&size, resp_buf);
+		safe_unpackstr(&port, resp_buf);
 unpack_error:
 	FREE_NULL_BUFFER(resp_buf);
 

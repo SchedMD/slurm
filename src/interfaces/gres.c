@@ -2126,11 +2126,11 @@ static int _unpack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 
 	/* gres_ctx->cur_plugin: filled in later with _load_plugin() */
 	safe_unpack32(&gres_ctx->config_flags, buffer);
-	safe_unpackstr_xmalloc(&gres_ctx->gres_name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_ctx->gres_name_colon, &uint32_tmp, buffer);
+	safe_unpackstr(&gres_ctx->gres_name, buffer);
+	safe_unpackstr(&gres_ctx->gres_name_colon, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
 	gres_ctx->gres_name_colon_len = (int)uint32_tmp;
-	safe_unpackstr_xmalloc(&gres_ctx->gres_type, &uint32_tmp, buffer);
+	safe_unpackstr(&gres_ctx->gres_type, buffer);
 	gres_recv_stepd(buffer, &gres_ctx->np_gres_devices);
 	/* gres_ctx->ops: filled in later with _load_plugin() */
 	safe_unpack32(&gres_ctx->plugin_id, buffer);
@@ -2172,7 +2172,6 @@ static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 				    buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	gres_slurmd_conf_t *gres_slurmd_conf =
 		xmalloc(sizeof(*gres_slurmd_conf));
 
@@ -2187,15 +2186,13 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 	safe_unpack32(&gres_slurmd_conf->config_flags, buffer);
 	safe_unpack64(&gres_slurmd_conf->count, buffer);
 	safe_unpack32(&gres_slurmd_conf->cpu_cnt, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->cpus, &uint32_tmp, buffer);
+	safe_unpackstr(&gres_slurmd_conf->cpus, buffer);
 	unpack_bit_str_hex(&gres_slurmd_conf->cpus_bitmap, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->file, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->links, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->type_name,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_slurmd_conf->unique_id,
-			       &uint32_tmp, buffer);
+	safe_unpackstr(&gres_slurmd_conf->file, buffer);
+	safe_unpackstr(&gres_slurmd_conf->links, buffer);
+	safe_unpackstr(&gres_slurmd_conf->name, buffer);
+	safe_unpackstr(&gres_slurmd_conf->type_name, buffer);
+	safe_unpackstr(&gres_slurmd_conf->unique_id, buffer);
 	safe_unpack32(&gres_slurmd_conf->plugin_id, buffer);
 
 	*object = gres_slurmd_conf;
@@ -2707,7 +2704,7 @@ extern int gres_node_config_pack(buf_t *buffer)
 extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 {
 	int i, rc = SLURM_SUCCESS;
-	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
+	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0;
 	uint64_t count64 = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
 	uint32_t config_flags = 0;
@@ -2750,11 +2747,11 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpack32(&cpu_cnt, buffer);
 			safe_unpack32(&config_flags, buffer);
 			safe_unpack32(&plugin_id, buffer);
-			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_unique_id, &utmp32, buffer);
+			safe_unpackstr(&tmp_cpus, buffer);
+			safe_unpackstr(&tmp_links, buffer);
+			safe_unpackstr(&tmp_name, buffer);
+			safe_unpackstr(&tmp_type, buffer);
+			safe_unpackstr(&tmp_unique_id, buffer);
 		}
 
 		if (!count64)
@@ -7128,8 +7125,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack64(&gres_js->mem_per_gres, buffer);
 			safe_unpack16(&gres_js->ntasks_per_gres, buffer);
 			safe_unpack64(&gres_js->total_gres, buffer);
-			safe_unpackstr_xmalloc(&gres_js->type_name,
-					       &utmp32, buffer);
+			safe_unpackstr(&gres_js->type_name, buffer);
 			gres_js->type_id =
 				gres_build_id(gres_js->type_name);
 			safe_unpack32(&gres_js->node_cnt, buffer);
@@ -7217,8 +7213,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack64(&gres_js->mem_per_gres, buffer);
 			safe_unpack16(&gres_js->ntasks_per_gres, buffer);
 			safe_unpack64(&gres_js->total_gres, buffer);
-			safe_unpackstr_xmalloc(&gres_js->type_name,
-					       &utmp32, buffer);
+			safe_unpackstr(&gres_js->type_name, buffer);
 			gres_js->type_id =
 				gres_build_id(gres_js->type_name);
 			safe_unpack32(&gres_js->node_cnt, buffer);
@@ -10590,10 +10585,8 @@ extern void gres_recv_stepd(buf_t *buffer, List *gres_devices)
 		gres_device->dev_desc.major = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		gres_device->dev_desc.minor = uint32_tmp;
-		safe_unpackstr_xmalloc(&gres_device->path,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&gres_device->unique_id,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&gres_device->path, buffer);
+		safe_unpackstr(&gres_device->unique_id, buffer);
 		list_append(*gres_devices, gres_device);
 		/* info("adding %d %s %s", gres_device->dev_num, */
 		/*      gres_device->major, gres_device->path); */

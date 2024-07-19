@@ -721,7 +721,6 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 				 buf_t *buffer)
 {
 	char *device_name;
-	uint32_t name_len;
 
 	safe_unpack32(&profile->svc_id, buffer);
 	safe_unpack16(&profile->vnis[0], buffer);
@@ -730,7 +729,7 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 	safe_unpack16(&profile->vnis[3], buffer);
 	safe_unpack32(&profile->tcs, buffer);
 
-	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
+	safe_unpackstr(&device_name, buffer);
 	if (!device_name)
 		goto unpack_error;
 	strlcpy(profile->device_name, device_name,
@@ -746,12 +745,11 @@ unpack_error:
 static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 {
 	char *address, *device_name;
-	uint32_t name_len;
 
 	safe_unpack32(&nic->nodeidx, buffer);
 	safe_unpack32(&nic->address_type, buffer);
 
-	safe_unpackstr_xmalloc(&address, &name_len, buffer);
+	safe_unpackstr(&address, buffer);
 	if (!address)
 		goto unpack_error;
 	strlcpy(nic->address, address, sizeof(nic->address));
@@ -759,7 +757,7 @@ static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 
 	safe_unpack16(&nic->numa_node, buffer);
 
-	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
+	safe_unpackstr(&device_name, buffer);
 	if (!device_name)
 		goto unpack_error;
 	strlcpy(nic->device_name, device_name, sizeof(nic->device_name));
@@ -775,7 +773,6 @@ static bool _unpack_hwcoll(slingshot_hwcoll_t **hwcollp, buf_t *buffer)
 {
 	slingshot_hwcoll_t *hwcoll = NULL;
 	bool got_hwcoll = false;
-	uint32_t name_len;
 
 	*hwcollp = NULL;
 	/* Unpack a boolean to see if hwcoll is packed in the buffer */
@@ -786,11 +783,11 @@ static bool _unpack_hwcoll(slingshot_hwcoll_t **hwcollp, buf_t *buffer)
 		safe_unpack32(&hwcoll->job_id, buffer);
 		safe_unpack32(&hwcoll->step_id, buffer);
 
-		safe_unpackstr_xmalloc(&hwcoll->mcast_token, &name_len, buffer);
+		safe_unpackstr(&hwcoll->mcast_token, buffer);
 		if (!hwcoll->mcast_token)
 			goto unpack_error;
 
-		safe_unpackstr_xmalloc(&hwcoll->fm_url, &name_len, buffer);
+		safe_unpackstr(&hwcoll->fm_url, buffer);
 		if (!hwcoll->fm_url)
 			goto unpack_error;
 

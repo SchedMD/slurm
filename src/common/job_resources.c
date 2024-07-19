@@ -823,7 +823,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		job_resrcs->nhosts = empty;
 		safe_unpack32(&job_resrcs->ncpus, buffer);
 		safe_unpack32(&job_resrcs->node_req, buffer);
-		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
+		safe_unpackstr(&job_resrcs->nodes, buffer);
 		safe_unpack8(&job_resrcs->whole_node, buffer);
 		safe_unpack16(&job_resrcs->threads_per_core, buffer);
 		safe_unpack16(&job_resrcs->cr_type, buffer);
@@ -890,7 +890,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		job_resrcs->nhosts = empty;
 		safe_unpack32(&job_resrcs->ncpus, buffer);
 		safe_unpack32(&job_resrcs->node_req, buffer);
-		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
+		safe_unpackstr(&job_resrcs->nodes, buffer);
 		safe_unpack8(&tmp8, buffer);
 		if (tmp8 == OLD_WHOLE_NODE_MCS)
 			job_resrcs->whole_node = WHOLE_NODE_MCS;

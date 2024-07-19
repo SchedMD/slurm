@@ -467,7 +467,6 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_credential_t *cred = NULL;
-	uint32_t size;
 
 	if (!buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -481,7 +480,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 		cred->verified = false;
 		cred->m_xstr = true;
 
-		safe_unpackstr_xmalloc(&cred->m_str, &size, buf);
+		safe_unpackstr(&cred->m_str, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);

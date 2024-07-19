@@ -6259,11 +6259,10 @@ extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
 extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
 				       buf_t *buff)
 {
-	uint32_t uint32_tmp;
 	config_plugin_params_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
 	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buff);
+	safe_unpackstr(&object_ptr->name, buff);
 
 	if (unpack_key_pair_list((void *) &object_ptr->key_pairs,
 				 protocol_version, buff) != SLURM_SUCCESS)
@@ -6346,12 +6345,11 @@ extern void pack_config_key_pair(void *in, uint16_t protocol_version,
 extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
 				  buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
 
 	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->value, &uint32_tmp, buffer);
+	safe_unpackstr(&object_ptr->name, buffer);
+	safe_unpackstr(&object_ptr->value, buffer);
 
 	return SLURM_SUCCESS;
 

@@ -89,11 +89,10 @@ static struct job_option_info *job_option_info_unpack(buf_t *buf)
 {
 	struct job_option_info *ji = xmalloc (sizeof (*ji));
 	uint32_t type;
-	uint32_t len;
 
 	safe_unpack32 (&type, buf);
-	safe_unpackstr_xmalloc (&ji->option, &len, buf);
-	safe_unpackstr_xmalloc (&ji->optarg, &len, buf);
+	safe_unpackstr(&ji->option, buf);
+	safe_unpackstr(&ji->optarg, buf);
 
 	ji->type = (int) type;
 	return (ji);
@@ -156,16 +155,10 @@ int job_options_pack(List opts, buf_t *buf)
 int job_options_unpack(List opts, buf_t *buf)
 {
 	uint32_t count;
-	uint32_t len;
 	char *   tag = NULL;
 	int      i;
 
-	safe_unpackstr_xmalloc (&tag, &len, buf);
-
-	if (xstrncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0) {
-		xfree(tag);
-		return (-1);
-	}
+	safe_unpackstr(&tag, buf);
 	xfree(tag);
 	safe_unpack32 (&count, buf);
 
