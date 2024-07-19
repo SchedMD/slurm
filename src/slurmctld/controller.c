@@ -1400,10 +1400,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 	}
 
-	/* leave ports open */
-	if (reconfig)
-		return NULL;
-
 	debug3("%s shutting down", __func__);
 
 	rate_limit_shutdown();
