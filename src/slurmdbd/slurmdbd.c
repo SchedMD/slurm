@@ -190,9 +190,7 @@ static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("SIGABRT received");
-	abort();	/* Should terminate here */
-	shutdown_threads();
+	fatal_abort("SIGABRT received");
 }
 
 static void _register_signal_handlers(void)
