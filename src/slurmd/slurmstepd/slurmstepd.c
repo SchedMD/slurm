@@ -1171,25 +1171,13 @@ _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
 			stepd_step_rec_destroy(step);
 	}
 
-	if (msg) {
-		/*
-		 * The message cannot be freed until the jobstep is complete
-		 * because the job struct has pointers into the msg, such
-		 * as the switch jobinfo pointer.
-		 */
-		switch(msg->msg_type) {
-		case REQUEST_BATCH_JOB_LAUNCH:
-			slurm_free_job_launch_msg(msg->data);
-			break;
-		case REQUEST_LAUNCH_TASKS:
-			slurm_free_launch_tasks_request_msg(msg->data);
-			break;
-		default:
-			fatal("handle_launch_message: Unrecognized launch RPC");
-			break;
-		}
-		xfree(msg);
-	}
+	/*
+	 * The message cannot be freed until the jobstep is complete
+	 * because the job struct has pointers into the msg, such
+	 * as the switch jobinfo pointer.
+	 */
+	slurm_free_msg(msg);
+
 	jobacctinfo_destroy(step_complete.jobacct);
 }
 #endif
