@@ -63,6 +63,8 @@
 #include "src/slurmdbd/slurmdbd.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/conmgr/conmgr.h"
+
 /* Local functions */
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn);
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn);
@@ -3427,7 +3429,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	info("Shutdown request received from UID %u",
 	     slurmdbd_conn->conn->auth_uid);
-	pthread_kill(signal_handler_thread, SIGTERM);
+	shutdown_threads();
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_SHUTDOWN);

@@ -45,7 +45,6 @@ extern pthread_mutex_t registered_lock;
 extern List registered_clusters;
 extern pthread_mutex_t rpc_mutex;
 extern slurmdb_stats_rec_t rpc_stats;
-extern pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 extern void shutdown_threads(void);
 

@@ -90,13 +90,8 @@ List registered_clusters = NULL;
 pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 slurmdb_stats_rec_t rpc_stats;
 pthread_mutex_t registered_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 /* Local variables */
-static int    dbd_sigarray[] = {	/* blocked signals for this process */
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
 static int    debug_level = 0;		/* incremented for -v on command line */
 static bool daemonize = true;		/* run process as a daemon */
 static int    setwd = 0;		/* change working directory -s  */
@@ -128,11 +123,92 @@ static void *_rollup_handler(void *no_data);
 static int   _find_rollup_stats_in_list(void *x, void *key);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
-static void *_signal_handler(void *no_data);
 static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
 static void _run(conmgr_callback_args_t conmgr_args, void *arg);
+
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGINT received");
+	shutdown_threads();
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGTERM received");
+	shutdown_threads();
+}
+
+static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGCHLD. Ignoring");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGQUIT. Ignoring.");
+}
+
+static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTSTP. Ignoring");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Reconfigure signal (SIGHUP) received");
+	reconfig();
+}
+
+static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGUSR1. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Logrotate signal (SIGUSR2) received");
+	_update_logging(false);
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
+static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGTTIN. Ignoring.");
+}
+
+static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGXCPU. Ignoring.");
+}
+
+static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("SIGABRT received");
+	abort();	/* Should terminate here */
+	shutdown_threads();
+}
+
+static void _register_signal_handlers(void)
+{
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGCHLD, _on_sigchld, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
+	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
+	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
+}
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
@@ -167,6 +243,7 @@ int main(int argc, char **argv)
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
 	conmgr_add_work_fifo(_run, &args);
+	_register_signal_handlers();
 
 	conmgr_run(true);
 
@@ -184,13 +261,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	run_args_t *args = arg;
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
-
-	/*
-	 * This must happen before we spawn any threads
-	* which are not designed to handle them
-	*/
-	if (xsignal_block(dbd_sigarray) < 0)
-		error("Unable to block signals");
 
 	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
@@ -220,9 +290,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
-
-	/* Create attached thread for signal handling */
-	slurm_thread_create(&signal_handler_thread, _signal_handler, NULL);
 
 	registered_clusters = list_create(NULL);
 
@@ -330,8 +397,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 end_it:
 
-	if (!backup || !restart_backup)
-		slurm_thread_join(signal_handler_thread);
 	slurm_thread_join(commit_handler_thread);
 
 	acct_storage_g_commit(db_conn, 1);
@@ -439,6 +504,8 @@ extern void shutdown_threads(void)
 	_commit_handler_cancel();
 	rpc_mgr_wake();
 	_rollup_handler_cancel();
+
+	conmgr_request_shutdown();
 }
 
 /* Allocate storage for statistics data structure,
@@ -905,54 +972,6 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 		close(fd);
 	}
 	return rc;
-}
-
-/* _signal_handler - Process daemon-wide signals */
-static void *_signal_handler(void *no_data)
-{
-	int rc, sig;
-	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
-	sigset_t set;
-
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	/* Make sure no required signals are ignored (possibly inherited) */
-	xsignal_default(SIGINT);
-	xsignal_default(SIGTERM);
-	xsignal_default(SIGHUP);
-	xsignal_default(SIGABRT);
-	xsignal_default(SIGUSR2);
-
-	while (1) {
-		xsignal_sigset_create(sig_array, &set);
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGHUP:	/* kill -1 */
-			info("Reconfigure signal (SIGHUP) received");
-			reconfig();
-			break;
-		case SIGINT:	/* kill -2  or <CTRL-C> */
-		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
-			shutdown_threads();
-			return NULL;	/* Normal termination */
-		case SIGABRT:	/* abort */
-			info("SIGABRT received");
-			abort();	/* Should terminate here */
-			shutdown_threads();
-			return NULL;
-		case SIGUSR2:
-			info("Logrotate signal (SIGUSR2) received");
-			_update_logging(false);
-			break;
-		default:
-			error("Invalid signal (%d) received", sig);
-		}
-	}
-
 }
 
 static void _restart_self(int argc, char **argv)
