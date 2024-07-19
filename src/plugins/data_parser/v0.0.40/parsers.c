@@ -8508,7 +8508,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #undef add_parse
 
 #define add_cparse(mtype, path, desc) \
-	add_complex_parser(shares_response_msg_t, mtype, false, path, desc)
+	add_complex_parser(slurmdb_account_cond_t, mtype, false, path, desc)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
