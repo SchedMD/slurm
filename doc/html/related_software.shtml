@@ -1,12 +1,12 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Download Slurm</h1>
+<h1>Related Software</h1>
+
 <p>Slurm source can be downloaded from
 <a href="https://www.schedmd.com/download-slurm/">
 https://www.schedmd.com/download-slurm/</a>.</p>
 
-<h2>Related Software</h2>
-<p>Note that the following software is not written or maintained by
+<p>Note that the following related software is not written or maintained by
 SchedMD. Some of the software is required for certain functionality
 (e.g. MySQL or MariaDB are required to use slurmdbd) while other software
 was written to provide additional functionality for users or
