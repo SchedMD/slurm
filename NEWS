@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
     subset of all GPUs on a node and the --gres-flags=allow-task-sharing option
  -- Add missing mariadb/mysql client package dependency to debian package.
  -- Fail the debian package build early if mysql cannot be found.
+ -- Prevent scontrol from segfaulting when requesting scontrol show reservation
+    --json or --yaml if there is an error retrieving reservations from the
+    slurmctld.
 
 * Changes in Slurm 24.05.1
 ==========================
