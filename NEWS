@@ -42,6 +42,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix inconsistent number of cpus when creating a reservation using the
     TRESPerNode option.
  -- data_parser/v0.0.40+ - Fix job state parsing which could break filtering.
+ -- Prevent cpus-per-task to be modified in jobs where a -c value has been
+    explicitly specified and the requested memory constraints implicitly
+    increase the number of CPUs to allocate.
 
 * Changes in Slurm 24.05.1
 ==========================
