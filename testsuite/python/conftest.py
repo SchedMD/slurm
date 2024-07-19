@@ -148,6 +148,7 @@ def module_setup(request, tmp_path_factory):
     atf.properties["configurations-modified"] = set()
     atf.properties["accounting-database-modified"] = False
     atf.properties["orig-environment"] = dict(os.environ)
+    atf.properties["orig-pypath"] = list(sys.path)
 
     # Creating a module level tmp_path mimicing what tmp_path does
     name = request.node.name
@@ -202,6 +203,7 @@ def module_teardown():
     # Restore the prior environment
     os.environ.clear()
     os.environ.update(atf.properties["orig-environment"])
+    sys.path = atf.properties["orig-pypath"]
 
     if failures:
         pytest.fail(failures[0])
