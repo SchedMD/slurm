@@ -67,6 +67,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/hash.h"
 #include "src/interfaces/tls.h"
 
@@ -74,6 +76,13 @@
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/backup.h"
+
+typedef struct {
+#define RUN_ARGS_MAGIC 0xfeb0afb9
+	int magic; /* RUN_ARGS_MAGIC */
+	int argc;
+	char **argv;
+} run_args_t;
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
@@ -123,14 +132,16 @@ static void *_signal_handler(void *no_data);
 static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
+static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	char node_name_short[128];
-	char node_name_long[128];
-	void *db_conn = NULL;
-	assoc_init_args_t assoc_init_arg;
+	run_args_t args = {
+		.magic = RUN_ARGS_MAGIC,
+		.argc = argc,
+		.argv = argv,
+	};
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -152,6 +163,27 @@ int main(int argc, char **argv)
 	 */
 	_init_pidfile();
 	become_slurm_user();
+
+	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_fifo(_run, &args);
+
+	conmgr_run(true);
+
+	conmgr_fini();
+	log_fini();
+	exit(0);
+}
+
+static void _run(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	char node_name_short[128];
+	char node_name_long[128];
+	void *db_conn = NULL;
+	assoc_init_args_t assoc_init_arg;
+	run_args_t *args = arg;
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
 
 	/*
 	 * This must happen before we spawn any threads
@@ -317,7 +349,7 @@ end_it:
 		info("Primary has come back but backup is "
 		     "running the rollup. To avoid contention, "
 		     "the backup dbd will now restart.");
-		_restart_self(argc, argv);
+		_restart_self(args->argc, args->argv);
 	}
 
 	assoc_mgr_fini(0);
@@ -325,12 +357,10 @@ end_it:
 	auth_g_fini();
 	hash_g_fini();
 	tls_g_fini();
-	log_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
 	slurmdb_free_stats_rec_members(&rpc_stats);
 	slurm_mutex_unlock(&rpc_mutex);
-	exit(0);
 }
 
 extern void reconfig(void)
