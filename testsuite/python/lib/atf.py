@@ -4135,10 +4135,6 @@ if "slurminstalldir" in testsuite_config:
     properties["slurm-prefix"] = testsuite_config["slurminstalldir"]
 if "slurmconfigdir" in testsuite_config:
     properties["slurm-config-dir"] = testsuite_config["slurmconfigdir"]
-if "allow-slurmdbd-modify" in testsuite_config:
-    properties["allow-slurmdbd-modify"] = bool(testsuite_config["slurmconfigdir"])
-else:
-    properties["allow-slurmdbd-modify"] = False
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
@@ -4187,6 +4183,7 @@ else:
 properties["submitted-jobs"] = []
 properties["test-user"] = pwd.getpwuid(os.getuid()).pw_name
 properties["auto-config"] = False
+properties["allow-slurmdbd-modify"] = False
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
 nodes = {}
