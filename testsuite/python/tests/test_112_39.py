@@ -17,17 +17,6 @@ import sys
 import time
 from pprint import pprint
 
-# avoid JWT for scontrol/sacctmgr calls
-if "SLURM_JWT" in os.environ:
-    del os.environ["SLURM_JWT"]
-
-# Require specific testing version
-os.environ["OPENAPI_GENERATOR_VERSION"] = "7.2.0"
-
-# Work around: https://github.com/OpenAPITools/openapi-generator/issues/13684
-os.environ[
-    "JAVA_OPTS"
-] = "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
 
 cluster_name = "test-cluster-taco"
 cluster2_name = "test-cluster-taco2"
@@ -59,22 +48,17 @@ def setup():
     global slurmrestd_url, token, slurmrestd
     global local_cluster_name, partition_name
 
-    ogc_version = atf.run_command_output("openapi-generator-cli version")
-    if ogc_version.strip().split("\n")[-1] != os.environ["OPENAPI_GENERATOR_VERSION"]:
-        pytest.skip(
-            "test requires openapi-generator-cli version {}".format(
-                os.environ["OPENAPI_GENERATOR_VERSION"]
-            ),
-            allow_module_level=True,
-        )
-
     atf.require_accounting(modify=True)
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
+    atf.require_slurmrestd("v0.0.39,dbv0.0.39", None)
     atf.require_slurm_running()
+
+    # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
+    atf.require_openapi_generator("7.2.0")
 
     # Conf reliant variables (put here to avert --auto-config errors)
     local_cluster_name = atf.get_config_parameter("ClusterName")
@@ -90,130 +74,32 @@ def setup():
     if not partition_name:
         partition_name = "debug"
 
-    token = (
-        atf.run_command_output("scontrol token lifespan=600", fatal=True)
-        .replace("SLURM_JWT=", "")
-        .replace("\n", "")
-    )
-    if token == "":
-        fatal("unable to get auth/jwt token")
 
-    if "SLURM_TESTSUITE_SLURMRESTD_URL" in os.environ:
-        slurmrestd_url = os.environ["SLURM_TESTSUITE_SLURMRESTD_URL"]
-    else:
-        os.environ["SLURM_JWT"] = "daemon"
-        port = None
+@pytest.fixture(scope="function")
+def slurm(setup):
+    yield atf.openapi_slurm()
 
-        while not port:
-            port = atf.get_open_port()
-            logging.debug("listen on port {}".format(port))
-            slurmrestd = subprocess.Popen(
-                [
-                    "slurmrestd",
-                    "-a",
-                    "jwt",
-                    "-s",
-                    "v0.0.39,dbv0.0.39",
-                    "localhost:{}".format(port),
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            s = None
 
-            for i in range(100):
-                if slurmrestd.poll():
-                    break
-
-                try:
-                    s = socket.create_connection(("localhost", port))
-                    break
-                except Exception as e:
-                    logging.debug("Unable to connect to port {}: {}".format(port, e))
-                time.sleep(1)
-
-            if s:
-                s.close()
-                break
-
-            logging.debug(
-                "slurmrestd accepting on port {} but is still running".format(port)
-            )
-            slurmrestd.kill()
-            slurmrestd.wait()
-            port = None
-
-        del os.environ["SLURM_JWT"]
-
-        slurmrestd_url = "http://localhost:{}/".format(port)
-
-    headers = {
-        "X-SLURM-USER-NAME": getpass.getuser(),
-        "X-SLURM-USER-TOKEN": token,
-    }
-    r = requests.get("{}/openapi/v3".format(slurmrestd_url), headers=headers)
-
+def test_loaded_versions():
+    r = atf.request_slurmrestd("openapi/v3")
     assert r.status_code == 200
-
-    if not "SLURM_TESTSUITE_OPENAPI_CLIENT" in os.environ:
-        # allow pointing to an existing OpenAPI generated client
-        pyapi_path = "{}/pyapi/".format(atf.module_tmp_path)
-        spec_path = "{}/openapi.json".format(atf.module_tmp_path)
-    else:
-        pyapi_path = "{}/pyapi/".format(os.environ["SLURM_TESTSUITE_OPENAPI_CLIENT"])
-        spec_path = "{}/openapi.json".format(
-            os.environ["SLURM_TESTSUITE_OPENAPI_CLIENT"]
-        )
-        pathlib.Path(pyapi_path).mkdir(parents=True, exist_ok=True)
 
     spec = r.json()
 
     # verify older plugins are not loaded
-    if "/slurm/v0.0.41/jobs/" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.41 not supported", allow_module_level=True)
-    if "/slurm/v0.0.40/jobs/" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.40 not supported", allow_module_level=True)
-    if "/slurm/v0.0.38/jobs" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.38 not supported", allow_module_level=True)
-    if "/slurmdb/v0.0.38/jobs" in spec["paths"].keys():
-        pytest.skip("plugin dbv0.0.38 not supported", allow_module_level=True)
-    if "/slurm/v0.0.37/jobs" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.37 not supported", allow_module_level=True)
-    if "/slurmdb/v0.0.37/jobs" in spec["paths"].keys():
-        pytest.skip("plugin dbv0.0.37 not supported", allow_module_level=True)
-    if "/slurm/v0.0.36/jobs" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.36 not supported", allow_module_level=True)
-    if "/slurmdb/v0.0.36/jobs" in spec["paths"].keys():
-        pytest.skip("plugin dbv0.0.36 not supported", allow_module_level=True)
-    if "/slurm/v0.0.35/jobs" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.36 not supported", allow_module_level=True)
+    assert "/slurm/v0.0.41/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.40/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.38/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.38/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.37/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.37/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.36/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.36/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.35/jobs" not in spec["paths"].keys()
 
     # verify current plugins are loaded
-    if not "/slurm/v0.0.39/jobs" in spec["paths"].keys():
-        pytest.skip("plugin v0.0.39 required", allow_module_level=True)
-    if not "/slurmdb/v0.0.39/jobs" in spec["paths"].keys():
-        pytest.skip("plugin dbv0.0.39 required", allow_module_level=True)
-
-    if not os.path.exists(spec_path):
-        with open(spec_path, "w") as f:
-            f.write(r.text)
-            f.close()
-        atf.run_command(
-            "openapi-generator-cli generate -i '{}' -g python-pydantic-v1 --strict-spec=false -o '{}'".format(
-                spec_path, pyapi_path
-            ),
-            fatal=True,
-            timeout=9999,
-        )
-
-    sys.path.insert(0, pyapi_path)
-
-    yield
-
-    if slurmrestd:
-        slurmrestd.kill()
-        slurmrestd.wait()
+    assert "/slurm/v0.0.39/jobs" in spec["paths"].keys()
+    assert "/slurmdb/v0.0.39/jobs" in spec["paths"].keys()
 
 
 def purge():
@@ -261,16 +147,13 @@ def cleanup():
     purge()
 
 
-def test_db_accounts():
-    import openapi_client
+def test_db_accounts(slurm):
     from openapi_client import ApiClient as Client
     from openapi_client import Configuration as Config
     from openapi_client.models.dbv0039_account_info import Dbv0039AccountInfo
     from openapi_client.models.v0039_account import V0039Account
     from openapi_client.models.v0039_assoc_short import V0039AssocShort
     from openapi_client.models.v0039_coord import V0039Coord
-
-    slurm = get_slurm()
 
     atf.run_command(
         "sacctmgr -i create user {} cluster={}".format(user_name, local_cluster_name),
@@ -398,36 +281,16 @@ def test_db_accounts():
     assert not resp.accounts
 
 
-def get_slurm():
-    import openapi_client
-    from openapi_client import ApiClient as Client
-
-    c = openapi_client.Configuration()
-    c.host = slurmrestd_url
-    c.access_token = token
-
-    return openapi_client.SlurmApi(openapi_client.ApiClient(c))
-
-
-def test_db_diag():
-    import openapi_client
-    from openapi_client.models.dbv0039_diag import Dbv0039Diag
-    from openapi_client.models.status import Status
-
-    slurm = get_slurm()
+def test_db_diag(slurm):
     resp = slurm.slurmdb_v0039_diag()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.statistics
 
 
-def test_db_wckeys():
-    import openapi_client
-    from openapi_client.models.status import Status
+def test_db_wckeys(slurm):
     from openapi_client.models.v0039_wckey import V0039Wckey
     from openapi_client.models.dbv0039_wckey_info import Dbv0039WckeyInfo
-
-    slurm = get_slurm()
 
     atf.run_command(
         "sacctmgr -i create user {} cluster={}".format(user_name, local_cluster_name),
@@ -500,13 +363,10 @@ def test_db_wckeys():
     # FIXME: bug#18939 assert len(resp.wckeys) == 0
 
 
-def test_db_clusters():
-    import openapi_client
+def test_db_clusters(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.dbv0039_clusters_info import Dbv0039ClustersInfo
     from openapi_client.models.v0039_cluster_rec import V0039ClusterRec
-
-    slurm = get_slurm()
 
     clusters = [
         V0039ClusterRec(
@@ -559,8 +419,7 @@ def test_db_clusters():
     assert not resp.clusters
 
 
-def test_db_users():
-    import openapi_client
+def test_db_users(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.dbv0039_update_users import Dbv0039UpdateUsers
     from openapi_client.models.v0039_assoc_short import V0039AssocShort
@@ -568,8 +427,6 @@ def test_db_users():
     from openapi_client.models.v0039_user import V0039User
     from openapi_client.models.v0039_user_default import V0039UserDefault
     from openapi_client.models.v0039_wckey import V0039Wckey
-
-    slurm = get_slurm()
 
     atf.run_command("sacctmgr -i create wckey {}".format(wckey_name), fatal=False)
     atf.run_command("sacctmgr -i create wckey {}".format(wckey2_name), fatal=False)
@@ -680,8 +537,7 @@ def test_db_users():
         assert not resp.users
 
 
-def test_db_assoc():
-    import openapi_client
+def test_db_assoc(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.dbv0039_update_users import Dbv0039UpdateUsers
     from openapi_client.models.dbv0039_associations_info import Dbv0039AssociationsInfo
@@ -691,8 +547,6 @@ def test_db_assoc():
     from openapi_client.models.v0039_user import V0039User
     from openapi_client.models.v0039_wckey import V0039Wckey
     from openapi_client.models.v0039_uint32_no_val import V0039Uint32NoVal
-
-    slurm = get_slurm()
 
     atf.run_command("sacctmgr -i create account {}".format(account_name), fatal=False)
     atf.run_command("sacctmgr -i create account {}".format(account2_name), fatal=False)
@@ -937,16 +791,13 @@ def test_db_assoc():
     assert not resp.associations
 
 
-def test_db_qos():
-    import openapi_client
+def test_db_qos(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.v0039_qos import V0039Qos
     from openapi_client.models.v0039_tres import V0039Tres
     from openapi_client.models.dbv0039_update_qos import Dbv0039UpdateQos
     from openapi_client.models.v0039_float64_no_val import V0039Float64NoVal
     from openapi_client.models.v0039_uint32_no_val import V0039Uint32NoVal
-
-    slurm = get_slurm()
 
     atf.run_command("sacctmgr -i create account {}".format(account_name), fatal=False)
     atf.run_command("sacctmgr -i create account {}".format(account2_name), fatal=False)
@@ -1099,28 +950,19 @@ def test_db_qos():
     assert not resp.qos
 
 
-def test_db_tres():
-    import openapi_client
-
-    slurm = get_slurm()
-
+def test_db_tres(slurm):
     resp = slurm.slurmdb_v0039_get_tres()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
-def test_db_config():
-    import openapi_client
-
-    slurm = get_slurm()
-
+def test_db_config(slurm):
     resp = slurm.slurmdb_v0039_get_config()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
-def test_jobs():
-    import openapi_client
+def test_jobs(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.v0039_job_submission import V0039JobSubmission
     from openapi_client.models.v0039_job_submission_response import (
@@ -1129,8 +971,6 @@ def test_jobs():
     from openapi_client.models.v0039_job_desc_msg import V0039JobDescMsg
     from openapi_client.models.v0039_job_info import V0039JobInfo
     from openapi_client.models.v0039_uint32_no_val import V0039Uint32NoVal
-
-    slurm = get_slurm()
 
     script = "#!/bin/bash\n/bin/true"
     env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
@@ -1256,11 +1096,8 @@ def test_jobs():
                 assert job.partition == partition_name
 
 
-def test_resv():
-    import openapi_client
+def test_resv(slurm):
     from openapi_client.models.status import Status
-
-    slurm = get_slurm()
 
     atf.run_command(
         "scontrol create reservation starttime=now duration=120 user=root flags=maint,ignore_jobs nodes=ALL ReservationName={}".format(
@@ -1282,11 +1119,8 @@ def test_resv():
     assert resp.reservations
 
 
-def test_partitions():
-    import openapi_client
+def test_partitions(slurm):
     from openapi_client.models.status import Status
-
-    slurm = get_slurm()
 
     resp = slurm.slurm_v0039_get_partition(partition_name)
     assert len(resp.warnings) == 0
@@ -1301,12 +1135,9 @@ def test_partitions():
     assert resp.partitions
 
 
-def test_nodes():
-    import openapi_client
+def test_nodes(slurm):
     from openapi_client.models.status import Status
     from openapi_client.models.v0039_update_node_msg import V0039UpdateNodeMsg
-
-    slurm = get_slurm()
 
     node_name = None
     resp = slurm.slurm_v0039_get_nodes()
@@ -1387,22 +1218,16 @@ def test_nodes():
         # assert node.extra == extra
 
 
-def test_ping():
-    import openapi_client
+def test_ping(slurm):
     from openapi_client.models.status import Status
-
-    slurm = get_slurm()
 
     resp = slurm.slurm_v0039_ping()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
-def test_diag():
-    import openapi_client
+def test_diag(slurm):
     from openapi_client.models.status import Status
-
-    slurm = get_slurm()
 
     resp = slurm.slurm_v0039_diag()
     assert len(resp.warnings) == 0
@@ -1410,11 +1235,8 @@ def test_diag():
     assert resp.statistics
 
 
-def test_licenses():
-    import openapi_client
+def test_licenses(slurm):
     from openapi_client.models.status import Status
-
-    slurm = get_slurm()
 
     resp = slurm.slurm_v0039_slurmctld_get_licenses()
     assert len(resp.errors) == 0
