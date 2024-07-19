@@ -22,7 +22,11 @@ import traceback
 
 # slurmrestd
 import requests
+import signal
 
+# This module will be (un)imported in require_openapi_generator()
+openapi_client = None
+import importlib
 
 ##############################################################################
 # ATF module functions
@@ -468,6 +472,18 @@ done"""
     return pids
 
 
+def is_slurmrestd_running():
+    """Checks if slurmrestd is running.
+    Needs to be run after the related properties are set.
+    """
+    # TODO: We could check also if the required plugins/parsers in properties
+    #       are in the returned specs, but the format still depends on the version.
+    #       Once v0.0.39 is removed, we could add the extra check.
+    return repeat_until(
+        lambda: request_slurmrestd("openapi/v3"), lambda r: r.status_code == 200
+    )
+
+
 def is_slurmctld_running(quiet=False):
     """Checks whether slurmctld is running.
 
@@ -598,7 +614,7 @@ def start_slurm(clean=False, quiet=False):
     start_slurmctld(clean, quiet)
 
     # Start slurmrestd if required
-    if "slurmrestd_version" in properties:
+    if "slurmrestd_required" in properties:
         start_slurmrestd()
 
     # Build list of slurmds
@@ -758,6 +774,14 @@ def stop_slurm(fatal=True, quiet=False):
         run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
         failures.append(f"Some slurmds are still running ({pids})")
 
+    # Stop slurmrestd if was started
+    if "slurmrestd" in properties:
+        properties["slurmrestd"].send_signal(signal.SIGINT)
+        try:
+            properties["slurmrestd"].wait(timeout=60)
+        except:
+            properties["slurmrestd"].kill()
+
     if failures:
         if fatal:
             pytest.fail(failures[0])
@@ -766,14 +790,6 @@ def stop_slurm(fatal=True, quiet=False):
             return False
     else:
         return True
-
-    # Stop slurmrestd if was started
-    if "slurmrestd" in properties:
-        properties["slurmrestd"].send_signal(signal.SIGINT)
-        try:
-            properties["slurmrestd"].wait(timeout=60)
-        except:
-            properties["slurmrestd"].kill()
 
 
 def restart_slurmctld(clean=False, quiet=False):
@@ -903,7 +919,7 @@ def require_openapi_generator(version="7.3.0"):
             headers=properties["slurmrestd-headers"],
         )
         if r.status_code != 200:
-            fail(f"Error requesting openapi specs from slurmrestd: {r}")
+            pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
 
         with open(spec_path, "w") as f:
             f.write(r.text)
@@ -916,7 +932,16 @@ def require_openapi_generator(version="7.3.0"):
 
     sys.path.insert(0, pyapi_path)
 
-    import openapi_client
+    # Re-import openapi_client
+    # Regular import doesn't work if was already imported by another test.
+    global openapi_client
+    module_name = "openapi_client"
+    module_prefix = module_name + "."
+    for mod in list(sys.modules):
+        if mod == module_name or mod.startswith(module_prefix):
+            del sys.modules[mod]
+    openapi_client = importlib.import_module(module_name)
+    importlib.reload(openapi_client)
 
     properties["openapi_config"] = openapi_client.Configuration()
     properties["openapi_config"].host = properties["slurmrestd_url"]
@@ -930,8 +955,6 @@ def openapi_slurm():
     Returns a SlurmApi client from OpenAPI.
     It needs require_openapi_generator() to be run first.
     """
-    import openapi_client
-
     return openapi_client.SlurmApi(
         openapi_client.ApiClient(properties["openapi_config"])
     )
@@ -942,8 +965,6 @@ def openapi_slurmdb():
     Returns a SlurmdbApi client from OpenAPI.
     It needs require_openapi_generator() to be run first.
     """
-    import openapi_client
-
     return openapi_client.SlurmdbApi(
         openapi_client.ApiClient(properties["openapi_config"])
     )
@@ -1739,27 +1760,19 @@ def require_accounting(modify=False):
             )
 
 
-def require_slurmrestd(version="v0.0.40"):
+def require_slurmrestd(openapi_plugins, data_parsers):
+    properties["openapi_plugins"] = openapi_plugins
+    properties["data_parsers"] = data_parsers
+
     if properties["auto-config"]:
-        properties["slurmrestd_version"] = version
+        properties["slurmrestd_required"] = True
     elif "SLURM_TESTSUITE_SLURMRESTD_URL" in os.environ:
         properties["slurmrestd_url"] = os.environ["SLURM_TESTSUITE_SLURMRESTD_URL"]
 
         # Check version is the expected one
-        r = atf.request_slurmrestd("openapi/v3")
-        if r.status_code != 200:
+        if not is_slurmrestd_running():
             pytest.skip(
-                f"Unable to obtain openapi specs from {SLURM_TESTSUITE_SLURMRESTD_URL}: {r}",
-                allow_module_level=True,
-            )
-
-        spec = r.json()
-        if (
-            f"/slurm/{version}/jobs/" not in spec["paths"].keys()
-            or f"/slurmdb/{version}/jobs/" not in spec["paths"].keys()
-        ):
-            pytest.skip(
-                f"Slurmrestd in {SLURM_TESTSUITE_SLURMRESTD_URL} not using the required version {version}",
+                f"This test needs slurmrestd runnig in SLURM_TESTSUITE_SLURMRESTD_URL but cannot connect with {os.environ['SLURM_TESTSUITE_SLURMRESTD_URL']}",
                 allow_module_level=True,
             )
     else:
@@ -1775,18 +1788,21 @@ def start_slurmrestd():
 
     while not port:
         port = get_open_port()
-        logging.debug(f"trying restd on port {port}")
+        args = [
+            "slurmrestd",
+            "-a",
+            "jwt",
+            "-s",
+            properties["openapi_plugins"],
+        ]
+        if properties["data_parsers"] is not None:
+            args.extend(["-d", properties["data_parsers"]])
+
+        args.append(f"localhost:{port}")
+        logging.debug(f"Trying to start slurmrestd: {args}")
+
         properties["slurmrestd"] = subprocess.Popen(
-            [
-                "slurmrestd",
-                "-a",
-                "jwt",
-                "-s",
-                "slurmctld,slurmdbd",
-                "-d",
-                properties["slurmrestd_version"],
-                f"localhost:{port}",
-            ],
+            args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -1824,12 +1840,16 @@ def start_slurmrestd():
         .replace("\n", "")
     )
     if token == "":
-        fatal("unable to get auth/jwt token")
+        logging.warning("unable to get auth/jwt token")
 
     properties["slurmrestd-headers"] = {
         "X-SLURM-USER-NAME": get_user_name(),
         "X-SLURM-USER-TOKEN": token,
     }
+
+    # Check slurmrestd is up
+    if not is_slurmrestd_running():
+        pytest.fail(f"Slurmrestd not responding")
 
 
 def get_user_name():
