@@ -6462,6 +6462,7 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 
 	/*
 	 * Now we know that either tres-per-task is set by cli and the option
+	 * is set by env, or only tres-per-task is set either by cli or env.
 	 * Either way, set the option from tres-per-task.
 	 */
 	if (optval == LONG_OPT_GPUS_PER_TASK) {
