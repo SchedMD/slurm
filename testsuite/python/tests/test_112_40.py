@@ -1067,7 +1067,7 @@ def reservation(setup):
     )
 
 
-def test_resv(slurm):
+def test_resv(slurm, reservation):
     resp = slurm.slurm_v0040_get_reservation(resv_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
