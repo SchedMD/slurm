@@ -54,7 +54,7 @@ def setup():
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_slurmrestd("v0.0.39,dbv0.0.39", None)
+    atf.require_slurmrestd("v0.0.39,dbv0.0.39", "v0.0.39")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
