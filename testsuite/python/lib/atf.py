@@ -899,10 +899,12 @@ def require_openapi_generator(version="7.3.0"):
         "JAVA_OPTS"
     ] = "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
 
-    ogc_version = run_command_output("openapi-generator-cli version")
-    if ogc_version.strip().split("\n")[-1] != version:
+    ogc_version = (
+        run_command_output("openapi-generator-cli version").strip().split("\n")[-1]
+    )
+    if ogc_version != version:
         pytest.skip(
-            "test requires openapi-generator-cli version {version}",
+            f"test requires openapi-generator-cli version {version} (not {ogc_version})",
             allow_module_level=True,
         )
 
@@ -1769,6 +1771,9 @@ def require_slurmrestd(openapi_plugins, data_parsers):
     elif "SLURM_TESTSUITE_SLURMRESTD_URL" in os.environ:
         properties["slurmrestd_url"] = os.environ["SLURM_TESTSUITE_SLURMRESTD_URL"]
 
+        # Setup auth token
+        setup_slurmrestd_headers()
+
         # Check version is the expected one
         if not is_slurmrestd_running():
             pytest.skip(
@@ -1833,6 +1838,15 @@ def start_slurmrestd():
 
     properties["slurmrestd_url"] = f"http://localhost:{port}/"
 
+    # Setup auth token
+    setup_slurmrestd_headers()
+
+    # Check slurmrestd is up
+    if not is_slurmrestd_running():
+        pytest.fail(f"Slurmrestd not responding")
+
+
+def setup_slurmrestd_headers():
     # Create the headers with the token to connect later
     token = (
         run_command_output("scontrol token lifespan=600", fatal=True)
@@ -1846,10 +1860,6 @@ def start_slurmrestd():
         "X-SLURM-USER-NAME": get_user_name(),
         "X-SLURM-USER-TOKEN": token,
     }
-
-    # Check slurmrestd is up
-    if not is_slurmrestd_running():
-        pytest.fail(f"Slurmrestd not responding")
 
 
 def get_user_name():
@@ -4177,10 +4187,6 @@ if "slurminstalldir" in testsuite_config:
     properties["slurm-prefix"] = testsuite_config["slurminstalldir"]
 if "slurmconfigdir" in testsuite_config:
     properties["slurm-config-dir"] = testsuite_config["slurmconfigdir"]
-if "allow-slurmdbd-modify" in testsuite_config:
-    properties["allow-slurmdbd-modify"] = bool(testsuite_config["slurmconfigdir"])
-else:
-    properties["allow-slurmdbd-modify"] = False
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
@@ -4229,6 +4235,7 @@ else:
 properties["submitted-jobs"] = []
 properties["test-user"] = pwd.getpwuid(os.getuid()).pw_name
 properties["auto-config"] = False
+properties["allow-slurmdbd-modify"] = False
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
 nodes = {}

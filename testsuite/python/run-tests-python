@@ -24,6 +24,11 @@ group.add_argument(
 parser.add_argument(
     "--no-color", action="store_true", help="the logs won't include color"
 )
+parser.add_argument(
+    "--allow-slurmdbd-modify",
+    action="store_true",
+    help="allow running in local-config even if require_accounting(modify=True)",
+)
 parser.add_argument("PYTEST_OPTION ...", nargs="?", help="additional pytest options")
 parser.add_argument("TEST_FILE_OR_DIR ...", nargs="?", help="test files or directories")
 args, unknown = parser.parse_known_args()
