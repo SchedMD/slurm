@@ -293,7 +293,8 @@ static const openapi_path_binding_method_t openapi_methods[] = {
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt);
 
-#define OP_FLAGS (OP_BIND_HIDDEN_OAS | OP_BIND_NO_SLURMDBD)
+#define OP_FLAGS (OP_BIND_HIDDEN_OAS | OP_BIND_NO_SLURMDBD | \
+		  OP_BIND_NO_DATA_PARSER)
 
 /*
  * Paths to generate OpenAPI specification
@@ -916,7 +917,8 @@ extern int register_path_binding(const char *in_path,
 
 	for (int i = 0; op_path->methods[i].method != HTTP_REQUEST_INVALID;
 	     i++) {
-		if (!_data_parser_supports_method(parser, &op_path->methods[i]))
+		if (parser &&
+		    !_data_parser_supports_method(parser, &op_path->methods[i]))
 			continue;
 
 		methods_count++;
@@ -924,7 +926,9 @@ extern int register_path_binding(const char *in_path,
 
 	if (!methods_count) {
 		debug5("%s: skip binding %s with %s",
-		       __func__, path, data_parser_get_plugin(parser));
+		       __func__, path,
+		       (parser ? data_parser_get_plugin_version(parser) :
+			"data_parser/none"));
 		_free_entry_list(entries, -1, NULL);
 		return ESLURM_NOT_SUPPORTED;
 	}
@@ -951,7 +955,7 @@ extern int register_path_binding(const char *in_path,
 		 * Skip method if data_parser does not support any of the in/out
 		 * types which would just cause slurmrestd to abort() later.
 		 */
-		if (!_data_parser_supports_method(parser, m)) {
+		if (parser && !_data_parser_supports_method(parser, m)) {
 			debug5("%s: skip binding \"%s %s\" with %s",
 			       __func__, get_http_method_string(m->method),
 			       path, data_parser_get_plugin(parser));
@@ -1952,7 +1956,7 @@ static int _foreach_count_path(void *x, void *arg)
 	xassert(spec->magic == MAGIC_OAS);
 	xassert(path->magic == MAGIC_PATH);
 
-	if (!bound)
+	if (!bound || !path->parser)
 		return SLURM_SUCCESS;
 
 	refs = &spec->references[_resolve_parser_index(path->parser)];
@@ -2372,10 +2376,12 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	ctxt.parent_path = data_set_list(data_new());
 	ctxt.errors = list_create(free_openapi_resp_error);
 	ctxt.warnings = list_create(free_openapi_resp_warning);
-	ctxt.parser = data_parser_g_new(_on_error, _on_error, _on_error, &ctxt,
-					_on_warn, _on_warn, _on_warn, &ctxt,
-					data_parser_get_plugin(parser), NULL,
-					true);
+	if (parser)
+		ctxt.parser =
+			data_parser_g_new(_on_error, _on_error, _on_error,
+					  &ctxt, _on_warn, _on_warn, _on_warn,
+					  &ctxt, data_parser_get_plugin(parser),
+					  NULL, true);
 
 	debug("%s: [%s] %s using %s",
 	      __func__, context_id, get_http_method_string(method),

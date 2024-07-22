@@ -263,6 +263,9 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	int rc = SLURM_SUCCESS;
 	data_t *resp;
 
+	if (op_path->flags & OP_BIND_NO_DATA_PARSER)
+		return _add_binded_path(NULL, op_path, meta, NULL);
+
 	if (!(op_path->flags & OP_BIND_DATA_PARSER)) {
 		data_parser_t *default_parser = NULL;
 

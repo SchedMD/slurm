@@ -45,6 +45,9 @@ documents those changes that are of interest to users and administrators.
  -- Prevent cpus-per-task to be modified in jobs where a -c value has been
     explicitly specified and the requested memory constraints implicitly
     increase the number of CPUs to allocate.
+ -- slurmrestd - Fix regression where args '-s v0.0.39,dbv0.0.39' and
+    '-d v0.0.39' would result in 'GET /openapi/v3' not registering as a valid
+    possible query resulting in 404 errors.
 
 * Changes in Slurm 24.05.1
 ==========================
