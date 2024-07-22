@@ -614,7 +614,7 @@ def start_slurm(clean=False, quiet=False):
     start_slurmctld(clean, quiet)
 
     # Start slurmrestd if required
-    if "slurmrestd_required" in properties:
+    if properties["slurmrestd-started"]:
         start_slurmrestd()
 
     # Build list of slurmds
@@ -775,7 +775,7 @@ def stop_slurm(fatal=True, quiet=False):
         failures.append(f"Some slurmds are still running ({pids})")
 
     # Stop slurmrestd if was started
-    if "slurmrestd" in properties:
+    if properties["slurmrestd-started"]:
         properties["slurmrestd"].send_signal(signal.SIGINT)
         try:
             properties["slurmrestd"].wait(timeout=60)
@@ -1767,7 +1767,7 @@ def require_slurmrestd(openapi_plugins, data_parsers):
     properties["data_parsers"] = data_parsers
 
     if properties["auto-config"]:
-        properties["slurmrestd_required"] = True
+        properties["slurmrestd-started"] = True
     elif "SLURM_TESTSUITE_SLURMRESTD_URL" in os.environ:
         properties["slurmrestd_url"] = os.environ["SLURM_TESTSUITE_SLURMRESTD_URL"]
 
