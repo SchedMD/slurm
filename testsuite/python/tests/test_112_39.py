@@ -1096,15 +1096,23 @@ def test_jobs(slurm):
                 assert job.partition == partition_name
 
 
-def test_resv(slurm):
-    from openapi_client.models.status import Status
+@pytest.fixture(scope="function")
+def reservation(setup):
+    atf.run_command(
+        f"scontrol create reservation starttime=now duration=120 user=root nodes=ALL ReservationName={resv_name}",
+        fatal=True,
+    )
+
+    yield
 
     atf.run_command(
-        "scontrol create reservation starttime=now duration=120 user=root flags=maint,ignore_jobs nodes=ALL ReservationName={}".format(
-            resv_name
-        ),
+        f"scontrol delete ReservationName={resv_name}",
         fatal=False,
     )
+
+
+def test_resv(slurm, reservation):
+    from openapi_client.models.status import Status
 
     resp = slurm.slurm_v0039_get_reservation(resv_name)
     assert len(resp.warnings) == 0
