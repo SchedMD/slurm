@@ -1039,7 +1039,7 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		 */
 		if ((to_stepd[0] != conf->lfd)
 		    && (to_slurmd[1] != conf->lfd))
-			close(conf->lfd);
+			fd_close(&conf->lfd);
 
 		if (close(to_stepd[1]) < 0)
 			error("close write to_stepd in grandchild: %m");
