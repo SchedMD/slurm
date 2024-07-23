@@ -167,6 +167,7 @@ typedef struct {
 	int magic; /* RUN_ARGS_MAGIC */
 	int argc;
 	char **argv;
+	int pidfd;
 } run_args_t;
 
 /*
@@ -237,6 +238,7 @@ static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
 static void _attempt_reconfig(void);
 static void _run(conmgr_callback_args_t conmgr_args, void *arg);
+static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -343,6 +345,7 @@ main (int argc, char **argv)
 		.magic = RUN_ARGS_MAGIC,
 		.argc = argc,
 		.argv = argv,
+		.pidfd = -1,
 	};
 
 	if (getenv("SLURMD_RECONF"))
@@ -432,7 +435,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	run_args_t *args = arg;
 	int argc = args->argc;
 	char **argv = args->argv;
-	int pidfd = -1;
 	char *oom_value;
 	char time_stamp[256];
 
@@ -501,7 +503,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		xsystemd_change_mainpid(getpid());
 
 	if (!under_systemd)
-		pidfd = create_pidfile(conf->pidfile, 0);
+		args->pidfd = create_pidfile(conf->pidfile, 0);
 
 	if (original)
 		run_script_health_check();
@@ -511,6 +513,15 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* main processing loop. when this returns start shutting down */
 	_msg_engine();
+
+	conmgr_add_work_fifo(_run_fini, NULL);
+}
+
+static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	run_args_t *args = arg;
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
 
 	/*
 	 * Unlink now while the slurm_conf.pidfile is still accessible,
@@ -542,8 +553,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	 * Explicitly close the pidfile after all other shutdown has completed
 	 * which will release the flock.
 	 */
-	if (pidfd >= 0)			/* valid pidfd, non-error */
-		(void) close(pidfd);	/* Ignore errors */
+	fd_close(&args->pidfd);
 
 	info("Slurmd shutdown completing");
 }
