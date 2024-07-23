@@ -193,7 +193,7 @@ pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
 int	sched_interval = 60;
-slurmctld_config_t slurmctld_config;
+slurmctld_config_t slurmctld_config = {0};
 diag_stats_t slurmctld_diag_stats;
 bool slurmctld_primary = true;
 bool	want_nodes_reboot = true;
