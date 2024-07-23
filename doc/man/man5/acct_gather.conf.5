@@ -66,6 +66,8 @@ Options used for acct_gather_energy/ipmi are as follows:
 .TP 10
 \fBEnergyIPMIFrequency\fR=<number>
 This parameter is the number of seconds between BMC access samples.
+Ideally it should be higher or equal to \fBJobAcctGatherFrequency\fR, otherwise
+the JobAcctGather plugin will get repeated values in successive polls.
 .IP
 
 .TP

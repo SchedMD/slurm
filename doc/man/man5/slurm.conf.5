@@ -1661,6 +1661,10 @@ applications having less than 10,000 tasks.
 .br
 Users can independently override each interval on a per job basis using the
 \fB\-\-acctg\-freq\fR option when submitting the job.
+.br
+This value should be lower or equal to \fBEnergyIPMIFreq\fR when using
+\fIacct_gather_energy/ipmi\fR or xcc plugins as otherwise it will unnecessarily
+get repeated values on successive polls.
 .RE
 .IP
 
