@@ -173,7 +173,7 @@ other modules along with pam_slurm_adopt.
 
 <p>
 Stacking pam_access with pam_slurm_adopt is one way to permit administrative
-access, with two possible implementations with subtle differences in behavor.
+access, with two possible implementations with subtle differences in behavior.
 Both will require editing the pam_access configuration file
 (/etc/security/access.conf). In the following example, the access.conf file will
 allow members of the group "wheel" to log in.
@@ -187,7 +187,7 @@ allow members of the group "wheel" to log in.
 <p>
 Then you will need to stack the modules in the /etc/pam.d/sshd file.  The order
 here matters, and each ordering has different implications. In the example
-below, pam_slurm adopt is listed fist as "sufficient", followed by pam_access.
+below, pam_slurm adopt is listed first as "sufficient", followed by pam_access.
 In this configuration when the admin has a job running, their ssh session
 will be adopted into the job. If they do not, access will be permitted by
 pam_access, but note that pam_slurm_adopt will still emit the "access denied"
@@ -201,8 +201,8 @@ account    required      pam_access.so
 
 <p>
 Flipping this order, with pam_access(sufficient) before
-pam_slurm_adopt(reqired), members of the administrative group will bypass
-pam_slurm_adopt entierly.
+pam_slurm_adopt(required), members of the administrative group will bypass
+pam_slurm_adopt entirely.
 </p>
 
 <pre>
@@ -225,7 +225,7 @@ account    required      pam_slurm_adopt.so
 
 <p>
 More information about the capabilities and configuration options for pam_access
-and pam_listfile can be found in their respecive man pages.
+and pam_listfile can be found in their respective man pages.
 </p>
 
 <h2 id="OPTIONS">pam_slurm_adopt Module Options
@@ -556,6 +556,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 22 March 2024</p>
+<p style="text-align:center;">Last modified 23 July 2024</p>
 
 <!--#include virtual="footer.txt"-->
