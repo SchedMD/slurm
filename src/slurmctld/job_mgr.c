@@ -18532,11 +18532,20 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 {
 	job_record_t *job_ptr;
 	job_details_t *detail_ptr;
+	part_record_t *part_ptr = NULL;
 
 	job_ptr = _create_job_record(1, false);
 	detail_ptr = job_ptr->details;
 
 	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
+
+	if (job_ptr->partition)
+		part_ptr = find_part_record(job_ptr->partition);
+	if (part_ptr && part_ptr->def_mem_per_cpu)
+		detail_ptr->pn_min_memory = part_ptr->def_mem_per_cpu;
+	else
+		detail_ptr->pn_min_memory = slurm_conf.def_mem_per_cpu;
+
 	job_ptr->time_limit = resv_desc_ptr->duration;
 
 	detail_ptr->begin_time = resv_desc_ptr->start_time;
@@ -18572,6 +18581,8 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 
 		detail_ptr->num_tasks = detail_ptr->min_cpus =
 			resv_desc_ptr->core_cnt;
+		if (detail_ptr->min_cpus == NO_VAL)
+			detail_ptr->min_cpus = detail_ptr->min_nodes;
 	} else {
 		detail_ptr->num_tasks = detail_ptr->min_cpus =
 			detail_ptr->min_nodes;
@@ -18581,7 +18592,13 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->cpus_per_task = 1;
 	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
 	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
-	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
+	if ((resv_desc_ptr->flags & RESERVE_TRES_PER_NODE) &&
+	    (resv_desc_ptr->core_cnt != NO_VAL) &&
+	    (resv_desc_ptr->node_cnt != NO_VAL)) {
+		detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus =
+			resv_desc_ptr->core_cnt / resv_desc_ptr->node_cnt;
+	} else
+		detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
 	detail_ptr->features = xstrdup(resv_desc_ptr->features);
 
 	if (build_feature_list(job_ptr, false, true)) {
@@ -18615,7 +18632,6 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 			.gres_list = &job_ptr->gres_list_req,
 		};
 
-		detail_ptr->ntasks_per_node = NO_VAL16;
 		detail_ptr->mc_ptr->ntasks_per_socket = NO_VAL16;
 		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
 		detail_ptr->orig_cpus_per_task = NO_VAL16;
@@ -18637,8 +18653,12 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 			detail_ptr->num_tasks = 0;
 		if (detail_ptr->min_cpus == NO_VAL)
 			detail_ptr->min_cpus = 1;
-		if (detail_ptr->ntasks_per_node == NO_VAL16)
+
+		if (resv_desc_ptr->flags & RESERVE_TRES_PER_NODE)
+			detail_ptr->ntasks_per_node = detail_ptr->pn_min_cpus;
+		else if (detail_ptr->ntasks_per_node == NO_VAL16)
 			detail_ptr->ntasks_per_node = 0;
+
 		if (detail_ptr->mc_ptr->ntasks_per_socket == NO_VAL16)
 			detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
 		if (job_ptr->gres_list_req)
