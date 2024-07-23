@@ -1617,9 +1617,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	 * all nodes have the same processor count, just translate this to
 	 * a node count
 	 */
-	if (step_spec->cpu_count && job_ptr->job_resrcs &&
-	    (job_ptr->job_resrcs->cpu_array_cnt == 1) &&
-	    (job_ptr->job_resrcs->cpu_array_value)) {
+	if (step_spec->cpu_count && job_resrcs_ptr &&
+	    (job_resrcs_ptr->cpu_array_cnt == 1) &&
+	    (job_resrcs_ptr->cpu_array_value)) {
 		uint32_t cpu_count = step_spec->cpu_count;
 		uint16_t req_tpc;
 		/*
@@ -1639,7 +1639,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		 * build_job_resources_cpu_array().
 		 */
 		if ((req_tpc != NO_VAL16) &&
-		    (req_tpc < job_ptr->job_resrcs->threads_per_core)) {
+		    (req_tpc < job_resrcs_ptr->threads_per_core)) {
 			int first_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
 			if (first_inx == -1) {
 				error("%s: Job %pJ doesn't have any nodes in it! This should never happen",
@@ -1664,8 +1664,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 
 		i = (cpu_count +
-		     (job_ptr->job_resrcs->cpu_array_value[0] - 1)) /
-			job_ptr->job_resrcs->cpu_array_value[0];
+		     (job_resrcs_ptr->cpu_array_value[0] - 1)) /
+			job_resrcs_ptr->cpu_array_value[0];
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 			i : step_spec->min_nodes ;
 
