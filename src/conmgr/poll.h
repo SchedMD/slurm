@@ -65,6 +65,11 @@ extern void pollctl_fini(void);
 
 typedef enum {
 	PCTL_TYPE_INVALID = 0,
+	/*
+	 * Not possible to poll this file descriptor type.
+	 * Files and directories can not be epoll()ed.
+	 */
+	PCTL_TYPE_UNSUPPORTED,
 	PCTL_TYPE_NONE, /* Stop polling connection */
 	PCTL_TYPE_CONNECTED, /* only watch for connection to hangup/close */
 	PCTL_TYPE_READ_ONLY,
@@ -82,9 +87,10 @@ extern const char *pollctl_type_to_string(pollctl_fd_type_t type);
  * IN type - type of file descriptor
  * IN con_name - connection name for logging
  * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
  */
-extern void pollctl_link_fd(int fd, pollctl_fd_type_t type,
-			    const char *con_name, const char *caller);
+extern int pollctl_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+			   const char *caller);
 
 /*
  * Update existing connection type of monitoring via poll()

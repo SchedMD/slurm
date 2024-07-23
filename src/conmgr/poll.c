@@ -78,14 +78,14 @@ static const struct {
 	const char *events_string;
 } fd_types[] = {
 	T(PCTL_TYPE_INVALID, 0),
+	T(PCTL_TYPE_UNSUPPORTED, 0),
 	T(PCTL_TYPE_NONE, 0),
 	T(PCTL_TYPE_CONNECTED, (EPOLLHUP | EPOLLERR | EPOLLET)),
 	T(PCTL_TYPE_READ_ONLY, (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR |
 				EPOLLET)),
 	T(PCTL_TYPE_READ_WRITE,
 	  (EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR | EPOLLET)),
-	T(PCTL_TYPE_WRITE_ONLY, (EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR |
-				 EPOLLET)),
+	T(PCTL_TYPE_WRITE_ONLY, (EPOLLOUT | EPOLLHUP | EPOLLERR | EPOLLET)),
 	T(PCTL_TYPE_LISTEN, (EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLET)),
 	T(PCTL_TYPE_INVALID_MAX, 0),
 };
@@ -161,8 +161,8 @@ static struct {
 	} interrupt;
 } pctl = PCTL_INITIALIZER;
 
-static void _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-		     const char *caller);
+static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+		    const char *caller);
 extern void _unlink_fd(int fd, const char *con_name, const char *caller);
 
 extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
@@ -274,8 +274,9 @@ extern void pollctl_init(const int max_connections)
 
 	_check_pctl_magic();
 
-	_link_fd(pctl.interrupt.receive, PCTL_TYPE_READ_ONLY,
-		 INTERRUPT_CON_NAME, __func__);
+	if (_link_fd(pctl.interrupt.receive, PCTL_TYPE_READ_ONLY,
+		     INTERRUPT_CON_NAME, __func__))
+		fatal_abort("unable to monitor interrupt");
 
 	slurm_mutex_unlock(&pctl.mutex);
 }
@@ -319,8 +320,8 @@ extern void pollctl_fini(void)
 }
 
 /* caller must hold pctl.mutex lock */
-static void _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-		     const char *caller)
+static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+		    const char *caller)
 {
 	struct epoll_event ev = {
 		.events = _fd_type_to_events(type),
@@ -328,9 +329,13 @@ static void _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	};
 
 	if (epoll_ctl(pctl.epoll, EPOLL_CTL_ADD, ev.data.fd, &ev)) {
-		fatal_abort("%s->%s: [POLL:%s] epoll_ctl(EPOLL_CTL_ADD, %d, %s) failed: %m",
-			    caller, __func__, con_name,
-			    ev.data.fd, _fd_type_to_events_string(type));
+		int rc = errno;
+
+		log_flag(CONMGR, "%s->%s: [POLL:%s] epoll_ctl(EPOLL_CTL_ADD, %d, %s) failed: %s",
+			 caller, __func__, con_name, ev.data.fd,
+			 _fd_type_to_events_string(type), slurm_strerror(rc));
+
+		return rc;
 	} else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
 		log_flag(CONMGR, "%s->%s: [POLL:%s] registered fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
@@ -338,15 +343,20 @@ static void _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 			 _fd_type_to_events_string(type));
 
 	pctl.fd_count++;
+	return SLURM_SUCCESS;
 }
 
-extern void pollctl_link_fd(int fd, pollctl_fd_type_t type,
-			    const char *con_name, const char *caller)
+extern int pollctl_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+			   const char *caller)
 {
+	int rc;
+
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
-	_link_fd(fd, type, con_name, caller);
+	rc = _link_fd(fd, type, con_name, caller);
 	slurm_mutex_unlock(&pctl.mutex);
+
+	return rc;
 }
 
 extern void pollctl_relink_fd(int fd, pollctl_fd_type_t type,

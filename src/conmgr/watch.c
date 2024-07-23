@@ -86,7 +86,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (con->is_connected || con->read_eof) {
+	if (con->is_connected) {
 		/* continue on to follow other checks */
 	} else if (con->is_listen) {
 		/*
@@ -165,7 +165,8 @@ static int _handle_connection(void *x, void *arg)
 	/* handle out going data */
 	if (!con->is_listen && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
-		if (con->can_write) {
+		if (con->can_write ||
+		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
 			add_work_con_fifo(true, con, handle_write, con);
@@ -206,7 +207,9 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* read as much data as possible before processing */
-	if (!con->is_listen && !con->read_eof && con->can_read) {
+	if (!con->is_listen && !con->read_eof &&
+	    (con->can_read ||
+	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
@@ -463,7 +466,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 	if (fd == con->input_fd) {
 		con->can_read = pollctl_events_can_read(events);
 
-		if (!con->read_eof)
+		/* Avoid setting read_eof if can_read=true */
+		if (!con->can_read && !con->read_eof)
 			con->read_eof = pollctl_events_has_hangup(events);
 	}
 	if (fd == con->output_fd)
@@ -567,13 +571,27 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_new_conns(void)
+static void _handle_events(bool *work)
 {
+	/* grab counts once */
+	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
+
+	log_flag(CONMGR, "%s: connections=%u listen_conns=%u complete_conns=%u",
+		 __func__, list_count(mgr.connections),
+		 list_count(mgr.listen_conns), list_count(mgr.complete_conns));
+
+	if (!list_is_empty(mgr.complete_conns))
+		_handle_complete_conns();
+
+	if (!count)
+		return;
+
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
 		add_work_fifo(true, _inspect_connections, NULL);
 	}
 
+	/* start poll thread if needed */
 	if (!mgr.poll_active) {
 		/* request a listen thread to run */
 		log_flag(CONMGR, "%s: queuing up poll", __func__);
@@ -582,25 +600,8 @@ static void _handle_new_conns(void)
 		add_work_fifo(true, _poll_connections, NULL);
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
-}
 
-static void _handle_events(bool *work)
-{
-	/* grab counts once */
-	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
-
-	log_flag(CONMGR, "%s: starting connections=%u listen_conns=%u",
-		 __func__, list_count(mgr.connections),
-		 list_count(mgr.listen_conns));
-
-	if (!list_is_empty(mgr.complete_conns))
-		_handle_complete_conns();
-
-	/* start poll thread if needed */
-	if (count) {
-		_handle_new_conns();
-		*work = true;
-	}
+	*work = true;
 }
 
 static bool _watch_loop(void)
@@ -634,6 +635,7 @@ static bool _watch_loop(void)
 			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
 				 __func__, non_watch_workers,
 				 list_count(mgr.work));
+			mgr.waiting_on_work = true;
 			return true;
 		}
 	}
@@ -713,7 +715,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d ",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -724,9 +726,11 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 				 (mgr.inspecting ? 'T' : 'F'),
 				 (mgr.shutdown_requested ? 'T' : 'F'),
 				 (mgr.quiesced ? 'T' : 'F'),
-				 mgr.watch_on_worker);
+				 mgr.watch_on_worker,
+				 (mgr.waiting_on_work ? 'T' : 'F'));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
+		mgr.waiting_on_work = false;
 	}
 
 	xassert(mgr.watching);

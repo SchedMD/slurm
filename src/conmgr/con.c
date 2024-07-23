@@ -55,6 +55,7 @@
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/util-net.h"
@@ -164,6 +165,10 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
 	con->can_read = false;
+
+	/* drop any unprocessed input buffer */
+	if (con->in)
+		set_buf_offset(con->in, 0);
 
 	if (con->is_listen) {
 		if (close(con->input_fd) == -1)
@@ -393,6 +398,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
+		.read_eof = !has_in,
 		.output_fd = output_fd,
 		.events = events,
 		/* save socket type to avoid calling fstat() again */
@@ -1103,23 +1109,35 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 	close_con(true, con);
 }
 
-static void _set_fd_polling(int fd, pollctl_fd_type_t old,
-			    pollctl_fd_type_t new, const char *con_name,
-			    const char *caller)
+static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
+			   const char *con_name, const char *caller)
 {
+	if (old == PCTL_TYPE_UNSUPPORTED)
+		return PCTL_TYPE_UNSUPPORTED;
+
 	if (old == new)
-		return;
+		return new;
 
 	if (new == PCTL_TYPE_NONE) {
 		if (old != PCTL_TYPE_NONE)
 			pollctl_unlink_fd(fd, con_name, caller);
-		return;
+		return new;
 	}
 
-	if (old != PCTL_TYPE_NONE)
+	if (old != PCTL_TYPE_NONE) {
 		pollctl_relink_fd(fd, new, con_name, caller);
-	else
-		pollctl_link_fd(fd, new, con_name, caller);
+		return new;
+	} else {
+		int rc = pollctl_link_fd(fd, new, con_name, caller);
+
+		if (!rc)
+			return new;
+		else if (rc == EPERM)
+			return PCTL_TYPE_UNSUPPORTED;
+		else
+			fatal("%s->%s: [%s] Unable to start polling: %s",
+			      caller, __func__, con_name, slurm_strerror(rc));
+	}
 }
 
 static void _log_set_polling(conmgr_fd_t *con, bool has_in, bool has_out,
@@ -1190,6 +1208,8 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	 * PCTL_TYPE_NONE above.
 	 */
 	switch (type) {
+	case PCTL_TYPE_UNSUPPORTED:
+		fatal_abort("should never happen");
 	case PCTL_TYPE_NONE:
 		break;
 	case PCTL_TYPE_CONNECTED:
@@ -1227,25 +1247,28 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		fatal_abort("should never execute");
 	}
 
+	if (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)
+		out_type = PCTL_TYPE_UNSUPPORTED;
+	if (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED)
+		in_type = PCTL_TYPE_UNSUPPORTED;
+
 	_log_set_polling(con, has_in, has_out, type, in_type, out_type, caller);
 
 	if (is_same) {
 		/* same never link output_fd */
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 
-		_set_fd_polling(in, con->polling_input_fd, in_type, con->name,
-				caller);
-		con->polling_input_fd = in_type;
-	} else {
-		if (has_in) {
+		con->polling_input_fd =
 			_set_fd_polling(in, con->polling_input_fd, in_type,
 					con->name, caller);
-			con->polling_input_fd = in_type;
-		}
-		if (has_out) {
-			_set_fd_polling(out, con->polling_output_fd, out_type,
-					con->name, caller);
-			con->polling_output_fd = out_type;
-		}
+	} else {
+		if (has_in)
+			con->polling_input_fd =
+				_set_fd_polling(in, con->polling_input_fd,
+						in_type, con->name, caller);
+		if (has_out)
+			con->polling_output_fd =
+				_set_fd_polling(out, con->polling_output_fd,
+						out_type, con->name, caller);
 	}
 }

@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "stdlib.h"
+
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
@@ -113,6 +115,9 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	mgr.initialized = true;
 	slurm_mutex_unlock(&mgr.mutex);
+
+	/* Hook into atexit() in always clean shutdown if exit() called */
+	(void) atexit(conmgr_request_shutdown);
 }
 
 extern void conmgr_fini(void)
@@ -215,9 +220,10 @@ extern void conmgr_request_shutdown(void)
 	log_flag(CONMGR, "%s: shutdown requested", __func__);
 
 	slurm_mutex_lock(&mgr.mutex);
-	mgr.shutdown_requested = true;
-
-	EVENT_SIGNAL(&mgr.watch_sleep);
+	if (mgr.initialized) {
+		mgr.shutdown_requested = true;
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
