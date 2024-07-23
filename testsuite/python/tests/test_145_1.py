@@ -13,39 +13,12 @@ def setup():
     atf.require_slurm_running()
 
 
-def get_nnodes(output):
-    match = re.search(r"SLURM_NNODES=(\d)", output)
-    if match == None:
-        return 0
-    return int(match.group(1))
-
-
-def get_nodelist(output):
-    match = re.search(r"SLURM_JOB_NODELIST=.*\[(.*)\]", output)
-    if match == None:
-        return ""
-    return match.group(1)
-
-
-def expected_nodelist(f1, f2):
-    nodelist = [
-        [
-            "1,4",  # 1, 1
-            "1,4-5",  # 1, 2
-            "1,4-6",  # 1, 3
-        ],
-        [
-            "1-2,4",  # 2, 1
-            "1-2,4-5",  # 2, 2
-            "1-2,4-6",  # 2, 3
-        ],
-        [
-            "1-4",  # 3, 1
-            "1-5",  # 3, 2
-            "1-6",  # 3, 3
-        ],
-    ]
-    return nodelist[f1 - 1][f2 - 1]
+def get_nodes_with_feature(feat, nodelist):
+    nodes = 0
+    for node in nodelist:
+        if re.search(feat, atf.get_node_parameter(node, "AvailableFeatures")):
+            nodes += 1
+    return nodes
 
 
 @pytest.mark.parametrize(
@@ -60,29 +33,26 @@ def expected_nodelist(f1, f2):
 def test_ntasks_multiple_count(f1, f2, command):
     """Test that number of nodes and nodes are the right ones requesting constrains."""
 
-    # Run jobs with egrep
+    # Submit job with constraints
     n = f1 + f2
     params = f'-n{n} --ntasks-per-node=1 -C "[f1*{f1}&f2*{f2}]"'
-    job = 'env|egrep -i "SLURM_NNODES|SLURM_JOB_NODELIST"'
 
-    if command == "sbatch":
-        job_id = atf.submit_job_sbatch(f"{params} -o out.txt --wrap '{job}'")
+    job_id = atf.submit_job(command, params, "hostname", fatal=True)
+    atf.wait_for_job_state(job_id, "DONE")
 
-        atf.wait_for_job_state(job_id, "DONE")
-        atf.wait_for_file("out.txt")
+    # Make sure NumNodes is correct
+    assert (
+        atf.get_job_parameter(job_id, "NumNodes") == n
+    ), f"Verify number of nodes is {n}"
 
-        output = atf.run_command_output("cat out.txt")
-    else:
-        output = atf.run_command_output(f"{command} {params} {job}", fatal=True)
-
-    # Make sure SLURM_NNODES is correct
-    assert get_nnodes(output) == n, f"Verify number of nodes is {n}"
-
-    # Make sure that NODELIST is correct
-    nodelist = get_nodelist(output)
-    assert nodelist == expected_nodelist(
-        f1, f2
-    ), f"Verify nodelist is {expected_nodelist(f1, f2)}"
+    # Make sure that NodeList is correct
+    nodelist = atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList"))
+    assert f1 == get_nodes_with_feature(
+        "f1", nodelist
+    ), f"Verify nodelist contains {f1} nodes with f1"
+    assert f2 == get_nodes_with_feature(
+        "f2", nodelist
+    ), f"Verify nodelist contains {f2} nodes with f2"
 
 
 @pytest.mark.parametrize(
