@@ -2197,7 +2197,7 @@ static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 {
 	int rc = SLURM_SUCCESS;
 	char **dst = obj;
-	uint32_t state;
+	uint32_t state = 0;
 
 	if (data_get_type(src) == DATA_TYPE_INT_64)
 		state = data_get_int(src);
@@ -2215,7 +2215,7 @@ static int DUMP_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 {
 	int rc;
 	char **src = obj;
-	uint32_t state;
+	uint32_t state = 0;
 	data_t *parent_path, *dsrc;
 
 	parent_path = data_set_list(data_new());

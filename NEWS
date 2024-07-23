@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix one-task-per-sharing not working across multiple nodes.
  -- Fix inconsistent number of cpus when creating a reservation using the
     TRESPerNode option.
+ -- data_parser/v0.0.40+ - Fix job state parsing which could break filtering.
 
 * Changes in Slurm 24.05.1
 ==========================
