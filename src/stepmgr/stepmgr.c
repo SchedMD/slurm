@@ -1663,9 +1663,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			}
 		}
 
-		i = (cpu_count +
-		     (job_resrcs_ptr->cpu_array_value[0] - 1)) /
-			job_resrcs_ptr->cpu_array_value[0];
+		i = ROUNDUP(cpu_count, job_resrcs_ptr->cpu_array_value[0]);
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 			i : step_spec->min_nodes ;
 
