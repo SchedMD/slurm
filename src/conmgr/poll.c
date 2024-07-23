@@ -121,7 +121,7 @@ static const struct {
 	}, \
 }
 
-static struct {
+static struct pctl_s {
 	pthread_mutex_t mutex;
 
 	/* Is currently initialized */
@@ -241,8 +241,19 @@ static void _check_pctl_magic(void)
 #endif /* !NDEBUG */
 }
 
+static void _atfork_child(void)
+{
+	/*
+	 * Force pctl to return to default state before it was initialized at
+	 * forking as all of the prior state is completely unusable.
+	 */
+	pctl = (struct pctl_s) PCTL_INITIALIZER;
+}
+
 extern void pollctl_init(const int max_connections)
 {
+	int rc;
+
 	slurm_mutex_lock(&pctl.mutex);
 
 	if (pctl.initialized) {
@@ -252,6 +263,10 @@ extern void pollctl_init(const int max_connections)
 	}
 
 	pctl.events_count = MAX_POLL_EVENTS(max_connections);
+
+	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+		fatal_abort("%s: pthread_atfork() failed: %s",
+			    __func__, slurm_strerror(rc));
 
 	{
 		int fd[2] = { -1, -1 };
