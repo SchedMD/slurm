@@ -83,7 +83,7 @@ static void _signal_handler(int signo)
 
 try_again:
 	if (write(signal_fd, &signo, sizeof(signo)) != sizeof(signo)) {
-		if (errno == EPIPE) {
+		if ((errno == EPIPE) || (errno == EBADF)) {
 			/*
 			 * write() after conmgr shutdown before reading that
 			 * signal_fd was set to -1. Ignoring this race condition
