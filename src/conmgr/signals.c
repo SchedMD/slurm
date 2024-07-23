@@ -55,6 +55,9 @@ typedef struct {
 /* protects all of the static variables here */
 pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
+/* protected by lock */
+static bool one_time_init = false;
+
 /* list of all registered signal handlers */
 static signal_handler_t *signal_handlers = NULL;
 static int signal_handler_count = 0;
@@ -262,6 +265,22 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	slurm_rwlock_unlock(&lock);
 }
 
+static void _atfork_child(void)
+{
+	/*
+	 * Force state to return to default state before it was initialized at
+	 * forking as all of the prior state is completely unusable.
+	 */
+	lock = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
+	one_time_init = false;
+	signal_handlers = NULL;
+	signal_handler_count = 0;
+	signal_work = NULL;
+	signal_work_count = 0;
+	signal_fd = -1;
+	signal_con = NULL;
+}
+
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const conmgr_events_t events = {
@@ -270,6 +289,7 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 		.on_finish = _on_finish,
 	};
 	int fd[2] = { -1, -1 };
+	int rc;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
@@ -278,6 +298,13 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 		fatal_abort("%s: pipe() failed: %m", __func__);
 
 	slurm_rwlock_wrlock(&lock);
+
+	if (!one_time_init) {
+		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+			fatal_abort("%s: pthread_atfork() failed: %s",
+				    __func__, slurm_strerror(rc));
+		one_time_init = true;
+	}
 
 	xassert(signal_fd == -1);
 	xassert(!signal_con);
