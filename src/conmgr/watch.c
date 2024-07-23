@@ -56,8 +56,12 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->events.on_finish)
+	if (con->is_listen) {
+		if (con->events.on_listen_finish)
+			con->events.on_listen_finish(con, arg);
+	} else if (con->events.on_finish) {
 		con->events.on_finish(con, arg);
+	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->wait_on_finish = false;
@@ -88,15 +92,8 @@ static int _handle_connection(void *x, void *arg)
 
 	if (con->is_connected) {
 		/* continue on to follow other checks */
-	} else if (con->is_listen) {
-		/*
-		 * Listening connections don't need to do anything to be
-		 * connected
-		 */
-		con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
-		con->is_connected = true;
-		return 0;
-	} else if (!con->is_socket || con->can_read || con->can_write) {
+	} else if (!con->is_socket || con->can_read || con->can_write ||
+		   con->is_listen) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
@@ -107,7 +104,21 @@ static int _handle_connection(void *x, void *arg)
 		if (con->is_socket && (con->output_fd != -1))
 			con->mss = fd_get_maxmss(con->output_fd, con->name);
 
-		if (con->events.on_connection) {
+		if (con->is_listen) {
+			if (con->events.on_listen_connect) {
+				/* disable polling until on_listen_connect() */
+				con_set_polling(con, PCTL_TYPE_CONNECTED,
+						__func__);
+				add_work_con_fifo(true, con, wrap_on_connection,
+						  con);
+
+				log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_listen_connect() callback.",
+					 __func__, con->name);
+				return 0;
+			} else {
+				/* follow normal checks */
+			}
+		} else if (con->events.on_connection) {
 			/* disable polling until on_connect() is done */
 			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 			add_work_con_fifo(true, con, wrap_on_connection, con);
@@ -267,14 +278,17 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	if (con->wait_on_finish) {
-		log_flag(CONMGR, "%s: [%s] waiting for on_finish()",
-			 __func__, con->name);
+		log_flag(CONMGR, "%s: [%s] waiting for %s",
+			 __func__, con->name,
+			 (con->is_listen ? "on_finish()" :
+			  "on_listen_finish()"));
 		return 0;
 	}
 
 	if (con->arg) {
-		log_flag(CONMGR, "%s: [%s] queuing up on_finish",
-			 __func__, con->name);
+		log_flag(CONMGR, "%s: [%s] queuing up %s",
+			 __func__, con->name, (con->is_listen ? "on_finish()" :
+			  "on_listen_finish()"));
 
 		con->wait_on_finish = true;
 

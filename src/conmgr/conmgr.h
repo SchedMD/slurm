@@ -69,6 +69,26 @@ typedef struct conmgr_fd_s conmgr_fd_t;
  */
 typedef struct {
 	/*
+	 * Call back for new listener for setup
+	 *
+	 * IN con - connection handler
+	 * IN arg - arg ptr handed to fd processing functions
+	 * RET arg ptr to hand to events
+	 */
+	void *(*on_listen_connect)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when listener ended.
+	 * Called once per connection right before connection is xfree()ed.
+	 *
+	 * IN con - connection handler
+	 * IN arg - ptr to be handed return of on_connection().
+	 * 	Ownership of arg pointer returned to caller as it will not be
+	 * 	used anymore.
+	 */
+	void (*on_listen_finish)(conmgr_fd_t *con, void *arg);
+
+	/*
 	 * Call back for new connection for setup
 	 *
 	 * IN fd file descriptor of new connection

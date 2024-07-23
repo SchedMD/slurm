@@ -465,16 +465,29 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-		 __func__, con->name,
-		 (uintptr_t) con->events.on_connection);
+	if (con->is_listen) {
+		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_listen_connect);
 
-	arg = con->events.on_connection(con, con->new_arg);
+		arg = con->events.on_listen_connect(con, con->new_arg);
 
-	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name,
-		 (uintptr_t) con->events.on_connection,
-		 (uintptr_t) arg);
+		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_listen_connect,
+			 (uintptr_t) arg);
+	} else {
+		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection);
+
+		arg = con->events.on_connection(con, con->new_arg);
+
+		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection,
+			 (uintptr_t) arg);
+	}
 
 	if (!arg) {
 		error("%s: [%s] closing connection due to NULL return from on_connection",
