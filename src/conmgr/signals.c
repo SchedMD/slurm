@@ -282,6 +282,9 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(signal_fd == -1);
 	xassert(!signal_con);
 
+	fd_set_close_on_exec(fd[0]);
+	fd_set_close_on_exec(fd[1]);
+
 	fd_set_blocking(fd[1]);
 	signal_fd = fd[1];
 
