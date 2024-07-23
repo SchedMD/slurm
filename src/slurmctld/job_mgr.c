@@ -18518,11 +18518,20 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 {
 	job_record_t *job_ptr;
 	job_details_t *detail_ptr;
+	part_record_t *part_ptr = NULL;
 
 	job_ptr = _create_job_record(1, false);
 	detail_ptr = job_ptr->details;
 
 	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
+
+	if (job_ptr->partition)
+		part_ptr = find_part_record(job_ptr->partition);
+	if (part_ptr && part_ptr->def_mem_per_cpu)
+		detail_ptr->pn_min_memory = part_ptr->def_mem_per_cpu;
+	else
+		detail_ptr->pn_min_memory = slurm_conf.def_mem_per_cpu;
+
 	job_ptr->time_limit = resv_desc_ptr->duration;
 
 	detail_ptr->begin_time = resv_desc_ptr->start_time;
