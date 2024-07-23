@@ -60,6 +60,16 @@
 #define BUFFER_START_SIZE 4096
 
 typedef struct {
+#define MAGIC_EXTRACT_FD 0xabf8e2a3
+	int magic; /* MAGIC_EXTRACT_FD */
+	int input_fd;
+	int output_fd;
+	conmgr_extract_fd_func_t func;
+	const char *func_name;
+	void *func_arg;
+} extract_fd_t;
+
+typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
 	conmgr_work_status_t status;
@@ -110,6 +120,9 @@ struct conmgr_fd_s {
 	bool can_read;
 	/* has this connection received read EOF */
 	bool read_eof;
+
+	/* queued extraction of input_fd/output_fd request */
+	extract_fd_t *extract;
 
 	/*
 	 * Current active polling (if any).
@@ -450,5 +463,10 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * Wraps on_connection() callback
  */
 extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
+ * Extract connection file descriptors
+ */
+extern void extract_con_fd(conmgr_fd_t *con);
 
 #endif /* _CONMGR_MGR_H */

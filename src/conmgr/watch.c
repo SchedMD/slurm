@@ -162,6 +162,12 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
+	if (con->extract) {
+		/* extraction of file descriptors requested */
+		extract_con_fd(con);
+		return 0;
+	}
+
 	/* handle out going data */
 	if (!con->is_listen && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {

@@ -664,4 +664,33 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
  */
 extern bool conmgr_enabled(void);
 
+/*
+ * Callback function for when connection file descriptors extracted
+ * IN conmgr_args - Args relaying conmgr callback state
+ * IN input_fd - input file descriptor or -1 - Ownership is transferred.
+ * IN output_fd - output file descriptor or -1 - Ownership is transferred.
+ */
+typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
+					 int input_fd, int output_fd,
+					 void *arg);
+
+/*
+ * Queue up extraction of file descriptors from a connection.
+ * NOTE: Extraction may need to wait for any running work to be completed on
+ *	connection.
+ * WARNING: Only to be used for conversion to conmgr where file descriptors must
+ *	be controlled by non-conmgr code.
+ *
+ * IN con - connection to extract file descriptors from
+ * IN func - callback function when extraction is complete to take ownership of
+ *	file descriptors
+ * IN func_name - XSTRINGIFY(func) for logging
+ * IN func_arg - arbitrary pointer passed directly to func
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
+				       conmgr_extract_fd_func_t func,
+				       const char *func_name,
+				       void *func_arg);
+
 #endif /* _CONMGR_H */
