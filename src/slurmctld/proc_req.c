@@ -3159,7 +3159,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		else {
 			error("thread_id_sig undefined, hard shutdown");
-			slurmctld_config.shutdown_time = now;
 			slurmctld_shutdown();
 		}
 	}

@@ -1278,20 +1278,17 @@ static void *_slurmctld_signal_hand(void *no_data)
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_config.shutdown_time = time(NULL);
 			slurmctld_shutdown();
 			return NULL;	/* Normal termination */
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
 			reconfig = true;
-			slurmctld_config.shutdown_time = time(NULL);
 			slurmctld_shutdown();
 			return NULL;
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
-			slurmctld_config.shutdown_time = time(NULL);
 			slurmctld_shutdown();
 			dump_core = true;
 			return NULL;
@@ -2755,6 +2752,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 int slurmctld_shutdown(void)
 {
 	sched_debug("slurmctld terminating");
+	slurmctld_config.shutdown_time = time(NULL);
 	slurm_cond_signal(&shutdown_cond);
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);

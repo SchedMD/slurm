@@ -367,7 +367,6 @@ static void *_background_signal_hand(void *no_data)
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_config.shutdown_time = time(NULL);
 			slurmctld_shutdown();
 			return NULL;	/* Normal termination */
 			break;
@@ -384,7 +383,6 @@ static void *_background_signal_hand(void *no_data)
 			break;
 		case SIGABRT:   /* abort */
 			info("SIGABRT received");
-			slurmctld_config.shutdown_time = time(NULL);
 			slurmctld_shutdown();
 			dump_core = true;
 			return NULL;    /* Normal termination */
