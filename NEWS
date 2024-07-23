@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a performance regression from 23.11.0 in cpu frequency handling when no
     CpuFreqDef is defined.
  -- Fix one-task-per-sharing not working across multiple nodes.
+ -- Fix inconsistent number of cpus when creating a reservation using the
+    TRESPerNode option.
 
 * Changes in Slurm 24.05.1
 ==========================
