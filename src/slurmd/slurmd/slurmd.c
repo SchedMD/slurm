@@ -529,8 +529,7 @@ static void _msg_engine(void)
 		error("accept: %m");
 	}
 	verbose("got shutdown request");
-	close(conf->lfd);
-	conf->lfd = -1;
+	fd_close(&conf->lfd);
 }
 
 static void _decrement_thd_count(void)
