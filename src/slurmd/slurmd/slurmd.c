@@ -131,6 +131,7 @@ decl_static_data(usage_txt);
 
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000
+#define TIMEOUT_RECONFIG 5000000
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -188,9 +189,8 @@ static bool original = true;
 static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
-static bool waiting_conmgr_quiesce = false;
+static bool reconfiguring = false;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
@@ -589,17 +589,8 @@ static void _msg_engine(void)
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
 		if (_reconfig) {
-			int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
-			DEF_TIMERS;
-			START_TIMER;
 			verbose("got reconfigure request");
-			/* Wait for RPCs to finish */
-			_wait_for_all_threads(rpc_wait);
-			if (_shutdown)
-				break;
 			_attempt_reconfig();
-			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
-				   5000000);
 		}
 		cli = xmalloc(sizeof(*cli));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
@@ -1431,9 +1422,8 @@ static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
 		_try_to_reconfig();
 
 	slurm_mutex_lock(&reconfig_mutex);
-	xassert(waiting_conmgr_quiesce);
-	waiting_conmgr_quiesce = false;
-	slurm_cond_broadcast(&reconfig_cond);
+	xassert(reconfiguring);
+	reconfiguring = false;
 	slurm_mutex_unlock(&reconfig_mutex);
 }
 
@@ -1441,20 +1431,13 @@ static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
-	if (conmgr_enabled()) {
-		slurm_mutex_lock(&reconfig_mutex);
-		if (!waiting_conmgr_quiesce) {
-			waiting_conmgr_quiesce = true;
-			conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
-						      NULL);
-		}
-
-		while (waiting_conmgr_quiesce)
-			slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-		slurm_mutex_unlock(&reconfig_mutex);
-	} else {
-		_try_to_reconfig();
+	slurm_mutex_lock(&reconfig_mutex);
+	if (!reconfiguring) {
+		reconfiguring = true;
+		conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
+					      NULL);
 	}
+	slurm_mutex_unlock(&reconfig_mutex);
 }
 
 static void _try_to_reconfig(void)
@@ -1464,8 +1447,18 @@ static void _try_to_reconfig(void)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
+	const int rpc_wait = MAX(5, (slurm_conf.msg_timeout / 2));
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	_reconfig = 0;
+
+	/* Wait for RPCs to finish */
+	_wait_for_all_threads(rpc_wait);
+
+	if (_shutdown)
+		return;
 
 	save_cred_state();
 
@@ -1526,6 +1519,9 @@ rwfail:
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
 		conmgr_run(false);
+
+		END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
+			   TIMEOUT_RECONFIG);
 		return;
 	}
 
