@@ -44,6 +44,8 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
+#define SIGNAL_FD_FAILED -250
+
 typedef struct {
 #define MAGIC_SIGNAL_HANDLER 0xC20A444A
 	int magic; /* MAGIC_SIGNAL_HANDLER */
@@ -89,9 +91,12 @@ try_again:
 		if ((errno == EPIPE) || (errno == EBADF)) {
 			/*
 			 * write() after conmgr shutdown before reading that
-			 * signal_fd was set to -1. Ignoring this race condition
-			 * entirely.
+			 * signal_fd was closed. Ignoring this race condition
+			 * entirely. Set signal_fd to an invalid value that is
+			 * not -1 to distinguish it from the normal "unset"
+			 * state.
 			 */
+			signal_fd = SIGNAL_FD_FAILED;
 			return;
 		}
 
