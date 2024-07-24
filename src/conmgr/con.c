@@ -652,11 +652,7 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 			.magic = MAGIC_SEND_FD,
 			.fd = fd,
 		};
-		add_work(true, con, (conmgr_callback_t) {
-				.func = _send_fd,
-				.func_name = XSTRINGIFY(_send_fd),
-				.arg = args,
-			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		add_work_con_fifo(true, con, _send_fd, args);
 		rc = SLURM_SUCCESS;
 	}
 
