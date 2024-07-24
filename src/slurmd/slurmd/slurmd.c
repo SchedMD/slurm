@@ -135,6 +135,8 @@ decl_static_data(usage_txt);
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
+#define ENV_DAEMON_FIELD "SLURMD_DAEMONIZED"
+#define ENV_DAEMON_VALUE "1"
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -330,6 +332,24 @@ static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("Caught SIGTTIN. Ignoring.");
 }
 
+static void _daemonize(int argc, char **argv)
+{
+	if (getenv(ENV_DAEMON_FIELD)) {
+		debug3("%s: skipping - already daemonized", __func__);
+		unsetenv(ENV_DAEMON_FIELD);
+		return;
+	}
+
+	debug3("%s: daemonizing %s", __func__, conf->binary);
+	setenv(ENV_DAEMON_FIELD, ENV_DAEMON_VALUE, true);
+
+	if (xdaemon())
+		fatal("Couldn't daemonize slurmd: %m");
+
+	execv(conf->binary, argv);
+	fatal("exec() failed: %m");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -393,10 +413,9 @@ main (int argc, char **argv)
 	/*
 	 * Become a daemon if desired.
 	 */
-	if (original && conf->daemonize) {
-		if (xdaemon())
-			error("Couldn't daemonize slurmd: %m");
-	}
+	if (original && conf->daemonize)
+		_daemonize(argc, argv);
+
 	test_core_limit();
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
