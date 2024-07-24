@@ -589,11 +589,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 			.events = events,
 			.arg = arg,
 		};
-		add_work(true, src, (conmgr_callback_t) {
-				.func = _receive_fd,
-				.func_name = XSTRINGIFY(_receive_fd),
-				.arg = args,
-			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		add_work_con_fifo(true, src, _receive_fd, args);
 		rc = SLURM_SUCCESS;
 	}
 
