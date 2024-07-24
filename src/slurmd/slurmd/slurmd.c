@@ -130,6 +130,7 @@
 decl_static_data(usage_txt);
 
 #define MAX_THREADS		256
+#define TIMEOUT_SIGUSR2 5000000
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -190,7 +191,6 @@ static sig_atomic_t _reconfig = 0;
 static bool waiting_conmgr_quiesce = false;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
-static sig_atomic_t _update_log = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
@@ -306,8 +306,19 @@ static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	DEF_TIMERS;
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGUSR2. Triggering logging update.");
-	_update_log = 1;
+
+	START_TIMER;
+
+	update_slurmd_logging(LOG_LEVEL_END);
+	update_stepd_logging(false);
+
+	END_TIMER3(__func__, TIMEOUT_SIGUSR2);
 }
 
 static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
@@ -588,14 +599,6 @@ static void _msg_engine(void)
 				break;
 			_attempt_reconfig();
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
-				   5000000);
-		}
-		if (_update_log) {
-			DEF_TIMERS;
-			START_TIMER;
-			update_slurmd_logging(LOG_LEVEL_END);
-			update_stepd_logging(false);
-			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
 		cli = xmalloc(sizeof(*cli));
@@ -2607,7 +2610,6 @@ extern void update_slurmd_logging(log_level_t log_lvl)
 	log_options_t *o = &conf->log_opts;
 	slurm_conf_t *cf;
 
-	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
 	if (log_lvl != LOG_LEVEL_END) {
