@@ -188,7 +188,6 @@ static int	ncpus;			/* number of CPUs on this node */
 static bool original = true;
 static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
-static sig_atomic_t _reconfig = 0;
 static bool reconfiguring = false;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t msg_pthread = (pthread_t) 0;
@@ -295,8 +294,12 @@ static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGHUP. Triggering reconfigure.");
-	_reconfig = 1;
+
+	_attempt_reconfig();
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -588,10 +591,6 @@ static void _msg_engine(void)
 	msg_pthread = pthread_self();
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
-		if (_reconfig) {
-			verbose("got reconfigure request");
-			_attempt_reconfig();
-		}
 		cli = xmalloc(sizeof(*cli));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
@@ -1452,8 +1451,6 @@ static void _try_to_reconfig(void)
 
 	START_TIMER;
 
-	_reconfig = 0;
-
 	/* Wait for RPCs to finish */
 	_wait_for_all_threads(rpc_wait);
 
@@ -1520,8 +1517,7 @@ rwfail:
 		info("Resuming operation, reconfigure failed.");
 		conmgr_run(false);
 
-		END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
-			   TIMEOUT_RECONFIG);
+		END_TIMER3(__func__, TIMEOUT_RECONFIG);
 		return;
 	}
 
