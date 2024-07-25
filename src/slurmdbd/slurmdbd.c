@@ -188,11 +188,6 @@ static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("Caught SIGXCPU. Ignoring.");
 }
 
-static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	fatal_abort("SIGABRT received");
-}
-
 static void _register_signal_handlers(void)
 {
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
@@ -206,7 +201,6 @@ static void _register_signal_handlers(void)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
-	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
 }
 
 /* main - slurmctld main function, start various threads and process RPCs */
