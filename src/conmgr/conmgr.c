@@ -202,7 +202,6 @@ extern int conmgr_run(bool blocking)
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
 		if (!mgr.watching) {
-			wreq->running_on_worker = true;
 			add_work_fifo(true, watch, wreq);
 		}
 		slurm_mutex_unlock(&mgr.mutex);

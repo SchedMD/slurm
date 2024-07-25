@@ -642,18 +642,15 @@ static bool _watch_loop(void)
 	_handle_events(&work);
 
 	if (!work) {
-		const int non_watch_workers =
-			(mgr.workers.active - mgr.watch_on_worker);
-
 		/*
 		 * Avoid watch() ending if there are any other active workers or
 		 * any queued work.
 		 */
 
-		if ((non_watch_workers > 0) || !list_is_empty(mgr.work)) {
+		if (mgr.workers.active || !list_is_empty(mgr.work)) {
 			/* Need to wait for all work/workers to complete */
 			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
-				 __func__, non_watch_workers,
+				 __func__, mgr.workers.active,
 				 list_count(mgr.work));
 			mgr.waiting_on_work = true;
 			return true;
@@ -678,12 +675,6 @@ static void _release_watch_request(watch_request_t **wreq_ptr)
 
 	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
 
-	if (wreq->running_on_worker)
-		mgr.watch_on_worker--;
-
-	xassert(mgr.watch_on_worker >= 0);
-	xassert(mgr.watch_on_worker <= mgr.workers.active);
-
 	wreq->magic = ~MAGIC_WATCH_REQUEST;
 	xfree(wreq);
 	*wreq_ptr = NULL;
@@ -697,12 +688,6 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
 
 	slurm_mutex_lock(&mgr.mutex);
-
-	if (wreq->running_on_worker) {
-		mgr.watch_on_worker++;
-		xassert(mgr.watch_on_worker > 0);
-		xassert(mgr.watch_on_worker <= mgr.workers.active);
-	}
 
 	if (mgr.shutdown_requested ||
 	    (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)) {
@@ -735,7 +720,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d waiting_on_work:%c",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -746,7 +731,6 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 				 (mgr.inspecting ? 'T' : 'F'),
 				 (mgr.shutdown_requested ? 'T' : 'F'),
 				 (mgr.quiesced ? 'T' : 'F'),
-				 mgr.watch_on_worker,
 				 (mgr.waiting_on_work ? 'T' : 'F'));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);

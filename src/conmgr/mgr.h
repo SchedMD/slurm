@@ -173,7 +173,6 @@ typedef struct {
 typedef struct {
 #define MAGIC_WATCH_REQUEST 0xD204f412
 	int magic; /* MAGIC_WATCH_REQUEST */
-	bool running_on_worker; /* true if request issues via work */
 	bool blocking; /* true to block if another thread already watching */
 } watch_request_t;
 
@@ -209,10 +208,6 @@ typedef struct {
 	 * True if _watch() is running
 	 */
 	bool watching;
-	/*
-	 * Number of watch() instances running on a worker thread (as work)
-	 */
-	int watch_on_worker;
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
