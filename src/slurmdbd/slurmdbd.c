@@ -78,6 +78,7 @@
 #include "src/slurmdbd/backup.h"
 
 #define DEFAULT_COMMIT_DELAY 5
+#define DELAY_CHECK_MISSING_UIDS HOUR_SECONDS
 
 typedef struct {
 #define RUN_ARGS_MAGIC 0xfeb0afb9
@@ -129,6 +130,7 @@ static void  _update_nice(void);
 static void  _usage(char *prog_name);
 static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg);
+static void _check_missing_uids(conmgr_callback_args_t conmgr_args, void *arg);
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -325,6 +327,9 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		fatal("getnodename: %m");
 	if (gethostname_short(node_name_short, sizeof(node_name_short)))
 		fatal("getnodename_short: %m");
+
+	conmgr_add_work_delayed_fifo(_check_missing_uids, NULL,
+				     DELAY_CHECK_MISSING_UIDS, 0);
 
 	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
@@ -886,14 +891,26 @@ static void *_rollup_handler(void *db_conn)
 
 		start_time = next_time;
 
-		/* Just in case some new uids were added to the system
-		   pick them up here. */
-		assoc_mgr_set_missing_uids();
 		/* repeat ;) */
 
 	}
 
 	return NULL;
+}
+
+static void _check_missing_uids(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	/*
+	 * Just in case some new uids were added to the system pick them up
+	 * here.
+	 */
+	assoc_mgr_set_missing_uids();
+
+	conmgr_add_work_delayed_fifo(_check_missing_uids, NULL,
+				     DELAY_CHECK_MISSING_UIDS, 0);
 }
 
 static void _try_apply_commit(void)
