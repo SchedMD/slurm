@@ -299,10 +299,17 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
+	slurm_rwlock_wrlock(&lock);
+
+	if (signal_fd >= 0) {
+		slurm_rwlock_unlock(&lock);
+		log_flag(CONMGR, "%s: skipping - already initialized",
+			 __func__);
+		return;
+	}
+
 	if (pipe(fd))
 		fatal_abort("%s: pipe() failed: %m", __func__);
-
-	slurm_rwlock_wrlock(&lock);
 
 	if (!one_time_init) {
 		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
