@@ -176,7 +176,7 @@ extern void conmgr_fini(void)
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
-	watch_request_t *wreq = NULL;
+	bool running = false;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -191,20 +191,21 @@ extern int conmgr_run(bool blocking)
 
 	xassert(!mgr.error || !mgr.exit_on_error);
 	mgr.quiesced = false;
+
+	if (mgr.watch_thread)
+		running = true;
+	else if (!blocking)
+		slurm_thread_create(&mgr.watch_thread, watch, NULL);
+	else
+		mgr.watch_thread = pthread_self();
+
 	slurm_mutex_unlock(&mgr.mutex);
 
-	wreq = xmalloc(sizeof(*wreq));
-	wreq->magic = MAGIC_WATCH_REQUEST;
-	wreq->blocking = blocking;
-
 	if (blocking) {
-		watch((conmgr_callback_args_t) {0}, wreq);
-	} else {
-		slurm_mutex_lock(&mgr.mutex);
-		if (!mgr.watching) {
-			add_work_fifo(true, watch, wreq);
-		}
-		slurm_mutex_unlock(&mgr.mutex);
+		if (running)
+			wait_for_watch();
+		else
+			(void) watch(NULL);
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -240,9 +241,10 @@ extern void conmgr_quiesce(bool wait)
 
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
+	slurm_mutex_unlock(&mgr.mutex);
+
 	if (wait)
 		wait_for_watch();
-	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_set_exit_on_error(bool exit_on_error)

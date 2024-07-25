@@ -422,8 +422,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
  * Run connection manager main loop for until quiesced or shutdown or failure
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
- * WARNING: Do not call with blocking=true from side of conmgr work or
- *	conmgr_run() will never return
+ * WARNING: Never call from work function (directly or indirectly)
  */
 extern int conmgr_run(bool blocking);
 

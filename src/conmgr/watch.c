@@ -547,8 +547,10 @@ done:
 
 extern void wait_for_watch(void)
 {
-	while (mgr.watching && !mgr.shutdown_requested)
+	slurm_mutex_lock(&mgr.mutex);
+	while (mgr.watch_thread)
 		EVENT_WAIT(&mgr.watch_return, &mgr.mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
@@ -668,43 +670,16 @@ static bool _watch_loop(void)
 	return false;
 }
 
-/* caller must hold conmgr.mutex */
-static void _release_watch_request(watch_request_t **wreq_ptr)
+extern void *watch(void *arg)
 {
-	watch_request_t *wreq = *wreq_ptr;
-
-	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
-
-	wreq->magic = ~MAGIC_WATCH_REQUEST;
-	xfree(wreq);
-	*wreq_ptr = NULL;
-}
-
-extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	watch_request_t *wreq = arg;
-
-	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
-
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.shutdown_requested ||
-	    (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)) {
-		_release_watch_request(&wreq);
+	xassert(mgr.watch_thread == pthread_self());
+
+	if (mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
+		return NULL;
 	}
-
-	if (mgr.watching) {
-		if (wreq->blocking)
-			wait_for_watch();
-
-		_release_watch_request(&wreq);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	mgr.watching = true;
 
 	add_work_fifo(true, signal_mgr_start, NULL);
 
@@ -736,16 +711,16 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 		mgr.waiting_on_work = false;
 	}
 
-	xassert(mgr.watching);
-	mgr.watching = false;
-
-	_release_watch_request(&wreq);
-
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
 		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
 		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
 		 list_count(mgr.listen_conns));
 
+	xassert(mgr.watch_thread == pthread_self());
+	mgr.watch_thread = 0;
+
 	EVENT_BROADCAST(&mgr.watch_return);
 	slurm_mutex_unlock(&mgr.mutex);
+
+	return NULL;
 }

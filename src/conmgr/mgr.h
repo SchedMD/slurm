@@ -170,12 +170,6 @@ typedef struct {
 	int id;
 } worker_t;
 
-typedef struct {
-#define MAGIC_WATCH_REQUEST 0xD204f412
-	int magic; /* MAGIC_WATCH_REQUEST */
-	bool blocking; /* true to block if another thread already watching */
-} watch_request_t;
-
 /*
  * Global instance of conmgr
  */
@@ -205,9 +199,9 @@ typedef struct {
 	/* One time per process tasks initialized */
 	bool one_time_initialized;
 	/*
-	 * True if _watch() is running
+	 * Thread id of thread running watch()
 	 */
-	bool watching;
+	pthread_t watch_thread;
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
@@ -340,14 +334,12 @@ extern void update_last_time(void);
 
 /*
  * Poll all connections and handle any events
- * IN arg - cast to bool blocking - non-zero if blocking
  */
-extern void watch(conmgr_callback_args_t conmgr_args, void *arg);
+extern void *watch(void *arg);
 
 /*
  * Wait for _watch() to finish
- *
- * WARNING: caller MUST hold mgr.mutex
+ * WARNING: caller must not hold mgr.mutex
  */
 extern void wait_for_watch(void);
 
