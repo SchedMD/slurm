@@ -216,6 +216,8 @@ documents those changes that are of interest to users and administrators.
     is configured due to incompatibility.
  -- switch/nvidia_imex - Remove any pre-existing channels when slurmd starts.
  -- rpc_queue - Add support for an optional rpc_queue.yaml configuration file.
+ -- slurmrestd - Add new +prefer_refs flag to data_parser/v0.0.41 plugin. This
+    flag will avoid inlining single referenced schemas in the OpenAPI schema.
 
 * Changes in Slurm 24.05.0
 ==========================
