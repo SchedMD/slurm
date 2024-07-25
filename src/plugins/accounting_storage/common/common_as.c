@@ -72,6 +72,10 @@ extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;
 
+extern char *qos_day_table;
+extern char *qos_hour_table;
+extern char *qos_month_table;
+
 extern char *wckey_day_table;
 extern char *wckey_hour_table;
 extern char *wckey_month_table;
