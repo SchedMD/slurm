@@ -893,6 +893,27 @@ static void _commit_handler_cancel()
 	slurm_mutex_unlock(&registered_lock);
 }
 
+static void _try_apply_commit(void)
+{
+	slurmdbd_conn_t *slurmdbd_conn = NULL;
+	list_itr_t *itr = NULL;
+
+	if (!slurmdbd_conf->commit_delay)
+		return;
+
+	slurm_mutex_lock(&registered_lock);
+	running_commit = 1;
+	itr = list_iterator_create(registered_clusters);
+	while ((slurmdbd_conn = list_next(itr))) {
+		debug4("running commit for %s",
+		       slurmdbd_conn->conn->cluster_name);
+		acct_storage_g_commit(slurmdbd_conn->db_conn, 1);
+	}
+	list_iterator_destroy(itr);
+	running_commit = 0;
+	slurm_mutex_unlock(&registered_lock);
+}
+
 /* _commit_handler - Process commit's of registered clusters */
 static void *_commit_handler(void *db_conn)
 {
@@ -901,23 +922,7 @@ static void *_commit_handler(void *db_conn)
 
 	while (!shutdown_time) {
 		/* Commit each slurmctld's info */
-		if (slurmdbd_conf->commit_delay) {
-			slurmdbd_conn_t *slurmdbd_conn = NULL;
-			list_itr_t *itr = NULL;
-
-			slurm_mutex_lock(&registered_lock);
-			running_commit = 1;
-			itr = list_iterator_create(registered_clusters);
-			while ((slurmdbd_conn = list_next(itr))) {
-				debug4("running commit for %s",
-				       slurmdbd_conn->conn->cluster_name);
-				acct_storage_g_commit(
-					slurmdbd_conn->db_conn, 1);
-			}
-			list_iterator_destroy(itr);
-			running_commit = 0;
-			slurm_mutex_unlock(&registered_lock);
-		}
+		_try_apply_commit();
 
 		/* This really doesn't need to be synconized so just
 		 * sleep for a bit and do it again.
