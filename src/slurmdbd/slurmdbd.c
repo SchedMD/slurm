@@ -896,15 +896,15 @@ static void _commit_handler_cancel()
 /* _commit_handler - Process commit's of registered clusters */
 static void *_commit_handler(void *db_conn)
 {
-	list_itr_t *itr;
-	slurmdbd_conn_t *slurmdbd_conn;
-
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (!shutdown_time) {
 		/* Commit each slurmctld's info */
 		if (slurmdbd_conf->commit_delay) {
+			slurmdbd_conn_t *slurmdbd_conn = NULL;
+			list_itr_t *itr = NULL;
+
 			slurm_mutex_lock(&registered_lock);
 			running_commit = 1;
 			itr = list_iterator_create(registered_clusters);
