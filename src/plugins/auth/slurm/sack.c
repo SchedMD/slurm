@@ -310,6 +310,4 @@ extern void fini_sack_conmgr(void)
 	 * longer be the one that owns that socket, and removing it
 	 * would prevent the current owner from responding.
 	 */
-
-	conmgr_fini();
 }
