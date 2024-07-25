@@ -77,6 +77,8 @@
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/backup.h"
 
+#define DEFAULT_COMMIT_DELAY 5
+
 typedef struct {
 #define RUN_ARGS_MAGIC 0xfeb0afb9
 	int magic; /* RUN_ARGS_MAGIC */
@@ -101,7 +103,6 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 static int	 new_nice = 0;
 static pthread_t rpc_handler_thread = 0; /* thread ID for RPC hander */
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
-static pthread_t commit_handler_thread = 0; /* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 static bool running_commit = 0;
@@ -110,8 +111,7 @@ static bool reset_lft_rgt = 0;
 static List lft_rgt_list = NULL;
 
 /* Local functions */
-static void  _commit_handler_cancel(void);
-static void *_commit_handler(void *no_data);
+static void _commit_handler(conmgr_callback_args_t conmgr_args, void *arg);
 static void  _daemonize(void);
 static void  _init_config(void);
 static void  _init_pidfile(void);
@@ -287,7 +287,8 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	registered_clusters = list_create(NULL);
 
-	slurm_thread_create(&commit_handler_thread, _commit_handler, NULL);
+	conmgr_add_work_delayed_fifo(_commit_handler, args,
+				     DEFAULT_COMMIT_DELAY, 0);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 
@@ -304,7 +305,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	if (assoc_mgr_init(args->db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&args->db_conn);
-		goto end_it;
+		return;
 	}
 
 	if (reset_lft_rgt) {
@@ -387,13 +388,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		if (shutdown_time)
 			break;
 	}
-	/* Daemon termination handled here */
-
-end_it:
-
-	slurm_thread_join(commit_handler_thread);
-
-	conmgr_add_work_fifo(_run_fini, args);
 }
 
 static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
@@ -504,7 +498,6 @@ extern void shutdown_threads(void)
 	/* End commit before rpc_mgr_wake.  It will do the final
 	   commit on the connection.
 	*/
-	_commit_handler_cancel();
 	rpc_mgr_wake();
 	_rollup_handler_cancel();
 
@@ -893,16 +886,6 @@ static void *_rollup_handler(void *db_conn)
 	return NULL;
 }
 
-static void _commit_handler_cancel()
-{
-	if (running_commit)
-		debug("Waiting for commit thread to finish.");
-	slurm_mutex_lock(&registered_lock);
-	if (commit_handler_thread)
-		pthread_cancel(commit_handler_thread);
-	slurm_mutex_unlock(&registered_lock);
-}
-
 static void _try_apply_commit(void)
 {
 	slurmdbd_conn_t *slurmdbd_conn = NULL;
@@ -925,23 +908,33 @@ static void _try_apply_commit(void)
 }
 
 /* _commit_handler - Process commit's of registered clusters */
-static void *_commit_handler(void *db_conn)
+static void _commit_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	const time_t delay = slurmdbd_conf->commit_delay ?
+		slurmdbd_conf->commit_delay : DEFAULT_COMMIT_DELAY;
+	run_args_t *args = arg;
 
-	while (!shutdown_time) {
-		/* Commit each slurmctld's info */
-		_try_apply_commit();
+	xassert(args->magic == RUN_ARGS_MAGIC);
 
-		/* This really doesn't need to be synconized so just
-		 * sleep for a bit and do it again.
-		 */
-		sleep(slurmdbd_conf->commit_delay ?
-		      slurmdbd_conf->commit_delay : 5);
+	if (shutdown_time) {
+		debug3("%s: shutdown requested", __func__);
+		conmgr_add_work_fifo(_run_fini, args);
+		return;
 	}
 
-	return NULL;
+	/* Commit each slurmctld's info */
+	_try_apply_commit();
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: cancelled", __func__);
+		return;
+	}
+
+	/*
+	 * This really doesn't need to be synchronized so just
+	 * sleep for a bit and do it again.
+	 */
+	conmgr_add_work_delayed_fifo(_commit_handler, args, delay, 0);
 }
 
 /*
