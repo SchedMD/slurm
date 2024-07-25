@@ -571,6 +571,7 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 		if (data_dict_for_each(query, _foreach_query_search, &args) >=
 		    0)
 			_dump_jobs(ctxt, &job_cond);
+		slurmdb_destroy_job_cond_members(&job_cond);
 	} else {
 		_dump_jobs(ctxt, NULL);
 	}
