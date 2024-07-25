@@ -821,15 +821,16 @@ static int _find_rollup_stats_in_list(void *x, void *key)
 	return 0;
 }
 
-static void _rollup(void *db_conn, time_t *start_time_ptr)
+static void _rollup(void *db_conn)
 {
 	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
 
+	debug2("%s: BEGIN: hourly rollup", __func__);
+
 	/* run the roll up */
 	slurm_mutex_lock(&rollup_lock);
 	running_rollup = 1;
-	debug2("running rollup at %s", slurm_ctime2(start_time_ptr));
 	START_TIMER;
 	acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats_list);
 	END_TIMER;
@@ -839,6 +840,8 @@ static void _rollup(void *db_conn, time_t *start_time_ptr)
 	handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
 	FREE_NULL_LIST(rollup_stats_list);
 	slurm_mutex_unlock(&rollup_lock);
+
+	debug2("%s: END: hourly rollup", __func__);
 }
 
 /* _rollup_handler - Process rollup duties */
@@ -862,7 +865,7 @@ static void *_rollup_handler(void *db_conn)
 		if (!db_conn)
 			break;
 
-		_rollup(db_conn, &start_time);
+		_rollup(db_conn);
 
 		/* get the time now we have rolled usage */
 		start_time = time(NULL);
