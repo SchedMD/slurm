@@ -181,6 +181,15 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 	if (sargs->disable_refs)
 		return false;
 
+	/*
+	 * Removed parsers/fields are just place holders and using $ref will
+	 * result in an invalid $ref include path.
+	 */
+	if (parser->model == PARSER_MODEL_REMOVED)
+		return false;
+	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)
+		return false;
+
 	parser_index = _resolve_parser_index(parser, sargs);
 
 	/* parser with single reference doesn't need to be a $ref */
