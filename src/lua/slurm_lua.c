@@ -384,6 +384,22 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		lua_pushnumber(L, job_ptr->delay_boot);
+	} else if (!xstrcmp(name, "curr_dependency")) {
+		/*
+		 * Name it "curr_dependency" rather than "dependency" because
+		 * the job's dependency value can change as individual
+		 * dependencies change. This prevents the use of "dependency"
+		 * when someone is expecting the original dependency value.
+		 */
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->dependency);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "orig_dependency")) {
+		if (job_ptr->details)
+			lua_pushstring(L, job_ptr->details->orig_dependency);
+		else
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "derived_ec")) {
 		lua_pushnumber(L, job_ptr->derived_ec);
 	} else if (!xstrcmp(name, "direct_set_prio")) {
