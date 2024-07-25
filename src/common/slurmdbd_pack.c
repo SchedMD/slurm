@@ -1181,6 +1181,8 @@ extern void slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg, uint16_t rpc_version,
 	void (*my_rec) (void *object, uint16_t rpc_version, buf_t *buffer);
 
 	switch (type) {
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
 		my_rec = slurmdb_pack_assoc_rec;
@@ -1215,6 +1217,8 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 	*msg = msg_ptr;
 
 	switch (type) {
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
 		my_rec = slurmdb_unpack_assoc_rec;

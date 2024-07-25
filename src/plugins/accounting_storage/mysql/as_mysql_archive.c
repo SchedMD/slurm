@@ -4679,6 +4679,23 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 			break;
 		}
 		break;
+	case DBD_GOT_QOS_USAGE:
+		switch (period) {
+		case DBD_ROLLUP_HOUR:
+			my_usage_table = qos_hour_table;
+			break;
+		case DBD_ROLLUP_DAY:
+			my_usage_table = qos_day_table;
+			break;
+		case DBD_ROLLUP_MONTH:
+			my_usage_table = qos_month_table;
+			break;
+		default:
+			error("Unknown period");
+			return NULL;
+			break;
+		}
+		break;
 	case DBD_GOT_WCKEY_USAGE:
 		switch (period) {
 		case DBD_ROLLUP_HOUR:

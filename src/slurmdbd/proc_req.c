@@ -1316,6 +1316,9 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	case DBD_GET_ASSOC_USAGE:
 		ret_type = DBD_GOT_ASSOC_USAGE;
 		break;
+	case DBD_GET_QOS_USAGE:
+		ret_type = DBD_GOT_QOS_USAGE;
+		break;
 	case DBD_GET_WCKEY_USAGE:
 		ret_type = DBD_GOT_WCKEY_USAGE;
 		break;

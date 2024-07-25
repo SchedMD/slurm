@@ -42,6 +42,11 @@
 
 #include "accounting_storage_mysql.h"
 
+typedef struct {
+	list_t *assoc_list;
+	list_t *qos_list;
+} usage_qos_query_t;
+
 extern time_t global_last_rollup;
 extern pthread_mutex_t rollup_lock;
 extern pthread_mutex_t usage_rollup_lock;
