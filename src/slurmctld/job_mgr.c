@@ -6838,6 +6838,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.ntasks_per_tres = detail_ptr->ntasks_per_tres;
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
 		job_desc.job_id = job_ptr->job_id;
+		job_desc.bitflags = job_ptr->bit_flags;
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
 			/* debug2 message already logged inside the function. */
 			fail_reason = WAIT_PN_MEM_LIMIT;
@@ -8591,6 +8592,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 	uint64_t job_mem_limit = job_desc_msg->pn_min_memory;
 	uint64_t sys_mem_limit;
 	uint16_t cpus_per_node;
+	bool cpus_set = job_desc_msg->bitflags & JOB_CPUS_SET;
 
 	if (part_ptr && part_ptr->max_mem_per_cpu)
 		sys_mem_limit = part_ptr->max_mem_per_cpu;
@@ -8601,7 +8603,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		return true;
 
 	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {
-		uint64_t mem_ratio;
+		uint64_t mem_ratio, cpu_factor;
 		job_mem_limit &= (~MEM_PER_CPU);
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
@@ -8609,10 +8611,12 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		mem_ratio = ROUNDUP(job_mem_limit, sys_mem_limit);
 		debug("JobId=%u: increasing cpus_per_task and decreasing mem_per_cpu by factor of %"PRIu64" based upon mem_per_cpu limits",
 		      job_desc_msg->job_id, mem_ratio);
-		if (job_desc_msg->cpus_per_task == NO_VAL16)
+		if (!cpus_set || (job_desc_msg->cpus_per_task == NO_VAL16)) {
 			job_desc_msg->cpus_per_task = mem_ratio;
+			cpu_factor = 1;
+		}
 		else
-			job_desc_msg->cpus_per_task *= mem_ratio;
+			cpu_factor = mem_ratio;
 		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
 					       mem_ratio) | MEM_PER_CPU;
 		if ((job_desc_msg->num_tasks != NO_VAL) &&
@@ -8620,14 +8624,17 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		    (job_desc_msg->min_cpus  != NO_VAL)) {
 			job_desc_msg->min_cpus =
 				job_desc_msg->num_tasks *
-				job_desc_msg->cpus_per_task;
+				job_desc_msg->cpus_per_task *
+				cpu_factor;
 
 			if ((job_desc_msg->max_cpus != NO_VAL) &&
 			    (job_desc_msg->max_cpus < job_desc_msg->min_cpus)) {
 				job_desc_msg->max_cpus = job_desc_msg->min_cpus;
 			}
 		} else {
-			job_desc_msg->pn_min_cpus = job_desc_msg->cpus_per_task;
+			job_desc_msg->pn_min_cpus =
+				job_desc_msg->cpus_per_task *
+				cpu_factor;
 		}
 		return true;
 	}
