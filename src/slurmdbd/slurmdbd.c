@@ -79,6 +79,7 @@
 
 #define DEFAULT_COMMIT_DELAY 5
 #define DELAY_CHECK_MISSING_UIDS HOUR_SECONDS
+#define DELAY_ROLLUP_HANDLER HOUR_SECONDS
 
 typedef struct {
 #define RUN_ARGS_MAGIC 0xfeb0afb9
@@ -103,7 +104,6 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
 static pthread_t rpc_handler_thread = 0; /* thread ID for RPC hander */
-static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 static bool running_commit = 0;
@@ -120,8 +120,7 @@ static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char **argv);
 static void  _restart_self(int argc, char **argv);
 static void  _request_registrations(void *db_conn);
-static void  _rollup_handler_cancel(void);
-static void *_rollup_handler(void *no_data);
+static void _rollup_handler(conmgr_callback_args_t conmgr_args, void *arg);
 static int   _find_rollup_stats_in_list(void *x, void *key);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
@@ -330,6 +329,8 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	conmgr_add_work_delayed_fifo(_check_missing_uids, NULL,
 				     DELAY_CHECK_MISSING_UIDS, 0);
+	conmgr_add_work_delayed_fifo(_rollup_handler, args->db_conn,
+				     DELAY_ROLLUP_HANDLER, 0);
 
 	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
@@ -363,12 +364,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 			slurm_thread_create(&rpc_handler_thread, rpc_mgr, NULL);
 		}
 
-		if (!shutdown_time) {
-			/* Create attached thread to do usage rollup */
-			slurm_thread_create(&rollup_handler_thread,
-					    _rollup_handler, args->db_conn);
-		}
-
 		/* Daemon is fully operational here */
 		if (!shutdown_time || primary_resumed) {
 			shutdown_time = 0;
@@ -382,7 +377,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		acct_storage_g_commit(args->db_conn, 1);
 
 		/* this is only ran if not backup */
-		slurm_thread_join(rollup_handler_thread);
 		slurm_thread_join(rpc_handler_thread);
 
 		if (backup && primary_resumed && !restart_backup) {
@@ -504,7 +498,13 @@ extern void shutdown_threads(void)
 	   commit on the connection.
 	*/
 	rpc_mgr_wake();
-	_rollup_handler_cancel();
+
+	if (backup && running_rollup && primary_resumed) {
+		debug("%s: Hard cancelling rollup thread", __func__);
+		restart_backup = true;
+	} else {
+		debug("%s: Waiting for rollup thread to finish.", __func__);
+	}
 
 	conmgr_request_shutdown();
 }
@@ -794,27 +794,6 @@ static void _request_registrations(void *db_conn)
 	FREE_NULL_LIST(cluster_list);
 }
 
-static void _rollup_handler_cancel(void)
-{
-	if (running_rollup) {
-		if (backup && running_rollup && primary_resumed)
-			debug("Hard cancelling rollup thread");
-		else
-			debug("Waiting for rollup thread to finish.");
-	}
-
-	if (rollup_handler_thread) {
-		if (backup && running_rollup && primary_resumed) {
-			pthread_cancel(rollup_handler_thread);
-			restart_backup = true;
-		} else {
-			slurm_mutex_lock(&rollup_lock);
-			pthread_cancel(rollup_handler_thread);
-			slurm_mutex_unlock(&rollup_lock);
-		}
-	}
-}
-
 static int _find_rollup_stats_in_list(void *x, void *key)
 {
 	slurmdb_rollup_stats_t *rollup_stats_a = (slurmdb_rollup_stats_t *)x;
@@ -850,52 +829,23 @@ static void _rollup(void *db_conn)
 }
 
 /* _rollup_handler - Process rollup duties */
-static void *_rollup_handler(void *db_conn)
+static void _rollup_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	time_t start_time = time(NULL);
-	time_t next_time;
-/* 	int sigarray[] = {SIGUSR1, 0}; */
-	struct tm tm;
+	void *db_conn = arg;
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
 
-	if (!localtime_r(&start_time, &tm)) {
-		fatal("Couldn't get localtime for rollup handler %ld",
-		      (long)start_time);
-		return NULL;
-	}
+	if (!db_conn)
+		return;
 
-	while (1) {
-		if (!db_conn)
-			break;
+	if (shutdown_time)
+		return;
 
-		_rollup(db_conn);
+	_rollup(db_conn);
 
-		/* get the time now we have rolled usage */
-		start_time = time(NULL);
-
-		if (!localtime_r(&start_time, &tm)) {
-			fatal("Couldn't get localtime for rollup handler %ld",
-			      (long)start_time);
-			return NULL;
-		}
-
-		/* sleep until the next hour */
-		tm.tm_sec = 0;
-		tm.tm_min = 0;
-		tm.tm_hour++;
-		next_time = slurm_mktime(&tm);
-
-		sleep((next_time - start_time));
-
-		start_time = next_time;
-
-		/* repeat ;) */
-
-	}
-
-	return NULL;
+	conmgr_add_work_delayed_fifo(_rollup_handler, NULL,
+				     DELAY_ROLLUP_HANDLER, 0);
 }
 
 static void _check_missing_uids(conmgr_callback_args_t conmgr_args, void *arg)
