@@ -47,6 +47,7 @@
 #define MAGIC_ARGS 0x2ea1bebb
 #define is_fast_mode(args) (args->flags & FLAG_FAST)
 #define is_complex_mode(args) (args->flags & FLAG_COMPLEX_VALUES)
+#define is_prefer_refs_mode(args) (args->flags & FLAG_PREFER_REFS)
 
 typedef enum {
 	FLAG_NONE = 0,
@@ -56,6 +57,8 @@ typedef enum {
 	FLAG_FAST = SLURM_BIT(1),
 	/* use null/false/Infinity/NaN for *_NO_VALs */
 	FLAG_COMPLEX_VALUES = SLURM_BIT(2),
+	/* Prefer $ref over expanding schema inline in OpenAPI specification */
+	FLAG_PREFER_REFS = SLURM_BIT(3),
 } data_parser_flags_t;
 
 typedef struct {
