@@ -42,3 +42,7 @@ SLURMRESTD CHANGES
 ==================
  -- Removed fields deprecated in the Slurm-23.11 release from v0.0.42 endpoints.
  -- Removed v0.0.39 plugins.
+ -- Set data_parser/v0.0.42+prefer_refs flag to default.
+ -- Add data_parser/v0.0.42+minimize_refs flag to inline single referenced
+    schemas in the OpenAPI schema to get default behavior of
+    data_parser/v0.0.41.
