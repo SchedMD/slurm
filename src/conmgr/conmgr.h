@@ -419,7 +419,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_events_t events, void *arg);
 
 /*
- * Run connection manager main loop for until quiesced or shutdown or failure
+ * Run connection manager main loop for until shutdown
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
  * WARNING: Never call from work function (directly or indirectly)
@@ -433,9 +433,8 @@ extern void conmgr_request_shutdown(void);
 
 /*
  * Hold starting any new work and event handling.
- * 	Will cause any active conmgr_run(true) to return.
- * 	Any running work will not be interrupted.
- * 	Quiesce state cleared by next call of conmgr_run().
+ * 	Any running work will not be interrupted and will be allowed until
+ * 	function returns.
  * IN wait - wait for all running work to finish before returning
  */
 extern void conmgr_quiesce(bool wait);

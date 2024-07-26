@@ -634,11 +634,9 @@ static bool _watch_loop(void)
 		signal_mgr_stop();
 		close_all_connections();
 	} else if (mgr.quiesced) {
-		if (mgr.poll_active)
-			return true;
-
-		log_flag(CONMGR, "%s: quiesced", __func__);
-		return false;
+		log_flag(CONMGR, "%s: skipping - quiesced state active",
+			 __func__);
+		return true;
 	}
 
 	_handle_events(&work);
