@@ -373,6 +373,13 @@ be used to enforce site policy on job submissions.
 .SH "EXAMPLES"
 
 .LP
+Generate OpenAPI schema without configuration
+.IP
+.nf
+$ slurmrestd -f /dev/null  --generate-openapi-spec -s slurmdbd,slurmctld -d v0.0.42 > openapi.json
+.fi
+
+.LP
 Start \fBslurmrestd\fR with a UNIX socket in listen mode:
 .IP
 .nf
