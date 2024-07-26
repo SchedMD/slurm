@@ -145,8 +145,7 @@ static void _parse_param(const char *param, args_t *args)
 			return;
 		}
 
-		log_flag(DATA, "parser(0x%"PRIxPTR") activated flag=%s",
-			 (uintptr_t) args, bit->flag_name);
+		debug("%s activated flag=%s", plugin_type, bit->flag_name);
 
 		args->flags |= bit->value;
 		return;
