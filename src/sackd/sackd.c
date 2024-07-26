@@ -329,8 +329,7 @@ static void _try_to_reconfig(void)
 	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
 
 	if ((pid = fork()) < 0) {
-		error("%s: fork() failed, cannot reconfigure.", __func__);
-		return;
+		fatal("%s: fork() failed: %m", __func__);
 	} else if (pid > 0) {
 		pid_t grandchild_pid;
 		int rc;
