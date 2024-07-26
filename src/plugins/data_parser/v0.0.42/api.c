@@ -151,8 +151,7 @@ static void _parse_param(const char *param, args_t *args)
 		return;
 	}
 
-	log_flag(DATA, "parser(0x%"PRIxPTR") ignoring param=%s",
-		 (uintptr_t) args, param);
+	warning("%s ignoring unknown flag=%s", plugin_type, param);
 }
 
 extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
