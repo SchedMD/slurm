@@ -593,7 +593,7 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_events(bool *work)
+static bool _handle_events(void)
 {
 	/* grab counts once */
 	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
@@ -606,7 +606,7 @@ static void _handle_events(bool *work)
 		_handle_complete_conns();
 
 	if (!count)
-		return;
+		return false;
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
@@ -623,13 +623,11 @@ static void _handle_events(bool *work)
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 
-	*work = true;
+	return true;
 }
 
 static bool _watch_loop(void)
 {
-	bool work = false; /* is there any work to do? */
-
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
 		close_all_connections();
@@ -639,26 +637,20 @@ static bool _watch_loop(void)
 		return true;
 	}
 
-	_handle_events(&work);
+	if (_handle_events())
+		return true;
 
-	if (!work) {
-		/*
-		 * Avoid watch() ending if there are any other active workers or
-		 * any queued work.
-		 */
+	/*
+	 * Avoid watch() ending if there are any other active workers or
+	 * any queued work.
+	 */
 
-		if (mgr.workers.active || !list_is_empty(mgr.work)) {
-			/* Need to wait for all work/workers to complete */
-			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
-				 __func__, mgr.workers.active,
-				 list_count(mgr.work));
-			mgr.waiting_on_work = true;
-			return true;
-		}
-	}
-
-	if (work) {
-		/* wait until something happens */
+	if (mgr.workers.active || !list_is_empty(mgr.work)) {
+		/* Need to wait for all work/workers to complete */
+		log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
+			 __func__, mgr.workers.active,
+			 list_count(mgr.work));
+		mgr.waiting_on_work = true;
 		return true;
 	}
 
