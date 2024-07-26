@@ -8906,6 +8906,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
 	add_flag_bit(FLAG_FAST, "FAST"),
 	add_flag_bit(FLAG_COMPLEX_VALUES, "COMPLEX"),
 	add_flag_bit(FLAG_PREFER_REFS, "PREFER_REFS"),
+	add_flag_bit(FLAG_MINIMIZE_REFS, "MINIMIZE_REFS"),
 };
 
 #define add_flag(flag_value, mask, flag_string, hidden, desc)               \

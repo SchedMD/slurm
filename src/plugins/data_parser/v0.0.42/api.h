@@ -59,6 +59,8 @@ typedef enum {
 	FLAG_COMPLEX_VALUES = SLURM_BIT(2),
 	/* Prefer $ref over expanding schema inline in OpenAPI specification */
 	FLAG_PREFER_REFS = SLURM_BIT(3),
+	/* Prefer to inline $ref into schemas when possible in OpenAPI specification */
+	FLAG_MINIMIZE_REFS = SLURM_BIT(4),
 } data_parser_flags_t;
 
 typedef struct {
