@@ -1218,7 +1218,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 
 	/*
 	 * Now pick specific GRES for these sockets.
-	 * First: Try to place one GRES per socket in this job's allocation.
+	 * First: Try to place GRES on sockets relative to allocated cores cnts.
 	 * Second: Try to place additional GRES on allocated sockets.
 	 * Third: Use any additional available GRES.
 	 */
