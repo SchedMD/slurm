@@ -939,6 +939,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 	int max_gres, pick_gres;
 	int fini = 0;
 	uint16_t cpus_per_gres = 0;
+	float gres_needed_per_core;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -987,6 +988,9 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 		 */
 		pick_gres = MAX(max_gres, 1);
 	}
+
+	gres_needed_per_core = (float)pick_gres / (float)total_cores;
+
 	/*
 	 * Now pick specific GRES for these sockets.
 	 * First select all GRES that we might possibly use, starting with
@@ -996,8 +1000,11 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < pick_gres)); s++) {
 		if (!cores_on_sock[s])
 			continue;
+		int sock_gres_needed = MIN(pick_gres - alloc_gres_cnt,
+					   (int)(cores_on_sock[s] *
+						 gres_needed_per_core));
 		alloc_gres_cnt += _pick_gres_topo(sock_gres,
-						  (pick_gres - alloc_gres_cnt),
+						  sock_gres_needed,
 						  node_inx, s, NULL, NULL);
 	}
 	if (alloc_gres_cnt < pick_gres)
@@ -1005,6 +1012,14 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 						  (pick_gres - alloc_gres_cnt),
 						  node_inx, ANY_SOCK_TEST, NULL,
 						  NULL);
+	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < pick_gres)); s++) {
+		if (!cores_on_sock[s])
+			continue;
+		alloc_gres_cnt += _pick_gres_topo(sock_gres,
+						  (pick_gres - alloc_gres_cnt),
+						  node_inx, s, NULL, NULL);
+	}
+
 	if (alloc_gres_cnt == 0 && !enforce_binding) {
 		for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt == 0)); s++) {
 			if (cores_on_sock[s])
