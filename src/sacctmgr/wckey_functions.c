@@ -251,8 +251,14 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_WCKEY_RESP, wckey_list, argc, argv,
-				     db_conn, mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(WCKEY_LIST, wckey_list,
+						 "wckeys", argc, argv, db_conn,
+						 mime_type, rc);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_WCKEY_RESP, wckey_list,
+					     argc, argv, db_conn, mime_type,
+					     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(wckey_list);
 		return rc;

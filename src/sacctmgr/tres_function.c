@@ -159,8 +159,14 @@ int sacctmgr_list_tres(int argc, char **argv)
 
 	if (mime_type) {
 		int rc;
-		DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, argc, argv,
-				     db_conn, mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(TRES_LIST, tres_list, "tres",
+						 argc, argv, db_conn, mime_type,
+						 rc);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, argc,
+					     argv, db_conn, mime_type,
+					     data_parser, rc);
 		FREE_NULL_LIST(format_list);
 		FREE_NULL_LIST(tres_list);
 		return rc;

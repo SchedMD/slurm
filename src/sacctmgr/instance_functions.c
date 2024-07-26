@@ -200,9 +200,13 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	slurmdb_destroy_instance_cond(instance_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP, instance_list,
-				     argc, argv, db_conn, mime_type,
-				     data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			rc = error("%s does not support dumping for instances",
+				   data_parser);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP,
+					     instance_list, argc, argv, db_conn,
+					     mime_type, data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(instance_list);
 		return rc;
