@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression introduced in 24.05.0rc1 breaking srun --send-libs parsing.
  -- Fix slurmd vsize memory leak when using job submission/allocation commands
     that implicitly or explicitly use --get-user-env.
+ -- slurmd - Fix node going into invalid state when using CPUSpecList and
+    setting CPUs to the # of cores on a multithreaded node
 
 * Changes in Slurm 24.05.2
 ==========================
