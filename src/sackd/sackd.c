@@ -323,10 +323,8 @@ static void _try_to_reconfig(void)
 	if (!daemonize && !under_systemd)
 		goto start_child;
 
-	if (pipe(to_parent) < 0) {
-		error("%s: pipe() failed: %m", __func__);
-		return;
-	}
+	if (pipe(to_parent))
+		fatal("%s: pipe() failed: %m", __func__);
 
 	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
 
