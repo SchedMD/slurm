@@ -115,6 +115,11 @@ documents those changes that are of interest to users and administrators.
     format, groups, job_name, partition, qos, reason, reservation, state, users,
     or wckey. This affects the following endpoints:
       'GET /slurmdb/v0.0.39/jobs'
+ -- slurmrestd - In the case the slurmdbd does not respond to a persistent
+    connection init message, prevent the closed fd from being used, and instead
+    emit an error or warning depending on if the connection was required.
+ -- Fix 24.05.0 regression that caused the slurmdbd not to send back an error
+    message if there is an error initializing a persistent connection.
 
 * Changes in Slurm 24.05.1
 ==========================
