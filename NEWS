@@ -144,6 +144,9 @@ documents those changes that are of interest to users and administrators.
     SlurmctldParameters=enable_rpc_queue from happening on reconfigure.
  -- Fix potential segfault of slurmctld on its shutdown when rate limitting
     is enabled.
+ -- slurmrestd - Fix missing job environment for SLURM_JOB_NAME,
+    SLURM_OPEN_MODE, SLURM_JOB_DEPENDENCY, SLURM_PROFILE, SLURM_ACCTG_FREQ,
+    SLURM_NETWORK and SLURM_CPU_FREQ_REQ to match sbatch.
 
 * Changes in Slurm 24.05.1
 ==========================
