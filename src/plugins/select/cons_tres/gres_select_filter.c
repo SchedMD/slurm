@@ -928,7 +928,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 			  sock_gres_t *sock_gres, uint32_t job_id,
 			  gres_mc_data_t *tres_mc_ptr, uint16_t cpus_per_core,
 			  uint32_t *cores_on_sock, uint32_t total_cores,
-			  uint32_t total_res_gres)
+			  uint32_t total_res_gres, bool enforce_binding)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -1005,7 +1005,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 						  (pick_gres - alloc_gres_cnt),
 						  node_inx, ANY_SOCK_TEST, NULL,
 						  NULL);
-	if (alloc_gres_cnt == 0) {
+	if (alloc_gres_cnt == 0 && !enforce_binding) {
 		for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt == 0)); s++) {
 			if (cores_on_sock[s])
 				continue;
@@ -1873,7 +1873,8 @@ static int _select_and_set_node(void *x, void *arg)
 					 sock_gres, job_id, tres_mc_ptr,
 					 node_ptr->tpc,
 					 args->used_cores_on_sock,
-					 args->used_core_cnt, total_res_gres);
+					 args->used_core_cnt, total_res_gres,
+					 enforce_binding);
 		if (*job_fini != 0)
 			*job_fini = tmp;
 	} else {
