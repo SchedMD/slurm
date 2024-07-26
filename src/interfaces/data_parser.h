@@ -600,6 +600,8 @@ typedef struct data_parser_s data_parser_t;
 #define SLURM_DATA_PARSER_VERSION_COMPLEX \
 	SLURM_DATA_PARSER_VERSION SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR "complex"
 
+#define SLURM_DATA_PARSER_VERSION_DEPRECATED "v0.0.39"
+
 /*
  * Initialize new data parser against given plugin
  * IN on_parse_error - callback when an parsing error is encountered
@@ -808,6 +810,41 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				       const char *data_parser,
 				       data_parser_dump_cli_ctxt_t *ctxt,
 				       openapi_resp_meta_t *meta);
+
+extern int data_parser_dump_cli_stdout_v39(data_parser_type_t type, void *obj,
+					   int obj_bytes, const char *key,
+					   void *acct_db_conn,
+					   const char *mime_type,
+					   data_parser_dump_cli_ctxt_t *ctxt,
+					   openapi_resp_meta_t *meta);
+
+extern bool is_data_parser_deprecated(const char *data_parser);
+
+/*
+ * Dump object to stdout using v0.0.39 data_parser
+ */
+#define DATA_DUMP_CLI_DEPRECATED(type, src, key, argc, argv, db_conn,         \
+				 mime_type, rc)                               \
+	do {                                                                  \
+		data_parser_dump_cli_ctxt_t dump_ctxt = {                     \
+			.magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC,             \
+			.data_parser = SLURM_DATA_PARSER_VERSION_DEPRECATED,  \
+		};                                                            \
+		openapi_resp_meta_t *meta = data_parser_cli_meta(             \
+				argc, argv, mime_type,                        \
+				SLURM_DATA_PARSER_VERSION_DEPRECATED);        \
+		meta = data_parser_cli_meta(                                  \
+				argc, argv, mime_type,                        \
+				SLURM_DATA_PARSER_VERSION_DEPRECATED);        \
+		dump_ctxt.errors = list_create(free_openapi_resp_error);      \
+		dump_ctxt.warnings = list_create(free_openapi_resp_warning);  \
+		rc = data_parser_dump_cli_stdout_v39(                         \
+			DATA_PARSER_##type, &src, sizeof(src), key, db_conn,  \
+			mime_type, &dump_ctxt, meta);                         \
+		FREE_NULL_LIST(dump_ctxt.warnings);                           \
+		FREE_NULL_LIST(dump_ctxt.errors);                             \
+		free_openapi_resp_meta(meta);                                 \
+	} while (false)
 
 /*
  * Dump object to stdout
