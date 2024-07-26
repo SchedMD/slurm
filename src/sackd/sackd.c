@@ -68,7 +68,7 @@ static char *dir = "/run/slurm/conf";
 static char **main_argv = NULL;
 static int listen_fd = -1;
 
-static void _try_to_reconfig(void);
+static void _try_to_reconfig(conmgr_callback_args_t conmgr_args, void *arg);
 
 static void _usage(void)
 {
@@ -244,7 +244,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		info("reconfigure requested by slurmd");
 		if (write_configs_to_conf_cache(msg->data, dir))
 			error("%s: failed to write configs to cache", __func__);
-		_try_to_reconfig();
+		conmgr_add_work_quiesced_fifo(_try_to_reconfig, NULL);
 		/* no need to respond */
 		break;
 	default:
@@ -285,7 +285,7 @@ static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGHUP. Reconfiguring.");
-	_try_to_reconfig();
+	conmgr_add_work_quiesced_fifo(_try_to_reconfig, NULL);
 }
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
@@ -298,7 +298,7 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
-static void _try_to_reconfig(void)
+static void _try_to_reconfig(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	extern char **environ;
 	struct rlimit rlim;
@@ -306,7 +306,8 @@ static void _try_to_reconfig(void)
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
 
-	conmgr_quiesce(false);
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
