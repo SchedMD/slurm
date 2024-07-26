@@ -1,10 +1,8 @@
-slurm-helper
-============
+# slurm-helper
 
 Bunch of helper files for the Slurm resource manager
 
-Vim syntax file
----------------
+## Vim syntax file
 
 The Vim syntax file renders the Slurm batch submission scripts easier to read and to spot errors in the submission options.
 
@@ -12,7 +10,7 @@ As submission scripts are indeed shell scripts, and all Slurm options are actual
 
 This syntax file allows vim to understand the Slurm option and highlight them accordingly. Whenever possible, the syntax rules check the validity of the options and put in a special color what is not recognized as a valid option, or valid parameters values.
 
-__Installation__
+### Installation
 
 Under Linux or MacOS, simply copy the file in the directory
 
@@ -20,13 +18,9 @@ Under Linux or MacOS, simply copy the file in the directory
 
 or whatever shell other than ``sh`` you prefer.
 
-For system wide use with bash put the file in
-
-    /etc/bash_completion.d/
-
 The syntax file is then read and applied on a Shell script after the usual syntax file has been processed.
 
-__Known issues__
+### Known issues
 
 * Some regex needed to validate options or parameter values are not exactly correct, but should work in most cases.
   * Currently, value completions do not support complex types (e.g. `param=key0:val0,key1:val1,`).
@@ -36,27 +30,27 @@ __Known issues__
   after a tab.
   Based on http://askubuntu.com/questions/33440/tab-completion-doesnt-work-for-commands you need to alter your /etc/bash.bashrc to make this work correctly.
 
-Bash completion
----------------
+## Bash completion
 
 The Bash completion script offers <TAB> completion for Slurm commands.
 
-__Instalation__
+### Instalation
 
-Source the [`slurm_completion.sh`](./__slurm_completion.sh) script. It is
+Source the [slurm_completion.sh][slurm-completion] script. It is
 recommended to automate this by adding a bash sourcing line to your
-`.bashrc` or `.profile`.
+`.bashrc` or `.profile`. Alternatively, add it to `/etc/profile.d/`
+to automatically source it for login shells.
 
 Additionally, there are a number of environment variables that can be set to
 alter/customize completion behavior. They are documented in
-[`slurm_completion.sh`](./__slurm_completion.sh).
+[slurm_completion.sh][slurm-completion].
 
 ```sh
 # .bashrc
 source /path/to/slurm_completion.sh
 ```
 
-__Examples__
+### Examples
 
 ```sh
 $ sacct --<tab><tab>
@@ -157,3 +151,6 @@ down               idle               power_down_force
 drain              noresp             power_up           
 fail               power_down         resume             
 ```
+
+<!-- Links -->
+[slurm-completion]: ./slurm_completion.sh

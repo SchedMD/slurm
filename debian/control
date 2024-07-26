@@ -64,7 +64,8 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
- munge
+ munge,
+ bash-completion
 Conflicts:
  slurm-client,
  slurm-client-emulator
