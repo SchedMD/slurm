@@ -173,7 +173,8 @@ static void *_worker(void *arg)
 	while (true) {
 		work_t *work = NULL;
 
-		work = list_pop(mgr.work);
+		if (!mgr.quiesced)
+			work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
 		if (!work) {
