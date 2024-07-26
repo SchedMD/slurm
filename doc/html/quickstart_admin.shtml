@@ -150,7 +150,8 @@ plugins and what is required to build them.</p>
 <li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
 		library is installed.</li>
 <li> <b>PMIx</b> PMIx support will be added if the <i>pmix</i> development
-		library is installed.</li>
+		library is installed and the <code>--with-pmix</code> flag is
+		provided at build time.</li>
 <li> <b>Readline Support</b> Readline support in scontrol and sacctmgr's
 		interactive modes will be available if the <i>readline</i>
 		development library is present.</li>
