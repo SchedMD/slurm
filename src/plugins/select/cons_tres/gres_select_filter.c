@@ -993,8 +993,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 
 	/*
 	 * Now pick specific GRES for these sockets.
-	 * First select all GRES that we might possibly use, starting with
-	 * those not constrained by socket, then contrained by socket.
+	 * First select all GRES that we might possibly use
 	 * Then remove those which are not required and not "best".
 	 */
 	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < pick_gres)); s++) {
