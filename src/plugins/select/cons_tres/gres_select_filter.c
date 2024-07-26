@@ -1238,10 +1238,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 					       links_cnt);
 	}
 
-	/*
-	 * Try to place additional GRES on allocated sockets. Favor use of
-	 * GRES which are best linked to GRES which have already been selected.
-	 */
+	/* Try to place additional GRES on allocated sockets. */
 	for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
 		if (!used_cores_on_sock[s])
 			continue;
@@ -1254,10 +1251,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 					       sorted_gres, links_cnt);
 	}
 
-	/*
-	 * Use any additional available GRES. Again, favor use of GRES
-	 * which are best linked to GRES which have already been selected.
-	 */
+	/* Use any additional available GRES.  */
 	if (gres_needed && !enforce_binding) {
 		for (s = 0; ((s < sock_cnt) && gres_needed); s++) {
 			/* Sockets we ignored before */
