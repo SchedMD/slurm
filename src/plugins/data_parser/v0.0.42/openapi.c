@@ -184,7 +184,7 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 	parser_index = _resolve_parser_index(parser, sargs);
 
 	/* parser with single reference doesn't need to be a $ref */
-	if (parser_index != NO_VAL) {
+	if ((parser_index != NO_VAL) && !is_prefer_refs_mode(sargs->args)) {
 		debug4("%s: %s references=%u",
 		       __func__, parser->type_string,
 		       sargs->references[parser_index]);
