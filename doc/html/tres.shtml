@@ -118,18 +118,18 @@ of "mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
 with:
 </p>
 
-<pre>TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0"</pre>
+<pre>TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0,license/licA=1.5"</pre>
 
 <p>the billable TRES will be:
 </p>
-<pre>(1*1.0) + (8*0.25) + (0*2.0) = 3.0</pre>
+<pre>(1*1.0) + (8*0.25) + (0*2.0) + (0*1.5) = 3.0</pre>
 
 <p>If <i>PriorityFlags=MAX_TRES</i> is configured, the billable TRES is
   calculated as the MAX of individual TRESs on a node (e.g. cpus, mem,
   gres) plus the sum of all global TRESs (e.g. licenses). Using the
   same example above, the billable TRES will be:
 </p>
-<pre>MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0</pre>
+<pre>MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0</pre>
 
 <p>If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
@@ -179,6 +179,6 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 13 March 2024</p>
+<p style="text-align:center;">Last modified 16 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
