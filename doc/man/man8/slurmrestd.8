@@ -116,15 +116,15 @@ as given and no warnings will be generated about ignored or incorrect fields or
 values.
 .IP
 .TP
-\fB+prefer_refs\fR
-Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+\fB+minimize_refs\fR
+Prefer inline expansion of referenced schemas (via \fI$ref\fR) in generated
 OpenAPI specifications if the schema is only referenced once.
 .IP
 .RE
 .IP
 
 .TP
-\fB[data_parser/]v0.0.42[+fast][+prefer_refs]\fR
+\fB[data_parser/]v0.0.42[+fast][+minimize_refs]\fR
 Load data_parser/]v0.0.42 plugin to for formatting of data. Only compatible
 with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
 .RS
