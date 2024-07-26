@@ -645,11 +645,12 @@ static bool _watch_loop(void)
 	 * any queued work.
 	 */
 
-	if (mgr.workers.active || !list_is_empty(mgr.work)) {
+	if (mgr.workers.active || !list_is_empty(mgr.work) ||
+	    !list_is_empty(mgr.delayed_work)) {
 		/* Need to wait for all work/workers to complete */
-		log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
+		log_flag(CONMGR, "%s: waiting on workers:%d work:%d delayed_work:%d",
 			 __func__, mgr.workers.active,
-			 list_count(mgr.work));
+			 list_count(mgr.delayed_work), list_count(mgr.work));
 		mgr.waiting_on_work = true;
 		return true;
 	}
