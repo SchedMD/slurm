@@ -1121,7 +1121,7 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 	}
 
 	if (rc != SLURM_SUCCESS)
-		goto unpack_error;
+		return rc;
 
 	/* Here we transfer the auth_cred to the persist_conn just in case in the
 	 * future we need to use it in some way to verify things for messages
