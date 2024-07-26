@@ -1233,7 +1233,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	}
 
 	if (gres_needed) {
-		gres_needed -= _pick_gres_topo(sock_gres, 1, node_inx,
+		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
 					       ANY_SOCK_TEST, sorted_gres,
 					       links_cnt);
 	}
@@ -1244,11 +1244,6 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 			continue;
 		gres_needed -= _pick_gres_topo(sock_gres, gres_needed, node_inx,
 					       s, sorted_gres, links_cnt);
-	}
-	if (gres_needed) {
-		gres_needed -= _pick_gres_topo(sock_gres, gres_needed,
-					       node_inx, ANY_SOCK_TEST,
-					       sorted_gres, links_cnt);
 	}
 
 	/* Use any additional available GRES.  */
