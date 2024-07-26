@@ -28,6 +28,7 @@ Build-Depends:
  libjson-c-dev,
  libjwt-dev,
  liblz4-dev,
+ libmariadb-dev | libmysqlclient-dev,
  bash-completion,
  libdbus-1-dev,
  librdkafka-dev
