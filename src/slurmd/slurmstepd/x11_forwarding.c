@@ -148,6 +148,9 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 
 	slurm_free_msg_members(&resp);
 
+	net_set_nodelay(*local);
+	net_set_nodelay(*remote);
+
 	/* setup eio to handle both sides of the connection now */
 	e1 = eio_obj_create(*local, &half_duplex_ops, remote);
 	e2 = eio_obj_create(*remote, &half_duplex_ops, local);

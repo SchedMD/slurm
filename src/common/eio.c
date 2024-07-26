@@ -294,8 +294,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		if (!pollfds)  /* Fix for CLANG false positive */
 			goto done;
 
-		debug4("eio: handling events for %d objects",
-		       list_count(eio->obj_list));
+		debug4("eio: handling events for %u objects", n);
 		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
 		if (nfds <= 0)
 			goto done;

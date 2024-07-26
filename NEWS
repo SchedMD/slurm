@@ -120,6 +120,7 @@ documents those changes that are of interest to users and administrators.
     emit an error or warning depending on if the connection was required.
  -- Fix 24.05.0 regression that caused the slurmdbd not to send back an error
     message if there is an error initializing a persistent connection.
+ -- Reduce latency of forwarded x11 packets.
 
 * Changes in Slurm 24.05.1
 ==========================
