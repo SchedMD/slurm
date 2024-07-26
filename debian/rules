@@ -18,7 +18,7 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	# Run with --disable-debug to allow optimizations, -g is still provided
 	# by dpkg-buildflags.
-	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-slurmrestd --with-pmix --enable-pam --with-systemdsystemunitdir=/lib/systemd/system/ SUCMD=/bin/su SLEEP_CMD=/bin/sleep
+	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-mysql_config --with-slurmrestd --with-pmix --enable-pam --with-systemdsystemunitdir=/lib/systemd/system/ SUCMD=/bin/su SLEEP_CMD=/bin/sleep
 
 override_dh_auto_install:
 	dh_auto_install

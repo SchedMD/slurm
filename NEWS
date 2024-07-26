@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix GRES environment variable indices being incorrect when only using a
     subset of all GPUs on a node and the --gres-flags=allow-task-sharing option
  -- Add missing mariadb/mysql client package dependency to debian package.
+ -- Fail the debian package build early if mysql cannot be found.
 
 * Changes in Slurm 24.05.1
 ==========================
