@@ -631,11 +631,31 @@ static bool _watch_loop(void)
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
 		close_all_connections();
-	} else if (mgr.quiesced) {
-		log_flag(CONMGR, "%s: skipping - quiesced state active",
-			 __func__);
+	}
+
+	if (!mgr.quiesced && !list_is_empty(mgr.quiesced_work)) {
+		mgr.quiesced = true;
+		log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
+	}
+
+	if (mgr.quiesced) {
+		xassert(!list_is_empty(mgr.quiesced_work));
+
+		if (mgr.workers.active) {
+			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d quiesced_work:%u",
+				 __func__, mgr.workers.active,
+				 list_count(mgr.quiesced_work));
+			mgr.waiting_on_work = true;
+			return true;
+		}
+
+		run_quiesced_work();
+		mgr.quiesced = false;
+		log_flag(CONMGR, "%s: END: quiesced state", __func__);
 		return true;
 	}
+
+	xassert(list_is_empty(mgr.quiesced_work));
 
 	if (_handle_events())
 		return true;
@@ -685,7 +705,7 @@ extern void *watch(void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_on_work:%c",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c[%u] waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -696,16 +716,16 @@ extern void *watch(void *arg)
 				 (mgr.inspecting ? 'T' : 'F'),
 				 (mgr.shutdown_requested ? 'T' : 'F'),
 				 (mgr.quiesced ? 'T' : 'F'),
+				 list_count(mgr.quiesced_work),
 				 (mgr.waiting_on_work ? 'T' : 'F'));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
 		mgr.waiting_on_work = false;
 	}
 
-	log_flag(CONMGR, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
+	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
 		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
-		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
-		 list_count(mgr.listen_conns));
+		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
 	xassert(mgr.watch_thread == pthread_self());
 	mgr.watch_thread = 0;

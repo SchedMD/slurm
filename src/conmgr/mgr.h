@@ -210,6 +210,8 @@ typedef struct {
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
+	/* list of work_t* to run while quiesced */
+	list_t *quiesced_work;
 	/*
 	 * Is mgr currently quiesced?
 	 * Defers all new work to while true
@@ -267,7 +269,7 @@ typedef struct {
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
-		.quiesced = true,\
+		.quiesced = false,\
 		.shutdown_requested = true,\
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
@@ -410,6 +412,13 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
  * RET ptr or NULL if not found
  */
 extern conmgr_fd_t *con_find_by_fd(int fd);
+
+/*
+ * Run all work in mgr.quiesced_work
+ * NOTE: Caller must hold mgr.mutex lock
+ * WARNING: Releases and retakes mgr.mutex lock
+ */
+extern void run_quiesced_work(void);
 
 /*
  * Wrap work requested to notify mgr when that work is complete

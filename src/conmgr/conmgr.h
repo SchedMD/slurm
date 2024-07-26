@@ -181,6 +181,23 @@ typedef enum {
 	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
 	/* call every time signal is received */
 	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4),
+	/*
+	 * Run work while conmgr is quiesced.
+	 *
+	 * Once eligible to run (if any other controls are specified):
+	 *	Pauses any new work from starting until run.
+	 *	Pauses all event management until run.
+	 *
+	 * Will only be run when all worker threads have finished all previously
+	 * running work when pause of new work started.
+	 *
+	 * Upon work's return, conmgr will resume normal operations (or run next
+	 * work with CONMGR_WORK_DEP_QUIESCED flag set).
+	 *
+	 * Only 1 work of this type will run at a time.
+	 * Incompatible with connection work.
+	 */
+	CONMGR_WORK_DEP_QUIESCED = SLURM_BIT(5),
 } conmgr_work_depend_t;
 
 /* RET caller must xfree() */
@@ -432,10 +449,7 @@ extern int conmgr_run(bool blocking);
 extern void conmgr_request_shutdown(void);
 
 /*
- * Hold starting any new work and event handling.
- * 	Any running work will not be interrupted and will be allowed until
- * 	function returns.
- * IN wait - wait for all running work to finish before returning
+ * Removed placeholder
  */
 extern void conmgr_quiesce(bool wait);
 
@@ -572,6 +586,21 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 		}, (conmgr_work_control_t) { \
 			.depend_type = CONMGR_WORK_DEP_SIGNAL, \
 			.on_signal_number = signal_number, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
+ * Add work to run while quiesced
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ */
+#define conmgr_add_work_quiesced_fifo(_func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_QUIESCED, \
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, __func__)
 
