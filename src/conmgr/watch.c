@@ -683,7 +683,6 @@ static void _release_watch_request(watch_request_t **wreq_ptr)
 extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	watch_request_t *wreq = arg;
-	bool shutdown_requested;
 
 	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
 
@@ -740,13 +739,10 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(mgr.watching);
 	mgr.watching = false;
 
-	/* Get the value of shutdown_requested while mutex is locked */
-	shutdown_requested = mgr.shutdown_requested;
-
 	_release_watch_request(&wreq);
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
-		 __func__, (shutdown_requested ? 'T' : 'F'),
+		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
 		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
 		 list_count(mgr.listen_conns));
 
