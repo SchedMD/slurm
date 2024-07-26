@@ -97,7 +97,10 @@ extern void rate_limit_init(void)
 
 extern void rate_limit_shutdown(void)
 {
+	slurm_mutex_lock(&rate_limit_mutex);
+	rate_limit_enabled = false;
 	xfree(user_buckets);
+	slurm_mutex_unlock(&rate_limit_mutex);
 }
 
 /*
@@ -122,6 +125,11 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		return false;
 
 	slurm_mutex_lock(&rate_limit_mutex);
+	/* This can happen if we already executed rate_limit_shutdown */
+	if (!user_buckets) {
+		slurm_mutex_unlock(&rate_limit_mutex);
+		return true;
+	}
 	now = time(NULL);
 
 	/*

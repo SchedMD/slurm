@@ -125,6 +125,10 @@ documents those changes that are of interest to users and administrators.
     and "orig_dependency" (representing the original requested dependency of
     the job) fields to the job record in job_submit.lua (for job update) and
     jobcomp.lua.
+ -- Fix potential segfault of slurmctld configured with
+    SlurmctldParameters=enable_rpc_queue from happening on reconfigure.
+ -- Fix potential segfault of slurmctld on its shutdown when rate limitting
+    is enabled.
 
 * Changes in Slurm 24.05.1
 ==========================
