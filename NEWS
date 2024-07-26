@@ -121,6 +121,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix 24.05.0 regression that caused the slurmdbd not to send back an error
     message if there is an error initializing a persistent connection.
  -- Reduce latency of forwarded x11 packets.
+ -- Add "curr_dependency" (representing the current dependency of the job)
+    and "orig_dependency" (representing the original requested dependency of
+    the job) fields to the job record in job_submit.lua (for job update) and
+    jobcomp.lua.
 
 * Changes in Slurm 24.05.1
 ==========================
