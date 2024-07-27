@@ -1461,6 +1461,7 @@ static void _try_to_reconfig(void)
 	if (conf->lfd != -1) {
 		setenvf(&child_env, "SLURMD_RECONF_LISTEN_FD", "%d", conf->lfd);
 		fd_set_noclose_on_exec(conf->lfd);
+		debug3("%s: retaining listener socket fd:%d", __func__, conf->lfd);
 	}
 
 	if (!conf->daemonize && !under_systemd)
