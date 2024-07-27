@@ -297,6 +297,26 @@ static bool         _verify_clustername(void);
 static bool         _wait_for_server_thread(void);
 static void *       _wait_primary_prog(void *arg);
 
+static void _attempt_reconfig(void)
+{
+	info("Attempting to reconfigure");
+	reconfig_rc = _try_to_reconfig();
+
+	slurm_mutex_lock(&reconfig_mutex);
+	while (reconfig_threads) {
+		slurm_cond_broadcast(&reconfig_cond);
+		slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+	}
+	slurm_mutex_unlock(&reconfig_mutex);
+
+	if (!reconfig_rc) {
+		info("Relinquishing control to new child");
+		_exit(0);
+	}
+
+	recover = 2;
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -780,22 +800,7 @@ int main(int argc, char **argv)
 
 		/* attempt reconfig here */
 		if (reconfig) {
-			info("Attempting to reconfigure");
-			reconfig_rc = _try_to_reconfig();
-
-			slurm_mutex_lock(&reconfig_mutex);
-			while (reconfig_threads) {
-				slurm_cond_broadcast(&reconfig_cond);
-				slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-			}
-			slurm_mutex_unlock(&reconfig_mutex);
-
-			if (!reconfig_rc) {
-				info("Relinquishing control to new child");
-				_exit(0);
-			}
-
-			recover = 2;
+			_attempt_reconfig();
 			continue;
 		}
 
