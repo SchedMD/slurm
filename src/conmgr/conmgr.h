@@ -449,11 +449,6 @@ extern int conmgr_run(bool blocking);
 extern void conmgr_request_shutdown(void);
 
 /*
- * Removed placeholder
- */
-extern void conmgr_quiesce(bool wait);
-
-/*
  * Add work to run
  * IN con - connection to run work or NULL
  * IN callback - callback function details

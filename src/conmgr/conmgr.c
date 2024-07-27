@@ -230,11 +230,6 @@ extern void conmgr_request_shutdown(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void conmgr_quiesce(bool wait)
-{
-	fatal_abort("removed");
-}
-
 extern void conmgr_set_exit_on_error(bool exit_on_error)
 {
 	slurm_mutex_lock(&mgr.mutex);
