@@ -234,6 +234,7 @@ static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
+static bool waiting_conmgr_quiesce = false;
 static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
@@ -297,10 +298,36 @@ static bool         _verify_clustername(void);
 static bool         _wait_for_server_thread(void);
 static void *       _wait_primary_prog(void *arg);
 
+static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
+				      void *arg)
+{
+	if (conmgr_args.status != CONMGR_WORK_STATUS_CANCELLED)
+		reconfig_rc = _try_to_reconfig();
+
+	slurm_mutex_lock(&reconfig_mutex);
+	xassert(waiting_conmgr_quiesce);
+	waiting_conmgr_quiesce = false;
+	slurm_cond_broadcast(&reconfig_cond);
+	slurm_mutex_unlock(&reconfig_mutex);
+}
+
 static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
-	reconfig_rc = _try_to_reconfig();
+
+	if (conmgr_enabled()) {
+		slurm_mutex_lock(&reconfig_mutex);
+		if (!waiting_conmgr_quiesce) {
+			waiting_conmgr_quiesce = true;
+			slurm_mutex_unlock(&reconfig_mutex);
+			conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
+						      NULL);
+		} else {
+			slurm_mutex_unlock(&reconfig_mutex);
+		}
+	} else {
+		reconfig_rc = _try_to_reconfig();
+	}
 
 	slurm_mutex_lock(&reconfig_mutex);
 	while (reconfig_threads) {
@@ -1041,8 +1068,6 @@ static int _try_to_reconfig(void)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
-
-	conmgr_quiesce(true);
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
