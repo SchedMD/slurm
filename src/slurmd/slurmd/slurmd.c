@@ -180,6 +180,9 @@ static bool original = true;
 static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
+static bool waiting_conmgr_quiesce = false;
+static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
 static sig_atomic_t _update_log = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
@@ -228,6 +231,7 @@ static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
+static void _attempt_reconfig(void);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -499,7 +503,7 @@ static void _msg_engine(void)
 			_wait_for_all_threads(rpc_wait);
 			if (_shutdown)
 				break;
-			_try_to_reconfig();
+			_attempt_reconfig();
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
@@ -1335,6 +1339,39 @@ rwfail:
 	return;
 }
 
+static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
+				      void *arg)
+{
+	if (conmgr_args.status != CONMGR_WORK_STATUS_CANCELLED)
+		_try_to_reconfig();
+
+	slurm_mutex_lock(&reconfig_mutex);
+	xassert(waiting_conmgr_quiesce);
+	waiting_conmgr_quiesce = false;
+	slurm_cond_broadcast(&reconfig_cond);
+	slurm_mutex_unlock(&reconfig_mutex);
+}
+
+static void _attempt_reconfig(void)
+{
+	info("Attempting to reconfigure");
+
+	if (conmgr_enabled()) {
+		slurm_mutex_lock(&reconfig_mutex);
+		if (!waiting_conmgr_quiesce) {
+			waiting_conmgr_quiesce = true;
+			conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
+						      NULL);
+		}
+
+		while (waiting_conmgr_quiesce)
+			slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
+		slurm_mutex_unlock(&reconfig_mutex);
+	} else {
+		_try_to_reconfig();
+	}
+}
+
 static void _try_to_reconfig(void)
 {
 	extern char **environ;
@@ -1344,7 +1381,6 @@ static void _try_to_reconfig(void)
 	int to_parent[2] = {-1, -1};
 
 	_reconfig = 0;
-	conmgr_quiesce(true);
 
 	save_cred_state();
 
