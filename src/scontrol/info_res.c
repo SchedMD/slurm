@@ -88,23 +88,6 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 
 	error_code = scontrol_load_reservations(&res_info_ptr);
 	if (error_code) {
-		if (mime_type) {
-			int rc;
-			openapi_resp_reserve_info_msg_t resp = {
-				.reservations = res_info_ptr,
-				.last_update = res_info_ptr->last_update,
-			};
-
-			DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc,
-				      argv, NULL, mime_type, data_parser, rc);
-
-			if (rc)
-				exit_code = 1;
-
-			slurm_free_reservation_info_msg(res_info_ptr);
-			return;
-		}
-
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_reservations error");
