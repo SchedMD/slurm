@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- topology/tree - Fix issues with switch distance optimization.
  -- Fix potential segfault of secondary slurmctld when falling back to the
     primary when running with a JobComp plugin.
+ -- Enable --json/--yaml=v0.0.39 options on client commands to dump data using
+    data_parser/v0.0.39 instead or outputting nothing.
 
 * Changes in Slurm 24.05.2
 ==========================
