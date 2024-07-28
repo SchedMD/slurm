@@ -2559,7 +2559,7 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 	/* intentionally skipping SLURM_EXPORT_ENV */
 
 	if (job->profile) {
-		char tmp[128];
+		char tmp[128] = {0};
 		acct_gather_profile_to_string_r(job->profile, tmp);
 		env_array_overwrite(&launch->environment, "SLURM_PROFILE", tmp);
 	}
