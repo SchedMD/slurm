@@ -2160,6 +2160,58 @@ static int _clone_env_child(child_args_t *child_args)
 }
 #endif
 
+static bool _ns_path_disabled(const char *ns_path)
+{
+	FILE *fp = NULL;
+	size_t line_sz = 0;
+	ssize_t nbytes = 0;
+	int ns_value;
+	char *line = NULL;
+	bool ns_disabled = false;
+
+	/* We will assume not having these files as having no limits. */
+	fp = fopen(ns_path, "r");
+	if (!fp) {
+		debug2("%s: could not open %s, assuming no pid namespace limits. Reason: %m",
+		       __func__, ns_path);
+	} else {
+		nbytes = getline(&line, &line_sz, fp);
+		if (nbytes < 0) {
+			debug2("%s: could not read contents of %s. Assuming no namespace limits. Reason: %m",
+			       __func__, ns_path);
+		} else if (nbytes == 0) {
+			debug2("%s: read 0 bytes from %s. Assuming no namespace limits",
+			       __func__, ns_path);
+		} else {
+			ns_value = xstrntol(line, NULL, nbytes, 10);
+			if (ns_value == 0)
+				ns_disabled = true;
+		}
+		fclose(fp);
+		free(line);
+		line = NULL;
+	}
+
+	return ns_disabled;
+}
+
+/*
+ * Returns a boolean indicating if the required namespaces for the clone
+ * calls are disabled. This is performed by checking the contents of
+ * "/proc/sys/max_[mnt|pid]_namespaces" and ensuring they are not 0.
+ */
+extern bool _ns_disabled()
+{
+	char *pid_ns_path = "/proc/sys/user/max_pid_namespaces";
+	char *mnt_ns_path = "/proc/sys/user/max_mnt_namespaces";
+
+	if (_ns_path_disabled(pid_ns_path) ||
+	    _ns_path_disabled(mnt_ns_path))
+		return true;
+
+	return false;
+}
+
 /*
  * Return an array of strings representing the specified user's default
  * environment variables following a two-prongged approach.
