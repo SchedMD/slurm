@@ -100,6 +100,7 @@ typedef struct {
 	char *cmdstr;
 	int *fildes;
 	int mode;
+	bool perform_mount;
 	int rlimit;
 	char **tmp_env;
 	const char *username;
@@ -2099,11 +2100,13 @@ static int _child_fn(void *arg)
 	 * have coherent /proc contents with their virtual PIDs.
 	 * Check _clone_env_child to see namespace flags used in clone.
 	 */
-	if (mount("none", "/proc", NULL, MS_PRIVATE|MS_REC, NULL))
-		_exit(1);
-	if (mount("proc", "/proc", "proc",
-		  MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL))
-		_exit(1);
+	if (child_args->perform_mount) {
+		if (mount("none", "/proc", NULL, MS_PRIVATE|MS_REC, NULL))
+			_exit(1);
+		if (mount("proc", "/proc", "proc",
+			  MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL))
+			_exit(1);
+	}
 #endif
 
 	if ((devnull = open("/dev/null", O_RDWR)) != -1) {
@@ -2230,6 +2233,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	child_args.username = username;
 	child_args.cmdstr = cmdstr;
 	child_args.tmp_env = env_array_create();
+	child_args.perform_mount = true;
 	env_array_overwrite(&child_args.tmp_env, "ENVIRONMENT", "BATCH");
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
