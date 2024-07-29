@@ -624,7 +624,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
    user or not.  The assoc_mgr locks should be unlocked before coming here.
 */
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
-			      slurmdbd_msg_type_t type, List object_list,
+			      slurmdbd_msg_type_t type, void *object_in,
 			      char *cluster_name, time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -633,6 +633,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	char *id_str = NULL, *name_char = NULL;
 	list_itr_t *itr = NULL, *u_itr = NULL;
 	void *object = NULL;
+	list_t *object_list = object_in;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;

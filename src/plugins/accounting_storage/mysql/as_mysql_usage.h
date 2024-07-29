@@ -47,7 +47,7 @@ extern pthread_mutex_t rollup_lock;
 extern pthread_mutex_t usage_rollup_lock;
 
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
-			      slurmdbd_msg_type_t type, List object_list,
+			      slurmdbd_msg_type_t type, void *object_in,
 			      char *cluster_name, time_t start, time_t end);
 extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,
