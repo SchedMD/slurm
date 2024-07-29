@@ -50,7 +50,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
 #include "../common/common_jag.h"
 
 /*
