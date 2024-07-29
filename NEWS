@@ -81,6 +81,9 @@ documents those changes that are of interest to users and administrators.
     concurrent steps to run at a time if threads per core is greater than 1.
  -- In existing allocations SLURM_GPUS_PER_NODE environment variable will be
     ignored by srun if --gpus is specified.
+ -- When using --get-user-env explicitly or implicitly, check if PID or mnt
+    namespaces are disabled and fall back to old logic that does not rely on
+    them when they are not available.
 
 * Changes in Slurm 24.05.3
 ==========================
