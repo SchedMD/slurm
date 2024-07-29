@@ -979,7 +979,7 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 
 			/*
 			 * There is a race condition here where the global
-			 * QOS list could have changed betwen the query of the
+			 * QOS list could have changed between the query of the
 			 * list and the bitstrs. Just error and have the user
 			 * try again if they want.
 			 */
@@ -4394,7 +4394,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 					  &job->cpu_freq_gov))) {
 		xfree(str);
 		return parse_error(parser, args, parent_path, rc,
-				   "Invalid cpu_freuency");
+				   "Invalid cpu_frequency");
 	}
 
 	xfree(str);
@@ -6740,7 +6740,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_skip(show_full),
 	add_parse(TIMESTAMP, start, "time/start", "Time execution began (UNIX timestamp)"),
 	add_parse_bit_flag_array(slurmdb_job_rec_t, JOB_STATE, false, state, "state/current", "Current state"),
-	add_parse(JOB_REASON, state_reason_prev, "state/reason", "Reaason for previous Pending or Failed state"),
+	add_parse(JOB_REASON, state_reason_prev, "state/reason", "Reason for previous Pending or Failed state"),
 	add_parse(STEP_LIST, steps, "steps", "Individual steps in the job"),
 	add_parse(TIMESTAMP, submit, "time/submission", "Time when the job was submitted (UNIX timestamp)"),
 	add_parse(STRING, submit_line, "submit_line", "Command used to submit the job"),
@@ -6828,7 +6828,7 @@ static const parser_t PARSER_ARRAY(ACCOUNTING)[] = {
 /* should mirror the structure of slurmdb_coord_rec_t  */
 static const parser_t PARSER_ARRAY(COORD)[] = {
 	add_parse_req(STRING, name, "name", "User name"),
-	add_parse(BOOL16, direct, "direct", "Indicates whether the coorinator was directly assigned to this account"),
+	add_parse(BOOL16, direct, "direct", "Indicates whether the coordinator was directly assigned to this account"),
 };
 #undef add_parse
 #undef add_parse_req
@@ -7061,7 +7061,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_parse(STRING, control_host, "controller/host", "ControlHost"),
 	add_parse(UINT32, control_port, "controller/port", "ControlPort"),
 	add_skip(dim_size), /* BG deprecated */
-	add_skip(fed), /* federation not supportted */
+	add_skip(fed), /* federation not supported */
 	add_parse_bit_flag_array(slurmdb_cluster_rec_t, CLUSTER_REC_FLAGS, false, flags, "flags", "Flags"),
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", "ClusterName"),
@@ -7329,7 +7329,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, reason, "reason", "Describes why the node is in a \"DOWN\", \"DRAINED\", \"DRAINING\", \"FAILING\" or \"FAIL\" state"),
 	add_parse(TIMESTAMP_NO_VAL, reason_time, "reason_changed_at", "When the reason changed (UNIX timestamp)"),
 	add_parse(USER_ID, reason_uid, "reason_set_by_user", "User who set the reason"),
-	add_parse(TIMESTAMP_NO_VAL, resume_after, "resume_after", "Number of seconds after the node's state is updated to \"DONW\" or \"DRAIN\" before scheduling a node state resume"),
+	add_parse(TIMESTAMP_NO_VAL, resume_after, "resume_after", "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume"),
 	add_parse(STRING, resv_name, "reservation", "Name of reservation containing this node"),
 	add_cparse(NODE_SELECT_ALLOC_MEMORY, "alloc_memory", "Total memory in MB currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_CPUS, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
@@ -7382,7 +7382,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(BF_WHOLE_NODE_TEST, "TESTING_WHOLE_NODE_BACKFILL"),
 	add_flag_bit(TOP_PRIO_TMP, "TOP_PRIORITY_JOB"),
 	add_flag_bit(JOB_ACCRUE_OVER, "ACCRUE_COUNT_CLEARED"),
-	add_flag_bit(GRES_DISABLE_BIND, "GRED_BINDING_DISABLED"),
+	add_flag_bit(GRES_DISABLE_BIND, "GRES_BINDING_DISABLED"),
 	add_flag_bit(JOB_WAS_RUNNING, "JOB_WAS_RUNNING"),
 	add_flag_bit(RESET_ACCRUE_TIME, "JOB_ACCRUE_TIME_RESET"),
 	add_flag_bit(CRON_JOB, "CRON_JOB"),
@@ -7493,7 +7493,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, container_id, "container_id", "OCI container ID"),
 	add_parse(BOOL16_NO_VAL, contiguous, "contiguous", "True if job requires contiguous nodes"),
 	add_parse_overload(CORE_SPEC, core_spec, 1, "core_spec", "Specialized core count"),
-	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_spec", "Specilized thread count"),
+	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_spec", "Specialized thread count"),
 	add_parse(UINT16_NO_VAL, cores_per_socket, "cores_per_socket", "Cores per socket required"),
 	add_parse(FLOAT64_NO_VAL, billable_tres, "billable_tres", "Billable TRES"),
 	add_parse(UINT16_NO_VAL, cpus_per_task, "cpus_per_task", "Number of CPUs required by each task"),
@@ -7558,7 +7558,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT16_NO_VAL, pn_min_cpus, "minimum_cpus_per_node", "Minimum number of CPUs per node"),
 	add_parse(UINT32_NO_VAL, pn_min_tmp_disk, "minimum_tmp_disk_per_node", "Minimum tmp disk space required per node"),
 	add_removed(POWER_FLAGS, "power/flags", NULL, SLURM_24_05_PROTOCOL_VERSION),
-	add_parse(TIMESTAMP_NO_VAL, preempt_time, "preempt_time", "Time job received preemptjion signal (UNIX timestamp)"),
+	add_parse(TIMESTAMP_NO_VAL, preempt_time, "preempt_time", "Time job received preemption signal (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, preemptable_time, "preemptable_time", "Time job becomes eligible for preemption (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, pre_sus_time, "pre_sus_time", "Total run time prior to last suspend in seconds"),
 	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
@@ -7584,7 +7584,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, start_time, "start_time", "Time execution began, or is expected to begin (UNIX timestamp)"),
 	add_skip(start_protocol_ver),
 	add_parse(STRING, state_desc, "state_description", "Optional details for state_reason"),
-	add_parse(JOB_REASON, state_reason, "state_reason", "Reaason for current Pending or Failed state"),
+	add_parse(JOB_REASON, state_reason, "state_reason", "Reason for current Pending or Failed state"),
 	add_skip(std_err),
 	add_skip(std_in),
 	add_skip(std_out),
@@ -8232,16 +8232,16 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
 	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
-	add_parse(STRING, node_list, "node_list", "ranged node string"),
-	add_parse(TIMESTAMP, time_end, "time_end", "time end UNIX timestamp"),
-	add_parse(TIMESTAMP, time_start, "time_start", "time start UNIX timestamp"),
+	add_parse(STRING, node_list, "node_list", "Ranged node string"),
+	add_parse(TIMESTAMP, time_end, "time_end", "Time end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, time_start, "time_start", "Time start (UNIX timestamp)"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_submit_request_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
-	add_parse(STRING, script, "script", "Batch job script. Batch script must be specified in first component of jobs or in job if this field is not populated."),
+	add_parse(STRING, script, "script", "Batch job script; must be specified in first component of jobs or in job if this field is not populated"),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
 	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
 };
@@ -8299,16 +8299,16 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, associd_list, "association", "CSV association list"),
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(CSV_STRING_LIST, constraint_list, "constraints", "CSV constraint list"),
-	add_parse(UINT32_NO_VAL, cpus_max, "cpus_max", "number of cpus high range"),
-	add_parse(UINT32_NO_VAL, cpus_min, "cpus_min", "number of cpus low range"),
+	add_parse(UINT32_NO_VAL, cpus_max, "cpus_max", "Maximum number of cpus"),
+	add_parse(UINT32_NO_VAL, cpus_min, "cpus_min", "Minimum number of cpus"),
 	add_flags(JOB_CONDITION_DB_FLAGS, db_flags),
-	add_parse(INT32, exitcode, "exit_code", "job exit code (numeric)"),
+	add_parse(INT32, exitcode, "exit_code", "Job exit code (numeric)"),
 	add_flags(JOB_CONDITION_FLAGS, flags),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(GROUP_ID_STRING_LIST, groupid_list, "groups", "CSV group list"),
 	add_parse(CSV_STRING_LIST, jobname_list, "job_name", "CSV job name list"),
-	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "number of nodes high range"),
-	add_parse(UINT32_NO_VAL, nodes_min, "nodes_min", "number of nodes low range"),
+	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "Maximum number of nodes"),
+	add_parse(UINT32_NO_VAL, nodes_min, "nodes_min", "Minimum number of nodes"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
 	add_parse(CSV_STRING_LIST, qos_list, "qos", "CSV QOS name list"),
 	add_parse(CSV_STRING_LIST, reason_list, "reason", "CSV reason list"),
@@ -8316,12 +8316,12 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, resvid_list, "reservation_id", "CSV reservation ID list"),
 	add_parse(JOB_STATE_ID_STRING_LIST, state_list, "state", "CSV state list"),
 	add_parse(SELECTED_STEP_LIST, step_list, "step", "CSV step id list"),
-	add_parse(UINT32_NO_VAL, timelimit_max, "timelimit_max", "maximum timelimit (seconds)"),
-	add_parse(UINT32_NO_VAL, timelimit_min, "timelimit_min", "minimum timelimit (seconds)"),
-	add_parse(TIMESTAMP, usage_end, "end_time", "usage end timestamp"),
-	add_parse(TIMESTAMP, usage_start, "start_time", "usage start timestamp"),
-	add_cparse(JOB_CONDITION_SUBMIT_TIME, "submit_time", "submit time timestamp"),
-	add_parse(STRING, used_nodes, "node", "ranged node string where jobs ran"),
+	add_parse(UINT32_NO_VAL, timelimit_max, "timelimit_max", "Maximum timelimit (seconds)"),
+	add_parse(UINT32_NO_VAL, timelimit_min, "timelimit_min", "Minimum timelimit (seconds)"),
+	add_parse(TIMESTAMP, usage_end, "end_time", "Usage end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, usage_start, "start_time", "Usage start (UNIX timestamp)"),
+	add_cparse(JOB_CONDITION_SUBMIT_TIME, "submit_time", "Submit time (UNIX timestamp)"),
+	add_parse(STRING, used_nodes, "node", "Ranged node string where jobs ran"),
 	add_parse(USER_ID_STRING_LIST, userid_list, "users", "CSV user name list"),
 	add_parse(CSV_STRING_LIST, wckey_list, "wckey", "CSV wckey list"),
 };
@@ -8898,7 +8898,7 @@ static const parser_t PARSER_ARRAY(KILL_JOBS_RESP_JOB)[] = {
 	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME), "Query warnings")
 
 /*
- * Generic response when there is only possiblity of warnings/errors
+ * Generic response when there is only possibility of warnings/errors
  * and HTTP status code.
  */
 static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                            \
