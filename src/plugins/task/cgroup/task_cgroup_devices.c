@@ -54,8 +54,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#include "task_cgroup.h"
-
 typedef struct handle_dev_args {
 	cgroup_level_t cgroup_type;
 	uint32_t taskid;
