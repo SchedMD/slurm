@@ -101,7 +101,8 @@ static const char *tags[] = {
 	NULL
 };
 
-#define OP_FLAGS (OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT)
+#define OP_FLAGS (OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT | \
+		  OP_BIND_NO_SLURMDBD)
 
 const openapi_path_binding_t openapi_paths[] = {
 	{
