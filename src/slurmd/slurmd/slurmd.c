@@ -61,11 +61,14 @@
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
@@ -157,11 +160,6 @@ static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
-typedef struct connection {
-	int fd;
-	slurm_addr_t *cli_addr;
-} conn_t;
-
 typedef struct {
 #define RUN_ARGS_MAGIC 0xaeb00fab
 	int magic; /* RUN_ARGS_MAGIC */
@@ -191,7 +189,6 @@ static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
 static bool reconfiguring = false;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
 /*
@@ -205,15 +202,13 @@ pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
-static void      _create_msg_socket(void);
+static void _create_msg_socket(run_args_t *args);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
-static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
-static void      _msg_engine(void);
 static void _notify_parent_of_success(void);
 static void      _print_conf(void);
 static void      _print_config(void);
@@ -224,7 +219,6 @@ static void     *_registration_engine(void *arg);
 static void      _resource_spec_fini(void);
 static int       _resource_spec_init(void);
 static void      _select_spec_cores(void);
-static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(const char *dir);
 static int       _set_topo_info(void);
 static int       _set_work_dir(void);
@@ -486,7 +480,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	plugins_registered = true;
 
-	_create_msg_socket();
+	_create_msg_socket(args);
 
 	conf->pid = getpid();
 
@@ -510,11 +504,6 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	record_launched_jobs();
 	slurm_thread_create_detached(_registration_engine, NULL);
-
-	/* main processing loop. when this returns start shutting down */
-	_msg_engine();
-
-	conmgr_add_work_fifo(_run_fini, NULL);
 }
 
 static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
@@ -593,31 +582,6 @@ _registration_engine(void *arg)
 	return NULL;
 }
 
-static void _msg_engine(void)
-{
-	slurm_addr_t *cli;
-	int sock;
-
-	msg_pthread = pthread_self();
-	slurmd_req(NULL);	/* initialize timer */
-	while (!_shutdown) {
-		cli = xmalloc(sizeof(*cli));
-		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
-			_handle_connection(sock, cli);
-			continue;
-		}
-		/*
-		 *  Otherwise, accept() failed.
-		 */
-		xfree(cli);
-		if (errno == EINTR)
-			continue;
-		error("accept: %m");
-	}
-	verbose("got shutdown request");
-	fd_close(&conf->lfd);
-}
-
 static void _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
@@ -677,29 +641,48 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void _handle_connection(int fd, slurm_addr_t *cli)
+static void _service_connection(conmgr_callback_args_t conmgr_args,
+				int input_fd, int output_fd, void *arg)
 {
-	conn_t *arg = xmalloc(sizeof(conn_t));
-
-	arg->fd       = fd;
-	arg->cli_addr = cli;
-
-	_increment_thd_count();
-	slurm_thread_create_detached(_service_connection, arg);
-}
-
-static void *
-_service_connection(void *arg)
-{
-	conn_t *con = (conn_t *) arg;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t *msg = NULL;
+	slurm_addr_t addr = {
+		.ss_family = AF_UNSPEC,
+	};
 	int rc = SLURM_SUCCESS;
 
-	debug3("in the service_connection");
+	xassert(!arg);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: [fd:%d] connection work cancelled",
+		       __func__, input_fd);
+
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		return;
+	}
+
+	xassert(input_fd == output_fd);
+	xassert(input_fd >= 0);
+
+	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
+		error("%s: [fd:%d] getting socket peer failed: %s",
+		      __func__, input_fd, slurm_strerror(rc));
+		fd_close(&input_fd);
+		return;
+	}
+
+	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
+
+	msg = xmalloc_nz(sizeof(*msg));
 	slurm_msg_t_init(msg);
+
 	msg->flags |= SLURM_MSG_KEEP_BUFFER;
-	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg))
-	   != SLURM_SUCCESS) {
+
+	/* force blocking mode for blocking handlers */
+	fd_set_blocking(input_fd);
+
+	if ((rc = slurm_receive_msg_and_forward(input_fd, &addr, msg))) {
 		error("service_connection: slurm_receive_msg: %m");
 		/*
 		 * if this fails we need to make sure the nodes we forward
@@ -717,25 +700,19 @@ _service_connection(void *arg)
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-		slurm_addr_t cli_addr;
-		(void) slurm_get_peer_addr(con->fd, &cli_addr);
 		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
 			 rpc_num2string(msg->msg_type), msg->auth_uid,
-			 &cli_addr, msg->protocol_version);
+			 &addr, msg->protocol_version);
 	}
 
 	slurmd_req(msg);
 
 cleanup:
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
-		error ("close(%d): %m", con->fd);
+		error ("close(%d): %m", input_fd);
 
-	xfree(con->cli_addr);
-	xfree(con);
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 	slurm_free_msg(msg);
-	_decrement_thd_count();
-	return NULL;
 }
 
 static int _load_gres()
@@ -1943,18 +1920,89 @@ _process_cmdline(int ac, char **av)
 	}
 }
 
-static void _create_msg_socket(void)
+static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
-	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
-		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
-		debug2("%s: inherited socket on fd=%d", __func__, conf->lfd);
-		return;
+	run_args_t *args = arg;
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
+
+	debug3("%s: [%s] Successfully opened slurm listen port %u",
+	       __func__, conmgr_fd_get_name(con), conf->port);
+
+	slurmd_req(NULL);	/* initialize timer */
+
+	return args;
+}
+
+static void _on_listen_finish(conmgr_fd_t *con, void *arg)
+{
+	run_args_t *args = arg;
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
+
+	debug3("%s: [%s] closed RPC listener. Queuing up cleanup.",
+	       __func__, conmgr_fd_get_name(con));
+
+	conf->lfd = -1;
+
+	conmgr_add_work_fifo(_run_fini, args);
+}
+
+static void *_on_connection(conmgr_fd_t *con, void *arg)
+{
+	int rc;
+
+	debug3("%s: [%s] New RPC connection",
+	       __func__, conmgr_fd_get_name(con));
+
+	if ((rc = conmgr_queue_extract_con_fd(con, _service_connection,
+					      XSTRINGIFY(_service_connection),
+					      NULL))) {
+		error("%s: [%s] Extracting FDs failed: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+		return NULL;
 	}
 
-	if ((conf->lfd = slurm_init_msg_engine_port(conf->port)) < 0)
-		fatal("Unable to bind listen port (%u): %m", conf->port);
+	return con;
+}
 
-	debug3("Successfully opened slurm listen port %u", conf->port);
+static void _on_finish(conmgr_fd_t *con, void *arg)
+{
+	xassert(arg == con);
+
+	debug3("%s: [%s] RPC connection closed",
+	       __func__, conmgr_fd_get_name(con));
+}
+
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+{
+	fatal_abort("should never happen");
+}
+
+static void _create_msg_socket(run_args_t *args)
+{
+	static const conmgr_events_t events = {
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_connection = _on_connection,
+		.on_msg = _on_msg,
+		.on_finish = _on_finish,
+	};
+	int rc;
+
+	xassert(args->magic == RUN_ARGS_MAGIC);
+
+	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
+		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
+		debug2("%s: inherited socket on fd:%d", __func__, conf->lfd);
+	} else if ((conf->lfd = slurm_init_msg_engine_port(conf->port)) < 0) {
+		fatal("Unable to bind listen port (%u): %m", conf->port);
+	}
+
+	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, events,
+					   NULL, 0, args)))
+		fatal("%s: unable to process fd:%d error:%s",
+		      __func__, conf->lfd, slurm_strerror(rc));
 }
 
 static void
@@ -2544,8 +2592,6 @@ _slurmd_fini(void)
 extern void slurmd_shutdown(void)
 {
 	_shutdown = 1;
-	if (msg_pthread && (pthread_self() != msg_pthread))
-		pthread_kill(msg_pthread, SIGTERM);
 	conmgr_request_shutdown();
 }
 
