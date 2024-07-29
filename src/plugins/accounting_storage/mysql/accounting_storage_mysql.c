@@ -1302,6 +1302,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int unsigned not null" },
+		{ "id_alt", "int unsigned default 0 not null" },
 		{ "id_tres", "int default 1 not null" },
 		{ "time_start", "bigint unsigned not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },

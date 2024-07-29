@@ -423,6 +423,7 @@ typedef struct {
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t id;	/* association/wckey ID		*/
+	uint32_t id_alt; /* association/wckey ID */
 	time_t period_start; /* when this record was started */
 	slurmdb_tres_rec_t tres_rec;
 } slurmdb_accounting_rec_t;
