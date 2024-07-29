@@ -4828,14 +4828,10 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
+			packbool(0, buffer);
 			return;
 		}
+		packbool(1, buffer);
 
 		slurm_pack_list(object->description_list,
 				packstr_func,
@@ -4892,10 +4888,15 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 				   buf_t *buffer)
 {
 	slurmdb_qos_cond_t *object_ptr = xmalloc(sizeof(slurmdb_qos_cond_t));
+	bool need_unpack = false;
 
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
 		if (slurm_unpack_list(&object_ptr->description_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -4966,6 +4967,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 	} else
 		goto unpack_error;
 
+end_unpack:
 	return SLURM_SUCCESS;
 
 unpack_error:
