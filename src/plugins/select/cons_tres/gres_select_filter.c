@@ -431,8 +431,8 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 
 	if (use_single_dev && total_res_gres && (sock_with_res_cnt > 1)) {
 		/*
-		 * Have to allocate gres accross more then one socket.
-		 * This is assuming one socket per gres configueration line.
+		 * Have to allocate gres accross more than one socket.
+		 * This is assuming one socket per gres configuration line.
 		 */
 		*satisfy_res_gres = false;
 		return;
