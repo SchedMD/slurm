@@ -998,6 +998,11 @@ inherit the variable from the caller's environment. If the caller doesn't
 have an environment variable defined for \fIEDITOR\fR, then the job's
 environment will use the value given by \fB\-\-export\fR.
 .RE
+
+\fBNOTE\fR: NONE and [\fIALL\fR,]<\fIenvironment_variables\fR> implicitly
+work as if \fB--get-user-env\fR was defined. Please see the implications
+of this in its respective section.
+
 .RE
 .IP
 
@@ -1074,6 +1079,14 @@ If \fImode\fR not specified, the mode established at Slurm build time
 is used.
 Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
+
+\fBNOTE\fR: The explicit or implicit use of \fB--get-user-env\fR relies in
+the capability of being able to create PID and mount namespaces. It is very
+advisable to ensure that PID and mount namespace creation is available and
+not limited (check that \fB/proc/sys/user/max_[pid|mnt]_namespaces\fR
+is not 0). Although they are not strictly mandatory for \fB--get-user-env\fR
+to work, they ensure that there are no orphan processes left after the
+environment is retrieved.
 .IP
 
 .TP

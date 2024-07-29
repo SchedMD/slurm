@@ -936,8 +936,15 @@ If \fImode\fR is not specified, the mode established at Slurm build time
 is used.
 Examples of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
-\fBNOTE\fR: This option only works if the caller has an
-effective uid of "root".
+
+\fBNOTE\fR: This option only works if the caller has an effective uid
+of "root". The explicit or implicit use of \fB--get-user-env\fR relies on
+the capability of being able to create PID and mount namespaces. It is very
+advisable to ensure that PID and mount namespace creation is available and
+not limited (check that \fB/proc/sys/user/max_[pid|mnt]_namespaces\fR
+is not 0). Although they are not strictly mandatory for \fB--get-user-env\fR
+to work, they ensure that there are no orphan processes left after the
+environment is retrieved.
 .IP
 
 .TP
