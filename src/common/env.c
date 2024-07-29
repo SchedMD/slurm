@@ -2200,7 +2200,7 @@ static bool _ns_path_disabled(const char *ns_path)
  * calls are disabled. This is performed by checking the contents of
  * "/proc/sys/max_[mnt|pid]_namespaces" and ensuring they are not 0.
  */
-extern bool _ns_disabled()
+static bool _ns_disabled()
 {
 	char *pid_ns_path = "/proc/sys/user/max_pid_namespaces";
 	char *mnt_ns_path = "/proc/sys/user/max_mnt_namespaces";
@@ -2302,9 +2302,27 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (child == 0)
 		_child_fn(&child_args);
 #else
-	if ((child = _clone_env_child(&child_args)) == -1) {
-		fatal("clone: %m");
-		return NULL;
+	/*
+	 * Since we will be using namespaces in the clone calls (CLONE_NEWPID,
+	 * CLONE_NEWNS), we need to know if they are disabled . If they are,
+	 * we must fall back to fork and warn the user about the risks.
+	 */
+	if (_ns_disabled()) {
+		warning("%s: pid or mnt namespaces are disabled, avoiding clone and falling back to fork. This can produce orphan/unconstrained processes!",
+			__func__);
+		child_args.perform_mount = false;
+		child = fork();
+		if (child == -1) {
+			fatal("fork: %m");
+			return NULL;
+		}
+		if (child == 0)
+			_child_fn(&child_args);
+	} else {
+		if ((child = _clone_env_child(&child_args)) == -1) {
+			fatal("clone: %m");
+			return NULL;
+		}
 	}
 #endif
 	close(fildes[1]);
