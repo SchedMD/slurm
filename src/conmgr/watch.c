@@ -696,8 +696,9 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
-		if ((mgr.quiesced || mgr.shutdown_requested) &&
-		    mgr.poll_active) {
+		if (mgr.poll_active &&
+		    (mgr.quiesced || mgr.shutdown_requested ||
+		     (mgr.waiting_on_work && (mgr.workers.active == 1)))) {
 			/*
 			 * poll() hasn't returned yet but we want to
 			 * shutdown. Send interrupt before sleeping or
