@@ -76,17 +76,25 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-static void _update_last_time(void)
+static struct timespec _get_time(void)
 {
+	struct timespec time;
 	int rc;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &last_time))) {
+	if ((rc = clock_gettime(CLOCK_MONOTONIC, &time))) {
 		if (rc == -1)
 			rc = errno;
 
 		fatal("%s: clock_gettime() failed: %s",
 		      __func__, slurm_strerror(rc));
 	}
+
+	return time;
+}
+
+static void _update_last_time(void)
+{
+	last_time = _get_time();
 }
 
 static list_t *_inspect(void)
