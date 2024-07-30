@@ -47,6 +47,7 @@ typedef struct {
 } foreach_delayed_work_t;
 
 static int _match_work_elapsed(void *x, void *key);
+static void _update_timer(void);
 
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
@@ -91,7 +92,7 @@ static list_t *_inspect(void)
 	count = list_transfer_match(mgr.delayed_work, elapsed,
 				    _match_work_elapsed, NULL);
 
-	update_timer();
+	_update_timer();
 
 	while ((work = list_pop(elapsed))) {
 		if (!work_clear_time_delay(work))
@@ -152,7 +153,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern void update_timer(void)
+static void _update_timer(void)
 {
 	int rc;
 	struct itimerspec spec = {{0}};

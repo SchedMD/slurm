@@ -326,8 +326,6 @@ extern bool work_clear_time_delay(work_t *work);
 extern void cancel_delayed_work(void);
 extern void init_delayed_work(void);
 extern void free_delayed_work(void);
-/* update_timer - Caller must lock mgr.mutex */
-extern void update_timer(void);
 /*
  * Inspect and update queued work in mgr.delayed_work
  * IN locked - true if mgr.mutex is locked by caller
