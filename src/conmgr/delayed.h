@@ -59,7 +59,4 @@ extern void update_delayed_work(bool locked);
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 
-/* update_last_time - Caller must lock mgr.mutex */
-extern void update_last_time(void);
-
 #endif /* _CONMGR_DELAYED_H */

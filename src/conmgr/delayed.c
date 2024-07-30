@@ -68,7 +68,7 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-extern void update_last_time(void)
+static void _update_last_time(void)
 {
 	int rc;
 
@@ -87,7 +87,7 @@ static list_t *_inspect(void)
 	work_t *work;
 	list_t *elapsed = list_create(xfree_ptr);
 
-	update_last_time();
+	_update_last_time();
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
