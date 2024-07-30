@@ -46,7 +46,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include "slurm/slurm.h"
 
@@ -228,10 +227,6 @@ typedef struct {
 	int error;
 	/* list of work_t */
 	list_t *delayed_work;
-	/* last time clock was queried */
-	struct timespec last_time;
-	/* monotonic timer */
-	timer_t timer;
 	/* list of work_t* */
 	list_t *work;
 

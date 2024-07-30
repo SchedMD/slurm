@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <time.h>
+
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -47,6 +49,12 @@ typedef struct {
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
 } foreach_delayed_work_t;
+
+/* last time clock was queried */
+static struct timespec last_time = {0};
+
+/* monotonic timer */
+static timer_t timer = {0};
 
 static int _match_work_elapsed(void *x, void *key);
 static void _update_timer(void);
@@ -73,7 +81,7 @@ static void _update_last_time(void)
 {
 	int rc;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr.last_time))) {
+	if ((rc = clock_gettime(CLOCK_MONOTONIC, &last_time))) {
 		if (rc == -1)
 			rc = errno;
 
@@ -121,9 +129,9 @@ static int _foreach_delayed_work(void *x, void *arg)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		int64_t remain_sec, remain_nsec;
 
-		remain_sec = begin.seconds - mgr.last_time.tv_sec;
+		remain_sec = begin.seconds - last_time.tv_sec;
 		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - mgr.last_time.tv_nsec;
+			remain_nsec = begin.nanoseconds - last_time.tv_nsec;
 		} else if (remain_sec < 0) {
 			remain_nsec = NO_VAL64;
 		} else {
@@ -178,10 +186,10 @@ static void _update_timer(void)
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			int64_t remain_sec, remain_nsec;
 
-			remain_sec = begin.seconds - mgr.last_time.tv_sec;
+			remain_sec = begin.seconds - last_time.tv_sec;
 			if (remain_sec == 0) {
 				remain_nsec = begin.nanoseconds -
-					      mgr.last_time.tv_nsec;
+					      last_time.tv_nsec;
 			} else if (remain_sec < 0) {
 				remain_nsec = NO_VAL64;
 			} else {
@@ -197,7 +205,7 @@ static void _update_timer(void)
 		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
 	}
 
-	if ((rc = timer_settime(mgr.timer, TIMER_ABSTIME, &spec, NULL))) {
+	if ((rc = timer_settime(timer, TIMER_ABSTIME, &spec, NULL))) {
 		if ((rc == -1) && errno)
 			rc = errno;
 	}
@@ -213,9 +221,9 @@ static int _match_work_elapsed(void *x, void *key)
 
 	xassert(work->magic == MAGIC_WORK);
 
-	remain_sec = begin.seconds - mgr.last_time.tv_sec;
+	remain_sec = begin.seconds - last_time.tv_sec;
 	if (remain_sec == 0) {
-		remain_nsec = begin.nanoseconds - mgr.last_time.tv_nsec;
+		remain_nsec = begin.nanoseconds - last_time.tv_nsec;
 		trigger = (remain_nsec <= 0);
 	} else if (remain_sec < 0) {
 		trigger = true;
@@ -270,13 +278,13 @@ extern void init_delayed_work(void)
 	struct sigevent sevp = {
 		.sigev_notify = SIGEV_SIGNAL,
 		.sigev_signo = SIGALRM,
-		.sigev_value.sival_ptr = &mgr.timer,
+		.sigev_value.sival_ptr = &timer,
 	};
 
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
-	if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr.timer))) {
+	if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &timer))) {
 		if ((rc == -1) && errno)
 			rc = errno;
 
@@ -294,7 +302,7 @@ extern void free_delayed_work(void)
 		return;
 
 	FREE_NULL_LIST(mgr.delayed_work);
-	if (timer_delete(mgr.timer))
+	if (timer_delete(timer))
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
