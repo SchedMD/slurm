@@ -169,7 +169,9 @@ static void _update_timer(void)
 		const conmgr_work_time_begin_t begin = work->control.time_begin;
 
 		spec.it_value.tv_sec = begin.seconds;
-		spec.it_value.tv_nsec = begin.nanoseconds;
+
+		if (begin.seconds <= 0)
+			spec.it_value.tv_nsec = begin.nanoseconds;
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			int64_t remain_sec, remain_nsec;
