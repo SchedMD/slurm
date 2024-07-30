@@ -162,11 +162,6 @@ static void _update_timer(void)
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
 	};
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		/* get updated clock for logging but not needed otherwise */
-		update_last_time();
-	}
-
 	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
 
 	if (args.shortest) {
