@@ -65,4 +65,11 @@ extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
  */
 extern void add_work_delayed(work_t *work);
 
+/*
+ * Create string describing delayed work for logging
+ * IN work - delayed work to describe
+ * RET log string (caller must xfree())
+ */
+extern char *work_delayed_to_str(work_t *work);
+
 #endif /* _CONMGR_DELAYED_H */

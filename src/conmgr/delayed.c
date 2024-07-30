@@ -35,6 +35,7 @@
 
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/delayed.h"
@@ -340,4 +341,40 @@ extern void add_work_delayed(work_t *work)
 {
 	list_append(mgr.delayed_work, work);
 	update_delayed_work(true);
+}
+
+extern char *work_delayed_to_str(work_t *work)
+{
+	struct timespec last_time = {0};
+	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
+	char *delay = NULL;
+
+	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
+		return NULL;
+
+	(void) clock_gettime(CLOCK_MONOTONIC, &last_time);
+
+	diff = work->control.time_begin.seconds - last_time.tv_sec;
+
+	days = diff / (DAY_HOURS * HOUR_SECONDS);
+	diff = diff % (DAY_HOURS * HOUR_SECONDS);
+
+	hours = diff / HOUR_SECONDS;
+	diff = diff % HOUR_SECONDS;
+
+	minutes = diff / MINUTE_SECONDS;
+	diff = diff % MINUTE_SECONDS;
+
+	seconds = diff;
+
+	if (!seconds)
+		nanoseconds = work->control.time_begin.nanoseconds;
+	else
+		nanoseconds = (work->control.time_begin.nanoseconds -
+			       last_time.tv_nsec);
+
+	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
+		   days, hours, minutes, seconds, nanoseconds);
+
+	return delay;
 }
