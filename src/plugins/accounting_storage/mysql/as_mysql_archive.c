@@ -2671,7 +2671,15 @@ static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
 static int _unpack_local_usage(local_usage_t *object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
-	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->id, buffer);
+		safe_unpackstr(&object->tres_id, buffer);
+		safe_unpackstr(&object->time_start, buffer);
+		safe_unpackstr(&object->alloc_secs, buffer);
+		safe_unpackstr(&object->creation_time, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->id, buffer);
 		safe_unpackstr(&object->tres_id, buffer);
 		safe_unpackstr(&object->time_start, buffer);
