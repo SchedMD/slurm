@@ -298,16 +298,25 @@ extern void free_delayed_work(void)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
+extern void update_delayed_work(bool locked)
 {
 	list_t *elapsed = NULL;
 
-	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
-	slurm_mutex_lock(&mgr.mutex);
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
 	elapsed = _inspect();
-	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
 
 	FREE_NULL_LIST(elapsed);
+}
+
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
+	update_delayed_work(false);
 }
 
 extern bool work_clear_time_delay(work_t *work)
