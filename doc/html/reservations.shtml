@@ -379,11 +379,15 @@ $ scontrol create reservation user=operator nodes=tux8 \
 <a class="slurm_link" href="#replace"></a>
 </h2>
 
-<p>Slurm can create an advanced reservation for which nodes which are allocated
-to jobs are automatically replaced with new idle nodes.
+<p>By default, nodes in a reservation that are DOWN or DRAINED will be replaced,
+but not nodes that are allocated to jobs. This behavior may be explicitly
+requested with the <b>REPLACE_DOWN</b> flag.</p>
+
+<p>However, you may instruct Slurm to also replace nodes which are allocated to
+jobs with new idle nodes. This is done using the <b>REPLACE</b> flag as shown in
+the example below.
 The effect of this is to always maintain a constant size pool of resources.
-This is accomplished by using the <b>REPLACE</b> flag as shown in the example
-below. This option is not supported for reservations specifying cores which
+This option is not supported for reservations specifying cores which
 span more than one node, rather than full nodes. (E.g. a 1 core reservation on
 node "tux1" will be moved if node "tux1" goes down, but a reservation
 containing 2 cores on node "tux1" and 3 cores on "tux2" will not be moved if
@@ -425,10 +429,6 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
    97     debug   tmp   foo  R  0:09      1 tux0
    98     debug   tmp   foo  R  0:07      1 tux1
 </pre>
-
-<p><b>NOTE</b>: By default, nodes that are DOWN or DRAINED will be replaced,
-but not nodes that have jobs running on them. This behavior may be explicitly
-requested with the <b>REPLACE_DOWN</b> flag.</p>
 
 <h2 id="flex">FLEX Reservations<a class="slurm_link" href="#flex"></a></h2>
 
