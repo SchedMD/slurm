@@ -141,8 +141,17 @@ static void *_agent_thread(void *data)
 			persist_msg_t persist_msg = {0};
 
 			set_buf_offset(buffer, 0);
-			slurm_persist_msg_unpack(&persist_conn, &persist_msg,
-						 buffer);
+			if (slurm_persist_msg_unpack(&persist_conn,
+						     &persist_msg, buffer) !=
+			    SLURM_SUCCESS) {
+				/* This should never happen, we packed it */
+				error("%s: Failed to unpack persist msg, can't send '%s' to controller.",
+				      __func__,
+				      rpc_num2string(REQUEST_DBD_RELAY));
+				slurmdbd_free_msg(&persist_msg);
+				FREE_NULL_BUFFER(buffer);
+				continue;
+			}
 
 			slurm_msg_t_init(&msg);
 			msg.msg_type = REQUEST_DBD_RELAY;
