@@ -47,6 +47,7 @@ typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
+	struct timespec time;
 } foreach_delayed_work_t;
 
 typedef struct {
@@ -139,6 +140,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 	work_t *work = x;
 	foreach_delayed_work_t *args = arg;
 	const conmgr_work_time_begin_t begin = work->control.time_begin;
+	const struct timespec time = args->time;
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
@@ -146,9 +148,9 @@ static int _foreach_delayed_work(void *x, void *arg)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		int64_t remain_sec, remain_nsec;
 
-		remain_sec = begin.seconds - last_time.tv_sec;
+		remain_sec = begin.seconds - time.tv_sec;
 		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - last_time.tv_nsec;
+			remain_nsec = begin.nanoseconds - time.tv_nsec;
 		} else if (remain_sec < 0) {
 			remain_nsec = NO_VAL64;
 		} else {
@@ -187,6 +189,7 @@ static void _update_timer(void)
 
 	foreach_delayed_work_t args = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
+		.time = _get_time(),
 	};
 
 	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
@@ -203,10 +206,10 @@ static void _update_timer(void)
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			int64_t remain_sec, remain_nsec;
 
-			remain_sec = begin.seconds - last_time.tv_sec;
+			remain_sec = begin.seconds - args.time.tv_sec;
 			if (remain_sec == 0) {
 				remain_nsec = begin.nanoseconds -
-					      last_time.tv_nsec;
+					      args.time.tv_nsec;
 			} else if (remain_sec < 0) {
 				remain_nsec = NO_VAL64;
 			} else {
