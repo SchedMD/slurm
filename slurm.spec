@@ -139,7 +139,7 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 BuildRequires: pkgconfig(lua) >= 5.1.0
 %endif
 
-%if %{with hwloc}
+%if %{with hwloc} && "%{_with_hwloc}" == "--with-hwloc"
 BuildRequires: hwloc-devel
 %endif
 
@@ -387,6 +387,7 @@ Provides a REST interface to Slurm.
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
+	%{?_with_hwloc} \
 	%{?_with_shared_libslurm} \
 	%{!?_with_slurmrestd:--disable-slurmrestd} \
 	%{?_without_x11:--disable-x11} \
