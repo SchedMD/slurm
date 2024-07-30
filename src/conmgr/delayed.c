@@ -55,7 +55,6 @@ static timer_t timer = {0};
 
 static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const struct timespec time);
-static int _foreach_delayed_work(void *x, void *arg);
 
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
@@ -105,8 +104,6 @@ static list_t *_inspect(void)
 	count = list_transfer_match(mgr.delayed_work, elapsed,
 				    _inspect_work, &dargs);
 
-	list_for_each(mgr.delayed_work, _foreach_delayed_work, &dargs);
-
 	_update_timer(dargs.shortest, dargs.time);
 
 	while ((work = list_pop(elapsed))) {
@@ -120,53 +117,6 @@ static list_t *_inspect(void)
 		 __func__, count, total);
 
 	return elapsed;
-}
-
-static int _foreach_delayed_work(void *x, void *arg)
-{
-	work_t *work = x;
-	foreach_delayed_work_t *args = arg;
-	const conmgr_work_time_begin_t begin = work->control.time_begin;
-	const struct timespec time = args->time;
-
-	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
-	xassert(work->magic == MAGIC_WORK);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		int64_t remain_sec, remain_nsec;
-
-		remain_sec = begin.seconds - time.tv_sec;
-		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - time.tv_nsec;
-		} else if (remain_sec < 0) {
-			remain_nsec = NO_VAL64;
-		} else {
-			remain_nsec = NO_VAL64;
-		}
-
-		log_flag(CONMGR, "%s: evaluating delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
-			 __func__, remain_sec,
-			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-			 work->callback.func_name,
-			 (uintptr_t) work->callback.func);
-	}
-
-	if (!args->shortest) {
-		args->shortest = work;
-		return SLURM_SUCCESS;
-	} else {
-		const conmgr_work_time_begin_t shortest_begin =
-			args->shortest->control.time_begin;
-
-		if (shortest_begin.seconds == begin.seconds) {
-			if (shortest_begin.nanoseconds > begin.nanoseconds)
-				args->shortest = work;
-		} else if (shortest_begin.seconds > begin.seconds) {
-			args->shortest = work;
-		}
-	}
-
-	return SLURM_SUCCESS;
 }
 
 static void _update_timer(work_t *shortest, const struct timespec time)
@@ -216,14 +166,14 @@ static int _inspect_work(void *x, void *key)
 	bool trigger;
 	work_t *work = x;
 	const conmgr_work_time_begin_t begin = work->control.time_begin;
-	int64_t remain_sec, remain_nsec;
 	foreach_delayed_work_t *args = key;
 	const struct timespec time = args->time;
+	const int64_t remain_sec = begin.seconds - time.tv_sec;
+	int64_t remain_nsec;
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
-	remain_sec = begin.seconds - time.tv_sec;
 	if (remain_sec == 0) {
 		remain_nsec = begin.nanoseconds - time.tv_nsec;
 		trigger = (remain_nsec <= 0);
@@ -235,10 +185,26 @@ static int _inspect_work(void *x, void *key)
 		trigger = false;
 	}
 
-	log_flag(CONMGR, "%s: %s %s() ETA in %"PRId64"s %"PRId64"ns",
+	log_flag(CONMGR, "%s: %s delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
 		 __func__, (trigger ? "triggering" : "deferring"),
-		 work->callback.func_name, remain_sec,
-		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec));
+		 remain_sec,
+		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
+		 work->callback.func_name,
+		 (uintptr_t) work->callback.func);
+
+	if (!args->shortest) {
+		args->shortest = work;
+	} else {
+		const conmgr_work_time_begin_t shortest_begin =
+			args->shortest->control.time_begin;
+
+		if (shortest_begin.seconds == begin.seconds) {
+			if (shortest_begin.nanoseconds > begin.nanoseconds)
+				args->shortest = work;
+		} else if (shortest_begin.seconds > begin.seconds) {
+			args->shortest = work;
+		}
+	}
 
 	return trigger ? 1 : 0;
 }
