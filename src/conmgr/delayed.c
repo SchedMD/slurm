@@ -160,7 +160,9 @@ static void _update_timer(work_t *shortest, const struct timespec time)
 		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
 	}
 
-	if ((rc = timer_settime(timer, TIMER_ABSTIME, &spec, NULL))) {
+	rc = timer_settime(timer, TIMER_ABSTIME, &spec, NULL);
+
+	if (rc) {
 		if ((rc == -1) && errno)
 			rc = errno;
 	}
