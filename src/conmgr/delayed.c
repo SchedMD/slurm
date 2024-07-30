@@ -46,6 +46,8 @@ typedef struct {
 	work_t *shortest;
 } foreach_delayed_work_t;
 
+static int _match_work_elapsed(void *x, void *key);
+
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
 {
@@ -75,6 +77,33 @@ extern void update_last_time(void)
 		fatal("%s: clock_gettime() failed: %s",
 		      __func__, slurm_strerror(rc));
 	}
+}
+
+static list_t *_inspect(void)
+{
+	int count, total;
+	work_t *work;
+	list_t *elapsed = list_create(xfree_ptr);
+
+	update_last_time();
+
+	total = list_count(mgr.delayed_work);
+	count = list_transfer_match(mgr.delayed_work, elapsed,
+				    _match_work_elapsed, NULL);
+
+	update_timer();
+
+	while ((work = list_pop(elapsed))) {
+		if (!work_clear_time_delay(work))
+			fatal_abort("should never happen");
+
+		handle_work(true, work);
+	}
+
+	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
+		 __func__, count, total);
+
+	return elapsed;
 }
 
 static int _foreach_delayed_work(void *x, void *arg)
@@ -271,32 +300,12 @@ extern void free_delayed_work(void)
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	int count, total;
-	work_t *work;
-	list_t *elapsed = list_create(xfree_ptr);
+	list_t *elapsed = NULL;
 
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
-
 	slurm_mutex_lock(&mgr.mutex);
-	update_last_time();
-
-	total = list_count(mgr.delayed_work);
-	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _match_work_elapsed, NULL);
-
-	update_timer();
-
-	while ((work = list_pop(elapsed))) {
-		if (!work_clear_time_delay(work))
-			fatal_abort("should never happen");
-
-		handle_work(true, work);
-	}
-
+	elapsed = _inspect();
 	slurm_mutex_unlock(&mgr.mutex);
-
-	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
-		 __func__, count, total);
 
 	FREE_NULL_LIST(elapsed);
 }
