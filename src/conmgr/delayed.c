@@ -128,37 +128,45 @@ static list_t *_inspect(void)
 	return elapsed;
 }
 
+static struct itimerspec _calc_timer(work_t *shortest,
+				     const struct timespec time)
+{
+	struct itimerspec spec = {{0}};
+	const conmgr_work_time_begin_t begin = shortest->control.time_begin;
+
+	spec.it_value.tv_sec = begin.seconds;
+
+	if (begin.seconds <= 0)
+		spec.it_value.tv_nsec = begin.nanoseconds;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		int64_t remain_sec, remain_nsec;
+
+		remain_sec = begin.seconds - time.tv_sec;
+		if (remain_sec == 0) {
+			remain_nsec = begin.nanoseconds - time.tv_nsec;
+		} else if (remain_sec < 0) {
+			remain_nsec = NO_VAL64;
+		} else {
+			remain_nsec = NO_VAL64;
+		}
+
+		log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
+			 __func__, remain_sec,
+			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
+			 shortest->callback.func_name);
+	}
+
+	return spec;
+}
+
 static void _update_timer(work_t *shortest, const struct timespec time)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
 
 	if (shortest) {
-		const conmgr_work_time_begin_t begin =
-			shortest->control.time_begin;
-
-		spec.it_value.tv_sec = begin.seconds;
-
-		if (begin.seconds <= 0)
-			spec.it_value.tv_nsec = begin.nanoseconds;
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			int64_t remain_sec, remain_nsec;
-
-			remain_sec = begin.seconds - time.tv_sec;
-			if (remain_sec == 0) {
-				remain_nsec = begin.nanoseconds - time.tv_nsec;
-			} else if (remain_sec < 0) {
-				remain_nsec = NO_VAL64;
-			} else {
-				remain_nsec = NO_VAL64;
-			}
-
-			log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
-				 __func__, remain_sec,
-				 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-				 shortest->callback.func_name);
-		}
+		spec = _calc_timer(shortest, time);
 	} else {
 		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
 	}
