@@ -59,7 +59,7 @@ typedef struct {
 /* monotonic timer */
 static timer_t timer = {0};
 
-static int _match_work_elapsed(void *x, void *key);
+static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const struct timespec time);
 static int _foreach_delayed_work(void *x, void *arg);
 
@@ -113,7 +113,7 @@ static list_t *_inspect(void)
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _match_work_elapsed, &args);
+				    _inspect_work, &args);
 
 	list_for_each(mgr.delayed_work, _foreach_delayed_work, &dargs);
 
@@ -221,7 +221,7 @@ static void _update_timer(work_t *shortest, const struct timespec time)
 }
 
 /* check begin times to see if the work delay has elapsed */
-static int _match_work_elapsed(void *x, void *key)
+static int _inspect_work(void *x, void *key)
 {
 	bool trigger;
 	work_t *work = x;
