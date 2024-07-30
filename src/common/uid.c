@@ -115,8 +115,15 @@ int uid_from_string(const char *name, uid_t *uidp)
 			bufsize *= 2;
 			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
-		} else if (rc)
-			result = NULL;
+		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
+			   (rc == EBADF) || (rc == EPERM)) {
+			debug2("%s: getpwnam_r(%s): no record found",
+			       __func__, name);
+		} else {
+			error("%s: getpwnam_r(%s): %s",
+			      __func__, name, slurm_strerror(rc));
+		}
+		result = NULL;
 		break;
 	}
 	END_TIMER2("getpwnam_r");
@@ -294,8 +301,15 @@ int gid_from_string(const char *name, gid_t *gidp)
 			bufsize *= 2;
 			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
-		} else if (rc)
-			result = NULL;
+		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
+			   (rc == EBADF) || (rc == EPERM)) {
+			debug2("%s: getgrnam_r(%s): no record found",
+			       __func__, name);
+		} else {
+			error("%s: getgrnam_r(%s): %s",
+			      __func__, name, slurm_strerror(rc));
+		}
+		result = NULL;
 		break;
 	}
 	END_TIMER2("getgrnam_r");
@@ -331,8 +345,15 @@ int gid_from_string(const char *name, gid_t *gidp)
 			bufsize *= 2;
 			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
-		} else if (rc)
-			result = NULL;
+		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
+			   (rc == EBADF) || (rc == EPERM)) {
+			debug2("%s: getgrgid_r(%ld): no record found",
+			       __func__, l);
+		} else {
+			error("%s: getgrgid_r(%ld): %s",
+			      __func__, l, slurm_strerror(rc));
+		}
+		result = NULL;
 		break;
 	}
 	END_TIMER2("getgrgid_r");
@@ -384,8 +405,15 @@ char *gid_to_string_or_null(gid_t gid)
 			bufsize *= 2;
 			curr_buf = xrealloc(buf_malloc, bufsize);
 			continue;
-		} else if (rc)
-			result = NULL;
+		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
+			   (rc == EBADF) || (rc == EPERM)) {
+			debug2("%s: getgrgid_r(%d): no record found",
+			       __func__, gid);
+		} else {
+			error("%s: getgrgid_r(%d): %s",
+			      __func__, gid, slurm_strerror(rc));
+		}
+		result = NULL;
 		break;
 	}
 	END_TIMER2("getgrgid_r");
