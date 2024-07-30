@@ -48,7 +48,11 @@
  */
 extern bool work_clear_time_delay(work_t *work);
 
+/*
+ * Set all time delayed work as cancelled and run queue to run
+ */
 extern void cancel_delayed_work(void);
+
 extern void init_delayed_work(void);
 extern void free_delayed_work(void);
 
