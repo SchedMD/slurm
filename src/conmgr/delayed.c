@@ -43,9 +43,8 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
-#define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
-
 typedef struct {
+#define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
 } foreach_delayed_work_t;
