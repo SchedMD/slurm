@@ -630,6 +630,7 @@ static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
+		cancel_delayed_work();
 		close_all_connections();
 	}
 
