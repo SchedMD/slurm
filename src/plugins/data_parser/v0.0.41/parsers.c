@@ -6891,7 +6891,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 	add_flag_eq(SLURMDB_ACCT_FLAG_NONE, SLURMDB_ACCT_FLAG_BASE, "NONE", true, "no flags set"),
 	add_flag_eq(SLURMDB_ACCT_FLAG_BASE, SLURMDB_ACCT_FLAG_BASE, "BASE_MASK", true, "mask for flags not stored in database"),
 	add_flag_eq(SLURMDB_ACCT_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
-	add_flag(SLURMDB_ACCT_FLAG_DELETED, SLURMDB_ACCT_FLAG_BASE, "DELETED", false, "include deleted assocations"),
+	add_flag(SLURMDB_ACCT_FLAG_DELETED, SLURMDB_ACCT_FLAG_BASE, "DELETED", false, "include deleted associations"),
 	add_flag(SLURMDB_ACCT_FLAG_WASSOC, SLURMDB_ACCT_FLAG_BASE, "WithAssociations", false, "query includes associations"),
 	add_flag(SLURMDB_ACCT_FLAG_WCOORD, SLURMDB_ACCT_FLAG_BASE, "WithCoordinators", false,  "query includes coordinators"),
 	add_flag(SLURMDB_ACCT_FLAG_USER_COORD_NO, SLURMDB_ACCT_FLAG_BASE, "NoUsersAreCoords", false, "remove users as coordinators"),
@@ -7520,7 +7520,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(BF_WHOLE_NODE_TEST, "TESTING_WHOLE_NODE_BACKFILL"),
 	add_flag_bit(TOP_PRIO_TMP, "TOP_PRIORITY_JOB"),
 	add_flag_bit(JOB_ACCRUE_OVER, "ACCRUE_COUNT_CLEARED"),
-	add_flag_bit(GRES_DISABLE_BIND, "GRED_BINDING_DISABLED"),
+	add_flag_bit(GRES_DISABLE_BIND, "GRES_BINDING_DISABLED"),
 	add_flag_bit(JOB_WAS_RUNNING, "JOB_WAS_RUNNING"),
 	add_flag_bit(RESET_ACCRUE_TIME, "JOB_ACCRUE_TIME_RESET"),
 	add_flag_bit(CRON_JOB, "CRON_JOB"),
@@ -8640,7 +8640,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
 	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
-	add_parse(BOOL, with_assocs, "with_assocs", "Include assocations"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include associations"),
 	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
 	add_parse(BOOL, with_wckeys, "with_wckeys", "Include wckeys"),
 };
@@ -9294,7 +9294,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
 	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submision user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submission user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_job_post_response_t),
 	add_openapi_response_errors(openapi_job_post_response_t),
 	add_openapi_response_warnings(openapi_job_post_response_t),
@@ -9308,9 +9308,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse(UINT32, resp.job_id, "job_id", "submited JobId"),
-	add_parse(STEP_ID, resp.step_id, "step_id", "submited StepID"),
-	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),
+	add_parse(UINT32, resp.job_id, "job_id", "submitted JobId"),
+	add_parse(STEP_ID, resp.step_id, "step_id", "submitted StepID"),
+	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
@@ -9437,7 +9437,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_alloc_response_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
-	add_parse(UINT32, job_id, "job_id", "submited JobId"),
+	add_parse(UINT32, job_id, "job_id", "submitted JobId"),
 	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
