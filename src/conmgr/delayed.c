@@ -43,6 +43,12 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
+#ifdef __linux__
+#define CLOCK_TYPE CLOCK_TAI
+#else
+#define CLOCK_TYPE CLOCK_REALTIME
+#endif
+
 typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
@@ -50,7 +56,7 @@ typedef struct {
 	struct timespec time;
 } foreach_delayed_work_t;
 
-/* monotonic timer */
+/* timer to trigger SIGALRM */
 static timer_t timer = {0};
 
 static int _inspect_work(void *x, void *key);
@@ -79,7 +85,7 @@ static struct timespec _get_time(void)
 	struct timespec time;
 	int rc;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &time))) {
+	if ((rc = clock_gettime(CLOCK_TYPE, &time))) {
 		if (rc == -1)
 			rc = errno;
 
@@ -244,7 +250,7 @@ extern void init_delayed_work(void)
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
-	if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &timer))) {
+	if ((rc = timer_create(CLOCK_TYPE, &sevp, &timer))) {
 		if ((rc == -1) && errno)
 			rc = errno;
 
