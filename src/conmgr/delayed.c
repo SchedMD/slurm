@@ -60,7 +60,8 @@ typedef struct {
 static timer_t timer = {0};
 
 static int _match_work_elapsed(void *x, void *key);
-static void _update_timer(void);
+static void _update_timer(work_t *shortest, const struct timespec time);
+static int _foreach_delayed_work(void *x, void *arg);
 
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
@@ -105,12 +106,18 @@ static list_t *_inspect(void)
 		.magic = MAGIC_MATCH_WORK_ELAPSED_ARGS,
 		.time = _get_time(),
 	};
+	foreach_delayed_work_t dargs = {
+		.magic = MAGIC_FOREACH_DELAYED_WORK,
+		.time = _get_time(),
+	};
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
 				    _match_work_elapsed, &args);
 
-	_update_timer();
+	list_for_each(mgr.delayed_work, _foreach_delayed_work, &dargs);
+
+	_update_timer(dargs.shortest, dargs.time);
 
 	while ((work = list_pop(elapsed))) {
 		if (!work_clear_time_delay(work))
@@ -172,21 +179,14 @@ static int _foreach_delayed_work(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _update_timer(void)
+static void _update_timer(work_t *shortest, const struct timespec time)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
 
-	foreach_delayed_work_t args = {
-		.magic = MAGIC_FOREACH_DELAYED_WORK,
-		.time = _get_time(),
-	};
-
-	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
-
-	if (args.shortest) {
-		work_t *work = args.shortest;
-		const conmgr_work_time_begin_t begin = work->control.time_begin;
+	if (shortest) {
+		const conmgr_work_time_begin_t begin =
+			shortest->control.time_begin;
 
 		spec.it_value.tv_sec = begin.seconds;
 
@@ -196,10 +196,9 @@ static void _update_timer(void)
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			int64_t remain_sec, remain_nsec;
 
-			remain_sec = begin.seconds - args.time.tv_sec;
+			remain_sec = begin.seconds - time.tv_sec;
 			if (remain_sec == 0) {
-				remain_nsec = begin.nanoseconds -
-					      args.time.tv_nsec;
+				remain_nsec = begin.nanoseconds - time.tv_nsec;
 			} else if (remain_sec < 0) {
 				remain_nsec = NO_VAL64;
 			} else {
@@ -209,7 +208,7 @@ static void _update_timer(void)
 			log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
 				 __func__, remain_sec,
 				 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-				 work->callback.func_name);
+				 shortest->callback.func_name);
 		}
 	} else {
 		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
