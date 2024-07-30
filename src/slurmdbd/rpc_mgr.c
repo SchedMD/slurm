@@ -52,7 +52,6 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
