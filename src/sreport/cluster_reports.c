@@ -842,7 +842,6 @@ extern int cluster_account_by_user(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
-	slurmdb_cluster_cond_t cluster_cond;
 	list_itr_t *itr = NULL;
 	list_itr_t *tres_itr = NULL;
 	list_itr_t *cluster_itr = NULL;
@@ -854,8 +853,6 @@ extern int cluster_account_by_user(int argc, char **argv)
 	List tree_list = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
-
-	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	assoc_cond->with_sub_accts = 1;
 
@@ -1056,7 +1053,6 @@ extern int cluster_user_by_account(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
-	slurmdb_cluster_cond_t cluster_cond;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
@@ -1067,8 +1063,6 @@ extern int cluster_user_by_account(int argc, char **argv)
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
-
-	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
@@ -1254,7 +1248,6 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t *wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
-	slurmdb_cluster_cond_t cluster_cond;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
@@ -1265,8 +1258,6 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
-
-	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
@@ -1740,7 +1731,6 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t *wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
-	slurmdb_cluster_cond_t cluster_cond;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
@@ -1751,8 +1741,6 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
-
-	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
