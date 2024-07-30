@@ -250,16 +250,19 @@ extern void init_delayed_work(void)
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
-	if ((rc = timer_create(CLOCK_TYPE, &sevp, &timer))) {
-		if ((rc == -1) && errno)
-			rc = errno;
+	rc = timer_create(CLOCK_TYPE, &sevp, &timer);
 
-		if (rc == EAGAIN)
-			goto again;
-		else if (rc)
-			fatal("%s: timer_create() failed: %s",
-			      __func__, slurm_strerror(rc));
-	}
+	if (rc)
+		return;
+
+	if ((rc == -1) && errno)
+		rc = errno;
+
+	if (rc == EAGAIN)
+		goto again;
+	else if (rc)
+		fatal("%s: timer_create() failed: %s",
+		      __func__, slurm_strerror(rc));
 }
 
 extern void free_delayed_work(void)
