@@ -69,6 +69,26 @@ typedef struct conmgr_fd_s conmgr_fd_t;
  */
 typedef struct {
 	/*
+	 * Call back for new listener for setup
+	 *
+	 * IN con - connection handler
+	 * IN arg - arg ptr handed to fd processing functions
+	 * RET arg ptr to hand to events
+	 */
+	void *(*on_listen_connect)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when listener ended.
+	 * Called once per connection right before connection is xfree()ed.
+	 *
+	 * IN con - connection handler
+	 * IN arg - ptr to be handed return of on_connection().
+	 * 	Ownership of arg pointer returned to caller as it will not be
+	 * 	used anymore.
+	 */
+	void (*on_listen_finish)(conmgr_fd_t *con, void *arg);
+
+	/*
 	 * Call back for new connection for setup
 	 *
 	 * IN fd file descriptor of new connection
@@ -161,6 +181,23 @@ typedef enum {
 	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
 	/* call every time signal is received */
 	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4),
+	/*
+	 * Run work while conmgr is quiesced.
+	 *
+	 * Once eligible to run (if any other controls are specified):
+	 *	Pauses any new work from starting until run.
+	 *	Pauses all event management until run.
+	 *
+	 * Will only be run when all worker threads have finished all previously
+	 * running work when pause of new work started.
+	 *
+	 * Upon work's return, conmgr will resume normal operations (or run next
+	 * work with CONMGR_WORK_DEP_QUIESCED flag set).
+	 *
+	 * Only 1 work of this type will run at a time.
+	 * Incompatible with connection work.
+	 */
+	CONMGR_WORK_DEP_QUIESCED = SLURM_BIT(5),
 } conmgr_work_depend_t;
 
 /* RET caller must xfree() */
@@ -399,11 +436,10 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_events_t events, void *arg);
 
 /*
- * Run connection manager main loop for until quiesced or shutdown or failure
+ * Run connection manager main loop for until shutdown
  * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
- * WARNING: Do not call with blocking=true from side of conmgr work or
- *	conmgr_run() will never return
+ * WARNING: Never call from work function (directly or indirectly)
  */
 extern int conmgr_run(bool blocking);
 
@@ -411,15 +447,6 @@ extern int conmgr_run(bool blocking);
  * Notify conmgr to shutdown
  */
 extern void conmgr_request_shutdown(void);
-
-/*
- * Hold starting any new work and event handling.
- * 	Will cause any active conmgr_run(true) to return.
- * 	Any running work will not be interrupted.
- * 	Quiesce state cleared by next call of conmgr_run().
- * IN wait - wait for all running work to finish before returning
- */
-extern void conmgr_quiesce(bool wait);
 
 /*
  * Add work to run
@@ -558,6 +585,21 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 		}, __func__)
 
 /*
+ * Add work to run while quiesced
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ */
+#define conmgr_add_work_quiesced_fifo(_func, func_arg) \
+	conmgr_add_work(NULL, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_QUIESCED, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, __func__)
+
+/*
  * Control if conmgr will exit on any error
  */
 extern void conmgr_set_exit_on_error(bool exit_on_error);
@@ -663,5 +705,34 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
  * RET true if conmgr is enabled or running in this process
  */
 extern bool conmgr_enabled(void);
+
+/*
+ * Callback function for when connection file descriptors extracted
+ * IN conmgr_args - Args relaying conmgr callback state
+ * IN input_fd - input file descriptor or -1 - Ownership is transferred.
+ * IN output_fd - output file descriptor or -1 - Ownership is transferred.
+ */
+typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
+					 int input_fd, int output_fd,
+					 void *arg);
+
+/*
+ * Queue up extraction of file descriptors from a connection.
+ * NOTE: Extraction may need to wait for any running work to be completed on
+ *	connection.
+ * WARNING: Only to be used for conversion to conmgr where file descriptors must
+ *	be controlled by non-conmgr code.
+ *
+ * IN con - connection to extract file descriptors from
+ * IN func - callback function when extraction is complete to take ownership of
+ *	file descriptors
+ * IN func_name - XSTRINGIFY(func) for logging
+ * IN func_arg - arbitrary pointer passed directly to func
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
+				       conmgr_extract_fd_func_t func,
+				       const char *func_name,
+				       void *func_arg);
 
 #endif /* _CONMGR_H */

@@ -51,6 +51,7 @@
 #endif /* __linux__ */
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
@@ -464,16 +465,29 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-		 __func__, con->name,
-		 (uintptr_t) con->events.on_connection);
+	if (con->is_listen) {
+		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_listen_connect);
 
-	arg = con->events.on_connection(con, con->new_arg);
+		arg = con->events.on_listen_connect(con, con->new_arg);
 
-	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name,
-		 (uintptr_t) con->events.on_connection,
-		 (uintptr_t) arg);
+		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_listen_connect,
+			 (uintptr_t) arg);
+	} else {
+		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection);
+
+		arg = con->events.on_connection(con, con->new_arg);
+
+		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name,
+			 (uintptr_t) con->events.on_connection,
+			 (uintptr_t) arg);
+	}
 
 	if (!arg) {
 		error("%s: [%s] closing connection due to NULL return from on_connection",
@@ -589,11 +603,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 			.events = events,
 			.arg = arg,
 		};
-		add_work(true, src, (conmgr_callback_t) {
-				.func = _receive_fd,
-				.func_name = XSTRINGIFY(_receive_fd),
-				.arg = args,
-			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		add_work_con_fifo(true, src, _receive_fd, args);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -656,11 +666,7 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 			.magic = MAGIC_SEND_FD,
 			.fd = fd,
 		};
-		add_work(true, con, (conmgr_callback_t) {
-				.func = _send_fd,
-				.func_name = XSTRINGIFY(_send_fd),
-				.arg = args,
-			 }, (conmgr_work_control_t) {0}, 0, __func__);
+		add_work_con_fifo(true, con, _send_fd, args);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -1271,4 +1277,114 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 				_set_fd_polling(out, con->polling_output_fd,
 						out_type, con->name, caller);
 	}
+}
+
+extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
+				       conmgr_extract_fd_func_t func,
+				       const char *func_name,
+				       void *func_arg)
+{
+	int rc = SLURM_ERROR;
+
+	xassert(con);
+	xassert(func);
+	if (!con || !func)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (con->extract) {
+		rc = EEXIST;
+	} else {
+		extract_fd_t *extract = xmalloc_nz(sizeof(*extract));
+		*extract = (extract_fd_t) {
+			.magic = MAGIC_EXTRACT_FD,
+			.func = func,
+			.func_name = func_name,
+			.func_arg = func_arg,
+			.input_fd = -1,
+			.output_fd = -1,
+		};
+
+		xassert(!con->extract);
+		con->extract = extract;
+
+		/* Disable all polling for this connection */
+		con_set_polling(con, PCTL_TYPE_NONE, __func__);
+
+		/* wake up watch to finish extraction */
+		EVENT_SIGNAL(&mgr.watch_sleep);
+
+		rc = SLURM_SUCCESS;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	extract_fd_t *extract = arg;
+	xassert(extract->magic == MAGIC_EXTRACT_FD);
+
+	log_flag(CONMGR, "%s: calling %s() input_fd=%d output_fd=%d arg=0x%"PRIxPTR,
+		 __func__, extract->func_name, extract->input_fd,
+		 extract->output_fd, (uintptr_t) extract->func_arg);
+
+	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
+		      extract->func_arg);
+
+	extract->magic = ~MAGIC_EXTRACT_FD;
+	xfree(extract);
+}
+
+/* caller must hold mgr.mutex lock */
+extern void extract_con_fd(conmgr_fd_t *con)
+{
+	extract_fd_t *extract = NULL;
+
+	SWAP(extract, con->extract);
+	xassert(extract);
+	xassert(extract->magic == MAGIC_EXTRACT_FD);
+
+	/* Polling should already be disabled */
+	xassert((con->polling_input_fd == PCTL_TYPE_NONE) ||
+		(con->polling_input_fd == PCTL_TYPE_UNSUPPORTED));
+	xassert((con->polling_output_fd == PCTL_TYPE_NONE) ||
+		(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
+
+	/* can't extract safely when work running or not connected */
+	xassert(!con->work_active);
+	xassert(con->is_connected);
+
+	log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d read_eof=%c can_read=%c can_write=%c on_data_tried=%c work_active=%c func=%s()",
+		 __func__, con->input_fd, con->output_fd,
+		 (con->read_eof ? 'T' : 'F'), (con->can_read ? 'T' : 'F'),
+		 (con->can_write ? 'T' : 'F'), (con->on_data_tried ? 'T' : 'F'),
+		 (con->work_active ? 'T' : 'F'), extract->func_name);
+
+	/* clear all polling states */
+	con->read_eof = true;
+	con->can_read = false;
+	con->can_write = false;
+	con->on_data_tried = false;
+
+	/* clear any buffered input/outputs */
+	list_flush(con->out);
+	set_buf_offset(con->in, 0);
+
+	/*
+	 * take the file descriptors, replacing the file descriptors in
+	 * con with invalid values initialied in conmgr_queue_extract_con_fd().
+	 */
+	SWAP(extract->input_fd, con->input_fd);
+	SWAP(extract->output_fd, con->output_fd);
+
+	/*
+	 * Queue up work but not against the connection as we want watch() to
+	 * cleanup the connection.
+	 */
+	add_work_fifo(true, _wrap_on_extract, extract);
 }

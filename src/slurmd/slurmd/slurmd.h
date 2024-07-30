@@ -171,8 +171,8 @@ int send_registration_msg(uint32_t status);
 /* Run the health check program if configured */
 int run_script_health_check(void);
 
-/* Handler for SIGTERM; can also be called to shutdown the slurmd. */
-void slurmd_shutdown(int signum);
+/* shutdown the slurmd daemon */
+extern void slurmd_shutdown(void);
 
 /* Handler for debug level update */
 extern void update_slurmd_logging(log_level_t log_lvl);

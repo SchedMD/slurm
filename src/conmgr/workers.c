@@ -173,7 +173,8 @@ static void *_worker(void *arg)
 	while (true) {
 		work_t *work = NULL;
 
-		work = list_pop(mgr.work);
+		if (!mgr.quiesced)
+			work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
 		if (!work) {
@@ -232,6 +233,17 @@ static void *_worker(void *arg)
 	EVENT_SIGNAL(&mgr.worker_return);
 	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
+}
+
+extern void wait_for_workers_idle(const char *caller)
+{
+	while (mgr.workers.active > 0) {
+		log_flag(CONMGR, "%s->%s: waiting for workers=%u/%u",
+			 caller, __func__, mgr.workers.active,
+			 mgr.workers.total);
+
+		EVENT_WAIT(&mgr.worker_return, &mgr.mutex);
+	}
 }
 
 extern void workers_shutdown(void)

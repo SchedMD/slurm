@@ -109,6 +109,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.work = list_create(NULL);
+	mgr.quiesced_work = list_create(NULL);
 	init_delayed_work();
 
 	pollctl_init(mgr.max_connections);
@@ -133,7 +134,6 @@ extern void conmgr_fini(void)
 
 	mgr.initialized = false;
 	mgr.shutdown_requested = true;
-	mgr.quiesced = false;
 
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
@@ -158,6 +158,10 @@ extern void conmgr_fini(void)
 
 	workers_fini();
 
+	xassert(!mgr.quiesced);
+	xassert(list_is_empty(mgr.quiesced_work));
+	FREE_NULL_LIST(mgr.quiesced_work);
+
 	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
 	FREE_NULL_LIST(mgr.work);
@@ -176,7 +180,7 @@ extern void conmgr_fini(void)
 extern int conmgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
-	watch_request_t *wreq = NULL;
+	bool running = false;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -190,22 +194,21 @@ extern int conmgr_run(bool blocking)
 	}
 
 	xassert(!mgr.error || !mgr.exit_on_error);
-	mgr.quiesced = false;
+
+	if (mgr.watch_thread)
+		running = true;
+	else if (!blocking)
+		slurm_thread_create(&mgr.watch_thread, watch, NULL);
+	else
+		mgr.watch_thread = pthread_self();
+
 	slurm_mutex_unlock(&mgr.mutex);
 
-	wreq = xmalloc(sizeof(*wreq));
-	wreq->magic = MAGIC_WATCH_REQUEST;
-	wreq->blocking = blocking;
-
 	if (blocking) {
-		watch((conmgr_callback_args_t) {0}, wreq);
-	} else {
-		slurm_mutex_lock(&mgr.mutex);
-		if (!mgr.watching) {
-			wreq->running_on_worker = true;
-			add_work_fifo(true, watch, wreq);
-		}
-		slurm_mutex_unlock(&mgr.mutex);
+		if (running)
+			wait_for_watch();
+		else
+			(void) watch(NULL);
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -224,25 +227,6 @@ extern void conmgr_request_shutdown(void)
 		mgr.shutdown_requested = true;
 		EVENT_SIGNAL(&mgr.watch_sleep);
 	}
-	slurm_mutex_unlock(&mgr.mutex);
-}
-
-extern void conmgr_quiesce(bool wait)
-{
-	log_flag(CONMGR, "%s: quiesce requested", __func__);
-
-	slurm_mutex_lock(&mgr.mutex);
-	if (mgr.quiesced || mgr.shutdown_requested) {
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	mgr.quiesced = true;
-
-	EVENT_SIGNAL(&mgr.watch_sleep);
-
-	if (wait)
-		wait_for_watch();
 	slurm_mutex_unlock(&mgr.mutex);
 }
 

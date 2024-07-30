@@ -69,6 +69,7 @@ static struct {
 	{ CONMGR_WORK_DEP_CON_WRITE_COMPLETE, "CONNECTION_WRITE_COMPLETE" },
 	{ CONMGR_WORK_DEP_TIME_DELAY, "TIME_DELAY" },
 	{ CONMGR_WORK_DEP_SIGNAL, "SIGNAL" },
+	{ CONMGR_WORK_DEP_QUIESCED, "QUIESCED" },
 };
 
 extern const char *conmgr_work_status_string(conmgr_work_status_t status)
@@ -287,6 +288,13 @@ static void _handle_work_pending(work_t *work)
 		return;
 	}
 
+	if (depend & CONMGR_WORK_DEP_QUIESCED) {
+		xassert(!work->con);
+		_log_work(work, __func__, "Enqueueing quiesced work");
+		list_append(mgr.quiesced_work, work);
+		return;
+	}
+
 	if (con) {
 		_log_work(work, __func__, "Enqueueing connection work. work_active=%c pending_work:%u",
 			 (con->work_active ? 'T' : 'F'), list_count(con->work));
@@ -366,4 +374,23 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 			    conmgr_work_control_t control, const char *caller)
 {
 	add_work(false, con, callback, control, 0, caller);
+}
+
+extern void run_quiesced_work(void)
+{
+	work_t *work = NULL;
+
+	while ((work = list_pop(mgr.quiesced_work))) {
+		xassert(work->magic == MAGIC_WORK);
+		xassert(!work->con);
+
+		if (mgr.shutdown_requested)
+			work->status = CONMGR_WORK_STATUS_CANCELLED;
+		else
+			work->status = CONMGR_WORK_STATUS_RUN;
+
+		slurm_mutex_unlock(&mgr.mutex);
+		wrap_work(work);
+		slurm_mutex_lock(&mgr.mutex);
+	}
 }

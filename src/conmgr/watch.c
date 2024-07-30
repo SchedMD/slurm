@@ -56,8 +56,12 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->events.on_finish)
+	if (con->is_listen) {
+		if (con->events.on_listen_finish)
+			con->events.on_listen_finish(con, arg);
+	} else if (con->events.on_finish) {
 		con->events.on_finish(con, arg);
+	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	con->wait_on_finish = false;
@@ -88,15 +92,8 @@ static int _handle_connection(void *x, void *arg)
 
 	if (con->is_connected) {
 		/* continue on to follow other checks */
-	} else if (con->is_listen) {
-		/*
-		 * Listening connections don't need to do anything to be
-		 * connected
-		 */
-		con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
-		con->is_connected = true;
-		return 0;
-	} else if (!con->is_socket || con->can_read || con->can_write) {
+	} else if (!con->is_socket || con->can_read || con->can_write ||
+		   con->is_listen) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
@@ -107,7 +104,21 @@ static int _handle_connection(void *x, void *arg)
 		if (con->is_socket && (con->output_fd != -1))
 			con->mss = fd_get_maxmss(con->output_fd, con->name);
 
-		if (con->events.on_connection) {
+		if (con->is_listen) {
+			if (con->events.on_listen_connect) {
+				/* disable polling until on_listen_connect() */
+				con_set_polling(con, PCTL_TYPE_CONNECTED,
+						__func__);
+				add_work_con_fifo(true, con, wrap_on_connection,
+						  con);
+
+				log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_listen_connect() callback.",
+					 __func__, con->name);
+				return 0;
+			} else {
+				/* follow normal checks */
+			}
+		} else if (con->events.on_connection) {
 			/* disable polling until on_connect() is done */
 			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 			add_work_con_fifo(true, con, wrap_on_connection, con);
@@ -159,6 +170,12 @@ static int _handle_connection(void *x, void *arg)
 		con->work_active = true; /* unset by _wrap_con_work() */
 
 		handle_work(true, work);
+		return 0;
+	}
+
+	if (con->extract) {
+		/* extraction of file descriptors requested */
+		extract_con_fd(con);
 		return 0;
 	}
 
@@ -261,14 +278,17 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	if (con->wait_on_finish) {
-		log_flag(CONMGR, "%s: [%s] waiting for on_finish()",
-			 __func__, con->name);
+		log_flag(CONMGR, "%s: [%s] waiting for %s",
+			 __func__, con->name,
+			 (con->is_listen ? "on_finish()" :
+			  "on_listen_finish()"));
 		return 0;
 	}
 
 	if (con->arg) {
-		log_flag(CONMGR, "%s: [%s] queuing up on_finish",
-			 __func__, con->name);
+		log_flag(CONMGR, "%s: [%s] queuing up %s",
+			 __func__, con->name, (con->is_listen ? "on_finish()" :
+			  "on_listen_finish()"));
 
 		con->wait_on_finish = true;
 
@@ -527,8 +547,10 @@ done:
 
 extern void wait_for_watch(void)
 {
-	while (mgr.watching && !mgr.shutdown_requested)
+	slurm_mutex_lock(&mgr.mutex);
+	while (mgr.watch_thread)
 		EVENT_WAIT(&mgr.watch_return, &mgr.mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
@@ -571,7 +593,7 @@ static void _handle_complete_conns(void)
 	}
 }
 
-static void _handle_events(bool *work)
+static bool _handle_events(void)
 {
 	/* grab counts once */
 	int count = list_count(mgr.connections) + list_count(mgr.listen_conns);
@@ -584,7 +606,7 @@ static void _handle_events(bool *work)
 		_handle_complete_conns();
 
 	if (!count)
-		return;
+		return false;
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
@@ -601,47 +623,55 @@ static void _handle_events(bool *work)
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 
-	*work = true;
+	return true;
 }
 
 static bool _watch_loop(void)
 {
-	bool work = false; /* is there any work to do? */
-
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
 		close_all_connections();
-	} else if (mgr.quiesced) {
-		if (mgr.poll_active)
-			return true;
-
-		log_flag(CONMGR, "%s: quiesced", __func__);
-		return false;
 	}
 
-	_handle_events(&work);
+	if (!mgr.quiesced && !list_is_empty(mgr.quiesced_work)) {
+		mgr.quiesced = true;
+		log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
+	}
 
-	if (!work) {
-		const int non_watch_workers =
-			(mgr.workers.active - mgr.watch_on_worker);
+	if (mgr.quiesced) {
+		xassert(!list_is_empty(mgr.quiesced_work));
 
-		/*
-		 * Avoid watch() ending if there are any other active workers or
-		 * any queued work.
-		 */
-
-		if ((non_watch_workers > 0) || !list_is_empty(mgr.work)) {
-			/* Need to wait for all work/workers to complete */
-			log_flag(CONMGR, "%s: waiting on workers:%d work:%d",
-				 __func__, non_watch_workers,
-				 list_count(mgr.work));
+		if (mgr.workers.active) {
+			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d quiesced_work:%u",
+				 __func__, mgr.workers.active,
+				 list_count(mgr.quiesced_work));
 			mgr.waiting_on_work = true;
 			return true;
 		}
+
+		run_quiesced_work();
+		mgr.quiesced = false;
+		log_flag(CONMGR, "%s: END: quiesced state", __func__);
+		return true;
 	}
 
-	if (work) {
-		/* wait until something happens */
+	xassert(list_is_empty(mgr.quiesced_work));
+
+	if (_handle_events())
+		return true;
+
+	/*
+	 * Avoid watch() ending if there are any other active workers or
+	 * any queued work.
+	 */
+
+	if (mgr.workers.active || !list_is_empty(mgr.work) ||
+	    !list_is_empty(mgr.delayed_work)) {
+		/* Need to wait for all work/workers to complete */
+		log_flag(CONMGR, "%s: waiting on workers:%d work:%d delayed_work:%d",
+			 __func__, mgr.workers.active,
+			 list_count(mgr.delayed_work), list_count(mgr.work));
+		mgr.waiting_on_work = true;
 		return true;
 	}
 
@@ -651,56 +681,16 @@ static bool _watch_loop(void)
 	return false;
 }
 
-/* caller must hold conmgr.mutex */
-static void _release_watch_request(watch_request_t **wreq_ptr)
+extern void *watch(void *arg)
 {
-	watch_request_t *wreq = *wreq_ptr;
-
-	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
-
-	if (wreq->running_on_worker)
-		mgr.watch_on_worker--;
-
-	xassert(mgr.watch_on_worker >= 0);
-	xassert(mgr.watch_on_worker <= mgr.workers.active);
-
-	wreq->magic = ~MAGIC_WATCH_REQUEST;
-	xfree(wreq);
-	*wreq_ptr = NULL;
-}
-
-extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	watch_request_t *wreq = arg;
-	bool shutdown_requested;
-
-	xassert(wreq->magic == MAGIC_WATCH_REQUEST);
-
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (wreq->running_on_worker) {
-		mgr.watch_on_worker++;
-		xassert(mgr.watch_on_worker > 0);
-		xassert(mgr.watch_on_worker <= mgr.workers.active);
-	}
+	xassert(mgr.watch_thread == pthread_self());
 
-	if (mgr.shutdown_requested ||
-	    (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)) {
-		_release_watch_request(&wreq);
+	if (mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
+		return NULL;
 	}
-
-	if (mgr.watching) {
-		if (wreq->blocking)
-			wait_for_watch();
-
-		_release_watch_request(&wreq);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	mgr.watching = true;
 
 	add_work_fifo(true, signal_mgr_start, NULL);
 
@@ -715,7 +705,7 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c waiting_watch:%d waiting_on_work:%c",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c[%u] waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -726,26 +716,22 @@ extern void watch(conmgr_callback_args_t conmgr_args, void *arg)
 				 (mgr.inspecting ? 'T' : 'F'),
 				 (mgr.shutdown_requested ? 'T' : 'F'),
 				 (mgr.quiesced ? 'T' : 'F'),
-				 mgr.watch_on_worker,
+				 list_count(mgr.quiesced_work),
 				 (mgr.waiting_on_work ? 'T' : 'F'));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
 		mgr.waiting_on_work = false;
 	}
 
-	xassert(mgr.watching);
-	mgr.watching = false;
+	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
+		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
+		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
-	/* Get the value of shutdown_requested while mutex is locked */
-	shutdown_requested = mgr.shutdown_requested;
-
-	_release_watch_request(&wreq);
-
-	log_flag(CONMGR, "%s: returning shutdown_requested=%c quiesced=%c connections=%u listen_conns=%u",
-		 __func__, (shutdown_requested ? 'T' : 'F'),
-		 (mgr.quiesced ?  'T' : 'F'), list_count(mgr.connections),
-		 list_count(mgr.listen_conns));
+	xassert(mgr.watch_thread == pthread_self());
+	mgr.watch_thread = 0;
 
 	EVENT_BROADCAST(&mgr.watch_return);
 	slurm_mutex_unlock(&mgr.mutex);
+
+	return NULL;
 }

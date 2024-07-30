@@ -60,6 +60,16 @@
 #define BUFFER_START_SIZE 4096
 
 typedef struct {
+#define MAGIC_EXTRACT_FD 0xabf8e2a3
+	int magic; /* MAGIC_EXTRACT_FD */
+	int input_fd;
+	int output_fd;
+	conmgr_extract_fd_func_t func;
+	const char *func_name;
+	void *func_arg;
+} extract_fd_t;
+
+typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
 	conmgr_work_status_t status;
@@ -111,6 +121,9 @@ struct conmgr_fd_s {
 	/* has this connection received read EOF */
 	bool read_eof;
 
+	/* queued extraction of input_fd/output_fd request */
+	extract_fd_t *extract;
+
 	/*
 	 * Current active polling (if any).
 	 * Only set by con_set_polling()
@@ -157,13 +170,6 @@ typedef struct {
 	int id;
 } worker_t;
 
-typedef struct {
-#define MAGIC_WATCH_REQUEST 0xD204f412
-	int magic; /* MAGIC_WATCH_REQUEST */
-	bool running_on_worker; /* true if request issues via work */
-	bool blocking; /* true to block if another thread already watching */
-} watch_request_t;
-
 /*
  * Global instance of conmgr
  */
@@ -193,13 +199,9 @@ typedef struct {
 	/* One time per process tasks initialized */
 	bool one_time_initialized;
 	/*
-	 * True if _watch() is running
+	 * Thread id of thread running watch()
 	 */
-	bool watching;
-	/*
-	 * Number of watch() instances running on a worker thread (as work)
-	 */
-	int watch_on_worker;
+	pthread_t watch_thread;
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
@@ -208,6 +210,8 @@ typedef struct {
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
+	/* list of work_t* to run while quiesced */
+	list_t *quiesced_work;
 	/*
 	 * Is mgr currently quiesced?
 	 * Defers all new work to while true
@@ -265,7 +269,7 @@ typedef struct {
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
-		.quiesced = true,\
+		.quiesced = false,\
 		.shutdown_requested = true,\
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
@@ -332,14 +336,12 @@ extern void update_last_time(void);
 
 /*
  * Poll all connections and handle any events
- * IN arg - cast to bool blocking - non-zero if blocking
  */
-extern void watch(conmgr_callback_args_t conmgr_args, void *arg);
+extern void *watch(void *arg);
 
 /*
  * Wait for _watch() to finish
- *
- * WARNING: caller MUST hold mgr.mutex
+ * WARNING: caller must not hold mgr.mutex
  */
 extern void wait_for_watch(void);
 
@@ -412,9 +414,23 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
 extern conmgr_fd_t *con_find_by_fd(int fd);
 
 /*
+ * Run all work in mgr.quiesced_work
+ * NOTE: Caller must hold mgr.mutex lock
+ * WARNING: Releases and retakes mgr.mutex lock
+ */
+extern void run_quiesced_work(void);
+
+/*
  * Wrap work requested to notify mgr when that work is complete
  */
 extern void wrap_work(work_t *work);
+
+/*
+ * Wait for all workers to finish their work
+ * WARNING: caller must hold mgr.mutex
+ * WARNING: never call from work or call will never return
+ */
+extern void wait_for_workers_idle(const char *caller);
 
 /*
  * Notify all worker thread to shutdown.
@@ -450,5 +466,10 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * Wraps on_connection() callback
  */
 extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
+ * Extract connection file descriptors
+ */
+extern void extract_con_fd(conmgr_fd_t *con);
 
 #endif /* _CONMGR_MGR_H */

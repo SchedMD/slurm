@@ -60,6 +60,10 @@
 
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
+#define SLURMCTLD_SACK_SOCKET "unix:/run/slurmctld/sack.socket"
+#define SLURMDBD_SACK_SOCKET "unix:/run/slurmdbd/sack.socket"
+#define SLURM_SACK_SOCKET "unix:/run/slurm/sack.socket"
+
 /*
  * Loosely inspired by MUNGE.
  *
@@ -252,50 +256,31 @@ extern void init_sack_conmgr(void)
 	conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
-	int fd;
-	slurm_addr_t addr = {0};
 	int rc;
 	mode_t mask;
+	const char *path = NULL;
 
 	if (running_in_slurmctld()) {
 		_prepare_run_dir("slurmctld");
-		addr = sockaddr_from_unix_path("/run/slurmctld/sack.socket");
+		path = SLURMCTLD_SACK_SOCKET;
 	} else if (running_in_slurmdbd()) {
 		_prepare_run_dir("slurmdbd");
-		addr = sockaddr_from_unix_path("/run/slurmdbd/sack.socket");
+		path = SLURMDBD_SACK_SOCKET;
 	} else {
 		_prepare_run_dir("slurm");
-		addr = sockaddr_from_unix_path("/run/slurm/sack.socket");
+		path = SLURM_SACK_SOCKET;
 	}
-
-	if (addr.ss_family != AF_UNIX)
-		fatal("%s: Unexpected invalid socket address", __func__);
 
 	conmgr_init(0, 0, callbacks);
 
-	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
-		fatal("%s: socket() failed: %m", __func__);
-
-	/* set value of socket path */
 	mask = umask(0);
-	/* bind() will EINVAL if socklen=sizeof(addr) */
-	if ((rc = bind(fd, (const struct sockaddr *) &addr,
-		       sizeof(struct sockaddr_un))))
-		fatal("%s: [%pA] Unable to bind UNIX socket: %m",
-		      __func__, &addr);
+
+	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, events,
+					      NULL)))
+		fatal("%s: [%s] unable to create socket: %s",
+		      __func__, path, slurm_strerror(rc));
+
 	umask(mask);
-
-	fd_set_oob(fd, 0);
-
-	if ((rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
-		fatal("%s: [%pA] unable to listen(): %m",
-		      __func__, &addr);
-
-	if ((rc = conmgr_process_fd_unix_listen(CON_TYPE_RAW, fd, events,
-						(const slurm_addr_t *) &addr,
-						sizeof(addr), NULL, NULL)))
-		fatal("%s: conmgr refused fd %d: %s",
-		      __func__, fd, slurm_strerror(rc));
 
 	if ((rc = conmgr_run(false)))
 		fatal("%s: conmgr run failed: %s",
@@ -310,6 +295,4 @@ extern void fini_sack_conmgr(void)
 	 * longer be the one that owns that socket, and removing it
 	 * would prevent the current owner from responding.
 	 */
-
-	conmgr_fini();
 }

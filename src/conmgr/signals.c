@@ -44,6 +44,8 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
+#define SIGNAL_FD_FAILED -250
+
 typedef struct {
 #define MAGIC_SIGNAL_HANDLER 0xC20A444A
 	int magic; /* MAGIC_SIGNAL_HANDLER */
@@ -67,7 +69,7 @@ static work_t **signal_work = NULL;
 static int signal_work_count = 0;
 
 /* interrupt handler (_signal_handler()) will send signal to this fd */
-static int signal_fd = -1;
+static sig_atomic_t signal_fd = -1;
 static conmgr_fd_t *signal_con = NULL;
 
 static void _signal_handler(int signo)
@@ -89,9 +91,12 @@ try_again:
 		if ((errno == EPIPE) || (errno == EBADF)) {
 			/*
 			 * write() after conmgr shutdown before reading that
-			 * signal_fd was set to -1. Ignoring this race condition
-			 * entirely.
+			 * signal_fd was closed. Ignoring this race condition
+			 * entirely. Set signal_fd to an invalid value that is
+			 * not -1 to distinguish it from the normal "unset"
+			 * state.
 			 */
+			signal_fd = SIGNAL_FD_FAILED;
 			return;
 		}
 
@@ -294,10 +299,17 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
+	slurm_rwlock_wrlock(&lock);
+
+	if (signal_fd >= 0) {
+		slurm_rwlock_unlock(&lock);
+		log_flag(CONMGR, "%s: skipping - already initialized",
+			 __func__);
+		return;
+	}
+
 	if (pipe(fd))
 		fatal_abort("%s: pipe() failed: %m", __func__);
-
-	slurm_rwlock_wrlock(&lock);
 
 	if (!one_time_init) {
 		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
