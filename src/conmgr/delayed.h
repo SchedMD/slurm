@@ -40,15 +40,6 @@
 #include "src/conmgr/mgr.h"
 
 /*
- * Clear time delay dependency from work
- * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
- * NOTE: caller must call update_timer() after to cause work to requeue
- * NOTE: caller must hold mgr.mutex lock
- * RET True if time delay removed
- */
-extern bool work_clear_time_delay(work_t *work);
-
-/*
  * Set all time delayed work as cancelled and run queue to run
  */
 extern void cancel_delayed_work(void);

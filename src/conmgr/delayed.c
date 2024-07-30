@@ -64,6 +64,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const struct timespec time);
+static bool _work_clear_time_delay(work_t *work);
 
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
@@ -116,7 +117,7 @@ static list_t *_inspect(void)
 	_update_timer(dargs.shortest, dargs.time);
 
 	while ((work = list_pop(elapsed))) {
-		if (!work_clear_time_delay(work))
+		if (!_work_clear_time_delay(work))
 			fatal_abort("should never happen");
 
 		handle_work(true, work);
@@ -323,7 +324,14 @@ extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 	_update_delayed_work(false);
 }
 
-extern bool work_clear_time_delay(work_t *work)
+/*
+ * Clear time delay dependency from work
+ * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
+ * NOTE: caller must call update_timer() after to cause work to requeue
+ * NOTE: caller must hold mgr.mutex lock
+ * RET True if time delay removed
+ */
+static bool _work_clear_time_delay(work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
 
