@@ -35,6 +35,7 @@
 
 #include <time.h>
 
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -58,6 +59,8 @@ typedef struct {
 
 /* timer to trigger SIGALRM */
 static timer_t timer = {0};
+/* Mutex to protect timer */
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const struct timespec time);
@@ -160,7 +163,9 @@ static void _update_timer(work_t *shortest, const struct timespec time)
 		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
 	}
 
+	slurm_mutex_lock(&mutex);
 	rc = timer_settime(timer, TIMER_ABSTIME, &spec, NULL);
+	slurm_mutex_unlock(&mutex);
 
 	if (rc) {
 		if ((rc == -1) && errno)
@@ -255,7 +260,9 @@ extern void init_delayed_work(void)
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
+	slurm_mutex_lock(&mutex);
 	rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+	slurm_mutex_unlock(&mutex);
 
 	if (rc)
 		return;
@@ -279,7 +286,9 @@ extern void free_delayed_work(void)
 
 	FREE_NULL_LIST(mgr.delayed_work);
 
+	slurm_mutex_lock(&mutex);
 	rc = timer_delete(timer);
+	slurm_mutex_unlock(&mutex);
 
 	if (rc)
 		fatal("%s: timer_delete() failed: %m", __func__);
