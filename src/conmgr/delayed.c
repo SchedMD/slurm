@@ -267,11 +267,16 @@ again:
 
 extern void free_delayed_work(void)
 {
+	int rc;
+
 	if (!mgr.delayed_work)
 		return;
 
 	FREE_NULL_LIST(mgr.delayed_work);
-	if (timer_delete(timer))
+
+	rc = timer_delete(timer);
+
+	if (rc)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
