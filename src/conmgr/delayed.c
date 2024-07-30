@@ -268,8 +268,7 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	struct timespec last_time = {0};
-	int rc = SLURM_ERROR;
+	const struct timespec time = _get_time();
 
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
@@ -279,7 +278,7 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
 	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &last_time))) {
+	if ((rc = clock_gettime(CLOCK_MONOTONIC, &time))) {
 		if (rc == -1)
 			rc = errno;
 		fatal("%s: clock_gettime() failed: %s",
@@ -287,10 +286,10 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	}
 
 	/* catch integer overflows */
-	xassert((delay_seconds + last_time.tv_sec) >= last_time.tv_sec);
+	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
 
 	return (conmgr_work_time_begin_t) {
-		.seconds = (delay_seconds + last_time.tv_sec),
+		.seconds = (delay_seconds + time.tv_sec),
 		.nanoseconds = delay_nanoseconds,
 	};
 }
