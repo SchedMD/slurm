@@ -278,13 +278,6 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
 	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &time))) {
-		if (rc == -1)
-			rc = errno;
-		fatal("%s: clock_gettime() failed: %s",
-		      __func__, slurm_strerror(rc));
-	}
-
 	/* catch integer overflows */
 	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
 
@@ -375,16 +368,14 @@ extern void add_work_delayed(work_t *work)
 
 extern char *work_delayed_to_str(work_t *work)
 {
-	struct timespec last_time = {0};
+	const struct timespec time = _get_time();
 	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
 	char *delay = NULL;
 
 	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
 		return NULL;
 
-	(void) clock_gettime(CLOCK_MONOTONIC, &last_time);
-
-	diff = work->control.time_begin.seconds - last_time.tv_sec;
+	diff = work->control.time_begin.seconds - time.tv_sec;
 
 	days = diff / (DAY_HOURS * HOUR_SECONDS);
 	diff = diff % (DAY_HOURS * HOUR_SECONDS);
@@ -401,7 +392,7 @@ extern char *work_delayed_to_str(work_t *work)
 		nanoseconds = work->control.time_begin.nanoseconds;
 	else
 		nanoseconds = (work->control.time_begin.nanoseconds -
-			       last_time.tv_nsec);
+			       time.tv_nsec);
 
 	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
 		   days, hours, minutes, seconds, nanoseconds);
