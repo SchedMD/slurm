@@ -426,10 +426,9 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
    98     debug   tmp   foo  R  0:07      1 tux1
 </pre>
 
-<p><b>NOTE</b>: If you want the reservation to maintain the size you specify,
-but not grow as the reservation is used you can use the <b>REPLACE_DOWN</b>
-flag. Nodes that are DOWN or DRAINED will be replaced, but not nodes that
-have jobs running on them.
+<p><b>NOTE</b>: By default, nodes that are DOWN or DRAINED will be replaced,
+but not nodes that have jobs running on them. This behavior may be explicitly
+requested with the <b>REPLACE_DOWN</b> flag.</p>
 
 <h2 id="flex">FLEX Reservations<a class="slurm_link" href="#flex"></a></h2>
 
@@ -530,7 +529,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 10 July 2024</p>
+<p style="text-align: center;">Last modified 02 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
 
