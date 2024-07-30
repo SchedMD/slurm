@@ -49,17 +49,18 @@ typedef struct {
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
 {
-	if (mgr.delayed_work && !list_is_empty(mgr.delayed_work)) {
-		work_t *work;
+	work_t *work;
 
-		log_flag(CONMGR, "%s: cancelling %d delayed work",
-			 __func__, list_count(mgr.delayed_work));
+	if (!mgr.delayed_work || list_is_empty(mgr.delayed_work))
+		return;
 
-		/* run everything immediately but with cancelled status */
-		while ((work = list_pop(mgr.delayed_work))) {
-			work->status = CONMGR_WORK_STATUS_CANCELLED;
-			handle_work(true, work);
-		}
+	log_flag(CONMGR, "%s: cancelling %d delayed work",
+		 __func__, list_count(mgr.delayed_work));
+
+	/* run everything immediately but with cancelled status */
+	while ((work = list_pop(mgr.delayed_work))) {
+		work->status = CONMGR_WORK_STATUS_CANCELLED;
+		handle_work(true, work);
 	}
 }
 
