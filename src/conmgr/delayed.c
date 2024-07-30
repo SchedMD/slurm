@@ -335,3 +335,9 @@ extern bool work_clear_time_delay(work_t *work)
 
 	return true;
 }
+
+extern void add_work_delayed(work_t *work)
+{
+	list_append(mgr.delayed_work, work);
+	update_delayed_work(true);
+}

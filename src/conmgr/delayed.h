@@ -59,4 +59,10 @@ extern void update_delayed_work(bool locked);
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 
+/*
+ * Enqueue new delayed work
+ * Caller must hold mgr.mutex lock
+ */
+extern void add_work_delayed(work_t *work);
+
 #endif /* _CONMGR_DELAYED_H */
