@@ -107,6 +107,8 @@ int uid_from_string(const char *name, uid_t *uidp)
 	START_TIMER;
 	while (true) {
 		int rc = getpwnam_r(name, &pwd, curr_buf, bufsize, &result);
+		if (!rc && result)
+			break;
 		if (rc == EINTR) {
 			continue;
 		} else if (rc == ERANGE) {
@@ -284,6 +286,8 @@ int gid_from_string(const char *name, gid_t *gidp)
 	START_TIMER;
 	while (true) {
 		int rc = getgrnam_r(name, &grp, curr_buf, bufsize, &result);
+		if (!rc && result)
+			break;
 		if (rc == EINTR) {
 			continue;
 		} else if (rc == ERANGE) {
@@ -319,6 +323,8 @@ int gid_from_string(const char *name, gid_t *gidp)
 	START_TIMER;
 	while (true) {
 		int rc = getgrgid_r(l, &grp, curr_buf, bufsize, &result);
+		if (!rc && result)
+			break;
 		if (rc == EINTR) {
 			continue;
 		} else if (rc == ERANGE) {
@@ -360,7 +366,7 @@ extern char *gid_to_string(gid_t gid)
 char *gid_to_string_or_null(gid_t gid)
 {
 	DEF_TIMERS;
-	struct group grp, *result;
+	struct group grp, *result = NULL;
 	char buf_stack[PW_BUF_SIZE];
 	char *buf_malloc = NULL;
 	size_t bufsize = PW_BUF_SIZE;
@@ -370,6 +376,8 @@ char *gid_to_string_or_null(gid_t gid)
 	START_TIMER;
 	while (true) {
 		int rc = getgrgid_r(gid, &grp, curr_buf, bufsize, &result);
+		if (!rc && result)
+			break;
 		if (rc == EINTR) {
 			continue;
 		} else if (rc == ERANGE) {
