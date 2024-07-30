@@ -272,7 +272,7 @@ extern void free_delayed_work(void)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-extern void update_delayed_work(bool locked)
+static void _update_delayed_work(bool locked)
 {
 	list_t *elapsed = NULL;
 
@@ -290,7 +290,7 @@ extern void update_delayed_work(bool locked)
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
-	update_delayed_work(false);
+	_update_delayed_work(false);
 }
 
 extern bool work_clear_time_delay(work_t *work)
@@ -314,7 +314,7 @@ extern bool work_clear_time_delay(work_t *work)
 extern void add_work_delayed(work_t *work)
 {
 	list_append(mgr.delayed_work, work);
-	update_delayed_work(true);
+	_update_delayed_work(true);
 }
 
 extern char *work_delayed_to_str(work_t *work)
