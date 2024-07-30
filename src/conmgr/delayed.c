@@ -165,6 +165,9 @@ static void _update_timer(work_t *shortest, const struct timespec time)
 	if (rc) {
 		if ((rc == -1) && errno)
 			rc = errno;
+
+		error("%s: timer_set_time() failed: %s",
+		      __func__, slurm_strerror(rc));
 	}
 }
 
