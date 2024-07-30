@@ -40,6 +40,7 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/signals.h"

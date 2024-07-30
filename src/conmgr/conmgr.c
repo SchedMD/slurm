@@ -42,6 +42,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150

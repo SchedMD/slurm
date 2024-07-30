@@ -36,4 +36,30 @@
 #ifndef _CONMGR_DELAYED_H
 #define _CONMGR_DELAYED_H
 
+#include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
+
+/*
+ * Clear time delay dependency from work
+ * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
+ * NOTE: caller must call update_timer() after to cause work to requeue
+ * NOTE: caller must hold mgr.mutex lock
+ * RET True if time delay removed
+ */
+extern bool work_clear_time_delay(work_t *work);
+
+extern void cancel_delayed_work(void);
+extern void init_delayed_work(void);
+extern void free_delayed_work(void);
+/*
+ * Inspect and update queued work in mgr.delayed_work
+ * IN locked - true if mgr.mutex is locked by caller
+ */
+extern void update_delayed_work(bool locked);
+
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
+
+/* update_last_time - Caller must lock mgr.mutex */
+extern void update_last_time(void);
+
 #endif /* _CONMGR_DELAYED_H */

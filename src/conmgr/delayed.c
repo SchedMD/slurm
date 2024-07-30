@@ -37,6 +37,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
