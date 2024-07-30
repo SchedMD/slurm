@@ -50,12 +50,6 @@ typedef struct {
 	struct timespec time;
 } foreach_delayed_work_t;
 
-typedef struct {
-#define MAGIC_MATCH_WORK_ELAPSED_ARGS 0xA283423A
-	int magic; /* MAGIC_MATCH_WORK_ELAPSED_ARGS */
-	struct timespec time;
-} foreach_match_work_elapsed_args_t;
-
 /* monotonic timer */
 static timer_t timer = {0};
 
@@ -102,10 +96,6 @@ static list_t *_inspect(void)
 	int count, total;
 	work_t *work;
 	list_t *elapsed = list_create(xfree_ptr);
-	foreach_match_work_elapsed_args_t args = {
-		.magic = MAGIC_MATCH_WORK_ELAPSED_ARGS,
-		.time = _get_time(),
-	};
 	foreach_delayed_work_t dargs = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
 		.time = _get_time(),
@@ -113,7 +103,7 @@ static list_t *_inspect(void)
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _inspect_work, &args);
+				    _inspect_work, &dargs);
 
 	list_for_each(mgr.delayed_work, _foreach_delayed_work, &dargs);
 
@@ -227,10 +217,10 @@ static int _inspect_work(void *x, void *key)
 	work_t *work = x;
 	const conmgr_work_time_begin_t begin = work->control.time_begin;
 	int64_t remain_sec, remain_nsec;
-	foreach_match_work_elapsed_args_t *args = key;
+	foreach_delayed_work_t *args = key;
 	const struct timespec time = args->time;
 
-	xassert(args->magic == MAGIC_MATCH_WORK_ELAPSED_ARGS);
+	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
 	remain_sec = begin.seconds - time.tv_sec;
