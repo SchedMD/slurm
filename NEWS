@@ -9,6 +9,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix compilation issue with switch/hpe_slingshot plugin.
  -- Fix gres per task allocation with threads-per-core.
  -- data_parser/v0.0.41 - Added field descriptions
+ -- slurmrestd - Change back generated OpenAPI schema for
+    `DELETE /slurm/v0.0.40/jobs/` to RequestBody instead of using parameters
+    for request. slurmrestd will continue accept endpoint requests via
+    RequestBody or HTTP query.
 
 * Changes in Slurm 24.05.2
 ==========================
