@@ -56,9 +56,6 @@ typedef struct {
 	struct timespec time;
 } foreach_match_work_elapsed_args_t;
 
-/* last time clock was queried */
-static struct timespec last_time = {0};
-
 /* monotonic timer */
 static timer_t timer = {0};
 
@@ -99,11 +96,6 @@ static struct timespec _get_time(void)
 	return time;
 }
 
-static void _update_last_time(void)
-{
-	last_time = _get_time();
-}
-
 static list_t *_inspect(void)
 {
 	int count, total;
@@ -113,8 +105,6 @@ static list_t *_inspect(void)
 		.magic = MAGIC_MATCH_WORK_ELAPSED_ARGS,
 		.time = _get_time(),
 	};
-
-	_update_last_time();
 
 	total = list_count(mgr.delayed_work);
 	count = list_transfer_match(mgr.delayed_work, elapsed,
