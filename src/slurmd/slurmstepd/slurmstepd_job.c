@@ -454,7 +454,6 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	step->timelimit   = (time_t) -1;
 	step->flags       = msg->flags;
-	step->switch_step = msg->switch_step;
 	step->open_mode   = msg->open_mode;
 	step->options     = msg->options;
 
