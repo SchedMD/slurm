@@ -54,6 +54,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
+#include <poll.h>
 #include <sched.h>
 #include <stdlib.h>
 #include <string.h>
@@ -491,6 +492,9 @@ static void _msg_engine(void)
 {
 	slurm_addr_t *cli;
 	int sock;
+	struct pollfd pfd;
+	pfd.fd = conf->lfd;
+	pfd.events = POLLIN;
 
 	msg_pthread = pthread_self();
 	slurmd_req(NULL);	/* initialize timer */
@@ -513,18 +517,27 @@ static void _msg_engine(void)
 			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
-		cli = xmalloc(sizeof(*cli));
-		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
-			_handle_connection(sock, cli);
-			continue;
+		if (poll(&pfd, 1, -1) < 0) {
+			if (errno != EINTR)
+				error("poll: %m");
+		} else if (pfd.revents && POLLIN) {
+			_increment_thd_count();
+			cli = xmalloc(sizeof(*cli));
+			if ((sock =
+			     slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
+				_handle_connection(sock, cli);
+				continue;
+			}
+			/*
+			 *  Otherwise, accept() failed
+			 */
+			xfree(cli);
+			if (errno == EINTR)
+				continue;
+			error("accept: %m");
+
+			_decrement_thd_count();
 		}
-		/*
-		 *  Otherwise, accept() failed.
-		 */
-		xfree(cli);
-		if (errno == EINTR)
-			continue;
-		error("accept: %m");
 	}
 	verbose("got shutdown request");
 	close(conf->lfd);
@@ -600,7 +613,6 @@ static void _handle_connection(int fd, slurm_addr_t *cli)
 	arg->fd       = fd;
 	arg->cli_addr = cli;
 
-	_increment_thd_count();
 	slurm_thread_create_detached(_service_connection, arg);
 }
 
