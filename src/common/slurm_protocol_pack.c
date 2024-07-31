@@ -4118,6 +4118,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
 		packstr(build_ptr->cred_type, buffer);
+		packstr(build_ptr->data_parser_parameters, buffer);
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
@@ -5214,6 +5215,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
 		safe_unpackstr(&build_ptr->cred_type, buffer);
+		safe_unpackstr(&build_ptr->data_parser_parameters, buffer);
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack64(&build_ptr->debug_flags, buffer);

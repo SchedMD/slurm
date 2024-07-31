@@ -892,6 +892,15 @@ Use Slurm's internal credential format.
 .IP
 
 .TP
+\fBDataParserParameters\fR=<\fIdata_parser\fR>
+Apply default value for data_parser plugin parameters. See \fI\-\-json\fR or
+\fI\-\-yaml\fR arguments in \fBsacct\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1),
+\fBsqueue\fR(1), \fBsacctmgr\fR(1), \fBsdiag\fR(1), and \fBsshare\fR(1).
+.br
+Default: Latest data_parser plugin version with no flags selected.
+.IP
+
+.TP
 \fBDebugFlags\fR
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.

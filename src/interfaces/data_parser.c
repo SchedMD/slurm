@@ -831,10 +831,13 @@ extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 
 extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 {
+	char *default_data_parser = (slurm_conf.data_parser_parameters ?
+				     slurm_conf.data_parser_parameters :
+				     SLURM_DATA_PARSER_VERSION);
 	return data_parser_g_new(_on_error, _on_error, _on_error, arg, _on_warn,
 				 _on_warn, _on_warn, arg,
 				 (data_parser ?  data_parser :
-				  SLURM_DATA_PARSER_VERSION), NULL, false);
+				  default_data_parser), NULL, false);
 }
 
 extern openapi_type_t data_parser_g_resolve_openapi_type(

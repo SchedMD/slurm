@@ -662,6 +662,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "CpuFreqGovernors", "%s", tmp_str);
 
 	add_key_pair(ret_list, "CredType", "%s", conf->cred_type);
+	add_key_pair(ret_list, "DataParserParameters", "%s",
+		     conf->data_parser_parameters);
 
 	add_key_pair_own(ret_list, "DebugFlags",
 			 debug_flags2str(conf->debug_flags));

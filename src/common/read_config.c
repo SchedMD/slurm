@@ -265,6 +265,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CpuFreqGovernors", S_P_STRING},
 	{"CredType", S_P_STRING},
 	{"CryptoType", S_P_STRING},
+	{"DataParserParameters", S_P_STRING},
 	{"DebugFlags", S_P_STRING},
 	{"DefCPUPerGPU" , S_P_UINT64},
 	{"DefMemPerCPU", S_P_UINT64},
@@ -2926,6 +2927,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->cred_type);
+	xfree(ctl_conf_ptr->data_parser_parameters);
 	xfree (ctl_conf_ptr->dependency_params);
 	for (int i = 0; i < ctl_conf_ptr->epilog_cnt; i++)
 		xfree(ctl_conf_ptr->epilog[i]);
@@ -4188,6 +4190,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		} else
 			 conf->cred_type = xstrdup(DEFAULT_CRED_TYPE);
 	}
+
+	(void) s_p_get_string(&conf->data_parser_parameters,
+			      "DataParserParameters", hashtbl);
 
 	if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode", hashtbl)) {
 		if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU",
