@@ -1870,6 +1870,9 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 		rc = slurm_persist_send_msg(msg->conn, buffer);
 		FREE_NULL_BUFFER(buffer);
 
+		if ((rc < 0) && (fd < 0))
+			fd = msg->conn->fd;
+
 		if ((rc < 0) && (errno == ENOTCONN)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
 				peer = fd_resolve_peer(fd);
