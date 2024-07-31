@@ -2126,19 +2126,16 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
  */
 int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
+	return_code_msg_t rc_msg = {
+		.return_code = rc,
+	};
 
-	if (msg->conn_fd < 0) {
-		slurm_seterrno(ENOTCONN);
+	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC, &rc_msg))) {
+		errno = rc;
 		return SLURM_ERROR;
 	}
-	rc_msg.return_code = rc;
 
-	response_init(&resp_msg, msg, RESPONSE_SLURM_RC, &rc_msg);
-
-	/* send message */
-	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	return SLURM_SUCCESS;
 }
 
 /* slurm_send_rc_err_msg
