@@ -79,6 +79,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent scontrol from segfaulting when requesting scontrol show reservation
     --json or --yaml if there is an error retrieving reservations from the
     slurmctld.
+ -- switch/hpe_slingshot - Fix security issue around managing VNI access.
+ -- switch/nvidia_imex - Fix security issue managing IMEX channel access.
 
 * Changes in Slurm 24.05.1
 ==========================
