@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 23.11.10
+===========================
+
 * Changes in Slurm 23.11.9
 ==========================
  -- Fix many commands possibly reporting an "Unexpected Message Received" when
