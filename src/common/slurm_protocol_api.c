@@ -56,6 +56,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -2086,6 +2088,34 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	 * it, and already implicitly trust the connection.
 	 */
 	resp_msg->flags |= SLURM_NO_AUTH_CRED;
+}
+
+extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+			     void *data)
+{
+	int rc;
+	slurm_msg_t resp_msg;
+
+	if ((source_msg->conn_fd < 0) && !source_msg->conn)
+		return ENOTCONN;
+
+	response_init(&resp_msg, source_msg, msg_type, data);
+
+	resp_msg.conn_fd = source_msg->conn_fd;
+	resp_msg.conn = source_msg->conn;
+
+	rc = slurm_send_node_msg(source_msg->conn_fd, &resp_msg);
+
+	if (rc >= 0)
+		return SLURM_SUCCESS;
+
+	rc = errno;
+	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
+		 __func__, (source_msg->conn ? source_msg->conn->fd :
+			    source_msg->conn_fd),
+		 rpc_num2string(msg_type), slurm_strerror(rc));
+
+	return rc;
 }
 
 /* slurm_send_rc_msg

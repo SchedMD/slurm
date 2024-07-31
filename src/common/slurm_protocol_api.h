@@ -391,6 +391,19 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 			  uint16_t msg_type, void *data);
 
+/*
+ * Send message in response to a source message
+ *
+ * Handles creating response slurm_msg_t and sending based on source_msg.
+ *
+ * IN source_msg - Message to send response about
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+			     void *data);
+
 /* slurm_send_rc_msg
  * given the original request message this function sends a
  *	slurm_return_code message back to the client that made the request
