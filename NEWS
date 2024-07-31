@@ -866,6 +866,9 @@ documents those changes that are of interest to users and administrators.
  -- Improve scontrol show node -d information of used shared gres (shard/mps)
     topology.
 
+* Changes in Slurm 23.02.9
+==========================
+
 * Changes in Slurm 23.02.8
 ==========================
  -- Fix rare deadlock when a dynamic node registers at the same time that a
