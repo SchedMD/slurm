@@ -808,6 +808,8 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 					    &cred_arg.step_mem_alloc_size);
 	}
 
+	cred_arg.switch_step = step_ptr->switch_job;
+
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
 					true, protocol_version);
 

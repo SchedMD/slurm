@@ -54,6 +54,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/switch.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
@@ -267,6 +268,10 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	step->selinux_context = xstrdup(cred_arg->selinux_context);
 
 	step->alias_list = xstrdup(cred_arg->job_alias_list);
+
+	if (cred_arg->switch_step)
+		switch_g_duplicate_jobinfo(cred_arg->switch_step,
+					   &step->switch_job);
 
 	slurm_cred_unlock_args(cred);
 }

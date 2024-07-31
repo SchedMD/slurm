@@ -218,6 +218,8 @@ typedef struct {
 	uint32_t step_mem_alloc_size;	/* Size of memory arrays above */
 
 	List step_gres_list;		/* Generic resources allocated to STEP */
+
+	void *switch_step;
 } slurm_cred_arg_t;
 
 /* Initialize the plugin. */
