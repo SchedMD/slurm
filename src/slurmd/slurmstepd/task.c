@@ -135,16 +135,6 @@ static void _proc_stdout(char *buf, stepd_step_rec_t *step)
 				equal_ptr--;
 			equal_ptr[0] = '\0';
 			end_line[0] = '\0';
-			if (!xstrcmp(name_ptr, "SLURM_PROLOG_CPU_MASK")) {
-				step->cpu_bind_type = CPU_BIND_MASK;
-				xfree(step->cpu_bind);
-				step->cpu_bind = xstrdup(val_ptr);
-				if (task_g_pre_launch(step)) {
-					error("Failed SLURM_PROLOG_CPU_MASK "
-					      "setup");
-					exit(1);
-				}
-			}
 			debug("export name:%s:val:%s:", name_ptr, val_ptr);
 			if (setenvf(env, name_ptr, "%s", val_ptr)) {
 				error("Unable to set %s environment variable",

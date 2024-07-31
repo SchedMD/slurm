@@ -84,6 +84,8 @@ documents those changes that are of interest to users and administrators.
  -- When using --get-user-env explicitly or implicitly, check if PID or mnt
     namespaces are disabled and fall back to old logic that does not rely on
     them when they are not available.
+ -- Removed non-functional option SLURM_PROLOG_CPU_MASK from TaskProlog which
+    was used to reset the affinity of a task based on the mask given.
 
 * Changes in Slurm 24.05.3
 ==========================
