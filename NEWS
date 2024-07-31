@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 23.02.9
+==========================
+
 * Changes in Slurm 23.02.8
 ==========================
  -- Fix rare deadlock when a dynamic node registers at the same time that a
