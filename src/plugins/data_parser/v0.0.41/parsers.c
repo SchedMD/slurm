@@ -8425,9 +8425,9 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
 	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
-	add_parse(STRING, node_list, "node_list", "ranged node string"),
-	add_parse(TIMESTAMP, time_end, "time_end", "time end UNIX timestamp"),
-	add_parse(TIMESTAMP, time_start, "time_start", "time start UNIX timestamp"),
+	add_parse(STRING, node_list, "node_list", "Ranged node string"),
+	add_parse(TIMESTAMP, time_end, "time_end", "Time end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, time_start, "time_start", "Time start (UNIX timestamp)"),
 };
 #undef add_parse
 
@@ -8436,7 +8436,7 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_submit_request_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
-	add_parse_deprec(STRING, script, 0, "script", "Deprecated. Populate script field in jobs[0] or job.", SLURM_24_05_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, script, 0, "script", "Deprecated; Populate script field in jobs[0] or job", SLURM_24_05_PROTOCOL_VERSION),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
 	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
 };
@@ -8495,16 +8495,16 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, associd_list, "association", "CSV association list"),
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(CSV_STRING_LIST, constraint_list, "constraints", "CSV constraint list"),
-	add_parse(UINT32_NO_VAL, cpus_max, "cpus_max", "number of cpus high range"),
-	add_parse(UINT32_NO_VAL, cpus_min, "cpus_min", "number of cpus low range"),
+	add_parse(UINT32_NO_VAL, cpus_max, "cpus_max", "Maximum number of cpus"),
+	add_parse(UINT32_NO_VAL, cpus_min, "cpus_min", "Minimum number of cpus"),
 	add_flags(JOB_CONDITION_DB_FLAGS, db_flags),
-	add_parse(INT32, exitcode, "exit_code", "job exit code (numeric)"),
+	add_parse(INT32, exitcode, "exit_code", "Job exit code (numeric)"),
 	add_flags(JOB_CONDITION_FLAGS, flags),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(GROUP_ID_STRING_LIST, groupid_list, "groups", "CSV group list"),
 	add_parse(CSV_STRING_LIST, jobname_list, "job_name", "CSV job name list"),
-	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "number of nodes high range"),
-	add_parse(UINT32_NO_VAL, nodes_min, "nodes_min", "number of nodes low range"),
+	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "Maximum number of nodes"),
+	add_parse(UINT32_NO_VAL, nodes_min, "nodes_min", "Minimum number of nodes"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
 	add_parse(CSV_STRING_LIST, qos_list, "qos", "CSV QOS name list"),
 	add_parse(CSV_STRING_LIST, reason_list, "reason", "CSV reason list"),
@@ -8512,12 +8512,12 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, resvid_list, "reservation_id", "CSV reservation ID list"),
 	add_parse(JOB_STATE_ID_STRING_LIST, state_list, "state", "CSV state list"),
 	add_parse(SELECTED_STEP_LIST, step_list, "step", "CSV step id list"),
-	add_parse(UINT32_NO_VAL, timelimit_max, "timelimit_max", "maximum timelimit (seconds)"),
-	add_parse(UINT32_NO_VAL, timelimit_min, "timelimit_min", "minimum timelimit (seconds)"),
-	add_parse(TIMESTAMP, usage_end, "end_time", "usage end timestamp"),
-	add_parse(TIMESTAMP, usage_start, "start_time", "usage start timestamp"),
-	add_cparse(JOB_CONDITION_SUBMIT_TIME, "submit_time", "submit time timestamp"),
-	add_parse(STRING, used_nodes, "node", "ranged node string where jobs ran"),
+	add_parse(UINT32_NO_VAL, timelimit_max, "timelimit_max", "Maximum timelimit (seconds)"),
+	add_parse(UINT32_NO_VAL, timelimit_min, "timelimit_min", "Minimum timelimit (seconds)"),
+	add_parse(TIMESTAMP, usage_end, "end_time", "Usage end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, usage_start, "start_time", "Usage start (UNIX timestamp)"),
+	add_cparse(JOB_CONDITION_SUBMIT_TIME, "submit_time", "Submit time (UNIX timestamp)"),
+	add_parse(STRING, used_nodes, "node", "Ranged node string where jobs ran"),
 	add_parse(USER_ID_STRING_LIST, userid_list, "users", "CSV user name list"),
 	add_parse(CSV_STRING_LIST, wckey_list, "wckey", "CSV wckey list"),
 };
@@ -8532,7 +8532,7 @@ static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 	add_parse(QOS_ID_STRING_CSV_LIST, id_list, "id", "CSV QOS id list"),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
-	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", NULL),
+	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", "PreemptMode used when jobs in this QOS are preempted"),
 	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted QOS"),
 };
 #undef add_parse
@@ -8591,19 +8591,19 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV id list"),
-	add_parse(BOOL16, only_defs, "only_defaults", "filter to only defaults"),
+	add_parse(BOOL16, only_defs, "only_defaults", "Filter to only defaults"),
 	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, qos_list, "qos", "CSV QOS list"),
-	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp"),
-	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
-	add_parse(BOOL16, with_usage, "with_usage", "fill in usage"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "return deleted associations"),
-	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "return a raw qos or delta_qos"),
-	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "return sub acct information also"),
-	add_parse(BOOL16, without_parent_info, "without_parent_info", "don't give me parent id/name"),
-	add_parse(BOOL16, without_parent_limits, "without_parent_limits", "don't give me limits from parents"),
+	add_parse(BOOL16, with_usage, "with_usage", "Include usage"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted associations"),
+	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "Include a raw qos or delta_qos"),
+	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "Include sub acct information"),
+	add_parse(BOOL16, without_parent_info, "without_parent_info", "Exclude parent id/name"),
+	add_parse(BOOL16, without_parent_limits, "without_parent_limits", "Exclude limits from parents"),
 };
 #undef add_parse
 
@@ -8660,12 +8660,12 @@ static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format name list"),
 	add_parse(CSV_STRING_LIST, id_list, "id", "CSV id list"),
 	add_parse(CSV_STRING_LIST, name_list, "name", "CSV name list"),
-	add_parse(BOOL16, only_defs, "only_defaults", "only query defaults"),
-	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp (seconds)"),
-	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp (seconds)"),
+	add_parse(BOOL16, only_defs, "only_defaults", "Only query defaults"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
-	add_parse(BOOL16, with_usage, "with_usage", "include usage with query"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted wckeys with query"),
+	add_parse(BOOL16, with_usage, "with_usage", "Include usage"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted wckeys"),
 };
 #undef add_parse
 
@@ -8679,18 +8679,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_PARAM)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_account_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
-	add_parse(BOOL, with_assocs, "with_assocs", "include associations"),
-	add_parse(BOOL, with_coords, "with_coords", "include coordinators"),
-	add_parse(BOOL, with_deleted, "with_deleted", "include deleted"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include associations"),
+	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
+	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "assocation filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Assocation filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
-	add_parse_bit_eflag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS, flags, NULL),
+	add_parse_bit_eflag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS, flags, "Query flags"),
 };
 #undef add_parse
 
@@ -8714,20 +8714,20 @@ static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_CLASSIFICATION, false, classification, "classification", NULL),
 	add_parse(STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(STRING_LIST, federation_list, "federation", "CSV federation list"),
-	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_REC_FLAGS, false, flags, "flags", NULL),
+	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_REC_FLAGS, false, flags, "flags", "Query flags"),
 	add_parse(STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(STRING_LIST, rpc_version_list, "rpc_version", "CSV RPC version list"),
-	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end UNIX timestamp (seconds)"),
-	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start UNIX timestamp (seconds)"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted clusters"),
-	add_parse(BOOL16, with_usage, "with_usage", "query usage"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted clusters"),
+	add_parse(BOOL16, with_usage, "with_usage", "Include usage"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_info_param_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_PARAM)[] = {
-	add_parse(SELECTED_STEP, job_id, "job_id", "JobId"),
+	add_parse(SELECTED_STEP, job_id, "job_id", "Job ID"),
 };
 #undef add_parse
 
@@ -8876,9 +8876,9 @@ static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurm_step_id_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
-	add_parse(UINT32_NO_VAL, job_id, "job_id", "Job identifier"),
+	add_parse(UINT32_NO_VAL, job_id, "job_id", "Job ID"),
 	add_parse(UINT32_NO_VAL, step_het_comp, "step_het_component", "HetJob Component"),
-	add_parse(STEP_ID, step_id, "step_id", "Job StepId"),
+	add_parse(STEP_ID, step_id, "step_id", "Job step ID"),
 };
 #undef add_parse
 
@@ -8887,7 +8887,7 @@ static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
 			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
 			   hidden, desc)
 static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
-	add_flag_eq(SLURM_PENDING_STEP, INFINITE, "TBD", false, "StepId not yet assigned"),
+	add_flag_eq(SLURM_PENDING_STEP, INFINITE, "TBD", false, "Step ID not yet assigned"),
 	add_flag_eq(SLURM_EXTERN_CONT, INFINITE, "extern", false, "External Step"),
 	add_flag_eq(SLURM_BATCH_SCRIPT, INFINITE, "batch", false, "Batch Step"),
 	add_flag_eq(SLURM_INTERACTIVE_STEP, INFINITE, "interactive", false, "Interactive Step"),
@@ -8920,22 +8920,22 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
 	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
 static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
-	add_parse(UINT32, obj.assoc_id, "id", "assocation id"),
-	add_parse(STRING, obj.cluster, "cluster", "cluster name"),
-	add_parse(STRING, obj.name, "name", "share name"),
-	add_parse(STRING, obj.parent, "parent", "parent name"),
-	add_parse(STRING, obj.partition, "partition", "partition name"),
-	add_parse(FLOAT64_NO_VAL, obj.shares_norm, "shares_normalized", "normalized shares"),
-	add_parse(UINT32_NO_VAL, obj.shares_raw, "shares", "number of shares allocated"),
-	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, "tres/run_seconds", "currently running tres-secs = grp_used_tres_run_secs"),
-	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, "tres/group_minutes", "tres-minute limit"),
-	add_parse(FLOAT64, obj.usage_efctv, "effective_usage", "effective, normalized usage"),
-	add_parse(FLOAT64_NO_VAL, obj.usage_norm, "usage_normalized", "normalized usage"),
-	add_parse(UINT64, obj.usage_raw, "usage", "measure of tresbillableunits usage"),
-	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, "tres/usage", "measure of each tres usage"),
-	add_parse(FLOAT64, obj.fs_factor, "fairshare/factor", "fairshare factor"),
-	add_parse(FLOAT64, obj.level_fs, "fairshare/level", "fairshare factor at this level. stored on an assoc as a long double, but that is not needed for display in sshare"),
-	add_parse_bit_flag_array(assoc_shares_object_wrap_t, ASSOC_SHARES_OBJ_WRAP_TYPE, false, obj.user, "type", "user or account association"),
+	add_parse(UINT32, obj.assoc_id, "id", "Assocation ID"),
+	add_parse(STRING, obj.cluster, "cluster", "Cluster name"),
+	add_parse(STRING, obj.name, "name", "Share name"),
+	add_parse(STRING, obj.parent, "parent", "Parent name"),
+	add_parse(STRING, obj.partition, "partition", "Partition name"),
+	add_parse(FLOAT64_NO_VAL, obj.shares_norm, "shares_normalized", "Normalized shares"),
+	add_parse(UINT32_NO_VAL, obj.shares_raw, "shares", "Number of shares allocated"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, "tres/run_seconds", "Currently running tres-secs = grp_used_tres_run_secs"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, "tres/group_minutes", "TRES-minute limit"),
+	add_parse(FLOAT64, obj.usage_efctv, "effective_usage", "Effective, normalized usage"),
+	add_parse(FLOAT64_NO_VAL, obj.usage_norm, "usage_normalized", "Normalized usage"),
+	add_parse(UINT64, obj.usage_raw, "usage", "Measure of tresbillableunits usage"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, "tres/usage", "Measure of each TRES usage"),
+	add_parse(FLOAT64, obj.fs_factor, "fairshare/factor", "Fairshare factor"),
+	add_parse(FLOAT64, obj.level_fs, "fairshare/level", "Fairshare factor at this level; stored on an assoc as a long double, but that is not needed for display in sshare"),
+	add_parse_bit_flag_array(assoc_shares_object_wrap_t, ASSOC_SHARES_OBJ_WRAP_TYPE, false, obj.user, "type", "User or account association"),
 	add_skip(tot_shares),
 	add_skip(tres_cnt),
 	add_skip(tres_names),
@@ -8987,8 +8987,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_QOS_QUERY)[] = {
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(JOB_ARRAY_RESPONSE_MSG_entry_t, mtype, false, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(JOB_ARRAY_RESPONSE_MSG_ENTRY)[] = {
-	add_parse(UINT32, step.step_id.job_id, "job_id", "JobId for updated Job"),
-	add_parse(SELECTED_STEP, step, "step_id", "StepId for updated Job"),
+	add_parse(UINT32, step.step_id.job_id, "job_id", "Job ID for updated job"),
+	add_parse(SELECTED_STEP, step, "step_id", "Step ID for updated job"),
 	add_parse_overload(ERROR, rc, 1, "error", "Verbose update status or error"),
 	add_parse_overload(INT32, rc, 1, "error_code", "Verbose update status or error"),
 	add_parse(STRING, msg, "why", "Update response message"),
@@ -9039,45 +9039,45 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_CR_TYPE)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(FLOAT64_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(FLOAT64_NO_VAL_STRUCT)[] = {
-	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
-	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
-	add_parse(FLOAT64, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(FLOAT64, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(UINT64_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(UINT64_NO_VAL_STRUCT)[] = {
-	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
-	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
-	add_parse(UINT64, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(UINT64, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(UINT32_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(UINT32_NO_VAL_STRUCT)[] = {
-	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
-	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
-	add_parse(UINT32, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(UINT32, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(UINT16_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(UINT16_NO_VAL_STRUCT)[] = {
-	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
-	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
-	add_parse(UINT16, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(UINT16, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(INT64_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(INT64_NO_VAL_STRUCT)[] = {
-	add_parse(BOOL, set, "set", "True if number has been set. False if number is unset"),
-	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite. \"set\" and \"number\" will be ignored."),
-	add_parse(INT64, number, "number", "If set is True the number will be set with value. Otherwise ignore number contents."),
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(INT64, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
 
@@ -9087,21 +9087,21 @@ static const parser_t PARSER_ARRAY(INT64_NO_VAL_STRUCT)[] = {
 	add_parser(slurmdb_rollup_stats_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ROLLUP_STATS)[] = {
 	add_skip(cluster_name), /* not packed */
-	add_parse_req(UINT16, count[DBD_ROLLUP_HOUR], "hourly/count", "number of hourly rollups since last_run"),
-	add_parse_req(UINT16, count[DBD_ROLLUP_DAY], "daily/count", "number of daily rollups since last_run"),
-	add_parse_req(UINT16, count[DBD_ROLLUP_MONTH], "monthly/count", "number of monthly rollups since last_run"),
+	add_parse_req(UINT16, count[DBD_ROLLUP_HOUR], "hourly/count", "Number of hourly rollups since last_run"),
+	add_parse_req(UINT16, count[DBD_ROLLUP_DAY], "daily/count", "Number of daily rollups since last_run"),
+	add_parse_req(UINT16, count[DBD_ROLLUP_MONTH], "monthly/count", "Number of monthly rollups since last_run"),
 	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_HOUR], "hourly/last_run", "Last time hourly rollup ran (UNIX timestamp)"),
 	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_DAY], "daily/last_run", "Last time daily rollup ran (UNIX timestamp)"),
 	add_parse_req(TIMESTAMP, timestamp[DBD_ROLLUP_MONTH], "monthly/last_run", "Last time monthly rollup ran (UNIX timestamp)"),
-	add_parse_req(UINT64, time_last[DBD_ROLLUP_HOUR], "hourly/duration/last", "total time spent doing last daily rollup (seconds)"),
-	add_parse_req(UINT64, time_last[DBD_ROLLUP_DAY], "daily/duration/last", "total time spent doing daily daily rollup (seconds)"),
-	add_parse_req(UINT64, time_last[DBD_ROLLUP_MONTH], "monthly/duration/last", "total time spent doing monthly daily rollup (seconds)"),
-	add_parse_req(UINT64, time_max[DBD_ROLLUP_HOUR], "hourly/duration/max", "longest hourly rollup time (seconds)"),
-	add_parse_req(UINT64, time_max[DBD_ROLLUP_DAY], "daily/duration/max", "longest daily rollup time (seconds)"),
-	add_parse_req(UINT64, time_max[DBD_ROLLUP_MONTH], "monthly/duration/max", "longest monthly rollup time (seconds)"),
-	add_parse_req(UINT64, time_total[DBD_ROLLUP_HOUR], "hourly/duration/time", "total time spent doing hourly rollups (seconds)"),
-	add_parse_req(UINT64, time_total[DBD_ROLLUP_DAY], "daily/duration/time", "total time spent doing daily rollups (seconds)"),
-	add_parse_req(UINT64, time_total[DBD_ROLLUP_MONTH], "monthly/duration/time", "total time spent doing monthly rollups (seconds)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_HOUR], "hourly/duration/last", "Total time spent doing last daily rollup (seconds)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_DAY], "daily/duration/last", "Total time spent doing daily daily rollup (seconds)"),
+	add_parse_req(UINT64, time_last[DBD_ROLLUP_MONTH], "monthly/duration/last", "Total time spent doing monthly daily rollup (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_HOUR], "hourly/duration/max", "Longest hourly rollup time (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_DAY], "daily/duration/max", "Longest daily rollup time (seconds)"),
+	add_parse_req(UINT64, time_max[DBD_ROLLUP_MONTH], "monthly/duration/max", "Longest monthly rollup time (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_HOUR], "hourly/duration/time", "Total time spent doing hourly rollups (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_DAY], "daily/duration/time", "Total time spent doing daily rollups (seconds)"),
+	add_parse_req(UINT64, time_total[DBD_ROLLUP_MONTH], "monthly/duration/time", "Total time spent doing monthly rollups (seconds)"),
 };
 #undef add_parse_req
 #undef add_skip
@@ -9129,8 +9129,8 @@ static const parser_t PARSER_ARRAY(STATS_MSG_RPC_TYPE)[] = {
 #define add_parse_req_overload(mtype, field, overloads, path, desc) \
 	add_parser(STATS_MSG_RPC_USER_t, mtype, true, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(STATS_MSG_RPC_USER)[] = {
-	add_parse_req_overload(UINT32, id, 1, "user_id", "user id (numeric)"),
-	add_parse_req_overload(USER_ID, id, 1, "user", "user name"),
+	add_parse_req_overload(UINT32, id, 1, "user_id", "User ID (numeric)"),
+	add_parse_req_overload(USER_ID, id, 1, "user", "User name"),
 	add_parse_req(UINT32, count, "count", "Number of RPCs received"),
 	add_parse_req(UINT64, time, "total_time", "Total time spent processing RPC in seconds"),
 	add_parse_req(UINT64_NO_VAL, average_time, "average_time", "Average time spent processing RPC in seconds"),
@@ -9169,7 +9169,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG_RPC_DUMP)[] = {
 #define add_skip(field) \
 	add_parser_skip(job_state_response_job_t, field)
 static const parser_t PARSER_ARRAY(JOB_STATE_RESP_JOB)[] = {
-	add_cparse_req(JOB_STATE_RESP_JOB_JOB_ID, "job_id", "JobId"),
+	add_cparse_req(JOB_STATE_RESP_JOB_JOB_ID, "job_id", "Job ID"),
 	add_skip(job_id),
 	add_skip(array_task_id),
 	add_skip(array_task_id_bitmap),
@@ -9182,7 +9182,7 @@ static const parser_t PARSER_ARRAY(JOB_STATE_RESP_JOB)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_state_query_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_QUERY)[] = {
-	add_parse(SELECTED_STEP_LIST, job_id_list, "job_id", "Search for CSV list of JobIds"),
+	add_parse(SELECTED_STEP_LIST, job_id_list, "job_id", "Search for CSV list of Job IDs"),
 };
 #undef add_parse
 
@@ -9292,8 +9292,8 @@ add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "sta
 	add_parser_deprec(openapi_job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
-	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated Job ID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated Step ID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submission user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_job_post_response_t),
 	add_openapi_response_errors(openapi_job_post_response_t),
@@ -9308,9 +9308,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse(UINT32, resp.job_id, "job_id", "submitted JobId"),
-	add_parse(STEP_ID, resp.step_id, "step_id", "submitted StepID"),
-	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
+	add_parse(UINT32, resp.job_id, "job_id", "Submitted Job ID"),
+	add_parse(STEP_ID, resp.step_id, "step_id", "Submitted Step ID"),
+	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "Job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
@@ -9321,9 +9321,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_job_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_RESP)[] = {
-	add_parse_req(JOB_INFO_MSG_PTR, jobs, "jobs", "list of jobs"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_backfill, "last_backfill", "time of last backfill scheduler run (UNIX timestamp)"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last job change (UNIX timestamp)"),
+	add_parse_req(JOB_INFO_MSG_PTR, jobs, "jobs", "List of jobs"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_backfill, "last_backfill", "Time of last backfill scheduler run (UNIX timestamp)"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last job change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9333,14 +9333,14 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_RESP)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
-	add_parse(CLUSTER_REC_LIST, clusters, "clusters", "clusters"),
-	add_parse(TRES_LIST, tres, "tres", "tres"),
-	add_parse(ACCOUNT_LIST, accounts, "accounts", "accounts"),
-	add_parse(USER_LIST, users, "users", "users"),
-	add_parse(QOS_LIST, qos, "qos", "qos"),
-	add_parse(WCKEY_LIST, wckeys, "wckeys", "wckeys"),
-	add_parse(ASSOC_LIST, associations, "associations", "associations"),
-	add_parse(INSTANCE_LIST, instances, "instances", "instances"),
+	add_parse(CLUSTER_REC_LIST, clusters, "clusters", "Clusters"),
+	add_parse(TRES_LIST, tres, "tres", "TRES"),
+	add_parse(ACCOUNT_LIST, accounts, "accounts", "Accounts"),
+	add_parse(USER_LIST, users, "users", "Users"),
+	add_parse(QOS_LIST, qos, "qos", "QOS"),
+	add_parse(WCKEY_LIST, wckeys, "wckeys", "WCKeys"),
+	add_parse(ASSOC_LIST, associations, "associations", "Associations"),
+	add_parse(INSTANCE_LIST, instances, "instances", "Instances"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9350,8 +9350,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_node_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_NODES_RESP)[] = {
-	add_parse_req(NODES_PTR, nodes, "nodes", "list of nodes"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last node change (UNIX timestamp)"),
+	add_parse_req(NODES_PTR, nodes, "nodes", "List of nodes"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last node change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9361,8 +9361,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_NODES_RESP)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_partitions_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_RESP)[] = {
-	add_parse_req(PARTITION_INFO_MSG_PTR, partitions, "partitions", "list of partitions"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last partition change (UNIX timestamp)"),
+	add_parse_req(PARTITION_INFO_MSG_PTR, partitions, "partitions", "List of partitions"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last partition change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9372,8 +9372,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_RESP)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_reserve_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_RESP)[] = {
-	add_parse_req(RESERVATION_INFO_MSG_PTR, reservations, "reservations", "list of reservations"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last reservation change (UNIX timestamp)"),
+	add_parse_req(RESERVATION_INFO_MSG_PTR, reservations, "reservations", "List of reservations"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last reservation change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9383,8 +9383,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_RESP)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_license_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_LICENSES_RESP)[] = {
-	add_parse_req(LICENSES_PTR, licenses, "licenses", "list of licenses"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
+	add_parse_req(LICENSES_PTR, licenses, "licenses", "List of licenses"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last licenses change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9394,8 +9394,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_LICENSES_RESP)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_job_step_info_msg_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_STEP_INFO_MSG)[] = {
-	add_parse_req(STEP_INFO_MSG_PTR, steps, "steps", "list of steps"),
-	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
+	add_parse_req(STEP_INFO_MSG_PTR, steps, "steps", "List of steps"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "Time of last licenses change (UNIX timestamp)"),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -9437,8 +9437,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_alloc_response_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
-	add_parse(UINT32, job_id, "job_id", "submitted JobId"),
-	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
+	add_parse(UINT32, job_id, "job_id", "Submitted Job ID"),
+	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "Job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
@@ -9755,7 +9755,7 @@ static const parser_t parsers[] = {
 	addpsp(ASSOC_ID_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
-	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
+	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job Step ID"),
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
 	addpsa(KILL_JOBS_RESP_MSG, KILL_JOBS_RESP_JOB, kill_jobs_resp_msg_t, NEED_NONE, "List of jobs signal responses"),
