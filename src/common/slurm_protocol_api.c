@@ -2171,23 +2171,19 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 			   slurmdb_cluster_rec_t *cluster_rec,
 			   char *stepmgr)
 {
-	slurm_msg_t resp_msg;
-	reroute_msg_t reroute_msg = {0};
+	int rc;
+	reroute_msg_t reroute_msg = {
+		.working_cluster_rec = cluster_rec,
+		.stepmgr = stepmgr,
+	};
 
-	if (msg->conn_fd < 0) {
-		slurm_seterrno(ENOTCONN);
+	if ((rc = send_msg_response(msg, RESPONSE_SLURM_REROUTE_MSG,
+				    &reroute_msg))) {
+		errno = rc;
 		return SLURM_ERROR;
 	}
 
-	/* Don't free the cluster_rec, it's pointing to the actual object. */
-	reroute_msg.working_cluster_rec = cluster_rec;
-	reroute_msg.stepmgr = stepmgr;
-
-	response_init(&resp_msg, msg, RESPONSE_SLURM_REROUTE_MSG,
-			&reroute_msg);
-
-	/* send message */
-	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	return SLURM_SUCCESS;
 }
 
 /*
