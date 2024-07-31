@@ -8097,6 +8097,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 	uint32_t uint32_tmp = 0;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
+	dynamic_plugin_data_t *tmp_switch = NULL;
 
 	xassert(msg_ptr);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
@@ -8216,12 +8217,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_jobinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&tmp_switch, buffer,
 					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_jobinfo(tmp_switch);
 			goto unpack_error;
 		}
+		switch_g_free_jobinfo(tmp_switch);
 		msg->options = job_options_create();
 		if (job_options_unpack(msg->options, buffer) < 0) {
 			error("Unable to unpack extra job options: %m");
@@ -8363,12 +8365,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_jobinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&tmp_switch, buffer,
 					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_jobinfo(tmp_switch);
 			goto unpack_error;
 		}
+		switch_g_free_jobinfo(tmp_switch);
 		msg->options = job_options_create();
 		if (job_options_unpack(msg->options, buffer) < 0) {
 			error("Unable to unpack extra job options: %m");
@@ -8510,12 +8513,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_jobinfo(&msg->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&tmp_switch, buffer,
 					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
-			switch_g_free_jobinfo(msg->switch_job);
+			switch_g_free_jobinfo(tmp_switch);
 			goto unpack_error;
 		}
+		switch_g_free_jobinfo(tmp_switch);
 		msg->options = job_options_create();
 		if (job_options_unpack(msg->options, buffer) < 0) {
 			error("Unable to unpack extra job options: %m");
