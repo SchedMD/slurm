@@ -304,6 +304,7 @@ typedef struct {
 
 	List def_qos_id_list;   /* list of char * */
 
+	uint32_t flags;         /* Query flags */
 	List format_list; 	/* list of char * */
 	List id_list;		/* list of char */
 

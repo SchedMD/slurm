@@ -73,6 +73,8 @@ hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond)
     FETCH_FIELD(hv, assoc_cond, without_parent_info,   uint16_t, FALSE);
     FETCH_FIELD(hv, assoc_cond, without_parent_limits, uint16_t, FALSE);
 
+    FETCH_FIELD(hv, assoc_cond, flags, uint32_t, FALSE);
+
     FETCH_LIST_FIELD(hv, assoc_cond, acct_list);
     FETCH_LIST_FIELD(hv, assoc_cond, cluster_list);
     FETCH_LIST_FIELD(hv, assoc_cond, def_qos_id_list);

@@ -3611,6 +3611,8 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 
+		pack32(object->flags, buffer);
+
 		slurm_pack_list(object->format_list,
 				packstr_func,
 				buffer, protocol_version);
@@ -3769,6 +3771,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 				      buffer, protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
+
+		safe_unpack32(&object_ptr->flags, buffer);
 
 		if (slurm_unpack_list(&object_ptr->format_list,
 				      safe_unpackstr_func,
