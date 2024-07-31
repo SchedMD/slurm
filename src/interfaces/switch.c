@@ -88,6 +88,8 @@ typedef struct slurm_switch_ops {
 	void         (*job_start)         ( job_record_t *job_ptr );
 	void         (*job_complete)      ( job_record_t *job_ptr );
 	int          (*fs_init)           ( stepd_step_rec_t *step );
+	void         (*extern_stepinfo)   ( switch_stepinfo_t **stepinfo,
+					    job_record_t *job_ptr );
 } slurm_switch_ops_t;
 
 /*
@@ -113,6 +115,7 @@ static const char *syms[] = {
 	"switch_p_job_start",
 	"switch_p_job_complete",
 	"switch_p_fs_init",
+	"switch_p_extern_stepinfo",
 };
 
 static slurm_switch_ops_t  *ops            = NULL;
@@ -575,4 +578,23 @@ extern int switch_g_fs_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].fs_init))(step);
+}
+
+extern void switch_g_extern_stepinfo(void **stepinfo, job_record_t *job_ptr)
+{
+	switch_stepinfo_t *tmp = NULL;
+	dynamic_plugin_data_t *dest_ptr = NULL;
+
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return;
+
+	(*(ops[switch_context_default].extern_stepinfo))(&tmp, job_ptr);
+
+	if (tmp) {
+		dest_ptr = _create_dynamic_plugin_data(switch_context_default);
+		dest_ptr->data = tmp;
+		*stepinfo = dest_ptr;
+	}
 }
