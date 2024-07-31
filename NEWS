@@ -81,6 +81,7 @@ documents those changes that are of interest to users and administrators.
     slurmctld.
  -- switch/hpe_slingshot - Fix security issue around managing VNI access.
  -- switch/nvidia_imex - Fix security issue managing IMEX channel access.
+ -- switch/nvidia_imex - Allow for compatibility with job_container/tmpfs.
 
 * Changes in Slurm 24.05.1
 ==========================
