@@ -2040,6 +2040,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/**********************************************************************\
+ * simplified communication routines
+ * They open a connection do work then close the connection all within
+ * the function
+\**********************************************************************/
+
 extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 			  uint16_t msg_type, void *data)
 {
@@ -2081,12 +2087,6 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	 */
 	resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
-
-/**********************************************************************\
- * simplified communication routines
- * They open a connection do work then close the connection all within
- * the function
-\**********************************************************************/
 
 /* slurm_send_rc_msg
  * given the original request message this function sends a
