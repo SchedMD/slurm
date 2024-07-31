@@ -870,6 +870,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix rare deadlock when a dynamic node registers at the same time that a
     once per minute background task occurs.
  -- Fix assertion in developer mode on a failed message unpack.
+ -- switch/hpe_slingshot - Fix security issue around managing VNI access.
 
 * Changes in Slurm 23.02.7
 ==========================
