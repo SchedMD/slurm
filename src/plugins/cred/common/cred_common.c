@@ -46,6 +46,81 @@
 
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/switch.h"
+
+/*
+ * This is a way to avoid breaking RPC compatibility, while allowing an
+ * additional field to be sent. This works by hiding the extra field within
+ * an existing string field behind a trailing NUL.
+ * Two caveats:
+ * - If a NULL pointer was previously sent, it would now be received as instead.
+ * - If the receiving side verifies the string length it will see the full
+ *   payload length, which is no longer equal to the strlen().
+ */
+#define safe_unpackstr_and_switch(valp, switch, buf, proto) 	\
+do {								\
+	xassert(buf->magic == BUF_MAGIC);			\
+	if (_unpackstr_and_switch(valp, switch, buf, proto))	\
+		goto unpack_error;				\
+} while (0)
+
+static void _packstr_and_switch(char *string, void *switch_step, buf_t *buffer,
+				uint16_t protocol_version)
+{
+	uint32_t start = 0, end = 0;
+
+	if (!switch_step) {
+		packstr(string, buffer);
+		return;
+	}
+
+	if (!string)
+		string = "";
+
+	start = get_buf_offset(buffer);
+	packstr(string, buffer);
+	switch_g_pack_jobinfo(switch_step, buffer, protocol_version);
+	pack8(0, buffer); /* ensure trailing NUL */
+	end = get_buf_offset(buffer);
+	set_buf_offset(buffer, start);
+	pack32(end - start - 4, buffer);
+	set_buf_offset(buffer, end);
+}
+
+static int _unpackstr_and_switch(char **string, void **switch_step,
+				 buf_t *buffer, uint16_t protocol_version)
+{
+	uint32_t start = 0;
+	uint32_t len = 0, string_len = 0;
+
+	start = get_buf_offset(buffer);
+	safe_unpackstr_xmalloc(string, &len, buffer);
+
+	if (!*string)
+		return SLURM_SUCCESS;
+
+	string_len = strlen(*string) + 1;
+
+	if (len > string_len) {
+		dynamic_plugin_data_t *switch_tmp = NULL;
+		/* Second hidden field */
+		uint32_t end = get_buf_offset(buffer);
+		set_buf_offset(buffer, start + string_len + 4);
+		if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+					     protocol_version)) {
+			error("switch_g_unpack_jobinfo: %m");
+			switch_g_free_jobinfo(switch_tmp);
+			goto unpack_error;
+		}
+		*switch_step = switch_tmp;
+		set_buf_offset(buffer, end);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
 
 extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				 uint16_t protocol_version)
@@ -81,7 +156,8 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		pack_time(cred->job_end_time, buffer);
 		packstr(cred->job_extra, buffer);
 		pack16(cred->job_oversubscribe, buffer);
-		packstr(cred->job_partition, buffer);
+		_packstr_and_switch(cred->job_partition, cred->switch_step,
+				    buffer, protocol_version);
 		packstr(cred->job_reservation, buffer);
 		pack16(cred->job_restart_cnt, buffer);
 		pack_time(cred->job_start_time, buffer);
@@ -158,7 +234,8 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		pack_time(cred->job_end_time, buffer);
 		packstr(cred->job_extra, buffer);
 		pack16(cred->job_oversubscribe, buffer);
-		packstr(cred->job_partition, buffer);
+		_packstr_and_switch(cred->job_partition, cred->switch_step,
+				    buffer, protocol_version);
 		packstr(cred->job_reservation, buffer);
 		pack16(cred->job_restart_cnt, buffer);
 		pack_time(cred->job_start_time, buffer);
@@ -335,7 +412,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpack_time(&cred_arg->job_end_time, buffer);
 		safe_unpackstr(&cred_arg->job_extra, buffer);
 		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
-		safe_unpackstr(&cred_arg->job_partition, buffer);
+		safe_unpackstr_and_switch(&cred_arg->job_partition,
+					  &cred_arg->switch_step, buffer,
+					  protocol_version);
 		safe_unpackstr(&cred_arg->job_reservation, buffer);
 		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
 		safe_unpack_time(&cred_arg->job_start_time, buffer);
@@ -433,7 +512,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpack_time(&cred_arg->job_end_time, buffer);
 		safe_unpackstr(&cred_arg->job_extra, buffer);
 		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
-		safe_unpackstr(&cred_arg->job_partition, buffer);
+		safe_unpackstr_and_switch(&cred_arg->job_partition,
+					  &cred_arg->switch_step, buffer,
+					  protocol_version);
 		safe_unpackstr(&cred_arg->job_reservation, buffer);
 		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
 		safe_unpack_time(&cred_arg->job_start_time, buffer);
