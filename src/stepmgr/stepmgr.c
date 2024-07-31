@@ -5222,7 +5222,6 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 	char *err_msg = NULL;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	slurm_msg_t resp;
 	step_record_t *step_rec;
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg = msg->data;
@@ -5364,11 +5363,16 @@ end_it:
 
 		if (lock_func)
 			lock_func(false);
-		response_init(&resp, msg, RESPONSE_JOB_STEP_CREATE,
-			      &job_step_resp);
-		resp.protocol_version = step_rec->start_protocol_ver;
 
-		if (slurm_send_node_msg(msg->conn_fd, &resp) < 0) {
+		if (msg->protocol_version != step_rec->start_protocol_ver) {
+			log_flag(NET, "%s: responding with non-matching msg 0x%x to step 0x%x protocol version",
+				 __func__, msg->protocol_version,
+				 step_rec->start_protocol_ver);
+			msg->protocol_version = step_rec->start_protocol_ver;
+		}
+
+		if (send_msg_response(msg, RESPONSE_JOB_STEP_CREATE,
+				      &job_step_resp)) {
 			step_complete_msg_t req;
 
 			memset(&req, 0, sizeof(req));
