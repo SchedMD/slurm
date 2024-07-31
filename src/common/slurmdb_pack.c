@@ -3592,7 +3592,88 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_assoc_cond_t *object = (slurmdb_assoc_cond_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
+		}
+
+		slurm_pack_list(object->acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->def_qos_id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		pack16(object->only_defs, buffer);
+
+		slurm_pack_list(object->partition_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->parent_acct_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->qos_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		pack_time(object->usage_end, buffer);
+		pack_time(object->usage_start, buffer);
+
+		slurm_pack_list(object->user_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		pack16(object->with_usage, buffer);
+		pack16(object->with_deleted, buffer);
+		pack16(object->with_raw_qos, buffer);
+		pack16(object->with_sub_accts, buffer);
+		pack16(object->without_parent_info, buffer);
+		pack16(object->without_parent_limits, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -3686,7 +3767,85 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&object_ptr->acct_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->cluster_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->def_qos_id_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->format_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		if (object_ptr->format_list &&
+		    !list_count(object_ptr->format_list))
+			FREE_NULL_LIST(object_ptr->format_list);
+
+		if (slurm_unpack_list(&object_ptr->id_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->only_defs, buffer);
+
+		if (slurm_unpack_list(&object_ptr->partition_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->parent_acct_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->qos_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack_time(&object_ptr->usage_end, buffer);
+		safe_unpack_time(&object_ptr->usage_start, buffer);
+
+		if (slurm_unpack_list(&object_ptr->user_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->with_usage, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_raw_qos, buffer);
+		safe_unpack16(&object_ptr->with_sub_accts, buffer);
+		safe_unpack16(&object_ptr->without_parent_info, buffer);
+		safe_unpack16(&object_ptr->without_parent_limits, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&object_ptr->acct_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
