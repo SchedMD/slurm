@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.05.3
+==========================
+
 * Changes in Slurm 24.05.2
 ==========================
  -- Fix energy gathering rpc counter underflow in _rpc_acct_gather_energy when
