@@ -2147,20 +2147,17 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
  */
 int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 {
-	slurm_msg_t resp_msg;
-	return_code2_msg_t rc_msg;
+	return_code2_msg_t rc_msg = {
+		.return_code = rc,
+		.err_msg = err_msg,
+	};
 
-	if (msg->conn_fd < 0) {
-		slurm_seterrno(ENOTCONN);
+	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC_MSG, &rc_msg))) {
+		errno = rc;
 		return SLURM_ERROR;
 	}
-	rc_msg.return_code = rc;
-	rc_msg.err_msg     = err_msg;
 
-	response_init(&resp_msg, msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
-
-	/* send message */
-	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	return SLURM_SUCCESS;
 }
 
 /*
