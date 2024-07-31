@@ -52,6 +52,11 @@ static void _topo_add_dist(uint32_t *dist, int inx)
 	}
 }
 
+/*
+ * returns 1 if switch "i" is better fit
+ * returns -1 if switch "j" is better fit
+ * returns 0 if there is no better fit
+ */
 static int _topo_compare_switches(int i, int j, int rem_nodes,
 				  int *switch_node_cnt, int rem_cpus,
 				  uint32_t *switch_cpu_cnt)
