@@ -7105,8 +7105,11 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(UINT32, grace_time, "limits/grace_time", NULL),
 	add_parse(UINT32_NO_VAL, grp_jobs_accrue, "limits/max/active_jobs/accruing", NULL),
 	add_parse(UINT32_NO_VAL, grp_jobs, "limits/max/active_jobs/count", NULL),
+	add_parse(UINT32_NO_VAL, grp_submit_jobs, "limits/max/jobs/count", "Maximum number of jobs which can be in a pending or running state at any time in aggregate for this association and all associations which are children of this association."),
 	add_parse(TRES_STR, grp_tres, "limits/max/tres/total", NULL),
 	add_skip(grp_tres_ctld), /* not packed */
+	add_parse(TRES_STR, grp_tres_mins, "limits/max/tres/minutes/total", "The total number of TRES minutes that can possibly be used by past, present and future jobs running from this association and its children."),
+	add_skip(grp_tres_mins_ctld), /* not packed */
 	add_parse(TRES_STR, grp_tres_run_mins, "limits/max/tres/minutes/per/qos", NULL),
 	add_skip(grp_tres_run_mins_ctld), /* not packed */
 	add_parse(STRING, name, "name", NULL),
@@ -7140,6 +7143,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode", NULL),
 	add_parse(UINT32_NO_VAL, preempt_exempt_time, "preempt/exempt_time", NULL),
 	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
+	add_skip(relative_tres_cnt),
 	add_skip(usage), /* not packed */
 	add_parse(FLOAT64_NO_VAL, usage_factor, "usage_factor", NULL),
 	add_parse(FLOAT64_NO_VAL, usage_thres, "usage_threshold", NULL),
