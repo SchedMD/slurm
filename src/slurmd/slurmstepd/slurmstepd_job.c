@@ -61,6 +61,7 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/switch.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -247,6 +248,10 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	}
 	step->alias_list = xstrdup(cred_arg->job_alias_list);
 	step->node_list = xstrdup(cred_arg->job_hostlist);
+
+	if (cred_arg->switch_step)
+		switch_g_duplicate_stepinfo(cred_arg->switch_step,
+					    &step->switch_step);
 
 	slurm_cred_unlock_args(cred);
 }

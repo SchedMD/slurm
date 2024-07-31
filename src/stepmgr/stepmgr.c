@@ -5096,6 +5096,8 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 					    &cred_arg.step_mem_alloc_size);
 	}
 
+	cred_arg.switch_step = step_ptr->switch_step;
+
 	*slurm_cred = slurm_cred_create(&cred_arg, true, protocol_version);
 
 	xfree(cred_arg.job_mem_alloc);
