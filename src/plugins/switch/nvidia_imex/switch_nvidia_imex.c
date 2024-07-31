@@ -340,5 +340,22 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
+	if (step->switch_step && step->switch_step->data) {
+		switch_info_t *switch_info = step->switch_step->data;
+		if (switch_info->channel != NO_VAL)
+			return setup_imex_channel(switch_info->channel, false);
+	}
+
 	return SLURM_SUCCESS;
+}
+
+extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
+				     job_record_t *job_ptr)
+{
+	if (job_ptr->switch_jobinfo) {
+                switch_info_t *jobinfo = job_ptr->switch_jobinfo;
+                *stepinfo = _create_info(jobinfo->channel);
+                log_flag(SWITCH, "using channel %u for %pJ",
+                         jobinfo->channel, job_ptr);
+	}
 }

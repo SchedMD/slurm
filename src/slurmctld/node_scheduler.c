@@ -3363,8 +3363,11 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
 
+	switch_g_extern_stepinfo(&cred_arg.switch_step, job_ptr);
+
 	prolog_msg_ptr->cred = slurm_cred_create(&cred_arg, false,
 						 protocol_version);
+	switch_g_free_stepinfo(cred_arg.switch_step);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
 
