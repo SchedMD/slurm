@@ -264,15 +264,6 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 		step_req->num_tasks,
 		0);
 
-	if (switch_g_alloc_jobinfo(&step_resp->switch_job,
-				   step_req->step_id.job_id,
-				   step_resp->job_step_id) < 0)
-		fatal("switch_g_alloc_jobinfo: %m");
-	if (switch_g_build_jobinfo(step_resp->switch_job,
-				   step_resp->step_layout,
-				   NULL) < 0)
-		fatal("switch_g_build_jobinfo: %m");
-
 	step_resp->job_step_id = step_id;
 
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
