@@ -289,6 +289,9 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 	if (*max_tasks_this_node == 0)
 		return;
 
+	if (mc_ptr->threads_per_core)
+		cpus_per_core = MIN(cpus_per_core, mc_ptr->threads_per_core);
+
 	xassert(avail_core);
 	avail_cores_per_sock = xcalloc(sockets, sizeof(uint16_t));
 	for (int s = 0; s < sockets; s++) {
