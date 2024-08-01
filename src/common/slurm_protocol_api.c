@@ -79,6 +79,8 @@
 #include "src/interfaces/hash.h"
 #include "src/interfaces/topology.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/slurmdbd/read_config.h"
 
 typedef struct {
@@ -2096,10 +2098,23 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	int rc;
 	slurm_msg_t resp_msg;
 
-	if ((source_msg->conn_fd < 0) && !source_msg->conn)
+	if ((source_msg->conn_fd < 0) && !source_msg->conn &&
+	    !source_msg->conmgr_fd)
 		return ENOTCONN;
 
 	response_init(&resp_msg, source_msg, msg_type, data);
+
+	if (source_msg->conmgr_fd) {
+		rc = conmgr_queue_write_msg(source_msg->conmgr_fd, &resp_msg);
+
+		if (rc)
+			log_flag(NET, "%s: [%s] write response RPC %s failure: %s",
+				 __func__,
+				 conmgr_fd_get_name(source_msg->conmgr_fd),
+				 rpc_num2string(msg_type), slurm_strerror(rc));
+
+		return rc;
+	}
 
 	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
