@@ -4276,6 +4276,9 @@ no_aggregate:
 	if (max_rc)
 		*max_rc = step_ptr->exit_code;
 
+	if (req->step_rc == ESLURMD_EXECVE_FAILED)
+		step_ptr->state = JOB_NODE_FAIL;
+
 	/* The step has finished, finish it completely */
 	if (!*rem && finish) {
 		(void) _finish_step_comp(step_ptr, NULL);

@@ -278,6 +278,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve performance for _will_run_test().
  -- Add SchedulerParameters=bf_topopt_enable option to enable experimental hook
     to control backfill.
+ -- If a step fails to launch under certain conditions, set the step's state
+    to NODE_FAIL.
 
 * Changes in Slurm 24.05.5
 ==========================
