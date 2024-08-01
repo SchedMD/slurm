@@ -917,6 +917,14 @@ static bool _opt_verify(void)
 			opt.nodes_set = false;
 	}
 
+	/*
+	 * Specifying --gpus should override SLURM_GPUS_PER_NODE env if present
+	 * in step request.
+	 */
+	if (slurm_option_set_by_env(&opt, LONG_OPT_GPUS_PER_NODE) &&
+	    slurm_option_set_by_cli(&opt, 'G') && getenv("SLURM_JOB_ID"))
+		slurm_option_reset(&opt, "gpus-per-node");
+
 	validate_options_salloc_sbatch_srun(&opt);
 
 	/*
