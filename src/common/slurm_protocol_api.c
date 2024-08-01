@@ -2258,6 +2258,10 @@ tryagain:
 			break;
 		}
 
+		if (comm_cluster_rec)
+			request_msg->protocol_version =
+				comm_cluster_rec->rpc_version;
+
 		rc = _send_and_recv_msg(fd, request_msg, response_msg, 0);
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
