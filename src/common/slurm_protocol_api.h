@@ -514,14 +514,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 /* DO NOT USE THIS. See comment in slurm_protocol_api.c for further info. */
 extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
 
-/*
- * slurm_send_msg_maybe
- * opens a connection, sends a message across while ignoring any errors,
- * then closes the connection
- * IN request_msg	- slurm_msg request
- */
-extern void slurm_send_msg_maybe(slurm_msg_t *request_msg);
-
 /* Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
  * IN fd	- file descriptor to receive msg on

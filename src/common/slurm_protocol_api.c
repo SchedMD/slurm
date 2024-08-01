@@ -2610,27 +2610,6 @@ again:
 }
 
 /*
- * Open a connection to the "address" specified in the slurm msg `req'
- * Then, immediately close the connection w/out waiting for a reply.
- * Ignore any errors. This should only be used when you do not care if
- * the message is ever received.
- */
-void slurm_send_msg_maybe(slurm_msg_t *req)
-{
-	int fd = -1;
-
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
-			 __func__, &req->address);
-		return;
-	}
-
-	(void) slurm_send_node_msg(fd, req);
-
-	(void) close(fd);
-}
-
-/*
  *  Send a message to the nodelist specificed using fanout
  *    Then return List containing type (ret_data_info_t).
  * IN nodelist	  - list of nodes to send to.
