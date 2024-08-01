@@ -7286,13 +7286,13 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_parse(UINT32, gettimeofday_latency, "gettimeofday_latency", "Latency of 1000 calls to the gettimeofday() syscall in microseconds, as measured at controller startup"),
 	add_parse(UINT32, schedule_cycle_max, "schedule_cycle_max", "Max time of any scheduling cycle in microseconds since last reset"),
 	add_parse(UINT32, schedule_cycle_last, "schedule_cycle_last", "Time in microseconds for last scheduling cycle"),
-	add_parse(UINT32, schedule_cycle_sum, "schedule_cycle_sum", NULL),
-	add_parse(UINT32, schedule_cycle_counter, "schedule_cycle_total", "Total run time in microseconds for all scheduling cycles since last reset"),
+	add_parse(UINT32, schedule_cycle_sum, "schedule_cycle_sum", "Total run time in microseconds for all scheduling cycles since last reset"),
+	add_parse(UINT32, schedule_cycle_counter, "schedule_cycle_total", "Number of scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN, "schedule_cycle_mean", "Mean time in microseconds for all scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN_DEPTH, "schedule_cycle_mean_depth", "Mean of the number of jobs processed in a scheduling cycle"),
 	add_cparse(STATS_MSG_CYCLE_PER_MIN, "schedule_cycle_per_minute", "Number of scheduling executions per minute"),
-	add_parse(UINT32, schedule_cycle_depth, "schedule_cycle_depth", NULL),
-	add_cparse(STATS_MSG_SCHEDULE_EXIT, "schedule_exit", NULL),
+	add_parse(UINT32, schedule_cycle_depth, "schedule_cycle_depth", "Total number of jobs processed in scheduling cycles"),
+	add_cparse(STATS_MSG_SCHEDULE_EXIT, "schedule_exit", "Reasons for which the scheduling cycle exited since last reset"),
 	add_skip(schedule_exit), /* handled by STATS_MSG_SCHEDULE_EXIT */
 	add_skip(schedule_exit_cnt), /* handled by STATS_MSG_SCHEDULE_EXIT */
 	add_parse(UINT32, schedule_queue_len, "schedule_queue_length", "Number of jobs pending in queue"),
@@ -7313,8 +7313,8 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_BF_DEPTH_MEAN_TRY, "bf_depth_mean_try", "The subset of Depth Mean that the backfill scheduler attempted to schedule"),
 	add_parse(UINT64, bf_cycle_sum, "bf_cycle_sum", "Total time in microseconds of backfilling scheduling cycles since last reset"),
 	add_parse(UINT32, bf_cycle_last, "bf_cycle_last", "Execution time in microseconds of last backfill scheduling cycle"),
-	add_parse(UINT32, bf_cycle_max, "bf_cycle_max", NULL),
-	add_cparse(STATS_MSG_BF_EXIT, "bf_exit", NULL),
+	add_parse(UINT32, bf_cycle_max, "bf_cycle_max", "Execution time in microseconds of longest backfill scheduling cycle"),
+	add_cparse(STATS_MSG_BF_EXIT, "bf_exit", "Reasons for which the backfill scheduling cycle exited since last reset"),
 	add_skip(bf_exit), /* handled by STATS_MSG_BF_EXIT */
 	add_parse(UINT32, bf_last_depth, "bf_last_depth", "Number of processed jobs during last backfilling scheduling cycle"),
 	add_parse(UINT32, bf_last_depth_try, "bf_last_depth_try", "Number of processed jobs during last backfilling scheduling cycle that had a chance to start using available resources"),
@@ -7324,7 +7324,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_BF_QUEUE_LEN_MEAN, "bf_queue_len_mean", "Mean number of jobs pending to be processed by backfilling algorithm"),
 	add_parse(UINT32, bf_queue_len_sum, "bf_queue_len_sum", "Total number of jobs pending to be processed by backfilling algorithm since last reset"),
 	add_parse(UINT32, bf_table_size, "bf_table_size", "Number of different time slots tested by the backfill scheduler in its last iteration"),
-	add_parse(UINT32, bf_table_size_sum, "bf_table_size_sum", NULL),
+	add_parse(UINT32, bf_table_size_sum, "bf_table_size_sum", "Total number of different time slots tested by the backfill scheduler"),
 	add_cparse(STATS_MSG_BF_QUEUE_LEN_MEAN, "bf_table_size_mean", "Mean number of different time slots tested by the backfill scheduler"),
 	add_parse(TIMESTAMP_NO_VAL, bf_when_last_cycle, "bf_when_last_cycle", "When the last backfill scheduling cycle happened (UNIX timestamp)"),
 	add_cparse(STATS_MSG_BF_ACTIVE, "bf_active", "Backfill scheduler currently running"),
@@ -7355,24 +7355,24 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(bf_exit_fields_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(BF_EXIT_FIELDS)[] = {
-	add_parse(UINT32, end_job_queue, "end_job_queue", NULL),
-	add_parse(UINT32, bf_max_job_start, "bf_max_job_start", NULL),
-	add_parse(UINT32, bf_max_job_test, "bf_max_job_test", NULL),
-	add_parse(UINT32, bf_max_time, "bf_max_time", NULL),
-	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", NULL),
-	add_parse(UINT32, state_changed, "state_changed", NULL),
+	add_parse(UINT32, end_job_queue, "end_job_queue", "Reached end of queue"),
+	add_parse(UINT32, bf_max_job_start, "bf_max_job_start", "Reached number of jobs allowed to start"),
+	add_parse(UINT32, bf_max_job_test, "bf_max_job_test", "Reached number of jobs allowed to be tested"),
+	add_parse(UINT32, bf_max_time, "bf_max_time", "Reached maximum allowed scheduler time"),
+	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", "Reached table size limit"),
+	add_parse(UINT32, state_changed, "state_changed", "System state changed"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(schedule_exit_fields_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SCHEDULE_EXIT_FIELDS)[] = {
-	add_parse(UINT32, end_job_queue, "end_job_queue", NULL),
-	add_parse(UINT32, default_queue_depth, "default_queue_depth", NULL),
-	add_parse(UINT32, max_job_start, "max_job_start", NULL),
-	add_parse(UINT32, max_rpc_cnt, "max_rpc_cnt", NULL),
-	add_parse(UINT32, max_sched_time, "max_sched_time", NULL),
-	add_parse(UINT32, licenses, "licenses", NULL),
+	add_parse(UINT32, end_job_queue, "end_job_queue", "Reached end of queue"),
+	add_parse(UINT32, default_queue_depth, "default_queue_depth", "Reached number of jobs allowed to be tested"),
+	add_parse(UINT32, max_job_start, "max_job_start", "Reached number of jobs allowed to start"),
+	add_parse(UINT32, max_rpc_cnt, "max_rpc_cnt", "Reached RPC limit"),
+	add_parse(UINT32, max_sched_time, "max_sched_time", "Reached maximum allowed scheduler time"),
+	add_parse(UINT32, licenses, "licenses", "Blocked on licenses"),
 };
 #undef add_parse
 
