@@ -72,7 +72,8 @@ slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
-bool node_tres = false;
+
+static bool node_tres = false;
 
 static char *	_build_cluster_string(void);
 static void	_build_tres_list(void);
