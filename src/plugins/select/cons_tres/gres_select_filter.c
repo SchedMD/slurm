@@ -959,6 +959,9 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 			tres_mc_ptr->cpus_per_task;
 	}
 	if (cpus_per_gres) {
+		if (tres_mc_ptr->threads_per_core)
+			cpus_per_core = MIN(cpus_per_core,
+					    tres_mc_ptr->threads_per_core);
 		max_gres = MIN(max_gres,
 			       ((total_cores * cpus_per_core) /
 				cpus_per_gres));
