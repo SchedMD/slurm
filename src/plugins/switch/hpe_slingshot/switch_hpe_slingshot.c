@@ -1158,7 +1158,7 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
+extern void switch_p_extern_stepinfo(switch_stepinfo_t **stepinfo,
 				     job_record_t *job_ptr)
 {
 	/* not supported */
