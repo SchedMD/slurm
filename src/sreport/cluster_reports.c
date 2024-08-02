@@ -58,6 +58,8 @@ enum {
 	PRINT_CLUSTER_WCKEY,
 	PRINT_CLUSTER_ENERGY,
 	PRINT_CLUSTER_TRES_NAME,
+	PRINT_CLUSTER_QOS,
+	PRINT_CLUSTER_QOS_ID,
 };
 
 static List print_fields_list = NULL; /* types are of print_field_t */
@@ -479,6 +481,18 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
 			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("QOS", object,
+					 MAX(command_len, 1))) {
+			field->type = PRINT_CLUSTER_QOS;
+			field->name = xstrdup("QOS");
+			field->len = 12;
+			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("QOSID", object,
+					 MAX(command_len, 4))) {
+			field->type = PRINT_CLUSTER_QOS_ID;
+			field->name = xstrdup("QOS ID");
+			field->len = 8;
+			field->print_routine = print_fields_uint32;
 		} else if (!xstrncasecmp("reported", object,
 					 MAX(command_len, 3))) {
 			field->type = PRINT_CLUSTER_TRES_REPORTED;
@@ -730,6 +744,21 @@ static void _cluster_account_by_user_tres_report(
 		case PRINT_CLUSTER_NAME:
 			field->print_routine(field,
 					     slurmdb_report_cluster->name,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS:
+			common_get_qos_list();
+
+			tmp_char = slurmdb_qos_str(
+				g_qos_list,
+				slurmdb_report_assoc->id_alt);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS_ID:
+			field->print_routine(field,
+					     &slurmdb_report_assoc->id_alt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER_USER_LOGIN:
@@ -1694,6 +1723,21 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 					tmp_char = pwd->pw_gecos;
 			}
 			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS:
+			common_get_qos_list();
+
+			tmp_char = slurmdb_qos_str(
+				g_qos_list,
+				slurmdb_report_assoc->id_alt);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS_ID:
+			field->print_routine(field,
+					     &slurmdb_report_assoc->id_alt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER_AMOUNT_USED:
