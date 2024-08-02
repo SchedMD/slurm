@@ -376,6 +376,12 @@ extern int add_connection(conmgr_con_type_t type,
 		return SLURM_ERROR;
 	}
 
+	if (!has_in && !has_out) {
+		log_flag(CONMGR, "%s: refusing connection without input or output fd",
+			 __func__);
+		return SLURM_ERROR;
+	}
+
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
 		    (has_out && S_ISSOCK(out_stat.st_mode));
 
