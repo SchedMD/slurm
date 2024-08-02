@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - Added field descriptions
  -- slurmrestd - Avoid creating new slurmdbd connection per request to
     '* /slurm/slurmctld/*/*' endpoints.
+ -- Fix compilation issue with switch/hpe_slingshot plugin.
 
 * Changes in Slurm 24.05.2
 ==========================
