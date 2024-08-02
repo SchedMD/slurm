@@ -1792,6 +1792,45 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					r_usage->local_assocs);
 				while ((assoc = list_next(tmp_itr))) {
 					uint32_t associd = slurm_atoul(assoc);
+					slurmdb_assoc_rec_t assoc_rec = {
+						.cluster = cluster_name,
+						.id = associd,
+					};
+					slurmdb_assoc_rec_t *assoc_ptr = NULL;
+					slurmdb_qos_rec_t qos_rec = { 0 };
+					local_id_usage_t id_usage = {
+						.id = associd,
+					};
+					/*
+					 * Figure out the closest to correct QOS
+					 */
+					(void) assoc_mgr_fill_in_assoc(
+						mysql_conn,
+						&assoc_rec,
+						ACCOUNTING_ENFORCE_ASSOCS,
+						&assoc_ptr, false);
+					assoc_mgr_get_default_qos_info(
+						assoc_ptr, &qos_rec);
+					if (!qos_rec.id)
+						assoc_mgr_fill_in_qos(
+							mysql_conn, &qos_rec,
+							ACCOUNTING_ENFORCE_QOS,
+							NULL, false);
+					id_usage.id_alt = qos_rec.id;
+
+					if (id_usage.id_alt) {
+						q_usage = _check_q_usage(
+							qos_usage_list, q_usage,
+							&id_usage);
+
+						_add_time_tres(
+							q_usage->loc_tres,
+							TIME_ALLOC,
+							loc_tres->id,
+							resv_unused_secs,
+							0);
+					}
+
 					if ((last_id != associd) &&
 					    !(a_usage = list_find_first(
 						      assoc_usage_list,
