@@ -264,8 +264,8 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			 * If driver false reports POLLIN but then does not
 			 * provide any output: try poll() again.
 			 */
-			log_flag(NET, "send() sent zero bytes out of %d/%zu",
-				 tot_bytes_sent, size);
+			log_flag(NET, "%s: [fd:%d] writev() sent zero bytes out of %d/%zu",
+				 __func__, fd, tot_bytes_sent, size);
 			continue;
 		}
 
