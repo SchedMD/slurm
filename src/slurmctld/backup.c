@@ -75,8 +75,6 @@
 #define _DEBUG		0
 #define SHUTDOWN_WAIT	2	/* Time to wait for primary server shutdown */
 
-static int          _background_process_msg(slurm_msg_t * msg);
-static void *       _background_rpc_mgr(void *no_data);
 static void         _backup_reconfig(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
@@ -148,12 +146,6 @@ void run_backup(void)
 	slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 	slurm_cond_broadcast(&slurmctld_config.backup_finish_cond);
 	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
-
-	/*
-	 * create attached thread to process RPCs
-	 */
-	slurm_thread_create(&slurmctld_config.thread_id_rpc,
-			    _background_rpc_mgr, NULL);
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
@@ -280,7 +272,6 @@ void run_backup(void)
 	trigger_backup_ctld_as_ctrl();
 
 	pthread_kill(pthread_self(), SIGTERM);
-	slurm_thread_join(slurmctld_config.thread_id_rpc);
 
 	/*
 	 * Expressly shutdown the agent. The agent can in whole or in part
@@ -344,81 +335,29 @@ void run_backup(void)
 	unlock_slurmctld(config_write_lock);
 }
 
-/*
- * _background_rpc_mgr - Read and process incoming RPCs to the background
- *	controller (that's us)
- */
-static void *_background_rpc_mgr(void *no_data)
+extern void *on_backup_connection(conmgr_fd_t *con, void *arg)
 {
-	int newsockfd;
-	int fd_next = 0, i;
-	slurm_addr_t cli_addr;
-	slurm_msg_t msg;
+	debug3("%s: [%s] BACKUP: New RPC connection",
+	       __func__, conmgr_fd_get_name(con));
 
-	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
-
-	/*
-	 * Process incoming RPCs indefinitely
-	 */
-	while (slurmctld_config.shutdown_time == 0) {
-		if (poll(listen_fds, listen_nports, -1) == -1) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn poll: %m");
-			continue;
-		}
-
-		/* find one to process */
-		for (i = 0; i < listen_nports; i++) {
-			if (listen_fds[(fd_next + i) % listen_nports].revents) {
-				i = (fd_next + i) % listen_nports;
-				break;
-			}
-		}
-		fd_next = (i + 1) % listen_nports;
-
-		if ((newsockfd = slurm_accept_msg_conn(listen_fds[i].fd,
-						       &cli_addr))
-		    == SLURM_ERROR) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn: %m");
-			continue;
-		}
-
-		log_flag(PROTOCOL, "%s: accept() connection from %pA",
-			 __func__, &cli_addr);
-
-		slurm_msg_t_init(&msg);
-		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
-			error("slurm_receive_msg: %m");
-		else {
-			if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-				slurm_addr_t cli_addr;
-				(void) slurm_get_peer_addr(newsockfd, &cli_addr);
-				log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
-					 rpc_num2string(msg.msg_type),
-					 msg.auth_uid, &cli_addr,
-					 msg.protocol_version);
-			}
-
-			_background_process_msg(&msg);
-		}
-
-		slurm_free_msg_members(&msg);
-
-		close(newsockfd);	/* close new socket */
-	}
-
-	debug3("_background_rpc_mgr shutting down");
-	return NULL;
+	return con;
 }
 
-/*
- * _background_process_msg - process an RPC to the backup_controller
- */
-static int _background_process_msg(slurm_msg_t *msg)
+extern void on_backup_finish(conmgr_fd_t *con, void *arg)
+{
+	xassert(arg == con);
+
+	debug3("%s: [%s] BACKUP: finish RPC connection",
+	       __func__, conmgr_fd_get_name(con));
+}
+
+/* process an RPC to the backup_controller */
+extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
+
+	xassert(arg == con);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -426,19 +365,9 @@ static int _background_process_msg(slurm_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		const char *p = rpc_num2string(msg->msg_type);
-		if (msg->conn) {
-			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, msg->auth_uid);
-		} else {
-			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, msg->auth_uid);
-		}
-	}
+	log_flag(PROTOCOL, "%s: [%s] Received opcode %s from uid %u",
+	     __func__, conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
+	     msg->auth_uid);
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;

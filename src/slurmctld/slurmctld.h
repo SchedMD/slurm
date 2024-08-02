@@ -154,7 +154,6 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;
 	pthread_t thread_id_purge_files;
-	pthread_t thread_id_rpc;
 } slurmctld_config_t;
 
 typedef enum {
@@ -255,7 +254,6 @@ extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
 extern int listen_nports;
-extern struct pollfd *listen_fds;
 extern int max_depend_depth;
 extern uint32_t max_powered_nodes;
 extern bool node_features_updated;
@@ -1685,6 +1683,11 @@ extern void restore_node_features(int recover);
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);
+
+/* conmgr RPC connection callbacks */
+extern void *on_backup_connection(conmgr_fd_t *con, void *arg);
+extern void on_backup_finish(conmgr_fd_t *con, void *arg);
+extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
 
 /*
  * ping_controllers - ping other controllers in HA configuration.
