@@ -185,7 +185,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 		return SLURM_ERROR;
 	}
 
-	assoc_cond->flags = ASSOC_COND_FLAG_WITH_DELETED |
+	assoc_cond->flags |= ASSOC_COND_FLAG_WITH_DELETED |
 		ASSOC_COND_FLAG_WITH_USAGE;
 
 	if (!assoc_cond->cluster_list)
