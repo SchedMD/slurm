@@ -72,6 +72,7 @@ slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
+list_t *g_qos_list = NULL;
 
 static bool node_tres = false;
 
@@ -270,6 +271,7 @@ main (int argc, char **argv)
 	xfree(cluster_flag);
 
 	slurmdb_connection_close(&db_conn);
+	FREE_NULL_LIST(g_qos_list);
 	acct_storage_g_fini();
 	exit(exit_code);
 }
