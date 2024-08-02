@@ -421,6 +421,8 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->boards = node_state_rec->boards;
 			config_ptr->core_spec_cnt =
 				node_state_rec->core_spec_cnt;
+			config_ptr->mem_spec_limit =
+				node_state_rec->mem_spec_limit;
 			config_ptr->cores = node_state_rec->cores;
 			config_ptr->cpu_spec_list =
 				xstrdup(node_state_rec->cpu_spec_list);

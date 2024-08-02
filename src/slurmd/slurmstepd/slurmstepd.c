@@ -226,6 +226,7 @@ static int _foreach_job_node_array(void *x, void *arg)
 	config_ptr = create_config_record();
 	config_ptr->boards = job_node_ptr->boards;
 	config_ptr->core_spec_cnt = job_node_ptr->core_spec_cnt;
+	config_ptr->mem_spec_limit = job_node_ptr->mem_spec_limit;
 	config_ptr->cores = job_node_ptr->cores;
 	config_ptr->cpu_spec_list = xstrdup(job_node_ptr->cpu_spec_list);
 	config_ptr->cpus = job_node_ptr->cpus;

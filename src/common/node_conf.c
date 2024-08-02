@@ -1586,6 +1586,7 @@ extern void node_record_pack(void *in,
 		pack16(object->tot_sockets, buffer);
 		pack16(object->cores, buffer);
 		pack16(object->core_spec_cnt, buffer);
+		pack64(object->mem_spec_limit, buffer);
 		pack16(object->threads, buffer);
 		pack64(object->real_memory, buffer);
 		pack16(object->res_cores_per_gpu, buffer);
@@ -1677,6 +1678,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack16(&object->tot_sockets, buffer);
 		safe_unpack16(&object->cores, buffer);
 		safe_unpack16(&object->core_spec_cnt, buffer);
+		safe_unpack64(&object->mem_spec_limit, buffer);
 		safe_unpack16(&object->threads, buffer);
 		safe_unpack64(&object->real_memory, buffer);
 		safe_unpack16(&object->res_cores_per_gpu, buffer);
