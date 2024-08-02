@@ -253,7 +253,8 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			log_flag(NET, "%s: [fd:%d] writev() sent %zd/%zu bytes failed: %m",
 				 __func__, fd, bytes_sent, size);
 
- 			if (errno == EAGAIN) {	/* poll() lied to us */
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				/* poll() lied to us */
 				usleep(10000);
 				continue;
 			}
