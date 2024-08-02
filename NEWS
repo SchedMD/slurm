@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     '* /slurm/slurmctld/*/*' endpoints.
  -- Fix compilation issue with switch/hpe_slingshot plugin.
  -- Fix gres per task allocation with threads-per-core.
+ -- data_parser/v0.0.41 - Added field descriptions
 
 * Changes in Slurm 24.05.2
 ==========================
