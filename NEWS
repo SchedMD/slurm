@@ -9213,6 +9213,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Make sure suspended time is only subtracted from the CPU TRES
     as it is the only TRES that can be given to another job while suspended.
  -- Clarify how TRESBillingWeights operates on memory and burst buffers.
+ -- Add report AccountUtilizationByQOS to sreport. AccountUtilizationByUser is
+    also able to be filtered by QOS as well.
 
 * Changes in Slurm 15.08.1
 ==========================
