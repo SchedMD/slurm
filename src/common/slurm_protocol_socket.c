@@ -271,8 +271,11 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 
 		tot_bytes_sent += bytes_sent;
 
-		if (tot_bytes_sent >= size)
+		if (tot_bytes_sent >= size) {
+			log_flag(NET, "%s: [fd:%d] writev() completed sending %d/%zu bytes",
+				 __func__, fd, tot_bytes_sent, size);
 			break;
+		}
 
 		/* partial write, need to adjust iovec before next call */
 		for (int i = 0; i < iovcnt; i++) {
