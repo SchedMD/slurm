@@ -2336,7 +2336,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 	}
 
+	/* If asking for QOS usage do not filter here. */
 	if (assoc_cond &&
+	    !(assoc_cond->flags & ASSOC_COND_FLAG_QOS_USAGE) &&
 	    assoc_cond->qos_list &&
 	    list_count(assoc_cond->qos_list)) {
 		wanted_qos = bit_alloc(g_qos_count);
@@ -2697,11 +2699,23 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	xfree(parent_delta_qos);
 	xfree(parent_qos);
 
-	if (with_usage && assoc_list && list_count(assoc_list))
-		get_usage_for_list(mysql_conn, DBD_GET_ASSOC_USAGE,
-				   assoc_list, cluster_name,
-				   assoc_cond->usage_start,
-				   assoc_cond->usage_end);
+	if (with_usage && assoc_list && list_count(assoc_list)) {
+		if (assoc_cond->flags & ASSOC_COND_FLAG_QOS_USAGE) {
+			usage_qos_query_t qos_usage = {
+				.assoc_list = assoc_list,
+				.qos_list = assoc_cond->qos_list,
+			};
+			get_usage_for_list(mysql_conn, DBD_GET_QOS_USAGE,
+					   &qos_usage, cluster_name,
+					   assoc_cond->usage_start,
+					   assoc_cond->usage_end);
+		} else {
+			get_usage_for_list(mysql_conn, DBD_GET_ASSOC_USAGE,
+					   assoc_list, cluster_name,
+					   assoc_cond->usage_start,
+					   assoc_cond->usage_end);
+		}
+	}
 
 	list_transfer(sent_list, assoc_list);
 	FREE_NULL_LIST(assoc_list);

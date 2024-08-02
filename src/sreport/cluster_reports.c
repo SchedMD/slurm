@@ -746,21 +746,6 @@ static void _cluster_account_by_user_tres_report(
 					     slurmdb_report_cluster->name,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_CLUSTER_QOS:
-			common_get_qos_list();
-
-			tmp_char = slurmdb_qos_str(
-				g_qos_list,
-				slurmdb_report_assoc->id_alt);
-
-			field->print_routine(field, tmp_char,
-					     (curr_inx == field_count));
-			break;
-		case PRINT_CLUSTER_QOS_ID:
-			field->print_routine(field,
-					     &slurmdb_report_assoc->id_alt,
-					     (curr_inx == field_count));
-			break;
 		case PRINT_CLUSTER_USER_LOGIN:
 			field->print_routine(field,
 					     slurmdb_report_assoc->user,
@@ -1723,21 +1708,6 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 					tmp_char = pwd->pw_gecos;
 			}
 			field->print_routine(field, tmp_char,
-					     (curr_inx == field_count));
-			break;
-		case PRINT_CLUSTER_QOS:
-			common_get_qos_list();
-
-			tmp_char = slurmdb_qos_str(
-				g_qos_list,
-				slurmdb_report_assoc->id_alt);
-
-			field->print_routine(field, tmp_char,
-					     (curr_inx == field_count));
-			break;
-		case PRINT_CLUSTER_QOS_ID:
-			field->print_routine(field,
-					     &slurmdb_report_assoc->id_alt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER_AMOUNT_USED:
