@@ -19,6 +19,70 @@ that have SLURM_JWT in their environment).</p>
 Both the library and the development headers must be available when Slurm is
 compiled.</p>
 
+<h2 id="trust_jwt_create">Full root trust in JWT creation
+<a class="slurm_link" href="#trust_jwt_create"></a>
+</h2>
+<p>The power to create JWTs is the power of root on a cluster. This is a
+per-site decision on what/who/when/how to trust. If a given authentication
+system can not be fully trusted with the powers of root for the entire cluster,
+then an authenticating proxy will need to be used to divide up the trust and
+implement the site's specific policies before the requests reach Slurm
+(specifically slurmrestd). While possibly inefficient, there is no technical
+reason that tiers of authenticating proxies can not be used if there is a lack
+of trust but a desire to allow creation of lesser auth tokens. Each site will
+need to weight the risks and benefits of which JWTs to trust before implementing
+any system. Once a job has been queued, the proxied authentication system will
+no longer be involved and the job will run with that user's permissions and
+access per Linux/POSIX's ACLs and trusts.</p>
+
+<h2 id="models_trust">Models of trust
+<a class="slurm_link" href="#models_trust"></a>
+</h2>
+<p>There are several ways to handle controlling JWT authentication and access.
+Slurm JWT plugin implementation is purposefully simple and will not be able to
+support most models of trust needed by sites. There already exists a plethora of
+authentication systems, and the expectation is that any site that wants more
+complexity than the default offering will use one of those systems instead.</p>
+
+<ul>
+<li><a href="#compatibility">External JWT generation</a>
+<p>We provide an example python script for generating new JWTs but they are a
+standard and most languages have existing tooling for them. This is usually the
+easiest route for sites but does require each site to implement the tooling for
+their users directly.</p></li>
+
+<li>Authenticating proxy
+<p>This is the most versatile option, as any authentication system can be
+placed in front of slurmrestd. It requires creating a slurmuser/root token that
+can then be used to proxy for any user. There are existing solutions for this
+with Nginx and Apache, and probably every other non-trivial proxy. We suggest
+choosing the preferred proxy and finding an existing setup guide for
+authenticating via that proxy. The proxy will need to have the
+<b>X-SLURM-USER-TOKEN</b> and <b>X-SLURM-USER-NAME</b> headers defined.</p>
+
+<p>There is no requirement that an authenticating proxy implement JWT for
+clients. This is the primary benefit of authenticating proxies; they can use
+any authentication method since they are the trusted point that tells Slurm
+which user the request is from. These authentication tokens are only used by
+the proxy and are not passed to the job. This is generally not an
+issue as once the job is in Slurm, it runs as the Posix user with all of the
+inherent trust of that user and it then uses <code>auth/munge</code> or
+<code>auth/slurm</code> for everything after that.</p></li>
+
+<li><a href="#external_auth">JWKS</a>
+<p>This is like an authentication proxy, as another system is used to create the
+tokens, but it skips having the authentication system in front of Slurm by using
+signed public keys. This tends to be the preferred solution for sites using
+cloud authentication systems, such as:
+<ul>
+<li><a href="https://aws.amazon.com/blogs/hpc/using-the-slurm-rest-api-to-integrate-with-distributed-architectures-on-aws/">
+Amazon Cognito</a></li>
+<li><a href="https://www.keycloak.org/">Keycloak</a> - Using keycloak is an
+option which doesn't require a cloud auth solution.</li>
+</ul>
+</p></li>
+</ul>
+
 <h2 id="setup">Setup for Standalone Use
 <a class="slurm_link" href="#setup"></a>
 </h2>
@@ -104,6 +168,15 @@ configuring the <b>jwt_key=</b> option alongside <b>jwks=</b>.
 attempt to verify the certificate chain if presented in the JWKS file. JWTs are
 only verified against RSA 256 bit keys provided via <b>e</b> and
 <b>n</b> fields.
+</p>
+<p>JWKS has signing keys that receive trust by being placed in the
+jwks.json. Those trusted keys can then create new tokens (which are JWTs) for
+any user by signing them. JWKS does not support adding keys for individual
+users but only for adding trusted signing keys.
+</p>
+<p>JWT and JWKS can coexist in Slurm. Slurm will auto-disable JWT when
+JWKS is configured as a safety mechanism, to avoid accidentally having both
+enabled at the same time.
 </p>
 
 <h3 id="user_mapping">User Mapping
@@ -225,6 +298,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 17 July 2024</p>
+<p style="text-align:center;">Last modified 15 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
