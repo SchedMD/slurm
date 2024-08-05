@@ -12,7 +12,10 @@
 
 <p>See also:
 <ul>
-<li><a href="rest_quickstart.html">REST API Quick Start Guide</a></li>
+<li><a href="rest_quickstart.html">REST API Quick Start Guide</a>
+<ul>
+<li><a href="rest_quickstart.html#common_issues">Common Issues</a></li>
+</ul></li>
 <li><a href="rest_api.html">REST API Implementation Details</a></li>
 <li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
 </ul>
