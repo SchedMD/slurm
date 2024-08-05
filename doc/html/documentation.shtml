@@ -70,6 +70,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="rest_quickstart.html">Quick Start Guide</a></li>
 <li><a href="rest.html">API Reference</a></li>
 <li><a href="rest_api.html">API Implementation Details</a></li>
+<li><a href="rest_clients.html">Client Guide</a></li>
 </ul>
 </li>
 <li><a href="selinux.html">Slurm SELinux Context Management</a></li>

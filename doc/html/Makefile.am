@@ -75,6 +75,7 @@ generated_html = \
 	resource_limits.html \
 	rest.html \
 	rest_api.html \
+	rest_clients.html \
 	rest_quickstart.html \
 	rosetta.html \
 	sched_config.html \
