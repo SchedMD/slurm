@@ -2,6 +2,120 @@
 
 <h1>REST API Client Writing Guide</h1>
 
+<p>
+<ul>
+<li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
+</ul>
+</p>
+
+<h2 id="openapi">OpenAPI Specification (OAS)
+<a class="slurm_link" href="#openapi"></a>
+</h2>
+<p>Slurmrestd is compliant with
+	<a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md">
+		OpenAPI 3.0.2
+	</a>.
+	The generated OAS can be viewed at the following URLs:
+</p>
+<ul>
+	<li>/openapi.json</li>
+	<li>/openapi.yaml</li>
+	<li>/openapi/v3</li>
+</ul>
+<p>The OAS is designed to be the primary documentation for the request methods.
+There are several third party tools that automatically generate documentation
+against the OAS output listed by
+<a href="https://openapi.tools/">openapi.tools.</a></p>
+
+<p><b>NOTE</b>: Slurm attempts to strictly comply with the relevant
+<a href="https://github.com/OAI/OpenAPI-Specification">OpenAPI standards</a>.
+For reasons of compatibility, Slurm may be tested against publicly available
+OpenAPI client generators, but Slurm does not directly support any of them as
+they are outside the control of SchedMD and may change at any time. The goal
+is to comply with the standards, supporting as many clients as possible,
+without favoring any one client. Sites are always welcome to write their own
+clients that are OpenAPI compliant. As a rule, SchedMD will debug the HTTP
+sent to and received by slurmrestd but will not directly debug any client
+source code.
+</p>
+Tested compatibility by OpenAPI plugins:
+<ul>
+	<li>openapi/v0.0.37:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/v0.0.38:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/v0.0.39:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.37:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.38:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.39:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+</ul>
+
 <p style="text-align:center;">Last modified 06 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
