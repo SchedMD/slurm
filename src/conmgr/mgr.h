@@ -46,7 +46,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include "slurm/slurm.h"
 
@@ -228,10 +227,6 @@ typedef struct {
 	int error;
 	/* list of work_t */
 	list_t *delayed_work;
-	/* last time clock was queried */
-	struct timespec last_time;
-	/* monotonic timer */
-	timer_t timer;
 	/* list of work_t* */
 	list_t *work;
 
@@ -314,25 +309,8 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, 0, __func__)
 
-/*
- * Clear time delay dependency from work
- * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
- * NOTE: caller must call update_timer() after to cause work to requeue
- * NOTE: caller must hold mgr.mutex lock
- * RET True if time delay removed
- */
-extern bool work_clear_time_delay(work_t *work);
-
-extern void cancel_delayed_work(void);
-extern void init_delayed_work(void);
-extern void free_delayed_work(void);
-/* update_timer - Caller must lock mgr.mutex */
-extern void update_timer(void);
-extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
-/* update_last_time - Caller must lock mgr.mutex */
-extern void update_last_time(void);
 
 /*
  * Poll all connections and handle any events

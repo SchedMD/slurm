@@ -1,11 +1,7 @@
 /*****************************************************************************\
- *  slurmdbd.h - data structures and function definitions for SlurmDBD
+ *  delayed.h - Internal declarations for delayed work handlers
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,22 +33,33 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_DBD_H
-#define _SLURM_DBD_H
+#ifndef _CONMGR_DELAYED_H
+#define _CONMGR_DELAYED_H
 
-extern time_t shutdown_time;		/* when shutdown request arrived */
-extern pthread_mutex_t registered_lock;
-extern List registered_clusters;
-extern pthread_mutex_t rpc_mutex;
-extern slurmdb_stats_rec_t rpc_stats;
+#include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
 
-extern void shutdown_threads(void);
+/*
+ * Set all time delayed work as cancelled and run queue to run
+ */
+extern void cancel_delayed_work(void);
 
-extern void reconfig(void);
+extern void init_delayed_work(void);
+extern void free_delayed_work(void);
 
-extern void handle_rollup_stats(List rollup_stats_list,
-				long delta_time, int type);
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg);
 
-extern void init_dbd_stats(void);
+/*
+ * Enqueue new delayed work
+ * Caller must hold mgr.mutex lock
+ */
+extern void add_work_delayed(work_t *work);
 
-#endif /* !_SLURM_DBD_H */
+/*
+ * Create string describing delayed work for logging
+ * IN work - delayed work to describe
+ * RET log string (caller must xfree())
+ */
+extern char *work_delayed_to_str(work_t *work);
+
+#endif /* _CONMGR_DELAYED_H */

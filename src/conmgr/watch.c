@@ -45,6 +45,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/poll.h"
@@ -630,6 +631,7 @@ static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
+		cancel_delayed_work();
 		close_all_connections();
 	}
 
@@ -695,8 +697,9 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
-		if ((mgr.quiesced || mgr.shutdown_requested) &&
-		    mgr.poll_active) {
+		if (mgr.poll_active &&
+		    (mgr.quiesced || mgr.shutdown_requested ||
+		     (mgr.waiting_on_work && (mgr.workers.active == 1)))) {
 			/*
 			 * poll() hasn't returned yet but we want to
 			 * shutdown. Send interrupt before sleeping or

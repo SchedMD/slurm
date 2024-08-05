@@ -33,80 +33,192 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <time.h>
+
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
-#define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
+#ifdef __linux__
+#define CLOCK_TYPE CLOCK_TAI
+#else
+#define CLOCK_TYPE CLOCK_REALTIME
+#endif
 
 typedef struct {
+#define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
+	struct timespec time;
 } foreach_delayed_work_t;
+
+/* timer to trigger SIGALRM */
+static timer_t timer = {0};
+/* Mutex to protect timer */
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static int _inspect_work(void *x, void *key);
+static void _update_timer(work_t *shortest, const struct timespec time);
+static bool _work_clear_time_delay(work_t *work);
 
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
 {
-	if (mgr.delayed_work && !list_is_empty(mgr.delayed_work)) {
-		work_t *work;
+	work_t *work;
 
-		log_flag(CONMGR, "%s: cancelling %d delayed work",
-			 __func__, list_count(mgr.delayed_work));
+	if (!mgr.delayed_work || list_is_empty(mgr.delayed_work))
+		return;
 
-		/* run everything immediately but with cancelled status */
-		while ((work = list_pop(mgr.delayed_work))) {
-			work->status = CONMGR_WORK_STATUS_CANCELLED;
-			handle_work(true, work);
-		}
+	log_flag(CONMGR, "%s: cancelling %d delayed work",
+		 __func__, list_count(mgr.delayed_work));
+
+	/* run everything immediately but with cancelled status */
+	while ((work = list_pop(mgr.delayed_work))) {
+		work->status = CONMGR_WORK_STATUS_CANCELLED;
+		handle_work(true, work);
 	}
 }
 
-extern void update_last_time(void)
+static struct timespec _get_time(void)
 {
+	struct timespec time;
 	int rc;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr.last_time))) {
+	if ((rc = clock_gettime(CLOCK_TYPE, &time))) {
 		if (rc == -1)
 			rc = errno;
 
 		fatal("%s: clock_gettime() failed: %s",
 		      __func__, slurm_strerror(rc));
 	}
+
+	return time;
 }
 
-static int _foreach_delayed_work(void *x, void *arg)
+static list_t *_inspect(void)
 {
-	work_t *work = x;
-	foreach_delayed_work_t *args = arg;
-	const conmgr_work_time_begin_t begin = work->control.time_begin;
+	int count, total;
+	work_t *work;
+	list_t *elapsed = list_create(xfree_ptr);
+	foreach_delayed_work_t dargs = {
+		.magic = MAGIC_FOREACH_DELAYED_WORK,
+		.time = _get_time(),
+	};
 
-	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
-	xassert(work->magic == MAGIC_WORK);
+	total = list_count(mgr.delayed_work);
+	count = list_transfer_match(mgr.delayed_work, elapsed,
+				    _inspect_work, &dargs);
+
+	_update_timer(dargs.shortest, dargs.time);
+
+	while ((work = list_pop(elapsed))) {
+		if (!_work_clear_time_delay(work))
+			fatal_abort("should never happen");
+
+		handle_work(true, work);
+	}
+
+	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
+		 __func__, count, total);
+
+	return elapsed;
+}
+
+static struct itimerspec _calc_timer(work_t *shortest,
+				     const struct timespec time)
+{
+	struct itimerspec spec = {{0}};
+	const conmgr_work_time_begin_t begin = shortest->control.time_begin;
+
+	spec.it_value.tv_sec = begin.seconds;
+
+	if (begin.seconds <= 0)
+		spec.it_value.tv_nsec = begin.nanoseconds;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		int64_t remain_sec, remain_nsec;
 
-		remain_sec = begin.seconds - mgr.last_time.tv_sec;
+		remain_sec = begin.seconds - time.tv_sec;
 		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - mgr.last_time.tv_nsec;
+			remain_nsec = begin.nanoseconds - time.tv_nsec;
 		} else if (remain_sec < 0) {
 			remain_nsec = NO_VAL64;
 		} else {
 			remain_nsec = NO_VAL64;
 		}
 
-		log_flag(CONMGR, "%s: evaluating delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
+		log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
 			 __func__, remain_sec,
 			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-			 work->callback.func_name,
-			 (uintptr_t) work->callback.func);
+			 shortest->callback.func_name);
 	}
+
+	return spec;
+}
+
+static void _update_timer(work_t *shortest, const struct timespec time)
+{
+	int rc;
+	struct itimerspec spec = {{0}};
+
+	if (shortest) {
+		spec = _calc_timer(shortest, time);
+	} else {
+		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
+	}
+
+	slurm_mutex_lock(&mutex);
+	rc = timer_settime(timer, TIMER_ABSTIME, &spec, NULL);
+	slurm_mutex_unlock(&mutex);
+
+	if (rc) {
+		if ((rc == -1) && errno)
+			rc = errno;
+
+		error("%s: timer_set_time() failed: %s",
+		      __func__, slurm_strerror(rc));
+	}
+}
+
+/* check begin times to see if the work delay has elapsed */
+static int _inspect_work(void *x, void *key)
+{
+	bool trigger;
+	work_t *work = x;
+	const conmgr_work_time_begin_t begin = work->control.time_begin;
+	foreach_delayed_work_t *args = key;
+	const struct timespec time = args->time;
+	const int64_t remain_sec = begin.seconds - time.tv_sec;
+	int64_t remain_nsec;
+
+	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
+	xassert(work->magic == MAGIC_WORK);
+
+	if (remain_sec == 0) {
+		remain_nsec = begin.nanoseconds - time.tv_nsec;
+		trigger = (remain_nsec <= 0);
+	} else if (remain_sec < 0) {
+		trigger = true;
+		remain_nsec = NO_VAL64;
+	} else {
+		remain_nsec = NO_VAL64;
+		trigger = false;
+	}
+
+	log_flag(CONMGR, "%s: %s delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
+		 __func__, (trigger ? "triggering" : "deferring"),
+		 remain_sec,
+		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
+		 work->callback.func_name,
+		 (uintptr_t) work->callback.func);
 
 	if (!args->shortest) {
 		args->shortest = work;
-		return SLURM_SUCCESS;
 	} else {
 		const conmgr_work_time_begin_t shortest_begin =
 			args->shortest->control.time_begin;
@@ -119,87 +231,6 @@ static int _foreach_delayed_work(void *x, void *arg)
 		}
 	}
 
-	return SLURM_SUCCESS;
-}
-
-extern void update_timer(void)
-{
-	int rc;
-	struct itimerspec spec = {{0}};
-
-	foreach_delayed_work_t args = {
-		.magic = MAGIC_FOREACH_DELAYED_WORK,
-	};
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		/* get updated clock for logging but not needed otherwise */
-		update_last_time();
-	}
-
-	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
-
-	if (args.shortest) {
-		work_t *work = args.shortest;
-		const conmgr_work_time_begin_t begin = work->control.time_begin;
-
-		spec.it_value.tv_sec = begin.seconds;
-		spec.it_value.tv_nsec = begin.nanoseconds;
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			int64_t remain_sec, remain_nsec;
-
-			remain_sec = begin.seconds - mgr.last_time.tv_sec;
-			if (remain_sec == 0) {
-				remain_nsec = begin.nanoseconds -
-					      mgr.last_time.tv_nsec;
-			} else if (remain_sec < 0) {
-				remain_nsec = NO_VAL64;
-			} else {
-				remain_nsec = NO_VAL64;
-			}
-
-			log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
-				 __func__, remain_sec,
-				 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-				 work->callback.func_name);
-		}
-	} else {
-		log_flag(CONMGR, "%s: disabling conmgr timer", __func__);
-	}
-
-	if ((rc = timer_settime(mgr.timer, TIMER_ABSTIME, &spec, NULL))) {
-		if ((rc == -1) && errno)
-			rc = errno;
-	}
-}
-
-/* check begin times to see if the work delay has elapsed */
-static int _match_work_elapsed(void *x, void *key)
-{
-	bool trigger;
-	work_t *work = x;
-	const conmgr_work_time_begin_t begin = work->control.time_begin;
-	int64_t remain_sec, remain_nsec;
-
-	xassert(work->magic == MAGIC_WORK);
-
-	remain_sec = begin.seconds - mgr.last_time.tv_sec;
-	if (remain_sec == 0) {
-		remain_nsec = begin.nanoseconds - mgr.last_time.tv_nsec;
-		trigger = (remain_nsec <= 0);
-	} else if (remain_sec < 0) {
-		trigger = true;
-		remain_nsec = NO_VAL64;
-	} else {
-		remain_nsec = NO_VAL64;
-		trigger = false;
-	}
-
-	log_flag(CONMGR, "%s: %s %s() ETA in %"PRId64"s %"PRId64"ns",
-		 __func__, (trigger ? "triggering" : "deferring"),
-		 work->callback.func_name, remain_sec,
-		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec));
-
 	return trigger ? 1 : 0;
 }
 
@@ -207,8 +238,7 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	struct timespec last_time = {0};
-	int rc = SLURM_ERROR;
+	const struct timespec time = _get_time();
 
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
@@ -218,18 +248,11 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
 	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &last_time))) {
-		if (rc == -1)
-			rc = errno;
-		fatal("%s: clock_gettime() failed: %s",
-		      __func__, slurm_strerror(rc));
-	}
-
 	/* catch integer overflows */
-	xassert((delay_seconds + last_time.tv_sec) >= last_time.tv_sec);
+	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
 
 	return (conmgr_work_time_begin_t) {
-		.seconds = (delay_seconds + last_time.tv_sec),
+		.seconds = (delay_seconds + time.tv_sec),
 		.nanoseconds = delay_nanoseconds,
 	};
 }
@@ -240,67 +263,75 @@ extern void init_delayed_work(void)
 	struct sigevent sevp = {
 		.sigev_notify = SIGEV_SIGNAL,
 		.sigev_signo = SIGALRM,
-		.sigev_value.sival_ptr = &mgr.timer,
+		.sigev_value.sival_ptr = &timer,
 	};
 
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
-	if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr.timer))) {
-		if ((rc == -1) && errno)
-			rc = errno;
+	slurm_mutex_lock(&mutex);
+	rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+	slurm_mutex_unlock(&mutex);
 
-		if (rc == EAGAIN)
-			goto again;
-		else if (rc)
-			fatal("%s: timer_create() failed: %s",
-			      __func__, slurm_strerror(rc));
-	}
+	if (rc)
+		return;
+
+	if ((rc == -1) && errno)
+		rc = errno;
+
+	if (rc == EAGAIN)
+		goto again;
+	else if (rc)
+		fatal("%s: timer_create() failed: %s",
+		      __func__, slurm_strerror(rc));
 }
 
 extern void free_delayed_work(void)
 {
+	int rc;
+
 	if (!mgr.delayed_work)
 		return;
 
 	FREE_NULL_LIST(mgr.delayed_work);
-	if (timer_delete(mgr.timer))
+
+	slurm_mutex_lock(&mutex);
+	rc = timer_delete(timer);
+	slurm_mutex_unlock(&mutex);
+
+	if (rc)
 		fatal("%s: timer_delete() failed: %m", __func__);
 }
 
-extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
+static void _update_delayed_work(bool locked)
 {
-	int count, total;
-	work_t *work;
-	list_t *elapsed = list_create(xfree_ptr);
+	list_t *elapsed = NULL;
 
-	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
 
-	slurm_mutex_lock(&mgr.mutex);
-	update_last_time();
+	elapsed = _inspect();
 
-	total = list_count(mgr.delayed_work);
-	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _match_work_elapsed, NULL);
-
-	update_timer();
-
-	while ((work = list_pop(elapsed))) {
-		if (!work_clear_time_delay(work))
-			fatal_abort("should never happen");
-
-		handle_work(true, work);
-	}
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
-		 __func__, count, total);
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
 
 	FREE_NULL_LIST(elapsed);
 }
 
-extern bool work_clear_time_delay(work_t *work)
+extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
+	_update_delayed_work(false);
+}
+
+/*
+ * Clear time delay dependency from work
+ * IN work - work to remove CONMGR_WORK_DEP_TIME_DELAY flag
+ * NOTE: caller must call update_timer() after to cause work to requeue
+ * NOTE: caller must hold mgr.mutex lock
+ * RET True if time delay removed
+ */
+static bool _work_clear_time_delay(work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
 
@@ -316,4 +347,44 @@ extern bool work_clear_time_delay(work_t *work)
 	work_mask_depend(work, ~CONMGR_WORK_DEP_TIME_DELAY);
 
 	return true;
+}
+
+extern void add_work_delayed(work_t *work)
+{
+	list_append(mgr.delayed_work, work);
+	_update_delayed_work(true);
+}
+
+extern char *work_delayed_to_str(work_t *work)
+{
+	const struct timespec time = _get_time();
+	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
+	char *delay = NULL;
+
+	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
+		return NULL;
+
+	diff = work->control.time_begin.seconds - time.tv_sec;
+
+	days = diff / (DAY_HOURS * HOUR_SECONDS);
+	diff = diff % (DAY_HOURS * HOUR_SECONDS);
+
+	hours = diff / HOUR_SECONDS;
+	diff = diff % HOUR_SECONDS;
+
+	minutes = diff / MINUTE_SECONDS;
+	diff = diff % MINUTE_SECONDS;
+
+	seconds = diff;
+
+	if (!seconds)
+		nanoseconds = work->control.time_begin.nanoseconds;
+	else
+		nanoseconds = (work->control.time_begin.nanoseconds -
+			       time.tv_nsec);
+
+	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
+		   days, hours, minutes, seconds, nanoseconds);
+
+	return delay;
 }

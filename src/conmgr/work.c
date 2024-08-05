@@ -40,6 +40,7 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/signals.h"
@@ -137,35 +138,7 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 		xfree(signame);
 	}
 
-	if (work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY) {
-		struct timespec last_time = {0};
-		uint32_t diff, days, hours, minutes, seconds, nanoseconds;
-
-		(void) clock_gettime(CLOCK_MONOTONIC, &last_time);
-
-		diff = work->control.time_begin.seconds - last_time.tv_sec;
-
-		days = diff / (DAY_HOURS * HOUR_SECONDS);
-		diff = diff % (DAY_HOURS * HOUR_SECONDS);
-
-		hours = diff / HOUR_SECONDS;
-		diff = diff % HOUR_SECONDS;
-
-		minutes = diff / MINUTE_SECONDS;
-		diff = diff % MINUTE_SECONDS;
-
-		seconds = diff;
-
-		if (!seconds)
-			nanoseconds = work->control.time_begin.nanoseconds;
-		else
-			nanoseconds = (work->control.time_begin.nanoseconds -
-				       last_time.tv_nsec);
-
-		xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
-			   days, hours, minutes, seconds, nanoseconds);
-	}
-
+	delay = work_delayed_to_str(work);
 	depend = conmgr_work_depend_string(work->control.depend_type);
 	sched = conmgr_work_sched_string(work->control.schedule_type);
 
@@ -177,12 +150,13 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 		va_end(ap);
 	}
 
-	log_flag(CONMGR, "%s->%s:%s work=0x%"PRIxPTR" status=%s %ssched=%s depend=%s%s%s%s%s",
+	log_flag(CONMGR, "%s->%s:%s work=0x%"PRIxPTR" status=%s %ssched=%s depend=%s%s%s%s%s%s",
 		 caller, __func__, (con_name ? con_name : ""), (uintptr_t) work,
 		 status,
 		 (callback ? callback : ""),
 		 sched, depend,
 		 (signal ? signal : ""),
+		 (delay ? " " : ""),
 		 (delay ? delay : ""),
 		 (fmtstr ? " -> " : ""),
 		 (fmtstr ? fmtstr : ""));
@@ -269,8 +243,7 @@ static void _handle_work_pending(work_t *work)
 	if (depend & CONMGR_WORK_DEP_TIME_DELAY) {
 		_log_work(work, __func__, "Enqueueing delayed work. delayed_work:%u",
 			  list_count(mgr.delayed_work));
-		list_append(mgr.delayed_work, work);
-		update_timer();
+		add_work_delayed(work);
 		return;
 	}
 
