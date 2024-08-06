@@ -1816,8 +1816,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			memset(&assoc_cond, 0,
 			       sizeof(slurmdb_assoc_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
-			assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS;
-			assoc_cond.without_parent_limits = 1;
+			assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS |
+				ASSOC_COND_FLAG_WOPL;
 			list_append(assoc_cond.cluster_list, cluster_name);
 			user_cond.assoc_cond = &assoc_cond;
 			curr_user_list = slurmdb_users_get(db_conn, &user_cond);

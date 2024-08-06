@@ -8665,6 +8665,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_CONDITION_FLAGS)[] = {
 	add_flag_bit(ASSOC_COND_FLAG_RAW_QOS, "Include the raw QOS or delta_qos"),
 	add_flag_bit(ASSOC_COND_FLAG_SUB_ACCTS, "Include sub acct information"),
 	add_flag_bit(ASSOC_COND_FLAG_WOPI, "Exclude parent id/name"),
+	add_flag_bit(ASSOC_COND_FLAG_WOPL, "Exclude limits from parents"),
 };
 
 #define add_parse(mtype, field, path, desc) \
@@ -8682,7 +8683,6 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp"),
 	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
-	add_parse(BOOL16, without_parent_limits, "without_parent_limits", "don't give me limits from parents"),
 };
 #undef add_parse
 

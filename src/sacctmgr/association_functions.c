@@ -82,12 +82,11 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!end && !xstrncasecmp(argv[i], "WOPInfo",
 						 MAX(command_len, 4))) {
 			assoc_cond->flags |= ASSOC_COND_FLAG_WOPI;
-		} else if (!end && !xstrncasecmp(argv[i], "WOPLimits",
-						 MAX(command_len, 4))) {
-			assoc_cond->without_parent_limits = 1;
-		} else if (!end && !xstrncasecmp(argv[i], "WOLimits",
-						 MAX(command_len, 3))) {
-			assoc_cond->without_parent_limits = 1;
+		} else if (!end && (!xstrncasecmp(argv[i], "WOPLimits",
+						  MAX(command_len, 4)) ||
+				    !xstrncasecmp(argv[i], "WOLimits",
+						  MAX(command_len, 3)))) {
+			assoc_cond->flags |= ASSOC_COND_FLAG_WOPL;
 		} else if (!end && !xstrncasecmp(argv[i], "where",
 						 MAX(command_len, 5))) {
 			continue;
@@ -790,7 +789,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
-		if (!assoc_cond->without_parent_limits)
+		if (!(assoc_cond->flags & ASSOC_COND_FLAG_WOPL))
 			slurm_addto_char_list(format_list,
 					      "Share,Priority,GrpJ,GrpTRES,"
 					      "GrpS,GrpWall,GrpTRESMins,MaxJ,"

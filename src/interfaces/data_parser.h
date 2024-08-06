@@ -141,6 +141,7 @@ typedef enum {
 	DATA_PARSER_ASSOC_CONDITION_RAW_QOS_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_RAW_QOS */
 	DATA_PARSER_ASSOC_CONDITION_SUB_ACCTS_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_SUB_ACCTS */
 	DATA_PARSER_ASSOC_CONDITION_WOPI_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_WOPI */
+	DATA_PARSER_ASSOC_CONDITION_WOPL_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_WOPL */
 	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */

@@ -6584,6 +6584,34 @@ static int DUMP_FUNC(ASSOC_CONDITION_WOPI_OLD)(
 	return DUMP(BOOL, flag, dst, args);
 }
 
+static int PARSE_FUNC(ASSOC_CONDITION_WOPL_OLD)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= ASSOC_COND_FLAG_WOPL;
+	else
+		cond->flags &= ASSOC_COND_FLAG_WOPL;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ASSOC_CONDITION_WOPL_OLD)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag = cond->flags & ASSOC_COND_FLAG_WOPL;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8823,7 +8851,7 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_cparse(ASSOC_CONDITION_RAW_QOS_OLD, "with_raw_qos", "Include a raw qos or delta_qos"),
 	add_cparse(ASSOC_CONDITION_SUB_ACCTS_OLD, "with_sub_accts", "Include sub acct information"),
 	add_cparse(ASSOC_CONDITION_WOPI_OLD, "without_parent_info", "Exclude parent id/name"),
-	add_parse(BOOL16, without_parent_limits, "without_parent_limits", "Exclude limits from parents"),
+	add_cparse(ASSOC_CONDITION_WOPL_OLD, "without_parent_limits", "Exclude limits from parents"),
 };
 #undef add_parse
 #undef add_cparse
@@ -10057,6 +10085,7 @@ static const parser_t parsers[] = {
 	addpcp(ASSOC_CONDITION_RAW_QOS_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 	addpcp(ASSOC_CONDITION_SUB_ACCTS_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 	addpcp(ASSOC_CONDITION_WOPI_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
+	addpcp(ASSOC_CONDITION_WOPL_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(SELECT_PLUGIN_ID, STRING, SLURM_24_05_PROTOCOL_VERSION),

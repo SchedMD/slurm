@@ -2255,7 +2255,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	if (assoc_cond) {
 		with_raw_qos = assoc_cond->flags & ASSOC_COND_FLAG_RAW_QOS;
 		with_usage = assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE;
-		without_parent_limits = assoc_cond->without_parent_limits;
+		without_parent_limits =
+			assoc_cond->flags & ASSOC_COND_FLAG_WOPL;
 		without_parent_info = assoc_cond->flags & ASSOC_COND_FLAG_WOPI;
 	}
 
@@ -4710,7 +4711,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		info("Resetting cluster %s", cluster_name);
 		assoc_list = list_create(slurmdb_destroy_assoc_rec);
 		/* set this up to get the associations without parent_limits */
-		assoc_cond.without_parent_limits = 1;
+		assoc_cond.flags |= ASSOC_COND_FLAG_WOPL;
 
 		/* Get the associations for the cluster that needs to
 		 * somehow got lft and rgt's messed up. */
@@ -4847,7 +4848,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 
 		/* set this up to get the associations with parent_limits */
-		assoc_cond.without_parent_limits = 0;
+		assoc_cond.flags &= ~ASSOC_COND_FLAG_WOPL;
 		if ((rc = _cluster_get_assocs(mysql_conn, &user, &assoc_cond,
 					      cluster_name, tmp,
 					      " deleted=0",

@@ -1064,8 +1064,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	user_cond.with_assocs = 1;
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
-	assoc_cond.without_parent_limits = 1;
-	assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS;
+	assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS | ASSOC_COND_FLAG_WOPL;
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
 	/* this is needed for getting the correct wckeys */
