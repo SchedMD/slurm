@@ -1828,3 +1828,27 @@ unpack_error:
 	*out = NULL;
 	return SLURM_ERROR;
 }
+
+extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
+{
+	config_record_t *config_ptr = create_config_record();
+
+	config_ptr->boards = node_ptr->boards;
+	config_ptr->core_spec_cnt = node_ptr->core_spec_cnt;
+	config_ptr->mem_spec_limit = node_ptr->mem_spec_limit;
+	config_ptr->cores = node_ptr->cores;
+	config_ptr->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
+	config_ptr->cpus = node_ptr->cpus;
+	config_ptr->feature = xstrdup(node_ptr->features);
+	config_ptr->gres = xstrdup(node_ptr->gres);
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
+	config_ptr->nodes = xstrdup(node_ptr->name);
+	config_ptr->real_memory = node_ptr->real_memory;
+	config_ptr->res_cores_per_gpu = node_ptr->res_cores_per_gpu;
+	config_ptr->threads = node_ptr->threads;
+	config_ptr->tmp_disk = node_ptr->tmp_disk;
+	config_ptr->tot_sockets = node_ptr->tot_sockets;
+	config_ptr->weight = node_ptr->weight;
+
+	return config_ptr;
+}

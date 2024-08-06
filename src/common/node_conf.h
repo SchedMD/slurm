@@ -527,4 +527,7 @@ extern int node_record_unpack(void **out,
 			      uint16_t protocol_version,
 			      buf_t *buffer);
 
+/* Create config_record_t from a packed node_record_t */
+extern config_record_t *config_record_from_node_record(node_record_t *node_ptr);
+
 #endif /* !_HAVE_NODE_CONF_H */

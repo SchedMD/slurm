@@ -222,24 +222,8 @@ static int _foreach_job_node_array(void *x, void *arg)
 	node_record_t *job_node_ptr = x;
 	int *table_index = arg;
 
-	config_record_t *config_ptr;
-	config_ptr = create_config_record();
-	config_ptr->boards = job_node_ptr->boards;
-	config_ptr->core_spec_cnt = job_node_ptr->core_spec_cnt;
-	config_ptr->mem_spec_limit = job_node_ptr->mem_spec_limit;
-	config_ptr->cores = job_node_ptr->cores;
-	config_ptr->cpu_spec_list = xstrdup(job_node_ptr->cpu_spec_list);
-	config_ptr->cpus = job_node_ptr->cpus;
-	config_ptr->feature = xstrdup(job_node_ptr->features);
-	config_ptr->gres = xstrdup(job_node_ptr->gres);
-	config_ptr->node_bitmap = bit_alloc(node_record_count);
-	config_ptr->nodes = xstrdup(job_node_ptr->name);
-	config_ptr->real_memory = job_node_ptr->real_memory;
-	config_ptr->res_cores_per_gpu = job_node_ptr->res_cores_per_gpu;
-	config_ptr->threads = job_node_ptr->threads;
-	config_ptr->tmp_disk = job_node_ptr->tmp_disk;
-	config_ptr->tot_sockets = job_node_ptr->tot_sockets;
-	config_ptr->weight = job_node_ptr->weight;
+	config_record_t *config_ptr =
+		config_record_from_node_record(job_node_ptr);
 
 	*table_index = bit_ffs_from_bit(job_step_ptr->node_bitmap, *table_index);
 
