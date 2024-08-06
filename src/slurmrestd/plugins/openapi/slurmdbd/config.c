@@ -55,8 +55,7 @@ static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
 	};
 	slurmdb_assoc_cond_t assoc_cond = {
 		.flags = ASSOC_COND_FLAG_WITH_DELETED |
-		ASSOC_COND_FLAG_WITH_USAGE,
-		.with_raw_qos = true,
+		ASSOC_COND_FLAG_WITH_USAGE | ASSOC_COND_FLAG_RAW_QOS,
 		.with_sub_accts = true,
 	};
 	slurmdb_account_cond_t acct_cond = {

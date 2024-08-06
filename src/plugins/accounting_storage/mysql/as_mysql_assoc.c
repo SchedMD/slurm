@@ -2253,7 +2253,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	};
 
 	if (assoc_cond) {
-		with_raw_qos = assoc_cond->with_raw_qos;
+		with_raw_qos = assoc_cond->flags & ASSOC_COND_FLAG_RAW_QOS;
 		with_usage = assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE;
 		without_parent_limits = assoc_cond->without_parent_limits;
 		without_parent_info = assoc_cond->without_parent_info;
