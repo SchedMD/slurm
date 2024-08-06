@@ -8444,7 +8444,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
 	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
-	add_parse(BOOL, with_assocs, "with_assocs", "Include assocations"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include associations"),
 	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
 	add_parse(BOOL, with_wckeys, "with_wckeys", "Include wckeys"),
 };
@@ -8494,7 +8494,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Assocation filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Association filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
 	add_cparse(ACCOUNT_CONDITION_WITH_ASSOC_V40, "with_assocs", "Include associations"),
 	add_cparse(ACCOUNT_CONDITION_WITH_WCOORD_V40, "with_coords", "Include coordinators"),
@@ -8708,7 +8708,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 	add_parser(shares_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(shares_response_msg_t, field)
 static const parser_t PARSER_ARRAY(SHARES_RESP_MSG)[] = {
-	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Assocation shares"),
+	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Association shares"),
 	add_parse(UINT64, tot_shares, "total_shares", "Total number of shares"),
 	add_skip(tres_cnt),
 	add_skip(tres_names),
@@ -8728,7 +8728,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
 	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
 static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
-	add_parse(UINT32, obj.assoc_id, "id", "Assocation ID"),
+	add_parse(UINT32, obj.assoc_id, "id", "Association ID"),
 	add_parse(STRING, obj.cluster, "cluster", "Cluster name"),
 	add_parse(STRING, obj.name, "name", "Share name"),
 	add_parse(STRING, obj.parent, "parent", "Parent name"),
