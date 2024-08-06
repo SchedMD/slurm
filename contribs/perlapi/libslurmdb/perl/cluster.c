@@ -781,7 +781,7 @@ hv_to_qos_cond(HV* hv, slurmdb_qos_cond_t* qos_cond)
     int    i, elements = 0;
 
     FETCH_FIELD(hv, qos_cond, preempt_mode, uint16_t, FALSE);
-    FETCH_FIELD(hv, qos_cond, with_deleted, uint16_t, FALSE);
+    FETCH_FIELD(hv, qos_cond, flags, uint16_t, FALSE);
 
     FETCH_LIST_FIELD(hv, qos_cond, description_list);
     FETCH_LIST_FIELD(hv, qos_cond, id_list);

@@ -71,7 +71,7 @@ static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
 		.with_coords = true,
 	};
 	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = true,
+		.flags = QOS_COND_FLAG_WITH_DELETED,
 	};
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,

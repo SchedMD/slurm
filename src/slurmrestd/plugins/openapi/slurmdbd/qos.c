@@ -211,7 +211,8 @@ extern int op_handler_single_qos(ctxt_t *ctxt)
 	qos_cond = xmalloc(sizeof(*qos_cond));
 	qos_cond->name_list = list_create(xfree_ptr);
 	list_append(qos_cond->name_list, params.name);
-	qos_cond->with_deleted = query.with_deleted;
+	if (query.with_deleted)
+		qos_cond->flags |= QOS_COND_FLAG_WITH_DELETED;
 
 	rc = _op_handler_qos(ctxt, qos_cond);
 

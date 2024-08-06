@@ -103,7 +103,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			break;
 		} else if (!end && !xstrncasecmp(argv[i], "WithDeleted",
 						 MAX(command_len, 5))) {
-			qos_cond->with_deleted = 1;
+			qos_cond->flags |= QOS_COND_FLAG_WITH_DELETED;
 		} else if (!end && !xstrncasecmp(argv[i], "where",
 						 MAX(command_len, 5))) {
 			continue;

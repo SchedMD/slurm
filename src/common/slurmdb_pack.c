@@ -4837,6 +4837,8 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 
+		pack16(object->flags, buffer);
+
 		slurm_pack_list(object->format_list,
 				packstr_func,
 				buffer, protocol_version);
@@ -4850,8 +4852,9 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 				buffer, protocol_version);
 
 		pack16(object->preempt_mode, buffer);
-		pack16(object->with_deleted, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint16_tmp;
+
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -4880,7 +4883,13 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 
 
 		pack16(object->preempt_mode, buffer);
-		pack16(object->with_deleted, buffer);
+
+		if (object->flags & QOS_COND_FLAG_WITH_DELETED)
+			uint16_tmp = 1;
+		else
+			uint16_tmp = 0;
+
+		pack16(uint16_tmp, buffer);
 	}
 }
 
@@ -4904,6 +4913,8 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
+		safe_unpack16(&object_ptr->flags, buffer);
+
 		if (slurm_unpack_list(&object_ptr->format_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -4929,8 +4940,9 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
+
 		if (slurm_unpack_list(&object_ptr->description_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -4963,7 +4975,9 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= QOS_COND_FLAG_WITH_DELETED;
 	} else
 		goto unpack_error;
 

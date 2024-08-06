@@ -1557,10 +1557,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_int = job->qosid;
 				if (!g_qos_list) {
-					slurmdb_qos_cond_t qos_cond;
-					memset(&qos_cond, 0,
-					       sizeof(slurmdb_qos_cond_t));
-					qos_cond.with_deleted = 1;
+					slurmdb_qos_cond_t qos_cond = {
+						.flags =
+						QOS_COND_FLAG_WITH_DELETED,
+					};
 					g_qos_list = slurmdb_qos_get(
 						acct_db_conn, &qos_cond);
 				}

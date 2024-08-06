@@ -6300,6 +6300,34 @@ static int DUMP_FUNC(ACCOUNT_CONDITION_WITH_DELETED_V40)(
 	return DUMP(BOOL, flag, dst, args);
 }
 
+static int PARSE_FUNC(QOS_CONDITION_WITH_DELETED_OLD)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_qos_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= QOS_COND_FLAG_WITH_DELETED;
+	else
+		cond->flags &= QOS_COND_FLAG_WITH_DELETED;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(QOS_CONDITION_WITH_DELETED_OLD)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_qos_cond_t *cond = obj;
+	bool flag = cond->flags & QOS_COND_FLAG_WITH_DELETED;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8347,6 +8375,8 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 #undef add_cparse
 #undef add_flags
 
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(slurmdb_qos_cond_t, mtype, false, path, desc)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_qos_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
@@ -8355,9 +8385,10 @@ static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
 	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", "PreemptMode used when jobs in this QOS are preempted"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted QOS"),
+	add_cparse(QOS_CONDITION_WITH_DELETED_OLD, "with_deleted", "Include deleted QOS"),
 };
 #undef add_parse
+#undef add_cparse
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_add_assoc_cond_t, field)
@@ -9495,6 +9526,7 @@ static const parser_t parsers[] = {
 	addpcp(ACCOUNT_CONDITION_WITH_ASSOC_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
 	addpcp(ACCOUNT_CONDITION_WITH_WCOORD_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
 	addpcp(ACCOUNT_CONDITION_WITH_DELETED_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
+	addpcp(QOS_CONDITION_WITH_DELETED_OLD, BOOL, slurmdb_qos_cond_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(EXT_SENSORS_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),

@@ -140,6 +140,9 @@ typedef enum {
 #define	QOS_FLAG_RELATIVE_SET        SLURM_BIT(11)
 #define	QOS_FLAG_PART_QOS            SLURM_BIT(12)
 
+/* Define QOS Cond flags */
+#define	QOS_COND_FLAG_WITH_DELETED SLURM_BIT(0)
+
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
 #define	SLURMDB_RES_FLAG_NOTSET      0x10000000
@@ -1101,11 +1104,11 @@ typedef struct {
 
 typedef struct {
 	List description_list; /* list of char * */
+	uint16_t flags; /* See QOS_COND_FLAG_* */
 	List id_list; /* list of char * */
 	List format_list;/* list of char * */
 	List name_list; /* list of char * */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
-	uint16_t with_deleted;
 } slurmdb_qos_cond_t;
 
 typedef struct {

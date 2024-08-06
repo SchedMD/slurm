@@ -8596,15 +8596,19 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 #undef add_cparse
 #undef add_flags
 
+static const flag_bit_t PARSER_FLAG_ARRAY(QOS_CONDITION_FLAGS)[] = {
+	add_flag_bit(QOS_COND_FLAG_WITH_DELETED, "Include Deleted QOS"),
+};
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_qos_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, description_list, "description", "CSV description list"),
+	add_parse_bit_eflag_array(slurmdb_qos_cond_t, QOS_CONDITION_FLAGS, flags, NULL),
 	add_parse(QOS_ID_STRING_CSV_LIST, id_list, "id", "CSV QOS id list"),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
 	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", NULL),
-	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted QOS"),
 };
 #undef add_parse
 
@@ -10078,6 +10082,7 @@ static const parser_t parsers[] = {
 	addfa(ACCOUNT_FLAGS, uint32_t),
 	addfa(WCKEY_FLAGS, uint32_t),
 	addfa(QOS_FLAGS, uint32_t),
+	addfa(QOS_CONDITION_FLAGS, uint16_t),
 	addfa(QOS_PREEMPT_MODES, uint16_t),
 	addfa(CLUSTER_REC_FLAGS, uint32_t),
 	addfa(NODE_STATES, uint32_t),

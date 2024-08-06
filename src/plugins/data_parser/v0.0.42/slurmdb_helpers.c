@@ -353,7 +353,7 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 
 	if ((parser->needs & NEED_QOS) && !args->qos_list) {
 		slurmdb_qos_cond_t cond = {
-			.with_deleted = 1,
+			.flags = QOS_COND_FLAG_WITH_DELETED,
 		};
 
 		if ((rc = _db_query_list(QUERYING, parser->type, args,

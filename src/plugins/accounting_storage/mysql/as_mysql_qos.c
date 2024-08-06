@@ -1310,7 +1310,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		goto empty;
 	}
 
-	if (qos_cond->with_deleted)
+	if (qos_cond->flags & QOS_COND_FLAG_WITH_DELETED)
 		xstrcat(extra, "where (deleted=0 || deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
