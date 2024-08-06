@@ -743,6 +743,22 @@ fini:
 	return rc;
 }
 
+static void _decrement_node_cnt(int num_nodes_taken, int switch_index,
+				int *switch_node_cnt)
+{
+	for (int i = switch_index; i >= 0; i = switch_record_table[i].parent) {
+		if (switch_node_cnt[i] <= num_nodes_taken) {
+			switch_node_cnt[i] = 0;
+		} else {
+			switch_node_cnt[i] -= num_nodes_taken;
+		}
+
+		/* end once we've reached root switch */
+		if (switch_record_table[i].parent == SWITCH_NO_PARENT)
+			break;
+	}
+}
+
 /* Allocate resources to job using a minimal leaf switch count */
 static int _eval_nodes_topo(topology_eval_t *topo_eval)
 {
@@ -1185,6 +1201,7 @@ try_again:
 
 	/* Add additional resources for already required leaf switches */
 	if (req_nodes_bitmap || req2_nodes_bitmap) {
+		int num_nodes_taken = 0;
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
@@ -1202,6 +1219,7 @@ try_again:
 					avail_cpu_per_node[j] = 0;
 					continue;
 				}
+				num_nodes_taken++;
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -1216,6 +1234,9 @@ try_again:
 					goto fini;
 				}
 			}
+
+			_decrement_node_cnt(num_nodes_taken, i,
+					    switch_node_cnt);
 		}
 	}
 
@@ -1229,6 +1250,7 @@ try_again:
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
 		int best_switch_inx = -1;
+
 		if (prev_rem_nodes == rem_nodes)
 			break; 	/* Stalled */
 		prev_rem_nodes = rem_nodes;
@@ -1280,6 +1302,8 @@ try_again:
 				goto fini;
 			}
 		}
+		_decrement_node_cnt(switch_node_cnt[best_switch_inx],
+				    best_switch_inx, switch_node_cnt);
 		switch_node_cnt[best_switch_inx] = 0;	/* Used all */
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
