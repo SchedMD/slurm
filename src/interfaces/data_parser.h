@@ -576,6 +576,8 @@ typedef enum {
 	DATA_PARSER_KILL_JOBS_RESP_JOB_PTR, /* kill_jobs_resp_job_t* */
 	DATA_PARSER_OPENAPI_KILL_JOBS_RESP, /* openapi_kill_jobs_resp_t */
 	DATA_PARSER_OPENAPI_KILL_JOBS_RESP_PTR, /* openapi_kill_jobs_resp_t* */
+	DATA_PARSER_OPENAPI_KILL_JOB_RESP, /* openapi_kill_jobs_resp_t */
+	DATA_PARSER_OPENAPI_KILL_JOB_RESP_PTR, /* openapi_kill_jobs_resp_t* */
 	DATA_PARSER_PRIORITY_BY_PARTITION, /* slurm_job_info_t */
 	DATA_PARSER_PART_PRIO, /* part_prio_t */
 	DATA_PARSER_PART_PRIO_PTR,
