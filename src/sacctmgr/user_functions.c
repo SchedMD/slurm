@@ -1631,7 +1631,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			   association, just want to know if it
 			   exists.
 			*/
-			del_user_assoc_cond.without_parent_info = 1;
+			del_user_assoc_cond.flags = ASSOC_COND_FLAG_WOPI;
 			del_user_cond.assoc_cond = &del_user_assoc_cond;
 			user_list = slurmdb_users_get(db_conn, &del_user_cond);
 			FREE_NULL_LIST(del_user_list);

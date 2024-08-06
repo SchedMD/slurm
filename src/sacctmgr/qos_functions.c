@@ -744,7 +744,7 @@ static bool _isdefault(List qos_list)
 	xassert(g_qos_list);
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
-	assoc_cond.without_parent_info = 1;
+	assoc_cond.flags = ASSOC_COND_FLAG_WOPI;
 	assoc_cond.def_qos_id_list = list_create(xfree_ptr);
 
 	itr = list_iterator_create(qos_list);

@@ -81,7 +81,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			assoc_cond->flags |= ASSOC_COND_FLAG_SUB_ACCTS;
 		} else if (!end && !xstrncasecmp(argv[i], "WOPInfo",
 						 MAX(command_len, 4))) {
-			assoc_cond->without_parent_info = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_WOPI;
 		} else if (!end && !xstrncasecmp(argv[i], "WOPLimits",
 						 MAX(command_len, 4))) {
 			assoc_cond->without_parent_limits = 1;
