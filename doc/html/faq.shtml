@@ -1184,6 +1184,7 @@ If the cluster's computers used for the primary or backup controller
 will be out of service for an extended period of time, it may be desirable
 to relocate them. In order to do so, follow this procedure:</p>
 <ol>
+<li>(Slurm 23.02 and older) Drain the cluster of running jobs</li>
 <li>Stop all Slurm daemons</li>
 <li>Modify the <i>SlurmctldHost</i> values in the <i>slurm.conf</i> file</li>
 <li>Distribute the updated <i>slurm.conf</i> file to all nodes</li>
@@ -1191,12 +1192,15 @@ to relocate them. In order to do so, follow this procedure:</p>
 make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 <li>Restart all Slurm daemons</li>
 </ol>
-<p>Jobs that were started by the old controller will receive the updated
-controller address and will continue and finish normally. There should be
-no loss of any pending jobs.
+<p>Starting with Slurm 23.11, jobs that were started by the old controller will
+receive the updated controller address and will continue and finish normally.
+On older versions, jobs started by the old controller will still try to report
+back to the older controller.
+In both cases, there should be no loss of any pending jobs.
 Ensure that any nodes added to the cluster have a current <i>slurm.conf</i>
-file installed.
-<b>CAUTION:</b> If two nodes are simultaneously configured as the primary
+file installed.</p>
+
+<p><b>CAUTION:</b> If two nodes are simultaneously configured as the primary
 controller (two nodes on which <i>SlurmctldHost</i> specify the local host
 and the <i>slurmctld</i> daemon is executing on each), system behavior will be
 destructive. If a compute node has an incorrect <i>SlurmctldHost</i> parameter,
