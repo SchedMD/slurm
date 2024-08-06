@@ -61,6 +61,8 @@ typedef struct {
 					   switches */
 } switch_record_t;
 
+#define SWITCH_NO_PARENT 0xffff
+
 extern switch_record_t *switch_record_table;  /* ptr to switch records */
 extern int switch_record_cnt;		/* size of switch_record_table */
 extern int switch_levels;               /* number of switch levels     */

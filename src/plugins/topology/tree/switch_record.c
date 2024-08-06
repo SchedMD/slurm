@@ -382,6 +382,7 @@ extern void switch_record_validate(void)
 	switch_ptr = switch_record_table;
 	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 		ptr = ptr_array[i];
+		switch_ptr->parent = SWITCH_NO_PARENT;
 		switch_ptr->name = xstrdup(ptr->switch_name);
 		/* See if switch name has already been defined. */
 		prior_ptr = switch_record_table;
