@@ -794,7 +794,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 		}
 	}
 
-	acct_cond->assoc_cond->only_defs = 0;
+	acct_cond->assoc_cond->flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;;
 
 	notice_thread_init();
 	if (cond_set == SA_SET_USER) {

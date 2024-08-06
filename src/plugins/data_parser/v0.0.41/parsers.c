@@ -6472,6 +6472,34 @@ static int DUMP_FUNC(ASSOC_CONDITION_WITH_USAGE_OLD)(
 	return DUMP(BOOL, flag, dst, args);
 }
 
+static int PARSE_FUNC(ASSOC_CONDITION_ONLY_DEFS_OLD)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= ASSOC_COND_FLAG_ONLY_DEFS;
+	else
+		cond->flags &= ASSOC_COND_FLAG_ONLY_DEFS;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ASSOC_CONDITION_ONLY_DEFS_OLD)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag = cond->flags & ASSOC_COND_FLAG_ONLY_DEFS;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8699,7 +8727,7 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV id list"),
-	add_parse(BOOL16, only_defs, "only_defaults", "Filter to only defaults"),
+	add_cparse(ASSOC_CONDITION_ONLY_DEFS_OLD, "only_defaults", "Filter to only defaults"),
 	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, qos_list, "qos", "CSV QOS list"),
@@ -9941,6 +9969,7 @@ static const parser_t parsers[] = {
 	addpcp(QOS_CONDITION_WITH_DELETED_OLD, BOOL, slurmdb_qos_cond_t, NEED_NONE, NULL),
 	addpcp(ASSOC_CONDITION_WITH_DELETED_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 	addpcp(ASSOC_CONDITION_WITH_USAGE_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
+	addpcp(ASSOC_CONDITION_ONLY_DEFS_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(SELECT_PLUGIN_ID, STRING, SLURM_24_05_PROTOCOL_VERSION),

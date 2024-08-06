@@ -1368,8 +1368,9 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	user_cond = get_msg->cond;
 	if ((!user_cond->with_assocs && !user_cond->with_wckeys)
-	    && ((slurmdbd_conn->conn->version < 8)
-		|| (user_cond->assoc_cond->only_defs))) {
+	    && ((slurmdbd_conn->conn->version < 8) ||
+		(user_cond->assoc_cond->flags &
+		 ASSOC_COND_FLAG_ONLY_DEFS))) {
 		List cluster_list = user_cond->assoc_cond->cluster_list;
 		/* load up with just this cluster to query against
 		 * since befor 2.2 we had only 1 default account so

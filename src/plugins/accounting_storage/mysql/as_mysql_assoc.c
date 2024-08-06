@@ -1238,7 +1238,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	else
 		xstrfmtcat(*extra, " t1.deleted=0");
 
-	if (assoc_cond->only_defs) {
+	if (assoc_cond->flags & ASSOC_COND_FLAG_ONLY_DEFS) {
 		set = 1;
 		xstrfmtcat(*extra, " && (%s.is_def=1)", prefix);
 	}

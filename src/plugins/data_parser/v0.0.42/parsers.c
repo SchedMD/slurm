@@ -8661,6 +8661,7 @@ static const parser_t PARSER_ARRAY(USERS_ADD_COND)[] = {
 static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_CONDITION_FLAGS)[] = {
 	add_flag_bit(ASSOC_COND_FLAG_WITH_DELETED, "Include deleted associations"),
 	add_flag_bit(ASSOC_COND_FLAG_WITH_USAGE, "Include Usage"),
+	add_flag_bit(ASSOC_COND_FLAG_ONLY_DEFS, "Filter to only defaults"),
 };
 
 #define add_parse(mtype, field, path, desc) \
@@ -8672,7 +8673,6 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse_bit_eflag_array(slurmdb_assoc_cond_t, ASSOC_CONDITION_FLAGS, flags, NULL),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV id list"),
-	add_parse(BOOL16, only_defs, "only_defaults", "filter to only defaults"),
 	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, qos_list, "qos", "CSV QOS list"),

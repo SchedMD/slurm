@@ -1823,7 +1823,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			curr_user_list = slurmdb_users_get(db_conn, &user_cond);
 
 			user_cond.assoc_cond = NULL;
-			assoc_cond.only_defs = 0;
+			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 
 			/* make sure this person running is an admin */
 			user_name = uid_to_string_cached(my_uid);

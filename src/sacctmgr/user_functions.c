@@ -282,7 +282,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				/* We need this to get the defaults. (Usually
 				 * only for the calling cluster) */
 				if (xstrcasestr(argv[i]+end, "default"))
-					assoc_cond->only_defs = 1;
+					assoc_cond->flags |=
+						ASSOC_COND_FLAG_ONLY_DEFS;
 
 				slurm_addto_char_list(format_list, argv[i]+end);
 			}
@@ -974,11 +975,12 @@ extern int sacctmgr_list_user(int argc, char **argv)
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 		else
-			user_cond->assoc_cond->only_defs = 1;
+			user_cond->assoc_cond->flags |=
+				ASSOC_COND_FLAG_ONLY_DEFS;
 	}
 	/* If we are getting associations we want to disable only defs */
 	if (user_cond->with_assocs) {
-		user_cond->assoc_cond->only_defs = 0;
+		user_cond->assoc_cond->flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 		user_cond->with_wckeys = 1;
 	}
 

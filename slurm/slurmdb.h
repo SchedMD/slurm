@@ -270,6 +270,7 @@ typedef enum {
 /* Assoc Cond flags */
 #define	ASSOC_COND_FLAG_WITH_DELETED SLURM_BIT(0)
 #define	ASSOC_COND_FLAG_WITH_USAGE SLURM_BIT(1)
+#define	ASSOC_COND_FLAG_ONLY_DEFS SLURM_BIT(2)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
@@ -311,8 +312,6 @@ typedef struct {
 	uint32_t flags;         /* Query flags */
 	List format_list; 	/* list of char * */
 	List id_list;		/* list of char */
-
-	uint16_t only_defs;  /* only send back defaults */
 
 	List parent_acct_list;	/* name of parent account */
 	List partition_list;	/* list of char * */

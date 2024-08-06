@@ -3621,9 +3621,6 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 
-
-		pack16(object->only_defs, buffer);
-
 		slurm_pack_list(object->partition_list,
 				packstr_func,
 				buffer, protocol_version);
@@ -3700,7 +3697,8 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 				buffer, protocol_version);
 
 
-		pack16(object->only_defs, buffer);
+		pack16((object->flags & ASSOC_COND_FLAG_ONLY_DEFS) ? 1 : 0,
+		       buffer);
 
 		slurm_pack_list(object->partition_list,
 				packstr_func,
@@ -3790,8 +3788,6 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&object_ptr->only_defs, buffer);
-
 		if (slurm_unpack_list(&object_ptr->partition_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -3867,7 +3863,9 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&object_ptr->only_defs, buffer);
+		safe_unpack16(&tmp16, buffer);
+		if (tmp16)
+			object_ptr->flags |= ASSOC_COND_FLAG_ONLY_DEFS;
 
 		if (slurm_unpack_list(&object_ptr->partition_list,
 				      safe_unpackstr_func,

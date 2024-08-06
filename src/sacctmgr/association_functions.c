@@ -63,7 +63,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 		if (!end && !xstrncasecmp(argv[i], "OnlyDefaults",
 					  MAX(command_len, 2))) {
-			assoc_cond->only_defs = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_ONLY_DEFS;
 			set = 1;
 		} else if (!end && !xstrncasecmp(argv[i], "Tree",
 					  MAX(command_len, 4))) {

@@ -120,7 +120,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (user_cond->assoc_cond->user_list)
 			assoc_cond.user_list = user_cond->assoc_cond->user_list;
 	}
-	assoc_cond.only_defs = 1;
+	assoc_cond.flags |= ASSOC_COND_FLAG_ONLY_DEFS;
 	tmp_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
 	if (tmp_list) {
 		slurmdb_assoc_rec_t *object = NULL;
@@ -1808,9 +1808,10 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if (user_cond && (user_cond->with_assocs
-			  || (user_cond->assoc_cond
-			      && user_cond->assoc_cond->only_defs))) {
+	if (user_cond && (user_cond->with_assocs ||
+			  (user_cond->assoc_cond &&
+			   (user_cond->assoc_cond->flags &
+			    ASSOC_COND_FLAG_ONLY_DEFS)))) {
 		list_itr_t *assoc_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
@@ -1877,9 +1878,10 @@ empty:
 	}
 
 get_wckeys:
-	if (user_cond && (user_cond->with_wckeys
-			  || (user_cond->assoc_cond
-			      && user_cond->assoc_cond->only_defs))) {
+	if (user_cond && (user_cond->with_wckeys ||
+			  (user_cond->assoc_cond &&
+			   (user_cond->assoc_cond->flags &
+			    ASSOC_COND_FLAG_ONLY_DEFS)))) {
 		list_itr_t *wckey_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
@@ -1893,7 +1895,8 @@ get_wckeys:
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
 			wckey_cond.only_defs =
-				user_cond->assoc_cond->only_defs;
+				user_cond->assoc_cond->flags &
+				ASSOC_COND_FLAG_ONLY_DEFS;
 		}
 		wckey_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
 
