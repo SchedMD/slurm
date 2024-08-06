@@ -59,13 +59,15 @@ static void _topo_add_dist(uint32_t *dist, int inx)
  */
 static int _topo_compare_switches(int i, int j, int rem_nodes,
 				  int *switch_node_cnt, int rem_cpus,
-				  uint32_t *switch_cpu_cnt)
+				  uint32_t *switch_cpu_cnt, bool *i_fit_out)
 {
 	while (1) {
 		bool i_fit = ((switch_node_cnt[i] >= rem_nodes) &&
 			      (switch_cpu_cnt[i] >= rem_cpus));
 		bool j_fit = ((switch_node_cnt[j] >= rem_nodes) &&
 			      (switch_cpu_cnt[j] >= rem_cpus));
+		*i_fit_out = i_fit;
+
 		if (i_fit && j_fit) {
 			if (switch_node_cnt[i] < switch_node_cnt[j])
 				return 1;
@@ -107,6 +109,7 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 				     int rem_cpus, int i, int *best_switch)
 {
 	int tcs = 0;
+	bool i_fit = false;
 
 	if (*best_switch == -1 || dist[i] == INFINITE || !switch_node_cnt[i]) {
 		/*
@@ -118,8 +121,9 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 	}
 
 	tcs = _topo_compare_switches(i, *best_switch, rem_nodes,
-				     switch_node_cnt, rem_cpus, switch_cpu_cnt);
-	if (((dist[i] < dist[*best_switch]) && (tcs >= 0)) ||
+				     switch_node_cnt, rem_cpus, switch_cpu_cnt,
+				     &i_fit);
+	if (((dist[i] < dist[*best_switch]) && i_fit) ||
 	    ((dist[i] == dist[*best_switch]) && (tcs > 0))) {
 		/*
 		 * If closer and fit request OR
