@@ -10301,6 +10301,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_STATE_RESP, openapi_resp_job_state_t, NULL, NULL),
 	addoar(OPENAPI_KILL_JOBS_RESP),
 	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
+	addalias(OPENAPI_KILL_JOB_RESP, OPENAPI_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
