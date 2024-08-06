@@ -3646,7 +3646,6 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 
 
 		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
 		pack16(object->with_raw_qos, buffer);
 		pack16(object->with_sub_accts, buffer);
 		pack16(object->without_parent_info, buffer);
@@ -3727,7 +3726,8 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 
 
 		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
+		pack16((object->flags & ASSOC_COND_FLAG_WITH_DELETED) ? 1 : 0,
+		       buffer);
 		pack16(object->with_raw_qos, buffer);
 		pack16(object->with_sub_accts, buffer);
 		pack16(object->without_parent_info, buffer);
@@ -3825,12 +3825,12 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
 		safe_unpack16(&object_ptr->with_raw_qos, buffer);
 		safe_unpack16(&object_ptr->with_sub_accts, buffer);
 		safe_unpack16(&object_ptr->without_parent_info, buffer);
 		safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp16;
 		if (slurm_unpack_list(&object_ptr->acct_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -3903,7 +3903,9 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&tmp16, buffer);
+		if (tmp16)
+			object_ptr->flags |= ASSOC_COND_FLAG_WITH_DELETED;
 		safe_unpack16(&object_ptr->with_raw_qos, buffer);
 		safe_unpack16(&object_ptr->with_sub_accts, buffer);
 		safe_unpack16(&object_ptr->without_parent_info, buffer);

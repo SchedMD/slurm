@@ -126,6 +126,7 @@ typedef enum {
 	DATA_PARSER_ASSOC, /* slurmdb_assoc_rec_t */
 	DATA_PARSER_ASSOC_PTR, /* slurmdb_assoc_rec_t* */
 	DATA_PARSER_ASSOC_FLAGS, /* slurmdb_assoc_flags_t */
+	DATA_PARSER_ASSOC_CONDITION_FLAGS, /* slurmdb_assoc_cond_t->flags & ASSOC_FLAG_COND_* */
 	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
 	DATA_PARSER_ASSOC_REC_SET, /* slurmdb_assoc_rec_t */
@@ -134,6 +135,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_ASSOC_CONDITION, /* slurmdb_assoc_cond_t */
 	DATA_PARSER_ASSOC_CONDITION_PTR, /* slurmdb_assoc_cond_t* */
+	DATA_PARSER_ASSOC_CONDITION_WITH_DELETED_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_FLAG_WITH_DELETED */
 	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */

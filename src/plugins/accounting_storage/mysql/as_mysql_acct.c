@@ -1036,7 +1036,8 @@ empty:
 		FREE_NULL_LIST(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
-			acct_cond->assoc_cond->with_deleted = 1;
+			acct_cond->assoc_cond->flags |=
+				ASSOC_COND_FLAG_WITH_DELETED;
 	}
 
 	while ((row = mysql_fetch_row(result))) {

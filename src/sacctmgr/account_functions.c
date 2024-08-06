@@ -93,7 +93,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			acct_cond->flags |= SLURMDB_ACCT_FLAG_DELETED;
-			assoc_cond->with_deleted = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_WITH_DELETED;
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {

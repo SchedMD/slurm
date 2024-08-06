@@ -1233,7 +1233,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	 * Don't use prefix here, always use t1 or we could get extra "deleted"
 	 * entries we don't want.
 	 */
-	if (assoc_cond->with_deleted)
+	if (assoc_cond->flags & ASSOC_COND_FLAG_WITH_DELETED)
 		xstrfmtcat(*extra, " (t1.deleted=0 || t1.deleted=1)");
 	else
 		xstrfmtcat(*extra, " t1.deleted=0");

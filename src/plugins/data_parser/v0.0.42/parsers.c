@@ -8658,12 +8658,17 @@ static const parser_t PARSER_ARRAY(USERS_ADD_COND)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_CONDITION_FLAGS)[] = {
+	add_flag_bit(ASSOC_COND_FLAG_WITH_DELETED, "Include deleted associations"),
+};
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_assoc_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, acct_list, "account", "CSV accounts list"),
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
+	add_parse_bit_eflag_array(slurmdb_assoc_cond_t, ASSOC_CONDITION_FLAGS, flags, NULL),
 	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV id list"),
 	add_parse(BOOL16, only_defs, "only_defaults", "filter to only defaults"),
@@ -8674,7 +8679,6 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
 	add_parse(BOOL16, with_usage, "with_usage", "fill in usage"),
-	add_parse(BOOL16, with_deleted, "with_deleted", "return deleted associations"),
 	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "return a raw qos or delta_qos"),
 	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "return sub acct information also"),
 	add_parse(BOOL16, without_parent_info, "without_parent_info", "don't give me parent id/name"),
@@ -10077,6 +10081,7 @@ static const parser_t parsers[] = {
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
+	addfa(ASSOC_CONDITION_FLAGS, uint32_t),
 	addfa(USER_FLAGS, uint32_t),
 	addfa(SLURMDB_JOB_FLAGS, uint32_t),
 	addfa(ACCOUNT_FLAGS, uint32_t),
