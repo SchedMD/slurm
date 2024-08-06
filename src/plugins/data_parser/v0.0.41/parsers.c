@@ -6561,7 +6561,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
 	add_flag_eq(ASSOC_FLAG_NONE, ASSOC_FLAG_BASE, "NONE", true, "no flags set"),
 	add_flag_eq(ASSOC_FLAG_BASE, ASSOC_FLAG_BASE, "BASE_MASK", true, "mask for flags not stored in database"),
 	add_flag_eq(ASSOC_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
-	add_flag(ASSOC_FLAG_DELETED, ASSOC_FLAG_BASE, "DELETED", false, "assocation deleted"),
+	add_flag(ASSOC_FLAG_DELETED, ASSOC_FLAG_BASE, "DELETED", false, "association deleted"),
 	add_flag(ASSOC_FLAG_NO_UPDATE, ASSOC_FLAG_BASE, "NoUpdate", false, "No update requested"),
 	add_flag(ASSOC_FLAG_EXACT, ASSOC_FLAG_BASE, "Exact", false, "only match partition association"),
 	add_flag(ASSOC_FLAG_USER_COORD_NO, ASSOC_FLAG_BASE, "NoUsersAreCoords", false, "removed users are coordinators"),
@@ -7189,7 +7189,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_parse(STRING, control_host, "controller/host", "ControlHost"),
 	add_parse(UINT32, control_port, "controller/port", "ControlPort"),
 	add_skip(dim_size), /* BG deprecated */
-	add_skip(fed), /* federation not supportted */
+	add_skip(fed), /* federation not supported */
 	add_parse_bit_flag_array(slurmdb_cluster_rec_t, CLUSTER_REC_FLAGS, false, flags, "flags", "Flags"),
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", "ClusterName"),
@@ -8688,7 +8688,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Assocation filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Association filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
 	add_parse_bit_eflag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS, flags, "Query flags"),
 };
@@ -8900,7 +8900,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 	add_parser(shares_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(shares_response_msg_t, field)
 static const parser_t PARSER_ARRAY(SHARES_RESP_MSG)[] = {
-	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Assocation shares"),
+	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Association shares"),
 	add_parse(UINT64, tot_shares, "total_shares", "Total number of shares"),
 	add_skip(tres_cnt),
 	add_skip(tres_names),
@@ -8920,7 +8920,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
 	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
 static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
-	add_parse(UINT32, obj.assoc_id, "id", "Assocation ID"),
+	add_parse(UINT32, obj.assoc_id, "id", "Association ID"),
 	add_parse(STRING, obj.cluster, "cluster", "Cluster name"),
 	add_parse(STRING, obj.name, "name", "Share name"),
 	add_parse(STRING, obj.parent, "parent", "Parent name"),
