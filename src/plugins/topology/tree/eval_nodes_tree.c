@@ -63,9 +63,9 @@ static int _topo_compare_switches(int i, int j, int rem_nodes,
 {
 	while (1) {
 		bool i_fit = ((switch_node_cnt[i] >= rem_nodes) &&
-			      (switch_cpu_cnt[i] >= rem_cpus));
+			      ((int) switch_cpu_cnt[i] >= rem_cpus));
 		bool j_fit = ((switch_node_cnt[j] >= rem_nodes) &&
-			      (switch_cpu_cnt[j] >= rem_cpus));
+			      ((int) switch_cpu_cnt[j] >= rem_cpus));
 		*i_fit_out = i_fit;
 
 		if (i_fit && j_fit) {
