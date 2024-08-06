@@ -854,7 +854,7 @@ extern int cluster_account_by_user(int argc, char **argv)
 
 	print_fields_list = list_create(destroy_print_field);
 
-	assoc_cond->with_sub_accts = 1;
+	assoc_cond->flags = ASSOC_COND_FLAG_SUB_ACCTS;
 
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 	if (!list_count(format_list)) {

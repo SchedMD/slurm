@@ -1250,7 +1250,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			if (assoc_cond->with_sub_accts) {
+			if (assoc_cond->flags & ASSOC_COND_FLAG_SUB_ACCTS) {
 				xstrfmtcat(*extra,
 					   "%s.lineage like '%%/%s/%%'",
 					   prefix, object);

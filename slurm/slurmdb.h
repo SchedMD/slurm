@@ -272,6 +272,7 @@ typedef enum {
 #define	ASSOC_COND_FLAG_WITH_USAGE SLURM_BIT(1)
 #define	ASSOC_COND_FLAG_ONLY_DEFS SLURM_BIT(2)
 #define	ASSOC_COND_FLAG_RAW_QOS SLURM_BIT(3)
+#define	ASSOC_COND_FLAG_SUB_ACCTS SLURM_BIT(4)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
@@ -324,7 +325,6 @@ typedef struct {
 
 	List user_list;		/* list of char * */
 
-	uint16_t with_sub_accts; /* return sub acct information also */
 	uint16_t without_parent_info; /* don't give me parent id/name */
 	uint16_t without_parent_limits; /* don't give me limits from
 					 * parents */
