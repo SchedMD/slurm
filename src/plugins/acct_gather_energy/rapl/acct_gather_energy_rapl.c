@@ -83,6 +83,23 @@
 #define MSR_DRAM_PERF_STATUS            0x61B
 #define MSR_DRAM_POWER_INFO             0x61C
 
+/*
+ * Processors list extracted from linux/drivers/powercap/intel_rapl_common.c.
+ *
+ * The ones in this list are the ones that in the rapl_ids list use the
+ * rapl_defaults_hsw_server struct. This struct has the dram_domain_energy_unit
+ * hardcoded to 15300 indicating that the DRAM uses this specific energy unit.
+ *
+ * This list should be in sync with _is_dram_model()'s dram_models[] variable.
+ */
+#define INTEL_HASWELL_X 63
+#define INTEL_BROADWELL_X 79
+#define INTEL_SKYLAKE_X 85
+#define INTEL_ICELAKE_X 106
+#define INTEL_ICELAKE_D 108
+#define INTEL_XEON_PHI_KNL 87
+#define INTEL_XEON_PHI_KNM 133
+
 union {
 	uint64_t val;
 	struct {
@@ -126,6 +143,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static acct_gather_energy_t *local_energy = NULL;
 
 static int dataset_id = -1; /* id of the dataset for profile data */
+static bool dram_specific_unit = false;
 
 /* one cpu in the package */
 static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
@@ -234,11 +252,29 @@ static int _open_msr(int core)
 	return fd;
 }
 
+static bool _is_dram_model(int model)
+{
+	/* List of processors that have specific DRAM energy units. */
+	int dram_models[] = { INTEL_HASWELL_X,   INTEL_BROADWELL_X,
+			      INTEL_SKYLAKE_X,   INTEL_ICELAKE_X,
+			      INTEL_ICELAKE_D,   INTEL_XEON_PHI_KNL,
+			      INTEL_XEON_PHI_KNM };
+
+	for (int i = 0; i < (sizeof(dram_models) / sizeof(int)); i++) {
+		if (model == dram_models[i]) {
+			log_flag(ENERGY, "RAPL Using different energy units for DRAM in this processor.");
+			return true;
+		}
+	}
+	return false;
+}
+
 static void _hardware(void)
 {
 	char buf[1024];
 	FILE *fd;
-	int cpu = -1, pkg = -1;
+	int cpu = -1, pkg = -1, family = 0, model = 0;
+	bool vendor_intel = false;
 
 	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
 		fatal("RAPL: error on attempt to open /proc/cpuinfo");
@@ -266,8 +302,28 @@ static void _hardware(void)
 			}
 			continue;
 		}
+		if (!xstrncmp(buf, "vendor_id", (sizeof("vendor_id") - 1))) {
+			if (xstrcasestr(buf, "GenuineIntel"))
+				vendor_intel = true;
+			continue;
+		}
+		if (!xstrncmp(buf, "cpu family", (sizeof("cpu family") - 1))) {
+			sscanf(buf, "cpu family\t: %d", &family);
+			continue;
+		}
+		if (!xstrncmp(buf, "model", (sizeof("model") - 1))) {
+			sscanf(buf, "model\t: %d", &model);
+			continue;
+		}
 	}
 	fclose(fd);
+
+	/*
+	 * In case this in an Intel processor of family 6 check whether it has
+	 * different DRAM energy units.
+	 */
+	if (vendor_intel && (family == 6))
+		dram_specific_unit = _is_dram_model(model);
 
 	log_flag(ENERGY, "RAPL Found: %d packages", nb_pkg);
 }
@@ -301,9 +357,9 @@ _send_drain_request(void)
 static void _get_joules_task(acct_gather_energy_t *energy)
 {
 	int i;
-	double energy_units;
+	double energy_units, dram_energy_units;
 	uint64_t result;
-	double ret;
+	double ret = 0;
 	static uint32_t readings = 0;
 
 	if (pkg_fd[0] < 0) {
@@ -323,6 +379,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	 */
 	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
+	dram_energy_units = dram_specific_unit ? (pow(0.5, 16)) : energy_units;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ENERGY) {
 		double power_units = pow(0.5, (double)(result&0xf));
@@ -344,13 +401,11 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		info("RAPL Max power = %ld w", max_power);
 	}
 
-	result = 0;
-	for (i = 0; i < nb_pkg; i++)
-		result += _get_package_energy(i) + _get_dram_energy(i);
-
-	ret = (double)result * energy_units;
-
-	log_flag(ENERGY, "RAPL Result %"PRIu64" = %.6f Joules", result, ret);
+	for (i = 0; i < nb_pkg; i++) {
+		ret += _get_package_energy(i) * energy_units;
+		ret += _get_dram_energy(i) * dram_energy_units;
+	}
+	log_flag(ENERGY, "RAPL Result %.6f Joules", ret);
 
 	if (energy->consumed_energy) {
 		time_t interval;
