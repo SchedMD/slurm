@@ -2202,14 +2202,20 @@ static bool _ns_path_disabled(const char *ns_path)
  */
 static bool _ns_disabled()
 {
+	static int disabled = -1;
 	char *pid_ns_path = "/proc/sys/user/max_pid_namespaces";
 	char *mnt_ns_path = "/proc/sys/user/max_mnt_namespaces";
 
+	if (disabled != -1)
+		return disabled;
+
+	disabled = false;
+
 	if (_ns_path_disabled(pid_ns_path) ||
 	    _ns_path_disabled(mnt_ns_path))
-		return true;
+		disabled = true;
 
-	return false;
+	return disabled;
 }
 
 /*
