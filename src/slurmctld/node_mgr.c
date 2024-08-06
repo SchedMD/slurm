@@ -416,26 +416,8 @@ extern int load_all_node_state ( bool state_only )
 			 * cpu_spec_list, core_spec_cnt, port are only restored
 			 * for dynamic nodes, otherwise always trust slurm.conf
 			 */
-			config_record_t *config_ptr;
-			config_ptr = create_config_record();
-			config_ptr->boards = node_state_rec->boards;
-			config_ptr->core_spec_cnt =
-				node_state_rec->core_spec_cnt;
-			config_ptr->cores = node_state_rec->cores;
-			config_ptr->cpu_spec_list =
-				xstrdup(node_state_rec->cpu_spec_list);
-			config_ptr->cpus = node_state_rec->cpus;
-			config_ptr->feature = xstrdup(node_state_rec->features);
-			config_ptr->gres = xstrdup(node_state_rec->gres);
-			config_ptr->node_bitmap = bit_alloc(node_record_count);
-			config_ptr->nodes = xstrdup(node_state_rec->name);
-			config_ptr->real_memory = node_state_rec->real_memory;
-			config_ptr->res_cores_per_gpu =
-				node_state_rec->res_cores_per_gpu;
-			config_ptr->threads = node_state_rec->threads;
-			config_ptr->tmp_disk = node_state_rec->tmp_disk;
-			config_ptr->tot_sockets = node_state_rec->tot_sockets;
-			config_ptr->weight = node_state_rec->weight;
+			config_record_t *config_ptr =
+				config_record_from_node_record(node_state_rec);
 
 			if ((error_code = add_node_record(node_state_rec->name,
 							  config_ptr,
