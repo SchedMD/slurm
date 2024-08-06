@@ -84,7 +84,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 	user_cond->with_deleted = 1;
 	user_cond->with_assocs = 1;
-	user_cond->assoc_cond->with_usage = 1;
+	user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE;
 	user_cond->assoc_cond->without_parent_info = 1;
 
 	/* This needs to be done on some systems to make sure

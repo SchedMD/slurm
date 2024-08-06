@@ -59,13 +59,12 @@ hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond)
     assoc_cond->usage_start = start_time;
     assoc_cond->usage_end = end_time;
 
-    assoc_cond->with_usage = 1;
+    assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE;
     assoc_cond->with_raw_qos = 0;
     assoc_cond->with_sub_accts = 0;
     assoc_cond->without_parent_info = 0;
     assoc_cond->without_parent_limits = 0;
 
-    FETCH_FIELD(hv, assoc_cond, with_usage,            uint16_t, FALSE);
     FETCH_FIELD(hv, assoc_cond, with_raw_qos,          uint16_t, FALSE);
     FETCH_FIELD(hv, assoc_cond, with_sub_accts,        uint16_t, FALSE);
     FETCH_FIELD(hv, assoc_cond, without_parent_info,   uint16_t, FALSE);

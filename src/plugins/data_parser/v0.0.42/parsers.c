@@ -8660,6 +8660,7 @@ static const parser_t PARSER_ARRAY(USERS_ADD_COND)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_CONDITION_FLAGS)[] = {
 	add_flag_bit(ASSOC_COND_FLAG_WITH_DELETED, "Include deleted associations"),
+	add_flag_bit(ASSOC_COND_FLAG_WITH_USAGE, "Include Usage"),
 };
 
 #define add_parse(mtype, field, path, desc) \
@@ -8678,7 +8679,6 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp"),
 	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
-	add_parse(BOOL16, with_usage, "with_usage", "fill in usage"),
 	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "return a raw qos or delta_qos"),
 	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "return sub acct information also"),
 	add_parse(BOOL16, without_parent_info, "without_parent_info", "don't give me parent id/name"),

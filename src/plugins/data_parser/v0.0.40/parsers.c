@@ -6356,6 +6356,34 @@ static int DUMP_FUNC(ASSOC_CONDITION_WITH_DELETED_OLD)(
 	return DUMP(BOOL, flag, dst, args);
 }
 
+static int PARSE_FUNC(ASSOC_CONDITION_WITH_USAGE_OLD)(
+	const parser_t *const parser, void *obj, data_t *src, args_t *args,
+	data_t *parent_path)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag;
+	int rc;
+
+	if ((rc = PARSE(BOOL, flag, src, parent_path, args)))
+		return rc;
+
+	if (flag)
+		cond->flags |= ASSOC_COND_FLAG_WITH_USAGE;
+	else
+		cond->flags &= ASSOC_COND_FLAG_WITH_USAGE;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(ASSOC_CONDITION_WITH_USAGE_OLD)(
+	const parser_t *const parser, void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_assoc_cond_t *cond = obj;
+	bool flag = cond->flags & ASSOC_COND_FLAG_WITH_USAGE;
+
+	return DUMP(BOOL, flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8481,7 +8509,7 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
 	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
-	add_parse(BOOL16, with_usage, "with_usage", "Include usage"),
+	add_cparse(ASSOC_CONDITION_WITH_USAGE_OLD, "with_usage", "Include usage"),
 	add_cparse(ASSOC_CONDITION_WITH_DELETED_OLD, "with_deleted", "Include deleted associations"),
 	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "Include a raw qos or delta_qos"),
 	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "Include sub acct information also"),
@@ -9559,6 +9587,7 @@ static const parser_t parsers[] = {
 	addpcp(ACCOUNT_CONDITION_WITH_DELETED_V40, BOOL, slurmdb_account_cond_t, NEED_NONE, NULL),
 	addpcp(QOS_CONDITION_WITH_DELETED_OLD, BOOL, slurmdb_qos_cond_t, NEED_NONE, NULL),
 	addpcp(ASSOC_CONDITION_WITH_DELETED_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
+	addpcp(ASSOC_CONDITION_WITH_USAGE_OLD, BOOL, slurmdb_assoc_cond_t, NEED_NONE, NULL),
 
 	/* Removed parsers */
 	addr(EXT_SENSORS_DATA, void *, OBJECT, SLURM_24_05_PROTOCOL_VERSION),
