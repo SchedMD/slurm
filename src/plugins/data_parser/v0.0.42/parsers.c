@@ -6599,7 +6599,7 @@ static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 	add_parse(STRING, acct, "account", "Association account (if assigned)"),
 	add_parse(STRING, cluster, "cluster", "Association cluster (if assigned)"),
 	add_parse(STRING, partition, "partition", "Association partition (if assigned)"),
-	add_parse_req(STRING, user, "user", "Assocation user (if assigned)"),
+	add_parse_req(STRING, user, "user", "Association user (if assigned)"),
 	add_parse(UINT32, id, "id", "Numeric Association ID (if known)"),
 };
 #undef add_parse
@@ -6617,7 +6617,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
 	add_flag_eq(ASSOC_FLAG_NONE, ASSOC_FLAG_BASE, "NONE", true, "no flags set"),
 	add_flag_eq(ASSOC_FLAG_BASE, ASSOC_FLAG_BASE, "BASE_MASK", true, "mask for flags not stored in database"),
 	add_flag_eq(ASSOC_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
-	add_flag(ASSOC_FLAG_DELETED, ASSOC_FLAG_BASE, "DELETED", false, "assocation deleted"),
+	add_flag(ASSOC_FLAG_DELETED, ASSOC_FLAG_BASE, "DELETED", false, "association deleted"),
 	add_flag(ASSOC_FLAG_NO_UPDATE, ASSOC_FLAG_BASE, "NoUpdate", false, "No update requested"),
 	add_flag(ASSOC_FLAG_EXACT, ASSOC_FLAG_BASE, "Exact", false, "only match partition association"),
 	add_flag(ASSOC_FLAG_USER_COORD_NO, ASSOC_FLAG_BASE, "NoUsersAreCoords", false, "removed users are coordinators"),
@@ -6950,7 +6950,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 	add_flag_eq(SLURMDB_ACCT_FLAG_NONE, SLURMDB_ACCT_FLAG_BASE, "NONE", true, "no flags set"),
 	add_flag_eq(SLURMDB_ACCT_FLAG_BASE, SLURMDB_ACCT_FLAG_BASE, "BASE_MASK", true, "mask for flags not stored in database"),
 	add_flag_eq(SLURMDB_ACCT_FLAG_INVALID, INFINITE64, "INVALID", true, "invalid flag detected"),
-	add_flag(SLURMDB_ACCT_FLAG_DELETED, SLURMDB_ACCT_FLAG_BASE, "DELETED", false, "include deleted assocations"),
+	add_flag(SLURMDB_ACCT_FLAG_DELETED, SLURMDB_ACCT_FLAG_BASE, "DELETED", false, "include deleted associations"),
 	add_flag(SLURMDB_ACCT_FLAG_WASSOC, SLURMDB_ACCT_FLAG_BASE, "WithAssociations", false, "query includes associations"),
 	add_flag(SLURMDB_ACCT_FLAG_WCOORD, SLURMDB_ACCT_FLAG_BASE, "WithCoordinators", false,  "query includes coordinators"),
 	add_flag(SLURMDB_ACCT_FLAG_USER_COORD_NO, SLURMDB_ACCT_FLAG_BASE, "NoUsersAreCoords", false, "remove users as coordinators"),
@@ -7259,7 +7259,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_parse(STRING, control_host, "controller/host", NULL),
 	add_parse(UINT32, control_port, "controller/port", NULL),
 	add_skip(dim_size), /* BG deprecated */
-	add_skip(fed), /* federation not supportted */
+	add_skip(fed), /* federation not supported */
 	add_parse_bit_flag_array(slurmdb_cluster_rec_t, CLUSTER_REC_FLAGS, false, flags, "flags", NULL),
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", NULL),
@@ -8723,7 +8723,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
 	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
-	add_parse(BOOL, with_assocs, "with_assocs", "Include assocations"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include associations"),
 	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
 	add_parse(BOOL, with_wckeys, "with_wckeys", "Include wckeys"),
 };
@@ -8982,7 +8982,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 	add_parser(shares_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(shares_response_msg_t, field)
 static const parser_t PARSER_ARRAY(SHARES_RESP_MSG)[] = {
-	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Assocation shares"),
+	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Association shares"),
 	add_parse(UINT64, tot_shares, "total_shares", "Total number of shares"),
 	add_skip(tres_cnt),
 	add_skip(tres_names),
@@ -9002,7 +9002,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
 	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
 static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
-	add_parse(UINT32, obj.assoc_id, "id", "assocation id"),
+	add_parse(UINT32, obj.assoc_id, "id", "association id"),
 	add_parse(STRING, obj.cluster, "cluster", "cluster name"),
 	add_parse(STRING, obj.name, "name", "share name"),
 	add_parse(STRING, obj.parent, "parent", "parent name"),
@@ -9386,9 +9386,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
-	add_parse(UINT32, resp.job_id, "job_id", "submited JobId"),
-	add_parse(STEP_ID, resp.step_id, "step_id", "submited StepID"),
-	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),
+	add_parse(UINT32, resp.job_id, "job_id", "submitted JobId"),
+	add_parse(STEP_ID, resp.step_id, "step_id", "submitted StepID"),
+	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
@@ -9515,7 +9515,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_alloc_response_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
-	add_parse(UINT32, job_id, "job_id", "submited JobId"),
+	add_parse(UINT32, job_id, "job_id", "submitted JobId"),
 	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
