@@ -94,6 +94,14 @@ typedef enum {
 	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of objects */
 	PARSER_MODEL_REMOVED, /* parser for removed types */
 
+	/*
+	 * Alias for another parser.
+	 *
+	 * Only for use in maintaining the same OAS name when a new parser name
+	 * is needed in newer plugins.
+	 */
+	PARSER_MODEL_ALIAS,
+
 	PARSER_MODEL_MAX /* place holder */
 } parser_model_t;
 
@@ -124,6 +132,9 @@ typedef struct parser_s {
 	char *key; /* path of field key in dictionary */
 	ssize_t ptr_offset; /* offset from parent object or NO_VAL */
 	bool required;
+
+	/* Alias model properties ----------------------------------------- */
+	type_t alias_type;
 
 	/* Pointer model properties ----------------------------------------- */
 	type_t pointer_type;
