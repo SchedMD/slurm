@@ -44,8 +44,6 @@ autom4te.cache
 /src/api/version.map
 /src/common/global_defaults.c
 /src/db_api/version.map
-/src/plugins/checkpoint/blcr/cr_checkpoint.sh
-/src/plugins/checkpoint/blcr/cr_restart.sh
 /stamp-h1
 /src/sacct/sacct
 /src/sacctmgr/sacctmgr
