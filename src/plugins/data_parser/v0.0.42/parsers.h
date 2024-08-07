@@ -193,6 +193,11 @@ extern void verify_parser_not_sliced_funcname(const parser_t *const parser,
 
 extern const parser_t *const find_parser_by_type(type_t type);
 
+/*
+ * Resolve aliased or pointer model parsers to final unaliased parser
+ */
+extern const parser_t *unalias_parser(const parser_t *parser);
+
 extern void get_parsers(const parser_t **parsers_ptr, int *count_ptr);
 
 #endif
