@@ -63,7 +63,6 @@ autom4te.cache
 /src/slurmd/slurmd/slurmd
 /src/slurmd/slurmstepd/slurmstepd
 /src/slurmdbd/slurmdbd
-/src/smap/smap
 /src/sprio/sprio
 /src/squeue/squeue
 /src/sreport/sreport
