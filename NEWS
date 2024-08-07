@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     `DELETE /slurm/v0.0.40/jobs/` to RequestBody instead of using parameters
     for request. slurmrestd will continue accept endpoint requests via
     RequestBody or HTTP query.
+ -- topology/tree - Fix issues with switch distance optimization.
 
 * Changes in Slurm 24.05.2
 ==========================
