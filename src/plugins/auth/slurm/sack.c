@@ -286,13 +286,3 @@ extern void init_sack_conmgr(void)
 		fatal("%s: conmgr run failed: %s",
 		      __func__, slurm_strerror(rc));
 }
-
-extern void fini_sack_conmgr(void)
-{
-	/*
-	 * Do not attempt to remove /run/slurm/sack.socket.
-	 * If multiple daemons are co-located on this node, we may no
-	 * longer be the one that owns that socket, and removing it
-	 * would prevent the current owner from responding.
-	 */
-}

@@ -145,7 +145,12 @@ extern int fini(void)
 	fini_run = true;
 
 	if (internal) {
-		fini_sack_conmgr();
+		/*
+		 * Do not attempt to remove /run/slurm/sack.socket.
+		 * If multiple daemons are co-located on this node, we may no
+		 * longer be the one that owns that socket, and removing it
+		 * would prevent the current owner from responding.
+		 */
 		fini_internal();
 	}
 
