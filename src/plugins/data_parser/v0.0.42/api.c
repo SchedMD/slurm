@@ -269,6 +269,10 @@ extern openapi_type_t data_parser_p_resolve_openapi_type(
 	if (!parser)
 		return OPENAPI_TYPE_INVALID;
 
+	if (parser->model == PARSER_MODEL_ALIAS)
+		return openapi_type_format_to_type(unalias_parser(
+			find_parser_by_type(parser->type))->obj_openapi);
+
 	if (!field)
 		return openapi_type_format_to_type(parser->obj_openapi);
 

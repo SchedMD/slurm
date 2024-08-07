@@ -198,7 +198,7 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||
-	    parser->fields)
+	    parser->fields || parser->alias_type)
 		return true;
 
 	return false;
@@ -277,6 +277,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(!parser->pointer_type);
+	xassert(!parser->alias_type);
 	xassert(parser->model != PARSER_MODEL_ARRAY_LINKED_FIELD);
 	xassert(parser->model !=
 		PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD);
@@ -370,6 +371,11 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 
 		if (parser->pointer_type) {
 			parser = find_parser_by_type(parser->pointer_type);
+			continue;
+		}
+
+		if (parser->alias_type) {
+			parser = find_parser_by_type(parser->alias_type);
 			continue;
 		}
 
