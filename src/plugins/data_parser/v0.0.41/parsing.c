@@ -1311,8 +1311,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 		}
 
 		/* Fully resolve pointer on NULL to use correct model */
-		while (pt->pointer_type)
-			pt = find_parser_by_type(pt->pointer_type);
+		pt = unalias_parser(pt);
 
 		if (parser->allow_null_pointer) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -1401,8 +1400,7 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 
 	while ((parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
 	       parser->pointer_type) {
-		while (parser->pointer_type)
-			parser = find_parser_by_type(parser->pointer_type);
+		parser = unalias_parser(parser);
 
 		while (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)
 			parser = find_parser_by_type(parser->type);
