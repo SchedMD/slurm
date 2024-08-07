@@ -52,15 +52,22 @@ static void _topo_add_dist(uint32_t *dist, int inx)
 	}
 }
 
+/*
+ * returns 1 if switch "i" is better fit
+ * returns -1 if switch "j" is better fit
+ * returns 0 if there is no better fit
+ */
 static int _topo_compare_switches(int i, int j, int rem_nodes,
 				  int *switch_node_cnt, int rem_cpus,
-				  uint32_t *switch_cpu_cnt)
+				  uint32_t *switch_cpu_cnt, bool *i_fit_out)
 {
 	while (1) {
 		bool i_fit = ((switch_node_cnt[i] >= rem_nodes) &&
-			      (switch_cpu_cnt[i] >= rem_cpus));
+			      ((int) switch_cpu_cnt[i] >= rem_cpus));
 		bool j_fit = ((switch_node_cnt[j] >= rem_nodes) &&
-			      (switch_cpu_cnt[j] >= rem_cpus));
+			      ((int) switch_cpu_cnt[j] >= rem_cpus));
+		*i_fit_out = i_fit;
+
 		if (i_fit && j_fit) {
 			if (switch_node_cnt[i] < switch_node_cnt[j])
 				return 1;
@@ -102,6 +109,7 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 				     int rem_cpus, int i, int *best_switch)
 {
 	int tcs = 0;
+	bool i_fit = false;
 
 	if (*best_switch == -1 || dist[i] == INFINITE || !switch_node_cnt[i]) {
 		/*
@@ -113,8 +121,9 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 	}
 
 	tcs = _topo_compare_switches(i, *best_switch, rem_nodes,
-				     switch_node_cnt, rem_cpus, switch_cpu_cnt);
-	if (((dist[i] < dist[*best_switch]) && (tcs >= 0)) ||
+				     switch_node_cnt, rem_cpus, switch_cpu_cnt,
+				     &i_fit);
+	if (((dist[i] < dist[*best_switch]) && i_fit) ||
 	    ((dist[i] == dist[*best_switch]) && (tcs > 0))) {
 		/*
 		 * If closer and fit request OR
@@ -738,6 +747,22 @@ fini:
 	return rc;
 }
 
+static void _decrement_node_cnt(int num_nodes_taken, int switch_index,
+				int *switch_node_cnt)
+{
+	for (int i = switch_index; i >= 0; i = switch_record_table[i].parent) {
+		if (switch_node_cnt[i] <= num_nodes_taken) {
+			switch_node_cnt[i] = 0;
+		} else {
+			switch_node_cnt[i] -= num_nodes_taken;
+		}
+
+		/* end once we've reached root switch */
+		if (switch_record_table[i].parent == SWITCH_NO_PARENT)
+			break;
+	}
+}
+
 /* Allocate resources to job using a minimal leaf switch count */
 static int _eval_nodes_topo(topology_eval_t *topo_eval)
 {
@@ -1180,6 +1205,7 @@ try_again:
 
 	/* Add additional resources for already required leaf switches */
 	if (req_nodes_bitmap || req2_nodes_bitmap) {
+		int num_nodes_taken = 0;
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
@@ -1197,6 +1223,7 @@ try_again:
 					avail_cpu_per_node[j] = 0;
 					continue;
 				}
+				num_nodes_taken++;
 				rem_nodes--;
 				min_rem_nodes--;
 				topo_eval->max_nodes--;
@@ -1211,6 +1238,9 @@ try_again:
 					goto fini;
 				}
 			}
+
+			_decrement_node_cnt(num_nodes_taken, i,
+					    switch_node_cnt);
 		}
 	}
 
@@ -1224,6 +1254,7 @@ try_again:
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
 		int best_switch_inx = -1;
+
 		if (prev_rem_nodes == rem_nodes)
 			break; 	/* Stalled */
 		prev_rem_nodes = rem_nodes;
@@ -1275,6 +1306,8 @@ try_again:
 				goto fini;
 			}
 		}
+		_decrement_node_cnt(switch_node_cnt[best_switch_inx],
+				    best_switch_inx, switch_node_cnt);
 		switch_node_cnt[best_switch_inx] = 0;	/* Used all */
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
