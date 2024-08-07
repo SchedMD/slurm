@@ -480,12 +480,6 @@ rm -f %{buildroot}/%{_mandir}/man1/sjobexitmod.1
 rm -f %{buildroot}/%{_mandir}/man1/sjstat.1
 %{buildroot}/%{_bindir}/sjstat --roff > %{buildroot}/%{_mandir}/man1/sjstat.1
 
-# Build conditional file list for main package
-LIST=./slurm.files
-touch $LIST
-test -f %{buildroot}/%{_datadir}/bash-completion/completions/slurm_completion.sh &&
-  echo %{_datadir}/bash-completion/completions/slurm_completion.sh	>> $LIST
-
 LIST=./pam.files
 touch $LIST
 %if %{?with_pam_dir}0
@@ -513,7 +507,7 @@ touch $LIST
 rm -rf %{buildroot}
 #############################################################################
 
-%files -f slurm.files
+%files
 %defattr(-,root,root,0755)
 %{_datadir}/doc
 %{_bindir}/s*
