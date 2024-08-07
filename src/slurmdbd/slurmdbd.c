@@ -81,7 +81,6 @@ typedef struct {
 	int magic; /* RUN_ARGS_MAGIC */
 	int argc;
 	char **argv;
-	void *db_conn;
 } run_args_t;
 
 /* Global variables */
@@ -127,7 +126,6 @@ static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
 static void _run(conmgr_callback_args_t conmgr_args, void *arg);
-static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg);
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -250,6 +248,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	char node_name_short[128];
 	char node_name_long[128];
+	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
 	run_args_t *args = arg;
 
@@ -299,22 +298,22 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		ASSOC_MGR_CACHE_QOS | ASSOC_MGR_CACHE_TRES |
 		ASSOC_MGR_CACHE_WCKEY;
 
-	args->db_conn = acct_storage_g_get_connection(0, NULL, true, NULL);
-	if (assoc_mgr_init(args->db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
+	db_conn = acct_storage_g_get_connection(0, NULL, true, NULL);
+	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
-		acct_storage_g_close_connection(&args->db_conn);
+		acct_storage_g_close_connection(&db_conn);
 		goto end_it;
 	}
 
 	if (reset_lft_rgt) {
 		int rc;
-		if ((rc = acct_storage_g_reset_lft_rgt(args->db_conn,
+		if ((rc = acct_storage_g_reset_lft_rgt(db_conn,
 		                                       slurm_conf.slurm_user_id,
 		                                       lft_rgt_list))
 		    != SLURM_SUCCESS)
 			fatal("Error when trying to reset lft and rgt's");
 
-		if (acct_storage_g_commit(args->db_conn, 1))
+		if (acct_storage_g_commit(db_conn, 1))
 			fatal("commit failed, meaning reset failed");
 		FREE_NULL_LIST(lft_rgt_list);
 	}
@@ -333,10 +332,10 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 			have_control = false;
 			backup = true;
 			/* make sure any locks are released */
-			acct_storage_g_commit(args->db_conn, 1);
+			acct_storage_g_commit(db_conn, 1);
 			run_dbd_backup();
 			if (!shutdown_time)
-				assoc_mgr_refresh_lists(args->db_conn, 0);
+				assoc_mgr_refresh_lists(db_conn, 0);
 		} else if (slurmdbd_conf->dbd_host &&
 			   (!xstrcmp(slurmdbd_conf->dbd_host, node_name_short)||
 			    !xstrcmp(slurmdbd_conf->dbd_host, node_name_long) ||
@@ -359,7 +358,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		if (!shutdown_time) {
 			/* Create attached thread to do usage rollup */
 			slurm_thread_create(&rollup_handler_thread,
-					    _rollup_handler, args->db_conn);
+					    _rollup_handler, db_conn);
 		}
 
 		/* Daemon is fully operational here */
@@ -371,8 +370,8 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 				run_dbd_backup();
 		}
 
-		_request_registrations(args->db_conn);
-		acct_storage_g_commit(args->db_conn, 1);
+		_request_registrations(db_conn);
+		acct_storage_g_commit(db_conn, 1);
 
 		/* this is only ran if not backup */
 		slurm_thread_join(rollup_handler_thread);
@@ -392,17 +391,8 @@ end_it:
 
 	slurm_thread_join(commit_handler_thread);
 
-	conmgr_add_work_fifo(_run_fini, args);
-}
-
-static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	run_args_t *args = arg;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
-
-	acct_storage_g_commit(args->db_conn, 1);
-	acct_storage_g_close_connection(&args->db_conn);
+	acct_storage_g_commit(db_conn, 1);
+	acct_storage_g_close_connection(&db_conn);
 
 	if (slurmdbd_conf->pid_file &&
 	    (unlink(slurmdbd_conf->pid_file) < 0)) {
