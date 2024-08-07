@@ -100,6 +100,8 @@ documents those changes that are of interest to users and administrators.
     for request. slurmrestd will continue accept endpoint requests via
     RequestBody or HTTP query.
  -- topology/tree - Fix issues with switch distance optimization.
+ -- Fix potential segfault of secondary slurmctld when falling back to the
+    primary when running with a JobComp plugin.
 
 * Changes in Slurm 24.05.2
 ==========================
