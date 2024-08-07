@@ -9986,6 +9986,19 @@ extern const parser_t *const find_parser_by_type(type_t type)
 	return NULL;
 }
 
+extern const parser_t *unalias_parser(const parser_t *parser)
+{
+	if (!parser)
+		return NULL;
+
+	while (parser->pointer_type) {
+		if (parser->pointer_type)
+			parser = find_parser_by_type(parser->pointer_type);
+	}
+
+	return parser;
+}
+
 extern void parsers_init(void)
 {
 #ifndef NDEBUG
