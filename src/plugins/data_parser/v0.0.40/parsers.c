@@ -456,6 +456,30 @@ extern void check_parser_funcname(const parser_t *const parser,
 	xassert(parser->model < PARSER_MODEL_MAX);
 	xassert(parser->obj_type_string && parser->obj_type_string[0]);
 
+	if (parser->model == PARSER_MODEL_ALIAS) {
+		xassert(!parser->size);
+		xassert(!parser->field_name);
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->key);
+		xassert(!parser->deprecated);
+		xassert(!parser->flag_bit_array_count);
+		xassert(parser->type_string && parser->type_string[0]);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
+		xassert(parser->obj_openapi == OPENAPI_FORMAT_INVALID);
+		xassert(parser->alias_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->alias_type < DATA_PARSER_TYPE_MAX);
+		xassert(parser->alias_type != parser->type);
+		return;
+	}
+
+	xassert(parser->alias_type == DATA_PARSER_TYPE_INVALID);
+
 	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
 		xassert(!parser->size);
 		xassert(!parser->field_name);
@@ -616,6 +640,11 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->obj_openapi);
 
 		switch (linked->model) {
+		case PARSER_MODEL_ALIAS:
+			xassert(linked->alias_type > DATA_PARSER_TYPE_INVALID);
+			xassert(linked->alias_type < DATA_PARSER_TYPE_MAX);
+			xassert(linked->alias_type != parser->type);
+			break;
 		case PARSER_MODEL_SIMPLE:
 			xassert(parser->field_name && parser->field_name[0]);
 			/* fall through */
@@ -9374,6 +9403,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_STATE_RESP)[] = {
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
 		.ptr_offset = NO_VAL,                                          \
 	}
+/* add parser alias */
+#define addalias(typev, typea)                                                 \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_ALIAS,                                   \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typea),                          \
+		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
+		.alias_type = DATA_PARSER_##typea,                             \
+		.ptr_offset = NO_VAL,                                          \
+	}
 /* add parser array (for struct) and pointer for parser array */
 #define addpap(typev, typet, newf, freef)                                      \
 	addpa(typev, typet),                                      \
@@ -9991,9 +10032,11 @@ extern const parser_t *unalias_parser(const parser_t *parser)
 	if (!parser)
 		return NULL;
 
-	while (parser->pointer_type) {
+	while (parser->pointer_type || parser->alias_type) {
 		if (parser->pointer_type)
 			parser = find_parser_by_type(parser->pointer_type);
+		if (parser->alias_type)
+			parser = find_parser_by_type(parser->alias_type);
 	}
 
 	return parser;

@@ -147,7 +147,7 @@ static bool _should_be_ref(const parser_t *parser)
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||
-	    parser->fields)
+	    parser->fields || parser->alias_type)
 		return true;
 
 	return false;
@@ -232,9 +232,8 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 		/* find all parsers that should be references */
 		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
-	} else if (parser->pointer_type) {
-		_set_ref(obj, parser, find_parser_by_type(parser->pointer_type),
-			 sargs);
+	} else if (parser->pointer_type || parser->alias_type) {
+		_set_ref(obj, parser, parser, sargs);
 		return NULL;
 	}
 
@@ -323,11 +322,16 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	while (parser->pointer_type) {
+	while (parser->pointer_type || parser->alias_type) {
+		/* Not possible to use unalias_parser() here */
+
 		if (parser->obj_desc)
 			desc = parser->obj_desc;
 
-		parser = find_parser_by_type(parser->pointer_type);
+		if (parser->pointer_type)
+			parser = find_parser_by_type(parser->pointer_type);
+		if (parser->alias_type)
+			parser = find_parser_by_type(parser->alias_type);
 	}
 
 	if (sargs->disable_refs || !_should_be_ref(parser)) {
