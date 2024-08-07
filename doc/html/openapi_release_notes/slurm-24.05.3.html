@@ -1,0 +1,109 @@
+<h2 id="24053">Slurm 24.05.3<a class="slurm_link" href="#24053"></a></h2>
+
+<h3>data_parser/v0.0.41</h3>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].parameters = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema.$ref = "#/components/schemas/v0.0.41_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.description = "Signal or cancel jobs";</td>
+</tr>
+</table>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.40_kill_jobs_msg"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].parameters = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema.$ref = "#/components/schemas/v0.0.40_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.description = "Signal or cancel jobs";</td>
+</tr>
+</table>
