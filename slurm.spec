@@ -483,10 +483,6 @@ rm -f %{buildroot}/%{_mandir}/man1/sjstat.1
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-test -f %{buildroot}/%{_libexecdir}/slurm/cr_checkpoint.sh   &&
-  echo %{_libexecdir}/slurm/cr_checkpoint.sh	        >> $LIST
-test -f %{buildroot}/%{_libexecdir}/slurm/cr_restart.sh      &&
-  echo %{_libexecdir}/slurm/cr_restart.sh	        >> $LIST
 test -f %{buildroot}/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f %{buildroot}/%{_sbindir}/capmc_resume		&&
