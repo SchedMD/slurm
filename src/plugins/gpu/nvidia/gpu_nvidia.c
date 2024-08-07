@@ -35,7 +35,12 @@
 
 #define _GNU_SOURCE
 
+#include <dirent.h>
+
 #include "../common/gpu_common.h"
+
+#define NVIDIA_PROC_DRIVER_PREFIX "/proc/driver/nvidia/gpus/"
+#define NVIDIA_INFORMATION_PREFIX "/proc/driver/nvidia/gpus/%s/information"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -66,6 +71,98 @@ const char plugin_name[] = "GPU Nvidia plugin";
 const char plugin_type[] = "gpu/nvidia";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static int _count_devices(unsigned int *dev_count)
+{
+	struct dirent *de;
+
+	DIR *dr = opendir(NVIDIA_PROC_DRIVER_PREFIX);
+
+	*dev_count = 0;
+
+	if (!dr)
+		return SLURM_ERROR;
+
+	while ((de = readdir(dr))) {
+		if (strlen(de->d_name) > 4) {
+			(*dev_count)++;
+		}
+	}
+	closedir(dr);
+	return SLURM_SUCCESS;
+}
+
+static void _set_name_and_file(node_config_load_t *node_conf, char *bus_id,
+			       char **device_name, char **device_file)
+{
+	FILE *f;
+	uint32_t minor_number = NO_VAL;
+	char buffer[2000];
+	char *path;
+	const char whitespace[] = " \f\n\r\t\v";
+
+	path = xstrdup_printf(NVIDIA_INFORMATION_PREFIX, bus_id);
+	f = fopen(path, "r");
+
+	while (fgets(buffer, sizeof(buffer), f) != NULL) {
+		if (!xstrncmp("Device Minor:", buffer, 13)) {
+			minor_number = strtol(buffer + 13, NULL, 10);
+			xstrfmtcat(*device_file, "/dev/nvidia%u", minor_number);
+		} else if (!xstrncmp("Model:", buffer, 6)) {
+			buffer[strcspn(buffer, "\n")] = 0; /* Remove newline */
+			*device_name = xstrdup(buffer + 6 +
+					       strspn(buffer + 6, whitespace));
+			gpu_common_underscorify_tolower(*device_name);
+		}
+	}
+
+	if (!*device_file)
+		error("Device file and Minor number not found");
+	if (!*device_name)
+		error("Device name not found");
+
+	debug2("Name: %s", *device_name);
+	debug2("Device File (minor number): %s", *device_file);
+	xfree(path);
+}
+
+static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
+{
+	struct dirent *de;
+	list_t *gres_list_system = NULL;
+	DIR *dr = opendir(NVIDIA_PROC_DRIVER_PREFIX);
+
+	if (!dr)
+		return NULL;
+
+	while ((de = readdir(dr))) {
+		if (strlen(de->d_name) < 5) /* Don't include .. and . */
+			continue;
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.config_flags = GRES_CONF_ENV_NVML,
+			.count = 1,
+			.cpu_cnt = node_conf->cpu_cnt,
+			.name = "gpu",
+		};
+
+		_set_name_and_file(node_conf, de->d_name,
+				   &gres_slurmd_conf.type_name,
+				   &gres_slurmd_conf.file);
+
+		if (!gres_list_system)
+			gres_list_system = list_create(
+				destroy_gres_slurmd_conf);
+
+		/* Add the GPU to list */
+		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
+
+		xfree(gres_slurmd_conf.file);
+		xfree(gres_slurmd_conf.type_name);
+	}
+	closedir(dr);
+
+	return gres_list_system;
+}
+
 extern int init(void)
 {
 	return SLURM_SUCCESS;
@@ -78,7 +175,7 @@ extern int fini(void)
 
 extern void gpu_p_get_device_count(unsigned int *device_count)
 {
-	return;
+	_count_devices(device_count);
 }
 
 extern void gpu_p_reconfig(void)
@@ -88,7 +185,12 @@ extern void gpu_p_reconfig(void)
 
 extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_conf)
 {
-	return NULL;
+	list_t *gres_list_system = _get_system_gpu_list_nvidia(node_conf);
+
+	if (!gres_list_system)
+		error("System GPU detection failed");
+
+	return gres_list_system;
 }
 
 extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
