@@ -1282,8 +1282,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 
 	if (!*ptr && !is_complex_mode(args)) {
 		/* Fully resolve pointer on NULL to use correct model */
-		while (pt->pointer_type)
-			pt = find_parser_by_type(pt->pointer_type);
+		pt = unalias_parser(pt);
 
 		if (parser->allow_null_pointer) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -1404,9 +1403,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 
 		while ((rparser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
 		       rparser->pointer_type) {
-			while (rparser->pointer_type)
-				rparser = find_parser_by_type(
-					rparser->pointer_type);
+			rparser = unalias_parser(rparser);
 
 			while (rparser->model ==
 			       PARSER_MODEL_ARRAY_REMOVED_FIELD)
