@@ -265,6 +265,9 @@ static void _handle_work_pending(work_t *work)
 		xassert(!work->con);
 		_log_work(work, __func__, "Enqueueing quiesced work");
 		list_append(mgr.quiesced_work, work);
+
+		/* trigger watch() to start quiesce process */
+		EVENT_SIGNAL(&mgr.watch_sleep);
 		return;
 	}
 
