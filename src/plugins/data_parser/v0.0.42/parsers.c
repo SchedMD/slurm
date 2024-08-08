@@ -7003,6 +7003,7 @@ static const parser_t PARSER_ARRAY(ACCOUNT_SHORT)[] = {
 static const parser_t PARSER_ARRAY(ACCOUNTING)[] = {
 	add_parse(UINT64, alloc_secs, "allocated/seconds", NULL),
 	add_parse(UINT32, id, "id", NULL),
+	add_parse(UINT32, id_alt, "id_alt", NULL),
 	add_parse(TIMESTAMP, period_start, "start", NULL),
 	add_parse(TRES, tres_rec, "TRES", NULL),
 };

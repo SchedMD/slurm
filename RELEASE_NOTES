@@ -20,6 +20,8 @@ prior to 24.11.
 
 HIGHLIGHTS
 ==========
+ -- Add report AccountUtilizationByQOS to sreport.
+ -- AccountUtilizationByUser is able to be filtered by QOS.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -28,6 +30,7 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Remove srun --cpu-bind=rank.
  -- Add "%b" as a file name pattern for the array task id modulo 10.
+ -- 
 
 API CHANGES
 ===========

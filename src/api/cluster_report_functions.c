@@ -95,22 +95,51 @@ static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
 					  &slurmdb_report_user->tres_list);
 }
 
-static void _process_au(List assoc_list, slurmdb_assoc_rec_t *assoc)
+static int _find_assoc_in_report(void *x, void *key)
 {
-	slurmdb_report_assoc_rec_t *slurmdb_report_assoc =
-		xmalloc(sizeof(slurmdb_report_assoc_rec_t));
+	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = x;
+	slurmdb_accounting_rec_t *accting = key;
 
-	list_append(assoc_list, slurmdb_report_assoc);
+	if ((slurmdb_report_assoc->id == accting->id) &&
+	    (slurmdb_report_assoc->id_alt == accting->id_alt))
+		return 1;
+	return 0;
+}
 
-	slurmdb_report_assoc->acct = xstrdup(assoc->acct);
-	slurmdb_report_assoc->cluster = xstrdup(assoc->cluster);
-	slurmdb_report_assoc->parent_acct = xstrdup(assoc->parent_acct);
-	slurmdb_report_assoc->user = xstrdup(assoc->user);
+static void _process_au(list_t *assoc_list, slurmdb_assoc_rec_t *assoc)
+{
+	list_itr_t *itr;
+	slurmdb_accounting_rec_t *accting = NULL;
+	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
 
-	/* get the amount of time this assoc used
-	   during the time we are looking at */
-	slurmdb_transfer_acct_list_2_tres(assoc->accounting_list,
-					  &slurmdb_report_assoc->tres_list);
+	itr = list_iterator_create(assoc->accounting_list);
+	while ((accting = list_next(itr))) {
+		if (slurmdb_report_assoc &&
+		    _find_assoc_in_report(slurmdb_report_assoc, accting)) {
+			/* Same report as before, no need to look it up again */
+		} else if (!(slurmdb_report_assoc = list_find_first(
+				     assoc_list,
+				     _find_assoc_in_report,
+				     accting))) {
+			slurmdb_report_assoc =
+				xmalloc(sizeof(*slurmdb_report_assoc));
+
+			list_append(assoc_list, slurmdb_report_assoc);
+
+			slurmdb_report_assoc->acct = xstrdup(assoc->acct);
+			slurmdb_report_assoc->cluster =
+				xstrdup(assoc->cluster);
+			slurmdb_report_assoc->parent_acct =
+				xstrdup(assoc->parent_acct);
+			slurmdb_report_assoc->user = xstrdup(assoc->user);
+			slurmdb_report_assoc->id = accting->id;
+			slurmdb_report_assoc->id_alt = accting->id_alt;
+		}
+
+		slurmdb_add_accounting_to_tres_list(
+			accting, &slurmdb_report_assoc->tres_list);
+	}
+	list_iterator_destroy(itr);
 }
 
 static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)

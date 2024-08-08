@@ -142,6 +142,9 @@ char *assoc_month_table = NULL;
 char *cluster_day_table = NULL;
 char *cluster_hour_table = NULL;
 char *cluster_month_table = NULL;
+char *qos_day_table = NULL;
+char *qos_hour_table = NULL;
+char *qos_month_table = NULL;
 char *wckey_day_table = NULL;
 char *wckey_hour_table = NULL;
 char *wckey_month_table = NULL;
@@ -2637,6 +2640,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	req.conn = db_conn;
 
 	switch (type) {
+	case DBD_GET_QOS_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		my_list = &got_assoc->accounting_list;
 		break;
@@ -2676,6 +2680,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
 		switch (type) {
+		case DBD_GET_QOS_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 			got_assoc = (slurmdb_assoc_rec_t *)got_msg->rec;
 			(*my_list) = got_assoc->accounting_list;

@@ -98,6 +98,7 @@ extern slurmdb_report_sort_t sort_flag;
 extern char *cluster_flag;
 extern char *tres_usage_str;
 extern bool user_case_norm;
+extern list_t *g_qos_list; /* qos list from database - unaltered */
 
 extern char *sreport_get_time_str(uint64_t value, uint64_t total_time);
 extern int parse_option_end(char *option);
@@ -138,5 +139,7 @@ extern void combine_tres_list(List orig_tres_list, List dup_tres_list);
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
 extern void combine_user_tres(List first_user_list, List new_user_list);
+
+extern void common_get_qos_list(void);
 
 #endif /* HAVE_SREPORT_H */

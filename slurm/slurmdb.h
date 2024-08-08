@@ -275,6 +275,7 @@ typedef enum {
 #define	ASSOC_COND_FLAG_SUB_ACCTS SLURM_BIT(4)
 #define	ASSOC_COND_FLAG_WOPI SLURM_BIT(5)
 #define	ASSOC_COND_FLAG_WOPL SLURM_BIT(6)
+#define	ASSOC_COND_FLAG_QOS_USAGE SLURM_BIT(7)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
@@ -423,6 +424,7 @@ typedef struct {
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t id;	/* association/wckey ID		*/
+	uint32_t id_alt; /* association/wckey ID */
 	time_t period_start; /* when this record was started */
 	slurmdb_tres_rec_t tres_rec;
 } slurmdb_accounting_rec_t;
@@ -1358,6 +1360,8 @@ typedef struct {
 typedef struct {
 	char *acct;
 	char *cluster;
+	uint32_t id;
+	uint32_t id_alt;
 	char *parent_acct;
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 	char *user;

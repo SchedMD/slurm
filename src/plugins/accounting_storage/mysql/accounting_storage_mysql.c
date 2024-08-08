@@ -141,6 +141,9 @@ char *job_table = "job_table";
 char *job_env_table = "job_env_table";
 char *job_script_table = "job_script_table";
 char *last_ran_table = "last_ran_table";
+char *qos_day_table = "qos_usage_day_table";
+char *qos_hour_table = "qos_usage_hour_table";
+char *qos_month_table = "qos_usage_month_table";
 char *qos_table = "qos_table";
 char *resv_table = "resv_table";
 char *res_table = "res_table";
@@ -1299,6 +1302,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int unsigned not null" },
+		{ "id_alt", "int unsigned default 0 not null" },
 		{ "id_tres", "int default 1 not null" },
 		{ "time_start", "bigint unsigned not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },
@@ -1612,6 +1616,39 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, qos_day_table);
+
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  id_usage_table_fields,
+				  ", primary key (id, id_alt, "
+				  "id_tres, time_start), "
+				  "key archive_purge (mod_time))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, qos_hour_table);
+
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  id_usage_table_fields,
+				  ", primary key (id, id_alt, "
+				  "id_tres, time_start), "
+				  "key archive_purge (mod_time))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, qos_month_table);
+
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  id_usage_table_fields,
+				  ", primary key (id, id_alt, "
+				  "id_tres, time_start), "
+				  "key archive_purge (mod_time))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, resv_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  resv_table_fields,
@@ -1710,6 +1747,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
 		   cluster_name, assoc_table,
 		   cluster_name, assoc_day_table,
@@ -1723,6 +1761,9 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   cluster_name, job_script_table,
 		   cluster_name, job_table,
 		   cluster_name, last_ran_table,
+		   cluster_name, qos_day_table,
+		   cluster_name, qos_hour_table,
+		   cluster_name, qos_month_table,
 		   cluster_name, resv_table,
 		   cluster_name, step_table,
 		   cluster_name, suspend_table,

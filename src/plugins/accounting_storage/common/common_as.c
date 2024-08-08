@@ -72,6 +72,10 @@ extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;
 
+extern char *qos_day_table;
+extern char *qos_hour_table;
+extern char *qos_month_table;
+
 extern char *wckey_day_table;
 extern char *wckey_hour_table;
 extern char *wckey_month_table;
@@ -530,6 +534,9 @@ extern int set_usage_information(char **usage_table,
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_hour_table;
 			break;
+		case DBD_GET_QOS_USAGE:
+			my_usage_table = qos_hour_table;
+			break;
 		case DBD_GET_WCKEY_USAGE:
 			my_usage_table = wckey_hour_table;
 			break;
@@ -546,6 +553,9 @@ extern int set_usage_information(char **usage_table,
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_month_table;
+			break;
+		case DBD_GET_QOS_USAGE:
+			my_usage_table = qos_month_table;
 			break;
 		case DBD_GET_WCKEY_USAGE:
 			my_usage_table = wckey_month_table;

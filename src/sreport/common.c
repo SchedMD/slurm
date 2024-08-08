@@ -669,3 +669,13 @@ extern void combine_user_tres(List first_user_list, List new_user_list)
 	(void) list_delete_all(new_user_list, _find_empty_user_tres, NULL);
 	list_transfer(first_user_list, new_user_list);
 }
+
+extern void common_get_qos_list(void)
+{
+	slurmdb_qos_cond_t qos_cond = {
+		.flags = QOS_COND_FLAG_WITH_DELETED,
+	};
+	if (g_qos_list)
+		return;
+	g_qos_list = slurmdb_qos_get(db_conn, &qos_cond);
+}

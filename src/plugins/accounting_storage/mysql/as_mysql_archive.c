@@ -454,6 +454,7 @@ static void _free_local_txn_members(local_txn_t *object)
 typedef struct {
 	char *alloc_secs;
 	char *id;
+	char *id_alt;
 	char *time_start;
 	char *tres_id;
 	char *creation_time;
@@ -466,6 +467,7 @@ static void _free_local_usage_members(local_usage_t *object)
 	if (object) {
 		xfree(object->alloc_secs);
 		xfree(object->id);
+		xfree(object->id_alt);
 		xfree(object->time_start);
 		xfree(object->tres_id);
 		xfree(object->creation_time);
@@ -863,6 +865,7 @@ enum {
 /* if this changes you will need to edit the corresponding enum below */
 char *usage_req_inx[] = {
 	"id",
+	"id_alt",
 	"id_tres",
 	"time_start",
 	"alloc_secs",
@@ -873,6 +876,7 @@ char *usage_req_inx[] = {
 
 enum {
 	USAGE_ID,
+	USAGE_ID_ALT,
 	USAGE_TRES,
 	USAGE_START,
 	USAGE_ALLOC,
@@ -2658,6 +2662,7 @@ static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
 {
 	/* Always packs as current version */
 	packstr(object->id, buffer);
+	packstr(object->id_alt, buffer);
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->alloc_secs, buffer);
@@ -2671,7 +2676,16 @@ static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
 static int _unpack_local_usage(local_usage_t *object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
-	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->id, buffer);
+		safe_unpackstr(&object->id_alt, buffer);
+		safe_unpackstr(&object->tres_id, buffer);
+		safe_unpackstr(&object->time_start, buffer);
+		safe_unpackstr(&object->alloc_secs, buffer);
+		safe_unpackstr(&object->creation_time, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->id, buffer);
 		safe_unpackstr(&object->tres_id, buffer);
 		safe_unpackstr(&object->time_start, buffer);
@@ -4623,6 +4637,7 @@ static buf_t *_pack_archive_usage(MYSQL_RES *result, char *cluster_name,
 		memset(&usage, 0, sizeof(local_usage_t));
 
 		usage.id = row[USAGE_ID];
+		usage.id_alt = row[USAGE_ID_ALT];
 		usage.tres_id = row[USAGE_TRES];
 		usage.time_start = row[USAGE_START];
 		usage.alloc_secs = row[USAGE_ALLOC];
@@ -4657,6 +4672,23 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 			break;
 		case DBD_ROLLUP_MONTH:
 			my_usage_table = assoc_month_table;
+			break;
+		default:
+			error("Unknown period");
+			return NULL;
+			break;
+		}
+		break;
+	case DBD_GOT_QOS_USAGE:
+		switch (period) {
+		case DBD_ROLLUP_HOUR:
+			my_usage_table = qos_hour_table;
+			break;
+		case DBD_ROLLUP_DAY:
+			my_usage_table = qos_day_table;
+			break;
+		case DBD_ROLLUP_MONTH:
+			my_usage_table = qos_month_table;
 			break;
 		default:
 			error("Unknown period");
@@ -4710,6 +4742,7 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 
 		xstrfmtcatat(insert, &insert_pos, format,
 			     object.id,
+			     object.id_alt ? object.id_alt : "0",
 			     object.tres_id,
 			     object.time_start,
 			     object.alloc_secs,

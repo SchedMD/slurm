@@ -58,6 +58,8 @@ enum {
 	PRINT_CLUSTER_WCKEY,
 	PRINT_CLUSTER_ENERGY,
 	PRINT_CLUSTER_TRES_NAME,
+	PRINT_CLUSTER_QOS,
+	PRINT_CLUSTER_QOS_ID,
 };
 
 static List print_fields_list = NULL; /* types are of print_field_t */
@@ -185,7 +187,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 		return SLURM_ERROR;
 	}
 
-	assoc_cond->flags = ASSOC_COND_FLAG_WITH_DELETED |
+	assoc_cond->flags |= ASSOC_COND_FLAG_WITH_DELETED |
 		ASSOC_COND_FLAG_WITH_USAGE;
 
 	if (!assoc_cond->cluster_list)
@@ -242,6 +244,18 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 			if (format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
+		} else if (!xstrncasecmp(argv[i], "QosLevel",
+					 MAX(command_len, 1))) {
+			if (!assoc_cond->qos_list)
+				assoc_cond->qos_list = list_create(xfree_ptr);
+
+			common_get_qos_list();
+
+			if (slurmdb_addto_qos_char_list(assoc_cond->qos_list,
+							g_qos_list, argv[i]+end,
+							0) > 0)
+				set = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_QOS_USAGE;
 		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 1))) {
 			assoc_cond->usage_start = parse_time(argv[i]+end, 1);
@@ -479,6 +493,18 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
 			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("QOS", object,
+					 MAX(command_len, 1))) {
+			field->type = PRINT_CLUSTER_QOS;
+			field->name = xstrdup("QOS");
+			field->len = 12;
+			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("QOSID", object,
+					 MAX(command_len, 4))) {
+			field->type = PRINT_CLUSTER_QOS_ID;
+			field->name = xstrdup("QOS ID");
+			field->len = 8;
+			field->print_routine = print_fields_uint32;
 		} else if (!xstrncasecmp("reported", object,
 					 MAX(command_len, 3))) {
 			field->type = PRINT_CLUSTER_TRES_REPORTED;
@@ -732,6 +758,21 @@ static void _cluster_account_by_user_tres_report(
 					     slurmdb_report_cluster->name,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_CLUSTER_QOS:
+			common_get_qos_list();
+
+			tmp_char = slurmdb_qos_str(
+				g_qos_list,
+				slurmdb_report_assoc->id_alt);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS_ID:
+			field->print_routine(field,
+					     &slurmdb_report_assoc->id_alt,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_CLUSTER_USER_LOGIN:
 			field->print_routine(field,
 					     slurmdb_report_assoc->user,
@@ -889,6 +930,124 @@ extern int cluster_account_by_user(int argc, char **argv)
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 		printf("Cluster/Account/User Utilization %s - %s (%d secs)\n",
+		       start_char, end_char,
+		       (int)(assoc_cond->usage_end - assoc_cond->usage_start));
+
+		switch (time_format) {
+		case SLURMDB_REPORT_TIME_PERCENT:
+			printf("Usage reported in %s\n", time_format_string);
+			break;
+		default:
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
+			break;
+		}
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+	}
+
+	_set_usage_column_width(print_fields_list, slurmdb_report_cluster_list);
+
+	print_fields_header(print_fields_list);
+
+	list_sort(slurmdb_report_cluster_list, (ListCmpF)sort_cluster_dec);
+
+	tres_itr = list_iterator_create(tres_list);
+	cluster_itr = list_iterator_create(slurmdb_report_cluster_list);
+	while ((slurmdb_report_cluster = list_next(cluster_itr))) {
+		//list_sort(slurmdb_report_cluster->assoc_list,
+		//  (ListCmpF)sort_assoc_dec);
+
+		if (tree_list)
+			list_flush(tree_list);
+		else
+			tree_list = list_create(slurmdb_destroy_print_tree);
+
+		itr = list_iterator_create(slurmdb_report_cluster->assoc_list);
+		while ((slurmdb_report_assoc = list_next(itr))) {
+			slurmdb_tres_rec_t *tres;
+			list_iterator_reset(tres_itr);
+			while ((tres = list_next(tres_itr))) {
+				if (tres->id == NO_VAL)
+					continue;
+				_cluster_account_by_user_tres_report(
+					tres,
+					slurmdb_report_cluster,
+					slurmdb_report_assoc,
+					tree_list);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+	list_iterator_destroy(cluster_itr);
+	list_iterator_destroy(tres_itr);
+
+end_it:
+	slurmdb_destroy_assoc_cond(assoc_cond);
+	FREE_NULL_LIST(slurmdb_report_cluster_list);
+	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(tree_list);
+
+	return rc;
+}
+
+extern int cluster_account_by_qos(int argc, char **argv)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
+	list_itr_t *itr = NULL;
+	list_itr_t *tres_itr = NULL;
+	list_itr_t *cluster_itr = NULL;
+	List format_list = list_create(xfree_ptr);
+	List slurmdb_report_cluster_list = NULL;
+	int i = 0;
+	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
+	List tree_list = NULL;
+
+	print_fields_list = list_create(destroy_print_field);
+
+	assoc_cond->flags =
+		ASSOC_COND_FLAG_SUB_ACCTS |
+		ASSOC_COND_FLAG_QOS_USAGE;
+	assoc_cond->user_list = list_create(xfree_ptr);
+	list_append(assoc_cond->user_list, xstrdup(""));
+
+	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
+
+	if (!list_count(format_list)) {
+		if (tres_str) {
+			slurm_addto_char_list(format_list,
+				"Cluster,Ac,QOS,TresName,Used");
+		} else {
+			slurm_addto_char_list(format_list,
+				"Cluster,Ac,QOS,Used,Energy");
+		}
+	}
+
+	_setup_print_fields_list(format_list);
+	FREE_NULL_LIST(format_list);
+
+	if (!(slurmdb_report_cluster_list =
+	     slurmdb_report_cluster_account_by_user(db_conn, assoc_cond))) {
+		exit_code = 1;
+		goto end_it;
+	}
+	if (fed_name)
+		_merge_cluster_reps(slurmdb_report_cluster_list);
+
+	if (print_fields_have_header) {
+		char start_char[256];
+		char end_char[256];
+		time_t my_start = assoc_cond->usage_start;
+		time_t my_end = assoc_cond->usage_end - 1;
+
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+		printf("Cluster/Account/QOS Utilization %s - %s (%d secs)\n",
 		       start_char, end_char,
 		       (int)(assoc_cond->usage_end - assoc_cond->usage_start));
 
@@ -1694,6 +1853,21 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 					tmp_char = pwd->pw_gecos;
 			}
 			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS:
+			common_get_qos_list();
+
+			tmp_char = slurmdb_qos_str(
+				g_qos_list,
+				slurmdb_report_assoc->id_alt);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CLUSTER_QOS_ID:
+			field->print_routine(field,
+					     &slurmdb_report_assoc->id_alt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER_AMOUNT_USED:

@@ -678,7 +678,7 @@ static int _run_report(int type, int argc, char **argv)
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;
 	print_field_t *field = NULL;
-	print_field_t total_field;
+	print_field_t total_field, total_cnt_field = { 0 };
 	slurmdb_report_time_format_t temp_format;
 	List slurmdb_report_cluster_grouping_list = NULL;
 	List assoc_list = NULL;
@@ -787,6 +787,12 @@ static int _run_report(int type, int argc, char **argv)
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
 
+	total_cnt_field.type = PRINT_JOB_SIZE;
+	total_cnt_field.name = xstrdup("Total Count");
+	total_cnt_field.len = 11;
+	total_cnt_field.print_routine = print_fields_str;
+	list_append(header_list, &total_cnt_field);
+
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
@@ -889,15 +895,21 @@ static int _run_report(int type, int argc, char **argv)
 			list_iterator_reset(itr2);
 			list_iterator_destroy(local_itr);
 
-			temp_format = time_format;
-			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			if (!print_job_count) {
 				count1 = acct_tres_alloc_secs;
 				count2 = cluster_tres_alloc_secs;
+				tmp_char = sreport_get_time_str(count1, 0);
 			} else {
 				count1 = acct_group->count;
 				count2 = cluster_group->count;
+				tmp_char = xstrdup_printf("%"PRIu64, count1);
 			}
+			total_cnt_field.print_routine(&total_cnt_field,
+						      tmp_char, 0);
+			xfree(tmp_char);
+
+			temp_format = time_format;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			tmp_char = sreport_get_time_str(count1, count2);
 			total_field.print_routine(&total_field, tmp_char, 1);
 			xfree(tmp_char);
