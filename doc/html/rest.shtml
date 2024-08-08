@@ -12,9 +12,13 @@
 
 <p>See also:
 <ul>
-<li><a href="rest_quickstart.html">REST API Quick Start Guide</a></li>
+<li><a href="rest_quickstart.html">REST API Quick Start Guide</a>
+<ul>
+<li><a href="rest_quickstart.html#common_issues">Common Issues</a></li>
+</ul></li>
 <li><a href="rest_api.html">REST API Implementation Details</a></li>
 <li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
+<li><a href="rest_clients.html">REST API Client Guide</a></li>
 </ul>
 </p>
 
@@ -54,114 +58,6 @@ slurmrestd can be configured either by environment variables or command line
 arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page and
 <a href="rest_quickstart.html#customization">REST API Quick Start Guide</a>
 for details.
-
-<h2 id="openapi">OpenAPI Specification (OAS)
-<a class="slurm_link" href="#openapi"></a>
-</h2>
-<p>Slurmrestd is compliant with
-	<a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md">
-		OpenAPI 3.0.2
-	</a>.
-	The OAS can be viewed at the following URLs:
-</p>
-<ul>
-	<li>/openapi.json</li>
-	<li>/openapi.yaml</li>
-	<li>/openapi/v3</li>
-</ul>
-<p>The OAS is designed to be the primary documentation for the request methods.
-There are several third party tools that automatically generate documentation
-against the OAS output listed by
-<a href="https://openapi.tools/">openapi.tools.</a></p>
-
-<p><b>NOTE</b>: Slurm attempts to strictly comply with the relevant
-<a href="https://github.com/OAI/OpenAPI-Specification">OpenAPI standards</a>.
-For reasons of compatibility, Slurm may be tested against publicly available
-OpenAPI client generators, but Slurm does not directly support any of them as
-they are outside the control of SchedMD and may change at anytime. The goal
-is to comply with the standards, supporting as many clients as possible,
-without favoring any one client. Sites are always welcome to write their own
-clients that are OpenAPI compliant. As a rule, SchedMD will debug the HTTP
-sent to and received by slurmrestd but will not directly debug any client
-source code.
-</p>
-Tested compatibility by OpenAPI plugins:
-<ul>
-	<li>openapi/v0.0.37:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/v0.0.38:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/v0.0.39:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v6.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.37:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.38:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.39:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v6.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-</ul>
 
 <h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and

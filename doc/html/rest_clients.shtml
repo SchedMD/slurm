@@ -1,0 +1,284 @@
+<!--#include virtual="header.txt"-->
+
+<h1>REST API Client Writing Guide</h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
+<li><a href="#openapi-compliance">OpenAPI Standard Compliance</a></li>
+<li><a href="#generated-openapi-docs">
+		OpenAPI Specification (OAS) Documentation</a></li>
+<li><a href="#client-design">Client design</a></li>
+<li><a href="#openapi-changes">OpenAPI Specification (OAS) changes</a></li>
+</ul>
+
+<h2 id="openapi">OpenAPI Specification (OAS)
+<a class="slurm_link" href="#openapi"></a>
+</h2>
+<p>Slurmrestd is compliant with
+	<a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md">
+		OpenAPI 3.0.2
+	</a>.
+	The generated OAS can be viewed at the following URLs:
+</p>
+<ul>
+	<li>/openapi.json</li>
+	<li>/openapi.yaml</li>
+	<li>/openapi/v3</li>
+</ul>
+<p>The generated OAS can be generated directly via calling:<br>
+<ul>
+<li>Generate OAS with only a compiled slurmrestd:<br>
+<code>env SLURM_CONF=/dev/null slurmrestd --generate-openapi-spec -s slurmctld,slurmdbd -d v0.0.40</code>
+</li>
+<li>Generate OAS with fully configured Slurm install:<br>
+<code>slurmrestd --generate-openapi-spec -s slurmctld,slurmdbd -d v0.0.40</code>
+</li>
+</ul>
+</p>
+
+<p>The OAS is designed to be the primary documentation for the request methods
+and responses including their contents. There are several third party tools
+that automatically generate documentation against the OAS output listed by
+<a href="https://openapi.tools/">openapi.tools</a>.
+An example of how to generate the docs is <a href="#generated-openapi-docs">
+here</a>.</p>
+
+<p>The generated OpenAPI specification changes depending on the configuration of
+slurmrestd at run time. <a href="slurmrestd.html">slurmrestd</a> is a
+framework, and the actual content is provided by plugins, which are optional at
+runtime. However, the specific plugin versions (as noted by the v0.0.XX in the
+paths) will be stable across Slurm versions, if the relevant plugin is still
+present. Plugin life cycles are described
+<a href="upgrades.html#openapi_changes">here</a>.</p>
+
+<h2 id="openapi-compliance">OpenAPI Standard Compliance
+<a class="slurm_link" href="#openapi-compliance"></a>
+</h2>
+
+<p>Slurm attempts to strictly comply with the relevant
+<a href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.2.md">
+OpenAPI standards</a>.
+For reasons of compatibility, Slurm's OAS is tested against publicly available
+OpenAPI client generators, but Slurm does not directly support any of them as
+they are outside the control of SchedMD and may change at any time. The goal
+is to comply with the standards, supporting as many clients as possible,
+without favoring any one client. Sites are always welcome to write their own
+clients that are OpenAPI compliant. As a rule, SchedMD will debug the HTTP
+sent to and received by slurmrestd but will not directly debug any client
+source code.
+</p>
+Tested compatibility by OpenAPI plugins:
+<ul>
+	<li>openapi/v0.0.37:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator</a>
+			</li>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/v0.0.38:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator</a>
+			</li>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/v0.0.39:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.37:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator</a>
+			</li>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.38:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator</a>
+			</li>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.39:
+		<ul>
+			<li><a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator</a>
+			</li>
+		</ul>
+	</li>
+</ul>
+
+<h2 id="generated-openapi-docs">OpenAPI Specification (OAS) Documentation
+<a class="slurm_link" href="#generated-openapi-docs"></a>
+</h2>
+
+<p>Slurm includes <a href="rest_api.html">example generated documentation</a>,
+provided with each release. Slurm's documentation only includes the latest
+plugins to encourage sites to develop against the latest plugins, as they
+will have the longest lifespan and, by extension, the new clients will continue
+to work for longer. Plugin life cycles are described
+<a href="upgrades.html#openapi_changes">here</a>. This documentation is
+generated via the following steps using
+<a href="https://github.com/OpenAPITools/openapi-generator">
+	OpenAPI-generator</a> HTML output:</p>
+
+<p><ol>
+<li>Generate OAS:<br>
+<code>
+env SLURM_CONF=/dev/null slurmrestd --generate-openapi-spec -s slurmctld,slurmdbd -d v0.0.40 &gt; openapi.json
+</code>
+</li>
+<li>Generate documentation:<br>
+<code>
+openapi-generator-cli generate -i openapi.json -g html -o rest_api_docs
+</code>
+</li>
+<li>Point browser to <code>rest_api_docs/index.html</code></li>
+</ol></p>
+
+<h2 id="client-design">Client Design
+<a class="slurm_link" href="#client-design"></a>
+</h2>
+
+<p>Clients should always be generated against or designed to work with specific
+versions of the tagged paths from <a href="slurmrestd.html">slurmrestd</a>.
+Client developers are strongly encouraged to not include functionality for
+versions of methods not intended for use.
+</p>
+
+<p>Client developers need to plan how to gracefully handle changes between
+different Slurm versions if they plan to support multiple versions.
+Slurm's method of versioning is done explicitly to allow old code to continue
+to work with newer Slurm releases while that older version is still
+supported. For example, v0.0.38 methods were added in Slurm-22.05 but can be
+used until Slurm-24.05. While this works, these methods will not get any new
+features or functionality, but generally only security fixes. Slurm will get
+several new features every release, and those changes are then reflected by the
+changes in the new plugin version. A client wishing to use the new features will
+have to move to the newer version as new features will not be backported.</p>
+
+<p>Using an OpenAPI schema generated for just one version is
+advised. Many of the OpenAPI client generators have a way to strip out the
+version tag from the struct names (i.e. <code>V0039AccountFlagsDELETED</code>
+-&gt; <code>AccountFlagsDELETED</code>). This could allow for a set of
+unversioned base code could be created and then adjusted for material changes
+in the outputted code with newer Slurm versions. Having a strongly typed
+language can help with this considerably. Generally, only parts of the schema
+change between different versions for specific endpoints, although looking at
+a diff of them can be intimidating even if using something like
+<a href="https://jsondiff.com/">json-diff</a>. Another option is
+having wrappers to account for version differences in the same fashion as many
+c libraries account for differences between Windows and Linux.</p>
+
+<p>The generated OpenAPI schema can change, depending on which plugins are
+present, but the versioned paths and their schemas will not (with limited
+exceptions). As such, generating a schema limited to only <code>v0.0.40</code>
+and placing it in your repo should result in a schema that can be used in
+Slurm-23.11 to Slurm-25.05. In general, regenerating the client code and OpenAPI
+schema will be counter-productive, as even the OpenAPI generators themselves can
+generate different results for the same OpenAPI specification between their
+versions. The same driver code would likely not even compile even though
+nothing about the server has changed. An example of this
+specific type of issue can be found
+<a href="https://github.com/oapi-codegen/oapi-codegen/tree/main?tab=readme-ov-file#action-required-the-repository-for-this-project-has-changed">
+here</a>.</p>
+
+<p>Developers may want to consider having a somewhat static set of compiled
+client code in your client's code repository. That code will then only need to
+be updated for revisions inside of the tagged versions, which are generally
+quite rare. That will remove the need for end users to run the code generators
+and limit the chances of any change disrupting your workflow.
+It will also allow you to plan for upgrades at a convenient time rather than
+having to ensure compatibility of multiple permutations at all times.</p>
+
+<p>Developers should be aware that older versions of the versioned plugins are
+removed from Slurm in a documented cadence as given
+<a href="https://slurm.schedmd.com/upgrades.html#openapi_changes">here</a>.
+Clients will need to be upgraded once the relevant plugins versions are removed
+to continue to communicate with slurmrestd.</p>
+
+<p>If slurmrestd compiles, then all of it will compile. Run time args to
+slurmrestd and slurm.conf will, however, change the output of OAS. For instance,
+if slurmdbd accounting is not configured then the <code>/slurmdb/</code> paths
+will automatically <b>not</b> be included as there is an invalid prerequisite
+for them. A client that queries them will get a 404 error. Slurmrestd can and
+should be told to load the minimal number of plugins too (via -d and -s)
+which will also change which paths are present and thus included in the OAS. To
+slurmrestd, the OAS is just a form of documentation and doesn't have any
+bearing to how it functions. A client could be generated with many paths that
+the current running slurmrestd does not have loaded. That client will just get
+404 errors for those queries and should try to avoid them via internal logic.
+The client only needs to have a matching OAS for the paths/endpoints that client
+will actually query. Since all endpoints in slurmrestd are versioned, there is
+an automatic guarantee they will work (if present) as though the client is
+querying the original slurmrestd it used to generate the original OAS it was
+compiled against. If a path of the same version does not behave the same, then
+that is a bug, and we kindly ask that a
+<a href="https://support.schedmd.com">ticket be opened so we can fix it</a>.</p>
+
+<p>There are very limited situations where slurmrestd will generate an OAS with
+the same endpoint having different functionalities.
+<ul>
+<li>If the specification is somehow fundamentally broken so that it violates the
+OpenAPI standard. Slurm has test units to try catch this but those tests are
+not perfect.</li>
+<li>A new field or path has been added. This should never break a client as
+clients should ignore unknown fields in JSON/YAML.</li>
+</ul></p>
+
+<h2 id="openapi-changes">OpenAPI Specification (OAS) changes
+<a class="slurm_link" href="#openapi-changes"></a>
+</h2>
+
+<p>Changes to the OAS are always listed with every release in the
+<a href="openapi_release_notes.html">OpenAPI Release Notes</a>.</p>
+
+<p>A simple trick to see the differences between versions is to query both and
+then mask the newer one, to avoid having diff list out every version tag that
+changed:
+<pre>
+env SLURM_CONF=/dev/null slurmrestd -d v0.0.41 -s slurmdbd,slurmctld --generate-openapi-spec &gt; /tmp/v41.json
+env SLURM_CONF=/dev/null slurmrestd -d v0.0.40 -s slurmdbd,slurmctld --generate-openapi-spec &gt; /tmp/v40.json
+cat /tmp/v41.json | sed -e 's#v0.0.41#v0.0.40#g' &gt; /tmp/v41_masked.json
+vimdiff /tmp/v40.json /tmp/v41_masked.json
+jsondiff /tmp/v40.json /tmp/v41_masked.json
+</pre></p>
+
+<p>Sometimes this trick still produces too much change in the diff output to be
+useful. In those cases, selecting a specific (sub)schema can be helpful:
+<pre>
+jq '.components.schemas."v0.0.40_job"' /tmp/v40.json &gt; /tmp/v40_job.json
+jq '.components.schemas."v0.0.40_openapi_job_info_resp".properties.jobs.items' /tmp/v41_masked.json &gt; /tmp/v41_masked_job.json
+vimdiff /tmp/v40_job.json /tmp/v41_masked_job.json
+</pre></p>
+
+<p>The generated OpenAPI schemas are very detailed and get more detailed
+every release as we add more enums, better expose possible values and
+increase documentation in comments. Even minor changes to tree structure can
+result in a large number of changes in the generated schema, which can be
+confusing while looking at diffs. The example above shows the inlining of
+<code>v0.0.40_job</code> into <code>v0.0.40_openapi_job_info_resp</code>.
+Depending on the generated client, that change may not change the
+resultant client code at all.</p>
+
+<p style="text-align:center;">Last modified 08 August 2024</p>
+
+<!--#include virtual="footer.txt"-->
