@@ -515,6 +515,13 @@ static void _print_config(char *config_param, int argc, char **argv)
 	int error_code;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
+	/*
+	 * There isn't a parser for slurm.conf but there is one for ping, which
+	 * gets printed as part of this funciton. So to make sure the ouput is
+	 * not mixing output types disable json/yaml ouput for ping.
+	 */
+	mime_type = NULL;
+
 	if (old_slurm_ctl_conf_ptr) {
 		error_code = slurm_load_ctl_conf (
 				old_slurm_ctl_conf_ptr->last_update,
