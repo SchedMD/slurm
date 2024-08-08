@@ -3743,7 +3743,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		unpackbool(&need_unpack, buffer);
+		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;
 
@@ -5049,7 +5049,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		unpackbool(&need_unpack, buffer);
+		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;
 
