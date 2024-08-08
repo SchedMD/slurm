@@ -276,7 +276,7 @@ again:
 	}
 	slurm_mutex_unlock(&mutex);
 
-	if (rc)
+	if (!rc)
 		return;
 
 	if ((rc == -1) && errno)
