@@ -212,7 +212,7 @@ proc inc22_1_fed {} {
 		-re "There was a problem" {
 			error "There was a problem with the sacctmgr command"
 		}
-		-re "$cluster.$account1.0.$alloc_sec.0.100\\.00%." {
+		-re "$cluster.$account1.0.$alloc_sec.0.$alloc_sec.100\\.00%." {
 			incr matches
 			exp_continue
 		}
@@ -233,7 +233,7 @@ proc inc22_1_fed {} {
 		-re "There was a problem" {
 			error "There was a problem with the sacctmgr command"
 		}
-		-re "$cluster.$wckey1.0.$wckey_alloc_sec.0.100\\.00%." {
+		-re "$cluster.$wckey1.0.$wckey_alloc_sec.0.$wckey_alloc_sec.100\\.00%." {
 			incr matches
 			exp_continue
 		}

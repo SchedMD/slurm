@@ -52,13 +52,13 @@ proc inc22_1_5 { } {
 	# Test the job report with flatview, should show first level of accounts under root individually
 	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview"]
 	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
-	#test22-1clus1|test22-1acct1|2|0|0|0|0|50.00%|
-	#test22-1clus1|test22-1acct2|1|0|0|0|0|25.00%|
-	#test22-1clus1|test22-1acct3|1|0|0|0|0|25.00%|
-	subtest {[regexp -all "$cluster1.$account1.2.*.50.00%.\\\n$cluster1.$account2.1.*.25.00%.\\\n$cluster1.$account3.1.*.25.00%" $output] == 1} "Test the job report with flatview"
+	#test22-1clus1|test22-1acct1|2|0|0|0|0|2|50.00%|
+	#test22-1clus1|test22-1acct2|1|0|0|0|0|1|25.00%|
+	#test22-1clus1|test22-1acct3|1|0|0|0|0|1|25.00%|
+	subtest {[regexp -all "$cluster1.$account1.2.*.2.50.00%.\\\n$cluster1.$account2.1.*.1.25.00%.\\\n$cluster1.$account3.1.*.1.25.00%" $output] == 1} "Test the job report with flatview"
 
 	# Test the job report for specific account, should show just one account with all its jobs
 	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n"]
 	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
-	subtest {[regexp -all "$cluster1.$account1.2.*.100.00%." $output] == 1} "Test the job report for specific account"
+	subtest {[regexp -all "$cluster1.$account1.2.*.2.100.00%." $output] == 1} "Test the job report for specific account"
 }
