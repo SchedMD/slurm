@@ -105,10 +105,17 @@ int main(int argc, char **argv)
 			_sort_rpc();
 
 			if (params.mimetype) {
-				DATA_DUMP_CLI_SINGLE(OPENAPI_DIAG_RESP, buf,
-						     argc, argv, NULL,
-						     params.mimetype,
-						     params.data_parser, rc);
+				if (is_data_parser_deprecated(
+					    params.data_parser))
+					DATA_DUMP_CLI_DEPRECATED(
+						STATS_MSG, *buf, "statistics",
+						argc, argv, NULL,
+						params.mimetype, rc);
+				else
+					DATA_DUMP_CLI_SINGLE(
+						OPENAPI_DIAG_RESP, buf, argc,
+						argv, NULL, params.mimetype,
+						params.data_parser, rc);
 			} else {
 				rc = _print_stats();
 			}

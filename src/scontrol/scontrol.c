@@ -576,8 +576,14 @@ static void _print_ping(int argc, char **argv)
 	controller_ping_t *pings = ping_all_controllers();
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, argc, argv,
-				     NULL, mime_type, data_parser, exit_code);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(CONTROLLER_PING_ARRAY, pings,
+						 "pings", argc, argv, NULL,
+						 mime_type, exit_code);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings,
+					     argc, argv, NULL, mime_type,
+					     data_parser, exit_code);
 		xfree(pings);
 		return;
 	}

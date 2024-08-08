@@ -131,8 +131,13 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 		for (int i = 0; i < print_cnt; i++)
 			msg.reservation_array[i] = *resvs[i];
 
-		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc, argv, NULL,
-			      mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(RESERVATION_INFO_MSG, msg,
+						 "reservations", argc, argv,
+						 NULL, mime_type, rc);
+		else
+			DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc,
+				      argv, NULL, mime_type, data_parser, rc);
 
 		if (rc)
 			exit_code = 1;

@@ -327,8 +327,13 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			resp.last_backfill = job_buffer_ptr->last_backfill;
 		}
 
-		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
-			      mime_type, data_parser, error_code);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(JOB_INFO_MSG, *job_buffer_ptr,
+						 "jobs", argc, argv, NULL,
+						 mime_type, error_code);
+		else
+			DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv,
+				      NULL, mime_type, data_parser, error_code);
 
 		if (error_code)
 			exit_code = 1;
@@ -493,8 +498,16 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 				resp.last_update =
 					job_step_info_ptr->last_update;
 
-			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv,
-				      NULL, mime_type, data_parser, error_code);
+			if (is_data_parser_deprecated(data_parser))
+				DATA_DUMP_CLI_DEPRECATED(STEP_INFO_MSG_PTR,
+							 job_step_info_ptr,
+							 "steps", argc, argv,
+							 NULL, mime_type,
+							 error_code);
+			else
+				DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc,
+					      argv, NULL, mime_type,
+					      data_parser, error_code);
 
 			if (error_code)
 				exit_code = 1;
@@ -552,8 +565,14 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (job_step_info_ptr)
 			resp.last_update = job_step_info_ptr->last_update;
 
-		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
-			      mime_type, data_parser, error_code);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(STEP_INFO_MSG_PTR,
+						 job_step_info_ptr, "steps",
+						 argc, argv, NULL, mime_type,
+						 error_code);
+		else
+			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv,
+				      NULL, mime_type, data_parser, error_code);
 	} else if (steps) {
 		int i = 0;
 

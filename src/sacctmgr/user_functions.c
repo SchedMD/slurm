@@ -1006,8 +1006,14 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	slurmdb_destroy_user_cond(user_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_USERS_RESP, user_list, argc, argv,
-				     db_conn, mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(USER_LIST, user_list, "users",
+						 argc, argv, db_conn, mime_type,
+						 rc);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_USERS_RESP, user_list,
+					     argc, argv, db_conn, mime_type,
+					     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(user_list);
 		return rc;

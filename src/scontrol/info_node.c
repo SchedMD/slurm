@@ -217,8 +217,14 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 				.last_update = node_info_ptr->last_update,
 			};
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
+			if (is_data_parser_deprecated(data_parser))
+				DATA_DUMP_CLI_DEPRECATED(NODES, *node_info_ptr,
+							 "nodes", argc, argv,
+							 NULL, mime_type, rc);
+			else
+				DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc,
+					      argv, NULL, mime_type,
+					      data_parser, rc);
 
 			if (rc)
 				exit_code = 1;
@@ -278,8 +284,14 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 			msg.record_count = count;
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
+			if (is_data_parser_deprecated(data_parser))
+				DATA_DUMP_CLI_DEPRECATED(NODES, msg, "nodes",
+							 argc, argv, NULL,
+							 mime_type, rc);
+			else
+				DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc,
+					      argv, NULL, mime_type,
+					      data_parser, rc);
 
 			if (rc)
 				exit_code = 1;

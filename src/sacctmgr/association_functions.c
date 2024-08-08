@@ -811,8 +811,14 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_ASSOCS_RESP, assoc_list, argc,
-				     argv, db_conn, mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(ASSOC_LIST, assoc_list,
+						 "associations", argc, argv,
+						 db_conn, mime_type, rc);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_ASSOCS_RESP, assoc_list,
+					     argc, argv, db_conn, mime_type,
+					     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(assoc_list);
 		return rc;

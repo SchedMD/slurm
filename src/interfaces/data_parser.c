@@ -798,6 +798,88 @@ cleanup:
 	return rc;
 }
 
+/*
+ * Dump object using data_parser/v0.0.39.
+ * Dump meta data and errors/warnings with SLURM_DATA_PARSER_VERSION
+ */
+extern int data_parser_dump_cli_stdout_v39(data_parser_type_t type, void *obj,
+					   int obj_bytes, const char *key,
+					   void *acct_db_conn,
+					   const char *mime_type,
+					   data_parser_dump_cli_ctxt_t *ctxt,
+					   openapi_resp_meta_t *meta)
+{
+	data_t *dresp = data_set_dict(data_new());
+	data_t *dout = data_key_set(dresp, key);
+	data_t *dmeta = data_key_set(dresp, "meta");
+	data_t *dwarning = data_key_set(dresp, "warnings");
+	data_t *derror = data_key_set(dresp, "errors");
+	data_parser_t *parser = NULL;
+	data_parser_t *meta_parser = NULL;
+	char *out = NULL;
+	int rc;
+
+	if (!(parser = data_parser_cli_parser(
+			SLURM_DATA_PARSER_VERSION_DEPRECATED, ctxt))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		error("%s output not supported by %s",
+		      mime_type, SLURM_DATA_PARSER_VERSION);
+		goto cleanup;
+	}
+
+	if (!(meta_parser = data_parser_cli_parser(SLURM_DATA_PARSER_VERSION,
+						   ctxt))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		error("%s output not supported by %s",
+		      mime_type, SLURM_DATA_PARSER_VERSION);
+		goto cleanup;
+	}
+
+	if (acct_db_conn)
+		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
+				     acct_db_conn);
+
+	if (!meta->plugin.data_parser)
+		meta->plugin.data_parser =
+			xstrdup(data_parser_get_plugin(parser));
+
+	if ((!data_parser_g_dump(parser, type, obj, obj_bytes, dout) &&
+	    (data_get_type(dout) != DATA_TYPE_NULL)) &&
+	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_META, meta,
+				 sizeof(*meta), dmeta) &&
+	    (data_get_type(dmeta) != DATA_TYPE_NULL)) &&
+	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_ERRORS,
+				 &ctxt->errors, sizeof(ctxt->errors), derror) &&
+	    (data_get_type(derror) != DATA_TYPE_NULL)) &&
+	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_WARNINGS,
+				 &ctxt->warnings, sizeof(ctxt->warnings),
+				 dwarning) &&
+	    (data_get_type(dwarning) != DATA_TYPE_NULL))) {
+		serialize_g_data_to_string(&out, NULL, dresp, mime_type,
+					   SER_FLAGS_PRETTY);
+	}
+
+	if (out && out[0])
+		printf("%s\n", out);
+	else
+		debug("No output generated");
+
+cleanup:
+	xfree(out);
+	FREE_NULL_DATA(dresp);
+	FREE_NULL_DATA_PARSER(parser);
+	FREE_NULL_DATA_PARSER(meta_parser);
+
+	return rc;
+}
+
+extern bool is_data_parser_deprecated(const char *data_parser)
+{
+	char *full_name = "data_parser/" SLURM_DATA_PARSER_VERSION_DEPRECATED;
+	return !xstrcmp(data_parser, SLURM_DATA_PARSER_VERSION_DEPRECATED) ||
+		!xstrcmp(data_parser, full_name);
+}
+
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 {
 	int rc;

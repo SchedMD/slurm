@@ -419,8 +419,14 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	slurmdb_destroy_account_cond(acct_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list, argc,
-				     argv, db_conn, mime_type, data_parser, rc);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(ACCOUNT_LIST, acct_list,
+						 "accounts", argc, argv,
+						 db_conn, mime_type, rc);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list,
+					     argc, argv, db_conn, mime_type,
+					     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(acct_list);
 		return rc;
