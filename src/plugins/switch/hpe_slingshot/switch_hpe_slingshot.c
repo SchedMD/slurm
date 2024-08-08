@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/fd.h"
 #include "src/common/strlcpy.h"
 
 #include "src/slurmctld/slurmctld.h"
@@ -230,6 +231,10 @@ extern int switch_p_libstate_save(char *dir_name)
 		goto error;
 	}
 
+	if (fsync_and_close(state_fd, "switch"))
+		goto error;
+	state_fd = -1;
+
 	/* Overwrite the current state file with rename */
 	if (rename(new_state_file, state_file) == -1) {
 		error("Couldn't rename %s to %s: %m", new_state_file,
@@ -238,14 +243,14 @@ extern int switch_p_libstate_save(char *dir_name)
 	}
 
 	debug("State file %s saved", state_file);
-	close(state_fd);
 	FREE_NULL_BUFFER(state_buf);
 	xfree(new_state_file);
 	xfree(state_file);
 	return SLURM_SUCCESS;
 
 error:
-	close(state_fd);
+	if (state_fd)
+		close(state_fd);
 	FREE_NULL_BUFFER(state_buf);
 	unlink(new_state_file);
 	xfree(new_state_file);
