@@ -260,17 +260,20 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 extern void init_delayed_work(void)
 {
 	int rc;
-	struct sigevent sevp = {
-		.sigev_notify = SIGEV_SIGNAL,
-		.sigev_signo = SIGALRM,
-		.sigev_value.sival_ptr = &timer,
-	};
 
 	mgr.delayed_work = list_create(xfree_ptr);
 
 again:
 	slurm_mutex_lock(&mutex);
-	rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+	{
+		struct sigevent sevp = {
+			.sigev_notify = SIGEV_SIGNAL,
+			.sigev_signo = SIGALRM,
+			.sigev_value.sival_ptr = &timer,
+		};
+
+		rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+	}
 	slurm_mutex_unlock(&mutex);
 
 	if (rc)
