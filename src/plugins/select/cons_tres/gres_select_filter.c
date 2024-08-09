@@ -1353,12 +1353,13 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 }
 
 /* Build array to identify task count for each node-socket pair */
-static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
-					     uint8_t overcommit,
-					     gres_mc_data_t *tres_mc_ptr)
+static int _build_tasks_per_node_sock(struct job_resources *job_res,
+				      uint8_t overcommit,
+				      gres_mc_data_t *tres_mc_ptr,
+				      uint32_t ***tasks_per_node_socket_ptr)
 {
 	uint32_t **tasks_per_node_socket;
-	int j, node_cnt, job_node_inx = 0;
+	int rc = SLURM_SUCCESS, j, node_cnt, job_node_inx = 0;
 	int c, s, core_offset;
 	int cpus_per_task = 1, cpus_per_node, cpus_per_core;
 	int task_per_node_limit = 0;
@@ -1499,10 +1500,13 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 			}
 		}
 	}
-	if (rem_tasks > 0)	/* This should never happen */
+	if (rem_tasks > 0) { /* This should never happen */
 		error("%s: rem_tasks not zero (%d > 0)", __func__, rem_tasks);
+		rc = ESLURM_INVALID_GRES;
+	}
 
-	return tasks_per_node_socket;
+	*tasks_per_node_socket_ptr = tasks_per_node_socket;
+	return rc;
 }
 
 static void _free_tasks_per_node_sock(uint32_t **tasks_per_node_socket,
@@ -1782,8 +1786,12 @@ static int _select_and_set_node(void *x, void *arg)
 	}
 	if (gres_js->gres_per_task && /* Data needed */
 	    !*args->tasks_per_node_socket) { /* Not built yet */
-		*args->tasks_per_node_socket = _build_tasks_per_node_sock(
-			job_res, job_ptr->details->overcommit, tres_mc_ptr);
+		*rc = _build_tasks_per_node_sock(job_res,
+						 job_ptr->details->overcommit,
+						 tres_mc_ptr,
+						 args->tasks_per_node_socket);
+		if (*rc != SLURM_SUCCESS)
+			return -1;
 	}
 
 	tasks_per_node_socket = *args->tasks_per_node_socket;
