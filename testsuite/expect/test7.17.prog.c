@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	char *node_name, *reason_down = NULL;
 	char *orig_config, *new_config = NULL, *tres_per_node = NULL;
 	buf_t *buffer;
-	List job_gres_list = NULL, node_gres_list = NULL;
+	list_t *job_gres_list = NULL, *node_gres_list = NULL;
 	bitstr_t *cpu_bitmap;
 	char config_dir[1000], test[1000];
 	char slurm_conf[1000];

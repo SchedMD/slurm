@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	char *gres_conf = NULL;
 	char *fake_gpus_conf = NULL;
 	struct stat stat_buf;
-	List gres_list = NULL;
+	list_t *gres_list = NULL;
 	log_level_t debug_level = LOG_LEVEL_INFO;
 
 	if (argc < 4) {

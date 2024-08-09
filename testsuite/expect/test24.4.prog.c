@@ -54,7 +54,7 @@ char *time_format_string = "Minutes";
 time_t last_job_update = (time_t) 0;
 uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 
-List   job_list = NULL;		/* job_record list */
+list_t *job_list = NULL;		/* job_record list */
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* this will leak memory, but we don't care really */
