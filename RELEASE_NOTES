@@ -22,6 +22,7 @@ HIGHLIGHTS
 ==========
  -- Add report AccountUtilizationByQOS to sreport.
  -- AccountUtilizationByUser is able to be filtered by QOS.
+ -- Add autodetected gpus to the output of slurmd -C
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

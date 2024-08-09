@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
     easier parsing.
  -- sacct,sacctmgr,scontrol,sdiag,sinfo,squeue,sshare,slurmrestd - Avoid crash
     when loading data_parser plugins fail due to NULL dereference.
+ -- Add autodetected gpus to the output of slurmd -C
 
 * Changes in Slurm 24.05.3
 ==========================
