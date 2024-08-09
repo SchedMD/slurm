@@ -91,6 +91,9 @@ documents those changes that are of interest to users and administrators.
  -- sacct,sacctmgr,scontrol,sdiag,sinfo,squeue,sshare - Change response to
     '--json=list' or '--yaml=list' to send list of plugins to stdout and
     descriptive header to stderr to allow for easier parsing.
+ -- slurmrestd - Change response to '-d list', '-a list' or '-s list' to send
+    list of plugins to stdout and descriptive header to stderr to allow for
+    easier parsing.
 
 * Changes in Slurm 24.05.3
 ==========================

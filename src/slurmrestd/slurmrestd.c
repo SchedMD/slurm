@@ -592,7 +592,7 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
-	fprintf(stderr, "%s\n", full_type);
+	fprintf(stdout, "%s\n", full_type);
 }
 
 static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
