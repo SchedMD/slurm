@@ -666,11 +666,6 @@ extern void job_record_free_fed_details(job_fed_details_t **fed_details_pptr);
 
 extern int pack_ctld_job_step_info(void *x, void *arg);
 
-extern int job_record_pack(job_record_t *dump_job_ptr,
-			   int tres_cnt,
-			   buf_t *buffer,
-			   uint16_t proto_version);
-
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
@@ -690,6 +685,11 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version);
 
 extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr);
+
+extern int job_record_pack(job_record_t *dump_job_ptr,
+			   int tres_cnt,
+			   buf_t *buffer,
+			   uint16_t proto_version);
 
 extern int job_record_unpack(job_record_t **out,
 			     int tres_cnt,
