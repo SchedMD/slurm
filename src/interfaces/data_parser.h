@@ -790,8 +790,7 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
  * Generate meta instance for a CLI command
  */
 extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
-						 const char *mime_type,
-						 const char *data_parser);
+						 const char *mime_type);
 
 #define DATA_PARSER_DUMP_CLI_CTXT_MAGIC 0x1BA211B3
 typedef struct {
@@ -834,8 +833,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		__typeof__(src) *src_ptr = &src;                              \
 		if (!src.OPENAPI_RESP_STRUCT_META_FIELD_NAME)                 \
 			src.OPENAPI_RESP_STRUCT_META_FIELD_NAME =             \
-				data_parser_cli_meta(argc, argv, mime_type,   \
-						     data_parser_str);        \
+				data_parser_cli_meta(argc, argv, mime_type);  \
 		if (!src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME)               \
 			src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME =           \
 				dump_ctxt.errors =                            \

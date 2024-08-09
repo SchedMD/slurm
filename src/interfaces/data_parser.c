@@ -595,12 +595,10 @@ extern int data_parser_g_assign(data_parser_t *parser,
 }
 
 extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
-						 const char *mime_type,
-						 const char *data_parser)
+						 const char *mime_type)
 {
 	openapi_resp_meta_t *meta = xmalloc_nz(sizeof(*meta));
 	int tty;
-	char *parser = NULL;
 	char **argvnt = NULL;
 
 	/* need a new array with a NULL terminator */
@@ -618,12 +616,9 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 	else
 		tty = -1;
 
-	if (data_parser)
-		parser = xstrdup(data_parser);
-
 	*meta = (openapi_resp_meta_t) {
 		.plugin = {
-			.data_parser = parser,
+			.data_parser = NULL,
 			.accounting_storage =
 				slurm_conf.accounting_storage_type,
 		},
@@ -781,9 +776,8 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
 				     acct_db_conn);
 
-	if (!meta->plugin.data_parser)
-		meta->plugin.data_parser =
-			xstrdup(data_parser_get_plugin(parser));
+	xassert(!meta->plugin.data_parser);
+	meta->plugin.data_parser = xstrdup(data_parser_get_plugin(parser));
 
 	dresp = data_new();
 
