@@ -621,6 +621,21 @@ typedef struct {
 	slurmctld_resv_t *resv_ptr;
 } job_queue_req_t;
 
+typedef struct {
+	slurm_step_id_t *step_id;
+	uint16_t show_flags;
+	uid_t uid;
+	uint32_t steps_packed;
+	buf_t *buffer;
+	bool privileged;
+	uint16_t proto_version;
+	bool valid_job;
+	part_record_t **visible_parts;
+	list_t *job_step_list;
+	list_t *stepmgr_jobs;
+	int (*pack_job_step_list_func)(void *x, void *arg);
+} pack_step_args_t;
+
 /*
  * Create and initialize job_record_t.
  *
@@ -648,21 +663,6 @@ extern void job_record_free_null_array_recs(job_record_t *array_recs);
  * Free job's fed_details ptr.
  */
 extern void job_record_free_fed_details(job_fed_details_t **fed_details_pptr);
-
-typedef struct {
-	slurm_step_id_t *step_id;
-	uint16_t show_flags;
-	uid_t uid;
-	uint32_t steps_packed;
-	buf_t *buffer;
-	bool privileged;
-	uint16_t proto_version;
-	bool valid_job;
-	part_record_t **visible_parts;
-	list_t *job_step_list;
-	list_t *stepmgr_jobs;
-	int (*pack_job_step_list_func)(void *x, void *arg);
-} pack_step_args_t;
 
 extern int pack_ctld_job_step_info(void *x, void *arg);
 
