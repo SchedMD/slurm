@@ -1031,7 +1031,7 @@ enum node_states {
  * Values can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
-/*  was SHOW_DETAIL2	0x0004     Removed v19.05 */
+/*	SLURM_BIT(2) empty */
 #define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
 #define SHOW_LOCAL	0x0010	/* Show only local information, even on
 				 * federated cluster */
