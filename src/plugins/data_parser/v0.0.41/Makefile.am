@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
+AM_CPPFLAGS = -I$(top_srcdir) \
 	      -I$(top_srcdir)/src/plugin/data_parser/v0.0.41/
 
 pkglib_LTLIBRARIES = data_parser_v0_0_41.la

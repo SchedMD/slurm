@@ -514,7 +514,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 @BUILD_OFED_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 @BUILD_OFED_TRUE@pkglib_LTLIBRARIES = acct_gather_interconnect_ofed.la
 

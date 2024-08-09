@@ -517,7 +517,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(FREEIPMI_CPPFLAGS)
 @BUILD_IPMI_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 @BUILD_IPMI_TRUE@pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
 

@@ -520,7 +520,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 	      $(HPE_SLINGSHOT_CFLAGS) $(LIBCURL_CPPFLAGS) $(JSON_CPPFLAGS)
 
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = switch_hpe_slingshot.la

@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir)
 
 BCAST_LIB = libfile_bcast.la
 libfile_bcast_la_SOURCES = file_bcast.c file_bcast.h
