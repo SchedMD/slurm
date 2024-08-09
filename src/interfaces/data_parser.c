@@ -51,6 +51,7 @@
 
 #define PARSE_MAJOR_TYPE "data_parser"
 #define PARSE_MAGIC 0x0ea0b1be
+#define LATEST_PLUGIN_NAME "latest"
 
 struct data_parser_s {
 	int magic;
@@ -241,6 +242,11 @@ static plugin_param_t *_parse_plugin_type(const char *plugin_type)
 			p->params = xstrdup(pl);
 		} else {
 			p->plugin_type = xstrdup(type);
+		}
+
+		if (!xstrcasecmp(p->plugin_type, LATEST_PLUGIN_NAME)) {
+			xfree(p->plugin_type);
+			p->plugin_type = xstrdup(SLURM_DATA_PARSER_VERSION);
 		}
 
 		log_flag(DATA, "%s: plugin=%s params=%s",

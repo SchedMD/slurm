@@ -86,6 +86,8 @@ documents those changes that are of interest to users and administrators.
     them when they are not available.
  -- Removed non-functional option SLURM_PROLOG_CPU_MASK from TaskProlog which
     was used to reset the affinity of a task based on the mask given.
+ -- slurmrestd - Support passing of '-d latest' to load latest version of
+    data_parser plugin.
 
 * Changes in Slurm 24.05.3
 ==========================
