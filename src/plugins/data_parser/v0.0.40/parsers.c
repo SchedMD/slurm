@@ -6784,7 +6784,7 @@ static const parser_t PARSER_ARRAY(ASSOC_REC_SET)[] = {
 /* should mirror the structure of slurmdb_assoc_rec_t */
 static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(ACCOUNTING_LIST, accounting_list, "accounting", "Accounting records containing related resource usage"),
-	add_parse(STRING, acct, "account", NULL),
+	add_parse(STRING, acct, "account", "Account"),
 	add_skip(assoc_next),
 	add_skip(assoc_next_id),
 	add_skip(bf_usage),
@@ -7093,7 +7093,7 @@ static const parser_t PARSER_ARRAY(WCKEY)[] = {
 	add_parse_req(STRING, name, "name", "WCKey name"),
 	add_parse_req(STRING, user, "user", "User name"),
 	add_skip(uid),
-	add_parse_bit_flag_array(slurmdb_wckey_rec_t, WCKEY_FLAGS, false, flags, "flags", NULL),
+	add_parse_bit_flag_array(slurmdb_wckey_rec_t, WCKEY_FLAGS, false, flags, "flags", "Flags associated with the WCKey"),
 };
 #undef add_parse
 #undef add_parse_req
@@ -7400,13 +7400,13 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_parse(UINT32, schedule_cycle_max, "schedule_cycle_max", "Max time of any scheduling cycle in microseconds since last reset"),
 	add_parse(UINT32, schedule_cycle_last, "schedule_cycle_last", "Time in microseconds for last scheduling cycle"),
 	add_skip(schedule_cycle_sum),
-	add_parse(UINT32, schedule_cycle_counter, "schedule_cycle_total", "Total run time in microseconds for all scheduling cycles since last reset"),
+	add_parse(UINT32, schedule_cycle_counter, "schedule_cycle_total", "Number of scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN, "schedule_cycle_mean", "Mean time in microseconds for all scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN_DEPTH, "schedule_cycle_mean_depth", "Mean of the number of jobs processed in a scheduling cycle"),
 	add_cparse(STATS_MSG_CYCLE_PER_MIN, "schedule_cycle_per_minute", "Number of scheduling executions per minute"),
 	add_skip(schedule_cycle_depth),
 	add_parse(UINT32, schedule_queue_len, "schedule_queue_length", "Number of jobs pending in queue"),
-	add_cparse(STATS_MSG_SCHEDULE_EXIT, "schedule_exit", NULL),
+	add_cparse(STATS_MSG_SCHEDULE_EXIT, "schedule_exit", "Reasons for which the scheduling cycle exited since last reset"),
 	add_parse(UINT32, jobs_submitted, "jobs_submitted", "Number of jobs submitted since last reset"),
 	add_parse(UINT32, jobs_started, "jobs_started", "Number of jobs started since last reset"),
 	add_parse(UINT32, jobs_completed, "jobs_completed", "Number of jobs completed since last reset"),
@@ -7436,7 +7436,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_BF_QUEUE_LEN_MEAN, "bf_table_size_mean", "Mean number of different time slots tested by the backfill scheduler"),
 	add_parse(TIMESTAMP_NO_VAL, bf_when_last_cycle, "bf_when_last_cycle", "When the last backfill scheduling cycle happened (UNIX timestamp)"),
 	add_cparse(STATS_MSG_BF_ACTIVE, "bf_active", "Backfill scheduler currently running"),
-	add_cparse(STATS_MSG_BF_EXIT, "bf_exit", NULL),
+	add_cparse(STATS_MSG_BF_EXIT, "bf_exit", "Reasons for which the backfill scheduling cycle exited since last reset"),
 	add_skip(rpc_type_size),
 	add_cparse(STATS_MSG_RPCS_BY_TYPE, "rpcs_by_message_type", "Most frequently issued remote procedure calls (RPCs)"),
 	add_skip(rpc_type_id), /* handled by STATS_MSG_RPCS_BY_TYPE */
@@ -7461,24 +7461,24 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(bf_exit_fields_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(BF_EXIT_FIELDS)[] = {
-	add_parse(UINT32, end_job_queue, "end_job_queue", NULL),
-	add_parse(UINT32, bf_max_job_start, "bf_max_job_start", NULL),
-	add_parse(UINT32, bf_max_job_test, "bf_max_job_test", NULL),
-	add_parse(UINT32, bf_max_time, "bf_max_time", NULL),
-	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", NULL),
-	add_parse(UINT32, state_changed, "state_changed", NULL),
+	add_parse(UINT32, end_job_queue, "end_job_queue", "Reached end of queue"),
+	add_parse(UINT32, bf_max_job_start, "bf_max_job_start", "Reached number of jobs allowed to start"),
+	add_parse(UINT32, bf_max_job_test, "bf_max_job_test", "Reached number of jobs allowed to be tested"),
+	add_parse(UINT32, bf_max_time, "bf_max_time", "Reached maximum allowed scheduler time"),
+	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", "Reached table size limit"),
+	add_parse(UINT32, state_changed, "state_changed", "System state changed"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(schedule_exit_fields_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SCHEDULE_EXIT_FIELDS)[] = {
-	add_parse(UINT32, end_job_queue, "end_job_queue", NULL),
-	add_parse(UINT32, default_queue_depth, "default_queue_depth", NULL),
-	add_parse(UINT32, max_job_start, "max_job_start", NULL),
-	add_parse(UINT32, max_rpc_cnt, "max_rpc_cnt", NULL),
-	add_parse(UINT32, max_sched_time, "max_sched_time", NULL),
-	add_parse(UINT32, licenses, "licenses", NULL),
+	add_parse(UINT32, end_job_queue, "end_job_queue", "Reached end of queue"),
+	add_parse(UINT32, default_queue_depth, "default_queue_depth", "Reached number of jobs allowed to be tested"),
+	add_parse(UINT32, max_job_start, "max_job_start", "Reached number of jobs allowed to start"),
+	add_parse(UINT32, max_rpc_cnt, "max_rpc_cnt", "Reached RPC limit"),
+	add_parse(UINT32, max_sched_time, "max_sched_time", "Reached maximum allowed scheduler time"),
+	add_parse(UINT32, licenses, "licenses", "Blocked on licenses"),
 };
 #undef add_parse
 
@@ -7552,8 +7552,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, gres, "gres", "Generic resources"),
 	add_parse(STRING, gres_drain, "gres_drained", "Drained generic resources"),
 	add_parse(STRING, gres_used, "gres_used", "Generic resources currently in use"),
-	add_parse(STRING, instance_id, "instance_id", NULL),
-	add_parse(STRING, instance_type, "instance_type", NULL),
+	add_parse(STRING, instance_id, "instance_id", "Cloud instance ID"),
+	add_parse(STRING, instance_type, "instance_type", "Cloud instance type"),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", "Time when the node was last busy (UNIX timestamp)"),
 	add_parse(STRING, mcs_label, "mcs_label", "Multi-Category Security label"),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", "Combined memory limit, in MB, for Slurm compute node daemons"),
@@ -7965,8 +7965,8 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", "MaxMemPerNode"),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", "MaxNodes"),
 	add_parse_overload(UINT16, max_share, 2, "maximums/shares", "OverSubscribe"),
-	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", NULL),
-	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", NULL),
+	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
+	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes"),
 	add_parse(STRING, name, "name", "PartitionName"),
@@ -8053,7 +8053,7 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT64, base_consumed_energy, "base_consumed_energy", "The energy consumed between when the node was powered on and the last time it was registered by slurmd, in joules"),
 	add_parse(UINT64, consumed_energy, "consumed_energy", "The energy consumed between the last time the node was registered by the slurmd daemon and the last node energy accounting sample, in joules"),
 	add_parse(UINT32_NO_VAL, current_watts, "current_watts", "The instantaneous power consumption at the time of the last node energy accounting sample, in watts"),
-	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
+	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", "Previous value of consumed_energy"),
 	add_parse(TIMESTAMP, poll_time, "last_collected", "Time when energy data was last retrieved (UNIX timestamp)"),
 };
 #undef add_parse
@@ -8182,7 +8182,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(cron_entry_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
-	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags", NULL),
+	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags", "Flags"),
 	add_parse(BITSTR_PTR, minute, "minute", "Ranged string specifying eligible minute values (e.g. 0-10,50)"),
 	add_parse(BITSTR_PTR, hour, "hour", "Ranged string specifying eligible hour values (e.g. 0-5,23)"),
 	add_parse(BITSTR_PTR, day_of_month, "day_of_month", "Ranged string specifying eligible day of month values (e.g. 0-10,29)"),
@@ -8495,16 +8495,16 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
 			   XSTRINGIFY(INFINITE64), flag_string,       \
 			   hidden, desc)
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_FLAGS)[] = {
-	add_flag(JOBCOND_FLAG_DUP, "show_duplicates", false, NULL),
-	add_flag(JOBCOND_FLAG_NO_STEP, "skip_steps", false, NULL),
-	add_flag(JOBCOND_FLAG_NO_TRUNC, "disable_truncate_usage_time", false, NULL),
-	add_flag(JOBCOND_FLAG_RUNAWAY, "run_away_jobs", true, NULL),
-	add_flag(JOBCOND_FLAG_WHOLE_HETJOB, "whole_hetjob", false, NULL),
-	add_flag(JOBCOND_FLAG_NO_WHOLE_HETJOB, "disable_whole_hetjob", false, NULL),
-	add_flag(JOBCOND_FLAG_NO_WAIT, "disable_wait_for_result", false, NULL),
-	add_flag(JOBCOND_FLAG_NO_DEFAULT_USAGE, "usage_time_as_submit_time", false, NULL),
-	add_flag(JOBCOND_FLAG_SCRIPT, "show_batch_script", false, NULL),
-	add_flag(JOBCOND_FLAG_ENV, "show_job_environment", false, NULL),
+	add_flag(JOBCOND_FLAG_DUP, "show_duplicates", false, "Include duplicate job entries"),
+	add_flag(JOBCOND_FLAG_NO_STEP, "skip_steps", false, "Exclude job step details"),
+	add_flag(JOBCOND_FLAG_NO_TRUNC, "disable_truncate_usage_time", false, "Do not truncate the time to usage_start and usage_end"),
+	add_flag(JOBCOND_FLAG_RUNAWAY, "run_away_jobs", true, "Only show runaway jobs"),
+	add_flag(JOBCOND_FLAG_WHOLE_HETJOB, "whole_hetjob", false, "Include details on all hetjob components"),
+	add_flag(JOBCOND_FLAG_NO_WHOLE_HETJOB, "disable_whole_hetjob", false, "Only show details on specified hetjob components"),
+	add_flag(JOBCOND_FLAG_NO_WAIT, "disable_wait_for_result", false, "Tell dbd not to wait for the result"),
+	add_flag(JOBCOND_FLAG_NO_DEFAULT_USAGE, "usage_time_as_submit_time", false, "Use usage_time as the submit_time of the job"),
+	add_flag(JOBCOND_FLAG_SCRIPT, "show_batch_script", false, "Include job script"),
+	add_flag(JOBCOND_FLAG_ENV, "show_job_environment", false, "Include job environment"),
 };
 #undef add_flag
 
@@ -8519,13 +8519,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_FLAGS)[] = {
 			   INFINITE, XSTRINGIFY(INFINITE),            \
 			   flag_string, hidden, desc)
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_DB_FLAGS)[] = {
-	add_flag_eq(SLURMDB_JOB_FLAG_NONE, "none", true, NULL),
-	add_flag_eq(SLURMDB_JOB_CLEAR_SCHED, "clear_scheduling", true, NULL),
-	add_flag(SLURMDB_JOB_FLAG_NOTSET, "scheduler_unset", false, NULL),
-	add_flag(SLURMDB_JOB_FLAG_SUBMIT, "scheduled_on_submit", false, NULL),
-	add_flag(SLURMDB_JOB_FLAG_SCHED, "scheduled_by_main", false, NULL),
-	add_flag(SLURMDB_JOB_FLAG_BACKFILL, "scheduled_by_backfill", false, NULL),
-	add_flag(SLURMDB_JOB_FLAG_START_R, "job_started", false, NULL),
+	add_flag_eq(SLURMDB_JOB_FLAG_NONE, "none", true, "No flags"),
+	add_flag_eq(SLURMDB_JOB_CLEAR_SCHED, "clear_scheduling", true, "Clear scheduling bits"),
+	add_flag(SLURMDB_JOB_FLAG_NOTSET, "scheduler_unset", false, "Schedule bits not set"),
+	add_flag(SLURMDB_JOB_FLAG_SUBMIT, "scheduled_on_submit", false, "Job was started on submit"),
+	add_flag(SLURMDB_JOB_FLAG_SCHED, "scheduled_by_main", false, "Job was started from main scheduler"),
+	add_flag(SLURMDB_JOB_FLAG_BACKFILL, "scheduled_by_backfill", false, "Job was started from backfill"),
+	add_flag(SLURMDB_JOB_FLAG_START_R, "job_started", false, "Job start RPC was received"),
 };
 #undef add_flag
 #undef add_flag_eq
@@ -8692,7 +8692,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
 	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
-	add_parse(BOOL, with_assocs, "with_assocs", "Include assocations"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include associations"),
 	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
 	add_parse(BOOL, with_wckeys, "with_wckeys", "Include wckeys"),
 };
@@ -8742,7 +8742,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Assocation filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Association filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
 	add_cparse(ACCOUNT_CONDITION_WITH_ASSOC_V40, "with_assocs", "Include associations"),
 	add_cparse(ACCOUNT_CONDITION_WITH_WCOORD_V40, "with_coords", "Include coordinators"),
@@ -8762,13 +8762,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_CLASSIFICATION)[] = {
 	add_flag_equal(SLURMDB_CLASS_NONE, INFINITE16, "UNCLASSIFIED"),
 	add_flag_bit(SLURMDB_CLASS_CAPABILITY, "CAPABILITY"),
 	add_flag_bit(SLURMDB_CLASS_CAPACITY, "CAPACITY"),
-	add_flag_bit(SLURMDB_CLASS_CAPAPACITY, "CAPAPACITY"),
+	add_flag_bit(SLURMDB_CLASS_CAPAPACITY, "CAPAPACITY (both CAPABILITY and CAPACITY)"),
 };
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_cluster_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
-	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_CLASSIFICATION, false, classification, "classification", NULL),
+	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_CLASSIFICATION, false, classification, "classification", "Type of machine"),
 	add_parse(STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(STRING_LIST, federation_list, "federation", "CSV federation list"),
 	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_REC_FLAGS, false, flags, "flags", "Query flags"),
@@ -8956,7 +8956,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 	add_parser(shares_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(shares_response_msg_t, field)
 static const parser_t PARSER_ARRAY(SHARES_RESP_MSG)[] = {
-	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Assocation shares"),
+	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Association shares"),
 	add_parse(UINT64, tot_shares, "total_shares", "Total number of shares"),
 	add_skip(tres_cnt),
 	add_skip(tres_names),
@@ -8976,7 +8976,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
 	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
 static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
-	add_parse(UINT32, obj.assoc_id, "id", "Assocation ID"),
+	add_parse(UINT32, obj.assoc_id, "id", "Association ID"),
 	add_parse(STRING, obj.cluster, "cluster", "Cluster name"),
 	add_parse(STRING, obj.name, "name", "Share name"),
 	add_parse(STRING, obj.parent, "parent", "Parent name"),
