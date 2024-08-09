@@ -652,7 +652,7 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
-	info("%s", full_type);
+	dprintf(STDOUT_FILENO, "%s\n", full_type);
 }
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,
@@ -763,7 +763,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	char *out = NULL;
 
 	if (!xstrcasecmp(data_parser, "list")) {
-		info("Possible data_parser plugins:");
+		dprintf(STDERR_FILENO, "Possible data_parser plugins:\n");
 		parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
 					   NULL, NULL, "list",
 					   _plugrack_foreach_list, false);
