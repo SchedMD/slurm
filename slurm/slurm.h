@@ -1029,16 +1029,16 @@ enum node_states {
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be ORed */
-#define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
-#define SHOW_DETAIL	0x0002	/* Show detailed resource information */
+#define SHOW_ALL SLURM_BIT(0) /* Show info for "hidden" partitions */
+#define SHOW_DETAIL SLURM_BIT(1) /* Show detailed resource information */
 /*	SLURM_BIT(2) empty */
-#define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
-#define SHOW_LOCAL	0x0010	/* Show only local information, even on
+#define SHOW_MIXED SLURM_BIT(3)	/* Automatically set node MIXED state */
+#define SHOW_LOCAL SLURM_BIT(4)	/* Show only local information, even on
 				 * federated cluster */
-#define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
-#define SHOW_FEDERATION	0x0040	/* Show federated state information.
-				 * Shows local info if not in federation */
-#define SHOW_FUTURE	0x0080	/* Show future nodes */
+#define SHOW_SIBLING SLURM_BIT(5) /* Show sibling jobs on a federated cluster */
+#define SHOW_FEDERATION SLURM_BIT(6) /* Show federated state information.
+				      * Shows local info if not in federation */
+#define SHOW_FUTURE SLURM_BIT(7) /* Show future nodes */
 
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
