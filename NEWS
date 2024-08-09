@@ -94,6 +94,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Change response to '-d list', '-a list' or '-s list' to send
     list of plugins to stdout and descriptive header to stderr to allow for
     easier parsing.
+ -- sacct,sacctmgr,scontrol,sdiag,sinfo,squeue,sshare,slurmrestd - Avoid crash
+    when loading data_parser plugins fail due to NULL dereference.
 
 * Changes in Slurm 24.05.3
 ==========================

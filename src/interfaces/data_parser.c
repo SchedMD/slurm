@@ -463,7 +463,7 @@ cleanup:
 		xfree(pparams);
 	}
 
-	if (plugins)
+	if (plugins && parsers)
 		for (int j = 0; j < plugins->count; j++)
 			FREE_NULL_DATA_PARSER(parsers[j]);
 	xfree(parsers);
