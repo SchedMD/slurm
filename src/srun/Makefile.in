@@ -488,7 +488,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-AM_CPPFLAGS = -I$(top_srcdir) $(CRAY_JOB_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)
 depend_libs = $(top_builddir)/src/bcast/libfile_bcast.la
 srun_SOURCES = \
 	allocate.c allocate.h \
