@@ -502,7 +502,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 SRCS = \
 	env.c \
 	opt.c \
@@ -516,6 +515,7 @@ scrontab_DEPENDENCIES = $(LIB_SLURM_BUILD)
 scrontab_LDFLAGS = $(CMD_LDFLAGS)
 scrontab_LDADD = $(LIB_SLURM) $(LIB_REF)
 REF = default_crontab.txt usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

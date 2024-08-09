@@ -2,7 +2,6 @@
 # Makefile for sinfo
 
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 
 AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = sinfo

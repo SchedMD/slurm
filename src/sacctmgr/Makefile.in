@@ -524,7 +524,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 sacctmgr_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sacctmgr_LDADD = $(LIB_SLURM) $(READLINE_LIBS) $(LIB_REF)
@@ -553,6 +552,7 @@ sacctmgr_SOURCES = \
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

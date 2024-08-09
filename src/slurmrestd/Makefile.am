@@ -3,7 +3,6 @@ SUBDIRS = plugins
 endif
 
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 
 SRCS = \
 	http.c http.h \

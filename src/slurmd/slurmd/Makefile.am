@@ -2,7 +2,6 @@
 # Makefile for slurmd
 
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 
 sbin_PROGRAMS = slurmd
 

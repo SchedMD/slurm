@@ -506,7 +506,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 squeue_LDADD = $(LIB_SLURM) $(LIB_REF)
 squeue_DEPENDENCIES = $(LIB_SLURM_BUILD)
@@ -514,6 +513,7 @@ noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 squeue_LDFLAGS = $(CMD_LDFLAGS)
 REF = help.txt usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

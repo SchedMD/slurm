@@ -109,7 +109,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @HAVE_LUA_TRUE@bin_PROGRAMS = scrun$(EXEEXT)
-@HAVE_LUA_TRUE@am__append_1 = *.bino
 subdir = src/scrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -509,7 +508,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* $(am__append_1)
 SRCS = \
 	alloc.c \
 	anchor.c \
@@ -531,6 +529,7 @@ convenience_libs = $(LIB_SLURM)
 @HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
 @HAVE_LUA_TRUE@	$(lua_LIBS) $(LIB_REF)
 @HAVE_LUA_TRUE@REF = usage.txt
+@HAVE_LUA_TRUE@CLEANFILES = *.bino
 @HAVE_LUA_TRUE@BIN_REF = $(REF:.txt=.bino)
 @HAVE_LUA_TRUE@LIB_REF = lib_ref.la
 

@@ -500,7 +500,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 SRCS = sackd.c
 AM_CPPFLAGS = -I$(top_srcdir)
 sackd_SOURCES = $(SRCS)
@@ -508,6 +507,7 @@ sackd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sackd_LDFLAGS = $(CMD_LDFLAGS)
 sackd_LDADD = $(LIB_SLURM) $(LIB_REF)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

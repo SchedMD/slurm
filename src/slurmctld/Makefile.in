@@ -533,7 +533,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 
 # noinst_LTLIBRARIES = libslurmctld.la
@@ -604,6 +603,7 @@ slurmctld_LDADD = $(LIB_SLURM) $(dependencies) $(LIB_REF)
 slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(dependencies)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

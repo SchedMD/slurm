@@ -478,7 +478,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 sshare_LDADD = $(LIB_SLURM) $(READLINE_LIBS)
 sshare_DEPENDENCIES = $(LIB_SLURM_BUILD)
@@ -696,7 +695,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

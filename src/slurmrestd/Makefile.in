@@ -109,7 +109,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @WITH_SLURMRESTD_TRUE@sbin_PROGRAMS = slurmrestd$(EXEEXT)
-@WITH_SLURMRESTD_TRUE@am__append_1 = *.bino
 subdir = src/slurmrestd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -522,7 +521,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @WITH_SLURMRESTD_TRUE@SUBDIRS = plugins
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* $(am__append_1)
 SRCS = \
 	http.c http.h \
 	operations.c operations.h \
@@ -537,6 +535,7 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = $(LIB_SLURM) \
 @WITH_SLURMRESTD_TRUE@	$(HTTP_PARSER_LDFLAGS) $(LIB_REF)
 @WITH_SLURMRESTD_TRUE@REF = usage.txt
+@WITH_SLURMRESTD_TRUE@CLEANFILES = *.bino
 @WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
 @WITH_SLURMRESTD_TRUE@LIB_REF = lib_ref.la
 

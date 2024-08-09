@@ -515,7 +515,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 scontrol_SOURCES = \
 	common.c	\
@@ -541,6 +540,7 @@ scontrol_LDADD = $(LIB_SLURM) $(READLINE_LIBS) $(LIB_REF)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
 scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

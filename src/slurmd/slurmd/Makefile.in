@@ -510,7 +510,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 depend_libs = \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
 	../common/libslurmd_common.o \
@@ -535,6 +534,7 @@ SLURMD_SOURCES = \
 slurmd_SOURCES = $(SLURMD_SOURCES)
 slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 
