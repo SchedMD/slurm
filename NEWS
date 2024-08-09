@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     or wckey. This affects the following endpoints:
       'GET /slurmdb/v0.0.39/jobs'
  -- switch/hpe_slingshot - Fix security issue around managing VNI access.
+    CVE-2024-42511.
 
 * Changes in Slurm 23.11.8
 ==========================
@@ -878,6 +879,7 @@ documents those changes that are of interest to users and administrators.
     once per minute background task occurs.
  -- Fix assertion in developer mode on a failed message unpack.
  -- switch/hpe_slingshot - Fix security issue around managing VNI access.
+    CVE-2024-42511.
 
 * Changes in Slurm 23.02.7
 ==========================
