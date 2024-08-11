@@ -126,7 +126,7 @@ extern int fini (void)
  *    wrong.
  */
 extern void jobacct_gather_p_poll_data(
-	List task_list, int64_t cont_id, bool profile)
+	list_t *task_list, int64_t cont_id, bool profile)
 {
 	static jag_callbacks_t callbacks;
 

@@ -63,7 +63,7 @@
 
 /* Global externs from scontrol.h */
 char *command_name;
-List clusters = NULL;
+list_t *clusters = NULL;
 char *cluster_names = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */

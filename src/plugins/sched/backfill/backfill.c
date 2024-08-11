@@ -161,7 +161,7 @@ typedef struct {
 typedef struct {
 	uint32_t comp_time_limit;	/* Time limit for hetjob */
 	uint32_t het_job_id;
-	List het_job_rec_list;		/* List of het_job_rec_t */
+	list_t *het_job_rec_list;	/* list of het_job_rec_t */
 	time_t prev_start;		/* Expected start time from last test */
 } het_job_map_t;
 
@@ -171,7 +171,7 @@ typedef struct {
 } deadlock_job_struct_t;
 
 typedef struct {
-	List deadlock_job_list;
+	list_t *deadlock_job_list;
 	part_record_t *part_ptr;
 } deadlock_part_struct_t;
 
@@ -201,7 +201,7 @@ static int bf_node_space_size = 0;
 static bool bf_running_job_reserve = false;
 static bool bf_licenses = false;
 static uint32_t bf_min_prio_reserve = 0;
-static List deadlock_global_list;
+static list_t *deadlock_global_list = NULL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static bool bf_one_resv_per_job = false;
@@ -218,7 +218,7 @@ static bool assoc_limit_stop = false;
 static int max_rpc_cnt = 0;
 static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
-static List het_job_list = NULL;
+static list_t *het_job_list = NULL;
 static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 static bitstr_t *planned_bitmap = NULL;
 static bool soft_time_limit = false;
@@ -413,8 +413,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 	bool has_xand = false, has_mor = false;
 	int feat_cnt = _num_feature_count(job_ptr, &has_xand, &has_mor);
 	job_details_t *detail_ptr = job_ptr->details;
-	List feature_cache = detail_ptr->feature_list_use;
-	List preemptee_candidates = NULL;
+	list_t *feature_cache = detail_ptr->feature_list_use;
+	list_t *preemptee_candidates = NULL;
 	list_itr_t *feat_iter;
 	job_feature_t *feat_ptr;
 	job_feature_t *feature_base;
@@ -1746,7 +1746,7 @@ static void _handle_planned(bool set)
 static void _attempt_backfill(void)
 {
 	DEF_TIMERS;
-	List job_queue;
+	list_t *job_queue = NULL;
 	job_queue_rec_t *job_queue_rec = NULL;
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	slurmdb_qos_rec_t *qos_ptr = NULL;

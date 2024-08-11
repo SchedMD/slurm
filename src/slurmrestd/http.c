@@ -70,7 +70,7 @@ typedef struct {
 	/* URL query parameters by client */
 	const char *query;
 	/* list of each header received (to be handed to callback) */
-	List headers;
+	list_t *headers;
 	/* state tracking of last header received */
 	char *last_header;
 	/* client requested to keep_alive header or -1 to disable */
@@ -911,7 +911,7 @@ static int _http_header_find_key(void *x, void *y)
 		return 0;
 }
 
-extern const char *find_http_header(List headers, const char *name)
+extern const char *find_http_header(list_t *headers, const char *name)
 {
 	http_header_entry_t *header = NULL;
 

@@ -890,7 +890,7 @@ static int _run_lua_script(run_lua_args_t *args)
 {
 	int rc;
 	buf_t *info_buf = NULL;
-	List job_ids = NULL;
+	list_t *job_ids = NULL;
 	job_record_t *job_ptr;
 	slurmctld_lock_t job_read_lock = {
 		.conf = READ_LOCK, .job = READ_LOCK,
@@ -2340,7 +2340,7 @@ static void _free_orphan_alloc_rec(void *x)
  * that the burst buffer is in.
  */
 static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
-			    time_t defer_time, List orphan_rec_list)
+			    time_t defer_time, list_t *orphan_rec_list)
 {
 	bb_job_t *bb_job;
 	uint16_t job_bb_state = bb_state_num(job_ptr->burst_buffer_state);
@@ -2448,7 +2448,7 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
  */
 static void _purge_vestigial_bufs(void)
 {
-	List orphan_rec_list = list_create(_free_orphan_alloc_rec);
+	list_t *orphan_rec_list = list_create(_free_orphan_alloc_rec);
 	bb_alloc_t *bb_alloc = NULL;
 	time_t defer_time = time(NULL) + 60;
 	int i;
@@ -2969,7 +2969,7 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 static int _identify_bb_candidate(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	List job_candidates = (List) arg;
+	list_t *job_candidates = arg;
 	bb_job_t *bb_job;
 	bb_job_queue_rec_t *job_rec;
 
@@ -3486,9 +3486,9 @@ static int _try_alloc_job_bb(void *x, void *arg)
 /*
  * Attempt to allocate resources and begin file staging for pending jobs.
  */
-extern int bb_p_job_try_stage_in(List job_queue)
+extern int bb_p_job_try_stage_in(list_t *job_queue)
 {
-	List job_candidates;
+	list_t *job_candidates;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "Mutex locked");

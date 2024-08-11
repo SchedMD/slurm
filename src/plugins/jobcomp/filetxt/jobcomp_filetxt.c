@@ -337,10 +337,10 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 /*
  * get info from the database
- * in/out job_list List of job_rec_t *
- * note List needs to be freed when called
+ * in/out job_list list of job_rec_t *
+ * note list needs to be freed when called
  */
-extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
+extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	return filetxt_jobcomp_process_get_jobs(job_cond);
 }

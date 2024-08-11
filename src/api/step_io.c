@@ -86,7 +86,7 @@ static bool     _outgoing_buf_free(client_io_t *cio);
  * Listening socket declarations
  **********************************************************************/
 static bool _listening_socket_readable(eio_obj_t *obj);
-static int _listening_socket_read(eio_obj_t *obj, List objs);
+static int _listening_socket_read(eio_obj_t *obj, list_t *objs);
 
 struct io_operations listening_socket_ops = {
 	.readable = &_listening_socket_readable,
@@ -97,9 +97,9 @@ struct io_operations listening_socket_ops = {
  * IO server socket declarations
  **********************************************************************/
 static bool _server_readable(eio_obj_t *obj);
-static int _server_read(eio_obj_t *obj, List objs);
+static int _server_read(eio_obj_t *obj, list_t *objs);
 static bool _server_writable(eio_obj_t *obj);
-static int _server_write(eio_obj_t *obj, List objs);
+static int _server_write(eio_obj_t *obj, list_t *objs);
 
 struct io_operations server_ops = {
 	.readable = &_server_readable,
@@ -122,7 +122,7 @@ struct server_io_info {
 	int remote_stderr_objs; /* active eio_obj_t's on the remote node */
 
 	/* outgoing variables */
-	List msg_queue;
+	list_t *msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	bool out_eof;
@@ -132,7 +132,7 @@ struct server_io_info {
  * File write declarations
  **********************************************************************/
 static bool _file_writable(eio_obj_t *obj);
-static int _file_write(eio_obj_t *obj, List objs);
+static int _file_write(eio_obj_t *obj, list_t *objs);
 
 struct io_operations file_write_ops = {
 	.writable = &_file_writable,
@@ -143,7 +143,7 @@ struct file_write_info {
 	client_io_t *cio;
 
 	/* outgoing variables */
-	List msg_queue;
+	list_t *msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	/* If taskid is (uint32_t)-1, output from all tasks is accepted,
@@ -157,7 +157,7 @@ struct file_write_info {
  * File read declarations
  **********************************************************************/
 static bool _file_readable(eio_obj_t *obj);
-static int _file_read(eio_obj_t *obj, List objs);
+static int _file_read(eio_obj_t *obj, list_t *objs);
 
 struct io_operations file_read_ops = {
 	.readable = &_file_readable,
@@ -194,8 +194,7 @@ _listening_socket_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int
-_listening_socket_read(eio_obj_t *obj, List objs)
+static int _listening_socket_read(eio_obj_t *obj, list_t *objs)
 {
 	client_io_t *cio = (client_io_t *)obj->arg;
 
@@ -282,8 +281,7 @@ _server_readable(eio_obj_t *obj)
 	return false;
 }
 
-static int
-_server_read(eio_obj_t *obj, List objs)
+static int _server_read(eio_obj_t *obj, list_t *objs)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 	void *buf;
@@ -461,8 +459,7 @@ _server_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int
-_server_write(eio_obj_t *obj, List objs)
+static int _server_write(eio_obj_t *obj, list_t *objs)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 	void *buf;
@@ -567,7 +564,7 @@ static bool _file_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int _file_write(eio_obj_t *obj, List objs)
+static int _file_write(eio_obj_t *obj, list_t *objs)
 {
 	struct file_write_info *info = (struct file_write_info *) obj->arg;
 	void *ptr;
@@ -688,7 +685,7 @@ static bool _file_readable(eio_obj_t *obj)
 	return false;
 }
 
-static int _file_read(eio_obj_t *obj, List objs)
+static int _file_read(eio_obj_t *obj, list_t *objs)
 {
 	struct file_read_info *info = (struct file_read_info *) obj->arg;
 	struct io_buf *msg;

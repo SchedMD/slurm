@@ -85,7 +85,7 @@ typedef struct {
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
-List registered_clusters = NULL;
+list_t *registered_clusters = NULL;
 pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 slurmdb_stats_rec_t rpc_stats;
 pthread_mutex_t registered_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -105,7 +105,7 @@ static bool running_rollup = 0;
 static bool running_commit = 0;
 static bool restart_backup = false;
 static bool reset_lft_rgt = 0;
-static List lft_rgt_list = NULL;
+static list_t *lft_rgt_list = NULL;
 
 /* Local functions */
 static void  _commit_handler_cancel(void);
@@ -428,7 +428,7 @@ extern void reconfig(void)
 	_update_logging(false);
 }
 
-extern void handle_rollup_stats(List rollup_stats_list,
+extern void handle_rollup_stats(list_t *rollup_stats_list,
 				long delta_time, int type)
 {
 	list_itr_t *itr;
@@ -765,7 +765,7 @@ static void _set_work_dir(void)
 
 static void _request_registrations(void *db_conn)
 {
-	List cluster_list = acct_storage_g_get_clusters(
+	list_t *cluster_list = acct_storage_g_get_clusters(
 		db_conn, getuid(), NULL);
 	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
@@ -824,7 +824,7 @@ static void *_rollup_handler(void *db_conn)
 	time_t next_time;
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
-	List rollup_stats_list = NULL;
+	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);

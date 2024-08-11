@@ -54,8 +54,8 @@ typedef struct {
 } wrapper_rm_job_args_t;
 
 typedef struct {
-	List preemptee_candidates;
-	List cr_job_list;
+	list_t *preemptee_candidates;
+	list_t *cr_job_list;
 	node_use_record_t *future_usage;
 	part_res_record_t *future_part;
 	list_t *future_license_list;
@@ -266,7 +266,7 @@ static struct multi_core_data *_create_default_mc(void)
 	return mc_ptr;
 }
 
-/* List sort function: sort by the job's expected end time */
+/* list sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
 	job_record_t *job1_ptr = *(job_record_t **) x;
@@ -494,10 +494,10 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
 	node_record_t *node_ptr = node_record_table_ptr[node_i];
-	List node_gres_list;
+	list_t *node_gres_list;
 	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
 	avail_res_t *avail_res = NULL;
-	List sock_gres_list = NULL;
+	list_t *sock_gres_list = NULL;
 	bool enforce_binding = false;
 	uint16_t min_cpus_per_node, ntasks_per_node = 1;
 
@@ -774,7 +774,7 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 bool sharing_only, part_record_t *my_part_ptr,
-			 bool qos_preemptor, List jobs)
+			 bool qos_preemptor, list_t *jobs)
 {
 	uint32_t r;
 	uint16_t num_rows;
@@ -805,7 +805,7 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 	return 0;
 }
 
-static bool _is_preemptable(job_record_t *job_ptr, List preemptee_candidates)
+static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
 {
 	if (!preemptee_candidates)
 		return false;
@@ -982,7 +982,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem, avail_mem;
-	List gres_list;
+	list_t *gres_list;
 	bool disable_binding = false;
 
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
@@ -1174,7 +1174,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int i;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
 	gres_mc_data_t *tres_mc_ptr = NULL;
-	List *node_gres_list = NULL, *sock_gres_list = NULL;
+	list_t **node_gres_list = NULL, **sock_gres_list = NULL;
 	uint32_t *gres_task_limit = NULL;
 	char *nodename = NULL;
 	node_record_t *node_ptr;
@@ -1912,8 +1912,8 @@ alloc_job:
 			gres_task_limit = xcalloc(job_res->nhosts,
 						  sizeof(uint32_t));
 		}
-		node_gres_list = xcalloc(job_res->nhosts, sizeof(List));
-		sock_gres_list = xcalloc(job_res->nhosts, sizeof(List));
+		node_gres_list = xcalloc(job_res->nhosts, sizeof(list_t *));
+		sock_gres_list = xcalloc(job_res->nhosts, sizeof(list_t *));
 		for (i = 0, j = 0;
 		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
 		     i++) {
@@ -2305,15 +2305,15 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
-			  List preemptee_candidates,
-			  List *preemptee_job_list,
+			  list_t *preemptee_candidates,
+			  list_t **preemptee_job_list,
 			  resv_exc_t *resv_exc_ptr)
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *future_license_list;
 	job_record_t *tmp_job_ptr;
-	List cr_job_list;
+	list_t *cr_job_list;
 	list_itr_t *job_iterator, *preemptee_iterator;
 	bitstr_t *orig_map;
 	int rc = SLURM_ERROR;
@@ -2513,7 +2513,7 @@ timer_check:
 		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		/*
 		 * Build list of preemptee jobs whose resources are
-		 * actually used. List returned even if not killed
+		 * actually used. list returned even if not killed
 		 * in selected plugin, but by Moab or something else.
 		 */
 		if (*preemptee_job_list == NULL) {
@@ -2546,7 +2546,7 @@ timer_check:
 static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
-		    List preemptee_candidates, List *preemptee_job_list,
+		    list_t *preemptee_candidates, list_t **preemptee_job_list,
 		    resv_exc_t *resv_exc_ptr)
 {
 	int rc;
@@ -3316,7 +3316,7 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
  * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
  *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
  *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
- * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN preemptee_candidates - list of pointers to jobs which can be preempted.
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
@@ -3335,8 +3335,8 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
 extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t mode,
-		    List preemptee_candidates,
-		    List *preemptee_job_list,
+		    list_t *preemptee_candidates,
+		    list_t **preemptee_job_list,
 		    resv_exc_t *resv_exc_ptr)
 {
 	int rc = EINVAL;

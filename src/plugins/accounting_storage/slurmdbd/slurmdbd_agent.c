@@ -65,7 +65,7 @@ persist_conn_t *slurmdbd_conn = NULL;
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-static List      agent_list     = (List) NULL;
+static list_t *agent_list = NULL;
 static pthread_t agent_tid      = 0;
 
 static bool      halt_agent          = 0;

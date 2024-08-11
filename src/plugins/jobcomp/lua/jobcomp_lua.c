@@ -234,7 +234,7 @@ out:	slurm_mutex_unlock(&lua_lock);
 	return rc;
 }
 
-extern List jobcomp_p_get_jobs(void *job_cond)
+extern list_t *jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
 }

@@ -75,11 +75,11 @@ typedef struct {
 	eio_obj_t *stdin_obj;
 	eio_obj_t *stdout_obj;
 	eio_obj_t *stderr_obj;
-	List free_incoming;     /* List of free struct io_buf * for incoming
+	list_t *free_incoming;  /* List of free struct io_buf * for incoming
 				 * traffic. "incoming" means traffic from the
 				 * client to the tasks.
 				 */
-	List free_outgoing;     /* List of free struct io_buf * for outgoing
+	list_t *free_outgoing;  /* List of free struct io_buf * for outgoing
 				 * traffic "outgoing" means traffic from the
 				 * tasks to the client.
 				 */

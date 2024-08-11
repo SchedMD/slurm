@@ -355,7 +355,8 @@ void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
 	}
 }
 
-void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
+void _handle_response_msg_list(list_t *other_nodes_resp,
+			       bitstr_t *tasks_started)
 {
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
@@ -391,7 +392,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 			    bitstr_t *tasks_started)
 {
 	slurm_msg_t msg;
-	List nodes_resp = NULL;
+	list_t *nodes_resp = NULL;
 	int timeout = slurm_conf.msg_timeout * 1000; /* sec to msec */
 	reattach_tasks_request_msg_t reattach_msg;
 	char *hosts;

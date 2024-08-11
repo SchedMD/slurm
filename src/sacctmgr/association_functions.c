@@ -43,7 +43,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_assoc_cond_t *assoc_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -535,7 +535,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 }
 
 extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
-				     print_field_t *field, List tree_list,
+				     print_field_t *field, list_t *tree_list,
 				     bool last)
 {
 	char *print_acct = NULL;
@@ -760,20 +760,20 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
-	List assoc_list = NULL;
+	list_t *assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int i=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	char *last_cluster = NULL;
-	List tree_list = NULL;
+	list_t *tree_list = NULL;
 
 	int field_count = 0;
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

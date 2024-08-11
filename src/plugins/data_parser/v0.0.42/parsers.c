@@ -188,7 +188,7 @@ typedef struct {
 	data_t *parent_path;
 	const char *caller;
 	ssize_t index;
-	List qos_list;
+	list_t *qos_list;
 	args_t *args;
 } foreach_qos_string_id_t;
 

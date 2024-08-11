@@ -81,8 +81,8 @@ strong_alias(bitmap2node_name, slurm_bitmap2node_name);
 strong_alias(find_node_record, slurm_find_node_record);
 
 /* Global variables */
-List config_list  = NULL;	/* list of config_record entries */
-List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
+list_t *config_list = NULL;	/* list of config_record entries */
+list_t *front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;

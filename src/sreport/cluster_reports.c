@@ -62,12 +62,12 @@ enum {
 	PRINT_CLUSTER_QOS_ID,
 };
 
-static List print_fields_list = NULL; /* types are of print_field_t */
+static list_t *print_fields_list = NULL; /* types are of print_field_t */
 
 
 static int _set_wckey_cond(int *start, int argc, char **argv,
 			   slurmdb_wckey_cond_t *wckey_cond,
-			   List format_list)
+			   list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -173,7 +173,7 @@ static int _set_wckey_cond(int *start, int argc, char **argv,
 
 static int _set_assoc_cond(int *start, int argc, char **argv,
 			   slurmdb_assoc_cond_t *assoc_cond,
-			   List format_list)
+			   list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -288,7 +288,7 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 
 static int _set_cluster_cond(int *start, int argc, char **argv,
 			     slurmdb_cluster_cond_t *cluster_cond,
-			     List format_list)
+			     list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -370,7 +370,7 @@ static int _set_cluster_cond(int *start, int argc, char **argv,
 	return set;
 }
 
-static int _setup_print_fields_list(List format_list)
+static int _setup_print_fields_list(list_t *format_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -578,8 +578,8 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static void _set_usage_column_width(List print_fields_list,
-				    List slurmdb_report_cluster_list)
+static void _set_usage_column_width(list_t *print_fields_list,
+				    list_t *slurmdb_report_cluster_list)
 {
 	print_field_t *field, *usage_field = NULL, *energy_field = NULL;
 	list_itr_t *itr;
@@ -604,7 +604,7 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
-static void _merge_cluster_recs(List cluster_list)
+static void _merge_cluster_recs(list_t *cluster_list)
 {
 	slurmdb_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
 	list_itr_t *iter = NULL;
@@ -635,13 +635,13 @@ static void _merge_cluster_recs(List cluster_list)
 	list_iterator_destroy(iter);
 }
 
-static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
-			      char *report_name, List format_list)
+static list_t *_get_cluster_list(int argc, char **argv, uint32_t *total_time,
+				 char *report_name, list_t *format_list)
 {
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	int i = 0, fed_cluster_count = 1;
-	List cluster_list = NULL;
+	list_t *cluster_list = NULL;
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
 	cluster_cond->with_deleted = 1;
@@ -703,7 +703,7 @@ static void _cluster_account_by_user_tres_report(
 	slurmdb_tres_rec_t *tres,
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster,
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc,
-	List tree_list)
+	list_t *tree_list)
 {
 	slurmdb_tres_rec_t *cluster_tres_rec, *tres_rec, *total_energy;
 	char *tmp_char = NULL;
@@ -839,7 +839,7 @@ static void _cluster_account_by_user_tres_report(
 	printf("\n");
 }
 
-static void _merge_cluster_reps(List cluster_list)
+static void _merge_cluster_reps(list_t *cluster_list)
 {
 	slurmdb_report_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
 	list_itr_t *iter = NULL;
@@ -886,12 +886,12 @@ extern int cluster_account_by_user(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *tres_itr = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
-	List tree_list = NULL;
+	list_t *tree_list = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -999,12 +999,12 @@ extern int cluster_account_by_qos(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *tres_itr = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
-	List tree_list = NULL;
+	list_t *tree_list = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -1215,8 +1215,8 @@ extern int cluster_user_by_account(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
@@ -1410,8 +1410,8 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
@@ -1651,8 +1651,8 @@ extern int cluster_utilization(int argc, char **argv)
 	list_itr_t *itr3 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	uint32_t total_time = 0;
-	List cluster_list = NULL;
-	List format_list = list_create(xfree_ptr);
+	list_t *cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
 	slurmdb_cluster_accounting_rec_t total_acct;
 	print_field_t *field;
 	slurmdb_tres_rec_t *tres;
@@ -1681,7 +1681,7 @@ extern int cluster_utilization(int argc, char **argv)
 	itr = list_iterator_create(cluster_list);
 	while ((cluster = list_next(itr))) {
 		slurmdb_cluster_accounting_rec_t *accting = NULL;
-		List total_tres_acct = NULL;
+		list_t *total_tres_acct = NULL;
 
 		if (!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
@@ -1908,8 +1908,8 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;

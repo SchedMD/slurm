@@ -414,7 +414,7 @@ end_it:
 static int _get_object_usage(mysql_conn_t *mysql_conn,
 			     slurmdbd_msg_type_t type, char *my_usage_table,
 			     char *cluster_name, char *id_str,
-			     time_t start, time_t end, List *usage_list)
+			     time_t start, time_t end, list_t **usage_list)
 {
 	char *tmp = NULL;
 	int i = 0;
@@ -633,7 +633,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *my_usage_table = NULL;
-	List usage_list = NULL;
+	list_t *usage_list = NULL;
 	char *id_str = NULL, *name_char = NULL, *pos = NULL;
 	list_itr_t *itr = NULL, *u_itr = NULL;
 	void *object = NULL;
@@ -746,7 +746,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	while ((object = list_next(itr))) {
 		int found = 0;
 		int id = 0;
-		List acct_list = NULL;
+		list_t *acct_list = NULL;
 
 		switch (type) {
 		case DBD_GET_QOS_USAGE:
@@ -815,7 +815,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	slurmdb_assoc_rec_t *slurmdb_assoc = in;
 	slurmdb_wckey_rec_t *slurmdb_wckey = in;
 	char *username = NULL;
-	List *my_list = NULL;
+	list_t **my_list = NULL;
 	char *cluster_name = NULL;
 	char *id_str = NULL, *id_str_pos = NULL;
 
@@ -958,7 +958,7 @@ is_user:
 
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 			       time_t sent_end, uint16_t archive_data,
-			       List *rollup_stats_list_in)
+			       list_t **rollup_stats_list_in)
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;

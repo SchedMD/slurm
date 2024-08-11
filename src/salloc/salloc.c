@@ -108,7 +108,7 @@ static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
-static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list);
+static void _match_job_name(job_desc_msg_t *desc_last, list_t *job_req_list);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t *desc = NULL, *first_job = NULL;
-	List job_req_list = NULL, job_resp_list = NULL;
+	list_t *job_req_list = NULL, *job_resp_list = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr = NULL;
@@ -715,7 +715,7 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 /* Copy job name from last component to all hetjob components unless
  * explicitly set. The default value comes from _salloc_default_command()
  * and is "sh". */
-static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
+static void _match_job_name(job_desc_msg_t *desc_last, list_t *job_req_list)
 {
 	list_itr_t *iter;
 	job_desc_msg_t *desc = NULL;

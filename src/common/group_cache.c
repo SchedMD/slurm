@@ -75,7 +75,7 @@ typedef struct gids_cache_needle {
 } gids_cache_needle_t;
 
 static pthread_mutex_t gids_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List gids_cache_list = NULL;
+static list_t *gids_cache_list = NULL;
 
 static void _group_cache_list_delete(void *x)
 {

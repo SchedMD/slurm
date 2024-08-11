@@ -5457,7 +5457,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
-	List use_cluster_list;
+	list_t *use_cluster_list;
 	bool new_cluster_list = false;
 	list_itr_t *itr = NULL;
 

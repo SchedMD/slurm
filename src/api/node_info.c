@@ -65,7 +65,7 @@ typedef struct load_node_req_struct {
 	slurmdb_cluster_rec_t *cluster;
 	int cluster_inx;
 	slurm_msg_t *req_msg;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 	uint16_t show_flags;
 } load_node_req_struct_t;
 
@@ -607,7 +607,7 @@ static int _load_fed_nodes(slurm_msg_t *req_msg,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_node_req_struct_t *load_args;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 
 	*node_info_msg_pptr = NULL;
 

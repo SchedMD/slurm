@@ -43,7 +43,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_txn_cond_t *txn_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -158,7 +158,7 @@ extern int sacctmgr_list_txn(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_txn_cond_t *txn_cond = xmalloc(sizeof(slurmdb_txn_cond_t));
-	List txn_list = NULL;
+	list_t *txn_list = NULL;
 	slurmdb_txn_rec_t *txn = NULL;
 	int i=0;
 	list_itr_t *itr = NULL;
@@ -168,8 +168,8 @@ extern int sacctmgr_list_txn(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

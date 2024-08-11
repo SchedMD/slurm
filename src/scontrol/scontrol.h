@@ -74,7 +74,7 @@
 #define	MAX_INPUT_FIELDS 128
 
 extern char *command_name;
-extern List clusters;
+extern list_t *clusters;
 extern char *cluster_names;
 extern int all_flag;	/* display even hidden partitions */
 extern int detail_flag;	/* display additional details */

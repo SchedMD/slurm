@@ -44,10 +44,10 @@ typedef struct {
 	uint64_t gres_needed;
 	gres_key_t *job_search_key;
 	uint64_t max_gres;
-	List node_gres_list;
+	list_t *node_gres_list;
 	int node_offset;
 	int rc;
-	List step_gres_list_alloc;
+	list_t *step_gres_list_alloc;
 	gres_state_t *gres_state_step;
 	uint64_t *step_node_mem_alloc;
 	slurm_step_id_t tmp_step_id;
@@ -127,7 +127,7 @@ static bool _cores_on_gres(bitstr_t *core_bitmap, bitstr_t *alloc_core_bitmap,
 	return false;
 }
 
-static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
+static gres_job_state_t *_get_job_alloc_gres_ptr(list_t *job_gres_list_alloc,
 						 gres_state_t *gres_state_in,
 						 uint32_t type_id,
 						 char *type_name,
@@ -274,7 +274,7 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 }
 
 
-static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
+static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 		      gres_state_t *gres_state_node,
 		      int node_cnt, int node_index,
 		      int node_offset, uint32_t job_id,
@@ -797,7 +797,7 @@ cleanup:
 
 static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_state_t *gres_state_node,
-	List job_gres_list, List *job_gres_list_alloc, int node_cnt,
+	list_t *job_gres_list, list_t **job_gres_list_alloc, int node_cnt,
 	int node_index, int node_offset, int type_index, uint32_t job_id,
 	char *node_name, bitstr_t *core_bitmap, bool new_alloc)
 {
@@ -840,7 +840,7 @@ static int _job_alloc_whole_node_internal(
 
 static void _job_select_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *gres_ns,
-	int type_inx, char *gres_name, List job_gres_list)
+	int type_inx, char *gres_name, list_t *job_gres_list)
 {
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
@@ -935,7 +935,7 @@ static int _foreach_clear_job_gres(void *x, void *arg)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_stepmgr_job_select_whole_node(
-	List *job_gres_list, List node_gres_list,
+	list_t **job_gres_list, list_t *node_gres_list,
 	uint32_t job_id, char *node_name)
 {
 	list_itr_t *node_gres_iter;
@@ -1066,8 +1066,8 @@ static int _set_node_type_cnt(gres_state_t *gres_state_job,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_stepmgr_job_alloc(
-	List job_gres_list, List *job_gres_list_alloc,
-	List node_gres_list, int node_cnt,
+	list_t *job_gres_list, list_t **job_gres_list_alloc,
+	list_t *node_gres_list, int node_cnt,
 	int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, bool new_alloc)
@@ -1140,7 +1140,7 @@ extern int gres_stepmgr_job_alloc(
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_stepmgr_job_alloc_whole_node(
-	List job_gres_list, List *job_gres_list_alloc, List node_gres_list,
+	list_t *job_gres_list, list_t **job_gres_list_alloc, list_t *node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, bool new_alloc)
@@ -1549,7 +1549,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_stepmgr_job_dealloc(
-	List job_gres_list, List node_gres_list,
+	list_t *job_gres_list, list_t *node_gres_list,
 	int node_offset, uint32_t job_id,
 	char *node_name, bool old_job, bool resize)
 {
@@ -1600,9 +1600,9 @@ extern int gres_stepmgr_job_dealloc(
  * IN to_job_node_bitmap - bitmap of nodes for the job being merged into
  */
 extern void gres_stepmgr_job_merge(
-	List from_job_gres_list,
+	list_t *from_job_gres_list,
 	bitstr_t *from_job_node_bitmap,
-	List to_job_gres_list,
+	list_t *to_job_gres_list,
 	bitstr_t *to_job_node_bitmap)
 {
 	static int select_hetero = -1;
@@ -1832,7 +1832,7 @@ step3:
 }
 
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
-extern void gres_stepmgr_job_clear_alloc(List job_gres_list)
+extern void gres_stepmgr_job_clear_alloc(list_t *job_gres_list)
 {
 
 	if (job_gres_list == NULL)
@@ -1916,7 +1916,7 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
  * OUT total_gres_str - String containing all gres in the job and counts.
  */
 extern void gres_stepmgr_job_build_details(
-	List job_gres_list, char *nodes,
+	list_t *job_gres_list, char *nodes,
 	uint32_t *gres_detail_cnt,
 	char ***gres_detail_str,
 	char **total_gres_str)
@@ -2021,7 +2021,7 @@ extern void gres_stepmgr_job_build_details(
 }
 
 /* Fill in job/node TRES arrays with allocated GRES. */
-static void _set_type_tres_cnt(List gres_list,
+static void _set_type_tres_cnt(list_t *gres_list,
 			       uint64_t *tres_cnt,
 			       bool locked)
 {
@@ -2217,7 +2217,7 @@ static void _set_type_tres_cnt(List gres_list,
 		assoc_mgr_unlock(&locks);
 }
 extern void gres_stepmgr_set_job_tres_cnt(
-	List gres_list, uint32_t node_cnt, uint64_t *tres_cnt, bool locked)
+	list_t *gres_list, uint32_t node_cnt, uint64_t *tres_cnt, bool locked)
 {
 	if (!node_cnt || (node_cnt == NO_VAL))
 		return;
@@ -2226,7 +2226,7 @@ extern void gres_stepmgr_set_job_tres_cnt(
 }
 
 extern void gres_stepmgr_set_node_tres_cnt(
-	List gres_list, uint64_t *tres_cnt, bool locked)
+	list_t *gres_list, uint64_t *tres_cnt, bool locked)
 {
 	_set_type_tres_cnt(gres_list, tres_cnt, locked);
 }
@@ -2319,7 +2319,7 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 				    slurm_step_id_t *step_id,
 				    uint64_t gres_alloc,
 				    bool decr_job_alloc,
-				    List node_gres_list,
+				    list_t *node_gres_list,
 				    bitstr_t *core_bitmap)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
@@ -2406,7 +2406,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		       uint64_t *gres_needed, uint64_t *max_gres,
 		       bool decr_job_alloc,
 		       uint64_t *step_node_mem_alloc,
-		       List node_gres_list,
+		       list_t *node_gres_list,
 		       bitstr_t *core_bitmap,
 		       int *total_gres_cpu_cnt)
 {
@@ -2521,7 +2521,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	return SLURM_SUCCESS;
 }
 
-static gres_step_state_t *_step_get_alloc_gres_ptr(List step_gres_list_alloc,
+static gres_step_state_t *_step_get_alloc_gres_ptr(list_t *step_gres_list_alloc,
 						   gres_state_t *gres_state_job)
 {
 	gres_key_t step_search_key;
@@ -2602,15 +2602,15 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 }
 
 extern int gres_stepmgr_step_alloc(
-	List step_gres_list,
-	List *step_gres_list_alloc,
-	List job_gres_list,
+	list_t *step_gres_list,
+	list_t **step_gres_list_alloc,
+	list_t *job_gres_list,
 	int node_offset, bool first_step_node,
 	uint16_t tasks_on_node, uint32_t rem_nodes,
 	uint32_t job_id, uint32_t step_id,
 	bool decr_job_alloc,
 	uint64_t *step_node_mem_alloc,
-	List node_gres_list,
+	list_t *node_gres_list,
 	bitstr_t *core_bitmap,
 	int *total_gres_cpu_cnt)
 {
@@ -2696,7 +2696,7 @@ extern int gres_stepmgr_step_alloc(
 	return rc;
 }
 
-static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
+static int _step_dealloc(gres_state_t *gres_state_step, list_t *job_gres_list,
 			 slurm_step_id_t *step_id, int node_offset,
 			 bool decr_job_alloc)
 {
@@ -2814,7 +2814,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 }
 
 extern int gres_stepmgr_step_dealloc(
-	List step_gres_list, List job_gres_list,
+	list_t *step_gres_list, list_t *job_gres_list,
 	uint32_t job_id, uint32_t step_id,
 	int node_offset,
 	bool decr_job_alloc)
@@ -2859,7 +2859,7 @@ extern int gres_stepmgr_step_dealloc(
  * IN new_job_node_bitmap  - bitmap of nodes in the new job allocation
  */
 void gres_stepmgr_step_state_rebase(
-	List gres_list,
+	list_t *gres_list,
 	bitstr_t *orig_job_node_bitmap,
 	bitstr_t *new_job_node_bitmap)
 {
@@ -3015,7 +3015,7 @@ static void _gres_2_tres_str_internal(char **tres_str,
  * requested.
  */
 extern char *gres_stepmgr_gres_on_node_as_tres(
-	List job_gres_list, int node_inx, bool locked)
+	list_t *job_gres_list, int node_inx, bool locked)
 {
 	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
@@ -3289,7 +3289,7 @@ extern uint64_t gres_stepmgr_step_test(gres_stepmgr_step_test_args_t *args)
 	return cpu_cnt;
 }
 
-extern char *gres_stepmgr_gres_2_tres_str(List gres_list, bool locked)
+extern char *gres_stepmgr_gres_2_tres_str(list_t *gres_list, bool locked)
 {
 	list_itr_t *itr;
 	gres_state_t *gres_state_ptr;
@@ -3399,7 +3399,7 @@ static int _gres_next_node_inx(int *cur_inx, int *node_inx, int len,
  * IN min_nodes - minimum nodes required for this step
  */
 extern void gres_stepmgr_step_test_per_step(
-	List step_gres_list,
+	list_t *step_gres_list,
 	job_record_t *job_ptr,
 	bitstr_t *nodes_avail,
 	int min_nodes)

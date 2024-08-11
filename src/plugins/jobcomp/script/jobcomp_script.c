@@ -136,7 +136,7 @@ const char plugin_type[]       	= "jobcomp/script";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 static char *jobcomp_script = NULL;
-static List comp_list = NULL;
+static list_t *comp_list = NULL;
 
 static pthread_t script_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -573,7 +573,7 @@ static void * _script_agent (void *args)
 			slurm_cond_wait(&comp_list_cond, &comp_list_mutex);
 
 		/*
-		 * It is safe to unlock list mutex here. List has its
+		 * It is safe to unlock list mutex here. list has its
 		 *  own internal mutex that protects the comp_list itself
 		 */
 		slurm_mutex_unlock(&comp_list_mutex);
@@ -675,10 +675,10 @@ extern int fini ( void )
 
 /*
  * get info from the storage
- * in/out job_list List of job_rec_t *
- * note List needs to be freed when called
+ * in/out job_list list of job_rec_t *
+ * note list needs to be freed when called
  */
-extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
+extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 
 	info("This function is not implemented.");

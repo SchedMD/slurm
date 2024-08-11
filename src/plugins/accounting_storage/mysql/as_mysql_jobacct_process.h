@@ -45,10 +45,10 @@
 
 #include "accounting_storage_mysql.h"
 
-extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					slurmdb_job_cond_t *job_cond,
-					void **curr_cluster);
-extern int good_nodes_from_inx(List local_cluster_list,
+extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
+					   slurmdb_job_cond_t *job_cond,
+					   void **curr_cluster);
+extern int good_nodes_from_inx(list_t *local_cluster_list,
 			       void **object, char *node_inx,
 			       int submit);
 extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
@@ -57,7 +57,8 @@ extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 				 char **extra);
 
-extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   slurmdb_job_cond_t *job_cond);
+extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+						 uid_t uid,
+						 slurmdb_job_cond_t *job_cond);
 
 #endif

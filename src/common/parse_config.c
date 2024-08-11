@@ -122,7 +122,7 @@ typedef struct _expline_values_st {
 	s_p_hashtbl_t**	values;
 } _expline_values_t;
 
-List conf_includes_list = NULL;
+list_t *conf_includes_list = NULL;
 
 /*
  * NOTE - "key" is case insensitive.

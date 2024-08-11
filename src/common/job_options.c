@@ -51,7 +51,7 @@
 #define JOB_OPTIONS_MAGIC 0xa1a2a3a4
 struct job_options {
 	int magic;
-	List options;
+	list_t *options;
 	list_itr_t *iterator;
 };
 
@@ -106,7 +106,7 @@ static struct job_option_info *job_option_info_unpack(buf_t *buf)
 /*
  *  Create generic job options container.
  */
-List job_options_create(void)
+list_t *job_options_create(void)
 {
 	return list_create((ListDelF) job_option_info_destroy);
 }
@@ -114,7 +114,8 @@ List job_options_create(void)
 /*
  *  Append option of type `type' and its argument to job options
  */
-int job_options_append(List opts, int type, const char *opt, const char *optarg)
+int job_options_append(list_t *opts, int type, const char *opt,
+		       const char *optarg)
 {
 	list_append(opts, job_option_info_create(type, opt, optarg));
 
@@ -124,7 +125,7 @@ int job_options_append(List opts, int type, const char *opt, const char *optarg)
 /*
  *  Pack all accumulated options into buf
  */
-int job_options_pack(List opts, buf_t *buf)
+int job_options_pack(list_t *opts, buf_t *buf)
 {
 	uint32_t count = 0;
 	list_itr_t *i;
@@ -152,7 +153,7 @@ int job_options_pack(List opts, buf_t *buf)
 /*
  *  Unpack options from buffer "buf" into options container opts.
  */
-int job_options_unpack(List opts, buf_t *buf)
+int job_options_unpack(list_t *opts, buf_t *buf)
 {
 	uint32_t count;
 	char *   tag = NULL;

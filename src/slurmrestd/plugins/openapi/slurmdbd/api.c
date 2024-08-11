@@ -676,12 +676,12 @@ const openapi_path_binding_t openapi_paths[] = {
 	{0}
 };
 
-extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
+extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name, const char *caller,
 				  bool ignore_empty_result)
 {
-	List l;
+	list_t *l;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!*list);
@@ -728,7 +728,7 @@ extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 	return rc;
 }
 
-extern int db_query_rc_funcname(ctxt_t *ctxt, List list,
+extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 				db_rc_query_func_t func, const char *func_name,
 				const char *caller)
 {
@@ -745,7 +745,7 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 				 db_rc_modify_func_t func,
 				 const char *func_name, const char *caller)
 {
-	List changed;
+	list_t *changed;
 	int rc = SLURM_SUCCESS;
 
 	errno = 0;

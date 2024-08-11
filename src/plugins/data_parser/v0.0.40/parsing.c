@@ -58,7 +58,7 @@ typedef struct {
 	ssize_t index;
 	args_t *args;
 	const parser_t *const parser;
-	List list;
+	list_t *list;
 	data_t *dlist;
 	data_t *parent_path;
 } foreach_list_t;
@@ -348,7 +348,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 {
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
-	List *list = dst;
+	list_t **list = dst;
 	foreach_list_t list_args = {
 		.magic = MAGIC_FOREACH_LIST,
 		.dlist = NULL,
@@ -977,7 +977,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
-		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(List)));
+		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(list_t *)));
 		xassert(!parser->parse);
 		rc = _parse_list(parser, dst, src, args, parent_path);
 		break;
@@ -1242,7 +1242,7 @@ static int _foreach_dump_list(void *obj, void *arg)
 static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 		      args_t *args)
 {
-	List *list_ptr = src;
+	list_t **list_ptr = src;
 	foreach_list_t fargs = {
 		.magic = MAGIC_FOREACH_LIST,
 		.args = args,
@@ -1566,7 +1566,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		verify_parser_not_sliced(parser);
 		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
 			(data_get_type(dst) == DATA_TYPE_LIST));
-		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(List)));
+		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(list_t *)));
 		xassert(!parser->dump);
 		rc = _dump_list(parser, src, dst, args);
 		break;

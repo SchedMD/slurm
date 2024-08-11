@@ -41,17 +41,17 @@
 #include "parsers.h"
 
 /* Generic typedef for the DB query functions that return a list */
-typedef List (*db_list_query_func_t)(void *db_conn, void *cond);
+typedef list_t *(*db_list_query_func_t)(void *db_conn, void *cond);
 /*
  * Generic typedef for the DB query functions that takes a list and returns an
  * rc if the query was successful.
  */
-typedef int (*db_rc_query_func_t)(void *db_conn, List list);
+typedef int (*db_rc_query_func_t)(void *db_conn, list_t *list);
 /*
  * Generic typedef for the DB modify functions that takes an object record and
  * returns an List if the query was successful or NULL on error
  */
-typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
+typedef list_t *(*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
 
 /*
  * Macro helper for Query database API for List output.
@@ -74,7 +74,7 @@ typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
  * RET SLURM_SUCCESS or error
  */
 extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
-				  args_t *args, List *list,
+				  args_t *args, list_t **list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name,
 				  const char *func_caller_name);

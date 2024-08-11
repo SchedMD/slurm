@@ -208,7 +208,7 @@ typedef struct bb_state {
 	time_t		next_end_time;
 	time_t		last_update_time;
 	uint64_t	persist_resv_sz; /* Space reserved for persistent buffers */
-	List		persist_resv_rec;/* List of bb_pend_persist_t records */
+	list_t *	persist_resv_rec;/* list of bb_pend_persist_t records */
 	pthread_cond_t	term_cond;
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;

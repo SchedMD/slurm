@@ -557,9 +557,9 @@ static int _auth_cred_verify(buf_t *buf, uid_t *uid)
  */
 
 static bool _serv_readable(eio_obj_t *obj);
-static int _serv_read(eio_obj_t *obj, List objs);
+static int _serv_read(eio_obj_t *obj, list_t *objs);
 static bool _serv_writable(eio_obj_t *obj);
-static int _serv_write(eio_obj_t *obj, List objs);
+static int _serv_write(eio_obj_t *obj, list_t *objs);
 static void _process_server_request(pmixp_base_hdr_t *hdr, buf_t *buf);
 
 
@@ -588,7 +588,7 @@ static bool _serv_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _serv_read(eio_obj_t *obj, List objs)
+static int _serv_read(eio_obj_t *obj, list_t *objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );
@@ -648,7 +648,7 @@ static bool _serv_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int _serv_write(eio_obj_t *obj, List objs)
+static int _serv_write(eio_obj_t *obj, list_t *objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );

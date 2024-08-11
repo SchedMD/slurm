@@ -97,7 +97,7 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static void _dump_slurmdb_assoc_records(List assoc_list)
+static void _dump_slurmdb_assoc_records(list_t *assoc_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr = NULL;
@@ -115,7 +115,7 @@ static void _dump_slurmdb_clus_res_record(slurmdb_clus_res_rec_t *clus_res)
 	debug("\t\t\tallowed=%u", clus_res->allowed);
 }
 
-static void _dump_slurmdb_clus_res_records(List clus_res_list)
+static void _dump_slurmdb_clus_res_records(list_t *clus_res_list)
 {
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	list_itr_t *itr = NULL;
@@ -126,7 +126,7 @@ static void _dump_slurmdb_clus_res_records(List clus_res_list)
 	list_iterator_destroy(itr);
 }
 
-static void _dump_slurmdb_res_records(List res_list)
+static void _dump_slurmdb_res_records(list_t *res_list)
 {
 	slurmdb_res_rec_t *res = NULL;
 	list_itr_t *itr = NULL;
@@ -198,7 +198,7 @@ extern bool _is_user_any_coord_internal(void *db_conn, slurmdb_user_rec_t *user,
  * NOTE: This function will take the object given and free it later so it
  *       needs to be removed from a existing lists prior.
  */
-extern int addto_update_list(List update_list, slurmdb_update_type_t type,
+extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 			     void *object)
 {
 	slurmdb_update_object_t *update_object = NULL;
@@ -349,7 +349,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
  * dump_update_list - dump contents of updates
  * IN update_list: updates to perform
  */
-extern void dump_update_list(List update_list)
+extern void dump_update_list(list_t *update_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_update_object_t *object = NULL;
@@ -584,7 +584,7 @@ extern int set_usage_information(char **usage_table,
  * IN/OUT qos_list: list of QOS'es
  * IN delta_qos_list: list of delta QOS'es
  */
-extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
+extern void merge_delta_qos_list(list_t *qos_list, list_t *delta_qos_list)
 {
 	list_itr_t *curr_itr = list_iterator_create(qos_list);
 	list_itr_t *new_itr = list_iterator_create(delta_qos_list);

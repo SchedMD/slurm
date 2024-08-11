@@ -50,7 +50,7 @@
 
 static uint16_t track_wckey;
 
-static List dbd_config_list = NULL;
+static list_t *dbd_config_list = NULL;
 
 
 static void _load_dbd_config(void)

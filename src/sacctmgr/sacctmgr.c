@@ -66,9 +66,9 @@ int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
-List g_qos_list = NULL;
-List g_res_list = NULL;
-List g_tres_list = NULL;
+list_t *g_qos_list = NULL;
+list_t *g_res_list = NULL;
+list_t *g_tres_list = NULL;
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
 

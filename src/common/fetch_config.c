@@ -63,7 +63,7 @@ static char *client_config_files[] = {
 };
 
 
-static void _init_minimal_conf_server_config(List controllers);
+static void _init_minimal_conf_server_config(list_t *controllers);
 
 static int to_parent[2] = {-1, -1};
 
@@ -107,7 +107,7 @@ rwfail:
 	return NULL;
 }
 
-static void _fetch_child(List controllers, uint32_t flags)
+static void _fetch_child(list_t *controllers, uint32_t flags)
 {
 	config_response_msg_t *config;
 	buf_t *buffer = init_buf(1024 * 1024);
@@ -149,7 +149,7 @@ rwfail:
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
-	List controllers = NULL;
+	list_t *controllers = NULL;
 	pid_t pid;
 	char *sack_jwks = NULL, *sack_key = NULL;
 	struct stat statbuf;
@@ -327,7 +327,7 @@ static int _print_controllers(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _init_minimal_conf_server_config(List controllers)
+static void _init_minimal_conf_server_config(list_t *controllers)
 {
 	char *conf = NULL, *filename = NULL;
 	int fd;

@@ -91,7 +91,7 @@ typedef struct {
 	int core_end_bit;
 	int core_start_bit;
 	int job_node_inx;
-	List node_gres_list;
+	list_t *node_gres_list;
 } foreach_gres_filter_t;
 
 static void _build_pending_step(job_record_t *job_ptr,
@@ -109,7 +109,7 @@ static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
-				  List step_gres_list, int cpus_per_task,
+				  list_t *step_gres_list, int cpus_per_task,
 				  uint32_t node_count,
 				  dynamic_plugin_data_t *select_jobinfo,
 				  int *return_code);
@@ -1092,7 +1092,7 @@ static void _set_max_num_tasks(job_step_create_request_msg_t *step_spec,
  */
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
-				  List step_gres_list, int cpus_per_task,
+				  list_t *step_gres_list, int cpus_per_task,
 				  uint32_t node_count,
 				  dynamic_plugin_data_t *select_jobinfo,
 				  int *return_code)
@@ -3339,7 +3339,7 @@ extern int step_create(job_record_t *job_ptr,
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 	uint32_t orig_cpu_count;
-	List step_gres_list = (List) NULL;
+	list_t *step_gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
 	uint32_t max_tasks;
@@ -3612,7 +3612,7 @@ extern int step_create(job_record_t *job_ptr,
 	step_ptr->container = xstrdup(step_specs->container);
 	step_ptr->container_id = xstrdup(step_specs->container_id);
 	step_ptr->gres_list_req = step_gres_list;
-	step_gres_list      = (List) NULL;
+	step_gres_list = NULL;
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&

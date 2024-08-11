@@ -81,7 +81,7 @@ typedef struct {
 } plugin_mime_type_t;
 
 /* list of all of the known mime types */
-static List mime_types_list = NULL;
+static list_t *mime_types_list = NULL;
 static const char **mime_array = NULL;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -199,7 +199,7 @@ extern const char *resolve_mime_type(const char *mime_type,
 	return pmt->mime_type;
 }
 
-static int _register_mime_types(List mime_types_list, size_t plugin_index,
+static int _register_mime_types(list_t *mime_types_list, size_t plugin_index,
 				const char **mime_type)
 {
 	while (*mime_type) {

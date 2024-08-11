@@ -1195,9 +1195,9 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 }
 
 /* Copy list of job_defaults_t elements */
-extern List job_defaults_copy(List in_list)
+extern list_t *job_defaults_copy(list_t *in_list)
 {
-	List out_list = NULL;
+	list_t *out_list = NULL;
 	job_defaults_t *in_default, *out_default;
 	list_itr_t *iter;
 
@@ -1245,10 +1245,10 @@ static uint16_t _job_def_type(char *type)
  * out_list OUT - equivalent list of key=value pairs
  * Returns SLURM_SUCCESS or an error code
  */
-extern int job_defaults_list(char *in_str, List *out_list)
+extern int job_defaults_list(char *in_str, list_t **out_list)
 {
 	int rc = SLURM_SUCCESS;
-	List tmp_list;
+	list_t *tmp_list;
 	char *end_ptr = NULL, *tmp_str, *save_ptr = NULL, *sep, *tok;
 	uint16_t type;
 	long long int value;
@@ -1298,7 +1298,7 @@ extern int job_defaults_list(char *in_str, List *out_list)
  * Translate list of job_defaults_t elements into a string.
  * Return value must be released using xfree()
  */
-extern char *job_defaults_str(List in_list)
+extern char *job_defaults_str(list_t *in_list)
 {
 	job_defaults_t *in_default;
 	list_itr_t *iter;
@@ -4617,7 +4617,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->accounting_storage_tres =
 			xstrdup(DEFAULT_ACCOUNTING_TRES);
 	} else {
-		List tres_list = list_create(xfree_ptr);
+		list_t *tres_list = list_create(xfree_ptr);
 
 		slurm_addto_char_list(tres_list, DEFAULT_ACCOUNTING_TRES);
 		slurm_addto_char_list(tres_list, conf->accounting_storage_tres);
@@ -6284,7 +6284,7 @@ extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
 		count = list_count(in);
 	pack32(count, buff);
 	if (count && (count != NO_VAL))	{
-		list_itr_t *itr = list_iterator_create((List)in);
+		list_itr_t *itr = list_iterator_create((list_t *) in);
 		config_plugin_params_t *obj = NULL;
 		while ((obj = list_next(itr))) {
 			pack_config_plugin_params(obj, protocol_version, buff);
@@ -6298,7 +6298,7 @@ extern int unpack_config_plugin_params_list(void **plugin_params_l,
 					    buf_t *buff)
 {
 	uint32_t count = NO_VAL;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 
 	safe_unpack32(&count, buff);
 	if (count > NO_VAL)
@@ -6368,8 +6368,7 @@ extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
 		count = list_count(key_pairs);
 	pack32(count, buffer);
 	if (count && (count != NO_VAL)) {
-		list_itr_t *itr = list_iterator_create(
-			(List)key_pairs);
+		list_itr_t *itr = list_iterator_create((list_t *) key_pairs);
 		config_key_pair_t *key_pair = NULL;
 		while ((key_pair = list_next(itr))) {
 			pack_config_key_pair(key_pair, protocol_version,
@@ -6383,7 +6382,7 @@ extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
 				buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 
 	safe_unpack32(&count, buffer);
 	if (count > NO_VAL)

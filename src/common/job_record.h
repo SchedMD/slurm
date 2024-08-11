@@ -98,7 +98,7 @@ typedef struct {
 	cron_entry_t *crontab_entry;	/* crontab entry (job submitted through
 					 * scrontab) */
 	uint16_t orig_cpus_per_task;	/* requested value of cpus_per_task */
-	List depend_list;		/* list of job_ptr:state pairs */
+	list_t *depend_list;		/* list of job_ptr:state pairs */
 	char *dependency;		/* wait for other jobs */
 	char *orig_dependency;		/* original value (for archiving) */
 	uint16_t env_cnt;		/* size of env_sup (see below) */
@@ -107,8 +107,8 @@ typedef struct {
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
 	uint32_t expanding_jobid;	/* ID of job to be expanded */
-	List feature_list;		/* required features with node counts */
-	List feature_list_use;		/* Use these features for scheduling,
+	list_t *feature_list;		/* required features with node counts */
+	list_t *feature_list_use;	/* Use these features for scheduling,
 					 * DO NOT FREE or PACK */
 	char *features;			/* required features */
 	char *features_use;		/* Use these features for scheduling,
@@ -145,7 +145,7 @@ typedef struct {
 					 * CPU | MEM_PER_CPU */
 	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
-	List prefer_list;		/* soft features with node counts */
+	list_t *prefer_list;		/* soft features with node counts */
 	char *prefer;			/* soft features */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
@@ -304,14 +304,14 @@ struct job_record {
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
-	List gres_list_req;		/* Requested generic resource allocation
+	list_t *gres_list_req;		/* Requested generic resource allocation
 					   detail */
-	List gres_list_req_accum;	/* Requested generic resource allocation
+	list_t *gres_list_req_accum;	/* Requested generic resource allocation
 					   detail with accumulated subtypes (DO
 					   NOT SAVE OR PACK). Only needed during
 					   allocation selection time and will
 					   be rebuilt there if needed. */
-	List gres_list_alloc;		/* Allocated generic resource allocation
+	list_t *gres_list_alloc;	/* Allocated generic resource allocation
 					 * detail */
 	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,
 					 * one per allocated node */
@@ -323,7 +323,7 @@ struct job_record {
 	uint32_t het_job_id;		/* job ID of HetJob leader */
 	char *het_job_id_set;		/* job IDs for all components */
 	uint32_t het_job_offset;	/* HetJob component index */
-	List het_job_list;		/* List of job pointers to all
+	list_t *het_job_list;		/* List of job pointers to all
 					 * components */
 	uint32_t job_id;		/* job ID */
 	identity_t *id;			/* job identity */
@@ -337,7 +337,7 @@ struct job_record {
 					 * node failure */
 	time_t last_sched_eval;		/* last time job was evaluated for scheduling */
 	char *licenses;			/* licenses required by the job */
-	List license_list;		/* structure with license info */
+	list_t *license_list;		/* structure with license info */
 	char *lic_req;		/* required system licenses directly requested*/
 	acct_policy_limit_set_t limit_set; /* flags if indicate an
 					    * associated limit was set from
@@ -377,7 +377,7 @@ struct job_record {
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of job partition(s) */
-	List part_ptr_list;		/* list of pointers to partition recs */
+	list_t *part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
@@ -408,7 +408,7 @@ struct job_record {
 	uint16_t restart_cnt;		/* count of restarts */
 	time_t resize_time;		/* time of latest size change */
 	uint32_t resv_id;		/* reservation ID */
-	List resv_list;                 /* Filled in if the job is requesting
+	list_t *resv_list;		/* Filled in if the job is requesting
 					 * more than one reservation,
 					 * DON'T PACK. */
 	char *resv_name;		/* reservation name */
@@ -439,7 +439,7 @@ struct job_record {
 	uint32_t state_reason_prev_db;	/* Previous state_reason that isn't
 					 * priority or resources, only stored in
 					 * the database. */
-	List step_list;			/* list of job's steps */
+	list_t *step_list;		/* list of job's steps */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	void *switch_jobinfo;		/* opaque blob for switch plugin */
 	char *system_comment;		/* slurmctld's arbitrary comment */
@@ -561,8 +561,8 @@ typedef struct {
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	uint32_t flags;		        /* flags from step_spec_flags_t */
-	List gres_list_req;		/* generic resource request detail */
-	List gres_list_alloc;		/* generic resource allocation detail */
+	list_t *gres_list_req;		/* generic resource request detail */
+	list_t *gres_list_alloc;	/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
 	job_record_t *job_ptr;		/* ptr to the job that owns the step */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
@@ -615,7 +615,7 @@ typedef struct {
 
 typedef struct {
 	job_record_t *job_ptr;
-	List job_queue;
+	list_t *job_queue;
 	part_record_t *part_ptr;
 	uint32_t prio;
 	slurmctld_resv_t *resv_ptr;

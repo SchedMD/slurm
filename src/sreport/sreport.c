@@ -61,8 +61,8 @@ bool federation_flag;	/* --federation option */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
-List g_tres_list = NULL;/* TRES list from database -- unlatered */
-List tres_list = NULL;  /* TRES list based of tres_str (--tres=str) */
+list_t *g_tres_list = NULL;/* TRES list from database -- unlatered */
+list_t *tres_list = NULL;  /* TRES list based of tres_str (--tres=str) */
 int all_clusters_flag = 0;
 char *cluster_flag = NULL;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
@@ -294,8 +294,8 @@ static char *_build_cluster_string(void)
 	char *cluster_str = NULL;
 	slurmdb_federation_rec_t *fed = NULL;
 	slurmdb_federation_cond_t fed_cond;
-	List fed_list = NULL;
-	List cluster_list = list_create(NULL);
+	list_t *fed_list = NULL;
+	list_t *cluster_list = list_create(NULL);
 
 	list_append(cluster_list, slurm_conf.cluster_name);
 	slurmdb_init_federation_cond(&fed_cond, 0);

@@ -390,7 +390,7 @@ static int _foreach_add_acct(void *x, void *arg)
 }
 
 extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			      List acct_list)
+			      list_t *acct_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -401,7 +401,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *tmp_extra = NULL;
 
 	int affect_rows = 0;
-	List assoc_list;
+	list_t *assoc_list;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -681,11 +681,11 @@ end_it:
 	return add_acct_cond.ret_str;
 }
 
-extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-				  slurmdb_account_cond_t *acct_cond,
-				  slurmdb_account_rec_t *acct)
+extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_account_cond_t *acct_cond,
+				     slurmdb_account_rec_t *acct)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *at = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
@@ -798,13 +798,13 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-				  slurmdb_account_cond_t *acct_cond)
+extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_account_cond_t *acct_cond)
 {
 	list_itr_t *itr = NULL;
-	List ret_list = NULL;
-	List coord_list = NULL;
-	List cluster_list_tmp = NULL;
+	list_t *ret_list = NULL;
+	list_t *coord_list = NULL;
+	list_t *cluster_list_tmp = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *at = NULL;
 	char *extra = NULL, *query = NULL,
@@ -915,13 +915,13 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
-			       slurmdb_account_cond_t *acct_cond)
+extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
+				  slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
 	char *extra = NULL, *at = NULL;
 	char *tmp = NULL;
-	List acct_list = NULL;
+	list_t *acct_list = NULL;
 	list_itr_t *itr = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
@@ -1077,7 +1077,7 @@ empty:
 		list_itr_t *assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		List assoc_list = as_mysql_get_assocs(
+		list_t *assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, acct_cond->assoc_cond);
 
 		if (!assoc_list) {

@@ -44,7 +44,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_account_cond_t *acct_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int cond_set = 0;
@@ -163,8 +163,8 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 static int _set_rec(int *start, int argc, char **argv,
-		    List acct_list,
-		    List cluster_list,
+		    list_t *acct_list,
+		    list_t *cluster_list,
 		    slurmdb_account_rec_t *acct,
 		    slurmdb_assoc_rec_t *assoc)
 {
@@ -347,7 +347,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
- 	List acct_list;
+	list_t *acct_list;
 	int i=0, cond_set=0, prev_set=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -360,8 +360,8 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	if (with_assoc_flag)
 		acct_cond->flags |= SLURMDB_ACCT_FLAG_WASSOC;
@@ -572,7 +572,7 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 
 	int i=0;
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 
 	slurmdb_init_assoc_rec(assoc, 0);
 
@@ -739,7 +739,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
 	int i = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *itr = NULL;
 	int cond_set = 0, prev_set = 0;
 

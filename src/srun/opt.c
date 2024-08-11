@@ -94,7 +94,7 @@ slurm_opt_t opt = {
 	.usage_func = _usage,
 	.autocomplete_func = _autocomplete,
 };
-List 	opt_list = NULL;
+list_t *opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
 bool local_het_step = false;

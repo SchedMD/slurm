@@ -43,7 +43,7 @@ typedef struct {
 	int id;
 } shared_dev_info_t;
 
-extern List shared_info; /* list of shared_dev_info_t */
+extern list_t *shared_info; /* list of shared_dev_info_t */
 
 extern void gres_c_s_fini(void);
 
@@ -52,8 +52,8 @@ extern void gres_c_s_fini(void);
  * This only validates that the configuration was specified in gres.conf.
  * In the general case, no code would need to be changed.
  */
-extern int gres_c_s_init_share_devices(List gres_conf_list,
-				       List *share_devices,
+extern int gres_c_s_init_share_devices(list_t *gres_conf_list,
+				       list_t **share_devices,
 				       node_config_load_t *config,
 				       char *sharing_name);
 

@@ -218,7 +218,7 @@ static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 /*
  * Prints out each gres_slurmd_conf_t record in the list
  */
-static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
+static void _print_gres_list_helper(list_t *gres_list, log_level_t log_lvl,
 				    bool parsable)
 {
 	list_itr_t *itr;
@@ -239,7 +239,7 @@ static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 /*
  * Print each gres_slurmd_conf_t record in the list
  */
-extern void print_gres_list(List gres_list, log_level_t log_lvl)
+extern void print_gres_list(list_t *gres_list, log_level_t log_lvl)
 {
 	_print_gres_list_helper(gres_list, log_lvl, false);
 }
@@ -248,7 +248,7 @@ extern void print_gres_list(List gres_list, log_level_t log_lvl)
  * Print each gres_slurmd_conf_t record in the list in a parsable manner for
  * test consumption
  */
-extern void print_gres_list_parsable(List gres_list)
+extern void print_gres_list_parsable(list_t *gres_list)
 {
 	_print_gres_list_helper(gres_list, LOG_LEVEL_INFO, true);
 }
@@ -336,7 +336,7 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 				     gres_prep_t *gres_prep,
 				     int node_inx, uint32_t gres_conf_flags,
-				     List gres_devices)
+				     list_t *gres_devices)
 {
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
 	gres_device_t *gres_device;

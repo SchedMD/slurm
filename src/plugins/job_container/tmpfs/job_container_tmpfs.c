@@ -106,7 +106,7 @@ static bool _is_plugin_disabled(char *basepath)
 	return ((!basepath) || (!xstrncasecmp(basepath, "none", 4)));
 }
 
-static int _restore_ns(List steps, const char *d_name)
+static int _restore_ns(list_t *steps, const char *d_name)
 {
 	char *endptr;
 	int fd;
@@ -191,7 +191,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 {
 	DIR *dp;
 	struct dirent *ep;
-	List steps;
+	list_t *steps;
 	int rc = SLURM_SUCCESS;
 
 	if (plugin_disabled)

@@ -60,12 +60,12 @@
  * IN gpu_spec_bitmap - bitmap of reserved gpu cores
  * IN res_cores_per_gpu - number of cores reserved for each gpu
  * IN sockets_per_node - number of requested sockets per node
- * RET: List of sock_gres_t entries identifying what resources are available on
+ * RET: list of sock_gres_t entries identifying what resources are available on
  *	each socket. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
  */
-extern List gres_sock_list_create(
-	List job_gres_list, List node_gres_list,
+extern list_t *gres_sock_list_create(
+	list_t *job_gres_list, list_t *node_gres_list,
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,

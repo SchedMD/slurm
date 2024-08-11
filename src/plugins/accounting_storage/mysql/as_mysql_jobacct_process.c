@@ -482,7 +482,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			     char *cluster_name,
 			     char *job_fields, char *step_fields,
 			     char *sent_extra,
-			     bool is_admin, int only_pending, List sent_list)
+			     bool is_admin, int only_pending, list_t *sent_list)
 {
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
@@ -492,9 +492,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	time_t now = time(NULL);
-	List job_list = list_create(slurmdb_destroy_job_rec);
+	list_t *job_list = list_create(slurmdb_destroy_job_rec);
 	list_itr_t *itr = NULL, *itr2 = NULL;
-	List local_cluster_list = NULL;
+	list_t *local_cluster_list = NULL;
 	int set = 0;
 	char *prefix="t2";
 	int rc = SLURM_SUCCESS;
@@ -1157,11 +1157,11 @@ end_it:
 	return rc;
 }
 
-extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					slurmdb_job_cond_t *job_cond,
-					void **curr_cluster)
+extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
+					   slurmdb_job_cond_t *job_cond,
+					   void **curr_cluster)
 {
-	List local_cluster_list = NULL;
+	list_t *local_cluster_list = NULL;
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1263,7 +1263,7 @@ no_hosts:
 	return local_cluster_list;
 }
 
-extern int good_nodes_from_inx(List local_cluster_list,
+extern int good_nodes_from_inx(list_t *local_cluster_list,
 			       void **object, char *node_inx,
 			       int start)
 {
@@ -1719,19 +1719,19 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	return set;
 }
 
-extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-					      uid_t uid,
-					      slurmdb_job_cond_t *job_cond)
+extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+					         uid_t uid,
+					         slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
 	list_itr_t *itr = NULL;
 	int is_admin=1;
 	int i;
-	List job_list = NULL;
+	list_t *job_list = NULL;
 	slurmdb_user_rec_t user;
 	int only_pending = 0;
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	char *cluster_name;
 	bool locked = false;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,

@@ -80,7 +80,7 @@ void _dmdx_free_caddy(dmdx_caddy_t *caddy)
 	xfree(caddy);
 }
 
-static List _dmdx_requests;
+static list_t *_dmdx_requests;
 static uint32_t _dmdx_seq_num = 1;
 
 static void _respond_with_error(int seq_num, int nodeid,

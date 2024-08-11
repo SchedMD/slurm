@@ -57,17 +57,17 @@ typedef struct jag_prec {	/* process record */
 
 typedef struct jag_callbacks {
 	void (*prec_extra) (jag_prec_t *prec, uint32_t taskid);
-	List (*get_precs) (List task_list, uint64_t cont_id,
-			   struct jag_callbacks *callbacks);
-	void (*get_offspring_data) (List prec_list,
-				    jag_prec_t *ancestor, pid_t pid, jag_prec_t * permanent_ancestor);
+	list_t *(*get_precs) (list_t *task_list, uint64_t cont_id,
+			      struct jag_callbacks *callbacks);
+	void (*get_offspring_data) (list_t *prec_list, jag_prec_t *ancestor,
+				    pid_t pid, jag_prec_t *permanent_ancestor);
 } jag_callbacks_t;
 
 extern void jag_common_init(long in_hertz);
 extern void jag_common_fini(void);
 extern void destroy_jag_prec(void *object);
 
-extern void jag_common_poll_data(List task_list, uint64_t cont_id,
+extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 				 jag_callbacks_t *callbacks, bool profile);
 
 #endif

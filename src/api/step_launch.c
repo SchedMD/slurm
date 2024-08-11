@@ -804,7 +804,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	signal_tasks_msg_t msg;
 	hostlist_t *hl;
 	char *name = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1643,7 +1643,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	slurm_cred_arg_t *cred_args;
 #endif
 	slurm_msg_t msg;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *ret_itr;
 	ret_data_info_t *ret_data = NULL;
 	int rc = SLURM_SUCCESS;

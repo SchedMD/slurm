@@ -38,7 +38,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_federation_cond_t *federation_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -107,7 +107,7 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 static int _set_rec(int *start, int argc, char **argv,
-		    List name_list, slurmdb_federation_rec_t *fed)
+		    list_t *name_list, slurmdb_federation_rec_t *fed)
 {
 	int i;
 	int set = 0;
@@ -154,7 +154,7 @@ static int _set_rec(int *start, int argc, char **argv,
 				break;
 			}
 
-			List cluster_names = list_create(xfree_ptr);
+			list_t *cluster_names = list_create(xfree_ptr);
 			if (slurm_addto_mode_char_list(cluster_names,
 						       argv[i]+end, option) < 0)
 			{
@@ -213,11 +213,11 @@ static int _set_rec(int *start, int argc, char **argv,
 }
 
 
-static int _verify_federations(List name_list, bool report_existing)
+static int _verify_federations(list_t *name_list, bool report_existing)
 {
 	int          rc        = SLURM_SUCCESS;
 	char        *name      = NULL;
-	List         temp_list = NULL;
+	list_t *temp_list = NULL;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr_c = NULL;
 	slurmdb_federation_cond_t fed_cond;
@@ -267,12 +267,12 @@ static int _verify_federations(List name_list, bool report_existing)
 	return SLURM_SUCCESS;
 }
 
-static int _remove_existing_feds(List name_list)
+static int _remove_existing_feds(list_t *name_list)
 {
 	return _verify_federations(name_list, 1);
 }
 
-extern int verify_federations_exist(List name_list)
+extern int verify_federations_exist(list_t *name_list)
 {
 	return _verify_federations(name_list, 0);
 }
@@ -288,12 +288,12 @@ extern int verify_federations_exist(List name_list)
  *                   is set to NULL and a cluster is assigned to federation then
  *                   existing_fed will be set to TRUE.
  */
-extern int verify_fed_clusters(List cluster_list, const char *fed_name,
+extern int verify_fed_clusters(list_t *cluster_list, const char *fed_name,
 			       bool *existing_fed)
 {
 	char        *missing_str  = NULL;
 	char        *existing_str = NULL;
-	List         temp_list    = NULL;
+	list_t *temp_list = NULL;
 	list_itr_t *itr_db = NULL;
 	list_itr_t *itr_c = NULL;
 	slurmdb_cluster_rec_t *cluster_rec  = NULL;
@@ -390,8 +390,8 @@ extern int sacctmgr_add_federation(int argc, char **argv)
 	int i = 0, limit_set = 0;
 	slurmdb_federation_rec_t *start_fed =
 		xmalloc(sizeof(slurmdb_federation_rec_t));
-	List name_list = list_create(xfree_ptr);
-	List federation_list;
+	list_t *name_list = list_create(xfree_ptr);
+	list_t *federation_list;
 	list_itr_t *itr = NULL;
 	char *name = NULL;
 
@@ -517,7 +517,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t *federation_cond =
 		xmalloc(sizeof(slurmdb_federation_cond_t));
-	List federation_list;
+	list_t *federation_list;
 	int i=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -528,8 +528,8 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	slurmdb_init_federation_cond(federation_cond, 0);
 	federation_cond->federation_list = list_create(xfree_ptr);
@@ -643,7 +643,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 					break;
 				case PRINT_FEATURES:
 				{
-					List tmp_list = NULL;
+					list_t *tmp_list = NULL;
 					if (tmp_cluster)
 						tmp_list = tmp_cluster->
 							fed.feature_list;
@@ -713,9 +713,9 @@ extern int sacctmgr_list_federation(int argc, char **argv)
  *                  are to be "set" on the federation the federation.
  * IN federation: name of the federation that is being added/modified.
  */
-static int _add_clusters_to_remove(List cluster_list, const char *federation)
+static int _add_clusters_to_remove(list_t *cluster_list, const char *federation)
 {
-	List        db_list = NULL;
+	list_t *db_list = NULL;
 	list_itr_t *db_itr = NULL;
 	slurmdb_federation_cond_t db_cond;
 	slurmdb_federation_rec_t *db_rec = NULL;
@@ -772,7 +772,7 @@ static int _add_clusters_to_remove(List cluster_list, const char *federation)
  * plus modes. Clusters that are to be removed from the federation clustesr will
  * have already been added to the list in '-' mode.
  */
-static int _change_assigns_to_adds(List cluster_list)
+static int _change_assigns_to_adds(list_t *cluster_list)
 {
 	int rc = SLURM_SUCCESS;
 	list_itr_t *itr = list_iterator_create(cluster_list);
@@ -795,7 +795,7 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	slurmdb_federation_cond_t *federation_cond =
 		xmalloc(sizeof(slurmdb_federation_cond_t));
 	slurmdb_federation_rec_t *federation =
@@ -848,7 +848,7 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 		bool existing_feds = false;
 		char *mod_fed = NULL;
 		slurmdb_cluster_rec_t *tmp_c = NULL;
-		List cluster_list = federation->cluster_list;
+		list_t *cluster_list = federation->cluster_list;
 
 		if (!federation_cond->federation_list ||
 		    (list_count(federation_cond->federation_list) != 1)) {
@@ -935,7 +935,7 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 	slurmdb_federation_cond_t *fed_cond =
 		xmalloc(sizeof(slurmdb_federation_cond_t));
 	int i=0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int cond_set = 0, prev_set;
 
 	slurmdb_init_federation_cond(fed_cond, 0);

@@ -545,7 +545,7 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
  *      cgroup.conf  file and return a key pair <name,value> ordered list.
  * RET List with cgroup.conf <name,value> pairs if no error, NULL otherwise.
  */
-extern List cgroup_get_conf_list(void)
+extern list_t *cgroup_get_conf_list(void)
 {
 	list_t *cgroup_conf_l;
 	cgroup_conf_t *cg_conf = &slurm_cgroup_conf;

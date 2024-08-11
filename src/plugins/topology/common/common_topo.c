@@ -58,10 +58,10 @@
  */
 
 #if defined (__APPLE__)
-extern List part_list __attribute__((weak_import));
+extern list_t *part_list __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
-List part_list = NULL;
+list_t *part_list = NULL;
 bitstr_t *idle_node_bitmap;
 #endif
 

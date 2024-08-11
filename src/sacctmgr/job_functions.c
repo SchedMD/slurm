@@ -231,7 +231,7 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 	slurmdb_job_rec_t *job = slurmdb_create_job_rec();
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 	job_cond->flags = JOBCOND_FLAG_NO_DEFAULT_USAGE;

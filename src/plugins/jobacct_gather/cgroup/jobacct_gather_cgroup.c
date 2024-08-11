@@ -212,7 +212,7 @@ extern int fini (void)
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-extern void jobacct_gather_p_poll_data(List task_list, uint64_t cont_id,
+extern void jobacct_gather_p_poll_data(list_t *task_list, uint64_t cont_id,
 				       bool profile)
 {
 	static jag_callbacks_t callbacks;

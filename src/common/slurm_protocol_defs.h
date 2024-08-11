@@ -258,7 +258,7 @@ typedef struct slurm_protocol_header {
 	uint16_t ret_cnt;
 	forward_t forward;
 	slurm_addr_t orig_addr;
-	List ret_list;
+	list_t *ret_list;
 } header_t;
 
 typedef struct forward_struct {
@@ -268,7 +268,7 @@ typedef struct forward_struct {
 	uint16_t fwd_cnt;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
-	List ret_list;
+	list_t *ret_list;
 	uint32_t timeout;
 } forward_struct_t;
 
@@ -333,7 +333,7 @@ typedef struct slurm_msg {
 	forward_t forward;
 	forward_struct_t *forward_struct;
 	slurm_addr_t orig_addr;
-	List ret_list;
+	list_t *ret_list;
 } slurm_msg_t;
 
 #ifndef NDEBUG
@@ -414,12 +414,12 @@ typedef struct assoc_shares_object {
 } assoc_shares_object_t;
 
 typedef struct shares_request_msg {
-	List acct_list;
-	List user_list;
+	list_t *acct_list;
+	list_t *user_list;
 } shares_request_msg_t;
 
 typedef struct shares_response_msg {
-	List assoc_shares_list; /* list of assoc_shares_object_t *'s */
+	list_t *assoc_shares_list; /* list of assoc_shares_object_t *'s */
 	uint64_t tot_shares;
 	uint32_t tres_cnt;
 	char **tres_names;
@@ -443,7 +443,7 @@ typedef struct job_user_id_msg {
 typedef struct job_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
-	List   job_ids;		/* Optional list of job_ids, otherwise show all
+	list_t *job_ids;	/* Optional list of job_ids, otherwise show all
 				 * jobs. */
 } job_info_request_msg_t;
 
@@ -731,7 +731,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t cred_version;	/* job credential protocol_version */
 	slurm_cred_t *cred;	/* job credential            */
 	dynamic_plugin_data_t *switch_step; /* switch credential for the job */
-	List options;  /* Arbitrary job options */
+	list_t *options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
@@ -815,7 +815,7 @@ typedef struct kill_job_msg {
 	uint32_t derived_ec;
 	uint32_t exit_code;
 	uint32_t het_job_id;
-	List job_gres_prep;	/* Used to set Epilog environment variables */
+	list_t *job_gres_prep;	/* Used to set Epilog environment variables */
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
@@ -851,7 +851,7 @@ typedef struct prolog_launch_msg {
 	slurm_cred_t *cred;
 	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */
-	List job_gres_prep;		/* Used to set Prolog env vars */
+	list_t *job_gres_prep;		/* Used to set Prolog env vars */
 	uint32_t job_id;		/* slurm job_id */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
@@ -976,7 +976,7 @@ typedef struct {
 } config_file_t;
 
 typedef struct {
-	List config_files;
+	list_t *config_files;
 	char *slurmd_spooldir;
 } config_response_msg_t;
 
@@ -1081,7 +1081,7 @@ typedef struct {
 
 typedef struct {
 	char *crontab;
-	List jobs;
+	list_t *jobs;
 	uint32_t uid;
 	uint32_t gid;
 } crontab_update_request_msg_t;
@@ -1134,7 +1134,7 @@ typedef struct slurm_node_registration_status_msg {
 
 typedef struct slurm_node_reg_resp_msg {
 	char *node_name;
-	List tres_list;
+	list_t *tres_list;
 } slurm_node_reg_resp_msg_t;
 
 typedef struct requeue_msg {
@@ -1182,12 +1182,12 @@ typedef struct {
 } dep_msg_t;
 
 typedef struct {
-	List depend_list;
+	list_t *depend_list;
 	uint32_t job_id;
 } dep_update_origin_msg_t;
 
 typedef struct {
-	List my_list;		/* this list could be of any type as long as it
+	list_t *my_list;	/* this list could be of any type as long as it
 				 * is handled correctly on both ends */
 } ctld_list_msg_t;
 
@@ -1196,7 +1196,7 @@ typedef struct {
 \*****************************************************************************/
 
 typedef struct {
-	List update_list; /* of type slurmdb_update_object_t *'s */
+	list_t *update_list; /* of type slurmdb_update_object_t *'s */
 	uint16_t rpc_version;
 } accounting_update_msg_t;
 
@@ -1323,18 +1323,18 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str);
-extern List slurm_copy_char_list(List char_list);
-extern int slurm_parse_char_list(List char_list, char *names, void *args,
-				 int (*func_ptr)(List char_list, char *name,
-						void *args));
-extern int slurm_addto_char_list(List char_list, char *names);
-extern int slurm_addto_char_list_with_case(List char_list, char *names,
+extern list_t *slurm_copy_char_list(list_t *char_list);
+extern int slurm_parse_char_list(
+	list_t *char_list, char *names, void *args,
+	int (*func_ptr)(list_t *char_list, char *name, void *args));
+extern int slurm_addto_char_list(list_t *char_list, char *names);
+extern int slurm_addto_char_list_with_case(list_t *char_list, char *names,
 					   bool lower_case_normalization);
-extern int slurm_addto_id_char_list(List char_list, char *names, bool gid);
-extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
-extern int slurm_addto_step_list(List step_list, char *names);
-extern int slurm_char_list_copy(List dst, List src);
-extern char *slurm_char_list_to_xstr(List char_list);
+extern int slurm_addto_id_char_list(list_t *char_list, char *names, bool gid);
+extern int slurm_addto_mode_char_list(list_t *char_list, char *names, int mode);
+extern int slurm_addto_step_list(list_t *step_list, char *names);
+extern int slurm_char_list_copy(list_t *dst, list_t *src);
+extern char *slurm_char_list_to_xstr(list_t *char_list);
 extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
 						slurm_node_alias_addrs_t *src);
 extern int slurm_find_char_exact_in_list(void *x, void *key);

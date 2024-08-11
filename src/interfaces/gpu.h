@@ -51,7 +51,7 @@ typedef struct {
 extern int gpu_plugin_init(void);
 extern int gpu_plugin_fini(void);
 extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos);
-extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf);
+extern list_t *gpu_g_get_system_gpu_list(node_config_load_t *node_conf);
 extern void gpu_g_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq);
 extern void gpu_g_step_hardware_fini(void);
 extern char *gpu_g_test_cpu_conv(char *cpu_range);

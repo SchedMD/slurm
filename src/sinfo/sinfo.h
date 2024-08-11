@@ -178,7 +178,7 @@ typedef struct fmt_data {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
-	List clusters;
+	list_t *clusters;
 	uint32_t cluster_flags;
 	char *cluster_names;
 	uint32_t convert_flags;
@@ -214,9 +214,9 @@ struct sinfo_parameters {
 	int part_field_size;
 	int verbose;
 
-	List  part_list;
-	List  format_list;
-	List  state_list;
+	list_t *part_list;
+	list_t *format_list;
+	list_t *state_list;
 	bool  state_list_and;
 
 	slurmdb_federation_rec_t *fed;
@@ -226,6 +226,6 @@ extern struct sinfo_parameters params;
 
 extern void parse_command_line( int argc, char* *argv );
 extern int  parse_state( char* str, uint16_t* states );
-extern void sort_sinfo_list( List sinfo_list );
+extern void sort_sinfo_list(list_t *sinfo_list);
 
 #endif

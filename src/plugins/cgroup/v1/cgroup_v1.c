@@ -106,7 +106,7 @@ static pthread_t oom_thread;
 static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Task tracking artifacts */
-List g_task_list[CG_CTL_CNT];
+list_t *g_task_list[CG_CTL_CNT];
 static uint32_t g_max_task_id = 0;
 /*
  * There are potentially multiple tasks on a node, so we want to

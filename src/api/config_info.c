@@ -61,7 +61,7 @@
 /* Local functions */
 static void _write_group_header(FILE* out, char * header);
 static void _write_key_pairs(FILE* out, void *key_pairs);
-static void _print_config_plugin_params_list(FILE* out, List l, char *title);
+static void _print_config_plugin_params_list(FILE *out, list_t *l, char *title);
 
 /*
  * slurm_api_version - Return a single number reflecting the Slurm API's
@@ -446,7 +446,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	fclose(fp);
 }
 
-static void _print_config_plugin_params_list(FILE* out, List l, char *title)
+static void _print_config_plugin_params_list(FILE *out, list_t *l, char *title)
 {
 	list_itr_t *itr = NULL;
 	config_plugin_params_t *p;
@@ -502,16 +502,17 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	xstrcat(tmp2_str, "\nNode Features Configuration:");
 	_print_config_plugin_params_list(out,
-		 (List) slurm_ctl_conf_ptr->node_features_conf, tmp2_str);
+		 (list_t *) slurm_ctl_conf_ptr->node_features_conf, tmp2_str);
 	xfree(tmp2_str);
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
 			      select_title);
 
 }
+
 extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	config_key_pair_t *key_pair;
 	char tmp_str[256];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -2063,21 +2064,21 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 {
 	config_key_pair_t *key_pair;
 	char *temp = NULL;
-	List config_list = (List)key_pairs;
+	list_t *config_list = key_pairs;
 	list_itr_t *iter = NULL;
 	/* define lists of specific configuration sections */
-	List other_list;
-	List control_list;
-	List accounting_list;
-	List logging_list;
-	List power_list;
-	List sched_list;
-	List topology_list;
-	List timers_list;
-	List debug_list;
-	List proepilog_list;
-	List resconf_list;
-	List proctrac_list;
+	list_t *other_list;
+	list_t *control_list;
+	list_t *accounting_list;
+	list_t *logging_list;
+	list_t *power_list;
+	list_t *sched_list;
+	list_t *topology_list;
+	list_t *timers_list;
+	list_t *debug_list;
+	list_t *proepilog_list;
+	list_t *resconf_list;
+	list_t *proctrac_list;
 
 	if (!config_list)
 		return;
@@ -2385,7 +2386,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
  */
 extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 {
-	List config_list = (List)key_pairs;
+	list_t *config_list = key_pairs;
 	list_itr_t *iter = NULL;
 	config_key_pair_t *key_pair;
 

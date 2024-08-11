@@ -101,7 +101,7 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 }
 
 extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
-				     List runaway_jobs)
+				     list_t *runaway_jobs)
 {
 	char *query = NULL, *job_ids = NULL;
 	slurmdb_job_rec_t *job = NULL;
@@ -111,7 +111,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *temp_cluster_name = mysql_conn->cluster_name;
 
 	if (!runaway_jobs) {
-		error("%s: No List of runaway jobs to fix given.",
+		error("%s: No list of runaway jobs to fix given.",
 		      __func__);
 		rc = SLURM_ERROR;
 		goto bail;
@@ -120,7 +120,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_sort(runaway_jobs, slurmdb_job_sort_by_submit_time);
 
 	if (!(first_job = list_peek(runaway_jobs))) {
-		error("%s: List of runaway jobs to fix is unexpectedly empty",
+		error("%s: list of runaway jobs to fix is unexpectedly empty",
 		      __func__);
 		rc = SLURM_ERROR;
 		goto bail;

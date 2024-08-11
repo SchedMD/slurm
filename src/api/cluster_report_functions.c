@@ -51,7 +51,7 @@ typedef enum {
 	CLUSTER_REPORT_WU
 } cluster_report_t;
 
-static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
+static void _process_ua(list_t *user_list, slurmdb_assoc_rec_t *assoc)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
@@ -142,7 +142,7 @@ static void _process_au(list_t *assoc_list, slurmdb_assoc_rec_t *assoc)
 	list_iterator_destroy(itr);
 }
 
-static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
+static void _process_uw(list_t *user_list, slurmdb_wckey_rec_t *wckey)
 {
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	struct passwd *passwd_ptr = NULL;
@@ -170,7 +170,7 @@ static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
 					  &slurmdb_report_user->tres_list);
 }
 
-static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
+static void _process_wu(list_t *assoc_list, slurmdb_wckey_rec_t *wckey)
 {
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL,
 		*parent_assoc = NULL;
@@ -269,15 +269,15 @@ static void _process_wckey_type(
 	}
 }
 
-static List _process_util_by_report(void *db_conn, char *calling_name,
-				    void *cond, cluster_report_t type)
+static list_t *_process_util_by_report(void *db_conn, char *calling_name,
+				       void *cond, cluster_report_t type)
 {
 	list_itr_t *itr = NULL;
 	list_itr_t *type_itr = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List type_list = NULL;
-	List cluster_list = NULL;
-	List first_list = NULL;
+	list_t *type_list = NULL;
+	list_t *cluster_list = NULL;
+	list_t *first_list = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	time_t start_time, end_time;
@@ -285,7 +285,7 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	int exit_code = 0;
 
 	uid_t my_uid = getuid();
-	List ret_list = list_create(slurmdb_destroy_report_cluster_rec);
+	list_t *ret_list = list_create(slurmdb_destroy_report_cluster_rec);
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
@@ -395,32 +395,32 @@ end_it:
 }
 
 
-extern List slurmdb_report_cluster_account_by_user(void *db_conn,
-	slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *slurmdb_report_cluster_account_by_user(
+	void *db_conn, slurmdb_assoc_cond_t *assoc_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_account_by_user",
 				       assoc_cond, CLUSTER_REPORT_AU);
 }
 
-extern List slurmdb_report_cluster_user_by_account(void *db_conn,
-	slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *slurmdb_report_cluster_user_by_account(
+	void *db_conn, slurmdb_assoc_cond_t *assoc_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_user_by_account",
 				       assoc_cond, CLUSTER_REPORT_UA);
 }
 
-extern List slurmdb_report_cluster_wckey_by_user(void *db_conn,
-	slurmdb_wckey_cond_t *wckey_cond)
+extern list_t *slurmdb_report_cluster_wckey_by_user(
+	void *db_conn, slurmdb_wckey_cond_t *wckey_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_wckey_by_user",
 				       wckey_cond, CLUSTER_REPORT_WU);
 }
 
-extern List slurmdb_report_cluster_user_by_wckey(void *db_conn,
-	slurmdb_wckey_cond_t *wckey_cond)
+extern list_t *slurmdb_report_cluster_user_by_wckey(
+	void *db_conn, slurmdb_wckey_cond_t *wckey_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_user_by_wckey",

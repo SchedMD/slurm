@@ -218,7 +218,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		if (assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 					    ACCOUNTING_ENFORCE_WCKEYS,
 					    NULL, false) != SLURM_SUCCESS) {
-			List wckey_list = NULL;
+			list_t *wckey_list = NULL;
 			slurmdb_wckey_rec_t *wckey_ptr = NULL;
 			/* we have already checked to make
 			   sure this was the slurm user before
@@ -882,20 +882,20 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	return rc;
 }
 
-extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_job_cond_t *job_cond,
-				slurmdb_job_rec_t *job)
+extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+				   slurmdb_job_cond_t *job_cond,
+				   slurmdb_job_rec_t *job)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *cond_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	List job_list = NULL;
+	list_t *job_list = NULL;
 	slurmdb_job_rec_t *job_rec;
 	list_itr_t *itr;
-	List id_switch_list = NULL;
+	list_t *id_switch_list = NULL;
 	id_switch_t *id_switch;
 	bool is_admin;
 

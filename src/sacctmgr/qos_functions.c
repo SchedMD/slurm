@@ -42,7 +42,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/interfaces/data_parser.h"
 
-static int _parse_preempt_modes_internal(List null, char *name, void *x)
+static int _parse_preempt_modes_internal(list_t *null, char *name, void *x)
 {
 	uint16_t *preempt_mode = x;
 	uint16_t ret_mode = 0;
@@ -75,7 +75,7 @@ static uint16_t _parse_preempt_modes(char *names)
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_qos_cond_t *qos_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -190,7 +190,7 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 static int _set_rec(int *start, int argc, char **argv,
-		    List name_list,
+		    list_t *name_list,
 		    slurmdb_qos_rec_t *qos)
 {
 	int i, mins;
@@ -727,13 +727,13 @@ static int _set_rec(int *start, int argc, char **argv,
 	return set;
 }
 
-static bool _isdefault(List qos_list)
+static bool _isdefault(list_t *qos_list)
 {
 	int rc = 0;
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	char *name = NULL;
 
 	if (!qos_list || !list_count(qos_list))
@@ -804,10 +804,10 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
-	List name_list = list_create(xfree_ptr);
+	list_t *name_list = list_create(xfree_ptr);
 	char *description = NULL;
 	char *name = NULL;
-	List qos_list = NULL;
+	list_t *qos_list = NULL;
 	char *qos_str = NULL;
 
 	slurmdb_init_qos_rec(start_qos, 0, NO_VAL);
@@ -929,15 +929,15 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
-	List qos_list = NULL;
+	list_t *qos_list = NULL;
 	int field_count = 0;
 	char *tmp_char;
 	uint64_t tmp64;
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -1327,7 +1327,7 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 	slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 
 	slurmdb_init_qos_rec(qos, 0, NO_VAL);
 
@@ -1419,7 +1419,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 	slurmdb_qos_cond_t *qos_cond =
 		xmalloc(sizeof(slurmdb_qos_cond_t));
 	int i=0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int set = 0;
 
 	for (i=0; i<argc; i++) {

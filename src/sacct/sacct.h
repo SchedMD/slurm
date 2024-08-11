@@ -226,12 +226,12 @@ typedef struct {
 extern print_field_t fields[];
 extern sacct_parameters_t params;
 
-extern List jobs;
-extern List print_fields_list;
+extern list_t *jobs;
+extern list_t *print_fields_list;
 extern list_itr_t *print_fields_itr;
 extern int field_count;
-extern List g_qos_list;
-extern List g_tres_list;
+extern list_t *g_qos_list;
+extern list_t *g_tres_list;
 
 /* process.c */
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);

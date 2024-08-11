@@ -88,7 +88,7 @@ static char *_elapsed_time(uint64_t secs, uint64_t usecs)
 	return str;
 }
 
-static char *_find_qos_name_from_list(List qos_list, int qosid)
+static char *_find_qos_name_from_list(list_t *qos_list, int qosid)
 {
 	slurmdb_qos_rec_t *qos;
 

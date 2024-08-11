@@ -1309,12 +1309,12 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
  * so the user doesn't need to specify manually in gres.conf.
  * Specifically populate cpu affinity and nvlink information
  */
-static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
+static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 {
 	bitstr_t *enabled_cpus_bits = NULL;
 	unsigned int i;
 	unsigned int device_count = 0;
-	List gres_list_system = list_create(destroy_gres_slurmd_conf);
+	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
 	char driver[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
 	char **device_lut;
@@ -1701,9 +1701,9 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
-	List gres_list_system = NULL;
+	list_t *gres_list_system = NULL;
 
 	if (!(gres_list_system = _get_system_gpu_list_nvml(node_config)))
 		error("System GPU detection failed");

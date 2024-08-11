@@ -74,21 +74,21 @@ static void _help_msg(void);
 static void _init_params(void);
 static void _usage(void);
 
-List selected_parts = NULL;
-List selected_steps = NULL;
+list_t *selected_parts = NULL;
+list_t *selected_steps = NULL;
 void *acct_db_conn = NULL;
 
-List print_fields_list = NULL;
+list_t *print_fields_list = NULL;
 list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
-List g_qos_list = NULL;
-List g_tres_list = NULL;
+list_t *g_qos_list = NULL;
+list_t *g_tres_list = NULL;
 
-static List _build_cluster_list(slurmdb_federation_rec_t *fed)
+static list_t *_build_cluster_list(slurmdb_federation_rec_t *fed)
 {
 	slurmdb_cluster_rec_t *cluster;
 	list_itr_t *iter;
-	List cluster_list;
+	list_t *cluster_list;
 
 	cluster_list = list_create(xfree_ptr);
 	iter = list_iterator_create(fed->cluster_list);
@@ -141,7 +141,8 @@ static void _help_job_reason_msg(void)
 }
 
 /* returns number of objects added to list */
-static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
+static int _addto_reason_char_list_internal(list_t *char_list, char *name,
+					    void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -161,7 +162,7 @@ static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
 }
 
 /* returns number of objects added to list */
-static int _addto_reason_char_list(List char_list, char *names)
+static int _addto_reason_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -199,7 +200,8 @@ static bool _supported_state(uint32_t state_num)
 	}
 }
 
-static int _addto_state_char_list_internal(List char_list, char *name, void *x)
+static int _addto_state_char_list_internal(list_t *char_list, char *name,
+					   void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -222,7 +224,7 @@ static int _addto_state_char_list_internal(List char_list, char *name, void *x)
 
 /* returns number of objects added to list */
 /* also checks if states are supported by sacct and fatals if not */
-static int _addto_state_char_list(List char_list, char *names)
+static int _addto_state_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -472,7 +474,7 @@ static int _sort_asc_submit_time(void *x, void *y)
 	return 0;
 }
 
-static void _remove_duplicate_fed_jobs(List jobs)
+static void _remove_duplicate_fed_jobs(list_t *jobs)
 {
 	int i, j;
 	uint32_t hash_inx;
@@ -1151,8 +1153,8 @@ extern void parse_command_line(int argc, char **argv)
 		 * all clusters in that federation */
 		slurmdb_federation_rec_t *fed = NULL;
 		slurmdb_federation_cond_t fed_cond;
-		List fed_list = NULL;
-		List cluster_list = list_create(NULL);
+		list_t *fed_list = NULL;
+		list_t *cluster_list = list_create(NULL);
 
 		params.cluster_name = xstrdup(slurm_conf.cluster_name);
 

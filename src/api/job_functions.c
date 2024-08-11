@@ -46,9 +46,9 @@
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
-extern List slurmdb_job_modify(void *db_conn,
-			       slurmdb_job_cond_t *job_cond,
-			       slurmdb_job_rec_t *job)
+extern list_t *slurmdb_job_modify(void *db_conn,
+				  slurmdb_job_cond_t *job_cond,
+				  slurmdb_job_rec_t *job)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -61,7 +61,7 @@ extern List slurmdb_job_modify(void *db_conn,
  * returns List of slurmdb_job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
+extern list_t *slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -74,7 +74,7 @@ extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
  * IN: jobs, a list of all the runaway jobs
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_jobs_fix_runaway(void *db_conn, List jobs)
+extern int slurmdb_jobs_fix_runaway(void *db_conn, list_t *jobs)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -98,7 +98,7 @@ extern int slurmdb_jobcomp_fini(void)
  * returns List of jobcomp_job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurmdb_jobcomp_jobs_get(slurmdb_job_cond_t *job_cond)
+extern list_t *slurmdb_jobcomp_jobs_get(slurmdb_job_cond_t *job_cond)
 {
 	return jobcomp_g_get_jobs(job_cond);
 }

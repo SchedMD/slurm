@@ -109,8 +109,8 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
  * OUT resp - response to request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_submit_batch_het_job(List job_req_list,
-				       submit_response_msg_t **resp)
+extern int slurm_submit_batch_het_job(list_t *job_req_list,
+				      submit_response_msg_t **resp)
 {
 	int rc;
 	job_desc_msg_t *req;

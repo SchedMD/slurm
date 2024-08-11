@@ -73,9 +73,9 @@ typedef struct {
 	void *warn_arg;
 	void *db_conn;
 	bool close_db_conn;
-	List tres_list;
-	List qos_list;
-	List assoc_list;
+	list_t *tres_list;
+	list_t *qos_list;
+	list_t *assoc_list;
 	data_parser_flags_t flags;
 } args_t;
 

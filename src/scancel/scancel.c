@@ -72,7 +72,7 @@ static int  _confirmation(job_info_t *job_ptr, uint32_t step_id,
 			  uint32_t array_id);
 static void _filter_job_records(void);
 static void _load_job_records (void);
-static int  _multi_cluster(List clusters);
+static int _multi_cluster(list_t *clusters);
 static int  _proc_cluster(void);
 static int  _signal_job_by_str(void);
 static int  _verify_job_ids(void);
@@ -316,8 +316,7 @@ static int _ctld_signal_jobs(void)
 }
 
 /* _multi_cluster - process job cancellation across a list of clusters */
-static int
-_multi_cluster(List clusters)
+static int _multi_cluster(list_t *clusters)
 {
 	list_itr_t *itr;
 	int rc = 0, rc2;

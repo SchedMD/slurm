@@ -53,7 +53,7 @@
 static int _local_send_recv_rc_msgs(const char *nodelist,
 				    slurm_msg_type_t type, void *data)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int temp_rc = 0, rc = 0;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));

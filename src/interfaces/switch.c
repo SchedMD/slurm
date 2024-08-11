@@ -165,7 +165,7 @@ extern int switch_g_init(bool only_default)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "switch";
 	int i, j, plugin_cnt;
-	List plugin_names = NULL;
+	list_t *plugin_names = NULL;
 	_plugin_args_t plugin_args = {0};
 
 	slurm_mutex_lock( &context_lock );

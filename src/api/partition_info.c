@@ -60,7 +60,7 @@ typedef struct load_part_req_struct {
 	slurmdb_cluster_rec_t *cluster;
 	int cluster_inx;
 	slurm_msg_t *req_msg;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 	uint16_t show_flags;
 } load_part_req_struct_t;
 
@@ -529,7 +529,7 @@ static int _load_fed_parts(slurm_msg_t *req_msg,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_part_req_struct_t *load_args;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 
 	*part_info_msg_pptr = NULL;
 

@@ -43,7 +43,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_wckey_cond_t *wckey_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -149,7 +149,7 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t *wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
-	List wckey_list = NULL;
+	list_t *wckey_list = NULL;
 	int i=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -159,8 +159,8 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 	print_field_t *field = NULL;
 	int field_count = 0;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	enum {
 		PRINT_CLUSTER,

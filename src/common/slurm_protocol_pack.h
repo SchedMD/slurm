@@ -97,24 +97,25 @@ extern void packstr_with_version(void *object, uint16_t protocol_version,
 				 buf_t *buffer);
 extern int unpackstr_with_version(void **object, uint16_t protocol_version,
 				  buf_t *buffer);
-extern int slurm_pack_list(List send_list,
+extern int slurm_pack_list(list_t *send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t rpc_version,
 						  buf_t *buffer),
 			   buf_t *buffer, uint16_t protocol_version);
-extern int slurm_pack_list_until(List send_list, pack_function_t pack_function,
+extern int slurm_pack_list_until(list_t *send_list,
+				 pack_function_t pack_function,
 				 buf_t *buffer, uint32_t max_buf_size,
 				 uint16_t protocol_version);
-extern int slurm_unpack_list(List *recv_list,
+extern int slurm_unpack_list(list_t **recv_list,
 			     int (*unpack_function) (void **object,
 						     uint16_t protocol_version,
 						     buf_t *buffer),
 			     void (*destroy_function) (void *object),
 			     buf_t *buffer, uint16_t protocol_version);
 
-extern void pack_dep_list(List dep_list, buf_t *buffer,
+extern void pack_dep_list(list_t *dep_list, buf_t *buffer,
 			  uint16_t protocol_version);
-extern int unpack_dep_list(List *dep_list, buf_t *buffer,
+extern int unpack_dep_list(list_t **dep_list, buf_t *buffer,
 			   uint16_t protocol_version);
 
 extern void pack_multi_core_data(multi_core_data_t *multi_core, buf_t *buffer,

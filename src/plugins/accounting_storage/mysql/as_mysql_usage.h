@@ -60,7 +60,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       time_t sent_start, time_t sent_end,
 			       uint16_t archive_data,
-			       List *rollup_stats_list_in);
+			       list_t **rollup_stats_list_in);
 
 /*
  * Set last_ran_table to event_time if it happened before the last rollup.

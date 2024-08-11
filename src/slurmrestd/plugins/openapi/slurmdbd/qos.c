@@ -62,7 +62,7 @@ static int _foreach_update_qos(void *x, void *arg)
 
 	/* Search for a QOS with the same id and/or name, if set */
 	if (qos->id || qos->name) {
-		List qos_list = NULL;
+		list_t *qos_list = NULL;
 
 		if (qos->id) {
 			/* Need to free string copy of id with xfree_ptr */
@@ -95,7 +95,7 @@ static int _foreach_update_qos(void *x, void *arg)
 		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				"Cannot create a QOS without a name");
 	} else if (!found_qos) {
-		List qos_add_list = list_create(NULL);
+		list_t *qos_add_list = list_create(NULL);
 
 		/* The QOS was not found, so create a new QOS */
 		debug("%s: adding qos request: name=%s description=%s",

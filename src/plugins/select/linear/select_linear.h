@@ -70,7 +70,7 @@ struct node_cr_record {
 	uint16_t exclusive_cnt;		/* count of jobs exclusively allocated
 					 * this node (from different
 					 * partitions) */
-	List gres_list;			/* list of gres state info managed by
+	list_t *gres_list;		/* list of gres state info managed by
 					 * plugins */
 };
 

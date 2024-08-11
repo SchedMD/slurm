@@ -79,7 +79,7 @@ typedef struct load_job_req_struct {
 	slurmdb_cluster_rec_t *cluster;
 	bool local_cluster;
 	slurm_msg_t *req_msg;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 } load_job_req_struct_t;
 
 typedef struct load_job_resp_struct {
@@ -1201,7 +1201,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_job_req_struct_t *load_args;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 
 	*job_info_msg_pptr = NULL;
 
@@ -2128,7 +2128,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_job_req_struct_t *load_args;
-	List resp_msg_list;
+	list_t *resp_msg_list;
 
 	*factors_resp = NULL;
 

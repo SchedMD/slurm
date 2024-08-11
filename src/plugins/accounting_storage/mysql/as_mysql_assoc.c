@@ -258,7 +258,8 @@ enum {
 	RASSOC_COUNT
 };
 
-static void _move_assoc_list_to_update_list(List update_list, List assoc_list)
+static void _move_assoc_list_to_update_list(list_t *update_list,
+					    list_t *assoc_list)
 {
 	slurmdb_assoc_rec_t *assoc;
 
@@ -925,7 +926,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 				slurmdb_assoc_rec_t *assoc,
 				char *acct,
 				char *lineage,
-				List ret_list, int moved_parent,
+				list_t *ret_list, int moved_parent,
 				char *old_parent, char *new_parent,
 				bool handle_child_parent)
 {
@@ -1100,7 +1101,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 			modified = 1;
 		}
 		if (!row[ASSOC_QOS][0] && assoc->qos_list) {
-			List delta_qos_list = NULL;
+			list_t *delta_qos_list = NULL;
 			char *qos_char = NULL, *delta_char = NULL;
 			list_itr_t *delta_itr = NULL;
 			list_itr_t *qos_itr =
@@ -1389,7 +1390,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name, char *sent_vals,
 					 bool is_admin, bool same_user,
-					 List ret_list,
+					 list_t *ret_list,
 					 slurmdb_assoc_cond_t *qos_assoc_cond,
 					 bitstr_t *wanted_qos)
 {
@@ -1935,7 +1936,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	}
 
 	if ((rpc_version < SLURM_23_11_PROTOCOL_VERSION) && moved_parent) {
-		List local_assoc_list = NULL;
+		list_t *local_assoc_list = NULL;
 		slurmdb_assoc_cond_t local_assoc_cond;
 		/* now we need to send the update of the new parents and
 		 * limits, so just to be safe, send the whole
@@ -2071,7 +2072,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name,
 					 char *name_char,
-					 bool is_admin, List ret_list,
+					 bool is_admin, list_t *ret_list,
 					 bool *jobs_running,
 					 bool *default_account,
 					 add_assoc_cond_t *add_assoc_cond)
@@ -2216,10 +2217,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			       slurmdb_assoc_cond_t *assoc_cond,
 			       char *cluster_name,
 			       char *fields, char *sent_extra,
-			       bool is_admin, List sent_list)
+			       bool is_admin, list_t *sent_list)
 {
-	List assoc_list;
-	List delta_qos_list = NULL;
+	list_t *assoc_list;
+	list_t *delta_qos_list = NULL;
 	list_itr_t *itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -3748,7 +3749,7 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-			       List assoc_list)
+			       list_t *assoc_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -4173,12 +4174,12 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	return add_assoc_cond.ret_str;
 }
 
-extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				   slurmdb_assoc_cond_t *assoc_cond,
-				   slurmdb_assoc_rec_t *assoc)
+extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+				      slurmdb_assoc_cond_t *assoc_cond,
+				      slurmdb_assoc_rec_t *assoc)
 {
 	list_itr_t *itr = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
@@ -4189,7 +4190,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *tmp_char1=NULL, *tmp_char2=NULL;
 	char *cluster_name = NULL;
 	char *prefix = "t1";
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	bool locked = false;
 	slurmdb_assoc_cond_t qos_assoc_cond;
 	bitstr_t *wanted_qos = NULL;
@@ -4364,7 +4365,7 @@ is_same_user:
 	FREE_NULL_BITMAP(wanted_qos);
 
 	if (ret_list && qos_assoc_cond.cluster_list) {
-		List local_assoc_list = as_mysql_get_assocs(
+		list_t *local_assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, &qos_assoc_cond);
 
 		if (local_assoc_list) {
@@ -4410,11 +4411,11 @@ is_same_user:
 	return ret_list;
 }
 
-extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				   slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+				      slurmdb_assoc_cond_t *assoc_cond)
 {
 	list_itr_t *itr = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *cluster_name = NULL;
 	char *extra = NULL, *query = NULL, *name_char = NULL;
@@ -4423,7 +4424,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	bool jobs_running = 0, default_account = false, locked = false;;
 	add_assoc_cond_t add_assoc_cond = {
 		.mysql_conn = mysql_conn,
@@ -4587,18 +4588,18 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
-				slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+				   slurmdb_assoc_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List assoc_list = NULL;
+	list_t *assoc_list = NULL;
 	list_itr_t *itr = NULL;
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	char *cluster_name = NULL;
 	bool locked = false;
 
@@ -4673,9 +4674,9 @@ empty:
 }
 
 extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
-				  List cluster_list)
+				  list_t *cluster_list)
 {
-	List assoc_list = NULL;
+	list_t *assoc_list = NULL;
 	list_itr_t *itr = NULL, *assoc_itr;
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
@@ -4685,7 +4686,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 	int rc = SLURM_SUCCESS;
 	slurmdb_update_object_t *update_object;
 	slurmdb_update_type_t type;
-	List use_cluster_list = as_mysql_cluster_list;
+	list_t *use_cluster_list = as_mysql_cluster_list;
 
 	info("Resetting lft and rgt's called");
 	/* This is not safe if ran during the middle of a slurmdbd
@@ -4895,10 +4896,10 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 }
 
 extern int as_mysql_assoc_remove_default(mysql_conn_t *mysql_conn,
-					 List user_list, List cluster_list)
+					 list_t *user_list, list_t *cluster_list)
 {
 	char *query = NULL;
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	list_itr_t *itr, *itr2;
 	slurmdb_assoc_rec_t assoc;
 	bool locked = false;

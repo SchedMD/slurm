@@ -185,9 +185,9 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bitstr_t *bblock_required = NULL;
 	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt, best_node_cnt, req_node_cnt = 0;
-	List best_gres = NULL;
+	list_t *best_gres = NULL;
 	block_record_t *block_ptr;
-	List node_weight_list = NULL;
+	list_t *node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	list_itr_t *iter;
 	node_record_t *node_ptr;

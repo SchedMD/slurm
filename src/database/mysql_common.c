@@ -294,7 +294,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i = 0;
-	List columns = NULL;
+	list_t *columns = NULL;
 	list_itr_t *itr = NULL;
 	char *col = NULL;
 	int adding = 0;
@@ -303,7 +303,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	char *unique_index = NULL;
 	int old_primary = 0;
 	char *temp = NULL, *temp2 = NULL;
-	List keys_list = NULL;
+	list_t *keys_list = NULL;
 	db_key_t *db_key = NULL;
 
 	DEF_TIMERS;

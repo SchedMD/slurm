@@ -1779,7 +1779,7 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 	int i, j, k, rc = BB_CAN_START_NOW;
 	bool avail_ok, do_preempt, preempt_ok;
 	time_t now = time(NULL);
-	List preempt_list = NULL;
+	list_t *preempt_list = NULL;
 	list_itr_t *preempt_iter;
 	bb_state_t bb_state = *bb_state_ptr;
 
@@ -2043,7 +2043,7 @@ extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
 		slurmdb_job_cond_t job_cond;
 		slurmdb_job_rec_t job_rec;
 		slurm_selected_step_t selected_step;
-		List ret_list;
+		list_t *ret_list;
 
 		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));

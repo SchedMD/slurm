@@ -714,7 +714,7 @@ end_modify:
 }
 
 extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			    List qos_list)
+			    list_t *qos_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -836,11 +836,11 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_qos_cond_t *qos_cond,
-				slurmdb_qos_rec_t *qos)
+extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+				   slurmdb_qos_cond_t *qos_cond,
+				   slurmdb_qos_rec_t *qos)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
@@ -1075,11 +1075,11 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_qos_cond_t *qos_cond)
+extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+				   slurmdb_qos_cond_t *qos_cond)
 {
 	list_itr_t *itr = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -1088,7 +1088,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List cluster_list_tmp = NULL;
+	list_t *cluster_list_tmp = NULL;
 
 	if (!qos_cond) {
 		error("we need something to change");
@@ -1211,13 +1211,13 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
-			     slurmdb_qos_cond_t *qos_cond)
+extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List qos_list = NULL;
+	list_t *qos_list = NULL;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;

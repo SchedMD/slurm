@@ -37,7 +37,7 @@
 
 #include "gres_c_s.h"
 
-List shared_info = NULL;
+list_t *shared_info = NULL;
 
 static gres_slurmd_conf_t *_create_shared_rec(
 	gres_slurmd_conf_t *sharing_record, char *shared_name,
@@ -70,7 +70,7 @@ static gres_slurmd_conf_t *_create_shared_rec(
 }
 
 /* Distribute MPS Count to records on original list */
-static void _distribute_count(List gres_conf_list, List sharing_conf_list,
+static void _distribute_count(list_t *gres_conf_list, list_t *sharing_conf_list,
 			      uint64_t count,
 			      gres_slurmd_conf_t *shared_record_in)
 {
@@ -109,8 +109,8 @@ static int _delete_leftovers(void *x, void *arg)
 }
 
 /* Merge SHARED records back to original list, updating and reordering as needed */
-static int _merge_lists(List gres_conf_list, List sharing_conf_list,
-			List shared_conf_list, char *shared_name)
+static int _merge_lists(list_t *gres_conf_list, list_t *sharing_conf_list,
+			list_t *shared_conf_list, char *shared_name)
 {
 	gres_slurmd_conf_t *sharing_record, *shared_record;
 
@@ -224,7 +224,7 @@ static int _compute_local_id(char *dev_file_name)
 	return local_id;
 }
 
-static uint64_t _build_shared_dev_info(List gres_conf_list)
+static uint64_t _build_shared_dev_info(list_t *gres_conf_list)
 {
 	uint64_t shared_count = 0;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -266,11 +266,11 @@ static int _remove_shared_recs(void *x, void *arg)
  * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
  * records).
  */
-static List _build_sharing_list(List gres_list, char *sharing_name)
+static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 {
 	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *sharing_record;
-	List sharing_list;
+	list_t *sharing_list;
 	hostlist_t *hl;
 	char *f_name;
 	bool log_fname = true;
@@ -345,11 +345,11 @@ static List _build_sharing_list(List gres_list, char *sharing_name)
  * divide the "Count" across all shared_name records and remove from the
  * original list.
  */
-static List _build_shared_list(List gres_list, char *shared_name)
+static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 {
 	list_itr_t *itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *shared_record;
-	List shared_list;
+	list_t *shared_list;
 	hostlist_t *hl;
 	char *f_name;
 	uint64_t count_per_file;
@@ -447,13 +447,13 @@ extern void gres_c_s_fini(void)
  * This only validates that the configuration was specified in gres.conf.
  * In the general case, no code would need to be changed.
  */
-extern int gres_c_s_init_share_devices(List gres_conf_list,
-				       List *share_devices,
+extern int gres_c_s_init_share_devices(list_t *gres_conf_list,
+				       list_t **share_devices,
 				       node_config_load_t *config,
 				       char *sharing_name)
 {
 	int rc = SLURM_SUCCESS;
-	List sharing_conf_list, shared_conf_list;
+	list_t *sharing_conf_list, *shared_conf_list;
 	log_level_t log_lvl;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
@@ -484,7 +484,7 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 	sharing_conf_list = _build_sharing_list(
 		gres_conf_list, sharing_name);
 
-	/* Now move SHARED records to new List, each with unique device file */
+	/* Now move SHARED records to new list, each with unique device file */
 	shared_conf_list = _build_shared_list(
 		gres_conf_list, config->gres_name);
 

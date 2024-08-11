@@ -177,7 +177,7 @@ typedef enum {
 \*****************************************************************************/
 
 typedef struct {
-	List acct_list; /* list of account names (char *'s) */
+	list_t *acct_list; /* list of account names (char *'s) */
 	slurmdb_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
@@ -217,8 +217,8 @@ typedef struct dbd_get_jobs_msg {
 				 * of accounting record */
 	uint32_t gid;		/* group id */
 	time_t last_update;	/* time of latest info */
-	List selected_steps;	/* List of slurm_selected_step_t *'s */
-	List selected_parts;	/* List of char *'s */
+	list_t *selected_steps;	/* list_t *of slurm_selected_step_t *'s */
+	list_t *selected_parts;	/* list_t *of char *'s */
 	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
 
@@ -342,7 +342,7 @@ typedef struct dbd_job_suspend_msg {
 } dbd_job_suspend_msg_t;
 
 typedef struct {
-	List my_list;		/* this list could be of any type as long as it
+	list_t *my_list;	/* this list could be of any type as long as it
 				 * is handled correctly on both ends */
 	uint32_t return_code;   /* If there was an error and a list of
 				 * them this is the type of error it

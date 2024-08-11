@@ -48,6 +48,6 @@ typedef struct {
  * or NULL on error.
  * Must list_destroy() the result to avoid a memory leak.
  */
-extern List resolve_ctls_from_dns_srv(void);
+extern list_t *resolve_ctls_from_dns_srv(void);
 
 #endif

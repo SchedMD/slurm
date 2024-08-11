@@ -68,7 +68,7 @@ typedef struct {
 #define PMIXP_NSPACE_DB_MAGIC 0xCAFEBABE
 	int magic;
 #endif
-	List nspaces;
+	list_t *nspaces;
 	pmixp_namespace_t *local;
 } pmixp_db_t;
 
@@ -91,7 +91,7 @@ hostlist_t *pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr,
 				  const uint32_t *ranks, size_t nranks);
 int pmixp_nspace_resolve(const char *name, int rank);
 
-size_t pmixp_nspace_mdx_lsize(List l);
+size_t pmixp_nspace_mdx_lsize(list_t *l);
 int pmixp_nspaces_push(buf_t *buf, int cnt);
 
 #endif /* PMIXP_NSPACES_H */

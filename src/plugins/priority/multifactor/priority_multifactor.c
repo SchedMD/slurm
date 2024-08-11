@@ -83,7 +83,7 @@
 #if defined (__APPLE__)
 extern void *acct_db_conn  __attribute__((weak_import));
 extern uint32_t cluster_cpus __attribute__((weak_import));
-extern List job_list  __attribute__((weak_import));
+extern list_t *job_list  __attribute__((weak_import));
 extern time_t last_job_update __attribute__((weak_import));
 extern time_t last_part_update __attribute__((weak_import));
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
@@ -93,7 +93,7 @@ extern int active_node_record_count __attribute__((weak_import));
 #else
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
-List job_list = NULL;
+list_t *job_list = NULL;
 time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 slurm_conf_t slurm_conf;
@@ -408,7 +408,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  *
  * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
-static int _set_children_usage_efctv(List children_list)
+static int _set_children_usage_efctv(list_t *children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr = NULL;
@@ -1533,7 +1533,7 @@ static void _internal_setup(void)
 /* Reursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an assoc
  */
-static void _set_norm_shares(List children_list)
+static void _set_norm_shares(list_t *children_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -1900,9 +1900,9 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	return priority_fs;
 }
 
-extern List priority_p_get_priority_factors_list(uid_t uid)
+extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *itr, *job_iter;
 	job_record_t *job_ptr = NULL;
 	part_record_t *job_part_ptr = NULL;

@@ -48,7 +48,7 @@
  * IN:  qos_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_qos_add(void *db_conn, List qos_list)
+extern int slurmdb_qos_add(void *db_conn, list_t *qos_list)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -62,7 +62,7 @@ extern int slurmdb_qos_add(void *db_conn, List qos_list)
  * RET: List of slurmdb_qos_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
+extern list_t *slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -77,9 +77,9 @@ extern List slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_qos_modify(void *db_conn,
-			       slurmdb_qos_cond_t *qos_cond,
-			       slurmdb_qos_rec_t *qos)
+extern list_t *slurmdb_qos_modify(void *db_conn,
+				  slurmdb_qos_cond_t *qos_cond,
+				  slurmdb_qos_rec_t *qos)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -93,7 +93,7 @@ extern List slurmdb_qos_modify(void *db_conn,
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond)
+extern list_t *slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();

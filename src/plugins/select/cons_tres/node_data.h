@@ -42,11 +42,11 @@
 typedef struct {
 	uint64_t alloc_memory;	      /* real memory reserved by already
 				       * scheduled jobs */
-	List gres_list;		      /* list of gres_node_state_t records as
+	list_t *gres_list;	      /* list of gres_node_state_t records as
 				       * defined in in src/interfaces/gres.h.
 				       * Local data used only in state copy
 				       * to emulate future node state */
-	List jobs; /* List of jobs running on node */
+	list_t *jobs;		      /* list of jobs running on node */
 	uint16_t node_state;	      /* see node_cr_state comments */
 } node_use_record_t;
 

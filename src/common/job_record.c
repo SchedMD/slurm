@@ -962,7 +962,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
-	List gres_list_req = NULL, gres_list_alloc = NULL;
+	list_t *gres_list_req = NULL, *gres_list_alloc = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = {
@@ -1432,7 +1432,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint8_t share_res, whole_node, features_use = 0;
 	time_t begin_time, accrue_time = 0, submit_time;
 	int i;
-	List depend_list = NULL;
+	list_t *depend_list = NULL;
 	multi_core_data_t *mc_ptr;
 	cron_entry_t *crontab_entry = NULL;
 	bitstr_t *job_size_bitmap = NULL;

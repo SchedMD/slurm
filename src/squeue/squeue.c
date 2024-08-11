@@ -76,7 +76,7 @@ int max_line_size;
 static int _get_info(bool clear_old, bool log_cluster_name, int argc,
 		     char **argv);
 static int  _get_window_width( void );
-static int _multi_cluster(List clusters, int argc, char **argv);
+static int _multi_cluster(list_t *clusters, int argc, char **argv);
 static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		      char **argv);
 static int _print_job_steps(bool clear_old, int argc, char **argv);
@@ -123,7 +123,7 @@ main (int argc, char **argv)
 		exit (0);
 }
 
-static int _multi_cluster(List clusters, int argc, char **argv)
+static int _multi_cluster(list_t *clusters, int argc, char **argv)
 {
 	list_itr_t *itr;
 	bool log_cluster_name = false, first = true;

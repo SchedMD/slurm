@@ -97,9 +97,9 @@ static int _unpack_job_step_pids(job_step_pids_t **msg, buf_t *buffer,
 static int _unpack_job_info_members(job_info_t *job, buf_t *buffer,
 				    uint16_t protocol_version);
 
-static void _pack_ret_list(List ret_list, uint16_t size_val, buf_t *buffer,
+static void _pack_ret_list(list_t *ret_list, uint16_t size_val, buf_t *buffer,
 			   uint16_t protocol_version);
-static int _unpack_ret_list(List *ret_list, uint16_t size_val, buf_t *buffer,
+static int _unpack_ret_list(list_t **ret_list, uint16_t size_val, buf_t *buffer,
 			    uint16_t protocol_version);
 
 /* pack_header
@@ -2177,7 +2177,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int slurm_pack_list(List send_list,
+extern int slurm_pack_list(list_t *send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t protocol_version,
 						  buf_t *buffer),
@@ -2220,7 +2220,8 @@ extern int slurm_pack_list(List send_list,
 	return rc;
 }
 
-extern int slurm_pack_list_until(List send_list, pack_function_t pack_function,
+extern int slurm_pack_list_until(list_t *send_list,
+				 pack_function_t pack_function,
 				 buf_t *buffer, uint32_t max_buf_size,
 				 uint16_t protocol_version)
 {
@@ -2266,7 +2267,7 @@ extern int slurm_pack_list_until(List send_list, pack_function_t pack_function,
 	return rc;
 }
 
-extern int slurm_unpack_list(List *recv_list,
+extern int slurm_unpack_list(list_t **recv_list,
 			     int (*unpack_function) (void **object,
 						     uint16_t protocol_version,
 						     buf_t *buffer),
@@ -5791,7 +5792,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_dep_list(List dep_list, buf_t *buffer, uint16_t protocol_version)
+extern void pack_dep_list(list_t *dep_list, buf_t *buffer,
+			  uint16_t protocol_version)
 {
 	uint32_t cnt;
 	depend_spec_t *dep_ptr;
@@ -5817,7 +5819,7 @@ extern void pack_dep_list(List dep_list, buf_t *buffer, uint16_t protocol_versio
 	}
 }
 
-extern int unpack_dep_list(List *dep_list, buf_t *buffer,
+extern int unpack_dep_list(list_t **dep_list, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	uint32_t cnt;
@@ -6577,9 +6579,8 @@ unpack_error:
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
-static void
-_pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_job_desc_list_msg(list_t *job_req_list, buf_t *buffer,
+				    uint16_t protocol_version)
 {
 	job_desc_msg_t *req;
 	list_itr_t *iter;
@@ -6598,9 +6599,8 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 	list_iterator_destroy(iter);
 }
 
-static int
-_unpack_job_desc_list_msg(List *job_req_list, buf_t *buffer,
-			  uint16_t protocol_version)
+static int _unpack_job_desc_list_msg(list_t **job_req_list, buf_t *buffer,
+				     uint16_t protocol_version)
 {
 	job_desc_msg_t *req;
 	uint16_t cnt = 0;
@@ -6673,9 +6673,8 @@ unpack_error:
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
-static void
-_pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_job_info_list_msg(list_t *job_resp_list, buf_t *buffer,
+				    uint16_t protocol_version)
 {
 	slurm_msg_t msg = { .protocol_version = protocol_version };
 	resource_allocation_response_msg_t *resp;
@@ -6702,9 +6701,8 @@ void _free_job_info_list(void *x)
 	slurm_free_resource_allocation_response_msg(job_info_ptr);
 }
 
-static int
-_unpack_job_info_list_msg(List *job_resp_list, buf_t *buffer,
-			  uint16_t protocol_version)
+static int _unpack_job_info_list_msg(list_t **job_resp_list, buf_t *buffer,
+				     uint16_t protocol_version)
 {
 	slurm_msg_t msg = { .protocol_version = protocol_version };
 	uint16_t cnt = 0;
@@ -6765,7 +6763,7 @@ static void _pack_node_reg_resp(
 	slurm_node_reg_resp_msg_t *msg,
 	buf_t *buffer, uint16_t protocol_version)
 {
-	List pack_list;
+	list_t *pack_list;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(msg);
@@ -9246,10 +9244,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_ret_list(List ret_list,
-	       uint16_t size_val, buf_t *buffer,
-	       uint16_t protocol_version)
+static void _pack_ret_list(list_t *ret_list, uint16_t size_val, buf_t *buffer,
+			   uint16_t protocol_version)
 {
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
@@ -9270,10 +9266,8 @@ _pack_ret_list(List ret_list,
 	list_iterator_destroy(itr);
 }
 
-static int
-_unpack_ret_list(List *ret_list,
-		 uint16_t size_val, buf_t *buffer,
-		 uint16_t protocol_version)
+static int _unpack_ret_list(list_t **ret_list, uint16_t size_val, buf_t *buffer,
+			    uint16_t protocol_version)
 {
 	int i = 0;
 	ret_data_info_t *ret_data_info = NULL;
@@ -12451,11 +12445,11 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_pack_job_desc_list_msg((List) msg->data, buffer,
+		_pack_job_desc_list_msg(msg->data, buffer,
 					msg->protocol_version);
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		_pack_job_info_list_msg((List) msg->data, buffer,
+		_pack_job_info_list_msg(msg->data, buffer,
 					msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_LOCK:
@@ -13102,11 +13096,11 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
+		rc = _unpack_job_desc_list_msg((list_t **) &(msg->data),
 					       buffer, msg->protocol_version);
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		rc = _unpack_job_info_list_msg((List *) &(msg->data),
+		rc = _unpack_job_info_list_msg((list_t **) &(msg->data),
 					       buffer, msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_LOCK:

@@ -46,7 +46,7 @@
 #include "src/common/xstring.h"
 #include "mysql_jobcomp_process.h"
 
-extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 
 	char *query = NULL;
@@ -61,7 +61,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	int i;
 	jobcomp_job_rec_t *job = NULL;
 	char time_str[256];
-	List job_list = list_create(jobcomp_destroy_job);
+	list_t *job_list = list_create(jobcomp_destroy_job);
 
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;

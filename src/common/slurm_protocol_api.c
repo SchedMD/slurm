@@ -1086,7 +1086,7 @@ endit:
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-List slurm_receive_msgs(int fd, int steps, int timeout)
+list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1096,7 +1096,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	slurm_msg_t msg;
 	buf_t *buffer;
 	ret_data_info_t *ret_data_info = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
@@ -1289,7 +1289,7 @@ total_return:
 
 }
 
-extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
+extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1299,7 +1299,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	slurm_msg_t msg;
 	buf_t *buffer;
 	ret_data_info_t *ret_data_info = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
@@ -2233,10 +2233,9 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-static List
-_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
+static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int steps = 0;
 
 	if (!req->forward.timeout) {
@@ -2603,9 +2602,9 @@ void slurm_send_msg_maybe(slurm_msg_t *req)
  *		    (if any) we forwarded the message to. List
  *		    containing type (ret_data_info_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
+list_t *slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	hostlist_t *hl = NULL;
 
 	if (!running_in_daemon()) {
@@ -2645,11 +2644,11 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
  *		    (if any) we forwarded the message to. List
  *		    containing type (ret_types_t).
  */
-List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
+list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
 	static uint16_t conn_timeout = NO_VAL16, tcp_timeout = 2;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	list_itr_t *itr;
@@ -2970,7 +2969,7 @@ extern int get_unit_type(char unit)
 extern int slurm_forward_data(
 	char **nodelist, char *address, uint32_t len, const char *data)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int temp_rc = 0, rc = 0;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;

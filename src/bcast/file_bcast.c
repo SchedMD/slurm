@@ -93,11 +93,11 @@ static int   _file_bcast(struct bcast_parameters *params,
 			 file_bcast_msg_t *bcast_msg,
 			 job_sbcast_cred_msg_t *sbcast_cred);
 static int   _file_state(struct bcast_parameters *params);
-static List _fill_in_excluded_paths(struct bcast_parameters *params);
+static list_t *_fill_in_excluded_paths(struct bcast_parameters *params);
 static int _find_subpath(void *x, void *key);
 static int _foreach_shared_object(void *x, void *y);
 static int   _get_job_info(struct bcast_parameters *params);
-static List _get_lib_paths(char *filename);
+static list_t *_get_lib_paths(char *filename);
 
 static int _file_state(struct bcast_parameters *params)
 {
@@ -168,7 +168,7 @@ static int _file_bcast(struct bcast_parameters *params,
 		       file_bcast_msg_t *bcast_msg,
 		       job_sbcast_cred_msg_t *sbcast_cred)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS, msg_rc;
@@ -424,9 +424,9 @@ static int _decompress_data_lz4(file_bcast_msg_t *req)
  * OUT: List of shared object direct and indirect dependencies.
  *      or NULL on error.
  */
-static List _get_lib_paths(char *filename)
+static list_t *_get_lib_paths(char *filename)
 {
-	List lib_paths = NULL;
+	list_t *lib_paths = NULL;
 	char **ldd_argv;
 	char *result = NULL;
 	char *lpath = NULL, *lpath_end = NULL;
@@ -560,10 +560,10 @@ static int _foreach_shared_object(void *x, void *y)
  * RET: List of excluded paths.
  * NOTE: Caller should free the returned list.
  */
-static List _fill_in_excluded_paths(struct bcast_parameters *params)
+static list_t *_fill_in_excluded_paths(struct bcast_parameters *params)
 {
 	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
-	List excl_paths = NULL;
+	list_t *excl_paths = NULL;
 
 	excl_paths = list_create(xfree_ptr);
 	if (!xstrcasecmp(params->exclude, "none"))
@@ -590,11 +590,11 @@ static List _fill_in_excluded_paths(struct bcast_parameters *params)
  * RET: SLURM_[ERROR|SUCCESS]
  */
 static int _bcast_shared_objects(struct bcast_parameters *params,
-				 List lib_paths)
+				 list_t *lib_paths)
 {
 	foreach_shared_object_t args =
 		{ .return_code = SLURM_SUCCESS };
-	List excl_paths = NULL;
+	list_t *excl_paths = NULL;
 	char *save_dst = params->dst_fname;
 	char *save_src = params->src_fname;
 
@@ -623,7 +623,7 @@ fini:
 
 extern int bcast_file(struct bcast_parameters *params)
 {
-	List lib_paths = NULL;
+	list_t *lib_paths = NULL;
 	int rc;
 
 	if ((rc = _file_state(params)) != SLURM_SUCCESS)

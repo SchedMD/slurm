@@ -38,7 +38,7 @@
 #include "src/common/xstring.h"
 
 extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
-			     uint32_t uid, List tres_list_in)
+			     uint32_t uid, list_t *tres_list_in)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -161,13 +161,13 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
-				slurmdb_tres_cond_t *tres_cond)
+extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
+				 slurmdb_tres_cond_t *tres_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List my_tres_list = NULL;
+	list_t *my_tres_list = NULL;
 	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;

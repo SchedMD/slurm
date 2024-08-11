@@ -126,7 +126,7 @@ typedef struct {
 	int opt_all_steps;	/* --allsteps */
 	char *opt_field_list;	/* --fields= */
 	int opt_help;		/* --help */
-	List opt_job_list;	/* --jobs */
+	list_t *opt_job_list;	/* --jobs */
 	int opt_noheader;	/* can only be cleared */
 	int opt_verbose;	/* --verbose */
 	bool pid_format;
@@ -134,13 +134,13 @@ typedef struct {
 	int units;		/* --units*/
 } sstat_parameters_t;
 
-extern List print_fields_list;
+extern list_t *print_fields_list;
 extern list_itr_t *print_fields_itr;
 extern print_field_t fields[];
 extern sstat_parameters_t params;
 extern int field_count;
 
-extern List jobs;
+extern list_t *jobs;
 
 /* print.c */
 void print_fields(slurmdb_step_rec_t *step);

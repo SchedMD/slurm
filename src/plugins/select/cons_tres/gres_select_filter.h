@@ -60,7 +60,7 @@
  * OUT near_gpus - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
-extern int gres_select_filter_remove_unusable(List sock_gres_list,
+extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 					      uint64_t avail_mem,
 					      uint16_t max_cpus,
 					      bool enforce_binding,
@@ -82,7 +82,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
  * tres_mc_ptr IN - job's multi-core options
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_select_filter_select_and_set(List *sock_gres_list,
+extern int gres_select_filter_select_and_set(list_t **sock_gres_list,
 					     job_record_t *job_ptr,
 					     gres_mc_data_t *tres_mc_ptr);
 

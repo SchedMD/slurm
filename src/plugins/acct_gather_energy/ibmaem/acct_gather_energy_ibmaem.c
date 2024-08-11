@@ -346,7 +346,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	return;
 }

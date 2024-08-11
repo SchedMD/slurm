@@ -125,13 +125,13 @@ typedef struct _launch_app_data
  * forward declaration of static funcs
  */
 static void  _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
-static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
+static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _setup_env_working_cluster(void);
-static void  _setup_job_env(srun_job_t *job, List srun_job_list,
-			    bool got_alloc);
+static void _setup_job_env(srun_job_t *job, list_t *srun_job_list,
+			   bool got_alloc);
 static void  _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 				bool got_alloc);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
@@ -170,7 +170,7 @@ int srun(int ac, char **av)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	bool got_alloc = false;
-	List srun_job_list = NULL;
+	list_t *srun_job_list = NULL;
 
 	slurm_init(NULL);
 	log_init(xbasename(av[0]), logopt, 0, NULL);
@@ -393,7 +393,7 @@ fini:	hostlist_destroy(in_hl);
 	xfree(out_tids);
 }
 
-static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
+static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
 {
 	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local = NULL;
@@ -737,7 +737,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	xfree(env);
 }
 
-static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
+static void _setup_job_env(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
 {
 	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local;

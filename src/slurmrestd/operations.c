@@ -50,7 +50,7 @@
 #include "src/slurmrestd/rest_auth.h"
 
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
-static List paths = NULL;
+static list_t *paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
 serializer_flags_t yaml_flags = SER_FLAGS_PRETTY;
 serializer_flags_t json_flags = SER_FLAGS_PRETTY;
@@ -317,7 +317,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 
 }
 
-static void _parse_http_accept_entry(char *entry, List l)
+static void _parse_http_accept_entry(char *entry, list_t *l)
 {
 	char *save_ptr = NULL;
 	char *token = NULL;
@@ -377,9 +377,9 @@ static void _http_accept_list_delete(void *x)
 	xfree(obj);
 }
 
-static List _parse_http_accept(const char *accept)
+static list_t *_parse_http_accept(const char *accept)
 {
-	List l = list_create(_http_accept_list_delete);
+	list_t *l = list_create(_http_accept_list_delete);
 	xassert(accept);
 	char *save_ptr = NULL;
 	char *token = NULL;
@@ -414,7 +414,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 	}
 
 	if (args->accept) {
-		List accept = _parse_http_accept(args->accept);
+		list_t *accept = _parse_http_accept(args->accept);
 		http_header_accept_t *ptr = NULL;
 		list_itr_t *itr = list_iterator_create(accept);
 		while ((ptr = list_next(itr))) {

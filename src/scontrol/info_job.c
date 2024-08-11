@@ -723,7 +723,7 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 static void
 _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 {
-	List steps;
+	list_t *steps;
 	list_itr_t *itr;
 	step_loc_t *stepd;
 	int count = 0;
@@ -778,7 +778,7 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 static void
 _list_pids_all_jobs(const char *node_name)
 {
-	List steps;
+	list_t *steps;
 	list_itr_t *itr;
 	step_loc_t *stepd;
 
@@ -837,7 +837,7 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 
 extern void scontrol_getent(const char *node_name)
 {
-	List steps = NULL;
+	list_t *steps = NULL;
 	list_itr_t *itr = NULL;
 	step_loc_t *stepd;
 	int fd;
@@ -898,7 +898,7 @@ extern void scontrol_getent(const char *node_name)
 
 extern void scontrol_gethost(const char *stepd_node, const char *node_name)
 {
-	List steps = NULL;
+	list_t *steps = NULL;
 	list_itr_t *itr = NULL;
 	step_loc_t *stepd;
 	int fd;

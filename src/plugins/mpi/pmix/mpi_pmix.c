@@ -396,10 +396,10 @@ extern s_p_hashtbl_t *mpi_p_conf_get(void)
 	return tbl;
 }
 
-extern List mpi_p_conf_get_printable(void)
+extern list_t *mpi_p_conf_get_printable(void)
 {
 	config_key_pair_t *key_pair;
-	List data = list_create(destroy_config_key_pair);
+	list_t *data = list_create(destroy_config_key_pair);
 
 	key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup("PMIxCliTmpDirBase");

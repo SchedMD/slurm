@@ -52,17 +52,17 @@ typedef openapi_ctxt_t ctxt_t;
 /* ------------ generic typedefs for slurmdbd queries --------------- */
 
 /* Generic typedef for the DB query functions that return a list */
-typedef List (*db_list_query_func_t)(void *db_conn, void *cond);
+typedef list_t *(*db_list_query_func_t)(void *db_conn, void *cond);
 /*
  * Generic typedef for the DB query functions that takes a list and returns an
  * rc if the query was successful.
  */
-typedef int (*db_rc_query_func_t)(void *db_conn, List list);
+typedef int (*db_rc_query_func_t)(void *db_conn, list_t *list);
 /*
  * Generic typedef for the DB modify functions that takes an object record and
  * returns an List if the query was successful or NULL on error
  */
-typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
+typedef list_t *(*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
 
 /* ------------ handlers for slurmdbd queries --------------- */
 
@@ -88,7 +88,7 @@ typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
  * IN ignore_empty_result - do not error/warn on empty results
  * RET SLURM_SUCCESS or error
  */
-extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
+extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name, const char *caller,
 				  bool ignore_empty_result);
@@ -109,7 +109,7 @@ extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
  * IN func_name - string of func name (for errors)
  * RET SLURM_SUCCESS or error
  */
-extern int db_query_rc_funcname(ctxt_t *ctxt, List list,
+extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 				db_rc_query_func_t func, const char *func_name,
 				const char *caller);
 

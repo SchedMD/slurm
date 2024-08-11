@@ -69,16 +69,16 @@ static pthread_cond_t agent_running_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t _agent_tid = 0;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
-static int  _tree_listen_read(eio_obj_t *obj, List objs);
+static int  _tree_listen_read(eio_obj_t *obj, list_t *objs);
 static struct io_operations tree_listen_ops = {
 .readable    = &_tree_listen_readable,
 .handle_read = &_tree_listen_read,
 };
 
 static bool _task_readable(eio_obj_t *obj);
-static int  _task_read(eio_obj_t *obj, List objs);
+static int  _task_read(eio_obj_t *obj, list_t *objs);
 /* static bool _task_writable(eio_obj_t *obj); */
-/* static int  _task_write(eio_obj_t *obj, List objs); */
+/* static int  _task_write(eio_obj_t *obj, list_t *objs); */
 static struct io_operations task_ops = {
 .readable    =  &_task_readable,
 .handle_read =  &_task_read,
@@ -157,8 +157,7 @@ _tree_listen_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int
-_tree_listen_read(eio_obj_t *obj, List objs)
+static int _tree_listen_read(eio_obj_t *obj, list_t *objs)
 {
 	int sd;
 	slurm_addr_t addr;
@@ -225,8 +224,7 @@ _task_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int
-_task_read(eio_obj_t *obj, List objs)
+static int _task_read(eio_obj_t *obj, list_t *objs)
 {
 	int rc, lrank;
 

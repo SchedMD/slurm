@@ -65,7 +65,7 @@ typedef struct {
 	uint32_t flags;
 	pthread_mutex_t lock;
 	char *pre_commit_query;
-	List update_list;
+	list_t *update_list;
 	int conn;
 	uint64_t wsrep_trx_fragment_size_orig;
 	char *wsrep_trx_fragment_unit_orig;

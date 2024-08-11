@@ -3345,10 +3345,10 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 /*
  * Attempt to allocate resources and begin file staging for pending jobs.
  */
-extern int bb_p_job_try_stage_in(List job_queue)
+extern int bb_p_job_try_stage_in(list_t *job_queue)
 {
 	bb_job_queue_rec_t *job_rec;
-	List job_candidates;
+	list_t *job_candidates;
 	list_itr_t *job_iter;
 	job_record_t *job_ptr;
 	bb_job_t *bb_job;

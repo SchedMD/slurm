@@ -592,7 +592,7 @@ static sock_gres_t *_build_sock_gres_basic(
 	return sock_gres;
 }
 
-static void _sock_gres_log(List sock_gres_list, char *node_name)
+static void _sock_gres_log(list_t *sock_gres_list, char *node_name)
 {
 	sock_gres_t *sock_gres;
 	list_itr_t *iter;
@@ -736,7 +736,7 @@ static int _foreach_restricted_gpu(void *x, void *arg)
 }
 
 static void _gres_limit_reserved_cores(
-	List job_gres_list, List node_gres_list, bitstr_t *core_bitmap,
+	list_t *job_gres_list, list_t *node_gres_list, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
 	uint32_t res_cores_per_gpu)
@@ -776,8 +776,8 @@ static void _gres_limit_reserved_cores(
 	bit_free(gpu_spec_cpy);
 }
 
-extern List gres_sock_list_create(
-	List job_gres_list, List node_gres_list,
+extern list_t *gres_sock_list_create(
+	list_t *job_gres_list, list_t *node_gres_list,
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
@@ -787,7 +787,7 @@ extern List gres_sock_list_create(
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
 	uint32_t res_cores_per_gpu, uint16_t cr_type)
 {
-	List sock_gres_list = NULL;
+	list_t *sock_gres_list = NULL;
 	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 	gres_job_state_t  *gres_js;

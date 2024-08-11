@@ -995,7 +995,7 @@ extern int fini(void)
  *
  * node_config (IN/OUT) pointer of node_config_load_t passed down
  */
-static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
+static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 {
 	char device_file[PATH_MAX];
 	char card_name[CARD_NAME_LEN];
@@ -1009,7 +1009,7 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	char *cpu_aff_mac_range = NULL;
 	int i;
 
-	List gres_list_system = list_create(destroy_gres_slurmd_conf);
+	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
 
 	/* Get all of device handles */
 	_oneapi_get_device_handles(all_devices, &gpu_num, true);
@@ -1120,11 +1120,11 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	xassert(node_config);
 
-	List gres_list_system = _get_system_gpu_list_oneapi(node_config);
+	list_t *gres_list_system = _get_system_gpu_list_oneapi(node_config);
 	if (!gres_list_system)
 		error("System GPU detection failed");
 

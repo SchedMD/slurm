@@ -82,9 +82,9 @@ typedef struct {
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 } config_record_t;
-extern List config_list;	/* list of config_record entries */
+extern list_t *config_list;	/* list of config_record entries */
 
-extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
+extern list_t *front_end_list;	/* list of slurm_conf_frontend_t entries */
 
 typedef struct node_record node_record_t;
 struct node_record {
@@ -124,7 +124,7 @@ struct node_record {
 	char *gres;			/* node's generic resources, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
-	List gres_list;			/* list of gres state info managed by
+	list_t *gres_list;		/* list of gres state info managed by
 					 * plugins */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */

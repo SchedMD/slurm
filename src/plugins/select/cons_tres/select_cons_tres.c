@@ -62,8 +62,8 @@
 #if defined (__APPLE__)
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
-extern List part_list __attribute__((weak_import));
-extern List job_list __attribute__((weak_import));
+extern list_t *part_list __attribute__((weak_import));
+extern list_t *job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
@@ -74,8 +74,8 @@ extern list_t *cluster_license_list __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
-List part_list;
-List job_list;
+list_t *part_list;
+list_t *job_list;
 int node_record_count;
 time_t last_node_update;
 bitstr_t *avail_node_bitmap;
@@ -247,7 +247,7 @@ extern int select_p_state_restore(char *dir_name)
  * src/slurmctld/read_config.c. See select_p_node_init for the
  * whole story.
  */
-extern int select_p_job_init(List job_list)
+extern int select_p_job_init(list_t *job_list)
 {
 	/* nothing to initialize for jobs */
 	return SLURM_SUCCESS;
@@ -371,7 +371,7 @@ extern int select_p_node_init(void)
  * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
  *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
  *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
- * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN preemptee_candidates - list of pointers to jobs which can be preempted.
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode==SELECT_MODE_TEST_ONLY or input pointer is NULL.
@@ -381,8 +381,8 @@ extern int select_p_node_init(void)
 extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
-			     List preemptee_candidates,
-			     List *preemptee_job_list,
+			     list_t *preemptee_candidates,
+			     list_t **preemptee_job_list,
 			     resv_exc_t *resv_exc_ptr)
 {
 	int rc;
@@ -663,7 +663,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	struct job_resources *job = job_ptr->job_resrcs;
 	part_res_record_t *p_ptr;
 	int i, n;
-	List gres_list;
+	list_t *gres_list;
 	bool old_job = false;
 
 	xassert(job_ptr);
@@ -945,7 +945,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, total_node_cores, efctv_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
-	List gres_list;
+	list_t *gres_list;
 
 	/*
 	 * only set this once when the last_node_update is newer than
@@ -1195,7 +1195,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t *tmp_32 = (uint32_t *) data;
-	List *tmp_list = (List *) data;
+	list_t **tmp_list = data;
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:

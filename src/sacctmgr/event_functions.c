@@ -84,7 +84,7 @@ static uint32_t _decode_node_state(char *val)
 	return NO_VAL;
 }
 
-static int _addto_state_char_list_internal(List char_list, char *name, void *x)
+static int _addto_state_char_list_internal(list_t *char_list, char *name, void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -103,7 +103,7 @@ static int _addto_state_char_list_internal(List char_list, char *name, void *x)
 	}
 }
 
-static int _addto_state_char_list(List char_list, char *names)
+static int _addto_state_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -140,7 +140,7 @@ static uint32_t _parse_cond_flags(const char *flags_str)
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_event_cond_t *event_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -173,7 +173,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!end || (!xstrncasecmp(argv[i], "Events",
 						  MAX(command_len, 1)))) {
 			list_itr_t *itr = NULL;
-			List tmp_list = list_create(xfree_ptr);
+			list_t *tmp_list = list_create(xfree_ptr);
 			char *temp = NULL;
 
 			if (slurm_addto_char_list(tmp_list,
@@ -319,7 +319,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_event_cond_t *event_cond =
 		xmalloc(sizeof(slurmdb_event_cond_t));
-	List event_list = NULL;
+	list_t *event_list = NULL;
 	slurmdb_event_rec_t *event = NULL;
 	int i = 0;
 	list_itr_t *itr = NULL;
@@ -328,8 +328,8 @@ extern int sacctmgr_list_event(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list;
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list;
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	/* If we don't have any arguments make sure we set up the
 	   time correctly for just the past day.

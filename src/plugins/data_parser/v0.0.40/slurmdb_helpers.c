@@ -55,13 +55,13 @@ typedef struct {
 } list_to_str_args_t;
 
 extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
-				  args_t *args, List *list,
+				  args_t *args, list_t **list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name,
 				  const char *func_caller_name)
 {
 	int rc;
-	List l;
+	list_t *l;
 
 	xassert(!*list);
 

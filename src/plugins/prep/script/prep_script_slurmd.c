@@ -71,10 +71,10 @@ static int _ef(const char *p, int errnum)
 	return error("prep_script_slurmd: glob: %s: %s", p, strerror(errno));
 }
 
-static List _script_list_create(const char *pattern)
+static list_t *_script_list_create(const char *pattern)
 {
 	glob_t gl;
-	List l = NULL;
+	list_t *l = NULL;
 	int rc;
 
 	if (!pattern)

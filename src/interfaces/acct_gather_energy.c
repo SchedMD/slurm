@@ -71,7 +71,7 @@ typedef struct slurm_acct_gather_energy_ops {
 				   int *full_options_cnt);
 	void (*conf_set)          (int context_id_in,
 				   s_p_hashtbl_t *tbl);
-	void (*conf_values)        (List *data);
+	void (*conf_values)        (list_t **data);
 } slurm_acct_gather_energy_ops_t;
 /*
  * These strings must be kept in the same order as the fields

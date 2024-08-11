@@ -68,7 +68,7 @@ typedef struct {
 /* based on sacctmgr_list_account() */
 static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 {
-	List acct_list = NULL;
+	list_t *acct_list = NULL;
 
 	(void) db_query_list(ctxt, &acct_list, slurmdb_accounts_get, acct_cond);
 	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list, ctxt);
@@ -177,7 +177,7 @@ static int _foreach_update_acct(void *x, void *arg)
 {
 	slurmdb_account_rec_t *acct = x;
 	ctxt_t *ctxt = arg;
-	List acct_list = NULL;
+	list_t *acct_list = NULL;
 	slurmdb_assoc_cond_t assoc_cond = {};
 	slurmdb_account_cond_t acct_cond = {
 		.assoc_cond = &assoc_cond,

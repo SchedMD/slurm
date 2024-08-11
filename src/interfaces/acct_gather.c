@@ -236,9 +236,9 @@ extern int acct_gather_conf_destroy(void)
 	return rc;
 }
 
-extern List acct_gather_conf_values(void)
+extern list_t *acct_gather_conf_values(void)
 {
-	List acct_list = list_create(destroy_config_key_pair);
+	list_t *acct_list = list_create(destroy_config_key_pair);
 
 	/* get acct_gather.conf in each plugin */
 	slurm_mutex_lock(&conf_mutex);

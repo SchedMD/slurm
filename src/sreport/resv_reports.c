@@ -58,11 +58,11 @@ enum {
 };
 
 
-static List print_fields_list = NULL; /* types are of print_field_t */
+static list_t *print_fields_list = NULL; /* types are of print_field_t */
 
 static int _set_resv_cond(int *start, int argc, char **argv,
 			  slurmdb_reservation_cond_t *resv_cond,
-			  List format_list)
+			  list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -172,7 +172,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 	return set;
 }
 
-static int _setup_print_fields_list(List format_list)
+static int _setup_print_fields_list(list_t *format_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -318,13 +318,13 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static List _get_resv_list(int argc, char **argv,
-			   char *report_name, List format_list)
+static list_t *_get_resv_list(int argc, char **argv,
+			      char *report_name, list_t *format_list)
 {
 	slurmdb_reservation_cond_t *resv_cond =
 		xmalloc(sizeof(slurmdb_reservation_cond_t));
 	int i = 0;
-	List resv_list = NULL;
+	list_t *resv_list = NULL;
 
 	resv_cond->with_usage = 1;
 
@@ -508,10 +508,10 @@ extern int resv_utilization(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	list_itr_t *resv_itr = NULL;
 	slurmdb_reservation_rec_t *resv_ptr = NULL;
-	List resv_list = NULL;
-	List req_tres_list = tres_list;
+	list_t *resv_list = NULL;
+	list_t *req_tres_list = tres_list;
 
-	List format_list = list_create(xfree_ptr);
+	list_t *format_list = list_create(xfree_ptr);
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -546,7 +546,7 @@ extern int resv_utilization(int argc, char **argv)
 
 	resv_itr = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(resv_itr))) {
-		List resv_tres_list = NULL;
+		list_t *resv_tres_list = NULL;
 		list_itr_t *tres_itr;
 		slurmdb_tres_rec_t *resv_tres, *req_tres;
 

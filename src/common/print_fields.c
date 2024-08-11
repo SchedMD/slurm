@@ -62,7 +62,7 @@ extern void destroy_print_field(void *object)
 	}
 }
 
-extern void print_fields_header(List print_fields_list)
+extern void print_fields_header(list_t *print_fields_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -421,10 +421,10 @@ extern void print_fields_char_list(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char *print_this = NULL;
-	List value = NULL;
+	list_t *value = NULL;
 
 	if (input)
-		value = *(List *) input;
+		value = *(list_t **) input;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)

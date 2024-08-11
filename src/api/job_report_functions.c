@@ -60,7 +60,7 @@ static int _sort_group_asc(void *v1, void *v2)
 }
 
 static void _check_create_grouping(
-	List cluster_list, list_itr_t *group_itr,
+	list_t *cluster_list, list_itr_t *group_itr,
 	char *cluster, char *name, void *object,
 	bool individual, bool wckey_type)
 {
@@ -132,8 +132,8 @@ static void _check_create_grouping(
 }
 
 /* FIXME: This only works for CPUS now */
-static List _process_grouped_report(
-	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
+static list_t *_process_grouped_report(
+	void *db_conn, slurmdb_job_cond_t *job_cond, list_t *grouping_list,
 	bool flat_view, bool wckey_type, bool both, bool acct_as_parent)
 {
 	int exit_code = 0;
@@ -150,11 +150,11 @@ static List _process_grouped_report(
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;
 
-	List job_list = NULL;
-	List cluster_list = NULL;
-	List object_list = NULL, object2_list = NULL;
+	list_t *job_list = NULL;
+	list_t *cluster_list = NULL;
+	list_t *object_list = NULL, *object2_list = NULL;
 
-	List tmp_acct_list = NULL;
+	list_t *tmp_acct_list = NULL;
 	bool destroy_job_cond = 0;
 	bool destroy_grouping_list = 0;
 	bool individual = 0;
@@ -542,24 +542,24 @@ end_it:
 	return cluster_list;
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_account(
-	void *db_conn,  slurmdb_job_cond_t *job_cond, List grouping_list,
+extern list_t *slurmdb_report_job_sizes_grouped_by_account(
+	void *db_conn, slurmdb_job_cond_t *job_cond, list_t *grouping_list,
 	bool flat_view, bool acct_as_parent)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
 				       flat_view, 0, 0, acct_as_parent);
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
-	slurmdb_job_cond_t *job_cond, List grouping_list)
+extern list_t *slurmdb_report_job_sizes_grouped_by_wckey(
+	void *db_conn, slurmdb_job_cond_t *job_cond, list_t *grouping_list)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
 				       0, 1, 0, false);
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_account_then_wckey(
-	void *db_conn, slurmdb_job_cond_t *job_cond,
-	List grouping_list, bool flat_view, bool acct_as_parent)
+extern list_t *slurmdb_report_job_sizes_grouped_by_account_then_wckey(
+	void *db_conn, slurmdb_job_cond_t *job_cond, list_t *grouping_list,
+	bool flat_view, bool acct_as_parent)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
 				       flat_view, 0, 1, acct_as_parent);

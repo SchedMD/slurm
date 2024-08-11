@@ -5742,7 +5742,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	 * cluster. Validation is still performed on slurmctld.
 	 */
 	if (!opt_local->clusters) {
-		List tmp_gres_list = NULL;
+		list_t *tmp_gres_list = NULL;
 		gres_job_state_validate_t gres_js_val = {
 			.cpus_per_tres = job_desc->cpus_per_tres,
 			.mem_per_tres = job_desc->mem_per_tres,

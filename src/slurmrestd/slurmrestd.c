@@ -109,7 +109,7 @@ static int debug_increase = 0;
 /* detected run mode */
 static run_mode_t run_mode = { 0 };
 /* Listen string */
-static List socket_listen = NULL;
+static list_t *socket_listen = NULL;
 static char *slurm_conf_filename = NULL;
 /* Number of requested threads */
 static int thread_count = 20;

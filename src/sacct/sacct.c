@@ -163,7 +163,7 @@ print_field_t fields[] = {
 	{0,  NULL, NULL, 0}
 };
 
-List jobs = NULL;
+list_t *jobs = NULL;
 
 int main(int argc, char **argv)
 {

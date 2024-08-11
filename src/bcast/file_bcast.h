@@ -78,7 +78,7 @@ typedef struct {
 	uint32_t bcast_sent_cnt;		/* succeeded bcast count */
 	int bcast_total_cnt;			/* libs in list count */
 	struct bcast_parameters *params;	/* bcast parameters */
-	List excluded_paths;			/* excluded paths list */
+	list_t *excluded_paths;			/* excluded paths list */
 	int return_code;			/* bcast_file() rc */
 } foreach_shared_object_t;
 

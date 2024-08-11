@@ -400,7 +400,7 @@ extern void acct_gather_interconnect_p_conf_options(
 	return;
 }
 
-extern void acct_gather_interconnect_p_conf_values(List *data)
+extern void acct_gather_interconnect_p_conf_values(list_t **data)
 {
 	xassert(*data);
 	add_key_pair(*data, "InterconnectOFEDPort", "%u", ofed_conf.port);

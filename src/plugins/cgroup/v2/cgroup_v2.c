@@ -71,7 +71,7 @@ const char plugin_type[] = "cgroup/v2";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Internal cgroup structs */
-static List task_list;
+static list_t *task_list;
 static uint16_t step_active_cnt;
 static xcgroup_ns_t int_cg_ns;
 static xcgroup_t int_cg[CG_LEVEL_CNT];

@@ -60,7 +60,7 @@
 #include "src/common/print_fields.h"
 #include "src/squeue/squeue.h"
 
-static void	_combine_pending_array_tasks(List l);
+static void _combine_pending_array_tasks(list_t *l);
 static bool _filter_job(job_info_t *job);
 static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
@@ -142,7 +142,7 @@ extern void print_jobs_array(job_info_t *jobs, int size, list_t *format)
 {
 	squeue_job_rec_t *job_rec_ptr;
 	int i;
-	List l;
+	list_t *l;
 
 	l = list_create(_job_list_del);
 	if (!params.no_header)
@@ -191,7 +191,7 @@ extern void print_steps_array(job_step_info_t *steps, int size, list_t *format)
 
 	if (size > 0) {
 		int i;
-		List step_list;
+		list_t *step_list;
 
 		step_list = list_create(NULL);
 
@@ -254,7 +254,7 @@ static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)
 /* Combine pending tasks of a job array into a single record.
  * The tasks may have been split into separate job records because they were
  * modified or started, but the records can be re-combined if pending. */
-static void _combine_pending_array_tasks(List job_list)
+static void _combine_pending_array_tasks(list_t *job_list)
 {
 	squeue_job_rec_t *job_rec_ptr, *task_rec_ptr;
 	list_itr_t *job_iterator, *task_iterator;
@@ -464,7 +464,7 @@ int _print_time(time_t t, int level, int width, bool right)
 /*****************************************************************************
  * Job Print Functions
  *****************************************************************************/
-static int _print_one_job_from_format(job_info_t * job, List list)
+static int _print_one_job_from_format(job_info_t *job, list_t *list)
 {
 	list_itr_t *iter = list_iterator_create(list);
 	job_format_t *current;
@@ -487,7 +487,7 @@ static int _print_job_from_format(void *x, void *arg)
 	int i, i_first, i_last;
 	bitstr_t *bitmap;
 	squeue_job_rec_t *job_rec_ptr = (squeue_job_rec_t *) x;
-	List list = (List) arg;
+	list_t *list = arg;
 
 	if (!job_rec_ptr) {
 		_print_one_job_from_format(NULL, list);
@@ -530,9 +530,8 @@ static int _print_job_from_format(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-int
-job_format_add_function(List list, int width, bool right, char *suffix,
-			int (*function) (job_info_t *, int, bool, char*))
+int job_format_add_function(list_t *list, int width, bool right, char *suffix,
+			    int (*function)(job_info_t *, int, bool, char *))
 {
 	job_format_t *tmp = (job_format_t *) xmalloc(sizeof(job_format_t));
 	tmp->function = function;
@@ -2456,7 +2455,7 @@ int _print_job_mcs_label(job_info_t * job, int width,
 static int _print_step_from_format(void *x, void *arg)
 {
 	job_step_info_t *job_step = (job_step_info_t *) x;
-	List list = (List) arg;
+	list_t *list = arg;
 	list_itr_t *i = list_iterator_create(list);
 	step_format_t *current;
 
@@ -2473,10 +2472,9 @@ static int _print_step_from_format(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-int
-step_format_add_function(List list, int width, bool right_justify,
-			 char* suffix,
-			 int (*function) (job_step_info_t *, int, bool, char*))
+int step_format_add_function(
+	list_t *list, int width, bool right_justify, char *suffix,
+	int (*function) (job_step_info_t *, int, bool, char *))
 {
 	step_format_t *tmp =
 	    (step_format_t *) xmalloc(sizeof(step_format_t));

@@ -83,7 +83,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	return NULL;
 }

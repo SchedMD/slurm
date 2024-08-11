@@ -1541,7 +1541,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	verbose("%s loaded", plugin_name);
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	xassert(*data);
 

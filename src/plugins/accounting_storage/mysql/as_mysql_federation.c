@@ -128,7 +128,7 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
  * IN: exceptions - list of clusters to not remove.
  */
 static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
-					 const char *fed, List exceptions)
+					 const char *fed, list_t *exceptions)
 {
 	int   rc    = SLURM_SUCCESS;
 	char *query = NULL;
@@ -166,7 +166,7 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
+static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, list_t *clusters)
 {
 	int   rc    = SLURM_SUCCESS;
 	char *query = NULL;
@@ -196,7 +196,7 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 	return rc;
 }
 
-static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, List clusters,
+static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, list_t *clusters,
 				const char *fed)
 {
 	int   rc      = SLURM_SUCCESS;
@@ -254,11 +254,11 @@ end_it:
 
 static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
 					  const char *federation,
-					  List cluster_list)
+					  list_t *cluster_list)
 {
 	int  rc       = SLURM_SUCCESS;
-	List add_list = NULL;
-	List rem_list = NULL;
+	list_t *add_list = NULL;
+	list_t *rem_list = NULL;
 	list_itr_t *itr = NULL;
 	bool clear_clusters = false;
 	slurmdb_cluster_rec_t *tmp_cluster = NULL;
@@ -309,7 +309,7 @@ end_it:
 }
 
 extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
-				    List federation_list)
+				    list_t *federation_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -422,13 +422,14 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern List as_mysql_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
-				     slurmdb_federation_cond_t *federation_cond)
+extern list_t *as_mysql_get_federations(
+	mysql_conn_t *mysql_conn, uid_t uid,
+	slurmdb_federation_cond_t *federation_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List federation_list = NULL;
+	list_t *federation_list = NULL;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -473,7 +474,7 @@ empty:
 
 	while ((row = mysql_fetch_row(result))) {
  		slurmdb_cluster_cond_t clus_cond;
- 		List tmp_list = NULL;
+		list_t *tmp_list = NULL;
  		fed = xmalloc(sizeof(slurmdb_federation_rec_t));
  		list_append(federation_list, fed);
 
@@ -498,12 +499,12 @@ empty:
 	return federation_list;
 }
 
-extern List as_mysql_modify_federations(
+extern list_t *as_mysql_modify_federations(
 				mysql_conn_t *mysql_conn, uint32_t uid,
 				slurmdb_federation_cond_t *fed_cond,
 				slurmdb_federation_rec_t *fed)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	int req_inx = 0;
 	char *object = NULL;
@@ -631,10 +632,11 @@ extern List as_mysql_modify_federations(
 	return ret_list;
 }
 
-extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_federation_cond_t *fed_cond)
+extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
+					   uint32_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
