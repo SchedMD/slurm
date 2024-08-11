@@ -49,7 +49,6 @@
 
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
-typedef struct xlist *List;
 typedef struct xlist list_t;
 
 /*
