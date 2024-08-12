@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     primary when running with a JobComp plugin.
  -- Enable --json/--yaml=v0.0.39 options on client commands to dump data using
     data_parser/v0.0.39 instead or outputting nothing.
+ -- switch/hpe_slingshot - Fix issue that could result in a 0 length state file.
 
 * Changes in Slurm 24.05.2
 ==========================
