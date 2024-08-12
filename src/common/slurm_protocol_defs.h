@@ -230,6 +230,11 @@ extern __thread bool drop_priv;
 typedef struct job_record job_record_t;
 #endif
 
+/*
+ * Prototype for conmgr connection w/o including conmgr.h
+ */
+typedef struct conmgr_fd_s conmgr_fd_t;
+
 /*****************************************************************************\
  * core api configuration struct
 \*****************************************************************************/
@@ -316,6 +321,7 @@ typedef struct slurm_msg {
 				 * message so that it is handled correctly. */
 	int conn_fd; /* Only used when the message isn't on a persistent
 		      * connection. */
+	conmgr_fd_t *conmgr_fd; /* msg originates from conmgr connection. */
 	void *data;
 	uint16_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.

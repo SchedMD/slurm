@@ -2603,7 +2603,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * Just reply now and send a separate kill job request if the
 	 * prolog or launch fail. */
 	replied = true;
-	if (slurm_send_rc_msg(msg, rc) < 1) {
+	if (slurm_send_rc_msg(msg, rc)) {
 		/* The slurmctld is no longer waiting for a reply.
 		 * This typically indicates that the slurmd was
 		 * blocked from memory and/or CPUs and the slurmctld
@@ -2734,7 +2734,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 done:
 	if (!replied) {
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (slurm_send_rc_msg(msg, rc)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld

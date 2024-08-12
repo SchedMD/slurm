@@ -263,16 +263,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	case SRUN_PING:
 	{
 		/* if conmgr is alive then always respond success */
-		slurm_msg_t resp_msg;
-		return_code_msg_t rc_msg = {
-			.return_code = SLURM_SUCCESS,
-		};
-
-		response_init(&resp_msg, msg, RESPONSE_SLURM_RC, &rc_msg);
-
-		rc = conmgr_queue_write_msg(con, &resp_msg);
-		/* nothing to xfree() */
-
+		rc = slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		debug("%s:[%s] srun RPC PING has been PONGED",
 		      __func__, conmgr_fd_get_name(con));
 		break;

@@ -388,8 +388,18 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
  * the function
 \**********************************************************************/
 
-extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
-			  uint16_t msg_type, void *data);
+/*
+ * Send message in response to a source message
+ *
+ * Handles creating response slurm_msg_t and sending based on source_msg.
+ *
+ * IN source_msg - Message to send response about
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+			     void *data);
 
 /* slurm_send_rc_msg
  * given the original request message this function sends a
@@ -503,14 +513,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 
 /* DO NOT USE THIS. See comment in slurm_protocol_api.c for further info. */
 extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
-
-/*
- * slurm_send_msg_maybe
- * opens a connection, sends a message across while ignoring any errors,
- * then closes the connection
- * IN request_msg	- slurm_msg request
- */
-extern void slurm_send_msg_maybe(slurm_msg_t *request_msg);
 
 /* Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.

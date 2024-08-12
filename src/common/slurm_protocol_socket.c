@@ -249,9 +249,12 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		if (bytes_sent < 0) {
  			if (errno == EINTR)
 				continue;
-			debug("%s at %d of %zu, send error: %s",
-			      __func__, tot_bytes_sent, size, strerror(errno));
- 			if (errno == EAGAIN) {	/* poll() lied to us */
+
+			log_flag(NET, "%s: [fd:%d] writev() sent %zd/%zu bytes failed: %m",
+				 __func__, fd, bytes_sent, size);
+
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				/* poll() lied to us */
 				usleep(10000);
 				continue;
 			}
@@ -264,15 +267,18 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			 * If driver false reports POLLIN but then does not
 			 * provide any output: try poll() again.
 			 */
-			log_flag(NET, "send() sent zero bytes out of %d/%zu",
-				 tot_bytes_sent, size);
+			log_flag(NET, "%s: [fd:%d] writev() sent zero bytes out of %d/%zu",
+				 __func__, fd, tot_bytes_sent, size);
 			continue;
 		}
 
 		tot_bytes_sent += bytes_sent;
 
-		if (tot_bytes_sent >= size)
+		if (tot_bytes_sent >= size) {
+			log_flag(NET, "%s: [fd:%d] writev() completed sending %d/%zu bytes",
+				 __func__, fd, tot_bytes_sent, size);
 			break;
+		}
 
 		/* partial write, need to adjust iovec before next call */
 		for (int i = 0; i < iovcnt; i++) {
