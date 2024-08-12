@@ -1033,6 +1033,7 @@ enable_x11
 enable_selinux
 with_rdkafka
 with_s2n
+enable_cgroupv2
 with_bpf
 enable_sview
 enable_glibtest
@@ -1740,6 +1741,7 @@ Optional Features:
                           environment without .login
   --disable-x11           disable internal X11 support
   --enable-selinux        enable internal SELinux support
+  --enable-cgroupv2       enable cgroupv2 support [default=auto]
   --disable-sview         disable sview support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
@@ -24873,6 +24875,18 @@ fi
 
 
 
+  # Check whether --enable-cgroupv2 was given.
+if test ${enable_cgroupv2+y}
+then :
+  enableval=$enable_cgroupv2;  case "$enableval" in
+        yes) x_ac_cgroupv2=yes ;;
+         no) x_ac_cgroupv2=no ;;
+          *) as_fn_error $? "bad value \"$enableval\" for --enable-cgroupv2" "$LINENO" 5
+      esac
+
+fi
+
+
   case ${host_os} in
   darwin* | freebsd* | netbsd* )
     with_cgroup=no
@@ -24901,6 +24915,11 @@ fi
 
 printf "%s\n" "#define WITH_CGROUP 1" >>confdefs.h
 
+  else
+    if test x$x_ac_cgroupv2 = xyes; then
+      as_fn_error $? "Cgroupv2 not supported in this system" "$LINENO" 5
+    fi
+    x_ac_cgroupv2=no
   fi
 
 
@@ -24918,9 +24937,13 @@ fi
 fi
 
 
-  if test "x$with_bpf" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for bpf disabled" >&5
+  if test "x$with_bpf" = xno || test "x$x_ac_cgroupv2" = xno; then
+    if test "x$x_ac_cgroupv2" = "xyes"; then
+      as_fn_error $? "support for bpf disabled" "$LINENO" 5
+    else
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for bpf disabled" >&5
 printf "%s\n" "$as_me: support for bpf disabled" >&6;}
+    fi
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bpf installation" >&5
 printf %s "checking for bpf installation... " >&6; }
@@ -24943,15 +24966,14 @@ fi
 printf "%s\n" "$x_ac_cv_bpf_dir" >&6; }
 
     if test -z "$x_ac_cv_bpf_dir"; then
-      if test -z "$with_bpf"; then
+      if test -z "$with_bpf" && test "x$x_ac_cgroupv2" != "xyes"; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate bpf header" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate bpf header" >&2;}
       else
         as_fn_error $? "unable to locate bpf header" "$LINENO" 5
       fi
     else
-      #Check for bpf defines existence added after original file creation
-      #in linux kernel release 3.18
+      #Check for bpf defines existence added in kernel 5.7
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <linux/bpf.h>
@@ -24977,10 +24999,20 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+      if test "x$ac_bpf_define_presence" = "xyes"; then
 
 printf "%s\n" "#define HAVE_BPF 1" >>confdefs.h
 
-      BPF_CPPFLAGS="-I$x_ac_cv_bpf_dir/include"
+        BPF_CPPFLAGS="-I$x_ac_cv_bpf_dir/include"
+      else
+        if test "x$x_ac_cgroupv2" = "xyes"; then
+          as_fn_error $? "unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" "$LINENO" 5
+	else
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" >&5
+printf "%s\n" "$as_me: WARNING: unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" >&2;}
+	fi
+	BPF_CPPFLAGS=""
+      fi
     fi
 
 
@@ -24996,6 +25028,7 @@ fi
 
 
 
+  if test "x$x_ac_cgroupv2" != "xno"; then
 
 pkg_failed=no
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for dbus-1 >= 1.11.16" >&5
@@ -25067,7 +25100,7 @@ else
 printf "%s\n" "yes" >&6; }
         x_ac_have_dbus="yes"
 fi
-        if test "x$x_ac_have_dbus" = "xyes"; then
+     if test "x$x_ac_have_dbus" = "xyes"; then
   WITH_DBUS_TRUE=
   WITH_DBUS_FALSE='#'
 else
@@ -25075,10 +25108,27 @@ else
   WITH_DBUS_FALSE=
 fi
 
-       if test "x$x_ac_have_dbus" = "xno"; then
-          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate dbus-1 development headers >= 1.11.16" >&5
+    if test "x$x_ac_have_dbus" = "xno"; then
+       if test "x$x_ac_cgroupv2" = "xdefault"; then
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate dbus-1 development headers >= 1.11.16" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate dbus-1 development headers >= 1.11.16" >&2;}
+       elif test "x$x_ac_cgroupv2" = "xyes"; then
+         as_fn_error $? "unable to locate dbus-1 development headers >= 1.11.16" "$LINENO" 5
        fi
+    fi
+  else
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Skipping dbus check as cgroupv2 is disabled" >&5
+printf "%s\n" "$as_me: Skipping dbus check as cgroupv2 is disabled" >&6;}
+    x_ac_have_dbus="no"
+     if test "x$x_ac_have_dbus" = "xyes"; then
+  WITH_DBUS_TRUE=
+  WITH_DBUS_FALSE='#'
+else
+  WITH_DBUS_TRUE='#'
+  WITH_DBUS_FALSE=
+fi
+
+  fi
 
 
 #
@@ -28071,6 +28121,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BPF_TRUE}" && test -z "${WITH_BPF_FALSE}"; then
   as_fn_error $? "conditional \"WITH_BPF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_DBUS_TRUE}" && test -z "${WITH_DBUS_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_DBUS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_DBUS_TRUE}" && test -z "${WITH_DBUS_FALSE}"; then
