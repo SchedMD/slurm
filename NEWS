@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Fix memory leak when using RestrictedCoresPerGPU.
  -- Fix allowing access to reservations without MaxStartDelay set.
  -- Fix regression introduced in 24.05.0rc1 breaking srun --send-libs parsing.
+ -- Fix slurmd vsize memory leak when using job submission/allocation commands
+    that implicitly or explicitly use --get-user-env.
 
 * Changes in Slurm 24.05.2
 ==========================
