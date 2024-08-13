@@ -134,7 +134,7 @@ proc sreport_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster\\|" {
+			-re "500-999 CPUs\\|>= 1000 CPUs\\|Total Count\\|% of cluster\\|" {
 				if {$debug} {log_debug "Match6"}
 				incr matches
 				exp_continue
@@ -166,7 +166,7 @@ proc sreport_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster" {
+			-re "500-999 CPUs\\|>= 1000 CPUs\\|Total Count\\|% of cluster" {
 				if {$debug} {log_debug "Match8"}
 				incr matches
 				exp_continue
