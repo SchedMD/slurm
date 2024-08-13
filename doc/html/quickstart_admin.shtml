@@ -446,7 +446,7 @@ synchronized throughout the cluster, usually done by NTP.</p>
 <a href="authentication.html#slurm">slurm</a>, an internal authentication
 plugin. This plugin has similar requirements to MUNGE, requiring a key file
 shared to all Slurm daemons. The auth/slurm plugin requires installation of the
-jwt pacakge.</p>
+jwt package.</p>
 <p>MUNGE is currently the default and recommended option.
 The configure script in the top-level directory of this distribution will
 determine which authentication plugins may be built.
