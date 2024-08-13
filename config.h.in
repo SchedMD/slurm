@@ -55,6 +55,9 @@
 /* Define to 1 if you have the `eaccess' function. */
 #undef HAVE_EACCESS
 
+/* Define to 1 if we have epoll(7) support */
+#undef HAVE_EPOLL
+
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
