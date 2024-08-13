@@ -443,6 +443,8 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
+	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+
 	/*
 	 * This must happen before we spawn any threads
 	* which are not designed to handle them
@@ -470,6 +472,8 @@ int main(int argc, char **argv)
 
 	/* open ports must happen after become_slurm_user() */
 	 _open_ports();
+
+	conmgr_run(false);
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
@@ -928,8 +932,11 @@ int main(int argc, char **argv)
 }
 #endif
 
+	conmgr_request_shutdown();
+
 	_close_ports();
 
+	conmgr_fini();
 	log_fini();
 	sched_log_fini();
 
