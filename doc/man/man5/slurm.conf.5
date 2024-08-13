@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "July 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6027,6 +6027,7 @@ session     required      pam_unix.so
 .br
 For sites configuring PAM with a general configuration file, the appropriate
 lines (see above), where \fBslurm\fR is the service\-name, should be added.
+See <https://slurm.schedmd.com/pam_slurm_adopt.html> for more details.
 
 \fBNOTE\fR: UsePAM option has nothing to do with the
 \fBcontribs/pam/pam_slurm\fR and/or \fBcontribs/pam_slurm_adopt\fR modules. So
