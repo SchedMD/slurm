@@ -3155,12 +3155,8 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 			msg_to_slurmd(REQUEST_SHUTDOWN);
 			unlock_slurmctld(node_read_lock);
 		}
-		if (slurmctld_config.thread_id_sig)	/* signal clean-up */
-			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
-		else {
-			error("thread_id_sig undefined, hard shutdown");
-			slurmctld_shutdown();
-		}
+		/* signal clean-up */
+		pthread_kill(pthread_self(), SIGTERM);
 	}
 
 	if (msg->msg_type == REQUEST_CONTROL) {

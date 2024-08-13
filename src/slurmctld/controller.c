@@ -885,7 +885,6 @@ int main(int argc, char **argv)
 		slurm_cond_signal(&purge_thread_cond); /* wake up last time */
 		slurm_mutex_unlock(&purge_thread_lock);
 		slurm_thread_join(slurmctld_config.thread_id_purge_files);
-		slurm_thread_join(slurmctld_config.thread_id_sig);
 		slurm_thread_join(slurmctld_config.thread_id_save);
 		slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 		slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
@@ -1145,7 +1144,6 @@ static void  _init_config(void)
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
-	slurmctld_config.thread_id_sig     = (pthread_t) 0;
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
@@ -1295,8 +1293,7 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);
 
-	if (slurmctld_config.thread_id_sig)
-		pthread_kill(slurmctld_config.thread_id_sig, SIGHUP);
+	pthread_kill(pthread_self(), SIGHUP);
 
 	if (!daemonize && !under_systemd) {
 		/*

@@ -153,7 +153,6 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_acct_update;
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;
-	pthread_t thread_id_sig;
 	pthread_t thread_id_purge_files;
 	pthread_t thread_id_rpc;
 } slurmctld_config_t;

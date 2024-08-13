@@ -262,7 +262,6 @@ void run_backup(void)
 			        slurm_conf.slurmctld_pidfile);
 
 		info("BackupController terminating");
-		slurm_thread_join(slurmctld_config.thread_id_sig);
 		log_fini();
 		if (dump_core)
 			abort();
@@ -280,8 +279,7 @@ void run_backup(void)
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
-	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
-	slurm_thread_join(slurmctld_config.thread_id_sig);
+	pthread_kill(pthread_self(), SIGTERM);
 	slurm_thread_join(slurmctld_config.thread_id_rpc);
 
 	/*
@@ -450,7 +448,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
 			info("Performing background RPC: REQUEST_SHUTDOWN");
-			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
+			pthread_kill(pthread_self(), SIGTERM);
 		} else if (super_user &&
 			   (msg->msg_type == REQUEST_TAKEOVER)) {
 			info("Performing background RPC: REQUEST_TAKEOVER");
