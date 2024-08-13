@@ -5992,7 +5992,7 @@ static int _merge_generic_data(
 			if (over_list[i].plugin_id != gres_state->plugin_id)
 				continue;
 			if (generic_gres_data == gres_state->gres_data) {
-				list_remove(iter);
+				list_delete_item(iter);
 				continue;
 			}
 
