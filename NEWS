@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix unnecessary message protocol downgrade for unregistered nodes.
  -- Fix unnecessarily packing alias addrs when terminating jobs with a mix of
     non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
+ -- accounting_storage/mysql - Fix issue when deleting a qos that could remove
+    too many commas from the qos and/or delta_qos fields of the assoc table.
 
 * Changes in Slurm 24.05.2
 ==========================
