@@ -722,4 +722,15 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 				       const char *func_name,
 				       void *func_arg);
 
+#define CONMGR_PARAM_THREADS "CONMGR_THREADS="
+#define CONMGR_PARAM_MAX_CONN "CONMGR_MAX_CONNECTIONS="
+
+/*
+ * Apply configuration parameters
+ * IN params - CSV string with parameters for conmgr.
+ *	See CONMGR_PARAM_* for possible parameters.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_apply_params(const char *params);
+
 #endif /* _CONMGR_H */
