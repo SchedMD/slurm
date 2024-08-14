@@ -817,7 +817,7 @@ extern int data_parser_dump_cli_stdout_v39(data_parser_type_t type, void *obj,
 	data_parser_t *parser = NULL;
 	data_parser_t *meta_parser = NULL;
 	char *out = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	if (!(parser = data_parser_cli_parser(
 			SLURM_DATA_PARSER_VERSION_DEPRECATED, ctxt))) {
