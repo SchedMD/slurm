@@ -164,7 +164,7 @@ static struct pctl_s {
 
 static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		    const char *caller);
-extern void _unlink_fd(int fd, const char *con_name, const char *caller);
+static void _unlink_fd(int fd, const char *con_name, const char *caller);
 
 extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
 {
@@ -414,7 +414,7 @@ extern void pollctl_relink_fd(int fd, pollctl_fd_type_t type,
 }
 
 /* caller must hold pctl.mutex */
-extern void _unlink_fd(int fd, const char *con_name, const char *caller)
+static void _unlink_fd(int fd, const char *con_name, const char *caller)
 {
 	_check_pctl_magic();
 
