@@ -35,6 +35,7 @@ COMMAND CHANGES (see man pages for details)
 
 API CHANGES
 ===========
+ -- Remove burst_buffer/lua call slurm.job_info_to_string().
 
 SLURMRESTD CHANGES
 ==================
