@@ -199,6 +199,15 @@ typedef struct {
 	const slurm_selected_step_t *filter;
 } for_each_by_job_id_args_t;
 
+typedef struct {
+	uint32_t error_code;
+	uint32_t max_nodes;
+	uint32_t min_nodes;
+	part_record_t *part_ptr;
+	uid_t submit_uid;
+	uint32_t time_limit;
+} qos_part_check_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -6208,6 +6217,56 @@ static int _alt_part_test(part_record_t *part_ptr, part_record_t **part_ptr_new)
 	return SLURM_SUCCESS;
 }
 
+static int _qos_part_check(void *object, void *arg)
+{
+	slurmdb_qos_rec_t *qos_ptr = object;
+	qos_part_check_t *qos_part_check = arg;
+	part_record_t *part_ptr = qos_part_check->part_ptr;
+
+	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (qos_part_check->min_nodes != NO_VAL) &&
+	    (qos_part_check->min_nodes < part_ptr->min_nodes) &&
+	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))) {
+		debug2("%s: Job requested for nodes (%u) smaller than partition %s(%u) min nodes",
+		       __func__, qos_part_check->min_nodes,
+		       part_ptr->name, part_ptr->min_nodes);
+		qos_part_check->error_code = ESLURM_INVALID_NODE_COUNT;
+		return -1;
+	}
+
+	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (qos_part_check->max_nodes != NO_VAL) &&
+	    (qos_part_check->max_nodes > part_ptr->max_nodes) &&
+	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))) {
+		debug2("%s: Job requested for nodes (%u) greater than partition %s(%u) max nodes",
+		       __func__, qos_part_check->max_nodes,
+		       part_ptr->name, part_ptr->max_nodes);
+		qos_part_check->error_code = ESLURM_INVALID_NODE_COUNT;
+		return -1;
+	}
+
+	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (qos_part_check->time_limit != NO_VAL) &&
+	    (qos_part_check->time_limit > part_ptr->max_time) &&
+	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))) {
+		debug2("%s: Job time limit (%u) exceeds limit of partition %s(%u)",
+		       __func__, qos_part_check->time_limit,
+		       part_ptr->name, part_ptr->max_time);
+		qos_part_check->error_code = ESLURM_INVALID_TIME_LIMIT;
+		return -1;
+	}
+
+	if (slurm_conf.enforce_part_limits) {
+		if ((qos_part_check->error_code =
+		     part_policy_valid_qos(part_ptr, qos_ptr,
+					   qos_part_check->submit_uid,
+					   NULL)) != SLURM_SUCCESS)
+			return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Test if this job can use this partition
  *
@@ -6219,8 +6278,15 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 			      bitstr_t *req_bitmap, uid_t submit_uid,
 			      slurmdb_qos_rec_t *qos_ptr, char *acct)
 {
-	uint32_t total_nodes, min_nodes_tmp, max_nodes_tmp;
-	uint32_t job_min_nodes, job_max_nodes;
+	uint32_t total_nodes;
+	qos_part_check_t qos_part_check = {
+		.error_code = SLURM_SUCCESS,
+		.max_nodes = job_desc->max_nodes,
+		.min_nodes = job_desc->min_nodes,
+		.part_ptr = part_ptr,
+		.submit_uid = submit_uid,
+		.time_limit = job_desc->time_limit,
+	};
 	int rc = SLURM_SUCCESS;
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
@@ -6291,46 +6357,10 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		return ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 	}
 
-	/* The node counts have not been altered yet, so do not figure them out
-	 * by using the cpu counts.  The partitions have already been altered
-	 * so we have to use the original values.
-	 */
-	job_min_nodes = job_desc->min_nodes;
-	job_max_nodes = job_desc->max_nodes;
-	min_nodes_tmp = part_ptr->min_nodes;
-	max_nodes_tmp = part_ptr->max_nodes;
-
 	/* Check against min/max node limits in the partition */
-
-	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_min_nodes != NO_VAL) &&
-	    (job_min_nodes < min_nodes_tmp) &&
-	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-				       & QOS_FLAG_PART_MIN_NODE)))) {
-		debug2("%s: Job requested for nodes (%u) smaller than partition %s(%u) min nodes",
-		       __func__, job_min_nodes, part_ptr->name, min_nodes_tmp);
-		return  ESLURM_INVALID_NODE_COUNT;
-	}
-
-	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_max_nodes != NO_VAL) &&
-	    (job_max_nodes > max_nodes_tmp) &&
-	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-				       & QOS_FLAG_PART_MAX_NODE)))) {
-		debug2("%s: Job requested for nodes (%u) greater than partition %s(%u) max nodes",
-		       __func__, job_max_nodes, part_ptr->name, max_nodes_tmp);
-		return ESLURM_INVALID_NODE_COUNT;
-	}
-
-	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->time_limit != NO_VAL) &&
-	    (job_desc->time_limit > part_ptr->max_time) &&
-	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))) {
-		debug2("%s: Job time limit (%u) exceeds limit of partition %s(%u)",
-		       __func__, job_desc->time_limit, part_ptr->name,
-		       part_ptr->max_time);
-		return ESLURM_INVALID_TIME_LIMIT;
-	}
+	(void) _qos_part_check(qos_ptr, &qos_part_check);
+	if (qos_part_check.error_code != SLURM_SUCCESS)
+		return qos_part_check.error_code;
 
 	if (slurm_conf.enforce_part_limits) {
 		if (!validate_group(part_ptr, job_desc->user_id)) {
@@ -6343,10 +6373,6 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 
 		if ((rc = part_policy_valid_acct(part_ptr, acct, NULL))
 		    != SLURM_SUCCESS)
-			goto fini;
-
-		if ((rc = part_policy_valid_qos(part_ptr, qos_ptr, submit_uid,
-						NULL)) != SLURM_SUCCESS)
 			goto fini;
 	}
 
