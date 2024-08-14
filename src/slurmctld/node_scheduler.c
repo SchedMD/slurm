@@ -427,9 +427,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				       __func__, use_protocol_version,
 				       node_ptr->name);
 			}
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				msg_flags |= SLURM_PACK_ADDRS;
 		}
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (job_ptr->details->prolog_running) {
