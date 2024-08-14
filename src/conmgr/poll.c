@@ -299,6 +299,18 @@ extern void pollctl_init(const int max_connections)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
+extern void pollctl_modify_max_connections(const int max_connections)
+{
+	slurm_mutex_lock(&pctl.mutex);
+	xassert(pctl.initialized);
+	xassert(!pctl.polling);
+
+	pctl.events_count = MAX_POLL_EVENTS(max_connections);
+	xrecalloc(pctl.events, pctl.events_count, sizeof(*pctl.events));
+
+	slurm_mutex_unlock(&pctl.mutex);
+}
+
 extern void pollctl_fini(void)
 {
 	slurm_mutex_lock(&pctl.mutex);

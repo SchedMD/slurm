@@ -58,6 +58,12 @@ extern bool pollctl_events_has_hangup(pollctl_events_t events);
 extern void pollctl_init(const int max_connections);
 
 /*
+ * Modify max connections count
+ * IN max_connections - Max connections same as mgr.max_connections
+ */
+extern void pollctl_modify_max_connections(const int max_connections);
+
+/*
  * Release memory and resources of polling controller
  */
 extern void pollctl_fini(void);
