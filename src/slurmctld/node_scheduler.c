@@ -416,15 +416,20 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
 
-		if (use_protocol_version > node_ptr->protocol_version)
-			use_protocol_version = node_ptr->protocol_version;
 		if (hostlist &&
 		    !IS_NODE_POWERED_DOWN(node_ptr) &&
 		    !IS_NODE_POWERING_UP(node_ptr)) {
 			hostlist_push_host(hostlist, node_ptr->name);
+			if (use_protocol_version > node_ptr->protocol_version) {
+				use_protocol_version =
+					node_ptr->protocol_version;
+				debug3("%s: protocol version downgraded to %u from node %s",
+				       __func__, use_protocol_version,
+				       node_ptr->name);
+			}
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				msg_flags |= SLURM_PACK_ADDRS;
 		}
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (job_ptr->details->prolog_running) {
