@@ -19,6 +19,9 @@ documents those changes that are of interest to users and administrators.
  -- Enable --json/--yaml=v0.0.39 options on client commands to dump data using
     data_parser/v0.0.39 instead or outputting nothing.
  -- switch/hpe_slingshot - Fix issue that could result in a 0 length state file.
+ -- Fix unnecessary message protocol downgrade for unregistered nodes.
+ -- Fix unnecessarily packing alias addrs when terminating jobs with a mix of
+    non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
 
 * Changes in Slurm 24.05.2
 ==========================
