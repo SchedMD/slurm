@@ -48,7 +48,7 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/poll.h"
+#include "src/conmgr/polling.h"
 #include "src/conmgr/signals.h"
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);

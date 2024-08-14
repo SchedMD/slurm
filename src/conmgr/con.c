@@ -67,7 +67,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/poll.h"
+#include "src/conmgr/polling.h"
 
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {

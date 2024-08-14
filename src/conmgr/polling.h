@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  poll.h - Internal declarations for poll() handlers
+ *  polling.h - Internal declarations for polling handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,8 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONMGR_POLL_H
-#define _CONMGR_POLL_H
+#ifndef _CONMGR_POLLING_H
+#define _CONMGR_POLLING_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -158,4 +158,4 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
  */
 extern void pollctl_interrupt(const char *caller);
 
-#endif /* _CONMGR_POLL_H */
+#endif /* _CONMGR_POLLING_H */

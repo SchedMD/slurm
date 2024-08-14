@@ -51,7 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/conmgr/poll.h"
+#include "src/conmgr/polling.h"
 #include "src/conmgr/events.h"
 
 /*
