@@ -1224,7 +1224,7 @@ $ scontrol update PartitionName=bar State=UP
 
 <p><a id="maint_time"><b>How can I dry up the workload for a
 maintenance period?</b></a><br>
-Create a resource reservation as described b. Slurm's
+Create a resource reservation as described in Slurm's
 <a href="reservations.html">Resource Reservation Guide</a>.</p>
 
 <p><a id="upgrade"><b>What should I be aware of when upgrading Slurm?</b></a><br>
