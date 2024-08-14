@@ -545,6 +545,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.10
 ===========================
  -- switch/hpe_slingshot - Fix issue that could result in a 0 length state file.
+ -- Fix unnecessary message protocol downgrade for unregistered nodes.
+ -- Fix unnecessarily packing alias addrs when terminating jobs with a mix of
+    non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
 
 * Changes in Slurm 23.11.9
 ==========================
