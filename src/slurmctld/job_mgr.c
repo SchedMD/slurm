@@ -10098,7 +10098,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack32(dump_job_ptr->job_state, buffer);
 		pack16(dump_job_ptr->batch_flag, buffer);
 		pack32(dump_job_ptr->state_reason, buffer);
-		pack8(0, buffer); /* was power_flags */
 		pack8(dump_job_ptr->reboot, buffer);
 		pack16(dump_job_ptr->restart_cnt, buffer);
 		pack16(show_flags, buffer);

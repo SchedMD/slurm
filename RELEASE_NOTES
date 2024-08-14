@@ -31,10 +31,10 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Remove srun --cpu-bind=rank.
  -- Add "%b" as a file name pattern for the array task id modulo 10.
- -- 
 
 API CHANGES
 ===========
+ -- Remove burst_buffer/lua call slurm.job_info_to_string().
 
 SLURMRESTD CHANGES
 ==================

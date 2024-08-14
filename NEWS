@@ -97,6 +97,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct,sacctmgr,scontrol,sdiag,sinfo,squeue,sshare,slurmrestd - Avoid crash
     when loading data_parser plugins fail due to NULL dereference.
  -- Add autodetected gpus to the output of slurmd -C
+ -- Remove burst_buffer/lua call slurm.job_info_to_string().
 
 * Changes in Slurm 24.05.3
 ==========================
