@@ -438,6 +438,9 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
+	if (slurm_conf.slurmd_params)
+		conmgr_apply_params(slurm_conf.slurmd_params);
+
 	conmgr_add_work_fifo(_run, &args);
 
 	while (!_shutdown)
