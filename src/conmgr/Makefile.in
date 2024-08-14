@@ -157,8 +157,9 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo events.lo io.lo \
-	poll.lo rpc.lo signals.lo watch.lo work.lo workers.lo
+am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo epoll.lo \
+	events.lo io.lo polling.lo rpc.lo signals.lo watch.lo work.lo \
+	workers.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -186,8 +187,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
-	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/events.Plo \
-	./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo ./$(DEPDIR)/rpc.Plo \
+	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/epoll.Plo \
+	./$(DEPDIR)/events.Plo ./$(DEPDIR)/io.Plo \
+	./$(DEPDIR)/polling.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/watch.Plo \
 	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workers.Plo
 am__mv = mv -f
@@ -495,11 +497,12 @@ libconmgr_la_SOURCES = \
 	conmgr.h \
 	delayed.c \
 	delayed.h \
+	epoll.c \
 	events.c \
 	events.h \
 	io.c \
 	mgr.h \
-	poll.c \
+	polling.c \
 	polling.h \
 	rpc.c \
 	signals.c \
@@ -579,9 +582,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/con.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/delayed.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/epoll.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/events.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/poll.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polling.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/watch.Plo@am__quote@ # am--include-marker
@@ -715,9 +719,10 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/con.Plo
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
+	-rm -f ./$(DEPDIR)/epoll.Plo
 	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
-	-rm -f ./$(DEPDIR)/poll.Plo
+	-rm -f ./$(DEPDIR)/polling.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
@@ -771,9 +776,10 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/con.Plo
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
+	-rm -f ./$(DEPDIR)/epoll.Plo
 	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
-	-rm -f ./$(DEPDIR)/poll.Plo
+	-rm -f ./$(DEPDIR)/polling.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  poll.c - Definitions for poll() handlers
+ *  epoll.c - Definitions for epoll_*() handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -166,7 +166,7 @@ static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		    const char *caller);
 static void _unlink_fd(int fd, const char *con_name, const char *caller);
 
-extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
+static const char *_type_to_string(pollctl_fd_type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(fd_types); i++)
 		if (fd_types[i].type == type)
@@ -251,7 +251,7 @@ static void _atfork_child(void)
 	pctl = (struct pctl_s) PCTL_INITIALIZER;
 }
 
-extern void pollctl_init(const int max_connections)
+static void _init(const int max_connections)
 {
 	int rc;
 
@@ -299,7 +299,7 @@ extern void pollctl_init(const int max_connections)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
-extern void pollctl_modify_max_connections(const int max_connections)
+static void _modify_max_connections(const int max_connections)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	xassert(pctl.initialized);
@@ -311,7 +311,7 @@ extern void pollctl_modify_max_connections(const int max_connections)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
-extern void pollctl_fini(void)
+static void _fini(void)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -376,8 +376,8 @@ static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	return SLURM_SUCCESS;
 }
 
-extern int pollctl_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-			   const char *caller)
+static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+			 const char *caller)
 {
 	int rc;
 
@@ -389,8 +389,8 @@ extern int pollctl_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	return rc;
 }
 
-extern void pollctl_relink_fd(int fd, pollctl_fd_type_t type,
-			      const char *con_name, const char *caller)
+static void _relink_fd(int fd, pollctl_fd_type_t type,
+			    const char *con_name, const char *caller)
 {
 	struct epoll_event ev = {
 		.events = _fd_type_to_events(type),
@@ -428,7 +428,7 @@ static void _unlink_fd(int fd, const char *con_name, const char *caller)
 	pctl.fd_count--;
 }
 
-extern void pollctl_unlink_fd(int fd, const char *con_name, const char *caller)
+static void _lock_unlink_fd(int fd, const char *con_name, const char *caller)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -465,7 +465,7 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
-extern int pollctl_poll(const char *caller)
+static int _poll(const char *caller)
 {
 	int nfds = -1, rc = SLURM_SUCCESS, events_count = 0, epoll = -1;
 	int fd_count = 0;
@@ -537,8 +537,8 @@ extern int pollctl_poll(const char *caller)
 	return rc;
 }
 
-extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
-				  const char *func_name, const char *caller)
+static int _for_each_event(pollctl_event_func_t func, void *arg,
+			   const char *func_name, const char *caller)
 {
 	int nfds = -1, rc = SLURM_SUCCESS, intr_fd = -1;
 	struct epoll_event *events = NULL;
@@ -614,7 +614,7 @@ rwfail:
 	return errno;
 }
 
-extern void pollctl_interrupt(const char *caller)
+static void _interrupt(const char *caller)
 {
 	event_signal_t *interrupt_return = NULL;
 	int rc, fd = -1;
@@ -671,7 +671,7 @@ extern void pollctl_interrupt(const char *caller)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
-extern bool pollctl_events_can_read(pollctl_events_t events)
+static bool _events_can_read(pollctl_events_t events)
 {
 	/*
 	 * Allow read()/write() to catch EPOLLRDHUP AND EPOLLHUP as there may
@@ -681,17 +681,35 @@ extern bool pollctl_events_can_read(pollctl_events_t events)
 	return (events & (EPOLLIN | EPOLLRDHUP | EPOLLHUP));
 }
 
-extern bool pollctl_events_can_write(pollctl_events_t events)
+static bool _events_can_write(pollctl_events_t events)
 {
 	return (events & (EPOLLOUT | EPOLLRDHUP | EPOLLHUP));
 }
 
-extern bool pollctl_events_has_error(pollctl_events_t events)
+static bool _events_has_error(pollctl_events_t events)
 {
 	return (events & EPOLLERR);
 }
 
-extern bool pollctl_events_has_hangup(pollctl_events_t events)
+static bool _events_has_hangup(pollctl_events_t events)
 {
 	return (events & (EPOLLRDHUP | EPOLLHUP));
 }
+
+const poll_funcs_t epoll_funcs = {
+	.mode = POLL_MODE_EPOLL,
+	.init = _init,
+	.fini = _fini,
+	.type_to_string = _type_to_string,
+	.modify_max_connections = _modify_max_connections,
+	.link_fd = _lock_link_fd,
+	.relink_fd = _relink_fd,
+	.unlink_fd = _lock_unlink_fd,
+	.poll = _poll,
+	.for_each_event = _for_each_event,
+	.interrupt = _interrupt,
+	.events_can_read = _events_can_read,
+	.events_can_write = _events_can_write,
+	.events_has_error = _events_has_error,
+	.events_has_hangup = _events_has_hangup,
+};

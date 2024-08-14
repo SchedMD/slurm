@@ -42,6 +42,12 @@
 /* typedef for the type of events returned by epoll */
 typedef uint32_t pollctl_events_t;
 
+typedef enum {
+	POLL_MODE_INVALID = 0,
+	POLL_MODE_EPOLL,
+	POLL_MODE_INVALID_MAX,
+} poll_mode_t;
+
 /* If events indicate connection is ready for READ operation */
 extern bool pollctl_events_can_read(pollctl_events_t events);
 /* If events indicate connection is ready for WRITE operation */
@@ -157,5 +163,26 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
  * IN caller - __func__ from caller
  */
 extern void pollctl_interrupt(const char *caller);
+
+typedef struct {
+	poll_mode_t mode;
+	bool (*events_can_read)(pollctl_events_t events);
+	bool (*events_can_write)(pollctl_events_t events);
+	bool (*events_has_error)(pollctl_events_t events);
+	bool (*events_has_hangup)(pollctl_events_t events);
+	void (*init)(const int max_connections);
+	void (*modify_max_connections)(const int max_connections);
+	void (*fini)(void);
+	const char *(*type_to_string)(pollctl_fd_type_t type);
+	int (*link_fd)(int fd, pollctl_fd_type_t type, const char *con_name,
+		       const char *caller);
+	void (*relink_fd)(int fd, pollctl_fd_type_t type, const char *con_name,
+			  const char *caller);
+	void (*unlink_fd)(int fd, const char *con_name, const char *caller);
+	int (*poll)(const char *caller);
+	int (*for_each_event)(pollctl_event_func_t func, void *arg,
+			      const char *func_name, const char *caller);
+	void (*interrupt)(const char *caller);
+} poll_funcs_t;
 
 #endif /* _CONMGR_POLLING_H */
