@@ -3259,7 +3259,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 	uint32_t uint32_tmp;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		uint8_t uint8_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3286,7 +3285,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->job_state, buffer);
 		safe_unpack16(&job->batch_flag, buffer);
 		safe_unpack32(&job->state_reason, buffer);
-		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
 		safe_unpack16(&job->show_flags, buffer);
@@ -6118,7 +6116,6 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack16(job_desc_ptr->pn_min_cpus, buffer);
 		pack64(job_desc_ptr->pn_min_memory, buffer);
 		pack32(job_desc_ptr->pn_min_tmp_disk, buffer);
-		pack8(0, buffer); /* was power_flags */
 		packstr(job_desc_ptr->prefer, buffer);
 
 		pack32(job_desc_ptr->cpu_freq_min, buffer);
@@ -6525,7 +6522,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 	job_desc_msg_t *job_desc_ptr = NULL;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		uint8_t uint8_tmp;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -6554,7 +6550,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
 		safe_unpack64(&job_desc_ptr->pn_min_memory, buffer);
 		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
-		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 
 		safe_unpackstr(&job_desc_ptr->prefer, buffer);
 		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
