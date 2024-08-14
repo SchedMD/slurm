@@ -893,8 +893,7 @@ extern int gres_job_state_unpack(list_t **gres_list, buf_t *buffer,
 extern uint32_t gres_job_test(list_t *job_gres_list, list_t *node_gres_list,
 			      bool use_total_gres, bitstr_t *core_bitmap,
 			      int core_start_bit, int core_end_bit,
-			      uint32_t job_id, char *node_name,
-			      bool disable_binding);
+			      uint32_t job_id, char *node_name);
 
 /*
  * Set environment variables as required for a batch job

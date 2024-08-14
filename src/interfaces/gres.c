@@ -7730,8 +7730,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 			  gres_state_t *gres_state_node,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name,
-			  bool disable_binding)
+			  uint32_t job_id, char *node_name)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
@@ -7821,8 +7820,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
-	} else if (min_gres_node && gres_ns->topo_cnt &&
-		   !disable_binding) {
+	} else if (min_gres_node && gres_ns->topo_cnt) {
 		/* Need to determine which specific cores can be used */
 		gres_avail = gres_ns->gres_cnt_avail;
 		if (!use_total_gres)
@@ -8059,8 +8057,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 extern uint32_t gres_job_test(list_t *job_gres_list, list_t *node_gres_list,
 			      bool use_total_gres, bitstr_t *core_bitmap,
 			      int core_start_bit, int core_end_bit,
-			      uint32_t job_id, char *node_name,
-			      bool disable_binding)
+			      uint32_t job_id, char *node_name)
 {
 	uint32_t core_cnt, tmp_cnt;
 	list_itr_t *job_gres_iter;
@@ -8088,8 +8085,7 @@ extern uint32_t gres_job_test(list_t *job_gres_list, list_t *node_gres_list,
 		tmp_cnt = _job_test(gres_state_job, gres_state_node,
 				    use_total_gres, core_bitmap,
 				    core_start_bit, core_end_bit,
-				    &topo_set, job_id, node_name,
-				    disable_binding);
+				    &topo_set, job_id, node_name);
 		if (tmp_cnt != NO_VAL) {
 			if (core_cnt == NO_VAL)
 				core_cnt = tmp_cnt;
