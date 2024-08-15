@@ -57,6 +57,30 @@
 #define CONTAINER_ID_TAG "containerid="
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
+static node_info_msg_t *_get_node_info_for_jobs(void)
+{
+	int error_code;
+	node_info_msg_t *node_info_msg = NULL;
+	uint16_t show_flags = 0;
+
+	/* Must load all nodes including hidden for cross-index
+	 * from job's node_inx to node table to work */
+	/*if (all_flag)		Always set this flag */
+	show_flags |= SHOW_ALL;
+	if (federation_flag)
+		show_flags |= SHOW_FEDERATION;
+	if (local_flag)
+		show_flags |= SHOW_LOCAL;
+	error_code = scontrol_load_nodes(&node_info_msg, show_flags);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_nodes error");
+		return NULL;
+	}
+
+	return node_info_msg;
+}
 static pthread_mutex_t job_node_info_lock = PTHREAD_MUTEX_INITIALIZER;
 static node_info_msg_t *job_node_ptr = NULL;
 
@@ -1013,7 +1037,6 @@ scontrol_print_completing (void)
 	job_info_msg_t  *job_info_msg;
 	job_info_t      *job_info;
 	node_info_msg_t *node_info_msg;
-	uint16_t         show_flags = 0;
 
 	error_code = scontrol_load_job (&job_info_msg, 0);
 	if (error_code) {
@@ -1022,21 +1045,9 @@ scontrol_print_completing (void)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
-	/* Must load all nodes including hidden for cross-index
-	 * from job's node_inx to node table to work */
-	/*if (all_flag)		Always set this flag */
-	show_flags |= SHOW_ALL;
-	if (federation_flag)
-		show_flags |= SHOW_FEDERATION;
-	if (local_flag)
-		show_flags |= SHOW_LOCAL;
-	error_code = scontrol_load_nodes(&node_info_msg, show_flags);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_nodes error");
+
+	if (!(node_info_msg = _get_node_info_for_jobs()))
 		return;
-	}
 
 	/* Scan the jobs for completing state */
 	job_info = job_info_msg->job_array;
