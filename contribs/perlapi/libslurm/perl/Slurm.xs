@@ -715,45 +715,6 @@ slurm_update_step(slurm_t self, HV *step_msg)
 	OUTPUT:
 		RETVAL
 
-
-######################################################################
-#	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-######################################################################
-int
-slurm_job_cpus_allocated_on_node_id(slurm_t self, SV *job_res, int node_id)
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(job_res) {
-			RETVAL = slurm_job_cpus_allocated_on_node_id(
-				(job_resources_t *)SV2ptr(job_res), node_id);
-		} else {
-			RETVAL = 0;
-		}
-	OUTPUT:
-		RETVAL
-
-int
-slurm_job_cpus_allocated_on_node(slurm_t self, SV *job_res, char *node_name)
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(job_res) {
-			RETVAL = slurm_job_cpus_allocated_on_node(
-				(job_resources_t *)SV2ptr(job_res), node_name);
-		} else {
-			RETVAL = 0;
-		}
-	OUTPUT:
-		RETVAL
-
-
 ######################################################################
 #	SLURM JOB CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################

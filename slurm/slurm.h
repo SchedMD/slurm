@@ -4024,62 +4024,6 @@ extern int slurm_get_statistics(stats_info_response_msg_t **buf,
 extern int slurm_reset_statistics(stats_info_request_msg_t *req);
 
 /*****************************************************************************\
- *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_job_cpus_allocated_on_node_id -
- *                        get the number of cpus allocated to a job
- *			  on a node by node id
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node_id(job_resources_t *job_resrcs_ptr,
-					       int node_id);
-
-/*
- * slurm_job_cpus_allocated_on_node -
- *                        get the number of cpus allocated to a job
- *			  on a node by node name
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
-					    const char *node_name);
-
-/*
- * slurm_job_cpus_allocated_str_on_node_id -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node id
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
-						   size_t cpus_len,
-						   job_resources_t *job_resrcs_ptr,
-						   int node_id);
-
-/*
- * slurm_job_cpus_allocated_str_on_node -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node name
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
-						size_t cpus_len,
-						job_resources_t *job_resrcs_ptr,
-						const char *node_name);
-
-/*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
