@@ -81,31 +81,29 @@ static node_info_msg_t *_get_node_info_for_jobs(void)
 
 	return node_info_msg;
 }
-static pthread_mutex_t job_node_info_lock = PTHREAD_MUTEX_INITIALIZER;
-static node_info_msg_t *job_node_ptr = NULL;
 
 /* This set of functions loads/free node information so that we can map a job's
  * core bitmap to it's CPU IDs based upon the thread count on each node. */
 
 static uint32_t _threads_per_core(char *host)
 {
+	node_info_msg_t *node_info_msg = NULL;
 	uint32_t i, threads = 1;
 
 	if (!host)
 		return threads;
 
-	slurm_mutex_lock(&job_node_info_lock);
-	if (!job_node_ptr)
-		slurm_load_node((time_t) NULL, &job_node_ptr, 0);
+	if (!(node_info_msg = _get_node_info_for_jobs()))
+		return threads;
 
-	for (i = 0; i < job_node_ptr->record_count; i++) {
-		if (job_node_ptr->node_array[i].name &&
-		    !xstrcmp(host, job_node_ptr->node_array[i].name)) {
-			threads = job_node_ptr->node_array[i].threads;
+	for (i = 0; i < node_info_msg->record_count; i++) {
+		if (node_info_msg->node_array[i].name &&
+		    !xstrcmp(host, node_info_msg->node_array[i].name)) {
+			threads = node_info_msg->node_array[i].threads;
 			break;
 		}
 	}
-	slurm_mutex_unlock(&job_node_info_lock);
+
 	return threads;
 }
 
@@ -902,18 +900,6 @@ static char *_sprint_job_info(job_info_t *job_ptr, int one_liner)
 	return out;
 }
 
-static void _free_node_info(void)
-{
-#if 0
-	slurm_mutex_lock(&job_node_info_lock);
-	if (job_node_ptr) {
-		slurm_free_node_info_msg(job_node_ptr);
-		job_node_ptr = NULL;
-	}
-	slurm_mutex_unlock(&job_node_info_lock);
-#endif
-}
-
 /*
  * _print_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
@@ -929,7 +915,6 @@ static void _print_job_info(FILE *out, job_info_t *job_ptr, int one_liner)
 		fprintf(out, "%s", print_this);
 		xfree(print_this);
 	}
-	_free_node_info();
 }
 
 /* Load current job table information into *job_buffer_pptr */
