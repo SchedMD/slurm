@@ -205,6 +205,7 @@ static list_t *deadlock_global_list = NULL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static bool bf_one_resv_per_job = false;
+static bool bf_allow_magnetic_slot = false;
 static uint32_t job_start_cnt = 0;
 static uint32_t job_test_cnt = 0;
 static int max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
@@ -958,6 +959,11 @@ static void _load_config(void)
 		bf_one_resv_per_job = true;
 	else
 		bf_one_resv_per_job = false;
+
+	if (xstrcasestr(sched_params, "bf_allow_magnetic_slot"))
+		bf_allow_magnetic_slot = true;
+	else
+		bf_allow_magnetic_slot = false;
 
 	if (xstrcasestr(sched_params, "bf_running_job_reserve"))
 		bf_running_job_reserve = true;
@@ -3105,7 +3111,8 @@ skip_start:
 		}
 		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
-		    !(job_ptr->bit_flags & JOB_MAGNETIC)) {
+		    (!(job_ptr->bit_flags & JOB_MAGNETIC) ||
+		     bf_allow_magnetic_slot)) {
 			if (node_space_recs >= bf_node_space_size) {
 				log_flag(BACKFILL, "table size limit of %u reached",
 					 bf_node_space_size);

@@ -3689,6 +3689,25 @@ The default value is 10.
 .IP
 
 .TP
+\fBbf_allow_magnetic_slot\fR
+By default the backfill scheduler will not add a slot in the bf plan when a job
+attempts to use a magnetic reservation. This option reverses this to make the
+backfill scheduler add slots in the bf plan when jobs are eligible to run in a
+magnetic reservation. With this option enabled, jobs inside magnetic
+reservations will respect priorities and also be counted against the backfill
+limits such as \fBbf_max_job_test\fR.
+\fBNOTE\fR:
+Backfill first evaluates jobs inside reservations, which means all
+magnetic jobs will be tested first. When enabling this option, make sure to
+revise (increasing if necessary) the backfill limits configured to validate
+backfill cycle gets to test the expected jobs in the queue.
+\fBNOTE\fR:
+If \fBbf_one_resv_per_job\fR is used along with this option the magnetic
+reservation slot will now be the only slot in the bf plan. Otherwise the
+slot will be the first one outside the magnetic reservation.
+.IP
+
+.TP
 \fBbf_busy_nodes\fR
 When selecting resources for pending jobs to reserve for future execution
 (i.e. the job can not be started immediately), then preferentially select
