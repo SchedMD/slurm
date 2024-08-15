@@ -3287,7 +3287,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->state_reason, buffer);
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);
@@ -3437,6 +3436,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3466,7 +3466,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);
@@ -3616,6 +3616,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3645,7 +3646,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);
@@ -3792,6 +3793,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3821,7 +3823,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);

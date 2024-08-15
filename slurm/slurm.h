@@ -1894,7 +1894,6 @@ typedef struct job_info {
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
-	uint16_t show_flags;	/* conveys level of details requested */
 	uint32_t site_factor;	/* factor to consider in priority */
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
