@@ -10060,9 +10060,9 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 	xassert(!has_qos_lock || verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		detail_ptr = dump_job_ptr->details;
-		pack32(dump_job_ptr->array_job_id, buffer);
-		pack32(dump_job_ptr->array_task_id, buffer);
+		job_record_pack_common(dump_job_ptr, false, buffer,
+				       protocol_version);
+
 		if (dump_job_ptr->array_recs) {
 			build_array_str(dump_job_ptr);
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
@@ -10081,28 +10081,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 				pack32(0, buffer);
 			}
 		}
-
-		pack32(dump_job_ptr->assoc_id, buffer);
-		packstr(dump_job_ptr->container, buffer);
-		packstr(dump_job_ptr->container_id, buffer);
-		pack32(dump_job_ptr->delay_boot, buffer);
-		packstr(dump_job_ptr->failed_node, buffer);
-		pack32(dump_job_ptr->job_id, buffer);
-		pack32(dump_job_ptr->user_id, buffer);
-		pack32(dump_job_ptr->group_id, buffer);
-		pack32(dump_job_ptr->het_job_id, buffer);
-		packstr(dump_job_ptr->het_job_id_set, buffer);
-		pack32(dump_job_ptr->het_job_offset, buffer);
-		pack32(dump_job_ptr->profile, buffer);
-
-		pack32(dump_job_ptr->job_state, buffer);
-		pack16(dump_job_ptr->batch_flag, buffer);
-		pack32(dump_job_ptr->state_reason, buffer);
-		pack8(dump_job_ptr->reboot, buffer);
-		pack16(dump_job_ptr->restart_cnt, buffer);
-		pack_time(dump_job_ptr->deadline, buffer);
-
-		pack32(dump_job_ptr->alloc_sid, buffer);
 		if ((dump_job_ptr->time_limit == NO_VAL) &&
 		    dump_job_ptr->part_ptr)
 			time_limit = dump_job_ptr->part_ptr->max_time;
@@ -10110,8 +10088,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 			time_limit = dump_job_ptr->time_limit;
 
 		pack32(time_limit, buffer);
-		pack32(dump_job_ptr->time_min, buffer);
-
 
 		if (IS_JOB_STARTED(dump_job_ptr)) {
 			/* Report actual start time, in past */
@@ -10138,12 +10114,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack_time(start_time, buffer);
 		pack_time(end_time, buffer);
 
-		pack_time(dump_job_ptr->suspend_time, buffer);
-		pack_time(dump_job_ptr->pre_sus_time, buffer);
-		pack_time(dump_job_ptr->resize_time, buffer);
-		pack_time(dump_job_ptr->last_sched_eval, buffer);
-		pack_time(dump_job_ptr->preempt_time, buffer);
-		pack32(dump_job_ptr->priority, buffer);
 		if (dump_job_ptr->part_prio) {
 			pack32_array(dump_job_ptr->part_prio->priority_array,
 				     (dump_job_ptr->part_prio->priority_array) ?
@@ -10155,9 +10125,9 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 			packnull(buffer);
 			packnull(buffer);
 		}
-		packdouble(dump_job_ptr->billable_tres, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
+
 		/*
 		 * Only send the allocated nodelist since we are only sending
 		 * the number of cpus and nodes that are currently allocated.
@@ -10170,25 +10140,12 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 			packstr(nodelist, buffer);
 			xfree(nodelist);
 		}
-
 		packstr(dump_job_ptr->sched_nodes, buffer);
 
 		if (!IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->part_ptr)
 			packstr(dump_job_ptr->part_ptr->name, buffer);
 		else
 			packstr(dump_job_ptr->partition, buffer);
-		packstr(dump_job_ptr->account, buffer);
-		packstr(dump_job_ptr->admin_comment, buffer);
-		pack32(dump_job_ptr->site_factor, buffer);
-		packstr(dump_job_ptr->network, buffer);
-		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->extra, buffer);
-		packstr(dump_job_ptr->container, buffer);
-		packstr(dump_job_ptr->batch_features, buffer);
-		packstr(dump_job_ptr->batch_host, buffer);
-		packstr(dump_job_ptr->burst_buffer, buffer);
-		packstr(dump_job_ptr->burst_buffer_state, buffer);
-		packstr(dump_job_ptr->system_comment, buffer);
 
 		if (!has_qos_lock)
 			assoc_mgr_lock(&locks);
@@ -10216,16 +10173,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		if (!has_qos_lock)
 			assoc_mgr_unlock(&locks);
 
-		packstr(dump_job_ptr->licenses, buffer);
-		packstr(dump_job_ptr->state_desc, buffer);
-		packstr(dump_job_ptr->resv_name, buffer);
-		packstr(dump_job_ptr->resv_ports, buffer);
-		packstr(dump_job_ptr->mcs_label, buffer);
-
-		pack32(dump_job_ptr->exit_code, buffer);
-		pack32(dump_job_ptr->derived_ec, buffer);
-
-		packstr(dump_job_ptr->gres_used, buffer);
 		if (show_flags & SHOW_DETAIL) {
 			pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 					   protocol_version);
@@ -10235,13 +10182,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 			pack32((uint32_t)0, buffer);
 		}
 
-		packstr(dump_job_ptr->name, buffer);
-		packstr(dump_job_ptr->user_name, buffer);
-		packstr(dump_job_ptr->wckey, buffer);
-		pack32(dump_job_ptr->req_switch, buffer);
-		pack32(dump_job_ptr->wait4switch, buffer);
-
-		packstr(dump_job_ptr->alloc_node, buffer);
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			pack_bit_str_hex(dump_job_ptr->node_bitmap, buffer);
 		else
@@ -10255,44 +10195,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		 * other job details are only dumped until the job starts
 		 * running (at which time they become meaningless)
 		 */
-		_pack_pending_job_details(detail_ptr, buffer, protocol_version);
-
-		pack64(dump_job_ptr->bit_flags, buffer);
-		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
-		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
-		pack16(dump_job_ptr->start_protocol_ver, buffer);
-
-		if (dump_job_ptr->fed_details) {
-			packstr(dump_job_ptr->fed_details->origin_str, buffer);
-			pack64(dump_job_ptr->fed_details->siblings_active,
-			       buffer);
-			packstr(dump_job_ptr->fed_details->siblings_active_str,
-				buffer);
-			pack64(dump_job_ptr->fed_details->siblings_viable,
-			       buffer);
-			packstr(dump_job_ptr->fed_details->siblings_viable_str,
-				buffer);
-		} else {
-			packnull(buffer);
-			pack64((uint64_t)0, buffer);
-			packnull(buffer);
-			pack64((uint64_t)0, buffer);
-			packnull(buffer);
-		}
-
-		packstr(dump_job_ptr->cpus_per_tres, buffer);
-		packstr(dump_job_ptr->mem_per_tres, buffer);
-		packstr(dump_job_ptr->tres_bind, buffer);
-		packstr(dump_job_ptr->tres_freq, buffer);
-		packstr(dump_job_ptr->tres_per_job, buffer);
-		packstr(dump_job_ptr->tres_per_node, buffer);
-		packstr(dump_job_ptr->tres_per_socket, buffer);
-		packstr(dump_job_ptr->tres_per_task, buffer);
-
-		pack16(dump_job_ptr->mail_type, buffer);
-		packstr(dump_job_ptr->mail_user, buffer);
-
-		packstr(dump_job_ptr->selinux_context, buffer);
+		_pack_pending_job_details(dump_job_ptr->details,
+					  buffer, protocol_version);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
