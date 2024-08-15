@@ -3257,6 +3257,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 {
 	multi_core_data_t *mc_ptr;
 	uint32_t uint32_tmp;
+	bool need_unpack = false;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
@@ -3353,29 +3354,41 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
 
 		/*** unpack default job details ***/
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack) {
+			safe_unpack32(&job->num_cpus, buffer);
+			safe_unpack32(&job->num_nodes, buffer);
+			goto end_unpack_details;
+		}
+
+		/* job_record_pack_details_common */
+		safe_unpackstr(&job->cluster_features, buffer);
+		safe_unpack32(&job->cpu_freq_gov, buffer);
+		safe_unpack32(&job->cpu_freq_max, buffer);
+		safe_unpack32(&job->cpu_freq_min, buffer);
+		safe_unpackstr(&job->dependency, buffer);
+		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
+		safe_unpack16(&job->ntasks_per_tres, buffer);
+		safe_unpack16(&job->requeue, buffer);
+		safe_unpackstr(&job->work_dir, buffer);
+		/**********************************/
+
 		safe_unpackstr(&job->features, buffer);
 		safe_unpackstr(&job->prefer, buffer);
-		safe_unpackstr(&job->cluster_features, buffer);
-		safe_unpackstr(&job->work_dir, buffer);
-		safe_unpackstr(&job->dependency, buffer);
 		safe_unpackstr(&job->command, buffer);
 
 		safe_unpack32(&job->num_cpus, buffer);
 		safe_unpack32(&job->max_cpus, buffer);
 		safe_unpack32(&job->num_nodes, buffer);
 		safe_unpack32(&job->max_nodes, buffer);
-		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
-		safe_unpack16(&job->requeue, buffer);
-		safe_unpack16(&job->ntasks_per_node, buffer);
-		safe_unpack16(&job->ntasks_per_tres, buffer);
 		safe_unpack32(&job->num_tasks, buffer);
 
 		safe_unpack16(&job->shared, buffer);
-		safe_unpack32(&job->cpu_freq_min, buffer);
-		safe_unpack32(&job->cpu_freq_max, buffer);
-		safe_unpack32(&job->cpu_freq_gov, buffer);
 
 		safe_unpackstr(&job->cronspec, buffer);
+
+	end_unpack_details:
 
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->contiguous, buffer);

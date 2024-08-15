@@ -531,6 +531,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 	 * dependency		orig_dependency
 	 */
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		job_record_pack_details_common(detail_ptr, buffer,
+					       protocol_version);
+
 		pack32(detail_ptr->orig_min_cpus, buffer);
 		pack32(detail_ptr->orig_max_cpus, buffer);
 		pack32(detail_ptr->min_nodes, buffer);
@@ -542,8 +545,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack16(detail_ptr->core_spec, buffer);
 		pack16(detail_ptr->orig_cpus_per_task, buffer);
 		pack32(detail_ptr->nice, buffer);
-		pack16(detail_ptr->ntasks_per_node, buffer);
-		pack16(detail_ptr->requeue, buffer);
 		pack32(detail_ptr->task_dist, buffer);
 
 		pack8(detail_ptr->share_res, buffer);
@@ -561,9 +562,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack32(detail_ptr->orig_pn_min_cpus, buffer);
 		pack64(detail_ptr->orig_pn_min_memory, buffer);
 		pack32(detail_ptr->pn_min_tmp_disk, buffer);
-		pack32(detail_ptr->cpu_freq_min, buffer);
-		pack32(detail_ptr->cpu_freq_max, buffer);
-		pack32(detail_ptr->cpu_freq_gov, buffer);
 		pack_time(detail_ptr->begin_time, buffer);
 		pack_time(detail_ptr->accrue_time, buffer);
 		pack_time(detail_ptr->submit_time, buffer);
@@ -571,7 +569,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->req_nodes, buffer);
 		packstr(detail_ptr->exc_nodes, buffer);
 		packstr(detail_ptr->features, buffer);
-		packstr(detail_ptr->cluster_features, buffer);
 		packstr(detail_ptr->prefer, buffer);
 		if (detail_ptr->features_use == detail_ptr->features)
 			pack8(1, buffer);
@@ -579,17 +576,14 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 			pack8(2, buffer);
 		else
 			pack8(0, buffer);
-		pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
 		pack_dep_list(detail_ptr->depend_list, buffer,
 			      protocol_version);
-		packstr(detail_ptr->dependency, buffer);
 		packstr(detail_ptr->orig_dependency, buffer);
 
 		packstr(detail_ptr->std_err, buffer);
 		packstr(detail_ptr->std_in, buffer);
 		packstr(detail_ptr->std_out, buffer);
 		packstr(detail_ptr->submit_line, buffer);
-		packstr(detail_ptr->work_dir, buffer);
 
 		pack_multi_core_data(detail_ptr->mc_ptr, buffer,
 				     protocol_version);
@@ -1298,7 +1292,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
 	uint32_t num_tasks, argc = 0, env_cnt = 0, task_dist;
 	uint16_t contiguous, core_spec = NO_VAL16;
-	uint16_t ntasks_per_node, cpus_per_task, requeue;
+	uint16_t ntasks_per_node, ntasks_per_tres = 0, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type;
 	uint16_t segment_size = 0;
 	uint16_t resv_port_cnt = NO_VAL16;
@@ -1313,6 +1307,19 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		/* job_record_pack_details_common */
+		safe_unpackstr(&cluster_features, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpackstr(&dependency, buffer);
+		unpack_bit_str_hex(&job_size_bitmap, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&ntasks_per_tres, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpackstr(&work_dir, buffer);
+		/**********************************/
+
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1324,8 +1331,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpack32(&nice, buffer);
-		safe_unpack16(&ntasks_per_node, buffer);
-		safe_unpack16(&requeue, buffer);
 		safe_unpack32(&task_dist, buffer);
 
 		safe_unpack8(&share_res, buffer);
@@ -1343,9 +1348,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&pn_min_cpus, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
-		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
 		safe_unpack_time(&begin_time, buffer);
 		safe_unpack_time(&accrue_time, buffer);
 		safe_unpack_time(&submit_time, buffer);
@@ -1353,20 +1355,16 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&req_nodes, buffer);
 		safe_unpackstr(&exc_nodes, buffer);
 		safe_unpackstr(&features, buffer);
-		safe_unpackstr(&cluster_features, buffer);
 		safe_unpackstr(&prefer, buffer);
 		safe_unpack8(&features_use, buffer);
-		unpack_bit_str_hex(&job_size_bitmap, buffer);
 
 		unpack_dep_list(&depend_list, buffer, protocol_version);
-		safe_unpackstr(&dependency, buffer);
 		safe_unpackstr(&orig_dependency, buffer);
 
 		safe_unpackstr(&err, buffer);
 		safe_unpackstr(&in, buffer);
 		safe_unpackstr(&out, buffer);
 		safe_unpackstr(&submit_line, buffer);
-		safe_unpackstr(&work_dir, buffer);
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
@@ -1631,6 +1629,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
+	job_ptr->details->ntasks_per_tres = ntasks_per_tres;
 	job_ptr->details->num_tasks = num_tasks;
 	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->std_out = out;
@@ -1716,6 +1715,24 @@ unpack_error:
 	*fed_details_pptr = NULL;
 
 	return SLURM_ERROR;
+}
+
+extern void job_record_pack_details_common(
+	job_details_t *detail_ptr, buf_t *buffer, uint16_t protocol_version)
+{
+	xassert(detail_ptr);
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		packstr(detail_ptr->cluster_features, buffer);
+		pack32(detail_ptr->cpu_freq_gov, buffer);
+		pack32(detail_ptr->cpu_freq_max, buffer);
+		pack32(detail_ptr->cpu_freq_min, buffer);
+		packstr(detail_ptr->dependency, buffer);
+		pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
+		pack16(detail_ptr->ntasks_per_node, buffer);
+		pack16(detail_ptr->ntasks_per_tres, buffer);
+		pack16(detail_ptr->requeue,   buffer);
+		packstr(detail_ptr->work_dir, buffer);
+	}
 }
 
 extern int job_record_pack(job_record_t *dump_job_ptr,
