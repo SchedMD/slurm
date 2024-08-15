@@ -100,6 +100,22 @@ extern void pollctl_modify_max_connections(const int new_max_connections)
 	_get_funcs()->modify_max_connections(max_connections);
 }
 
+extern void pollctl_set_mode(poll_mode_t new_mode)
+{
+	xassert(new_mode > POLL_MODE_INVALID);
+	xassert(new_mode < POLL_MODE_INVALID_MAX);
+
+	if (mode == new_mode)
+		return;
+
+	log_flag(CONMGR, "%s: Changing polling type: %s -> %s",
+		 __func__, _mode_string(mode), _mode_string(new_mode));
+
+	_get_funcs()->fini();
+	mode = new_mode;
+	_get_funcs()->init(max_connections);
+}
+
 extern void pollctl_fini(void)
 {
 	log_flag(CONMGR, "%s: [%s] cleanup", __func__, _mode_string(mode));

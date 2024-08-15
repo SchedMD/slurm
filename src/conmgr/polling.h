@@ -164,6 +164,13 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
  */
 extern void pollctl_interrupt(const char *caller);
 
+/*
+ * Change active polling mode
+ * WARNING: Only call before pollctl_link_fd() is called.
+ * IN mode - set to polling mode
+ */
+extern void pollctl_set_mode(poll_mode_t mode);
+
 typedef struct {
 	poll_mode_t mode;
 	bool (*events_can_read)(pollctl_events_t events);
