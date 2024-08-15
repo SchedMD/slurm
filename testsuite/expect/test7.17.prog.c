@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
 	char *orig_config, *new_config = NULL, *tres_per_node = NULL;
 	buf_t *buffer;
 	list_t *job_gres_list = NULL, *node_gres_list = NULL;
-	bitstr_t *cpu_bitmap;
 	char config_dir[1000], test[1000];
 	char slurm_conf[1000];
 	uint32_t num_tasks = 1;
@@ -166,10 +165,8 @@ int main(int argc, char *argv[])
 	gres_node_state_log(node_gres_list, node_name);
 	gres_job_state_log(job_gres_list, job_id);
 
-	cpu_bitmap = bit_alloc(cpu_count);
-	bit_set_all(cpu_bitmap);
 	cpu_alloc = gres_job_test(job_gres_list, node_gres_list, true,
-				  cpu_bitmap, 0, cpu_count - 1,
+				  0, cpu_count - 1,
 				  job_id, node_name);
 	if (cpu_alloc == NO_VAL)
 		printf("cpu_alloc=ALL\n");

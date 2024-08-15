@@ -1053,7 +1053,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 
 		gres_cores = gres_job_test(job_ptr->gres_list_req,
 					   gres_list, true,
-					   NULL, 0, 0, job_ptr->job_id,
+					   0, 0, job_ptr->job_id,
 					   node_ptr->name);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)

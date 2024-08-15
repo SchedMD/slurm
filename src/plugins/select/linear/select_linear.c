@@ -547,11 +547,10 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		core_start_bit = cr_get_coremap_offset(i);
 		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
 		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
-		gres_cores = gres_job_test(job_ptr->gres_list_req,
-						  gres_list, use_total_gres,
-						  NULL, core_start_bit,
-						  core_end_bit, job_ptr->job_id,
-						  node_ptr->name);
+		gres_cores = gres_job_test(job_ptr->gres_list_req, gres_list,
+					   use_total_gres, core_start_bit,
+					   core_end_bit, job_ptr->job_id,
+					   node_ptr->name);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL) {
 			gres_cpus *= cpus_per_core;
