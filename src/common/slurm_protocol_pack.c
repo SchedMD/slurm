@@ -3257,10 +3257,109 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 {
 	multi_core_data_t *mc_ptr;
 	uint32_t uint32_tmp;
+	bool need_unpack = false;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		/* job_record_pack_common */
+		safe_unpackstr(&job->account, buffer);
+		safe_unpackstr(&job->admin_comment, buffer);
+		safe_unpackstr(&job->alloc_node, buffer);
+		safe_unpack32(&job->alloc_sid, buffer);
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
+		safe_unpack32(&job->assoc_id, buffer);
+
+		safe_unpackstr(&job->batch_features, buffer);
+		safe_unpack16(&job->batch_flag, buffer);
+		safe_unpackstr(&job->batch_host, buffer);
+		safe_unpack64(&job->bitflags, buffer);
+		safe_unpackstr(&job->burst_buffer, buffer);
+		safe_unpackstr(&job->burst_buffer_state, buffer);
+		safe_unpackdouble(&job->billable_tres, buffer);
+
+		safe_unpackstr(&job->comment, buffer);
+		safe_unpackstr(&job->container, buffer);
+		safe_unpackstr(&job->container_id, buffer);
+		safe_unpackstr(&job->cpus_per_tres, buffer);
+
+		safe_unpack_time(&job->deadline, buffer);
+		safe_unpack32(&job->delay_boot, buffer);
+		safe_unpack32(&job->derived_ec, buffer);
+
+		safe_unpack32(&job->exit_code, buffer);
+		safe_unpackstr(&job->extra, buffer);
+
+		safe_unpackstr(&job->failed_node, buffer);
+		/* job_record_pack_fed_details */
+		safe_unpackbool(&need_unpack, buffer);
+		if (need_unpack) {
+			safe_unpackstr(&job->fed_origin_str, buffer);
+			safe_unpack64(&job->fed_siblings_active, buffer);
+			safe_unpackstr(&job->fed_siblings_active_str, buffer);
+			safe_unpack64(&job->fed_siblings_viable, buffer);
+			safe_unpackstr(&job->fed_siblings_viable_str, buffer);
+		}
+		/*******************************/
+
+		safe_unpackstr(&job->gres_total, buffer);
+		safe_unpack32(&job->group_id, buffer);
+
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr(&job->het_job_id_set, buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
+
+		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->job_state, buffer);
+
+		safe_unpack_time(&job->last_sched_eval, buffer);
+		safe_unpackstr(&job->licenses, buffer);
+
+		safe_unpack16(&job->mail_type, buffer);
+		safe_unpackstr(&job->mail_user, buffer);
+		safe_unpackstr(&job->mcs_label, buffer);
+		safe_unpackstr(&job->mem_per_tres, buffer);
+
+		safe_unpackstr(&job->name, buffer);
+		safe_unpackstr(&job->network, buffer);
+
+		safe_unpack_time(&job->preempt_time, buffer);
+		safe_unpack_time(&job->pre_sus_time, buffer);
+		safe_unpack32(&job->priority, buffer);
+		safe_unpack32(&job->profile, buffer);
+
+		safe_unpack8(&job->reboot, buffer);
+		safe_unpack32(&job->req_switch, buffer);
+		safe_unpack_time(&job->resize_time, buffer);
+		safe_unpack16(&job->restart_cnt, buffer);
+		safe_unpackstr(&job->resv_name, buffer);
+		safe_unpackstr(&job->resv_ports, buffer);
+
+		safe_unpackstr(&job->selinux_context, buffer);
+		safe_unpack32(&job->site_factor, buffer);
+		safe_unpack16(&job->start_protocol_ver, buffer);
+		safe_unpackstr(&job->state_desc, buffer);
+		safe_unpack32(&job->state_reason, buffer);
+		safe_unpack_time(&job->suspend_time, buffer);
+		safe_unpackstr(&job->system_comment, buffer);
+
+		safe_unpack32(&job->time_min, buffer);
+		safe_unpackstr(&job->tres_bind, buffer);
+		safe_unpackstr(&job->tres_alloc_str, buffer);
+		safe_unpackstr(&job->tres_req_str, buffer);
+		safe_unpackstr(&job->tres_freq, buffer);
+		safe_unpackstr(&job->tres_per_job, buffer);
+		safe_unpackstr(&job->tres_per_node, buffer);
+		safe_unpackstr(&job->tres_per_socket, buffer);
+		safe_unpackstr(&job->tres_per_task, buffer);
+
+		safe_unpack32(&job->user_id, buffer);
+		safe_unpackstr(&job->user_name, buffer);
+
+		safe_unpack32(&job->wait4switch, buffer);
+		safe_unpackstr(&job->wckey, buffer);
+		/**************************************/
+
+
 		/* The array_task_str value is stored in slurmctld and passed
 		 * here in hex format for best scalability. Its format needs
 		 * to be converted to human readable form by the client. */
@@ -3269,114 +3368,68 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		xlate_array_task_str(&job->array_task_str, job->array_max_tasks,
 				     &job->array_bitmap);
 
-		safe_unpack32(&job->assoc_id, buffer);
-		safe_unpackstr(&job->container, buffer);
-		safe_unpackstr(&job->container_id, buffer);
-		safe_unpack32(&job->delay_boot, buffer);
-		safe_unpackstr(&job->failed_node, buffer);
-		safe_unpack32(&job->job_id, buffer);
-		safe_unpack32(&job->user_id, buffer);
-		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->het_job_id, buffer);
-		safe_unpackstr(&job->het_job_id_set, buffer);
-		safe_unpack32(&job->het_job_offset, buffer);
-		safe_unpack32(&job->profile, buffer);
-
-		safe_unpack32(&job->job_state, buffer);
-		safe_unpack16(&job->batch_flag, buffer);
-		safe_unpack32(&job->state_reason, buffer);
-		safe_unpack8(&job->reboot, buffer);
-		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
-		safe_unpack_time(&job->deadline, buffer);
-
-		safe_unpack32(&job->alloc_sid, buffer);
 		safe_unpack32(&job->time_limit, buffer);
-		safe_unpack32(&job->time_min, buffer);
 
-		safe_unpack32(&job->nice, buffer);
-
-		safe_unpack_time(&job->submit_time, buffer);
-		safe_unpack_time(&job->eligible_time, buffer);
-		safe_unpack_time(&job->accrue_time, buffer);
 		safe_unpack_time(&job->start_time, buffer);
 		safe_unpack_time(&job->end_time, buffer);
-		safe_unpack_time(&job->suspend_time, buffer);
-		safe_unpack_time(&job->pre_sus_time, buffer);
-		safe_unpack_time(&job->resize_time, buffer);
-		safe_unpack_time(&job->last_sched_eval, buffer);
-		safe_unpack_time(&job->preempt_time, buffer);
-		safe_unpack32(&job->priority, buffer);
 		safe_unpack32_array(&job->priority_array, &uint32_tmp, buffer);
 		safe_unpackstr(&job->priority_array_parts, buffer);
-		safe_unpackdouble(&job->billable_tres, buffer);
 		safe_unpackstr(&job->cluster, buffer);
 		safe_unpackstr(&job->nodes, buffer);
 		safe_unpackstr(&job->sched_nodes, buffer);
 		safe_unpackstr(&job->partition, buffer);
-		safe_unpackstr(&job->account, buffer);
-		safe_unpackstr(&job->admin_comment,buffer);
-		safe_unpack32(&job->site_factor, buffer);
-		safe_unpackstr(&job->network, buffer);
-		safe_unpackstr(&job->comment, buffer);
-		safe_unpackstr(&job->extra, buffer);
-		safe_unpackstr(&job->container, buffer);
-		safe_unpackstr(&job->batch_features, buffer);
-		safe_unpackstr(&job->batch_host, buffer);
-		safe_unpackstr(&job->burst_buffer, buffer);
-		safe_unpackstr(&job->burst_buffer_state, buffer);
-		safe_unpackstr(&job->system_comment, buffer);
 		safe_unpackstr(&job->qos, buffer);
 		safe_unpack_time(&job->preemptable_time, buffer);
-		safe_unpackstr(&job->licenses, buffer);
-		safe_unpackstr(&job->state_desc, buffer);
-		safe_unpackstr(&job->resv_name, buffer);
-		safe_unpackstr(&job->resv_ports, buffer);
-		safe_unpackstr(&job->mcs_label, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
-		safe_unpack32(&job->derived_ec, buffer);
-		safe_unpackstr(&job->gres_total, buffer);
 		if (unpack_job_resources(&job->job_resrcs, buffer,
 					 protocol_version))
 			goto unpack_error;
 		safe_unpackstr_array(&job->gres_detail_str,
 				     &job->gres_detail_cnt, buffer);
 
-		safe_unpackstr(&job->name, buffer);
-		safe_unpackstr(&job->user_name, buffer);
-		safe_unpackstr(&job->wckey, buffer);
-		safe_unpack32(&job->req_switch, buffer);
-		safe_unpack32(&job->wait4switch, buffer);
-
-		safe_unpackstr(&job->alloc_node, buffer);
-
 		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
 
 		/*** unpack default job details ***/
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack) {
+			safe_unpack32(&job->num_cpus, buffer);
+			safe_unpack32(&job->num_nodes, buffer);
+			safe_unpack32(&job->nice, buffer);
+			goto end_unpack_details;
+		}
+
+		/* job_record_pack_details_common */
+		safe_unpack_time(&job->accrue_time, buffer);
+		safe_unpack_time(&job->eligible_time, buffer);
+		safe_unpackstr(&job->cluster_features, buffer);
+		safe_unpack32(&job->cpu_freq_gov, buffer);
+		safe_unpack32(&job->cpu_freq_max, buffer);
+		safe_unpack32(&job->cpu_freq_min, buffer);
+		safe_unpackstr(&job->dependency, buffer);
+		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
+		safe_unpack32(&job->nice, buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
+		safe_unpack16(&job->ntasks_per_tres, buffer);
+		safe_unpack16(&job->requeue, buffer);
+		safe_unpack_time(&job->submit_time, buffer);
+		safe_unpackstr(&job->work_dir, buffer);
+		/**********************************/
+
 		safe_unpackstr(&job->features, buffer);
 		safe_unpackstr(&job->prefer, buffer);
-		safe_unpackstr(&job->cluster_features, buffer);
-		safe_unpackstr(&job->work_dir, buffer);
-		safe_unpackstr(&job->dependency, buffer);
 		safe_unpackstr(&job->command, buffer);
 
 		safe_unpack32(&job->num_cpus, buffer);
 		safe_unpack32(&job->max_cpus, buffer);
 		safe_unpack32(&job->num_nodes, buffer);
 		safe_unpack32(&job->max_nodes, buffer);
-		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
-		safe_unpack16(&job->requeue, buffer);
-		safe_unpack16(&job->ntasks_per_node, buffer);
-		safe_unpack16(&job->ntasks_per_tres, buffer);
 		safe_unpack32(&job->num_tasks, buffer);
 
 		safe_unpack16(&job->shared, buffer);
-		safe_unpack32(&job->cpu_freq_min, buffer);
-		safe_unpack32(&job->cpu_freq_max, buffer);
-		safe_unpack32(&job->cpu_freq_gov, buffer);
 
 		safe_unpackstr(&job->cronspec, buffer);
+
+	end_unpack_details:
 
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->contiguous, buffer);
@@ -3411,32 +3464,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			job->ntasks_per_core = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
-		safe_unpack64(&job->bitflags, buffer);
-		safe_unpackstr(&job->tres_alloc_str, buffer);
-		safe_unpackstr(&job->tres_req_str, buffer);
-		safe_unpack16(&job->start_protocol_ver, buffer);
-
-		safe_unpackstr(&job->fed_origin_str, buffer);
-		safe_unpack64(&job->fed_siblings_active, buffer);
-		safe_unpackstr(&job->fed_siblings_active_str, buffer);
-		safe_unpack64(&job->fed_siblings_viable, buffer);
-		safe_unpackstr(&job->fed_siblings_viable_str, buffer);
-
-		safe_unpackstr(&job->cpus_per_tres, buffer);
-		safe_unpackstr(&job->mem_per_tres, buffer);
-		safe_unpackstr(&job->tres_bind, buffer);
-		safe_unpackstr(&job->tres_freq, buffer);
-		safe_unpackstr(&job->tres_per_job, buffer);
-		safe_unpackstr(&job->tres_per_node, buffer);
-		safe_unpackstr(&job->tres_per_socket, buffer);
-		safe_unpackstr(&job->tres_per_task, buffer);
-
-		safe_unpack16(&job->mail_type, buffer);
-		safe_unpackstr(&job->mail_user, buffer);
-
-		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3466,7 +3496,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);
@@ -3616,6 +3646,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3645,7 +3676,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);
@@ -3792,6 +3823,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
+		uint16_t uint16_tmp;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3821,7 +3853,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
-		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid, buffer);

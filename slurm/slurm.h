@@ -1894,7 +1894,6 @@ typedef struct job_info {
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
-	uint16_t show_flags;	/* conveys level of details requested */
 	uint32_t site_factor;	/* factor to consider in priority */
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
@@ -4024,62 +4023,6 @@ extern int slurm_get_statistics(stats_info_response_msg_t **buf,
 extern int slurm_reset_statistics(stats_info_request_msg_t *req);
 
 /*****************************************************************************\
- *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_job_cpus_allocated_on_node_id -
- *                        get the number of cpus allocated to a job
- *			  on a node by node id
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node_id(job_resources_t *job_resrcs_ptr,
-					       int node_id);
-
-/*
- * slurm_job_cpus_allocated_on_node -
- *                        get the number of cpus allocated to a job
- *			  on a node by node name
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
-					    const char *node_name);
-
-/*
- * slurm_job_cpus_allocated_str_on_node_id -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node id
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
-						   size_t cpus_len,
-						   job_resources_t *job_resrcs_ptr,
-						   int node_id);
-
-/*
- * slurm_job_cpus_allocated_str_on_node -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node name
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
-						size_t cpus_len,
-						job_resources_t *job_resrcs_ptr,
-						const char *node_name);
-
-/*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
@@ -4211,39 +4154,6 @@ extern int slurm_notify_job(uint32_t job_id, char *message);
  * RET 0 or -1 on error
  */
 extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
-
-/*
- * slurm_print_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info(FILE *out,
-				 slurm_job_info_t *job_ptr,
-				 int one_liner);
-
-/*
- * slurm_print_job_info_msg - output information about all Slurm
- *	jobs based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_info_msg_ptr - job information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info_msg(FILE *out,
-				     job_info_msg_t *job_info_msg_ptr,
-				     int one_liner);
-
-/*
- * slurm_sprint_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_job_info(slurm_job_info_t *job_ptr,
-				   int one_liner);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,

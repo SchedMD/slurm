@@ -7791,7 +7791,6 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, sched_nodes, "scheduled_nodes", NULL),
 	add_parse(STRING, selinux_context, "selinux_context", NULL),
 	add_parse(JOB_SHARED, shared, "shared", NULL),
-	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, show_flags, "show_flags", NULL),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", NULL),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", NULL),
 	add_parse(TIMESTAMP_NO_VAL, start_time, "start_time", NULL),
