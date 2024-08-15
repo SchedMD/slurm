@@ -1666,11 +1666,11 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 {
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		if (!fed_details_ptr) {
-			pack16(0, buffer);
+			packbool(false, buffer);
 			return;
 		}
 
-		pack16(1, buffer);
+		packbool(true, buffer);
 		pack32(fed_details_ptr->cluster_lock, buffer);
 		packstr(fed_details_ptr->origin_str, buffer);
 		pack64(fed_details_ptr->siblings_active, buffer);
@@ -1696,28 +1696,26 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 				 buf_t *buffer, uint16_t protocol_version)
 {
-	uint16_t tmp_uint16;
+	bool need_unpack = true;
 	job_fed_details_t *fed_details_ptr = NULL;
 
 	xassert(fed_details_pptr);
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpack16(&tmp_uint16, buffer);
-		if (tmp_uint16) {
-			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
-			fed_details_ptr = *fed_details_pptr;
-			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
-			safe_unpackstr(&fed_details_ptr->origin_str, buffer);
-			safe_unpack64(&fed_details_ptr->siblings_active,
-				      buffer);
-			safe_unpackstr(&fed_details_ptr->siblings_active_str,
-				       buffer);
-			safe_unpack64(&fed_details_ptr->siblings_viable,
-				      buffer);
-			safe_unpackstr(&fed_details_ptr->siblings_viable_str,
-				       buffer);
-		}
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
+		*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
+		fed_details_ptr = *fed_details_pptr;
+		safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
+		safe_unpackstr(&fed_details_ptr->origin_str, buffer);
+		safe_unpack64(&fed_details_ptr->siblings_active, buffer);
+		safe_unpackstr(&fed_details_ptr->siblings_active_str, buffer);
+		safe_unpack64(&fed_details_ptr->siblings_viable, buffer);
+		safe_unpackstr(&fed_details_ptr->siblings_viable_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
 			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
@@ -1735,7 +1733,7 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 		}
 	} else
 		goto unpack_error;
-
+end_unpack:
 	return SLURM_SUCCESS;
 
 unpack_error:
