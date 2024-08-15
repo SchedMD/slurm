@@ -671,9 +671,14 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 }
 
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
-				  buf_t *buffer)
+				  buf_t *buffer, uint16_t protocol_version)
 {
-	if (fed_details_ptr) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!fed_details_ptr) {
+			pack16(0, buffer);
+			return;
+		}
+
 		pack16(1, buffer);
 		pack32(fed_details_ptr->cluster_lock, buffer);
 		packstr(fed_details_ptr->origin_str, buffer);
@@ -681,8 +686,6 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 		packstr(fed_details_ptr->siblings_active_str, buffer);
 		pack64(fed_details_ptr->siblings_viable, buffer);
 		packstr(fed_details_ptr->siblings_viable_str, buffer);
-	} else {
-		pack16(0, buffer);
 	}
 }
 
@@ -1918,7 +1921,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 
 		packstr(dump_job_ptr->clusters, buffer);
-		_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
+		_dump_job_fed_details(dump_job_ptr->fed_details, buffer,
+				      protocol_version);
 
 		packstr(dump_job_ptr->origin_cluster, buffer);
 
@@ -2109,7 +2113,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 
 		packstr(dump_job_ptr->clusters, buffer);
-		_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
+		_dump_job_fed_details(dump_job_ptr->fed_details, buffer,
+				      protocol_version);
 
 		packstr(dump_job_ptr->origin_cluster, buffer);
 
