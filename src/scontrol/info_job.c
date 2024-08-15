@@ -120,11 +120,10 @@ static void _sprint_range(char *str, uint32_t str_size,
  * _sprint_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
  * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-static char *_sprint_job_info(job_info_t *job_ptr, int one_liner)
+static char *_sprint_job_info(job_info_t *job_ptr)
 {
 	int i, j, k;
 	char time_str[256], *group_name, *user_name;
@@ -905,13 +904,12 @@ static char *_sprint_job_info(job_info_t *job_ptr, int one_liner)
  *	job based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
  * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
  */
-static void _print_job_info(FILE *out, job_info_t *job_ptr, int one_liner)
+static void _print_job_info(FILE *out, job_info_t *job_ptr)
 {
 	char *print_this;
 
-	if ((print_this = _sprint_job_info(job_ptr, one_liner))) {
+	if ((print_this = _sprint_job_info(job_ptr))) {
 		fprintf(out, "%s", print_this);
 		xfree(print_this);
 	}
@@ -1213,7 +1211,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			save_task_id = job_ptr->array_task_id;
 			job_ptr->array_task_id = array_id;
 		}
-		_print_job_info(stdout, job_ptr, one_liner);
+		_print_job_info(stdout, job_ptr);
 		if (save_array_str) {
 			job_ptr->array_task_str = save_array_str;
 			job_ptr->array_task_id = save_task_id;
