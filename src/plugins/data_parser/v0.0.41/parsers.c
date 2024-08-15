@@ -7986,7 +7986,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, tres_alloc_str, "tres_alloc_str", "TRES used by the job"),
 	add_parse_overload(UINT32, user_id, 1, "user_id", "User ID that owns the job"),
 	add_parse_overload(USER_ID, user_id, 1, "user_name", "User name that owns the job"),
-	add_parse(UINT32, wait4switch, "maximum_switch_wait_time", "Maximum time to wait for minimum switches in seconds"),
+	add_parse(UINT32, wait4switch, "maximum_switch_wait_time", "Maximum time to wait for switches in seconds"),
 	add_parse(STRING, wckey, "wckey", "Workload characterization key"),
 	add_parse(STRING, work_dir, "current_working_directory", "Working directory to use for the job"),
 };

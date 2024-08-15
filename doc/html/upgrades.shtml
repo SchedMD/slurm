@@ -198,6 +198,11 @@ in which the daemons should be upgraded:</p>
 <li>Archive backup data</li>
 </ol>
 
+<p>Before considering the upgrade complete, wait for all jobs that were already
+running to finish. Any jobs started before the <b>slurmd</b> system was upgraded
+will be running with the old version of <b>slurmstepd</b>, so starting another
+upgrade or trying to use new features in the new version may cause problems.</p>
+
 <p><b>NOTE</b>: If multiple daemons are present on the same system, they may
 need to be upgraded at the same time due to dependencies to the general
 <b>slurm</b> package. After upgrading, daemons should be started in the order
@@ -618,6 +623,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 18 July 2024</p>
+<p style="text-align:center;">Last modified 15 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
