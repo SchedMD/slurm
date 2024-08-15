@@ -4157,27 +4157,6 @@ extern int slurm_notify_job(uint32_t job_id, char *message);
 extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
 
 /*
- * slurm_print_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info(FILE *out,
-				 slurm_job_info_t *job_ptr,
-				 int one_liner);
-
- * slurm_sprint_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_job_info(slurm_job_info_t *job_ptr,
-				   int one_liner);
-
-/*
  * slurm_update_job - issue RPC to a job's configuration per request,
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates

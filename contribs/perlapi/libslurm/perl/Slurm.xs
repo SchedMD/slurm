@@ -869,51 +869,6 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 		}
 	OUTPUT:
 		RETVAL
-
-void
-slurm_print_job_info(slurm_t self, FILE* out, HV *job_info, int one_liner=0)
-	PREINIT:
-		job_info_t ji;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if (hv_to_job_info(job_info, &ji) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ji, one_liner
-	CLEANUP:
-		xfree(ji.exc_node_inx);
-		xfree(ji.node_inx);
-		xfree(ji.req_node_inx);
-
-slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
-	PREINIT:
-		job_info_t ji;
-		char *tmp_str = NULL;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(hv_to_job_info(job_info, &ji) < 0) {
-			XSRETURN_UNDEF;
-		}
-		tmp_str = slurm_sprint_job_info(&ji, one_liner);
-		xfree(ji.exc_node_inx);
-		xfree(ji.node_inx);
-		xfree(ji.req_node_inx);
-		RETVAL = tmp_str;
-	OUTPUT:
-		RETVAL
-
 int
 slurm_update_job(slurm_t self, HV *job_info)
 	PREINIT:
