@@ -13,7 +13,6 @@ libconmgr_la_SOURCES = \
 	conmgr.h \
 	delayed.c \
 	delayed.h \
-	epoll.c \
 	events.c \
 	events.h \
 	io.c \
@@ -27,6 +26,10 @@ libconmgr_la_SOURCES = \
 	watch.c \
 	work.c \
 	workers.c
+
+if HAVE_EPOLL
+libconmgr_la_SOURCES += epoll.c
+endif
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 

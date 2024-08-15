@@ -40,7 +40,12 @@
 
 #include "src/conmgr/polling.h"
 
+#ifdef HAVE_EPOLL
 #define DEFAULT_POLLING_MODE POLL_MODE_EPOLL
+extern const poll_funcs_t epoll_funcs;
+#else
+#define DEFAULT_POLLING_MODE POLL_MODE_POLL
+#endif /* HAVE_EPOLL */
 
 #define T(mode) { mode, XSTRINGIFY(mode) }
 static const struct {
@@ -53,13 +58,14 @@ static const struct {
 	T(POLL_MODE_INVALID_MAX),
 };
 
-extern const poll_funcs_t epoll_funcs;
 extern const poll_funcs_t poll_funcs;
 
 static poll_mode_t mode = DEFAULT_POLLING_MODE;
 static int max_connections = 0;
 static const poll_funcs_t *polling_funcs[] = {
+#ifdef HAVE_EPOLL
 	&epoll_funcs,
+#endif /* HAVE_EPOLL */
 	&poll_funcs,
 };
 

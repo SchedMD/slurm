@@ -93,6 +93,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = libconmgr.o$(EXEEXT)
+@HAVE_EPOLL_TRUE@am__append_1 = epoll.c
 subdir = src/conmgr
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -158,9 +159,10 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
-am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo epoll.lo \
-	events.lo io.lo poll.lo polling.lo rpc.lo signals.lo watch.lo \
-	work.lo workers.lo
+@HAVE_EPOLL_TRUE@am__objects_1 = epoll.lo
+am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo events.lo io.lo \
+	poll.lo polling.lo rpc.lo signals.lo watch.lo work.lo \
+	workers.lo $(am__objects_1)
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -493,27 +495,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libconmgr.la
-libconmgr_la_SOURCES = \
-	con.c \
-	conmgr.c \
-	conmgr.h \
-	delayed.c \
-	delayed.h \
-	epoll.c \
-	events.c \
-	events.h \
-	io.c \
-	mgr.h \
-	poll.c \
-	polling.c \
-	polling.h \
-	rpc.c \
-	signals.c \
-	signals.h \
-	watch.c \
-	work.c \
-	workers.c
-
+libconmgr_la_SOURCES = con.c conmgr.c conmgr.h delayed.c delayed.h \
+	events.c events.h io.c mgr.h poll.c polling.c polling.h rpc.c \
+	signals.c signals.h watch.c work.c workers.c $(am__append_1)
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libconmgr
