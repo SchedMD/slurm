@@ -670,22 +670,14 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 	}
 }
 
-/*
- * dump_job_step_state - dump the state of a specific job step to a buffer,
- *	load with load_step_state
- * IN step_ptr - pointer to job step for which information is to be dumped
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-extern int dump_job_step_state(void *x, void *arg)
+static void _pack_step_state(void *object, uint16_t protocol_version,
+			     buf_t *buffer)
 {
-	step_record_t *step_ptr = (step_record_t *) x;
-	buf_t *buffer = (buf_t *) arg;
+	step_record_t *step_ptr = object;
 	slurm_node_alias_addrs_t *alias_addrs_tmp;
 
 	if (step_ptr->state < JOB_RUNNING)
-		return 0;
-
-	pack16((uint16_t) STEP_FLAG, buffer);
+		return;
 
 	pack32(step_ptr->step_id.step_id, buffer);
 	pack32(step_ptr->step_id.step_het_comp, buffer);
@@ -728,28 +720,28 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	(void) gres_step_state_pack(step_ptr->gres_list_req, buffer,
 				    &step_ptr->step_id,
-				    SLURM_PROTOCOL_VERSION);
+				    protocol_version);
 	(void) gres_step_state_pack(step_ptr->gres_list_alloc, buffer,
 				    &step_ptr->step_id,
-				    SLURM_PROTOCOL_VERSION);
+				    protocol_version);
 	/*
 	 * Don't dump alias_addrs
 	 */
 	alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
 	step_ptr->step_layout->alias_addrs = NULL;
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
-			       SLURM_PROTOCOL_VERSION);
+			       protocol_version);
 	step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
 
 	if (step_ptr->switch_step) {
 		pack8(1, buffer);
 		switch_g_pack_stepinfo(step_ptr->switch_step, buffer,
-				       SLURM_PROTOCOL_VERSION);
+				       protocol_version);
 	} else
 		pack8(0, buffer);
 
 	select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-				     SLURM_PROTOCOL_VERSION);
+				     protocol_version);
 	packstr(step_ptr->tres_alloc_str, buffer);
 	packstr(step_ptr->tres_fmt_alloc_str, buffer);
 
@@ -762,7 +754,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->tres_per_node, buffer);
 	packstr(step_ptr->tres_per_socket, buffer);
 	packstr(step_ptr->tres_per_task, buffer);
-	jobacctinfo_pack(step_ptr->jobacct, SLURM_PROTOCOL_VERSION,
+	jobacctinfo_pack(step_ptr->jobacct, protocol_version,
 	                 PROTOCOL_TYPE_SLURM, buffer);
 
 	if (step_ptr->memory_allocated &&
@@ -772,6 +764,25 @@ extern int dump_job_step_state(void *x, void *arg)
 			     step_ptr->step_layout->node_cnt, buffer);
 	else
 		pack64_array(step_ptr->memory_allocated, 0, buffer);
+}
+
+/*
+ * dump_job_step_state - dump the state of a specific job step to a buffer,
+ *	load with load_step_state
+ * IN step_ptr - pointer to job step for which information is to be dumped
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+extern int dump_job_step_state(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	buf_t *buffer = (buf_t *) arg;
+
+	if (step_ptr->state < JOB_RUNNING)
+		return 0;
+
+	pack16((uint16_t) STEP_FLAG, buffer);
+
+	_pack_step_state(step_ptr, SLURM_PROTOCOL_VERSION, buffer);
 
 	return 0;
 }
@@ -2088,10 +2099,10 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packbool(false, buffer); /* no details */
 
 		/* Dump job steps */
-		list_for_each_ro(dump_job_ptr->step_list, dump_job_step_state,
-				 buffer);
+		(void) slurm_pack_list(dump_job_ptr->step_list,
+				       _pack_step_state, buffer,
+				       protocol_version);
 
-		pack16((uint16_t) 0, buffer);	/* no step flag */
 		packstr(dump_job_ptr->tres_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_req_str, buffer);
 		packstr(dump_job_ptr->clusters, buffer);
@@ -2443,19 +2454,26 @@ extern int job_record_unpack(job_record_t **out,
 		     SLURM_SUCCESS)) {
 			goto unpack_error;
 		}
-		safe_unpack16(&step_flag, buffer);
 
-		while (step_flag == STEP_FLAG) {
-			/*
-			 * No need to put these into accounting if they
-			 * haven't been since all information will be
-			 * put in when the job is finished.
-			 */
-			if ((error_code = load_step_state(job_ptr, buffer,
-							  protocol_version)))
-				goto unpack_error;
-			safe_unpack16(&step_flag, buffer);
+		/*
+		 * slurm_list_pack was used here but the step needs the job_ptr
+		 * so we have to make a copy of slurm_unpack_list logic so we
+		 * can deal with the extra pointer.
+		 */
+		safe_unpack32(&count, buffer);
+
+		if (count > NO_VAL)
+			goto unpack_error;
+
+		if (count != NO_VAL) {
+			for (int i = 0; i < count; i++) {
+				if (load_step_state(job_ptr, buffer,
+						    protocol_version) !=
+				    SLURM_SUCCESS)
+					goto unpack_error;
+			}
 		}
+
 		safe_unpackstr(&job_ptr->tres_alloc_str, buffer);
 		safe_unpackstr(&job_ptr->tres_req_str, buffer);
 		safe_unpackstr(&job_ptr->clusters, buffer);
