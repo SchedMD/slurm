@@ -670,38 +670,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 	}
 }
 
-static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
-				  buf_t *buffer, uint16_t protocol_version)
-{
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		if (!fed_details_ptr) {
-			pack16(0, buffer);
-			return;
-		}
-
-		pack16(1, buffer);
-		pack32(fed_details_ptr->cluster_lock, buffer);
-		packstr(fed_details_ptr->origin_str, buffer);
-		pack64(fed_details_ptr->siblings_active, buffer);
-		packstr(fed_details_ptr->siblings_active_str, buffer);
-		pack64(fed_details_ptr->siblings_viable, buffer);
-		packstr(fed_details_ptr->siblings_viable_str, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!fed_details_ptr) {
-			pack16(0, buffer);
-			return;
-		}
-
-		pack16(1, buffer);
-		pack32(fed_details_ptr->cluster_lock, buffer);
-		packstr(fed_details_ptr->origin_str, buffer);
-		pack64(fed_details_ptr->siblings_active, buffer);
-		packstr(fed_details_ptr->siblings_active_str, buffer);
-		pack64(fed_details_ptr->siblings_viable, buffer);
-		packstr(fed_details_ptr->siblings_viable_str, buffer);
-	}
-}
-
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
@@ -1691,6 +1659,38 @@ unpack_error:
 	xfree(script_hash);
 	xfree(work_dir);
 	return SLURM_ERROR;
+}
+
+static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
+				  buf_t *buffer, uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!fed_details_ptr) {
+			pack16(0, buffer);
+			return;
+		}
+
+		pack16(1, buffer);
+		pack32(fed_details_ptr->cluster_lock, buffer);
+		packstr(fed_details_ptr->origin_str, buffer);
+		pack64(fed_details_ptr->siblings_active, buffer);
+		packstr(fed_details_ptr->siblings_active_str, buffer);
+		pack64(fed_details_ptr->siblings_viable, buffer);
+		packstr(fed_details_ptr->siblings_viable_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!fed_details_ptr) {
+			pack16(0, buffer);
+			return;
+		}
+
+		pack16(1, buffer);
+		pack32(fed_details_ptr->cluster_lock, buffer);
+		packstr(fed_details_ptr->origin_str, buffer);
+		pack64(fed_details_ptr->siblings_active, buffer);
+		packstr(fed_details_ptr->siblings_active_str, buffer);
+		pack64(fed_details_ptr->siblings_viable, buffer);
+		packstr(fed_details_ptr->siblings_viable_str, buffer);
+	}
 }
 
 static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
