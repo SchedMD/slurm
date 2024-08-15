@@ -878,8 +878,7 @@ bit_copy(bitstr_t *b)
 	newsize_bits  = bit_size(b);
 	len = (_bitstr_words(newsize_bits) - BITSTR_OVERHEAD)*sizeof(bitstr_t);
 	new = bit_alloc(newsize_bits);
-	if (new)
-		memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], len);
+	memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], len);
 
 	return new;
 }
@@ -1266,8 +1265,6 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 		return NULL;
 
 	new = bit_alloc(bit_size(b));
-	if (new == NULL)
-		return NULL;
 
 	while ((bit < _bitstr_bits(b)) && (count < nbits)) {
 		int32_t word = _bit_word(bit);
