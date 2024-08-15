@@ -869,6 +869,7 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 		}
 	OUTPUT:
 		RETVAL
+
 int
 slurm_update_job(slurm_t self, HV *job_info)
 	PREINIT:
