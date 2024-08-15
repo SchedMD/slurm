@@ -518,9 +518,8 @@ static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.poll_active);
 
-	if (mgr.quiesced) {
-		log_flag(CONMGR, "%s: skipping poll() while quiesced",
-			 __func__);
+	if (_is_poll_interrupt()) {
+		log_flag(CONMGR, "%s: skipping poll()", __func__);
 		goto done;
 	} else if (list_is_empty(mgr.connections) &&
 		   list_is_empty(mgr.listen_conns)) {
