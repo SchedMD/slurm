@@ -158,8 +158,8 @@ PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
 am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo epoll.lo \
-	events.lo io.lo polling.lo rpc.lo signals.lo watch.lo work.lo \
-	workers.lo
+	events.lo io.lo poll.lo polling.lo rpc.lo signals.lo watch.lo \
+	work.lo workers.lo
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -188,7 +188,7 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
 	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/epoll.Plo \
-	./$(DEPDIR)/events.Plo ./$(DEPDIR)/io.Plo \
+	./$(DEPDIR)/events.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo \
 	./$(DEPDIR)/polling.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/watch.Plo \
 	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workers.Plo
@@ -502,6 +502,7 @@ libconmgr_la_SOURCES = \
 	events.h \
 	io.c \
 	mgr.h \
+	poll.c \
 	polling.c \
 	polling.h \
 	rpc.c \
@@ -585,6 +586,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/epoll.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/events.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/poll.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polling.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
@@ -722,6 +724,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/epoll.Plo
 	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
+	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/polling.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
@@ -779,6 +782,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/epoll.Plo
 	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
+	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/polling.Plo
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo

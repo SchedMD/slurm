@@ -18,6 +18,7 @@ libconmgr_la_SOURCES = \
 	events.h \
 	io.c \
 	mgr.h \
+	poll.c \
 	polling.c \
 	polling.h \
 	rpc.c \

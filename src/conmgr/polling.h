@@ -45,6 +45,7 @@ typedef uint32_t pollctl_events_t;
 typedef enum {
 	POLL_MODE_INVALID = 0,
 	POLL_MODE_EPOLL,
+	POLL_MODE_POLL,
 	POLL_MODE_INVALID_MAX,
 } poll_mode_t;
 

@@ -49,15 +49,18 @@ static const struct {
 } modes[] = {
 	T(POLL_MODE_INVALID),
 	T(POLL_MODE_EPOLL),
+	T(POLL_MODE_POLL),
 	T(POLL_MODE_INVALID_MAX),
 };
 
 extern const poll_funcs_t epoll_funcs;
+extern const poll_funcs_t poll_funcs;
 
 static poll_mode_t mode = DEFAULT_POLLING_MODE;
 static int max_connections = 0;
 static const poll_funcs_t *polling_funcs[] = {
 	&epoll_funcs,
+	&poll_funcs,
 };
 
 static const char *_mode_string(poll_mode_t find_mode)
