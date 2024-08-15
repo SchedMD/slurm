@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     too many commas from the qos and/or delta_qos fields of the assoc table.
  -- slurmctld - Fix memory leak when using RestrictedCoresPerGPU.
  -- Fix allowing access to reservations without MaxStartDelay set.
+ -- Fix regression introduced in 24.05.0rc1 breaking srun --send-libs parsing.
 
 * Changes in Slurm 24.05.2
 ==========================
