@@ -4167,18 +4167,6 @@ extern void slurm_print_job_info(FILE *out,
 				 slurm_job_info_t *job_ptr,
 				 int one_liner);
 
-/*
- * slurm_print_job_info_msg - output information about all Slurm
- *	jobs based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_info_msg_ptr - job information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info_msg(FILE *out,
-				     job_info_msg_t *job_info_msg_ptr,
-				     int one_liner);
-
-/*
  * slurm_sprint_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
  * IN job_ptr - an individual job information record pointer

@@ -282,29 +282,6 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 	}
 }
 
-/*
- * slurm_print_job_info_msg - output information about all Slurm
- *	jobs based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_info_msg_ptr - job information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void
-slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
-{
-	int i;
-	job_info_t *job_ptr = jinfo->job_array;
-	char time_str[256];
-
-	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str,
-		sizeof(time_str));
-	fprintf( out, "Job data as of %s, record count %d\n",
-		 time_str, jinfo->record_count);
-
-	for (i = 0; i < jinfo->record_count; i++)
-		slurm_print_job_info(out, &job_ptr[i], one_liner);
-}
-
 static void _sprint_range(char *str, uint32_t str_size,
 			  uint32_t lower, uint32_t upper)
 {

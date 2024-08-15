@@ -893,28 +893,6 @@ slurm_print_job_info(slurm_t self, FILE* out, HV *job_info, int one_liner=0)
 		xfree(ji.node_inx);
 		xfree(ji.req_node_inx);
 
-void
-slurm_print_job_info_msg(slurm_t self, FILE *out, HV *job_info_msg, int one_liner=0)
-	PREINIT:
-		job_info_msg_t ji_msg;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if (hv_to_job_info_msg(job_info_msg, &ji_msg) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ji_msg, one_liner
-	CLEANUP:
-		xfree(ji_msg.job_array);
-
-char_xfree *
 slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
 	PREINIT:
 		job_info_t ji;
