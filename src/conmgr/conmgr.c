@@ -133,8 +133,15 @@ extern void conmgr_fini(void)
 		return;
 	}
 
-	mgr.initialized = false;
 	mgr.shutdown_requested = true;
+
+	if (mgr.watch_thread) {
+		slurm_mutex_unlock(&mgr.mutex);
+		wait_for_watch();
+		slurm_mutex_lock(&mgr.mutex);
+	}
+
+	mgr.initialized = false;
 
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
