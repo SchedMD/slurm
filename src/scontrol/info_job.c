@@ -237,7 +237,7 @@ static char *_sprint_job_info(job_info_t *job_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line 5a (optional) ******/
-	if (job_ptr->show_flags & SHOW_DETAIL) {
+	if (detail_flag) {
 		exit_status = term_sig = 0;
 		if (WIFSIGNALED(job_ptr->derived_ec))
 			term_sig = WTERMSIG(job_ptr->derived_ec);
