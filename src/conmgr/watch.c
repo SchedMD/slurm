@@ -501,6 +501,13 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 	return SLURM_SUCCESS;
 }
 
+/* caller must hold mgr.mutex lock */
+static bool _is_poll_interrupt(void)
+{
+	return (mgr.quiesced || mgr.shutdown_requested ||
+		(mgr.waiting_on_work && (mgr.workers.active == 1)));
+}
+
 /* Poll all connections */
 static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -697,9 +704,7 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
-		if (mgr.poll_active &&
-		    (mgr.quiesced || mgr.shutdown_requested ||
-		     (mgr.waiting_on_work && (mgr.workers.active == 1)))) {
+		if (mgr.poll_active && _is_poll_interrupt()) {
 			/*
 			 * poll() hasn't returned yet but we want to
 			 * shutdown. Send interrupt before sleeping or
