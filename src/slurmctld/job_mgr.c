@@ -10112,20 +10112,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack32(time_limit, buffer);
 		pack32(dump_job_ptr->time_min, buffer);
 
-		if (dump_job_ptr->details) {
-			pack32(dump_job_ptr->details->nice, buffer);
-			pack_time(dump_job_ptr->details->submit_time, buffer);
-			/* Earliest possible begin time */
-			begin_time = dump_job_ptr->details->begin_time;
-			/* When we started accruing time for priority */
-			accrue_time = dump_job_ptr->details->accrue_time;
-		} else { /* Some job details may be purged after completion */
-			pack32(NICE_OFFSET, buffer); /* Best guess */
-			pack_time((time_t)0, buffer);
-		}
-
-		pack_time(begin_time, buffer);
-		pack_time(accrue_time, buffer);
 
 		if (IS_JOB_STARTED(dump_job_ptr)) {
 			/* Report actual start time, in past */
@@ -10862,6 +10848,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32(job_ptr->cpu_cnt, buffer);
 
 			pack32(job_ptr->node_cnt, buffer);
+			pack32(NICE_OFFSET, buffer); /* Best guess */
 			return;
 		}
 		packbool(true, buffer);
