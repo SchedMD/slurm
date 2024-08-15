@@ -139,19 +139,59 @@ static void _clear_job_gres_details(job_record_t *job_ptr)
 	job_ptr->gres_detail_cnt = 0;
 }
 
+static void _delete_job_details_members(job_details_t *detail_ptr)
+{
+	int i;
+
+	if (!detail_ptr)
+		return;
+
+	xassert(detail_ptr->magic == DETAILS_MAGIC);
+
+	xfree(detail_ptr->acctg_freq);
+	for (i=0; i<detail_ptr->argc; i++)
+		xfree(detail_ptr->argv[i]);
+	xfree(detail_ptr->argv);
+	xfree(detail_ptr->cpu_bind);
+	free_cron_entry(detail_ptr->crontab_entry);
+	FREE_NULL_LIST(detail_ptr->depend_list);
+	xfree(detail_ptr->dependency);
+	xfree(detail_ptr->orig_dependency);
+	xfree(detail_ptr->env_hash);
+	for (i=0; i<detail_ptr->env_cnt; i++)
+		xfree(detail_ptr->env_sup[i]);
+	xfree(detail_ptr->env_sup);
+	xfree(detail_ptr->std_err);
+	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+	xfree(detail_ptr->exc_nodes);
+	FREE_NULL_LIST(detail_ptr->feature_list);
+	xfree(detail_ptr->features);
+	xfree(detail_ptr->cluster_features);
+	FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+	xfree(detail_ptr->std_in);
+	xfree(detail_ptr->mc_ptr);
+	xfree(detail_ptr->mem_bind);
+	FREE_NULL_LIST(detail_ptr->prefer_list);
+	xfree(detail_ptr->prefer);
+	xfree(detail_ptr->req_context);
+	xfree(detail_ptr->std_out);
+	xfree(detail_ptr->submit_line);
+	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	xfree(detail_ptr->req_nodes);
+	xfree(detail_ptr->script);
+	xfree(detail_ptr->script_hash);
+	xfree(detail_ptr->arbitrary_tpn);
+	xfree(detail_ptr->work_dir);
+	xfree(detail_ptr->x11_magic_cookie);
+	xfree(detail_ptr->x11_target);
+}
+
 /*
  * _delete_job_details - delete a job's detail record and clear it's pointer
  * IN job_entry - pointer to job_record to clear the record of
  */
 static void _delete_job_details(job_record_t *job_entry)
 {
-	int i;
-
-	if (job_entry->details == NULL)
-		return;
-
-	xassert (job_entry->details->magic == DETAILS_MAGIC);
-
 	/*
 	 * Queue up job to have the batch script and environment deleted.
 	 * This is handled by a separate thread to limit the amount of
@@ -163,42 +203,7 @@ static void _delete_job_details(job_record_t *job_entry)
 		list_enqueue(purge_files_list, job_id);
 	}
 
-	xfree(job_entry->details->acctg_freq);
-	for (i=0; i<job_entry->details->argc; i++)
-		xfree(job_entry->details->argv[i]);
-	xfree(job_entry->details->argv);
-	xfree(job_entry->details->cpu_bind);
-	free_cron_entry(job_entry->details->crontab_entry);
-	FREE_NULL_LIST(job_entry->details->depend_list);
-	xfree(job_entry->details->dependency);
-	xfree(job_entry->details->orig_dependency);
-	xfree(job_entry->details->env_hash);
-	for (i=0; i<job_entry->details->env_cnt; i++)
-		xfree(job_entry->details->env_sup[i]);
-	xfree(job_entry->details->env_sup);
-	xfree(job_entry->details->std_err);
-	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
-	xfree(job_entry->details->exc_nodes);
-	FREE_NULL_LIST(job_entry->details->feature_list);
-	xfree(job_entry->details->features);
-	xfree(job_entry->details->cluster_features);
-	FREE_NULL_BITMAP(job_entry->details->job_size_bitmap);
-	xfree(job_entry->details->std_in);
-	xfree(job_entry->details->mc_ptr);
-	xfree(job_entry->details->mem_bind);
-	FREE_NULL_LIST(job_entry->details->prefer_list);
-	xfree(job_entry->details->prefer);
-	xfree(job_entry->details->req_context);
-	xfree(job_entry->details->std_out);
-	xfree(job_entry->details->submit_line);
-	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
-	xfree(job_entry->details->req_nodes);
-	xfree(job_entry->details->script);
-	xfree(job_entry->details->script_hash);
-	xfree(job_entry->details->arbitrary_tpn);
-	xfree(job_entry->details->work_dir);
-	xfree(job_entry->details->x11_magic_cookie);
-	xfree(job_entry->details->x11_target);
+	_delete_job_details_members(job_entry->details);
 	xfree(job_entry->details);	/* Must be last */
 }
 
