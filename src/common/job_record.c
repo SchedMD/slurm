@@ -673,7 +673,20 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  buf_t *buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!fed_details_ptr) {
+			pack16(0, buffer);
+			return;
+		}
+
+		pack16(1, buffer);
+		pack32(fed_details_ptr->cluster_lock, buffer);
+		packstr(fed_details_ptr->origin_str, buffer);
+		pack64(fed_details_ptr->siblings_active, buffer);
+		packstr(fed_details_ptr->siblings_active_str, buffer);
+		pack64(fed_details_ptr->siblings_viable, buffer);
+		packstr(fed_details_ptr->siblings_viable_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!fed_details_ptr) {
 			pack16(0, buffer);
 			return;
@@ -1688,7 +1701,23 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 
 	xassert(fed_details_pptr);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
+			fed_details_ptr = *fed_details_pptr;
+			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
+			safe_unpackstr(&fed_details_ptr->origin_str, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_active,
+				      buffer);
+			safe_unpackstr(&fed_details_ptr->siblings_active_str,
+				       buffer);
+			safe_unpack64(&fed_details_ptr->siblings_viable,
+				      buffer);
+			safe_unpackstr(&fed_details_ptr->siblings_viable_str,
+				       buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
 			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
