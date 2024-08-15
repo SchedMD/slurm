@@ -34,7 +34,7 @@
 \*****************************************************************************/
 
 #include <signal.h>
-#include "stdlib.h"
+#include <stdlib.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
