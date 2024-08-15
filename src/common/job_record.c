@@ -2308,7 +2308,7 @@ extern int job_record_unpack(job_record_t **out,
 			     buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	uint32_t task_id_size = NO_VAL;
+	uint32_t count;
 	uint8_t uint8_tmp, identity_flag;
 	uint16_t details, step_flag;
 	int error_code;
@@ -2326,13 +2326,13 @@ extern int job_record_unpack(job_record_t **out,
 		}
 
 		/* Job Array record */
-		safe_unpack32(&task_id_size, buffer);
-		if (task_id_size != NO_VAL) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
 			job_ptr->array_recs =
 				xmalloc(sizeof(job_array_struct_t));
-			if (task_id_size) {
+			if (count) {
 				job_ptr->array_recs->task_id_bitmap =
-					bit_alloc(task_id_size);
+					bit_alloc(count);
 				safe_unpackstr(
 					&job_ptr->array_recs->task_id_str,
 					buffer);
@@ -2474,13 +2474,13 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 
 		/* Job Array record */
-		safe_unpack32(&task_id_size, buffer);
-		if (task_id_size != NO_VAL) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
 			job_ptr->array_recs =
 				xmalloc(sizeof(job_array_struct_t));
-			if (task_id_size) {
+			if (count) {
 				job_ptr->array_recs->task_id_bitmap =
-					bit_alloc(task_id_size);
+					bit_alloc(count);
 				safe_unpackstr(
 					&job_ptr->array_recs->task_id_str,
 					buffer);
@@ -2705,13 +2705,13 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 
 		/* Job Array record */
-		safe_unpack32(&task_id_size, buffer);
-		if (task_id_size != NO_VAL) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
 			job_ptr->array_recs =
 				xmalloc(sizeof(job_array_struct_t));
-			if (task_id_size) {
+			if (count) {
 				job_ptr->array_recs->task_id_bitmap =
-					bit_alloc(task_id_size);
+					bit_alloc(count);
 				safe_unpackstr(
 					&job_ptr->array_recs->task_id_str,
 					buffer);
@@ -2929,14 +2929,14 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 
 		/* Job Array record */
-		safe_unpack32(&task_id_size, buffer);
-		if (task_id_size != NO_VAL) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
 			job_ptr->array_recs =
 				xmalloc(sizeof(job_array_struct_t));
 
-			if (task_id_size) {
+			if (count) {
 				job_ptr->array_recs->task_id_bitmap =
-					bit_alloc(task_id_size);
+					bit_alloc(count);
 				safe_unpackstr(
 					&job_ptr->array_recs->task_id_str,
 					buffer);
