@@ -2081,11 +2081,11 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		/* Dump job details, if available */
 		detail_ptr = dump_job_ptr->details;
 		if (detail_ptr) {
-			xassert (detail_ptr->magic == DETAILS_MAGIC);
-			pack16((uint16_t) DETAILS_FLAG, buffer);
+			xassert(detail_ptr->magic == DETAILS_MAGIC);
+			packbool(true, buffer);
 			_dump_job_details(detail_ptr, buffer, protocol_version);
 		} else
-			pack16((uint16_t) 0, buffer);	/* no details flag */
+			packbool(false, buffer); /* no details */
 
 		/* Dump job steps */
 		list_for_each_ro(dump_job_ptr->step_list, dump_job_step_state,
@@ -2098,13 +2098,12 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 
 		packstr(dump_job_ptr->origin_cluster, buffer);
 
-
 		if (dump_job_ptr->id) {
-			pack8(1, buffer);
+			packbool(true, buffer);
 			pack_identity(dump_job_ptr->id, buffer,
 				      protocol_version);
 		} else {
-			pack8(0, buffer);
+			packbool(false, buffer);
 		}
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		/* Dump basic job info */
@@ -2312,6 +2311,7 @@ extern int job_record_unpack(job_record_t **out,
 	uint8_t uint8_tmp, identity_flag;
 	uint16_t details, step_flag;
 	int error_code;
+	bool need_unpack = false;
 
 	job_record_t *job_ptr = job_record_create();
 	*out = job_ptr;
@@ -2437,9 +2437,10 @@ extern int job_record_unpack(job_record_t **out,
 			goto unpack_error;
 		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 
-		safe_unpack16(&details, buffer);
-		if ((details == DETAILS_FLAG) &&
-		    (_load_job_details(job_ptr, buffer, protocol_version))) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (need_unpack &&
+		    (_load_job_details(job_ptr, buffer, protocol_version) !=
+		     SLURM_SUCCESS)) {
 			goto unpack_error;
 		}
 		safe_unpack16(&step_flag, buffer);
@@ -2461,8 +2462,8 @@ extern int job_record_unpack(job_record_t **out,
 
 		safe_unpackstr(&job_ptr->origin_cluster, buffer);
 
-		safe_unpack8(&identity_flag, buffer);
-		if (identity_flag) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (need_unpack) {
 			if (unpack_identity(&job_ptr->id, buffer,
 					    protocol_version))
 				goto unpack_error;
