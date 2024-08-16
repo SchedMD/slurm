@@ -321,22 +321,6 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    const conmgr_events_t events,
 				    const slurm_addr_t *addr,
 				    socklen_t addrlen, void *arg);
-/*
- * instruct connection manager to listen to unix socket fd (async)
- * IN type connection type for fd
- * IN fd file descriptor to have conmgr take ownership of
- * IN events call backs on events of fd
- * IN addr socket listen address (will not xfree())
- * IN addrlen sizeof addr or 0 if addr is NULL
- * IN path path to unix socket on filesystem
- * IN arg ptr handed to on_connection callback
- * RET SLURM_SUCCESS or error
- */
-extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
-					 const conmgr_events_t events,
-					 const slurm_addr_t *addr,
-					 socklen_t addrlen, const char *path,
-					 void *arg);
 
 /*
  * Queue up work to receive new connection (file descriptor via socket)

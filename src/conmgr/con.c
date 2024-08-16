@@ -528,16 +528,6 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 			      NULL, arg);
 }
 
-extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
-					  const conmgr_events_t events,
-					  const slurm_addr_t *addr,
-					  socklen_t addrlen, const char *path,
-					  void *arg)
-{
-	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			      path, arg);
-}
-
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	receive_fd_args_t *args = arg;
@@ -842,9 +832,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, listen_on);
 
-		return conmgr_process_fd_unix_listen(type, fd, events, &addr,
-						     sizeof(addr), unixsock,
-						     arg);
+		return add_connection(type, NULL, fd, -1, events, &addr,
+				      sizeof(addr), true, unixsock, arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(listen_on)))
