@@ -2963,6 +2963,7 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 
 	xassert(reason_down);
 
+	xfree(node_ptr->gpu_spec);
 	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 
 	if (!res_cnt)
