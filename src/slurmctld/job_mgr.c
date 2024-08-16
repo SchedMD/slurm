@@ -3879,10 +3879,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 				break;
 		}
 		list_iterator_destroy(iter);
-		if (best_rc != -1)
-			rc = best_rc;
-		else if (part_limits_rc == WAIT_PART_DOWN)
-			rc = ESLURM_PARTITION_DOWN;
 	} else {
 		/*
 		 * We don't need to check the return code of this as the rc we
@@ -3894,12 +3890,12 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 					  &best_rc,
 					  &rc,
 					  &part_limits_rc);
-		if (best_rc != -1)
-			rc = best_rc;
-		else if (part_limits_rc == WAIT_PART_DOWN)
-			rc = ESLURM_PARTITION_DOWN;
 	}
 
+	if (best_rc != -1)
+		rc = best_rc;
+	else if (part_limits_rc == WAIT_PART_DOWN)
+		rc = ESLURM_PARTITION_DOWN;
 	if (rc == ESLURM_NODES_BUSY)
 		job_ptr->state_reason = WAIT_RESOURCES;
 	else if ((rc == ESLURM_RESERVATION_BUSY) ||
