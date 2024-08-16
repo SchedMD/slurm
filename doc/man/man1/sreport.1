@@ -296,41 +296,8 @@ on separate lines.
 .B cluster Utilization
 This report will display total usage divided amongst Allocated, Down,
 Planned Down, Idle, and Planned time for selected clusters.
-.RS
-.IP Allocated 14
 
-Time that nodes were in use with active jobs or an active reservation.
-This does not include reservations created with the MAINT or IGNORE_JOBS
-flags.
-.IP Down
-
-Time that nodes were marked as Down or fully Drained, or time that slurmctld was
-not responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
-.IP Idle
-
-Time that nodes were not Allocated, Down, PlannedDown, or Planned.
-.IP OverCommitted
-
-Time of eligible jobs waiting in the queue over the Planned time. Unlike
-Planned, this has no limit. It is typically useful to determine whether your
-system is overloaded and by how much.
-.IP PlannedDown
-
-Time that nodes were in use by a reservation created with the MAINT flag
-but not the IGNORE_JOBS flag. Also, time that nodes were in the FUTURE or
-POWERED_DOWN state.
-.IP Planned
-
-Time that nodes were not Allocated, Down or PlannedDown with eligible jobs in
-the queue that were unable to start due to time or size constraints. The maximum
-time is limited to the amount of time possible on the system. If this value is
-not of importance for you then the number can be grouped with idle time.
-.IP TresCount
-
-Configured number of TRESs on the reported nodes. See also the
-\fBTresName\fP field.
-.RE
-.RS 7
+Refer to the later section for descriptions of these fields.
 
 Note: Reservations created with the IGNORE_JOBS flag are not tracked
 in the Cluster Utilization report due to the fact that allowing any
@@ -339,8 +306,6 @@ possibility for them to be accounted for incorrectly.
 The jobs in these reservations will be tracked as normal rather than
 being bundled in the reservation time, as they are with reservations that
 do not have the IGNORE_JOBS flag.
-.RE
-.RS
 
 Note: The default view for the "Cluster Utilization" report includes the
 following fields: Cluster, Allocated, Down, PlannedDown, Idle, Planned,
@@ -678,6 +643,127 @@ Account, Cluster, Login, Proper, Used
 
 .LP
 All commands and options are case\-insensitive.
+
+.SH "EXPLANATION OF REPORT FIELDS"
+.LP
+.TP
+\fBAccount\fP
+Account name
+.IP
+.TP
+\fBAllocated\fP
+\fBCluster utilization report:\fR Time that nodes were in use with active jobs or an
+active reservation. This does not include reservations created with the MAINT or
+IGNORE_JOBS flags.
+
+\fBReservation reports:\fR Time that nodes were in use with active jobs in this
+reservation
+.IP
+.TP
+\fBAssociations\fP
+Associations allowed in the reservation
+.IP
+.TP
+\fBCluster\fP
+Cluster name
+.IP
+.TP
+\fBDown\fP
+\fBCluster utilization report only:\fR Time that nodes were marked as Down or fully
+Drained, or time that slurmctld was not responding (if TrackSlurmctldDown is set
+in slurmdbd.conf)
+.IP
+.TP
+\fBEnd\fP
+\fBReservation reports only:\fR End time
+.IP
+.TP
+\fBEnergy\fP
+Energy use (if tracking energy consumption)
+.IP
+.TP
+\fBFlags\fP
+\fBReservation reports only:\fR Flags applied to the reservation
+.IP
+.TP
+\fBIdle\fP
+\fBCluster utilization report:\fR Time that nodes were not Allocated, Down,
+PlannedDown, or Planned
+
+\fBReservation reports:\fR Time that nodes were not Allocated
+.IP
+.TP
+\fBLogin\fP
+User's login name
+.IP
+.TP
+\fBName\fP
+\fBReservation reports only:\fR Reservation name
+.IP
+.TP
+\fBOverCommitted\fP
+\fBCluster utilization report only:\fR Time of eligible jobs waiting in the
+queue over the Planned time. This contains any overflow of Planned time that
+would otherwise exceed the Reported time. It is typically useful to
+determine whether your system is overloaded and by how much.
+.IP
+.TP
+\fBPlanned\fP
+\fBCluster utilization report only:\fR Time that nodes were not Allocated, Down or
+PlannedDown with eligible jobs in the queue that were unable to start due to
+time or size constraints. If Allocated plus Planned time exceeds the Reported
+time, the excess will be reported as OverCommitted. If this value is not of
+importance for you then the number can be grouped with idle time.
+.IP
+.TP
+\fBPlannedDown\fP
+\fBCluster utilization report only:\fR Time that nodes were in use by a reservation
+created with the MAINT flag but not the IGNORE_JOBS flag. Also, time that nodes
+were in the FUTURE or POWERED_DOWN state.
+.IP
+.TP
+\fBProper Name\fP
+User's proper/real name
+.IP
+.TP
+\fBReported\fP
+\fBCluster utilization report only:\fR Total time that records are available for.
+Nodes that were added to or removed from the cluster during the report period
+will only contribute usage data for the time they were present in the cluster
+and cause percentage calculations to deviate from 100%.
+.IP
+.TP
+\fBReservationId\fP
+\fBReservation reports only:\fR Reservation ID
+.IP
+.TP
+\fBStart\fP
+\fBReservation reports only:\fR Start time
+.IP
+.TP
+\fBTotalTime\fP
+\fBReservation reports only:\fR Amount of time the reservation was valid
+.IP
+.TP
+\fBTresCount\fP
+Number of TRES present
+.IP
+.TP
+\fBTresName\fP
+Name of TRES reported
+.IP
+.TP
+\fBTresTime\fP
+\fBReservation reports only:\fR Total TRES-time in the reservation
+.IP
+.TP
+\fBUsed\fP
+Used TRES-minutes
+.IP
+.TP
+\fBWckey\fP
+Workload Characterization Key
+.IP
 
 .SH "PERFORMANCE"
 .PP
