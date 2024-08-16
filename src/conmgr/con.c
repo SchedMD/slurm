@@ -492,8 +492,14 @@ extern int add_connection(conmgr_con_type_t type,
 
 	_check_con_type(con, type);
 
-	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
-		 __func__, con->name, input_fd, output_fd);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+
+		log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u flags=%s",
+			 __func__, con->name, input_fd, output_fd, flags);
+
+		xfree(flags);
+	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen) {
