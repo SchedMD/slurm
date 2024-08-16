@@ -106,8 +106,8 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 
 static int _sort_sockets_by_avail_cores(const void *x, const void *y)
 {
-	return slurm_sort_uint_list_desc(&avail_cores_per_sock[*(int *)x],
-					 &avail_cores_per_sock[*(int *)y]);
+	return slurm_sort_uint16_list_desc(&avail_cores_per_sock[*(int *)x],
+					   &avail_cores_per_sock[*(int *)y]);
 }
 
 static int _sock_gres_sort(void *x, void *y)

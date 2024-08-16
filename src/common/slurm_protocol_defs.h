@@ -1315,6 +1315,14 @@ extern int slurm_find_ptr_in_list(void *x, void *key);
 extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 						  list_t *needles);
 
+extern int slurm_sort_time_list_asc(const void *, const void *);
+extern int slurm_sort_time_list_desc(const void *, const void *);
+extern int slurm_sort_uint16_list_asc(const void *, const void *);
+extern int slurm_sort_uint16_list_desc(const void *, const void *);
+extern int slurm_sort_uint32_list_asc(const void *, const void *);
+extern int slurm_sort_uint32_list_desc(const void *, const void *);
+extern int slurm_sort_uint64_list_asc(const void *, const void *);
+extern int slurm_sort_uint64_list_desc(const void *, const void *);
 extern int slurm_sort_uint_list_asc(const void *, const void *);
 extern int slurm_sort_uint_list_desc(const void *, const void *);
 extern int slurm_sort_int_list_asc(const void *, const void *);

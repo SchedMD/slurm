@@ -817,7 +817,7 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	config_record_t *c1 = *(config_record_t **) config_entry1;
 	config_record_t *c2 = *(config_record_t **) config_entry2;
 
-	return slurm_sort_uint_list_asc(&c1->weight, &c2->weight);
+	return slurm_sort_uint32_list_asc(&c1->weight, &c2->weight);
 }
 
 static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)

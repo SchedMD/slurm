@@ -102,6 +102,20 @@ strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 __thread bool drop_priv = false;
 #endif
 
+/*
+ * Macro for implementing generic integer sort comparison
+ *
+ * param T: base type to cast void* to
+ * param va: void * pointer to first item
+ * param vb: void * pointer to other item
+ */
+#define SORT_INT_ASC(T, va, vb) \
+	({T _a = *(T *) (va), _b = *(T *) (vb); \
+	 ((_a < _b) ? -1 : (_a > _b) ? 1 : 0);})
+
+/* It's just ASC with va and vb swapped */
+#define SORT_INT_DESC(T, va, vb) SORT_INT_ASC(T, (vb), (va))
+
 typedef struct {
 	uint32_t flag;
 	const char *str;
@@ -748,82 +762,74 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern int slurm_sort_time_list_asc(const void *v1, const void *v2)
+{
+	return SORT_INT_ASC(time_t, v1, v2);
+}
+
+extern int slurm_sort_time_list_desc(const void *v1, const void *v2)
+{
+	return SORT_INT_DESC(time_t, v1, v2);
+}
+
+extern int slurm_sort_uint16_list_asc(const void *v1, const void *v2)
+{
+	return SORT_INT_ASC(uint16_t, v1, v2);
+}
+
+extern int slurm_sort_uint16_list_desc(const void *v1, const void *v2)
+{
+	return SORT_INT_DESC(uint16_t, v1, v2);
+}
+
+extern int slurm_sort_uint32_list_asc(const void *v1, const void *v2)
+{
+	return SORT_INT_ASC(uint32_t, v1, v2);
+}
+
+extern int slurm_sort_uint32_list_desc(const void *v1, const void *v2)
+{
+	return SORT_INT_DESC(uint32_t, v1, v2);
+}
+
+extern int slurm_sort_uint64_list_asc(const void *v1, const void *v2)
+{
+	return SORT_INT_ASC(uint64_t, v1, v2);
+}
+
+extern int slurm_sort_uint64_list_desc(const void *v1, const void *v2)
+{
+	return SORT_INT_DESC(uint64_t, v1, v2);
+}
+
 extern int slurm_sort_uint_list_asc(const void *v1, const void *v2)
 {
-	uint64_t uint64a = *(uint64_t *) v1;
-	uint64_t uint64b = *(uint64_t *) v2;
-
-	if (uint64a < uint64b)
-		return -1;
-	else if (uint64a > uint64b)
-		return 1;
-
-	return 0;
+	return SORT_INT_ASC(unsigned int, v1, v2);
 }
 
 extern int slurm_sort_uint_list_desc(const void *v1, const void *v2)
 {
-	uint64_t uint64a = *(uint64_t *) v1;
-	uint64_t uint64b = *(uint64_t *) v2;
-
-	if (uint64a > uint64b)
-		return -1;
-	else if (uint64a < uint64b)
-		return 1;
-
-	return 0;
+	return SORT_INT_DESC(unsigned int, v1, v2);
 }
 
 extern int slurm_sort_int_list_asc(const void *v1, const void *v2)
 {
-	int inta = *(int *) v1;
-	int intb = *(int *) v2;
-
-	if (inta < intb)
-		return -1;
-	else if (inta > intb)
-		return 1;
-
-	return 0;
+	return SORT_INT_ASC(int, v1, v2);
 }
 
 extern int slurm_sort_int_list_desc(const void *v1, const void *v2)
 {
-	int inta = *(int *) v1;
-	int intb = *(int *) v2;
-
-	if (inta > intb)
-		return -1;
-	else if (inta < intb)
-		return 1;
-
-	return 0;
+	return SORT_INT_DESC(int, v1, v2);
 }
 
 extern int slurm_sort_int64_list_asc(const void *v1, const void *v2)
 {
-	int64_t int64a = *(int64_t *) v1;
-	int64_t int64b = *(int64_t *) v2;
-
-	if (int64a < int64b)
-		return -1;
-	else if (int64a > int64b)
-		return 1;
-
-	return 0;
+	return SORT_INT_ASC(int64_t, v1, v2);
 }
 
 extern int slurm_sort_int64_list_desc(const void *v1, const void *v2)
 {
-	int64_t int64a = *(int64_t *) v1;
-	int64_t int64b = *(int64_t *) v2;
-
-	if (int64a > int64b)
-		return -1;
-	else if (int64a < int64b)
-		return 1;
-
-	return 0;
+	return SORT_INT_DESC(int64_t, v1, v2);
 }
 
 extern char **slurm_char_array_copy(int n, char **src)
